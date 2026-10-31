@@ -21,6 +21,8 @@
 
 ## Trạng thái hiện tại (30/10/2026)
 
+- **GĐ305:** ⏱️ Thời gian test 427s → 194s (~3,2 phút, đạt ≤5 phút): `economySim.test.ts` (430s tuần tự, nút cổ chai wall-clock) tách 3 file chạy song song — `economySim` (smoke + ngày 1 + cấp 5), `economySimL10L20`, `economySimL50` (GĐ280). Không đổi nội dung/ngưỡng test; 228 file, 2356 test xanh. Ghi nhớ: test mô phỏng nặng mới phải nằm file riêng để vitest song song hoá.
+
 - **GĐ304:** ⚡ Tách bảng thành chunk riêng: 33 bảng trong `Panels.tsx` dùng `React.lazy` + `Suspense` (chỉ tải khi mở lần đầu); `ArrangePanel`/`BusinessPanel` import thẳng từ `panels/*` (bỏ re-export tĩnh làm hỏng việc tách). **Tải ban đầu 758 → 646 KB gzip, chunk lớn nhất 359 → 267 KB**; trần `check-bundle` hạ 780/380 → 680/300. Kiểm trình duyệt: mở order/staff/quests/business/storage/levels đều render, 0 lỗi console; full suite 2356 xanh. Mục tiêu còn lại: ≤600 KB (tách `vendor-three`/phần đồ họa nặng khỏi đường tải đầu).
 
 - **GĐ303:** 📦 Đo bundle: tải ban đầu 758 KB, chunk lớn nhất 359 KB gzip → hạ trần `check-bundle.mjs` 840/400 → 780/380 (khoá mức đã đạt). Full suite sau GĐ302: 2356/2356 xanh, 427s (~7 phút, chưa đạt ≤5). Còn: 2 bản sao Draco thừa trong assets/, tách code ít dùng bằng import() để tới ≤600 KB.
@@ -370,3 +372,4 @@
 - GĐ302 — 🔕 Báo hết hàng 1 lần/ngày, thông báo ngày đầu 27→22
 - GĐ303 — 📦 Hạ trần bundle 780/380 KB; full suite 2356 xanh
 - GĐ304 — ⚡ Bảng tải lười: tải đầu 758→646 KB, trần bundle 680/300
+- GĐ305 — ⏱️ Tách economySim thành 3 file song song: test 427s → 194s

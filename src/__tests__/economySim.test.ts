@@ -72,11 +72,7 @@ describe('khảo sát kinh tế vòng ngày — simulator thật trên store', (
   // 3 mức cấp (5/10/20) × ~30 ngày. Autoplay chạy tick thật + customer thật headless.
   // Số liệu mới — KHÔNG assert cứng tỉ số; test là regression (harness chạy được, số hữu hạn, không NaN)
   // + in BẢNG TRUNG BÌNH ra stdout để Leader dùng.
-  const CASES = [
-    { level: 5, days: 30 },
-    { level: 10, days: 20 },
-    { level: 20, days: 15 },
-  ];
+  const CASES = [{ level: 5, days: 30 }];
 
   for (const { level, days } of CASES) {
     it(`level ${level} — chạy ${days} ngày không crash, số hữu hạn & in bảng trung bình`, { timeout: 900_000 }, async () => {
@@ -186,46 +182,3 @@ const DAY1_TOAST_CEILING = 24; // đo 22 sau GĐ302 (gộp báo hết hàng thà
 
 // Đo 31/10 sau khi neo trần thưởng vào lãi bán hàng: 3.6 / 1.7 / 1.2 (cấp 5 cao vì sàn 150k + ngày 1 chưa có trần). Chỉ được hạ.
 const BONUS_TO_SALES_CEILING: Record<number, number> = { 5: 5, 10: 3, 20: 2 };
-
-// ── GĐ280 — đóng GĐ110/117: đo tỉ lệ hoàn thành nhiệm vụ ở cấp 50 bằng harness tất định ──
-// Số liệu đo 28 ngày (seed cố định qua seedLevel): 3 nhiệm vụ xương sống (Đông khách/Doanh thu/
-// Khách vui vẻ) bot đạt ~26/28 — mục tiêu kinh tế KHÔNG vô lý; 8 nhiệm vụ còn lại (nấu/MXH/dịch
-// vụ/trại/online/combo) bot = 0 vì bot KHÔNG thực hiện các hành động đó (giới hạn bot, không phải
-// cân bằng) — khớp quan sát browser thật GĐ110/117 → CHỐT: giữ nguyên mục tiêu, không siết.
-it('GĐ280 — cấp 50: 3 nhiệm vụ xương sống bot đạt ≥25/28 (khoá tín hiệu cân bằng, đóng GĐ110/117)', { timeout: 600_000 }, async () => {
-  const orig = useGame.getState().claimQuest;
-  // Gộp (union) qua MỌI lần claim của cùng ngày bằng Set: mốc settle trôi nhẹ theo yield (async
-  // nhả main thread) nên lần-record đầu có thể chốt sớm — union hội tụ về trạng thái cuối ngày.
-  const doneByDay: Record<number, Set<string>> = {};
-  useGame.setState({
-    claimQuest: (id: string) => {
-      const st = useGame.getState();
-      const set = (doneByDay[st.day] ??= new Set());
-      for (const q of dailyQuests(questContext(st))) if (q.done) set.add(q.id);
-      return orig(id);
-    },
-  });
-  setSimSeed(280);
-  try {
-    const { rows } = await runEconomySim(50, 28, { betTier: 1.0 });
-    const s = useGame.getState();
-    expect(rows.length).toBe(28);
-    expect(Number.isFinite(s.money)).toBe(true); // GĐ169 simSmoke cấp 50 dùng chung lượt mô phỏng này
-    expect(s.level).toBeGreaterThanOrEqual(50);
-    expect(Number.isFinite(s.stats.xp)).toBe(true);
-    expect(Number.isFinite(s.biz.lastWeek?.goal)).toBe(true);
-    expect(Number.isFinite(s.biz.lastWeek?.nextGoal)).toBe(true);
-    const doneCount: Record<string, number> = {};
-    for (const set of Object.values(doneByDay)) for (const id of set) doneCount[id] = (doneCount[id] || 0) + 1;
-    for (const id of ['daily_customers', 'daily_revenue', 'daily_smile']) {
-      // eslint-disable-next-line no-console
-      console.log(`[GĐ280] ${id}: bot đạt ${doneCount[id] || 0}/28 ngày ở cấp 50`);
-      // Đo thực tế dao động 24–26/28 (yield async ảnh hưởng nhẹ tới tick) — ngưỡng 22 (~80%) đủ
-      // bắt mục tiêu vô lý (sẽ tuột về ~10) mà không rung đỏ vì nhiễu môi trường.
-      expect(doneCount[id] || 0).toBeGreaterThanOrEqual(22);
-    }
-  } finally {
-    clearSimSeed();
-    useGame.setState({ claimQuest: orig });
-  }
-});
