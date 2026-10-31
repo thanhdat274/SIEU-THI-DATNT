@@ -9,6 +9,7 @@ import { DEBT_LATE_DAYS, DEBT_WRITE_OFF_DAYS, WRITE_OFF_FRIEND_LOSS, type Debt }
 import { INSPECTION_EVERY, INSPECTION_FINE, INSPECTION_REWARD, INSPECTION_UNLOCK, activeAds, inspectionResult, type BizState } from '../../data/biz';
 import { sceneFor, surpriseArcById } from '../../data/surpriseArcs';
 import { quanNuocDay } from '../../data/quanNuoc';
+import { tiemXoiDay, tiemXoiSaved } from '../../data/tiemXoi';
 import { bizEndOfDay, checkAchievements } from '../biz';
 import { PHONE_FRIEND_GAIN } from '../../data/phoneOrders';
 import { nextMarketIndex } from '../../data/market';
@@ -138,6 +139,16 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
       quanNuocLast = { day: s.day, revenue: q.revenue, served: q.served, wanted: q.wanted, wages: q.wages, profit: q.revenue - q.wages };
       quanNews.push(`🧋 Quán nước: ${q.served}/${q.wanted} ly · ${formatMoney(q.revenue)} · lương −${formatMoney(q.wages)}`
         + (q.short ? ' · kho thiếu đồ uống, nhập thêm' : ''));
+    }
+  }
+  // Tiệm xôi (GĐ410): nấu bù xôi vào kho thật `k` sau quán nước, giá vốn + lương trừ két.
+  let tiemXoiLast: BizState['tiemXoiLast'];
+  if (s.biz.tiemXoi?.open) {
+    const t = tiemXoiDay(s.biz.tiemXoi, s.level, k.storage, (id, qty) => putStock(k, id, qty));
+    if (t) {
+      tiemXoiLast = { day: s.day, total: t.total, cost: t.cost, wages: t.wages, saved: tiemXoiSaved(t.made) };
+      quanWages += t.cost + t.wages;
+      quanNews.push(t.total ? `🍚 Tiệm xôi nấu ${t.total} phần vào kho · −${formatMoney(t.cost + t.wages)}` : '🍚 Tiệm xôi: kho đủ xôi, hôm nay không nấu');
     }
   }
   // Phụ trại đổ cám hộ + gom nông sản về kho (kèm nhãn nhà trồng/nhà nuôi bán được giá hơn)
@@ -361,6 +372,7 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
   if (biz.news.length) s.notify(biz.news.join(' · '));
   // Kết quả quán nước hôm nay ghi vào biz để UI hiển thị (xem lại "hôm qua bán được bao nhiêu ly")
   if (quanNuocLast) biz.biz = { ...biz.biz, quanNuocLast };
+  if (tiemXoiLast) biz.biz = { ...biz.biz, tiemXoiLast };
   const todayReviews = s.reviews.filter((r) => r.day === s.day);
   const record: DayRecord = {
     day: s.day, revenue: stats.revenue, profit: stats.revenue - stats.spent - wages - rent,

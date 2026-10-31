@@ -8,6 +8,7 @@ import {
 import { quanNuocStaffValues } from '../../data/quanNuocStaffValue';
 import { teahouseHaulRead } from '../../data/teahouseHaul';
 import { Callout, Footer, styles } from './shared';
+import { TiemXoiSection } from './TiemXoiSection';
 
 /** Thứ tự hiển thị 3 mức giờ bán: bình dân → vừa phải → đắt hơn. */
 const PRICE_ORDER: readonly QuanNuocPrice[] = ['re', 'vua', 'cao'];
@@ -224,6 +225,7 @@ export function QuanNuocPanel() {
           <p style={{ fontSize: 12, opacity: 0.7, margin: '8px 0 0' }}>🧃 Nguyên liệu lấy thẳng từ kho: kho hết nước là quán bán không được.</p>
         </>
       )}
+      <TiemXoiSection />
       <Footer onClose={closePanel} />
     </div>
   );

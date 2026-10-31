@@ -376,6 +376,10 @@ export interface GameState {
   fireQuanNuoc: () => boolean;
   /** Đổi mức giá quán nước (bình dân / vừa phải / đắt hơn). */
   setQuanNuocPrice: (p: QuanNuocPrice) => void;
+  /** Tiệm xôi (GĐ411): mua mặt bằng, tuyển/cho nghỉ thợ nấu. */
+  buyTiemXoi: () => boolean;
+  hireTiemXoi: () => boolean;
+  fireTiemXoi: () => boolean;
   /** Lấy bớt hàng khỏi kho (vd. thức ăn cho thú cưng). */
   consumeStock: (productId: string, qty: number) => void;
   /** Sổ nợ khách quen (theo id khách quen). */

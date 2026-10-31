@@ -5,6 +5,7 @@
  */
 import { formatMoney, productById } from './products';
 import { newQuanNuoc, type QuanNuocState } from './quanNuoc';
+import { newTiemXoi, type TiemXoiState } from './tiemXoi';
 import type { HiepLucState } from './hiepLuc';
 import { monthOf } from './calendar';
 import { emptyYear } from './yearReport';
@@ -1152,6 +1153,9 @@ export interface BizState {
   upgrades?: string[];
   /** Quán nước đầu ngõ (GĐ7, bán đồ uống rút từ kho); thiếu ở save cũ — nạp bản cũ tự bù mặc định. */
   quanNuoc: QuanNuocState;
+  /** Tiệm xôi (GĐ410): xưởng nấu xôi số lượng lớn đổ vào kho chung mỗi đêm. */
+  tiemXoi: TiemXoiState;
+  tiemXoiLast?: { day: number; total: number; cost: number; wages: number; saved: number };
   /** Kết quả ngày vừa rồi của quán nước (để UI hiển thị); chưa từng chạy thì undefined.
    *  wages = tổng lương nhân viên phải trả hôm đó, profit = revenue − wages (lời ròng thật). */
   quanNuocLast?: { day: number; revenue: number; served: number; wanted: number; wages: number; profit: number };
@@ -1232,6 +1236,7 @@ export const newBiz = (): BizState => ({
   home: [], vehicle: 'none', breakfastDay: 0,
   chapters: [], chapterPending: null, counterKills: 0, tutorialOff: false, prestige: { level: 0, bonus: 0, goalsClaimed: [] }, services: [], upgrades: [],
   quanNuoc: newQuanNuoc(),
+  tiemXoi: newTiemXoi(),
   discoveryClaimed: [],
   landmark: { contributions: 0, lastContributeDay: 0 },
   demographics: {},

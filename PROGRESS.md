@@ -55,6 +55,7 @@
 
 ## Quyết định lớn đã chốt
 
+- Tiệm xôi (người dùng chọn b, 2026-10-31): giữ Quây xôi cấp 36 trong tạp hóa (tạp hóa lớn thành siêu thị); Tiệm xôi là cơ sở riêng cấp 40, nấu xôi số lượng lớn rẻ 40% bù kho chung mỗi đêm. Còn lại: lô 3D đầu hẻm, Sổ đầu ngày, xu hướng cơ sở.
 - Thứ tự ưu tiên giữ chân: vòng ngày → dẫn đường người mới → nhịp tuần → endgame/rival → hạ tầng server.
 - NG+ (GĐ14) chỉ làm sau khi có quán thứ hai; giữ bộ sưu tập, chỉ bonus doanh thu (tối đa +48%), chặn khi hẻm online.
 - Vé tha thứ streak: tối đa 1 lần/7 ngày, cần chuỗi ≥3. Thử thách tuần tích vào sổ tuần.
@@ -67,7 +68,6 @@
 - Họ màu hướng dẫn/chuỗi/biểu đồ: gộp về một sắc info `#3498db` (GĐ178); ngoại lệ duy nhất: buy-tone `#55efc4`/`#ff7675`; GardenPanel giữ họ riêng. GĐ258 quét nốt 6 màu cũ — src/ui chỉ còn bảng duyệt + màu nhận diện.
 
 ## Cần theo dõi / nợ mở
-- 🙋 **CẦN DUYỆT (GĐ408) — mở rộng "Tiệm xôi" (chuỗi tiệm cung ứng lẫn nhau):** Leader đánh giá chiều sâu bão hòa từ GĐ346 (GĐ402–407 chỉ còn khe nhỏ ở khách quen). Ý định cũ của người dùng: tiệm xôi mở cấp 29, xôi CHỈ nấu ở tiệm xôi, ăn tại chỗ + mang về, tạp hóa nhận xôi gói qua đơn nội bộ. Xung đột với code hiện tại: (1) tạp hóa đã nấu xôi ở Quây xôi (rice_station, cấp 36) + 8 món xôi trong catalog; (2) cấp 29 đã là mốc Quán nước. Cần chọn: (a) dời xôi khỏi tạp hóa sang tiệm xôi (đổi gameplay đang có + migration save món xôi đang tồn); (b) giữ Quây xôi, tiệm xôi là nơi nấu số lượng lớn rẻ hơn, cấp ~40; (c) hoãn. Trong lúc chờ: tiếp tục chiều sâu nhỏ + QA.
 - GĐ330: QA lưu máy khách (127.0.0.1:5173) — tải lại trang vẫn hiện "Chơi tiếp trong máy (ngày 1)" và vào lại đúng ván; lần "mất ván" trước là bấm nhầm nút ván mới, KHÔNG phải lỗi lưu.
 
 - ⏱️ (GĐ296–298) `npm run test` rất nhạy với tải máy: cùng một bộ test cho **355s / 405s / 532s / 655s / 733s / 994s**. Ở lần 994s có **1 test đỏ**, chạy lại ngay sau đó thì **2331/2331 xanh (532s)** → đỏ do tranh CPU, không phải lỗi logic (GĐ298 chỉ sửa CSS + dev tool, không đụng logic game). Nếu gặp 1 test đỏ lẻ mà không liên quan thay đổi vừa làm: chạy lại đúng file đó trước khi kết luận. Nếu máy rảnh mà vẫn >10 phút: đo file chậm nhất (`npx vitest run --reporter=json`) rồi tối ưu — nghi phạm vẫn là cụm sim cấp 50 (GĐ280 ~242s/file).
@@ -135,5 +135,6 @@
 - GĐ404 — 💬 Sổ khách quen hiện "câu cửa miệng" (lines.greeting, trước đây là dữ liệu chết) sau lần ghé đầu: `regularQuote()` (regularTrust.ts) + 1 dòng nghiêng trong RegularsPanel. Không thêm thông báo/nút. QA @5173: khách 0 lần ghé ẩn đúng. 2524 test xanh 176s.
 - GĐ405 — 😞 Khách quen bỏ về nói rõ món hụt đầu tiên: "Hết X rồi…" (hết hàng) / "X bán mắc quá…" (giá); lý do khác giữ câu riêng. `walkoutLine()` + tham số miss tuỳ chọn của regularVisit (customers.ts truyền c.missed). Không thêm toast; ≤90 ký tự với mọi khách × món dài nhất. Co-op: chạy trên máy chạy như cũ. 2526 test xanh 168s.
 - GĐ406: QA điện thoại 375×812 @5173 (save ngày 2): sổ Khách quen (Thêm → Danh tiếng → 💛) mở đủ thẻ không tràn ngang (scrollWidth 375). Không đổi code.
+- GĐ410–412 — 🍚 Tiệm xôi: `data/tiemXoi.ts` (nấu bù tới 80 phần/món, món thiếu nhiều nhất trước, vốn ×0.6), slice mua/tuyển/cho nghỉ, endDay cất vào kho + trừ vốn/lương, mục trong bảng Quán nước (không thêm nút HUD). Save cũ tự bù mặc định (merge sâu biz). 13 test mới; đã thử trong game.
 - GĐ408 — 🙋 Leader review: đề xuất mở rộng Tiệm xôi ghi vào Cần duyệt (xung đột Quây xôi cấp 36 + mốc Quán nước cấp 29) — chờ người dùng chọn a/b/c.
 - GĐ407 — 📒 Khách quen bỏ về vì hụt món ưa thích → sổ khách quen ghi món đó là đã biết (hết "???" sau khi khách đã nói thẳng). `regularWalkout(prev, day, def?, missedId?)`; discovered vốn được lưu → không đổi save. 2528 test xanh 177s.
