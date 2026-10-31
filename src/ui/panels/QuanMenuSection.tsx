@@ -51,7 +51,7 @@ export function QuanMenuSection() {
               {locked ? `Cấp ${r.unlock}` : on ? '✓ Bán' : 'Thêm'}
             </button>
             <div style={{ fontSize: 13, lineHeight: 1.4 }}>
-              {r.icon} <b>{r.name}</b> · {formatMoney(Math.round(r.price * mul))} · lời ~{formatMoney(profit)}/ly
+              {r.icon} <b>{r.name}</b> · {formatMoney(Math.round(r.price * mul))} · lời ~{formatMoney(profit)}/ly{r.hot ? " · ♨ đồ nóng (mưa/rét đông khách)" : ""}
               <div style={{ fontSize: 11, opacity: 0.75 }}>
                 {r.uses.map((u) => productById(u.id).name).join(' + ')}
                 {!locked && (missing.length ? ` · ⚠️ thiếu ${missing.join(', ')}` : ` · kho đủ ~${cap} ly`)}
