@@ -293,3 +293,15 @@ describe('GĐ479: bán thật ngày mưa với đồ nóng', () => {
     expect(run(['tra_da', 'tra_gung']).customers).toBeGreaterThan(run(['tra_da', 'nuoc_mia']).customers);
   });
 });
+
+describe('GĐ480: ca cao nóng', () => {
+  it('mở cấp 38, đồ nóng, không đá, lời hơn vốn', async () => {
+    const { quanRecipeById, recipeCupCost, QUAN_RECIPES } = await import('../data/quanRecipes');
+    const r = quanRecipeById('ca_cao_nong')!;
+    expect(r.unlock).toBe(38);
+    expect(r.hot).toBe(true);
+    expect(r.uses.some((u) => u.id === 'x_nuoc_da')).toBe(false);
+    expect(r.price).toBeGreaterThan(recipeCupCost(r) * 2);
+    expect(QUAN_RECIPES.filter((x) => x.hot).length).toBe(3);
+  });
+});
