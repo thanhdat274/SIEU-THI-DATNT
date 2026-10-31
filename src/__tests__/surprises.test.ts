@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { SURPRISES } from '../data/biz';
+import { loadStories } from '../data/biz';
+await loadStories(); // SURPRISES nạp lười
 
 describe('SURPRISES — dữ liệu sự kiện bất ngờ nhất quán', () => {
   it('id không trùng lặp và mỗi sự kiện có đầy đủ tiêu đề, mô tả, ít nhất 2 lựa chọn', () => {

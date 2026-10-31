@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest';
+import { beforeAll, describe, it, expect } from 'vitest';
 import { CHAPTERS, type ChapterContext } from '../data/chapters';
-import { STORIES } from '../data/biz';
+import { STORIES, loadStories } from '../data/biz';
 import { REGULARS, regularById } from '../data/regulars';
 
 /** Id 6 chương gốc (ch1–ch6) phải được giữ nguyên. */
@@ -97,6 +97,7 @@ describe('Cốt truyện chương (chapters.ts)', () => {
 });
 
 describe('Chuyện khách quen (STORIES)', () => {
+  beforeAll(async () => { await loadStories(); });
   it('mọi key là khách quen có thật, mỗi người 3 chương ở mốc 10/30/60', () => {
     const ids = new Set(REGULARS.map((r) => r.id));
     for (const [rid, chapters] of Object.entries(STORIES)) {

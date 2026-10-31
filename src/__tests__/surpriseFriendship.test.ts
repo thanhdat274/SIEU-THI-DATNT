@@ -1,8 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { SURPRISES, type EventChoice, type SurpriseDef } from '../data/biz';
+import { loadStories } from '../data/biz';
 import { REGULARS, type RegularProgress } from '../data/regulars';
 import { chooseSurprise } from '../core/biz';
 import { newGameData, useGame } from '../core/store';
+await loadStories(); // SURPRISES nạp lười
 
 /**
  * Bộ test GĐ13 — Wire `friendship` vào hệ sự kiện bất ngờ (SURPRISES).

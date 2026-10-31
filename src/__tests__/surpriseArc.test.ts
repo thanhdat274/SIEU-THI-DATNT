@@ -7,10 +7,12 @@ import {
   sceneFor, surpriseArcById,
 } from '../data/surpriseArcs';
 import { SURPRISES, type BizState } from '../data/biz';
+import { loadStories } from '../data/biz';
 import { chooseSurprise, maybeSurprise } from '../core/biz';
 import { newGameData, useGame } from '../core/store';
 import { applySnapshot, snapshot } from '../core/save';
 import { clearSimSeed, setSimSeed } from '../core/rand';
+await loadStories(); // SURPRISES nạp lười
 
 /**
  * GĐ164 — "Sự kiện bất ngờ" thành chuyện kể: mini-arc 2–3 ngày (surpriseArcs.ts).

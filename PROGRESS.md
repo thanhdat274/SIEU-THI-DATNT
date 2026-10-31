@@ -84,6 +84,7 @@
 - 📦 (GĐ317) Bundle 618 KB vs mục tiêu 600: `world/farm.ts` (49KB raw ≈ 12KB gzip) chỉ gọi đồng bộ trong `createWorld` — lazy-load nó cũng chưa đủ 18KB và buộc đổi `createWorld` sang async (rủi ro 3D/co-op). Hoãn; muốn xuống 600 cần tách thêm cả `three` examples hoặc world con khác.
 - 💰 Tỉ số thưởng/lãi bán 1,44 (cấp 5) / 1,17 (cấp 10) — phần lớn do ngày 1 không trần (luật người mới, cố ý). Muốn ≤1: tăng lãi gộp, đo trước/sau.
 
+- 📦 GĐ336: ✅ BUNDLE ĐẠT 596 KB (<600): văn bản dài `STORIES` + `SURPRISES` chuyển sang `data/stories.ts`, nạp lười bằng `loadStories()` (gọi ở main.tsx; `STORIES`/`SURPRISES` là `let` live-binding, rỗng tới khi nạp xong, mọi chỗ đọc chịu được rỗng). Test cần `await loadStories()` (narrative + 3 test surprise). 2356 test xanh, trần bundle hạ 600/260.
 - 📦 GĐ335: thử nạp lười `world/farm.ts` (await import ở main.tsx + tách FARM_CENTER) → chỉ 604→602 KB vì main thành module async làm chunk vỡ vụn thêm; không đáng rủi ro → hoàn tác. Bundle chốt 604 KB (mục tiêu 600 lệch 4KB).
 - 📦 GĐ334: GLTFLoader+DRACOLoader nạp lười (`world/gltfLoader.ts`, 4 chỗ gọi + manualChunks tách `three/examples/jsm/loaders`) → tải ban đầu 618→604 KB, chunk lớn nhất 267→253; QA trình duyệt: GLB kit/facade vẫn tải 200, không lỗi mới. Trần hạ 610/260. Còn 4KB tới 600.
 - 📦 GĐ333: thử `build.target: esnext` và alias three→three/webgpu → đều vẫn 618 KB (không đổi); vendor-three 267KB gz là cục lớn nhất, three/webgpu không tree-shake được thêm. Bundle 600 chỉ còn đường tách lõi–UI; trần giữ 625.

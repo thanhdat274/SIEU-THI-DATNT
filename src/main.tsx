@@ -1,3 +1,4 @@
+import { loadStories } from './data/biz';
 import { skyAt } from './data/weather';
 import { isMarketDay } from './data/chophien';
 import { isRoadworks } from './data/roadwork';
@@ -129,6 +130,7 @@ useGame.subscribe((s, prev) => {
   saveGame();
   if (useSession.getState().account) pushCloudSave();
 });
+void loadStories(); // GĐ336: chuyện khách quen nạp lười ngay sau khi vào game
 startAutosave(
   () => useSession.getState().screen === 'game' && !inAlley(),
   () => void (useSession.getState().account && pushCloudSave()),
