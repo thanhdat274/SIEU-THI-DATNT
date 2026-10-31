@@ -8,7 +8,7 @@ import { join } from 'node:path';
  * Trần là mức đo ngày 2026-10-31; muốn thêm nút thì GỘP vào bảng có sẵn hoặc BỎ một nút cũ.
  * Rút gọn được thì HẠ trần theo số mới — không bao giờ nâng lên.
  */
-const HUD_TOOLS_CEILING = { total: 28, dock: 10, more: 18 };
+const HUD_TOOLS_CEILING = { total: 20, dock: 10, more: 10 };
 /** Mục tiêu dài hạn (rà soát mỗi 10 GĐ): tổng ≤ 20 nút. */
 export const HUD_TOOLS_TARGET = 20;
 

@@ -51,7 +51,8 @@ import { findSurprise } from '../data/surpriseArcs';
 import { chooseSurprise, closeChapter, closeStory, dismissTutorial, REGULAR_NAMES } from '../core/biz';
 import { chapterById } from '../data/chapters';
 import { initAudio, isMuted, isMusic, setMuted, setMusic } from '../core/audio';
-import { Panels, SO_SACH_TABS } from './Panels';
+import { Panels } from './Panels';
+import { hubFirst, hubOf } from './hubs';
 import { answerAsk, useCounterAsk, askWallElapsed } from '../core/counterAsk';
 import { GFX_CYCLE, GFX_LABEL, gfxStatus, setGfxChoice } from '../render/graphicsQuality';
 import './hud.css';
@@ -371,22 +372,11 @@ Bản đang chơi được giữ lại, khôi phục lần nữa là trở lại
     { icon: '🎁', label: 'Combo', more: true, group: 'Hàng hóa', lock: COMBO_UNLOCK, active: openType === 'combos', on: () => openPanel({ type: 'combos' }) },
     { icon: '📋', label: 'Hợp đồng', group: 'Hàng hóa', lock: 14, more: true, active: openType === 'contracts', on: () => openPanel({ type: 'contracts' }) },
     { icon: '📈', label: 'Kinh doanh', narrowMore: true, group: 'Kinh doanh & đối thủ', lock: 3, badge: [loanBadge, rivalBadge, challengeBadge].filter(Boolean).join(' · ') || undefined, active: openType === 'business', on: () => openPanel({ type: 'business' }) },
-    { icon: '📊', label: 'Sổ sách', more: true, group: 'Kinh doanh & đối thủ', badge: dossierBadge, active: !!openType && SO_SACH_TABS.some(([id]) => id === openType), on: () => openPanel({ type: 'history' }) },
-    { icon: '🚜', label: 'Trang trại', more: true, group: 'Ngoài tiệm', lock: 8, badge: gardenBadge, active: openType === 'garden', on: () => openPanel({ type: 'garden' }) },
-    { icon: '🧋', label: 'Quán nước', more: true, group: 'Ngoài tiệm', lock: QUAN_NUOC_UNLOCK, active: openType === 'quannuoc', on: () => openPanel({ type: 'quannuoc' }) },
-    { icon: '🏗️', label: 'Sân chơi', more: true, group: 'Ngoài tiệm', active: openType === 'landmark', badge: landmarkContrib >= 28 ? '✅ Xong' : `${landmarkContrib}/28`, on: () => openPanel({ type: 'landmark' }) },
+    { icon: '📊', label: 'Sổ sách', more: true, group: 'Kinh doanh & đối thủ', badge: dossierBadge, active: hubOf(openType ?? '') === 'sosach', on: () => openPanel({ type: hubFirst('sosach', level) } as never) },
+    { icon: '⭐', label: 'Danh tiếng', more: true, group: 'Nhân sự & khách', badge: [rating.count ? `${rating.average.toFixed(1)}★` : undefined, triBadge, licenseBadge, skillsLeft > 0 ? `+${skillsLeft} kỹ năng` : undefined].filter(Boolean)[0], active: hubOf(openType ?? '') === 'danhtieng', on: () => openPanel({ type: hubFirst('danhtieng', level) } as never) },
+    { icon: '🌱', label: 'Mở rộng', more: true, group: 'Ngoài tiệm', badge: [gardenBadge, socialBadge, onlineBadge].find(Boolean) ?? (landmarkContrib >= 28 ? undefined : `${landmarkContrib}/28`), active: hubOf(openType ?? '') === 'morong', on: () => openPanel({ type: hubFirst('morong', level) } as never) },
     { icon: '👕', label: 'Trang phục', group: 'Nhân sự & khách', lock: 2, more: true, active: openType === 'costume', on: () => openPanel({ type: 'costume' }) },
-    { icon: '🏅', label: 'Danh hiệu', more: true, group: 'Nhân sự & khách', badge: skillsLeft > 0 ? `+${skillsLeft} kỹ năng` : undefined, active: openType === 'skills', on: () => openPanel({ type: 'skills' }) },
-    { icon: '💛', label: 'Khách quen', more: true, group: 'Nhân sự & khách', badge: triBadge, active: openType === 'regulars', on: () => openPanel({ type: 'regulars' }) },
     { icon: '👥', label: 'Nhân viên', more: true, group: 'Nhân sự & khách', lock: FEATURES.staff, active: openType === 'staff', on: () => openPanel({ type: 'staff' }) },
-    { icon: '🏪', label: 'Tiện lợi 24/7', more: true, group: 'Mở rộng', lock: CONVENIENCE.unlock, active: openType === 'branch', on: () => openPanel({ type: 'branch' }) },
-    { icon: '📱', label: 'Mạng xã hội', more: true, group: 'Mở rộng', lock: SOCIAL_UNLOCK, badge: socialBadge, active: openType === 'social', on: () => openPanel({ type: 'social' }) },
-    { icon: '📲', label: 'Bán online', more: true, group: 'Mở rộng', lock: ONLINE_UNLOCK, badge: onlineBadge, active: openType === 'online', on: () => openPanel({ type: 'online' }) },
-    { icon: '📜', label: 'Giấy phép', more: true, group: 'Pháp lý & danh tiếng', lock: INSPECTION_UNLOCK, badge: licenseBadge, active: openType === 'licenses', on: () => openPanel({ type: 'licenses' }) },
-    {
-      icon: '💬', label: 'Đánh giá', more: true, group: 'Pháp lý & danh tiếng', active: openType === 'reviews', badge: rating.count ? `${rating.average.toFixed(1)}★` : undefined,
-      on: () => openPanel({ type: 'reviews' }),
-    },
   ];
 
   return (

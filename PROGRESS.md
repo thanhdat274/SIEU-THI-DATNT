@@ -21,6 +21,8 @@
 
 ## Trạng thái hiện tại (30/10/2026)
 
+- **GĐ307:** 🧹 Nút HUD 28 → **20 (đạt mục tiêu dài hạn)**: thêm 2 nút gom — "⭐ Danh tiếng" (Đánh giá, Khách quen, Danh hiệu, Giấy phép) và "🌱 Mở rộng" (Trang trại, Quán nước, Sân chơi, Tiện lợi, MXH, Online); định nghĩa tập trung ở `src/ui/hubs.ts` (`HUBS`, mỗi tab có cấp mở khóa; tab chưa mở thì ẩn, riêng tab đang mở luôn hiện). Gộp luôn "Sổ sách" (GĐ306) vào cùng cơ chế. Mất: nút khoá 🔒 "Cấp N" làm gợi ý mở khóa — tab "Mở khóa" trong Sổ sách đã gánh vai đó. Trần HUD 28/18 → 20/10. Kiểm trình duyệt cấp 1: tab đúng cấp, layoutAudit 0 cắt/0 tràn; full suite 2356 xanh, 153s.
+
 - **GĐ306:** 🧹 Nút HUD 33 → 28: gộp 6 nút tra cứu (Sổ theo dõi, Kỷ lục, Sức khoẻ món, Hồ sơ tiệm, Bản đồ mở khóa, Sổ tay Tiệm) thành MỘT nút "📊 Sổ sách" + thanh tab trong `Panels.tsx` (`SO_SACH_TABS`); các bảng cũ giữ nguyên, `openPanel({type})` ở mọi nơi vẫn chạy. Badge Hồ sơ giữ trên nút Sổ sách; badge Bản đồ mở khóa bỏ (nhiễu). Trần `HUD_TOOLS_CEILING` 33/23 → 28/18 (Thêm). QA 320px: 6 tab đều mở, tab xuống dòng gọn, layoutAudit 0 cắt/0 tràn; full suite 2356 xanh, 181s. Mục tiêu còn: ≤20 nút (gộp tiếp nhóm Kinh doanh/Ngoài tiệm/Nhân sự).
 
 - **GĐ305:** ⏱️ Thời gian test 427s → 194s (~3,2 phút, đạt ≤5 phút): `economySim.test.ts` (430s tuần tự, nút cổ chai wall-clock) tách 3 file chạy song song — `economySim` (smoke + ngày 1 + cấp 5), `economySimL10L20`, `economySimL50` (GĐ280). Không đổi nội dung/ngưỡng test; 228 file, 2356 test xanh. Ghi nhớ: test mô phỏng nặng mới phải nằm file riêng để vitest song song hoá.
@@ -376,3 +378,4 @@
 - GĐ304 — ⚡ Bảng tải lười: tải đầu 758→646 KB, trần bundle 680/300
 - GĐ305 — ⏱️ Tách economySim thành 3 file song song: test 427s → 194s
 - GĐ306 — 🧹 Gộp 6 nút tra cứu thành "Sổ sách" (tab): nút HUD 33→28
+- GĐ307 — 🧹 Hub tab Danh tiếng/Mở rộng: nút HUD 28→20 (đạt mục tiêu)
