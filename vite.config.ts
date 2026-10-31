@@ -35,7 +35,8 @@ export default defineConfig({
           if (!id.includes('node_modules')) return undefined;
           if (/[\\/]node_modules[\\/](react|react-dom|scheduler)[\\/]/.test(id)) return 'vendor-react';
           if (/[\\/]node_modules[\\/]three[\\/]/.test(id)) return 'vendor-three';
-          if (/[\\/]node_modules[\\/](zustand|dexie|firebase)[\\/]/.test(id)) return 'vendor-data';
+          if (/[\\/]node_modules[\\/](zustand|dexie)[\\/]/.test(id)) return 'vendor-data';
+          if (/[\\/]node_modules[\\/](firebase|@firebase)[\\/]/.test(id)) return 'vendor-firebase';
           return 'vendor-misc';
         },
       },

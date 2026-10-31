@@ -21,6 +21,8 @@
 
 ## Trạng thái hiện tại (30/10/2026)
 
+- **GĐ308:** 📦 Firebase nạp động: `src/net/firebase.ts` dùng `import('firebase/app'|'firebase/auth')` (memo `loadAuth`), `watchUser` trả hàm huỷ an toàn kể cả khi SDK chưa nạp xong; `vite.config.ts` tách `vendor-firebase` (45,6 KB gzip, không còn gộp chung zustand/dexie). **Tải ban đầu 646 → 618 KB gzip**; trần `check-bundle` 680/300 → 640/290. Màn đăng nhập vẫn đủ nút, SDK kéo về sau khi trang hiện; full suite 2356 xanh, 159s. Còn: ≤600 KB (index app 247 KB + three 267 KB là phần lớn).
+
 - **GĐ307:** 🧹 Nút HUD 28 → **20 (đạt mục tiêu dài hạn)**: thêm 2 nút gom — "⭐ Danh tiếng" (Đánh giá, Khách quen, Danh hiệu, Giấy phép) và "🌱 Mở rộng" (Trang trại, Quán nước, Sân chơi, Tiện lợi, MXH, Online); định nghĩa tập trung ở `src/ui/hubs.ts` (`HUBS`, mỗi tab có cấp mở khóa; tab chưa mở thì ẩn, riêng tab đang mở luôn hiện). Gộp luôn "Sổ sách" (GĐ306) vào cùng cơ chế. Mất: nút khoá 🔒 "Cấp N" làm gợi ý mở khóa — tab "Mở khóa" trong Sổ sách đã gánh vai đó. Trần HUD 28/18 → 20/10. Kiểm trình duyệt cấp 1: tab đúng cấp, layoutAudit 0 cắt/0 tràn; full suite 2356 xanh, 153s.
 
 - **GĐ306:** 🧹 Nút HUD 33 → 28: gộp 6 nút tra cứu (Sổ theo dõi, Kỷ lục, Sức khoẻ món, Hồ sơ tiệm, Bản đồ mở khóa, Sổ tay Tiệm) thành MỘT nút "📊 Sổ sách" + thanh tab trong `Panels.tsx` (`SO_SACH_TABS`); các bảng cũ giữ nguyên, `openPanel({type})` ở mọi nơi vẫn chạy. Badge Hồ sơ giữ trên nút Sổ sách; badge Bản đồ mở khóa bỏ (nhiễu). Trần `HUD_TOOLS_CEILING` 33/23 → 28/18 (Thêm). QA 320px: 6 tab đều mở, tab xuống dòng gọn, layoutAudit 0 cắt/0 tràn; full suite 2356 xanh, 181s. Mục tiêu còn: ≤20 nút (gộp tiếp nhóm Kinh doanh/Ngoài tiệm/Nhân sự).
@@ -379,3 +381,4 @@
 - GĐ305 — ⏱️ Tách economySim thành 3 file song song: test 427s → 194s
 - GĐ306 — 🧹 Gộp 6 nút tra cứu thành "Sổ sách" (tab): nút HUD 33→28
 - GĐ307 — 🧹 Hub tab Danh tiếng/Mở rộng: nút HUD 28→20 (đạt mục tiêu)
+- GĐ308 — 📦 Firebase nạp động + chunk riêng: tải đầu 646→618 KB, trần 640/290
