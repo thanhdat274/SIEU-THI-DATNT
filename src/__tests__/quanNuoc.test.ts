@@ -162,6 +162,7 @@ describe('endDay tích hợp — quán chạy theo ngày', () => {
       level: 29,
       money: 100_000_000,
       minutes: 20 * 60, // đủ giờ để đi ngủ, chạy trọn endDay
+      weather: 'cloudy', // GĐ414: trời mây = hệ số khách ×1, giữ số liệu cũ
       storage: { ...storage },
       notify: (m: string) => { msgs.push(m); },
       // Đánh dấu đủ mọi thành tựu để tiền cuối ngày chỉ còn doanh thu/lương/tiền nhà của quán
@@ -253,5 +254,26 @@ describe('save cũ — tự bù quanNuoc mặc định', () => {
     // Field không có ở bản lưu lấy từ mặc định
     expect(s.biz.rival).toBeNull();
     expect(s.biz.loyalty.on).toBe(false);
+  });
+});
+
+describe('thời tiết ảnh hưởng khách quán nước (GĐ414)', () => {
+  const q: QuanNuocState = { open: true, staff: 1, price: 'vua' };
+  const day = (w?: Parameters<typeof quanNuocDay>[4]) => quanNuocDay(q, 29, { nuoc: 9999 }, () => {}, w)!;
+
+  it('nắng đông hơn, mưa/bão vắng hơn, không truyền = như trời mây', () => {
+    expect(day('cloudy')).toEqual(day());
+    expect(day('sunny').customers).toBeGreaterThan(day().customers);
+    expect(day('rain').customers).toBeLessThan(day().customers);
+    expect(day('storm').customers).toBeLessThan(day('rain').customers);
+  });
+
+  it('dự phóng dùng cùng hệ số với ngày bán thật', async () => {
+    const { quanNuocProjection } = await import('../data/quanNuoc');
+    for (const w of ['sunny', 'rain', 'storm', 'fog', 'cloudy'] as const) {
+      const d = day(w);
+      const p = quanNuocProjection(q, 29, 9999, w);
+      expect([p.customers, p.wanted, p.served, p.revenue]).toEqual([d.customers, d.wanted, d.served, d.revenue]);
+    }
   });
 });

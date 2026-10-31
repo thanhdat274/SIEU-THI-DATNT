@@ -153,7 +153,7 @@ function supplierTomorrow(s: Supplier, level: number, day: number): Dir {
 }
 
 export function OrderPanel() {
-  const { level, day, money, demand, demandToday, deliveries, placeOrder, closePanel, notify, weatherSeed, forecast, storage, warehouseTier, priceOf, furniture, openPanel, analytics } = useGame();
+  const { level, day, money, demand, demandToday, deliveries, placeOrder, closePanel, notify, weatherSeed, forecast, storage, weather, warehouseTier, priceOf, furniture, openPanel, analytics } = useGame();
   const unlockedSuppliers = SUPPLIERS.filter((s) => s.unlock <= level);
   // GĐ57: lớp minh bạch giá mua chỉ bật khi đã mở mối dao động mạnh (Chợ đầu mối, cấp 3) — cấp <3 chưa thấy gì mới.
   const showCost = level >= 3;
@@ -181,7 +181,7 @@ export function OrderPanel() {
   const itemsSold = useGame((s) => s.totals.itemsSold);
   // GĐ190b: thấy được ngay chỗ nhập — quán nước tối nay cần thêm bao nhiêu ly đồ uống (chỉ khi quán mở + thiếu).
   const restockTip = biz.quanNuoc?.open
-    ? quanNuocRestockTip(biz.quanNuoc, level, storage, biz.quanNuocLast)
+    ? quanNuocRestockTip(biz.quanNuoc, level, storage, biz.quanNuocLast, weather)
     : null;
   // GĐ204: nối GĐ191 (quán nước) thành cả mạng lưới — rốn kho chung có điểm bán nào cần nhập/chở
   // hôm nay (supplyRestockManifest, GĐ202). Chỉ hiện khi có nhu cầu NGOÀI phần quán nước đã báo trên

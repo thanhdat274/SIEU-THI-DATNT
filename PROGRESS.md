@@ -97,6 +97,13 @@
 
 ## Backlog tiếp theo
 
+- 🔍 **Rà 3 cơ sở (GĐ413, theo yêu cầu người dùng trước khi mở rộng tiệm xôi):**
+  - Cửa hàng tiện lợi: luật chơi SÂU (ca kíp, mệt mỏi, sự cố đêm, máy bán hàng, điện, nhóm khách đêm). Nợ: BranchPanel 297 dòng gánh hết, cần soát độ rối; chưa có đợt chụp QA 3D.
+  - Nông trại: SÂU (mùa vụ, 7 vật nuôi, công trình 3 sao, đơn đặt hàng, phụ trại; world/farm.ts 996 dòng). Nợ: chưa chụp QA 3D gần đây.
+  - Quán nước: MỎNG — chỉ 2 nút (số nhân viên, 3 mức giá), thực đơn tự lấy mọi đồ uống, thời tiết không ảnh hưởng, không sự kiện; panel 230 dòng phần lớn là bảng phân tích quanh 2 nút. 3D dựng hộp thủ tục, chưa dùng kit Blender (bang_ghe, chau_cay có sẵn).
+  - Thứ tự sửa: ~~(1) thời tiết~~ xong GĐ414, (2) chọn món chủ lực, (3) 3D quán dùng kit, (4) gọn BranchPanel, (5) chụp QA 3D cả ba. Tiệm xôi phần còn lại để sau.
+  - QA 3D cần save thử riêng: không có chế độ sandbox, không được sửa save thật của người dùng.
+
 1. **Trục đã cạn:** 3D trang trí (chỉ làm 3D mới khi đi kèm gameplay — GĐ172–198) · multi-shop supply chain (GĐ199–209, khép mạch) · bộ soi tiền/vốn (GĐ210–251) · UI nợ (GĐ183/258) · chợ phiên (GĐ182).
 2. **Khoá chờ save người thật:** NG+ vòng (GĐ171) · nhiệm vụ ngày 1–5 (GĐ254 đã giảm lặp). (GĐ110/117 ĐÃ ĐÓNG GĐ280 bằng số liệu; Arc E "Hàng xóm khai trương" ĐÃ HOÀN THÀNH GĐ283, 27 test cấu trúc xanh).
 3. **Ý tưởng chờ Leader duyệt (chiều sâu, chưa làm):** (a) nhịp cuối tuần đậm hơn — **ĐÃ HOÀN THÀNH GĐ291** (lô chợ phiên đầu tháng nhận biết món ăn vặt cuối tuần + gợi ý trữ hàng đặc biệt); (b) nhiệm vụ tuần/tháng biết đến thứ/ngày trong kỳ — **ĐÃ HOÀN THÀNH GĐ289** (nhịp tháng monthPace hiển thị ngày còn lại tới hết tháng + dự báo kịp/hụt và bảo vệ chuỗi tháng).
@@ -110,18 +117,7 @@
 - GĐ350–381: xem docs/progress-archive/INDEX-GD350-381.md
 
 - GĐ359–363 — 🧹 QA thưởng quay lại theo cấp, mobile 375px, ngất đúng giờ; gỡ 31 tên import không dùng (tsc sạch, 2361 test, bundle 596/253); chuyển mục lục GĐ251–300 sang archive (PROGRESS.md 25KB)
-- GĐ382 — 🗜️ Dồn mục lục GĐ301–349 sang archive (INDEX-GD301-349.md), PROGRESS.md 30,3KB → 26,7KB (về dưới trần 30KB)
-- GĐ383 — ⏳ Test nhắc hàng sắp HỎNG của `stockReminders` (+3 test, mutation 2/2): lô trên kệ/trong kho còn <1 ngày nhắc một lần/ngày, hạn dài im lặng, kho hết hàng thì không nhắc; đóng chỗ hở GĐ381
-- GĐ384 — 🧭 Leader review (GĐ374–384): 245 file / 2470 test xanh (129–184s tuỳ tải máy, vẫn trên mục tiêu ~150s; không có bằng chứng do code mới — test mới đều <1s), tsc sạch, build OK, chunk chính gzip 244KB (<255), PROGRESS.md 27KB. Chỉ thêm test (slice orders/inventory/branch/regulars, biz.ts: vay-hụi-thú, truyện, đồ nhà-xe, quảng cáo, nhắc hàng) + gỡ 1 console.log sót; gameplay/ngân sách không đổi. Hở còn lại: biz.ts (surprise/arc/achievement/rival đêm), orders.ts nhánh hợp đồng, inventory.placeOrder/buy. Review kế ~GĐ394.
-- GĐ385 — 🛒 Test nhập hàng `inventory.ts` buy/placeOrder/upgradeWarehouse (9 test, mutation 3/3): trừ đúng + sổ chi, món nhà làm không nhập, kho tràn (kể cả hàng chờ giao)/thiếu tiền/dưới mức tối thiểu bị chặn không mất gì, mối giao ngay vào kho còn mối trễ vào hàng chờ, nâng kho đúng cấp-tiền
-- GĐ386 — 📋 Test `acceptContract` (5 test, mutation 3/3): chặn thiếu cấp/danh tiếng, không ghi đè hợp đồng đang chạy, hạn kỳ đầu = hôm nay + periodDays, chờ giao; nhánh hợp đồng của orders.ts giờ đã phủ đủ (commit/giao/chuỗi có từ trước)
-- GĐ387: test checkAchievements (thưởng một lần, nhiều mốc, closeFriends), mutation 2/2 — bizAchievements.test.ts
-- GĐ388: test hết hạn chào bán mặt bằng rival qua đêm (bizEndOfDay), mutation 2/2 — rivalForSaleExpiry.test.ts
-- GĐ389: rà biz.ts — rival sinh đời mới (rivalGen/rivalBoss) và maybeSurprise (surpriseArc) đã có test; không còn khoảng trống lớn ở biz.ts. Gap kế: deliverPhone/restockAndAnswerPhone, rushDeliverOrder (orders.ts).
-- GĐ390: test restockAndAnswerPhone (nhập bù, thiếu tiền, món nhà làm), mutation 2/2 — phoneRestock.test.ts
-- GĐ391: test learnSkill (cấp, điểm kỹ năng, trùng, id lạ), mutation 3/3 — learnSkill.test.ts
-- GĐ392: test setShopName/setCostume (cắt 24 ký tự, mặc định, cấp, tái sinh), mutation 4/4 — shopNameCostume.test.ts
-- GĐ393: rà checkWelcomeBack/contributeLandmark (đã có test riêng). Full suite 252 file/2506 test xanh, tsc sạch, build OK, main gzip 244KB, PROGRESS 29KB. Leader review kế GĐ394.
+- GĐ382–393 — test bổ sung (nhắc hàng hỏng, nhập hàng, hợp đồng, thành tựu, rival, kỹ năng, tên tiệm) + Leader review GĐ384; chi tiết dồn archive.
 - GĐ394 — 🧭 Leader review (GĐ384–394): 252 file / 2506 test xanh 173s (cùng dải dao động tải máy), tsc sạch, build OK, chunk chính gzip 244KB (<255), PROGRESS.md ~29KB (cần gọn lại sớm). Chỉ thêm test (acceptContract, thành tựu, hết hạn chào bán rival, nhập bù đơn điện thoại, learnSkill, tên tiệm/trang phục); gameplay/ngân sách không đổi. Phủ slice/biz.ts gần bão hòa — các hàm còn lại đều đã có test riêng. Chờ save thật (NG+, nhiệm vụ ngày 1–5). Review kế ~GĐ404; khi hết gap test, ưu tiên chiều sâu gameplay.
 - GĐ395 — 🗜️ Dồn mục lục GĐ350–381 (26 dòng) sang archive/INDEX-GD350-381.md; PROGRESS.md 29KB → ~23,6KB
 - GĐ396: QA save sạch @127.0.0.1:5173 tải lại bình thường. Console cũ có lỗi HMR 'emptyTiers before initialization' (chu trình import store → stock → biz → store); chỉ xảy ra khi Vite hot-reload store.ts, tải mới/bản build không lỗi — chỉ dev → ĐÃ SỬA GĐ397.
@@ -135,6 +131,8 @@
 - GĐ404 — 💬 Sổ khách quen hiện "câu cửa miệng" (lines.greeting, trước đây là dữ liệu chết) sau lần ghé đầu: `regularQuote()` (regularTrust.ts) + 1 dòng nghiêng trong RegularsPanel. Không thêm thông báo/nút. QA @5173: khách 0 lần ghé ẩn đúng. 2524 test xanh 176s.
 - GĐ405 — 😞 Khách quen bỏ về nói rõ món hụt đầu tiên: "Hết X rồi…" (hết hàng) / "X bán mắc quá…" (giá); lý do khác giữ câu riêng. `walkoutLine()` + tham số miss tuỳ chọn của regularVisit (customers.ts truyền c.missed). Không thêm toast; ≤90 ký tự với mọi khách × món dài nhất. Co-op: chạy trên máy chạy như cũ. 2526 test xanh 168s.
 - GĐ406: QA điện thoại 375×812 @5173 (save ngày 2): sổ Khách quen (Thêm → Danh tiếng → 💛) mở đủ thẻ không tràn ngang (scrollWidth 375). Không đổi code.
-- GĐ410–412 — 🍚 Tiệm xôi: `data/tiemXoi.ts` (nấu bù tới 80 phần/món, món thiếu nhiều nhất trước, vốn ×0.6), slice mua/tuyển/cho nghỉ, endDay cất vào kho + trừ vốn/lương, mục trong bảng Quán nước (không thêm nút HUD). Save cũ tự bù mặc định (merge sâu biz). 13 test mới; đã thử trong game.
-- GĐ408 — 🙋 Leader review: đề xuất mở rộng Tiệm xôi ghi vào Cần duyệt (xung đột Quây xôi cấp 36 + mốc Quán nước cấp 29) — chờ người dùng chọn a/b/c.
 - GĐ407 — 📒 Khách quen bỏ về vì hụt món ưa thích → sổ khách quen ghi món đó là đã biết (hết "???" sau khi khách đã nói thẳng). `regularWalkout(prev, day, def?, missedId?)`; discovered vốn được lưu → không đổi save. 2528 test xanh 177s.
+- GĐ408 — 🙋 Leader review: đề xuất mở rộng Tiệm xôi ghi vào Cần duyệt (xung đột Quây xôi cấp 36 + mốc Quán nước cấp 29) — chờ người dùng chọn a/b/c.
+- GĐ410–412 — 🍚 Tiệm xôi: `data/tiemXoi.ts` (nấu bù tới 80 phần/món, món thiếu nhiều nhất trước, vốn ×0.6), slice mua/tuyển/cho nghỉ, endDay cất vào kho + trừ vốn/lương, mục trong bảng Quán nước (không thêm nút HUD). Save cũ tự bù mặc định (merge sâu biz). 13 test mới; đã thử trong game.
+- GĐ413 — 🔍 Rà 3 cơ sở theo yêu cầu người dùng: tiện lợi & nông trại sâu, quán nước mỏng → thứ tự sửa ghi ở Backlog; dừng mở rộng tiệm xôi.
+- GĐ414 — 🌦️ Quán nước theo thời tiết: khách ×1.25 nắng / ×0.75 mưa / ×0.45 bão / ×0.9 sương (`QUAN_WEATHER_MUL`), dùng chung cho ngày bán thật, dự phóng, Sổ kinh doanh, nhắc nạp kho; panel nhắc "nạp thêm" / "bớt nhập". supplyChain/teahouseHaul vẫn ước ×1.

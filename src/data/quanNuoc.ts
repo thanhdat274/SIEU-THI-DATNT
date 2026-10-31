@@ -7,6 +7,7 @@
  */
 import { productById, unlockedProducts } from './products';
 import type { DayAction } from './dayPlan';
+import type { Weather } from './weather';
 
 /** Cấp tối thiểu được mở quán nước. */
 export const QUAN_NUOC_UNLOCK = 29;
@@ -26,6 +27,10 @@ export const QUAN_PRICE_OPTIONS: Record<QuanNuocPrice, { mul: number; traffic: n
   vua: { mul: 1.0, traffic: 1.0, label: 'Vừa phải' },
   cao: { mul: 1.3, traffic: 0.75, label: 'Đắt hơn' },
 };
+
+/** Khách quán nước theo thời tiết (GĐ414): nắng khát nước đông hơn, mưa bão vắng. Không truyền = ×1. */
+export const QUAN_WEATHER_MUL: Record<Weather, number> = { sunny: 1.25, cloudy: 1, rain: 0.75, storm: 0.45, fog: 0.9 };
+const weatherMul = (w?: Weather) => (w ? QUAN_WEATHER_MUL[w] ?? 1 : 1);
 
 export interface QuanNuocState { open: boolean; staff: number; price: QuanNuocPrice }
 export const newQuanNuoc = (): QuanNuocState => ({ open: false, staff: 0, price: 'vua' });
@@ -57,14 +62,14 @@ export const quanNuocDrinkIds = (level: number): string[] =>
  * Trả về null khi quán chưa mở.
  */
 export function quanNuocDay(
-  q: QuanNuocState, level: number, storage: Record<string, number>, take: (id: string, qty: number) => void,
+  q: QuanNuocState, level: number, storage: Record<string, number>, take: (id: string, qty: number) => void, weather?: Weather,
 ): QuanNuocDay | null {
   if (!q.open) return null;
   const drinks = quanNuocDrinkIds(level);
   const opt = QUAN_PRICE_OPTIONS[q.price];
   // Giá bán trung bình của thực đơn đã mở: tính một lần rồi nhân hệ số mức giá
   const avgPrice = drinks.length ? drinks.reduce((n, id) => n + productById(id).sell, 0) / drinks.length : 0;
-  const customers = Math.round(45 * opt.traffic * (1 + 0.15 * q.staff));
+  const customers = Math.round(45 * opt.traffic * (1 + 0.15 * q.staff) * weatherMul(weather));
   const wanted = Math.ceil(customers * 1.5);
   // Tổng ly phục vụ được bị chặn bởi tồn kho đồ uống
   const have = drinks.reduce((n, id) => n + (storage[id] ?? 0), 0);
@@ -105,10 +110,10 @@ export interface QuanNuocProjection { customers: number; wanted: number; served:
  * đơn vị đồ uống hiện có `drinkUnits` (cap như `quanNuocDay`). THUẦN — không gọi
  * `take`, không đổi state. Dùng để hỏi "thuê thêm 1 người có đáng lương 150k không".
  */
-export function quanNuocProjection(q: QuanNuocState, level: number, drinkUnits: number): QuanNuocProjection {
+export function quanNuocProjection(q: QuanNuocState, level: number, drinkUnits: number, weather?: Weather): QuanNuocProjection {
   const opt = QUAN_PRICE_OPTIONS[q.price];
   const avgPrice = quanNuocAvgSell(level);
-  const customers = Math.round(45 * opt.traffic * (1 + 0.15 * q.staff));
+  const customers = Math.round(45 * opt.traffic * (1 + 0.15 * q.staff) * weatherMul(weather));
   const wanted = Math.ceil(customers * 1.5);
   const served = Math.min(wanted, Math.max(0, drinkUnits));
   const revenue = Math.round(served * avgPrice * opt.mul);
@@ -140,11 +145,11 @@ export interface QuanNuocHealth {
  * và có tín hiệu (short / lỗ / cạn kho) để không nhiễu ngày sạch.
  */
 export function quanNuocHealth(
-  q: QuanNuocState, level: number, storage: Record<string, number>, last?: { served?: number; wanted?: number } | null,
+  q: QuanNuocState, level: number, storage: Record<string, number>, last?: { served?: number; wanted?: number } | null, weather?: Weather,
 ): QuanNuocHealth {
   const drinkUnits = quanNuocDrinkIds(level).reduce((n, id) => n + (storage[id] ?? 0), 0);
-  const tonight = quanNuocProjection(q, level, drinkUnits);
-  const hire = q.staff < QUAN_NUOC_MAX_STAFF ? quanNuocProjection({ ...q, staff: q.staff + 1 }, level, drinkUnits) : null;
+  const tonight = quanNuocProjection(q, level, drinkUnits, weather);
+  const hire = q.staff < QUAN_NUOC_MAX_STAFF ? quanNuocProjection({ ...q, staff: q.staff + 1 }, level, drinkUnits, weather) : null;
   const hireMarginal = hire ? hire.profit - tonight.profit : null;
   const shortYesterday = !!last && typeof last.wanted === 'number' && typeof last.served === 'number' && last.served < last.wanted;
   const missedRevenue = shortYesterday ? Math.round(((last!.wanted as number) - (last!.served as number)) * quanNuocAvgSell(level) * QUAN_PRICE_OPTIONS[q.price].mul) : 0;
@@ -201,9 +206,9 @@ export function quanNuocDayAction(h: QuanNuocHealth | null | undefined): DayActi
 export interface QuanNuocRestockTip { shortfall: number; wanted: number; have: number; missedRevenue: number; verdict: 'danger' | 'warn' }
 
 export function quanNuocRestockTip(
-  q: QuanNuocState, level: number, storage: Record<string, number>, last?: { served?: number; wanted?: number } | null,
+  q: QuanNuocState, level: number, storage: Record<string, number>, last?: { served?: number; wanted?: number } | null, weather?: Weather,
 ): QuanNuocRestockTip | null {
-  const h = quanNuocHealth(q, level, storage, last);
+  const h = quanNuocHealth(q, level, storage, last, weather);
   const shortfall = Math.max(0, h.tonight.wanted - h.drinkUnitsNow);
   if (h.missedRevenue > 0) {
     return { shortfall, wanted: h.tonight.wanted, have: h.drinkUnitsNow, missedRevenue: h.missedRevenue, verdict: 'danger' };

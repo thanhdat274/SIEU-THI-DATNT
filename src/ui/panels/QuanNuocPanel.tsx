@@ -3,12 +3,13 @@ import { useGame } from '../../core/store';
 import { formatMoney } from '../../data/products';
 import {
   QUAN_NUOC_HIRE_FEE, QUAN_NUOC_MAX_STAFF, QUAN_NUOC_PRICE, QUAN_NUOC_UNLOCK, QUAN_NUOC_WAGE,
-  QUAN_PRICE_OPTIONS, quanNuocProjection, quanNuocDrinkIds, quanNuocRestockTip, quanNuocBuildPayback, type QuanNuocPrice,
+  QUAN_PRICE_OPTIONS, QUAN_WEATHER_MUL, quanNuocProjection, quanNuocDrinkIds, quanNuocRestockTip, quanNuocBuildPayback, type QuanNuocPrice,
 } from '../../data/quanNuoc';
 import { quanNuocStaffValues } from '../../data/quanNuocStaffValue';
 import { teahouseHaulRead } from '../../data/teahouseHaul';
 import { Callout, Footer, styles } from './shared';
 import { TiemXoiSection } from './TiemXoiSection';
+import { WEATHER } from '../../data/weather';
 
 /** Thứ tự hiển thị 3 mức giờ bán: bình dân → vừa phải → đắt hơn. */
 const PRICE_ORDER: readonly QuanNuocPrice[] = ['re', 'vua', 'cao'];
@@ -28,7 +29,7 @@ const priceTip = (mul: number, traffic: number) => {
 
 /** Quán Nước Đầu Ngõ: quán nước ở đầu hẻm, nguyên liệu lấy thẳng từ kho tiệm. */
 export function QuanNuocPanel() {
-  const { biz, level, money, storage, buyQuanNuoc, hireQuanNuoc, fireQuanNuoc, setQuanNuocPrice, closePanel, openPanel } = useGame();
+  const { biz, level, money, storage, weather, buyQuanNuoc, hireQuanNuoc, fireQuanNuoc, setQuanNuocPrice, closePanel, openPanel } = useGame();
   const quan = biz.quanNuoc;
   const last = biz.quanNuocLast;
   const locked = level < QUAN_NUOC_UNLOCK;
@@ -36,17 +37,22 @@ export function QuanNuocPanel() {
   const canHire = quan.staff < QUAN_NUOC_MAX_STAFF && money >= QUAN_NUOC_HIRE_FEE;
   // GĐ127: mồi quyết định — dự phóng ROI thuê thêm (thuần đọc kho hiện tại, chặn bởi tồn đồ uống).
   const drinkUnits = quanNuocDrinkIds(level).reduce((n, id) => n + (storage[id] ?? 0), 0);
-  const hireProj = quan.open && quan.staff < QUAN_NUOC_MAX_STAFF ? quanNuocProjection({ ...quan, staff: quan.staff + 1 }, level, drinkUnits) : null;
-  const tonightProj = quan.open ? quanNuocProjection(quan, level, drinkUnits) : null;
+  const hireProj = quan.open && quan.staff < QUAN_NUOC_MAX_STAFF ? quanNuocProjection({ ...quan, staff: quan.staff + 1 }, level, drinkUnits, weather) : null;
+  const tonightProj = quan.open ? quanNuocProjection(quan, level, drinkUnits, weather) : null;
   // GĐ188: "người thứ N đáng đồng lương?" — chiều xuống (nên giữ bớt ai / sa thải ai). Thuần đọc.
   const staffValues = quan.open ? quanNuocStaffValues(quan.price, level, quan.staff, drinkUnits) : [];
   // GĐ190: thanh nạp kho — thiếu bao nhiêu ly để bán đủ tối nay + nút nhảy sang Nhập hàng.
-  const restockTip = quan.open ? quanNuocRestockTip(quan, level, storage, last) : null;
+  const restockTip = quan.open ? quanNuocRestockTip(quan, level, storage, last, weather) : null;
 
   return (
     <div style={{ width: '100%', maxWidth: 560 }}>
       <h2 style={styles.title}>🧋 Quán Nước Đầu Ngõ</h2>
       <p style={styles.sub}>Quán chuyên nước ở đầu hẻm — nguyên liệu lấy thẳng từ kho của mình.</p>
+      {quan.open && QUAN_WEATHER_MUL[weather] !== 1 && (
+        <p style={{ fontSize: 12, margin: '0 0 6px' }}>
+          {WEATHER[weather].icon} {WEATHER[weather].name}: khách quán {QUAN_WEATHER_MUL[weather] > 1 ? 'đông' : 'vắng'} hơn ×{QUAN_WEATHER_MUL[weather]} — {QUAN_WEATHER_MUL[weather] > 1 ? 'nạp thêm đồ uống' : 'bớt nhập cho đỡ tồn'}
+        </p>
+      )}
       {!quan.open ? (
         <>
           <div style={{ ...styles.card, display: 'block' }}>

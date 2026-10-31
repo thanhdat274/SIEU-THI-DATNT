@@ -132,7 +132,7 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
   let quanNuocLast: BizState['quanNuocLast'];
   const quanNews: string[] = [];
   if (s.biz.quanNuoc?.open) {
-    const q = quanNuocDay(s.biz.quanNuoc, s.level, k.storage, (id, qty) => takeStock(k, id, qty).reduce((n, l) => n + l.qty, 0));
+    const q = quanNuocDay(s.biz.quanNuoc, s.level, k.storage, (id, qty) => takeStock(k, id, qty).reduce((n, l) => n + l.qty, 0), s.weather);
     if (q) {
       quanRevenue = q.revenue;
       quanWages = q.wages;
