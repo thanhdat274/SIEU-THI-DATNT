@@ -180,5 +180,5 @@ const fmt = (v: number) => `${Math.round(v).toLocaleString('vi-VN')}đ`;
 /** Số thông báo tối đa trong ngày đầu của bot chơi cấp 1 (mức đo 2026-10-31; chỉ được hạ). */
 const DAY1_TOAST_CEILING = 20; // đo 18 sau GĐ309 (dời danh hiệu/kèo/chi phí/thay ô sang ngày 2+; GĐ302: 22; ban đầu 27)
 
-// Đo 31/10 sau khi neo trần thưởng vào lãi bán hàng: 3.6 / 1.7 / 1.2 (cấp 5 cao vì sàn 150k + ngày 1 chưa có trần). Chỉ được hạ.
-const BONUS_TO_SALES_CEILING: Record<number, number> = { 5: 5, 10: 3, 20: 2 };
+// Đo GĐ311 (3 lần): cấp 5 1.7–2.0 · cấp 10 1.4–2.0 · cấp 20 0.94–1.53 (trước đó 3.6 / 1.7 / 1.2); trần = đỉnh dải + đệm. Chỉ được hạ.
+const BONUS_TO_SALES_CEILING: Record<number, number> = { 5: 3, 10: 2.5, 20: 1.8 };
