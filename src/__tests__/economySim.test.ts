@@ -153,12 +153,13 @@ describe('khảo sát kinh tế vòng ngày — simulator thật trên store', (
     // Người chơi mới: đếm số thông báo bật lên trong ngày đầu (ô thông báo chỉ có một chỗ, 3 giây —
     // dồn dập thì người mới đọc không kịp và mất luôn thông báo trước). Trần = mức đo 2026-10-31.
     let toasts = 0;
-    const unsub = useGame.subscribe((st, prev) => { if (st.message && st.message !== prev.message) toasts++; });
+    const seen: string[] = [];
+    const unsub = useGame.subscribe((st, prev) => { if (st.message && st.message !== prev.message) { toasts++; seen.push(String(st.message)); } });
     const { rows } = await runEconomySim(1, 1, { betTier: 1.0 });
     unsub();
     expect(rows.length).toBe(1);
     // eslint-disable-next-line no-console
-    console.log(`[người mới] ngày 1: ${toasts} thông báo bật lên`);
+    console.log(`[người mới] ngày 1: ${toasts} thông báo bật lên: ` + seen.join(' | '));
     expect(toasts, 'ngày đầu quá nhiều thông báo — gộp hoặc dời bớt sang ngày sau').toBeLessThanOrEqual(DAY1_TOAST_CEILING);
     const revenue = useGame.getState().totals.revenue;
     // eslint-disable-next-line no-console
