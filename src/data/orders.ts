@@ -260,7 +260,6 @@ export function offerForDay(seed: number, day: number, level: number, regulars: 
   // và 7 đơn câu chuyện khác = 0 trên 8340 lượt). Salt theo ngày phá tương quan, mọi đơn trong
   // pool đều có cơ hội ~đều nhau.
   const def = pool[Math.floor(roll(seed, day, 1009 + day * 7) * pool.length)];
-  if (def.id === 'hoc_nhom') console.log('DBG PICKED');
   return { id: def.id, dueDay: day + def.days - 1, accepted: false };
 }
 
