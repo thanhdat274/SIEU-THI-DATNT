@@ -236,3 +236,14 @@ describe('GĐ474: cà phê muối', () => {
     expect(r.price).toBeGreaterThan(recipeCupCost(r) * 2);
   });
 });
+
+describe('GĐ475: trà gừng nóng', () => {
+  it('mở cấp 36, không cần đá, lời hơn vốn', async () => {
+    const { quanRecipeById, quanRecipesAt, recipeCupCost } = await import('../data/quanRecipes');
+    const r = quanRecipeById('tra_gung')!;
+    expect(r.uses.map((u) => u.id)).toEqual(['tra', 'x_gung', 'x_duong']);
+    expect(quanRecipesAt(35).some((x) => x.id === 'tra_gung')).toBe(false);
+    expect(quanRecipesAt(36).some((x) => x.id === 'tra_gung')).toBe(true);
+    expect(r.price).toBeGreaterThan(recipeCupCost(r) * 2);
+  });
+});
