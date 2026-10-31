@@ -904,6 +904,9 @@ export interface PetState { fedDay: number }
 export const petDef = (k: PetKind) => PETS.find((p) => p.kind === k)!;
 /** Thú được cho ăn hôm qua hoặc hôm nay thì mới có tác dụng. */
 export const petActive = (p: PetState | undefined, day: number) => !!p && day - p.fedDay <= 1;
+/** Chó giữ nhà giảm trộm/tiền giả; mèo giảm hỏng hàng — đặt ở data để core/stock không import vòng qua core/biz. */
+export const theftFactor = (b: { pets: Record<string, PetState | undefined> }, day: number) => (petActive(b.pets.dog, day) ? 0.45 : 1);
+export const spoilFactor = (b: { pets: Record<string, PetState | undefined> }, day: number) => (petActive(b.pets.cat, day) ? 0.8 : 1);
 
 // ───────────────────────── Thành tựu ─────────────────────────
 

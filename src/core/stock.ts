@@ -3,7 +3,7 @@ import { furnitureDef, slotCount, type FurnitureType } from '../data/furniture';
 import { warehouseTier } from '../data/warehouse';
 import { productById } from '../data/products';
 import { ageLots, fitLots, mergeLots, needsCold, shelfLife, spoilRate, takeOldest, type Lot } from '../data/freshness';
-import { spoilFactor } from './biz';
+import { spoilFactor } from '../data/biz';
 import { hasSkill } from '../data/titles';
 import { WAREHOUSE_KEEP_PER_STAR } from '../data/staff';
 import type { GameState, Furniture, Tier } from './gameTypes';

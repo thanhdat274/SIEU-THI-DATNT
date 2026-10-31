@@ -1,4 +1,5 @@
 import { simRng } from './rand';
+export { theftFactor, spoilFactor } from '../data/biz';
 import {
   ACHIEVEMENTS, adById, activeAds, BREAKFAST, closeMonth, closeWeek, COUNTER_RETAILIATE, COUNTER_RETAILIATE_BUFF, COUNTER_STREAK_MAX,
   counterById, emptyMonth, emptyWeek, HOME_ITEMS, HUI_COLLAPSE, HUI_OPTIONS, HUI_UNLOCK, newRival, RIVAL_BUY_DAYS,
@@ -212,8 +213,6 @@ export function buyUpgrade(id: UpgradeId) {
   s.notify(`${def.icon} Đã lắp ${def.name}! ${def.desc}`);
 }
 
-export const theftFactor = (b: BizState, day: number) => (petActive(b.pets.dog, day) ? 0.45 : 1);
-export const spoilFactor = (b: BizState, day: number) => (petActive(b.pets.cat, day) ? 0.8 : 1);
 
 // ───── Thành tựu ─────
 
