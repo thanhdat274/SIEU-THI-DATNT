@@ -68,6 +68,7 @@
 - Họ màu hướng dẫn/chuỗi/biểu đồ: gộp về một sắc info `#3498db` (GĐ178); ngoại lệ duy nhất: buy-tone `#55efc4`/`#ff7675`; GardenPanel giữ họ riêng. GĐ258 quét nốt 6 màu cũ — src/ui chỉ còn bảng duyệt + màu nhận diện.
 
 ## Cần theo dõi / nợ mở
+- 📦 GĐ515: tải ban đầu 598/598 KB — code mới cho Ngõ 2/sạp phải nằm trong chunk lười (world/ngo2, QuanNuocPanel); trước khi thêm vào main/index tìm chỗ tách bớt.
 - GĐ330: QA lưu máy khách (127.0.0.1:5173) — tải lại trang vẫn hiện "Chơi tiếp trong máy (ngày 1)" và vào lại đúng ván; lần "mất ván" trước là bấm nhầm nút ván mới, KHÔNG phải lỗi lưu.
 
 - ⏱️ (GĐ296–298) `npm run test` rất nhạy với tải máy: cùng một bộ test cho **355s / 405s / 532s / 655s / 733s / 994s**. Ở lần 994s có **1 test đỏ**, chạy lại ngay sau đó thì **2331/2331 xanh (532s)** → đỏ do tranh CPU, không phải lỗi logic (GĐ298 chỉ sửa CSS + dev tool, không đụng logic game). Nếu gặp 1 test đỏ lẻ mà không liên quan thay đổi vừa làm: chạy lại đúng file đó trước khi kết luận. Nếu máy rảnh mà vẫn >10 phút: đo file chậm nhất (`npx vitest run --reporter=json`) rồi tối ưu — nghi phạm vẫn là cụm sim cấp 50 (GĐ280 ~242s/file).
@@ -129,6 +130,7 @@
 - GĐ397 — 🔁 Gỡ vòng import stock→biz→store: spoilFactor/theftFactor chuyển sang data/biz.ts (core/biz re-export, API giữ nguyên); stock.ts import từ data. 252 file/2506 test xanh 161s, tsc sạch, build OK (gzip 244,5KB <255). Rà thời tiết: nhu cầu theo thời tiết (customers.ts), hỏng hàng, đơn điện thoại, nhiệm vụ đồ mưa đã có — trục này đã sâu, không làm thêm.
 - GĐ398 — 📏 Đồng bộ bảng "Ngân sách chống phình" trong promt_game(.full).md theo hằng số test (HUD 20, thông báo 90/0, ngày 1 = 10, thưởng/lãi 1.0/0.92/0.67, bundle 598/255, rò rỉ +2%/+20, test ~3 phút) — bảng cũ ghi số trước GĐ306 khiến phiên mới dễ làm lại việc đã xong. QA @5173: màn khởi đầu tải, không lỗi console. Mọi trần đạt đích; trục chiều sâu bão hòa, chờ save thật.
 - GĐ399 — 🧹 Hạ trần rò rỉ object ngoài tiệm 2% → 0% (đo 563 → 563 suốt 6 ngày) trong longSessionLeak.test.ts; nhân vật sống giữ +20 vì dao động theo khách đang ở ngoài. Test xanh, tsc sạch.
+- GĐ515: 🧭 Rà ngân sách GĐ505–514: bundle tải đầu 598/598 KB (sát trần), chunk lớn 253/255; 269 file/2639 test xanh 142–260s; thông báo ≤90 xanh; không thêm nút HUD (Ngõ 2 nằm trong bảng quán). Ngõ 2 thêm mới chỉ được vào chunk lười.
 - GĐ514: Sạp 3D theo bậc: xe đẩy hiện 2 bánh, quầy thêm biển hiệu (bật/tắt hiển thị, giữ khuôn bàn và hộp chặn lưới) + ngo2View.test.ts. 2639 test xanh.
 - GĐ513: Nâng bậc lô sạp Ngõ 2: Gánh → Xe đẩy (3tr, ×1,4) → Quầy (5tr, ×1,8), hoàn vốn ~25/~40 ngày nắng; nút ⬆ cạnh nút món; save biz.sapTiers? (thiếu = gánh), coop 'sap' + test; QA sandbox nút + số đúng. 3D chưa đổi theo bậc (hộp chặn lưới cố định). 2638 test xanh.
 - GĐ512: Dồn mục lục GĐ450–499 sang archive/INDEX-GD450-499.md (PROGRESS.md dưới 30KB).
