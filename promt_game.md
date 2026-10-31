@@ -70,17 +70,17 @@ Người chơi máy yếu bị giật ngay ngày đầu sẽ bỏ game trước 
 
 ## Ngân sách chống phình (chỉ được giảm, không được tăng)
 
-Làm việc tự chủ dễ trôi theo kiểu "mỗi giai đoạn thêm một thứ nhỏ", cộng dồn thành game rối, nặng, chậm. Các trần dưới đây là mức đo ngày 2026-10-31, có test khoá. Test đỏ thì **sửa thiết kế**, không nâng trần. Rút gọn được thì hạ trần theo số mới.
+Làm việc tự chủ dễ trôi theo kiểu "mỗi giai đoạn thêm một thứ nhỏ", cộng dồn thành game rối, nặng, chậm. Các trần dưới đây là mức đo ngày 2026-10-31 (đồng bộ lại theo test ở GĐ398), có test khoá. Test đỏ thì **sửa thiết kế**, không nâng trần. Rút gọn được thì hạ trần theo số mới. Nguồn chân lý là hằng số trong test; bảng này lệch thì sửa bảng theo test.
 
 | Thứ | Trần hiện tại | Mục tiêu dài hạn | Test / lệnh |
 |---|---|---|---|
-| Nút HUD (dock + menu Thêm) | 33 (dock 10, Thêm 23) | ≤ 20 | `featureBudget.test.ts` |
-| Thông báo dài nhất / số thông báo > 90 ký tự | 154 / 22 | ≤ 90 / 0 | `featureBudget.test.ts` |
-| Thông báo trong ngày đầu người mới | 30 (đo 27) | ≤ 10 | `economySim.test.ts` |
-| (Nhiệm vụ + kèo) / lãi bán hàng thật, cấp 5 / 10 / 20 | 5 / 3 / 2 (đo 3.6 / 1.7 / 1.2 sau khi neo trần thưởng vào lãi bán hàng) | ≤ 1 | `economySim.test.ts` |
-| Tải ban đầu / chunk lớn nhất (gzip) | 840 KB / 400 KB | ≤ 600 KB | `npm run check:bundle` |
-| Rò rỉ khi chơi nhiều ngày | object ngoài tiệm +10%, nhân vật sống +40 | 0 | `longSessionLeak.test.ts` |
-| Thời gian `npm run test` | ~7 phút | ≤ 5 phút | đo mỗi giai đoạn |
+| Nút HUD (dock + menu Thêm) | 20 (dock 10, Thêm 10) — đạt | ≤ 20 | `featureBudget.test.ts` |
+| Thông báo dài nhất / số thông báo > 90 ký tự | 90 / 0 — đạt | ≤ 90 / 0 | `featureBudget.test.ts` |
+| Thông báo trong ngày đầu người mới | 10 — đạt | ≤ 10 | `economySim.test.ts` |
+| (Nhiệm vụ + kèo) / lãi bán hàng thật, cấp 5 / 10 / 20 | 1.0 / 0.92 / 0.67 (đo 0.99 / 0.89 / 0.64) — đạt | ≤ 1 | `economySim.test.ts` |
+| Tải ban đầu / chunk lớn nhất (gzip) | 598 KB / 255 KB — đạt | ≤ 600 KB | `npm run check:bundle` |
+| Rò rỉ khi chơi nhiều ngày | object ngoài tiệm +2%, nhân vật sống +20 | 0 | `longSessionLeak.test.ts` |
+| Thời gian `npm run test` | ~2,7–3 phút (dao động theo tải máy) — đạt | ≤ 5 phút | đo mỗi giai đoạn |
 
 - **Tính năng mới phải gộp vào bảng có sẵn hoặc thay một tính năng cũ.** Không thêm nút HUD mới khi chưa bỏ được một nút. Mỗi 10 giai đoạn, Leader + Game Designer rà mọi tính năng, gộp hoặc bỏ những cái ít dùng, chồng chéo hay nông, rồi hạ trần. Ghi lý do vào PROGRESS.md.
 - **Kinh tế:** đo bằng cột `salesProfit` của autoplay (lãi gộp hàng bán − lương − tiền nhà, không trừ tiền đầu tư). Thưởng nhiệm vụ, kèo, sự kiện là gia vị, không phải nguồn thu chính. Đổi kinh tế thì đối chiếu tỉ số này trước và sau.
