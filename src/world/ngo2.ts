@@ -7,7 +7,7 @@ import { Walker } from '../agents/walker';
  * ở ranh x=80 khi chưa mở; mở rồi thì bỏ rào, hiện các lô trống chờ sạp hàng rong (bước 3).
  * Tải lười, chỉ hình ảnh — chặn đi lại do `zoneBlockRects` lo.
  */
-export interface Ngo2View { group: THREE.Group; setOpen(open: boolean): void; /** GĐ501: số lô đã có sạp hàng rong. */ setStalls(n: number): void }
+export interface Ngo2View { group: THREE.Group; setOpen(open: boolean): void; /** GĐ501: số lô đã có sạp hàng rong. */ setStalls(n: number, colors?: readonly ([number, number] | undefined)[]): void }
 
 const mat = (color: number) => new THREE.MeshStandardMaterial({ color, roughness: 0.85 });
 
@@ -76,17 +76,21 @@ export function createNgo2(): Ngo2View {
   const lots = new THREE.Group();
   const signs: THREE.Group[] = [];
   const stalls: THREE.Group[] = [];
+  const GOODS = [0xe17055, 0xfdcb6e, 0x00b894, 0x74b9ff];
+  const UMBS = [0xd63031, 0x0984e3, 0xe84393, 0x00cec9];
+  const tint: [THREE.MeshStandardMaterial, THREE.MeshStandardMaterial][] = [];
   for (let i = 0; i < 4; i++) {
     const stall = new THREE.Group();
     const table = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.8, 0.9), mat(0x9c6b3c));
     table.position.y = 0.4;
-    const goods = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.15, 0.6), mat([0xe17055, 0xfdcb6e, 0x00b894, 0x74b9ff][i]));
+    const goods = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.15, 0.6), mat(GOODS[i]));
     goods.position.y = 0.88;
     const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 2.2), mat(0x636e72));
     pole.position.y = 1.1;
-    const umb = new THREE.Mesh(new THREE.ConeGeometry(1.4, 0.5, 8), mat([0xd63031, 0x0984e3, 0xe84393, 0x00cec9][i]));
+    const umb = new THREE.Mesh(new THREE.ConeGeometry(1.4, 0.5, 8), mat(UMBS[i]));
     umb.position.y = 2.25;
     stall.add(table, goods, pole, umb);
+    tint.push([goods.material as THREE.MeshStandardMaterial, umb.material as THREE.MeshStandardMaterial]);
     stall.position.set(86 + i * 8, 0, -0.5);
     stall.visible = false;
     stalls.push(stall);
@@ -106,8 +110,10 @@ export function createNgo2(): Ngo2View {
       gate.visible = !open;
       lots.visible = open;
     },
-    setStalls(n) {
+    setStalls(n, colors) {
       stalls.forEach((s, i) => { s.visible = i < n; signs[i].visible = i >= n; });
+      // GĐ511: màu hàng + ô dù theo món đang bán (đổi màu vật liệu, không biên dịch lại shader)
+      tint.forEach(([g, u], i) => { g.color.setHex(colors?.[i]?.[0] ?? GOODS[i]); u.color.setHex(colors?.[i]?.[1] ?? UMBS[i]); });
     },
   };
 }

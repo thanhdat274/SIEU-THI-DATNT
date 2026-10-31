@@ -114,3 +114,13 @@ describe('GĐ509: icon món trong tin cuối ngày', () => {
     expect([...sapKindIcons(9)].length).toBe(SAP_LOTS);
   });
 });
+
+describe('GĐ511: màu sạp 3D theo món', () => {
+  it('Tổng hợp giữ màu riêng từng lô; các món khác có màu ô dù riêng, không trùng', async () => {
+    const { SAP_KINDS } = await import('../data/sapRong');
+    expect(SAP_KINDS[0].colors).toBeUndefined();
+    const umbs = SAP_KINDS.slice(1).map((k) => k.colors?.[1]);
+    expect(umbs.every((c) => typeof c === 'number')).toBe(true);
+    expect(new Set(umbs).size).toBe(umbs.length);
+  });
+});

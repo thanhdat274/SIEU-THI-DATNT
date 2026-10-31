@@ -52,7 +52,7 @@ import { cancelSleep, checkpoint, inAlley, initCoop, isGuest, partnerPositions, 
 import { watchUser } from './net/firebase';
 import { useSession } from './net/session';
 import { playerPos } from './core/playerPos';
-import { SAP_LOT_COST, sapStallBox, sapStrollerCount } from './data/sapRong';
+import { SAP_LOT_COST, sapKindOf, sapStallBox, sapStrollerCount } from './data/sapRong';
 import { openZones, zoneBlockRects, zoneById } from './data/zones';
 import { formatMoney } from './data/products';
 
@@ -373,7 +373,7 @@ const syncZones = () => {
   const key = openZones(zones).join(',');
   ngo2View?.setOpen(key.includes('ngo2'));
   const sapN = useGame.getState().biz.sapRong ?? 0;
-  ngo2View?.setStalls(sapN);
+  ngo2View?.setStalls(sapN, Array.from({ length: sapN }, (_, i) => sapKindOf(useGame.getState().biz.sapKinds, i).colors));
   if (sapN !== lastSapN) {
     lastSapN = sapN;
     grid.setStatic('sapRong', Array.from({ length: sapN }, (_, i) => {

@@ -151,6 +151,7 @@
 - GĐ470: Ghi Cần duyệt nâng tiệm xôi thành cửa hàng nhỏ (chờ người dùng chọn).
 - GĐ471: Bảng quán ghi rõ 'bậc x/3: Quầy nước → Quán nước → Quán cà phê — cùng một cửa hàng' (người dùng tưởng cà phê là tiệm riêng).
 - GĐ472: QA sandbox: bảng quán hiện 'bậc 3/3 … cùng một cửa hàng' và '🎉 Cuối tuần ×1.2' (ngày 6).
+- GĐ511: Sạp 3D Ngõ 2 đổi màu hàng + ô dù theo món (SapKind.colors, chỉ setHex, không biên dịch lại shader; Tổng hợp giữ màu lô) + test; QA sandbox đọc màu ô dù 4 lô đúng. 2636 test xanh.
 - GĐ510: QA sandbox ?thu=1 (window.game.useGame): 3 lô 🥤/🥖/🍙 thứ 7 nắng = 585k/300k/351k đúng công thức, gợi ý 'Mai sương mù: nên bán Xôi'; 375px không tràn, nút cao 40px.
 - GĐ509: Tin cuối ngày sạp Ngõ 2 hiện icon món từng lô (sapKindIcons, vd 🥤🥖🛒) + test; 2635 test xanh.
 - GĐ508: Bản đồ khu phố gợi ý món sạp theo dự báo ngày mai (bestSapKind; mưa/bão báo sạp nghỉ) + test; 2634 test xanh.
