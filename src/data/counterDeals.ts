@@ -10,7 +10,7 @@ export const HAGGLE_SHARE = 0.1;
 export const HAGGLE_REFUSE_OK = 0.6;
 
 /** Thiếu tiền lẻ: tỉ lệ mỗi lần tính tiền khi hóa đơn lẻ (không tròn 5.000đ). */
-export const CHANGE_UNLOCK = 1;
+export const CHANGE_UNLOCK = 2; // GĐ329: cấp 1 chỉ dạy bán-thu tiền, không hộp thoại thiếu lẻ (QA GĐ328)
 export const CHANGE_CHANCE = 0.06;
 /** Thối bằng kẹo thì chừng này phần khách thấy phiền. */
 export const CANDY_ANNOY = 0.4;

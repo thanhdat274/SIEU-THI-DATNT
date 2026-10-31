@@ -21,6 +21,7 @@
 
 ## Trạng thái hiện tại (30/10/2026)
 
+- **GĐ329:** 🪙 Hộp thoại "thiếu tiền lẻ" mở từ cấp 2 thay vì cấp 1 (`CHANGE_UNLOCK` 1→2, cùng cấp với mặc cả): lần bán đầu của người mới không còn bị quyết định phức tạp chen vào (QA GĐ328 gặp ngay ở khách đầu, xác suất 6%/lần). Cấp 2 đạt ngay trong ngày 1. 2356 test xanh.
 - **GĐ328:** 🧭 ĐO LẦN BÁN ĐẦU trên save sạch (127.0.0.1:5173, tab nền trước): mở cửa ~11:40 game → khách đầu chờ ở quầy lúc ~12:56 (≈76 phút game ≈ **2,7 phút thật ở tốc độ 1×**; đo ở 8× là ~3,7 phút game/giây) → cộng ~10 cú bấm chuẩn bị (~1 phút) ≈ **~4 phút tới lần bán đầu: đạt mục tiêu ≤5 phút**. Bán xong: +5.000đ, checklist "Đứng quầy" tick, cấp 1 → 9%. Phát hiện: (1) phải bấm **"Ra tiệm"** — mở cửa từ trong nhà thì khách chưa tới quầy; (2) **khách đầu tiên gặp ngay hộp thoại thiếu tiền lẻ** ("khách đưa tờ chẵn, kết thiếu 4.000đ — Bớt luôn 1.000đ / Thối bằng kẹo", tự chốt sau ~38 giây) — cơ chế thú vị nhưng là một quyết định phức tạp cho lần bán ĐẦU; ứng viên: ngày 1 tự chốt mặc định, hoặc để mặc nhiên không phát sinh thiếu lẻ ở khách đầu.
 - **GĐ327:** 🧮 Rà ngân sách (Leader + Game Designer, đợt GĐ316–326). Hiện trạng so mục tiêu: nút HUD **20/20 ✅** · thông báo >90 ký tự **0 ✅** · tỉ số thưởng/lãi bán cấp 5/10/20 **1,07 / 0,98 / 0,67** (cấp 5 còn dư vì ngày 1 không trần) · thông báo ngày 1 **11–12** (mục tiêu ≤10, bot lên 4 cấp/ngày nên cao hơn người thật) · bundle **618 KB** (mục tiêu 600, thực tế sàn) · rò rỉ object +2%/walker +20 ✅ · test toàn bộ **~150s ✅** · PROGRESS.md **~30KB ✅ (đã dồn archive)**. Siết trần bundle 640/290 → **625/275** (chỉ được hạ). Chưa gộp/bỏ tính năng nào: không tính năng nào đủ ít dùng để loại, nút HUD đã chạm đích. Việc còn: QA lần bán đầu cần người đứng quầy.
 - **GĐ326:** 🔕 Thông báo Sổ tay Tiệm (mốc 10 món) không hiện ở ngày 1 (`count < 25`) — thưởng vẫn cộng; thông báo ngày 1 (sim tất định) 13 → **11**, trần 13 → **12**. 2356 test xanh. Còn ≤10: bot lên 4 cấp trong 1 ngày nên khó hơn người thật.
@@ -164,6 +165,7 @@
 - GĐ308 — 📦 Firebase nạp động + chunk riêng: tải đầu 646→618 KB, trần 640/290
 - GĐ309 — 🔕 Dời 4 thông báo phụ khỏi ngày đầu: 22→18, trần 20
 - GĐ310 — 🔒 Hạ trần rò rỉ: object +2%, nhân vật +20 (đo 0% / +11)
+- GĐ329 — 🪙 Thiếu tiền lẻ mở từ cấp 2 (lần bán đầu sạch)
 - GĐ328 — 🧭 Đo lần bán đầu: ~4 phút (≤5 ✅); khách đầu gặp hộp thoại thiếu tiền lẻ
 - GĐ327 — 🧮 Rà ngân sách đợt GĐ316–326; siết trần bundle 625/275
 - GĐ326 — 🔕 Ẩn thông báo Sổ tay mốc nhỏ ngày 1; thông báo ngày 1 = 11, trần 12
