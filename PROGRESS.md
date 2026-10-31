@@ -130,6 +130,7 @@
 - GĐ397 — 🔁 Gỡ vòng import stock→biz→store: spoilFactor/theftFactor chuyển sang data/biz.ts (core/biz re-export, API giữ nguyên); stock.ts import từ data. 252 file/2506 test xanh 161s, tsc sạch, build OK (gzip 244,5KB <255). Rà thời tiết: nhu cầu theo thời tiết (customers.ts), hỏng hàng, đơn điện thoại, nhiệm vụ đồ mưa đã có — trục này đã sâu, không làm thêm.
 - GĐ398 — 📏 Đồng bộ bảng "Ngân sách chống phình" trong promt_game(.full).md theo hằng số test (HUD 20, thông báo 90/0, ngày 1 = 10, thưởng/lãi 1.0/0.92/0.67, bundle 598/255, rò rỉ +2%/+20, test ~3 phút) — bảng cũ ghi số trước GĐ306 khiến phiên mới dễ làm lại việc đã xong. QA @5173: màn khởi đầu tải, không lỗi console. Mọi trần đạt đích; trục chiều sâu bão hòa, chờ save thật.
 - GĐ399 — 🧹 Hạ trần rò rỉ object ngoài tiệm 2% → 0% (đo 563 → 563 suốt 6 ngày) trong longSessionLeak.test.ts; nhân vật sống giữ +20 vì dao động theo khách đang ở ngoài. Test xanh, tsc sạch.
+- GĐ522: QA gợi ý phím Ngõ 2 (cần pane hiện để vòng render chạy): lô có sạp hiện '[L] Đứng sạp hôm nay (+25%)', lô trống kế tiếp hiện '[L] Thuê lô sạp…'.
 - GĐ521: Tự đứng sạp Ngõ 2: [L] ở lô có sạp, mỗi ngày 1 lần, mọi lô thu ×1,25 hôm đó, +4 XP; mưa/bão không được; save biz.sapHandDay?, coop 'sap' + test. Bù bundle (599→598): AlleyPanel tải lười trong LoginScreen. QA sandbox: phím L đặt sapHandDay đúng. 2642 test xanh.
 - GĐ520: Dọn backlog: kế hoạch cửa hàng nước B1–B5 đánh dấu xong (GĐ424–428).
 - GĐ519: Chụp lại Ngõ 2 sau đổi màu @1280×800: 4 ô dù xanh lá mạ/nâu/vàng/xanh ngọc phân biệt rõ, thẳng hàng vỉa hè.
