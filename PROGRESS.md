@@ -140,3 +140,4 @@
 - GĐ385 — 🛒 Test nhập hàng `inventory.ts` buy/placeOrder/upgradeWarehouse (9 test, mutation 3/3): trừ đúng + sổ chi, món nhà làm không nhập, kho tràn (kể cả hàng chờ giao)/thiếu tiền/dưới mức tối thiểu bị chặn không mất gì, mối giao ngay vào kho còn mối trễ vào hàng chờ, nâng kho đúng cấp-tiền
 - GĐ386 — 📋 Test `acceptContract` (5 test, mutation 3/3): chặn thiếu cấp/danh tiếng, không ghi đè hợp đồng đang chạy, hạn kỳ đầu = hôm nay + periodDays, chờ giao; nhánh hợp đồng của orders.ts giờ đã phủ đủ (commit/giao/chuỗi có từ trước)
 - GĐ387: test checkAchievements (thưởng một lần, nhiều mốc, closeFriends), mutation 2/2 — bizAchievements.test.ts
+- GĐ388: test hết hạn chào bán mặt bằng rival qua đêm (bizEndOfDay), mutation 2/2 — rivalForSaleExpiry.test.ts
