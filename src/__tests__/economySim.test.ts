@@ -155,7 +155,7 @@ describe('khảo sát kinh tế vòng ngày — simulator thật trên store', (
     // dồn dập thì người mới đọc không kịp và mất luôn thông báo trước). Trần = mức đo 2026-10-31.
     let toasts = 0;
     const seen: string[] = [];
-    const unsub = useGame.subscribe((st, prev) => { if (st.message && st.message !== prev.message && !/^(📜|🎯)/.test(String(st.message))) { toasts++; seen.push(String(st.message)); } });
+    const unsub = useGame.subscribe((st, prev) => { if (st.day <= 1 && st.message && st.message !== prev.message && !/^(📜|🎯)/.test(String(st.message))) { toasts++; seen.push(String(st.message)); } });
     const { rows } = await runEconomySim(1, 1, { betTier: 1.0 });
     unsub();
     expect(rows.length).toBe(1);
@@ -180,7 +180,7 @@ const fmt = (v: number) => `${Math.round(v).toLocaleString('vi-VN')}đ`;
  * HẠ trần này theo số đo mới — không bao giờ nâng lên.
  */
 /** Số thông báo tối đa trong ngày đầu của bot chơi cấp 1 (mức đo 2026-10-31; chỉ được hạ). */
-const DAY1_TOAST_CEILING = 12; // GĐ316: không đếm thông báo nhận thưởng (📜/🎯), đo 11–14; đo 18 sau GĐ309 (dời danh hiệu/kèo/chi phí/thay ô sang ngày 2+; GĐ302: 22; ban đầu 27)
+const DAY1_TOAST_CEILING = 10; // GĐ331: chỉ đếm thông báo khi còn ở ngày 1 (dự báo/danh hiệu sau đi ngủ là của ngày 2) → đo 10; // GĐ316: không đếm thông báo nhận thưởng (📜/🎯), đo 11–14; đo 18 sau GĐ309 (dời danh hiệu/kèo/chi phí/thay ô sang ngày 2+; GĐ302: 22; ban đầu 27)
 
 // GĐ321: sim TẤT ĐỊNH (Math.random seed 20261031) đo cấp 5 1.13 · cấp 10 1.02 · cấp 20 0.71 (sau GĐ322; trước 1.53/1.29/0.96); trần = đo + đệm nhỏ. Chỉ được hạ.
 const BONUS_TO_SALES_CEILING: Record<number, number> = { 5: 1.15, 10: 1.05, 20: 0.75 };
