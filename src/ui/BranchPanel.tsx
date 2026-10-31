@@ -9,6 +9,8 @@ import { licenseById, licenseStatus } from '../data/licenses';
 import { formatMoney, productById } from '../data/products';
 import { haulTripPlan, autoHaulCfg, HAUL_REFILL_BELOW, HAUL_TRIP_EVERY, HAUL_BELOW_MIN, HAUL_BELOW_MAX, HAUL_EVERY_MIN, HAUL_EVERY_MAX } from '../data/branchHaul';
 import { Callout } from './panels/shared';
+import { BranchNightTab } from './BranchNightTab';
+import { st } from './branchStyles';
 
 /** Cửa hàng tiện lợi 24/7: thuê mặt bằng, tuyển người, xem doanh thu. */
 export function BranchPanel() {
@@ -190,65 +192,7 @@ export function BranchPanel() {
         </div>
       )}
 
-      {tab === 'night' && (() => {
-        const alcLic = licenseStatus(licenses, 'alcohol', day);
-        const licOk = alcLic === 'valid' || alcLic === 'expiring';
-        const guardNight = branch.staff.some((s) => s.role === 'guard' && s.shift === 'night');
-        const groups = branch.groupToday ?? {};
-        const bill = branchPowerBill(branch);
-        return (
-          <div style={{ display: 'grid', gap: 10 }}>
-            <div style={{ ...st.event, display: 'block', background: 'rgba(52,152,219,0.12)', border: '1px solid rgba(52,152,219,0.45)' }}>
-              <b>👥 Khách đêm theo nhóm</b>
-              <div style={st.sub}>Từ 21h khách chia thành các nhóm có giờ cao điểm và món ưa thích riêng — kệ có đúng món thì họ mua nhiều hơn.</div>
-              {NIGHT_GROUPS.map((g) => (
-                <div key={g.id} style={{ ...st.row, marginBottom: 2, alignItems: 'baseline', flexWrap: 'wrap' }}>
-                  <span>{g.icon} <b>{g.name}</b> · {groups[g.id] ?? 0} khách</span>
-                  <span style={{ ...st.sub, minWidth: 140 }}>{g.desc}</span>
-                </div>
-              ))}
-            </div>
-
-            <div style={{ ...st.event, display: 'block' }}>
-              <b>🍺 Rượu bia ban đêm</b>
-              <div style={st.sub}>
-                Bán rượu bia giờ đêm lời hơn (×1.15). Cần <b>{licenseById('alcohol').name}</b> (cấp {licenseById('alcohol').unlock}+): công an tuần tra đêm có thể phạt và tịch thu nếu thiếu phép.
-                Không có bảo vệ ca đêm thì khách say dễ gây gổ ({Math.round(ALCOHOL_BRAWL_CHANCE * 100)}% mỗi lượt bán).
-              </div>
-              <div style={st.sub}>
-                Giấy phép: <b style={{ color: licOk ? '#2ecc71' : '#e74c3c' }}>{licOk ? 'còn hạn' : alcLic === 'none' ? 'chưa có' : 'hết hạn'}</b>
-                {' · '}hôm nay bán {branch.alcoholToday ?? 0} món rượu bia
-              </div>
-              {hasAlcohol(branch.shelf) && !licOk && level >= licenseById('alcohol').unlock && <p style={st.warn}>⚠️ Kệ đang có rượu bia mà chưa có giấy phép — xin ở bảng Giấy phép trước khi công an ghé.</p>}
-              {hasAlcohol(branch.shelf) && !guardNight && <p style={st.warn}>⚠️ Ca đêm chưa có bảo vệ — bán rượu bia dễ xảy ra gây gổ.</p>}
-            </div>
-
-            <div style={{ ...st.event, display: 'block' }}>
-              <div style={st.row}>
-                <b>🛵 Giao hàng đêm qua app</b>
-                <button style={st.primary} onClick={toggleNightDelivery}>{branch.nightDelivery ? 'Ngưng nhận đơn đêm' : 'Nhận đơn đêm'}</button>
-              </div>
-              <div style={st.sub}>
-                Đơn app 22h–6h có phụ phí +{Math.round(NIGHT_DELIVERY_SURCHARGE * 100)}% (app giữ hoa hồng). Cần gian hàng app đã mở ({online.open ? 'đã mở' : 'chưa mở'}) và người giao hàng ca đêm không quá mệt; thiếu người giao thì đơn bị hủy, tụt điểm app. Shipper đêm đôi khi gặp sự cố mất đơn.
-                {branch.nightDelivery && <> Đêm nay: <b>{branch.deliveryToday ?? 0}</b> đơn, thu <b>{formatMoney(branch.deliveryRevenueToday ?? 0)}</b>.</>}
-              </div>
-            </div>
-
-            <div style={{ ...st.event, display: 'block' }}>
-              <b>⚡ Điện lạnh</b>
-              <div style={st.sub}>Tủ mát, tủ đông, bếp đồ nóng chạy suốt 24h: hóa đơn điện hôm nay <b>{formatMoney(bill)}</b> (trừ cuối ngày, nằm trong chi phí vận hành).</div>
-              {POWER_UPGRADES.map((u) => (
-                <div key={u.id} style={{ ...st.row, marginBottom: 2, alignItems: 'center' }}>
-                  <span style={{ flex: 1 }}>{u.icon} <b>{u.name}</b> <span style={st.sub}>— {u.desc}</span></span>
-                  {hasPower(branch, u.id)
-                    ? <span style={{ color: '#2ecc71' }}>✅ Đã lắp</span>
-                    : <button style={st.btn} disabled={money < u.price} onClick={() => buyBranchPower(u.id)}>Lắp · {formatMoney(u.price)}</button>}
-                </div>
-              ))}
-            </div>
-          </div>
-        );
-      })()}
+      {tab === 'night' && <BranchNightTab />}
 
       {tab === 'report' && (
         <div style={{ display: 'grid', gap: 8 }}>
@@ -275,23 +219,3 @@ export function BranchPanel() {
     </>
   );
 }
-
-const st: Record<string, React.CSSProperties> = {
-  event: { display: 'grid', gap: 6, padding: 10, borderRadius: 10, background: 'rgba(231,76,60,0.15)', border: '1px solid rgba(231,76,60,0.5)' },
-  chart: { display: 'flex', alignItems: 'stretch', gap: 2, height: 140, padding: '6px 0' },
-  col: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 0 },
-  bars: { flex: 1, width: '100%', display: 'flex', alignItems: 'flex-end', gap: 1 },
-  bar: { flex: 1, minHeight: 1, borderRadius: '2px 2px 0 0' },
-  dot: { display: 'inline-block', width: 10, height: 10, borderRadius: 2, marginRight: 4 },
-  title: { margin: '0 0 8px' },
-  sub: { fontSize: 13, opacity: 0.8, margin: '4px 0' },
-  warn: { fontSize: 13, color: '#e67e22', margin: '2px 0' },
-  row: { display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 },
-  badge: { padding: '4px 10px', borderRadius: 999, color: '#fff', fontWeight: 700, fontSize: 12 },
-  tabs: { display: 'flex', gap: 6, margin: '4px 0 12px', flexWrap: 'wrap' },
-  tab: { padding: '6px 10px', borderRadius: 8, border: 'none', color: '#222', cursor: 'pointer' },
-  shift: { display: 'grid', gap: 6, padding: 10, borderRadius: 12, border: '1px solid rgba(255,255,255,0.12)' },
-  card: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, flexWrap: 'wrap', padding: 10, background: '#3a3a4d', borderRadius: 10 },
-  primary: { padding: '8px 14px', borderRadius: 8, border: 'none', background: '#f1c40f', color: '#222', fontWeight: 700, cursor: 'pointer' },
-  btn: { padding: '6px 10px', borderRadius: 8, border: 'none', background: '#fff', color: '#222', cursor: 'pointer' },
-};
