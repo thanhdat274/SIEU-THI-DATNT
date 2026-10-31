@@ -13,7 +13,7 @@ import { trainValue } from '../../data/trainValue';
 import { staffEff } from '../../data/staffEff';
 import { serveCoverage, SERVE_TOP_HOURS } from '../../data/serveCoverage';
 import { staffValueToday, staffShiftSummary } from '../../data/staffValue';
-import { staffIdleStats, IDLE_HEAVY_PCT, type StaffIdleRow } from '../../data/staffIdle';
+import { staffIdleStats, type StaffIdleRow } from '../../data/staffIdle';
 import { staffDaySnapshot } from '../../core/slices/staffDay';
 import { branchShiftSummary, branchStaffValueToday } from '../../data/branchStaffValue';
 import { nightStaffValueToday } from '../../data/nightStaffValue';

@@ -14,7 +14,7 @@
  * của họ trong ngày. Ca đêm KHÔNG tính ở đây (đã có nightReport.nightPnl riêng).
  * Chỉ import hằng số + dailyWage → không có vòng lặp import.
  */
-import { dailyWage, SHIFTS, type Shift, type Staff, type StaffRole } from './staff';
+import { dailyWage, type Shift, type Staff, type StaffRole } from './staff';
 
 /** Một giờ (theo giờ trong ngày) có thuộc ca ngày nào không; ca đêm trả null (đã có nightReport). */
 export type DayShift = 'morning' | 'afternoon' | 'full';

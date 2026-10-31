@@ -3,7 +3,7 @@ import { happyHourActive } from '../../data/rhythm';
 import { makeVendorOffer, vendorById, wholesaleTotal } from '../../data/wholesale';
 import { missKey } from '../../data/advice';
 import { counterActive, PRICE_WAR_CUT } from '../../data/biz';
-import { defaultCounterPolicy, type CounterPolicy } from '../../data/counterDeals';
+import { defaultCounterPolicy } from '../../data/counterDeals';
 import { RISK_RULES } from '../../data/risks';
 import { hasUpgrade } from '../../data/upgrades';
 import { isNight, NIGHT_PRICE_MUL } from '../../data/night';

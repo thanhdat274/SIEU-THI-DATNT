@@ -8,7 +8,7 @@
  */
 
 import { WAREHOUSE_TIERS, warehouseTier } from './warehouse';
-import { casesFor, productById } from './products';
+import { casesFor } from './products';
 import { needsCold } from './freshness';
 
 export type WarehouseVerdict = 'upgrade' | 'soon' | 'ok';

@@ -6,7 +6,7 @@ import { summarizeReviews } from '../../data/reviews';
 import { costumeById } from '../../data/costumes';
 import { giftOfStreak, giftText, recentAvgProfit, scaledGiftEco, scaledPrize, spinWheelPrize, welcomeBackReward, daysAway } from '../../data/gifts';
 import { feedCost, landmarkProgress, LANDMARK_STAGES, LANDMARK_TARGETS } from '../../data/landmark';
-import { ngGoalProgress, NG_GOALS } from '../../data/ngGoals';
+import { ngGoalProgress } from '../../data/ngGoals';
 import { playSfx } from '../audio';
 import type { GameState, SetState, GetState } from '../gameTypes';
 import { questContext } from '../store';

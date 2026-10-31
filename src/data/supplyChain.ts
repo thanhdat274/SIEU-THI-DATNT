@@ -1,6 +1,6 @@
 import { shelfTotal, CONVENIENCE } from './branches';
 import { quanNuocProjection, quanNuocDrinkIds, quanNuocRestockTip, type QuanNuocState } from './quanNuoc';
-import { productById, type Product } from './products';
+import { productById } from './products';
 
 /**
  * GĐ199 — "Rốn kho chung": bắt đầu trục multi-shop supply chain (backlog 6) bằng một bước soi sáng —
