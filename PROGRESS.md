@@ -146,3 +146,4 @@
 - GĐ421 — 🍚 Sổ đầu ngày có mục Tiệm xôi: hôm qua nấu bao nhiêu, tiết kiệm so với nhập lẻ − lương = lời/lỗ ròng; kho đủ mà thợ dư sức thì gợi ý cho nghỉ bớt (`tiemXoiMorning`).
 - GĐ423 — 🍚 Xu hướng cơ sở thêm dòng Tiệm xôi (tiết kiệm − lương, `xoiNet` tùy chọn cho save cũ). Người dùng duyệt nâng quán nước thành cửa hàng thật.
 - GĐ424 — 🏠 Cửa hàng nước B1: quầy ngoài trời thành nhà nhỏ 5.6×5 m (tường bạc hà, mái xanh ngọc, mặt tiền kính + cửa giữa, mái hiên cam, biển "QUÁN NƯỚC"); trong có quầy pha, máy xay, ly, tủ mát sáng đèn, kệ ly, bảng phấn thực đơn; bàn 1 trong nhà, bàn 2–3 ngoài hiên (ghế đỏ). Test giữ mép ngoài hẻm/đường. QA `?thu=1` ổn. Chưa vào trong được (B2).
+- GĐ425 — 🚪 Cửa hàng nước B2: tường/quầy/tủ mát chặn lưới đi lại khi quán mở (`quanHouseBoxes`, lớp static "quanNuoc", dựng lại lưới qua `shop.attachGrid`); chỉ vào qua cửa giữa (rộng 1.7 m), đi được ra sau quầy. Test lưới + QA `?thu=1` (tường chặn, cửa thông, tiệm chính vẫn tới được).

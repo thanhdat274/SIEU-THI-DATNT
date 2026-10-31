@@ -41,6 +41,7 @@ import { NavGrid } from './world/navGrid';
 import { createWorld } from './world/world';
 import { quanNuocStandState } from './data/quanNuoc';
 import { menuBoardLines } from './data/quanRecipes';
+import { quanHouseBoxes } from './world/quanNuocStand';
 import { branchStandState } from './data/branches';
 import { Hud, tutorialActive, tutorialStep } from './ui/Hud';
 import './ui/controls.css';
@@ -277,11 +278,19 @@ let lastStandStaff = -1;
 let lastStandLevel = 0;
 let lastStandOpen = false;
 let lastStandMenu: string | null = null;
+let lastStandWalls = false;
 const syncQuanNuocStand = () => {
   const s = useGame.getState();
   const st = quanNuocStandState(s.level, s.biz.quanNuoc.open);
   world.quanNuoc.lot.visible = st === 'lot';
   world.quanNuoc.stand.visible = st === 'open';
+  // GĐ425: nhà quán nước chặn lưới đi lại khi đã mở (chỉ vào qua cửa); đổi trạng thái thì dựng lại lưới
+  if ((st === 'open') !== lastStandWalls) {
+    lastStandWalls = st === 'open';
+    const p = world.quanNuoc.group.position;
+    grid.setStatic('quanNuoc', lastStandWalls ? quanHouseBoxes(p.x, p.z) : []);
+    shop.attachGrid(grid);
+  }
   if (s.biz.quanNuoc.staff !== lastStandStaff) {
     lastStandStaff = s.biz.quanNuoc.staff;
     world.quanNuoc.setStaff(s.biz.quanNuoc.staff);

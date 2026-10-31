@@ -75,6 +75,31 @@ function buildLot(): THREE.Group {
  *  (thế giới 54.4, 0, 1). Mép tây 52.6 chừa hẻm (≤52.5), mép trước z 1.8 chừa vỉa hè/đường (z ≥ 3). */
 export const QUAN_HOUSE = { x: 1.0, z: -1.7, width: 5.6, depth: 5, height: 3 } as const;
 
+/** Nửa bề rộng lối cửa giữa mặt tiền (m). */
+export const QUAN_DOOR_HALF = 0.85;
+
+/**
+ * Khối chặn lưới đi lại của nhà quán nước (GĐ425, bước 2): tường sau, hai tường hông, hai đoạn mặt tiền
+ * hai bên cửa, quầy pha và tủ mát — toạ độ THẾ GIỚI theo gốc quán (ox, oz). Cửa giữa để trống nên người
+ * chơi/NPC chỉ vào được qua cửa.
+ */
+export function quanHouseBoxes(ox: number, oz: number): THREE.Box3[] {
+  const { x, z, width: W, depth: D, height: H } = QUAN_HOUSE;
+  const cx = ox + x, cz = oz + z, t = 0.12;
+  const b = (x1: number, z1: number, x2: number, z2: number) =>
+    new THREE.Box3(new THREE.Vector3(x1, 0, z1), new THREE.Vector3(x2, H, z2));
+  const front = cz + D / 2, back = cz - D / 2;
+  return [
+    b(cx - W / 2, back - t / 2, cx + W / 2, back + t / 2),
+    b(cx - W / 2 - t / 2, back, cx - W / 2 + t / 2, front),
+    b(cx + W / 2 - t / 2, back, cx + W / 2 + t / 2, front),
+    b(cx - W / 2, front - t / 2, cx - QUAN_DOOR_HALF, front + t / 2),
+    b(cx + QUAN_DOOR_HALF, front - t / 2, cx + W / 2, front + t / 2),
+    b(cx - 1.65, cz - 0.6, cx + 1.65, cz + 0.2),
+    b(cx + W / 2 - 1.15, back, cx + W / 2, back + 0.85),
+  ];
+}
+
 /** Cửa hàng nước: nhà nhỏ tường + mái + mặt tiền kính, bên trong quầy pha, tủ mát, kệ ly, máy xay,
  *  bảng phấn thực đơn; bàn ghế ngoài hiên bật theo số nhân viên. */
 function buildStand(): { group: THREE.Group; setStaff(n: number): void; setMenu(lines: string[]): void } {
