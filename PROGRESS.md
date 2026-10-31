@@ -159,6 +159,7 @@
 - GĐ309 — 🔕 Dời 4 thông báo phụ khỏi ngày đầu: 22→18, trần 20
 - GĐ310 — 🔒 Hạ trần rò rỉ: object +2%, nhân vật +20 (đo 0% / +11)
 - GĐ344 — 🧪 QA bán hàng ngày 2/3 (save sạch): mở cửa, tiền đổi; tải mới 0 lỗi (emptyTiers/depthTexture trong console là dấu vết HMR cũ)
+- GĐ345 — ⏱️ Đo lại bộ test: 2359 xanh; nặng nhất economySimL50/L10L20/weeklyGoalCap/economySim (giữ nguyên, là tín hiệu cân bằng)
 - GĐ343 — 📦 Siết trần bundle 598/255
 - GĐ336–342 — 📦 Bundle 596 KB (nạp lười STORIES/SURPRISES/GLTF, test hợp đồng); QA gfx=low ~58 FPS, mobile/tablet không tràn; Leader review GĐ337
 - GĐ332 — 💰 % kèo 25/40/65; tỉ số thưởng/lãi 0,99/0,89/0,64
