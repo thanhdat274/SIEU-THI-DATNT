@@ -42,7 +42,7 @@ import { createWorld } from './world/world';
 import { tiemXoiStandState } from './data/tiemXoi';
 import { quanNuocStandState, quanPatrons, quanTierOf } from './data/quanNuoc';
 import { menuBoardLines } from './data/quanRecipes';
-import { quanHouseBoxes } from './world/quanNuocStand';
+import { QUAN_HOUSE, quanHouseBoxes } from './world/quanNuocStand';
 import { branchStandState, LANE_X } from './data/branches';
 import { Hud, tutorialActive, tutorialStep } from './ui/Hud';
 import './ui/controls.css';
@@ -442,6 +442,9 @@ const fixedInteractables: Interactable[] = [
   // Trang trại nam đường thứ hai: đứng cạnh cổng bấm V mở bảng trại (trồng, tưới, thu hoạch, cho gà ăn)
   { position: world.farmSpot, radius: 4, hint: () => '[V] Trang trại', key: 'KeyV', action: () => useGame.getState().openPanel({ type: 'garden' }) },
   // Giếng nước trong trại: tưới nhanh tất cả luống không cần mở bảng
+  // GĐ432 cửa hàng nước: đứng sau quầy pha bấm P tự pha một mẻ (B4 "tự đứng quầy")
+  { position: world.quanNuoc.group.position.clone().add(new THREE.Vector3(QUAN_HOUSE.x, 0, QUAN_HOUSE.z - 0.9)), radius: 1.6,
+    hint: () => (useGame.getState().biz.quanNuoc.open ? '[P] Tự pha 5 ly ở quầy' : 'Quán nước chưa mở'), key: 'KeyP', action: () => { useGame.getState().brewQuanHand(); } },
   { position: world.farm.wellSpot, radius: 2.6, hint: () => '[T] Tưới luống từ giếng', key: 'KeyT', action: () => useGame.getState().waterGarden() },
 ];
 

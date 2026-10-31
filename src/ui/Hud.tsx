@@ -3,7 +3,6 @@ import { ANIMALS, ANIMAL_ORDER, EGG_PER_TRAY, plotReady } from '../data/garden';
 import { activeBuzz } from '../data/social';
 import { licenseStatus, type LicenseId } from '../data/licenses';
 import { faintMinutes, weeklyChallenge, rivalUndercutAlerts } from '../data/biz';
-import { pendingUnlockAct } from '../data/unlockActs';
 import { Joystick } from './Joystick';
 import { Fragment, lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { formatClock, questContext, useClock, useGame } from '../core/store';
@@ -47,6 +46,7 @@ import { GFX_CYCLE, GFX_LABEL, gfxStatus, setGfxChoice } from '../render/graphic
 import './hud.css';
 const SurpriseAlert = lazy(() => import('./SurpriseAlert').then((m) => ({ default: m.SurpriseAlert })));
 const ExpiryAlert = lazy(() => import('./ExpiryAlert').then((m) => ({ default: m.ExpiryAlert })));
+const UnlockActBanner = lazy(() => import('./UnlockActBanner').then((m) => ({ default: m.UnlockActBanner })));
 const PhoneAlerts = lazy(() => import('./PhoneAlerts').then((m) => ({ default: m.PhoneAlerts })));
 
 export { tutorialActive, tutorialStep, tutorialSteps } from './tutorialSteps';
@@ -458,7 +458,7 @@ ${forecastText}`}>
         <BranchAlert />
         <RivalAlert />
         <Suspense fallback={null}><ExpiryAlert /></Suspense>
-        <UnlockActBanner />
+        <Suspense fallback={null}><UnlockActBanner /></Suspense>
         <Suspense fallback={null}><VendorAlert /></Suspense>
         <CounterAskAlert />
         <FestivalBanner />
@@ -765,24 +765,6 @@ function RivalAlert() {
   );
 }
 
-/** GĐ64 — mồi "Thử ngay" khi một hệ chính mới mở khóa: hiện trong cột alert, đóng vĩnh viễn. */
-function UnlockActBanner() {
-  const level = useGame((s) => s.level);
-  const biz = useGame((s) => s.biz);
-  const openPanel = useGame((s) => s.openPanel);
-  const act = pendingUnlockAct(biz, level);
-  if (!act) return null;
-  const done = () => useGame.getState().dismissUnlockAct(act.id);
-  return (
-    <div className="hud-alert" style={{ background: 'rgba(39,174,96,0.95)' }}>
-      <span>🔓 Mới mở: {act.icon} {act.title} — {act.hint}</span>
-      <span className="hud-alert-actions">
-        <button className="hud-btn" onClick={() => { openPanel(act.panel()); done(); }}>🚀 Thử ngay</button>
-        <button className="hud-btn" onClick={done} title="Bỏ qua (không hiện lại)">✕</button>
-      </span>
-    </div>
-  );
-}
 
 /** Đang trong mùa lễ: nói rõ khách đông bao nhiêu, món nào hút, giá nhập tăng bao nhiêu. */
 function FestivalBanner() {

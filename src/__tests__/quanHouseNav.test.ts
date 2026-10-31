@@ -17,6 +17,11 @@ describe('nhà quán nước trên lưới đi lại', () => {
   it('vào được sau quầy (lối hai bên quầy)', () => {
     expect(g.reachable(street, new THREE.Vector3(cx - 0.5, 0, cz - 1.6))).toBe(true);
   });
+  it('GĐ432: chỗ đứng pha (sau quầy, giữa) đi tới được, không bị chặn', () => {
+    const spot = new THREE.Vector3(cx, 0, cz - 0.9);
+    expect(g.isBlocked(spot.x, spot.z)).toBe(false);
+    expect(g.reachable(street, spot)).toBe(true);
+  });
   it('tường mặt tiền cạnh cửa và tường hông bị chặn', () => {
     expect(g.isBlocked(cx - 2, oz + QUAN_HOUSE.z + QUAN_HOUSE.depth / 2)).toBe(true);
     expect(g.isBlocked(cx + QUAN_HOUSE.width / 2, cz)).toBe(true);
