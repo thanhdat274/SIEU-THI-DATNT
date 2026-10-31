@@ -1,7 +1,7 @@
 import { playerPos } from '../../core/playerPos';
 import { useGame } from '../../core/store';
 import { formatMoney } from '../../data/products';
-import { SAP_LOTS, SAP_TIERS, bestSapKind, sapKindOf, sapLotIncome, sapTierOf } from '../../data/sapRong';
+import { SAP_HOME_XOI_MUL, SAP_LOTS, SAP_TIERS, bestSapKind, sapKindOf, sapLotIncome, sapTierOf } from '../../data/sapRong';
 import { WEATHER } from '../../data/weather';
 import { MAP_LANDMARKS, ZONES, zoneMapView } from '../../data/zones';
 import { styles } from './shared';
@@ -56,10 +56,11 @@ export function ZoneMapSection() {
             const k = sapKindOf(biz.sapKinds, i);
             const t = SAP_TIERS[sapTierOf(biz.sapTiers, i)];
             const up = SAP_TIERS[sapTierOf(biz.sapTiers, i) + 1];
+            const home = k.id === 'xoi' && biz.tiemXoi.open;
             return (
               <span key={i} style={{ display: 'inline-flex', gap: 4 }}>
-                <button style={styles.btn} title={`${k.hint} — bấm để đổi món`} onClick={() => cycleSapKind(i)}>
-                  Lô {i + 1}: {t.icon} {k.icon} {k.name} · hôm nay {formatMoney(Math.round(sapLotIncome(k, weather, day) * t.mul))}
+                <button style={styles.btn} title={`${k.hint}${home ? ' · xôi nhà làm +20%' : ''} — bấm để đổi món`} onClick={() => cycleSapKind(i)}>
+                  Lô {i + 1}: {t.icon} {k.icon} {k.name} · hôm nay {formatMoney(Math.round(sapLotIncome(k, weather, day) * t.mul * (home ? SAP_HOME_XOI_MUL : 1)))}{home ? ' 🏠' : ''}
                 </button>
                 {up && (
                   <button style={styles.btn} disabled={money < up.cost} title={`Nâng lên ${up.name}: thu ×${up.mul}`} onClick={() => upgradeSapLot(i)}>

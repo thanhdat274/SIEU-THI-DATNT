@@ -147,3 +147,14 @@ describe('GĐ513: nâng bậc lô sạp', () => {
     expect(g().biz.sapTiers).toBeUndefined();
   });
 });
+
+describe('GĐ516: xôi nhà làm', () => {
+  it('đã mở tiệm xôi: chỉ lô xôi +20%', async () => {
+    const { SAP_HOME_XOI_MUL } = await import('../data/sapRong');
+    const base = sapRongIncome(2, 'fog', 1, ['xoi', 'banhmi']);
+    const home = sapRongIncome(2, 'fog', 1, ['xoi', 'banhmi'], undefined, true);
+    const xoiOnly = sapRongIncome(1, 'fog', 1, ['xoi']);
+    expect(home - base).toBe(Math.round(xoiOnly * SAP_HOME_XOI_MUL) - xoiOnly);
+    expect(sapRongIncome(1, 'fog', 1, ['banhmi'], undefined, true)).toBe(sapRongIncome(1, 'fog', 1, ['banhmi']));
+  });
+});

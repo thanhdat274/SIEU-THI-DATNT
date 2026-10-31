@@ -18,7 +18,7 @@ export const SAP_KINDS: SapKind[] = [
   { id: 'tonghop', icon: '🛒', name: 'Tổng hợp', weather: {}, weekday: 1, weekend: 1.3, hint: 'Đều đều, cuối tuần ×1,3' },
   { id: 'nuocmia', icon: '🥤', name: 'Nước mía', weather: { sunny: 1.5, cloudy: 0.9, fog: 0.7 }, weekday: 1, weekend: 1.3, hint: 'Nắng ×1,5, mây ×0,9, sương ×0,7', colors: [0x55efc4, 0x00b894] },
   { id: 'banhmi', icon: '🥖', name: 'Bánh mì', weather: {}, weekday: 1.2, weekend: 1, hint: 'Ngày thường ×1,2, cuối tuần ×1', colors: [0xe1a95f, 0xe17055] },
-  { id: 'xoi', icon: '🍙', name: 'Xôi', weather: { cloudy: 1.2, fog: 1.25, sunny: 0.9 }, weekday: 1, weekend: 1.3, hint: 'Mây ×1,2, sương ×1,25, nắng ×0,9', colors: [0xffeaa7, 0xfdcb6e] },
+  { id: 'xoi', icon: '🍙', name: 'Xôi', weather: { cloudy: 1.2, fog: 1.25, sunny: 0.9 }, weekday: 1, weekend: 1.3, hint: 'Mây ×1,2, sương ×1,25, nắng ×0,9; có tiệm xôi +20%', colors: [0xffeaa7, 0xfdcb6e] },
 ];
 export const sapKindOf = (kinds: readonly string[] | undefined, i: number) =>
   SAP_KINDS.find((k) => k.id === kinds?.[i]) ?? SAP_KINDS[0];
@@ -50,11 +50,17 @@ export const SAP_TIERS = [
 export const sapTierOf = (tiers: readonly number[] | undefined, i: number) =>
   Math.max(0, Math.min(SAP_TIERS.length - 1, Math.floor(tiers?.[i] ?? 0)));
 
+/** GĐ516: lô bán xôi lấy hàng tiệm xôi nhà mình (đã mở tiệm) thì thêm 20% — chuỗi cung ứng giữa các cơ sở. */
+export const SAP_HOME_XOI_MUL = 1.2;
+
 /** Lãi ròng một ngày của các sạp đã thuê (0 khi mưa/bão). */
-export function sapRongIncome(lots: number | undefined, weather?: Weather, day?: number, kinds?: readonly string[], tiers?: readonly number[]): number {
+export function sapRongIncome(lots: number | undefined, weather?: Weather, day?: number, kinds?: readonly string[], tiers?: readonly number[], homeXoi = false): number {
   const n = Math.max(0, Math.min(SAP_LOTS, lots ?? 0));
   let sum = 0;
-  for (let i = 0; i < n; i++) sum += Math.round(sapLotIncome(sapKindOf(kinds, i), weather, day) * SAP_TIERS[sapTierOf(tiers, i)].mul);
+  for (let i = 0; i < n; i++) {
+    const k = sapKindOf(kinds, i);
+    sum += Math.round(sapLotIncome(k, weather, day) * SAP_TIERS[sapTierOf(tiers, i)].mul * (homeXoi && k.id === 'xoi' ? SAP_HOME_XOI_MUL : 1));
+  }
   return sum;
 }
 
