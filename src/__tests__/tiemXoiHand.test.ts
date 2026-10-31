@@ -31,3 +31,16 @@ describe('steamXoiHand', () => {
     for (const m of msgs) expect(m.length).toBeLessThanOrEqual(90);
   });
 });
+
+describe('tin cuối ngày', () => {
+  it('ghi chủ tự đồ khi đã đồ trong ngày, ≤90 ký tự', () => {
+    g().buyTiemXoi();
+    g().steamXoiHand();
+    msgs = [];
+    useGame.setState({ minutes: 20 * 60 });
+    expect(g().sleep()).toBe(true);
+    const seg = msgs.join('|').match(/🍚 Tiệm xôi.*?chủ tự đồ 1 mẻ/)?.[0];
+    expect(seg).toBeTruthy();
+    expect(seg!.length).toBeLessThanOrEqual(90);
+  });
+});

@@ -152,7 +152,8 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
     if (t) {
       tiemXoiLast = { day: s.day, total: t.total, cost: t.cost, wages: t.wages, saved: tiemXoiSaved(t.made) };
       quanWages += t.cost + t.wages;
-      quanNews.push(t.total ? `🍚 Tiệm xôi nấu ${t.total} phần vào kho · −${formatMoney(t.cost + t.wages)}` : '🍚 Tiệm xôi: kho đủ xôi, hôm nay không nấu');
+      const hand = s.biz.tiemXoi.handDay === s.day ? ' · chủ tự đồ 1 mẻ' : '';
+      quanNews.push((t.total ? `🍚 Tiệm xôi nấu ${t.total} phần vào kho · −${formatMoney(t.cost + t.wages)}` : '🍚 Tiệm xôi: kho đủ xôi, hôm nay không nấu') + hand);
     }
   }
   // Phụ trại đổ cám hộ + gom nông sản về kho (kèm nhãn nhà trồng/nhà nuôi bán được giá hơn)
