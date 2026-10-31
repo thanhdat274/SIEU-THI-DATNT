@@ -18,6 +18,8 @@ export interface QuanNuocStand {
   setStaff(n: number): void;
   /** Vẽ lại bảng phấn thực đơn sau quầy (GĐ416) từ các dòng `menuBoardLines`. */
   setMenu(lines: string[]): void;
+  /** Khách ngồi ở các ghế bàn đang hiện (GĐ426), hình khối đơn giản, không phải agent. */
+  setPatrons(n: number): void;
   /** Hộp các khối chính nếu muốn chặn nav — để rỗng cho an toàn đi lại. */
   boxes: THREE.Box3[];
 }
@@ -32,7 +34,7 @@ export function createQuanNuocStand(): QuanNuocStand {
   group.add(lot, stand.group);
   lot.visible = false;
   stand.group.visible = false;
-  return { group, lot, stand: stand.group, setStaff: stand.setStaff, setMenu: stand.setMenu, boxes: [] };
+  return { group, lot, stand: stand.group, setStaff: stand.setStaff, setMenu: stand.setMenu, setPatrons: stand.setPatrons, boxes: [] };
 }
 
 /** Khoảnh đất trống đủ cấp chưa mua: sàn mỏng, gạch mép, biển gỗ "ĐỒ UỐNG", marker 🧋 gợi chú ý. */
@@ -102,7 +104,7 @@ export function quanHouseBoxes(ox: number, oz: number): THREE.Box3[] {
 
 /** Cửa hàng nước: nhà nhỏ tường + mái + mặt tiền kính, bên trong quầy pha, tủ mát, kệ ly, máy xay,
  *  bảng phấn thực đơn; bàn ghế ngoài hiên bật theo số nhân viên. */
-function buildStand(): { group: THREE.Group; setStaff(n: number): void; setMenu(lines: string[]): void } {
+function buildStand(): { group: THREE.Group; setStaff(n: number): void; setMenu(lines: string[]): void; setPatrons(n: number): void } {
   const g = new THREE.Group();
   const wall = new THREE.MeshStandardMaterial({ color: 0xbfe9e2, roughness: 0.85 });
   const trim = new THREE.MeshStandardMaterial({ color: 0x26a69a, roughness: 0.6 });
@@ -202,6 +204,8 @@ function buildStand(): { group: THREE.Group; setStaff(n: number): void; setMenu(
   // Bàn ghế: bàn đầu tiên trong nhà (trước quầy), các bàn sau ngoài hiên (z < 3, không xuống đường)
   const tablePos: [number, number][] = [[cx - 1.5, cz + 1.3], [cx - 1.6, front + 0.75], [cx + 1.6, front + 0.75]];
   const tableGroups: THREE.Group[] = [];
+  const patrons: THREE.Group[] = [];
+  const skin = new THREE.MeshStandardMaterial({ color: 0xf1c27d, roughness: 0.8 });
   for (const [tx, tz] of tablePos) {
     const t = new THREE.Group();
     const leg = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.7, 0.12), woodDark);
@@ -213,6 +217,17 @@ function buildStand(): { group: THREE.Group; setStaff(n: number): void; setMenu(
       const stool = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.42, 10), new THREE.MeshStandardMaterial({ color: 0xe74c3c, roughness: 0.6 }));
       stool.position.set(ax, 0.21, 0);
       t.add(stool);
+      // Khách ngồi trên ghế, quay mặt vào bàn
+      const p = new THREE.Group();
+      const body = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.18, 0.5, 8), new THREE.MeshStandardMaterial({ color: CUP_COLORS[patrons.length % CUP_COLORS.length], roughness: 0.7 }));
+      body.position.y = 0.67;
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.14, 10, 8), skin);
+      head.position.y = 1.06;
+      p.add(body, head);
+      p.position.set(ax, 0, 0);
+      p.visible = false;
+      t.add(p);
+      patrons.push(p);
     }
     t.position.set(tx, 0, tz);
     t.visible = false;
@@ -223,7 +238,15 @@ function buildStand(): { group: THREE.Group; setStaff(n: number): void; setMenu(
     const count = THREE.MathUtils.clamp(Math.floor(n), 0, tableGroups.length);
     tableGroups.forEach((t, i) => { t.visible = i < count; });
   };
-  return { group: g, setStaff, setMenu };
+  let patronCount = 0;
+  const showPatrons = () => {
+    const seats = patrons.filter((_, i) => tableGroups[Math.floor(i / 2)].visible);
+    patrons.forEach((p) => { p.visible = false; });
+    seats.slice(0, patronCount).forEach((p) => { p.visible = true; });
+  };
+  const setPatrons = (n: number) => { patronCount = Math.max(0, Math.floor(n)); showPatrons(); };
+  const setStaffAll = (n: number) => { setStaff(n); showPatrons(); };
+  return { group: g, setStaff: setStaffAll, setMenu, setPatrons };
 }
 
 /** Mặt biển "ĐỒ UỐNG": chữ trắng đậm trên nền xanh cyan (màu thương hiệu quán). */

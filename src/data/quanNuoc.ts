@@ -268,3 +268,7 @@ export function quanNuocBuildPayback(level: number, staff: number = 1, price: Qu
   const paybackDays = Math.ceil(QUAN_NUOC_PRICE / net);
   return { cost: QUAN_NUOC_PRICE, netPerDay: net, paybackDays, verdict: paybackDays <= 60 ? 'worth' : 'slow' };
 }
+
+/** Số khách ngồi trong quán 3D (GĐ426): theo số ly bán hôm qua, mỗi 12 ly một khách, tối đa 2 ghế/bàn. */
+export const quanPatrons = (staff: number, servedYesterday: number | undefined) =>
+  Math.min(2 * Math.max(0, Math.min(3, Math.floor(staff))), Math.ceil(Math.max(0, servedYesterday ?? 0) / 12));
