@@ -573,7 +573,7 @@ export function OrderPanel() {
         {supplier.bulk && ` Mua nhiều: ${supplier.bulk.map((b) => `từ ${b.minCases} thùng một món bớt ${b.discount * 100}%`).join(', ')}.`}
         {' '}Hàng nhập theo thùng, về kho rồi khui ra bày lẻ.
       </p>
-      <div style={st.banner}>
+      <div style={{ ...st.banner, ...(day <= 1 ? { display: 'none' } : null) }}>{/* GĐ319: ngày đầu chỉ dạy nhập-bày-bán */}
         {(() => {
           const life = biz.supplierRel?.[supplier.id]?.spent ?? 0;
           const { cur, next, pct } = tierProgress(life);
@@ -639,7 +639,7 @@ export function OrderPanel() {
         </div>
       )}
 
-      <div style={st.banner}>
+      <div style={{ ...st.banner, ...(day <= 1 ? { display: 'none' } : null) }}>
         🌦️ Dự báo: {forecast.map((w, i) => (
           <span key={i}>
             {i > 0 && ' · '}
@@ -665,7 +665,7 @@ export function OrderPanel() {
         </div>
       )}
 
-      {hot.length > 0 && (
+      {hot.length > 0 && day > 1 && (
         <div style={st.banner}>
           🔥 Tuần này khách săn: <b>{hot.map((id) => productById(id).name).join(', ')}</b>
           {hotNextWeek.length > 0 && (
