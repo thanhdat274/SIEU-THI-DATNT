@@ -158,3 +158,13 @@ describe('GĐ516: xôi nhà làm', () => {
     expect(sapRongIncome(1, 'fog', 1, ['banhmi'], undefined, true)).toBe(sapRongIncome(1, 'fog', 1, ['banhmi']));
   });
 });
+
+describe('GĐ518: ô dù món khác hẳn ô dù mặc định các lô', () => {
+  it('khoảng cách màu RGB ≥ 80 với 4 màu lô Tổng hợp', async () => {
+    const { SAP_KINDS } = await import('../data/sapRong');
+    const LOT_UMBS = [0xd63031, 0x0984e3, 0xe84393, 0x00cec9]; // world/ngo2.ts UMBS
+    const rgb = (c: number) => [(c >> 16) & 255, (c >> 8) & 255, c & 255];
+    const dist = (a: number, b: number) => Math.hypot(...rgb(a).map((v, i) => v - rgb(b)[i]));
+    for (const k of SAP_KINDS.slice(1)) for (const u of LOT_UMBS) expect(dist(k.colors![1], u)).toBeGreaterThanOrEqual(80);
+  });
+});

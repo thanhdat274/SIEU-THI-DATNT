@@ -16,8 +16,8 @@ export const SAP_BASE_INCOME = 300_000;
 export interface SapKind { id: string; icon: string; name: string; weather: Partial<Record<Weather, number>>; weekday: number; weekend: number; hint: string; /** GĐ511: màu hàng + ô dù 3D (thiếu = màu riêng từng lô). */ colors?: [goods: number, umbrella: number] }
 export const SAP_KINDS: SapKind[] = [
   { id: 'tonghop', icon: '🛒', name: 'Tổng hợp', weather: {}, weekday: 1, weekend: 1.3, hint: 'Đều đều, cuối tuần ×1,3' },
-  { id: 'nuocmia', icon: '🥤', name: 'Nước mía', weather: { sunny: 1.5, cloudy: 0.9, fog: 0.7 }, weekday: 1, weekend: 1.3, hint: 'Nắng ×1,5, mây ×0,9, sương ×0,7', colors: [0x55efc4, 0x00b894] },
-  { id: 'banhmi', icon: '🥖', name: 'Bánh mì', weather: {}, weekday: 1.2, weekend: 1, hint: 'Ngày thường ×1,2, cuối tuần ×1', colors: [0xe1a95f, 0xe17055] },
+  { id: 'nuocmia', icon: '🥤', name: 'Nước mía', weather: { sunny: 1.5, cloudy: 0.9, fog: 0.7 }, weekday: 1, weekend: 1.3, hint: 'Nắng ×1,5, mây ×0,9, sương ×0,7', colors: [0xa3e048, 0x6ab04c] },
+  { id: 'banhmi', icon: '🥖', name: 'Bánh mì', weather: {}, weekday: 1.2, weekend: 1, hint: 'Ngày thường ×1,2, cuối tuần ×1', colors: [0xf3d29b, 0xc68642] },
   { id: 'xoi', icon: '🍙', name: 'Xôi', weather: { cloudy: 1.2, fog: 1.25, sunny: 0.9 }, weekday: 1, weekend: 1.3, hint: 'Mây ×1,2, sương ×1,25, nắng ×0,9; có tiệm xôi +20%', colors: [0xffeaa7, 0xfdcb6e] },
 ];
 export const sapKindOf = (kinds: readonly string[] | undefined, i: number) =>
