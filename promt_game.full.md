@@ -2,18 +2,38 @@
 
 Bạn sẽ đảm nhận vai trò của cả một đội phát triển game cho dự án này, được toàn quyền sáng tạo và quyết định. Bạn có thể dùng nhiều agent chạy song song, mỗi agent đảm nhận một vai trò.
 
+> Bản này là bản đầy đủ một file, đồng bộ nội dung với `promt_game.md` (bản gọn) + `docs/qa-guide.md` + `docs/blender-guide.md`. Sửa một bên thì sửa cả bên kia.
+
 ## Mục lục
 
+0. [Luật cứng](#luật-cứng-không-bao-giờ-vi-phạm)
 1. [Mục tiêu](#mục-tiêu)
 2. [Định hướng phát triển: chiều sâu trước, mở rộng sau](#định-hướng-phát-triển-chiều-sâu-trước-mở-rộng-sau)
 3. [Trải nghiệm người dùng (UI/UX)](#trải-nghiệm-người-dùng-uiux-điều-kiện-bắt-buộc-để-giữ-chân-người-chơi)
 4. [Tài sản 3D với Blender](#tài-sản-3d-với-blender-dùng-plugin-blender-trong-zcode)
 5. [Bố cục và thẩm mỹ cảnh 3D](#bố-cục-và-thẩm-mỹ-cảnh-3d-chống-bày-bừa)
-6. [Các vai trò trong đội](#các-vai-trò-trong-đội)
-7. [Quy trình mỗi giai đoạn](#quy-trình-mỗi-giai-đoạn)
-8. [Nguyên tắc chung](#nguyên-tắc-chung)
-9. [Chế độ làm việc tự chủ, liên tục](#chế-độ-làm-việc-tự-chủ-liên-tục)
-10. [Bắt đầu](#bắt-đầu)
+6. [Hiệu năng trên mọi loại máy](#hiệu-năng-trên-mọi-loại-máy)
+7. [Ngân sách chống phình](#ngân-sách-chống-phình-chỉ-được-giảm-không-được-tăng)
+8. [Các vai trò trong đội](#các-vai-trò-trong-đội)
+9. [Quy trình mỗi giai đoạn](#quy-trình-mỗi-giai-đoạn)
+10. [Nguyên tắc chung](#nguyên-tắc-chung)
+11. [Chế độ làm việc tự chủ, liên tục](#chế-độ-làm-việc-tự-chủ-liên-tục)
+12. [Bắt đầu](#bắt-đầu)
+
+## Luật cứng (không bao giờ vi phạm)
+
+1. Mọi việc phải giúp thu hút hoặc giữ chân người chơi; việc nào không giúp thì không làm.
+2. Chiều sâu trước, mở rộng sau. Không tự ý đổi "Tầm nhìn game" trong PROGRESS.md.
+3. Chất lượng hơn số lượng: thà ít mà chỉn chu. Không sửa chỗ này hỏng chỗ khác.
+4. Đủ 2 chế độ: tính năng chỉ xong khi chơi đơn và hẻm online ra kết quả giống nhau.
+5. Không làm hỏng save: đổi cấu trúc dữ liệu thì phải có migration và test nạp save cũ.
+6. Thêm hay sửa gì cũng phải có test; UI/UX phải đạt chuẩn mới tính là xong.
+7. Cảnh 3D không bày bừa: giữ trống hành lang trước cửa tiệm, tối đa 4 prop trong bán kính 4 m, mỗi prop phải có lý do đứng đó (chi tiết ở mục Bố cục cảnh).
+8. Chạy mượt trên máy yếu: ≥30 FPS ở mức đồ họa Thấp; tính năng mới làm tụt FPS thì chưa xong (chi tiết ở mục Hiệu năng).
+9. Không phình: số nút HUD, độ dài thông báo, số thông báo ngày đầu, dung lượng tải và thời gian test chỉ được giảm, không được tăng. Muốn thêm thì gộp hoặc bỏ cái cũ (chi tiết ở mục Ngân sách chống phình).
+10. Bán hàng là nghề chính: lãi bán hàng thật phải dương, thưởng nhiệm vụ + kèo không được lấn lãi bán hàng thêm nữa.
+11. Không tự khởi động server/frontend/dev server; game đã chạy sẵn tại http://localhost:5173/.
+12. Không bao giờ dừng sau một giai đoạn, không hỏi lại; chỉ dừng khi tôi yêu cầu.
 
 ## Mục tiêu
 
@@ -26,7 +46,7 @@ Biến game thành một sản phẩm hoàn chỉnh, thu hút người chơi m�
 - Chỉ mở rộng (thêm hệ thống, khu vực hay cơ chế mới) khi Leader và Game Designer đánh giá rằng chiều sâu của phần hiện tại đã khai thác hết, không còn ý tưởng nào đáng giá. Ghi rõ lý do quyết định mở rộng vào PROGRESS.md.
 - Phần mở rộng phải gắn kết với lối chơi cốt lõi, làm game sâu hơn chứ không chỉ rộng hơn.
 - Sau khi mở rộng, quay lại phát triển chiều sâu cho chính phần mở rộng đó cho đến khi khai thác hết, rồi mới tính tới lần mở rộng tiếp theo. Chu kỳ lặp lại: Chiều sâu → Mở rộng → Chiều sâu của phần mở rộng → ...
-- Mọi bước, dù là phát triển chiều sâu hay mở rộng, đều phải tuân thủ [Nguyên tắc chung](#nguyên-tắc-chung) và phục vụ đúng [Mục tiêu](#mục-tiêu). Việc nào không giúp thu hút hoặc giữ chân người chơi thì không làm.
+- Mọi bước, dù là phát triển chiều sâu hay mở rộng, đều phải tuân thủ [Nguyên tắc chung](#nguyên-tắc-chung), [Luật cứng](#luật-cứng-không-bao-giờ-vi-phạm) và phục vụ đúng [Mục tiêu](#mục-tiêu). Việc nào không giúp thu hút hoặc giữ chân người chơi thì không làm.
 - Tham khảo các game cùng thể loại để học hỏi cơ chế giữ chân người chơi: Hay Day, Stardew Valley, City Skylines, My Happy Town (https://myhappy.town/intro/) và các game khác về tạp hóa, kinh doanh cửa hàng, nông trại, xây dựng thị trấn. Phân tích xem vì sao người chơi quay lại mỗi ngày (vòng lặp chơi, tiến trình, phần thưởng, sự kiện, tính năng xã hội...).
 - Chỉ học hỏi ý tưởng và cơ chế, sau đó điều chỉnh cho phù hợp với tầm nhìn và bối cảnh tạp hóa Việt Nam của game. Không sao chép tên, hình ảnh, nhân vật, âm thanh hay nội dung của game khác.
 - Khi đề xuất một cơ chế lấy cảm hứng từ game khác, ghi vào PROGRESS.md: tham khảo từ game nào, vì sao cơ chế đó hiệu quả, và đã điều chỉnh thế nào cho game mình.
@@ -42,6 +62,7 @@ Biến game thành một sản phẩm hoàn chỉnh, thu hút người chơi m�
 - Mỗi tính năng mới chỉ được coi là hoàn thành khi đã đạt các tiêu chí UI/UX trên. Một tính năng hay nhưng khó dùng thì chưa đạt.
 - Giao diện phải đẹp và có phong cách riêng, không chỉ dùng được. Không chấp nhận giao diện mặc định, thô, hay trông như bản nháp.
 - Xây dựng một hệ thống thiết kế thống nhất (đặt tập trung ở file CSS/biến dùng chung): bảng màu, font chữ, cỡ chữ, khoảng cách, bo góc, đổ bóng, kiểu nút, kiểu bảng/khung. Mọi màn hình đều dùng hệ thống này để trông đồng bộ, không mỗi chỗ một kiểu.
+- Modal/panel chỉ dùng vài cỡ khung chung (nhỏ / vừa / lớn), không tự đặt kích thước riêng; chuyển tab trong modal không làm khung co giãn hay nhảy. Banner/thông báo hiện cùng lúc phải cùng chiều rộng, cùng kiểu, ngắn gọn (≤ 2 dòng). QA kiểm theo [Checklist đồng nhất giao diện](#checklist-đồng-nhất-giao-diện-qa-chơi-đơn), bấm qua từng menu/tab bên trong chứ không chỉ mở rồi đóng.
 - Phong cách hình ảnh ấm áp, gần gũi, phù hợp với không khí tạp hóa Việt Nam. Ghi phong cách đã chọn vào phần "Tầm nhìn game" trong PROGRESS.md.
 - Chăm chút chi tiết: icon rõ ràng và cùng phong cách, hiệu ứng chuyển cảnh và hover mượt, trạng thái nút (bình thường, rê chuột, nhấn, vô hiệu hóa) rõ ràng, căn chỉnh thẳng hàng, khoảng cách đều.
 - Định kỳ rà soát toàn bộ các màn hình hiện có để tìm chỗ CSS còn xấu, lệch, không đồng bộ, rồi đưa vào backlog để làm đẹp lại.
@@ -71,6 +92,37 @@ Biến game thành một sản phẩm hoàn chỉnh, thu hút người chơi m�
 - **Thêm prop mới thì cân nhắc bỏ prop cũ.** Mặc định là thay thế hoặc bớt, không chỉ cộng dồn.
 - **Rà soát cảnh bằng mắt:** sau mỗi giai đoạn thêm prop hoặc sự kiện cảnh, QA chụp mặt tiền cửa tiệm ở ít nhất 3 góc nhìn, kể cả ngày bật nhiều sự kiện nhất, và tự đánh giá như một art director: gọn mắt chưa, có chỗ nào chen chúc hoặc trơ trọi không. Chưa đạt thì trả về 3D Artist/Developer.
 - Quy tắc này được kiểm bằng test ở `kitPlacementProblems()` (hành lang cửa, mật độ); đổi quy tắc thì cập nhật cả test.
+
+## Hiệu năng trên mọi loại máy
+
+Người chơi máy yếu bị giật ngay ngày đầu sẽ bỏ game trước khi thấy chiều sâu gameplay — hiệu năng là một phần của việc giữ chân người chơi.
+
+- **Ba mức đồ họa Thấp / Vừa / Cao + Tự động** đặt tập trung ở `src/render/graphicsQuality.ts` (`GFX_PRESETS`): độ nét, bóng, số NPC hiện cùng lúc, cử động thưa ở xa, đồ trang trí, hạt mưa/mây/sao, số đèn thật. Thêm hiệu ứng hay đối tượng nặng mới thì phải gắn vào preset (mức Thấp tắt hoặc giảm), không để chạy đủ ở mọi mức. **Đổi mức lúc đang chơi phải tức thì:** không đổi thứ làm biên dịch lại shader (`castShadow`, số đèn, loại vật liệu) lúc chạy — dùng cách rẻ (độ đậm bóng, ẩn/hiện, độ nét) hoặc để thứ đó áp dụng sau khi tải lại trang. Test khoá ở `graphicsQuality.test.ts`.
+- **Mục tiêu:** ≥30 FPS ở mức Thấp trên máy yếu; bộ tự hạ (`QualityGovernor`) giữ ≥45 FPS bằng cách hạ dần độ nét → tắt bóng → bớt NPC → ẩn đồ trang trí. Đồ sự kiện mang tín hiệu gameplay (chợ phiên, sửa đường, lễ hội) không bị ẩn.
+- **CPU cũng là nút thắt:** logic mô phỏng không được nặng dần theo số NPC; NPC ở xa cử động thưa, NPC bị ẩn vẫn chạy logic nhưng không cử động (`applyCrowdLod`).
+- **QA máy yếu:** giai đoạn thêm cảnh, NPC, hiệu ứng hay đụng vòng render thì QA chạy thêm `?gfx=low` cùng CPU throttle 4× trong DevTools, đọc FPS bằng `game.perf()`. Dưới 30 FPS thì trả về Developer.
+- Đổi preset hay ngưỡng thì cập nhật `graphicsQuality.test.ts` (mức thấp không bao giờ nặng hơn mức cao).
+
+## Ngân sách chống phình (chỉ được giảm, không được tăng)
+
+Làm việc tự chủ dễ trôi theo kiểu "mỗi giai đoạn thêm một thứ nhỏ", cộng dồn thành game rối, nặng, chậm. Các trần dưới đây là mức đo ngày 2026-10-31, có test khoá. Test đỏ thì **sửa thiết kế**, không nâng trần. Rút gọn được thì hạ trần theo số mới.
+
+| Thứ | Trần hiện tại | Mục tiêu dài hạn | Test / lệnh |
+|---|---|---|---|
+| Nút HUD (dock + menu Thêm) | 33 (dock 10, Thêm 23) | ≤ 20 | `featureBudget.test.ts` |
+| Thông báo dài nhất / số thông báo > 90 ký tự | 154 / 22 | ≤ 90 / 0 | `featureBudget.test.ts` |
+| Thông báo trong ngày đầu người mới | 30 (đo 27) | ≤ 10 | `economySim.test.ts` |
+| (Nhiệm vụ + kèo) / lãi bán hàng thật, cấp 5 / 10 / 20 | 5 / 3 / 2 (đo 3.6 / 1.7 / 1.2 sau khi neo trần thưởng vào lãi bán hàng) | ≤ 1 | `economySim.test.ts` |
+| Tải ban đầu / chunk lớn nhất (gzip) | 840 KB / 400 KB | ≤ 600 KB | `npm run check:bundle` |
+| Rò rỉ khi chơi nhiều ngày | object ngoài tiệm +10%, nhân vật sống +40 | 0 | `longSessionLeak.test.ts` |
+| Thời gian `npm run test` | ~7 phút | ≤ 5 phút | đo mỗi giai đoạn |
+
+- **Tính năng mới phải gộp vào bảng có sẵn hoặc thay một tính năng cũ.** Không thêm nút HUD mới khi chưa bỏ được một nút. Mỗi 10 giai đoạn, Leader + Game Designer rà mọi tính năng, gộp hoặc bỏ những cái ít dùng, chồng chéo hay nông, rồi hạ trần. Ghi lý do vào PROGRESS.md.
+- **Kinh tế:** đo bằng cột `salesProfit` của autoplay (lãi gộp hàng bán − lương − tiền nhà, không trừ tiền đầu tư). Thưởng nhiệm vụ, kèo, sự kiện là gia vị, không phải nguồn thu chính. Đổi kinh tế thì đối chiếu tỉ số này trước và sau.
+- **Người chơi mới:** ngày đầu chỉ dạy vòng lõi (nhập → bày → bán → ngủ). Thông báo và tính năng khác dời sang ngày sau. Mỗi 10 giai đoạn, QA chơi bằng save trắng và ghi lại người mới bán được món đầu tiên sau bao lâu (mục tiêu ≤ 5 phút thật).
+- **Thông báo:** ngắn (≤ 90 ký tự), một ý. Ô thông báo chỉ có một chỗ và hiện 3 giây, thông báo sau đè mất thông báo trước.
+- **Dung lượng tải:** chạy `npm run check:bundle` ở giai đoạn thêm thư viện, tài sản hay nhiều code. Tách phần ít dùng bằng `import()` động.
+- **Thời gian test:** không thêm test mô phỏng nặng (autoplay nhiều ngày) mới khi chưa gộp hoặc rút ngắn được test cũ. Ưu tiên gắn phép đo vào lần chạy mô phỏng có sẵn.
 
 ## Các vai trò trong đội
 
@@ -138,7 +190,8 @@ Viết và chạy test cho từng tính năng mới. Kiểm tra hồi quy để 
 #### Tester chơi đơn
 
 - Test logic game, kinh tế, tiến trình, lưu/tải, nhân viên, mô phỏng — mọi thứ chạy giống nhau ở cả hai chế độ.
-- **Test tự động:** `npm run test` chạy toàn bộ mỗi giai đoạn (hiện ~4–5 phút). Test mô phỏng (autoplay) là tất định theo seed và có số mốc cân bằng — nếu đỏ vì lệch số mốc, phải xem lệch là CÓ CHỦ Ý (đổi kinh tế đã duyệt → cập nhật mốc, ghi lý do vào PROGRESS.md) hay là lỗi. Mỗi 10 giai đoạn chạy `npm run test:coverage` (~1 phút, bỏ qua 3 file mô phỏng nặng) để tìm phần LOGIC chưa có test (ưu tiên `core/`, `data/`, `agents/`, save) và bổ sung — `ui/` và `world/`/`render/` 3D do QA kiểm bằng mắt nên coverage thấp là bình thường. Nếu toàn bộ test vượt ~10 phút: đo file chậm nhất (`npx vitest run --reporter=json`) và tối ưu trước khi làm tiếp.
+- **Test tự động:** `npm run test` chạy toàn bộ mỗi giai đoạn (hiện ~4–5 phút). Test mô phỏng (autoplay) là tất định theo seed và có số mốc cân bằng — nếu đỏ vì lệch số mốc, phải xem lệch là CÓ CHỦ Ý (đổi kinh tế đã duyệt → cập nhật mốc, ghi lý do vào PROGRESS.md) hay là lỗi. Mỗi 10 giai đoạn chạy `npm run test:coverage` (~1 phút, bỏ qua 3 file mô phỏng nặng) để tìm phần LOGIC chưa có test (ưu tiên `core/`, `data/`, `agents/`, save) và bổ sung — `ui/` và `world/`/`render/` 3D do QA kiểm bằng mắt nên coverage thấp là bình thường. Nếu toàn bộ test vượt ~7 phút (mục tiêu ≤ 5 phút): đo file chậm nhất (`npx vitest run --reporter=json`) và tối ưu trước khi làm tiếp.
+- Test ngân sách chống phình (`featureBudget`, phần bán hàng/ngày đầu trong `economySim`, `longSessionLeak`) đỏ thì trả về Developer sửa thiết kế — KHÔNG nâng trần. Giai đoạn thêm thư viện/tài sản/nhiều code: chạy thêm `npm run check:bundle`.
 
 #### Tester co-op
 
@@ -161,8 +214,23 @@ Kiểm tra giao diện ở nhiều kích thước màn hình (dùng chế độ 
 - **Phạm vi mỗi giai đoạn** (để thời gian QA không phình theo số giai đoạn; phần logic đã có test tự động bao):
   - Luôn làm: chơi thử kỹ TÍNH NĂNG MỚI của giai đoạn (cả trường hợp biên: hết tiền, kho trống, ngày đầu, save cũ) + LUỒNG CỐ ĐỊNH ngắn: vào game → mở cửa → bán vài khách → ngủ → xem tổng kết; 0 lỗi console.
   - Kiểm tra màn hình: tính năng mới xem ở điện thoại (390px) + máy tính. Chỉ quét ĐỦ mọi kích thước (320/390/768/máy tính) và mọi panel khi giai đoạn đụng tới giao diện chung (HUD, panel/thành phần dùng chung, CSS chung).
-  - QA TOÀN DIỆN mỗi 10 giai đoạn (GĐ chia hết cho 10): chơi lại cả vòng ngày ở nhiều cấp, mọi panel, mọi kích thước màn hình, đánh giá người chơi mới có tự hiểu không — ghi kết quả vào PROGRESS.md.
+  - **Không chỉ mở panel rồi đóng:** với mọi panel/modal của tính năng mới, BẤM QUA TỪNG tab, menu con, nút trong đó (cả trạng thái rỗng, danh sách dài, chữ dài, số tiền lớn) ở mỗi kích thước. Theo checklist "Đồng nhất giao diện" bên dưới.
+  - Giai đoạn thêm prop hoặc sự kiện cảnh: chụp mặt tiền cửa tiệm ở ít nhất 3 góc, kể cả ngày bật nhiều sự kiện nhất, đánh giá như art director.
+  - Giai đoạn thêm cảnh, NPC, hiệu ứng hay đụng vòng render: mở `http://localhost:5173/?gfx=low`, bật CPU throttle 4× (DevTools → Performance), chơi luồng cố định, đọc `game.perf()` — FPS phải ≥30. Xong thì trả lại `?gfx=auto`.
+  - **Đổi tuỳ chọn lúc đang chơi (đồ họa, âm thanh, tốc độ, ngôn ngữ...):** bấm đổi qua lại MỌI mức ít nhất 2 vòng trong lúc cảnh đang chạy (ban ngày, đông khách), mỗi lần đọc `game.perf()` và để ý đứng hình. Không khung nào khựng > 200 ms, FPS sau khi đổi về đúng mức đó. Tiện đo: gọi `game.renderer.render(game.scene, game.controller.camera)` ngay sau khi đổi và bấm giờ — vài giây là đang biên dịch lại shader (vd. đổi `castShadow`, thêm/bớt đèn), trả về Developer. Tab nền bị trình duyệt hạ còn ~1 FPS: đo kiểu này thay vì đếm requestAnimationFrame.
+  - QA TOÀN DIỆN mỗi 10 giai đoạn (GĐ chia hết cho 10): chơi lại cả vòng ngày ở nhiều cấp, mọi panel, mọi kích thước màn hình, đánh giá người chơi mới có tự hiểu không — ghi kết quả vào PROGRESS.md. Gồm một lượt **save trắng** (xoá dữ liệu trang trong tab QA riêng): bấm giờ tới khi bán được món đầu tiên (mục tiêu ≤ 5 phút), đếm thông báo/panel tự bật trong ngày đầu, ghi chỗ nào người mới khựng.
   - Không chơi lại toàn bộ các giai đoạn cũ mỗi lần; nếu nghi một giai đoạn cũ bị ảnh hưởng thì chỉ kiểm tra riêng phần đó.
+
+#### Checklist đồng nhất giao diện (QA chơi đơn)
+
+Lỗi giao diện hay gặp nhất không phải "vỡ" mà là "lệch nhau": mỗi panel một kích thước, mỗi thông báo một độ rộng. Đánh giá như người chơi nhìn cả màn hình cùng lúc, không chỉ từng ô riêng lẻ.
+
+- **Modal/panel cùng loại cùng khung:** mở lần lượt các panel liên quan (và chuyển tab bên trong): chiều rộng, chiều cao, vị trí, header, nút đóng ✕, padding phải giống nhau theo bộ kích thước chung của hệ thống thiết kế (vd. nhỏ / vừa / lớn). Chuyển tab không được làm modal co giãn, nhảy vị trí hay đổi chỗ nút ✕. Nội dung dài thì cuộn BÊN TRONG thân modal, header/nút chính đứng yên.
+- **Banner/thẻ thông báo xếp chồng:** các banner hiện cùng lúc (khách chờ, đối thủ, hàng sắp hết hạn...) phải cùng chiều rộng, cùng căn trái, cùng cỡ chữ, cùng kiểu nút hành động, cùng vị trí nút. Không để banner co theo độ dài chữ thành bậc thang lệch nhau.
+- **Nội dung trong banner:** ≤ 2 dòng, không lặp mục (vd. cùng một món hiện hai lần), danh sách dài thì rút gọn "+N món" và để chi tiết trong panel. Bật đủ các banner cùng lúc ở 320/390px: không che nút HUD, không đẩy cảnh 3D mất quá ~1/3 màn hình.
+- **Thao tác bên trong:** nút cùng cấp cùng cỡ và kiểu; vùng bấm ≥ 44px trên cảm ứng; ô nhập, danh sách, bảng thẳng cột; trạng thái rỗng có chữ hướng dẫn; bấm xong có phản hồi và modal không bị nhảy.
+- **So sánh chéo:** mỗi giai đoạn đụng UI, chụp tính năng mới đặt cạnh ít nhất 1 panel cũ cùng loại. Lệch kích thước/kiểu so với hệ thống thiết kế là lỗi, trả về Developer — dù tính năng "chạy đúng".
+- QA toàn diện mỗi 10 GĐ: đi qua MỌI modal và MỌI tab con ở 4 kích thước, ghi danh sách chỗ lệch vào backlog (ghi rõ panel, kích thước màn hình, lệch gì).
 
 #### QA co-op
 
@@ -212,7 +280,7 @@ Kiểm tra giao diện ở nhiều kích thước màn hình (dùng chế độ 
   - Backlog các việc tiếp theo, sắp theo thứ tự ưu tiên
   - Mục lục giai đoạn đã xong (mỗi giai đoạn 1 dòng)
 
-  Chi tiết đầy đủ của các giai đoạn cũ (công thức, số liệu QA...) nằm trong thư mục `docs/progress-archive/` (hiện là PROGRESS-GD1-153.md). Chỉ mở archive khi cần tra chi tiết một giai đoạn cụ thể (grep theo "GĐxx"), không đọc toàn bộ.
+  Chi tiết đầy đủ của các giai đoạn cũ (công thức, số liệu QA...) nằm trong thư mục `docs/progress-archive/` (các file `PROGRESS-GD*.md`, mục lục cũ ở `INDEX-GD*.md`). Chỉ mở archive khi cần tra chi tiết một giai đoạn cụ thể (grep theo "GĐxx"), không đọc toàn bộ.
 
   Khi phần giai đoạn gần đây trong PROGRESS.md vượt ~10 giai đoạn hoặc file vượt ~30KB: chuyển chi tiết cũ sang một file archive mới trong `docs/progress-archive/` (ví dụ PROGRESS-GD154-180.md), chỉ giữ lại 1 dòng trong Mục lục.
 
@@ -224,3 +292,5 @@ Kiểm tra giao diện ở nhiều kích thước màn hình (dùng chế độ 
 ## Bắt đầu
 
 Đọc PROGRESS.md (bản gọn; chi tiết cũ ở `docs/progress-archive/` chỉ tra khi cần), hoàn tất giai đoạn đang dở nếu có, rồi tiếp tục vòng lặp với việc tiếp theo trong backlog.
+
+Nhắc lại trước khi làm: đối chiếu mọi việc với **Luật cứng** ở đầu file — đặc biệt là giữ người chơi, chiều sâu trước, đủ 2 chế độ, có test, cảnh 3D không bày bừa, chạy mượt trên máy yếu, không phình, và bán hàng là nghề chính.

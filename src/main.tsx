@@ -578,7 +578,10 @@ let lastPerfDay = -1;
 function applyGfx() {
   const p = gfx.preset;
   renderer.setPixelRatio(gfx.step.pixelRatio);
-  lighting.sun.castShadow = p.shadows;
+  // Không đổi castShadow lúc chạy: đổi là mọi vật liệu biên dịch lại pipeline → đứng hình vài giây.
+  // Đã dựng có bóng thì chỉ làm mờ hẳn bóng + ngừng vẽ shadow pass (vòng render đọc preset.shadows);
+  // dựng không bóng (mức Thấp) thì bật bóng phải chờ tải lại trang.
+  if (lighting.sun.castShadow) lighting.sun.shadow.intensity = p.shadows ? 1 : 0;
   world.kit.setDecor(p.decor);
   reportGfx(gfxChoice, gfx.step.level, gfx.avgFps);
 }
@@ -588,7 +591,7 @@ onGfxChoice((c) => {
   const level = c === 'auto' ? detectLevel(readDeviceHints()) : c;
   gfx = new QualityGovernor(level, nativeDpr, c === 'auto');
   applyGfx();
-  useGame.getState().notify(`🎨 Đồ họa: ${GFX_LABEL[c]}. Mưa, mây và khử răng cưa đổi theo sau khi tải lại trang.`);
+  useGame.getState().notify(`🎨 Đồ họa: ${GFX_LABEL[c]}. Bóng, mưa, mây đổi hẳn sau khi tải lại trang.`);
 });
 renderer.shadowMap.autoUpdate = false;
 let frameNo = 0;

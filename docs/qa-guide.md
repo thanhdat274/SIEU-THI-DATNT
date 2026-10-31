@@ -55,8 +55,21 @@ Chơi như người thật trên http://localhost:5173/: đánh giá trải nghi
 - **Phạm vi mỗi giai đoạn:**
   - Luôn làm: chơi kỹ TÍNH NĂNG MỚI (cả biên: hết tiền, kho trống, ngày đầu, save cũ) + LUỒNG CỐ ĐỊNH ngắn: vào game → mở cửa → bán vài khách → ngủ → xem tổng kết; 0 lỗi console.
   - Màn hình: tính năng mới xem ở điện thoại (390px) + máy tính. Chỉ quét ĐỦ (320/390/768/máy tính) và mọi panel khi giai đoạn đụng giao diện chung (HUD, thành phần dùng chung, CSS chung).
+  - **Không chỉ mở panel rồi đóng:** với mọi panel/modal của tính năng mới, BẤM QUA TỪNG tab, menu con, nút trong đó (cả trạng thái rỗng, danh sách dài, chữ dài, số tiền lớn) ở mỗi kích thước. Theo checklist "Đồng nhất giao diện" bên dưới.
+
+## Checklist đồng nhất giao diện (QA chơi đơn)
+
+Lỗi giao diện hay gặp nhất không phải "vỡ" mà là "lệch nhau": mỗi panel một kích thước, mỗi thông báo một độ rộng. Đánh giá như người chơi nhìn cả màn hình cùng lúc, không chỉ từng ô riêng lẻ.
+
+- **Modal/panel cùng loại cùng khung:** mở lần lượt các panel liên quan (và chuyển tab bên trong): chiều rộng, chiều cao, vị trí, header, nút đóng ✕, padding phải giống nhau theo bộ kích thước chung của hệ thống thiết kế (vd. nhỏ / vừa / lớn). Chuyển tab không được làm modal co giãn, nhảy vị trí hay đổi chỗ nút ✕. Nội dung dài thì cuộn BÊN TRONG thân modal, header/nút chính đứng yên.
+- **Banner/thẻ thông báo xếp chồng:** các banner hiện cùng lúc (khách chờ, đối thủ, hàng sắp hết hạn...) phải cùng chiều rộng, cùng căn trái, cùng cỡ chữ, cùng kiểu nút hành động, cùng vị trí nút. Không để banner co theo độ dài chữ thành bậc thang lệch nhau.
+- **Nội dung trong banner:** ≤ 2 dòng, không lặp mục (vd. cùng một món hiện hai lần), danh sách dài thì rút gọn "+N món" và để chi tiết trong panel. Bật đủ các banner cùng lúc ở 320/390px: không che nút HUD, không đẩy cảnh 3D mất quá ~1/3 màn hình.
+- **Thao tác bên trong:** nút cùng cấp cùng cỡ và kiểu; vùng bấm ≥ 44px trên cảm ứng; ô nhập, danh sách, bảng thẳng cột; trạng thái rỗng có chữ hướng dẫn; bấm xong có phản hồi và modal không bị nhảy.
+- **So sánh chéo:** mỗi giai đoạn đụng UI, chụp tính năng mới đặt cạnh ít nhất 1 panel cũ cùng loại. Lệch kích thước/kiểu so với hệ thống thiết kế là lỗi, trả về Developer — dù tính năng "chạy đúng".
+- QA toàn diện mỗi 10 GĐ: đi qua MỌI modal và MỌI tab con ở 4 kích thước, ghi danh sách chỗ lệch vào backlog (ghi rõ panel, kích thước màn hình, lệch gì).
   - Giai đoạn thêm prop hoặc sự kiện cảnh: chụp mặt tiền cửa tiệm ở ít nhất 3 góc, kể cả ngày bật nhiều sự kiện nhất, đánh giá như art director (xem mục bố cục trong `promt_game.md`).
   - Giai đoạn thêm cảnh, NPC, hiệu ứng hay đụng vòng render: mở `http://localhost:5173/?gfx=low`, bật CPU throttle 4× (DevTools → Performance), chơi luồng cố định, đọc `game.perf()` — FPS phải ≥30. Xong thì trả lại `?gfx=auto`.
+  - **Đổi tuỳ chọn lúc đang chơi (đồ họa, âm thanh, tốc độ, ngôn ngữ...):** bấm đổi qua lại MỌI mức ít nhất 2 vòng trong lúc cảnh đang chạy (ban ngày, đông khách), mỗi lần đọc `game.perf()` và để ý đứng hình. Không khung nào khựng > 200 ms, FPS sau khi đổi về đúng mức đó. Tiện đo: gọi `game.renderer.render(game.scene, game.controller.camera)` ngay sau khi đổi và bấm giờ — vài giây là đang biên dịch lại shader (vd. đổi `castShadow`, thêm/bớt đèn), trả về Developer. Tab nền bị trình duyệt hạ còn ~1 FPS: đo kiểu này thay vì đếm requestAnimationFrame.
   - QA TOÀN DIỆN mỗi 10 giai đoạn: chơi lại cả vòng ngày ở nhiều cấp, mọi panel, mọi kích thước, đánh giá người chơi mới — ghi kết quả vào PROGRESS.md. Gồm một lượt **save trắng** (xoá dữ liệu trang trong tab QA riêng): bấm giờ tới khi bán được món đầu tiên (mục tiêu ≤ 5 phút), đếm thông báo/panel tự bật trong ngày đầu, ghi chỗ nào người mới khựng.
   - Không chơi lại toàn bộ giai đoạn cũ; nghi giai đoạn cũ bị ảnh hưởng thì chỉ kiểm riêng phần đó.
 

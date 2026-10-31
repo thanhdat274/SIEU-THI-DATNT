@@ -179,3 +179,12 @@ describe('giới hạn đám đông (Walker)', () => {
     for (const w of [...ws, hidden]) w.dispose();
   });
 });
+
+describe('Đổi mức đồ họa lúc chạy không làm đứng hình', () => {
+  it('main.tsx không gán sun.castShadow lúc chạy (đổi là biên dịch lại mọi pipeline ~2s)', async () => {
+    const { readFileSync } = await import('node:fs');
+    const src = readFileSync(new URL('../main.tsx', import.meta.url), 'utf8');
+    expect(src).not.toMatch(/sun\.castShadow\s*=[^=]/);
+    expect(src).toMatch(/sun\.shadow\.intensity\s*=/);
+  });
+});
