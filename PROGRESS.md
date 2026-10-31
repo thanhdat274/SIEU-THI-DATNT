@@ -148,3 +148,4 @@
 - GĐ468: Bảng quán nước ghi '🎉 Cuối tuần: khách đông hơn ×1.2' vào T7/CN.
 - GĐ469: Ước tính chở/nạp đồ uống cho quán (teahouseHaul, đơn nhập) tính cả cuối tuần ×1.2.
 - GĐ470: Ghi Cần duyệt nâng tiệm xôi thành cửa hàng nhỏ (chờ người dùng chọn).
+- GĐ471: Bảng quán ghi rõ 'bậc x/3: Quầy nước → Quán nước → Quán cà phê — cùng một cửa hàng' (người dùng tưởng cà phê là tiệm riêng).
