@@ -169,3 +169,4 @@
 - GĐ445: Gợi ý phím J ghi số phần xôi sẽ đồ.
 - GĐ446: Gợi ý phím P ở quầy pha ghi số mẻ tự pha còn lại trong ngày.
 - GĐ447: Sạp xôi 3D bốc hơi to khi chủ đã đồ mẻ hôm nay (setSteaming).
+- GĐ448: QA sandbox: gợi ý J 'Tự đồ 35 phần xôi' (3 thợ) và 'hôm nay đã đồ' đúng.
