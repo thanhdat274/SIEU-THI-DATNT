@@ -51,6 +51,8 @@ import { pushCloudSave } from './net/cloud';
 import { cancelSleep, checkpoint, inAlley, initCoop, isGuest, partnerPositions, updateCoop } from './net/coop';
 import { watchUser } from './net/firebase';
 import { useSession } from './net/session';
+import { openZones, zoneBlockRects, zoneById } from './data/zones';
+import { formatMoney } from './data/products';
 
 // Thời gian đứng yên cho tới khi rời màn đăng nhập
 useGame.setState({ speed: 0 });
@@ -86,8 +88,8 @@ try {
 } catch { /* chế độ ẩn danh */ }
 const tiltChoice = tiltPick ?? tiltSaved;
 const tiltShift = (tiltChoice ? tiltChoice === 'on' : !LOW_POWER) ? createTiltShift(renderer, scene, camera) : null;
-// Lưới đi bộ phủ cả mặt đất 160×160 (±80m) để đi bộ tới được cửa hàng tiện lợi 24/7 (x=60, z=-64)
-const grid = new NavGrid(80);
+// Lưới đi bộ ±120m (GĐ500): hẻm ±80 + chỗ cho khu mở rộng; ngoài khu đã mở là tường vô hình (zoneBlockRects)
+const grid = new NavGrid(120);
 const world = createWorld(scene, grid);
 const { shop } = world;
 const customers = new CustomerManager(scene, grid, shop);
@@ -359,6 +361,26 @@ const syncTiemXoi = () => {
 syncTiemXoi();
 useGame.subscribe(syncTiemXoi);
 
+// GĐ500: khu bản đồ — chặn lưới ngoài khu đã mở; Ngõ 2 (tải lười) có rào RAO BÁN khi chưa mở
+let lastZonesKey = '';
+let ngo2View: import('./world/ngo2').Ngo2View | null = null;
+const syncZones = () => {
+  const zones = useGame.getState().biz.zones;
+  const key = openZones(zones).join(',');
+  ngo2View?.setOpen(key.includes('ngo2'));
+  if (key === lastZonesKey) return;
+  lastZonesKey = key;
+  grid.setStatic('zones', zoneBlockRects(zones, grid.extent).map((r) => new THREE.Box3(new THREE.Vector3(r.x1, 0, r.z1), new THREE.Vector3(r.x2, 2, r.z2))));
+  shop.attachGrid(grid);
+};
+syncZones();
+useGame.subscribe(syncZones);
+void import('./world/ngo2').then((m) => {
+  ngo2View = m.createNgo2();
+  scene.add(ngo2View.group);
+  ngo2View.setOpen(openZones(useGame.getState().biz.zones).includes('ngo2'));
+});
+
 // Cửa hàng tiện lợi theo trạng thái sở hữu (GĐ26): mảnh đất RAO BÁN khi đủ cấp chưa mua, toà nhà +
 // biển "ĐÓNG CỬA" khi đã mua, biển "MỞ CỬA 24/7" khi đang mở. Toà nhà cửa hàng tiện lợi (convenience)
 // là của chính nó, không chạm vào thế giới; chỉ bật/ẩn theo `branchStandState` trong subscribe.
@@ -475,6 +497,14 @@ const fixedInteractables: Interactable[] = [
       else if (g.biz.tiemXoi?.open) g.openPanel({ type: 'quannuoc' });
       else if (g.level >= 40) g.openPanel({ type: 'quannuoc' });
     } },
+  // GĐ500: rào RAO BÁN đầu Ngõ 2 (x≈79, cuối đường chính phía đông) bấm L để mở khu
+  { position: new THREE.Vector3(78.6, 0, 4), radius: 3,
+    hint: () => {
+      const g = useGame.getState();
+      if (openZones(g.biz.zones).includes('ngo2')) return '';
+      const z = zoneById('ngo2')!;
+      return g.level < z.unlock ? `Ngõ 2: mở ở cấp ${z.unlock}` : `[L] Mở ${z.name} ${formatMoney(z.cost)}`;
+    }, key: 'KeyL', action: () => { useGame.getState().openZone('ngo2'); } },
   { position: world.farm.wellSpot, radius: 2.6, hint: () => '[T] Tưới luống từ giếng', key: 'KeyT', action: () => useGame.getState().waterGarden() },
 ];
 

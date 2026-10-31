@@ -46,3 +46,21 @@ export function canOpenZone(id: string, saved: readonly string[] | undefined, le
   if (money < z.cost) return 'money';
   return 'ok';
 }
+
+export interface Rect { x1: number; z1: number; x2: number; z2: number }
+
+/**
+ * Vùng cấm đi (GĐ500): phần lưới ±extent không thuộc khu đã mở, chia theo lưới toạ độ ranh giới khu.
+ * Khu chưa mở thành tường vô hình; mở khu thì bỏ chặn.
+ */
+export function zoneBlockRects(saved: readonly string[] | undefined, extent = 120): Rect[] {
+  const open = openZones(saved).map((id) => zoneById(id)!.bounds);
+  const xs = [...new Set([-extent, extent, ...ZONES.flatMap((z) => [z.bounds.x1, z.bounds.x2])])].sort((a, b) => a - b);
+  const zs = [...new Set([-extent, extent, ...ZONES.flatMap((z) => [z.bounds.z1, z.bounds.z2])])].sort((a, b) => a - b);
+  const out: Rect[] = [];
+  for (let i = 0; i + 1 < xs.length; i++) for (let j = 0; j + 1 < zs.length; j++) {
+    const cx = (xs[i] + xs[i + 1]) / 2, cz = (zs[j] + zs[j + 1]) / 2;
+    if (!open.some((b) => cx >= b.x1 && cx < b.x2 && cz >= b.z1 && cz < b.z2)) out.push({ x1: xs[i], z1: zs[j], x2: xs[i + 1], z2: zs[j + 1] });
+  }
+  return out;
+}

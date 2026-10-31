@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ZONES, canOpenZone, openZones, zoneAt } from '../data/zones';
+import { ZONES, canOpenZone, openZones, zoneAt, zoneBlockRects } from '../data/zones';
 
 /** GĐ497 — khung khu bản đồ (bước 1 mở rộng bản đồ). */
 describe('khu bản đồ', () => {
@@ -47,5 +47,19 @@ describe('GĐ498: openZone', () => {
     expect(g().openZone('ngo2')).toBe(false);
     expect(g().openZone('hem')).toBe(false);
     for (const m of msgs) expect(m.length).toBeLessThanOrEqual(90);
+  });
+});
+
+describe('zoneBlockRects (GĐ500)', () => {
+  const inside = (rs: { x1: number; z1: number; x2: number; z2: number }[], x: number, z: number) =>
+    rs.some((r) => x >= r.x1 && x < r.x2 && z >= r.z1 && z < r.z2);
+  it('chặn Ngõ 2 khi chưa mở, bỏ chặn khi mở; hẻm luôn đi được', () => {
+    const closed = zoneBlockRects(undefined);
+    expect(inside(closed, 100, 5)).toBe(true);
+    expect(inside(closed, 0, 0)).toBe(false);
+    expect(inside(closed, -100, 0)).toBe(true);
+    const open = zoneBlockRects(['ngo2']);
+    expect(inside(open, 100, 5)).toBe(false);
+    expect(inside(open, 100, 60)).toBe(true);
   });
 });
