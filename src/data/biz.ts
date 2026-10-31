@@ -1067,6 +1067,8 @@ export const HOME_ITEMS: HomeItem[] = [
 export const homeRest = (owned: string[]) => owned.reduce((n, id) => n + (HOME_ITEMS.find((h) => h.id === id)?.rest ?? 0), 0);
 
 export const BREAKFAST = { price: 20000, speed: 0.1, lateMinutes: 60 };
+/** Phút trong ngày (tính từ 0h hôm nay) mà quá đó chưa ngủ thì ngất: 02:00 hôm sau, +1h nếu đã ăn sáng. */
+export const faintMinutes = (fedBreakfast: boolean): number => 26 * 60 + (fedBreakfast ? BREAKFAST.lateMinutes : 0);
 
 export type Vehicle = 'none' | 'bike' | 'moto';
 export const VEHICLES: { id: Exclude<Vehicle, 'none'>; icon: string; name: string; price: number; unlock: number; speed: number; travel: number }[] = [
