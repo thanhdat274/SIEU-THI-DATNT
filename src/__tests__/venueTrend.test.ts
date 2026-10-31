@@ -77,3 +77,12 @@ describe('venueTrendSummary — xu hướng 14 ngày cơ sở', () => {
     expect(venueTrendSummary(vt)).toEqual(venueTrendSummary(vt));
   });
 });
+
+describe('GĐ423 — dòng Tiệm xôi trong xu hướng cơ sở', () => {
+  const base = { branchRevenue: 0, branchProfit: 0, branchCustomers: 0, quanRevenue: 0, quanProfit: 0 };
+  it('có xoiNet thì hiện dòng 🍚; save cũ thiếu field thì ẩn', () => {
+    const withXoi = venueTrendSummary([{ day: 1, ...base, xoiNet: 100 }, { day: 2, ...base, xoiNet: 200 }]);
+    expect(withXoi.some((l) => l.label.startsWith('Tiệm xôi'))).toBe(true);
+    expect(venueTrendSummary([{ day: 1, ...base }]).some((l) => l.label.startsWith('Tiệm xôi'))).toBe(false);
+  });
+});

@@ -96,7 +96,7 @@
 
 
 ## Backlog tiếp theo
-- 🙋 **Cần duyệt (GĐ422)** — Người dùng hỏi sao quán nước chưa là cửa hàng như tạp hóa. Hiện là quầy ngoài trời ở (54.4,0,1), sim theo ngày, không vào trong được. Đề xuất: (a) nâng thành cửa hàng nước thật — nhà có quầy pha + tủ mát, khách 3D vào gọi món/ngồi, tự đứng quầy pha, lớn dần quầy→quán→cà phê (thay đổi lớn: sim, nav, migration); (b) giữ quầy, chỉ đẹp/to dần theo cấp; (c) hướng khác. Chờ người dùng chọn; trong lúc chờ làm tiếp tiệm xôi.
+- ✅ **Đã duyệt (a) cửa hàng nước thật** — lộ trình: B1 nhà thật có quầy pha/tủ mát bên trong (hình) → B2 vào trong được (nav) → B3 khách 3D gọi món/ngồi → B4 tự đứng quầy pha → B5 lớn dần quầy→quán→cà phê. Đề xuất gốc GĐ422: — Người dùng hỏi sao quán nước chưa là cửa hàng như tạp hóa. Hiện là quầy ngoài trời ở (54.4,0,1), sim theo ngày, không vào trong được. Đề xuất: (a) nâng thành cửa hàng nước thật — nhà có quầy pha + tủ mát, khách 3D vào gọi món/ngồi, tự đứng quầy pha, lớn dần quầy→quán→cà phê (thay đổi lớn: sim, nav, migration); (b) giữ quầy, chỉ đẹp/to dần theo cấp; (c) hướng khác. Chờ người dùng chọn; trong lúc chờ làm tiếp tiệm xôi.
 
 - 🔍 **Rà 3 cơ sở (GĐ413, theo yêu cầu người dùng trước khi mở rộng tiệm xôi):**
   - Cửa hàng tiện lợi: luật chơi SÂU (ca kíp, mệt mỏi, sự cố đêm, máy bán hàng, điện, nhóm khách đêm). Nợ: BranchPanel 297 dòng gánh hết, cần soát độ rối; chưa có đợt chụp QA 3D.
@@ -144,3 +144,4 @@
 - GĐ419 — QA bằng `?thu=1` (cấp 40, mở đủ 3 cơ sở): bảng phấn quầy vẽ đúng "Trà đá 5k / Cà phê sữa đá 20k / Sinh tố trái cây 28k"; ChapterDialogue tải lười vẫn hiện; save thật giữ nguyên (cấp 1, savedAt trước QA). Mẹo QA: lệnh browser luôn ghi `tabId`.
 - GĐ420 — QA `?thu=1` tiếp: cửa hàng tiện lợi (60,−64) hiện đủ kệ/quầy/biển ĐÓNG CỬA; nông trại (18,−63.5) đủ rào/chuồng/giếng/lối đất. Save thật vẫn cấp 1, savedAt cũ. Mẹo: tab nền không vẽ (màn đen) — `tabs_select` trước khi chụp. Rà 3 cơ sở xong.
 - GĐ421 — 🍚 Sổ đầu ngày có mục Tiệm xôi: hôm qua nấu bao nhiêu, tiết kiệm so với nhập lẻ − lương = lời/lỗ ròng; kho đủ mà thợ dư sức thì gợi ý cho nghỉ bớt (`tiemXoiMorning`).
+- GĐ423 — 🍚 Xu hướng cơ sở thêm dòng Tiệm xôi (tiết kiệm − lương, `xoiNet` tùy chọn cho save cũ). Người dùng duyệt nâng quán nước thành cửa hàng thật.

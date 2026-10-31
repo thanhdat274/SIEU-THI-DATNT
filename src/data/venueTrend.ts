@@ -11,6 +11,8 @@ export interface VenueDay {
   branchMissed?: number;
   quanRevenue: number;
   quanProfit: number;
+  /** Tiệm xôi (GĐ423): tiết kiệm so với nhập lẻ − lương; tùy chọn để save cũ vẫn đọc được. */
+  xoiNet?: number;
 }
 
 /** Số ngày gần nhất giữ để vẽ xu hướng. */
@@ -62,12 +64,14 @@ export function venueTrendSummary(vt: VenueDay[]): VenueTrendLine[] {
     buildLine('🏪', 'Chi nhánh 24/7 (lãi thô)', vt, (d) => d.branchProfit),
     buildLine('🏪', 'Chi nhánh 24/7 (doanh thu)', vt, (d) => d.branchRevenue),
     buildLine('🍹', 'Quán nước (lãi)', vt, (d) => d.quanProfit),
+    buildLine('🍚', 'Tiệm xôi (tiết kiệm − lương)', vt, (d) => d.xoiNet ?? 0),
   ];
   // Ẩn dòng chưa có hoạt động (toàn 0); vẫn hiện chuỗi toàn âm để lỗ không biến mất.
   const active = [
     vt.some((d) => d.branchProfit !== 0),
     vt.some((d) => d.branchRevenue !== 0),
     vt.some((d) => d.quanProfit !== 0),
+    vt.some((d) => (d.xoiNet ?? 0) !== 0),
   ];
   return lines.filter((l, i) => l.days > 0 && active[i]);
 }

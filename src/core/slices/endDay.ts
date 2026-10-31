@@ -392,6 +392,7 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
     branchMissed: br ? br.missedToday : 0,
     quanRevenue: quanNuocLast ? quanNuocLast.revenue : 0,
     quanProfit: quanNuocLast ? quanNuocLast.profit : 0,
+    ...(tiemXoiLast ? { xoiNet: tiemXoiLast.saved - tiemXoiLast.wages } : {}),
   };
   // Sổ rủi ro (GĐ58): gộp thất thoát/chặn trong ngày (trộm + tiền giả đã cộng vào riskToday lúc bán)
   // + nhân viên gian lận (crew) rồi ghi 1 ngày vào riskTrend và reset riskToday — kinh tế không đổi.
