@@ -4,6 +4,7 @@ import { regularById, regularCheckout, regularFriendship, regularWalkout, INFLUE
 import { FORGIVE_FRIEND_GAIN, REMIND_FRIEND_LOSS } from '../../data/credit';
 import { counterActive } from '../../data/biz';
 import { arcForRegular, arcById, currentArcStep, arcStepFulfilled } from '../../data/regularArc';
+import { satisfiedLine } from '../../data/regularTrust';
 import { REP_CAP } from '../../data/reputation';
 import { type GameState, type SetState, type GetState, addHour } from '../gameTypes';
 
@@ -90,7 +91,7 @@ export const createRegularsSlice = (set: SetState, get: GetState): Pick<GameStat
     }
     const tip = r.tip ? ` · boa ${formatMoney(r.tip)}` : '';
     if (r.newPerks.length) s.notify(`💛 ${def.name} thân thiết hơn: ${r.newPerks.map((p) => p.description).join(' ')}${tip}${resNote}${giftNote}${arcNote}`);
-    else s.notify(`😊 ${def.name}: "${def.lines.satisfied}"${tip}${resNote}${giftNote}${arcNote}`);
+    else s.notify(`😊 ${def.name}: "${satisfiedLine(def.lines.satisfied, get().regulars[id], s.shopName)}"${tip}${resNote}${giftNote}${arcNote}`);
     return r.tip;
   },
   addReservation: (regularId, productId, qty) => {

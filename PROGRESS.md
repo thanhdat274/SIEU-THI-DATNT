@@ -129,3 +129,4 @@
 - GĐ399 — 🧹 Hạ trần rò rỉ object ngoài tiệm 2% → 0% (đo 563 → 563 suốt 6 ngày) trong longSessionLeak.test.ts; nhân vật sống giữ +20 vì dao động theo khách đang ở ngoài. Test xanh, tsc sạch.
 - GĐ400: test plantCrop/waterPlot/waterGarden (cấp, tiền giống, luống có cây, mưa, tưới tự động), mutation bắt được — gardenActions.test.ts
 - GĐ401: test moveFurniture/moveMainCounter (miễn phí, giữ uid + hàng trên kệ, uid lạ) — moveFurniture.test.ts. Full suite 254 file/2517 test xanh 225s (máy bận), tsc sạch, build OK.
+- GĐ402 — 💛 Mối ruột (thân thiết ≥ 40) gọi đúng tên tiệm người chơi đặt khi mua xong: `satisfiedLine()` (data/regularTrust.ts) thay câu hài lòng cố định; khách chưa thân giữ câu riêng. Chỉ lời thoại, không đổi kinh tế/save. Co-op: shopName + regulars nằm trong snapshot máy chạy → cùng câu. 5 test (gồm ≤90 ký tự với tên 24 ký tự × mọi khách). 2522 test xanh 192s, tsc sạch.

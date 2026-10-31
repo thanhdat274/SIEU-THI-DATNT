@@ -50,3 +50,12 @@ export function monthlyTriAn(visits: number, monthVisits: number, closeFriends: 
   if (tier.level < 1 || closeFriends < 1) return { tier, amount: 0 };
   return { tier, amount: Math.min(monthVisits * tier.rate, tier.cap) };
 }
+
+/**
+ * Câu khách quen nói khi mua xong (GĐ402): đã thành "mối ruột" thì gọi đúng tên tiệm người chơi đặt
+ * — "khách quen gọi đúng tên mình" trong Tầm nhìn. Chưa đủ thân thì giữ câu riêng của từng khách.
+ */
+export function satisfiedLine(own: string, prog: RegularProgress | undefined, shopName: string): string {
+  if ((prog?.friendship ?? 0) < EMOTIONAL_FRIENDSHIP) return own;
+  return `Mua ở ${shopName.trim() || 'tiệm mình'} quen rồi, đi đâu nữa!`;
+}
