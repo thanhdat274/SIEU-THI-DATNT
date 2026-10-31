@@ -284,3 +284,12 @@ describe('GĐ478: cà phê sữa nóng', () => {
     expect(r.price).toBeGreaterThan(recipeCupCost(r) * 2);
   });
 });
+
+describe('GĐ479: bán thật ngày mưa với đồ nóng', () => {
+  it('quanNuocDay ngày mưa: thực đơn có đồ nóng phục vụ nhiều khách hơn', async () => {
+    const { quanNuocDay } = await import('../data/quanNuoc');
+    const stock = () => ({ tra: 50, x_nuoc_da: 500, x_gung: 50, x_duong: 50, mia: 200 }) as Record<string, number>;
+    const run = (menu: string[]) => quanNuocDay({ open: true, staff: 0, price: 'vua', menu }, 40, stock(), () => {}, 'rain', 2)!;
+    expect(run(['tra_da', 'tra_gung']).customers).toBeGreaterThan(run(['tra_da', 'nuoc_mia']).customers);
+  });
+});
