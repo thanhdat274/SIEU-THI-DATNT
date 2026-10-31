@@ -743,7 +743,7 @@ export function MorningPanel() {
           Liệt kê mỗi điểm bán còn dư/cạn + điểm nghẽn nên xử lý trước (quán nước deterministic,
           chi nhánh & kho chung quan sát được). Thuần đọc, không đổi save/kinh tế. */}
       {(() => {
-        const sc = supplyChainOverview(storage, branch ?? undefined, biz.quanNuoc, level, biz.quanNuocLast ?? null);
+        const sc = supplyChainOverview(storage, branch ?? undefined, biz.quanNuoc, level, biz.quanNuocLast ?? null, weather, day);
         return (
           <Callout tone={sc.choke ? (sc.choke.state === 'danger' ? 'danger' : 'warn') : 'info'} style={{ marginBottom: 8 }}
             title={<>🔗 Rốn kho chung{sc.choke ? ` — nghẽn: ${sc.choke.icon} ${sc.choke.name}` : ''}</>}>
@@ -756,7 +756,7 @@ export function MorningPanel() {
                {sc.choke && <div style={{ fontSize: 11, opacity: 0.7, marginTop: 2 }}>Xử lý điểm nghẽn trước — nguồn cho các điểm còn lại là kho chung.</div>}
               {(() => {
                 // GĐ202: "Phiếu nạp kho" — biến gợi ý thành số đơn vị cụ thể cần chở/nhập cho từng điểm bán.
-                const rm = supplyRestockManifest(storage, branch ?? undefined, biz.quanNuoc, level, biz.quanNuocLast ?? null);
+                const rm = supplyRestockManifest(storage, branch ?? undefined, biz.quanNuoc, level, biz.quanNuocLast ?? null, weather, day);
                 if (rm.total === 0 && sc.choke) return null;
                 return (
                   <div style={{ marginTop: 6, borderTop: '1px dashed rgba(255,255,255,0.18)', paddingTop: 6 }}>

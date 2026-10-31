@@ -1,3 +1,4 @@
+import type { Weather } from './weather';
 import { shelfTotal, CONVENIENCE } from './branches';
 import { quanNuocProjection, quanNuocDrinkIds, quanNuocRestockTip, type QuanNuocState } from './quanNuoc';
 import { productById } from './products';
@@ -68,6 +69,7 @@ export function supplyChainOverview(
   quan: QuanNuocState,
   level: number,
   last?: { served?: number; wanted?: number } | null,
+  weather?: Weather, day?: number,
 ): SupplyChain {
   const outlets: SupplyOutletStatus[] = [];
 
@@ -85,7 +87,7 @@ export function supplyChainOverview(
   if (!quan.open) {
     outlets.push({ id: 'teahouse', icon: '🍵', name: 'Quán nước', state: 'idle', line: 'chưa mở — không dùng kho chung' });
   } else {
-    const tip = quanNuocRestockTip(quan, level, storage, last);
+    const tip = quanNuocRestockTip(quan, level, storage, last, weather, day);
     const days = teahouseKhoDays(quan, level, storage);
     outlets.push(tip === null
       ? { id: 'teahouse', icon: '🍵', name: 'Quán nước', state: 'ok', line: `đủ đồ uống cho tối nay${days !== null ? ` · kho chung nuôi ~${days} ngày` : ''}` }
@@ -158,6 +160,7 @@ export function supplyRestockManifest(
   quan: QuanNuocState,
   level: number,
   last?: { served?: number; wanted?: number } | null,
+  weather?: Weather, day?: number,
 ): RestockManifest {
   const lines: RestockLine[] = [];
   let total = 0, warehouseCover = 0, buyNeed = 0;
@@ -177,7 +180,7 @@ export function supplyRestockManifest(
 
   // Quán nước: shortfall đã gồm kho chung → phần hụt là nhập thêm.
   if (quan.open) {
-    const tip = quanNuocRestockTip(quan, level, storage, last);
+    const tip = quanNuocRestockTip(quan, level, storage, last, weather, day);
     if (tip && tip.shortfall > 0) {
       total += tip.shortfall;
       buyNeed += tip.shortfall;

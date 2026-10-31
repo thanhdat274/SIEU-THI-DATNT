@@ -186,7 +186,7 @@ export function OrderPanel() {
   // GĐ204: nối GĐ191 (quán nước) thành cả mạng lưới — rốn kho chung có điểm bán nào cần nhập/chở
   // hôm nay (supplyRestockManifest, GĐ202). Chỉ hiện khi có nhu cầu NGOÀI phần quán nước đã báo trên
   // (chi nhánh thiếu kệ hoặc cần chở từ kho) — không lặp cái thẻ quán nước bên trên.
-  const netManifest = supplyRestockManifest(storage, branch ?? undefined, biz.quanNuoc, level, biz.quanNuocLast);
+  const netManifest = supplyRestockManifest(storage, branch ?? undefined, biz.quanNuoc, level, biz.quanNuocLast, weather, day);
   const netNeeds = supplyNetworkOrderVisible(netManifest);
   const guideItems = guideProducts(level);
   const guideIds = guideIdsOf(guideItems);

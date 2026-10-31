@@ -347,3 +347,17 @@ describe('GĐ491: sức khoẻ quán biết cuối tuần', () => {
     expect(a).toBeGreaterThan(b);
   });
 });
+
+describe('GĐ492: chuỗi cung ứng biết cuối tuần', () => {
+  it('supplyRestockManifest cuối tuần cần nhập nhiều hơn ngày thường', async () => {
+    const { supplyRestockManifest } = await import('../data/supplyChain');
+    const { isWeekend } = await import('../data/calendar');
+    let we = 1, wd = 1;
+    while (!isWeekend(we)) we++;
+    while (isWeekend(wd)) wd++;
+    const q = { open: true, staff: 1, price: 'vua' as const };
+    const a = supplyRestockManifest({}, undefined, q, 35, null, 'cloudy', we).total;
+    const b = supplyRestockManifest({}, undefined, q, 35, null, 'cloudy', wd).total;
+    expect(a).toBeGreaterThan(b);
+  });
+});
