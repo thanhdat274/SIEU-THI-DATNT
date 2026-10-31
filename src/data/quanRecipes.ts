@@ -16,6 +16,8 @@ export interface QuanRecipe {
   price: number;
   /** Mỗi nguyên liệu: một đơn vị trong kho pha được bao nhiêu ly. */
   uses: { id: string; cups: number }[];
+  /** GĐ476: đồ nóng — giữ khách ngày mưa. */
+  hot?: boolean;
 }
 
 export const QUAN_RECIPES: QuanRecipe[] = [
@@ -32,7 +34,7 @@ export const QUAN_RECIPES: QuanRecipe[] = [
   { id: 'tra_sua_dua', name: 'Trà sữa cốt dừa', icon: '🥥', unlock: 38, price: 25_000, uses: [{ id: 'tra', cups: 40 }, { id: 'x_dua_cot_hop', cups: 8 }, { id: 'x_sua_dac', cups: 10 }, { id: 'x_nuoc_da', cups: 10 }] },
   { id: 'sinh_to_xoai', name: 'Sinh tố xoài', icon: '🥭', unlock: 39, price: 30_000, uses: [{ id: 'x_xoai', cups: 3 }, { id: 'x_sua_dac', cups: 10 }, { id: 'x_nuoc_da', cups: 10 }] },
   { id: 'ca_phe_muoi', name: 'Cà phê muối', icon: '🧂', unlock: 40, price: 28_000, uses: [{ id: 'x_ca_phe_hoa_tan', cups: 15 }, { id: 'x_sua_dac', cups: 10 }, { id: 'x_muoi', cups: 60 }, { id: 'x_nuoc_da', cups: 10 }] },
-  { id: 'tra_gung', name: 'Trà gừng nóng', icon: '🫚', unlock: 36, price: 15_000, uses: [{ id: 'tra', cups: 40 }, { id: 'x_gung', cups: 12 }, { id: 'x_duong', cups: 30 }] },
+  { id: 'tra_gung', name: 'Trà gừng nóng', icon: '🫚', unlock: 36, price: 15_000, uses: [{ id: 'tra', cups: 40 }, { id: 'x_gung', cups: 12 }, { id: 'x_duong', cups: 30 }], hot: true },
 ];
 
 /** Số món tối đa trên thực đơn. */
@@ -58,6 +60,10 @@ export const menuBoardLines = (menu: readonly string[] | undefined): string[] =>
   const rs = (menu ?? []).map(quanRecipeById).filter((r): r is QuanRecipe => !!r);
   return rs.length ? rs.map((r) => `${r.name} ${r.price / 1000}k`) : ['Nước giải khát chai'];
 };
+
+/** GĐ476: mưa/bão mà thực đơn có đồ nóng thì khách ghé thêm 20%. */
+export const quanHotMul = (menu: readonly string[], weather?: string) =>
+  (weather === 'rain' || weather === 'storm') && menu.some((id) => quanRecipeById(id)?.hot) ? 1.2 : 1;
 
 /** Hệ số khách theo độ đa dạng thực đơn: 1 món ×1, 4 món ×1.24. */
 export const varietyMul = (menuSize: number) => 1 + QUAN_VARIETY_BONUS * Math.max(0, menuSize - 1);

@@ -247,3 +247,17 @@ describe('GĐ475: trà gừng nóng', () => {
     expect(r.price).toBeGreaterThan(recipeCupCost(r) * 2);
   });
 });
+
+describe('GĐ476: đồ nóng giữ khách ngày mưa', () => {
+  it('mưa/bão + có trà gừng → ×1.2; nắng hoặc không có đồ nóng → ×1', async () => {
+    const { quanHotMul } = await import('../data/quanRecipes');
+    const { quanNuocProjection } = await import('../data/quanNuoc');
+    expect(quanHotMul(['tra_gung'], 'rain')).toBe(1.2);
+    expect(quanHotMul(['tra_gung'], 'storm')).toBe(1.2);
+    expect(quanHotMul(['tra_gung'], 'sunny')).toBe(1);
+    expect(quanHotMul(['tra_da'], 'rain')).toBe(1);
+    const base = { open: true, staff: 0, price: 'vua', menu: ['tra_da', 'tra_gung'] } as never;
+    const cold = { open: true, staff: 0, price: 'vua', menu: ['tra_da', 'nuoc_mia'] } as never;
+    expect(quanNuocProjection(base, 40, 1e6, 'rain').customers).toBeGreaterThan(quanNuocProjection(cold, 40, 1e6, 'rain').customers);
+  });
+});
