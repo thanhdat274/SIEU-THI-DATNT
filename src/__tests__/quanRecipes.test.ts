@@ -272,3 +272,15 @@ describe('GĐ477: nhắc đồ nóng ngày mưa', () => {
     for (const m of [quanHotNote(['tra_da'], 'rain', 40)!, quanHotNote(['tra_gung'], 'rain', 40)!]) expect(m.length).toBeLessThanOrEqual(90);
   });
 });
+
+describe('GĐ478: cà phê sữa nóng', () => {
+  it('mở cấp 37, đồ nóng, không dùng đá, giữ khách ngày mưa', async () => {
+    const { quanRecipeById, quanHotMul, recipeCupCost } = await import('../data/quanRecipes');
+    const r = quanRecipeById('ca_phe_sua_nong')!;
+    expect(r.unlock).toBe(37);
+    expect(r.hot).toBe(true);
+    expect(r.uses.some((u) => u.id === 'x_nuoc_da')).toBe(false);
+    expect(quanHotMul(['ca_phe_sua_nong'], 'rain')).toBe(1.2);
+    expect(r.price).toBeGreaterThan(recipeCupCost(r) * 2);
+  });
+});
