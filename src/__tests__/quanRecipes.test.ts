@@ -215,3 +215,13 @@ describe('GĐ449: quán cà phê thêm 1 ô thực đơn', () => {
     expect(cleanMenu(ids, 99, 5).length).toBe(Math.min(5, ids.length));
   });
 });
+
+describe('GĐ455: Sinh tố xoài', () => {
+  it('mở cấp 39, nguyên liệu là sản phẩm có thật', async () => {
+    const { quanRecipeById } = await import('../data/quanRecipes');
+    const { productById } = await import('../data/products');
+    const r = quanRecipeById('sinh_to_xoai')!;
+    expect(r.unlock).toBe(39);
+    for (const u of r.uses) expect(productById(u.id)).toBeTruthy();
+  });
+});
