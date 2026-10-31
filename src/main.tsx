@@ -897,7 +897,9 @@ function App() {
 }
 
 // Nạp bản lưu từ IndexedDB trước khi hiện màn đăng nhập (màn này đọc bản lưu đồng bộ)
-initSaves().finally(() => createRoot(document.getElementById('ui')!).render(<UiBoundary><App /></UiBoundary>));
+// Vite hot-reload có thể chạy lại main.tsx: dùng lại root cũ thay vì createRoot lần hai trên cùng container (GĐ403)
+const uiEl = document.getElementById('ui') as HTMLElement & { __root?: ReturnType<typeof createRoot> };
+initSaves().finally(() => (uiEl.__root ??= createRoot(uiEl)).render(<UiBoundary><App /></UiBoundary>));
 
 // PWA: đăng ký service worker để game cài ra màn hình chính iPhone/iOS
 // (chỉ ở bản build/run thật; dev thì tắt để không gây nhiễu khi sửa code)
