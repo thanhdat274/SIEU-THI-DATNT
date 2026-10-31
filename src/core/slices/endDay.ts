@@ -160,7 +160,7 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
       tiemXoiLast = { day: s.day, total: t.total, cost: t.cost, wages: t.wages, saved: tiemXoiSaved(t.made) };
       quanWages += t.cost + t.wages;
       // GĐ484: khách ngồi ăn tại chỗ trong nhà tiệm, lấy xôi từ kho, bán giá lẻ
-      const dine = tiemXoiDinePlan(s.biz.tiemXoi, s.level, k.storage, s.weather);
+      const dine = tiemXoiDinePlan(s.biz.tiemXoi, s.level, k.storage, s.weather, s.day);
       for (const [id, qty] of Object.entries(dine.take)) takeStock(k, id, qty);
       quanRevenue += dine.revenue;
       tiemXoiLast = { ...tiemXoiLast!, dine: dine.portions };
