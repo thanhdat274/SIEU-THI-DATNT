@@ -11,6 +11,7 @@ import { Callout, Footer, styles } from './shared';
 import { TiemXoiSection } from './TiemXoiSection';
 import { QuanMenuSection } from './QuanMenuSection';
 import { WEATHER } from '../../data/weather';
+import { quanHotNote } from '../../data/quanRecipes';
 
 /** Thứ tự hiển thị 3 mức giờ bán: bình dân → vừa phải → đắt hơn. */
 const PRICE_ORDER: readonly QuanNuocPrice[] = ['re', 'vua', 'cao'];
@@ -56,6 +57,9 @@ export function QuanNuocPanel() {
       )}
       {quan.open && quanWeekendMul(day) !== 1 && (
         <p style={{ fontSize: 12, margin: '0 0 6px' }}>🎉 Cuối tuần: khách ngồi quán đông hơn ×{quanWeekendMul(day)} — nạp thêm nguyên liệu</p>
+      )}
+      {quan.open && quanHotNote(quan.menu ?? [], weather, level) && (
+        <p style={{ fontSize: 12, margin: '0 0 6px' }}>{quanHotNote(quan.menu ?? [], weather, level)}</p>
       )}
       {!quan.open ? (
         <>

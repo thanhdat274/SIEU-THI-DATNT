@@ -65,6 +65,14 @@ export const menuBoardLines = (menu: readonly string[] | undefined): string[] =>
 export const quanHotMul = (menu: readonly string[], weather?: string) =>
   (weather === 'rain' || weather === 'storm') && menu.some((id) => quanRecipeById(id)?.hot) ? 1.2 : 1;
 
+/** GĐ477: dòng nhắc ngày mưa trong panel quán (null = không cần nhắc). */
+export function quanHotNote(menu: readonly string[], weather: string | undefined, level: number): string | null {
+  if (weather !== 'rain' && weather !== 'storm') return null;
+  if (quanHotMul(menu, weather) > 1) return '🫚 Có đồ nóng trên thực đơn: giữ thêm khách ×1.2';
+  const hot = QUAN_RECIPES.find((r) => r.hot && level >= r.unlock);
+  return hot ? `🫚 Trời mưa: thêm ${hot.name} vào thực đơn để giữ khách ×1.2` : null;
+}
+
 /** Hệ số khách theo độ đa dạng thực đơn: 1 món ×1, 4 món ×1.24. */
 export const varietyMul = (menuSize: number) => 1 + QUAN_VARIETY_BONUS * Math.max(0, menuSize - 1);
 

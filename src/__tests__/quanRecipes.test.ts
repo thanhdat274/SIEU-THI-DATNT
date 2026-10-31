@@ -261,3 +261,14 @@ describe('GĐ476: đồ nóng giữ khách ngày mưa', () => {
     expect(quanNuocProjection(base, 40, 1e6, 'rain').customers).toBeGreaterThan(quanNuocProjection(cold, 40, 1e6, 'rain').customers);
   });
 });
+
+describe('GĐ477: nhắc đồ nóng ngày mưa', () => {
+  it('nắng không nhắc; mưa gợi ý trà gừng khi đủ cấp; đã có thì báo ×1.2', async () => {
+    const { quanHotNote } = await import('../data/quanRecipes');
+    expect(quanHotNote(['tra_da'], 'sunny', 40)).toBeNull();
+    expect(quanHotNote(['tra_da'], 'rain', 30)).toBeNull();
+    expect(quanHotNote(['tra_da'], 'rain', 40)).toContain('Trà gừng nóng');
+    expect(quanHotNote(['tra_gung'], 'storm', 40)).toContain('×1.2');
+    for (const m of [quanHotNote(['tra_da'], 'rain', 40)!, quanHotNote(['tra_gung'], 'rain', 40)!]) expect(m.length).toBeLessThanOrEqual(90);
+  });
+});
