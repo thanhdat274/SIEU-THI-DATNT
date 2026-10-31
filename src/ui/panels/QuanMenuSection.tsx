@@ -30,7 +30,7 @@ export function QuanMenuSection() {
         )}
       </div>
       <button style={{ ...styles.btn, marginLeft: 0, marginBottom: 6 }} disabled={!menu.length || quanHandLeft(q, day) <= 0} onClick={() => brewQuanHand()}
-        title="Tự đứng quầy pha một mẻ món đầu tiên đủ nguyên liệu, bán ngay giá tay nghề +20%">
+        title="Tự đứng quầy pha một mẻ, lần lượt từng món trên thực đơn, bán ngay giá tay nghề +20%">
         🍹 Tự pha {QUAN_HAND_CUPS} ly (còn {quanHandLeft(q, day)} mẻ)
       </button>
       {QUAN_RECIPES.map((r) => {

@@ -181,3 +181,18 @@ describe('quanHandMax (GĐ433)', () => {
     expect(quanHandLeft({ ...q, tier: 2, hand: { day: 4, n: 2 } }, 4)).toBe(3);
   });
 });
+
+describe('brewQuanHand xoay vòng món (GĐ436)', () => {
+  it('mẻ 1 trà đá, mẻ 2 nước mía, mẻ 3 lại trà đá', () => {
+    const d = newGameData();
+    useGame.setState({ ...d, level: 33, storage: full(10), storageLots: {}, notify: () => {},
+      biz: { ...d.biz, quanNuoc: { ...d.biz.quanNuoc, open: true, menu: ['tra_da', 'nuoc_mia'] } } });
+    const g = useGame.getState;
+    g().brewQuanHand();
+    expect(g().storage.tra).toBe(9);
+    g().brewQuanHand();
+    expect(g().storage.mia).toBe(8);
+    g().brewQuanHand();
+    expect(g().storage.tra).toBe(8);
+  });
+});

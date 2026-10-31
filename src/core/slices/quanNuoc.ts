@@ -80,7 +80,10 @@ export const createQuanNuocSlice = (set: SetState, get: GetState): Pick<GameStat
     if (!q.open) { s.notify('Chưa mở quán nước!'); return false; }
     const left = quanHandLeft(q, s.day);
     if (left <= 0) { s.notify('Hôm nay đã tự pha đủ mẻ, để nhân viên lo phần còn lại'); return false; }
-    const r = cleanMenu(q.menu, s.level).map(quanRecipeById).find((x) => x && recipeCapacity(x, s.storage) >= QUAN_HAND_CUPS);
+    // GĐ436: lần lượt theo thực đơn (mẻ thứ n bắt đầu từ món thứ n), bỏ món thiếu nguyên liệu
+    const menu = cleanMenu(q.menu, s.level);
+    const done = q.hand?.day === s.day ? q.hand.n : 0;
+    const r = menu.map((_, i) => quanRecipeById(menu[(done + i) % menu.length])).find((x) => x && recipeCapacity(x, s.storage) >= QUAN_HAND_CUPS);
     if (!r) { s.notify('Chưa có món nào đủ nguyên liệu cho 5 ly, nhập thêm hoặc chọn thực đơn'); return false; }
     const k = copyStock(s);
     const b = brewMenu([r.id], k.storage, QUAN_HAND_CUPS, QUAN_PRICE_OPTIONS[q.price].mul * QUAN_HAND_BONUS, (id, n) => { takeStock(k, id, n); });

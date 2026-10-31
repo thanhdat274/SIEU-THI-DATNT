@@ -157,3 +157,4 @@
 - GĐ433 — ☕ Bậc cửa hàng nước thêm mẻ tự pha: quầy 3 / quán 4 / cà phê 5 mẻ mỗi ngày (`quanHandMax`). Rà test rò rỉ phiên dài: chạy riêng 3 lần đều xanh (object 563 cố định, nhân vật +5..+12 ≤ +20), lần đỏ trong bộ đầy đủ là do máy bận.
 - GĐ434 — 👩‍🍳 Sạp xôi 3D có người nấu đội nón: chủ sạp + mỗi thợ một người (tối đa 3, `setCooks`). QA `?thu=1` 2 thợ → 3 người đứng sau sạp. Bộ test đầy đủ 2577 xanh.
 - GĐ435 — 🍚 Đứng trước sạp xôi bấm [J] mở bảng quán nước (mục tiệm xôi); chưa cấp 40 thì không hiện gợi ý (gợi ý rỗng coi như không có). QA `?thu=1` ok, 2577 test xanh.
+- GĐ436 — 🔄 Tự pha xoay vòng thực đơn: mẻ thứ n bắt đầu từ món thứ n, bỏ món thiếu nguyên liệu (trước luôn pha món đầu). 2578 test xanh.
