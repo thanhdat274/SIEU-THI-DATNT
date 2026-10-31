@@ -1,8 +1,7 @@
-import { branchAlerts } from '../data/branches';
 import { ANIMALS, ANIMAL_ORDER, EGG_PER_TRAY, plotReady } from '../data/garden';
 import { activeBuzz } from '../data/social';
 import { licenseStatus, type LicenseId } from '../data/licenses';
-import { faintMinutes, weeklyChallenge, rivalUndercutAlerts } from '../data/biz';
+import { faintMinutes, weeklyChallenge } from '../data/biz';
 import { Joystick } from './Joystick';
 import { Fragment, lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { formatClock, questContext, useClock, useGame } from '../core/store';
@@ -36,8 +35,6 @@ import { pushCloudSave, takeCloudSave } from '../net/cloud';
 import { leaveRoom } from '../net/coop';
 import { logoutGoogle } from '../net/firebase';
 import { useSession } from '../net/session';
-import { STORIES } from '../data/biz';
-import { closeStory, REGULAR_NAMES } from '../core/biz';
 import { initAudio, isMuted, isMusic, setMuted, setMusic } from '../core/audio';
 import { Panels } from './Panels';
 import { hubFirst, hubOf } from './hubs';
@@ -47,6 +44,9 @@ import './hud.css';
 const SurpriseAlert = lazy(() => import('./SurpriseAlert').then((m) => ({ default: m.SurpriseAlert })));
 const ExpiryAlert = lazy(() => import('./ExpiryAlert').then((m) => ({ default: m.ExpiryAlert })));
 const UnlockActBanner = lazy(() => import('./UnlockActBanner').then((m) => ({ default: m.UnlockActBanner })));
+const BranchAlert = lazy(() => import('./HudAlerts').then((m) => ({ default: m.BranchAlert })));
+const RivalAlert = lazy(() => import('./HudAlerts').then((m) => ({ default: m.RivalAlert })));
+const StoryAlert = lazy(() => import('./HudAlerts').then((m) => ({ default: m.StoryAlert })));
 const PhoneAlerts = lazy(() => import('./PhoneAlerts').then((m) => ({ default: m.PhoneAlerts })));
 
 export { tutorialActive, tutorialStep, tutorialSteps } from './tutorialSteps';
@@ -455,8 +455,8 @@ ${forecastText}`}>
         )}
         {waiting > 0 && !hint?.startsWith('💵') &&<div className="hud-alert warn">🛒 {waiting} khách đang chờ tính tiền ở quầy</div>}
         <Suspense fallback={null}><PhoneAlerts /></Suspense>
-        <BranchAlert />
-        <RivalAlert />
+        <Suspense fallback={null}><BranchAlert /></Suspense>
+        <Suspense fallback={null}><RivalAlert /></Suspense>
         <Suspense fallback={null}><ExpiryAlert /></Suspense>
         <Suspense fallback={null}><UnlockActBanner /></Suspense>
         <Suspense fallback={null}><VendorAlert /></Suspense>
@@ -464,7 +464,7 @@ ${forecastText}`}>
         <FestivalBanner />
         <Suspense fallback={null}><Tutorial review={helpTutorial} onDone={() => setHelpTutorial(false)} /></Suspense>
         <Suspense fallback={null}><SurpriseAlert /></Suspense>
-        <StoryAlert />
+        <Suspense fallback={null}><StoryAlert /></Suspense>
         {conflict && (
           <div className="hud-alert info">
             ☁️ Cloud có bản lưu mới hơn từ máy khác (ngày {conflict.day}, cấp {conflict.level}).
@@ -727,45 +727,6 @@ function AccountMenu({ name, photo, status, items }: {
   );
 }
 
-/** Chi nhánh 24/7 "lên tiếng": đẩy cảnh báo (calloff/mất điện/trộm/kệ cạn/thiếu thu ngân) lên HUD. */
-function BranchAlert() {
-  const branch = useGame((s) => s.branch);
-  const minutes = useClock((c) => Math.floor(c.minutes));
-  if (!branch) return null;
-  const alerts = branchAlerts(branch, minutes);
-  if (!alerts.length) return null;
-  return (
-    <>
-      {alerts.map((a, i) => (
-        <div key={i} className={`hud-alert ${a.danger ? 'danger' : 'warn'}`}>{a.text}</div>
-      ))}
-    </>
-  );
-}
-
-/** Đối thủ đang bán rẻ những món mình có bày — nhắc ứng phó giá (GĐ42). */
-function RivalAlert() {
-  const biz = useGame((s) => s.biz);
-  const priceOf = useGame((s) => s.priceOf);
-  const day = useGame((s) => s.day);
-  const storage = useGame((s) => s.storage);
-  const furniture = useGame((s) => s.furniture);
-  const carried = new Set<string>();
-  for (const [id, q] of Object.entries(storage)) if (q > 0) carried.add(id);
-  for (const f of furniture) for (const t of f.tiers) if (t.productId && t.count > 0) carried.add(t.productId);
-  const alert = rivalUndercutAlerts(biz.rival, priceOf, day, carried);
-  if (!alert) return null;
-  return (
-    <div className="hud-alert warn">
-      ⚔️ {alert.rival} bán rẻ <b>{alert.items.join(', ')}</b> — khách nhạy giá các món này chê tiệm mình.
-      <span className="hud-alert-actions">
-        <button className="hud-btn primary" onClick={() => useGame.getState().openPanel({ type: 'prices' })}>Xem giá</button>
-      </span>
-    </div>
-  );
-}
-
-
 /** Đang trong mùa lễ: nói rõ khách đông bao nhiêu, món nào hút, giá nhập tăng bao nhiêu. */
 function FestivalBanner() {
   const day = useGame((s) => s.day);
@@ -908,22 +869,6 @@ function TodayAgendaStrip() {
           <span>{it.label}</span>
         </button>
       ))}
-    </div>
-  );
-}
-
-/** Chương truyện mới của khách quen (mở theo độ thân). */
-function StoryAlert() {
-  const p = useGame((s) => s.biz.storyPending);
-  const ch = p && STORIES[p.regular]?.[p.chapter];
-  if (!p || !ch) return null;
-  return (
-    <div className="hud-alert info">
-      📖 <b>{REGULAR_NAMES[p.regular]} · Chương {p.chapter + 1}: {ch.title}</b> — {ch.text}
-      {ch.reward && <small> (+{[ch.reward.money && formatMoney(ch.reward.money), ch.reward.xp && `${ch.reward.xp} XP`].filter(Boolean).join(', ')})</small>}
-      <span className="hud-alert-actions">
-        <button className="hud-btn primary" onClick={closeStory}>💛 Đọc xong</button>
-      </span>
     </div>
   );
 }
