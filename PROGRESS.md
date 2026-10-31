@@ -164,3 +164,4 @@
 - GĐ378 — 🏠 Test đồ nhà/xe/bữa sáng/dịch vụ quầy `biz.ts` (8 test, mutation 3/3): mua một lần đúng cấp-tiền, xe chỉ nâng cấp không hạ, bữa sáng một lần/ngày và trước 11h, dịch vụ ghi sổ theo id. Cả bộ 242 file / 2448 test xanh 160s
 - GĐ379 — 📢 Test quảng cáo/thẻ tích điểm/mua lại mặt bằng rival `biz.ts` (7 test, mutation 3/3): quảng cáo chạy đúng số ngày và không mua chồng, thẻ tặng món rẻ nhất, mua mặt bằng trừ giá + tạo chi nhánh + xoá lời chào bán
 - GĐ380 — 📉 Test `stockReminders` (4 test, mutation 3/3): nhắc sắp hết đúng một lần/ngày, nhắc lại ngày mới, im lặng khi kho còn/không có nhu cầu/kệ đủ, gộp nhiều món một thông báo
+- GĐ381 — 📏 Mốc: 245 file / 2467 test xanh 159s (+1 hở: nhắc hàng sắp HỎNG của stockReminders chưa test)
