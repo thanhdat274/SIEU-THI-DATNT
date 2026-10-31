@@ -51,6 +51,7 @@ import { pushCloudSave } from './net/cloud';
 import { cancelSleep, checkpoint, inAlley, initCoop, isGuest, partnerPositions, updateCoop } from './net/coop';
 import { watchUser } from './net/firebase';
 import { useSession } from './net/session';
+import { playerPos } from './core/playerPos';
 import { SAP_LOT_COST, sapStallBox, sapStrollerCount } from './data/sapRong';
 import { openZones, zoneBlockRects, zoneById } from './data/zones';
 import { formatMoney } from './data/products';
@@ -787,6 +788,8 @@ function renderFrame() {
     // Tua 3×/8×: nhân vật đi bộ vẫn cùng nhịp đồng hồ game (đường tự động của lịch), còn người
     // chơi tự bấm phím thì đi tốc độ thật — xem Player.update.
     const moving = (speed > 0 || guest) && !state.panel && player.update(dt, controller.yaw, speed);
+    playerPos.x = player.position.x;
+    playerPos.z = player.position.z;
     if (moving) controller.follow = player.position;
     autoBreakfast();
     if (!guest) {
