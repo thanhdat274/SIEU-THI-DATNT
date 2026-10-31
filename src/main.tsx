@@ -524,9 +524,12 @@ const fixedInteractables: Interactable[] = [
   ...[0, 1, 2, 3].map((i) => ({ position: new THREE.Vector3(86 + i * 8, 0, 1.6), radius: 2.6,
     hint: () => {
       const g = useGame.getState();
-      if (!openZones(g.biz.zones).includes('ngo2') || (g.biz.sapRong ?? 0) !== i) return '';
+      const n = g.biz.sapRong ?? 0;
+      if (!openZones(g.biz.zones).includes('ngo2') || n < i) return '';
+      // GĐ521: lô đã có sạp → tự đứng sạp (mỗi ngày một lần)
+      if (i < n) return g.biz.sapHandDay === g.day ? '' : '[L] Đứng sạp hôm nay (+25%)';
       return `[L] Thuê lô sạp hàng rong ${formatMoney(SAP_LOT_COST)}`;
-    }, key: 'KeyL', action: () => { useGame.getState().rentSapLot(); } })),
+    }, key: 'KeyL', action: () => { const g = useGame.getState(); if (i < (g.biz.sapRong ?? 0)) g.tendSapHand(); else g.rentSapLot(); } })),
   { position: world.farm.wellSpot, radius: 2.6, hint: () => '[T] Tưới luống từ giếng', key: 'KeyT', action: () => useGame.getState().waterGarden() },
 ];
 

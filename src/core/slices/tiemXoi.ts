@@ -7,7 +7,7 @@ import type { GameState, SetState, GetState } from '../gameTypes';
 
 /** Tiệm xôi (GĐ411): mua mặt bằng, tuyển/cho nghỉ thợ nấu. Mô phỏng nấu chạy trong endDay. */
 
-export const createTiemXoiSlice = (set: SetState, get: GetState): Pick<GameState, 'buyTiemXoi' | 'hireTiemXoi' | 'fireTiemXoi' | 'steamXoiHand' | 'expandTiemXoi' | 'openZone' | 'rentSapLot' | 'cycleSapKind' | 'upgradeSapLot'> => ({
+export const createTiemXoiSlice = (set: SetState, get: GetState): Pick<GameState, 'buyTiemXoi' | 'hireTiemXoi' | 'fireTiemXoi' | 'steamXoiHand' | 'expandTiemXoi' | 'openZone' | 'rentSapLot' | 'cycleSapKind' | 'upgradeSapLot' | 'tendSapHand'> => ({
   buyTiemXoi: () => {
     const s = get();
     if (s.biz.tiemXoi.open) return false;
@@ -109,6 +109,17 @@ export const createTiemXoiSlice = (set: SetState, get: GetState): Pick<GameState
     tiers[i] = t + 1;
     set({ money: s.money - next.cost, biz: { ...s.biz, sapTiers: tiers } });
     s.notify(`${next.icon} Lô ${i + 1} lên ${next.name}: thu ×${String(next.mul).replace('.', ',')}`);
+    return true;
+  },
+  /** GĐ521: chủ tự đứng sạp Ngõ 2 một buổi — hôm nay mọi lô thu +25%; mưa/bão sạp nghỉ. */
+  tendSapHand: () => {
+    const s = get();
+    if (!(s.biz.sapRong ?? 0)) { s.notify('Chưa thuê lô sạp nào ở Ngõ 2'); return false; }
+    if (s.biz.sapHandDay === s.day) { s.notify('Hôm nay đã đứng sạp rồi, mai ghé tiếp'); return false; }
+    if (s.weather === 'rain' || s.weather === 'storm') { s.notify('Trời mưa, sạp nghỉ bán hôm nay'); return false; }
+    set({ biz: { ...s.biz, sapHandDay: s.day } });
+    get().addXp(4);
+    s.notify('🙋 Đứng sạp Ngõ 2: hôm nay mọi lô thu thêm 25%');
     return true;
   },
   cycleSapKind: (i: number) => {

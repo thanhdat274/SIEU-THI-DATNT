@@ -1170,6 +1170,8 @@ export interface BizState {
   sapKinds?: string[];
   /** GĐ513: bậc từng lô sạp (0 gánh, 1 xe đẩy, 2 quầy); thiếu = gánh. */
   sapTiers?: number[];
+  /** GĐ521: ngày chủ tự đứng sạp gần nhất. */
+  sapHandDay?: number;
   tiemXoiLast?: { day: number; total: number; cost: number; wages: number; saved: number; /** GĐ486: suất khách ăn tại chỗ. */ dine?: number };
   /** Kết quả ngày vừa rồi của quán nước (để UI hiển thị); chưa từng chạy thì undefined.
    *  wages = tổng lương nhân viên phải trả hôm đó, profit = revenue − wages (lời ròng thật). */

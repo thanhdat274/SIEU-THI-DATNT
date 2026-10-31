@@ -391,6 +391,7 @@ export interface GameState {
   rentSapLot: () => boolean;
   cycleSapKind: (i: number) => boolean;
   upgradeSapLot: (i: number) => boolean;
+  tendSapHand: () => boolean;
   /** Lấy bớt hàng khỏi kho (vd. thức ăn cho thú cưng). */
   consumeStock: (productId: string, qty: number) => void;
   /** Sổ nợ khách quen (theo id khách quen). */

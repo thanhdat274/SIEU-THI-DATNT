@@ -168,3 +168,21 @@ describe('GĐ518: ô dù món khác hẳn ô dù mặc định các lô', () => 
     for (const k of SAP_KINDS.slice(1)) for (const u of LOT_UMBS) expect(dist(k.colors![1], u)).toBeGreaterThanOrEqual(80);
   });
 });
+
+describe('GĐ521: tự đứng sạp', () => {
+  it('mỗi ngày một lần, mưa không được, cần có sạp; thu ×1,25 hôm đó', async () => {
+    const { SAP_HAND_MUL } = await import('../data/sapRong');
+    expect(g().tendSapHand()).toBe(false);
+    g().openZone('ngo2'); g().rentSapLot();
+    useGame.setState({ weather: 'rain' });
+    expect(g().tendSapHand()).toBe(false);
+    useGame.setState({ weather: 'sunny' });
+    const xp = g().xp;
+    expect(g().tendSapHand()).toBe(true);
+    expect(g().biz.sapHandDay).toBe(g().day);
+    expect(g().xp).toBeGreaterThan(xp);
+    expect(g().tendSapHand()).toBe(false);
+    expect(sapRongIncome(2, 'sunny', 1, undefined, undefined, false, true)).toBe(Math.round(sapRongIncome(2, 'sunny', 1) * SAP_HAND_MUL));
+    expect(msgs.every((x) => [...x].length <= 90)).toBe(true);
+  });
+});

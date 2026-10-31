@@ -53,15 +53,18 @@ export const sapTierOf = (tiers: readonly number[] | undefined, i: number) =>
 /** GĐ516: lô bán xôi lấy hàng tiệm xôi nhà mình (đã mở tiệm) thì thêm 20% — chuỗi cung ứng giữa các cơ sở. */
 export const SAP_HOME_XOI_MUL = 1.2;
 
+/** GĐ521: hôm chủ tự đứng sạp (mỗi ngày một lần), mọi lô thu thêm 25%. */
+export const SAP_HAND_MUL = 1.25;
+
 /** Lãi ròng một ngày của các sạp đã thuê (0 khi mưa/bão). */
-export function sapRongIncome(lots: number | undefined, weather?: Weather, day?: number, kinds?: readonly string[], tiers?: readonly number[], homeXoi = false): number {
+export function sapRongIncome(lots: number | undefined, weather?: Weather, day?: number, kinds?: readonly string[], tiers?: readonly number[], homeXoi = false, hand = false): number {
   const n = Math.max(0, Math.min(SAP_LOTS, lots ?? 0));
   let sum = 0;
   for (let i = 0; i < n; i++) {
     const k = sapKindOf(kinds, i);
     sum += Math.round(sapLotIncome(k, weather, day) * SAP_TIERS[sapTierOf(tiers, i)].mul * (homeXoi && k.id === 'xoi' ? SAP_HOME_XOI_MUL : 1));
   }
-  return sum;
+  return hand ? Math.round(sum * SAP_HAND_MUL) : sum;
 }
 
 /** GĐ502: hộp chặn lưới của bàn sạp thứ i (bàn 1,8×0,9 tại x 86+8i, z −0,5). */
