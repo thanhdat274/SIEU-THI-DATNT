@@ -146,3 +146,4 @@
 - GĐ391: test learnSkill (cấp, điểm kỹ năng, trùng, id lạ), mutation 3/3 — learnSkill.test.ts
 - GĐ392: test setShopName/setCostume (cắt 24 ký tự, mặc định, cấp, tái sinh), mutation 4/4 — shopNameCostume.test.ts
 - GĐ393: rà checkWelcomeBack/contributeLandmark (đã có test riêng). Full suite 252 file/2506 test xanh, tsc sạch, build OK, main gzip 244KB, PROGRESS 29KB. Leader review kế GĐ394.
+- GĐ394 — 🧭 Leader review (GĐ384–394): 252 file / 2506 test xanh 173s (cùng dải dao động tải máy), tsc sạch, build OK, chunk chính gzip 244KB (<255), PROGRESS.md ~29KB (cần gọn lại sớm). Chỉ thêm test (acceptContract, thành tựu, hết hạn chào bán rival, nhập bù đơn điện thoại, learnSkill, tên tiệm/trang phục); gameplay/ngân sách không đổi. Phủ slice/biz.ts gần bão hòa — các hàm còn lại đều đã có test riêng. Chờ save thật (NG+, nhiệm vụ ngày 1–5). Review kế ~GĐ404; khi hết gap test, ưu tiên chiều sâu gameplay.
