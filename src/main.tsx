@@ -373,7 +373,7 @@ const syncZones = () => {
   const key = openZones(zones).join(',');
   ngo2View?.setOpen(key.includes('ngo2'));
   const sapN = useGame.getState().biz.sapRong ?? 0;
-  ngo2View?.setStalls(sapN, Array.from({ length: sapN }, (_, i) => sapKindOf(useGame.getState().biz.sapKinds, i).colors));
+  ngo2View?.setStalls(sapN, Array.from({ length: sapN }, (_, i) => sapKindOf(useGame.getState().biz.sapKinds, i).colors), useGame.getState().biz.sapTiers);
   if (sapN !== lastSapN) {
     lastSapN = sapN;
     grid.setStatic('sapRong', Array.from({ length: sapN }, (_, i) => {
