@@ -30,7 +30,7 @@ const priceTip = (mul: number, traffic: number) => {
 
 /** Quán Nước Đầu Ngõ: quán nước ở đầu hẻm, nguyên liệu lấy thẳng từ kho tiệm. */
 export function QuanNuocPanel() {
-  const { biz, level, money, storage, weather, buyQuanNuoc, hireQuanNuoc, fireQuanNuoc, setQuanNuocPrice, closePanel, openPanel } = useGame();
+  const { biz, level, money, storage, weather, day, buyQuanNuoc, hireQuanNuoc, fireQuanNuoc, setQuanNuocPrice, closePanel, openPanel } = useGame();
   const quan = biz.quanNuoc;
   const last = biz.quanNuocLast;
   const locked = level < QUAN_NUOC_UNLOCK;
@@ -38,8 +38,8 @@ export function QuanNuocPanel() {
   const canHire = quan.staff < QUAN_NUOC_MAX_STAFF && money >= QUAN_NUOC_HIRE_FEE;
   // GĐ127: mồi quyết định — dự phóng ROI thuê thêm (thuần đọc kho hiện tại, chặn bởi tồn đồ uống).
   const drinkUnits = quanNuocCupSupply(quan, level, storage);
-  const hireProj = quan.open && quan.staff < QUAN_NUOC_MAX_STAFF ? quanNuocProjection({ ...quan, staff: quan.staff + 1 }, level, drinkUnits, weather) : null;
-  const tonightProj = quan.open ? quanNuocProjection(quan, level, drinkUnits, weather) : null;
+  const hireProj = quan.open && quan.staff < QUAN_NUOC_MAX_STAFF ? quanNuocProjection({ ...quan, staff: quan.staff + 1 }, level, drinkUnits, weather, day) : null;
+  const tonightProj = quan.open ? quanNuocProjection(quan, level, drinkUnits, weather, day) : null;
   // GĐ188: "người thứ N đáng đồng lương?" — chiều xuống (nên giữ bớt ai / sa thải ai). Thuần đọc.
   const staffValues = quan.open ? quanNuocStaffValues(quan.price, level, quan.staff, drinkUnits) : [];
   // GĐ190: thanh nạp kho — thiếu bao nhiêu ly để bán đủ tối nay + nút nhảy sang Nhập hàng.

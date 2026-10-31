@@ -143,3 +143,4 @@
 - GĐ464: Thành tựu mới: Quán cà phê (+2tr) và Bếp xôi lớn (+1,5tr).
 - GĐ465: Đưa 2 thành tựu mới xuống cuối danh sách (không chen lên đầu bảng).
 - GĐ466: Dồn GĐ400–449 sang docs/progress-archive/PROGRESS-GD400-449.md, PROGRESS 37,6→27 KB.
+- GĐ467: Quán nước cuối tuần (T7/CN) khách ×1.2 — áp cho ngày bán thật và dự phóng trong bảng (quanWeekendMul).

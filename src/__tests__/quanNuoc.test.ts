@@ -297,3 +297,17 @@ describe('thời tiết ảnh hưởng khách quán nước (GĐ414)', () => {
     }
   });
 });
+
+describe('GĐ467: cuối tuần quán đông hơn', () => {
+  it('T7/CN ×1.2, ngày thường và không truyền ngày ×1', async () => {
+    const { quanWeekendMul, quanNuocProjection } = await import('../data/quanNuoc');
+    const { isWeekend } = await import('../data/calendar');
+    const sat = [1, 2, 3, 4, 5, 6, 7].find((d) => isWeekend(d))!;
+    const mon = [1, 2, 3, 4, 5, 6, 7].find((d) => !isWeekend(d))!;
+    expect(quanWeekendMul()).toBe(1);
+    expect(quanWeekendMul(mon)).toBe(1);
+    expect(quanWeekendMul(sat)).toBe(1.2);
+    const q = { open: true, staff: 0, price: 'vua' as const };
+    expect(quanNuocProjection(q, 29, 1e9, 'cloudy', sat).customers).toBeGreaterThan(quanNuocProjection(q, 29, 1e9, 'cloudy', mon).customers);
+  });
+});
