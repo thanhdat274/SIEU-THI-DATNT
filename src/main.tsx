@@ -42,7 +42,7 @@ import { createWorld } from './world/world';
 import { tiemXoiStandState, tiemXoiHandQty, tiemXoiDinerFigures } from './data/tiemXoi';
 import { quanHandLeft, quanNuocStandState, quanPatrons, quanTierOf } from './data/quanNuoc';
 import { menuBoardLines } from './data/quanRecipes';
-import { QUAN_HOUSE, quanHouseBoxes } from './world/quanNuocStand';
+import { QUAN_HOUSE, quanHouseBoxes, insideQuanHouse } from './world/quanNuocStand';
 import { branchStandState, LANE_X } from './data/branches';
 import { Hud, tutorialActive, tutorialStep } from './ui/Hud';
 import './ui/controls.css';
@@ -706,6 +706,8 @@ const clock = new THREE.Clock();
 /** Vòng lặp một khung hình — WebGPU cần renderer.init() xong mới được render nên tách ra riêng. */
 function renderFrame() {
   const dt = Math.min(clock.getDelta(), 0.1);
+  // GĐ488: tương tự cho nhà quán nước
+  world.quanNuoc.setRoofHidden(insideQuanHouse(world.quanNuoc.group.position.x, world.quanNuoc.group.position.z, player.position.x, player.position.z));
   // GĐ487: chủ đứng trong nhà tiệm xôi thì ẩn mái để nhìn thấy quầy, nồi và khách ngồi ăn
   if (tiemXoiStand && insideXoiHouseFn) tiemXoiStand.setRoofHidden(insideXoiHouseFn(tiemXoiStand.group.position.x, tiemXoiStand.group.position.z, player.position.x, player.position.z));
   const state = useGame.getState();

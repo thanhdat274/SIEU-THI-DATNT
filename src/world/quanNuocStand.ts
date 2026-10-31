@@ -22,6 +22,8 @@ export interface QuanNuocStand {
   setPatrons(n: number): void;
   /** Bậc cửa hàng (GĐ429): đổi biển hiệu + màu mái hiên theo quầy / quán / cà phê. */
   setTier(n: number): void;
+  /** GĐ488: ẩn mái khi chủ đứng trong quán. */
+  setRoofHidden(on: boolean): void;
   /** Hộp các khối chính nếu muốn chặn nav — để rỗng cho an toàn đi lại. */
   boxes: THREE.Box3[];
 }
@@ -40,7 +42,7 @@ export function createQuanNuocStand(): QuanNuocStand {
   group.add(lot, stand.group);
   lot.visible = false;
   stand.group.visible = false;
-  return { group, lot, stand: stand.group, setStaff: stand.setStaff, setMenu: stand.setMenu, setPatrons: stand.setPatrons, setTier: stand.setTier, boxes: [] };
+  return { group, lot, stand: stand.group, setStaff: stand.setStaff, setMenu: stand.setMenu, setPatrons: stand.setPatrons, setTier: stand.setTier, setRoofHidden: stand.setRoofHidden, boxes: [] };
 }
 
 /** Khoảnh đất trống đủ cấp chưa mua: sàn mỏng, gạch mép, biển gỗ "ĐỒ UỐNG", marker 🧋 gợi chú ý. */
@@ -83,6 +85,10 @@ function buildLot(): THREE.Group {
  *  (thế giới 54.4, 0, 1). Mép tây 52.6 chừa hẻm (≤52.5), mép trước z 1.8 chừa vỉa hè/đường (z ≥ 3). */
 export const QUAN_HOUSE = { x: 1.0, z: -1.7, width: 5.6, depth: 5, height: 3 } as const;
 
+/** GĐ488: điểm (thế giới) có nằm trong nhà quán nước đặt ở gốc (ox, oz) không. */
+export const insideQuanHouse = (ox: number, oz: number, x: number, z: number) =>
+  Math.abs(x - ox - QUAN_HOUSE.x) < QUAN_HOUSE.width / 2 && Math.abs(z - oz - QUAN_HOUSE.z) < QUAN_HOUSE.depth / 2;
+
 /** Nửa bề rộng lối cửa giữa mặt tiền (m). */
 export const QUAN_DOOR_HALF = 0.85;
 
@@ -110,7 +116,7 @@ export function quanHouseBoxes(ox: number, oz: number): THREE.Box3[] {
 
 /** Cửa hàng nước: nhà nhỏ tường + mái + mặt tiền kính, bên trong quầy pha, tủ mát, kệ ly, máy xay,
  *  bảng phấn thực đơn; bàn ghế ngoài hiên bật theo số nhân viên. */
-function buildStand(): { group: THREE.Group; setStaff(n: number): void; setMenu(lines: string[]): void; setPatrons(n: number): void; setTier(n: number): void } {
+function buildStand(): { group: THREE.Group; setStaff(n: number): void; setMenu(lines: string[]): void; setPatrons(n: number): void; setTier(n: number): void; setRoofHidden(on: boolean): void } {
   const g = new THREE.Group();
   const wall = new THREE.MeshStandardMaterial({ color: 0xbfe9e2, roughness: 0.85 });
   const trim = new THREE.MeshStandardMaterial({ color: 0x26a69a, roughness: 0.6 });
@@ -136,7 +142,7 @@ function buildStand(): { group: THREE.Group; setStaff(n: number): void; setMenu(
   box(W, H, T, wall, cx, H / 2, back);
   box(T, H, D, wall, cx - W / 2, H / 2, cz);
   box(T, H, D, wall, cx + W / 2, H / 2, cz);
-  box(W + 0.4, 0.16, D + 0.5, roof, cx, H + 0.08, cz + 0.1);
+  const roofSlab = box(W + 0.4, 0.16, D + 0.5, roof, cx, H + 0.08, cz + 0.1);
   box(W + 0.42, 0.3, 0.08, trim, cx, H - 0.1, front + 0.36);
   // Mặt tiền: hai trụ, kính hai bên, cửa trống ở giữa (rộng 1.4 m) để nhìn vào trong
   box(0.18, H, 0.18, trim, cx - W / 2, H / 2, front);
@@ -263,7 +269,7 @@ function buildStand(): { group: THREE.Group; setStaff(n: number): void; setMenu(
     signMat.needsUpdate = true;
     awningMat.color.setHex(QUAN_TIER_AWNINGS[n] ?? QUAN_TIER_AWNINGS[0]);
   };
-  return { group: g, setStaff: setStaffAll, setMenu, setPatrons, setTier };
+  return { group: g, setStaff: setStaffAll, setMenu, setPatrons, setTier, setRoofHidden: (on: boolean) => { roofSlab.visible = !on; } };
 }
 
 /** Mặt biển "ĐỒ UỐNG": chữ trắng đậm trên nền xanh cyan (màu thương hiệu quán). */

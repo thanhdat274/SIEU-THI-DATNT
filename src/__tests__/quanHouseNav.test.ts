@@ -37,3 +37,12 @@ describe('nhà quán nước trên lưới đi lại', () => {
     expect(Math.abs(x - cx)).toBeLessThan(0.9);
   });
 });
+
+describe('GĐ488: trong nhà quán nước', async () => {
+  const { insideQuanHouse } = await import('../world/quanNuocStand');
+  it('chỗ đứng pha là bên trong; vỉa hè là bên ngoài', () => {
+    const ox = 54.4, oz = 1;
+    expect(insideQuanHouse(ox, oz, ox + QUAN_HOUSE.x, oz + QUAN_HOUSE.z - 0.9)).toBe(true);
+    expect(insideQuanHouse(ox, oz, ox + QUAN_HOUSE.x, 2.6)).toBe(false);
+  });
+});
