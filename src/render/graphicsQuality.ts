@@ -124,6 +124,8 @@ export function buildLadder(start: GfxLevel, nativeDpr: number, auto: boolean): 
     const p = GFX_PRESETS[level];
     const top = Math.min(nativeDpr, p.maxPixelRatio);
     const ratios = [...new Set([top, 1.5, 1.25, 1, 0.75].filter((r) => r <= top + 0.01 && r >= p.minPixelRatio - 0.01))].sort((a, b) => b - a);
+    // DPR < min (zoom trang < 100%) lọc hết bậc → thang rỗng, step undefined; giữ ít nhất một bậc.
+    if (!ratios.length) ratios.push(top);
     for (const pixelRatio of ratios) steps.push({ level, pixelRatio });
   }
   return steps;
