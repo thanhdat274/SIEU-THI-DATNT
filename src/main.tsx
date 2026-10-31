@@ -341,6 +341,7 @@ const syncTiemXoi = () => {
   tiemXoiStand.stall.visible = st === 'open';
   tiemXoiStand.setCooks(1 + (s.biz.tiemXoi?.staff ?? 0));
   tiemXoiStand.setSteaming(s.biz.tiemXoi?.handDay === s.day);
+  tiemXoiStand.setBig(!!s.biz.tiemXoi?.big);
 };
 syncTiemXoi();
 useGame.subscribe(syncTiemXoi);

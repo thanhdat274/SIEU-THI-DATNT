@@ -5,7 +5,7 @@ import * as THREE from 'three';
  * lưới đi lại. `lot` = biển gỗ "TIỆM XÔI" khi đủ cấp chưa mở; `stall` = sạp có nồi chõ bốc hơi, mâm xôi
  * màu và mái che vàng khi đã mở. main.tsx bật/ẩn theo `tiemXoiStandState`.
  */
-export interface TiemXoiStand { group: THREE.Group; lot: THREE.Group; stall: THREE.Group; /** GĐ434: số người nấu đứng sau sạp (chủ + thợ). */ setCooks(n: number): void; /** GĐ447: hơi bốc to khi chủ đã đồ mẻ hôm nay. */ setSteaming(on: boolean): void }
+export interface TiemXoiStand { group: THREE.Group; lot: THREE.Group; stall: THREE.Group; /** GĐ434: số người nấu đứng sau sạp (chủ + thợ). */ setCooks(n: number): void; /** GĐ447: hơi bốc to khi chủ đã đồ mẻ hôm nay. */ setSteaming(on: boolean): void; setBig(on: boolean): void }
 
 const mat = (color: number) => new THREE.MeshStandardMaterial({ color, roughness: 0.8 });
 
@@ -46,6 +46,11 @@ export function createTiemXoiStand(): TiemXoiStand {
   const steam = new THREE.Mesh(new THREE.SphereGeometry(0.22, 10, 8), new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.45 }));
   steam.position.set(-0.6, 1.62, 0);
   stall.add(pot, steam);
+  // GĐ462: bếp mở rộng thêm nồi thứ hai sau sạp
+  const pot2 = pot.clone();
+  pot2.position.set(-0.6, 0.25, -0.75);
+  pot2.visible = false;
+  stall.add(pot2);
   // Mâm xôi màu: gấc đỏ, lá dứa xanh, đậu xanh vàng, nếp trắng
   [0xe74c3c, 0x27ae60, 0xf1c40f, 0xfdfdfd].forEach((c, i) => {
     const tray = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.17, 0.08, 12), mat(c));
@@ -87,5 +92,6 @@ export function createTiemXoiStand(): TiemXoiStand {
   lot.visible = false;
   stall.visible = false;
   const setSteaming = (on: boolean) => { steam.scale.setScalar(on ? 1.8 : 1); (steam.material as THREE.MeshStandardMaterial).opacity = on ? 0.6 : 0.45; };
-  return { group, lot, stall, setCooks, setSteaming };
+  const setBig = (on: boolean) => { pot2.visible = on; };
+  return { group, lot, stall, setCooks, setSteaming, setBig };
 }
