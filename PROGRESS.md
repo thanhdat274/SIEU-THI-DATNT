@@ -96,6 +96,7 @@
 - 📦 (GĐ317) Bundle 618 KB vs mục tiêu 600: `world/farm.ts` (49KB raw ≈ 12KB gzip) chỉ gọi đồng bộ trong `createWorld` — lazy-load nó cũng chưa đủ 18KB và buộc đổi `createWorld` sang async (rủi ro 3D/co-op). Hoãn; muốn xuống 600 cần tách thêm cả `three` examples hoặc world con khác.
 - 💰 Tỉ số thưởng/lãi bán 1,44 (cấp 5) / 1,17 (cấp 10) — phần lớn do ngày 1 không trần (luật người mới, cố ý). Muốn ≤1: tăng lãi gộp, đo trước/sau.
 
+- 🧭 (GĐ318) QA người mới trên save sạch (origin 127.0.0.1:5173, tách IndexedDB khỏi save thật — không xoá gì): từ màn khởi đầu tới **mở cửa tiệm = ~10 cú bấm, 06:29 giờ game** (3 thoại Bà Năm → Nhập hàng → Điền theo gợi ý → Nhập ngay → Mở cửa); checklist "Ngày đầu mở tiệm" tự tick đúng. **Chưa đo được lần bán đầu** (cảnh 3D tab nền không chạy rAF, cần người chơi đứng quầy). Phát hiện: panel **Nhập hàng ngày 1 quá dày** (lô chợ phiên, mối quen, dự báo, khách săn tuần, cần nhập gấp cùng lúc) — ứng viên ẩn bớt khối ở ngày 1.
 ## Backlog tiếp theo
 
 1. **Trục đã cạn:** 3D trang trí (chỉ làm 3D mới khi đi kèm gameplay — GĐ172–198) · multi-shop supply chain (GĐ199–209, khép mạch) · bộ soi tiền/vốn (GĐ210–251) · UI nợ (GĐ183/258) · chợ phiên (GĐ182).
