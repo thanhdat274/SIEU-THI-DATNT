@@ -41,13 +41,13 @@ export const quanRecipeById = (id: string) => QUAN_RECIPES.find((r) => r.id === 
 export const quanRecipesAt = (level: number) => QUAN_RECIPES.filter((r) => level >= r.unlock);
 
 /** Thực đơn hợp lệ: bỏ id lạ / chưa mở / trùng, cắt theo số ô. */
-export function cleanMenu(menu: readonly string[] | undefined, level: number): string[] {
+export function cleanMenu(menu: readonly string[] | undefined, level: number, slots = QUAN_MENU_SLOTS): string[] {
   const out: string[] = [];
   for (const id of menu ?? []) {
     const r = quanRecipeById(id);
     if (r && level >= r.unlock && !out.includes(id)) out.push(id);
   }
-  return out.slice(0, QUAN_MENU_SLOTS);
+  return out.slice(0, slots);
 }
 
 /** Dòng chữ bảng phấn trên quầy 3D (GĐ416): tên món + giá nghìn đồng; chưa chọn món = nước chai. */

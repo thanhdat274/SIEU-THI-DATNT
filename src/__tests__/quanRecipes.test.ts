@@ -196,3 +196,16 @@ describe('brewQuanHand xoay vòng món (GĐ436)', () => {
     expect(g().storage.tra).toBe(8);
   });
 });
+
+describe('GĐ449: quán cà phê thêm 1 ô thực đơn', () => {
+  it('bậc 0/1 có 4 ô, bậc 2 có 5 ô; cleanMenu cắt theo ô', async () => {
+    const { quanMenuSlots } = await import('../data/quanNuoc');
+    const { cleanMenu, QUAN_RECIPES } = await import('../data/quanRecipes');
+    expect(quanMenuSlots({ tier: 0 })).toBe(4);
+    expect(quanMenuSlots({ tier: 1 })).toBe(4);
+    expect(quanMenuSlots({ tier: 2 })).toBe(5);
+    const ids = QUAN_RECIPES.map((r) => r.id);
+    expect(cleanMenu(ids, 99).length).toBe(Math.min(4, ids.length));
+    expect(cleanMenu(ids, 99, 5).length).toBe(Math.min(5, ids.length));
+  });
+});

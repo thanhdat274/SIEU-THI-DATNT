@@ -1,8 +1,8 @@
 import { useGame } from '../../core/store';
 import { formatMoney, productById } from '../../data/products';
-import { QUAN_HAND_CUPS, QUAN_PRICE_OPTIONS, QUAN_TIERS, quanHandLeft, quanTierOf } from '../../data/quanNuoc';
+import { QUAN_HAND_CUPS, QUAN_PRICE_OPTIONS, QUAN_TIERS, quanHandLeft, quanMenuSlots, quanTierOf } from '../../data/quanNuoc';
 import {
-  cleanMenu, QUAN_MENU_SLOTS, QUAN_RECIPES, QUAN_VARIETY_BONUS, recipeCapacity, recipeCupCost,
+  cleanMenu, QUAN_RECIPES, QUAN_VARIETY_BONUS, recipeCapacity, recipeCupCost,
 } from '../../data/quanRecipes';
 import { styles } from './shared';
 
@@ -12,11 +12,12 @@ export function QuanMenuSection() {
   const tier = quanTierOf(biz.quanNuoc);
   const nextTier = QUAN_TIERS[tier + 1];
   const q = biz.quanNuoc;
-  const menu = cleanMenu(q.menu, level);
+  const slots = quanMenuSlots(q);
+  const menu = cleanMenu(q.menu, level, slots);
   const mul = QUAN_PRICE_OPTIONS[q.price].mul;
   return (
     <div style={{ ...styles.card, display: 'block', marginTop: 10 }}>
-      <b>📋 Thực đơn pha chế ({menu.length}/{QUAN_MENU_SLOTS})</b>
+      <b>📋 Thực đơn pha chế ({menu.length}/{slots})</b>
       <div style={{ fontSize: 12, opacity: 0.75, margin: '2px 0 6px' }}>
         Món pha lời hơn nước chai, cần đủ nguyên liệu trong kho. Mỗi món thêm kéo +{Math.round(QUAN_VARIETY_BONUS * 100)}% khách.
         {menu.length === 0 && ' Chưa chọn món nào: quán chỉ bán nước chai.'}
@@ -43,7 +44,7 @@ export function QuanMenuSection() {
           <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0', borderTop: '1px solid #0001', opacity: locked ? 0.5 : 1 }}>
             <button
               style={{ ...styles.btn, marginLeft: 0, minWidth: 64, background: on ? '#f1c40f' : '#fff', fontWeight: on ? 700 : undefined }}
-              disabled={locked || (!on && menu.length >= QUAN_MENU_SLOTS)}
+              disabled={locked || (!on && menu.length >= slots)}
               onClick={() => toggleQuanRecipe(r.id)}
             >
               {locked ? `Cấp ${r.unlock}` : on ? '✓ Bán' : 'Thêm'}

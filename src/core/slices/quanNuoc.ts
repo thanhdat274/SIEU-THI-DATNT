@@ -2,8 +2,9 @@ import { formatMoney } from '../../data/products';
 import {
   QUAN_TIERS, quanTierOf, QUAN_HAND_BONUS, QUAN_HAND_CUPS, quanHandLeft, QUAN_NUOC_HIRE_FEE, QUAN_NUOC_MAX_STAFF, QUAN_NUOC_PRICE, QUAN_NUOC_UNLOCK, QUAN_PRICE_OPTIONS,
   type QuanNuocPrice,
+  quanMenuSlots,
 } from '../../data/quanNuoc';
-import { brewMenu, cleanMenu, quanRecipeById, recipeCapacity, QUAN_MENU_SLOTS } from '../../data/quanRecipes';
+import { brewMenu, cleanMenu, quanRecipeById, recipeCapacity } from '../../data/quanRecipes';
 import { copyStock, takeStock } from '../stock';
 import type { GameState, SetState, GetState } from '../gameTypes';
 
@@ -68,9 +69,9 @@ export const createQuanNuocSlice = (set: SetState, get: GetState): Pick<GameStat
     const r = quanRecipeById(id);
     if (!r) return;
     if (s.level < r.unlock) { s.notify(`${r.name} mở ở cấp ${r.unlock}`); return; }
-    const menu = cleanMenu(q.menu, s.level);
+    const menu = cleanMenu(q.menu, s.level, quanMenuSlots(q));
     const on = menu.includes(id);
-    if (!on && menu.length >= QUAN_MENU_SLOTS) { s.notify(`Thực đơn tối đa ${QUAN_MENU_SLOTS} món, bỏ bớt một món trước`); return; }
+    if (!on && menu.length >= quanMenuSlots(q)) { s.notify(`Thực đơn tối đa ${quanMenuSlots(q)} món, bỏ bớt một món trước`); return; }
     set({ biz: { ...s.biz, quanNuoc: { ...q, menu: on ? menu.filter((m) => m !== id) : [...menu, id] } } });
   },
   /** GĐ427: đứng quầy tự pha một mẻ món đầu tiên còn đủ nguyên liệu trên thực đơn, bán ngay. */
@@ -81,7 +82,7 @@ export const createQuanNuocSlice = (set: SetState, get: GetState): Pick<GameStat
     const left = quanHandLeft(q, s.day);
     if (left <= 0) { s.notify('Hôm nay đã tự pha đủ mẻ, để nhân viên lo phần còn lại'); return false; }
     // GĐ436: lần lượt theo thực đơn (mẻ thứ n bắt đầu từ món thứ n), bỏ món thiếu nguyên liệu
-    const menu = cleanMenu(q.menu, s.level);
+    const menu = cleanMenu(q.menu, s.level, quanMenuSlots(q));
     const done = q.hand?.day === s.day ? q.hand.n : 0;
     const r = menu.map((_, i) => quanRecipeById(menu[(done + i) % menu.length])).find((x) => x && recipeCapacity(x, s.storage) >= QUAN_HAND_CUPS);
     if (!r) { s.notify('Chưa có món nào đủ nguyên liệu cho 5 ly, nhập thêm hoặc chọn thực đơn'); return false; }

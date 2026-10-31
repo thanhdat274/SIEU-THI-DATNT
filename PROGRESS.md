@@ -170,3 +170,4 @@
 - GĐ446: Gợi ý phím P ở quầy pha ghi số mẻ tự pha còn lại trong ngày.
 - GĐ447: Sạp xôi 3D bốc hơi to khi chủ đã đồ mẻ hôm nay (setSteaming).
 - GĐ448: QA sandbox: gợi ý J 'Tự đồ 35 phần xôi' (3 thợ) và 'hôm nay đã đồ' đúng.
+- GĐ449: Quán cà phê (bậc 3) có thêm 1 ô thực đơn pha chế (quanMenuSlots, 5 món).

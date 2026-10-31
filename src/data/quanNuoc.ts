@@ -8,7 +8,7 @@
 import { productById, unlockedProducts } from './products';
 import type { DayAction } from './dayPlan';
 import type { Weather } from './weather';
-import { brewMenu, cleanMenu, quanRecipeById, varietyMul } from './quanRecipes';
+import { brewMenu, cleanMenu, quanRecipeById, varietyMul, QUAN_MENU_SLOTS } from './quanRecipes';
 
 /** Cấp tối thiểu được mở quán nước. */
 export const QUAN_NUOC_UNLOCK = 29;
@@ -73,7 +73,7 @@ export function quanNuocDay(
   if (!q.open) return null;
   const drinks = quanNuocDrinkIds(level);
   const opt = QUAN_PRICE_OPTIONS[q.price];
-  const menu = cleanMenu(q.menu, level);
+  const menu = cleanMenu(q.menu, level, quanMenuSlots(q));
   // Giá bán trung bình nước chai đã mở: tính một lần rồi nhân hệ số mức giá
   const avgPrice = drinks.length ? drinks.reduce((n, id) => n + productById(id).sell, 0) / drinks.length : 0;
   const customers = Math.round(45 * opt.traffic * quanTierMul(q) * (1 + 0.15 * q.staff) * weatherMul(weather) * varietyMul(menu.length));
@@ -111,7 +111,7 @@ export function quanNuocDay(
 /** Giá bán trung bình của thực đơn đồ uống đã mở (cùng công thức quanNuocDay). */
 export const quanNuocAvgSell = (level: number, menu?: readonly string[]): number => {
   // GĐ415: có thực đơn pha chế thì lấy giá TB các món pha (khách phục vụ món pha trước)
-  const m = cleanMenu(menu, level);
+  const m = cleanMenu(menu, level, QUAN_MENU_SLOTS + 1);
   if (m.length) return m.reduce((n, id) => n + quanRecipeById(id)!.price, 0) / m.length;
   const drinks = quanNuocDrinkIds(level);
   return drinks.length ? drinks.reduce((n, id) => n + productById(id).sell, 0) / drinks.length : 0;
@@ -119,7 +119,7 @@ export const quanNuocAvgSell = (level: number, menu?: readonly string[]): number
 
 /** Tổng ly phục vụ được với kho hiện có: món pha (tới sức nguyên liệu) + nước chai. Thuần. */
 export function quanNuocCupSupply(q: QuanNuocState, level: number, storage: Record<string, number>): number {
-  const brewed = brewMenu(cleanMenu(q.menu, level), storage, 1e9, 1, () => {}).total;
+  const brewed = brewMenu(cleanMenu(q.menu, level, quanMenuSlots(q)), storage, 1e9, 1, () => {}).total;
   return brewed + quanNuocDrinkIds(level).reduce((n, id) => n + (storage[id] ?? 0), 0);
 }
 
@@ -133,7 +133,7 @@ export interface QuanNuocProjection { customers: number; wanted: number; served:
 export function quanNuocProjection(q: QuanNuocState, level: number, drinkUnits: number, weather?: Weather): QuanNuocProjection {
   const opt = QUAN_PRICE_OPTIONS[q.price];
   const avgPrice = quanNuocAvgSell(level, q.menu);
-  const customers = Math.round(45 * opt.traffic * quanTierMul(q) * (1 + 0.15 * q.staff) * weatherMul(weather) * varietyMul(cleanMenu(q.menu, level).length));
+  const customers = Math.round(45 * opt.traffic * quanTierMul(q) * (1 + 0.15 * q.staff) * weatherMul(weather) * varietyMul(cleanMenu(q.menu, level, quanMenuSlots(q)).length));
   const wanted = Math.ceil(customers * 1.5);
   const served = Math.min(wanted, Math.max(0, drinkUnits));
   const revenue = Math.round(served * avgPrice * opt.mul);
@@ -289,3 +289,5 @@ export const QUAN_TIERS = [
 ] as const;
 export const quanTierOf = (q: Pick<QuanNuocState, 'tier'>) => Math.max(0, Math.min(QUAN_TIERS.length - 1, Math.floor(q.tier ?? 0)));
 export const quanTierMul = (q: Pick<QuanNuocState, 'tier'>) => QUAN_TIERS[quanTierOf(q)].mul;
+/** GĐ449: quán cà phê (bậc 3) có thêm 1 ô thực đơn. */
+export const quanMenuSlots = (q: Pick<QuanNuocState, 'tier'>) => QUAN_MENU_SLOTS + (quanTierOf(q) >= 2 ? 1 : 0);
