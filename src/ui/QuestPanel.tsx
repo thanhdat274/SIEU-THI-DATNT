@@ -7,7 +7,7 @@ import { goalLocked, goalLockText, upcomingGoals, type CommunityGoal } from '../
 import { reputationOf } from '../data/reputation';
 import { betBonusMoney, betStatus, BET_TIERS, betCoreSetProgress, dailyQuests, dailySetProgress, isBetCore, questEcoCap, QUEST_ECO_MULT, STORY_STEPS, storyQuest, type BetTier, type Quest } from '../data/quests';
 import { formatMoney, productById } from '../data/products';
-import { recentAvgProfit } from '../data/gifts';
+import { recentAvgSalesProfit } from '../data/gifts';
 import { missingForOrder, orderValue, rushQuote, partyOrderById, STORY_ORDER_FRIEND_GAIN, STORY_ORDER_FRIEND_LOSS } from '../data/orders';
 
 /** Sổ nhiệm vụ: những việc mỗi ngày (đủ mở gì thêm việc đó) và một bước cốt truyện, xong thì bấm nhận thưởng. */
@@ -316,12 +316,12 @@ function QuestEcoNote() {
   const s = useGame();
   const daily = dailyQuests(questContext(s));
   const total = daily.reduce((n, q) => n + q.money, 0);
-  const avg = recentAvgProfit(s.history);
+  const avg = recentAvgSalesProfit(s.history);
   const cap = questEcoCap(avg);
   if (!isFinite(cap)) return null; // chưa tới trần — không nói gì
   return (
     <div style={{ marginBottom: 8, fontSize: 11.5, opacity: 0.8 }}>
-      💹 Thưởng bộ hôm nay <b>{formatMoney(total)}</b> — neo theo lãi bình quân gần đây ({formatMoney(avg)}/ngày, tối đa {QUEST_ECO_MULT}×), để việc bán hàng vẫn đáng công.
+      💹 Thưởng bộ hôm nay <b>{formatMoney(total)}</b> — neo theo lãi bán hàng gần đây ({formatMoney(avg)}/ngày, tối đa {QUEST_ECO_MULT}×), để việc bán hàng vẫn đáng công.
     </div>
   );
 }

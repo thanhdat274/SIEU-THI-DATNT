@@ -145,11 +145,10 @@ describe('NGÀY ĐẦU (level 1) — kèo & trần kinh tế phải thân thiệ
   it('người chơi mới (chưa có lãi) không bị trần kinh tế — questEcoCap = Infinity', () => {
     // cảnh tiệm vừa mở: chưa kết thúc ngày nào, chưa có lịch sử lãi → trần không giới hạn
     expect(questEcoCap(0)).toBe(Infinity);
-    expect(questEcoCap(50_000)).toBe(Infinity); // dưới floor 150k
-    expect(questEcoCap(150_000)).toBe(Infinity); // bằng floor
-    // từ trên floor mới bắt đầu chặn = 3 × lãi bình quân
-    expect(questEcoCap(200_000)).toBe(600_000);
-    expect(questEcoCap(1_000_000)).toBe(3_000_000);
+    // đã có lãi: trần = 0.7 × lãi bình quân nhưng không dưới sàn 150k (tiệm nhỏ vẫn có thưởng)
+    expect(questEcoCap(50_000)).toBe(150_000);
+    expect(questEcoCap(200_000)).toBe(150_000);
+    expect(questEcoCap(1_000_000)).toBe(700_000);
   });
 
   it('target việc chính ngày 1 đạt được ở mức nền → kèo trúng', () => {

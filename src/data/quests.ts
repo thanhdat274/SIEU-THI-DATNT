@@ -95,15 +95,20 @@ export const BET_BONUS_CAP = 1.0;
 // KHÔNG được lấn át sức bán thật. Tiệm nhỏ (chưa tới QUEST_ECO_FLOOR) hoặc chưa có lịch sử lãi → không
 // giới hạn (Infinity) → người mới/ngày đầu giữ nguyên hành vi.
 
-/** Lãi bình quân/ngày (7 ngày gần) từ đây mới bắt đầu giới hạn tổng thưởng bộ. */
-export const QUEST_ECO_FLOOR = 150_000;
-/** Trần tổng thưởng bộ ngày = QUEST_ECO_MULT × lãi bình quân/ngày. */
-export const QUEST_ECO_MULT = 3.0;
+// 2026-10-31 — đo lại bằng cột salesProfit (lãi bán hàng thật): trần cũ 3× và chỉ bật khi lãi > 150k nên
+// cấp 10 (lãi ~146k) không bị chặn, thưởng nhiệm vụ + kèo gấp 7–20× lãi bán. Luật cứng 10 của
+// promt_game.md: bán hàng là nguồn thu chính → trần 0.7× lãi (kèo vừa +50% đưa tổng về ~1× lãi), luôn
+// bật khi đã có lịch sử lãi; sàn QUEST_ECO_FLOOR giữ thưởng đáng kể cho tiệm nhỏ.
 
-/** Trần tổng thưởng tiền của bộ nhiệm vụ ngày. Tiệm nhỏ/chưa có lãi → Infinity (không giới hạn). */
+/** Sàn của trần tổng thưởng bộ ngày (≈ giá trị kho khởi đầu) — tiệm nhỏ vẫn có thưởng đáng nhận. */
+export const QUEST_ECO_FLOOR = 150_000;
+/** Trần tổng thưởng bộ ngày = QUEST_ECO_MULT × lãi bình quân/ngày (không thấp hơn sàn). */
+export const QUEST_ECO_MULT = 0.7;
+
+/** Trần tổng thưởng tiền của bộ nhiệm vụ ngày. Chưa có lịch sử lãi (ngày đầu) → Infinity. */
 export function questEcoCap(avgDailyProfit: number): number {
-  if (!(avgDailyProfit > 0) || avgDailyProfit <= QUEST_ECO_FLOOR) return Infinity;
-  return avgDailyProfit * QUEST_ECO_MULT;
+  if (!(avgDailyProfit > 0)) return Infinity;
+  return Math.max(QUEST_ECO_FLOOR, avgDailyProfit * QUEST_ECO_MULT);
 }
 
 /** Tiền thưởng kẽ nếu trúng ở mức `tier`: % tổng thưởng nhiệm vụ ngày, chặn bởi trần cứng. */

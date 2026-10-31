@@ -88,6 +88,12 @@ export function recentAvgProfit(history: { profit: number }[]): number {
   return recent.reduce((s, h) => s + h.profit, 0) / recent.length;
 }
 
+/** Lãi BÁN HÀNG bình quân/ngày (7 ngày gần, chỉ ngày dương) — đọc `salesProfit`; save cũ thiếu trường
+ *  thì rơi về `profit`. Dùng để neo thưởng nhiệm vụ (questEcoCap). */
+export function recentAvgSalesProfit(history: { profit: number; salesProfit?: number }[]): number {
+  return recentAvgProfit(history.map((h) => ({ profit: h.salesProfit ?? h.profit })));
+}
+
 /** Bản sao quà tiền đã scale theo cấp VÀ theo nền kinh tế; XP chỉ theo cấp. */
 export const scaledGiftEco = (g: DailyGift, level: number, avgDailyProfit = 0): DailyGift => ({
   ...scaledGift(g, level),

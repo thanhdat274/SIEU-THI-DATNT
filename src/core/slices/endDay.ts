@@ -23,7 +23,7 @@ import { supplyContractById } from '../../data/contracts';
 import { branchPowerBill, restingOn } from '../../data/branches';
 import { VENUE_TREND_DAYS, type VenueDay } from '../../data/venueTrend';
 import { RISK_TREND_DAYS, emptyRiskToday } from '../../data/risk';
-import { type GameState, type ContractState, type DayRecord, type SetState, type GetState, DAY_START, HISTORY_DAYS, wagesDue, emptyStats } from '../gameTypes';
+import { type GameState, type ContractState, type DayRecord, type SetState, type GetState, DAY_START, HISTORY_DAYS, wagesDue, emptyStats, daySalesProfit } from '../gameTypes';
 import { putStock, spoilOvernight, takeStock, type Stock } from '../stock';
 import { isCookStation } from '../../data/furniture';
 import type { CookingStation } from '../../data/recipes';
@@ -358,6 +358,7 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
   const record: DayRecord = {
     day: s.day, revenue: stats.revenue, profit: stats.revenue - stats.spent - wages - rent,
     customers: stats.customers, unhappy: stats.unhappy,
+    salesProfit: daySalesProfit(stats) - wages - rent,
     ...(todayReviews.length ? { rating: todayReviews.reduce((n, r) => n + r.stars, 0) / todayReviews.length } : {}),
   };
   const nextId = Math.max(0, ...s.staff.map((st) => st.id), ...s.candidates.map((c) => c.id)) + 1;

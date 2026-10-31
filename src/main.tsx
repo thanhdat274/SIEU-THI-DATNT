@@ -31,7 +31,9 @@ import { BranchVisit } from './agents/branchVisit';
 import { BizView } from './render/bizView';
 import { CameraController } from './render/cameraController';
 import { InteriorView } from './render/interiorView';
-import { AdaptiveResolution, createRenderer, installRenderGuard, Lighting, LOW_POWER, type GameRenderer } from './render/scene';
+import { createRenderer, GFX_CHOICE, INITIAL_GFX, installRenderGuard, Lighting, LOW_POWER, type GameRenderer } from './render/scene';
+import { GFX_LABEL, GFX_PRESETS, QualityGovernor, detectLevel, gfxStatus, onGfxChoice, readDeviceHints, readPerfLog, recordPerf, reportGfx, type GfxChoice } from './render/graphicsQuality';
+import { applyCrowdLod } from './agents/walker';
 import { createTiltShift } from './render/fx/tiltShift';
 import { applyLightBudget, initLightPool } from './render/lightBudget';
 import { NavGrid } from './world/navGrid';
@@ -563,9 +565,29 @@ function updateStatus() {
 }
 
 let reminderSlot = -1;
-// Tự co giãn độ phân giải theo FPS + bóng đổ cập nhật 30 hình/giây
-initLightPool(scene, LOW_POWER ? 4 : 8);
-const resScale = new AdaptiveResolution(renderer);
+// Mức đồ họa + bộ tự hạ nhiều tầng (độ nét → bóng → đám đông → đồ trang trí); bóng cập nhật 30 hình/giây
+initLightPool(scene, GFX_PRESETS[INITIAL_GFX].lightPool);
+const nativeDpr = window.devicePixelRatio || 1;
+let gfxChoice: GfxChoice = GFX_CHOICE;
+let gfx = new QualityGovernor(INITIAL_GFX, nativeDpr, gfxChoice === 'auto');
+/** Đã báo "tự giảm đồ họa" trong phiên này chưa — chỉ báo một lần, không làm phiền. */
+let gfxNotified = false;
+let lastPerfDay = -1;
+function applyGfx() {
+  const p = gfx.preset;
+  renderer.setPixelRatio(gfx.step.pixelRatio);
+  lighting.sun.castShadow = p.shadows;
+  world.kit.setDecor(p.decor);
+  reportGfx(gfxChoice, gfx.step.level, gfx.avgFps);
+}
+applyGfx();
+onGfxChoice((c) => {
+  gfxChoice = c;
+  const level = c === 'auto' ? detectLevel(readDeviceHints()) : c;
+  gfx = new QualityGovernor(level, nativeDpr, c === 'auto');
+  applyGfx();
+  useGame.getState().notify(`🎨 Đồ họa: ${GFX_LABEL[c]}. Mưa, mây và khử răng cưa đổi theo sau khi tải lại trang.`);
+});
 renderer.shadowMap.autoUpdate = false;
 let frameNo = 0;
 // Mảng người dùng lại mỗi khung cho updateDoor (không cấp phát mảng mới mỗi khung)
@@ -768,9 +790,22 @@ function renderFrame() {
     world.kit.setFestival(festival);
   }
   applyLightBudget(controller.target);
-  // Bóng đổ cập nhật 30 hình/giây là đủ (nắng di chuyển chậm): tiết kiệm một nửa vệt vẽ bóng
-  if ((frameNo++ & 1) === 0) renderer.shadowMap.needsUpdate = true;
-  resScale.update(dt);
+  // Bóng đổ cập nhật 30 hình/giây là đủ (nắng di chuyển chậm): tiết kiệm một nửa vệt vẽ bóng; mức Thấp tắt hẳn
+  if ((frameNo++ & 1) === 0 && gfx.preset.shadows) renderer.shadowMap.needsUpdate = true;
+  applyCrowdLod(controller.target, gfx.preset.npcCap, gfx.preset.animFarDist);
+  const prevLevel = gfx.step.level;
+  if (gfx.update(dt)) {
+    applyGfx();
+    if (gfx.step.level !== prevLevel && !gfxNotified && playing()) {
+      gfxNotified = true;
+      g.notify(`🎨 Máy hơi nặng nên game tự giảm đồ họa xuống "${GFX_LABEL[gfx.step.level]}" cho mượt hơn. Đổi ở ⋯ Thêm → Đồ họa.`);
+    }
+  } else reportGfx(gfxChoice, gfx.step.level, gfx.avgFps);
+  // Nhật ký hiệu năng riêng máy: mỗi ngày game ghi FPS trung bình + mức đang dùng (xem game.perf())
+  if (playing() && g.day !== lastPerfDay) {
+    if (lastPerfDay >= 0) recordPerf({ day: lastPerfDay, fps: gfx.avgFps, level: gfx.step.level });
+    lastPerfDay = g.day;
+  }
 
   if (tiltShift) tiltShift.render();
   else renderer.render(scene, camera);
@@ -872,7 +907,7 @@ if (import.meta.env.PROD && 'serviceWorker' in navigator) {
 
 // Để debug trong console khi chạy dev
 if (import.meta.env.DEV) {
-  Object.assign(window, { game: { player, world, controller, grid, useGame, customers, buildMode, staff, renderer, scene, lighting } });
+  Object.assign(window, { game: { player, world, controller, grid, useGame, customers, buildMode, staff, renderer, scene, lighting, perf: () => ({ ...gfxStatus(), log: readPerfLog() }) } });
   import('./dev/autoplay').then(({ createAutoplay }) =>
     Object.assign((window as unknown as { game: object }).game, { autoplay: createAutoplay(shop, customers, staff, player) }),
   );

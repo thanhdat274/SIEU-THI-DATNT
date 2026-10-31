@@ -164,6 +164,10 @@ export interface DayStats {
   fiveStars?: number;
 }
 
+/** Lãi gộp trong ngày: (tiền thu − vốn) theo sổ bán từng món + lời dịch vụ quầy. */
+export const daySalesProfit = (stats: DayStats) =>
+  Object.values(stats.byItem ?? {}).reduce((n, l) => n + l.revenue - l.cost, 0) + (stats.services ?? 0);
+
 export interface HourLine { customers: number; revenue: number }
 
 export const addHour = (byHour: DayStats['byHour'], minutes: number, customers: number, revenue: number) => {
@@ -183,6 +187,9 @@ export interface DayRecord {
   day: number;
   revenue: number;
   profit: number;
+  /** Lãi bán hàng: lãi gộp sổ bán + lời dịch vụ − lương − tiền nhà (không trừ tiền nhập kho/đầu tư).
+   *  `profit` trừ cả tiền nhập hàng nên hầu như ngày nào cũng âm — không dùng làm thước đo sức bán. */
+  salesProfit?: number;
   customers: number;
   unhappy: number;
   /** Sao trung bình của các đánh giá trong ngày; không ai chấm thì bỏ trống. */

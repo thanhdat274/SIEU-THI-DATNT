@@ -113,6 +113,16 @@ describe('khảo sát kinh tế vòng ngày — simulator thật trên store', (
       // Cửa sổ questLog sau nhiều ngày phải còn hợp lệ (không rác NaN)
       expect(Number.isFinite(s.money)).toBe(true);
 
+      // ── Bán hàng phải là nghề chính (luật cứng kinh tế trong promt_game.md) ──
+      // Lãi bán hàng thật (lãi gộp − lương − tiền nhà, không trừ đầu tư) phải dương, và thưởng
+      // nhiệm vụ + kèo không được lấn lãi bán hàng thêm nữa: trần là mức đo hiện tại (khoá chiều xấu đi).
+      const sales = rows.reduce((n0, r) => n0 + r.salesProfit, 0);
+      const bonus = rows.reduce((n0, r) => n0 + r.quest + r.bet, 0);
+      // eslint-disable-next-line no-console
+      console.log(`[bán hàng] level=${level} · lãi bán hàng/ngày=${fmt(sales / rows.length)} · (nhiệm vụ+kèo)/lãi bán = ${(bonus / Math.max(1, sales)).toFixed(2)}`);
+      expect(sales, 'lãi bán hàng cộng dồn phải dương').toBeGreaterThan(0);
+      expect(bonus / sales, `thưởng lấn lãi bán hàng quá trần ở cấp ${level}`).toBeLessThanOrEqual(BONUS_TO_SALES_CEILING[level]);
+
       // ── In BẢNG TRUNG BÌNH ra stdout cho Leader ──
       // eslint-disable-next-line no-console
       console.log(
@@ -144,8 +154,16 @@ describe('khảo sát kinh tế vòng ngày — simulator thật trên store', (
   // GĐ160 — ngày 1 cấp 1: bot autoplay bán đúng vòng nhập-bày-bán, doanh thu phải chạm được mục tiêu
   // doanh thu người mới (100.000đ = ~65% kho khởi đầu) — smoke ngắn, in số để Leader đối chiếu.
   it('ngày 1 cấp 1 — bot đạt mục tiêu doanh thu người mới 100.000đ (in số, không assert cứng tỉ số)', async () => {
+    // Người chơi mới: đếm số thông báo bật lên trong ngày đầu (ô thông báo chỉ có một chỗ, 3 giây —
+    // dồn dập thì người mới đọc không kịp và mất luôn thông báo trước). Trần = mức đo 2026-10-31.
+    let toasts = 0;
+    const unsub = useGame.subscribe((st, prev) => { if (st.message && st.message !== prev.message) toasts++; });
     const { rows } = await runEconomySim(1, 1, { betTier: 1.0 });
+    unsub();
     expect(rows.length).toBe(1);
+    // eslint-disable-next-line no-console
+    console.log(`[người mới] ngày 1: ${toasts} thông báo bật lên`);
+    expect(toasts, 'ngày đầu quá nhiều thông báo — gộp hoặc dời bớt sang ngày sau').toBeLessThanOrEqual(DAY1_TOAST_CEILING);
     const revenue = useGame.getState().totals.revenue;
     // eslint-disable-next-line no-console
     console.log(`[GĐ160 smoke] ngày 1 cấp 1: doanh thu=${fmt(revenue)} · mục tiêu doanh thu người mới=${fmt(100_000)} · đạt=${revenue >= 100_000 ? 'ĐẠT' : 'CHƯA'} · tiền nhiệm vụ=${fmt(rows[0].quest)} · lãi vận hành=${fmt(rows[0].operationalProfit)}`);
@@ -156,6 +174,18 @@ describe('khảo sát kinh tế vòng ngày — simulator thật trên store', (
 });
 
 const fmt = (v: number) => `${Math.round(v).toLocaleString('vi-VN')}đ`;
+
+/**
+ * Trần tỉ số (thưởng nhiệm vụ + kèo) / lãi bán hàng thật, đo ngày 2026-10-31: mô phỏng KHÔNG tất định
+ * giữa các lần chạy (đo được 5.1–7.5 / 18–20 / 3.1–5.2) nên trần = mức cao nhất +25%.
+ * Mục tiêu dài hạn trong promt_game.md: tỉ số ≤ 1 (bán hàng là nguồn thu chính). Cân bằng lại xong thì
+ * HẠ trần này theo số đo mới — không bao giờ nâng lên.
+ */
+/** Số thông báo tối đa trong ngày đầu của bot chơi cấp 1 (mức đo 2026-10-31; chỉ được hạ). */
+const DAY1_TOAST_CEILING = 30; // đo được 27 (đệm nhỏ vì thứ tự test đổi trạng thái seed)
+
+// Đo 31/10 sau khi neo trần thưởng vào lãi bán hàng: 3.6 / 1.7 / 1.2 (cấp 5 cao vì sàn 150k + ngày 1 chưa có trần). Chỉ được hạ.
+const BONUS_TO_SALES_CEILING: Record<number, number> = { 5: 5, 10: 3, 20: 2 };
 
 // ── GĐ280 — đóng GĐ110/117: đo tỉ lệ hoàn thành nhiệm vụ ở cấp 50 bằng harness tất định ──
 // Số liệu đo 28 ngày (seed cố định qua seedLevel): 3 nhiệm vụ xương sống (Đông khách/Doanh thu/

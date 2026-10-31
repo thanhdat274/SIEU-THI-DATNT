@@ -53,6 +53,7 @@ import { chapterById } from '../data/chapters';
 import { initAudio, isMuted, isMusic, setMuted, setMusic } from '../core/audio';
 import { Panels } from './Panels';
 import { answerAsk, useCounterAsk, askWallElapsed } from '../core/counterAsk';
+import { GFX_CYCLE, GFX_LABEL, gfxStatus, setGfxChoice } from '../render/graphicsQuality';
 import './hud.css';
 
 /** Màn hình cảm ứng: không có phím, thay chữ phím [X] bằng biểu tượng chạm. */
@@ -670,6 +671,7 @@ function MoreMenu({ tools, level, onHelp }: { tools: ToolDef[]; level: number; o
                   <ToolButton tool={t} level={level} onPicked={() => setOpen(false)} />
                 </Fragment>
               ))}
+              <GfxButton level={level} />
               {!TOUCH && <ToolButton tool={{ icon: '⌨️', label: 'Phím', on: () => setKeys(true) }} level={level} />}
               {/* Xem lại hướng dẫn mở tiệm: cả máy cảm xúc lẫn desktop đều cần */}
               <ToolButton tool={{ icon: '📖', label: 'Hướng dẫn', on: onHelp }} level={level} onPicked={() => setOpen(false)} />
@@ -679,6 +681,22 @@ function MoreMenu({ tools, level, onHelp }: { tools: ToolDef[]; level: number; o
       )}
     </div>
   );
+}
+
+/**
+ * Nút đồ họa trong menu Thêm: bấm để xoay vòng Tự động → Thấp → Vừa → Cao. Tự động thì ghi kèm
+ * mức máy đang chạy. Tuỳ chọn riêng máy, không vào save — menu vẫn mở để bấm tiếp cho tới mức ưng.
+ */
+function GfxButton({ level }: { level: number }) {
+  const [choice, setChoice] = useState(gfxStatus().choice);
+  const st = gfxStatus();
+  const label = choice === 'auto' ? `Đồ họa: Tự động (${GFX_LABEL[st.level]})` : `Đồ họa: ${GFX_LABEL[choice]}`;
+  const next = () => {
+    const c = GFX_CYCLE[(GFX_CYCLE.indexOf(choice) + 1) % GFX_CYCLE.length];
+    setGfxChoice(c);
+    setChoice(c);
+  };
+  return <ToolButton tool={{ icon: '🎨', label, on: next }} level={level} />;
 }
 
 /** Đóng popover khi bấm ra ngoài hoặc nhấn Esc. */

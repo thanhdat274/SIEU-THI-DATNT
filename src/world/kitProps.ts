@@ -35,20 +35,14 @@ export const KIT_PLACEMENTS: KitPlacement[] = [
   { module: 'chau_cay', pos: [1.5, 0, 1.35], rotY: 1.2, scale: 1.2 },
   { module: 'chau_cay', pos: [6.5, 0, 1.35], rotY: 4.4, scale: 1.3 },
   { module: 'thung_go', pos: [-8.3, 0, 1.1], rotY: 0.5 },
-  { module: 'thung_go', pos: [-8.2, 0, 0.45], rotY: 1.1 },
   { module: 'khom_tre', pos: [-40, 0, -16], rotY: 0.8, scale: 1.4 },
   { module: 'khom_tre', pos: [-43.5, 0, -23], rotY: 2.9, scale: 1.15 },
   { module: 'khom_tre', pos: [37, 0, -19], rotY: 1.7, scale: 1.3 },
   { module: 'bon_nuoc', pos: [-8.8, 0, -7.6], rotY: 0.2 },
-  { module: 'cho_nhua', pos: [7.6, 0, 2.55], rotY: 0.9 },
   { module: 'cho_nhua', pos: [-14.8, 0, 2.3], rotY: 2.2 },
-  { module: 'cho_nhua', pos: [-15.6, 0, 1.7], rotY: 3.1 },
-  { module: 'xe_day', pos: [17.5, 0, 2.15], rotY: 0.35 },
   // Băng ghế hẻm (gđ195): chỗ bà con ngồi hóng mát — cạnh nhà phía tây, bên đống chậu cây gần tre,
   // và trên vỉa hè phía đông đối diện dãy quán; vẫn chỉ đồ trang trí, không chặn lưới đi lại.
-  { module: 'bang_ghe', pos: [-18, 0, -6], rotY: 0.9 },
   { module: 'bang_ghe', pos: [15.2, 0, 2.1], rotY: -0.4 },
-  { module: 'bang_ghe', pos: [-45, 0, -22], rotY: 2.2 },
 ];
 
 /**
@@ -61,13 +55,9 @@ export const KIT_PLACEMENTS: KitPlacement[] = [
  */
 export const KIT_MARKET_PLACEMENTS: KitPlacement[] = [
   { module: 'xe_day', pos: [-3.2, 0, 2.6], rotY: 0.5 },
-  { module: 'xe_day', pos: [0.4, 0, 2.7], rotY: 1.4 },
   { module: 'xe_day', pos: [8.4, 0, 2.5], rotY: 4.6 },
   // Chỗ ngồi họp chợ (gđ196): băng ghế + ghế nhựa rải mép vỉa hè (z 1.4..3), theo nhịp isMarketDay
-  { module: 'bang_ghe', pos: [-1.4, 0, 1.9], rotY: 0.3 },
   { module: 'bang_ghe', pos: [-6.6, 0, 1.9], rotY: -0.2 },
-  { module: 'cho_nhua', pos: [-4.9, 0, 2.5], rotY: 1.1 },
-  { module: 'cho_nhua', pos: [2.4, 0, 2.2], rotY: -0.7 },
 ];
 
 /**
@@ -78,8 +68,8 @@ export const KIT_MARKET_PLACEMENTS: KitPlacement[] = [
  * giữa lòng đường — "đường phía trước đang sửa" chứ không chắn lối.
  */
 export const KIT_ROADWORK_PLACEMENTS: KitPlacement[] = [
-  { module: 'rao_chan', pos: [-2.2, 0, 2.6], rotY: 0.08, scale: 1.05 },
-  { module: 'rao_chan', pos: [4.6, 0, 2.5], rotY: -0.06, scale: 1.05 },
+  { module: 'rao_chan', pos: [-1.8, 0, 2.6], rotY: 0.08, scale: 1.05 },
+  { module: 'rao_chan', pos: [10.5, 0, 2.5], rotY: -0.06, scale: 1.05 },
 ];
 
 /**
@@ -90,7 +80,7 @@ export const KIT_ROADWORK_PLACEMENTS: KitPlacement[] = [
  */
 export const KIT_FESTIVAL_PLACEMENTS: KitPlacement[] = [
   { module: 'day_co', pos: [-0.4, 0, 2.6], rotY: 0.05 },
-  { module: 'day_co', pos: [5.2, 0, 1.6], rotY: 0.1 },
+  { module: 'day_co', pos: [9.6, 0, 1.6], rotY: 0.1 },
   { module: 'day_co', pos: [-18, 0, 0.6], rotY: 0.1 },
 ];
 
@@ -111,6 +101,8 @@ export function kitPlacementProblems(): string[] {
     if (inRect(x, z, -15, -5.2, -9, 1.2)) problems.push(`${p.module} @${x},${z}: đè nhà riêng`);
     // Mặt tiền tiệm (x 0..8, front z=1) — tiệm lớn lên phía sau nên đủ cỡ siêu thị cũng chỉ về phía −z
     if (inRect(x, z, 0, -22, 8, 1)) problems.push(`${p.module} @${x},${z}: đè mặt tiền tiệm`);
+    // Hành lang trước cửa tiệm: giữ trống để mặt tiền sạch mắt (chỉ chậu cây ở hai mép x=1.5/6.5)
+    if (inRect(x, z, 2, 0, 6, 4)) problems.push(`${p.module} @${x},${z}: bày trong hành lang trước cửa tiệm`);
   }
   // Hai món chen nhau quá sát nhìn như lỗi đặt chỗ (kể cả base lẫn chợ phiên)
   for (let i = 0; i < all.length; i++) {
@@ -120,6 +112,11 @@ export function kitPlacementProblems(): string[] {
         problems.push(`${all[i].module} & ${all[j].module}: chèn nhau <0.55 m`);
       }
     }
+  }
+  // Mật độ: không quá 4 món trong bán kính 4 m (kể cả khi mọi sự kiện cùng bật) — chống đống tạp nham
+  for (const a of all) {
+    const near = all.filter((b) => Math.hypot(a.pos[0] - b.pos[0], a.pos[2] - b.pos[2]) <= 4);
+    if (near.length > 4) problems.push(`${a.module} @${a.pos[0]},${a.pos[2]}: ${near.length} món trong 4 m (tối đa 4)`);
   }
   return problems;
 }
@@ -142,13 +139,15 @@ export interface KitProps {
   festivalGroup: THREE.Group;
   /** Bật/tắt cảnh "con hẻm vào dịp" (dãy cờ ngang hẻm khi có lễ hội — festivalOn). */
   setFestival(on: boolean): void;
+  /** Hiện/ẩn đồ trang trí thường ngày theo mức đồ họa (đồ sự kiện không bị ảnh hưởng). */
+  setDecor(on: boolean): void;
 }
 
 /**
  * Bắt đầu tải kit: trả về group trống để `scene.add` NGAY (thế giới không phải chờ), các prop
  * vừa tải xong vừa chen vào. Lỗi mạng chỉ ghi console — kit là đồ trang trí, không có vẫn chơi được.
  */
-export function loadKitProps(baseUrl = '/models/kit/'): { group: THREE.Group; done: Promise<KitProps>; marketGroup: THREE.Group; setMarketDay(on: boolean): void; roadworkGroup: THREE.Group; setRoadwork(on: boolean): void; festivalGroup: THREE.Group; setFestival(on: boolean): void } {
+export function loadKitProps(baseUrl = '/models/kit/'): { group: THREE.Group; done: Promise<KitProps>; marketGroup: THREE.Group; setMarketDay(on: boolean): void; roadworkGroup: THREE.Group; setRoadwork(on: boolean): void; festivalGroup: THREE.Group; setFestival(on: boolean): void; setDecor(on: boolean): void } {
   const group = new THREE.Group();
   group.name = 'kitProps';
   // Nhóm gánh hàng chợ phiên (gđ181): con của group, mặc định ẩn — setMarketDay bật khi isMarketDay.
@@ -166,7 +165,14 @@ export function loadKitProps(baseUrl = '/models/kit/'): { group: THREE.Group; do
   festivalGroup.name = 'festivalProps';
   festivalGroup.visible = false;
   group.add(festivalGroup);
-  const result: KitProps = { group, loaded: 0, failed: [], marketGroup, setMarketDay: (on) => { marketGroup.visible = on; }, roadworkGroup, setRoadwork: (on) => { roadworkGroup.visible = on; }, festivalGroup, setFestival: (on) => { festivalGroup.visible = on; } };
+  // Đồ trang trí thường ngày là con trực tiếp của group (trừ 3 nhóm sự kiện); prop tải muộn đọc cờ này
+  let decorOn = true;
+  const isEventGroup = (o: THREE.Object3D) => o === marketGroup || o === roadworkGroup || o === festivalGroup;
+  const setDecor = (on: boolean) => {
+    decorOn = on;
+    for (const c of group.children) if (!isEventGroup(c)) c.visible = on;
+  };
+  const result: KitProps = { group, loaded: 0, failed: [], marketGroup, setMarketDay: (on) => { marketGroup.visible = on; }, roadworkGroup, setRoadwork: (on) => { roadworkGroup.visible = on; }, festivalGroup, setFestival: (on) => { festivalGroup.visible = on; }, setDecor };
   const done = new Promise<KitProps>((resolve) => {
     const finish = () => resolve(result);
     if (KIT_PLACEMENTS.length === 0) return finish();
@@ -184,6 +190,7 @@ export function loadKitProps(baseUrl = '/models/kit/'): { group: THREE.Group; do
       root.traverse((o) => {
         if ((o as THREE.Mesh).isMesh) { o.castShadow = true; o.receiveShadow = false; }
       });
+      if (parent === group) root.visible = decorOn;
       parent.add(root);
     };
     let pending = KIT_PLACEMENTS.length;
@@ -249,5 +256,5 @@ export function loadKitProps(baseUrl = '/models/kit/'): { group: THREE.Group; do
         finish();
       });
   });
-  return { group, done, marketGroup, setMarketDay: result.setMarketDay, roadworkGroup, setRoadwork: result.setRoadwork, festivalGroup, setFestival: result.setFestival };
+  return { group, done, marketGroup, setMarketDay: result.setMarketDay, roadworkGroup, setRoadwork: result.setRoadwork, festivalGroup, setFestival: result.setFestival, setDecor };
 }

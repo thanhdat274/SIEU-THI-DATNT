@@ -25,16 +25,15 @@ describe('questEcoCap — trần tổng thưởng bộ nhiệm vụ ngày', () =
     expect(questEcoCap(undefined as unknown as number)).toBe(Infinity);
   });
 
-  it('lãi dưới ngưỡng QUEST_ECO_FLOOR → chưa giới hạn (bảo vệ người mới)', () => {
-    expect(questEcoCap(QUEST_ECO_FLOOR)).toBe(Infinity);
-    expect(questEcoCap(QUEST_ECO_FLOOR - 1)).toBe(Infinity);
-    expect(questEcoCap(50_000)).toBe(Infinity);
+  it('lãi nhỏ → trần không thấp hơn sàn QUEST_ECO_FLOOR (tiệm nhỏ vẫn có thưởng)', () => {
+    expect(questEcoCap(1)).toBe(QUEST_ECO_FLOOR);
+    expect(questEcoCap(50_000)).toBe(QUEST_ECO_FLOOR);
   });
 
-  it('lãi vượt ngưỡng → cap = lãi × QUEST_ECO_MULT (chặn đúng bội số, không phá)', () => {
-    const p = 300_000;
+  it('lãi lớn → cap = lãi × QUEST_ECO_MULT, thưởng không vượt lãi bán hàng', () => {
+    const p = 1_000_000;
     expect(questEcoCap(p)).toBe(p * QUEST_ECO_MULT);
-    expect(questEcoCap(1_000_000)).toBe(3_000_000);
+    expect(QUEST_ECO_MULT).toBeLessThan(1);
   });
 });
 
@@ -65,7 +64,8 @@ describe('dailyQuests — áp trần theo lãi bình quân', () => {
     expect(ratio).toBeGreaterThan(0);
     expect(ratio).toBeLessThan(1);
     daily.forEach((q, i) => {
-      expect(q.money).toBe(Math.max(0, Math.floor(ref[i].money * ratio)));
+      // ratio suy ngược từ việc đầu (đã floor) nên lệch tối đa 1đ
+      expect(Math.abs(q.money - Math.floor(ref[i].money * ratio))).toBeLessThanOrEqual(1);
       expect(q.target).toBe(ref[i].target); // mục tiêu KHÔNG đổi
       expect(q.xp).toBe(ref[i].xp); // XP KHÔNG đổi (chỉ tiền bị neo)
     });

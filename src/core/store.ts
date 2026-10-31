@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { warehouseTier } from '../data/warehouse';
 import { emptyQuestLog, emptyTotals, type QuestContext } from '../data/quests';
-import { recentAvgProfit } from '../data/gifts';
+import { recentAvgSalesProfit } from '../data/gifts';
 import { rentOf, type ShopStyle } from '../data/shopTiers';
 import type { Review } from '../data/reviews';
 import { forecastFrom, newWeatherSeed, type Weather } from '../data/weather';
@@ -69,7 +69,7 @@ export const questContext = (s: GameState): QuestContext => {
     festivalGoods: festivalOn(s.day) ? festivalStock(festivalOn(s.day)!, s.level) : [],
     reservationsToday: Object.values(s.reservations).filter((r) => r.day === s.day).length,
     rent: rentOf(s.shopTier),
-    avgDailyProfit: recentAvgProfit(s.history),
+    avgDailyProfit: recentAvgSalesProfit(s.history),
     weather: s.weather,
     regularsServedToday,
     regularsComingToday,

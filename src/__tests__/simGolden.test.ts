@@ -40,8 +40,8 @@ const TOL = 0.05;
 interface Snap { money: number; level: number; xp: number; profit: number[]; quest: number[] }
 
 const GOLDEN: Record<number, Snap> = {
-  // Mốc lấy 29/10/2026 sau khi sim tất định (seed 169).
-  30: { money: 32_087_360, level: 31, xp: 1419, profit: [-16_989_000, -11_952_000, -1_859_000], quest: [2_145_000, 2_145_000, 2_890_000] },
+  // Mốc lấy 31/10/2026: trần thưởng nhiệm vụ neo vào lãi bán hàng (salesProfit) — từ ngày 2 quest co lại.
+  30: { money: 25_211_511, level: 31, xp: 1917, profit: [-16_989_000, -11_669_000, -1_860_000], quest: [2_145_000, 160_396, 325_942] },
 };
 
 async function run(level: number, days: number): Promise<Snap> {

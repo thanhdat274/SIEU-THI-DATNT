@@ -75,6 +75,8 @@ export interface EconomyRow {
   level: number;
   /** Lãi vận hành (doanh thu − chi nhập − lương − tiền nhà) đọc từ summary cuối ngày. */
   operationalProfit: number;
+  /** Lãi bán hàng thật (lãi gộp hàng bán − lương − tiền nhà), không trừ tiền đầu tư. */
+  salesProfit: number;
   /** Tiền thưởng nhiệm vụ ngày nhận hôm đó. */
   quest: number;
   /** Tiền kèo trúng hôm đó. */
@@ -122,6 +124,7 @@ export async function runEconomySim(level: number, days: number, opts: AutoplayO
     day: r.day as number,
     level: r.level as number,
     operationalProfit: profitNum(r.profit as string),
+    salesProfit: profitNum(r.salesProfit as string),
     quest: r.quest as number,
     bet: r.bet as number,
   }));

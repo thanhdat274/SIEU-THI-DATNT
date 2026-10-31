@@ -44,6 +44,8 @@ export function createAutoplay(
   const st = () => useGame.getState();
   /** Đổi đ thành 'k' như các cột tiền cũ của autoplay. */
   const k = (v: number) => `${Math.round(v / 1000)}k`;
+  /** Tổng lãi gộp cộng dồn của mọi kệ (giá bán − giá vốn) — chênh trong ngày = lãi gộp bán hàng hôm nay. */
+  const shelfMarginTotal = () => Object.values(st().shelfProfit ?? {}).reduce((n, p) => n + p.profit, 0);
 
   /** Bày hàng: mỗi tầng một mặt hàng hợp ngành, nhập đủ để bày đầy rồi để dư một ít. */
   function restock() {
@@ -128,6 +130,7 @@ export function createAutoplay(
     player.teleport(main.center.x - 0.6, main.center.z - 0.9);
     if (!st().shopOpen) st().toggleShop();
     const day = st().day;
+    const margin0 = shelfMarginTotal();
     // Chốt kèo buổi sáng trước khi chơi: mục tiêu cả bộ theo ×betTier
     lockBet();
     let questDay = 0;
@@ -158,6 +161,9 @@ export function createAutoplay(
       revenue: sum ? k(sum.revenue) : '-',
       // Lãi vận hành (operationalProfit) = doanh thu − chi − lương − tiền nhà (như bảng tổng kết)
       profit: sum ? k(sum.revenue - sum.spent - sum.wages - (sum.rent ?? 0)) : '-',
+      // Lãi bán hàng thật = Σ(giá khách trả − giá vốn) của hàng bán ra hôm nay − lương − tiền nhà.
+      // Khác `profit` ở chỗ KHÔNG trừ tiền đầu tư (kệ, nâng cấp, giấy phép...) mà bot mua gần như mỗi ngày.
+      salesProfit: sum ? k(shelfMarginTotal() - margin0 - sum.wages - (sum.rent ?? 0)) : '-',
       quest: questDay,
       bet: betDay,
       customers: sum?.customers ?? 0,
@@ -187,6 +193,7 @@ export function createAutoplay(
     player.teleport(main.center.x - 0.6, main.center.z - 0.9);
     if (!st().shopOpen) st().toggleShop();
     const day = st().day;
+    const margin0 = shelfMarginTotal();
     lockBet();
     let questDay = 0;
     let betDay = 0;
@@ -212,6 +219,9 @@ export function createAutoplay(
       money: k(s.money),
       revenue: sum ? k(sum.revenue) : '-',
       profit: sum ? k(sum.revenue - sum.spent - sum.wages - (sum.rent ?? 0)) : '-',
+      // Lãi bán hàng thật = Σ(giá khách trả − giá vốn) của hàng bán ra hôm nay − lương − tiền nhà.
+      // Khác `profit` ở chỗ KHÔNG trừ tiền đầu tư (kệ, nâng cấp, giấy phép...) mà bot mua gần như mỗi ngày.
+      salesProfit: sum ? k(shelfMarginTotal() - margin0 - sum.wages - (sum.rent ?? 0)) : '-',
       quest: questDay,
       bet: betDay,
       customers: sum?.customers ?? 0,
