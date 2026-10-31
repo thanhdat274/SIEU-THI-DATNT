@@ -173,3 +173,4 @@
 - GĐ449: Quán cà phê (bậc 3) có thêm 1 ô thực đơn pha chế (quanMenuSlots, 5 món).
 - GĐ450: Nút nâng lên Quán cà phê ghi thêm '+1 ô món'.
 - GĐ451: QA sandbox: nút nâng ghi '+1 ô món', sau nâng thực đơn hiện x/5.
+- GĐ452: QA sandbox: gợi ý P 'còn 4 mẻ' và 'đã pha hết mẻ' đúng.
