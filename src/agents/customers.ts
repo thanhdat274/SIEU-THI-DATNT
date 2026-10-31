@@ -801,7 +801,7 @@ export class CustomerManager {
     }));
     // Nhân khẩu học (GĐ62): mỗi lượt khách vãng lai ghi nghề (khách quen profession=null) + có bỏ về không
     if (c.profession) st.tallyDemographics(c.profession.id, { visits: 1, walkouts: paid ? 0 : 1 });
-    if (c.regular && !happy) useGame.getState().regularVisit(c.regular.id, c.basket, false);
+    if (c.regular && !happy) useGame.getState().regularVisit(c.regular.id, c.basket, false, c.missed.find((m) => m.why === 'stock' || m.why === 'price'));
     this.review(c, happy);
     const queue = c.counterKey ? this.queues.get(c.counterKey) : undefined;
     const i = queue ? queue.indexOf(c) : -1;

@@ -363,7 +363,7 @@ export interface GameState {
   /** Từ chối/huỷ lời hẹn giữ món (không mất thân thiết). */
   cancelReservation: (regularId: string) => void;
   /** Khách quen trả tiền xong hoặc bỏ về; trả về tiền boa. */
-  regularVisit: (id: string, basket: CartItem[], paid: boolean) => number;
+  regularVisit: (id: string, basket: CartItem[], paid: boolean, miss?: { id: string; why: string }) => number;
   /** Cộng/trừ thân thiết ngoài lần ghé (đơn riêng), mở perk nếu tới mốc. */
   adjustFriendship: (id: string, delta: number) => void;
   /** Đối thủ, quảng cáo, tích điểm, vay, hụi, tuần, thú cưng, thành tựu, nhà, xe (xem data/biz.ts). */

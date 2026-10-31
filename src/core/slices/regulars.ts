@@ -4,7 +4,7 @@ import { regularById, regularCheckout, regularFriendship, regularWalkout, INFLUE
 import { FORGIVE_FRIEND_GAIN, REMIND_FRIEND_LOSS } from '../../data/credit';
 import { counterActive } from '../../data/biz';
 import { arcForRegular, arcById, currentArcStep, arcStepFulfilled } from '../../data/regularArc';
-import { satisfiedLine } from '../../data/regularTrust';
+import { satisfiedLine, walkoutLine } from '../../data/regularTrust';
 import { REP_CAP } from '../../data/reputation';
 import { type GameState, type SetState, type GetState, addHour } from '../gameTypes';
 
@@ -23,13 +23,13 @@ export const createRegularsSlice = (set: SetState, get: GetState): Pick<GameStat
     });
     if (happy) s.addXp(2);
   },
-  regularVisit: (id, basket, paid) => {
+  regularVisit: (id, basket, paid, miss) => {
     const s = get();
     const def = regularById(id);
     if (!def) return 0;
     if (!paid) {
       set({ regulars: { ...s.regulars, [id]: regularWalkout(s.regulars[id], s.day) } });
-      s.notify(`😞 ${def.name}: "${def.lines.walkout}"`);
+      s.notify(`😞 ${def.name}: "${walkoutLine(def.lines.walkout, miss && { name: productById(miss.id).name, why: miss.why })}"`);
       return 0;
     }
     const r = regularCheckout(def, s.regulars[id], basket, s.day);

@@ -63,3 +63,13 @@ export function satisfiedLine(own: string, prog: RegularProgress | undefined, sh
 /** Câu cửa miệng hiện trong sổ khách quen (GĐ404): chỉ lộ sau lần ghé đầu — gặp rồi mới biết người ta hay nói gì. */
 export const regularQuote = (greeting: string, prog: RegularProgress | undefined): string | null =>
   (prog?.visits ?? 0) > 0 ? greeting : null;
+
+/**
+ * Câu khách quen bỏ về (GĐ405): biết món hụt đầu tiên thì nói thẳng — hết hàng hay đắt — để người chơi biết sửa gì.
+ * Không rõ lý do (chờ lâu…) thì giữ câu riêng của khách.
+ */
+export function walkoutLine(own: string, miss?: { name: string; why: string }): string {
+  if (miss?.why === 'stock') return `Hết ${miss.name} rồi, thôi để bữa khác.`;
+  if (miss?.why === 'price') return `${miss.name} bán mắc quá, thôi để bữa khác.`;
+  return own;
+}
