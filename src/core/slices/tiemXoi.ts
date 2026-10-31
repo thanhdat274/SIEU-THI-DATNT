@@ -1,12 +1,13 @@
 import { formatMoney, productById } from '../../data/products';
 import { copyStock, putStock } from '../stock';
 import { TIEM_XOI_HIRE_FEE, TIEM_XOI_MAX_STAFF, TIEM_XOI_PRICE, TIEM_XOI_UNLOCK, TIEM_XOI_COST_MUL, tiemXoiHandQty, tiemXoiHandPick, TIEM_XOI_BIG_COST, TIEM_XOI_BIG_LEVEL } from '../../data/tiemXoi';
+import { SAP_LOT_COST, SAP_LOTS } from '../../data/sapRong';
 import { canOpenZone, openZones, zoneById } from '../../data/zones';
 import type { GameState, SetState, GetState } from '../gameTypes';
 
 /** Tiệm xôi (GĐ411): mua mặt bằng, tuyển/cho nghỉ thợ nấu. Mô phỏng nấu chạy trong endDay. */
 
-export const createTiemXoiSlice = (set: SetState, get: GetState): Pick<GameState, 'buyTiemXoi' | 'hireTiemXoi' | 'fireTiemXoi' | 'steamXoiHand' | 'expandTiemXoi' | 'openZone'> => ({
+export const createTiemXoiSlice = (set: SetState, get: GetState): Pick<GameState, 'buyTiemXoi' | 'hireTiemXoi' | 'fireTiemXoi' | 'steamXoiHand' | 'expandTiemXoi' | 'openZone' | 'rentSapLot'> => ({
   buyTiemXoi: () => {
     const s = get();
     if (s.biz.tiemXoi.open) return false;
@@ -85,6 +86,16 @@ export const createTiemXoiSlice = (set: SetState, get: GetState): Pick<GameState
     if (c === 'money') { s.notify(`Cần ${formatMoney(z.cost)} để mở ${z.name}`); return false; }
     set({ money: s.money - z.cost, biz: { ...s.biz, zones: openZones([...(s.biz.zones ?? []), id]).filter((x) => x !== 'hem') } });
     s.notify(`${z.icon} Đã mở ${z.name}! ${z.desc}`.slice(0, 90));
+    return true;
+  },
+  rentSapLot: () => {
+    const s = get();
+    const n = s.biz.sapRong ?? 0;
+    if (!openZones(s.biz.zones).includes('ngo2')) { s.notify('Mở Ngõ 2 trước rồi mới thuê lô sạp'); return false; }
+    if (n >= SAP_LOTS) { s.notify('Đã thuê hết lô sạp ở Ngõ 2'); return false; }
+    if (s.money < SAP_LOT_COST) { s.notify(`Cần ${formatMoney(SAP_LOT_COST)} để thuê lô sạp`); return false; }
+    set({ money: s.money - SAP_LOT_COST, biz: { ...s.biz, sapRong: n + 1 } });
+    s.notify(`🛒 Thuê lô sạp ${n + 1}/${SAP_LOTS}: sạp bán ngày nắng, mưa thì nghỉ`);
     return true;
   },
 });

@@ -51,6 +51,7 @@ import { pushCloudSave } from './net/cloud';
 import { cancelSleep, checkpoint, inAlley, initCoop, isGuest, partnerPositions, updateCoop } from './net/coop';
 import { watchUser } from './net/firebase';
 import { useSession } from './net/session';
+import { SAP_LOT_COST } from './data/sapRong';
 import { openZones, zoneBlockRects, zoneById } from './data/zones';
 import { formatMoney } from './data/products';
 
@@ -368,6 +369,7 @@ const syncZones = () => {
   const zones = useGame.getState().biz.zones;
   const key = openZones(zones).join(',');
   ngo2View?.setOpen(key.includes('ngo2'));
+  ngo2View?.setStalls(useGame.getState().biz.sapRong ?? 0);
   if (key === lastZonesKey) return;
   lastZonesKey = key;
   grid.setStatic('zones', zoneBlockRects(zones, grid.extent).map((r) => new THREE.Box3(new THREE.Vector3(r.x1, 0, r.z1), new THREE.Vector3(r.x2, 2, r.z2))));
@@ -378,7 +380,7 @@ useGame.subscribe(syncZones);
 void import('./world/ngo2').then((m) => {
   ngo2View = m.createNgo2();
   scene.add(ngo2View.group);
-  ngo2View.setOpen(openZones(useGame.getState().biz.zones).includes('ngo2'));
+  syncZones();
 });
 
 // Cửa hàng tiện lợi theo trạng thái sở hữu (GĐ26): mảnh đất RAO BÁN khi đủ cấp chưa mua, toà nhà +
@@ -505,6 +507,13 @@ const fixedInteractables: Interactable[] = [
       const z = zoneById('ngo2')!;
       return g.level < z.unlock ? `Ngõ 2: mở ở cấp ${z.unlock}` : `[L] Mở ${z.name} ${formatMoney(z.cost)}`;
     }, key: 'KeyL', action: () => { useGame.getState().openZone('ngo2'); } },
+  // GĐ501: lô trống Ngõ 2 — đứng ở lô kế tiếp bấm L thuê sạp hàng rong
+  ...[0, 1, 2, 3].map((i) => ({ position: new THREE.Vector3(86 + i * 8, 0, 1.6), radius: 2.6,
+    hint: () => {
+      const g = useGame.getState();
+      if (!openZones(g.biz.zones).includes('ngo2') || (g.biz.sapRong ?? 0) !== i) return '';
+      return `[L] Thuê lô sạp hàng rong ${formatMoney(SAP_LOT_COST)}`;
+    }, key: 'KeyL', action: () => { useGame.getState().rentSapLot(); } })),
   { position: world.farm.wellSpot, radius: 2.6, hint: () => '[T] Tưới luống từ giếng', key: 'KeyT', action: () => useGame.getState().waterGarden() },
 ];
 

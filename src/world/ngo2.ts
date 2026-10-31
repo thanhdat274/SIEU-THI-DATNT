@@ -5,7 +5,7 @@ import * as THREE from 'three';
  * ở ranh x=80 khi chưa mở; mở rồi thì bỏ rào, hiện các lô trống chờ sạp hàng rong (bước 3).
  * Tải lười, chỉ hình ảnh — chặn đi lại do `zoneBlockRects` lo.
  */
-export interface Ngo2View { group: THREE.Group; setOpen(open: boolean): void }
+export interface Ngo2View { group: THREE.Group; setOpen(open: boolean): void; /** GĐ501: số lô đã có sạp hàng rong. */ setStalls(n: number): void }
 
 const mat = (color: number) => new THREE.MeshStandardMaterial({ color, roughness: 0.85 });
 
@@ -70,12 +70,29 @@ export function createNgo2(): Ngo2View {
 
   // Lô trống bên vỉa hè (bước 3 đặt sạp hàng rong)
   const lots = new THREE.Group();
+  const signs: THREE.Group[] = [];
+  const stalls: THREE.Group[] = [];
   for (let i = 0; i < 4; i++) {
+    const stall = new THREE.Group();
+    const table = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.8, 0.9), mat(0x9c6b3c));
+    table.position.y = 0.4;
+    const goods = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.15, 0.6), mat([0xe17055, 0xfdcb6e, 0x00b894, 0x74b9ff][i]));
+    goods.position.y = 0.88;
+    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 2.2), mat(0x636e72));
+    pole.position.y = 1.1;
+    const umb = new THREE.Mesh(new THREE.ConeGeometry(1.4, 0.5, 8), mat([0xd63031, 0x0984e3, 0xe84393, 0x00cec9][i]));
+    umb.position.y = 2.25;
+    stall.add(table, goods, pole, umb);
+    stall.position.set(86 + i * 8, 0, -0.5);
+    stall.visible = false;
+    stalls.push(stall);
+    lots.add(stall);
     const lot = new THREE.Mesh(new THREE.PlaneGeometry(4, 3), mat(0xc8a96a));
     lot.rotation.x = -Math.PI / 2;
     lot.position.set(86 + i * 8, 0.015, -0.5);
     const sign = board('LÔ TRỐNG', '#27ae60');
     sign.position.set(84.3 + i * 8, 0, 0.6);
+    signs.push(sign);
     lots.add(lot, sign);
   }
   group.add(gate, lots);
@@ -84,6 +101,9 @@ export function createNgo2(): Ngo2View {
     setOpen(open) {
       gate.visible = !open;
       lots.visible = open;
+    },
+    setStalls(n) {
+      stalls.forEach((s, i) => { s.visible = i < n; signs[i].visible = i >= n; });
     },
   };
 }
