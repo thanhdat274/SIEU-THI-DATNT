@@ -144,3 +144,4 @@
 - GĐ389: rà biz.ts — rival sinh đời mới (rivalGen/rivalBoss) và maybeSurprise (surpriseArc) đã có test; không còn khoảng trống lớn ở biz.ts. Gap kế: deliverPhone/restockAndAnswerPhone, rushDeliverOrder (orders.ts).
 - GĐ390: test restockAndAnswerPhone (nhập bù, thiếu tiền, món nhà làm), mutation 2/2 — phoneRestock.test.ts
 - GĐ391: test learnSkill (cấp, điểm kỹ năng, trùng, id lạ), mutation 3/3 — learnSkill.test.ts
+- GĐ392: test setShopName/setCostume (cắt 24 ký tự, mặc định, cấp, tái sinh), mutation 4/4 — shopNameCostume.test.ts
