@@ -1,6 +1,5 @@
+import { lazyGltfLoader } from './gltfLoader';
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 
 /**
  * Kit prop GLB sinh bằng script (`scripts/build-kit-assets.ts` — Three.js → GLB, màu đỉnh,
@@ -176,12 +175,10 @@ export function loadKitProps(baseUrl = '/models/kit/'): { group: THREE.Group; do
   const done = new Promise<KitProps>((resolve) => {
     const finish = () => resolve(result);
     if (KIT_PLACEMENTS.length === 0) return finish();
-    const loader = new GLTFLoader();
+    const loader = lazyGltfLoader();
     // Kit đã qua bước nén Draco của Blender (scripts/blender_kit_atlas.py): nhỏ gấp ~8 lần.
     // Decoder để local (public/decoders/draco, copy từ node_modules/three) — không phụ thuộc CDN,
     // trình duyệt tải đúng một lần rồi cache cho mọi model nén sau này.
-    const draco = new DRACOLoader().setDecoderPath('/decoders/draco/');
-    loader.setDRACOLoader(draco);
     // Đặt một GLB vào đúng chỗ (gốc, xoay, tới scale) + đổ bóng xuống đất
     const place = (root: THREE.Object3D, p: KitPlacement, parent: THREE.Object3D) => {
       root.position.set(...p.pos);

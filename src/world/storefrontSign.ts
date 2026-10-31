@@ -1,6 +1,5 @@
+import { lazyGltfLoader } from './gltfLoader';
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 
 /**
  * Biển treo "mở/đóng cửa" trước cửa tiệm (gđ179 "Biển nói ra trạng thái tiệm").
@@ -91,9 +90,7 @@ export function createOpenSign(baseUrl = '/models/facade/'): OpenSign {
     group.rotation.z += (target - group.rotation.z) * 0.12;
   } };
 
-  const loader = new GLTFLoader();
-  const draco = new DRACOLoader().setDecoderPath('/decoders/draco/');
-  loader.setDRACOLoader(draco);
+  const loader = lazyGltfLoader();
   fetch(`${baseUrl}facade-manifest.json`)
     .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`manifest ${r.status}`))))
     .then(() => loader.load(

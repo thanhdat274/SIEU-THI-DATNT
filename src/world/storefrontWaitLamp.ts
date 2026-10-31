@@ -1,6 +1,5 @@
+import { lazyGltfLoader } from './gltfLoader';
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 
 /**
  * Đèn báo "khách đang đợi" trước hiên tiệm (gđ180 "Có khách chờ quầy — nhìn là biết").
@@ -138,9 +137,7 @@ export function createWaitLamp(baseUrl = '/models/facade/'): WaitLamp {
     // Không có nguồn sáng thật — chỉ là tín hiệu không lời, tránh thêm light cho một prop nhỏ
   } };
 
-  const loader = new GLTFLoader();
-  const draco = new DRACOLoader().setDecoderPath('/decoders/draco/');
-  loader.setDRACOLoader(draco);
+  const loader = lazyGltfLoader();
   fetch(`${baseUrl}facade-manifest.json`)
     .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`manifest ${r.status}`))))
     .then(() => loader.load(
