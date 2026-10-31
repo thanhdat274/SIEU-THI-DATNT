@@ -136,3 +136,4 @@
 - GĐ381 — 📏 Mốc: 245 file / 2467 test xanh 159s (+1 hở: nhắc hàng sắp HỎNG của stockReminders chưa test)
 - GĐ382 — 🗜️ Dồn mục lục GĐ301–349 sang archive (INDEX-GD301-349.md), PROGRESS.md 30,3KB → 26,7KB (về dưới trần 30KB)
 - GĐ383 — ⏳ Test nhắc hàng sắp HỎNG của `stockReminders` (+3 test, mutation 2/2): lô trên kệ/trong kho còn <1 ngày nhắc một lần/ngày, hạn dài im lặng, kho hết hàng thì không nhắc; đóng chỗ hở GĐ381
+- GĐ384 — 🧭 Leader review (GĐ374–384): 245 file / 2470 test xanh (129–184s tuỳ tải máy, vẫn trên mục tiêu ~150s; không có bằng chứng do code mới — test mới đều <1s), tsc sạch, build OK, chunk chính gzip 244KB (<255), PROGRESS.md 27KB. Chỉ thêm test (slice orders/inventory/branch/regulars, biz.ts: vay-hụi-thú, truyện, đồ nhà-xe, quảng cáo, nhắc hàng) + gỡ 1 console.log sót; gameplay/ngân sách không đổi. Hở còn lại: biz.ts (surprise/arc/achievement/rival đêm), orders.ts nhánh hợp đồng, inventory.placeOrder/buy. Review kế ~GĐ394.
