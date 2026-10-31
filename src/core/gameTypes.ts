@@ -1,9 +1,9 @@
 /** Kiểu dữ liệu, hằng số và hàm nhỏ của trạng thái game (useGame ghép ở store.ts). */
 import type { FurnitureType } from '../data/furniture';
-import { warehouseTier, WAREHOUSE_TIERS } from '../data/warehouse';
+import { warehouseTier } from '../data/warehouse';
 import type { QuestLog, Totals } from '../data/quests';
 import { casesFor } from '../data/products';
-import { SHOP_TIERS, type ShopStyle } from '../data/shopTiers';
+import { type ShopStyle } from '../data/shopTiers';
 import type { CounterPolicy } from '../data/counterDeals';
 import type { Review, ReviewReason } from '../data/reviews';
 import type { Weather } from '../data/weather';
@@ -16,7 +16,7 @@ import type { VendorOffer } from '../data/wholesale';
 import type { MissLog } from '../data/advice';
 import type { BizState } from '../data/biz';
 import type { QuanNuocPrice } from '../data/quanNuoc';
-import { PHONE_SLOTS, type PhoneOrder } from '../data/phoneOrders';
+import { type PhoneOrder } from '../data/phoneOrders';
 import { hasSkill, type SkillId } from '../data/titles';
 import { dailyWage, type Shift, type Staff } from '../data/staff';
 import type { RandomEvent } from '../data/events';

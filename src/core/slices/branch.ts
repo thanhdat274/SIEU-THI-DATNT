@@ -1,8 +1,8 @@
 import { simRng } from '../rand';
 import { formatMoney, productById } from '../../data/products';
 import { HOMEGROWN_PREMIUM } from '../../data/garden';
-import { dailyWage, GUARD_DETECT, maxStaff, ROLES, type Staff } from '../../data/staff';
-import { BLACKOUT_LOSS, BONUS_RELIEF, COVER_WAGE_MUL, DRUNK_BLOCK, DRUNK_DAMAGE, EVENT_CHANCE, EVENT_ROLL_AT, FATIGUE_PER_DAY, FATIGUE_QUIT, FATIGUE_SLOW, HOT_FOOD_MUL, MANAGER_REFILL_BELOW, QUIT_CHANCE, TIRED_MISS, autoSchedule, fatigueOf, isHotFood, pickWeighted, restingOn, spoilsInBlackout, BRANCH_NIGHT_THEFT, BRANCH_ROLES, BRANCH_SHIFT_NAME, BRANCH_SHIFTS, CONVENIENCE, VENDING_CAP, VENDING_COST, VENDING_ITEMS, VENDING_OFFTAKE, VENDING_THEFT, branchTrafficAt, isBranchNight, newBranch, onShift, shelfTotal, vendingTotal, type BranchState,
+import { dailyWage, GUARD_DETECT, ROLES, type Staff } from '../../data/staff';
+import { BLACKOUT_LOSS, BONUS_RELIEF, DRUNK_BLOCK, DRUNK_DAMAGE, EVENT_CHANCE, EVENT_ROLL_AT, FATIGUE_PER_DAY, FATIGUE_QUIT, FATIGUE_SLOW, HOT_FOOD_MUL, MANAGER_REFILL_BELOW, QUIT_CHANCE, TIRED_MISS, autoSchedule, fatigueOf, isHotFood, pickWeighted, restingOn, spoilsInBlackout, BRANCH_NIGHT_THEFT, BRANCH_ROLES, BRANCH_SHIFT_NAME, BRANCH_SHIFTS, CONVENIENCE, VENDING_CAP, VENDING_COST, VENDING_ITEMS, VENDING_OFFTAKE, VENDING_THEFT, branchTrafficAt, isBranchNight, newBranch, onShift, shelfTotal, vendingTotal, type BranchState,
   ALCOHOL_BRAWL_CHANCE, ALCOHOL_NIGHT_MUL, BRAWL_BLOCK, BRAWL_DAMAGE, GENERATOR_FUEL, GENERATOR_LOSS_MUL, NIGHT_DELIVERY_MISHAP, NIGHT_DELIVERY_PER_HOUR, NIGHT_DELIVERY_SURCHARGE, PATROL_AT, PATROL_CHANCE, POWER_UPGRADES,
   coverMul, hasAlcohol, hasPower, pickForGroup, pickNightGroup, powerUpgradeById, type PowerUpgradeId } from '../../data/branches';
 import type { GameState, SetState, GetState } from '../gameTypes';
