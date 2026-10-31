@@ -104,6 +104,8 @@
 
 - 🧪 (GĐ323) Thử trần thưởng 0,35×/sàn 60k (sim tất định): tỉ số 1,03 (cấp 5) / 0,95 (cấp 10) / 0,65 (cấp 20) nhưng `economySimL50` đỏ (bot cấp 50 chỉ đạt 21 < 22 nhiệm vụ xương sống) → thưởng thấp hơn làm bot thiếu vốn, mất nhịp. Hoàn tác về 0,4×/70k (GĐ322). Ratio ≤1 ở cấp 5 chỉ còn cách khác: tăng lãi gộp (không đụng trần thưởng), vì cấp 5 bị ngày 1 không-trần kéo lên.
 
+- 📦 (GĐ324) Phân tích chunk app 252KB gz bằng bộ giải source map tự viết (raw, minified): data/biz.ts 39KB · Hud.tsx 33KB · data/regulars.ts 26KB · core/biz.ts 25KB · world/farm.ts 22KB · characterModel 21KB · catalog 19KB · customers 18KB · productModels 16KB. Không có cục nào lazy-load được riêng mà đủ ~60KB raw (≈18KB gz) để xuống 600: các file lớn nhất là logic lõi (biz/regulars/customers) dùng đồng bộ ở endDay/tick. Kết luận: 618 KB là mức thực tế; muốn <600 phải tách lõi–UI (làm nặng, rủi ro) → hoãn, giữ trần 640.
+
 ## Backlog tiếp theo
 
 1. **Trục đã cạn:** 3D trang trí (chỉ làm 3D mới khi đi kèm gameplay — GĐ172–198) · multi-shop supply chain (GĐ199–209, khép mạch) · bộ soi tiền/vốn (GĐ210–251) · UI nợ (GĐ183/258) · chợ phiên (GĐ182).
