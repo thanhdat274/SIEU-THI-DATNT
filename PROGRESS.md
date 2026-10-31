@@ -161,3 +161,4 @@
 - GĐ375 — 🏪 Test slice chi nhánh `branch.ts` (12 test, mutation 3/3): mua mặt bằng 5tr (cấp/tiền, không mua hai lần), không mở cửa khi chưa có thu ngân, giới hạn maxStaff + vai trò, máy bán tự động trừ phí, nâng cấp điện không mua lại, đơn đêm cần online
 - GĐ376 — 📞 Test chăm nhân sự chi nhánh (7 test, mutation 2/2): gọi người thay ca nghỉ trừ công×hệ số một lần, thưởng giảm mệt không âm, thiếu tiền không làm gì, ngưỡng auto chuyển kho bị kẹp an toàn
 - GĐ377 — 📖 Test chuyện khách quen `biz.ts` (5 test, mutation 2/2): chương mở theo thân thiết, chỉ một chương chờ, đọc xong mới thưởng + sang chương sau, đóng hai lần không thưởng kép; lưu ý STORIES nạp lười phải `loadStories()` trong test
+- GĐ378 — 🏠 Test đồ nhà/xe/bữa sáng/dịch vụ quầy `biz.ts` (8 test, mutation 3/3): mua một lần đúng cấp-tiền, xe chỉ nâng cấp không hạ, bữa sáng một lần/ngày và trước 11h, dịch vụ ghi sổ theo id. Cả bộ 242 file / 2448 test xanh 160s
