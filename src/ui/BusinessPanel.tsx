@@ -4,7 +4,7 @@ import {
   buyAd, buyHomeItem, buyRivalShop, buyService, buyPet, buyUpgrade, buyVehicle, feedPet, joinHui, repayLoan, setLoyalty, startCounter, takeLoan,
 } from '../core/biz';
 import { hasUpgrade, UPGRADES } from '../data/upgrades';
-import { HistoryChart } from './Panels';
+import { HistoryChart } from './panels/ReportPanels';
 import { Callout } from './panels/shared';
 import {
   ACHIEVEMENTS, activeAds, ADS, adRoi, BREAKFAST, COUNTERS, HOME_ITEMS, HUI_COLLAPSE, HUI_OPTIONS, HUI_UNLOCK, LOAN_DAILY_RATE,

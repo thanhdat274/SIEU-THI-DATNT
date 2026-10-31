@@ -4,7 +4,7 @@ import { SELL_BACK, useGame, type Furniture } from '../core/store';
 import { FURNITURE, footprint, frontDir, furnitureDef, type FurnitureType } from '../data/furniture';
 import { EYE_LEVEL_BONUS, eyeRow, heatColor, isDisplay, shelfEfficiency, spotVisibility, visibilityLabel, type ShopGeom } from '../data/layout';
 import { formatMoney } from '../data/products';
-import { ExpandTab, PaintTab } from './Panels';
+import { ExpandTab, PaintTab } from './panels/BuildPanel';
 import './arrange.css';
 
 /** Bước dời bằng nút mũi tên / phím, và độ bám khi kéo (m). */
