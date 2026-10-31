@@ -102,8 +102,8 @@
 - ✅ **Cửa hàng nước thật B1–B5 ĐÃ XONG (GĐ424–428):** nhà quán, vào trong được, khách ngồi, tự pha, Quầy→Quán→Cà phê. Chiều sâu sau đó: thời tiết, đồ nóng, thực đơn (GĐ414–494).
 
 - 🔍 **Rà 3 cơ sở (GĐ413, theo yêu cầu người dùng trước khi mở rộng tiệm xôi):**
-  - Cửa hàng tiện lợi: luật chơi SÂU (ca kíp, mệt mỏi, sự cố đêm, máy bán hàng, điện, nhóm khách đêm). Nợ: BranchPanel 297 dòng gánh hết, cần soát độ rối; chưa có đợt chụp QA 3D.
-  - Nông trại: SÂU (mùa vụ, 7 vật nuôi, công trình 3 sao, đơn đặt hàng, phụ trại; world/farm.ts 996 dòng). Nợ: chưa chụp QA 3D gần đây.
+  - Cửa hàng tiện lợi: luật chơi SÂU (ca kíp, mệt mỏi, sự cố đêm, máy bán hàng, điện, nhóm khách đêm). Nợ: BranchPanel 297 dòng gánh hết, cần soát độ rối; QA 3D xong GĐ527.
+  - Nông trại: SÂU (mùa vụ, 7 vật nuôi, công trình 3 sao, đơn đặt hàng, phụ trại; world/farm.ts 996 dòng). QA 3D xong GĐ528.
   - Quán nước: MỎNG — chỉ 2 nút (số nhân viên, 3 mức giá), thực đơn tự lấy mọi đồ uống, thời tiết không ảnh hưởng, không sự kiện; panel 230 dòng phần lớn là bảng phân tích quanh 2 nút. 3D dựng hộp thủ tục, chưa dùng kit Blender (bang_ghe, chau_cay có sẵn).
   - Thứ tự sửa: ~~(1) thời tiết~~ xong GĐ414, ~~(2) chọn món~~ thành thực đơn pha chế GĐ415, ~~(3) 3D quán dùng kit~~ (đã có setQuanDecor: chậu cây + băng ghế), ~~(4) gọn BranchPanel~~ xong GĐ417, ~~(5) QA 3D~~ GĐ419 +GĐ420 đủ cả ba. Tiệm xôi phần còn lại để sau.
   - QA 3D cần save thử riêng: không có chế độ sandbox, không được sửa save thật của người dùng.
@@ -126,6 +126,7 @@
 - GĐ525: 🧭 Rà GĐ515–524: 269 file/2642 test xanh 160s, bundle 598/598 (sát trần), chunk 253/255, PROGRESS 26KB. Ngõ 2 đủ sâu (món, bậc, tự đứng sạp, chuỗi xôi, 3D, FPS 35+). Kế: chiều sâu khác ngoài Ngõ 2; review kế ~GĐ535.
 - GĐ526: Thông báo tự đứng sạp Ngõ 2 kèm số tiền thêm ước tính hôm nay (≈+…) + test. 2642 test xanh, bundle 598.
 - GĐ527: QA 3D cửa hàng tiện lợi (sandbox, openBranch @1280×800): nhà mái xanh, vạch qua đường, đèn đường gọn, không lấn đường, không lỗi. Nông trại chưa QA (sandbox chưa có trại) → kế.
+- GĐ528: QA 3D nông trại (sandbox, expandFarm @1280×800): luống có rào, chuồng mái đỏ, nhà kho gọn, không vật cản lối đi, không lỗi. Đóng nợ QA 3D của 3 cơ sở (GĐ413).
 
 - GĐ522: QA gợi ý phím Ngõ 2 (cần pane hiện để vòng render chạy): lô có sạp hiện '[L] Đứng sạp hôm nay (+25%)', lô trống kế tiếp hiện '[L] Thuê lô sạp…'.
 - GĐ523: Đo FPS sandbox preset Thấp (auto): Ngõ 2 có sạp + người dạo 35–37 FPS, trước tiệm chính 36,5 — đạt ≥30, Ngõ 2 không làm nặng thêm.
