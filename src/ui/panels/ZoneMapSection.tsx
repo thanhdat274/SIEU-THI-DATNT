@@ -1,9 +1,8 @@
 import { playerPos } from '../../core/playerPos';
 import { useGame } from '../../core/store';
-import { LANE_X } from '../../data/branches';
 import { formatMoney } from '../../data/products';
 import { SAP_LOTS } from '../../data/sapRong';
-import { ZONES, zoneMapView } from '../../data/zones';
+import { MAP_LANDMARKS, ZONES, zoneMapView } from '../../data/zones';
 import { styles } from './shared';
 
 // Khung bản đồ bao hết các khu; trục z thế giới hướng xuống dưới trên hình
@@ -11,16 +10,6 @@ const X1 = Math.min(...ZONES.map((z) => z.bounds.x1));
 const X2 = Math.max(...ZONES.map((z) => z.bounds.x2));
 const Z1 = Math.min(...ZONES.map((z) => z.bounds.z1));
 const Z2 = Math.max(...ZONES.map((z) => z.bounds.z2));
-
-// GĐ505: mốc chính trên bản đồ (toạ độ thế giới)
-const LANDMARKS = [
-  { icon: '🏠', x: -12, z: -2 },
-  { icon: '🏪', x: 0, z: -6 },
-  { icon: '🍚', x: LANE_X - 4, z: -1 },
-  { icon: '🧋', x: LANE_X + 4.4, z: -1 },
-  { icon: '🌾', x: 24, z: -70 },
-  { icon: '🏬', x: 60, z: -64 },
-];
 
 /** Bản đồ thu nhỏ các khu (GĐ504, bước 5 mở rộng bản đồ): khu đã mở / khoá, đường chính, sạp Ngõ 2. */
 export function ZoneMapSection() {
@@ -41,7 +30,7 @@ export function ZoneMapSection() {
           </g>
         ))}
         <rect x={X1} y={3} width={X2 - X1} height={6} fill="#4a4a4a" />
-        {LANDMARKS.map((l) => <text key={l.icon} x={l.x} y={l.z} fontSize={9} textAnchor="middle">{l.icon}</text>)}
+        {MAP_LANDMARKS.map((l) => <text key={l.icon} x={l.x} y={l.z} fontSize={9} textAnchor="middle"><title>{l.name}</title>{l.icon}</text>)}
         <circle cx={playerPos.x} cy={playerPos.z} r={3} fill="#0984e3" stroke="#fff" strokeWidth={1} />
         {Array.from({ length: Math.min(sap, SAP_LOTS) }, (_, i) => (
           <circle key={i} cx={86 + i * 8} cy={-0.5} r={2.2} fill="#d63031" />
