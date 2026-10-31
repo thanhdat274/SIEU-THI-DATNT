@@ -107,8 +107,8 @@ export const createSalesSlice = (set: SetState, get: GetState): Pick<GameState, 
       missed: { ...s.stats.missed, [reason]: (s.stats.missed?.[reason] ?? 0) + 1 },
       missLog: { ...s.stats.missLog, [key]: (s.stats.missLog?.[key] ?? 0) + 1 },
     } });
-    // Lần đầu trong ngày khách tìm một món mà kệ hết: báo để người chơi kịp bày/nhập thêm
-    if (reason === 'stock' && productId && !s.stats.missLog?.[key]) {
+    // Chỉ báo MỘT lần mỗi ngày (lần đầu khách tìm món mà kệ hết); các món sau xem ở bảng Nhập hàng
+    if (reason === 'stock' && productId && !s.stats.missed?.stock) {
       const name = productById(productId).name;
       s.notify((s.storage[productId] ?? 0) > 0
         ? `⚠️ Kệ hết ${name}, trong kho còn — bày lên kệ ngay!`
