@@ -141,3 +141,4 @@
 - GĐ386 — 📋 Test `acceptContract` (5 test, mutation 3/3): chặn thiếu cấp/danh tiếng, không ghi đè hợp đồng đang chạy, hạn kỳ đầu = hôm nay + periodDays, chờ giao; nhánh hợp đồng của orders.ts giờ đã phủ đủ (commit/giao/chuỗi có từ trước)
 - GĐ387: test checkAchievements (thưởng một lần, nhiều mốc, closeFriends), mutation 2/2 — bizAchievements.test.ts
 - GĐ388: test hết hạn chào bán mặt bằng rival qua đêm (bizEndOfDay), mutation 2/2 — rivalForSaleExpiry.test.ts
+- GĐ389: rà biz.ts — rival sinh đời mới (rivalGen/rivalBoss) và maybeSurprise (surpriseArc) đã có test; không còn khoảng trống lớn ở biz.ts. Gap kế: deliverPhone/restockAndAnswerPhone, rushDeliverOrder (orders.ts).
