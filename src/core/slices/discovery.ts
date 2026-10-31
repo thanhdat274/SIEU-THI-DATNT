@@ -35,6 +35,7 @@ export const createDiscoverySlice = (set: SetState, get: GetState): Pick<GameSta
     get().addXp(reward.xp);
     const gain = newly.map((m) => { const r = discoveryReward(m); return `mốc ${m}: +${formatMoney(r.money)} +${r.xp} XP`; }).join(' · ');
     const next = nextMilestone(count, nextClaimed);
+    if (s.day <= 1 && count < 25) return; // GĐ326: ngày đầu chỉ báo mốc lớn — thưởng vẫn cộng, bớt thông báo dồn
     get().notify(`🔍 Sổ tay Tiệm: đã bán được ${count} món! ${gain}.${next ? ` Còn ${next - count} món nữa tới mốc ${next}.` : ' Đã thu thập hết các mốc!'}`);
   },
 });
