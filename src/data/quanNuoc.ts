@@ -34,7 +34,7 @@ export const QUAN_WEATHER_MUL: Record<Weather, number> = { sunny: 1.25, cloudy: 
 const weatherMul = (w?: Weather) => (w ? QUAN_WEATHER_MUL[w] ?? 1 : 1);
 
 /** `menu` (GĐ415): id công thức pha chế trên thực đơn; trống = chỉ bán nước chai như cũ. Save cũ thiếu = []. */
-export interface QuanNuocState { open: boolean; staff: number; price: QuanNuocPrice; menu?: string[]; /** GĐ427: mẻ tự pha ở quầy hôm nay. */ hand?: { day: number; n: number } }
+export interface QuanNuocState { open: boolean; staff: number; price: QuanNuocPrice; menu?: string[]; /** GĐ428: bậc cửa hàng 0 quầy, 1 quán, 2 cà phê. */ tier?: number; /** GĐ427: mẻ tự pha ở quầy hôm nay. */ hand?: { day: number; n: number } }
 export const newQuanNuoc = (): QuanNuocState => ({ open: false, staff: 0, price: 'vua' });
 
 /** Trạng thái hình ảnh của quán nước trong thế giới 3D đầu hẻm. */
@@ -76,7 +76,7 @@ export function quanNuocDay(
   const menu = cleanMenu(q.menu, level);
   // Giá bán trung bình nước chai đã mở: tính một lần rồi nhân hệ số mức giá
   const avgPrice = drinks.length ? drinks.reduce((n, id) => n + productById(id).sell, 0) / drinks.length : 0;
-  const customers = Math.round(45 * opt.traffic * (1 + 0.15 * q.staff) * weatherMul(weather) * varietyMul(menu.length));
+  const customers = Math.round(45 * opt.traffic * quanTierMul(q) * (1 + 0.15 * q.staff) * weatherMul(weather) * varietyMul(menu.length));
   const wanted = Math.ceil(customers * 1.5);
   // Món pha chế phục vụ trước; khách còn lại mua nước chai
   const brew = brewMenu(menu, storage, wanted, opt.mul, take);
@@ -133,7 +133,7 @@ export interface QuanNuocProjection { customers: number; wanted: number; served:
 export function quanNuocProjection(q: QuanNuocState, level: number, drinkUnits: number, weather?: Weather): QuanNuocProjection {
   const opt = QUAN_PRICE_OPTIONS[q.price];
   const avgPrice = quanNuocAvgSell(level, q.menu);
-  const customers = Math.round(45 * opt.traffic * (1 + 0.15 * q.staff) * weatherMul(weather) * varietyMul(cleanMenu(q.menu, level).length));
+  const customers = Math.round(45 * opt.traffic * quanTierMul(q) * (1 + 0.15 * q.staff) * weatherMul(weather) * varietyMul(cleanMenu(q.menu, level).length));
   const wanted = Math.ceil(customers * 1.5);
   const served = Math.min(wanted, Math.max(0, drinkUnits));
   const revenue = Math.round(served * avgPrice * opt.mul);
@@ -278,3 +278,12 @@ export const QUAN_HAND_CUPS = 5;
 export const QUAN_HAND_BATCHES = 3;
 export const QUAN_HAND_BONUS = 1.2;
 export const quanHandLeft = (q: QuanNuocState, day: number) => QUAN_HAND_BATCHES - (q.hand?.day === day ? q.hand.n : 0);
+
+/** GĐ428 — nâng bậc cửa hàng nước: quầy → quán → cà phê. Mỗi bậc kéo thêm khách, cần cấp và tiền. */
+export const QUAN_TIERS = [
+  { name: 'Quầy nước', icon: '🧋', mul: 1, level: 0, cost: 0 },
+  { name: 'Quán nước', icon: '🪑', mul: 1.25, level: 33, cost: 15_000_000 },
+  { name: 'Quán cà phê', icon: '☕', mul: 1.5, level: 38, cost: 40_000_000 },
+] as const;
+export const quanTierOf = (q: Pick<QuanNuocState, 'tier'>) => Math.max(0, Math.min(QUAN_TIERS.length - 1, Math.floor(q.tier ?? 0)));
+export const quanTierMul = (q: Pick<QuanNuocState, 'tier'>) => QUAN_TIERS[quanTierOf(q)].mul;

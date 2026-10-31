@@ -151,3 +151,24 @@ describe('brewQuanHand (GĐ427 tự pha ở quầy)', () => {
     expect(useGame.getState().brewQuanHand()).toBe(false);
   });
 });
+
+describe('upgradeQuanTier (GĐ428 quầy → quán → cà phê)', () => {
+  it('nâng bậc theo cấp + tiền, khách tăng, save giữ bậc', async () => {
+    const { quanTierMul } = await import('../data/quanNuoc');
+    const d = newGameData();
+    const msgs: string[] = [];
+    useGame.setState({ ...d, level: 33, money: 100_000_000, notify: (m: string) => { msgs.push(m); }, biz: { ...d.biz, quanNuoc: { ...d.biz.quanNuoc, open: true } } });
+    const g = useGame.getState;
+    const before = quanNuocProjection(g().biz.quanNuoc, 33, 999).customers;
+    expect(g().upgradeQuanTier()).toBe(true);
+    expect(g().money).toBe(85_000_000);
+    expect(g().upgradeQuanTier()).toBe(false); // cà phê cần cấp 38
+    expect(quanNuocProjection(g().biz.quanNuoc, 33, 999).customers).toBeGreaterThan(before);
+    expect(quanTierMul({})).toBe(1);
+    const save = snapshot();
+    useGame.setState({ ...newGameData() });
+    applySnapshot(save);
+    expect(g().biz.quanNuoc.tier).toBe(1);
+    for (const m of msgs) expect(m.length).toBeLessThanOrEqual(90);
+  });
+});

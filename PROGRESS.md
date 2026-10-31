@@ -149,3 +149,4 @@
 - GĐ425 — 🚪 Cửa hàng nước B2: tường/quầy/tủ mát chặn lưới đi lại khi quán mở (`quanHouseBoxes`, lớp static "quanNuoc", dựng lại lưới qua `shop.attachGrid`); chỉ vào qua cửa giữa (rộng 1.7 m), đi được ra sau quầy. Test lưới + QA `?thu=1` (tường chặn, cửa thông, tiệm chính vẫn tới được).
 - GĐ426 — 🧑‍🤝‍🧑 Cửa hàng nước B3: khách ngồi ở ghế các bàn đang mở (`quanPatrons`: 12 ly hôm qua = 1 khách, tối đa 2 ghế/bàn), hình khối nhẹ, không phải agent nên solo/co-op như nhau. Bù bundle: lazy `PhoneAlerts`.
 - GĐ427 — 🍹 Cửa hàng nước B4: nút "Tự pha 5 ly" trong thực đơn quán (`brewQuanHand`): pha món đầu tiên đủ nguyên liệu, bán ngay giá +20%, tối đa 3 mẻ/ngày (`biz.quanNuoc.hand`, trường tùy chọn, save cũ chạy bình thường), có guard co-op.
+- GĐ428 — ☕ Cửa hàng nước B5: nâng bậc Quầy → Quán (cấp 33, 15tr, khách ×1.25) → Quán cà phê (cấp 38, 40tr, ×1.5) qua `upgradeQuanTier`; `biz.quanNuoc.tier` tùy chọn, dự phóng khớp ngày bán. Lộ trình B1–B5 xong.

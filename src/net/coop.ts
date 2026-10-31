@@ -73,6 +73,7 @@ export const GUARDED: Record<string, (args: unknown[]) => string> = {
   setQuanNuocPrice: () => 'quan',
   toggleQuanRecipe: () => 'quan',
   brewQuanHand: () => 'quan',
+  upgradeQuanTier: () => 'quan',
 };
 const GUARD_MS = 3000;
 /** Thao tác gửi đi chưa có kết quả quá lâu thì thôi chờ (mất gói, máy chạy vừa đổi). */

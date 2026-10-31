@@ -1,6 +1,6 @@
 import { useGame } from '../../core/store';
 import { formatMoney, productById } from '../../data/products';
-import { QUAN_HAND_CUPS, QUAN_PRICE_OPTIONS, quanHandLeft } from '../../data/quanNuoc';
+import { QUAN_HAND_CUPS, QUAN_PRICE_OPTIONS, QUAN_TIERS, quanHandLeft, quanTierOf } from '../../data/quanNuoc';
 import {
   cleanMenu, QUAN_MENU_SLOTS, QUAN_RECIPES, QUAN_VARIETY_BONUS, recipeCapacity, recipeCupCost,
 } from '../../data/quanRecipes';
@@ -8,7 +8,9 @@ import { styles } from './shared';
 
 /** Thực đơn pha chế quán nước (GĐ415): chọn tối đa 4 món, mỗi món hiện lời/ly và số ly kho đủ pha. */
 export function QuanMenuSection() {
-  const { biz, level, storage, day, toggleQuanRecipe, brewQuanHand } = useGame();
+  const { biz, level, storage, day, toggleQuanRecipe, brewQuanHand, upgradeQuanTier } = useGame();
+  const tier = quanTierOf(biz.quanNuoc);
+  const nextTier = QUAN_TIERS[tier + 1];
   const q = biz.quanNuoc;
   const menu = cleanMenu(q.menu, level);
   const mul = QUAN_PRICE_OPTIONS[q.price].mul;
@@ -18,6 +20,14 @@ export function QuanMenuSection() {
       <div style={{ fontSize: 12, opacity: 0.75, margin: '2px 0 6px' }}>
         Món pha lời hơn nước chai, cần đủ nguyên liệu trong kho. Mỗi món thêm kéo +{Math.round(QUAN_VARIETY_BONUS * 100)}% khách.
         {menu.length === 0 && ' Chưa chọn món nào: quán chỉ bán nước chai.'}
+      </div>
+      <div style={{ fontSize: 13, marginBottom: 6 }}>
+        {QUAN_TIERS[tier].icon} <b>{QUAN_TIERS[tier].name}</b>
+        {nextTier && (
+          <button style={styles.btn} disabled={level < nextTier.level} onClick={() => upgradeQuanTier()}>
+            {level < nextTier.level ? `${nextTier.name}: cấp ${nextTier.level}` : `Nâng lên ${nextTier.name} ${formatMoney(nextTier.cost)} (khách ×${nextTier.mul})`}
+          </button>
+        )}
       </div>
       <button style={{ ...styles.btn, marginLeft: 0, marginBottom: 6 }} disabled={!menu.length || quanHandLeft(q, day) <= 0} onClick={() => brewQuanHand()}
         title="Tự đứng quầy pha một mẻ món đầu tiên đủ nguyên liệu, bán ngay giá tay nghề +20%">

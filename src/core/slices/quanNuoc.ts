@@ -1,6 +1,6 @@
 import { formatMoney } from '../../data/products';
 import {
-  QUAN_HAND_BONUS, QUAN_HAND_CUPS, quanHandLeft, QUAN_NUOC_HIRE_FEE, QUAN_NUOC_MAX_STAFF, QUAN_NUOC_PRICE, QUAN_NUOC_UNLOCK, QUAN_PRICE_OPTIONS,
+  QUAN_TIERS, quanTierOf, QUAN_HAND_BONUS, QUAN_HAND_CUPS, quanHandLeft, QUAN_NUOC_HIRE_FEE, QUAN_NUOC_MAX_STAFF, QUAN_NUOC_PRICE, QUAN_NUOC_UNLOCK, QUAN_PRICE_OPTIONS,
   type QuanNuocPrice,
 } from '../../data/quanNuoc';
 import { brewMenu, cleanMenu, quanRecipeById, recipeCapacity, QUAN_MENU_SLOTS } from '../../data/quanRecipes';
@@ -12,7 +12,7 @@ import type { GameState, SetState, GetState } from '../gameTypes';
  * chung, chạy theo ngày trong endDay (không mô phỏng real-time). Khớp pattern slice branch.ts.
  */
 
-export const createQuanNuocSlice = (set: SetState, get: GetState): Pick<GameState, 'buyQuanNuoc' | 'hireQuanNuoc' | 'fireQuanNuoc' | 'setQuanNuocPrice' | 'toggleQuanRecipe' | 'brewQuanHand'> => ({
+export const createQuanNuocSlice = (set: SetState, get: GetState): Pick<GameState, 'buyQuanNuoc' | 'hireQuanNuoc' | 'fireQuanNuoc' | 'setQuanNuocPrice' | 'toggleQuanRecipe' | 'brewQuanHand' | 'upgradeQuanTier'> => ({
   /** Mua mặt bằng quán nước: cần đủ cấp và đủ tiền; mua xong là mở bán ngay từ tối nay. */
   buyQuanNuoc: () => {
     const s = get();
@@ -89,6 +89,25 @@ export const createQuanNuocSlice = (set: SetState, get: GetState): Pick<GameStat
       biz: { ...s.biz, quanNuoc: { ...q, hand: { day: s.day, n: (q.hand?.day === s.day ? q.hand.n : 0) + 1 } } },
     });
     s.notify(`${r.icon} Tự pha ${QUAN_HAND_CUPS} ly ${r.name}: +${formatMoney(b.revenue)} (còn ${left - 1} mẻ hôm nay)`);
+    return true;
+  },
+  /** GĐ428: nâng bậc cửa hàng nước (quầy → quán → cà phê), đông khách hơn. */
+  upgradeQuanTier: () => {
+    const s = get();
+    const q = s.biz.quanNuoc;
+    if (!q.open) { s.notify('Chưa mở quán nước!'); return false; }
+    const cur = quanTierOf(q);
+    const next = QUAN_TIERS[cur + 1];
+    if (!next) { s.notify('Cửa hàng nước đã ở bậc cao nhất'); return false; }
+    if (s.level < next.level) { s.notify(`${next.name} mở ở cấp ${next.level}`); return false; }
+    if (s.money < next.cost) { s.notify(`Cần ${formatMoney(next.cost)} để nâng lên ${next.name}`); return false; }
+    set({
+      money: s.money - next.cost,
+      biz: { ...s.biz, quanNuoc: { ...q, tier: cur + 1 } },
+      stats: { ...s.stats, spent: s.stats.spent + next.cost },
+      totals: { ...s.totals, spent: s.totals.spent + next.cost },
+    });
+    s.notify(`${next.icon} Đã nâng lên ${next.name}: khách ghé ×${next.mul}`);
     return true;
   },
 });
