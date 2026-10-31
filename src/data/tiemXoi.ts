@@ -88,3 +88,7 @@ export function tiemXoiMorning(
   const idle = t.staff > 0 && last.total <= tiemXoiCapacity(t.staff - 1);
   return { net, idle };
 }
+
+/** Trạng thái hình ảnh tiệm xôi 3D (GĐ430). */
+export const tiemXoiStandState = (level: number, open: boolean): 'hidden' | 'lot' | 'open' =>
+  open ? 'open' : level >= TIEM_XOI_UNLOCK ? 'lot' : 'hidden';

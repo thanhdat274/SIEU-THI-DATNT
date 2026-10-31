@@ -39,10 +39,11 @@ import { createTiltShift } from './render/fx/tiltShift';
 import { applyLightBudget, initLightPool } from './render/lightBudget';
 import { NavGrid } from './world/navGrid';
 import { createWorld } from './world/world';
+import { tiemXoiStandState } from './data/tiemXoi';
 import { quanNuocStandState, quanPatrons, quanTierOf } from './data/quanNuoc';
 import { menuBoardLines } from './data/quanRecipes';
 import { quanHouseBoxes } from './world/quanNuocStand';
-import { branchStandState } from './data/branches';
+import { branchStandState, LANE_X } from './data/branches';
 import { Hud, tutorialActive, tutorialStep } from './ui/Hud';
 import './ui/controls.css';
 import { LoginScreen } from './ui/LoginScreen';
@@ -315,6 +316,31 @@ useGame.subscribe((s) => {
     syncQuanNuocStand();
   }
 });
+
+// Tiệm xôi 3D (GĐ430): biển đất khi đủ cấp, sạp xôi khi đã mở. Tải lười (cấp 40 mới cần), đặt phía tây
+// hẻm đối diện quán nước, chỉ hình ảnh, không chặn lưới.
+let tiemXoiStand: import('./world/tiemXoiStand').TiemXoiStand | null = null;
+let tiemXoiLoading = false;
+const syncTiemXoi = () => {
+  const s = useGame.getState();
+  const st = tiemXoiStandState(s.level, !!s.biz.tiemXoi?.open);
+  if (!tiemXoiStand) {
+    if (st !== 'hidden' && !tiemXoiLoading) {
+      tiemXoiLoading = true;
+      void import('./world/tiemXoiStand').then((m) => {
+        tiemXoiStand = m.createTiemXoiStand();
+        tiemXoiStand.group.position.set(LANE_X - 4, 0, 1);
+        scene.add(tiemXoiStand.group);
+        syncTiemXoi();
+      });
+    }
+    return;
+  }
+  tiemXoiStand.lot.visible = st === 'lot';
+  tiemXoiStand.stall.visible = st === 'open';
+};
+syncTiemXoi();
+useGame.subscribe(syncTiemXoi);
 
 // Cửa hàng tiện lợi theo trạng thái sở hữu (GĐ26): mảnh đất RAO BÁN khi đủ cấp chưa mua, toà nhà +
 // biển "ĐÓNG CỬA" khi đã mua, biển "MỞ CỬA 24/7" khi đang mở. Toà nhà cửa hàng tiện lợi (convenience)
