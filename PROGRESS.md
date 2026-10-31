@@ -121,15 +121,9 @@
 - GĐ301–349: xem docs/progress-archive/INDEX-GD301-349.md
 - GĐ350–381: xem docs/progress-archive/INDEX-GD350-381.md
 - GĐ450–499 (quán nước đồ nóng, tiệm xôi có nhà, khu bản đồ B1–B2): xem docs/progress-archive/INDEX-GD450-499.md
+- GĐ359–399 (lẻ) + GĐ500–511 (Ngõ 2 B2–B5, món sạp): xem docs/progress-archive/INDEX-GD359-399-500-511.md
+- GĐ524: Dồn mục lục GĐ359–399 + GĐ500–511 sang archive (PROGRESS.md dưới 30KB).
 
-- GĐ359–363 — 🧹 QA thưởng quay lại theo cấp, mobile 375px, ngất đúng giờ; gỡ 31 tên import không dùng (tsc sạch, 2361 test, bundle 596/253); chuyển mục lục GĐ251–300 sang archive (PROGRESS.md 25KB)
-- GĐ382–393 — test bổ sung (nhắc hàng hỏng, nhập hàng, hợp đồng, thành tựu, rival, kỹ năng, tên tiệm) + Leader review GĐ384; chi tiết dồn archive.
-- GĐ394 — 🧭 Leader review (GĐ384–394): 252 file / 2506 test xanh 173s (cùng dải dao động tải máy), tsc sạch, build OK, chunk chính gzip 244KB (<255), PROGRESS.md ~29KB (cần gọn lại sớm). Chỉ thêm test (acceptContract, thành tựu, hết hạn chào bán rival, nhập bù đơn điện thoại, learnSkill, tên tiệm/trang phục); gameplay/ngân sách không đổi. Phủ slice/biz.ts gần bão hòa — các hàm còn lại đều đã có test riêng. Chờ save thật (NG+, nhiệm vụ ngày 1–5). Review kế ~GĐ404; khi hết gap test, ưu tiên chiều sâu gameplay.
-- GĐ395 — 🗜️ Dồn mục lục GĐ350–381 (26 dòng) sang archive/INDEX-GD350-381.md; PROGRESS.md 29KB → ~23,6KB
-- GĐ396: QA save sạch @127.0.0.1:5173 tải lại bình thường. Console cũ có lỗi HMR 'emptyTiers before initialization' (chu trình import store → stock → biz → store); chỉ xảy ra khi Vite hot-reload store.ts, tải mới/bản build không lỗi — chỉ dev → ĐÃ SỬA GĐ397.
-- GĐ397 — 🔁 Gỡ vòng import stock→biz→store: spoilFactor/theftFactor chuyển sang data/biz.ts (core/biz re-export, API giữ nguyên); stock.ts import từ data. 252 file/2506 test xanh 161s, tsc sạch, build OK (gzip 244,5KB <255). Rà thời tiết: nhu cầu theo thời tiết (customers.ts), hỏng hàng, đơn điện thoại, nhiệm vụ đồ mưa đã có — trục này đã sâu, không làm thêm.
-- GĐ398 — 📏 Đồng bộ bảng "Ngân sách chống phình" trong promt_game(.full).md theo hằng số test (HUD 20, thông báo 90/0, ngày 1 = 10, thưởng/lãi 1.0/0.92/0.67, bundle 598/255, rò rỉ +2%/+20, test ~3 phút) — bảng cũ ghi số trước GĐ306 khiến phiên mới dễ làm lại việc đã xong. QA @5173: màn khởi đầu tải, không lỗi console. Mọi trần đạt đích; trục chiều sâu bão hòa, chờ save thật.
-- GĐ399 — 🧹 Hạ trần rò rỉ object ngoài tiệm 2% → 0% (đo 563 → 563 suốt 6 ngày) trong longSessionLeak.test.ts; nhân vật sống giữ +20 vì dao động theo khách đang ở ngoài. Test xanh, tsc sạch.
 - GĐ522: QA gợi ý phím Ngõ 2 (cần pane hiện để vòng render chạy): lô có sạp hiện '[L] Đứng sạp hôm nay (+25%)', lô trống kế tiếp hiện '[L] Thuê lô sạp…'.
 - GĐ523: Đo FPS sandbox preset Thấp (auto): Ngõ 2 có sạp + người dạo 35–37 FPS, trước tiệm chính 36,5 — đạt ≥30, Ngõ 2 không làm nặng thêm.
 - GĐ521: Tự đứng sạp Ngõ 2: [L] ở lô có sạp, mỗi ngày 1 lần, mọi lô thu ×1,25 hôm đó, +4 XP; mưa/bão không được; save biz.sapHandDay?, coop 'sap' + test. Bù bundle (599→598): AlleyPanel tải lười trong LoginScreen. QA sandbox: phím L đặt sapHandDay đúng. 2642 test xanh.
@@ -142,15 +136,3 @@
 - GĐ514: Sạp 3D theo bậc: xe đẩy hiện 2 bánh, quầy thêm biển hiệu (bật/tắt hiển thị, giữ khuôn bàn và hộp chặn lưới) + ngo2View.test.ts. 2639 test xanh.
 - GĐ513: Nâng bậc lô sạp Ngõ 2: Gánh → Xe đẩy (3tr, ×1,4) → Quầy (5tr, ×1,8), hoàn vốn ~25/~40 ngày nắng; nút ⬆ cạnh nút món; save biz.sapTiers? (thiếu = gánh), coop 'sap' + test; QA sandbox nút + số đúng. 3D chưa đổi theo bậc (hộp chặn lưới cố định). 2638 test xanh.
 - GĐ512: Dồn mục lục GĐ450–499 sang archive/INDEX-GD450-499.md (PROGRESS.md dưới 30KB).
-- GĐ511: Sạp 3D Ngõ 2 đổi màu hàng + ô dù theo món (SapKind.colors, chỉ setHex, không biên dịch lại shader; Tổng hợp giữ màu lô) + test; QA sandbox đọc màu ô dù 4 lô đúng. 2636 test xanh.
-- GĐ510: QA sandbox ?thu=1 (window.game.useGame): 3 lô 🥤/🥖/🍙 thứ 7 nắng = 585k/300k/351k đúng công thức, gợi ý 'Mai sương mù: nên bán Xôi'; 375px không tràn, nút cao 40px.
-- GĐ509: Tin cuối ngày sạp Ngõ 2 hiện icon món từng lô (sapKindIcons, vd 🥤🥖🛒) + test; 2635 test xanh.
-- GĐ508: Bản đồ khu phố gợi ý món sạp theo dự báo ngày mai (bestSapKind; mưa/bão báo sạp nghỉ) + test; 2634 test xanh.
-- GĐ507: Chiều sâu Ngõ 2: mỗi lô sạp chọn món (Tổng hợp/Nước mía nắng ×1,5/Bánh mì ngày thường ×1,2/Xôi sương ×1,25) — nút đổi món + lãi hôm nay trong Bản đồ khu phố; save biz.sapKinds? (thiếu = Tổng hợp), coop 'sap' + test. economySim ngày 1 đỏ 1 lần khi cả bộ chạy nặng, chạy riêng xanh.
-- GĐ506: Mốc bản đồ chuyển vào data/zones (MAP_LANDMARKS, có tên khi rê chuột) + test mốc nằm trong hẻm đầu; 2630 test xanh 256s.
-- GĐ505: Bản đồ khu phố: mốc nhà/tạp hoá/tiệm xôi/quán nước/trại/cửa hàng tiện lợi + chấm vị trí nhân vật (core/playerPos, không lưu save).
-- GĐ504: Mở rộng bản đồ B5: mục "Bản đồ khu phố" trong bảng quán/tiệm (SVG các khu mở/khoá, đường chính, chấm sạp Ngõ 2, nút mở khu) — không thêm nút HUD; zoneMapView + test. Xong kế hoạch B1–B5.
-- GĐ503: Mở rộng bản đồ B4: người dạo phố Ngõ 2 (2/sạp, tối đa 6, 6h–20h, mưa vắng) đi từ đầu ngõ ghé từng sạp rồi quay ra; tải lười cùng Ngõ 2 + test. QA sandbox: vạch đường + khách ghé sạp OK.
-- GĐ502: Đường Ngõ 2 dùng nhựa đường có vạch như đường chính; bàn sạp hàng rong chặn lưới (sapStallBox) + test.
-- GĐ501: Mở rộng bản đồ B3: sạp hàng rong Ngõ 2 — thuê lô 5tr (tối đa 4, [L] ở lô kế tiếp), +300k/lô/ngày, cuối tuần ×1,3, mưa/bão nghỉ bán; ô dù + bàn hàng trên lô; save biz.sapRong? + coop sap + test.
-- GĐ500: Mở rộng bản đồ B2: lưới đi ±120, tường vô hình ngoài khu đã mở (zoneBlockRects); Ngõ 2 tải lười (đất, đường nối, rào RAO BÁN, 4 lô trống khi mở); [L] mở khu ở cuối đường phía đông + test lưới. QA sandbox OK.
