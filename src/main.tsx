@@ -39,7 +39,7 @@ import { createTiltShift } from './render/fx/tiltShift';
 import { applyLightBudget, initLightPool } from './render/lightBudget';
 import { NavGrid } from './world/navGrid';
 import { createWorld } from './world/world';
-import { quanNuocStandState, quanPatrons } from './data/quanNuoc';
+import { quanNuocStandState, quanPatrons, quanTierOf } from './data/quanNuoc';
 import { menuBoardLines } from './data/quanRecipes';
 import { quanHouseBoxes } from './world/quanNuocStand';
 import { branchStandState } from './data/branches';
@@ -278,6 +278,7 @@ let lastStandStaff = -1;
 let lastStandLevel = 0;
 let lastStandOpen = false;
 let lastStandLast: unknown = null;
+let lastStandTier: number | undefined;
 let lastStandMenu: string | null = null;
 let lastStandWalls = false;
 const syncQuanNuocStand = () => {
@@ -296,6 +297,7 @@ const syncQuanNuocStand = () => {
     lastStandStaff = s.biz.quanNuoc.staff;
     world.quanNuoc.setStaff(s.biz.quanNuoc.staff);
   }
+  world.quanNuoc.setTier(quanTierOf(s.biz.quanNuoc));
   world.quanNuoc.setPatrons(quanPatrons(s.biz.quanNuoc.staff, s.biz.quanNuocLast?.served));
   const menuKey = (s.biz.quanNuoc.menu ?? []).join();
   if (menuKey !== lastStandMenu) {
@@ -305,7 +307,8 @@ const syncQuanNuocStand = () => {
 };
 syncQuanNuocStand();
 useGame.subscribe((s) => {
-  if (s.level !== lastStandLevel || s.biz.quanNuoc.open !== lastStandOpen || s.biz.quanNuoc.staff !== lastStandStaff || (s.biz.quanNuoc.menu ?? []).join() !== lastStandMenu || s.biz.quanNuocLast !== lastStandLast) {
+  if (s.level !== lastStandLevel || s.biz.quanNuoc.open !== lastStandOpen || s.biz.quanNuoc.staff !== lastStandStaff || (s.biz.quanNuoc.menu ?? []).join() !== lastStandMenu || s.biz.quanNuocLast !== lastStandLast || s.biz.quanNuoc.tier !== lastStandTier) {
+    lastStandTier = s.biz.quanNuoc.tier;
     lastStandLast = s.biz.quanNuocLast;
     lastStandLevel = s.level;
     lastStandOpen = s.biz.quanNuoc.open;

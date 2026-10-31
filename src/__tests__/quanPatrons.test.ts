@@ -13,3 +13,11 @@ describe('quanPatrons', () => {
     expect(quanPatrons(9, 500)).toBe(6);
   });
 });
+
+import { QUAN_TIERS } from '../data/quanNuoc';
+import { QUAN_TIER_SIGNS } from '../world/quanNuocStand';
+describe('biển hiệu theo bậc (GĐ429)', () => {
+  it('mỗi bậc có một biển', () => {
+    expect(QUAN_TIER_SIGNS).toHaveLength(QUAN_TIERS.length);
+  });
+});

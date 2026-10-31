@@ -20,9 +20,15 @@ export interface QuanNuocStand {
   setMenu(lines: string[]): void;
   /** Khách ngồi ở các ghế bàn đang hiện (GĐ426), hình khối đơn giản, không phải agent. */
   setPatrons(n: number): void;
+  /** Bậc cửa hàng (GĐ429): đổi biển hiệu + màu mái hiên theo quầy / quán / cà phê. */
+  setTier(n: number): void;
   /** Hộp các khối chính nếu muốn chặn nav — để rỗng cho an toàn đi lại. */
   boxes: THREE.Box3[];
 }
+
+/** Biển hiệu + màu mái hiên theo bậc cửa hàng (GĐ429). */
+export const QUAN_TIER_SIGNS = ['QUẦY NƯỚC', 'QUÁN NƯỚC', 'CÀ PHÊ'];
+const QUAN_TIER_AWNINGS = [0xff8a3d, 0x2e86de, 0x6f4e37];
 
 /** Màu các ly/chai bày trên quầy, lấy cảm hứng từ IMPULSE_COLORS trong buildings.ts. */
 const CUP_COLORS = [0xe84393, 0x0984e3, 0xfdcb6e, 0xe17055, 0x00b894, 0x6c5ce7, 0xd63031, 0xff7a00];
@@ -34,7 +40,7 @@ export function createQuanNuocStand(): QuanNuocStand {
   group.add(lot, stand.group);
   lot.visible = false;
   stand.group.visible = false;
-  return { group, lot, stand: stand.group, setStaff: stand.setStaff, setMenu: stand.setMenu, setPatrons: stand.setPatrons, boxes: [] };
+  return { group, lot, stand: stand.group, setStaff: stand.setStaff, setMenu: stand.setMenu, setPatrons: stand.setPatrons, setTier: stand.setTier, boxes: [] };
 }
 
 /** Khoảnh đất trống đủ cấp chưa mua: sàn mỏng, gạch mép, biển gỗ "ĐỒ UỐNG", marker 🧋 gợi chú ý. */
@@ -104,7 +110,7 @@ export function quanHouseBoxes(ox: number, oz: number): THREE.Box3[] {
 
 /** Cửa hàng nước: nhà nhỏ tường + mái + mặt tiền kính, bên trong quầy pha, tủ mát, kệ ly, máy xay,
  *  bảng phấn thực đơn; bàn ghế ngoài hiên bật theo số nhân viên. */
-function buildStand(): { group: THREE.Group; setStaff(n: number): void; setMenu(lines: string[]): void; setPatrons(n: number): void } {
+function buildStand(): { group: THREE.Group; setStaff(n: number): void; setMenu(lines: string[]): void; setPatrons(n: number): void; setTier(n: number): void } {
   const g = new THREE.Group();
   const wall = new THREE.MeshStandardMaterial({ color: 0xbfe9e2, roughness: 0.85 });
   const trim = new THREE.MeshStandardMaterial({ color: 0x26a69a, roughness: 0.6 });
@@ -141,11 +147,13 @@ function buildStand(): { group: THREE.Group; setStaff(n: number): void; setMenu(
   box(W / 2 - 0.85, H - 0.6, 0.04, glass, cx + (W / 4 + 0.42), (H - 0.6) / 2 + 0.3, front);
   box(W, 0.5, 0.14, trim, cx, H - 0.25, front);
   // Mái hiên vải sọc phía trước + biển tên
-  const awning = new THREE.Mesh(new THREE.BoxGeometry(W + 0.2, 0.05, 0.9), new THREE.MeshStandardMaterial({ color: 0xff8a3d, roughness: 0.8 }));
+  const awningMat = new THREE.MeshStandardMaterial({ color: 0xff8a3d, roughness: 0.8 });
+  const awning = new THREE.Mesh(new THREE.BoxGeometry(W + 0.2, 0.05, 0.9), awningMat);
   awning.position.set(cx, H - 0.45, front + 0.45);
   awning.rotation.x = 0.28;
   g.add(awning);
-  const sign = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 0.44), new THREE.MeshStandardMaterial({ map: drinkSignTexture('QUÁN NƯỚC'), roughness: 0.6 }));
+  const signMat = new THREE.MeshStandardMaterial({ map: drinkSignTexture('QUÁN NƯỚC'), roughness: 0.6 });
+  const sign = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 0.44), signMat);
   sign.position.set(cx, H + 0.42, front + 0.37);
   box(2.75, 0.55, 0.06, trim, cx, H + 0.42, front + 0.33);
   g.add(sign);
@@ -246,7 +254,16 @@ function buildStand(): { group: THREE.Group; setStaff(n: number): void; setMenu(
   };
   const setPatrons = (n: number) => { patronCount = Math.max(0, Math.floor(n)); showPatrons(); };
   const setStaffAll = (n: number) => { setStaff(n); showPatrons(); };
-  return { group: g, setStaff: setStaffAll, setMenu, setPatrons };
+  let tierNow = -1;
+  const setTier = (n: number) => {
+    if (n === tierNow) return;
+    tierNow = n;
+    signMat.map?.dispose();
+    signMat.map = drinkSignTexture(QUAN_TIER_SIGNS[n] ?? QUAN_TIER_SIGNS[0]);
+    signMat.needsUpdate = true;
+    awningMat.color.setHex(QUAN_TIER_AWNINGS[n] ?? QUAN_TIER_AWNINGS[0]);
+  };
+  return { group: g, setStaff: setStaffAll, setMenu, setPatrons, setTier };
 }
 
 /** Mặt biển "ĐỒ UỐNG": chữ trắng đậm trên nền xanh cyan (màu thương hiệu quán). */

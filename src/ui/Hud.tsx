@@ -3,7 +3,6 @@ import { ANIMALS, ANIMAL_ORDER, EGG_PER_TRAY, plotReady } from '../data/garden';
 import { activeBuzz } from '../data/social';
 import { licenseStatus, type LicenseId } from '../data/licenses';
 import { faintMinutes, weeklyChallenge, rivalUndercutAlerts } from '../data/biz';
-import { nearExpiryItems } from '../data/freshness';
 import { pendingUnlockAct } from '../data/unlockActs';
 import { Joystick } from './Joystick';
 import { Fragment, lazy, Suspense, useEffect, useRef, useState } from 'react';
@@ -38,16 +37,16 @@ import { pushCloudSave, takeCloudSave } from '../net/cloud';
 import { leaveRoom } from '../net/coop';
 import { logoutGoogle } from '../net/firebase';
 import { useSession } from '../net/session';
-import { spoilRiskValue } from '../data/spoilRisk';
 import { STORIES } from '../data/biz';
-import { findSurprise } from '../data/surpriseArcs';
-import { chooseSurprise, closeStory, REGULAR_NAMES } from '../core/biz';
+import { closeStory, REGULAR_NAMES } from '../core/biz';
 import { initAudio, isMuted, isMusic, setMuted, setMusic } from '../core/audio';
 import { Panels } from './Panels';
 import { hubFirst, hubOf } from './hubs';
 import { answerAsk, useCounterAsk, askWallElapsed } from '../core/counterAsk';
 import { GFX_CYCLE, GFX_LABEL, gfxStatus, setGfxChoice } from '../render/graphicsQuality';
 import './hud.css';
+const SurpriseAlert = lazy(() => import('./SurpriseAlert').then((m) => ({ default: m.SurpriseAlert })));
+const ExpiryAlert = lazy(() => import('./ExpiryAlert').then((m) => ({ default: m.ExpiryAlert })));
 const PhoneAlerts = lazy(() => import('./PhoneAlerts').then((m) => ({ default: m.PhoneAlerts })));
 
 export { tutorialActive, tutorialStep, tutorialSteps } from './tutorialSteps';
@@ -458,13 +457,13 @@ ${forecastText}`}>
         <Suspense fallback={null}><PhoneAlerts /></Suspense>
         <BranchAlert />
         <RivalAlert />
-        <ExpiryAlert />
+        <Suspense fallback={null}><ExpiryAlert /></Suspense>
         <UnlockActBanner />
         <Suspense fallback={null}><VendorAlert /></Suspense>
         <CounterAskAlert />
         <FestivalBanner />
         <Suspense fallback={null}><Tutorial review={helpTutorial} onDone={() => setHelpTutorial(false)} /></Suspense>
-        <SurpriseAlert />
+        <Suspense fallback={null}><SurpriseAlert /></Suspense>
         <StoryAlert />
         {conflict && (
           <div className="hud-alert info">
@@ -761,59 +760,6 @@ function RivalAlert() {
       ⚔️ {alert.rival} bán rẻ <b>{alert.items.join(', ')}</b> — khách nhạy giá các món này chê tiệm mình.
       <span className="hud-alert-actions">
         <button className="hud-btn primary" onClick={() => useGame.getState().openPanel({ type: 'prices' })}>Xem giá</button>
-      </span>
-    </div>
-  );
-}
-
-/** Lô cận hạn trong kho/kệ — nhắc xử lý trước khi hỏng mất vốn (GĐ43). */
-function ExpiryAlert() {
-  const storage = useGame((s) => s.storage);
-  const storageLots = useGame((s) => s.storageLots);
-  const furniture = useGame((s) => s.furniture);
-  const priceOf = useGame((s) => s.priceOf);
-  const shelves = furniture.flatMap((f) => f.tiers);
-  const items = nearExpiryItems(storage, storageLots, shelves);
-  if (!items.length) return null;
-  const risk = spoilRiskValue(storage, storageLots, shelves, priceOf);
-  return (
-    <div className="hud-alert warn">
-      ⏳ <b>Hàng sắp hết hạn:</b> {items.map((i) => `${i.name} (${i.qty})`).join(', ')}
-      {risk && (
-        <small className="hud-wholesale-tip">
-          ≈ {formatMoney(risk.tonightValue > 0 ? risk.tonightValue : risk.totalValue)}
-          {risk.tonightValue > 0 ? ' hỏng đêm nay' : ' đang cận hạn'} · tổng {formatMoney(risk.totalValue)} — bày bán / hạ giá / bán sỉ kịp kẻo mất.
-        </small>
-      )}
-      <span className="hud-alert-actions">
-        <button className="hud-btn primary" onClick={() => useGame.getState().openPanel({ type: 'storage' })}>Xử lý</button>
-      </span>
-    </div>
-  );
-}
-
-/** Sự kiện bất ngờ trong ngày: chọn một cách xử lý. GĐ164: tra ARC trước rồi mới tới
- *  pool một-phát — cảnh arc resolve theo lựa chọn đã chốt; lựa chọn cần hàng kho mà
- *  kho thiếu thì xám kèm chữ "kho hết {món} rồi" (core chooseSurprise chặn lại lần nữa). */
-function SurpriseAlert() {
-  const active = useGame((s) => s.biz.surprise);
-  const storage = useGame((s) => s.storage);
-  const ev = active && findSurprise(active.id, useGame.getState().biz.surpriseArc?.choices);
-  if (!ev) return null;
-  return (
-    <div className="hud-alert phone">
-      {ev.icon} <b>{ev.title}</b>: {ev.text}
-      <span className="hud-alert-actions">
-        {ev.choices.map((c, i) => {
-          const short = c.needStock && (storage[c.needStock.productId] ?? 0) < c.needStock.qty;
-          return (
-            <button key={i} disabled={short} className={`hud-btn${i === 0 && !short ? ' primary' : ''}`}
-              onClick={() => chooseSurprise(i)}
-              title={short ? `Kho hết ${productById(c.needStock!.productId).name} rồi` : undefined}>
-              {c.label}{short && <small> (kho hết {productById(c.needStock!.productId).name} rồi)</small>}
-            </button>
-          );
-        })}
       </span>
     </div>
   );
