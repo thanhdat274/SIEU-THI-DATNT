@@ -106,3 +106,30 @@ export const tiemXoiHandPick = (level: number, storage: Record<string, number>):
   for (const id of tiemXoiIds(level)) if (pick === null || (storage[id] ?? 0) < (storage[pick] ?? 0)) pick = id;
   return pick;
 };
+
+/** GĐ484: tiệm xôi có nhà nên có khách ngồi ăn tại chỗ — 10 suất + 5/thợ (bếp lớn ×1.5) mỗi ngày. */
+export const tiemXoiDineCap = (staff: number, big = false) => Math.round((10 + 5 * staff) * (big ? 1.5 : 1));
+
+/**
+ * Kế hoạch khách ăn tại chỗ: lấy xôi từ kho (món còn nhiều nhất trước, hoà theo thứ tự mẫu hàng),
+ * bán đúng giá lẻ. Thuần xác định; trả phần cần rút kho + doanh thu.
+ */
+export function tiemXoiDinePlan(t: TiemXoiState, level: number, storage: Record<string, number>): { take: Record<string, number>; portions: number; revenue: number } {
+  const left: Record<string, number> = {};
+  const ids = tiemXoiIds(level);
+  for (const id of ids) left[id] = storage[id] ?? 0;
+  const take: Record<string, number> = {};
+  let n = t.open ? tiemXoiDineCap(t.staff, !!t.big) : 0;
+  let portions = 0, revenue = 0;
+  while (n > 0) {
+    let pick: string | null = null;
+    for (const id of ids) if (left[id] > 0 && (pick === null || left[id] > left[pick])) pick = id;
+    if (pick === null) break;
+    left[pick]--;
+    take[pick] = (take[pick] ?? 0) + 1;
+    portions++;
+    revenue += productById(pick).sell;
+    n--;
+  }
+  return { take, portions, revenue };
+}

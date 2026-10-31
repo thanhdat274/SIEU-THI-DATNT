@@ -97,3 +97,34 @@ describe('GĐ464: thành tựu quán cà phê / bếp xôi lớn', () => {
     expect(a('xoi_big').done({ ...ctx, xoiBig: true })).toBe(true);
   });
 });
+
+describe('GĐ484: khách ăn tại chỗ', () => {
+  it('suất theo thợ/bếp, lấy món nhiều nhất, doanh thu giá lẻ', async () => {
+    const { tiemXoiDineCap, tiemXoiDinePlan, tiemXoiIds } = await import('../data/tiemXoi');
+    const { productById } = await import('../data/products');
+    expect(tiemXoiDineCap(0)).toBe(10);
+    expect(tiemXoiDineCap(2)).toBe(20);
+    expect(tiemXoiDineCap(2, true)).toBe(30);
+    const ids = tiemXoiIds(TIEM_XOI_UNLOCK);
+    const st = { [ids[0]]: 3, [ids[1]]: 50 };
+    const p = tiemXoiDinePlan({ open: true, staff: 0 } as never, TIEM_XOI_UNLOCK, st);
+    expect(p.portions).toBe(10);
+    expect(p.take[ids[1]]).toBe(10);
+    expect(p.revenue).toBe(10 * productById(ids[1]).sell);
+    expect(tiemXoiDinePlan({ open: false, staff: 0 } as never, TIEM_XOI_UNLOCK, st).portions).toBe(0);
+    expect(tiemXoiDinePlan({ open: true, staff: 0 } as never, TIEM_XOI_UNLOCK, {}).portions).toBe(0);
+  });
+
+  it('cuối ngày cộng tiền + tin ≤90 ký tự', () => {
+    g().buyTiemXoi();
+    g().steamXoiHand();
+    msgs = [];
+    const m0 = g().money;
+    useGame.setState({ minutes: 20 * 60 });
+    g().sleep();
+    const seg = msgs.join('|').match(/🍚 Khách ăn tại tiệm xôi[^|·]*· \+[^|·]*/)?.[0];
+    expect(seg).toBeTruthy();
+    expect(seg!.length).toBeLessThanOrEqual(90);
+    expect(typeof m0).toBe('number');
+  });
+});

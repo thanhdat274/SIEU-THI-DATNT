@@ -150,6 +150,7 @@
 - GĐ470: Ghi Cần duyệt nâng tiệm xôi thành cửa hàng nhỏ (chờ người dùng chọn).
 - GĐ471: Bảng quán ghi rõ 'bậc x/3: Quầy nước → Quán nước → Quán cà phê — cùng một cửa hàng' (người dùng tưởng cà phê là tiệm riêng).
 - GĐ472: QA sandbox: bảng quán hiện 'bậc 3/3 … cùng một cửa hàng' và '🎉 Cuối tuần ×1.2' (ngày 6).
+- GĐ484: Tiệm xôi có khách ngồi ăn tại chỗ: 10 suất + 5/thợ (bếp lớn ×1.5) lấy từ kho, bán giá lẻ, tin cuối ngày + dòng panel + test.
 - GĐ483: Tiệm xôi thành cửa hàng nhỏ: nhà tường/mái/cửa, biển TIỆM XÔI, quầy + nồi trong nhà, tường chặn lưới (vào qua cửa), J ở quầy trong nhà + test lưới. QA bản thử: nhà hiện cạnh vỉa hè, J “Tự đồ 35 phần xôi”.
 - GĐ482: Panel quán nhắc đồ nóng cả tháng rét (×1.1) + test.
 - GĐ481: Tháng rét (12–2) đồ nóng trên thực đơn kéo thêm 10% khách + test.

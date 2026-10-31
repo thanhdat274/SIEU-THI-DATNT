@@ -4,7 +4,7 @@ import { applySnapshot, snapshot } from '../core/save';
 import { ACHIEVEMENTS } from '../data/biz';
 import { rentOf } from '../data/shopTiers';
 import {
-  newTiemXoi, tiemXoiCapacity, tiemXoiDay, tiemXoiIds,
+  newTiemXoi, tiemXoiCapacity, tiemXoiDinePlan, tiemXoiDay, tiemXoiIds,
   TIEM_XOI_HIRE_FEE, TIEM_XOI_MAX_STAFF, TIEM_XOI_PRICE, TIEM_XOI_UNLOCK, TIEM_XOI_WAGE,
 } from '../data/tiemXoi';
 
@@ -53,8 +53,10 @@ describe('endDay — nấu bù kho', () => {
     expect(g().sleep()).toBe(true);
     const after = g();
     const xoi = tiemXoiIds(TIEM_XOI_UNLOCK).reduce((n, id) => n + (after.storage[id] ?? 0), 0);
-    expect(xoi).toBe(tiemXoiCapacity(1));
-    expect(after.money).toBe(100_000_000 - t.cost - TIEM_XOI_WAGE - rentOf(0));
+    // GĐ484: khách ăn tại chỗ lấy bớt xôi vừa nấu và trả tiền giá lẻ
+    const dine = tiemXoiDinePlan({ open: true, staff: 1 }, TIEM_XOI_UNLOCK, t.made);
+    expect(xoi).toBe(tiemXoiCapacity(1) - dine.portions);
+    expect(after.money).toBe(100_000_000 - t.cost - TIEM_XOI_WAGE - rentOf(0) + dine.revenue);
     expect(after.biz.tiemXoiLast).toMatchObject({ day: 1, total: t.total, cost: t.cost, wages: TIEM_XOI_WAGE });
     const line = msgs.find((m) => m.includes('🍚 Tiệm xôi'))!;
     expect(line).toBeDefined();
