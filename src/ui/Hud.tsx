@@ -4,7 +4,7 @@ import { QUAN_NUOC_UNLOCK } from '../data/quanNuoc';
 import { activeBuzz, SOCIAL_UNLOCK } from '../data/social';
 import { ONLINE_UNLOCK } from '../data/online';
 import { licenseStatus, type LicenseId } from '../data/licenses';
-import { INSPECTION_UNLOCK, weeklyChallenge, rivalUndercutAlerts } from '../data/biz';
+import { BREAKFAST, INSPECTION_UNLOCK, weeklyChallenge, rivalUndercutAlerts } from '../data/biz';
 import { nearExpiryItems } from '../data/freshness';
 import { pendingUnlockAct } from '../data/unlockActs';
 import { Joystick } from './Joystick';
@@ -191,6 +191,7 @@ export function Hud() {
   const online = !!coop;
   /** Số lượt đã góp sân chơi (GĐ40) — để nút menu hiện tiến độ n/28. */
   const landmarkContrib = useGame((s) => s.biz.landmark.contributions);
+  const fedBreakfast = useGame((s) => s.biz.breakfastDay === s.day);
   const [copiedCode, setCopiedCode] = useState(false);
   // Xem lại hướng dẫn từ menu Thêm: bật thì Tutorial chuyển sang chế độ review
   const [helpTutorial, setHelpTutorial] = useState(false);
@@ -440,7 +441,7 @@ ${forecastText}`}>
 
       {/* Thông báo: cột trái, dưới ô trạng thái */}
       <div className="hud-alerts">
-        {late && !message && <div className="hud-alert danger">🌙 Đã khuya! Về nhà ngủ trước 2:00 sáng kẻo ngất.</div>}
+        {late && !message && <div className="hud-alert danger">🌙 Đã khuya! Về nhà ngủ trước {fedBreakfast ? 2 + BREAKFAST.lateMinutes / 60 : 2}:00 sáng kẻo ngất.</div>}
         {wheelBoost > 1 && <div className="hud-alert info">🍀 Vòng quay may mắn: hôm nay khách ghé đông thêm {Math.round((wheelBoost - 1) * 100)}%</div>}
         {dirt >= 30 && (
           <div className={`hud-alert ${dirt >= 60 ? 'warn' : 'info'}`}>
