@@ -1,13 +1,13 @@
 import { formatMoney, productById } from '../../data/products';
 import { copyStock, putStock } from '../stock';
 import { TIEM_XOI_HIRE_FEE, TIEM_XOI_MAX_STAFF, TIEM_XOI_PRICE, TIEM_XOI_UNLOCK, TIEM_XOI_COST_MUL, tiemXoiHandQty, tiemXoiHandPick, TIEM_XOI_BIG_COST, TIEM_XOI_BIG_LEVEL } from '../../data/tiemXoi';
-import { SAP_LOT_COST, SAP_LOTS, nextSapKinds, sapKindOf } from '../../data/sapRong';
+import { SAP_LOT_COST, SAP_LOTS, SAP_TIERS, nextSapKinds, sapKindOf, sapTierOf } from '../../data/sapRong';
 import { canOpenZone, openZones, zoneById } from '../../data/zones';
 import type { GameState, SetState, GetState } from '../gameTypes';
 
 /** Tiệm xôi (GĐ411): mua mặt bằng, tuyển/cho nghỉ thợ nấu. Mô phỏng nấu chạy trong endDay. */
 
-export const createTiemXoiSlice = (set: SetState, get: GetState): Pick<GameState, 'buyTiemXoi' | 'hireTiemXoi' | 'fireTiemXoi' | 'steamXoiHand' | 'expandTiemXoi' | 'openZone' | 'rentSapLot' | 'cycleSapKind'> => ({
+export const createTiemXoiSlice = (set: SetState, get: GetState): Pick<GameState, 'buyTiemXoi' | 'hireTiemXoi' | 'fireTiemXoi' | 'steamXoiHand' | 'expandTiemXoi' | 'openZone' | 'rentSapLot' | 'cycleSapKind' | 'upgradeSapLot'> => ({
   buyTiemXoi: () => {
     const s = get();
     if (s.biz.tiemXoi.open) return false;
@@ -96,6 +96,19 @@ export const createTiemXoiSlice = (set: SetState, get: GetState): Pick<GameState
     if (s.money < SAP_LOT_COST) { s.notify(`Cần ${formatMoney(SAP_LOT_COST)} để thuê lô sạp`); return false; }
     set({ money: s.money - SAP_LOT_COST, biz: { ...s.biz, sapRong: n + 1 } });
     s.notify(`🛒 Thuê lô sạp ${n + 1}/${SAP_LOTS}: sạp bán ngày nắng, mưa thì nghỉ`);
+    return true;
+  },
+  upgradeSapLot: (i: number) => {
+    const s = get();
+    if (!Number.isInteger(i) || i < 0 || i >= (s.biz.sapRong ?? 0)) return false;
+    const t = sapTierOf(s.biz.sapTiers, i);
+    const next = SAP_TIERS[t + 1];
+    if (!next) { s.notify('Sạp này đã là quầy, bậc cao nhất'); return false; }
+    if (s.money < next.cost) { s.notify(`Cần ${formatMoney(next.cost)} để nâng lên ${next.name}`); return false; }
+    const tiers = Array.from({ length: Math.max(i + 1, s.biz.sapTiers?.length ?? 0) }, (_, j) => sapTierOf(s.biz.sapTiers, j));
+    tiers[i] = t + 1;
+    set({ money: s.money - next.cost, biz: { ...s.biz, sapTiers: tiers } });
+    s.notify(`${next.icon} Lô ${i + 1} lên ${next.name}: thu ×${String(next.mul).replace('.', ',')}`);
     return true;
   },
   cycleSapKind: (i: number) => {

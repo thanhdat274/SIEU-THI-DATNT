@@ -124,3 +124,26 @@ describe('GĐ511: màu sạp 3D theo món', () => {
     expect(new Set(umbs).size).toBe(umbs.length);
   });
 });
+
+describe('GĐ513: nâng bậc lô sạp', () => {
+  it('save cũ = gánh; nâng 2 bậc, trừ tiền, thu nhân theo bậc, tin ≤90', async () => {
+    const { SAP_TIERS } = await import('../data/sapRong');
+    expect(sapRongIncome(1, 'cloudy', 1, undefined, undefined)).toBe(sapRongIncome(1, 'cloudy', 1));
+    expect(g().upgradeSapLot(0)).toBe(false);
+    g().openZone('ngo2'); g().rentSapLot();
+    const m = g().money;
+    expect(g().upgradeSapLot(0)).toBe(true);
+    expect(g().upgradeSapLot(0)).toBe(true);
+    expect(g().upgradeSapLot(0)).toBe(false);
+    expect(g().biz.sapTiers).toEqual([2]);
+    expect(g().money).toBe(m - SAP_TIERS[1].cost - SAP_TIERS[2].cost);
+    expect(sapRongIncome(1, 'cloudy', 1, undefined, [2])).toBe(Math.round(sapRongIncome(1, 'cloudy', 1) * SAP_TIERS[2].mul));
+    expect(msgs.every((x) => [...x].length <= 90)).toBe(true);
+  });
+  it('không đủ tiền thì không nâng', () => {
+    g().openZone('ngo2'); g().rentSapLot();
+    useGame.setState({ money: 0 });
+    expect(g().upgradeSapLot(0)).toBe(false);
+    expect(g().biz.sapTiers).toBeUndefined();
+  });
+});

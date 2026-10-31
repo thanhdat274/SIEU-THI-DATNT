@@ -41,11 +41,20 @@ export function bestSapKind(weather: Weather | undefined, day?: number): SapKind
   return SAP_KINDS.reduce((a, b) => (sapLotIncome(b, weather, day) > sapLotIncome(a, weather, day) ? b : a));
 }
 
+/** GĐ513: bậc sạp từng lô — gánh → xe đẩy → quầy; mỗi bậc nhân thu nhập lô (hoàn vốn ~25/~40 ngày nắng). */
+export const SAP_TIERS = [
+  { name: 'Gánh', icon: '🧺', mul: 1, cost: 0 },
+  { name: 'Xe đẩy', icon: '🛺', mul: 1.4, cost: 3_000_000 },
+  { name: 'Quầy', icon: '🏪', mul: 1.8, cost: 5_000_000 },
+] as const;
+export const sapTierOf = (tiers: readonly number[] | undefined, i: number) =>
+  Math.max(0, Math.min(SAP_TIERS.length - 1, Math.floor(tiers?.[i] ?? 0)));
+
 /** Lãi ròng một ngày của các sạp đã thuê (0 khi mưa/bão). */
-export function sapRongIncome(lots: number | undefined, weather?: Weather, day?: number, kinds?: readonly string[]): number {
+export function sapRongIncome(lots: number | undefined, weather?: Weather, day?: number, kinds?: readonly string[], tiers?: readonly number[]): number {
   const n = Math.max(0, Math.min(SAP_LOTS, lots ?? 0));
   let sum = 0;
-  for (let i = 0; i < n; i++) sum += sapLotIncome(sapKindOf(kinds, i), weather, day);
+  for (let i = 0; i < n; i++) sum += Math.round(sapLotIncome(sapKindOf(kinds, i), weather, day) * SAP_TIERS[sapTierOf(tiers, i)].mul);
   return sum;
 }
 

@@ -1,7 +1,7 @@
 import { playerPos } from '../../core/playerPos';
 import { useGame } from '../../core/store';
 import { formatMoney } from '../../data/products';
-import { SAP_LOTS, bestSapKind, sapKindOf, sapLotIncome } from '../../data/sapRong';
+import { SAP_LOTS, SAP_TIERS, bestSapKind, sapKindOf, sapLotIncome, sapTierOf } from '../../data/sapRong';
 import { WEATHER } from '../../data/weather';
 import { MAP_LANDMARKS, ZONES, zoneMapView } from '../../data/zones';
 import { styles } from './shared';
@@ -14,7 +14,7 @@ const Z2 = Math.max(...ZONES.map((z) => z.bounds.z2));
 
 /** Bản đồ thu nhỏ các khu (GĐ504, bước 5 mở rộng bản đồ): khu đã mở / khoá, đường chính, sạp Ngõ 2. */
 export function ZoneMapSection() {
-  const { biz, level, money, openZone, cycleSapKind, weather, day, forecast } = useGame();
+  const { biz, level, money, openZone, cycleSapKind, upgradeSapLot, weather, day, forecast } = useGame();
   const tmr = forecast[0];
   const tip = tmr ? bestSapKind(tmr, day + 1) : undefined;
   const cells = zoneMapView(biz.zones, level, money);
@@ -54,10 +54,19 @@ export function ZoneMapSection() {
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
           {Array.from({ length: Math.min(sap, SAP_LOTS) }, (_, i) => {
             const k = sapKindOf(biz.sapKinds, i);
+            const t = SAP_TIERS[sapTierOf(biz.sapTiers, i)];
+            const up = SAP_TIERS[sapTierOf(biz.sapTiers, i) + 1];
             return (
-              <button key={i} style={styles.btn} title={`${k.hint} — bấm để đổi món`} onClick={() => cycleSapKind(i)}>
-                Lô {i + 1}: {k.icon} {k.name} · hôm nay {formatMoney(sapLotIncome(k, weather, day))}
-              </button>
+              <span key={i} style={{ display: 'inline-flex', gap: 4 }}>
+                <button style={styles.btn} title={`${k.hint} — bấm để đổi món`} onClick={() => cycleSapKind(i)}>
+                  Lô {i + 1}: {t.icon} {k.icon} {k.name} · hôm nay {formatMoney(Math.round(sapLotIncome(k, weather, day) * t.mul))}
+                </button>
+                {up && (
+                  <button style={styles.btn} disabled={money < up.cost} title={`Nâng lên ${up.name}: thu ×${up.mul}`} onClick={() => upgradeSapLot(i)}>
+                    ⬆ {up.icon} {formatMoney(up.cost)}
+                  </button>
+                )}
+              </span>
             );
           })}
           {tmr && tip && (

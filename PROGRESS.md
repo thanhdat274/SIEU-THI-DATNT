@@ -97,14 +97,14 @@
 
 ## Backlog tiếp theo
 - ✅ **Đã duyệt (GĐ483):** người dùng chọn (a) — tiệm xôi thành cửa hàng nhỏ có nhà. Sạp/quầy hàng rong sau này bán ở ngõ khác khi **mở rộng bản đồ** (hướng kiểu Cities: Skylines 2: thêm ngõ/khu mới mở dần) — backlog lớn.
-- 🗺️ **Kế hoạch mở rộng bản đồ (GĐ495, nháp — làm sau khi người dùng bảo bắt đầu):** B1 khung "khu" dữ liệu (id, ranh giới, cấp/tiền mở, gốc toạ độ) + save `zones?` tuỳ chọn; B2 mở "Ngõ 2" phía bắc: đường + lô đất trống, biển RAO BÁN; B3 sạp/quầy hàng rong (xôi, nước mía, bánh mì) chỉ đặt ở ngõ mới; B4 khách/NPC đi lại giữa các khu, lưới đi lại theo khu; B5 bản đồ thu nhỏ hiện khu đã mở/chưa mở. Giữ ngân sách bundle (khu tải lười).
+- 🗺️ **Mở rộng bản đồ B1–B5 ĐÃ XONG (GĐ497–505); đang làm chiều sâu Ngõ 2 (món sạp GĐ507–511, nâng sạp GĐ513).** Kế hoạch gốc: B1 khung "khu" dữ liệu (id, ranh giới, cấp/tiền mở, gốc toạ độ) + save `zones?` tuỳ chọn; B2 mở "Ngõ 2" phía bắc: đường + lô đất trống, biển RAO BÁN; B3 sạp/quầy hàng rong (xôi, nước mía, bánh mì) chỉ đặt ở ngõ mới; B4 khách/NPC đi lại giữa các khu, lưới đi lại theo khu; B5 bản đồ thu nhỏ hiện khu đã mở/chưa mở. Giữ ngân sách bundle (khu tải lười).
 - ✅ **Đã duyệt (a) cửa hàng nước thật** — lộ trình: B1 nhà thật có quầy pha/tủ mát bên trong (hình) → B2 vào trong được (nav) → B3 khách 3D gọi món/ngồi → B4 tự đứng quầy pha → B5 lớn dần quầy→quán→cà phê. Đề xuất gốc GĐ422: — Người dùng hỏi sao quán nước chưa là cửa hàng như tạp hóa. Hiện là quầy ngoài trời ở (54.4,0,1), sim theo ngày, không vào trong được. Đề xuất: (a) nâng thành cửa hàng nước thật — nhà có quầy pha + tủ mát, khách 3D vào gọi món/ngồi, tự đứng quầy pha, lớn dần quầy→quán→cà phê (thay đổi lớn: sim, nav, migration); (b) giữ quầy, chỉ đẹp/to dần theo cấp; (c) hướng khác. Chờ người dùng chọn; trong lúc chờ làm tiếp tiệm xôi.
 
 - 🔍 **Rà 3 cơ sở (GĐ413, theo yêu cầu người dùng trước khi mở rộng tiệm xôi):**
   - Cửa hàng tiện lợi: luật chơi SÂU (ca kíp, mệt mỏi, sự cố đêm, máy bán hàng, điện, nhóm khách đêm). Nợ: BranchPanel 297 dòng gánh hết, cần soát độ rối; chưa có đợt chụp QA 3D.
   - Nông trại: SÂU (mùa vụ, 7 vật nuôi, công trình 3 sao, đơn đặt hàng, phụ trại; world/farm.ts 996 dòng). Nợ: chưa chụp QA 3D gần đây.
   - Quán nước: MỎNG — chỉ 2 nút (số nhân viên, 3 mức giá), thực đơn tự lấy mọi đồ uống, thời tiết không ảnh hưởng, không sự kiện; panel 230 dòng phần lớn là bảng phân tích quanh 2 nút. 3D dựng hộp thủ tục, chưa dùng kit Blender (bang_ghe, chau_cay có sẵn).
-  - Thứ tự sửa: ~~(1) thời tiết~~ xong GĐ414, ~~(2) chọn món~~ thành thực đơn pha chế GĐ415, (3) 3D quán dùng kit, ~~(4) gọn BranchPanel~~ xong GĐ417, ~~(5) QA 3D~~ GĐ419 +GĐ420 đủ cả ba. Tiệm xôi phần còn lại để sau.
+  - Thứ tự sửa: ~~(1) thời tiết~~ xong GĐ414, ~~(2) chọn món~~ thành thực đơn pha chế GĐ415, ~~(3) 3D quán dùng kit~~ (đã có setQuanDecor: chậu cây + băng ghế), ~~(4) gọn BranchPanel~~ xong GĐ417, ~~(5) QA 3D~~ GĐ419 +GĐ420 đủ cả ba. Tiệm xôi phần còn lại để sau.
   - QA 3D cần save thử riêng: không có chế độ sandbox, không được sửa save thật của người dùng.
 
 1. **Trục đã cạn:** 3D trang trí (chỉ làm 3D mới khi đi kèm gameplay — GĐ172–198) · multi-shop supply chain (GĐ199–209, khép mạch) · bộ soi tiền/vốn (GĐ210–251) · UI nợ (GĐ183/258) · chợ phiên (GĐ182).
@@ -129,6 +129,7 @@
 - GĐ397 — 🔁 Gỡ vòng import stock→biz→store: spoilFactor/theftFactor chuyển sang data/biz.ts (core/biz re-export, API giữ nguyên); stock.ts import từ data. 252 file/2506 test xanh 161s, tsc sạch, build OK (gzip 244,5KB <255). Rà thời tiết: nhu cầu theo thời tiết (customers.ts), hỏng hàng, đơn điện thoại, nhiệm vụ đồ mưa đã có — trục này đã sâu, không làm thêm.
 - GĐ398 — 📏 Đồng bộ bảng "Ngân sách chống phình" trong promt_game(.full).md theo hằng số test (HUD 20, thông báo 90/0, ngày 1 = 10, thưởng/lãi 1.0/0.92/0.67, bundle 598/255, rò rỉ +2%/+20, test ~3 phút) — bảng cũ ghi số trước GĐ306 khiến phiên mới dễ làm lại việc đã xong. QA @5173: màn khởi đầu tải, không lỗi console. Mọi trần đạt đích; trục chiều sâu bão hòa, chờ save thật.
 - GĐ399 — 🧹 Hạ trần rò rỉ object ngoài tiệm 2% → 0% (đo 563 → 563 suốt 6 ngày) trong longSessionLeak.test.ts; nhân vật sống giữ +20 vì dao động theo khách đang ở ngoài. Test xanh, tsc sạch.
+- GĐ513: Nâng bậc lô sạp Ngõ 2: Gánh → Xe đẩy (3tr, ×1,4) → Quầy (5tr, ×1,8), hoàn vốn ~25/~40 ngày nắng; nút ⬆ cạnh nút món; save biz.sapTiers? (thiếu = gánh), coop 'sap' + test; QA sandbox nút + số đúng. 3D chưa đổi theo bậc (hộp chặn lưới cố định). 2638 test xanh.
 - GĐ512: Dồn mục lục GĐ450–499 sang archive/INDEX-GD450-499.md (PROGRESS.md dưới 30KB).
 - GĐ511: Sạp 3D Ngõ 2 đổi màu hàng + ô dù theo món (SapKind.colors, chỉ setHex, không biên dịch lại shader; Tổng hợp giữ màu lô) + test; QA sandbox đọc màu ô dù 4 lô đúng. 2636 test xanh.
 - GĐ510: QA sandbox ?thu=1 (window.game.useGame): 3 lô 🥤/🥖/🍙 thứ 7 nắng = 585k/300k/351k đúng công thức, gợi ý 'Mai sương mù: nên bán Xôi'; 375px không tràn, nút cao 40px.
