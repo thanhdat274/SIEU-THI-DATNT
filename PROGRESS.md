@@ -96,6 +96,7 @@
 
 
 ## Backlog tiếp theo
+- 🙋 **Cần duyệt (GĐ422)** — Người dùng hỏi sao quán nước chưa là cửa hàng như tạp hóa. Hiện là quầy ngoài trời ở (54.4,0,1), sim theo ngày, không vào trong được. Đề xuất: (a) nâng thành cửa hàng nước thật — nhà có quầy pha + tủ mát, khách 3D vào gọi món/ngồi, tự đứng quầy pha, lớn dần quầy→quán→cà phê (thay đổi lớn: sim, nav, migration); (b) giữ quầy, chỉ đẹp/to dần theo cấp; (c) hướng khác. Chờ người dùng chọn; trong lúc chờ làm tiếp tiệm xôi.
 
 - 🔍 **Rà 3 cơ sở (GĐ413, theo yêu cầu người dùng trước khi mở rộng tiệm xôi):**
   - Cửa hàng tiện lợi: luật chơi SÂU (ca kíp, mệt mỏi, sự cố đêm, máy bán hàng, điện, nhóm khách đêm). Nợ: BranchPanel 297 dòng gánh hết, cần soát độ rối; chưa có đợt chụp QA 3D.
