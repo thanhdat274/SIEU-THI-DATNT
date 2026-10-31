@@ -117,13 +117,21 @@ export function applySnapshot(raw: Partial<SaveData>) {
   useGame.setState(merged);
 }
 
+/**
+ * Chế độ chơi thử (GĐ418): mở game với `?thu=1` thì đọc/ghi một kho riêng (IndexedDB `taphoa3d-thu`,
+ * khóa khẩn cấp riêng, không nhận bản localStorage cũ, không đẩy cloud) — QA thoải mái mà save thật
+ * của người chơi không bị đụng tới.
+ */
+export const isSandboxUrl = (search: string) => new URLSearchParams(search).get('thu') === '1';
+export const SANDBOX = typeof location !== 'undefined' && isSandboxUrl(location.search);
+
 type LocalSave = { id: string; savedAt: number; data: SaveData };
 
 /** Lưu trong IndexedDB: dung lượng lớn, không bị giới hạn ~5MB như localStorage. */
 class SaveDb extends Dexie {
   saves!: EntityTable<LocalSave, 'id'>;
   constructor() {
-    super('taphoa3d');
+    super(SANDBOX ? 'taphoa3d-thu' : 'taphoa3d');
     this.version(1).stores({ saves: 'id, savedAt' });
   }
 }
@@ -135,9 +143,9 @@ const BACKUP = 'backup';
 /** Bản chính bị hỏng được cất riêng (không ghi đè mất) để còn cứu tay. */
 const CORRUPT = 'corrupt';
 /** IndexedDB ghi bất đồng bộ nên có thể không kịp khi đóng tab; lúc đó ghi thêm bản này vào localStorage. */
-const EMERGENCY_KEY = 'taphoa3d-emergency';
+const EMERGENCY_KEY = SANDBOX ? 'taphoa3d-thu-emergency' : 'taphoa3d-emergency';
 /** Bản lưu cũ trong localStorage, trước khi chuyển sang IndexedDB. */
-const LEGACY_KEYS = ['taphoa3d-save-v1', 'taphoa3d-save-v1-backup'];
+const LEGACY_KEYS = SANDBOX ? [] : ['taphoa3d-save-v1', 'taphoa3d-save-v1-backup'];
 const LOCAL_KEYS = [EMERGENCY_KEY, ...LEGACY_KEYS];
 
 /** Bản lưu đọc được và đủ các trường cốt lõi; thiếu trường mới thì `applySnapshot` tự bù. */
