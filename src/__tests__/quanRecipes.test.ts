@@ -225,3 +225,14 @@ describe('GĐ455: Sinh tố xoài', () => {
     for (const u of r.uses) expect(productById(u.id)).toBeTruthy();
   });
 });
+
+describe('GĐ474: cà phê muối', () => {
+  it('mở cấp 40, pha từ cà phê + sữa đặc + muối + đá, lời hơn vốn', async () => {
+    const { quanRecipeById, quanRecipesAt, recipeCupCost } = await import('../data/quanRecipes');
+    const r = quanRecipeById('ca_phe_muoi')!;
+    expect(r.uses.map((u) => u.id)).toContain('x_muoi');
+    expect(quanRecipesAt(39).some((x) => x.id === 'ca_phe_muoi')).toBe(false);
+    expect(quanRecipesAt(40).some((x) => x.id === 'ca_phe_muoi')).toBe(true);
+    expect(r.price).toBeGreaterThan(recipeCupCost(r) * 2);
+  });
+});

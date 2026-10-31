@@ -31,6 +31,7 @@ export const QUAN_RECIPES: QuanRecipe[] = [
   { id: 'sinh_to', name: 'Sinh tố trái cây', icon: '🍓', unlock: 35, price: 28_000, uses: [{ id: 'traicay', cups: 3 }, { id: 'x_sua_dac', cups: 10 }, { id: 'x_nuoc_da', cups: 10 }] },
   { id: 'tra_sua_dua', name: 'Trà sữa cốt dừa', icon: '🥥', unlock: 38, price: 25_000, uses: [{ id: 'tra', cups: 40 }, { id: 'x_dua_cot_hop', cups: 8 }, { id: 'x_sua_dac', cups: 10 }, { id: 'x_nuoc_da', cups: 10 }] },
   { id: 'sinh_to_xoai', name: 'Sinh tố xoài', icon: '🥭', unlock: 39, price: 30_000, uses: [{ id: 'x_xoai', cups: 3 }, { id: 'x_sua_dac', cups: 10 }, { id: 'x_nuoc_da', cups: 10 }] },
+  { id: 'ca_phe_muoi', name: 'Cà phê muối', icon: '🧂', unlock: 40, price: 28_000, uses: [{ id: 'x_ca_phe_hoa_tan', cups: 15 }, { id: 'x_sua_dac', cups: 10 }, { id: 'x_muoi', cups: 60 }, { id: 'x_nuoc_da', cups: 10 }] },
 ];
 
 /** Số món tối đa trên thực đơn. */
