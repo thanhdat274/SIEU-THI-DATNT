@@ -45,13 +45,14 @@ export function PlanogramPanel() {
   // render, khiến React 19 + zustand rơi vào "Maximum update depth exceeded" và sập cả UI.
   const furniture = useGame((s) => s.furniture);
   const storage = useGame((s) => s.storage);
+  const shelfHeat = useGame((s) => s.shelfHeat);
+  const shelfProfit = useGame((s) => s.shelfProfit);
   const stockTier = useGame((s) => s.stockTier);
   const unstockTier = useGame((s) => s.unstockTier);
   const openPanel = useGame((s) => s.openPanel);
   const closePanel = useGame((s) => s.closePanel);
   const autoSwap = useGame((s) => s.autoSwap);
   const replaceEmptySlots = useGame((s) => s.replaceEmptySlots);
-  const notify = useGame((s) => s.notify);
   const [filter, setFilter] = useState<Filter>('all');
   const [query, setQuery] = useState('');
   const fixtures = furniture.filter((f) => furnitureDef(f.type).tiers > 0);
@@ -104,8 +105,33 @@ export function PlanogramPanel() {
     return same.length > 1 ? `${furnitureDef(f.type).name} ${same.indexOf(f) + 1}` : furnitureDef(f.type).name;
   };
 
+  // GD104: đưa dữ liệu "kệ đang chạy thế nào" về tại chỗ ra quyết định bày hàng — chỉ ĐỌC
+  // shelfHeat/shelfProfit đã có trong store (như AnalyticsPanel/ArrangePanel dùng), không thêm
+  // action mới. Tối đa ~5 kệ bán được nhất + kệ kém nhất (dưới nửa mức trung bình → gợi ý đổi chỗ).
+  const heatRows = (() => {
+    const heatOf = (f: Furniture) => shelfHeat[f.uid] ?? 0;
+    const sold = fixtures.filter((f) => heatOf(f) > 0).sort((a, b) => heatOf(b) - heatOf(a));
+    if (!sold.length) return [];
+    const k = (v: number) => (Math.abs(v) >= 1000 ? `${Math.round(Math.abs(v) / 1000)}k` : `${Math.round(Math.abs(v))}đ`);
+    const rows = sold.slice(0, 5).map((f) => ({
+      uid: f.uid,
+      text: `🟡 ${label(f)}: đã bán ${heatOf(f)} món · lời ~${k(shelfProfit[f.uid]?.profit ?? 0)}`,
+      cold: false,
+    }));
+    const total = fixtures.reduce((n, f) => n + heatOf(f), 0);
+    const avg = total / Math.max(1, fixtures.length);
+    const rest = fixtures.filter((f) => !sold.slice(0, 5).includes(f));
+    const cold = rest.length && fixtures.length >= 2
+      ? rest.reduce((min, f) => (heatOf(f) < heatOf(min) ? f : min), rest[0])
+      : null;
+    if (cold && heatOf(cold) < avg * 0.5) {
+      rows.push({ uid: cold.uid, text: `⚠️ ${label(cold)}: chỉ ${heatOf(cold)} món — vắng khách, đổi chỗ?`, cold: true });
+    }
+    return rows;
+  })();
+
   return (
-    <div style={{ width: 'min(900px, calc(100vw - 76px))' }}>
+    <div style={{ width: '100%', maxWidth: 900 }}>
       <h2 style={{ margin: '0 0 4px' }}>🗺️ Sơ đồ kệ</h2>
       <p style={st.sub}>Xem mọi kệ và tủ trong tiệm, ô nào đang bày gì, còn bao nhiêu. Bày hàng nhanh từ kho, ô trống tự chọn món kho đang có.</p>
 
@@ -125,6 +151,18 @@ export function PlanogramPanel() {
         </span>
       </div>
 
+      {heatRows.length > 0 && (
+        <div style={st.heatBox}>
+          <b style={{ fontSize: 12 }}>📊 Kệ đang chạy thế nào</b>
+          {heatRows.map((r) => (
+            <div key={r.uid} title={r.text}
+              style={{ fontSize: 12, lineHeight: 1.5, color: r.cold ? '#f1c40f' : undefined, opacity: r.cold ? 1 : 0.85, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {r.text}
+            </div>
+          ))}
+        </div>
+      )}
+
       <div style={{ display: 'flex', gap: 8, margin: '10px 0', flexWrap: 'wrap' }}>
         <Dropdown<Filter>
           value={filter}
@@ -141,10 +179,7 @@ export function PlanogramPanel() {
           <input type="checkbox" checked={autoSwap} onChange={(e) => useGame.setState({ autoSwap: e.target.checked })} />
           🔄 Tự thay món hết hàng
         </label>
-        <button style={st.btn} onClick={() => {
-          const done = replaceEmptySlots();
-          notify(done.length ? `🔄 Đã thay: ${done.join(', ')}` : 'Không có ô nào cần thay (hoặc kho chưa có món phù hợp)');
-        }}>🔄 Thay ngay</button>
+        <button style={st.btn} onClick={() => replaceEmptySlots(true)}>🔄 Thay ngay</button>
       </div>
 
       {fixtures.length === 0 && <p style={st.sub}>Tiệm chưa có kệ nào. Vào Xây dựng để mua kệ.</p>}
@@ -165,17 +200,18 @@ export function PlanogramPanel() {
               </div>
               {/* Tầng trên cùng ở trên, như nhìn vào kệ thật */}
               {Array.from({ length: def.tiers }, (_, r) => def.tiers - 1 - r).map((row) => (
-                <div key={row} style={{ display: 'flex', alignItems: 'stretch', gap: 6, marginTop: 6 }}>
+                <div key={row} style={{ display: 'flex', alignItems: 'stretch', gap: 6, marginTop: 6, overflowX: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: 4 }}>
                   <span style={st.rowLabel}>T{row + 1}</span>
                   {Array.from({ length: def.slots }, (_, c) => row * def.slots + c).map((i) => {
-                    const t = f.tiers[i];
+                    // Dự phòng dữ lệch (kit cũ chưa qua migrateTiers): ô thiếu coi như trống, không để sập cả UI
+                    const t = f.tiers[i] ?? { productId: null, count: 0 };
                     const p = t.productId ? productById(t.productId) : null;
                     const life = p ? nearestLife(fitLots(t.lots, t.count, p.id)) : null;
                     const sale = tierMarkdown(t.productId, t.lots, t.count);
                     const fill = t.count / def.capacity;
                     const kho = p ? storage[p.id] ?? 0 : 0;
                     return (
-                      <div key={i} style={{ ...st.slot, borderColor: !p || t.count === 0 ? '#e17055' : fill <= LOW ? '#fdcb6e' : '#ffffff22' }}>
+                      <div key={i} style={{ ...st.slot, borderColor: !p || t.count === 0 ? '#e67e22' : fill <= LOW ? '#f1c40f' : '#ffffff22' }}>
                         <div style={{ height: 4, borderRadius: 2, background: p ? `#${p.color.toString(16).padStart(6, '0')}` : '#ffffff22' }} />
                         <Dropdown
                           value={t.productId ?? ''}
@@ -188,7 +224,7 @@ export function PlanogramPanel() {
                           ]}
                         />
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
-                          <div style={st.bar}><div style={{ ...st.barFill, width: `${fill * 100}%`, background: fill <= LOW ? '#fdcb6e' : '#00b894' }} /></div>
+                          <div style={st.bar}><div style={{ ...st.barFill, width: `${fill * 100}%`, background: fill <= LOW ? '#f1c40f' : '#2ecc71' }} /></div>
                           <b>{t.count}/{def.capacity}</b>
                         </div>
                         <div style={{ fontSize: 11, opacity: 0.8, minHeight: 15 }}>
@@ -221,13 +257,14 @@ export function PlanogramPanel() {
 
 const Stat = ({ label, value, warn }: { label: string; value: number; warn?: boolean }) => (
   <span style={st.stat}>
-    <b style={{ fontSize: 18, color: warn ? '#fdcb6e' : undefined }}>{value}</b>
+    <b style={{ fontSize: 18, color: warn ? '#f1c40f' : undefined }}>{value}</b>
     <span style={{ fontSize: 11, opacity: 0.7 }}>{label}</span>
   </span>
 );
 
 const st: Record<string, React.CSSProperties> = {
   sub: { margin: '0 0 10px', opacity: 0.75, fontSize: 13 },
+  heatBox: { margin: '10px 0 0', padding: '6px 10px', background: '#33334a', borderRadius: 8, display: 'grid', gap: 2 },
   stats: { display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
   stat: { display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '4px 12px', background: '#3a3a4d', borderRadius: 8, minWidth: 64 },
   btn: { border: 'none', borderRadius: 6, padding: '6px 10px', cursor: 'pointer', fontSize: 13 },

@@ -34,7 +34,19 @@ export const houseDoor = (h: NeighborHouse) => ({ x: h.x, z: h.z + HOUSE_SIZE / 
 const STRANGERS = ['Cô Hạnh', 'Anh Phúc', 'Chị Thu', 'Bác Lộc', 'Em Vy', 'Chú Sáu', 'Cô Diệu'];
 
 /** Lý do gọi, để đơn có chút chuyện. */
-const REASONS = ['nhà có khách bất ngờ', 'trời nóng lười ra đường', 'đang trông con nhỏ', 'nấu dở thì hết đồ', 'chân đau đi không tiện', 'đang họp online', 'trời mưa không tiện ra ngoài', 'mưa to cả nhà sợ ướt đồ'];
+// GĐ271 — lý do gọi khớp THỜI TIẾT: "trời mưa..." ngày nắng nghe sai sự thật. Chia pool theo
+// ngữ cảnh, chọn theo weather của ngày; salt chọn cũng biến thiên theo ngày (mẫu GĐ267/269 —
+// salt cố định khiến roll chọn tương quan roll gate).
+const REASONS_NEUTRAL = ['nhà có khách bất ngờ', 'đang trông con nhỏ', 'nấu dở thì hết đồ', 'chân đau đi không tiện', 'đang họp online'];
+const REASONS_RAIN = ['trời mưa không tiện ra ngoài', 'mưa to cả nhà sợ ướt đồ'];
+const REASONS_HOT = ['trời nóng lười ra đường'];
+
+/** Pool lý do hợp ngữ cảnh hôm nay: mưa → có lý do mưa; nắng đẹp → có lý do nóng; còn lại chung. */
+export function reasonsFor(weather: Weather): string[] {
+  if (weather === 'rain' || weather === 'storm') return [...REASONS_NEUTRAL, ...REASONS_RAIN];
+  if (weather === 'sunny') return [...REASONS_NEUTRAL, ...REASONS_HOT];
+  return REASONS_NEUTRAL;
+}
 
 /** Đơn gọi điện trong ngày (được lưu để không mất hàng đã soạn). */
 export interface PhoneOrder {
@@ -85,7 +97,7 @@ export const VIP_CHANCE = 0.03;
 /** Giá hời của đơn VIP. */
 export const VIP_MUL = 1.5;
 /** Lý do của đơn VIP. */
-const VIP_REASONS = [
+export const VIP_REASONS = [
   'công ty chị ấy tổ chức, đặt gói lớn giúp', 'nhà có giỗ, người nhà nhờ đặt một mớ',
   'chị rể mở tiệm bên kia hẻm, đặt luôn ở tiệm quen', 'họ hàng về quê, mua mang theo nguyên thùng',
 ];
@@ -99,7 +111,7 @@ export const COOK_ORDER_MUL = 1.3;
 /** Đơn nấu cho nhiều giờ hơn để kịp đứng bếp: hẹn giao kể từ lúc gọi. */
 export const COOK_ORDER_MINUTES = 240;
 /** Lý do của đơn nấu. */
-const COOK_REASONS = [
+export const COOK_REASONS = [
   'chiều nhà có khách, nấu giúp tôi ít món', 'sinh nhật thằng nhỏ, đặt thêm vài phần',
   'cả nhà đi chơi về muộn, không kịp nấu', 'bữa trưa cơm quan có người đặt thêm',
   'tiệc nhỏ trong hẻm, nhờ tiệm nấu lấy', 'thằng nhỏ đòi ăn món tiệm nấu suốt ngày',
@@ -137,7 +149,7 @@ export function phoneCallFor(
     id, houseId: house.id,
     caller: regular?.name ?? STRANGERS[Math.floor(roll(seed, day, 809 + slot) * STRANGERS.length)],
     regular: regular?.id,
-    reason: REASONS[Math.floor(roll(seed, day, 907 + slot) * REASONS.length)],
+    reason: reasonsFor(weather)[Math.floor(roll(seed, day, 907 + slot + day * 7) * reasonsFor(weather).length)],
     items, calledAt, answerBy: calledAt + ANSWER_MINUTES, dueAt, status: 'ringing', premium,
   });
   // Đơn nấu: món nhà làm của trạm đang có trong tiệm, giá hời, đợi được lâu hơn để kịp nấu.

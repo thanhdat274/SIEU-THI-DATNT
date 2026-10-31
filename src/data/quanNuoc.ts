@@ -1,0 +1,298 @@
+import { isWeekend } from './calendar';
+/**
+ * Quán nước đầu ngõ (GĐ7): địa điểm kinh doanh thứ hai, mở ở cấp 29, chuyên bán ĐỒ UỐNG rút nguyên liệu
+ * từ kho chung (ăn vào chuỗi giá trị trại → kho → quán). Khác với chi nhánh tiện lợi (mô phỏng ngầm theo
+ * bước 10 phút), quán nước chạy THEO NGÀY: mỗi lần sang ngày mới, `endDay` gọi đúng một lần `quanNuocDay`
+ * — thiết kế tường minh, không dùng Math.random nên kết quả luôn xác định, dễ test.
+ * File này chỉ có dữ liệu và hàm thuần; hành động mua/tuyển nằm ở `core/slices/quanNuoc.ts`.
+ */
+import { productById, unlockedProducts } from './products';
+import type { DayAction } from './dayPlan';
+import type { Weather } from './weather';
+import { brewMenu, cleanMenu, quanRecipeById, varietyMul, quanHotMul, QUAN_MENU_SLOTS } from './quanRecipes';
+
+/** Cấp tối thiểu được mở quán nước. */
+export const QUAN_NUOC_UNLOCK = 29;
+/** Giá mua mặt bằng quán nước (mua đứt, một lần). */
+export const QUAN_NUOC_PRICE = 25_000_000;
+/** Phí tuyển một nhân viên quán nước (không hoàn lại khi cho nghỉ). */
+export const QUAN_NUOC_HIRE_FEE = 300_000;
+/** Lương mỗi nhân viên mỗi ngày (trả trong endDay, kể cả ngày kho cạn không bán được ly nào). */
+export const QUAN_NUOC_WAGE = 150_000;
+/** Số nhân viên tối đa. */
+export const QUAN_NUOC_MAX_STAFF = 3;
+
+/** Mức giá quán: rẻ hút nhiều khách nhưng lãi mỏng, đắt ngược lại. */
+export type QuanNuocPrice = 're' | 'vua' | 'cao';
+export const QUAN_PRICE_OPTIONS: Record<QuanNuocPrice, { mul: number; traffic: number; label: string }> = {
+  re: { mul: 0.85, traffic: 1.2, label: 'Bình dân' },
+  vua: { mul: 1.0, traffic: 1.0, label: 'Vừa phải' },
+  cao: { mul: 1.3, traffic: 0.75, label: 'Đắt hơn' },
+};
+
+/** Khách quán nước theo thời tiết (GĐ414): nắng khát nước đông hơn, mưa bão vắng. Không truyền = ×1. */
+export const QUAN_WEATHER_MUL: Record<Weather, number> = { sunny: 1.25, cloudy: 1, rain: 0.75, storm: 0.45, fog: 0.9 };
+const weatherMul = (w?: Weather) => (w ? QUAN_WEATHER_MUL[w] ?? 1 : 1);
+
+/** `menu` (GĐ415): id công thức pha chế trên thực đơn; trống = chỉ bán nước chai như cũ. Save cũ thiếu = []. */
+export interface QuanNuocState { open: boolean; staff: number; price: QuanNuocPrice; menu?: string[]; /** GĐ428: bậc cửa hàng 0 quầy, 1 quán, 2 cà phê. */ tier?: number; /** GĐ427: mẻ tự pha ở quầy hôm nay. */ hand?: { day: number; n: number } }
+export const newQuanNuoc = (): QuanNuocState => ({ open: false, staff: 0, price: 'vua' });
+
+/** Trạng thái hình ảnh của quán nước trong thế giới 3D đầu hẻm. */
+export type QuanNuocStandState = 'hidden' | 'lot' | 'open';
+export function quanNuocStandState(level: number, open: boolean): QuanNuocStandState {
+  if (open) return 'open';
+  if (level >= QUAN_NUOC_UNLOCK) return 'lot';
+  return 'hidden';
+}
+
+/** Kết quả một ngày bán của quán nước (ghi lại phần phục vụ được để báo tin sáng mai). */
+export interface QuanNuocDay {
+  revenue: number; customers: number; served: number; wanted: number; wages: number; short: boolean;
+  /** Ly pha chế theo món (GĐ415) và các món thiếu nguyên liệu hôm nay. */
+  brewed: Record<string, number>; brewShort: string[];
+}
+
+/** Món đồ uống (category 'drink' trong data/products.ts) đã mở ở `level`, giữ thứ tự bảng mẫu hàng. */
+export const quanNuocDrinkIds = (level: number): string[] =>
+  unlockedProducts(level).filter((p) => p.category === 'drink').map((p) => p.id);
+
+/**
+ * Mô phỏng một ngày bán của quán nước — hoàn toàn xác định (không Math.random):
+ *  - Khách/ngày = round(45 × traffic × (1 + 0.15 × staff)); mỗi khách mua trung bình 1.5 ly
+ *    → wanted = ceil(khách × 1.5).
+ *  - Số ly phục vụ được bị chặn bởi tổng đơn vị ĐỒ UỐNG trong kho: served = min(wanted, tổng có).
+ *  - Rút kho qua `take(id, qty)` theo thứ tự món CÓ NHIỀU NHẤT TRƯỚC (hoà nhau thì món đứng trước
+ *    trong bảng mẫu hàng được rút trước — sort ổn định): ưu tiên tiêu thụ món đang tồn nhiều.
+ *  - Doanh thu = served × giá bán TB (trung bình `sell` các món drink đã mở, lấy MỘT lần) × mul.
+ *  - Lương luôn trả đủ: wages = staff × QUAN_NUOC_WAGE; short = còn khách muốn mua mà kho hết.
+ * Trả về null khi quán chưa mở.
+ */
+export function quanNuocDay(
+  q: QuanNuocState, level: number, storage: Record<string, number>, take: (id: string, qty: number) => void, weather?: Weather, day?: number,
+): QuanNuocDay | null {
+  if (!q.open) return null;
+  const drinks = quanNuocDrinkIds(level);
+  const opt = QUAN_PRICE_OPTIONS[q.price];
+  const menu = cleanMenu(q.menu, level, quanMenuSlots(q));
+  // Giá bán trung bình nước chai đã mở: tính một lần rồi nhân hệ số mức giá
+  const avgPrice = drinks.length ? drinks.reduce((n, id) => n + productById(id).sell, 0) / drinks.length : 0;
+  const customers = Math.round(45 * opt.traffic * quanTierMul(q) * (1 + 0.15 * q.staff) * weatherMul(weather) * varietyMul(menu.length) * quanWeekendMul(day) * quanHotMul(menu, weather, day));
+  const wanted = Math.ceil(customers * 1.5);
+  // Món pha chế phục vụ trước; khách còn lại mua nước chai
+  const brew = brewMenu(menu, storage, wanted, opt.mul, take);
+  const rest = wanted - brew.total;
+  const have = drinks.reduce((n, id) => n + (storage[id] ?? 0), 0);
+  const bottled = Math.min(rest, have);
+  // Rút kho: món tồn nhiều nhất trước, đủ số ly phục vụ thì dừng
+  let left = bottled;
+  for (const id of [...drinks].sort((a, b) => (storage[b] ?? 0) - (storage[a] ?? 0))) {
+    if (left <= 0) break;
+    const n = Math.min(left, storage[id] ?? 0);
+    if (n > 0) { take(id, n); left -= n; }
+  }
+  const served = brew.total + bottled;
+  return {
+    revenue: brew.revenue + Math.round(bottled * avgPrice * opt.mul),
+    customers, served, wanted,
+    wages: q.staff * QUAN_NUOC_WAGE,
+    short: served < wanted,
+    brewed: brew.cups, brewShort: brew.short,
+  };
+}
+
+/* —————————————————————————————————————————————————————————————————————
+ * GĐ127: Sổ kinh doanh quán nước — mồi quyết định (thuê/sa thải, nhập kho, cân
+ * kho với kệ tiệm chính). THUẦN ĐỌC state/hằng số có sẵn (quanNuocLast, storage,
+ * quanNuocDrinkIds, QUAN_PRICE_OPTIONS, QUAN_NUOC_WAGE) — KHÔNG đổi SAVE_VERSION,
+ * không persist, không đổi công thức kinh tế. Giá trị hiển thị tự tính LẠI từ cùng
+ * công thức `quanNuocDay` nên không bao giờ lệch số liệu.
+ * ————————————————————————————————————————————————————————————————————— */
+
+/** Giá bán trung bình của thực đơn đồ uống đã mở (cùng công thức quanNuocDay). */
+export const quanNuocAvgSell = (level: number, menu?: readonly string[]): number => {
+  // GĐ415: có thực đơn pha chế thì lấy giá TB các món pha (khách phục vụ món pha trước)
+  const m = cleanMenu(menu, level, QUAN_MENU_SLOTS + 1);
+  if (m.length) return m.reduce((n, id) => n + quanRecipeById(id)!.price, 0) / m.length;
+  const drinks = quanNuocDrinkIds(level);
+  return drinks.length ? drinks.reduce((n, id) => n + productById(id).sell, 0) / drinks.length : 0;
+};
+
+/** Tổng ly phục vụ được với kho hiện có: món pha (tới sức nguyên liệu) + nước chai. Thuần. */
+export function quanNuocCupSupply(q: QuanNuocState, level: number, storage: Record<string, number>): number {
+  const brewed = brewMenu(cleanMenu(q.menu, level, quanMenuSlots(q)), storage, 1e9, 1, () => {}).total;
+  return brewed + quanNuocDrinkIds(level).reduce((n, id) => n + (storage[id] ?? 0), 0);
+}
+
+export interface QuanNuocProjection { customers: number; wanted: number; served: number; revenue: number; wages: number; profit: number }
+
+/**
+ * Dự phóng một đêm bán của quán nước theo số nhân viên `q.staff`, chặn bởi tổng
+ * đơn vị đồ uống hiện có `drinkUnits` (cap như `quanNuocDay`). THUẦN — không gọi
+ * `take`, không đổi state. Dùng để hỏi "thuê thêm 1 người có đáng lương 150k không".
+ */
+export function quanNuocProjection(q: QuanNuocState, level: number, drinkUnits: number, weather?: Weather, day?: number): QuanNuocProjection {
+  const opt = QUAN_PRICE_OPTIONS[q.price];
+  const avgPrice = quanNuocAvgSell(level, q.menu);
+  const customers = Math.round(45 * opt.traffic * quanTierMul(q) * (1 + 0.15 * q.staff) * weatherMul(weather) * varietyMul(cleanMenu(q.menu, level, quanMenuSlots(q)).length) * quanWeekendMul(day) * quanHotMul(cleanMenu(q.menu, level, quanMenuSlots(q)), weather, day));
+  const wanted = Math.ceil(customers * 1.5);
+  const served = Math.min(wanted, Math.max(0, drinkUnits));
+  const revenue = Math.round(served * avgPrice * opt.mul);
+  const wages = q.staff * QUAN_NUOC_WAGE;
+  return { customers, wanted, served, revenue, wages, profit: revenue - wages };
+}
+
+export interface QuanNuocHealth {
+  /** Tổng đơn vị đồ uống hiện trong kho (chung với kệ tiệm chính) — mồi cân kho. */
+  drinkUnitsNow: number;
+  /** Số ly quán tiêu HÔM QUA (= served) — cho biết mức lấn kho. */
+  consumedYesterday: number;
+  /** Doanh thu bỏ lỡ hôm qua vì kho thiếu (~Zđ, dùng giá/mul hiện tại) — 0 khi bán đủ. */
+  missedRevenue: number;
+  shortYesterday: boolean;
+  /** Dự phóng ĐÊM NAY (cùng kho + giá hiện tại) ở mức nhân viên hiện tại. */
+  tonight: QuanNuocProjection;
+  /** Dự phóng đêm nay nếu tuyển thêm 1 người (null khi đã đủ MAX). */
+  hire: QuanNuocProjection | null;
+  /** Lợi nhuận tăng thêm nếu tuyển thêm 1 người (lời hơn → dương; lỗ thêm → âm). */
+  hireMarginal: number | null;
+  /** Kho chỉ đủ cho đêm nay — quán sẽ ăn sạch, kệ tiệm chính cạn nước/rủi ro cạn. */
+  driesMain: boolean;
+}
+
+/**
+ * Mồi quyết định quán nước — đọc `quanNuocLast` (Hôm qua) + `storage` (kho hiện tại)
+ * + `q` (cấu hình hiện tại) + `level`. Trả phân tích thuần; UI chỉ hiện khi quán mở
+ * và có tín hiệu (short / lỗ / cạn kho) để không nhiễu ngày sạch.
+ */
+export function quanNuocHealth(
+  q: QuanNuocState, level: number, storage: Record<string, number>, last?: { served?: number; wanted?: number } | null, weather?: Weather, day?: number,
+): QuanNuocHealth {
+  const drinkUnits = quanNuocCupSupply(q, level, storage);
+  // GĐ491: có `day` thì dự báo tính cả cuối tuần + đồ nóng tháng rét
+  const tonight = quanNuocProjection(q, level, drinkUnits, weather, day);
+  const hire = q.staff < QUAN_NUOC_MAX_STAFF ? quanNuocProjection({ ...q, staff: q.staff + 1 }, level, drinkUnits, weather, day) : null;
+  const hireMarginal = hire ? hire.profit - tonight.profit : null;
+  const shortYesterday = !!last && typeof last.wanted === 'number' && typeof last.served === 'number' && last.served < last.wanted;
+  const missedRevenue = shortYesterday ? Math.round(((last!.wanted as number) - (last!.served as number)) * quanNuocAvgSell(level, q.menu) * QUAN_PRICE_OPTIONS[q.price].mul) : 0;
+  return {
+    drinkUnitsNow: drinkUnits,
+    consumedYesterday: typeof last?.served === 'number' ? last.served : 0,
+    missedRevenue,
+    shortYesterday,
+    tonight,
+    hire,
+    hireMarginal,
+    driesMain: q.open && q.staff > 0 && drinkUnits < tonight.wanted,
+  };
+}
+
+/**
+ * GĐ189 — "Quán nước thiếu đồ uống thành việc sáng": Sổ đầu ngày (GĐ76) đã nhắc chi nhánh, hợp đồng,
+ * nợ ngân hàng, đối tác, sự kiện mùa — nhưng quán nước chỉ nằm ở thẻ phụ (Callout thụ động), KHÔNG vào
+ * danh sách ưu tiên "Việc hôm nay". Chuyển tín hiệu quán thiếu kho lên Sổ đầu ngày:
+ *   - Quán thiếu ly hôm qua (missedRevenue>0): việc sáng "Nạp đồ uống" (danger — đang mất tiền thật).
+ *   - Quán sắp ăn khô kho chung (driesMain — kệ tiệm chính cạn nước theo): cảnh báo nên xử lý.
+ * THUẦN ĐỌC health có sẵn — không đổi SAVE_VERSION/kinh tế/sim; DayAction layout tái dùng dayPlan.
+ */
+export function quanNuocDayAction(h: QuanNuocHealth | null | undefined): DayAction | null {
+  if (!h) return null;
+  if (h.missedRevenue > 0) {
+    return {
+      icon: '🧋', panel: 'quannuoc',
+      text: `Quán nước hôm qua thiếu đồ uống bỏ lỡ ~${h.missedRevenue.toLocaleString('vi-VN')}đ — nạp nước/ngọt/cà phê`,
+      danger: true, priority: 1,
+    };
+  }
+  if (h.driesMain) {
+    return {
+      icon: '🥤', panel: 'quannuoc',
+      text: `Kho đồ uống còn ${h.drinkUnitsNow} ly, quán tối nay ăn hết là kệ tiệm chính cạn nước — nạp trước`,
+      danger: false, priority: 2,
+    };
+  }
+  return null;
+}
+
+/**
+ * GĐ190 — "Nạp bao nhiêu để bán đủ tối nay?" — companion nạp kho của GĐ189: Sổ đầu ngày nhắc quán
+ * thiếu đồ uống, nhưng vế quan trọng là NGƯỜI CHƠI cần biết NHẬP THÊM BAO NHIÊU ly và ấn ở đâu để
+ * xử lý. Helper thuần này trả con số thiếu hụt tối nay (chênh giữa `tonight.wanted` — nhu cầu dự phóng
+ * — và tồn kho hiện tại) + mức khẩn cấp đúng bảng ngữ cảnh:
+ *   - danger: hôm qua BỊ MẤT tiền vì kho thiếu (missedRevenue>0) — đang rỉ máu.
+ *   - warn:   chưa mất nhưng đêm nay ăn khô kho chung (driesMain) — cần xử lý trước.
+ *   - null:   ngày sạch — không nhiễu.
+ * Cùng chân lý `quanNuocHealth` (tức `quanNuocDay`), KHÔNG đổi SAVE_VERSION/kinh tế/sim. UI dùng
+ * con số này để ra thẻ nạp kho + nút nhảy sang Nhập hàng (order).
+ */
+export interface QuanNuocRestockTip { shortfall: number; wanted: number; have: number; missedRevenue: number; verdict: 'danger' | 'warn' }
+
+export function quanNuocRestockTip(
+  q: QuanNuocState, level: number, storage: Record<string, number>, last?: { served?: number; wanted?: number } | null, weather?: Weather, day?: number,
+): QuanNuocRestockTip | null {
+  const h = quanNuocHealth(q, level, storage, last, weather, day);
+  const shortfall = Math.max(0, h.tonight.wanted - h.drinkUnitsNow);
+  if (h.missedRevenue > 0) {
+    return { shortfall, wanted: h.tonight.wanted, have: h.drinkUnitsNow, missedRevenue: h.missedRevenue, verdict: 'danger' };
+  }
+  if (h.driesMain && shortfall > 0) {
+    return { shortfall, wanted: h.tonight.wanted, have: h.drinkUnitsNow, missedRevenue: 0, verdict: 'warn' };
+  }
+  return null;
+}
+
+/**
+ * GĐ193 — "Xây quán nước 25tr hồi vốn sau bao lâu?": màn XÂY QUÁN chỉ cho giá + cấp yêu cầu, không
+ * nói được sẽ kiếm về bao nhiêu để quyết mua. Vì quán nước chạy công thức DETERMINISTIC
+ * (`quanNuocProjection`, GĐ127) khác hẳn chi nhánh/sim, mình tính được lời ròng MỘT ngày (giả định kho
+ * ĐỦ đồ uống để bán hết nhu cầu — trường hợp tốt nhất) rồi chia vốn xây → số ngày hồi. Cực kỳ hữu ích:
+ * mở SỚM ở cấp 29 thực đơn ít → lời thấp → hồi vốn chậm; lên cấp thêm nước/ngọt/cà phê → hồi nhanh.
+ * THUẦN — đọc hằng số + projection, không đổi kinh tế/save. UI ghi rõ là ước tính "nếu kho đủ".
+ */
+export interface QuanNuocBuildPayback {
+  cost: number;
+  /** Lời ròng ước một ngày (1 nhân viên, giá vừa, kho đủ bán hết nhu cầu). */
+  netPerDay: number;
+  /** Số ngày cần để hồi vốn (làm tròn lên); null khi lỗ / chưa có thực đơn. */
+  paybackDays: number | null;
+  verdict: 'worth' | 'slow' | 'notworth' | 'noMenu';
+}
+
+export function quanNuocBuildPayback(level: number, staff: number = 1, price: QuanNuocPrice = 'vua'): QuanNuocBuildPayback {
+  if (quanNuocDrinkIds(level).length === 0) {
+    return { cost: QUAN_NUOC_PRICE, netPerDay: 0, paybackDays: null, verdict: 'noMenu' };
+  }
+  const q: QuanNuocState = { open: true, staff, price };
+  // Giả định kho đủ để bán hết nhu cầu (served = wanted) — giới hạn trên của tiềm năng hàng ngày.
+  const proj = quanNuocProjection(q, level, Number.MAX_SAFE_INTEGER);
+  const net = proj.profit;
+  if (net <= 0) return { cost: QUAN_NUOC_PRICE, netPerDay: net, paybackDays: null, verdict: 'notworth' };
+  const paybackDays = Math.ceil(QUAN_NUOC_PRICE / net);
+  return { cost: QUAN_NUOC_PRICE, netPerDay: net, paybackDays, verdict: paybackDays <= 60 ? 'worth' : 'slow' };
+}
+
+/** Số khách ngồi trong quán 3D (GĐ426): theo số ly bán hôm qua, mỗi 12 ly một khách, tối đa 2 ghế/bàn. */
+export const quanPatrons = (staff: number, servedYesterday: number | undefined) =>
+  Math.min(2 * Math.max(0, Math.min(3, Math.floor(staff))), Math.ceil(Math.max(0, servedYesterday ?? 0) / 12));
+
+/** GĐ427 — tự pha ở quầy: mỗi mẻ 5 ly bán ngay cho khách đang chờ, tối đa 3 mẻ/ngày, tiền thưởng tay nghề +20%. */
+export const QUAN_HAND_CUPS = 5;
+export const QUAN_HAND_BATCHES = 3;
+export const QUAN_HAND_BONUS = 1.2;
+/** GĐ433: mỗi bậc cửa hàng thêm 1 mẻ tự pha/ngày (quầy 3, quán 4, cà phê 5). */
+export const quanHandMax = (q: QuanNuocState) => QUAN_HAND_BATCHES + quanTierOf(q);
+export const quanHandLeft = (q: QuanNuocState, day: number) => quanHandMax(q) - (q.hand?.day === day ? q.hand.n : 0);
+
+/** GĐ428 — nâng bậc cửa hàng nước: quầy → quán → cà phê. Mỗi bậc kéo thêm khách, cần cấp và tiền. */
+export const QUAN_TIERS = [
+  { name: 'Quầy nước', icon: '🧋', mul: 1, level: 0, cost: 0 },
+  { name: 'Quán nước', icon: '🪑', mul: 1.25, level: 33, cost: 15_000_000 },
+  { name: 'Quán cà phê', icon: '☕', mul: 1.5, level: 38, cost: 40_000_000 },
+] as const;
+export const quanTierOf = (q: Pick<QuanNuocState, 'tier'>) => Math.max(0, Math.min(QUAN_TIERS.length - 1, Math.floor(q.tier ?? 0)));
+export const quanTierMul = (q: Pick<QuanNuocState, 'tier'>) => QUAN_TIERS[quanTierOf(q)].mul;
+/** GĐ467: cuối tuần (T7/CN) khách ngồi quán đông hơn ×1.2; không truyền ngày = ×1 (giữ số liệu cũ). */
+export const QUAN_WEEKEND_MUL = 1.2;
+export const quanWeekendMul = (day?: number) => (day !== undefined && isWeekend(day) ? QUAN_WEEKEND_MUL : 1);
+/** GĐ449: quán cà phê (bậc 3) có thêm 1 ô thực đơn. */
+export const quanMenuSlots = (q: Pick<QuanNuocState, 'tier'>) => QUAN_MENU_SLOTS + (quanTierOf(q) >= 2 ? 1 : 0);

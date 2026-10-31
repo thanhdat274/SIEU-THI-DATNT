@@ -1,0 +1,27 @@
+import { isWeekend } from './calendar';
+import type { Weather } from './weather';
+
+/**
+ * Sạp hàng rong ở Ngõ 2 (GĐ501, bước 3 mở rộng bản đồ): thuê lô trống, mỗi lô một sạp bán ngoài trời.
+ * Trời mưa/bão sạp nghỉ (ngoài trời không bán được — lý do tiệm xôi thành nhà ở GĐ483); cuối tuần đông hơn.
+ */
+export const SAP_LOTS = 4;
+export const SAP_LOT_COST = 5_000_000;
+export const SAP_BASE_INCOME = 300_000;
+
+/** Lãi ròng một ngày của các sạp đã thuê (0 khi mưa/bão). */
+export function sapRongIncome(lots: number | undefined, weather?: Weather, day?: number): number {
+  const n = Math.max(0, Math.min(SAP_LOTS, lots ?? 0));
+  if (!n || weather === 'rain' || weather === 'storm') return 0;
+  return Math.round(n * SAP_BASE_INCOME * (day !== undefined && isWeekend(day) ? 1.3 : 1));
+}
+
+/** GĐ502: hộp chặn lưới của bàn sạp thứ i (bàn 1,8×0,9 tại x 86+8i, z −0,5). */
+export const sapStallBox = (i: number) => ({ x1: 85.1 + i * 8, z1: -0.95, x2: 86.9 + i * 8, z2: -0.05 });
+
+/** GĐ503: số người dạo phố Ngõ 2 (2 người/sạp, tối đa 6): chỉ 6h–20h, mưa/bão vắng. */
+export function sapStrollerCount(lots: number | undefined, weather: Weather | undefined, minutes: number): number {
+  const m = minutes % 1440;
+  if (!lots || weather === 'rain' || weather === 'storm' || m < 6 * 60 || m >= 20 * 60) return 0;
+  return Math.min(6, Math.min(SAP_LOTS, lots) * 2);
+}

@@ -31,3 +31,29 @@ export function nextMarketIndex(prev: number, onHand: number, incoming: number, 
   const drift = Math.max(-MARKET_MAX_STEP, Math.min(MARKET_MAX_STEP, target - prev));
   return Math.round((prev + drift) * 1000) / 1000;
 }
+
+/** Hướng trôi đà giá thị trường (cho hiển thị, KHÔNG đổi kinh tế — chỉ đọc lại đúng logic nextMarketIndex). */
+export type MarketTrendDir = 'up' | 'down' | 'flat';
+export type MarketScarcity = 'scarce' | 'oversupply' | 'steady';
+
+export interface MarketTrend {
+  /** Hướng gợi ý giá thị trường sẽ nhích về (so với hôm nay). */
+  dir: MarketTrendDir;
+  /** Hệ số thị trường dự kiến ngày mai (giá gợi ý hôm sau ≈ gốc × next). */
+  next: number;
+  /** Mức trôi sau clamp (dương = nhích lên), làm tròn 3 chữ số như nextMarketIndex. */
+  drift: number;
+  /** Trạng thái hàng trong tiệm quyết định đà (cùng scarcityMul). */
+  scarcity: MarketScarcity;
+  /** Cầu trung bình của món (khách hỏi/ngày) — càng cao đà càng trụ. */
+  demand: number;
+}
+
+export function marketTrend(prev: number, onHand: number, incoming: number, demandPerDay: number): MarketTrend {
+  const target = Math.min(MARKET_MAX, Math.max(MARKET_MIN, scarcityMul(onHand, incoming) * demandMul(demandPerDay)));
+  const next = nextMarketIndex(prev, onHand, incoming, demandPerDay);
+  const sc = scarcityMul(onHand, incoming);
+  const scarcity: MarketScarcity = sc > 1 ? 'scarce' : sc < 1 ? 'oversupply' : 'steady';
+  const dir: MarketTrendDir = next > prev + 0.0005 ? 'up' : next < prev - 0.0005 ? 'down' : 'flat';
+  return { dir, next, drift: Math.round((next - prev) * 1000) / 1000, scarcity, demand: demandPerDay };
+}

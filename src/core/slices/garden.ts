@@ -1,12 +1,13 @@
 import { formatMoney, productById } from '../../data/products';
 import {
-  ANIMALS, emptyPlot, EGG_PER_TRAY, FARM_BUILDING_MAX_STAR, FARM_BUILDINGS, FARM_ORDER_UNLOCK, FERTILIZER_BOOST, FERTILIZER_PRODUCT,
+  ANIMALS, emptyPlot, EGG_PER_TRAY, FARM_BUILDING_MAX_STAR, FARM_BUILDINGS, FERTILIZER_BOOST, FERTILIZER_PRODUCT,
   GARDEN_UNLOCK, HOMEGROWN_PREMIUM, LAND_TIERS, animalMode, farmCritChance, farmGrazeDiscount, fattenReady, harvestYield, inSeason, penCap, plotReady,
-  type AnimalKind, type FarmBuildingId, type GardenState, type Plot,
+  type AnimalKind, type Plot,
 } from '../../data/garden';
 import { CROPS, cropById, type CropDef } from '../../data/garden';
 import type { GameState, SetState, GetState } from '../gameTypes';
 import { copyStock, putStock, takeStock } from '../stock';
+import { simRng } from '../rand';
 
 /** Trang trại đầu ngõ: trồng, tưới, bón phân, thu hoạch, nuôi vật nuôi, công trình, dọn trại, đơn quán xóm. */
 
@@ -81,7 +82,7 @@ export const createGardenSlice = (set: SetState, get: GetState): Pick<GameState,
     if (!plotReady(plot)) return s.notify(`${def.name} chưa lớn xong (còn ~${Math.ceil(def.days - plot.growth)} ngày)`);
     // Mùa vụ tính theo ngày cây CHÍN (không cho để chín chờ đúng vụ); bù nhìn may thì thu gấp đôi
     let qty = harvestYield(def, s.day, plot.ripeDay);
-    const doubled = Math.random() < farmCritChance(s.garden);
+    const doubled = simRng()() < farmCritChance(s.garden);
     if (doubled) qty *= 2;
     const k = copyStock(s);
     putStock(k, def.productId, qty);
@@ -89,6 +90,7 @@ export const createGardenSlice = (set: SetState, get: GetState): Pick<GameState,
     homegrown[def.productId] = (homegrown[def.productId] ?? 0) + qty;
     set({
       ...k,
+      stats: { ...s.stats, farmHarvest: (s.stats.farmHarvest ?? 0) + qty },
       garden: {
         ...s.garden,
         plots: s.garden.plots.map((p, i) => (i === plotIndex
@@ -202,7 +204,7 @@ export const createGardenSlice = (set: SetState, get: GetState): Pick<GameState,
       garden: { ...s.garden, pens: { ...s.garden.pens, [kind]: { count: 0, fedDay: 0, feedKg: pen.feedKg, pending: 0, fattened: 0, lateJoins: 0 } }, homegrown },
       money: s.money + refund,
     });
-    s.notify(`${def.icon} Xuất chuồng ${readyCount} ${def.name.toLowerCase()} (${meat} ${productById(def.productId).name} vào kho) — quán xóm sáng mai ghé mua liền${late ? `; ${late} con mua giữa kỳ chỉ nhận lại giá giống ${formatMoney(refund)}` : ''}`);
+    s.notify(`${def.icon} Xuất chuồng ${readyCount} ${def.name.toLowerCase()} (${meat} ${productById(def.productId).name} vào kho)${late ? `; ${late} con mua giữa kỳ chỉ nhận lại giá giống ${formatMoney(refund)}` : ''}`);
     s.addXp(10);
   },
   expandFarm: () => {
@@ -233,7 +235,7 @@ export const createGardenSlice = (set: SetState, get: GetState): Pick<GameState,
       const have = k.storage[it.productId] ?? 0;
       const home = hg[it.productId] ?? 0;
       if (have < it.qty || home < it.qty) {
-        return s.notify(`📦 Quán chỉ nhận nông sản nhà trồng/nhà nuôi: ${productById(it.productId).name} cần ${it.qty} (kho ${have}, nhà trồng ${home})`);
+        return s.notify(`📦 Quán chỉ nhận hàng nhà trồng: ${productById(it.productId).name} cần ${it.qty}, có ${home}`);
       }
     }
     let total = 0;
@@ -292,10 +294,10 @@ export const createGardenSlice = (set: SetState, get: GetState): Pick<GameState,
     for (let i = 0; i < debris; i++) {
       wood++;
       stone++;
-      if (Math.random() < 0.5) wood++;
+      if (simRng()() < 0.5) wood++;
     }
     set({ garden: { ...s.garden, debris: 0, wood: s.garden.wood + wood, stone: s.garden.stone + stone } });
-    s.notify(`🧹 Dọn ${debris} đống cỏ cành: nhặt ${wood} gỗ, ${stone} đá — dành nâng sao công trình (đang có ${s.garden.wood + wood} gỗ, ${s.garden.stone + stone} đá)`);
+    s.notify(`🧹 Dọn ${debris} đống: nhặt ${wood} gỗ, ${stone} đá (có ${s.garden.wood + wood} gỗ, ${s.garden.stone + stone} đá)`);
     s.addXp(3);
   },
 });

@@ -195,7 +195,7 @@
   font-size: 13px;
 }
 #ui .ar-sum { opacity: 0.85; }
-#ui .ar-error { color: #ff8a7a; font-weight: 600; }
+#ui .ar-error { color: #ff7675; font-weight: 600; }
 #ui .ar-foot-actions { margin-left: auto; display: flex; gap: 8px; }
 
 /* Màn hẹp dựng đứng: bản vẽ trên, danh mục dưới */

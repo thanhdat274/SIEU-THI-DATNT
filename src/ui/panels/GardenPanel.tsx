@@ -2,9 +2,11 @@ import { useGame } from '../../core/store';
 import { productById, formatMoney } from '../../data/products';
 import {
   ANIMALS, ANIMAL_ORDER, animalMode, CROPS, EGG_PER_TRAY, FARM_BUILDING_MAX_STAR, FARM_BUILDINGS, FARM_BUILDING_ORDER, FARM_ORDER_UNLOCK,
-  FERTILIZER_PRODUCT, GARDEN_UNLOCK, inSeason, LAND_TIERS, monthOf, penCap, fattenReady, plotLabel, plotReady,
+  FERTILIZER_PRODUCT, GARDEN_UNLOCK, cropById, inSeason, LAND_TIERS, monthOf, penCap, fattenReady, plotLabel, plotReady,
 } from '../../data/garden';
-import { Footer, styles } from './shared';
+import { animalPerDay, bestAnimal, bestCrop, cropPerDay } from '../../data/farmValue';
+import { farmVsCook } from '../../data/farmKitchenValue';
+import { Callout, Footer, styles } from './shared';
 
 /** Trang trại đầu ngõ: trồng theo mùa vụ, nuôi 7 loài, công trình + dọn trại lấy gỗ đá nâng sao, đơn quán xóm. */
 export function GardenPanel() {
@@ -27,16 +29,56 @@ export function GardenPanel() {
         <p style={styles.sub}>🔒 Trang trại mở ở cấp {GARDEN_UNLOCK}: dọn lại mảnh đất ven đường đã.</p>
       ) : (
         <div style={{ display: 'grid', gap: 6, maxWidth: 560 }}>
+          {(() => {
+            const bc = bestCrop(level, day);
+            const ba = bestAnimal(garden);
+            if (!bc && !ba) return null;
+            return (
+              <Callout tone="warn" title="💡 Hôm nay đáng: ">
+                <div style={{ fontSize: 12, marginTop: 4 }}>
+                  {bc && <span>Trồng <b>{bc.crop.icon} {bc.crop.name}</b> ~{formatMoney(Math.round(bc.perDay))}/luống/ngày{bc.inSeasonNow && bc.crop.season ? ' (đúng mùa ×1,5)' : ''}{ba ? ' · ' : ''}</span>}
+                  {ba && <span>Nuôi <b>{ba.def.icon} {ba.def.name}</b> ~{formatMoney(Math.round(ba.perDay))}/con/ngày{ba.perDay < 0 ? ' (lỗ cám!)' : ''}</span>}
+                </div>
+              </Callout>
+            );
+          })()}
+
+          {(() => {
+            // GĐ147 — Nấu hay bán lẻ: với từng nông sản nhà trồng/nuôi đang có trong kho,
+            // so bán lẻ (nhãn nhà trồng ×1,2) với nấu thành món (lãi món tính cơ hội phí thật).
+            const lines = homegrown
+              .map(([id, qty]) => {
+                const f = farmVsCook(id);
+                if (!f.best) return { id, qty, key: id, text: `${productById(id).name}: bán lẻ ~${formatMoney(f.sellPerUnit)}/món` };
+                const d = f.best;
+                return {
+                  id, qty, key: id,
+                  text: `${productById(id).name}: nấu <b>${d.recipe.name}</b> lời ~${formatMoney(d.homegrownNet)} (+${formatMoney(d.deltaVsSell)} so bán lẻ ${formatMoney(d.sellLot)})`,
+                  thin: d.homegrownNet < d.sellLot, // nấu lời còn kém cả bán lẻ cả lot — bán lẻ thật sự đáng cân nhắc
+                };
+              })
+              .slice(0, 5);
+            if (!lines.length) return null;
+            return (
+              <Callout tone="event" title="🧑‍🍳 Nấu hay bán lẻ: ">
+                <div style={{ fontSize: 12, marginTop: 4 }}>
+                  {lines.map((l) => (
+                    <div key={l.key} style={{ marginBottom: 2, color: l.thin ? '#e67e22' : undefined }}>
+                      <span dangerouslySetInnerHTML={{ __html: l.text }} />
+                    </div>
+                  ))}
+                  <div style={{ opacity: 0.75, marginTop: 3 }}>Lãi món tính theo giá bán lẻ nhà trồng (×1,2) của nông sản — bếp luôn cộng thêm giá trị cho nông sản, chỉ món nào lời <i>mỏng</i> (màu cam) thì bán lẻ cũng đáng cân nhắc khi trạm bận.</div>
+                </div>
+              </Callout>
+            );
+          })()}
+
           {order ? (
-            <div style={{ ...styles.card, display: 'block', borderLeft: '3px solid #f39c12' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center' }}>
-                <b>📦 Đơn của {order.from}</b>
-                <span style={{ display: 'flex', gap: 4 }}>
-                  <button style={{ ...styles.btn, background: orderReady ? '#27ae60' : '#555', color: '#fff' }} onClick={deliverFarmOrder}>
-                    Giao đơn · {formatMoney(orderPay)}
-                  </button>
-                </span>
-              </div>
+            <Callout tone="warn" title={`📦 Đơn của ${order.from}`} actions={
+              <button style={{ ...styles.btn, background: orderReady ? '#2ecc71' : '#555', color: '#fff' }} onClick={deliverFarmOrder}>
+                Giao đơn · {formatMoney(orderPay)}
+              </button>
+            }>
               <div style={{ fontSize: 12, marginTop: 4 }}>
                 {order.items.map((it) => {
                   const have = storage[it.productId] ?? 0;
@@ -45,18 +87,17 @@ export function GardenPanel() {
                   return `${productById(it.productId).name} ${have}/${it.qty} (nhà trồng ${home})${ok ? '✓' : '⚠️'}`;
                 }).join(' · ')} — giá hời ×{order.bonus} cho nông sản nhà trồng, hạn ngày {order.dueDay} (còn {Math.max(0, order.dueDay - day)} ngày)
               </div>
-            </div>
+            </Callout>
           ) : level >= FARM_ORDER_UNLOCK ? (
             <div style={{ ...styles.card, fontSize: 12, opacity: 0.75 }}>📦 Đơn quán xóm: đang trống — hôm sau sẽ có quán ghé đặt nông sản.</div>
           ) : null}
 
           {seasonCrops.length > 0 && (
-            <div style={{ ...styles.card, display: 'block', borderLeft: '3px solid #2ecc71' }}>
-              <b>🌤️ Đang vào mùa vụ (tháng {monthOf(day)}): trái sai gấp rưỡi</b>
+            <Callout tone="ok" title={`🌤️ Đang vào mùa vụ (tháng ${monthOf(day)}): trái sai gấp rưỡi`}>
               <div style={{ fontSize: 12, marginTop: 4 }}>
                 {seasonCrops.map((c) => `${c.icon} ${c.name} (${c.season![0]}–${c.season![1]})`).join(' · ')} — trồng giống này hôm nay thu được nhiều hơn hẳn.
               </div>
-            </div>
+            </Callout>
           )}
 
           <div style={{ ...styles.card, display: 'block' }}>
@@ -69,7 +110,7 @@ export function GardenPanel() {
                 </button>
               )}
               {nextTier ? (
-                <button style={{ ...styles.btn, background: level >= nextTier.unlock && money >= nextTier.cost ? '#27ae60' : '#555', color: '#fff', marginLeft: 8 }}
+                <button style={{ ...styles.btn, background: level >= nextTier.unlock && money >= nextTier.cost ? '#2ecc71' : '#555', color: '#fff', marginLeft: 8 }}
                   onClick={expandFarm} title={level < nextTier.unlock ? `Cần cấp ${nextTier.unlock}` : `Mua thêm ${nextTier.plots - garden.plots.length} luống và chuồng mới`}>
                   ⬆️ Mở rộng "{nextTier.name}" ({formatMoney(nextTier.cost)}){level < nextTier.unlock ? ` — cấp ${nextTier.unlock}` : ''}
                 </button>
@@ -112,12 +153,24 @@ export function GardenPanel() {
                     )}
                   </span>
                 </div>
+                {p.crop && (
+                  <div style={{ fontSize: 12, opacity: 0.85, marginTop: 3 }}>
+                    {(() => {
+                      const cv = cropPerDay(cropById(p.crop), { day, ripeDay: p.ripeDay });
+                      return (
+                        <span style={cv.perDay < 0 ? { color: '#e74c3c', fontWeight: 600 } : undefined}>
+                          🌱 ~{formatMoney(Math.round(cv.perDay))}/luống/ngày{cv.perDay < 0 ? ' (lỗ giống!)' : cv.inSeasonNow && cv.crop.season ? ' · đúng mùa ×1,5' : ''}
+                        </span>
+                      );
+                    })()}
+                  </div>
+                )}
                 {!p.crop && (
                   <div style={{ fontSize: 12, marginTop: 4, display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                     {CROPS.filter((c) => c.unlock <= level).map((c) => {
                       const onSeason = inSeason(c, day);
                       return (
-                        <button key={c.id} style={{ ...styles.btn, background: money >= c.seedCost ? (onSeason && c.season ? '#1e8449' : '#27ae60') : '#555', color: '#fff' }}
+                        <button key={c.id} style={{ ...styles.btn, background: money >= c.seedCost ? (onSeason && c.season ? '#1e8449' : '#2ecc71') : '#555', color: '#fff' }}
                           onClick={() => plantCrop(i, c.id)}
                           title={`~${c.days} ngày, thu ${c.yieldQty} món${c.regrowDays ? `, sau đó mỗi ${c.regrowDays} ngày ra trái tiếp` : ''}${c.season ? `, mùa vụ tháng ${c.season[0]}–${c.season[1]} (đúng vụ ×1,5)` : ''}`}>
                           {c.icon} {c.name} ({formatMoney(c.seedCost)}){onSeason && c.season ? ' 🌤️' : ''}
@@ -150,7 +203,7 @@ export function GardenPanel() {
                         <button style={{ ...styles.btn, background: hungry ? '#c0392b' : '#8e44ad', color: '#fff' }} onClick={() => feedPen(kind)}>
                           {hungry ? '⚠️ Hết cám — mua lẻ' : '🌾 Cho ăn'}
                         </button>
-                        <button style={{ ...styles.btn, background: fattenReady(kind, pen) ? '#f39c12' : '#555', color: '#fff' }} onClick={() => sellFattened(kind)}
+                        <button style={{ ...styles.btn, background: fattenReady(kind, pen) ? '#e67e22' : '#555', color: '#fff' }} onClick={() => sellFattened(kind)}
                           title={fattenReady(kind, pen) ? `Xuất chuồng: ~${(def.meatPerHead ?? 0) * pen.count} ${productById(def.productId).name} vào kho` : `Cần cho ăn đủ ${def.fattenDays} ngày`}>
                           🏷️ Xuất chuồng ({pen.fattened ?? 0}/{def.fattenDays})
                         </button>
@@ -161,7 +214,7 @@ export function GardenPanel() {
                         <button style={{ ...styles.btn, background: hungry ? '#c0392b' : '#8e44ad', color: '#fff' }} onClick={() => feedPen(kind)}>
                           {hungry ? '⚠️ Hết cám — mua lẻ' : '🌾 Cho ăn'}
                         </button>
-                        <button style={{ ...styles.btn, background: pen.pending >= EGG_PER_TRAY ? '#f39c12' : '#555', color: '#fff' }} onClick={() => collectPen(kind)}>
+                        <button style={{ ...styles.btn, background: pen.pending >= EGG_PER_TRAY ? '#e67e22' : '#555', color: '#fff' }} onClick={() => collectPen(kind)}>
                           🥚 Lấy trứng ({pen.pending}/{EGG_PER_TRAY})
                         </button>
                       </>
@@ -171,7 +224,7 @@ export function GardenPanel() {
                         <button style={{ ...styles.btn, background: hungry ? '#c0392b' : '#8e44ad', color: '#fff' }} onClick={() => feedPen(kind)}>
                           {hungry ? '⚠️ Hết cám — mua lẻ' : '🌾 Cho ăn'}
                         </button>
-                        <button style={{ ...styles.btn, background: pen.pending >= 1 ? '#f39c12' : '#555', color: '#fff' }} onClick={() => collectPen(kind)}>
+                        <button style={{ ...styles.btn, background: pen.pending >= 1 ? '#e67e22' : '#555', color: '#fff' }} onClick={() => collectPen(kind)}>
                           🥛 Vắt sữa ({pen.pending})
                         </button>
                       </>
@@ -193,6 +246,20 @@ export function GardenPanel() {
                   <div style={{ fontSize: 12, marginTop: 4 }}>
                     {pen.count}/{cap} con · {pen.fedDay === day ? '✅ Hôm nay đã cho ăn' : '⚠️ Chưa cho ăn hôm nay'}
                     {` · máng ${pen.feedKg.toFixed(1)}/${need.toFixed(1)} kg · kho ${bags} ${feedName}`}
+                    {(() => {
+                      const av = animalPerDay(kind, garden);
+                      return (
+                        <div style={{ marginTop: 3 }}>
+                          <span style={av.perDay < 0 ? { color: '#e74c3c', fontWeight: 600 } : undefined}>
+                            🐾 ~{formatMoney(Math.round(av.perDay))}/con/ngày
+                          </span>
+                          {av.perDay < 0 && <span style={{ color: '#e74c3c' }}> (nuôi lỗ vì cám!)</span>}
+                          {mode === 'fatten' && av.fattenRemaining > 0 && (
+                            <span style={{ color: '#e67e22' }}> · ⚠️ còn nuôi {av.fattenRemaining} ngày nữa mới bõ</span>
+                          )}
+                        </div>
+                      );
+                    })()}
                     {pen.count < cap && (
                       <button style={{ ...styles.btn, background: money >= def.price ? '#e67e22' : '#555', color: '#fff' }} onClick={() => buyAnimal(kind)}>
                         + Mua thêm ({formatMoney(def.price)})
@@ -209,18 +276,16 @@ export function GardenPanel() {
             );
           })}
 
-          <div style={{ ...styles.card, display: 'block', borderLeft: '3px solid #16a085' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center' }}>
-              <b>🧹 Dọn trại · 🪵 {garden.wood} gỗ · 🪨 {garden.stone} đá</b>
-              <button style={{ ...styles.btn, background: garden.debris > 0 ? '#16a085' : '#555', color: '#fff' }} onClick={cleanupFarm}
-                title="Cỏ dại cành rụng mọc lại sau mỗi đêm (bão rơi nhiều) — dọn lấy gỗ đá nâng sao công trình">
-                {garden.debris > 0 ? `Dọn ${garden.debris} đống rác` : 'Trại đang sạch'}
-              </button>
-            </div>
+          <Callout tone="info" title={`🧹 Dọn trại · 🪵 ${garden.wood} gỗ · 🪨 ${garden.stone} đá`} actions={
+            <button style={{ ...styles.btn, background: garden.debris > 0 ? '#f1c40f' : '#555', color: garden.debris > 0 ? '#222' : '#fff' }} onClick={cleanupFarm}
+              title="Cỏ dại cành rụng mọc lại sau mỗi đêm (bão rơi nhiều) — dọn lấy gỗ đá nâng sao công trình">
+              {garden.debris > 0 ? `Dọn ${garden.debris} đống rác` : 'Trại đang sạch'}
+            </button>
+          }>
             <div style={{ fontSize: 12, opacity: 0.75, marginTop: 4 }}>
               Gỗ đá chỉ để nâng sao công trình — sáng mai cỏ lại mọc, dọn đều tay là có lũ.
             </div>
-          </div>
+          </Callout>
 
           {FARM_BUILDING_ORDER.map((id) => {
             const def = FARM_BUILDINGS[id];
@@ -233,13 +298,13 @@ export function GardenPanel() {
                   <b>{def.icon} {def.name} {star > 0 ? `${'★'.repeat(star)}${'☆'.repeat(FARM_BUILDING_MAX_STAR - star)}` : ''}</b>
                   <span style={{ display: 'flex', gap: 4 }}>
                     {star === 0 && (
-                      <button style={{ ...styles.btn, background: level >= def.unlock && money >= def.cost ? '#16a085' : '#555', color: '#fff' }} onClick={() => buyFarmBuilding(id)}
+                      <button style={{ ...styles.btn, background: level >= def.unlock && money >= def.cost ? '#f1c40f' : '#555', color: level >= def.unlock && money >= def.cost ? '#222' : '#fff' }} onClick={() => buyFarmBuilding(id)}
                         title={level < def.unlock ? `Mở ở cấp ${def.unlock}` : def.note}>
                         Xây ({formatMoney(def.cost)}){level < def.unlock ? ` — cấp ${def.unlock}` : ''}
                       </button>
                     )}
                     {upCost && (
-                      <button style={{ ...styles.btn, background: canUp ? '#16a085' : '#555', color: '#fff' }} onClick={() => upgradeFarmBuilding(id)}
+                      <button style={{ ...styles.btn, background: canUp ? '#f1c40f' : '#555', color: canUp ? '#222' : '#fff' }} onClick={() => upgradeFarmBuilding(id)}
                         title={`Cần ${upCost.wood} gỗ + ${upCost.stone} đá + ${formatMoney(upCost.money)}`}>
                         ⬆️ Lên sao {star + 1} ({formatMoney(upCost.money)} + 🪵{upCost.wood} 🪨{upCost.stone})
                       </button>

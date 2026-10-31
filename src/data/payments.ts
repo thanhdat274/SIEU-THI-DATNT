@@ -5,8 +5,9 @@
  * Ghi sổ (khách quen quên ví) là một luồng riêng của credit.ts, vẫn thống kê chung ở đây.
  */
 
-export type PaymentMethod = 'cash' | 'bank' | 'wallet' | 'card' | 'credit';
+import { simRng } from '../core/rand';
 
+export type PaymentMethod = 'cash' | 'bank' | 'wallet' | 'card' | 'credit';
 export interface PaymentDef {
   id: PaymentMethod;
   icon: string;
@@ -31,7 +32,7 @@ export const PAYMENTS: PaymentDef[] = [
 export const paymentById = (id: PaymentMethod): PaymentDef => PAYMENTS.find((p) => p.id === id) ?? PAYMENTS[0];
 
 /** Khách chọn hình thức thanh toán: đơn càng lớn càng ngại đưa tiền mặt. */
-export function pickPayment(total: number, level: number, rng: () => number = Math.random): PaymentMethod {
+export function pickPayment(total: number, level: number, rng: () => number = simRng()): PaymentMethod {
   // Đơn lớn: tiền mặt giảm thế, chuyển khoản/thẻ/ví tăng thế
   const bigBill = total >= 150000 ? 2.2 : total >= 80000 ? 1.6 : total >= 30000 ? 1.2 : 1;
   const pool = PAYMENTS.filter((p) => p.weight > 0 && level >= p.unlock);

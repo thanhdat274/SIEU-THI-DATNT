@@ -10,7 +10,7 @@ export const createSocialSlice = (set: SetState, get: GetState): Pick<GameState,
     if (s.money < APOLOGY_COST) return s.notify('Không đủ tiền làm phiếu giảm giá xin lỗi khách!');
     const social = apologize(s.social, s.day);
     if (!social) return s.notify('Không có khủng hoảng nào cần xin lỗi');
-    set({ social, money: s.money - APOLOGY_COST, stats: { ...s.stats, spent: s.stats.spent + APOLOGY_COST } });
+    set({ social, money: s.money - APOLOGY_COST, stats: { ...s.stats, spent: s.stats.spent + APOLOGY_COST, socialPosts: (s.stats.socialPosts ?? 0) + 1 } });
     s.notify(`🙏 Đã đăng bài xin lỗi kèm phiếu giảm giá (${formatMoney(APOLOGY_COST)}): khách dần quay lại`);
   },
   promoteShop: () => {
@@ -22,7 +22,7 @@ export const createSocialSlice = (set: SetState, get: GetState): Pick<GameState,
         ? 'Hôm nay đã đăng bài rồi, đăng nhiều quá người ta bỏ theo dõi đó!'
         : `Cần ít nhất ${PROMO_MIN_FOLLOWERS} người theo dõi mới đăng quảng bá được — bán tốt để khách khen trên mạng`);
     }
-    set({ social });
+    set({ social, stats: { ...s.stats, socialPosts: (s.stats.socialPosts ?? 0) + 1 } });
     s.notify(`📣 Đã đăng bài quảng bá: hôm nay thêm ~${Math.round(promoBoost(social.followers) * 100)}% khách ghé`);
   },
 });

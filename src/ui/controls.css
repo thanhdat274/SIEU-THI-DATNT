@@ -185,10 +185,12 @@
   #ui .dd-trigger, #ui .dd-arrow { transition: none; }
 }
 
-/* Bảng nhập hàng: 7 cột trên máy tính, thành thẻ 2–3 dòng trên điện thoại */
+/* Bảng nhập hàng: 7 cột trên máy tính, thành thẻ 2–3 dòng trên màn hẹp.
+   Ràng buộc theo CHIỀU RỘNG (bài học GĐ92b: pointer:coarse không đáng tin trong môi trường
+   giả lập và không phủ bàn phím cảm ứng) — màn hẹp nào cũng phải đọc được bảng. */
 #ui .or-row { grid-template-columns: minmax(170px, 2.2fr) 0.8fr 0.8fr 1fr 0.9fr 1.5fr 1fr; }
 
-@media (pointer: coarse) and (max-width: 1000px) {
+@media (max-width: 700px) {
   #ui .or-head { display: none !important; }
   #ui .or-row { grid-template-columns: 1fr 1fr 1fr; row-gap: 6px; padding: 10px !important; }
   #ui .or-name { grid-column: 1 / -1; font-weight: 600; }
@@ -202,15 +204,43 @@
   #ui .or-total { text-align: right; font-weight: 600; }
 }
 
-/* Bảng game trên màn hẹp: nút và ô to hơn để dễ chạm */
-@media (pointer: coarse) {
+/* Bảng game trên màn hẹp: nút và ô to hơn để dễ chạm (trước đây gác pointer:coarse nên
+   rule .panel không bao giờ chạy ở nhiều môi trường — nút panel chỉ cao 21–29px). */
+@media (max-width: 700px) {
   #ui .dd-trigger, #ui select, #ui input:not([type='checkbox']) { height: 38px; font-size: 16px; }
   #ui .dd-option { padding: 11px 12px; }
   #ui .or-qty button { width: 32px !important; height: 32px !important; }
   #ui .or-qty input { height: 32px !important; }
   /* Nút thao tác trong panel (inline styles.btn chỉ có padding 5px/10px nên cao ~28px):
-     nâng lên đủ chuẩn chạm ~40px cho điện thoại. */
+     nâng lên đủ chuẩn chạm ~40px. Panel div phải có class "panel" (Panels.tsx). */
   #ui .panel button { min-height: 40px; }
+}
+
+/* Thẻ gập lại (details/summary) trong panel: nén danh sách dài trên màn nhỏ, chạm để mở */
+#ui details > summary { list-style: none; cursor: pointer; }
+#ui details > summary::-webkit-details-marker { display: none; }
+#ui details > summary::marker { content: ''; }
+
+/* Border-box cho toàn bộ nội dung panel: phần tử `width: 100%` có padding riêng không được
+   tràn ra ngoài panel (root cause của lớp tràn ngang 7–45px — panel là border-box nhưng con
+   cháu mặc định content-box nên width 100% + padding = tràn đúng bằng padding). */
+#ui .panel,
+#ui .panel * { box-sizing: border-box; }
+
+/* Trạng thái nút chung cho mọi panel (GĐ166): nút khoá phải nhìn là biết không bấm được,
+   hover là tín hiệu nhẹ (làm sáng) — áp sau các hiệu ứng hover riêng (brightness cộng thêm,
+   không đè background đã có). Agenda chip/HUD nằm ngoài .panel nên không ăn phải. */
+#ui .panel button:disabled { opacity: .45; cursor: not-allowed; }
+#ui .panel button:hover { filter: brightness(1.1); }
+
+/* Nút đóng panel: hover sáng lên, active hơi thu lại */
+#ui button[aria-label="Đóng"]:hover {
+  background: #f1c40f !important;
+  color: #222 !important;
+  transform: scale(1.05);
+}
+#ui button[aria-label="Đóng"]:active {
+  transform: scale(0.95);
 }
 
 /* Hẻm online: đang chờ máy chạy làm thao tác vừa bấm, làm mờ nút cho khỏi bấm lặp */

@@ -82,16 +82,17 @@ export function eventOn(seed: number, day: number, level: number): RandomEvent |
   const season = seasonOf(day);
   const poolIds = SEASON_POOL[season];
 
-  // Đôi khi ta vẫn muốn sự kiện ngoài mùa để đa dạng (50%). level dùng làm muối phụ.
-  const useSeasonal = roll(seed, day, 13) < 0.5;
+  // Đôi khi ta vẫn muốn sự kiện ngoài mùa để đa dạng (50%). GĐ269: salt biến thiên theo ngày —
+  // salt cố định làm roll nhánh và roll CHỌN tương quan (phân phối lệch ~2.7× giữa các sự kiện).
+  const useSeasonal = roll(seed, day, 1009 + day * 7) < 0.5;
   const all: RandomEvent[] = useSeasonal
     ? poolIds
         .map((id) => RANDOM_EVENTS.find((e) => e.id === id)!)
         .filter(Boolean)
     : [...RANDOM_EVENTS];
 
-  // level làm muối phụ để sự chọn lệch theo cấp độ chơi.
-  const idx = Math.floor(roll(seed, day, 17 + level) * all.length);
+  // level làm muối phụ để sự chọn lệch theo cấp độ chơi (cộng thêm ngày để phá tương quan GĐ269).
+  const idx = Math.floor(roll(seed, day, 2009 + day * 7 + level) * all.length);
   return all[idx] ?? null;
 }
 

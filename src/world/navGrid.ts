@@ -87,6 +87,23 @@ export class NavGrid {
     return true;
   }
 
+  /**
+   * Đi thẳng về phía đích nhưng dừng ở ô tự do cuối cùng trước vật cản — dành cho khi findPath trả rỗng
+   * (đích bị bịt kín không tới được). Thay vì đi xuyên tường/kệ, nhân vật tiến tới mép rồi dừng.
+   * Trả về mảng rỗng nếu ngay vị trí hiện tại đã bị chặn (đứng yên).
+   */
+  approach(from: THREE.Vector3, to: THREE.Vector3): THREE.Vector3[] {
+    const steps = Math.max(1, Math.ceil(from.distanceTo(to) / (this.cell * 0.5)));
+    let landing = from.clone().setY(0);
+    for (let i = 1; i <= steps; i++) {
+      const t = i / steps;
+      const p = new THREE.Vector3(from.x + (to.x - from.x) * t, 0, from.z + (to.z - from.z) * t);
+      if (this.isBlocked(p.x, p.z)) break;
+      landing = p;
+    }
+    return landing.distanceTo(from) < this.cell * 0.25 ? [] : [landing];
+  }
+
   /** Tìm đường A* 8 hướng, trả về danh sách điểm đã làm mượt. Rỗng nếu không tới được. */
   findPath(from: THREE.Vector3, to: THREE.Vector3): THREE.Vector3[] {
     const start = this.toCell(from.x, from.z);

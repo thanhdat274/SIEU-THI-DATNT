@@ -1,9 +1,12 @@
 import { formatClock, useClock, useGame } from '../../core/store';
 import {
-  ACCEPT_WINDOW, APP_COMMISSION, appRating, describeOnline, grabFee, grabTravel, ONLINE_OPEN_COST, ONLINE_UNLOCK, onlineValue, ownTravel,
+  ACCEPT_WINDOW, APP_COMMISSION, appRating, declineRating, describeOnline, grabFee, ONLINE_HOURS, ONLINE_OPEN_COST, ONLINE_UNLOCK, onlineOrderCap,
+  orderAssessment, orderGap, orderRateTone, ratingImpact,
 } from '../../data/online';
 import { formatMoney } from '../../data/products';
-import { Footer, styles } from './shared';
+import { onlineNet } from '../../data/onlineNet';
+import { onlineRatingValue, RATING_FLOOR, RATING_TARGET } from '../../data/onlineRatingValue';
+import { Footer, styles, Callout } from './shared';
 
 export function OnlinePanel() {
   const { online, level, money, staff, storage, priceOf, openOnline, toggleOnline, acceptOnline, declineOnline, closePanel } = useGame();
@@ -12,6 +15,8 @@ export function OnlinePanel() {
   const couriers = staff.filter((st) => st.role === 'courier').sort((a, b) => b.skill - a.skill);
   const busyOwn = online.orders.filter((o) => o.status === 'shipping' && o.via === 'own').length;
   const freeCourier = couriers[busyOwn];
+  const rating = appRating(online);
+  const cap = onlineOrderCap(rating, level);
   return (
     <>
       <h2 style={styles.title}>📲 Bán online</h2>
@@ -27,9 +32,53 @@ export function OnlinePanel() {
       ) : (
         <>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 10 }}>
-            <div style={{ ...styles.card, display: 'block' }}><small style={{ opacity: 0.7 }}>⭐ Điểm app</small><div><b>{appRating(online).toFixed(1)}</b> <small>({online.ratingCount})</small></div></div>
+            <div style={{ ...styles.card, display: 'block' }}><small style={{ opacity: 0.7 }}>⭐ Điểm app</small><div><b>{rating.toFixed(1)}</b> <small>({online.ratingCount})</small></div></div>
             <div style={{ ...styles.card, display: 'block' }}><small style={{ opacity: 0.7 }}>📦 Đã giao</small><div><b>{online.done}</b> <small>trễ {online.late}</small></div></div>
             <div style={{ ...styles.card, display: 'block' }}><small style={{ opacity: 0.7 }}>💵 Hôm nay</small><div><b>{formatMoney(online.revenueToday)}</b></div>{!!online.grabFeesToday && <small>Grab -{formatMoney(online.grabFeesToday)}</small>}</div>
+          </div>
+          {(() => {
+            const on = onlineNet(online);
+            if (on.revenue <= 0) return null;
+            const line = on.verdict === 'low'
+              ? { tone: 'danger' as const, t: `đơn app hôm nay đang LỖ ${formatMoney(-on.net)} sau phí giao — nên chọn đơn lời / tự chở, đừng gọi Grab đủ mọi đơn.` }
+              : on.verdict === 'warn'
+                ? { tone: 'warn' as const, t: `phí Grab đang ngốn ${Math.round(on.grabShare * 100)}% doanh thu online — tự chở bằng người giao rảnh giữ lại ~${formatMoney(on.savingsIfOwn)}/ngày.` }
+                : { tone: 'ok' as const, t: `lời ròng ~${formatMoney(on.net)}/ngày sau phí giao.` };
+            return (
+              <Callout tone={line.tone} style={{ marginBottom: 10 }} title={`📲 Online hôm nay: lời ròng ${formatMoney(on.net)}${on.grabFees > 0 ? ` (Grab −${formatMoney(on.grabFees)})` : ''}`}>
+                <div style={{ marginTop: 2, fontSize: 12 }}>{line.t}</div>
+              </Callout>
+            );
+          })()}
+          {(() => {
+            const rv = onlineRatingValue({
+              rating, level,
+              revenueToday: online.revenueToday, done: online.done, grabFeesToday: online.grabFeesToday,
+            });
+            if (rv.verdict === 'noData') return null;
+            const bestTone = rv.verdict === 'best' ? 'ok' : rv.verdict === 'upside' ? 'warn' : 'info';
+            return (
+              <Callout tone={bestTone} style={{ marginBottom: 10 }} title={
+                rv.verdict === 'best'
+                  ? `🏆 Điểm ${rating.toFixed(1)}⭐ đã ở mức đơn dày nhất`
+                  : `📈 Lên ${RATING_TARGET}⭐ thêm được ~${rv.ordersToBest} đơn/ngày ≈ ${formatMoney(rv.moneyBestPerDay)} lời`
+              }>
+                <div style={{ marginTop: 2, fontSize: 12 }}>
+                  {rv.verdict !== 'best' && (
+                    <>Hiện ~{rv.capNow} đơn/ngày, mốc {RATING_TARGET}⭐ được ~{rv.capBest}.{' '}
+                    {rv.ordersToFloor > 0 && <>Nếu điểm rớt về {RATING_FLOOR} có thể mất ~{rv.ordersToFloor} đơn/ngày (≈{formatMoney(rv.moneyFloorPerDay)}). </>}
+                    </>)
+                  }
+                  {rv.verdict === 'best' && <>Không còn dư địa tăng đơn theo điểm — giờ tập trung vào giá trị giỏ và phí giao.</>}
+                  {' '}Bình quân {formatMoney(rv.avgRevenuePerOrder)}/đơn thật hôm nay.
+                </div>
+              </Callout>
+            );
+          })()}          {/* Minh bạch hộp đen đơn app: điểm → độ dày đơn, số đơn tối đa/ngày, khung giờ */}
+          <div style={{ ...styles.card, display: 'block', fontSize: 12, marginBottom: 10, background: '#323244' }}>
+            <div>⏱️ Khung nhận đơn: <b>{Math.floor(ONLINE_HOURS[0] / 60)}h–{Math.floor(ONLINE_HOURS[1] / 60)}h30</b> · cách nhau trung bình ~{Math.round(orderGap(rating, level))} phút.</div>
+            <div>📈 Điểm {rating.toFixed(1)}⭐ → <b>{orderRateTone(rating)}</b> ({Math.round(cap)} đơn/ngày gần đúng).</div>
+            {rating < 4.5 && <div style={{ opacity: 0.8, marginTop: 2 }}>💡 Giao đúng hẹn để điểm lên 4,5⭐ sẽ có đơn dày nhất.</div>}
           </div>
           <label style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 13, marginBottom: 10 }}>
             <input type="checkbox" checked={online.open} onChange={toggleOnline} /> Đang nhận đơn
@@ -39,28 +88,59 @@ export function OnlinePanel() {
             {!online.orders.length && <p style={styles.sub}>Chưa có đơn nào. Đơn đổ về khi tiệm mở cửa, 7h–21h30.</p>}
             {online.orders.map((o) => {
               const enough = Object.entries(o.items).every(([id, q]) => (storage[id] ?? 0) >= q);
-              const own = freeCourier ? ownTravel(o.km, freeCourier.skill) : null;
-              const grab = grabTravel(o.km);
+              // GĐ59: đánh giá kinh tế + điểm app cho từng lựa chọn (thuần đọc từ công thức giao/checkout có sẵn)
+              const a = orderAssessment(o, priceOf, freeCourier ? freeCourier.skill : null, minutes);
+              const grabStars = 5;
+              const grabNext = ratingImpact(grabStars, online).nextRating;
+              const declineNext = declineRating(online).nextRating;
+              const ownNext = freeCourier ? ratingImpact(a.ownStars, online).nextRating : null;
+              const btn = { ...styles.btn } as React.CSSProperties;
               return (
                 <div key={o.id} style={{ ...styles.card, display: 'block' }}>
                   <div style={{ display: 'flex', gap: 8, fontSize: 13 }}>
                     <b>{o.customer}</b><span>· {o.km} km</span>
-                    <span style={{ marginLeft: 'auto' }}>{formatMoney(Math.round(onlineValue(o, priceOf) * (1 - APP_COMMISSION)))}</span>
+                    <span style={{ marginLeft: 'auto' }}>{formatMoney(a.gross)}</span>
                   </div>
                   <div style={{ fontSize: 13, margin: '4px 0', opacity: 0.85 }}>{describeOnline(o)}</div>
+                  {/* GĐ59: lời ròng + biên lãi — tín hiệu hoàn vốn cho quyết định lấy đơn */}
+                  <div style={{ fontSize: 12, marginBottom: 4 }}>
+                    💰 Lời ròng: <b style={{ color: a.net > 0 ? '#2ecc71' : '#e74c3c' }}>{formatMoney(a.net)}</b>
+                    {' · '}Grab: {formatMoney(a.grabNet)} · biên {Math.round(a.margin * 100)}%
+                    {a.net <= 0 && <span style={{ color: '#e74c3c' }}> · đơn này LỖ nếu lấy</span>}
+                  </div>
                   {o.status === 'shipping' ? (
                     <small>{o.via === 'own' ? '🛵 Nhân viên tiệm' : '🟢 Grab'} đang chở · tới lúc {formatClock(o.arriveAt!)} {o.arriveAt! > o.dueAt ? '(trễ hẹn)' : '(kịp hẹn)'}</small>
                   ) : (
-                    <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-                      <small style={{ opacity: 0.7, marginRight: 'auto' }}>Hẹn trước {formatClock(o.dueAt)} · còn {Math.max(0, Math.ceil(o.placedAt + ACCEPT_WINDOW - minutes))} phút để nhận{!enough && ' · ⚠️ kho thiếu hàng'}</small>
-                      <button style={{ ...styles.btn, background: '#f1c40f' }} disabled={!enough || !own} title={own ? `Tới nơi sau ~${own} phút` : 'Không có người giao rảnh'} onClick={() => acceptOnline(o.id, 'own')}>
-                        🛵 Tự giao{own ? ` (~${own}′${minutes + own > o.dueAt ? ', trễ' : ''})` : ''}
-                      </button>
-                      <button style={{ ...styles.btn, background: '#2ecc71' }} disabled={!enough || money < grabFee(o.km)} onClick={() => acceptOnline(o.id, 'grab')}>
-                        🟢 Grab {formatMoney(grabFee(o.km))} (~{grab}′)
-                      </button>
-                      <button style={styles.btn} onClick={() => declineOnline(o.id)}>Từ chối</button>
-                    </div>
+                    <>
+                      <small style={{ opacity: 0.7 }}>Hẹn trước {formatClock(o.dueAt)} · còn {Math.max(0, Math.ceil(o.placedAt + ACCEPT_WINDOW - minutes))} phút để nhận{!enough && ' · ⚠️ kho thiếu hàng'}</small>
+                      {/* Tự giao */}
+                      {freeCourier ? (
+                        <div style={{ marginTop: 5 }}>
+                          <button style={{ ...btn, background: '#f1c40f' }} disabled={!enough} onClick={() => acceptOnline(o.id, 'own')}>
+                            🛵 Tự giao (~{a.ownTravelT}′{a.urgent ? ', trễ' : ''})
+                          </button>
+                          <small style={{ display: 'block', fontSize: 11, opacity: 0.8, marginTop: 1 }}>
+                            Tự giao ~{a.ownTravelT}′ → {a.ownStars}★ (điểm về {(ownNext ?? 0).toFixed(1)}){a.urgent && <b style={{ color: '#e74c3c' }}> · TRỄ hẹn!</b>}
+                          </small>
+                        </div>
+                      ) : (
+                        <small style={{ display: 'block', fontSize: 11, opacity: 0.75, marginTop: 4 }}>Không có người giao rảnh — chỉ gọi Grab được.</small>
+                      )}
+                      {/* Grab */}
+                      <div style={{ marginTop: 5 }}>
+                        <button style={{ ...btn, background: '#2ecc71' }} disabled={!enough || money < grabFee(o.km)} onClick={() => acceptOnline(o.id, 'grab')}>
+                          🟢 Grab {formatMoney(grabFee(o.km))} (~{a.grabTravelT}′)
+                        </button>
+                        <small style={{ display: 'block', fontSize: 11, opacity: 0.8, marginTop: 1 }}>
+                          Grab ~{a.grabTravelT}′ · phí {formatMoney(grabFee(o.km))} → {grabStars}★ (điểm về {grabNext.toFixed(1)})
+                        </small>
+                      </div>
+                      {/* Từ chối */}
+                      <div style={{ marginTop: 5, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                        <button style={btn} onClick={() => declineOnline(o.id)}>Từ chối</button>
+                        <small style={{ fontSize: 11, opacity: 0.8 }}>Từ chối: điểm về {declineNext.toFixed(1)}</small>
+                      </div>
+                    </>
                   )}
                 </div>
               );

@@ -107,3 +107,71 @@ describe('lịch tự động: tắt thì không làm gì', () => {
     expect(todo.marks).toEqual(marks);
   });
 });
+
+// ── GĐ275 — lịch tự động chỉnh được giờ mở cửa (6h–8h) ──
+describe('autoOpenAt — giờ mở cửa theo người chơi (GĐ275)', () => {
+  const fresh = (day = 2): RoutineMarks => ({ walkDay: -1, openDay: -1, closeDay: -1, homeDay: -1 });
+
+  it('mặc định (save cũ không có autoOpenAt) = 8h: mở 8h, ra tiệm 7h — hành vi cũ nguyên vẹn', () => {
+    const fired = run([6 * 60 + 30, 7 * 60, 8 * 60 - 1, 8 * 60], { autoOpenAt: undefined, atShop: false }, fresh());
+    expect(fired).toEqual([
+      { minutes: 7 * 60, action: 'walkToShop' },
+      { minutes: 8 * 60, action: 'openShop' },
+    ]);
+  });
+
+  it('autoOpenAt 6h: mở 6h đón nửa đầu giờ vàng, ra tiệm 5h', () => {
+    const fired = run([5 * 60, 6 * 60], { autoOpenAt: 6 * 60, atShop: false }, fresh());
+    expect(fired).toEqual([
+      { minutes: 5 * 60, action: 'walkToShop' },
+      { minutes: 6 * 60, action: 'openShop' },
+    ]);
+  });
+
+  it('6h30: mở 6h30, ra tiệm 5h30', () => {
+    const fired = run([5 * 60 + 29, 5 * 60 + 30, 6 * 60 + 30], { autoOpenAt: 6 * 60 + 30, atShop: false }, fresh());
+    expect(fired).toEqual([
+      { minutes: 5 * 60 + 30, action: 'walkToShop' },
+      { minutes: 6 * 60 + 30, action: 'openShop' },
+    ]);
+  });
+
+  it('mở sớm không đụng mốc tối: vẫn đóng 22h30, về 23h', () => {
+    const fired = run([6 * 60, 22 * 60 + 31, 23 * 60 + 1], { autoOpenAt: 6 * 60 }, fresh());
+    expect(fired.map((f) => f.action)).toEqual(['openShop', 'closeShop', 'goHome', 'stocktake']);
+  });
+
+  it('lịch tắt thì không mở dù autoOpenAt là gì', () => {
+    expect(run([6 * 60, 8 * 60], { autoOpenAt: 6 * 60, autoRoutine: false }, fresh())).toEqual([]);
+  });
+});
+
+// ── GĐ276 — dòng trạng thái lịch trên Sổ đầu ngày ──
+import { autoOpenNote, cashierOpensMorning } from '../core/routine';
+
+describe('autoOpenNote (GĐ276, GĐ279 — thu ngân mở sớm)', () => {
+  it('lịch tắt → null; 8h → nhắc chỉnh; mở sớm → khẳng định đón trọn giờ vàng', () => {
+    expect(autoOpenNote(480, false)).toBeNull();
+    expect(autoOpenNote(undefined, false)).toBeNull();
+    expect(autoOpenNote(480, true)).toBe('⏰ Lịch tự động mở cửa 8h — lỡ nửa đầu giờ vàng sáng (chỉnh trong menu hồ sơ).');
+    expect(autoOpenNote(undefined, true)).toBe('⏰ Lịch tự động mở cửa 8h — lỡ nửa đầu giờ vàng sáng (chỉnh trong menu hồ sơ).'); // save cũ tự bù
+    expect(autoOpenNote(360, true)).toBe('⏰ Lịch tự động mở cửa 6h — đón trọn giờ vàng sáng 6h–8h30.');
+    expect(autoOpenNote(450, true)).toBe('⏰ Lịch tự động mở cửa 7h30 — đón trọn giờ vàng sáng 6h–8h30.');
+  });
+
+  it('GĐ279: thu ngân autoOpen ca sáng/cả ngày mở 6h → note nói thu ngân giữ cửa, dù lịch chủ 8h', () => {
+    const cashierEarly = [{ role: 'cashier', autoOpen: true, shift: 'morning' }];
+    expect(autoOpenNote(480, true, cashierOpensMorning(cashierEarly))).toBe(
+      '🧾 Thu ngân tự mở cửa sáng sớm — đón trọn giờ vàng 6h–8h30 (lịch chủ chỉ là dự phòng).');
+    expect(autoOpenNote(480, false, cashierOpensMorning(cashierEarly))).toBe(
+      '🧾 Thu ngân tự mở cửa sáng sớm — đón trọn giờ vàng 6h–8h30 (lịch chủ chỉ là dự phòng).');
+  });
+
+  it('GĐ279: thu ngân ca CHIỀU (không phủ 6h) hoặc không có cờ autoOpen → note theo lịch chủ', () => {
+    const afternoon = [{ role: 'cashier', autoOpen: true, shift: 'afternoon' }];
+    const noFlag = [{ role: 'cashier', autoOpen: false, shift: 'morning' }];
+    expect(autoOpenNote(480, true, cashierOpensMorning(afternoon))).toContain('lỡ nửa đầu giờ vàng');
+    expect(autoOpenNote(480, true, cashierOpensMorning(noFlag))).toContain('lỡ nửa đầu giờ vàng');
+    expect(autoOpenNote(480, false, cashierOpensMorning(noFlag))).toBeNull();
+  });
+});

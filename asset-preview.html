@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Preview kit asset GLB</title>
+  <style>
+    body { margin: 0; overflow: hidden; font-family: system-ui, sans-serif; }
+    #stage { position: fixed; inset: 0; }
+    h1 {
+      position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
+      color: #3a3a4d; font-size: 18px; background: #fff8ecdd;
+      padding: 6px 18px; border-radius: 999px; z-index: 2;
+    }
+    #labels {
+      position: fixed; bottom: 18px; left: 0; right: 0; display: flex;
+      justify-content: space-around; z-index: 2; pointer-events: none;
+    }
+    #labels span {
+      background: #3a3a4de6; color: #f1c40f; padding: 6px 14px;
+      border-radius: 999px; font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Demo kit asset sinh bằng script — Three.js → GLB</h1>
+  <div id="labels"><span>chậu cây</span><span>thùng gỗ</span><span>khóm tre</span></div>
+  <canvas id="stage"></canvas>
+  <script type="module">
+    import * as THREE from 'three';
+    import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+    import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+
+    const canvas = document.getElementById('stage');
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    renderer.setSize(innerWidth, innerHeight);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xf7ead7);
+    scene.fog = new THREE.Fog(0xf7ead7, 8, 16);
+
+    const camera = new THREE.PerspectiveCamera(40, innerWidth / innerHeight, 0.1, 100);
+    camera.position.set(2.1, 1.5, 3.0);
+    const controls = new OrbitControls(camera, canvas);
+    controls.target.set(0, 0.45, 0);
+    controls.enableDamping = true;
+
+    scene.add(new THREE.HemisphereLight(0xfff4e0, 0x8a6f4d, 1.1));
+    const sun = new THREE.DirectionalLight(0xfff2d9, 2.2);
+    sun.position.set(3, 5, 2);
+    sun.castShadow = true;
+    sun.shadow.mapSize.set(2048, 2048);
+    sun.shadow.camera.left = -3; sun.shadow.camera.right = 3;
+    sun.shadow.camera.top = 3; sun.shadow.camera.bottom = -3;
+    scene.add(sun);
+
+    // Mặt cỏ tròn để bóng đổ có chỗ landed
+    const ground = new THREE.Mesh(
+      new THREE.CircleGeometry(6, 48),
+      new THREE.MeshStandardMaterial({ color: 0x9ad06b, roughness: 1 }),
+    );
+    ground.rotation.x = -Math.PI / 2;
+    ground.receiveShadow = true;
+    scene.add(ground);
+
+    const loader = new GLTFLoader();
+    const files = ['chau_cay', 'thung_go', 'khom_tre', 'bon_nuoc', 'cho_nhua', 'xe_day'];
+    files.forEach((f, i) => {
+      loader.load(`/models/kit/${f}.glb`, (gltf) => {
+        const root = gltf.scene;
+        root.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+        const col = i % 3, row = Math.floor(i / 3);
+        root.position.set((col - 1) * 1.35, 0, row * 1.5 - 0.75);
+        scene.add(root);
+      });
+    });
+
+    // ?still: dựng ~30 khung rồi dừng vòng lặp — cho chụp màn hình sạch, máy đỡ nóng
+    const STILL = location.search.includes('still');
+    let frames = 0;
+    renderer.setAnimationLoop(() => {
+      controls.update();
+      renderer.render(scene, camera);
+      if (STILL && ++frames >= 30) renderer.setAnimationLoop(null);
+    });
+    window.__preview = { renderer, scene, camera };
+
+    addEventListener('resize', () => {
+      camera.aspect = innerWidth / innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(innerWidth, innerHeight);
+    });
+  </script>
+</body>
+</html>

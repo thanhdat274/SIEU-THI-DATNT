@@ -117,11 +117,33 @@ function roll(seed: number, n: number, salt: number) {
 
 export const dayOfYear = (day: number) => (day - 1 + YEAR_OFFSET) % YEAR_DAYS;
 
+/** Tháng dương lịch (1–12) mà một ngày chơi đang thuộc về — dùng làm mốc "tháng vận hành". */
+export const monthOf = (day: number) => dateOfDoy(dayOfYear(day)).month;
+
+
 /** Ngày game hiện tại đổi ra ngày tháng trong năm, vd "24/3". */
 export function describeDate(day: number): string {
   const { month, day: d } = dateOfDoy(dayOfYear(day));
   return `${d}/${month}`;
 }
+
+// ───── GĐ254 — ngày trong tuần (biến thể cuối tuần cho nhiệm vụ ngày) ─────
+// Game chưa từng có khái niệm thứ; định nghĩa tuần trùng nhịp tuần đã có (chợ phiên/sỉ theo
+// floor((day-1)/7)): ngày 1 = Thứ 2, Thứ 7 + Chủ nhật là CUỐI TUẦN — 2 ngày cuối mỗi khối 7 ngày.
+const WEEKDAY_NAMES = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật'];
+
+/** Tên thứ trong tuần của ngày chơi (ngày 1 = Thứ 2). */
+export const weekdayOf = (day: number): string => WEEKDAY_NAMES[((day - 1) % 7 + 7) % 7];
+
+/** Ngày chơi tương ứng một ngày trong năm (đảo của dayOfYear) — để lịch cả năm biết ô nào cuối tuần. */
+export const gameDayOfDoy = (doy: number): number =>
+  ((doy - YEAR_OFFSET) % YEAR_DAYS + YEAR_DAYS) % YEAR_DAYS + 1;
+
+/** Ngày cuối tuần (Thứ 7/Chủ nhật) — cửa sổ biến thể nhiệm vụ weekend. */
+export const isWeekend = (day: number): boolean => {
+  const i = ((day - 1) % 7 + 7) % 7;
+  return i === 5 || i === 6;
+};
 
 export function festivalOn(day: number): Festival | undefined {
   const d = dayOfYear(day);
@@ -144,9 +166,12 @@ export function marketEventNear(seed: number, day: number, level: number): Marke
   if (roll(seed, block, 3) > 0.5) return undefined;
   const from = block * BLOCK + 2;
   const kinds: MarketKind[] = ['shortage', 'glut', 'viral', 'roadworks'];
-  const kind = kinds[Math.floor(roll(seed, block, 5) * kinds.length)];
+  // GĐ269 — salt chọn kind/sản phẩm biến thiên theo khối: salt cố định khiến roll CHỌN tương quan
+  // roll GATE (cùng cặp seed, block) — đo thực tế: viral/roadworks ~115, shortage/glut ~12 (khan hiếm
+  // 10×); hai loại thú vị nhất về kinh tế gần như không bao giờ ra. Salt theo khối → đều nhau.
+  const kind = kinds[Math.floor(roll(seed, block, 1009 + block * 7) * kinds.length)];
   const pool = PRODUCTS.filter((p) => p.unlock <= level);
-  const productId = kind === 'roadworks' ? undefined : pool[Math.floor(roll(seed, block, 11) * pool.length)].id;
+  const productId = kind === 'roadworks' ? undefined : pool[Math.floor(roll(seed, block, 2003 + block * 11) * pool.length)].id;
   const text = MARKET_TEXT[kind];
   return { kind, icon: text.icon, label: text.label(productId ? productById(productId).name : ''), productId, from, to: from + 2 };
 }
@@ -204,4 +229,12 @@ export function morningNews(seed: number, day: number, level: number): string[] 
   if (m && day === m.from) out.push(`${m.icon} ${m.label} (3 ngày)`);
   if (m && day === m.from - 1) out.push(`${m.icon} Ngày mai: ${m.label}`);
   return out;
+}
+
+/** Số ngày còn lại của tháng dương lịch hiện tại (tính cả ngày hôm nay). */
+export function daysRemainingInMonth(day: number): number {
+  const doy = dayOfYear(day);
+  const { month, day: d } = dateOfDoy(doy);
+  const len = MONTH_LENGTHS[month - 1];
+  return Math.max(1, len - d + 1);
 }

@@ -21,8 +21,8 @@ export interface ItemDayRecord {
   lost: number;
 }
 
-/** Cờ kinh doanh của một ngày, để đo tác động combo/giờ vàng về sau. */
-export interface DayFlag { combo: boolean; happyHour: boolean }
+/** Cờ kinh doanh của một ngày, để đo tác động combo/giờ vàng/quảng cáo về sau. */
+export interface DayFlag { combo: boolean; happyHour: boolean; ads?: boolean }
 
 export interface AnalyticsState {
   /** Sổ theo món: id → các dòng cũ trước mới sau, tối đa 30 ngày. */
@@ -187,10 +187,41 @@ export function analyticsAdvice(
 /** Tác động combo / giờ vàng: doanh thu & lời trung bình ngày có chạy so với ngày không. */
 export interface PromoEffect { withAvg: number; withoutAvg: number; withDays: number; withoutDays: number }
 
+/**
+ * GĐ123 — "Kệ cần chú ý": chọn 2–3 món ĐANG GẶP RẮC RỐI nhất từ bảng sức khoẻ để trình bày ngay ở
+ * Sổ đầu ngày dưới dạng việc cần làm (bấm mở sổ phân tích). Mỗi món chỉ trả DÒNG CẤP CAO NHẤT
+ * (một lý do gọn, không lặp) — mồi tối ưu hàng cho người chơi cấp cao, nơi bán hàng đã auto.
+ * Thuần đọc — không đổi state/kinh tế/save/quest (đúng ĐỊNH HƯỚNG chiều sâu: làm nổi dữ liệu
+ * analytics có sẵn thay vì thêm hệ thống mới).
+ */
+export interface ShelfAttention {
+  /** product id của món cần chú ý (để dòng bấm mở đúng món trong sổ). */
+  id: string;
+  icon: string;
+  /** Lời gọn nhất (một dòng) cho món này. */
+  text: string;
+}
+
+export function shelfAttention(list: ItemHealth[], max = 3): ShelfAttention[] {
+  const out: ShelfAttention[] = [];
+  for (const h of list) {
+    if (out.length >= max) break;
+    // Ưu tiên: sắp cạn hàng (mất doanh ngay) > lỗ 3 tuần kéo dài (đang đốt vốn) > khách tìm không mua được.
+    if (h.dailyQty > 0 && h.daysLeft !== null && h.daysLeft > 0 && h.daysLeft <= 1.5) {
+      out.push({ id: h.id, icon: '📦', text: `${h.name}: còn ~${h.daysLeft.toFixed(1)} ngày là cạn hàng` });
+    } else if (h.profit21 < 0 && h.qty30 > 5) {
+      out.push({ id: h.id, icon: '🪦', text: `${h.name}: 3 tuần lỗ ${Math.round(-h.profit21).toLocaleString('vi-VN')}đ — cân nhắc bỏ` });
+    } else if (h.lostShare > 0.3 && h.qty30 > 5) {
+      out.push({ id: h.id, icon: '🚶', text: `${h.name}: ${Math.round(h.lostShare * 100)}% lượt tìm không mua được — bày đầy kệ hơn` });
+    }
+  }
+  return out;
+}
+
 export function promoEffect(
   a: AnalyticsState,
   history: { day: number; profit: number; revenue: number }[],
-  kind: 'combo' | 'happyHour',
+  kind: 'combo' | 'happyHour' | 'ads',
 ): PromoEffect | null {
   const withDays: number[] = [];
   const withoutDays: number[] = [];

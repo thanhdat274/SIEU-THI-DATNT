@@ -1,3 +1,4 @@
+import { simRng } from '../core/rand';
 /**
  * Dịch vụ ở quầy: không cần kệ, mua thiết bị một lần là mở. Khách dịch vụ đi thẳng tới quầy,
  * lãi mỗi lượt ít nhưng hay tiện tay mua kèm vài món.
@@ -27,7 +28,7 @@ export const SERVICE_BUY_ALONG = 0.45;
 export const BILL_RUSH_DAYS = 5;
 export const MONTH_DAYS = 30;
 
-const pick = <T,>(xs: T[]) => xs[Math.floor(Math.random() * xs.length)];
+const pick = <T,>(xs: T[]) => xs[Math.floor(simRng()() * xs.length)];
 
 export const SERVICES: ServiceDef[] = [
   {
@@ -54,7 +55,7 @@ export const SERVICES: ServiceDef[] = [
     fee: () => {
       const amount = 20000; // khách điển hình mua ~20k vé số
       // 0.5% khách trúng giải, tiệm phải trả 400k — nhịp lời đều nhưng có ngày "xịt"
-      return Math.random() < 0.005
+      return simRng()() < 0.005
         ? { amount, fee: -400000 }
         : { amount, fee: 3000 };
     },

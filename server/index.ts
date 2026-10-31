@@ -14,7 +14,11 @@ import { MongoClient, type Collection } from 'mongodb';
 import { cert, initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { WebSocketServer, type WebSocket } from 'ws';
-import { MAX_MEMBERS, handOffPlan, isValidCheckpoint, newAlleyCode, releaseLocksFor, tryLock } from './room';
+import {
+  ALLEY_SWEEP_MS, BUCKET_MAX, MAX_MEMBERS, handOffPlan, invalidSaveReason, isValidCheckpoint, newAlleyCode,
+  newWsRate, nextOwner, pruneBuckets, releaseLocksFor, sweepStaleAlleys, takeToken, tryLock, wsAllow,
+  type TokenBucket,
+} from './room';
 
 config({ path: resolve(dirname(fileURLToPath(import.meta.url)), '.env') });
 const env = process.env;
@@ -92,11 +96,48 @@ app.use('/api', async (req, res, next) => {
   next();
 });
 
+// Giới hạn tần suất REST theo uid (đã xác thực mới đếm; DEV_AUTH_BYPASS cũng bị limit theo uid giả của nó).
+// Mỗi uid một xô token: gửi dồn được REST_BURST request, sau đó nạp đều REST_RATE request/phút.
+// Các route /api/* dùng chung một xô — đủ để chặn spam cho kỳ này.
+const restBuckets = new Map<string, TokenBucket>();
+app.use('/api', (_req, res, next) => {
+  const { uid } = res.locals.account as Account;
+  const r = takeToken(restBuckets, uid, Date.now());
+  if (!r.ok) {
+    res.setHeader('Retry-After', String(r.retryAfter));
+    return void res.status(429).json({ error: `Bạn gửi yêu cầu quá nhanh, đợi ${r.retryAfter} giây rồi thử lại.` });
+  }
+  if (restBuckets.size > BUCKET_MAX) pruneBuckets(restBuckets, Date.now());
+  next();
+});
+
+/**
+ * Ghi log MỌI request /api/* — method, uid, đường dẫn, mã trạng thái, thời gian xử lý (ms).
+ * Gắn vào `res` sẵn để đọc được `res.locals` (uid đã xác thực) và status khi phản hồi xong.
+ * Giúp dò: request nào chậm (load bản lưu), request nào bị 400/409/429/500, ai đang gửi gì.
+ */
+app.use('/api', (req, res, next) => {
+  const started = Date.now();
+  const uid = (res.locals.account as Account | undefined)?.uid;
+  res.on('finish', () => {
+    const ms = Date.now() - started;
+    const slow = ms >= 1000 ? ` ⚠️ ${(ms / 1000).toFixed(1)}s` : ` ${ms}ms`;
+    console.log(`[api] ${req.method} ${req.originalUrl} uid=${uid ?? '-'} -> ${res.statusCode}${slow}`);
+  });
+  next();
+});
+
 const summary = (s: CloudSave) => ({ updatedAt: s.updatedAt, day: s.day, level: s.level, money: s.money });
 
 app.get('/api/save', async (_req, res) => {
-  const doc = await (await savesCollection()).findOne({ _id: (res.locals.account as Account).uid });
-  if (!doc) return void res.status(404).json({ error: 'Chưa có bản lưu.' });
+  const uid = (res.locals.account as Account).uid;
+  const t0 = Date.now();
+  const doc = await (await savesCollection()).findOne({ _id: uid });
+  if (!doc) {
+    console.log(`[api] GET /api/save uid=${uid} -> 404 chưa có bản lưu (${Date.now() - t0}ms)`);
+    return void res.status(404).json({ error: 'Chưa có bản lưu.' });
+  }
+  console.log(`[api] GET /api/save uid=${uid} -> 200 bản ${summary(doc).day}/cấp ${summary(doc).level}, data ${JSON.stringify(doc.data).length} ký tự (${Date.now() - t0}ms)`);
   res.json({ data: doc.data, ...summary(doc) });
 });
 
@@ -107,27 +148,36 @@ app.get('/api/save', async (_req, res) => {
 app.put('/api/save', async (req, res) => {
   const { uid } = res.locals.account as Account;
   const { data, expectedUpdatedAt, force } = req.body ?? {};
-  if (!data || typeof data !== 'object' || typeof data.day !== 'number' || typeof data.money !== 'number') {
-    return void res.status(400).json({ error: 'Bản lưu không hợp lệ.' });
+  // Kiểm tra dữ liệu trước, kể cả khi force: force chỉ được bỏ qua xung đột ghi, không bỏ qua validate
+  const bad = invalidSaveReason(data);
+  if (bad) {
+    console.log(`[api] PUT /api/save uid=${uid} -> 400 lỗi dữ liệu: ${bad} (force=${Boolean(force)})`);
+    return void res.status(400).json({ error: bad });
   }
   const coll = await savesCollection();
   const doc: CloudSave = { _id: uid, data, updatedAt: new Date().toISOString(), day: data.day, level: data.level, money: data.money };
   if (force) {
     await coll.replaceOne({ _id: uid }, doc, { upsert: true });
+    console.log(`[api] PUT /api/save uid=${uid} -> 200 force ghi đè, ngày ${doc.day}/cấp ${doc.level}`);
   } else if (expectedUpdatedAt == null) {
     try {
       await coll.insertOne(doc);
     } catch (err) {
       if ((err as { code?: number }).code !== 11000) throw err;
       const cur = await coll.findOne({ _id: uid });
+      console.log(`[api] PUT /api/save uid=${uid} -> 409 đã có bản cloud (tạo mới nhưng trùng); cloud ${cur && summary(cur).updatedAt} ${cur ? `ngày ${cur.day}` : ''} vs client xin ghi ${doc.updatedAt}`);
       return void res.status(409).json({ error: 'Đã có bản lưu cloud khác.', cloud: cur && summary(cur) });
     }
+    console.log(`[api] PUT /api/save uid=${uid} -> 200 tạo bản mới, ngày ${doc.day}/cấp ${doc.level}`);
   } else {
     const r = await coll.replaceOne({ _id: uid, updatedAt: String(expectedUpdatedAt) }, doc);
     if (r.matchedCount === 0) {
       const cur = await coll.findOne({ _id: uid });
+      const curAt = cur?.updatedAt ?? '(không có cloud)';
+      console.log(`[api] PUT /api/save uid=${uid} -> 409 XUNG ĐỘT: cloud=${curAt} != máy kỳ vọng=${expectedUpdatedAt} (force=${Boolean(force)}); máy gửi ngày ${doc.day}/cấp ${doc.level}, cloud ${cur ? `ngày ${cur.day}/cấp ${cur.level}/tiền ${cur.money}` : ''}`);
       return void res.status(409).json({ error: 'Bản lưu cloud đã thay đổi từ máy khác.', cloud: cur && summary(cur) });
     }
+    console.log(`[api] PUT /api/save uid=${uid} -> 200 ghi ${doc.updatedAt} (kỳ vọng ${expectedUpdatedAt}), ngày ${doc.day}/cấp ${doc.level}`);
   }
   res.json(summary(doc));
 });
@@ -142,6 +192,8 @@ app.put('/api/save', async (req, res) => {
 interface Member { uid: string; name: string }
 interface Alley {
   _id: string; name: string; owner: string; members: Member[];
+  /** Lần cuối hẻm có hoạt động (peer vào/tin nhắn/ghi tiến trình) — dùng cho TTL dọn hẻm bỏ hoang. */
+  lastActive?: number;
   data: Record<string, unknown> | null; updatedAt: string; day: number; level: number; money: number;
 }
 let alleys: Collection<Alley> | null = null;
@@ -170,7 +222,7 @@ app.post('/api/alleys', async (req, res) => {
   const title = String(req.body?.name ?? '').trim().slice(0, 30) || `Hẻm của ${name}`;
   for (let i = 0; i < 5; i++) {
     const doc: Alley = {
-      _id: newAlleyCode(), name: title, owner: uid, members: [{ uid, name }],
+      _id: newAlleyCode(), name: title, owner: uid, members: [{ uid, name }], lastActive: Date.now(),
       data: null, updatedAt: new Date().toISOString(), day: 1, level: 1, money: 0,
     };
     try {
@@ -204,9 +256,26 @@ app.post('/api/alleys/:id/leave', async (req, res) => {
   const { uid } = res.locals.account as Account;
   const id = String(req.params.id).toUpperCase();
   const coll = await alleyCollection();
+  const alley = await coll.findOne({ _id: id });
+  if (!alley) return void res.json({ ok: true });
+  const wasOwner = alley.owner === uid;
   await coll.updateOne({ _id: id }, { $pull: { members: { uid } } });
   // Không còn thành viên nào thì xoá hẻm
   await coll.deleteOne({ _id: id, members: { $size: 0 } });
+  if (wasOwner) {
+    // Chủ hẻm rời mà còn người: thành viên vào sớm nhất kế nhiệm (role máy chạy/ready của từng máy
+    // đang online là trạng thái phiên nên giữ nguyên). Không có người còn lại thì hẻm đã bị xoá ở trên.
+    const next = nextOwner(alley.members, uid);
+    if (next) {
+      await coll.updateOne({ _id: id }, { $set: { owner: next } });
+      const room = online.get(id);
+      if (room) {
+        const ownerName = alley.members.find((m) => m.uid === uid)?.name ?? 'Chủ hẻm';
+        const nextName = alley.members.find((m) => m.uid === next)?.name ?? '';
+        broadcast(room, { type: 'sys', text: `👑 ${ownerName} đã rời hẻm, ${nextName} giờ là chủ hẻm` });
+      }
+    }
+  }
   res.json({ ok: true });
 });
 
@@ -216,8 +285,8 @@ app.use(((err, _req, res, _next) => {
 }) as express.ErrorRequestHandler);
 
 /** `visible`: tab đang mở trên màn hình (trình duyệt dừng chạy game khi tab bị ẩn). */
-interface Peer { id: number; ws: WebSocket; uid: string; name: string; visible: boolean }
-interface Room { peers: Map<number, Peer>; runner: number | null; locks: Map<string, number> }
+interface Peer { id: number; ws: WebSocket; uid: string; name: string; visible: boolean; ready: boolean; isAlive: boolean }
+interface Room { peers: Map<number, Peer>; runner: number | null; locks: Map<string, number>; lastActive: number }
 /** Hẻm đang có người online. */
 const online = new Map<string, Room>();
 let nextPeerId = 1;
@@ -237,7 +306,7 @@ const broadcastLocks = (room: Room, started?: string) => broadcast(room, {
  */
 function handOff(room: Room, reason: 'left' | 'hidden', oldName: string) {
   const plan = handOffPlan(
-    [...room.peers.values()].map((p) => ({ id: p.id, name: p.name, visible: p.visible })),
+    [...room.peers.values()].map((p) => ({ id: p.id, name: p.name, visible: p.visible, ready: p.ready })),
     room.runner,
     reason,
     oldName,
@@ -253,7 +322,7 @@ async function saveCheckpoint(alleyId: string, data: unknown) {
   if (!isValidCheckpoint(data)) return;
   const d = data as { day: number; money: number; level?: unknown };
   await (await alleyCollection()).updateOne({ _id: alleyId }, {
-    $set: { data: d, updatedAt: new Date().toISOString(), day: d.day, level: Number(d.level) || 1, money: d.money },
+    $set: { data: d, lastActive: Date.now(), updatedAt: new Date().toISOString(), day: d.day, level: Number(d.level) || 1, money: d.money },
   });
 }
 
@@ -264,9 +333,17 @@ wss.on('connection', (ws) => {
   let peer: Peer | null = null;
   let alleyId = '';
   let entering = false;
+  // Mỗi kết nối một bộ đếm riêng: flood tin sẽ bị bỏ hoặc ngắt kết nối.
+  // Heartbeat ping/pong của thư viện ws chạy ở tầng khung, không bị limit.
+  const rate = newWsRate();
+  ws.on('pong', () => { if (peer) peer.isAlive = true; });
   ws.on('message', async (raw) => {
     let msg: { type?: string; [k: string]: unknown };
     try { msg = JSON.parse(String(raw)); } catch { return; }
+    // Chặn flood: tin vượt hạn mức bị bỏ; vi phạm đủ 3 lần trong 30s thì ngắt luôn kết nối
+    const verdict = wsAllow(rate, String(msg.type ?? ''), Date.now());
+    if (verdict === 'drop') return;
+    if (verdict === 'terminate') return void ws.terminate();
     if (!peer) {
       // Tin nhắn đầu tiên: vào hẻm (phải đăng nhập và là thành viên)
       if (msg.type !== 'enter' || entering) return;
@@ -278,27 +355,35 @@ wss.on('connection', (ws) => {
       if (!alley || !alley.members.some((m) => m.uid === account.uid)) {
         return void send(ws, { type: 'error', error: 'Bạn chưa là thành viên của hẻm này.' });
       }
-      const room: Room = online.get(alleyId) ?? { peers: new Map(), runner: null, locks: new Map() };
+      const room: Room = online.get(alleyId) ?? { peers: new Map(), runner: null, locks: new Map(), lastActive: Date.now() };
       if (room.peers.size >= MAX_MEMBERS) return void send(ws, { type: 'error', error: 'Hẻm đang đủ người online.' });
       online.set(alleyId, room);
-      peer = { id: nextPeerId++, ws, uid: account.uid, name: account.name, visible: msg.visible !== false };
+      // Người online đầu tiên làm máy chạy (đã có trạng thái tiệm từ server nên ready ngay);
+      // người vào sau phải nhận trạng thái đầu tiên từ máy chạy rồi mới được bầu làm máy chạy.
+      const firstRunner = room.runner == null;
+      peer = { id: nextPeerId++, ws, uid: account.uid, name: account.name, visible: msg.visible !== false, ready: firstRunner, isAlive: true };
       room.peers.set(peer.id, peer);
-      const runner = room.runner == null;
-      if (runner) room.runner = peer.id;
+      room.lastActive = Date.now();
+      if (firstRunner) room.runner = peer.id;
       send(ws, {
         // Phòng trong nhà chung: theo thứ tự vào hẻm
-        type: 'welcome', selfId: peer.id, room: Math.max(0, alley.members.findIndex((m) => m.uid === account.uid)), role: runner ? 'runner' : 'player',
+        type: 'welcome', selfId: peer.id, room: Math.max(0, alley.members.findIndex((m) => m.uid === account.uid)), role: firstRunner ? 'runner' : 'player',
         alley: { id: alley._id, name: alley.name }, peers: peerList(room),
         // Máy chạy nạp tiến trình từ server; người khác chờ trạng thái từ máy chạy
-        data: runner ? alley.data : undefined,
+        data: firstRunner ? alley.data : undefined,
       });
       broadcast(room, { type: 'peers', peers: peerList(room), joined: peer.name }, peer.id);
       return;
     }
     const room = online.get(alleyId);
     if (!room) return;
+    room.lastActive = Date.now(); // hẻm còn hoạt động: đánh dấu để TTL dọn hẻm không xoá oan
     const isRunner = room.runner === peer.id;
     switch (msg.type) {
+      case 'ready':
+        // Người không chạy báo đã nhận trạng thái tiệm đầu tiên → giờ mới được bầu làm máy chạy
+        peer.ready = true;
+        break;
       case 'pose':
         broadcast(room, { type: 'pose', from: peer.id, pose: msg.pose, look: String(msg.look ?? '').slice(0, 32) }, peer.id);
         break;
@@ -331,7 +416,7 @@ wss.on('connection', (ws) => {
         break;
       }
       case 'state':
-        if (isRunner) broadcast(room, { type: 'state', game: msg.game, actors: msg.actors }, peer.id);
+        if (isRunner) broadcast(room, { type: 'state', game: msg.game, actors: msg.actors, ask: msg.ask ?? null }, peer.id);
         break;
       case 'notify':
         if (isRunner) broadcast(room, { type: 'notify', text: msg.text }, peer.id);
@@ -341,12 +426,18 @@ wss.on('connection', (ws) => {
         break;
     }
   });
-  ws.on('close', () => {
+  ws.on('close', async () => {
     if (!peer) return;
     const room = online.get(alleyId);
     if (!room) return;
     room.peers.delete(peer.id);
-    if (!room.peers.size) return void online.delete(alleyId);
+    if (!room.peers.size) {
+      online.delete(alleyId);
+      // Người cuối cùng vừa rời: ghi lại thời điểm hẻm ngừng hoạt động, TTL dọn hẻm dựa vào đây
+      await (await alleyCollection()).updateOne({ _id: alleyId }, { $set: { lastActive: room.lastActive } })
+        .catch((err) => console.error('[alley]', err));
+      return;
+    }
     // Người rời đi thì nhả khoá đang giữ
     if (releaseLocksFor(room.locks, peer.id).length) broadcastLocks(room);
     if (room.runner === peer.id) {
@@ -364,5 +455,33 @@ if (existsSync(dist)) {
   app.use(express.static(dist));
   app.get(/^(?!\/api|\/ws).*/, (_req, res) => res.sendFile(resolve(dist, 'index.html')));
 }
+
+// Heartbeat: quét định kỳ, terminate kết nối "chết im lặng" (mất Wi-Fi/mobile không gửi FIN/RST).
+// Nếu không có, một peer chết nằm mãi trong room; nếu đó là máy chạy thì cả hẻm đứng vĩnh viễn.
+const heartbeat = setInterval(() => {
+  for (const ws of wss.clients) {
+    const alive = (ws as unknown as { isAlive?: boolean }).isAlive;
+    if (alive === false) { ws.terminate(); continue; }
+    (ws as unknown as { isAlive?: boolean }).isAlive = false;
+    ws.ping();
+  }
+}, 30_000);
+heartbeat.unref?.();
+
+// Dọn hẻm bỏ hoang: 30 phút/lần, xoá khỏi store các hẻm đã rỗng thành viên và im lặng quá 48h
+// (tiêu chí trong sweepStaleAlleys — room.ts). unref() để interval không giữ tiến trình sống.
+const alleySweep = setInterval(async () => {
+  try {
+    const coll = await alleyCollection();
+    const docs = await coll.find({}, { projection: { _id: 1, members: 1, lastActive: 1, updatedAt: 1 } }).toArray();
+    const stale = sweepStaleAlleys(docs, Date.now());
+    if (!stale.length) return;
+    await coll.deleteMany({ _id: { $in: stale } });
+    console.log(`[alley] Đã dọn ${stale.length} hẻm bỏ hoang: ${stale.join(', ')}`);
+  } catch (err) {
+    console.error('[alley] Quét dọn hẻm lỗi', err);
+  }
+}, ALLEY_SWEEP_MS);
+alleySweep.unref?.();
 
 server.listen(PORT, () => console.log(`[server] http://localhost:${PORT}  (lưu cloud + hẻm online)`));

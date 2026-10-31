@@ -1,3 +1,4 @@
+import { simRng } from '../core/rand';
 /** Thời tiết mỗi ngày: đổi cảnh (mưa, mây, sương) và số khách ra đường. */
 export type Weather = 'sunny' | 'cloudy' | 'rain' | 'storm' | 'fog';
 
@@ -41,7 +42,7 @@ function hash01(seed: number, day: number, channel: number): number {
 }
 
 export function newWeatherSeed(): number {
-  return Math.floor(Math.random() * 4294967296);
+  return Math.floor(simRng()() * 4294967296);
 }
 
 /** Thời tiết của ngày `day` khi hôm trước là `prev`. Cố định theo hạt giống nên dự báo luôn đúng. */

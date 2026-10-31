@@ -1,0 +1,5 @@
+# Archive GĐ311, 316, 319
+
+- **GĐ319:** 🧭 Panel Nhập hàng ngày 1 gọn lại (theo QA GĐ318): ẩn khối Mối quen, Dự báo, Tuần này khách săn khi `day <= 1` (hiện từ ngày 2) — chỉ còn gợi ý nhập, "cần nhập gấp", lô chợ phiên. Kiểm tra mắt trên save sạch 127.0.0.1:5173: 3 khối biến mất, danh sách nhập vẫn đủ.
+- **GĐ316:** 🔕 Đo thông báo ngày đầu đúng người chơi thật: không đếm 📜/🎯 (phản hồi cú bấm nhận thưởng, bot nhận dồn 7 cái một lượt). Đo 11–14; trần 20 → 15. GĐ315 in danh sách thông báo để truy vết. Còn lại ≤10: dồn thông báo lên cấp liền nhau.
+- **GĐ311:** 💰 Đo lại tỉ số (nhiệm vụ+kèo)/lãi bán hàng thật (4 lần chạy): cấp 5 **1,7–2,0**, cấp 10 **1,4–2,0**, cấp 20 **0,94–1,53** (trước: 3,6/1,7/1,2) — thưởng không còn lấn lãi bán hàng rõ rệt, cấp 20 có lúc ≤1. Trần test hạ 5/3/2 → 3/2,5/1,8 (thử 4/2,2/1,4 thì đỏ do nhiễu mô phỏng, nên đặt theo đỉnh dải + đệm). Chưa đổi công thức kinh tế. Mục tiêu ≤1 còn ở cấp 5/10: cần giảm thưởng nhiệm vụ cấp thấp hoặc tăng lãi gộp — để Game Designer cân nhắc, đo trước/sau.

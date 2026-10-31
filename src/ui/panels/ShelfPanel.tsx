@@ -4,6 +4,7 @@ import { useGame } from '../../core/store';
 import { furnitureDef } from '../../data/furniture';
 import { CATEGORIES, formatMoney, unlockedProducts } from '../../data/products';
 import { repairCost, RISK_RULES, wears } from '../../data/risks';
+import { wearRisk } from '../../data/wearRisk';
 import { LifeBadge, Footer, styles } from './shared';
 
 export function ShelfPanel({ uid }: { uid: number }) {
@@ -75,11 +76,28 @@ export function WearRow({ uid }: { uid: number }) {
     <div style={{ ...styles.card, gap: 10, marginBottom: 8, outline: f.broken ? '2px solid #e74c3c' : undefined }}>
       <span>{f.broken ? '❌ Đang hỏng: khách không lấy được hàng' : `🔧 Độ mòn ${wear}%`}</span>
       <div style={{ flex: 1, height: 6, background: '#555', borderRadius: 3 }}>
-        <div style={{ width: `${wear}%`, height: '100%', borderRadius: 3, background: wear >= RISK_RULES.wear.breakFrom ? '#e74c3c' : '#f39c12' }} />
+        <div style={{ width: `${wear}%`, height: '100%', borderRadius: 3, background: wear >= RISK_RULES.wear.breakFrom ? '#e74c3c' : '#e67e22' }} />
       </div>
       <button style={styles.btn} disabled={!canService} title={canService ? '' : `Mòn từ ${RISK_RULES.wear.serviceFrom}% mới cần bảo trì`} onClick={() => repairFurniture(uid)}>
         {f.broken ? 'Sửa' : 'Bảo trì'} {formatMoney(repairCost(f.type))}
       </button>
+      {(() => {
+        const wr = wearRisk(f.type, wear, !!f.broken);
+        if (wr.broken) {
+          return <div style={{ width: '100%', fontSize: 12, color: '#e74c3c' }}>❌ Kệ hỏng — khách không lấy được hàng ở đây. Sửa ngay tốn {formatMoney(wr.repairCost)}.</div>;
+        }
+        if (wr.verdict === 'danger') {
+          return (
+            <div style={{ width: '100%', fontSize: 12, color: '#e67e22' }}>
+              ⚠️ Nguy cơ hỏng đêm nay ~{Math.round(wr.breakChance * 100)}% — rủi ro tiền sửa ~{formatMoney(wr.expectedRepairExposure)}/đêm; nên sửa/làm bảo trì sớm.
+            </div>
+          );
+        }
+        if (wr.serviceable) {
+          return <div style={{ width: '100%', fontSize: 12, color: '#f1c40f' }}>🔧 Đủ điều kiện bảo trì (mòn ≥ {RISK_RULES.wear.serviceFrom}%) — làm sớm là về trắng {formatMoney(wr.repairCost)}, phòng hỏng.</div>;
+        }
+        return null;
+      })()}
     </div>
   );
 }

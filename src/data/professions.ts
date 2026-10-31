@@ -1,4 +1,5 @@
 import type { CharacterArchetype, PropKind } from '../render/characterModel';
+import { simRng } from '../core/rand';
 
 /** Nghề của khách vãng lai: quyết định ngoại hình, giờ hay ghé và thói quen mua hàng. */
 export interface ProfessionDef {
@@ -110,7 +111,7 @@ export const PROFESSIONS: ProfessionDef[] = [
   {
     id: 'barista', name: 'Pha chế quán nước', icon: '☕', archetype: 'barista',
     hours: [h(6, 9), h(13, 15.5), h(19, 22)],
-    likes: ['sua', 'x_sua_dac', 'caphe', 'x_ca_phe_lon', 'x_tra_xanh', 'duong', 'x_duong', 'sinhto'],
+    likes: ['sua', 'x_sua_dac', 'caphe', 'x_ca_phe_lon', 'x_tra_xanh', 'x_duong', 'sinhto'],
     loyalty: 0.7, extraItems: 0, sensitivity: 1, patience: 1,
   },
   {
@@ -132,19 +133,19 @@ export const PROFESSIONS: ProfessionDef[] = [
   {
     id: 'student_highschool', name: 'Học sinh cấp 3', icon: '🎒', archetype: 'student_boy',
     hours: [h(11, 11.5), h(15, 17.5)],
-    likes: ['banh', 'bimbim', 'ngot', 'nuoc', 'x_chuoi', 'x_tra_sua', 'x_phomai', 'che_dau_xanh', 'banh_trang_tron', 'tra_sua', 'ca_vien_chien'],
+    likes: ['banh', 'bimbim', 'ngot', 'nuoc', 'x_chuoi', 'che_dau_xanh', 'banh_trang_tron', 'tra_sua', 'ca_vien_chien'],
     loyalty: 0.8, extraItems: 0, sensitivity: 1.4, patience: 1.0,
   },
   {
     id: 'student_college', name: 'Sinh viên', icon: '📚', archetype: 'coder_guy',
     hours: [h(18, 22), h(13, 15)],
-    likes: ['caphe', 'x_ca_phe_lon', 'mi', 'nuoc', 'bimbim', 'x_tra_sua', 'x_revive_chai', 'tra_sua', 'mi_trung_nong', 'ca_phe_sua_da', 'ca_vien_chien'],
+    likes: ['caphe', 'x_ca_phe_lon', 'mi', 'nuoc', 'bimbim', 'x_revive_chai', 'tra_sua', 'mi_trung_nong', 'ca_phe_sua_da', 'ca_vien_chien'],
     loyalty: 0.75, extraItems: 0, sensitivity: 1.2, patience: 1.3,
   },
   {
     id: 'influencer', name: 'Influencer', icon: '📱', archetype: 'influencer',
     hours: [h(9, 12), h(15, 18)],
-    likes: ['x_tra_sua', 'x_tra_xanh', 'traicay', 'sinhto', 'x_phomai', 'banh', 'tra_dao_cam_sa', 'kem_trai_cay', 'tra_sua'],
+    likes: ['x_tra_xanh', 'traicay', 'sinhto', 'banh', 'tra_dao_cam_sa', 'kem_trai_cay', 'tra_sua'],
     loyalty: 0.6, extraItems: 1, sensitivity: 0.5, patience: 1.5,
   },
   {
@@ -192,7 +193,7 @@ export const PROFESSIONS: ProfessionDef[] = [
   {
     id: 'monk', name: 'Sư thầy', icon: '🙏', archetype: 'monk',
     hours: [h(4.5, 7), h(15, 17)],
-    likes: ['tra', 'x_tra_xanh', 'chuoi', 'traicay', 'suachua', 'x_yakult'],
+    likes: ['tra', 'x_tra_xanh', 'traicay', 'suachua', 'x_yakult'],
     loyalty: 0.85, extraItems: 0, sensitivity: 0.5, patience: 2.0,
   },
   {
@@ -234,7 +235,7 @@ export const PROFESSIONS: ProfessionDef[] = [
   {
     id: 'senior_citizen', name: 'Cụ già dân hẻm', icon: '👵', archetype: 'elder_woman',
     hours: [h(6, 9), h(15, 17)],
-    likes: ['gao', 'mi', 'duong', 'sua', 'nuoc', 'banh', 'x_tra_da', 'che_dau_xanh', 'xoi_dau_xanh', 'tra_gung_nong'],
+    likes: ['gao', 'mi', 'sua', 'nuoc', 'banh', 'x_tra_da', 'che_dau_xanh', 'xoi_dau_xanh', 'tra_gung_nong'],
     loyalty: 0.9, extraItems: 1, sensitivity: 1.5, patience: 1.6,
   },
   // ───── Nghề ca đêm: chỉ gặp khi tiệm mở cửa 24h (khung giờ sau nửa đêm) ─────
@@ -283,9 +284,9 @@ const inHours = (p: ProfessionDef, minutes: number) => p.hours.some(([a, b]) => 
 /** Chọn nghề cho khách vãng lai: nghề đang giờ ghé được ưu tiên gấp 4 lần. */
 /** `boosted`: nghề đang được quảng cáo nhắm tới, hay ghé gấp 3. */
 export function pickProfession(minutes: number, boosted: string[] = []): ProfessionDef | null {
-  if (Math.random() > PROFESSION_SHARE * (boosted.length ? 1.3 : 1)) return null;
+  if (simRng()() > PROFESSION_SHARE * (boosted.length ? 1.3 : 1)) return null;
   const weights = PROFESSIONS.map((p) => (inHours(p, minutes) ? 4 : 0.5) * (boosted.includes(p.id) ? 3 : 1));
-  let roll = Math.random() * weights.reduce((a, b) => a + b, 0);
+  let roll = simRng()() * weights.reduce((a, b) => a + b, 0);
   for (let i = 0; i < PROFESSIONS.length; i++) {
     roll -= weights[i];
     if (roll <= 0) return PROFESSIONS[i];

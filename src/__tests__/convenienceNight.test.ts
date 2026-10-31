@@ -58,6 +58,8 @@ describe('nhóm khách đêm', () => {
   });
 
   it('chi nhánh ghi nhận khách theo nhóm khi chạy ban đêm', () => {
+    // Cố định Math.random để có khách vào mỗi bước 10 phút (xác định, khỏi flake) — cùng kiểu dòng giao đêm.
+    vi.spyOn(Math, 'random').mockReturnValue(0.2);
     const b = newBranch();
     b.open = true;
     b.shelf = { mi: 40, nuoc: 40, bia: 40, x_ca_phe_lon: 40, x_thuoc_cam: 40 };

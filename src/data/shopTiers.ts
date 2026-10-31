@@ -1,3 +1,5 @@
+import { FURNITURE, type FurnitureType } from './furniture';
+
 /** Các mốc mở rộng tiệm: tiệm nhỏ → siêu thị. */
 export interface ShopTier {
   name: string;
@@ -29,6 +31,23 @@ export const SHOP_CENTER_X = 4;
  * Nhẹ ở tiệm nhỏ, đáng kể khi lên siêu thị (20k → 50k → 140k → 290k → 500k).
  */
 export const rentOf = (tier: number) => 20000 + tier * tier * 30000;
+
+/** Mức tăng tiền nhà khi mở từ bậc `fromTier` lên `toTier` — luôn dương khi tăng bậc (tiền nhà tăng vĩnh viễn theo bậc). */
+export const rentDelta = (fromTier: number, toTier: number) => rentOf(toTier) - rentOf(fromTier);
+
+/**
+ * % diện tích sàn bậc `tier` bị nội thất chiếm: tổng rộng×sâu của từng món đã đặt / (rộng×sâu của tiệm), làm tròn.
+ * Thuần đọc để soi sáng thẻ "Mở rộng tiệm" — không dùng trong tính kinh tế. Bậc không tồn tại → 0.
+ */
+export function spaceUsePct(furniture: readonly { type: FurnitureType }[], tier: number): number {
+  const t = SHOP_TIERS[tier];
+  if (!t || t.width <= 0 || t.depth <= 0) return 0;
+  const used = furniture.reduce((sum, f) => {
+    const def = FURNITURE.find((d) => d.type === f.type);
+    return sum + (def ? def.size[0] * def.size[1] : 0);
+  }, 0);
+  return Math.round((used / (t.width * t.depth)) * 100);
+}
 
 /**
  * Chi phí vận hành theo doanh thu (điện, nước, bảo trì): % doanh thu mỗi ngày, trừ ở bảng tổng kết.

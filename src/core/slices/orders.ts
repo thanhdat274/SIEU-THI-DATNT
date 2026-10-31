@@ -9,7 +9,7 @@ import { CANCEL_AFTER_LATE, describeItems, FAST_TIP, fastWindow, houseById, ON_T
 import { type CookingStation, COOKED_PRODUCT_IDS, RECIPE_MAP } from '../../data/recipes';
 import { BARTENDER_SPEED_PER_STAR, bestSkillOnDuty, SHIFTS } from '../../data/staff';
 import { workSpeed } from '../../data/staffTraits';
-import { contractValue, missingForContract, supplyContractById } from '../../data/contracts';
+import { commitBonusValue, commitDeposit, CONTRACT_STREAK_BONUS, contractMilestoneDue, contractValue, missingForContract, reservedMissing, supplyContractById } from '../../data/contracts';
 import { describeRep, meetsRep, reputationOf } from '../../data/reputation';
 import { activeGoals, addSales, goalLocked, goalMet } from '../../data/community';
 import { playSfx } from '../audio';
@@ -89,7 +89,7 @@ export const updatePhones = (set: SetState, get: GetState) => {
   }
 };
 
-export const createOrdersSlice = (set: SetState, get: GetState): Pick<GameState, 'acceptOrder' | 'startCook' | 'declineOrder' | 'answerPhone' | 'restockAndAnswerPhone' | 'declinePhone' | 'deliverPhone' | 'deliverOrder' | 'rushDeliverOrder' | 'communitySale' | 'acceptContract' | 'deliverContract'> => ({
+export const createOrdersSlice = (set: SetState, get: GetState): Pick<GameState, 'acceptOrder' | 'startCook' | 'declineOrder' | 'answerPhone' | 'restockAndAnswerPhone' | 'declinePhone' | 'deliverPhone' | 'deliverOrder' | 'rushDeliverOrder' | 'communitySale' | 'acceptContract' | 'commitContract' | 'releaseContract' | 'deliverContract'> => ({
   acceptOrder: () => {
     const s = get();
     if (!s.order) return;
@@ -184,7 +184,7 @@ export const createOrdersSlice = (set: SetState, get: GetState): Pick<GameState,
     const failed: string[] = [];
     for (const [pid, q] of restockable) if (!get().buy(pid, q)) failed.push(productById(pid).name);
     if (failed.length) {
-      s.notify(`⚠️ Không nhập bù được: ${failed.join(', ')} (hết tiền hoặc kho không đủ chỗ). Vào bảng Kho xử lý rồi quay lại nghe máy`);
+      s.notify(`⚠️ Không nhập bù được: ${failed.join(', ')} (thiếu tiền/chỗ kho)`);
       return false;
     }
     if (missing.length) s.notify(`🛒 Đã nhập bù ${missing.map(([pid, q]) => `${q} ${productById(pid).name}`).join(', ')} (${formatMoney(cost)})`);
@@ -210,7 +210,7 @@ export const createOrdersSlice = (set: SetState, get: GetState): Pick<GameState,
     const cooked = Object.entries(o.items).reduce((n, [id, q]) => n + (COOKED_PRODUCT_IDS.has(id) ? q : 0), 0);
     set({
       phoneOrders: s.phoneOrders.filter((p) => p !== o), phoneOrdersDone: s.phoneOrdersDone + 1, money: s.money + pay,
-      stats: { ...s.stats, revenue: s.stats.revenue + pay, itemsSold: s.stats.itemsSold + items },
+      stats: { ...s.stats, revenue: s.stats.revenue + pay, itemsSold: s.stats.itemsSold + items, cookOrders: (s.stats.cookOrders ?? 0) + (o.premium ? 1 : 0) },
       totals: {
         ...s.totals, revenue: s.totals.revenue + pay, itemsSold: s.totals.itemsSold + items,
         cookedSold: s.totals.cookedSold + cooked,
@@ -219,6 +219,7 @@ export const createOrdersSlice = (set: SetState, get: GetState): Pick<GameState,
     });
     get().addXp(onTime ? 15 + items * 2 : 5);
     get().addReview(onTime ? 5 : 3, onTime ? undefined : 'wait', Object.keys(o.items)[0]);
+    get().recordDiscovery(Object.keys(o.items)); // Sổ tay Tiệm (GĐ36)
     if (o.regular && onTime) get().adjustFriendship(o.regular, PHONE_FRIEND_GAIN);
     s.notify(onTime
       ? `🛵 Giao ${fast ? '⚡ lẹ như chớp' : 'kịp'} cho ${o.caller}: +${formatMoney(pay)} (boa ${formatMoney(tip)})${o.regular ? ` · 💛 +${PHONE_FRIEND_GAIN}` : ''}`
@@ -246,6 +247,7 @@ export const createOrdersSlice = (set: SetState, get: GetState): Pick<GameState,
     get().addXp(def.xp);
     get().addReview(5, undefined, Object.keys(def.items)[0]);
     if (def.regular) get().adjustFriendship(def.regular, STORY_ORDER_FRIEND_GAIN);
+    get().recordDiscovery(Object.keys(def.items)); // Sổ tay Tiệm (GĐ36)
     s.notify(`🎉 Giao xong "${def.title}": +${formatMoney(pay)} · +${def.xp} XP${def.regular ? ` · 💛 +${STORY_ORDER_FRIEND_GAIN} thân thiết với ${def.from}` : ''}`);
     get().checkTitles();
     return true;
@@ -303,30 +305,87 @@ export const createOrdersSlice = (set: SetState, get: GetState): Pick<GameState,
     set({ contracts: { ...s.contracts, [id]: { defId: id, dueDay: s.day + def.periodDays, delivered: 0, pending: true } } });
     s.notify(`📋 Nhận hợp đồng "${def.title}": ${formatMoney(contractValue(def))}/kỳ, giao mỗi ${def.periodDays} ngày`);
   },
+  commitContract: (id) => {
+    const s = get();
+    const def = supplyContractById(id);
+    const cs = s.contracts[id];
+    if (!def || !cs) { s.notify('Hợp đồng không hợp lệ'); return; }
+    if (cs.committed) { s.notify('Kỳ này đã cam kết rồi'); return; }
+    const missing = missingForContract(def, s.storage);
+    if (missing.length) { s.notify(`Kho chưa đủ để cam kết: ${missing.map((m) => `${m.need} ${productById(m.id).name}`).join(', ')}`); return; }
+    const deposit = commitDeposit(def);
+    if (s.money < deposit) { s.notify(`Cần ${formatMoney(deposit)} tiền cọc để cam kết`); return; }
+    const k = copyStock(s);
+    const locked: Record<string, number> = {};
+    for (const [pid, q] of Object.entries(def.items)) { takeStock(k, pid, q); locked[pid] = q; }
+    set({
+      ...k,
+      contracts: { ...s.contracts, [id]: { ...cs, committed: true, locked } },
+      money: s.money - deposit,
+    });
+    s.notify(`🤝 Cam kết "${def.title}": trữ ${Object.values(def.items).reduce((n, q) => n + q, 0)} món, cọc ${formatMoney(deposit)}. Giao đủ hạn +${formatMoney(commitBonusValue(def))}.`);
+  },
+  releaseContract: (id) => {
+    const s = get();
+    const def = supplyContractById(id);
+    const cs = s.contracts[id];
+    if (!def || !cs || !cs.committed) { s.notify('Chưa cam kết kỳ này'); return; }
+    const k = copyStock(s);
+    for (const [pid, q] of Object.entries(cs.locked ?? {})) putStock(k, pid, q);
+    const deposit = commitDeposit(def);
+    set({
+      ...k,
+      contracts: { ...s.contracts, [id]: { ...cs, committed: false, locked: undefined } },
+      money: s.money + deposit,
+    });
+    s.notify(`↩️ Hủy cam kết "${def.title}": hoàn cọc ${formatMoney(deposit)}, mất thưởng kỳ này.`);
+  },
   deliverContract: (id) => {
     const s = get();
     const cs = s.contracts[id];
     const def = cs && supplyContractById(cs.defId);
     if (!def || !cs) { s.notify('Hợp đồng không hợp lệ'); return false; }
-    const missing = missingForContract(def, s.storage);
+    // Đã cam kết: phải giao đủ từ ngăn trữ riêng (hàng đã khỏi kho bán chung), được thưởng tin cậy + hoàn cọc.
+    const committed = cs.committed === true;
+    const missing = committed
+      ? reservedMissing(def, cs.locked)
+      : missingForContract(def, s.storage);
     if (missing.length) {
       s.notify(`Kho còn thiếu: ${missing.map((m) => `${m.need} ${productById(m.id).name}`).join(', ')}`);
       return false;
     }
     const k = copyStock(s);
-    for (const [pid, q] of Object.entries(def.items)) takeStock(k, pid, q);
+    if (committed) {
+      for (const [pid, q] of Object.entries(cs.locked ?? {})) takeStock(k, pid, q);
+    } else {
+      for (const [pid, q] of Object.entries(def.items)) takeStock(k, pid, q);
+    }
     const pay = contractValue(def);
+    const commitBonus = committed ? commitBonusValue(def) : 0;
+    const depositBack = committed ? commitDeposit(def) : 0;
+    const earned = pay + commitBonus;
     const items = Object.values(def.items).reduce((n, q) => n + q, 0);
     const nextDue = s.day + def.periodDays;
+    // Chuỗi giao đúng hẹn: giao trong hạn kỳ (chưa bị đánh dấu quá hạn) thì +1, trễ thì về 0.
+    const onTime = !cs.overdue;
+    const newStreak = onTime ? (cs.streak ?? 0) + 1 : 0;
+    const milestone = contractMilestoneDue(newStreak);
+    const streambonus = milestone ? Math.round((pay * CONTRACT_STREAK_BONUS) / 1000) * 1000 : 0;
+    // Tiền về két = thu nhập thật (pay + tin cậy + mốc chuỗi) + hoàn lại tiền cọc đã giữ;
+    // doanh thu/tổng chỉ tính THU NHẬP (cọc hoàn không phải doanh thu).
+    const total = earned + streambonus + depositBack;
     set({
       ...k,
-      contracts: { ...s.contracts, [id]: { ...cs, delivered: cs.delivered + 1, dueDay: nextDue, pending: false } },
-      money: s.money + pay,
-      stats: { ...s.stats, revenue: s.stats.revenue + pay, itemsSold: s.stats.itemsSold + items },
-      totals: { ...s.totals, revenue: s.totals.revenue + pay, itemsSold: s.totals.itemsSold + items, contractsDone: s.totals.contractsDone + 1 },
+      contracts: { ...s.contracts, [id]: { ...cs, delivered: cs.delivered + 1, dueDay: nextDue, pending: false, streak: newStreak, overdue: false, committed: false, locked: undefined } },
+      money: s.money + total,
+      stats: { ...s.stats, revenue: s.stats.revenue + earned + streambonus, itemsSold: s.stats.itemsSold + items },
+      totals: { ...s.totals, revenue: s.totals.revenue + earned + streambonus, itemsSold: s.totals.itemsSold + items, contractsDone: s.totals.contractsDone + 1 },
     });
     get().addXp(def.xp);
-    s.notify(`🚚 Giao xong kỳ hạn "${def.title}": +${formatMoney(pay)} · +${def.xp} XP`);
+    get().recordDiscovery(Object.keys(def.items)); // Sổ tay Tiệm (GĐ36)
+    s.notify(`🚚 Giao xong kỳ hạn "${def.title}": +${formatMoney(pay)} · +${def.xp} XP`
+      + (commitBonus ? ` · 🤝 tin cậy +${formatMoney(commitBonus)}` : '')
+      + (streambonus ? ` · 🎯 Mốc ${newStreak} kỳ đúng hẹn! +${formatMoney(streambonus)}` : (onTime ? ` · chuỗi đúng hẹn ${newStreak}` : ' · giao muộn, chuỗi đúng hẹn về 0')));
     get().checkTitles();
     return true;
   },

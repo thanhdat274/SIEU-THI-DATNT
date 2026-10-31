@@ -12,6 +12,8 @@ export interface RoutineSnapshot {
   day: number;
   minutes: number;
   autoRoutine: boolean;
+  /** Giờ mở cửa do người chơi chỉnh (GĐ275, phút trong ngày); thiếu ở save cũ = 8h. */
+  autoOpenAt?: number;
   /** Người chơi đang đứng trong tiệm (đúng chỗ mở cửa, tính tiền được). */
   atShop: boolean;
   shopOpen: boolean;
@@ -62,9 +64,12 @@ export function planRoutine(s: RoutineSnapshot, prev: RoutineMarks): RoutineActi
   };
   if (!s.autoRoutine) return out;
 
+  // GĐ275: giờ mở cửa theo người chơi (6h–8h); ra tiệm trước giờ mở 1 giờ để kịp bày/khoan nhập
+  const openAt = s.autoOpenAt ?? ROUTINE.open;
+  const walkAt = Math.max(5 * 60, openAt - 60);
   // Sáng: ra tiệm rồi mở cửa, chỉ trong khung giờ bán hàng (qua 22h30 thì thôi)
-  const inSellingHours = s.minutes >= ROUTINE.open && s.minutes < ROUTINE.close;
-  if (s.minutes >= ROUTINE.goToShop && s.minutes < ROUTINE.close && marks.walkDay !== s.day) {
+  const inSellingHours = s.minutes >= openAt && s.minutes < ROUTINE.close;
+  if (s.minutes >= walkAt && s.minutes < ROUTINE.close && marks.walkDay !== s.day) {
     marks.walkDay = s.day;
     if (!s.atShop) out.walkToShop = true;
   }
@@ -84,4 +89,31 @@ export function planRoutine(s: RoutineSnapshot, prev: RoutineMarks): RoutineActi
     out.stocktake = true;
   }
   return out;
+}
+
+// ───── GĐ276: dòng trạng thái lịch tự động trên Sổ đầu ngày ─────
+// GĐ275 cho chỉnh giờ mở cửa — Sổ đầu ngày (mức lập kế hoạch sáng) phải phản chiếu lựa chọn đó:
+// mở sớm thì khẳng định "đón trọn giờ vàng", mở 8h thì nhắc gently kèm chỗ chỉnh. Thuần đọc.
+
+/** Thu ngân có cờ "tự mở cửa khi vào ca" và ca bắt đầu 6h (sáng/cả ngày) → tiệm mở 6h bất kể lịch. */
+export const cashierOpensMorning = (
+  staff: { role: string; autoOpen?: boolean; shift: string }[],
+): boolean => staff.some((st) => st.role === 'cashier' && st.autoOpen && (st.shift === 'morning' || st.shift === 'full'));
+
+/** Dòng ghi chú lịch tự động cho Sổ đầu ngày; null khi lịch tắt VÀ không có thu ngân mở sớm.
+ *  GĐ279: thu ngân "tự mở cửa khi vào ca" (autoOpen, ca 6h) mở tiệm trước lịch — note phải nói
+ *  đúng nhân vật nào đang giữ cửa, không lại khuyên "lỡ giờ vàng" trong khi tiệm mở 6h. */
+export function autoOpenNote(
+  autoOpenAt: number | undefined,
+  autoRoutine: boolean,
+  cashierOpensMorning = false,
+): string | null {
+  if (cashierOpensMorning) {
+    return '🧾 Thu ngân tự mở cửa sáng sớm — đón trọn giờ vàng 6h–8h30 (lịch chủ chỉ là dự phòng).';
+  }
+  if (!autoRoutine) return null;
+  const at = autoOpenAt ?? ROUTINE.open;
+  return at < ROUTINE.open
+    ? `⏰ Lịch tự động mở cửa ${Math.floor(at / 60)}h${at % 60 ? '30' : ''} — đón trọn giờ vàng sáng 6h–8h30.`
+    : `⏰ Lịch tự động mở cửa 8h — lỡ nửa đầu giờ vàng sáng (chỉnh trong menu hồ sơ).`;
 }

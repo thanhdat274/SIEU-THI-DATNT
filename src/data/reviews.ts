@@ -1,3 +1,4 @@
+import { simRng } from '../core/rand';
 /** Lời khách nhận xét sau mỗi lượt ghé tiệm. */
 export type ReviewReason = 'stock' | 'price' | 'wait' | 'expired';
 
@@ -49,7 +50,7 @@ const BY_REASON: Record<ReviewReason, string[]> = {
 
 const EXTRA_GOOD = ['Có {product} ngon lắm.', 'Mua được {product} đúng loại cần.'];
 
-const pick = <T,>(list: T[]) => list[Math.floor(Math.random() * list.length)];
+const pick = <T,>(list: T[]) => list[Math.floor(simRng()() * list.length)];
 
 /**
  * Soạn lời nhận xét. Không có lý do chê thì chọn câu theo số sao,
@@ -61,7 +62,7 @@ export function composeReview(input: {
 }): Review {
   const fill = (t: string) => t.replace('{product}', input.productName ?? 'món cần mua');
   let text = fill(pick(input.reason ? BY_REASON[input.reason] : BY_STARS[input.stars]));
-  if (!input.reason && input.stars >= 4 && input.productName && Math.random() < 0.4) text += ' ' + fill(pick(EXTRA_GOOD));
+  if (!input.reason && input.stars >= 4 && input.productName && simRng()() < 0.4) text += ' ' + fill(pick(EXTRA_GOOD));
   return {
     id: input.id, day: input.day, minute: input.minute, stars: input.stars, author: pick(AUTHORS), text,
     ...(input.reason ? { reason: input.reason } : {}),

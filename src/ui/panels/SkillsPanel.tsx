@@ -1,11 +1,12 @@
 import { useGame } from '../../core/store';
-import { SKILLS, skillPoints, TITLES } from '../../data/titles';
+import { ALL_TITLES, PRESTIGE_TITLES, SKILLS, skillPoints, TITLES } from '../../data/titles';
 import { Footer, styles } from './shared';
 
 /** Danh hiệu đã đạt và cây kỹ năng chủ tiệm. */
 export function SkillsPanel() {
-  const { level, skills, titles, learnSkill, closePanel } = useGame();
+  const { level, skills, titles, learnSkill, closePanel, biz } = useGame();
   const left = skillPoints(level) - skills.length;
+  const prestige = biz.prestige.level;
   return (
     <>
       <h2 style={styles.title}>🏅 Danh hiệu & kỹ năng</h2>
@@ -28,7 +29,7 @@ export function SkillsPanel() {
           );
         })}
       </div>
-      <h3 style={{ margin: '14px 0 8px', fontSize: 15 }}>Danh hiệu ({titles.length}/{TITLES.length})</h3>
+      <h3 style={{ margin: '14px 0 8px', fontSize: 15 }}>Danh hiệu ({titles.length}/{ALL_TITLES.length})</h3>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))', gap: 6, maxWidth: 560 }}>
         {TITLES.map((t) => {
           const got = titles.includes(t.id);
@@ -36,6 +37,23 @@ export function SkillsPanel() {
             <div key={t.id} style={{ ...styles.card, display: 'block', opacity: got ? 1 : 0.45 }} title={t.description}>
               <b>{got ? t.icon : '🔒'} {t.name}</b>
               <div style={{ fontSize: 12, opacity: 0.8 }}>{t.description}</div>
+            </div>
+          );
+        })}
+      </div>
+      <h3 style={{ margin: '14px 0 8px', fontSize: 15 }}>🌟 Danh hiệu NG+ (tái sinh)</h3>
+      <p style={styles.sub}>Mỗi lần tái sinh mở thêm một danh hiệu độc quyền, giữ qua mọi vòng sau.</p>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))', gap: 6, maxWidth: 560 }}>
+        {PRESTIGE_TITLES.map((t) => {
+          const got = titles.includes(t.id);
+          const locked = !got && prestige < (t.prestige ?? 0);
+          return (
+            <div key={t.id} style={{ ...styles.card, display: 'block', opacity: got ? 1 : 0.5, border: '1px solid rgba(241,196,15,0.25)' }} title={t.description}>
+              <b>{got ? t.icon : (locked ? (t.lockIcon ?? '🔒') : '🔒')} {t.name}</b>
+              <div style={{ fontSize: 12, opacity: 0.8 }}>{t.description}</div>
+              <div style={{ fontSize: 11, opacity: 0.65 }}>
+                {got ? '✔ Đã mở' : locked ? `Tái sinh ${t.prestige} lần` : `Chưa đạt: tái sinh ${t.prestige} lần`}
+              </div>
             </div>
           );
         })}

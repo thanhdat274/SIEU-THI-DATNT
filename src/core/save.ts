@@ -1,16 +1,42 @@
 import Dexie, { type EntityTable } from 'dexie';
-import { forecastFrom } from '../data/weather';
-import { initialWeather, migrateTiers, newGameData, useGame } from './store';
+import { forecastFrom, type Weather } from '../data/weather';
+import { normalizeBranch } from '../data/branches';
+import { initialWeather, migrateTiers, newGameData, useGame, type Furniture } from './store';
 
 /**
  * Phiên bản cấu trúc bản lưu. Đổi cấu trúc (đổi tên, tách, gộp trường) thì tăng số này và thêm một bước
  * vào MIGRATIONS; chỉ thêm trường mới thì không cần, `applySnapshot` tự bù giá trị mặc định.
  */
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 2;
 
 /** MIGRATIONS[n] nâng bản lưu từ phiên bản n lên n+1 (dùng cho cả bản trong máy lẫn bản cloud). */
 const MIGRATIONS: Record<number, (data: Record<string, unknown>) => Record<string, unknown>> = {
-  // 1: (d) => ({ ...d, tenMoi: d.tenCu }),
+  // 1→2: các bước nâng từng chạy ngầm lúc nạp bản cũ, giờ gom thành một bước có phiên bản rõ ràng
+  1: (d) => {
+    // Trang trại cũ chỉ có chuồng gà (garden.coop) — chuyển sang hệ chuồng theo loài (garden.pens)
+    const garden = d.garden as { coop?: { chickens: number; fedDay: number; eggs: number; feedKg?: number }; pens?: Record<string, unknown> } | undefined;
+    if (garden?.coop?.chickens && !garden.pens?.chicken) {
+      d.garden = { ...garden, pens: { ...garden.pens, chicken: { count: garden.coop.chickens, fedDay: garden.coop.fedDay, pending: garden.coop.eggs, feedKg: garden.coop.feedKg ?? 0 } } };
+    }
+    // Kệ kho, tủ lạnh kho từng đặt trong tiệm: giờ đã có nhà kho riêng, hoàn tiền mua
+    if (Array.isArray(d.furniture)) {
+      const OLD_WAREHOUSE: Record<string, number> = { stockRack: 200000, coldStorage: 250000 };
+      const list = d.furniture as Furniture[];
+      const refund = list.reduce((n, f) => n + (OLD_WAREHOUSE[f.type] ?? 0), 0);
+      d.furniture = list.filter((f) => !OLD_WAREHOUSE[f.type]).map(migrateTiers);
+      if (refund) d.money = (typeof d.money === 'number' ? d.money : 0) + refund;
+    }
+    // Bản lưu trước khi có hạt giống thời tiết: dự báo chỉ là một ngày, tính lại cho khớp hạt giống mới
+    if (typeof d.weatherSeed !== 'number') {
+      const seed = initialWeather().weatherSeed;
+      d.weatherSeed = seed;
+      d.forecast = forecastFrom(seed, (d.day as number | undefined) ?? 1, (d.weather as Weather | undefined) ?? 'sunny');
+    }
+    // Chi nhánh tiện lợi giờ chia 3 ca (sáng/chiều/đêm): ai đang làm "cả ngày" chuyển sang ca sáng
+    const branch = d.branch as { staff: { shift: string }[] } | undefined;
+    if (branch) d.branch = { ...branch, staff: branch.staff.map((st) => (st.shift === 'full' ? { ...st, shift: 'morning' } : st)) };
+    return d;
+  },
 };
 
 /** Các trường được lưu; còn lại (giao diện, khách đang đi) là tạm thời. */
@@ -29,12 +55,14 @@ export function snapshot(): SaveData {
     day: s.day, minutes: s.minutes, money: s.money, level: s.level, xp: s.xp,
     storage: s.storage, storageLots: s.storageLots, furniture: s.furniture, mainCounter: s.mainCounter, shelfHeat: s.shelfHeat, shelfProfit: s.shelfProfit, impulseHinted: s.impulseHinted, prices: s.prices, happyHour: s.happyHour, stats: s.stats,
     shopTier: s.shopTier, pendingUpgrade: s.pendingUpgrade, style: s.style,
-    staff: s.staff, candidates: s.candidates, autoOpen: s.autoOpen, autoRoutine: s.autoRoutine, autoSwap: s.autoSwap, totals: s.totals, questLog: s.questLog, warehouseTier: s.warehouseTier,
+    staff: s.staff, candidates: s.candidates, autoOpen: s.autoOpen, autoOpenAt: s.autoOpenAt, autoRoutine: s.autoRoutine, autoSwap: s.autoSwap, totals: s.totals, questLog: s.questLog, warehouseTier: s.warehouseTier,
     reviews: s.reviews, deliveries: s.deliveries, demand: s.demand, demandToday: s.demandToday,
-    sales: s.sales, salesToday: s.salesToday, regulars: s.regulars, reservations: s.reservations, market: s.market,
+    sales: s.sales, salesToday: s.salesToday, soldEver: s.soldEver, comboHitCount: s.comboHitCount, regulars: s.regulars, reservations: s.reservations, market: s.market,
     contracts: s.contracts, repLog: s.repLog, community: s.community, opening: s.opening, costume: s.costume, event: s.event,
-    giftStreak: s.giftStreak, giftLastDay: s.giftLastDay, wheelLastDay: s.wheelLastDay, wheelBoost: s.wheelBoost, shopName: s.shopName,
-    history: s.history, activeCombos: s.activeCombos, order: s.order, ordersDone: s.ordersDone, cookJobs: s.cookJobs, phoneOrders: s.phoneOrders, phoneSlot: s.phoneSlot, phoneHintDay: s.phoneHintDay, phoneOrdersDone: s.phoneOrdersDone, debts: s.debts, allowCredit: s.allowCredit, biz: s.biz, vendorDay: s.vendorDay, vendorOffer: s.vendorOffer, skills: s.skills, titles: s.titles, fakeCash: s.fakeCash, branch: s.branch,
+    giftStreak: s.giftStreak, giftLastDay: s.giftLastDay, giftGraceDay: s.giftGraceDay, wheelLastDay: s.wheelLastDay, wheelLastPrize: s.wheelLastPrize, wheelBoost: s.wheelBoost, shopName: s.shopName,
+    // Mỗi lần ghi bản lưu đều làm mới mốc "còn chơi" — chơi hằng ngày giữ bản tươi nên không bị tính là vắng.
+    lastSeenAt: Date.now(),
+    history: s.history, activeCombos: s.activeCombos, order: s.order, ordersDone: s.ordersDone, cookJobs: s.cookJobs, phoneOrders: s.phoneOrders, phoneSlot: s.phoneSlot, phoneHintDay: s.phoneHintDay, phoneOrdersDone: s.phoneOrdersDone, debts: s.debts, allowCredit: s.allowCredit, counterPolicy: s.counterPolicy, biz: s.biz, vendorDay: s.vendorDay, vendorOffer: s.vendorOffer, marketClearedDay: s.marketClearedDay, marketLast: s.marketLast, skills: s.skills, titles: s.titles, fakeCash: s.fakeCash, branch: s.branch, venueTrend: s.venueTrend, riskToday: s.riskToday, riskTrend: s.riskTrend,
     social: s.social, online: s.online, licenses: s.licenses, inspection: s.inspection,
     garden: s.garden, analytics: s.analytics,
     weatherSeed: s.weatherSeed, weather: s.weather, forecast: s.forecast,
@@ -42,31 +70,60 @@ export function snapshot(): SaveData {
   };
 }
 
+/** Object "thường" (không phải mảng, không phải null) — dạng hợp lệ để merge sâu. */
+const isPlainObject = (v: unknown): v is Record<string, unknown> =>
+  typeof v === 'object' && v !== null && !Array.isArray(v);
+
+/** Gộp đệ quy hai object thường: key có ở cả hai bên đều là object thì đệ quy tiếp,
+ * array/scalar/null thì bản lưu thắng trọn (như spread). */
+function deepMerge(base: Record<string, unknown>, incoming: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = { ...base };
+  for (const [key, value] of Object.entries(incoming)) {
+    const b = out[key];
+    out[key] = isPlainObject(b) && isPlainObject(value) ? deepMerge(b, value) : value;
+  }
+  return out;
+}
+
+/**
+ * Các key có giá trị mặc định trong `newGameData` là object thường: nạp bản cũ thì merge sâu thay vì
+ * thay trọn, để field mới thêm vào các hệ này không thành undefined. Value con là mảng/scalar vẫn
+ * được thay trọn theo key. `branch` mặc định null nên thực tế vẫn như cũ (bản lưu thắng).
+ */
+const MERGE_DEEP: readonly (keyof ReturnType<typeof newGameData>)[] = [
+  'stats', 'totals', 'biz', 'garden', 'social', 'online', 'licenses', 'inspection', 'analytics', 'branch',
+  'storage', 'storageLots', 'shelfHeat', 'shelfProfit', 'prices', 'style', 'questLog', 'community',
+  'demand', 'demandToday', 'sales', 'salesToday', 'soldEver', 'comboHitCount', 'regulars', 'reservations', 'debts', 'market', 'contracts',
+  'riskToday', 'counterPolicy',
+];
+
 /** Nạp một bản lưu (có thể là bản cũ thiếu trường mới, hoặc phiên bản cấu trúc cũ). */
 export function applySnapshot(raw: Partial<SaveData>) {
   const data = migrate(raw);
   const fresh = newGameData();
-  const merged = { ...fresh, ...data, stats: { ...fresh.stats, ...data.stats }, totals: { ...fresh.totals, ...data.totals }, biz: { ...fresh.biz, ...data.biz }, garden: { ...fresh.garden, ...data.garden } };
-  // Trang trại cũ chỉ có chuồng gà (garden.coop) — chuyển sang hệ chuồng theo loài (garden.pens)
-  const oldCoop = (merged.garden as { coop?: { chickens: number; fedDay: number; eggs: number; feedKg?: number } }).coop;
-  if (oldCoop?.chickens && !merged.garden.pens?.chicken) {
-    merged.garden = { ...merged.garden, pens: { ...merged.garden.pens, chicken: { count: oldCoop.chickens, fedDay: oldCoop.fedDay, pending: oldCoop.eggs, feedKg: oldCoop.feedKg ?? 0 } } };
+  const merged = { ...fresh, ...data };
+  // Với các hệ có mặc định là object thường: merge sâu, field mới của hệ tự bù từ mặc định
+  const incoming = data as Record<string, unknown>;
+  for (const key of MERGE_DEEP) {
+    const base = fresh[key] as unknown;
+    const extra = incoming[key];
+    if (isPlainObject(base) && isPlainObject(extra)) {
+      (merged as Record<string, unknown>)[key] = deepMerge(base, extra);
+    }
   }
-  // Kệ kho, tủ lạnh kho từng đặt trong tiệm: giờ đã có nhà kho riêng, hoàn tiền mua
-  const OLD_WAREHOUSE: Record<string, number> = { stockRack: 200000, coldStorage: 250000 };
-  const refund = merged.furniture.reduce((n, f) => n + (OLD_WAREHOUSE[f.type] ?? 0), 0);
-  merged.furniture = merged.furniture.filter((f) => !OLD_WAREHOUSE[f.type]).map(migrateTiers);
-  merged.money += refund;
-  // Bản lưu trước khi có hạt giống thời tiết: dự báo chỉ là một ngày, tính lại cho khớp hạt giống mới
-  if (typeof data.weatherSeed !== 'number') {
-    const seed = initialWeather().weatherSeed;
-    merged.weatherSeed = seed;
-    merged.forecast = forecastFrom(seed, merged.day, merged.weather);
-  }
-  // Chi nhánh tiện lợi giờ chia 3 ca (sáng/chiều/đêm): ai đang làm "cả ngày" chuyển sang ca sáng
-  if (merged.branch) merged.branch = { ...merged.branch, staff: merged.branch.staff.map((st) => (st.shift === 'full' ? { ...st, shift: 'morning' } : st)) };
+  // `branch` mặc định null nên không vào MERGE_DEEP: bản schema cũ thiếu field mới (staff...) phải
+  // bù từ newBranch() — thiếu là UI HUD đọc `branch.staff.some` sập cả cây React.
+  merged.branch = normalizeBranch(merged.branch);
   useGame.setState(merged);
 }
+
+/**
+ * Chế độ chơi thử (GĐ418): mở game với `?thu=1` thì đọc/ghi một kho riêng (IndexedDB `taphoa3d-thu`,
+ * khóa khẩn cấp riêng, không nhận bản localStorage cũ, không đẩy cloud) — QA thoải mái mà save thật
+ * của người chơi không bị đụng tới.
+ */
+export const isSandboxUrl = (search: string) => new URLSearchParams(search).get('thu') === '1';
+export const SANDBOX = typeof location !== 'undefined' && isSandboxUrl(location.search);
 
 type LocalSave = { id: string; savedAt: number; data: SaveData };
 
@@ -74,7 +131,7 @@ type LocalSave = { id: string; savedAt: number; data: SaveData };
 class SaveDb extends Dexie {
   saves!: EntityTable<LocalSave, 'id'>;
   constructor() {
-    super('taphoa3d');
+    super(SANDBOX ? 'taphoa3d-thu' : 'taphoa3d');
     this.version(1).stores({ saves: 'id, savedAt' });
   }
 }
@@ -86,9 +143,9 @@ const BACKUP = 'backup';
 /** Bản chính bị hỏng được cất riêng (không ghi đè mất) để còn cứu tay. */
 const CORRUPT = 'corrupt';
 /** IndexedDB ghi bất đồng bộ nên có thể không kịp khi đóng tab; lúc đó ghi thêm bản này vào localStorage. */
-const EMERGENCY_KEY = 'taphoa3d-emergency';
+const EMERGENCY_KEY = SANDBOX ? 'taphoa3d-thu-emergency' : 'taphoa3d-emergency';
 /** Bản lưu cũ trong localStorage, trước khi chuyển sang IndexedDB. */
-const LEGACY_KEYS = ['taphoa3d-save-v1', 'taphoa3d-save-v1-backup'];
+const LEGACY_KEYS = SANDBOX ? [] : ['taphoa3d-save-v1', 'taphoa3d-save-v1-backup'];
 const LOCAL_KEYS = [EMERGENCY_KEY, ...LEGACY_KEYS];
 
 /** Bản lưu đọc được và đủ các trường cốt lõi; thiếu trường mới thì `applySnapshot` tự bù. */
