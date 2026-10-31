@@ -46,6 +46,7 @@ const ExpiryAlert = lazy(() => import('./ExpiryAlert').then((m) => ({ default: m
 const UnlockActBanner = lazy(() => import('./UnlockActBanner').then((m) => ({ default: m.UnlockActBanner })));
 const BranchAlert = lazy(() => import('./HudAlerts').then((m) => ({ default: m.BranchAlert })));
 const RivalAlert = lazy(() => import('./HudAlerts').then((m) => ({ default: m.RivalAlert })));
+const FestivalBanner = lazy(() => import('./HudAlerts').then((m) => ({ default: m.FestivalBanner })));
 const StoryAlert = lazy(() => import('./HudAlerts').then((m) => ({ default: m.StoryAlert })));
 const PhoneAlerts = lazy(() => import('./PhoneAlerts').then((m) => ({ default: m.PhoneAlerts })));
 
@@ -461,7 +462,7 @@ ${forecastText}`}>
         <Suspense fallback={null}><UnlockActBanner /></Suspense>
         <Suspense fallback={null}><VendorAlert /></Suspense>
         <CounterAskAlert />
-        <FestivalBanner />
+        <Suspense fallback={null}><FestivalBanner /></Suspense>
         <Suspense fallback={null}><Tutorial review={helpTutorial} onDone={() => setHelpTutorial(false)} /></Suspense>
         <Suspense fallback={null}><SurpriseAlert /></Suspense>
         <Suspense fallback={null}><StoryAlert /></Suspense>
@@ -723,23 +724,6 @@ function AccountMenu({ name, photo, status, items }: {
           ))}
         </div>
       )}
-    </div>
-  );
-}
-
-/** Đang trong mùa lễ: nói rõ khách đông bao nhiêu, món nào hút, giá nhập tăng bao nhiêu. */
-function FestivalBanner() {
-  const day = useGame((s) => s.day);
-  const level = useGame((s) => s.level);
-  const seed = useGame((s) => s.weatherSeed);
-  const f = dayEffects(seed, day, level).festival;
-  if (!f || (f.traffic < 1.2 && !f.pull)) return null;
-  const goods = festivalStock(f, level).map((id) => productById(id).name).join(', ');
-  const pct = (x: number) => `${x >= 1 ? '+' : ''}${Math.round((x - 1) * 100)}%`;
-  return (
-    <div className="hud-alert festival">
-      {f.icon} <b>{f.name}</b>: khách {pct(f.traffic)}{f.cost !== 1 && ` · giá nhập ${pct(f.cost)}`}
-      {f.tolerance && ' · khách chịu giá cao'}{goods && <small> · hàng hút: {goods}</small>}
     </div>
   );
 }

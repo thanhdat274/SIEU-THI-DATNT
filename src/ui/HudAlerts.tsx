@@ -2,7 +2,8 @@ import { branchAlerts } from '../data/branches';
 import { rivalUndercutAlerts, STORIES } from '../data/biz';
 import { closeStory, REGULAR_NAMES } from '../core/biz';
 import { useClock, useGame } from '../core/store';
-import { formatMoney } from '../data/products';
+import { formatMoney, productById } from '../data/products';
+import { dayEffects, festivalStock } from '../data/calendar';
 
 /** GĐ456: cảnh báo HUD tách lazy khỏi Hud để giữ ngân sách tải ban đầu. */
 /** Chi nhánh 24/7 "lên tiếng": đẩy cảnh báo (calloff/mất điện/trộm/kệ cạn/thiếu thu ngân) lên HUD. */
@@ -56,6 +57,24 @@ export function StoryAlert() {
       <span className="hud-alert-actions">
         <button className="hud-btn primary" onClick={closeStory}>💛 Đọc xong</button>
       </span>
+    </div>
+  );
+}
+
+
+/** Đang trong mùa lễ: nói rõ khách đông bao nhiêu, món nào hút, giá nhập tăng bao nhiêu. */
+export function FestivalBanner() {
+  const day = useGame((s) => s.day);
+  const level = useGame((s) => s.level);
+  const seed = useGame((s) => s.weatherSeed);
+  const f = dayEffects(seed, day, level).festival;
+  if (!f || (f.traffic < 1.2 && !f.pull)) return null;
+  const goods = festivalStock(f, level).map((id) => productById(id).name).join(', ');
+  const pct = (x: number) => `${x >= 1 ? '+' : ''}${Math.round((x - 1) * 100)}%`;
+  return (
+    <div className="hud-alert festival">
+      {f.icon} <b>{f.name}</b>: khách {pct(f.traffic)}{f.cost !== 1 && ` · giá nhập ${pct(f.cost)}`}
+      {f.tolerance && ' · khách chịu giá cao'}{goods && <small> · hàng hút: {goods}</small>}
     </div>
   );
 }
