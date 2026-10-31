@@ -1,11 +1,11 @@
 import { formatMoney, productById } from '../../data/products';
 import { copyStock, putStock } from '../stock';
-import { TIEM_XOI_HIRE_FEE, TIEM_XOI_MAX_STAFF, TIEM_XOI_PRICE, TIEM_XOI_UNLOCK, TIEM_XOI_COST_MUL, tiemXoiHandQty, tiemXoiHandPick } from '../../data/tiemXoi';
+import { TIEM_XOI_HIRE_FEE, TIEM_XOI_MAX_STAFF, TIEM_XOI_PRICE, TIEM_XOI_UNLOCK, TIEM_XOI_COST_MUL, tiemXoiHandQty, tiemXoiHandPick, TIEM_XOI_BIG_COST, TIEM_XOI_BIG_LEVEL } from '../../data/tiemXoi';
 import type { GameState, SetState, GetState } from '../gameTypes';
 
 /** Tiệm xôi (GĐ411): mua mặt bằng, tuyển/cho nghỉ thợ nấu. Mô phỏng nấu chạy trong endDay. */
 
-export const createTiemXoiSlice = (set: SetState, get: GetState): Pick<GameState, 'buyTiemXoi' | 'hireTiemXoi' | 'fireTiemXoi' | 'steamXoiHand'> => ({
+export const createTiemXoiSlice = (set: SetState, get: GetState): Pick<GameState, 'buyTiemXoi' | 'hireTiemXoi' | 'fireTiemXoi' | 'steamXoiHand' | 'expandTiemXoi'> => ({
   buyTiemXoi: () => {
     const s = get();
     if (s.biz.tiemXoi.open) return false;
@@ -59,6 +59,18 @@ export const createTiemXoiSlice = (set: SetState, get: GetState): Pick<GameState
     set({ storage: k.storage, storageLots: k.storageLots, money: s.money - cost, biz: { ...s.biz, tiemXoi: { ...t, handDay: s.day } } });
     get().addXp(4); // GĐ453: việc tay như làm vườn
     s.notify(`🍚 Tự đồ ${qty} phần ${productById(id).name} vào kho (−${formatMoney(cost)})`);
+    return true;
+  },
+  /** GĐ461: mở rộng bếp xôi một lần. */
+  expandTiemXoi: () => {
+    const s = get();
+    const t = s.biz.tiemXoi;
+    if (!t.open) { s.notify('Chưa mở tiệm xôi!'); return false; }
+    if (t.big) { s.notify('Bếp xôi đã mở rộng rồi'); return false; }
+    if (s.level < TIEM_XOI_BIG_LEVEL) { s.notify(`Mở rộng bếp xôi ở cấp ${TIEM_XOI_BIG_LEVEL}`); return false; }
+    if (s.money < TIEM_XOI_BIG_COST) { s.notify(`Cần ${formatMoney(TIEM_XOI_BIG_COST)} để mở rộng bếp xôi`); return false; }
+    set({ money: s.money - TIEM_XOI_BIG_COST, biz: { ...s.biz, tiemXoi: { ...t, big: true } } });
+    s.notify('🍚 Bếp xôi mở rộng: giữ 120 phần mỗi món, nấu nhanh gấp rưỡi');
     return true;
   },
 });

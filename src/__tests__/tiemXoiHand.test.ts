@@ -66,3 +66,21 @@ describe('GĐ453: việc tay cho XP', () => {
     expect(g().xp === xp + 4 || g().level > TIEM_XOI_UNLOCK).toBe(true);
   });
 });
+
+describe('GĐ461: mở rộng bếp xôi', () => {
+  it('cần cấp + tiền, một lần; tăng mục tiêu và sức nấu', async () => {
+    const { tiemXoiCapacity, tiemXoiTarget, TIEM_XOI_BIG_LEVEL, TIEM_XOI_BIG_COST } = await import('../data/tiemXoi');
+    expect(tiemXoiTarget({})).toBe(80);
+    expect(tiemXoiTarget({ big: true })).toBe(120);
+    expect(tiemXoiCapacity(1, true)).toBe(Math.round(tiemXoiCapacity(1) * 1.5));
+    g().buyTiemXoi();
+    expect(g().expandTiemXoi()).toBe(false);
+    useGame.setState({ level: TIEM_XOI_BIG_LEVEL });
+    const m = g().money;
+    expect(g().expandTiemXoi()).toBe(true);
+    expect(g().money).toBe(m - TIEM_XOI_BIG_COST);
+    expect(g().biz.tiemXoi.big).toBe(true);
+    expect(g().expandTiemXoi()).toBe(false);
+    for (const x of msgs) expect(x.length).toBeLessThanOrEqual(90);
+  });
+});

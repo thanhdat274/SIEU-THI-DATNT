@@ -2,13 +2,13 @@ import { useGame } from '../../core/store';
 import { formatMoney } from '../../data/products';
 import {
   TIEM_XOI_COST_MUL, TIEM_XOI_HIRE_FEE, TIEM_XOI_MAX_STAFF, TIEM_XOI_PRICE, TIEM_XOI_TARGET, TIEM_XOI_UNLOCK,
-  TIEM_XOI_WAGE, tiemXoiCapacity, tiemXoiHandQty,
+  TIEM_XOI_WAGE, tiemXoiCapacity, tiemXoiHandQty, tiemXoiTarget, TIEM_XOI_BIG_COST, TIEM_XOI_BIG_LEVEL,
 } from '../../data/tiemXoi';
 import { styles } from './shared';
 
 /** Tiệm xôi (GĐ412): mục riêng trong bảng Quán nước — không thêm nút HUD. Hiện từ cấp mở khoá. */
 export function TiemXoiSection() {
-  const { biz, level, money, day, buyTiemXoi, hireTiemXoi, fireTiemXoi, steamXoiHand } = useGame();
+  const { biz, level, money, day, buyTiemXoi, hireTiemXoi, fireTiemXoi, steamXoiHand, expandTiemXoi } = useGame();
   const t = biz.tiemXoi;
   const last = biz.tiemXoiLast;
   if (!t.open && level < TIEM_XOI_UNLOCK) return null;
@@ -30,7 +30,7 @@ export function TiemXoiSection() {
       ) : (
         <>
           <div style={{ fontSize: 13, marginTop: 4 }}>
-            👩‍🍳 Thợ {t.staff}/{TIEM_XOI_MAX_STAFF} · nấu tối đa {tiemXoiCapacity(t.staff)} phần/đêm
+            👩‍🍳 Thợ {t.staff}/{TIEM_XOI_MAX_STAFF} · nấu tối đa {tiemXoiCapacity(t.staff, !!t.big)} phần/đêm · giữ {tiemXoiTarget(t)} phần/món
           </div>
           {last && (
             <div style={{ fontSize: 13, marginTop: 4 }}>
@@ -45,6 +45,11 @@ export function TiemXoiSection() {
             <button style={styles.btn} disabled={t.handDay === day} onClick={() => steamXoiHand()} title="Phím J ở sạp xôi cũng được">
               🍚 Tự đồ {tiemXoiHandQty(t.staff)} phần{t.handDay === day ? ' (mai đồ tiếp)' : ''}
             </button>
+            {!t.big && (
+              <button style={styles.btn} disabled={level < TIEM_XOI_BIG_LEVEL || money < TIEM_XOI_BIG_COST} onClick={() => expandTiemXoi()}>
+                {level < TIEM_XOI_BIG_LEVEL ? `Mở rộng bếp: cấp ${TIEM_XOI_BIG_LEVEL}` : `Mở rộng bếp ${formatMoney(TIEM_XOI_BIG_COST)} (120 phần, nấu ×1.5)`}
+              </button>
+            )}
           </div>
         </>
       )}

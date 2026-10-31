@@ -68,7 +68,7 @@ export const GUARDED: Record<string, (args: unknown[]) => string> = {
   // Quán nước đầu ngõ: cả cụm mua/tuyển/nghỉ/đổi giá là một chỗ chung "quan"
   buyQuanNuoc: () => 'quan',
   hireQuanNuoc: () => 'quan',
-  buyTiemXoi: () => 'xoi', hireTiemXoi: () => 'xoi', fireTiemXoi: () => 'xoi', steamXoiHand: () => 'xoi',
+  buyTiemXoi: () => 'xoi', hireTiemXoi: () => 'xoi', fireTiemXoi: () => 'xoi', steamXoiHand: () => 'xoi', expandTiemXoi: () => 'xoi',
   fireQuanNuoc: () => 'quan',
   setQuanNuocPrice: () => 'quan',
   toggleQuanRecipe: () => 'quan',

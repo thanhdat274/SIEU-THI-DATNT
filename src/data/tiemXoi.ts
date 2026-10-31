@@ -24,7 +24,7 @@ export const TIEM_XOI_COST_MUL = 0.6;
 /** Chỉ nấu bù đến mức tồn này mỗi món, tránh xôi dồn kho rồi hỏng. */
 export const TIEM_XOI_TARGET = 80;
 
-export interface TiemXoiState { open: boolean; staff: number; /** GĐ439: ngày chủ tự đồ một mẻ ở sạp. */ handDay?: number }
+export interface TiemXoiState { open: boolean; staff: number; /** GĐ439: ngày chủ tự đồ một mẻ ở sạp. */ handDay?: number; /** GĐ461: đã mở rộng bếp (kho mục tiêu + sức nấu lớn hơn). */ big?: boolean }
 export const newTiemXoi = (): TiemXoiState => ({ open: false, staff: 0 });
 
 /** Món xôi lẻ (không gồm combo) đã mở ở `level`, giữ thứ tự bảng mẫu hàng. */
@@ -32,7 +32,11 @@ export const tiemXoiIds = (level: number): string[] =>
   unlockedProducts(level).filter((p) => p.id.startsWith('xoi_')).map((p) => p.id);
 
 /** Số phần nấu được một ngày theo số thợ. */
-export const tiemXoiCapacity = (staff: number): number => TIEM_XOI_PER_COOK * (1 + staff);
+export const tiemXoiCapacity = (staff: number, big = false): number => Math.round(TIEM_XOI_PER_COOK * (1 + staff) * (big ? 1.5 : 1));
+/** GĐ461 — mở rộng bếp xôi: cấp 42, 20tr; giữ 120 phần mỗi món, sức nấu ×1.5. */
+export const TIEM_XOI_BIG_LEVEL = 42;
+export const TIEM_XOI_BIG_COST = 20_000_000;
+export const tiemXoiTarget = (t: Pick<TiemXoiState, 'big'>) => (t.big ? 120 : TIEM_XOI_TARGET);
 
 export interface TiemXoiDay { made: Record<string, number>; total: number; cost: number; wages: number; full: boolean }
 
@@ -51,9 +55,9 @@ export function tiemXoiDay(
   if (!t.open) return null;
   const ids = tiemXoiIds(level);
   const need: Record<string, number> = {};
-  for (const id of ids) need[id] = Math.max(0, TIEM_XOI_TARGET - (storage[id] ?? 0));
+  for (const id of ids) need[id] = Math.max(0, tiemXoiTarget(t) - (storage[id] ?? 0));
   const made: Record<string, number> = {};
-  let left = tiemXoiCapacity(t.staff);
+  let left = tiemXoiCapacity(t.staff, !!t.big);
   while (left > 0) {
     let pick: string | null = null;
     for (const id of ids) if (need[id] > 0 && (pick === null || need[id] > need[pick])) pick = id;
