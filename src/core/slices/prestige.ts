@@ -20,6 +20,6 @@ export const createPrestigeSlice = (set: SetState, get: GetState): Pick<GameStat
     set(next);
     // Mở ngay danh hiệu NG+ tương ứng mức tái sinh vừa đạt (nếu chưa có) để người chơi thấy thưởng.
     get().checkTitles();
-    s.notify(`🌟 Bắt đầu vòng mới! Tiệm bán đắt hơn +${Math.round(next.biz.prestige.bonus * 100)}%. Thành tựu, danh hiệu, cốt truyện giữ nguyên. Hẻm vắng đối thủ cũ — rival đời mới sẽ quay lại từ cấp ${RIVAL_UNLOCK}.`);
+    s.notify(`🌟 Vòng mới! Bán đắt hơn +${Math.round(next.biz.prestige.bonus * 100)}%, rival quay lại từ cấp ${RIVAL_UNLOCK}.`);
   },
 });

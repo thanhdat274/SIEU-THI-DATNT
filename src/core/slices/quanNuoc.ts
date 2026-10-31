@@ -23,7 +23,7 @@ export const createQuanNuocSlice = (set: SetState, get: GetState): Pick<GameStat
       stats: { ...s.stats, spent: s.stats.spent + QUAN_NUOC_PRICE },
       totals: { ...s.totals, spent: s.totals.spent + QUAN_NUOC_PRICE },
     });
-    s.notify('🧋 Quán nước đầu ngõ khai trương! Nhập đồ uống vào kho là quán bán mỗi ngày, kết quả xem khi sang ngày mới.');
+    s.notify('🧋 Quán nước khai trương! Nhập đồ uống vào kho là quán tự bán mỗi ngày.');
     return true;
   },
   /** Tuyển thêm nhân viên quán nước (tối đa QUAN_NUOC_MAX_STAFF): khách đông hơn, phí tuyển một lần. */

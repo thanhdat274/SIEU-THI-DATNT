@@ -15,7 +15,7 @@ import { updateFurniture } from './build';
 export const createInventorySlice = (set: SetState, get: GetState): Pick<GameState, 'toggleShop' | 'buy' | 'placeOrder' | 'noteDemand' | 'upgradeWarehouse' | 'replaceEmptySlots' | 'unstockTier' | 'stockTier' | 'takeFromShelf' | 'consumeStock'> => ({
   toggleShop: () => {
     const s = get();
-    if (!s.shopOpen && s.inspection?.suspendedDay === s.day) return s.notify('⛔ Tiệm đang bị đình chỉ kinh doanh hôm nay vì trượt thanh tra nhiều lần — mai mới mở cửa lại được');
+    if (!s.shopOpen && s.inspection?.suspendedDay === s.day) return s.notify('⛔ Tiệm bị đình chỉ hôm nay vì trượt thanh tra — mai mở lại.');
     set({ shopOpen: !s.shopOpen });
     s.notify(s.shopOpen ? '🔒 Đã đóng cửa tiệm' : `🏪 Mở cửa! Hôm nay dự kiến khoảng ${customersPerDay(s.level)} khách`);
   },
@@ -35,7 +35,7 @@ export const createInventorySlice = (set: SetState, get: GetState): Pick<GameSta
     const need = storageUsed(s.storage, { [productId]: qty });
     const cap = storageCapacity(s.warehouseTier);
     if (need > cap) {
-      s.notify(`📦 Nhà kho không đủ chỗ: cần thêm ${qty} thùng nhưng chỉ còn trống ${Math.max(0, cap - storageUsed(s.storage))}. Nâng cấp nhà kho hoặc nhập ít hơn nhé!`);
+      s.notify(`📦 Kho thiếu chỗ: cần ${qty} thùng, trống ${Math.max(0, cap - storageUsed(s.storage))}. Nâng kho hoặc nhập ít lại.`);
       return false;
     }
     const k = copyStock(s);
@@ -67,7 +67,7 @@ export const createInventorySlice = (set: SetState, get: GetState): Pick<GameSta
     const cap = storageCapacity(s.warehouseTier);
     const need = storageUsed(s.storage, ...pending, lines);
     if (need > cap) {
-      s.notify(`📦 Nhà kho không đủ chỗ: đơn cần ${need - storageUsed(s.storage, ...pending)} thùng, kho còn trống ${Math.max(0, cap - storageUsed(s.storage, ...pending))} thùng. Nâng cấp nhà kho nhé!`);
+      s.notify(`📦 Kho thiếu chỗ: cần ${need - storageUsed(s.storage, ...pending)} thùng, trống ${Math.max(0, cap - storageUsed(s.storage, ...pending))}. Nâng kho nhé!`);
       return false;
     }
     const stats = { ...s.stats, spent: s.stats.spent + cost };

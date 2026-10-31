@@ -109,7 +109,7 @@ export function buyRivalShop() {
   patch({ rivalForSale: undefined, rivalBuyUntil: s.day + RIVAL_BUY_DAYS });
   if (!s.branch) {
     useGame.setState({ branch: { ...newBranch(), simAt: s.minutes } });
-    s.notify(`🏢 Đã mua lại ${offer.name} làm chi nhánh mới! Kệ sẵn hàng, khách cũ của họ nửa đầu quen đường sang mình — thuê nhân viên rồi mở cửa.`);
+    s.notify(`🏢 Đã mua lại ${offer.name} làm chi nhánh! Thuê nhân viên rồi mở cửa.`);
   } else {
     // Đã có chi nhánh: mặt bằng mua về thành một chuyến hàng chuyển từ kho chung sang kệ chi nhánh
     const k = copyStock(s);
@@ -124,7 +124,7 @@ export function buyRivalShop() {
       moved += take;
     }
     useGame.setState({ ...k, branch: { ...s.branch!, shelf } });
-    s.notify(`🏢 Đã mua lại ${offer.name}: khách cũ của rival ghé tiệm mình đông hơn trong ${RIVAL_BUY_DAYS} ngày, chi nhánh nhận thêm ${moved} món từ kho chung`);
+    s.notify(`🏢 Mua lại ${offer.name}: khách cũ ghé đông ${RIVAL_BUY_DAYS} ngày, chi nhánh nhận ${moved} món`);
   }
 }
 
@@ -503,7 +503,7 @@ export function acceptFairOffer() {  const s = S();
   if (s.money < offer.dealPrice) return s.notify(`Không đủ tiền cho lô chợ phiên (cần ${formatMoney(offer.dealPrice)})`);
   const asStock = Object.fromEntries(offer.lines.map((l) => [l.id, l.qty]));
   if (storageUsed(s.storage, asStock) > storageCapacity(s.warehouseTier)) {
-    return s.notify(`Nhà kho không đủ chỗ cho lô chợ phiên — cần thêm ${storageUsed(s.storage, asStock)} thùng mới đủ. Nâng cấp kho trước nhé!`);
+    return s.notify(`Kho không đủ chỗ cho lô chợ phiên — cần thêm ${storageUsed(s.storage, asStock)} thùng.`);
   }
   const k = copyStock(s);
   for (const l of offer.lines) putStock(k, l.id, l.qty);
@@ -534,7 +534,7 @@ export function signHiepLuc() {
     totals: { ...s.totals, spent: s.totals.spent + HIEPLUC_COC },
     biz: { ...s.biz, hiepLuc: { m, active: true, coc: HIEPLUC_COC }, hiepLucMonth: 0 },
   });
-  s.notify(`🤝 Đã lập đối tác hiệp lực (cọc ${formatMoney(HIEPLUC_COC)}, hoàn cuối tháng): cả tháng này gom doanh thu chi nhánh + quán nước, đủ ${formatMoney(HIEPLUC_MIN)} được thưởng`);
+  s.notify(`🤝 Lập hiệp lực (cọc ${formatMoney(HIEPLUC_COC)}): gom đủ ${formatMoney(HIEPLUC_MIN)} trong tháng được thưởng`);
 }
 
 export function eatBreakfast() {

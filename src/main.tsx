@@ -773,7 +773,7 @@ function renderFrame() {
     lastMarketDay = marketDay;
     world.kit.setMarketDay(marketDay);
     // (GĐ182) Sáng phiên chợ: nhắc để người chơi biết hôm nay đông khách + tối gánh hàng dư
-    if (marketDay) g.notify('🛒 Hôm nay phiên chợ cuối ngõ — khách đông hơn! Tối nhớ xem "Chợ phiên" để gánh bớt hàng dư.');
+    if (marketDay) g.notify('🛒 Hôm nay có chợ phiên — khách đông! Tối xem "Chợ phiên" để bán bớt hàng dư.');
   }
   // Sửa đường trước hẻm (gđ184): hôm nào có sự kiện market roadworks, dựng rào chắn công trình ở mép vỉa hè —
   // người chơi thấy "đường đang sửa" bằng hình (đồng thời kinh tế ngày vẫn ít khách đi ngang như sim đã tính)

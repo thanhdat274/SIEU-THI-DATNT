@@ -184,7 +184,7 @@ export const createOrdersSlice = (set: SetState, get: GetState): Pick<GameState,
     const failed: string[] = [];
     for (const [pid, q] of restockable) if (!get().buy(pid, q)) failed.push(productById(pid).name);
     if (failed.length) {
-      s.notify(`⚠️ Không nhập bù được: ${failed.join(', ')} (hết tiền hoặc kho không đủ chỗ). Vào bảng Kho xử lý rồi quay lại nghe máy`);
+      s.notify(`⚠️ Không nhập bù được: ${failed.join(', ')} (thiếu tiền/chỗ kho)`);
       return false;
     }
     if (missing.length) s.notify(`🛒 Đã nhập bù ${missing.map(([pid, q]) => `${q} ${productById(pid).name}`).join(', ')} (${formatMoney(cost)})`);
@@ -323,7 +323,7 @@ export const createOrdersSlice = (set: SetState, get: GetState): Pick<GameState,
       contracts: { ...s.contracts, [id]: { ...cs, committed: true, locked } },
       money: s.money - deposit,
     });
-    s.notify(`🤝 Cam kết kỳ "${def.title}": đã trữ ${Object.values(def.items).reduce((n, q) => n + q, 0)} món riêng, cọc ${formatMoney(deposit)} (hoàn khi giao/hủy). Giao đủ hạn được thưởng tin cậy +${formatMoney(commitBonusValue(def))}.`);
+    s.notify(`🤝 Cam kết "${def.title}": trữ ${Object.values(def.items).reduce((n, q) => n + q, 0)} món, cọc ${formatMoney(deposit)}. Giao đủ hạn +${formatMoney(commitBonusValue(def))}.`);
   },
   releaseContract: (id) => {
     const s = get();
@@ -338,7 +338,7 @@ export const createOrdersSlice = (set: SetState, get: GetState): Pick<GameState,
       contracts: { ...s.contracts, [id]: { ...cs, committed: false, locked: undefined } },
       money: s.money + deposit,
     });
-    s.notify(`↩️ Hủy cam kết "${def.title}": trả hàng về kho bán chung, hoàn cọc ${formatMoney(deposit)} (mất thưởng tin cậy kỳ này).`);
+    s.notify(`↩️ Hủy cam kết "${def.title}": hoàn cọc ${formatMoney(deposit)}, mất thưởng kỳ này.`);
   },
   deliverContract: (id) => {
     const s = get();

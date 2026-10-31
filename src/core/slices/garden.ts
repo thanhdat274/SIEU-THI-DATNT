@@ -204,7 +204,7 @@ export const createGardenSlice = (set: SetState, get: GetState): Pick<GameState,
       garden: { ...s.garden, pens: { ...s.garden.pens, [kind]: { count: 0, fedDay: 0, feedKg: pen.feedKg, pending: 0, fattened: 0, lateJoins: 0 } }, homegrown },
       money: s.money + refund,
     });
-    s.notify(`${def.icon} Xuất chuồng ${readyCount} ${def.name.toLowerCase()} (${meat} ${productById(def.productId).name} vào kho) — quán xóm sáng mai ghé mua liền${late ? `; ${late} con mua giữa kỳ chỉ nhận lại giá giống ${formatMoney(refund)}` : ''}`);
+    s.notify(`${def.icon} Xuất chuồng ${readyCount} ${def.name.toLowerCase()} (${meat} ${productById(def.productId).name} vào kho)${late ? `; ${late} con mua giữa kỳ chỉ nhận lại giá giống ${formatMoney(refund)}` : ''}`);
     s.addXp(10);
   },
   expandFarm: () => {
@@ -235,7 +235,7 @@ export const createGardenSlice = (set: SetState, get: GetState): Pick<GameState,
       const have = k.storage[it.productId] ?? 0;
       const home = hg[it.productId] ?? 0;
       if (have < it.qty || home < it.qty) {
-        return s.notify(`📦 Quán chỉ nhận nông sản nhà trồng/nhà nuôi: ${productById(it.productId).name} cần ${it.qty} (kho ${have}, nhà trồng ${home})`);
+        return s.notify(`📦 Quán chỉ nhận hàng nhà trồng: ${productById(it.productId).name} cần ${it.qty}, có ${home}`);
       }
     }
     let total = 0;
@@ -297,7 +297,7 @@ export const createGardenSlice = (set: SetState, get: GetState): Pick<GameState,
       if (simRng()() < 0.5) wood++;
     }
     set({ garden: { ...s.garden, debris: 0, wood: s.garden.wood + wood, stone: s.garden.stone + stone } });
-    s.notify(`🧹 Dọn ${debris} đống cỏ cành: nhặt ${wood} gỗ, ${stone} đá — dành nâng sao công trình (đang có ${s.garden.wood + wood} gỗ, ${s.garden.stone + stone} đá)`);
+    s.notify(`🧹 Dọn ${debris} đống: nhặt ${wood} gỗ, ${stone} đá (có ${s.garden.wood + wood} gỗ, ${s.garden.stone + stone} đá)`);
     s.addXp(3);
   },
 });

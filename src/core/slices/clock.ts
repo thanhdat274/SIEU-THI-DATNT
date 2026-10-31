@@ -50,7 +50,7 @@ export const createClockSlice = (set: SetState, get: GetState): Pick<GameState, 
     if (br?.open && minutes >= STOCK_WARN_AT && br.warnedDay !== s.day) {
       const have = Object.values(get().storage).reduce((n, q) => n + q, 0) + shelfTotal(br.shelf);
       set({ branch: { ...br, warnedDay: s.day } });
-      if (have < nightNeed()) get().notify(`⚠️ Kho chung sắp cạn (còn ${have} món, đêm nay cần ~${nightNeed()}), đêm nay chi nhánh có thể hết hàng — nhập thêm hàng!`);
+      if (have < nightNeed()) get().notify(`⚠️ Kho chung sắp cạn (còn ${have}, đêm nay cần ~${nightNeed()}) — nhập thêm!`);
     }
     updatePhones(set, get);
     updateOnline(set, get);

@@ -552,7 +552,7 @@ export class CustomerManager {
     useGame.setState({ totals: { ...st.totals, impulseSold: st.totals.impulseSold + 1 } });
     if (!st.impulseHinted) {
       useGame.setState({ impulseHinted: true });
-      st.notify('🍬 Khách xếp hàng mua kẹp thêm món nhỏ ở kệ bên cạnh quầy! Bày kẹo, bánh, nước giá ≤15k sát quầy thu ngân để bán thêm mỗi đơn.');
+      st.notify('🍬 Khách xếp hàng hay mua kẹp! Bày kẹo, bánh, nước ≤15k sát quầy để bán thêm.');
     }
   }
 

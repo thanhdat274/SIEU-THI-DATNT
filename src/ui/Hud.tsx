@@ -532,7 +532,7 @@ Online: ${coop.peers.map((p) => (p.id === coop.selfId ? 'bạn' : p.name)).join(
                 if (!autoRoutine) {
                   const at = useGame.getState().autoOpenAt;
                   useGame.setState({ autoRoutine: true });
-                  notify(`⏰ Bật lịch tự động: mở cửa ${fmtOpenAt(at)} (bấm tiếp để đổi giờ 6h–8h), 22h30 đóng, 23h kiểm kê rồi về nhà`);
+                  notify(`⏰ Lịch tự động: mở ${fmtOpenAt(at)} (bấm tiếp đổi 6h–8h), đóng 22h30, về nhà 23h`);
                 } else {
                   const cur = useGame.getState().autoOpenAt;
                   const i = AUTO_OPEN_PRESETS.indexOf(cur);

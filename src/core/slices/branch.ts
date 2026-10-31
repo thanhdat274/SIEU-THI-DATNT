@@ -335,7 +335,7 @@ export const createBranchSlice = (set: SetState, get: GetState): Pick<GameState,
       stats: { ...s.stats, spent: s.stats.spent + CONVENIENCE.openCost },
       totals: { ...s.totals, spent: s.totals.spent + CONVENIENCE.openCost },
     });
-    s.notify('🏪 Đã mua đứt mặt bằng cửa hàng tiện lợi ở con đường bên kia! Thuê thu ngân, giao hàng, bảo vệ rồi mở cửa.');
+    s.notify('🏪 Đã mua mặt bằng tiện lợi bên kia đường! Thuê người rồi mở cửa.');
     return true;
   },
   toggleBranch: () => {
@@ -410,7 +410,7 @@ export const createBranchSlice = (set: SetState, get: GetState): Pick<GameState,
       stats: { ...s.stats, spent: s.stats.spent + VENDING_COST },
       totals: { ...s.totals, spent: s.totals.spent + VENDING_COST },
     });
-    s.notify('🥤 Đã lắp máy bán hàng tự động ngoài cửa — bán kể cả khi đóng cửa; cần người giao/xếp hàng nạp hàng định kỳ.');
+    s.notify('🥤 Đã lắp máy bán tự động — bán cả khi đóng cửa, cần người nạp hàng.');
   },
   toggleNightDelivery: () => {
     const s = get();

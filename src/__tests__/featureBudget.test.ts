@@ -50,7 +50,7 @@ describe('ngân sách chống phình tính năng', () => {
  * thông báo vượt mục tiêu 90 ký tự cũng khoá ở mức hiện tại và chỉ được giảm.
  */
 const NOTIFY_TARGET = 90;
-const NOTIFY_CEILING = { maxLen: 154, overTarget: 22 };
+const NOTIFY_CEILING = { maxLen: 90, overTarget: 0 };
 
 function sourceFiles(dir: string): string[] {
   return readdirSync(dir).flatMap((n) => {
