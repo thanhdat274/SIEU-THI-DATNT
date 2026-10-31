@@ -159,7 +159,7 @@
 - GĐ309 — 🔕 Dời 4 thông báo phụ khỏi ngày đầu: 22→18, trần 20
 - GĐ310 — 🔒 Hạ trần rò rỉ: object +2%, nhân vật +20 (đo 0% / +11)
 - GĐ344 — 🧪 QA bán hàng ngày 2/3 (save sạch): mở cửa, tiền đổi; tải mới 0 lỗi (emptyTiers/depthTexture trong console là dấu vết HMR cũ)
-- GĐ345 — ⏱️ Đo lại bộ test: 2359 xanh; nặng nhất economySimL50/L10L20/weeklyGoalCap/economySim (giữ nguyên, là tín hiệu cân bằng)
+- GĐ345 — ⏱️ Đo lại bộ test: 2359 xanh; nặng nhất economySimL50/L10L20/weeklyGoalCap/economySim (giữ nguyên, là tín hiệu cân bằng) · thử --pool=threads: 178s, không nhanh hơn (đừng thử lại)
 - GĐ346 — 🧭 Leader review (giữa GĐ337–347): 2359 test xanh, tsc sạch, bundle 596/253 KB, nút HUD 20; mọi trục chiều sâu đã bão hòa → KHÔNG mở rộng mới, chờ dữ liệu save người thật (NG+, nhiệm vụ ngày 1–5); việc kế: giữ ngân sách, QA định kỳ
 - GĐ347 — 📱 QA 320×640 (save sạch, ngày 3): quét mọi phần tử ngoài viewport (kể cả bị cắt bởi overflow hidden) = 0
 - GĐ348 — 🔬 Coverage (test:coverage): dòng 55% (phần thiếu là UI/3D), nhánh 88,8%, hàm 83%; không file core/data nào >60 dòng mà <50% — không cần test bù
