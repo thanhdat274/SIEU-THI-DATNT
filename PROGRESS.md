@@ -143,3 +143,4 @@
 - GĐ388: test hết hạn chào bán mặt bằng rival qua đêm (bizEndOfDay), mutation 2/2 — rivalForSaleExpiry.test.ts
 - GĐ389: rà biz.ts — rival sinh đời mới (rivalGen/rivalBoss) và maybeSurprise (surpriseArc) đã có test; không còn khoảng trống lớn ở biz.ts. Gap kế: deliverPhone/restockAndAnswerPhone, rushDeliverOrder (orders.ts).
 - GĐ390: test restockAndAnswerPhone (nhập bù, thiếu tiền, món nhà làm), mutation 2/2 — phoneRestock.test.ts
+- GĐ391: test learnSkill (cấp, điểm kỹ năng, trùng, id lạ), mutation 3/3 — learnSkill.test.ts
