@@ -21,6 +21,8 @@
 
 ## Trạng thái hiện tại (30/10/2026)
 
+- **GĐ303:** 📦 Đo bundle: tải ban đầu 758 KB, chunk lớn nhất 359 KB gzip → hạ trần `check-bundle.mjs` 840/400 → 780/380 (khoá mức đã đạt). Full suite sau GĐ302: 2356/2356 xanh, 427s (~7 phút, chưa đạt ≤5). Còn: 2 bản sao Draco thừa trong assets/, tách code ít dùng bằng import() để tới ≤600 KB.
+
 - **GĐ302:** 🔕 Ngày đầu người mới: báo "khách tìm X mà hết hàng" chỉ 1 lần/ngày (trước: mỗi món một lần, bot ngày 1 gặp 5 lần). Thông báo ngày đầu 27 → 22; trần `DAY1_TOAST_CEILING` 30 → 24. Chi tiết từng món vẫn ở bảng Nhập hàng + lời khuyên. Còn lại để về ≤10: gộp cụm lên cấp/nhiệm vụ xong (bot lên 4 cấp trong ngày 1, người thật không).
 
 - **GĐ301:** ✂️ Chống phình thông báo: rút 22 thông báo >90 ký tự (dài nhất 154) về ≤90, mỗi cái một ý; trần `featureBudget` hạ 154/22 → 90/0 (đạt mục tiêu dài hạn). Không đổi logic/kinh tế. Full suite 2355/2356 xanh; 1 lần economySim cấp 5 quá giờ khi chạy song song, chạy riêng đạt (không liên quan).
@@ -364,3 +366,4 @@
 - GĐ300 — 👥 Co-op parity: việc sáng 🧍 chốt sẵn ở máy chạy (`lastSummary.staffIdle`) để máy khách thấy y hệt
 - GĐ301 — ✂️ Rút 22 thông báo dài về ≤90 ký tự, trần ngân sách 90/0
 - GĐ302 — 🔕 Báo hết hàng 1 lần/ngày, thông báo ngày đầu 27→22
+- GĐ303 — 📦 Hạ trần bundle 780/380 KB; full suite 2356 xanh
