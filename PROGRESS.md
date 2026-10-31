@@ -130,6 +130,7 @@
 - GĐ529: Tự đồ xôi khi chưa có món xôi nào mở ở cấp hiện tại giờ báo lý do thay vì im lặng + test. 2643 test xanh.
 - GĐ530: Tiệm xôi cuối tuần khách ngồi ăn ×1,15 (tiemXoiWeekendMul, nhân cùng mưa ×1,2; kho thiếu thì vẫn bán theo kho) + tiemXoiWeekend.test.ts. Không thêm save. 2645 test xanh, bundle 598/253.
 - GĐ531: Bảng tiệm xôi hiện '👨‍👩‍👧 cuối tuần ×1.15 suất' vào ngày cuối tuần (cạnh dòng mưa). Hàm đã có test GĐ530; 2645 test xanh, bundle 598.
+- GĐ532: Tiện lợi 24/7: đêm cuối tuần (22h–6h) khách ghé ×1,3 (branchWeekendMul trong runBranch) + branchWeekend.test.ts. Không thêm save. 2646 test xanh, bundle 598/253.
 
 - GĐ522: QA gợi ý phím Ngõ 2 (cần pane hiện để vòng render chạy): lô có sạp hiện '[L] Đứng sạp hôm nay (+25%)', lô trống kế tiếp hiện '[L] Thuê lô sạp…'.
 - GĐ523: Đo FPS sandbox preset Thấp (auto): Ngõ 2 có sạp + người dạo 35–37 FPS, trước tiệm chính 36,5 — đạt ≥30, Ngõ 2 không làm nặng thêm.

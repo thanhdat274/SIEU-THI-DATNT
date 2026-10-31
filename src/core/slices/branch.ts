@@ -2,7 +2,7 @@ import { simRng } from '../rand';
 import { formatMoney, productById } from '../../data/products';
 import { HOMEGROWN_PREMIUM } from '../../data/garden';
 import { dailyWage, GUARD_DETECT, ROLES, type Staff } from '../../data/staff';
-import { BLACKOUT_LOSS, BONUS_RELIEF, DRUNK_BLOCK, DRUNK_DAMAGE, EVENT_CHANCE, EVENT_ROLL_AT, FATIGUE_PER_DAY, FATIGUE_QUIT, FATIGUE_SLOW, HOT_FOOD_MUL, MANAGER_REFILL_BELOW, QUIT_CHANCE, TIRED_MISS, autoSchedule, fatigueOf, isHotFood, pickWeighted, restingOn, spoilsInBlackout, BRANCH_NIGHT_THEFT, BRANCH_ROLES, BRANCH_SHIFT_NAME, BRANCH_SHIFTS, CONVENIENCE, VENDING_CAP, VENDING_COST, VENDING_ITEMS, VENDING_OFFTAKE, VENDING_THEFT, branchTrafficAt, isBranchNight, newBranch, onShift, shelfTotal, vendingTotal, type BranchState,
+import { BLACKOUT_LOSS, BONUS_RELIEF, DRUNK_BLOCK, DRUNK_DAMAGE, EVENT_CHANCE, EVENT_ROLL_AT, FATIGUE_PER_DAY, FATIGUE_QUIT, FATIGUE_SLOW, HOT_FOOD_MUL, MANAGER_REFILL_BELOW, QUIT_CHANCE, TIRED_MISS, autoSchedule, fatigueOf, isHotFood, pickWeighted, restingOn, spoilsInBlackout, BRANCH_NIGHT_THEFT, BRANCH_ROLES, BRANCH_SHIFT_NAME, BRANCH_SHIFTS, CONVENIENCE, VENDING_CAP, VENDING_COST, VENDING_ITEMS, VENDING_OFFTAKE, VENDING_THEFT, branchTrafficAt, branchWeekendMul, isBranchNight, newBranch, onShift, shelfTotal, vendingTotal, type BranchState,
   ALCOHOL_BRAWL_CHANCE, ALCOHOL_NIGHT_MUL, BRAWL_BLOCK, BRAWL_DAMAGE, GENERATOR_FUEL, GENERATOR_LOSS_MUL, NIGHT_DELIVERY_MISHAP, NIGHT_DELIVERY_PER_HOUR, NIGHT_DELIVERY_SURCHARGE, PATROL_AT, PATROL_CHANCE, POWER_UPGRADES,
   coverMul, hasAlcohol, hasPower, pickForGroup, pickNightGroup, powerUpgradeById, type PowerUpgradeId } from '../../data/branches';
 import type { GameState, SetState, GetState } from '../gameTypes';
@@ -179,7 +179,7 @@ export const runBranch = (get: GetState, to: number): Partial<GameState> => {
       if (autoHaul && moved) news.push(`🚚 Chi nhánh đã tự chở ${moved} món từ kho chung sang (auto chuyển kho, phí xăng ${formatMoney(CONVENIENCE.tripFee)})`);
     }
     // Khách ghé trong 10 phút; không ai đứng quầy, quầy đang ngưng hoặc hết hàng thì khách bỏ về
-    const expect = (branchTrafficAt(m) * STEP) / 60;
+    const expect = (branchTrafficAt(m) * branchWeekendMul(s.day, m) * STEP) / 60;
     let n = Math.floor(expect) + (simRng()() < expect % 1 ? 1 : 0);
     const cashiers = on.filter((st) => st.role === 'cashier');
     // Chủ đang có mặt ở chi nhánh thì tự đứng quầy được (không mệt)
