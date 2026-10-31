@@ -183,4 +183,4 @@ const fmt = (v: number) => `${Math.round(v).toLocaleString('vi-VN')}đ`;
 const DAY1_TOAST_CEILING = 13; // GĐ316: không đếm thông báo nhận thưởng (📜/🎯), đo 11–14; đo 18 sau GĐ309 (dời danh hiệu/kèo/chi phí/thay ô sang ngày 2+; GĐ302: 22; ban đầu 27)
 
 // GĐ321: sim TẤT ĐỊNH (Math.random seed 20261031) đo cấp 5 1.13 · cấp 10 1.02 · cấp 20 0.71 (sau GĐ322; trước 1.53/1.29/0.96); trần = đo + đệm nhỏ. Chỉ được hạ.
-const BONUS_TO_SALES_CEILING: Record<number, number> = { 5: 1.2, 10: 1.1, 20: 0.8 };
+const BONUS_TO_SALES_CEILING: Record<number, number> = { 5: 1.15, 10: 1.05, 20: 0.75 };
