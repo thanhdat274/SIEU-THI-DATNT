@@ -184,3 +184,4 @@
 - GĐ460: QA sandbox: FestivalBanner và dải hẹn hôm nay (lazy) hiện đúng, không lỗi console.
 - GĐ461: Mở rộng bếp xôi (cấp 42, 20tr): giữ 120 phần/món, sức nấu ×1.5 (expandTiemXoi, big? tuỳ chọn).
 - GĐ462: Sạp xôi 3D thêm nồi thứ hai sau quầy khi đã mở rộng bếp (setBig).
+- GĐ463: QA sandbox: mở rộng bếp xôi chạy (big=true), sạp hiện bình thường; nồi thứ hai quá nhỏ ở góc camera mặc định để thấy rõ.
