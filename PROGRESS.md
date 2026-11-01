@@ -145,3 +145,4 @@
 - GĐ652: thẻ lễ ở Lịch năm gắn ✓/⚠️ cho từng 'hàng nên nhập' (kho + kệ, như Sổ đầu ngày) khi lễ đang diễn ra hoặc ≤14 ngày. QA sandbox ngày 16: Tết 'Bánh kẹo ✓', lễ xa không gắn.
 - GĐ653: QA ⚠️ của GĐ652 ở cấp 45 (Tết thiếu hàng) → lộ lỗi 'Giỏ quà Tết' lặp 2 lần (có trong cả goods lẫn hot). festivalStock khử trùng bằng Set — sửa luôn tin báo lễ sắp tới. Test mọi lễ không trùng.
 - GĐ654: tin sáng 'lễ sắp tới, nhập sẵn …' chỉ nêu 4 món đầu + '+N món' (Tết cấp cao ~15 món làm dòng tin dài cả đoạn); đủ danh sách ở Lịch năm. 283 test liên quan + golden/economy xanh.
+- GĐ655: QA GĐ654 sandbox (cấp 45, ngủ sang ngày 25): tin sáng '🧧 3 ngày nữa là Tết Nguyên Đán, nhập sẵn Bánh chưng, Bao lì xì, Mứt dừa, Hạt dưa +11 món' (90 ký tự). Không đổi mã.
