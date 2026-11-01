@@ -251,3 +251,10 @@ describe('GĐ622: ngày có trận lô nước mía đông', () => {
     expect(sapLotIncome(mia, 'rain', d)).toBe(0);
   });
 });
+
+describe('GĐ624: gợi ý sạp ngày mai ghi "(có trận)"', () => {
+  it('ZoneMapSection gắn lý do khi món gợi ý là nước mía ngày trận', async () => {
+    const { readFileSync } = await import('node:fs');
+    expect(readFileSync('src/ui/panels/ZoneMapSection.tsx', 'utf8')).toContain("tip.id === 'nuocmia' && isQuanMatchDay(day + 1, tmr) ? ' (có trận)'");
+  });
+});

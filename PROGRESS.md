@@ -130,3 +130,4 @@
 - GĐ621: lưu trữ GĐ600–619 → docs/progress-archive/INDEX-GD600-619.md.
 - GĐ622: ngày có trận (lịch quán nước, không mưa/bão) lô sạp nước mía thu ×1,15 (SAP_MATCH_MUL); bản đồ khu ghi ' ⚽' sau lô. Theo số ngày → parity; bán thật, không phải thưởng. sapRong 22/22, golden + economySim 9/9 xanh, bundle 597/597.
 - GĐ623: gọn test GĐ622 (so với cùng công thức không trận). QA sandbox ngày 17 nắng: 'Lô 1: 🧺 🥤 Nước mía · hôm nay 517.500đ ⚽' (300k×1,5×1,15), lô bánh mì không đổi. Lưu ý QA: biz.zones là mảng id, đặt object làm vỡ UI.
+- GĐ624: gợi ý sạp ngày mai ghi lý do '(có trận)' khi món gợi ý là nước mía vào ngày trận. QA sandbox ngày 16, mai nắng: 'Mai nắng đẹp: nên bán 🥤 Nước mía (có trận)'. sapRong 23/23.

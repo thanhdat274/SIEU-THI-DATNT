@@ -74,7 +74,7 @@ export function ZoneMapSection() {
           })}
           {tmr && tip && (
             <div style={{ fontSize: 12, opacity: 0.8, width: '100%' }}>
-              {WEATHER[tmr].icon} Mai {WEATHER[tmr].name.toLowerCase()}: {tmr === 'rain' || tmr === 'storm' ? 'sạp nghỉ bán' : `nên bán ${tip.icon} ${tip.name}${tip.id === 'xoi' && isXoiCungDay(day + 1) ? ' (ngày cúng)' : ''}`}
+              {WEATHER[tmr].icon} Mai {WEATHER[tmr].name.toLowerCase()}: {tmr === 'rain' || tmr === 'storm' ? 'sạp nghỉ bán' : `nên bán ${tip.icon} ${tip.name}${tip.id === 'xoi' && isXoiCungDay(day + 1) ? ' (ngày cúng)' : ''}${tip.id === 'nuocmia' && isQuanMatchDay(day + 1, tmr) ? ' (có trận)' : ''}`}
             </div>
           )}
         </div>
