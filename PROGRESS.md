@@ -21,6 +21,7 @@
 
 ## Trạng thái hiện tại (01/11/2026)
 
+- **GĐ683:** hồi quy sau GĐ682: cả bộ 2740 test xanh (241 s). Không đổi mã.
 - **GĐ682:** 🧪 test HÀNH VI cho SW (bên cạnh test cấu trúc GĐ678): `swFetch.test.ts` nạp mã nguồn sw.js vào sandbox (self/caches giả, fetch mock) rồi gọi đúng handler fetch — 5 test: /assets hash cache-first thật sự, glb không-hash network-first (fix GĐ678) + fallback offline, /api không dính SW. Mutation-checked: đưa glb về cache-first → test đỏ (`dev/mutate_sw.cjs`). Ghi chú deploy: SW v2 tới tay người chơi khi bản build/deploy PROD kế tiếp (quy trình trong DEPLOY.md là của người dùng).
 - **GĐ672–680** (dồn archive GĐ662–671; QA khung tablet/ngang; QA 320px mobile; đo CPU render gfx=low 5,7 ms; dọn import chết; **sửa SW stale assets — glb network-first + swStrategy.test mutation-checked**; hồi quy 2735 xanh/225 s; audit 10-GĐ ĐẠT) đã dồn archive: docs/progress-archive/PROGRESS-GD672-680.md
 - **GĐ677 chi tiết:** dọn import chết `economySim.test.ts` sau GĐ669 — tsc + test xanh. Không đổi hành vi.
@@ -129,3 +130,4 @@
 - GĐ680: audit 10-GĐ ĐẠT; điểm nhấn chu kỳ = sửa SW stale assets (GĐ678); prune không bỏ gì.
 - GĐ681: dồn chi tiết GĐ672–680 sang docs/progress-archive/PROGRESS-GD672-680.md; PROGRESS về ~20 KB.
 - GĐ682: test hành vi SW (swFetch.test, mutation-checked); SW v2 áp dụng khi deploy PROD kế.
+- GĐ683: hồi quy cả bộ 2740 xanh / 241 s.
