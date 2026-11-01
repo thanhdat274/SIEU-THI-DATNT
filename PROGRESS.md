@@ -145,3 +145,4 @@
 - GĐ617: thẻ 'Mai tiệm có gì' thêm '⚽ Tối mai có trận — quán nước, tiện lợi đông khuya' (cấp ≥29, đúng lịch trận + thời tiết mai). Test 18/18 (bài 'không có gì' sang ngày 368).
 - GĐ618: QA thẻ 'Mai tiệm có gì' (sandbox, store ngày 17 nắng, cấp 50): hiện '⚽ Tối mai có trận — quán nước, tiện lợi đông khuya'. Đúng.
 - GĐ619: cả bộ sau GĐ615–618: 2703/2703 xanh (246s).
+- GĐ620 (rà ngân sách + QA người mới): bundle 597/597, chunk 253/255, PROGRESS 29,4KB (sát trần — lần sau lưu trữ GĐ600–619), 2703/2703 xanh (GĐ619). Save sandbox mới: Chơi không đăng nhập → Ra tiệm → 3 thoại Bà Năm → Mở cửa → bán món đầu ~62s (mục tiêu ≤5 phút).
