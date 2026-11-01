@@ -85,6 +85,9 @@ describe('heartbeat hẻm online — pong ghi đúng cờ heartbeat đọc (GĐ6
     const ws = await openClient(server.port);
     await wait(CYCLE_MS * 4);
     expect(server.terminatedCount()).toBeGreaterThan(0);
+    // terminate cắt đột ngột phía server — sẵn sàng trạng thái phía client có thể tới muộn
+    // một tick khi máy đang chạy song song nhiều worker (flaky GĐ699/700). Chờ có hạn, không che bug.
+    for (let i = 0; i < 20 && ws.readyState === WebSocket.OPEN; i++) await wait(10);
     expect(ws.readyState).not.toBe(WebSocket.OPEN);
   });
 });
