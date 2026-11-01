@@ -46,3 +46,15 @@ describe('GĐ584: Sổ đầu ngày nhắc trận bóng', () => {
     expect(quanNuocDayAction({ missedRevenue: 5000, driesMain: false, drinkUnitsNow: 0 } as never, d, 'sunny')!.icon).toBe('🧋');
   });
 });
+
+describe('GĐ586: Giải bóng đá phường = đêm có trận', () => {
+  it('mọi ngày của lễ bong_da_phuong đều có trận (trời khô), mưa thì không', async () => {
+    const { festivalOn } = await import('../data/calendar');
+    const days = Array.from({ length: 400 }, (_, i) => i + 1).filter((d) => festivalOn(d)?.id === 'bong_da_phuong');
+    expect(days.length).toBeGreaterThan(0);
+    for (const d of days) {
+      expect(isQuanMatchDay(d, 'sunny')).toBe(true);
+      expect(isQuanMatchDay(d, 'rain')).toBe(false);
+    }
+  });
+});

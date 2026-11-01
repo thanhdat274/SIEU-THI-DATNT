@@ -1,4 +1,4 @@
-import { isWeekend } from './calendar';
+import { festivalOn, isWeekend } from './calendar';
 /**
  * Quán nước đầu ngõ (GĐ7): địa điểm kinh doanh thứ hai, mở ở cấp 29, chuyên bán ĐỒ UỐNG rút nguyên liệu
  * từ kho chung (ăn vào chuỗi giá trị trại → kho → quán). Khác với chi nhánh tiện lợi (mô phỏng ngầm theo
@@ -298,7 +298,8 @@ export const QUAN_WEEKEND_MUL = 1.2;
 /** GĐ581: tối có trận bóng (1 ngày thường/tuần, không mưa bão) → khách quán nước ×1,3. Theo số ngày nên chơi đơn/hẻm online như nhau. */
 export const QUAN_MATCH_MUL = 1.3;
 export const isQuanMatchDay = (day?: number, weather?: Weather) =>
-  day !== undefined && day % 7 === 3 && !isWeekend(day) && weather !== 'storm' && weather !== 'rain';
+  day !== undefined && weather !== 'storm' && weather !== 'rain'
+  && ((day % 7 === 3 && !isWeekend(day)) || festivalOn(day)?.id === 'bong_da_phuong'); // GĐ586: cả giải bóng phường là đêm có trận
 export const quanMatchMul = (day?: number, weather?: Weather) => (isQuanMatchDay(day, weather) ? QUAN_MATCH_MUL : 1);
 export const quanWeekendMul = (day?: number) => (day !== undefined && isWeekend(day) ? QUAN_WEEKEND_MUL : 1);
 /** GĐ449: quán cà phê (bậc 3) có thêm 1 ô thực đơn. */
