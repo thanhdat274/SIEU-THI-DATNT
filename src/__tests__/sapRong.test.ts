@@ -241,13 +241,13 @@ describe('GĐ595: panel sạp báo ngày cúng', () => {
 });
 
 describe('GĐ622: ngày có trận lô nước mía đông', () => {
-  it('nước mía ×1,15 ngày trận (nắng), lô khác và ngày mưa không đổi', async () => {
+  it('nước mía ×1,15 ngày trận (nắng); cùng ngày đó trời mưa thì 0', async () => {
     const { SAP_KINDS, sapLotIncome, SAP_MATCH_MUL } = await import('../data/sapRong');
     const { isQuanMatchDay } = await import('../data/quanNuoc');
-    const d = Array.from({ length: 30 }, (_, i) => i + 2).find((x) => isQuanMatchDay(x, 'sunny') && !isQuanMatchDay(x + 7 - 1, 'sunny'))!;
+    const d = Array.from({ length: 30 }, (_, i) => i + 2).find((x) => isQuanMatchDay(x, 'sunny'))!;
     const mia = SAP_KINDS.find((k) => k.id === 'nuocmia')!;
-    const bm = SAP_KINDS.find((k) => k.id === 'banhmi')!;
-    expect(sapLotIncome(mia, 'sunny', d)).toBe(Math.round(sapLotIncome(mia, 'sunny', d + 7 - 1) * SAP_MATCH_MUL * (sapLotIncome(bm, 'sunny', d) / sapLotIncome(bm, 'sunny', d + 6))));
+    const noMatch = (sapLotIncome({ ...mia, id: 'nuocmia_x' }, 'sunny', d));
+    expect(sapLotIncome(mia, 'sunny', d)).toBe(Math.round(noMatch * SAP_MATCH_MUL));
     expect(sapLotIncome(mia, 'rain', d)).toBe(0);
   });
 });
