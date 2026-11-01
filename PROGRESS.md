@@ -21,6 +21,7 @@
 
 ## Trạng thái hiện tại (01/11/2026)
 
+- **GĐ663:** QA co-op luồng ngắn cho khung panel GĐ662 (2 tab `?dev=a`/`?dev=b`, hẻm "QA GD662 khung panel"): máy khách (Thử B, hẻm T9VP65) mở history/records/branch — khung cùng 760×688 top=56 như chơi đơn, chuyển tab không nhảy, `layoutAudit` clipped 0, không lỗi console. Không đổi mã.
 - **GĐ662:** 🔍 QA toàn diện giao diện (lần đầu từ ~GĐ300): quét 34 panel × 4 kích thước (320/390/768/1280) bằng `layoutAudit()` + bấm mọi tab hub — layoutAudit sạch, 0 lỗi console, nhưng đo khung `.panel` lộ lỗi thật: khung co theo nội dung nên chuyển tab làm modal nhảy (1280px hub Sổ sách 658→1160px rộng, cao 243→692, ✕ nhảy theo). Sửa 1 chỗ trong `styles.panel` (shared.tsx): khung CỐ ĐỊNH theo cỡ màn — desktop `760×min(688, 100dvh−108)`, mobile full-rộng × `100dvh−96`, nội dung dài cuộn bên trong (overflowX desktop = auto, bảng rộng thành cuộn ngang chuẩn GĐ298). Test khoá `panelFrame.test.ts` (đã kiểm đỏ khi phá khung). FPS gfx=low đo lại 70–74 (có khách) — mức ~46 của GĐ660 là nhiễu tải máy, không phải regression. 2724 test xanh, bundle 596,7/597.
 - **GĐ661:** QA ván mới bổ sung cho GĐ660 — Tiếp/Xong → Ra tiệm → Mở cửa, bán được 9 món (nước, bánh, mì) trong ~65 s thật (≤5 phút ✅).
 
@@ -139,3 +140,4 @@
 - GĐ660: rà ngân sách — tải đầu 596.7/597 KB, chunk 253/255 KB; lưu trữ GĐ637–659; PROGRESS gọn 25.6 KB; ván mới vào được ngày 1, FPS ~46.
 - GĐ661: QA ván mới bổ sung cho GĐ660 — Tiếp/Xong → Ra tiệm → Mở cửa, bán được 9 món (nước, bánh, mì) trong ~65 s thật (≤5 phút ✅).
 - GĐ662: QA toàn diện giao diện — khung modal cố định, hết nhảy khung khi chuyển tab (chi tiết: mục Trạng thái hiện tại; test `panelFrame.test.ts`). FPS gfx=low đo lại 70–74 có khách → mức ~46 GĐ660 là nhiễu tải máy.
+- GĐ663: QA co-op luồng ngắn khung panel GĐ662 — máy khách cùng khung 760×688 như chơi đơn, clipped 0. Không đổi mã.
