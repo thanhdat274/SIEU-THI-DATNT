@@ -13,8 +13,28 @@ import { simRng } from '../core/rand';
 export const ONLINE_UNLOCK = 10;
 /** Phí mở gian hàng trên app (trả một lần). */
 export const ONLINE_OPEN_COST = 500000;
-/** App lấy hoa hồng chừng này phần mỗi đơn. */
+/** App lấy hoa hồng chừng này phần mỗi đơn (bậc 0 — gian hàng mới). */
 export const APP_COMMISSION = 0.12;
+
+/** Bậc gian hàng theo số đơn app đã giao trọn đời — đơn ngày ở tiệm và đơn đêm chi nhánh cùng hồ sơ app.
+ *  Bậc cao hơn = hoa hồng thấp hơn (app tri ân gian hàng uy tín); chỉ là giảm phí, không đổi giá bán. */
+export interface AppTier { at: number; name: string; commission: number; }
+export const APP_TIERS: AppTier[] = [
+  { at: 0, name: 'Gian hàng mới', commission: 0.12 },
+  { at: 50, name: 'Quán quen app', commission: 0.11 },
+  { at: 150, name: 'Gian hạng bạc', commission: 0.1 },
+  { at: 400, name: 'Gian hạng vàng', commission: 0.09 },
+];
+/** Bậc hiện có của gian hàng theo số đơn đã giao. */
+export const appTier = (done: number): AppTier => {
+  let t = APP_TIERS[0];
+  for (const it of APP_TIERS) if (done >= it.at) t = it;
+  return t;
+};
+/** Hoa hồng app trả cho đơn theo bậc hiện có (phần app giữ lại). */
+export const appCommission = (done: number): number => appTier(done).commission;
+/** Tiền thật nhận cho đơn trị giá `value` sau hoa hồng theo bậc — khớp công thức các nơi giao. */
+export const appPay = (value: number, done: number): number => Math.round(value * (1 - appCommission(done)));
 /** App chỉ nhận đơn trong khung giờ này (phút trong ngày). */
 export const ONLINE_HOURS: [number, number] = [7 * 60, 21 * 60 + 30];
 /** Đơn mới chờ tiệm nhận tối đa chừng này phút rồi app tự huỷ. */
@@ -140,10 +160,11 @@ export const orderCost = (o: OnlineOrder): number =>
 
 /**
  * Lãi ròng của đơn (chưa trừ phí giao): doanh thu sau hoa hồng − giá vốn hàng.
- * Gross dùng Math.round(onlineValue×(1−commission)) — đúng số tiệm THỰC nhận khi giao (slices/online).
+ * Gross dùng Math.round(onlineValue×(1−commission)) — đúng số tiệm THỰC nhận khi giao (slices/online);
+ * truyền `commission` = hoa hồng theo bậc hiện có (appCommission(online.done)) để khớp số thật.
  */
-export const orderNet = (o: OnlineOrder, priceOf: (id: string) => number): number =>
-  Math.round(onlineValue(o, priceOf) * (1 - APP_COMMISSION)) - orderCost(o);
+export const orderNet = (o: OnlineOrder, priceOf: (id: string) => number, commission: number = APP_COMMISSION): number =>
+  Math.round(onlineValue(o, priceOf) * (1 - commission)) - orderCost(o);
 
 export interface OrderAssessment {
   /** Tiền thật nhận được sau hoa hồng (đúng số khi giao). */
@@ -168,9 +189,10 @@ export interface OrderAssessment {
   urgent: boolean;
 }
 
-/** Đánh giá kinh tế + thời điểm của một đơn: giúp quyết lấy / lấy qua Grab / từ chối. Thuần đọc, không đổi state. */
-export function orderAssessment(o: OnlineOrder, priceOf: (id: string) => number, courierSkill: number | null, minutes: number): OrderAssessment {
-  const gross = Math.round(onlineValue(o, priceOf) * (1 - APP_COMMISSION));
+/** Đánh giá kinh tế + thời điểm của một đơn: giúp quyết lấy / lấy qua Grab / từ chối. Thuần đọc, không đổi state.
+ *  `commission` — hoa hồng theo bậc hiện có (appCommission(online.done)); mặc định bậc 0 để test cũ không vỡ. */
+export function orderAssessment(o: OnlineOrder, priceOf: (id: string) => number, courierSkill: number | null, minutes: number, commission: number = APP_COMMISSION): OrderAssessment {
+  const gross = Math.round(onlineValue(o, priceOf) * (1 - commission));
   const cost = orderCost(o);
   const net = gross - cost;
   const ownTravelT = courierSkill == null ? 0 : ownTravel(o.km, courierSkill);

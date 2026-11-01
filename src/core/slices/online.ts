@@ -1,6 +1,6 @@
 import type { Lot } from '../../data/freshness';
 import {
-  ACCEPT_WINDOW, APP_COMMISSION, appRating, deliveryStars, grabFee, grabTravel, makeOnlineOrder, ONLINE_HOURS, ONLINE_OPEN_COST,
+  ACCEPT_WINDOW, appPay, appRating, deliveryStars, grabFee, grabTravel, makeOnlineOrder, ONLINE_HOURS, ONLINE_OPEN_COST,
   ONLINE_UNLOCK, onlineValue, orderGap, orderKindTag, ownTravel, type OnlineState,
 } from '../../data/online';
 import { formatMoney, productById } from '../../data/products';
@@ -47,7 +47,7 @@ export const updateOnline = (set: SetState, get: GetState) => {
     }
     if (o.status === 'shipping' && o.arriveAt !== undefined && m >= o.arriveAt) {
       const stars = deliveryStars(o, o.arriveAt);
-      const pay = Math.round(onlineValue(o, s.priceOf) * (1 - APP_COMMISSION));
+      const pay = appPay(onlineValue(o, s.priceOf), online.done); // hoa hồng theo bậc hiện có (GĐ716)
       money += pay;
       items += Object.values(o.items).reduce((n, q) => n + q, 0);
       doneCount++;
@@ -154,7 +154,7 @@ export function onlineDayEnd(s: GameState) {
   let { ratingSum, ratingCount, done, late } = on;
   for (const o of on.orders) {
     if (o.status === 'shipping') {
-      money += Math.round(onlineValue(o, s.priceOf) * (1 - APP_COMMISSION));
+      money += appPay(onlineValue(o, s.priceOf), done); // bậc tính cả đơn đã giao trước trong ngày
       ratingSum += 3; ratingCount++; done++; late++;
     }
   }

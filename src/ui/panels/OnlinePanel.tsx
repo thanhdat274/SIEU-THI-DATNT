@@ -1,6 +1,6 @@
 import { formatClock, useClock, useGame } from '../../core/store';
 import {
-  ACCEPT_WINDOW, APP_COMMISSION, appRating, declineRating, describeOnline, grabFee, ONLINE_HOURS, ONLINE_OPEN_COST, ONLINE_UNLOCK, onlineOrderCap,
+  ACCEPT_WINDOW, appCommission, APP_TIERS, appTier, appRating, declineRating, describeOnline, grabFee, ONLINE_HOURS, ONLINE_OPEN_COST, ONLINE_UNLOCK, onlineOrderCap,
   orderAssessment, orderGap, orderRateTone, ratingImpact,
 } from '../../data/online';
 import { formatMoney } from '../../data/products';
@@ -17,12 +17,14 @@ export function OnlinePanel() {
   const freeCourier = couriers[busyOwn];
   const rating = appRating(online);
   const cap = onlineOrderCap(rating, level);
+  const tier = appTier(online.done);
+  const nextTier = APP_TIERS.find((t) => t.at > online.done) ?? null;
   return (
     <>
       <h2 style={styles.title}>📲 Bán online</h2>
       <p style={styles.sub}>
         Đơn từ khắp quận đặt qua app khi tiệm mở cửa. Nhân viên giao hàng của tiệm chở miễn phí nhưng chậm, mỗi người một đơn;
-        Grab tới nhanh nhưng tính phí theo km. App lấy {Math.round(APP_COMMISSION * 100)}% mỗi đơn. Giao đúng hẹn giữ điểm cao, điểm thấp thì ít đơn.
+        Grab tới nhanh nhưng tính phí theo km. App lấy hoa hồng theo hạng gian hàng (12% → 9%). Giao đúng hẹn giữ điểm cao, điểm thấp thì ít đơn.
       </p>
       {!registered ? (
         <div style={styles.card}>
@@ -78,6 +80,7 @@ export function OnlinePanel() {
           <div style={{ ...styles.card, display: 'block', fontSize: 12, marginBottom: 10, background: '#323244' }}>
             <div>⏱️ Khung nhận đơn: <b>{Math.floor(ONLINE_HOURS[0] / 60)}h–{Math.floor(ONLINE_HOURS[1] / 60)}h30</b> · cách nhau trung bình ~{Math.round(orderGap(rating, level))} phút.</div>
             <div>📈 Điểm {rating.toFixed(1)}⭐ → <b>{orderRateTone(rating)}</b> ({Math.round(cap)} đơn/ngày gần đúng).</div>
+            <div>🏅 Hạng: <b>{tier.name}</b> — hoa hồng {Math.round(appCommission(online.done) * 100)}%.{nextTier ? ` Còn ${nextTier.at - online.done} đơn tới "${nextTier.name}" (hoa hồng ${Math.round(nextTier.commission * 100)}%).` : ' Đã ở bậc cao nhất — app tri ân gian hàng uy tín.'}</div>
             {rating < 4.5 && <div style={{ opacity: 0.8, marginTop: 2 }}>💡 Giao đúng hẹn để điểm lên 4,5⭐ sẽ có đơn dày nhất.</div>}
           </div>
           <label style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 13, marginBottom: 10 }}>
@@ -89,7 +92,7 @@ export function OnlinePanel() {
             {online.orders.map((o) => {
               const enough = Object.entries(o.items).every(([id, q]) => (storage[id] ?? 0) >= q);
               // GĐ59: đánh giá kinh tế + điểm app cho từng lựa chọn (thuần đọc từ công thức giao/checkout có sẵn)
-              const a = orderAssessment(o, priceOf, freeCourier ? freeCourier.skill : null, minutes);
+              const a = orderAssessment(o, priceOf, freeCourier ? freeCourier.skill : null, minutes, appCommission(online.done));
               const grabStars = 5;
               const grabNext = ratingImpact(grabStars, online).nextRating;
               const declineNext = declineRating(online).nextRating;

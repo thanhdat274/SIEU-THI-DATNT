@@ -11,7 +11,7 @@ import { autoHaulDue, autoHaulCfg } from '../../data/branchHaul';
 import { CHIEF_QUIT_MUL, LEAD_FATIGUE_MUL, hasRank } from '../../data/careers';
 import { gainExp } from '../../data/staffTraits';
 import { LICENSE_FINE, isAlcohol, licenseById, licenseStatus } from '../../data/licenses';
-import { APP_COMMISSION, appRating } from '../../data/online';
+import { appPay, appRating } from '../../data/online';
 
 /** Cửa hàng tiện lợi 24/7: mô phỏng ngầm theo bước 10 phút, sang ngày, thuê/xếp ca/thưởng nhân viên chi nhánh. */
 
@@ -243,7 +243,7 @@ export const runBranch = (get: GetState, to: number): Partial<GameState> => {
           news.push('🛵 Shipper giao đêm gặp sự cố giữa đường — mất một đơn app');
           continue;
         }
-        const pay = Math.round(value * (1 - APP_COMMISSION));
+        const pay = appPay(value, s.online.done + onl.done); // hoa hồng theo bậc app (GĐ716 — cùng hồ sơ với tiệm)
         revenue += pay;
         onl.pay += pay;
         onl.ratingSum += 5; onl.ratingCount++; onl.done++;
