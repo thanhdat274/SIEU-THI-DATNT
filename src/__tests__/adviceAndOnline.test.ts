@@ -6,7 +6,7 @@ import { migrateTiers } from '../core/stock';
 import { updateOnline } from '../core/slices/online';
 import { furnitureDef } from '../data/furniture';
 import { ACCEPT_WINDOW } from '../data/online';
-import type { Furniture } from '../data/furniture';
+import type { Furniture } from '../core/gameTypes';
 
 /**
  * GĐ699 — phủ các khối logic thuần còn lộ nhỏ (covlines GĐ693):
@@ -43,7 +43,7 @@ describe('expiringSoon — hàng sắp hết hạn (GĐ699)', () => {
 describe('analyticsAdvice — gợi ý từ sổ sức khoẻ (GĐ699)', () => {
   const h = (over: Partial<ItemHealth>): ItemHealth => ({
     id: 'mi', name: 'Mì gói', qty30: 10, profit30: 100000, revenue30: 500000, profit21: 100000,
-    margin: 0.2, dailyQty: 3, daysLeft: 10, spoilShare: 0, lostShare: 0, ...over,
+    margin: 0.2, dailyQty: 3, daysLeft: 10, spoilShare: 0, lostShare: 0, abc: 'C', ...over,
   });
 
   it('mỗi tình trạng sinh đúng một lời khuyên với nhãn riêng', () => {
@@ -125,7 +125,7 @@ describe('online: huỷ/toggle/nhận đơn (GĐ699)', () => {
     useGame.setState({ online: { ...g().online, open: true, orders: [order] }, storage: {} });
     const out: string[] = [];
     useGame.setState({ notify: (m: string) => out.push(m) });
-    expect(g().acceptOnline(2)).toBe(false);
+    expect(g().acceptOnline(2, 'own')).toBe(false);
     expect(out.join(' ')).toContain('Kho còn thiếu');
     expect(g().online.orders).toHaveLength(1);
   });

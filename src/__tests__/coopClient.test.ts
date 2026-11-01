@@ -574,3 +574,61 @@ describe('chính sách vận hành co-op parity: tái sinh & chào mừng quay l
     expect(store.useGame.getState().titles).toContain('tap_su');
   });
 });
+
+// ───── GĐ702: vào hẻm — đường lỗi & danh sách hẻm (REST) ─────
+
+describe('vào hẻm: đường lỗi + REST (GĐ702)', () => {
+  it('server trả lỗi khi vào hẻm: từ chối với đúng thông báo và đóng kết nối', async () => {
+    vi.resetModules();
+    store = await import('../core/store');
+    coop = await import('../net/coop');
+    store.useGame.setState(store.newGameData());
+    coop.initCoop({ scene: { add() {}, remove() {} } as never, player: { mesh: { position: { x: 0, z: 0 }, rotation: { y: 0 } } as never }, actors: () => [], resetSim: () => {} });
+    const entered = coop.enterAlley('ABC');
+    recv({ type: 'error', error: 'Hẻm đã đủ 4 người' });
+    await expect(entered).rejects.toThrow('Hẻm đã đủ 4 người');
+  });
+
+  it('rớt kết nối TRƯỚC khi vào được: từ chối "Mất kết nối khi vào hẻm."', async () => {
+    vi.resetModules();
+    store = await import('../core/store');
+    coop = await import('../net/coop');
+    store.useGame.setState(store.newGameData());
+    coop.initCoop({ scene: { add() {}, remove() {} } as never, player: { mesh: { position: { x: 0, z: 0 }, rotation: { y: 0 } } as never }, actors: () => [], resetSim: () => {} });
+    const entered = coop.enterAlley('ABC');
+    FakeWS.last.onclose!();
+    await expect(entered).rejects.toThrow('Mất kết nối khi vào hẻm.');
+  });
+
+  it('rớt kết nối SAU khi vào được (máy chạy): thoát session + báo người chơi, hẹn reload', async () => {
+    vi.useFakeTimers();
+    await join('runner');
+    const session = await import('../net/session');
+    const notes: string[] = [];
+    store.useGame.setState({ notify: (m: string) => notes.push(m) });
+    expect(session.useSession.getState().coop).not.toBeNull();
+    FakeWS.last.onclose!();
+    expect(session.useSession.getState().coop).toBeNull();
+    expect(notes.join(' ')).toContain('Mất kết nối hẻm online');
+    vi.advanceTimersByTime(2500); // reload đã được lên lịch (stub noop) — không treo
+  });
+
+  it('danh sách hẻm (REST): gọi GET có token, trả dữ liệu; lỗi server thì ném đúng thông báo', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify([{ id: 'a1', name: 'Hẻm 1' }]), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ error: 'Sai mã hẻm' }), { status: 404 }));
+    vi.stubGlobal('fetch', fetchMock);
+    const list = await coop.listAlleys();
+    expect(list[0].name).toBe('Hẻm 1');
+    expect(fetchMock.mock.calls[0][1]?.method).toBe('GET');
+    await expect(coop.joinAlley('ab')).rejects.toThrow('Sai mã hẻm');
+    expect(String(fetchMock.mock.calls[1][0])).toContain('/AB/join'); // mã được in hoa + mã hoá
+    vi.unstubAllGlobals();
+  });
+
+  it('mất mạng khi gọi REST: ném lỗi gợi ý chạy server (không treo)', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')));
+    await expect(coop.listAlleys()).rejects.toThrow('Không kết nối được server');
+    vi.unstubAllGlobals();
+  });
+});

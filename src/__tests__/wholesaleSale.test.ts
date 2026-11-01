@@ -40,7 +40,7 @@ describe('acceptWholesale — bán sỉ cho người bán rong (GĐ694)', () => 
     expect(st.stats.itemsSold).toBe(9);
     expect(st.stats.revenue).toBe(before.stats.revenue + expectedPay);
     expect(st.totals.revenue).toBe(before.totals.revenue + expectedPay);
-    expect(st.stats.byItem.nuoc.qty).toBe(9);
+    expect(st.stats.byItem!.nuoc.qty).toBe(9);
     expect(msgs.join(' ')).toContain('Bán sỉ');
   });
 
