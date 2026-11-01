@@ -1,6 +1,7 @@
 import { useGame } from '../../core/store';
 import { productById } from '../../data/products';
 import { isXoiCungDay } from '../../data/tiemXoi';
+import { isQuanMatchDay } from '../../data/quanNuoc';
 import { CUM_DAYS, dateOfDoy, dayOfYear, FESTIVALS, festivalOn, festivalStock, gameDayOfDoy, isWeekend, MONTH_LENGTHS, weekdayOf, YEAR_DAYS } from '../../data/calendar';
 import { Footer, styles } from './shared';
 
@@ -48,7 +49,7 @@ export function CalendarPanel() {
               return (
                 <div
                   key={d}
-                  title={`${d}/${m + 1} · ${weekdayOf(gd)}${f ? `: ${f.name}` : ''}${wknd ? ' · cuối tuần' : ''}${cung ? ' · ngày cúng' : ''}`}
+                  title={`${d}/${m + 1} · ${weekdayOf(gd)}${f ? `: ${f.name}` : ''}${wknd ? ' · cuối tuần' : ''}${cung ? ' · ngày cúng' : ''}${isQuanMatchDay(gd, 'sunny') ? ' · tối có trận (nếu không mưa)' : ''}`}
                   style={{
                     height: 16, borderRadius: 3, fontSize: 11, display: 'flex', alignItems: 'center', justifyContent: 'center',
                     // GĐ264: #54546e — #4a4a63 quá gần nền #3a3a4d, mắt thường khó thấy ô cuối tuần

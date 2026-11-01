@@ -143,6 +143,7 @@ describe('GĐ639: lịch năm đánh dấu ngày cúng', () => {
     expect(src).toContain('isXoiCungDay(gd)');
     expect(src).toContain("' · ngày cúng'");
     expect(src).toContain('🙏 là ngày cúng (mùng 1, rằm)'); // GĐ642: chú thích
+    expect(src).toContain("isQuanMatchDay(gd, 'sunny') ? ' · tối có trận (nếu không mưa)'"); // GĐ643
   });
 });
 
