@@ -80,3 +80,10 @@ describe('GĐ601: BranchPanel báo tan trận', () => {
     expect(readFileSync('src/ui/BranchPanel.tsx', 'utf8')).toContain('branchMatchMul(day, 23 * 60, weather) > 1');
   });
 });
+
+describe('GĐ603: tin tiện lợi gắn ⚽ đêm có trận', () => {
+  it('endDay thêm ⚽ sau số khách tiện lợi theo isQuanMatchDay', async () => {
+    const { readFileSync } = await import('node:fs');
+    expect(readFileSync('src/core/slices/endDay.ts', 'utf8')).toContain("khách${isQuanMatchDay(s.day, s.weather) ? ' ⚽' : ''}, thu");
+  });
+});

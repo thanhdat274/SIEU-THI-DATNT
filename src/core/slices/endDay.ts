@@ -75,7 +75,7 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
   const branchWages = Math.round(paid.reduce((n, st) => n + dailyWage(st), 0) * (hasSkill(s.skills, 'good_boss') ? 0.9 : 1));
   const nextBranch = br ? branchNewDay(br, s.day) : null;
   if (nextBranch?.news.length) say(nextBranch.news.join(' · '));
-  if (br) say(`🏪 Tiện lợi 24/7: ${br.customersToday} khách, thu ${formatMoney(br.revenueToday)}, lương ${formatMoney(branchWages)}`
+  if (br) say(`🏪 Tiện lợi 24/7: ${br.customersToday} khách${isQuanMatchDay(s.day, s.weather) ? ' ⚽' : ''}, thu ${formatMoney(br.revenueToday)}, lương ${formatMoney(branchWages)}`
     + (br.missedToday ? ` · ${br.missedToday} khách bỏ về (thiếu thu ngân/hết hàng)` : '')
     + (br.lostToday ? ` · mất ${br.lostToday} món (trộm/hỏng)` : '')
     + (br.event?.kind === 'drunk' ? ' · đêm qua có khách say quậy' : br.event?.kind === 'blackout' ? ' · đêm qua mất điện' : br.event?.kind === 'calloff' ? (br.event.covered ? ' · có người làm thay ca đêm' : ' · ca đêm thiếu người') : ''));

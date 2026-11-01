@@ -153,3 +153,4 @@
 - GĐ600 (rà ngân sách + QA người mới): bundle 597/597, chunk 253/255, PROGRESS 28,5KB, economySim (thông báo ngày 1/2) 8/8 xanh, 2692 test xanh. Save sandbox mới: 3 lời thoại → Ra tiệm → Mở cửa → bán đầu (2 nước) sau ≈61s (mục tiêu ≤5 phút).
 - GĐ601: cửa hàng tiện lợi ăn theo đêm có trận (cùng lịch quán nước, không mưa/bão): 22h–24h khách ×1,2; panel tiện lợi báo '⚽ tan trận 22h–24h khách ×1,2'. Theo số ngày → parity. 2694 xanh, bundle 597/597.
 - GĐ602: QA panel tiện lợi (sandbox): ngày 3 nắng hiện '⚽ tan trận 22h–24h khách ×1,2'; ngày 3 mưa và ngày 4 nắng không hiện. Đúng.
+- GĐ603: tin sáng tiện lợi gắn '⚽' sau số khách vào đêm có trận (giải thích khách tăng). QA sandbox ngày 3: '🏪 Tiện lợi 24/7: 0 khách ⚽, thu…'. 2695 xanh, bundle 597/597.
