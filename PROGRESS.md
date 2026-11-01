@@ -134,3 +134,4 @@
 - GĐ625: Sổ đầu ngày ngày trận nhắc '⚽ Hôm nay có trận — đổi một lô sạp sang nước mía (×1,15)' khi có sạp mà chưa lô nào bán nước mía (mở panel quán nước/bản đồ). QA sandbox ngày 17: lô bánh mì+xôi → hiện; có lô nước mía → ẩn. sapRong 24/24.
 - GĐ626: cả bộ sau GĐ622–625: 2706/2706 xanh (248s).
 - GĐ627: tin cuối ngày sạp hàng rong gắn ' · ⚽' vào ngày trận khi có lô nước mía (giải thích thu tăng), như ' · 🙏' của lô xôi ngày cúng. sapRong 25/25, tsc sạch.
+- GĐ628: QA tin sạp ngày trận (sandbox, ngày 17 nắng, lô nước mía + bánh mì, ngủ 20h): '🥤🥖 sạp hàng rong Ngõ 2 · +877.500đ · ⚽' (517,5k + 360k). Đúng.
