@@ -137,3 +137,4 @@
 - GĐ572: QA trình duyệt GĐ571 (2 tin cùng lượt → '⭐ Lên cấp 2 · 🛒 Bán được gói mì', lượt sau tách riêng); lưu trữ GĐ550–564 cho PROGRESS <30KB.- GĐ573: BranchPanel tab Tình hình: 5 dòng ⚠️ rời (thiếu thu ngân/giờ trống/giao hàng/bảo vệ/kho cạn) gom vào một Callout '⚠️ Cần xử lý (N)'. Test branchWarnGroup.
 - GĐ574: QA trình duyệt GĐ573 (sandbox mở chi nhánh): khung '⚠️ Cần xử lý (3)' hiện đúng 3 cảnh báo thiếu thu ngân/giao hàng/bảo vệ, gọn thay 3 dòng rời.
 - GĐ575: đo FPS sandbox (đồ họa tự hạ Thấp, có chi nhánh mở): ~75 FPS (trần ≥30). Rà ⚠️ ở BusinessPanel/ReportPanels: đều là cảnh báo ngữ cảnh gắn số liệu, không gom.
+- GĐ576: FPS trong tiệm (mở cửa, 3×) ~74. Nghi mất tiến độ save khách mới sau reload → kiểm: save khách mới + chơi tiếp đều lưu đúng (777.777đ còn sau reload). Nguyên nhân: deleteDatabase bị chặn khi trang còn mở kết nối, chạy trễ lúc reload sau. QA xoá sandbox: xoá rồi reload NGAY, đợi xong mới chơi.
