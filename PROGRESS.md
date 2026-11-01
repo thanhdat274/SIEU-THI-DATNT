@@ -147,3 +147,4 @@
 - GĐ594: QA trình duyệt sandbox (ngày 15, trời mây, 1 lô xôi): tin sáng '🍙 sạp hàng rong Ngõ 2 · +468.000đ · 🙏' — đúng ×1,3 (360k→468k).
 - GĐ595: panel sạp (ZoneMapSection) gắn 🙏 cho lô xôi ngày cúng; gợi ý mai thêm '(ngày cúng)' khi nên bán xôi. QA sandbox ngày 15: 'Lô 1: 🧺 🍙 Xôi · hôm nay 468.000đ 🙏'. 2689 xanh, bundle 597/597.
 - GĐ596: tiệm xôi ngày cúng thợ nấu kho mục tiêu ×1,3 (vẫn giới hạn sức nấu) để khách ×1,3 không vét cạn kho; ngày thường/không truyền ngày như cũ. 2690 xanh, bundle 597/597.
+- GĐ597: QA sandbox (cấp 50, 3 thợ, ngày 15): kho 6 món đủ 80 → thợ vẫn nấu 144 phần (6×24 = lên 104 = 80×1,3); kho trống → nấu 240 (chạm sức nấu); khách ăn 33 suất '🙏 ngày cúng'. Đúng.
