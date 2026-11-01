@@ -16,6 +16,7 @@ import { createQuanNuocStand } from './quanNuocStand';
 import { createBranchStand } from './branchStand';
 import { loadKitProps } from './kitProps';
 import { createStorefrontLantern } from './storefrontLantern';
+import { createAlleyLamps } from './alleyLamps';
 import { createOpenSign } from './storefrontSign';
 import { createWaitLamp } from './storefrontWaitLamp';
 import { createCompoundWarm } from './compoundWarm';
@@ -63,6 +64,7 @@ export interface World {
   branchStand: ReturnType<typeof createBranchStand>;
   /** Đèn lồng cột trước cửa tiệm (gđ177): chỉ hình ảnh + nguồn sáng ấm chập tối — không chặn lưới. */
   storefront: ReturnType<typeof createStorefrontLantern>;
+  alleyLamps: ReturnType<typeof createAlleyLamps>;
   /** Biển treo "mở/đóng cửa" trước cửa tiệm (gđ179): chỉ hình ảnh, tấm trạng thái đổi màu theo shopOpen — không chặn lưới. */
   openSign: ReturnType<typeof createOpenSign>;
   /** Đèn báo "khách đang đợi" cạnh cửa (gđ180): chỉ hình ảnh, sáng ấm khi waiting>0 — không chặn lưới. */
@@ -217,6 +219,9 @@ export function createWorld(scene: THREE.Scene, grid: NavGrid): World {
   // GLB Blender tải lười, có cái xác thủ tục dự phòng nên đèn luôn có hình.
   const storefront = createStorefrontLantern();
   scene.add(storefront.group);
+  // GĐ737 — đèn hẻm dọc lối đi: payoff thị giác của dự án "Đèn Đường Ngõ 1" (ẩn cho tới khi thắp sáng)
+  const alleyLamps = createAlleyLamps();
+  scene.add(alleyLamps.group);
   // Đèn ấm của riêng người chơi (gđ185 "Cơ ngơi lên đèn"): hiên nhà + cổng trại sáng ấm chập tối.
   // Đăng ký vào quỹ ánh sáng (lightBudget) nên không cần scene.add — chỉ cần giữ api để bật theo giờ.
   const compoundWarm = createCompoundWarm();
@@ -319,6 +324,7 @@ export function createWorld(scene: THREE.Scene, grid: NavGrid): World {
     convenience,
     convenienceViews,
     streetLamps,
+    alleyLamps,
     quanNuoc,
     kit,
     branchStand,

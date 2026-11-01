@@ -709,6 +709,7 @@ function applyGfx() {
   // dựng không bóng (mức Thấp) thì bật bóng phải chờ tải lại trang.
   if (lighting.sun.castShadow) lighting.sun.shadow.intensity = p.shadows ? 1 : 0;
   world.kit.setDecor(p.decor);
+  world.alleyLamps.setDecor(p.decor);
   reportGfx(gfxChoice, gfx.step.level, gfx.avgFps);
 }
 applyGfx();
@@ -889,6 +890,8 @@ function renderFrame() {
   world.streetLamps.update(lamp);
   // Đèn lồng cửa tiệm (gđ177): bật sáng ấm chập tối, cùng giờ với đèn đường
   world.storefront.update(lamp);
+  // Đèn hẻm (GĐ737): sáng khi dự án "Đèn Đường Ngõ 1" thắp sáng (landmark ≥ 48 lượt góp)
+  world.alleyLamps.update(lamp, useGame.getState().biz.landmark.contributions >= 48);
   // Đèn ấm của riêng người chơi (gđ185): hiên nhà + cổng trại sáng ấm cùng giờ
   world.compoundWarm.update(lamp);
   // Đèn ấm quán nước (gđ187): chỗ khách quen tụ họp cũng ấm chập tối — chỉ khi quán MỞ (có quán thật)
