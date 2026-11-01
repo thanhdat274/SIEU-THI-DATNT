@@ -31,6 +31,9 @@ export interface OnlineOrder {
   /** Hẹn giao trước giờ này. */
   dueAt: number;
   status: 'new' | 'shipping';
+  /** Loại đặc biệt: 'rush' = gấp (hẹn rất sớm, giỏ nhỏ, gần) · 'bulk' = lớn (một món 6–10 phần, hẹn thoáng).
+   *  Không set = đơn thường; bản lưu cũ thiếu trường coi như đơn thường (không cần migration). */
+  kind?: 'rush' | 'bulk';
   via?: 'own' | 'grab';
   /** Giờ hàng tới tay khách. */
   arriveAt?: number;
@@ -90,18 +93,33 @@ export const grabFee = (km: number) => Math.round((8000 + km * 4000) / 1000) * 1
 
 const NAMES = ['Chị Mai Q.7', 'Anh Tuấn Q.3', 'Bạn Hân', 'Cô Lệ', 'Anh Khoa', 'Chị Thu', 'Em Bảo', 'Chú Sáu', 'Chị Hồng', 'Anh Phát'];
 
-/** Tạo một đơn app: 1–3 món đang mở khoá (không phải món nhà làm nếu cấp đã mở), 1–8 km. */
+/** Nhãn loại đơn cho tin báo: gấp / lớn; đơn thường không có đuôi. */
+export const orderKindTag = (kind?: 'rush' | 'bulk') => (kind === 'rush' ? ' (gấp)' : kind === 'bulk' ? ' (lớn)' : '');
+
+/** Tạo một đơn app: 1–3 món đang mở khoá (không phải món nhà làm nếu cấp đã mở), 1–8 km.
+ *  GĐ715: ~16% đơn GẤP — gần (1–5 km), giỏ nhỏ 1–2 phần, hẹn rất sớm: Grab luôn kịp, người giao tay nghề
+ *  thấp hoặc nhận muộn thì trễ (quyết định trả phí Grab hay chịu mất điểm). ~12% đơn LỚN — một món
+ *  6–10 phần, hẹn thoáng thêm 30′: cửa ở kho có đủ hàng (trừ kho như thường, chấp nhận để nguyên kho khách quầy). */
 export function makeOnlineOrder(id: number, level: number, minutes: number, rng: () => number = simRng()): OnlineOrder {
   const pool = unlockedProducts(level);
+  const kr = rng();
+  const kind: OnlineOrder['kind'] = kr < 0.16 ? 'rush' : kr < 0.28 ? 'bulk' : undefined;
   const items: Record<string, number> = {};
-  for (let n = 1 + Math.floor(rng() * 3); n > 0 && pool.length; n--) {
+  if (kind === 'rush' || kind === 'bulk') {
     const p = pool[Math.floor(rng() * pool.length)];
-    items[p.id] = (items[p.id] ?? 0) + 1 + Math.floor(rng() * 4);
+    if (p) items[p.id] = kind === 'rush' ? 1 + Math.floor(rng() * 2) : 6 + Math.floor(rng() * 5);
+  } else {
+    for (let n = 1 + Math.floor(rng() * 3); n > 0 && pool.length; n--) {
+      const p = pool[Math.floor(rng() * pool.length)];
+      items[p.id] = (items[p.id] ?? 0) + 1 + Math.floor(rng() * 4);
+    }
   }
-  const km = Math.round((1 + rng() * 7) * 10) / 10;
+  const km = Math.round((1 + rng() * (kind === 'rush' ? 4 : 7)) * 10) / 10;
+  // Hẹn giao: thường = 20′ nhận + 20′ đường; gấp co còn 10′ + đường ngắn; lớn thoáng thêm 30′
+  const due = ACCEPT_WINDOW + (kind === 'rush' ? 10 + Math.round(km * 3) : kind === 'bulk' ? 50 + km * 8 : 20 + km * 8);
   return {
     id, customer: NAMES[Math.floor(rng() * NAMES.length)], items, km, placedAt: Math.round(minutes),
-    dueAt: Math.round(minutes + ACCEPT_WINDOW + 20 + km * 8), status: 'new',
+    dueAt: Math.round(minutes + due), status: 'new', ...(kind ? { kind } : {}),
   };
 }
 

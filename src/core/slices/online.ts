@@ -1,7 +1,7 @@
 import type { Lot } from '../../data/freshness';
 import {
   ACCEPT_WINDOW, APP_COMMISSION, appRating, deliveryStars, grabFee, grabTravel, makeOnlineOrder, ONLINE_HOURS, ONLINE_OPEN_COST,
-  ONLINE_UNLOCK, onlineValue, orderGap, ownTravel, type OnlineState,
+  ONLINE_UNLOCK, onlineValue, orderGap, orderKindTag, ownTravel, type OnlineState,
 } from '../../data/online';
 import { formatMoney, productById } from '../../data/products';
 import { playSfx } from '../audio';
@@ -35,7 +35,7 @@ export const updateOnline = (set: SetState, get: GetState) => {
     const gap = orderGap(appRating(on), s.level);
     online = { ...online, orders: [...online.orders, order], nextId: on.nextId + 1, nextAt: m + gap * (0.6 + simRng()() * 0.8) };
     playSfx('ring');
-    news.push(`📲 Đơn app mới: ${order.customer} (${order.km} km) — mở Bán online để nhận`);
+    news.push(`📲 Đơn app mới${orderKindTag(order.kind)}: ${order.customer} (${order.km} km) — mở Bán online để nhận`);
   }
   const kept = [];
   for (const o of online.orders) {
