@@ -140,3 +140,4 @@
 - GĐ647: QA GĐ646 trên save sandbox mới: mở cửa ở nhà → '🛒 1 khách đang chờ tính tiền ở quầy — bấm 🛵 Ra tiệm'; bấm Ra tiệm → tới Tạp hóa, cảnh báo biến (khách được tính). Không đổi mã.
 - GĐ648: nút 🛵 Ra tiệm nhấp nháy khi chủ ở nhà mà có khách chờ quầy (không chỉ trong hướng dẫn). QA sandbox ngày 1: Về nhà → khách chờ → nút có hud-pulse (hướng dẫn vẫn đang chạy nên chưa tách riêng được). Bundle 596,8.
 - GĐ649: QA tách riêng GĐ648 — tắt hướng dẫn (biz.tutorialOff) trên save sandbox: ở nhà + 1 khách chờ → nút Ra tiệm vẫn hud-pulse. Không đổi mã.
+- GĐ650 (rà ngân sách + QA người mới): bundle 596,8/597, chunk 253/255, cả bộ 2715/2715 xanh, PROGRESS 27KB, FPS gfx=low ~67. Save sandbox mới đúng thứ tự (3 thoại → Ra tiệm → Mở cửa 8,5s) → bán đầu ~55s. ≤5 phút.
