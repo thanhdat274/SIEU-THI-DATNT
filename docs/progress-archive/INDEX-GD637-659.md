@@ -1,0 +1,21 @@
+# PROGRESS lưu trữ GĐ637–659
+- GĐ637: Sổ đầu ngày thêm dòng đếm ngược ngày cúng / trận (dự kiến) — nextEventLine trong file nạp lười, bundle 596.8.
+- GĐ638: dòng đếm ngược Sổ đầu ngày báo thêm lễ sắp tới trong 14 ngày (gom hàng sớm hơn thông báo 3 ngày); bỏ '(dự kiến)' khi dòng >90.
+- GĐ639: lịch năm đánh dấu 🙏 ngày cúng (24 ô) + tooltip 'ngày cúng'.
+- GĐ642: lịch năm thêm chú thích '🙏 là ngày cúng (mùng 1, rằm): khách hỏi nhang, trái cây, xôi'.
+- GĐ643: tooltip ô lịch năm ghi 'tối có trận (nếu không mưa)' cho 54 ngày trận (không thêm icon để lưới gọn).
+- GĐ644: dòng đếm ngược Sổ đầu ngày thành nút '→' mở Lịch năm (QA sandbox ngày 16: bấm → Lịch sự kiện).
+- GĐ645: báo 'trận mai' dùng dự báo mai (forecast[0]) thay vì giả định nắng — mai mưa thì Sổ đầu ngày nhảy tới trận tuần sau, panel quán nước không báo.
+- GĐ646: cảnh báo '🛒 N khách đang chờ tính tiền' thêm ' — bấm 🛵 Ra tiệm' khi chủ ở nhà/trang trại (QA GĐ640: ngày 1 mở cửa ở nhà, khách xếp quầy). Bundle 596,8. QA sandbox cấp 45 có nhân viên đứng quầy nên không tái hiện được — chỉ test.
+- GĐ647: QA GĐ646 trên save sandbox mới: mở cửa ở nhà → '🛒 1 khách đang chờ tính tiền ở quầy — bấm 🛵 Ra tiệm'; bấm Ra tiệm → tới Tạp hóa, cảnh báo biến (khách được tính). Không đổi mã.
+- GĐ648: nút 🛵 Ra tiệm nhấp nháy khi chủ ở nhà mà có khách chờ quầy (không chỉ trong hướng dẫn). QA sandbox ngày 1: Về nhà → khách chờ → nút có hud-pulse (hướng dẫn vẫn đang chạy nên chưa tách riêng được). Bundle 596,8.
+- GĐ649: QA tách riêng GĐ648 — tắt hướng dẫn (biz.tutorialOff) trên save sandbox: ở nhà + 1 khách chờ → nút Ra tiệm vẫn hud-pulse. Không đổi mã.
+- GĐ651: ruột menu Thêm (danh sách nút, Đồ họa, Phím, Hướng dẫn) tách sang HudMoreBody nạp lười; ToolButton sang HudToolButton dùng chung. Bundle 596,8 → 596,7. QA sandbox: menu 13 nút, Đồ họa xoay vòng, Phím mở bảng phím.
+- GĐ652: thẻ lễ ở Lịch năm gắn ✓/⚠️ cho từng 'hàng nên nhập' (kho + kệ, như Sổ đầu ngày) khi lễ đang diễn ra hoặc ≤14 ngày. QA sandbox ngày 16: Tết 'Bánh kẹo ✓', lễ xa không gắn.
+- GĐ653: QA ⚠️ của GĐ652 ở cấp 45 (Tết thiếu hàng) → lộ lỗi 'Giỏ quà Tết' lặp 2 lần (có trong cả goods lẫn hot). festivalStock khử trùng bằng Set — sửa luôn tin báo lễ sắp tới. Test mọi lễ không trùng.
+- GĐ654: tin sáng 'lễ sắp tới, nhập sẵn …' chỉ nêu 4 món đầu + '+N món' (Tết cấp cao ~15 món làm dòng tin dài cả đoạn); đủ danh sách ở Lịch năm. 283 test liên quan + golden/economy xanh.
+- GĐ655: QA GĐ654 sandbox (cấp 45, ngủ sang ngày 25): tin sáng '🧧 3 ngày nữa là Tết Nguyên Đán, nhập sẵn Bánh chưng, Bao lì xì, Mứt dừa, Hạt dưa +11 món' (90 ký tự). Không đổi mã.
+- GĐ656: thẻ lễ ≤14 ngày ở Lịch năm có món ⚠️ thì hiện nút '🛒 Đặt hàng còn thiếu' mở bảng Nhập hàng. QA sandbox ngày 25 cấp 45: 1 nút (Tết), bấm → panel order.
+- GĐ657: Gợi ý ở bảng Nhập hàng tính hàng lễ (festivalStock) là hàng hot khi lễ đang diễn ra hoặc ≤7 ngày — trước đây hàng của dịp bị loại khỏi trending nên nút 'Đặt hàng còn thiếu' (GĐ656) mở ra không thấy. QA sandbox: ngày 25 thấy Bánh chưng/Bao lì xì/Mứt dừa/Hạt dưa, ngày 10 không.
+- GĐ658: Gợi ý nhập hàng thêm đồ cúng (CUNG_GOODS đã mở) vào ngày cúng và hôm trước. QA sandbox cấp 45: ngày 14 thấy Nhang ở mối mặc định (Trái cây hàng tươi — mối khác bán), ngày 10 không.
+- GĐ659: QA gợi ý đồ cúng — trái cây không hiện khi tiệm chưa có kệ đồ tươi (displayable=false, đúng thiết kế: không nhập hàng không có chỗ bày); không sửa code.
