@@ -4,6 +4,7 @@
  */
 import type { DayAction } from './dayPlan';
 import type { Weather } from './weather';
+import { upcomingFestival } from './calendar';
 import { productById } from './products';
 import { isQuanMatchDay } from './quanNuoc';
 import { SAP_LOTS, sapKindOf } from './sapRong';
@@ -51,10 +52,14 @@ export function nextEventLine(day: number, level: number, quanUnlock: number): s
   const find = (ok: (d: number) => boolean) => { for (let n = 1; n <= 31; n++) if (ok(day + n)) return n; return null; };
   const parts: string[] = [];
   const c = isXoiCungDay(day) ? null : find((d) => isXoiCungDay(d));
-  if (c) parts.push(c === 1 ? '🙏 Ngày cúng: mai' : `🙏 Ngày cúng: còn ${c} ngày`);
+  if (c) parts.push(c === 1 ? '🙏 Ngày cúng mai' : `🙏 Ngày cúng còn ${c} ngày`);
   if (level >= quanUnlock && !isQuanMatchDay(day, 'sunny')) {
     const m = find((d) => isQuanMatchDay(d, 'sunny'));
-    if (m) parts.push(m === 1 ? '⚽ Trận: mai (dự kiến)' : `⚽ Trận: còn ${m} ngày (dự kiến)`);
+    if (m) parts.push(m === 1 ? '⚽ Trận mai (dự kiến)' : `⚽ Trận còn ${m} ngày (dự kiến)`);
   }
-  return parts.length ? parts.join(' · ') : null;
+  const f = upcomingFestival(day, 14); // GĐ638: lễ sắp tới trong 2 tuần — đủ sớm để gom hàng
+  if (f) parts.unshift(`${f.festival.icon} ${f.festival.name} còn ${f.inDays} ngày`);
+  if (!parts.length) return null;
+  const line = parts.join(' · ');
+  return [...line].length > 90 ? line.replace(' (dự kiến)', '') : line; // tên lễ dài: bỏ chú thích để ≤90
 }

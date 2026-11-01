@@ -145,3 +145,4 @@
 - GĐ635b: SỬA — 597,1 KB vẫn đỏ (check so số thực, không làm tròn; GĐ635 đã push khi đỏ). Bảng phím tắt menu Thêm (CONTROLS) tách sang ui/HudKeys.tsx nạp lười → 597,0, check xanh (EXIT 0). QA: Thêm → Phím hiện đủ. Còn ~0 KB chỗ trống: GĐ sau phải bù trước khi thêm code vào gói đầu.
 - GĐ636: cả bộ 2706/2706 xanh (237s) sau GĐ635. Tạo chỗ trống gói đầu: CounterAskAlert chuyển từ Hud sang HudAlerts (nạp lười) → 596,8/597 KB. QA sandbox: giả câu hỏi quầy → khung 'Cô Ba muốn ghi sổ nợ… còn ~45s' + 2 nút hiện đúng.
 - GĐ637: Sổ đầu ngày thêm dòng đếm ngược ngày cúng / trận (dự kiến) — nextEventLine trong file nạp lười, bundle 596.8.
+- GĐ638: dòng đếm ngược Sổ đầu ngày báo thêm lễ sắp tới trong 14 ngày (gom hàng sớm hơn thông báo 3 ngày); bỏ '(dự kiến)' khi dòng >90.

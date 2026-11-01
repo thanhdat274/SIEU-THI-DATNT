@@ -114,13 +114,24 @@ describe('GĐ612/613/633: cungGoodsAction — nhắc đồ cúng thiếu hàng',
 describe('GĐ637: nextEventLine — đếm ngược ngày cúng / trận', () => {
   it('đếm đúng, ẩn trận khi chưa mở quán, hôm nay đúng dịp thì bỏ phần đó, ≤90', async () => {
     const { nextEventLine } = await import('../data/dayEventActions');
-    expect(nextEventLine(14, 1, 29)).toBe('🙏 Ngày cúng: mai');
-    expect(nextEventLine(12, 1, 29)).toBe('🙏 Ngày cúng: còn 3 ngày');
-    expect(nextEventLine(15, 1, 29)).toBeNull();
-    expect(nextEventLine(16, 1, 29)).toBe('🙏 Ngày cúng: còn 16 ngày');
+    expect(nextEventLine(14, 1, 29)).toContain('🙏 Ngày cúng mai');
+    expect(nextEventLine(12, 1, 29)).toContain('🙏 Ngày cúng còn 3 ngày');
+    expect(nextEventLine(15, 1, 29) ?? '').not.toContain('🙏');
+    expect(nextEventLine(16, 1, 29)).toContain('🙏 Ngày cúng còn 16 ngày');
     const l = nextEventLine(16, 99, 29)!;
-    expect(l).toContain('⚽ Trận: mai (dự kiến)');
-    expect(nextEventLine(17, 99, 29)).not.toContain('⚽');
+    expect(l).toContain('⚽ Trận mai (dự kiến)');
+    expect(nextEventLine(17, 99, 29)).not.toContain('⚽ Trận');
     for (let d = 1; d <= 60; d++) expect([...(nextEventLine(d, 99, 29) ?? '')].length).toBeLessThanOrEqual(90);
+  });
+});
+
+describe('GĐ638: nextEventLine báo lễ sắp tới trong 14 ngày', () => {
+  it('đứng đầu dòng, đúng số ngày, cả năm ≤90 chữ', async () => {
+    const { nextEventLine } = await import('../data/dayEventActions');
+    const { upcomingFestival } = await import('../data/calendar');
+    const d = Array.from({ length: 365 }, (_, i) => i + 1).find((x) => upcomingFestival(x, 14)?.inDays === 10)!;
+    const f = upcomingFestival(d, 14)!;
+    expect(nextEventLine(d, 1, 29)!.startsWith(`${f.festival.icon} ${f.festival.name} còn 10 ngày`)).toBe(true);
+    for (let x = 1; x <= 366; x++) expect([...(nextEventLine(x, 99, 29) ?? '')].length).toBeLessThanOrEqual(90);
   });
 });
