@@ -196,7 +196,7 @@ describe('khảo sát kinh tế vòng ngày — simulator thật trên store', (
 });
 
 /** GĐ561: mức đo ngày 2 (bot cấp 1); chỉ được hạ. */
-const DAY2_TOAST_CEILING = 11;
+const DAY2_TOAST_CEILING = 10; // GĐ568: tin đêm gom một toast (đo 11 → 10)
 const fmt = (v: number) => `${Math.round(v).toLocaleString('vi-VN')}đ`;
 
 /**
@@ -206,7 +206,7 @@ const fmt = (v: number) => `${Math.round(v).toLocaleString('vi-VN')}đ`;
  * HẠ trần này theo số đo mới — không bao giờ nâng lên.
  */
 /** Số thông báo tối đa trong ngày đầu của bot chơi cấp 1 (mức đo 2026-10-31; chỉ được hạ). */
-const DAY1_TOAST_CEILING = 10; // GĐ331: chỉ đếm thông báo khi còn ở ngày 1 (dự báo/danh hiệu sau đi ngủ là của ngày 2) → đo 10; // GĐ316: không đếm thông báo nhận thưởng (📜/🎯), đo 11–14; đo 18 sau GĐ309 (dời danh hiệu/kèo/chi phí/thay ô sang ngày 2+; GĐ302: 22; ban đầu 27)
+const DAY1_TOAST_CEILING = 9; // GĐ568: gom tin đêm → đo 9; GĐ331: chỉ đếm thông báo khi còn ở ngày 1 (dự báo/danh hiệu sau đi ngủ là của ngày 2) → đo 10; // GĐ316: không đếm thông báo nhận thưởng (📜/🎯), đo 11–14; đo 18 sau GĐ309 (dời danh hiệu/kèo/chi phí/thay ô sang ngày 2+; GĐ302: 22; ban đầu 27)
 
 // GĐ332: hạ phần trăm kèo 25/40/65% → đo cấp 5 0.99 · cấp 10 0.89 · cấp 20 0.64. GĐ321: sim TẤT ĐỊNH (Math.random seed 20261031) đo cấp 5 1.13 · cấp 10 1.02 · cấp 20 0.71 (sau GĐ322; trước 1.53/1.29/0.96); trần = đo + đệm nhỏ. Chỉ được hạ.
 const BONUS_TO_SALES_CEILING: Record<number, number> = { 5: 1.0, 10: 0.92, 20: 0.67 };

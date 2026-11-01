@@ -57,6 +57,10 @@ function movingAverage(avg: Record<string, number>, today: Record<string, number
 
 /** Kết thúc ngày: hiện bảng tổng kết, sang ngày mới. */
 export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> = {}) => {
+  // GĐ568: ô thông báo chỉ một chỗ — mọi tin đêm gom vào log, cuối hàm bật MỘT toast (thời tiết trước, '+N tin'); đủ ở Sổ đầu ngày.
+  const log: string[] = [];
+  const say = (m: string) => { log.push(m); };
+  let weatherLine = '';
   // Cửa hàng tiện lợi bán xuyên đêm trong lúc chủ ngủ: chạy nốt tới giờ thức dậy sáng mai
   if (get().branch) {
     const lateWake = get().minutes >= 24 * 60;
@@ -70,8 +74,8 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
   const paid = br ? br.staff.filter((st) => !restingOn(br, st.id, s.day) && !(br.event?.kind === 'calloff' && br.event.staffId === st.id)) : [];
   const branchWages = Math.round(paid.reduce((n, st) => n + dailyWage(st), 0) * (hasSkill(s.skills, 'good_boss') ? 0.9 : 1));
   const nextBranch = br ? branchNewDay(br, s.day) : null;
-  if (nextBranch?.news.length) s.notify(nextBranch.news.join(' · '));
-  if (br) s.notify(`🏪 Tiện lợi 24/7: ${br.customersToday} khách, thu ${formatMoney(br.revenueToday)}, lương ${formatMoney(branchWages)}`
+  if (nextBranch?.news.length) say(nextBranch.news.join(' · '));
+  if (br) say(`🏪 Tiện lợi 24/7: ${br.customersToday} khách, thu ${formatMoney(br.revenueToday)}, lương ${formatMoney(branchWages)}`
     + (br.missedToday ? ` · ${br.missedToday} khách bỏ về (thiếu thu ngân/hết hàng)` : '')
     + (br.lostToday ? ` · mất ${br.lostToday} món (trộm/hỏng)` : '')
     + (br.event?.kind === 'drunk' ? ' · đêm qua có khách say quậy' : br.event?.kind === 'blackout' ? ' · đêm qua mất điện' : br.event?.kind === 'calloff' ? (br.event.covered ? ' · có người làm thay ca đêm' : ' · ca đêm thiếu người') : ''));
@@ -85,7 +89,7 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
       mainCounter: s.mainCounter && { ...s.mainCounter, z: s.mainCounter.z + shift },
       opening: { day: s.day + 1, tier: s.shopTier + 1 },
     });
-    s.notify(`🏗️ Thợ đã xây xong: ${SHOP_TIERS[s.shopTier + 1].name}! Mai khai trương, cả hẻm sẽ tới mừng, xem mục tiêu ở Nhiệm vụ`);
+    say(`🏗️ Thợ đã xây xong: ${SHOP_TIERS[s.shopTier + 1].name}! Mai khai trương, cả hẻm sẽ tới mừng, xem mục tiêu ở Nhiệm vụ`);
   }
   // Qua đêm hàng cũ đi một ngày hạn, rồi hàng đặt hôm nay về kho lúc sáng mai (hạn đầy)
   const aged = spoilOvernight(get());
@@ -197,10 +201,10 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
     const age = s.day + 1 - d.since;
     if (age > DEBT_WRITE_OFF_DAYS) {
       s.adjustFriendship(rid, -WRITE_OFF_FRIEND_LOSS);
-      s.notify(`📕 ${regularById(rid)?.name} quỵt nợ ${formatMoney(d.amount)} sau ${DEBT_WRITE_OFF_DAYS} ngày`);
+      say(`📕 ${regularById(rid)?.name} quỵt nợ ${formatMoney(d.amount)} sau ${DEBT_WRITE_OFF_DAYS} ngày`);
       continue;
     }
-    if (age === DEBT_LATE_DAYS + 1) s.notify(`📒 ${regularById(rid)?.name} nợ ${formatMoney(d.amount)} đã ${DEBT_LATE_DAYS} ngày, nên nhắc nợ`);
+    if (age === DEBT_LATE_DAYS + 1) say(`📒 ${regularById(rid)?.name} nợ ${formatMoney(d.amount)} đã ${DEBT_LATE_DAYS} ngày, nên nhắc nợ`);
     debts[rid] = d;
   }
   // Đơn gọi điện chưa giao: hàng đã soạn mang về kho, khách phật ý
@@ -213,8 +217,8 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
   const reservations = Object.fromEntries(
     Object.entries(s.reservations).filter(([, r]) => r.day === s.day + 1),
   );
-  if (s.deliveries.length) s.notify(`🚚 Hàng đã về kho: ${s.deliveries.length} đơn`);
-  if (aged.items) s.notify(`🗑️ ${aged.items} món hết hạn phải bỏ đi (vốn ${formatMoney(aged.cost)})`);
+  if (s.deliveries.length) say(`🚚 Hàng đã về kho: ${s.deliveries.length} đơn`);
+  if (aged.items) say(`🗑️ ${aged.items} món hết hạn phải bỏ đi (vốn ${formatMoney(aged.cost)})`);
   // Nhu cầu: trung bình trượt, ngày gần nặng hơn
   const demand = movingAverage(s.demand, s.demandToday);
   const sales = movingAverage(s.sales, s.salesToday);
@@ -226,7 +230,7 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
     if (order.accepted && def) {
       s.addReview(1, 'stock');
       if (def.regular) s.adjustFriendship(def.regular, -STORY_ORDER_FRIEND_LOSS);
-      s.notify(`😠 Lỡ hẹn đơn "${def.title}" của ${def.from}${def.regular ? ` · -${STORY_ORDER_FRIEND_LOSS} thân thiết` : ''}`);
+      say(`😠 Lỡ hẹn đơn "${def.title}" của ${def.from}${def.regular ? ` · -${STORY_ORDER_FRIEND_LOSS} thân thiết` : ''}`);
     }
     order = null;
   }
@@ -362,7 +366,7 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
   const onlineDay = onlineDayEnd(s);
   if (s.online.done || s.online.orders.length) news.push(`📲 App hôm nay: thu ${formatMoney(s.online.revenueToday + onlineDay.money)} (đã trừ hoa hồng)${s.online.grabFeesToday ? `, phí Grab ${formatMoney(s.online.grabFeesToday)}` : ''} · điểm ${appRating(onlineDay.online).toFixed(1)}★`);
   if (s.fakeCash) news.push(`💸 Kiểm két thấy ${formatMoney(s.fakeCash)} tiền giả`);
-  s.notify(fitJoin([`Hôm nay: ${describeDay(s.weatherSeed, s.day + 1, today)}. ${WEATHER[today].tip}`, ...news])); // GĐ565: đủ tin ở lastSummary.news → Sổ đầu ngày
+  weatherLine = `Hôm nay: ${describeDay(s.weatherSeed, s.day + 1, today)}. ${WEATHER[today].tip}`; log.push(...news); // GĐ565/568: đủ tin ở lastSummary.news → Sổ đầu ngày
   // Giá tham chiếu thị trường nhích theo khan hiếm (kho + kệ) và cầu trung bình của từng món
   const market: Record<string, number> = { ...s.market };
   for (const p of unlockedProducts(s.level)) {
@@ -381,14 +385,14 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
     revenue: s.stats.revenue + onlineDay.money + crew.tips + quanRevenue, online: (s.stats.online ?? 0) + onlineDay.money,
     ...(crew.cashLoss || shrinkItems ? { shrinkCash: crew.cashLoss, shrinkItems } : {}),
   };
-  if (opCost >= 5000 && s.day > 1) s.notify(`💡 Chi phí vận hành (điện/nước) ${formatMoney(opCost)}${branchPower ? ` — riêng tiện lợi 24/7 ${formatMoney(branchPower)} tiền điện` : ''}`);
+  if (opCost >= 5000 && s.day > 1) say(`💡 Chi phí vận hành (điện/nước) ${formatMoney(opCost)}${branchPower ? ` — riêng tiện lợi 24/7 ${formatMoney(branchPower)} tiền điện` : ''}`);
   // GĐ300: chốt sẵn việc sáng 🧍 NGAY TẠI MÁY CHẠY. Snapshot staffDay là transient ngoài useGame
   // (chỉ máy chạy mô phỏng mới có), nên nếu để Sổ đầu ngày tự đọc thì máy khách hẻm online sẽ không
   // bao giờ thấy việc này. Tính ở đây rồi gửi kèm lastSummary → hai chế độ ra KẾT QUẢ GIỐNG NHAU.
   const staffIdleAct = morningShiftAction(staffDaySnapshot(), s.staff, stats);
   const staffIdleNote = staffIdleAct ? { staffIdle: staffIdleAct } : {};
   const biz = bizEndOfDay(s, stats, (br?.revenueToday ?? 0) + quanRevenue);
-  if (biz.news.length) s.notify(biz.news.join(' · '));
+  if (biz.news.length) say(biz.news.join(' · '));
   // Kết quả quán nước hôm nay ghi vào biz để UI hiển thị (xem lại "hôm qua bán được bao nhiêu ly")
   if (quanNuocLast) biz.biz = { ...biz.biz, quanNuocLast };
   if (tiemXoiLast) {
@@ -428,7 +432,7 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
   };
   // Thức qua nửa đêm (ca đêm) thì hôm sau dậy trễ, bỏ lỡ buổi sáng đông khách
   const wokeLate = s.minutes >= 24 * 60;
-  if (wokeLate) s.notify('😴 Ngủ muộn vì ca đêm: hôm nay dậy trễ, bỏ lỡ buổi sáng đông khách!');
+  if (wokeLate) say('😴 Ngủ muộn vì ca đêm: hôm nay dậy trễ, bỏ lỡ buổi sáng đông khách!');
   set({
     candidates: generateCandidates(s.level, nextId),
     day: s.day + 1,
@@ -438,7 +442,7 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
     buildMode: false,
     placing: null,
     panel: { type: 'summary', day: s.day, stats },
-    lastSummary: { day: s.day, stats, ...staffIdleNote, ...(news.length ? { news } : {}) },
+    lastSummary: { day: s.day, stats, ...staffIdleNote, ...(log.length ? { news: log } : {}) },
     stats: emptyStats(),
     ...k, furniture, order, phoneOrders: [], phoneSlot: 0, debts, vendorOffer: null, event: nextEvent, contracts, fakeCash: 0, wheelBoost: 1, history: [...s.history, record].slice(-HISTORY_DAYS), venueTrend: [...s.venueTrend, venueDay].slice(-VENUE_TREND_DAYS), riskTrend: [...s.riskTrend, riskDay].slice(-RISK_TREND_DAYS), riskToday: emptyRiskToday(), deliveries: [], demand, demandToday: {}, sales, salesToday: {}, reservations, market,
     garden, analytics,
@@ -451,6 +455,7 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
   });
   // GĐ169 — thưởng chuỗi tuần/tháng đổi XP: cộng sau khi state ngày mới đã set (đi qua addXp để
   // lên cấp/mở khóa đúng một luồng; XP Chuỗi là thành phần kinh tế NHẸ Leader duyệt theo audit).
+  s.notify(fitJoin([weatherLine, ...log]));
   if (biz.streakXp) get().addXp(biz.streakXp);
   checkAchievements();
   // Hàng mới về sáng nay: ô kệ hết hàng mà kho không còn món đó thì đổi sang món khác
