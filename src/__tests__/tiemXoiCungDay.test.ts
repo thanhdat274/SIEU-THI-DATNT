@@ -175,3 +175,12 @@ describe('GĐ645: mai dự báo mưa thì không báo trận mai', () => {
     expect(readFileSync('src/ui/panels/QuanNuocPanel.tsx', 'utf8')).toContain("isQuanMatchDay(day + 1, forecast[0] ?? 'sunny')");
   });
 });
+
+describe('GĐ652: lịch năm đánh dấu hàng lễ có/thiếu cho dịp ≤14 ngày', () => {
+  it('CalendarPanel dùng haveStock (kho + kệ) và chỉ gắn ✓/⚠️ khi đang diễn ra hoặc ≤14 ngày', async () => {
+    const { readFileSync } = await import('node:fs');
+    const src = readFileSync('src/ui/panels/CalendarPanel.tsx', 'utf8');
+    expect(src).toContain("running || inDays <= 14 ? (haveStock(id) ? ' ✓' : ' ⚠️') : ''");
+    expect(src).toContain('f.tiers.some((t) => t.productId === id && t.count > 0)');
+  });
+});

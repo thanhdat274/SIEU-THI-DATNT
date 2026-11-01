@@ -142,3 +142,4 @@
 - GĐ649: QA tách riêng GĐ648 — tắt hướng dẫn (biz.tutorialOff) trên save sandbox: ở nhà + 1 khách chờ → nút Ra tiệm vẫn hud-pulse. Không đổi mã.
 - GĐ650 (rà ngân sách + QA người mới): bundle 596,8/597, chunk 253/255, cả bộ 2715/2715 xanh, PROGRESS 27KB, FPS gfx=low ~67. Save sandbox mới đúng thứ tự (3 thoại → Ra tiệm → Mở cửa 8,5s) → bán đầu ~55s. ≤5 phút.
 - GĐ651: ruột menu Thêm (danh sách nút, Đồ họa, Phím, Hướng dẫn) tách sang HudMoreBody nạp lười; ToolButton sang HudToolButton dùng chung. Bundle 596,8 → 596,7. QA sandbox: menu 13 nút, Đồ họa xoay vòng, Phím mở bảng phím.
+- GĐ652: thẻ lễ ở Lịch năm gắn ✓/⚠️ cho từng 'hàng nên nhập' (kho + kệ, như Sổ đầu ngày) khi lễ đang diễn ra hoặc ≤14 ngày. QA sandbox ngày 16: Tết 'Bánh kẹo ✓', lễ xa không gắn.

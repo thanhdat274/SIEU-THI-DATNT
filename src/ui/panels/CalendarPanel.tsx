@@ -10,6 +10,10 @@ export function CalendarPanel() {
   const day = useGame((s) => s.day);
   const level = useGame((s) => s.level);
   const closePanel = useGame((s) => s.closePanel);
+  const storage = useGame((s) => s.storage);
+  const furniture = useGame((s) => s.furniture);
+  // GĐ652: như Sổ đầu ngày — có trong kho hay trên kệ thì ✓
+  const haveStock = (id: string) => (storage[id] ?? 0) > 0 || furniture.some((f) => f.tiers.some((t) => t.productId === id && t.count > 0));
   const doy = dayOfYear(day);
   const current = festivalOn(day);
   const sorted = [...FESTIVALS].sort((a, b) => {
@@ -85,7 +89,7 @@ export function CalendarPanel() {
                   👥 khách {pct(f.traffic)}
                   {f.cost !== 1 && ` · 💰 giá nhập ${pct(f.cost)}`}
                   {f.tolerance && ' · 😤 khách chịu giá cao'}
-                  {goods.length > 0 && <small style={{ opacity: 0.75 }}> · hàng nên nhập: {goods.map((id) => productById(id).name).join(', ')}</small>}
+                  {goods.length > 0 && <small style={{ opacity: 0.75 }}> · hàng nên nhập: {goods.map((id) => `${productById(id).name}${running || inDays <= 14 ? (haveStock(id) ? ' ✓' : ' ⚠️') : ''}`).join(', ')}</small>}
                 </div>
               </div>
             </div>
