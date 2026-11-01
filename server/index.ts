@@ -19,6 +19,7 @@ import {
   newWsRate, nextOwner, pruneBuckets, releaseLocksFor, sweepStaleAlleys, takeToken, tryLock, wsAllow,
   type TokenBucket,
 } from './room';
+import { heartbeatStep } from './room';
 
 config({ path: resolve(dirname(fileURLToPath(import.meta.url)), '.env') });
 const env = process.env;
@@ -285,7 +286,7 @@ app.use(((err, _req, res, _next) => {
 }) as express.ErrorRequestHandler);
 
 /** `visible`: tab đang mở trên màn hình (trình duyệt dừng chạy game khi tab bị ẩn). */
-interface Peer { id: number; ws: WebSocket; uid: string; name: string; visible: boolean; ready: boolean; isAlive: boolean }
+interface Peer { id: number; ws: WebSocket; uid: string; name: string; visible: boolean; ready: boolean }
 interface Room { peers: Map<number, Peer>; runner: number | null; locks: Map<string, number>; lastActive: number }
 /** Hẻm đang có người online. */
 const online = new Map<string, Room>();
@@ -336,7 +337,10 @@ wss.on('connection', (ws) => {
   // Mỗi kết nối một bộ đếm riêng: flood tin sẽ bị bỏ hoặc ngắt kết nối.
   // Heartbeat ping/pong của thư viện ws chạy ở tầng khung, không bị limit.
   const rate = newWsRate();
-  ws.on('pong', () => { if (peer) peer.isAlive = true; });
+  // GĐ686 FIX: heartbeat đọc `ws.isAlive` (index.ts heartbeat) nhưng pong cũ chỉ ghi `peer.isAlive`
+  // (object Peer khác) → ws.isAlive không bao giờ true → MỌI kết nối hẻm bị terminate sau ~60 giây
+  // (probe: client im lặng chết ở 49 s, code 1006). Pong phải ghi đúng cờ mà heartbeat đọc.
+  ws.on('pong', () => { (ws as unknown as { isAlive?: boolean }).isAlive = true; });
   ws.on('message', async (raw) => {
     let msg: { type?: string; [k: string]: unknown };
     try { msg = JSON.parse(String(raw)); } catch { return; }
@@ -361,7 +365,7 @@ wss.on('connection', (ws) => {
       // Người online đầu tiên làm máy chạy (đã có trạng thái tiệm từ server nên ready ngay);
       // người vào sau phải nhận trạng thái đầu tiên từ máy chạy rồi mới được bầu làm máy chạy.
       const firstRunner = room.runner == null;
-      peer = { id: nextPeerId++, ws, uid: account.uid, name: account.name, visible: msg.visible !== false, ready: firstRunner, isAlive: true };
+      peer = { id: nextPeerId++, ws, uid: account.uid, name: account.name, visible: msg.visible !== false, ready: firstRunner };
       room.peers.set(peer.id, peer);
       room.lastActive = Date.now();
       if (firstRunner) room.runner = peer.id;
@@ -460,9 +464,7 @@ if (existsSync(dist)) {
 // Nếu không có, một peer chết nằm mãi trong room; nếu đó là máy chạy thì cả hẻm đứng vĩnh viễn.
 const heartbeat = setInterval(() => {
   for (const ws of wss.clients) {
-    const alive = (ws as unknown as { isAlive?: boolean }).isAlive;
-    if (alive === false) { ws.terminate(); continue; }
-    (ws as unknown as { isAlive?: boolean }).isAlive = false;
+    if (heartbeatStep(ws as unknown as { isAlive?: boolean }) === 'terminate') { ws.terminate(); continue; }
     ws.ping();
   }
 }, 30_000);
