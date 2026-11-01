@@ -1392,15 +1392,18 @@ export function AdviceCard({ title, items, onAct }: { title: string; items: Advi
 /** Khách ghé theo giờ: cột cao nhất là giờ đông nhất. */
 export function HourChart({ hours, peak, quiet }: { hours: HourStat[]; peak?: number; quiet?: number }) {
   const max = Math.max(1, ...hours.map((h) => h.customers));
+  // Nhiều giờ (>12) thì cột hẹp trên điện thoại: số khách chỉ ghi ở giờ đông nhất (còn lại xem tooltip),
+  // nhãn giờ ghi giờ chẵn — để cột co được, không tràn khung (GĐ547).
+  const dense = hours.length > 12;
   return (
     <div style={{ ...styles.card, display: 'block', marginTop: 10, maxWidth: 560 }}>
       <b style={styles.cardTitle}>🕒 Khách theo giờ</b>
       <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3, height: 70, marginTop: 6 }}>
         {hours.map((h) => (
-          <div key={h.hour} title={`${h.hour}h: ${h.customers} khách · ${formatMoney(h.revenue)}`} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'flex-end' }}>
-            <span style={{ fontSize: 11 }}>{h.customers || ''}</span>
+          <div key={h.hour} title={`${h.hour}h: ${h.customers} khách · ${formatMoney(h.revenue)}`} style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'flex-end' }}>
+            <span style={{ fontSize: 11, whiteSpace: 'nowrap' }}>{(!dense || h.hour === peak) && h.customers ? h.customers : ''}</span>
             <div style={{ width: '100%', height: `${(h.customers / max) * 50}px`, minHeight: h.customers ? 2 : 0, borderRadius: 3, background: h.hour === peak ? '#e67e22' : h.hour === quiet ? '#95a5a6' : '#3498db' }} />
-            <span style={{ fontSize: 11, opacity: 0.7 }}>{h.hour}h</span>
+            <span style={{ fontSize: 11, opacity: 0.7, whiteSpace: 'nowrap' }}>{!dense || h.hour % 2 === 0 ? `${h.hour}h` : ''}</span>
           </div>
         ))}
       </div>
