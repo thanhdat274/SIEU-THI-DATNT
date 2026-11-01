@@ -155,9 +155,9 @@ describe('R4 · mốc gần đạt', () => {
 
 describe('ghép chung', () => {
   it('(i) không có gì đáng mồi → [] (ẩn thẻ)', () => {
-    // kỳ cựu (nowDay>7, đủ mọi mốc), trời nhiều mây, không lễ, không khách quen ghé — GĐ615: 366 là mùng 1 (ngày cúng) nên dùng 367
+    // kỳ cựu (nowDay>7, đủ mọi mốc), trời nhiều mây, không lễ, không khách quen ghé — GĐ615: 366 là mùng 1 (ngày cúng) nên dùng 368 (367 có trận, GĐ617)
     expect(tomorrowTeaser(base({
-      day: 367, level: 999, weather: 'cloudy', regulars: nobodyVisits(367),
+      day: 368, level: 999, weather: 'cloudy', regulars: nobodyVisits(368),
       totals: { revenue: 1e12, itemsSold: 1e7, customers: 1e6 },
     }))).toEqual([]);
   });
@@ -196,5 +196,16 @@ describe('R6 · GĐ615 mai ngày cúng', () => {
   it('ngày mai 15 có dòng 🙏, ngày 16 không', () => {
     expect(tomorrowTeaser(base({ day: 15 })).some((r) => r.id === 'cung')).toBe(true);
     expect(tomorrowTeaser(base({ day: 16 })).some((r) => r.id === 'cung')).toBe(false);
+  });
+});
+
+describe('R7 · GĐ617 tối mai có trận', () => {
+  it('chỉ hiện khi đã tới cấp quán nước và đúng ngày trận', async () => {
+    const { isQuanMatchDay, QUAN_NUOC_UNLOCK } = await import('../data/quanNuoc');
+    const d = Array.from({ length: 30 }, (_, i) => i + 2).find((x) => isQuanMatchDay(x, 'sunny'))!;
+    const has = (o: Partial<TeaserInput>) => tomorrowTeaser(base(o)).some((r) => r.id === 'match');
+    expect(has({ day: d, weather: 'sunny', level: QUAN_NUOC_UNLOCK })).toBe(true);
+    expect(has({ day: d, weather: 'sunny', level: QUAN_NUOC_UNLOCK - 1 })).toBe(false);
+    expect(has({ day: d, weather: 'rain', level: QUAN_NUOC_UNLOCK })).toBe(false);
   });
 });

@@ -19,6 +19,7 @@ import { nearestMilestones } from './goals';
 import type { MilestoneDossier } from './goals';
 import { DAILY_GIFTS, scaledGiftEco, giftText, recentAvgProfit } from './gifts';
 import { isXoiCungDay } from './tiemXoi';
+import { isQuanMatchDay, QUAN_NUOC_UNLOCK } from './quanNuoc';
 import { arcScenePending, surpriseArcById, type SurpriseArcState } from './surpriseArcs';
 
 /**
@@ -46,7 +47,7 @@ export interface TeaserInput {
 }
 
 export interface TeaserRow {
-  id: 'gift' | 'weather' | 'festival' | 'regulars' | 'milestone' | 'arc' | 'weekend' | 'trend' | 'cung';
+  id: 'gift' | 'weather' | 'festival' | 'regulars' | 'milestone' | 'arc' | 'weekend' | 'trend' | 'cung' | 'match';
   icon: string;
   text: string;
   hint?: string;
@@ -168,6 +169,8 @@ export function tomorrowTeaser(input: TeaserInput): TeaserRow[] {
 
   // R6 — GĐ615: mai ngày cúng (mùng 1/rằm) — khách hỏi đồ cúng, xôi bán chạy.
   if (isXoiCungDay(input.day)) rows.push({ id: 'cung', icon: '🙏', text: 'Mai ngày cúng — khách hỏi nhang, trái cây', panel: 'order' });
+  // R7 — GĐ617: tối mai có trận bóng (đã mở được quán nước) — quán/tiện lợi đông khuya.
+  if (input.level >= QUAN_NUOC_UNLOCK && isQuanMatchDay(input.day, input.weather)) rows.push({ id: 'match', icon: '⚽', text: 'Tối mai có trận — quán nước, tiện lợi đông khuya', panel: 'business' });
 
   return rows;
 }
