@@ -136,3 +136,4 @@
 - GĐ627: tin cuối ngày sạp hàng rong gắn ' · ⚽' vào ngày trận khi có lô nước mía (giải thích thu tăng), như ' · 🙏' của lô xôi ngày cúng. sapRong 25/25, tsc sạch.
 - GĐ628: QA tin sạp ngày trận (sandbox, ngày 17 nắng, lô nước mía + bánh mì, ngủ 20h): '🥤🥖 sạp hàng rong Ngõ 2 · +877.500đ · ⚽' (517,5k + 360k). Đúng.
 - GĐ629: QA máy yếu ?gfx=low (sandbox ngày 18, cấp 50, có sạp Ngõ 2, tab hiện): ~75 FPS đo rAF 5s (mục tiêu ≥30).
+- GĐ630 (rà ngân sách + QA người mới): bundle 597/597, chunk 253/255, PROGRESS 26,5KB, economySim (thông báo ngày 1/2) + golden 9/9 xanh, cả bộ 2706 xanh (GĐ626); FPS gfx=low ~75 (GĐ629). Save sandbox mới: bán món đầu ~136s từ lúc xoá save (trong đó ~80s do script QA kẹt ở thoại 3/3 'Xong'); từ Mở cửa tới bán đầu ~40s. Vẫn ≤5 phút.
