@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { QUAN_NUOC_MAX_STAFF, QUAN_NUOC_WAGE, quanNuocProjection } from '../data/quanNuoc';
+import { QUAN_NUOC_MAX_STAFF, QUAN_NUOC_WAGE } from '../data/quanNuoc';
+import { quanNuocProjection } from '../data/quanNuocInsights';
 import { quanNuocStaffValues, quanNuocNextStaffVerdict, type QuanNuocStaffValue } from '../data/quanNuocStaffValue';
 
 /**

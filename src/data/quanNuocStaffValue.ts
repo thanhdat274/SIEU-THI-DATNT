@@ -1,4 +1,5 @@
-import { QUAN_NUOC_MAX_STAFF, QUAN_NUOC_WAGE, QUAN_PRICE_OPTIONS, quanNuocAvgSell, quanNuocDrinkIds, type QuanNuocPrice } from './quanNuoc';
+import { QUAN_NUOC_MAX_STAFF, QUAN_NUOC_WAGE, QUAN_PRICE_OPTIONS, quanNuocDrinkIds, type QuanNuocPrice } from './quanNuoc';
+import { quanNuocAvgSell } from './quanNuocInsights';
 
 /**
  * GĐ188 — Quán nước: "người thứ N đáng đồng lương không?" (chiều xuống)

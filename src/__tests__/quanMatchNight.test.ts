@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { isQuanMatchDay, newQuanNuoc, quanMatchMul, quanNuocProjection, QUAN_MATCH_MUL } from '../data/quanNuoc';
+import { isQuanMatchDay, newQuanNuoc, quanMatchMul, QUAN_MATCH_MUL } from '../data/quanNuoc';
+import { quanNuocProjection } from '../data/quanNuocInsights';
 import { isWeekend } from '../data/calendar';
 
 /** GĐ581: tối có trận bóng — đúng 1 ngày thường mỗi tuần, mưa/bão thì không; khách quán ×1,3. */
@@ -34,7 +35,7 @@ describe('GĐ582: panel quán báo trước trận', () => {
 
 describe('GĐ584: Sổ đầu ngày nhắc trận bóng', () => {
   it('ngày trận + quán khỏe → việc ⚽ ưu tiên 3, ≤90; ngày thường/mưa → không; thiếu kho vẫn ưu tiên hơn', async () => {
-    const { quanNuocDayAction } = await import('../data/quanNuoc');
+    const { quanNuocDayAction } = await import('../data/quanNuocInsights');
     const ok = { missedRevenue: 0, driesMain: false, drinkUnitsNow: 99 } as never;
     const d = Array.from({ length: 7 }, (_, i) => i + 1).find((x) => isQuanMatchDay(x, 'sunny'))!;
     const a = quanNuocDayAction(ok, d, 'sunny')!;

@@ -9,7 +9,8 @@ import {
   SUPPLY_BRANCH_WARN,
   SUPPLY_BRANCH_DANGER,
 } from '../data/supplyChain';
-import { quanNuocProjection, quanNuocDrinkIds, type QuanNuocState } from '../data/quanNuoc';
+import { quanNuocDrinkIds, type QuanNuocState } from '../data/quanNuoc';
+import { quanNuocProjection } from '../data/quanNuocInsights';
 import { shelfTotal, CONVENIENCE } from '../data/branches';
 
 /**

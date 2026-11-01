@@ -17,7 +17,7 @@ import { showRestockExtras } from '../data/onboarding';
 import { fairLotValue } from '../data/fairLotValue';
 import { itemHealthList, shelfCount } from '../data/analytics';
 import { prodSuggestToday } from '../data/prodSuggest';
-import { quanNuocRestockTip } from '../data/quanNuoc';
+import { quanNuocRestockTip } from '../data/quanNuocInsights';
 import { supplyRestockManifest, supplyNetworkOrderVisible } from '../data/supplyChain';
 import { teahouseFillPlan } from '../data/teahouseHaul';
 import { quanNuocDrinkIds } from '../data/quanNuoc';

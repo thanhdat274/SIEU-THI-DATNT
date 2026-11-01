@@ -1,10 +1,8 @@
 import type * as React from 'react';
 import { useGame } from '../../core/store';
 import { formatMoney, fmtMul } from '../../data/products';
-import {
-  QUAN_NUOC_HIRE_FEE, QUAN_NUOC_MAX_STAFF, QUAN_NUOC_PRICE, QUAN_NUOC_UNLOCK, QUAN_NUOC_WAGE,
-  QUAN_PRICE_OPTIONS, QUAN_WEATHER_MUL, quanWeekendMul, quanMatchMul, isQuanMatchDay, quanNuocProjection, quanNuocCupSupply, quanNuocRestockTip, quanNuocBuildPayback, type QuanNuocPrice,
-} from '../../data/quanNuoc';
+import { QUAN_NUOC_HIRE_FEE, QUAN_NUOC_MAX_STAFF, QUAN_NUOC_PRICE, QUAN_NUOC_UNLOCK, QUAN_NUOC_WAGE, QUAN_PRICE_OPTIONS, QUAN_WEATHER_MUL, quanWeekendMul, quanMatchMul, isQuanMatchDay, type QuanNuocPrice } from '../../data/quanNuoc';
+import { quanNuocProjection, quanNuocCupSupply, quanNuocRestockTip, quanNuocBuildPayback } from '../../data/quanNuocInsights';
 import { quanNuocStaffValues } from '../../data/quanNuocStaffValue';
 import { teahouseHaulRead } from '../../data/teahouseHaul';
 import { Callout, Footer, styles } from './shared';

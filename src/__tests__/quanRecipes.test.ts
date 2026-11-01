@@ -2,7 +2,8 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { newGameData, useGame } from '../core/store';
 import { applySnapshot, snapshot } from '../core/save';
 import { productById } from '../data/products';
-import { quanNuocCupSupply, quanNuocDay, quanNuocProjection } from '../data/quanNuoc';
+import { quanNuocDay } from '../data/quanNuoc';
+import { quanNuocCupSupply, quanNuocProjection } from '../data/quanNuocInsights';
 import {
   brewMenu, cleanMenu, QUAN_MENU_SLOTS, QUAN_RECIPES, quanRecipeById, recipeCapacity, recipeCupCost, varietyMul, menuBoardLines,
  } from '../data/quanRecipes';
@@ -251,7 +252,7 @@ describe('GĐ475: trà gừng nóng', () => {
 describe('GĐ476: đồ nóng giữ khách ngày mưa', () => {
   it('mưa/bão + có trà gừng → ×1.2; nắng hoặc không có đồ nóng → ×1', async () => {
     const { quanHotMul } = await import('../data/quanRecipes');
-    const { quanNuocProjection } = await import('../data/quanNuoc');
+    const { quanNuocProjection } = await import('../data/quanNuocInsights');
     expect(quanHotMul(['tra_gung'], 'rain')).toBe(1.2);
     expect(quanHotMul(['tra_gung'], 'storm')).toBe(1.2);
     expect(quanHotMul(['tra_gung'], 'sunny')).toBe(1);

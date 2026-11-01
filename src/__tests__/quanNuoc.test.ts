@@ -291,7 +291,7 @@ describe('thời tiết ảnh hưởng khách quán nước (GĐ414)', () => {
   });
 
   it('dự phóng dùng cùng hệ số với ngày bán thật', async () => {
-    const { quanNuocProjection } = await import('../data/quanNuoc');
+    const { quanNuocProjection } = await import('../data/quanNuocInsights');
     for (const w of ['sunny', 'rain', 'storm', 'fog', 'cloudy'] as const) {
       const d = day(w);
       const p = quanNuocProjection(q, 29, 9999, w);
@@ -302,7 +302,8 @@ describe('thời tiết ảnh hưởng khách quán nước (GĐ414)', () => {
 
 describe('GĐ467: cuối tuần quán đông hơn', () => {
   it('T7/CN ×1.2, ngày thường và không truyền ngày ×1', async () => {
-    const { quanWeekendMul, quanNuocProjection } = await import('../data/quanNuoc');
+    const { quanWeekendMul } = await import('../data/quanNuoc');
+    const { quanNuocProjection } = await import('../data/quanNuocInsights');
     const { isWeekend } = await import('../data/calendar');
     const sat = [1, 2, 3, 4, 5, 6, 7].find((d) => isWeekend(d))!;
     const mon = [1, 2, 3, 4, 5, 6, 7].find((d) => !isWeekend(d))!;
@@ -338,7 +339,7 @@ describe('GĐ473: kế hoạch nạp đồ uống biết cuối tuần', () => {
 
 describe('GĐ491: sức khoẻ quán biết cuối tuần', () => {
   it('quanNuocHealth với day cuối tuần dự báo nhiều khách hơn ngày thường', async () => {
-    const { quanNuocHealth } = await import('../data/quanNuoc');
+    const { quanNuocHealth } = await import('../data/quanNuocInsights');
     const { isWeekend } = await import('../data/calendar');
     let we = 1, wd = 1;
     while (!isWeekend(we)) we++;
