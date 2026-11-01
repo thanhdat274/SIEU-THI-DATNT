@@ -6,7 +6,7 @@ import { isWeekend } from './calendar';
  * — thiết kế tường minh, không dùng Math.random nên kết quả luôn xác định, dễ test.
  * File này chỉ có dữ liệu và hàm thuần; hành động mua/tuyển nằm ở `core/slices/quanNuoc.ts`.
  */
-import { productById, unlockedProducts } from './products';
+import { fmtMul, productById, unlockedProducts } from './products';
 import type { DayAction } from './dayPlan';
 import type { Weather } from './weather';
 import { brewMenu, cleanMenu, quanRecipeById, varietyMul, quanHotMul, QUAN_MENU_SLOTS } from './quanRecipes';
@@ -195,7 +195,7 @@ export function quanNuocHealth(
  *   - Quán sắp ăn khô kho chung (driesMain — kệ tiệm chính cạn nước theo): cảnh báo nên xử lý.
  * THUẦN ĐỌC health có sẵn — không đổi SAVE_VERSION/kinh tế/sim; DayAction layout tái dùng dayPlan.
  */
-export function quanNuocDayAction(h: QuanNuocHealth | null | undefined): DayAction | null {
+export function quanNuocDayAction(h: QuanNuocHealth | null | undefined, day?: number, weather?: Weather): DayAction | null {
   if (!h) return null;
   if (h.missedRevenue > 0) {
     return {
@@ -211,6 +211,8 @@ export function quanNuocDayAction(h: QuanNuocHealth | null | undefined): DayActi
       danger: false, priority: 2,
     };
   }
+  // GĐ584: tối có trận bóng — nhắc trong Sổ đầu ngày, không chỉ trong panel quán
+  if (isQuanMatchDay(day, weather)) return { icon: '⚽', panel: 'quannuoc', text: `Tối nay có trận bóng — quán đông ×${fmtMul(QUAN_MATCH_MUL)}, nạp đủ đồ uống`, danger: false, priority: 3 };
   return null;
 }
 

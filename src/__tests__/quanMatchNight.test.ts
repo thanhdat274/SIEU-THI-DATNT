@@ -31,3 +31,18 @@ describe('GĐ582: panel quán báo trước trận', () => {
     for (const line of ['⚽ Tối nay có trận bóng: khách quán đông hơn ×1,3 — nạp thêm đồ uống', '⚽ Mai có trận bóng (nếu trời không mưa) — chuẩn bị đồ uống từ hôm nay']) expect([...line].length).toBeLessThanOrEqual(90);
   });
 });
+
+describe('GĐ584: Sổ đầu ngày nhắc trận bóng', () => {
+  it('ngày trận + quán khỏe → việc ⚽ ưu tiên 3, ≤90; ngày thường/mưa → không; thiếu kho vẫn ưu tiên hơn', async () => {
+    const { quanNuocDayAction } = await import('../data/quanNuoc');
+    const ok = { missedRevenue: 0, driesMain: false, drinkUnitsNow: 99 } as never;
+    const d = Array.from({ length: 7 }, (_, i) => i + 1).find((x) => isQuanMatchDay(x, 'sunny'))!;
+    const a = quanNuocDayAction(ok, d, 'sunny')!;
+    expect(a.icon).toBe('⚽');
+    expect(a.priority).toBe(3);
+    expect([...a.text].length).toBeLessThanOrEqual(90);
+    expect(quanNuocDayAction(ok, d, 'rain')).toBeNull();
+    expect(quanNuocDayAction(ok, d + 1, 'sunny')).toBeNull();
+    expect(quanNuocDayAction({ missedRevenue: 5000, driesMain: false, drinkUnitsNow: 0 } as never, d, 'sunny')!.icon).toBe('🧋');
+  });
+});
