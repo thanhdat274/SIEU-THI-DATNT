@@ -155,9 +155,9 @@ describe('R4 · mốc gần đạt', () => {
 
 describe('ghép chung', () => {
   it('(i) không có gì đáng mồi → [] (ẩn thẻ)', () => {
-    // kỳ cựu (nowDay>7, đủ mọi mốc), trời nhiều mây, không lễ, không khách quen ghé
+    // kỳ cựu (nowDay>7, đủ mọi mốc), trời nhiều mây, không lễ, không khách quen ghé — GĐ615: 366 là mùng 1 (ngày cúng) nên dùng 367
     expect(tomorrowTeaser(base({
-      day: 366, level: 999, weather: 'cloudy', regulars: nobodyVisits(366),
+      day: 367, level: 999, weather: 'cloudy', regulars: nobodyVisits(367),
       totals: { revenue: 1e12, itemsSold: 1e7, customers: 1e6 },
     }))).toEqual([]);
   });
@@ -189,5 +189,12 @@ describe('mồi hàng hot tuần mới (GĐ274, khớp GĐ273 trên Nhập hàng
     for (const day of [5, 6, 9, 12]) {
       expect(tomorrowTeaser(base({ day })).some((r) => r.id === 'trend')).toBe(false);
     }
+  });
+});
+
+describe('R6 · GĐ615 mai ngày cúng', () => {
+  it('ngày mai 15 có dòng 🙏, ngày 16 không', () => {
+    expect(tomorrowTeaser(base({ day: 15 })).some((r) => r.id === 'cung')).toBe(true);
+    expect(tomorrowTeaser(base({ day: 16 })).some((r) => r.id === 'cung')).toBe(false);
   });
 });

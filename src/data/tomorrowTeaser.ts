@@ -18,6 +18,7 @@ import type { RepSample } from './reputation';
 import { nearestMilestones } from './goals';
 import type { MilestoneDossier } from './goals';
 import { DAILY_GIFTS, scaledGiftEco, giftText, recentAvgProfit } from './gifts';
+import { isXoiCungDay } from './tiemXoi';
 import { arcScenePending, surpriseArcById, type SurpriseArcState } from './surpriseArcs';
 
 /**
@@ -45,7 +46,7 @@ export interface TeaserInput {
 }
 
 export interface TeaserRow {
-  id: 'gift' | 'weather' | 'festival' | 'regulars' | 'milestone' | 'arc' | 'weekend' | 'trend';
+  id: 'gift' | 'weather' | 'festival' | 'regulars' | 'milestone' | 'arc' | 'weekend' | 'trend' | 'cung';
   icon: string;
   text: string;
   hint?: string;
@@ -164,6 +165,9 @@ export function tomorrowTeaser(input: TeaserInput): TeaserRow[] {
     const def = surpriseArcById(input.surpriseArc.arcId);
     if (def) rows.push({ id: 'arc', icon: '📖', text: `Chuyện ${def.title} còn dở, mai có tiếp`, panel: 'morning' });
   }
+
+  // R6 — GĐ615: mai ngày cúng (mùng 1/rằm) — khách hỏi đồ cúng, xôi bán chạy.
+  if (isXoiCungDay(input.day)) rows.push({ id: 'cung', icon: '🙏', text: 'Mai ngày cúng — khách hỏi nhang, trái cây', panel: 'order' });
 
   return rows;
 }
