@@ -158,9 +158,9 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
     quanNews.push(sap ? `${sapKindIcons(s.biz.sapRong, s.biz.sapKinds)} sạp hàng rong Ngõ 2 · +${formatMoney(sap)}${isXoiCungDay(s.day) && s.biz.sapKinds?.slice(0, s.biz.sapRong).includes('xoi') ? ' · 🙏' : ''}${isQuanMatchDay(s.day, s.weather) && s.biz.sapKinds?.slice(0, s.biz.sapRong).includes('nuocmia') ? ' · ⚽' : ''}` : '🛒 Trời mưa: sạp hàng rong Ngõ 2 nghỉ bán');
   }
   if (s.biz.tiemXoi?.open) {
-    const t = tiemXoiDay(s.biz.tiemXoi, s.level, k.storage, (id, qty) => putStock(k, id, qty), s.day);
+    const t = tiemXoiDay(s.biz.tiemXoi, s.level, k.storage, (id, qty) => putStock(k, id, qty), s.day, simRng());
     if (t) {
-      tiemXoiLast = { day: s.day, total: t.total, cost: t.cost, wages: t.wages, saved: tiemXoiSaved(t.made) };
+      tiemXoiLast = { day: s.day, total: t.total, cost: t.cost, wages: t.wages, saved: tiemXoiSaved(t.made, t.event === 'gao' ? 1.25 : 1), event: t.event };
       quanWages += t.cost + t.wages;
       // GĐ484: khách ngồi ăn tại chỗ trong nhà tiệm, lấy xôi từ kho, bán giá lẻ
       const dine = tiemXoiDinePlan(s.biz.tiemXoi, s.level, k.storage, s.weather, s.day);
@@ -168,8 +168,11 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
       quanRevenue += dine.revenue;
       tiemXoiLast = { ...tiemXoiLast!, dine: dine.portions };
       if (dine.portions) quanNews.push(`🍚 Khách ăn tại tiệm xôi ${dine.portions} suất · +${formatMoney(dine.revenue)}${isXoiCungDay(s.day) ? ' · 🙏 ngày cúng' : ''}`);
+      // GĐ711: đuôi sự kiện giữ ở mọi giá (bài học GĐ707 — không thay bằng dòng khác), quá dài thì bỏ phần tự đồ trước
+      const evTail = t.event === 'cooker' ? ' · 🍚 nồi hỏng, nấu chậm' : t.event === 'gao' ? ' · 🌾 gạo khan, giá vốn tăng' : '';
       const hand = s.biz.tiemXoi.handDay === s.day ? ' · chủ tự đồ 1 mẻ' : '';
-      quanNews.push((t.total ? `🍚 Tiệm xôi nấu ${t.total} phần vào kho · −${formatMoney(t.cost + t.wages)}` : '🍚 Tiệm xôi: kho đủ xôi, hôm nay không nấu') + hand);
+      const xoiLine = (t.total ? `🍚 Tiệm xôi nấu ${t.total} phần vào kho · −${formatMoney(t.cost + t.wages)}` : '🍚 Tiệm xôi: kho đủ xôi, hôm nay không nấu') + evTail + hand;
+      quanNews.push([...xoiLine].length <= 90 ? xoiLine : (t.total ? `🍚 Tiệm xôi nấu ${t.total} phần vào kho · −${formatMoney(t.cost + t.wages)}` : '🍚 Tiệm xôi: kho đủ xôi, hôm nay không nấu') + evTail);
     }
   }
   // Phụ trại đổ cám hộ + gom nông sản về kho (kèm nhãn nhà trồng/nhà nuôi bán được giá hơn)

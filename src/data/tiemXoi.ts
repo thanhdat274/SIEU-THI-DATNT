@@ -39,7 +39,13 @@ export const TIEM_XOI_BIG_LEVEL = 42;
 export const TIEM_XOI_BIG_COST = 20_000_000;
 export const tiemXoiTarget = (t: Pick<TiemXoiState, 'big'>) => (t.big ? 120 : TIEM_XOI_TARGET);
 
-export interface TiemXoiDay { made: Record<string, number>; total: number; cost: number; wages: number; full: boolean }
+export interface TiemXoiDay { made: Record<string, number>; total: number; cost: number; wages: number; full: boolean;
+  /** GĐ711: sự kiện hôm nay — nồi hỏng (nấu chậm nửa sức) / gạo khan (giá vốn tăng). Không có thì undefined. */ event?: TiemXoiEventKind }
+
+/** GĐ711 — sự kiện một ngày ở tiệm xôi: endDay truyền rng (simRng) mới có; không truyền = không sự kiện
+ *  (giữ hành vi cũ cho test/morning không cần). Hai lần gieo luôn gọi đủ, xác định theo seed. */
+export const TIEM_XOI_EVENT = { cooker: 0.06, gao: 0.05 };
+export type TiemXoiEventKind = 'cooker' | 'gao';
 
 /**
  * Một ngày của tiệm xôi — hoàn toàn xác định:
@@ -51,14 +57,19 @@ export interface TiemXoiDay { made: Record<string, number>; total: number; cost:
  * Gọi `put(id, qty)` để cất vào kho. Trả null khi tiệm chưa mở.
  */
 export function tiemXoiDay(
-  t: TiemXoiState, level: number, storage: Record<string, number>, put: (id: string, qty: number) => void, day?: number,
+  t: TiemXoiState, level: number, storage: Record<string, number>, put: (id: string, qty: number) => void, day?: number, rng?: () => number,
 ): TiemXoiDay | null {
   if (!t.open) return null;
   const ids = tiemXoiIds(level);
+  // GĐ711: gieo 2 lần trước — nồi hỏng chặn nửa sức nấu, gạo khan đội giá vốn ×1,25 hôm đó
+  const r1 = rng?.(), r2 = rng?.();
+  const event: TiemXoiEventKind | undefined =
+    r1 !== undefined && r1 < TIEM_XOI_EVENT.cooker ? 'cooker'
+    : r2 !== undefined && r2 < TIEM_XOI_EVENT.gao ? 'gao' : undefined;
   const need: Record<string, number> = {};
   for (const id of ids) need[id] = Math.max(0, Math.round(tiemXoiTarget(t) * tiemXoiCungMul(day)) - (storage[id] ?? 0)); // GĐ596: ngày cúng nấu đầy kho hơn
   const made: Record<string, number> = {};
-  let left = tiemXoiCapacity(t.staff, !!t.big);
+  let left = Math.ceil(tiemXoiCapacity(t.staff, !!t.big) * (event === 'cooker' ? 0.5 : 1));
   while (left > 0) {
     let pick: string | null = null;
     for (const id of ids) if (need[id] > 0 && (pick === null || need[id] > need[pick])) pick = id;
@@ -72,14 +83,15 @@ export function tiemXoiDay(
   for (const [id, qty] of Object.entries(made)) {
     put(id, qty);
     total += qty;
-    cost += qty * productById(id).buy * TIEM_XOI_COST_MUL;
+    cost += qty * productById(id).buy * TIEM_XOI_COST_MUL * (event === 'gao' ? 1.25 : 1);
   }
-  return { made, total, cost: Math.round(cost), wages: t.staff * TIEM_XOI_WAGE, full: left > 0 };
+  return { made, total, cost: Math.round(cost), wages: t.staff * TIEM_XOI_WAGE, full: left > 0, event };
 }
 
-/** Phần tiết kiệm so với nhập lẻ cùng số xôi đó (để báo người chơi tiệm xôi đáng đồng nào). */
-export const tiemXoiSaved = (made: Record<string, number>): number =>
-  Math.round(Object.entries(made).reduce((n, [id, q]) => n + q * productById(id).buy * (1 - TIEM_XOI_COST_MUL), 0));
+/** Phần tiết kiệm so với nhập lẻ cùng số xôi đó (để báo người chơi tiệm xôi đáng đồng nào).
+ *  GĐ711: ngày gạo khan giá vốn ×1,25 → phần "rẻ hơn" cũng co lại theo cùng hệ số. */
+export const tiemXoiSaved = (made: Record<string, number>, costMul = TIEM_XOI_COST_MUL): number =>
+  Math.round(Object.entries(made).reduce((n, [id, q]) => n + q * productById(id).buy * (1 - costMul), 0));
 
 /**
  * Dòng Sổ đầu ngày cho tiệm xôi (GĐ421): hôm qua nấu bao nhiêu, tiết kiệm so với nhập lẻ trừ lương
@@ -153,5 +165,5 @@ export function tiemXoiDinePlan(t: TiemXoiState, level: number, storage: Record<
 }
 
 /** GĐ554: dòng "Hôm qua" của tiệm xôi — kèm suất ăn tại chỗ (đã lưu từ GĐ486 nhưng chưa hiện). */
-export const tiemXoiLastLine = (l: { total: number; cost: number; wages: number; saved: number; dine?: number }) =>
-  `Hôm qua: ${l.total} phần · chi ${formatMoney(l.cost + l.wages)} · rẻ hơn nhập lẻ ${formatMoney(l.saved)}${l.dine ? ` · 🪑 ${l.dine} suất ăn tại chỗ` : ''}`;
+export const tiemXoiLastLine = (l: { total: number; cost: number; wages: number; saved: number; dine?: number; event?: TiemXoiEventKind }) =>
+  `Hôm qua: ${l.total} phần · chi ${formatMoney(l.cost + l.wages)} · rẻ hơn nhập lẻ ${formatMoney(l.saved)}${l.dine ? ` · 🪑 ${l.dine} suất ăn tại chỗ` : ''}${l.event === 'cooker' ? ' · 🍚 nồi hỏng, nấu chậm' : l.event === 'gao' ? ' · 🌾 gạo khan, giá vốn tăng' : ''}`;
