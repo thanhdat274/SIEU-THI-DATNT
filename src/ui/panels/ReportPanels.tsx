@@ -1,5 +1,5 @@
 import { sapEventActions } from '../../data/sapRong';
-import { CUNG_GOODS, isXoiCungDay, tiemXoiMorning, TIEM_XOI_MAX_STAFF, TIEM_XOI_WAGE } from '../../data/tiemXoi';
+import { cungGoodsAction, isXoiCungDay, tiemXoiMorning, TIEM_XOI_MAX_STAFF, TIEM_XOI_WAGE } from '../../data/tiemXoi';
 import { ProductIcon } from '../ProductIcon';
 import { useState } from 'react';
 import { useGame, useClock, formatClock, type DayRecord, type DayStats, type ItemLine } from '../../core/store';
@@ -623,10 +623,8 @@ export function MorningPanel() {
   const quanAction = quanNuocDayAction(quanHealth, day, weather);
   if (quanAction) candidates.push(quanAction);
   // GĐ612: ngày cúng khách hỏi nhang/trái cây (GĐ609) — nhắc nhập món đã mở mà chưa có hàng
-  const cungEve = !isXoiCungDay(day) && isXoiCungDay(day + 1); // GĐ613: hôm trước nhắc nhập sẵn
-  const cungMissing = isXoiCungDay(day) || cungEve ? CUNG_GOODS.filter((id) => productById(id).unlock <= level && !haveStock(id)) : [];
-  const cungNames = cungMissing.map((id) => productById(id).name.toLowerCase()).join(', ');
-  if (cungMissing.length) candidates.push({ icon: '🙏', text: cungEve ? `Mai ngày cúng — nhập sẵn ${cungNames}` : `Ngày cúng khách hỏi ${cungNames} — chưa có hàng`, panel: 'order', danger: false, priority: 2 });
+  const cungAct = cungGoodsAction(day, level, haveStock); // GĐ612/613 → GĐ633 tách hàm thuần
+  if (cungAct) candidates.push(cungAct);
   // GĐ604: đêm có trận — tiện lợi đông sau 22h (GĐ601)
   candidates.push(...sapEventActions(biz.sapRong, biz.sapKinds, day, weather)); // GĐ625/631 → GĐ632 tách hàm thuần
   if (branch?.open && isQuanMatchDay(day, weather)) candidates.push({ icon: '⚽', text: 'Tối nay có trận — tiện lợi đông 22h–24h ×1,2, xếp đủ kệ', panel: 'branch', danger: false, priority: 3 });

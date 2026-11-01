@@ -7,6 +7,7 @@ import { dateOfDoy, dayOfYear, isWeekend } from './calendar';
  * co-op ra cùng kết quả. File này chỉ có dữ liệu và hàm thuần; hành động nằm ở `core/slices/tiemXoi.ts`.
  */
 import { formatMoney, productById, unlockedProducts } from './products';
+import type { DayAction } from './dayPlan';
 
 /** Cấp tối thiểu được mở tiệm xôi (sau Quây xôi cấp 36). */
 export const TIEM_XOI_UNLOCK = 40;
@@ -128,6 +129,18 @@ export const isXoiCungDay = (day?: number) => day !== undefined && [1, 15].inclu
 /** GĐ609: ngày cúng khách tiệm chính hay hỏi đồ cúng (nhang, trái cây). */
 export const CUNG_GOODS = ['x_nhang', 'traicay'];
 export const CUNG_PULL = 0.08;
+/**
+ * GĐ612/613 (tách GĐ633): việc Sổ đầu ngày khi đồ cúng đã mở mà chưa có hàng —
+ * ngày cúng "khách hỏi … chưa có hàng", hôm trước "Mai ngày cúng — nhập sẵn …".
+ */
+export function cungGoodsAction(day: number, level: number, haveStock: (id: string) => boolean): DayAction | null {
+  const eve = !isXoiCungDay(day) && isXoiCungDay(day + 1);
+  if (!eve && !isXoiCungDay(day)) return null;
+  const missing = CUNG_GOODS.filter((id) => productById(id).unlock <= level && !haveStock(id));
+  if (!missing.length) return null;
+  const names = missing.map((id) => productById(id).name.toLowerCase()).join(', ');
+  return { icon: '🙏', text: eve ? `Mai ngày cúng — nhập sẵn ${names}` : `Ngày cúng khách hỏi ${names} — chưa có hàng`, panel: 'order', danger: false, priority: 2 };
+}
 export const tiemXoiCungMul = (day?: number) => (isXoiCungDay(day) ? TIEM_XOI_CUNG_MUL : 1);
 export const TIEM_XOI_WEEKEND_MUL = 1.15;
 export const tiemXoiWeekendMul = (day?: number) => (day !== undefined && isWeekend(day) ? TIEM_XOI_WEEKEND_MUL : 1);
