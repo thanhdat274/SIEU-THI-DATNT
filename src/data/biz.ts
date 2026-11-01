@@ -1062,7 +1062,8 @@ export interface StoryChapter { at: number; title: string; text: string; reward?
 
 /** Mỗi khách quen 3 chương (nội dung ở stories.ts, nạp lười để gói tải ban đầu nhẹ hơn). Rỗng tới khi loadStories() xong — mọi chỗ đọc đã chịu được `undefined`. */
 export let STORIES: Record<string, StoryChapter[]> = {};
-export const loadStories = () => import('./stories').then((m) => { STORIES = m.STORIES; SURPRISES = m.SURPRISES; });
+export const loadStories = () => Promise.all([import('./stories'), import('./surpriseArcsData'), import('./surpriseArcs')])
+  .then(([m, d, a]) => { STORIES = m.STORIES; SURPRISES = m.SURPRISES; a.setSurpriseArcs(d.SURPRISE_ARCS); });
 
 // ───────────────────────── Nhà riêng, bữa sáng, xe cộ ─────────────────────────
 

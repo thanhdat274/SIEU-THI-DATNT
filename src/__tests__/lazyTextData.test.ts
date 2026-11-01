@@ -26,3 +26,13 @@ describe('dữ liệu văn bản nạp lười (STORIES / SURPRISES)', () => {
     expect(SURPRISES.length).toBe(n);
   });
 });
+
+describe('arc bất ngờ nạp lười (GĐ559)', () => {
+  it('loadStories() đổ SURPRISE_ARCS; tra arc theo id/sự kiện gốc chạy được', async () => {
+    const { loadStories } = await import('../data/biz');
+    await loadStories();
+    const arcs = await import('../data/surpriseArcs');
+    expect(arcs.SURPRISE_ARCS.length).toBeGreaterThanOrEqual(3);
+    expect(arcs.arcForEvent('mua_roi')?.id).toBe('arc_mua_roi');
+  });
+});
