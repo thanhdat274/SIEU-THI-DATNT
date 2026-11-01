@@ -204,3 +204,11 @@ describe('GĐ591: ngày cúng lô xôi đông', () => {
     expect(sapLotIncome(k.xoi, 'rain', cung)).toBe(0);
   });
 });
+
+describe('GĐ592: gợi ý món ngày mai biết ngày cúng', () => {
+  it('trời mây ngày thường: bánh mì; trời mây ngày cúng: xôi', async () => {
+    const { bestSapKind } = await import('../data/sapRong');
+    expect(bestSapKind('cloudy', 16).id).toBe('banhmi');
+    expect(bestSapKind('cloudy', 15).id).toBe('xoi');
+  });
+});
