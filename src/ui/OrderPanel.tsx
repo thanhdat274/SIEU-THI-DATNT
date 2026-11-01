@@ -25,7 +25,7 @@ import { festivalRestockPlan } from '../data/festivalRestock';
 import { PREP_MIN_QTY } from '../data/festivalPrep';
 import { Callout } from './panels/shared';
 import { acceptFairOffer } from '../core/biz';
-import { monthOf } from '../data/calendar';
+import { festivalOn, festivalStock, monthOf, upcomingFestival } from '../data/calendar';
 import { weekendPullOf, weekendSellingDays } from '../data/weekendRestock';
 
 /** Món mở khóa trong vòng chừng này cấp gần đây được gắn nhãn "Mới". */
@@ -196,7 +196,9 @@ export function OrderPanel() {
 
   // Memo: quét toàn bộ kệ/kho mỗi lần gõ số lượng (setCart) là tốn — chỉ tính lại khi dữ liệu nguồn thay đổi
   const rows = useMemo(() => {
-    const isHot = trending(day, level);
+    // GĐ657: lễ đang diễn ra hoặc ≤7 ngày nữa — hàng của dịp tính như hàng hot để hiện ở Gợi ý
+    const fest = festivalOn(day) ?? upcomingFestival(day, 7)?.festival;
+    const isHot = [...trending(day, level), ...(fest ? festivalStock(fest, level) : [])];
     return unlockedProducts(level)
       .filter((p) => supplierSells(supplier, p.id))
       .map((p) => {

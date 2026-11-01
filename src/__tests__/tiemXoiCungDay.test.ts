@@ -217,3 +217,12 @@ describe('GĐ656: thẻ lễ gần có nút đặt hàng còn thiếu', () => {
     expect(src).toContain("openPanel({ type: 'order' })}>🛒 Đặt hàng còn thiếu");
   });
 });
+
+describe('GĐ657: Gợi ý nhập hàng gồm hàng lễ ≤7 ngày', () => {
+  it('OrderPanel cộng festivalStock của lễ đang diễn ra/≤7 ngày vào isHot', async () => {
+    const { readFileSync } = await import('node:fs');
+    const src = readFileSync('src/ui/OrderPanel.tsx', 'utf8');
+    expect(src).toContain('festivalOn(day) ?? upcomingFestival(day, 7)?.festival');
+    expect(src).toContain('...(fest ? festivalStock(fest, level) : [])');
+  });
+});
