@@ -135,3 +135,4 @@
 - GĐ642: lịch năm thêm chú thích '🙏 là ngày cúng (mùng 1, rằm): khách hỏi nhang, trái cây, xôi'.
 - GĐ643: tooltip ô lịch năm ghi 'tối có trận (nếu không mưa)' cho 54 ngày trận (không thêm icon để lưới gọn).
 - GĐ644: dòng đếm ngược Sổ đầu ngày thành nút '→' mở Lịch năm (QA sandbox ngày 16: bấm → Lịch sự kiện).
+- GĐ645: báo 'trận mai' dùng dự báo mai (forecast[0]) thay vì giả định nắng — mai mưa thì Sổ đầu ngày nhảy tới trận tuần sau, panel quán nước không báo.

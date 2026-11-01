@@ -165,3 +165,13 @@ describe('GĐ644: dòng đếm ngược bấm mở lịch năm', () => {
     expect(src).toContain("{nextEvt && <button onClick={() => openPanel({ type: 'calendar' })}");
   });
 });
+
+describe('GĐ645: mai dự báo mưa thì không báo trận mai', () => {
+  it('nextEventLine bỏ trận mai khi forecast mưa, nhảy tới trận tuần sau; panel quán nước dùng forecast', async () => {
+    const { nextEventLine } = await import('../data/dayEventActions');
+    expect(nextEventLine(16, 99, 29, 'sunny')).toContain('⚽ Trận mai');
+    expect(nextEventLine(16, 99, 29, 'rain')).toContain('⚽ Trận còn 8 ngày');
+    const { readFileSync } = await import('node:fs');
+    expect(readFileSync('src/ui/panels/QuanNuocPanel.tsx', 'utf8')).toContain("isQuanMatchDay(day + 1, forecast[0] ?? 'sunny')");
+  });
+});

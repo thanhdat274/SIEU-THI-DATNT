@@ -48,13 +48,13 @@ export function sapEventActions(lots: number | undefined, kinds: readonly string
  * GĐ637: dòng đếm ngược dịp kế tiếp trên Sổ đầu ngày — ngày cúng (luôn) và tối có trận (khi quán nước
  * đã mở cấp). Trận tính theo lịch, chưa biết mưa nên ghi "dự kiến". Hôm nay đúng dịp thì bỏ (việc đã báo).
  */
-export function nextEventLine(day: number, level: number, quanUnlock: number): string | null {
+export function nextEventLine(day: number, level: number, quanUnlock: number, tomorrow?: Weather): string | null {
   const find = (ok: (d: number) => boolean) => { for (let n = 1; n <= 31; n++) if (ok(day + n)) return n; return null; };
   const parts: string[] = [];
   const c = isXoiCungDay(day) ? null : find((d) => isXoiCungDay(d));
   if (c) parts.push(c === 1 ? '🙏 Ngày cúng mai' : `🙏 Ngày cúng còn ${c} ngày`);
   if (level >= quanUnlock && !isQuanMatchDay(day, 'sunny')) {
-    const m = find((d) => isQuanMatchDay(d, 'sunny'));
+    const m = find((d) => isQuanMatchDay(d, d === day + 1 ? tomorrow ?? 'sunny' : 'sunny')); // GĐ645: mai đã có dự báo
     if (m) parts.push(m === 1 ? '⚽ Trận mai (dự kiến)' : `⚽ Trận còn ${m} ngày (dự kiến)`);
   }
   const f = upcomingFestival(day, 14); // GĐ638: lễ sắp tới trong 2 tuần — đủ sớm để gom hàng

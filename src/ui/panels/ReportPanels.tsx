@@ -670,7 +670,7 @@ export function MorningPanel() {
   );
   if (shiftAct) candidates.push(shiftAct);
   const actions = planDay(candidates);
-  const nextEvt = nextEventLine(day, level, QUAN_NUOC_UNLOCK); // GĐ637
+  const nextEvt = nextEventLine(day, level, QUAN_NUOC_UNLOCK, forecast[0]); // GĐ637
   // GĐ132: mồi "🧭 Sắp mở khóa" cho người chơi MỚI (tuần đầu) — 1–2 hệ lớn sắp mở + XP còn thiếu (thuần đọc)
   const earlyUnlocks = earlyUnlockTeaser({ level, xp, day });
   const courier = staff.some((w) => w.role === 'courier');

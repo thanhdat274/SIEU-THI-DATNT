@@ -30,7 +30,7 @@ const priceTip = (mul: number, traffic: number) => {
 
 /** Quán Nước Đầu Ngõ: quán nước ở đầu hẻm, nguyên liệu lấy thẳng từ kho tiệm. */
 export function QuanNuocPanel() {
-  const { biz, level, money, storage, weather, day, buyQuanNuoc, hireQuanNuoc, fireQuanNuoc, setQuanNuocPrice, closePanel, openPanel } = useGame();
+  const { biz, level, money, storage, weather, forecast, day, buyQuanNuoc, hireQuanNuoc, fireQuanNuoc, setQuanNuocPrice, closePanel, openPanel } = useGame();
   const quan = biz.quanNuoc;
   const last = biz.quanNuocLast;
   const locked = level < QUAN_NUOC_UNLOCK;
@@ -60,7 +60,7 @@ export function QuanNuocPanel() {
       {quan.open && isQuanMatchDay(day, weather) && (
         <p style={{ fontSize: 12, margin: '0 0 6px' }}>⚽ Tối nay có trận bóng: khách quán đông hơn ×{fmtMul(quanMatchMul(day, weather))} — nạp thêm đồ uống</p>
       )}
-      {quan.open && !isQuanMatchDay(day, weather) && isQuanMatchDay(day + 1, 'sunny') && (
+      {quan.open && !isQuanMatchDay(day, weather) && isQuanMatchDay(day + 1, forecast[0] ?? 'sunny') && ( // GĐ645: mai dự báo mưa thì không báo trận
         <p style={{ fontSize: 12, margin: '0 0 6px' }}>⚽ Mai có trận bóng (nếu trời không mưa) — chuẩn bị đồ uống từ hôm nay</p>
       )}
       {quan.open && quanHotNote(quan.menu ?? [], weather, level, day) && (
