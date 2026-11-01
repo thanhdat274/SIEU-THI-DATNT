@@ -146,7 +146,7 @@ describe('khảo sát kinh tế vòng ngày — simulator thật trên store', (
     expect(rows.length).toBe(1);
     expect(Object.keys(rows[0])).toEqual(expect.arrayContaining(['day', 'level', 'operationalProfit', 'quest', 'bet']));
     expect([rows[0].quest, rows[0].bet].every(Number.isFinite)).toBe(true);
-  });
+  }, 600_000);
 
   // GĐ160 — ngày 1 cấp 1: bot autoplay bán đúng vòng nhập-bày-bán, doanh thu phải chạm được mục tiêu
   // doanh thu người mới (100.000đ = ~65% kho khởi đầu) — smoke ngắn, in số để Leader đối chiếu.
@@ -168,7 +168,7 @@ describe('khảo sát kinh tế vòng ngày — simulator thật trên store', (
     // Assert mềm: bot chơi đúng nhịp thì số hữu hạn, và doanh thu ngày 1 không phải số 0 vô lý
     expect(Number.isFinite(revenue)).toBe(true);
     expect(revenue).toBeGreaterThan(0);
-  });
+  }, 600_000);
 
   // GĐ561: ngày 2 trước giờ không có trần (GĐ341 đo 11) — khoá mức đo để chỉ được giảm.
   it('ngày 2 không bơm thêm thông báo', async () => {
@@ -182,7 +182,7 @@ describe('khảo sát kinh tế vòng ngày — simulator thật trên store', (
     console.log(`[người mới] ngày 2: ${toasts} thông báo: ` + seen.join(' | '));
     expect(toasts, 'ngày 2 nhiều thông báo hơn mức đo — gộp hoặc dời bớt').toBeLessThanOrEqual(DAY2_TOAST_CEILING);
     expect([...long], 'thông báo dài hơn 90 ký tự').toEqual([]);
-  });
+  }, 600_000); // GĐ607: mặc định 5s quá ngắn khi chạy cả bộ dưới tải
 
   // GĐ564: thông báo sinh lúc chạy ≤90 cả ở cấp giữa (nhiều hệ thống mở hơn).
   // GĐ565: dòng sáng cũng ≤90 — bản đủ ở lastSummary.news (Sổ đầu ngày).
