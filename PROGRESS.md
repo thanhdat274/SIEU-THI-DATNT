@@ -148,3 +148,4 @@
 - GĐ584: Sổ đầu ngày có việc '⚽ Tối nay có trận bóng — quán đông ×1,3, nạp đủ đồ uống' (ưu tiên 3, sau thiếu kho). quanNuocDayAction nhận day/weather tùy chọn. 2680 test xanh.
 - GĐ585: QA Sổ đầu ngày (sandbox, ngày 3 nắng, quán mở): kho đồ uống ít → hiện việc '🥤 Kho đồ uống còn 10 ly…' (ưu tiên cao hơn); nạp đủ → hiện '⚽ Tối nay có trận bóng — quán đông ×1,3…'. Đúng thứ tự.
 - GĐ586: Giải bóng đá phường (lễ bong_da_phuong) = mọi ngày đều là đêm có trận ở quán nước (trời khô), khớp lễ có sẵn bán tăng lực/bia ở tiệm chính. 2681 test xanh.
+- GĐ587: tiệm xôi có sự kiện đầu tiên — ngày cúng (ngày 1 & 15 lịch game, giản lược mùng 1/rằm) khách ăn tại chỗ ×1,3; tin thêm '· 🙏 ngày cúng'. Theo số ngày → parity. Sửa 2 test cũ dùng ngày 1. 2683 xanh.

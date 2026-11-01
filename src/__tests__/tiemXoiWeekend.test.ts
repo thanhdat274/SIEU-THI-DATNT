@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { isWeekend } from '../data/calendar';
-import { TIEM_XOI_WEEKEND_MUL, tiemXoiDinePlan, tiemXoiIds, tiemXoiWeekendMul } from '../data/tiemXoi';
+import { isXoiCungDay, TIEM_XOI_WEEKEND_MUL, tiemXoiDinePlan, tiemXoiIds, tiemXoiWeekendMul } from '../data/tiemXoi';
 
 /** GĐ530 — cuối tuần khách ngồi ăn tiệm xôi đông hơn. */
 describe('tiemXoiWeekendMul', () => {
-  const we = Array.from({ length: 14 }, (_, i) => i + 1).find(isWeekend)!;
-  const wd = Array.from({ length: 14 }, (_, i) => i + 1).find((d) => !isWeekend(d))!;
+  const we = Array.from({ length: 14 }, (_, i) => i + 1).find((d) => isWeekend(d) && !isXoiCungDay(d))!; // GĐ587: tránh ngày cúng
+  const wd = Array.from({ length: 14 }, (_, i) => i + 1).find((d) => !isWeekend(d) && !isXoiCungDay(d))!;
 
   it('cuối tuần ×1,15, ngày thường/không rõ ngày ×1', () => {
     expect(tiemXoiWeekendMul(we)).toBe(TIEM_XOI_WEEKEND_MUL);

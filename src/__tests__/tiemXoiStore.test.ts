@@ -56,7 +56,7 @@ describe('endDay — nấu bù kho', () => {
     const after = g();
     const xoi = tiemXoiIds(TIEM_XOI_UNLOCK).reduce((n, id) => n + (after.storage[id] ?? 0), 0);
     // GĐ484: khách ăn tại chỗ lấy bớt xôi vừa nấu và trả tiền giá lẻ
-    const dine = tiemXoiDinePlan({ open: true, staff: 1 }, TIEM_XOI_UNLOCK, t.made);
+    const dine = tiemXoiDinePlan({ open: true, staff: 1 }, TIEM_XOI_UNLOCK, t.made, s.weather, s.day); // GĐ587: ngày 1 là ngày cúng
     expect(xoi).toBe(tiemXoiCapacity(1) - dine.portions);
     expect(after.money).toBe(100_000_000 - t.cost - TIEM_XOI_WAGE - rentOf(0) + dine.revenue);
     expect(after.biz.tiemXoiLast).toMatchObject({ day: 1, total: t.total, cost: t.cost, wages: TIEM_XOI_WAGE });

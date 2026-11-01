@@ -1,4 +1,4 @@
-import { isWeekend } from './calendar';
+import { dateOfDoy, dayOfYear, isWeekend } from './calendar';
 /**
  * Tiệm xôi (GĐ410): cơ sở thứ ba, mở ở cấp 40 — xưởng nấu xôi SỐ LƯỢNG LỚN cung ứng cho tạp hóa.
  * Người dùng chọn hướng (b): Quây xôi trong tiệm vẫn giữ nguyên (tạp hóa lớn dần thành siêu thị),
@@ -122,6 +122,10 @@ export const tiemXoiDineCap = (staff: number, big = false) => Math.round((10 + 5
 export const tiemXoiRainMul = (weather?: string) => (weather === 'rain' || weather === 'storm' ? 1.2 : 1);
 
 /** GĐ530: cuối tuần cả nhà đi ăn sáng — khách ngồi tiệm xôi ×1,15. */
+/** GĐ587: ngày cúng (mùng 1 & rằm — giản lược theo lịch game) bà con mua xôi cúng → khách ×1,3. */
+export const TIEM_XOI_CUNG_MUL = 1.3;
+export const isXoiCungDay = (day?: number) => day !== undefined && [1, 15].includes(dateOfDoy(dayOfYear(day)).day);
+export const tiemXoiCungMul = (day?: number) => (isXoiCungDay(day) ? TIEM_XOI_CUNG_MUL : 1);
 export const TIEM_XOI_WEEKEND_MUL = 1.15;
 export const tiemXoiWeekendMul = (day?: number) => (day !== undefined && isWeekend(day) ? TIEM_XOI_WEEKEND_MUL : 1);
 
@@ -130,7 +134,7 @@ export function tiemXoiDinePlan(t: TiemXoiState, level: number, storage: Record<
   const ids = tiemXoiIds(level);
   for (const id of ids) left[id] = storage[id] ?? 0;
   const take: Record<string, number> = {};
-  let n = t.open ? Math.round(tiemXoiDineCap(t.staff, !!t.big) * tiemXoiRainMul(weather) * tiemXoiWeekendMul(day)) : 0;
+  let n = t.open ? Math.round(tiemXoiDineCap(t.staff, !!t.big) * tiemXoiRainMul(weather) * tiemXoiWeekendMul(day) * tiemXoiCungMul(day)) : 0;
   let portions = 0, revenue = 0;
   while (n > 0) {
     let pick: string | null = null;

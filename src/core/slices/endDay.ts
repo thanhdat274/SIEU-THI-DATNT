@@ -12,7 +12,7 @@ import { INSPECTION_EVERY, INSPECTION_FINE, INSPECTION_REWARD, INSPECTION_UNLOCK
 import { sceneFor, surpriseArcById } from '../../data/surpriseArcs';
 import { isQuanMatchDay, quanNuocDay } from '../../data/quanNuoc';
 import { quanRecipeById } from '../../data/quanRecipes';
-import { tiemXoiDay, tiemXoiSaved, tiemXoiDinePlan } from '../../data/tiemXoi';
+import { isXoiCungDay, tiemXoiDay, tiemXoiSaved, tiemXoiDinePlan } from '../../data/tiemXoi';
 import { bizEndOfDay, checkAchievements } from '../biz';
 import { PHONE_FRIEND_GAIN } from '../../data/phoneOrders';
 import { nextMarketIndex } from '../../data/market';
@@ -169,7 +169,7 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
       for (const [id, qty] of Object.entries(dine.take)) takeStock(k, id, qty);
       quanRevenue += dine.revenue;
       tiemXoiLast = { ...tiemXoiLast!, dine: dine.portions };
-      if (dine.portions) quanNews.push(`🍚 Khách ăn tại tiệm xôi ${dine.portions} suất · +${formatMoney(dine.revenue)}`);
+      if (dine.portions) quanNews.push(`🍚 Khách ăn tại tiệm xôi ${dine.portions} suất · +${formatMoney(dine.revenue)}${isXoiCungDay(s.day) ? ' · 🙏 ngày cúng' : ''}`);
       const hand = s.biz.tiemXoi.handDay === s.day ? ' · chủ tự đồ 1 mẻ' : '';
       quanNews.push((t.total ? `🍚 Tiệm xôi nấu ${t.total} phần vào kho · −${formatMoney(t.cost + t.wages)}` : '🍚 Tiệm xôi: kho đủ xôi, hôm nay không nấu') + hand);
     }
