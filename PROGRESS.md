@@ -148,3 +148,4 @@
 - GĐ655: QA GĐ654 sandbox (cấp 45, ngủ sang ngày 25): tin sáng '🧧 3 ngày nữa là Tết Nguyên Đán, nhập sẵn Bánh chưng, Bao lì xì, Mứt dừa, Hạt dưa +11 món' (90 ký tự). Không đổi mã.
 - GĐ656: thẻ lễ ≤14 ngày ở Lịch năm có món ⚠️ thì hiện nút '🛒 Đặt hàng còn thiếu' mở bảng Nhập hàng. QA sandbox ngày 25 cấp 45: 1 nút (Tết), bấm → panel order.
 - GĐ657: Gợi ý ở bảng Nhập hàng tính hàng lễ (festivalStock) là hàng hot khi lễ đang diễn ra hoặc ≤7 ngày — trước đây hàng của dịp bị loại khỏi trending nên nút 'Đặt hàng còn thiếu' (GĐ656) mở ra không thấy. QA sandbox: ngày 25 thấy Bánh chưng/Bao lì xì/Mứt dừa/Hạt dưa, ngày 10 không.
+- GĐ658: Gợi ý nhập hàng thêm đồ cúng (CUNG_GOODS đã mở) vào ngày cúng và hôm trước. QA sandbox cấp 45: ngày 14 thấy Nhang ở mối mặc định (Trái cây hàng tươi — mối khác bán), ngày 10 không.

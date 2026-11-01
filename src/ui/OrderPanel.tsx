@@ -25,6 +25,7 @@ import { festivalRestockPlan } from '../data/festivalRestock';
 import { PREP_MIN_QTY } from '../data/festivalPrep';
 import { Callout } from './panels/shared';
 import { acceptFairOffer } from '../core/biz';
+import { CUNG_GOODS, isXoiCungDay } from '../data/tiemXoi';
 import { festivalOn, festivalStock, monthOf, upcomingFestival } from '../data/calendar';
 import { weekendPullOf, weekendSellingDays } from '../data/weekendRestock';
 
@@ -198,7 +199,9 @@ export function OrderPanel() {
   const rows = useMemo(() => {
     // GĐ657: lễ đang diễn ra hoặc ≤7 ngày nữa — hàng của dịp tính như hàng hot để hiện ở Gợi ý
     const fest = festivalOn(day) ?? upcomingFestival(day, 7)?.festival;
-    const isHot = [...trending(day, level), ...(fest ? festivalStock(fest, level) : [])];
+    // GĐ658: ngày cúng và hôm trước — đồ cúng (nhang, trái cây) cũng vào Gợi ý
+    const cung = isXoiCungDay(day) || isXoiCungDay(day + 1) ? CUNG_GOODS.filter((id) => productById(id).unlock <= level) : [];
+    const isHot = [...trending(day, level), ...(fest ? festivalStock(fest, level) : []), ...cung];
     return unlockedProducts(level)
       .filter((p) => supplierSells(supplier, p.id))
       .map((p) => {

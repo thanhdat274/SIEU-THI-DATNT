@@ -226,3 +226,11 @@ describe('GĐ657: Gợi ý nhập hàng gồm hàng lễ ≤7 ngày', () => {
     expect(src).toContain('...(fest ? festivalStock(fest, level) : [])');
   });
 });
+
+describe('GĐ658: Gợi ý nhập hàng gồm đồ cúng ngày cúng & hôm trước', () => {
+  it('OrderPanel cộng CUNG_GOODS đã mở khi isXoiCungDay(day) hoặc (day + 1)', async () => {
+    const { readFileSync } = await import('node:fs');
+    const src = readFileSync('src/ui/OrderPanel.tsx', 'utf8');
+    expect(src).toContain('isXoiCungDay(day) || isXoiCungDay(day + 1) ? CUNG_GOODS.filter((id) => productById(id).unlock <= level) : []');
+  });
+});
