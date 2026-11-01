@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (02/11/2026)
+- **GĐ739:** luồng cố định trọn vẹn trên HEAD trước audit (mẫu GĐ671) — không đổi mã: save trắng → thoại → Ra tiệm (bài học bấm sau thoại) → Mở cửa → khách vào bán (món đầu 10s sau giờ vàng 11h, 8.000đ) → qua ngày tự động (ngất khuya) → ngày 2 mở cửa tiếp — 0 lỗi console suốt. Các trục mới (quầy/nhân viên/landmark/tín dụng) không phá luồng lõi. Đưa số này vào audit GĐ730-style lần kế.
 - **GĐ737:** payoff thị giác đèn hẻm — **2 cột đèn dọc lối đi hiện trong 3D khi dự án "Đèn Đường Ngõ 1" thắp sáng** (landmark ≥ 48): alleyLamps.ts tái dùng thân đèn lồng đã đóng (fallbackLantern xuất công khai — không GLB mới, không khối nguyên thủy), quầng sprite + PointLight đăng ký quỹ; gate hiệu năng setDecor(p.decor) — mức Thấp ẩn, Vừa+ hiện (QA xác minh 2 mức); lit chỉ điều khiển cường độ. Test alleyLamps 3 (vị trí luật gđ177 + ma trận gate). Bài học: file CRLF — anchor node -e dùng 
 . 2887 test xanh (206 s).
 . QA: lightsOn 2 khi landmark 48 + đêm, 0 khi chưa, visible ở mức Vừa, 0 lỗi. 2887 test xanh (206 s).
