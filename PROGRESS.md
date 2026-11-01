@@ -139,4 +139,6 @@
 - GĐ588: panel tiệm xôi: '· 🙏 ngày cúng ×1,3 suất' hôm đó + '🙏 Mai là ngày cúng…' báo trước. QA trình duyệt ngày 14/15 đúng.
 - GĐ589: Sổ đầu ngày thêm việc '🙏 Hôm nay ngày cúng — khách mua xôi ×1,3, nấu đủ kho' (tiệm xôi mở). QA trình duyệt ngày 15 hiện đầu danh sách.
 
-- GĐ590 (rà ngân sách): bundle vượt 598/597 sau GĐ581–589 → tách helper Sổ kinh doanh quán nước (avgSell/cupSupply/projection/health/dayAction/restockTip/buildPayback) sang data/quanNuocInsights.ts chỉ panel lazy dùng → 597/597, chunk 253. Lưu trữ GĐ565–579 (PROGRESS ~30KB). 2684/2685 (ngày-2 economySim flaky tải CPU, chạy riêng xanh).- GĐ590 QA: save mới, bán đầu sau >63s và <3 phút (đạt ≤5 phút); 11 món bán trước 9:01 sáng.
+- GĐ590 (rà ngân sách): bundle vượt 598/597 sau GĐ581–589 → tách helper Sổ kinh doanh quán nước (avgSell/cupSupply/projection/health/dayAction/restockTip/buildPayback) sang data/quanNuocInsights.ts chỉ panel lazy dùng → 597/597, chunk 253. Lưu trữ GĐ565–579 (PROGRESS ~30KB). 2684/2685 (ngày-2 economySim flaky tải CPU, chạy riêng xanh).
+- GĐ590 QA: save mới, bán đầu sau >63s và <3 phút (đạt ≤5 phút); 11 món bán trước 9:01 sáng.
+- GĐ591: sạp hàng rong lô xôi ăn theo ngày cúng (×1,3, cùng nguồn tiemXoiCungMul) → xôi thắng sạp vào mùng 1/rằm, parity theo số ngày. Bundle 597/597. 2686 xanh (leak test flaky tải, chạy riêng xanh).

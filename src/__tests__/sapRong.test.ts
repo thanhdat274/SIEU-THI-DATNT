@@ -189,3 +189,18 @@ describe('GĐ521: tự đứng sạp', () => {
     expect(msgs.every((x) => [...x].length <= 90)).toBe(true);
   });
 });
+
+describe('GĐ591: ngày cúng lô xôi đông', () => {
+  it('lô xôi ×1,3 ngày cúng, món khác không đổi, mưa vẫn 0', async () => {
+    const { SAP_KINDS, sapLotIncome } = await import('../data/sapRong');
+    const { isXoiCungDay, TIEM_XOI_CUNG_MUL } = await import('../data/tiemXoi');
+    const k = Object.fromEntries(SAP_KINDS.map((x) => [x.id, x]));
+    const cung = Array.from({ length: 60 }, (_, i) => i + 1).find((d) => isXoiCungDay(d))!;
+    const prev = cung - 1;
+    expect(isXoiCungDay(prev)).toBe(false);
+    const noCung = sapLotIncome({ ...k.xoi, id: 'khac' }, 'fog', cung);
+    expect(Math.abs(sapLotIncome(k.xoi, 'fog', cung) - noCung * TIEM_XOI_CUNG_MUL)).toBeLessThanOrEqual(1);
+    expect(sapLotIncome(k.xoi, 'fog', cung)).toBeGreaterThan(sapLotIncome(k.tonghop, 'fog', cung));
+    expect(sapLotIncome(k.xoi, 'rain', cung)).toBe(0);
+  });
+});

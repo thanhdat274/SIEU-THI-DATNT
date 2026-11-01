@@ -1,5 +1,6 @@
 import { isWeekend } from './calendar';
 import type { Weather } from './weather';
+import { tiemXoiCungMul } from './tiemXoi';
 
 /**
  * Sạp hàng rong ở Ngõ 2 (GĐ501, bước 3 mở rộng bản đồ): thuê lô trống, mỗi lô một sạp bán ngoài trời.
@@ -33,7 +34,7 @@ export function nextSapKinds(kinds: readonly string[] | undefined, i: number): s
 export function sapLotIncome(kind: SapKind, weather?: Weather, day?: number): number {
   if (weather === 'rain' || weather === 'storm') return 0;
   const wk = day !== undefined && isWeekend(day) ? kind.weekend : kind.weekday;
-  return Math.round(SAP_BASE_INCOME * wk * (weather ? kind.weather[weather] ?? 1 : 1));
+  return Math.round(SAP_BASE_INCOME * wk * (weather ? kind.weather[weather] ?? 1 : 1) * (kind.id === 'xoi' ? tiemXoiCungMul(day) : 1)); // GĐ591: ngày cúng lô xôi đông
 }
 
 /** GĐ508: món lãi nhất cho một ngày (để gợi ý theo dự báo ngày mai); hoà thì giữ món đứng trước. */
