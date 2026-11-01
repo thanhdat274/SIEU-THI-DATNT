@@ -115,6 +115,24 @@ export function quanNuocDay(
   };
 }
 
+/** GĐ707 — dòng tin sáng mai của quán nước: giữ ≤90 ký tự, sự kiện không bao giờ bị thay
+ *  bằng dòng "kho thiếu" sai (lỗi tiềm ẩn GĐ703: ngày có sự kiện mà dòng quá dài thì fallback
+ *  cũ kể "kho thiếu" dù kho đủ). `head` là phần số liệu endDay dựng; hàm chỉ lo phần đuôi. */
+export function quanDayNews(head: string, q: QuanNuocDay): string {
+  const ev = q.event === 'brewer' ? ' · ⚙️ máy pha hỏng, pha chậm' : q.event === 'cart' ? ' · 🛺 xe nước mọc đối diện' : '';
+  const tail = ev
+    || (q.brewShort.length ? ` · thiếu ${quanRecipeById(q.brewShort[0])?.name ?? q.brewShort[0]}${q.brewShort.length > 1 ? ` +${q.brewShort.length - 1}` : ''}` : '')
+    || (q.short ? ' · kho thiếu đồ uống, nhập thêm' : '');
+  const line = head + tail;
+  if ([...line].length <= 90) return line;
+  const extra = ev || (q.brewShort.length ? ` · thiếu ${q.brewShort.length} món` : ' · kho thiếu');
+  const short = head + extra;
+  if ([...short].length <= 90) return short;
+  // head quá dài (doanh thu nhiều chữ + tự pha + trận): cắt ĐẦU head, giữ đuôi quan trọng — trần 90 cứng (Luật 9)
+  const hTrim = [...head].slice(0, Math.max(0, 90 - [...extra].length - 1)).join('') + '…';
+  return hTrim + extra;
+}
+
 /** Số khách ngồi trong quán 3D (GĐ426): theo số ly bán hôm qua, mỗi 12 ly một khách, tối đa 2 ghế/bàn. */
 export const quanPatrons = (staff: number, servedYesterday: number | undefined) =>
   Math.min(2 * Math.max(0, Math.min(3, Math.floor(staff))), Math.ceil(Math.max(0, servedYesterday ?? 0) / 12));

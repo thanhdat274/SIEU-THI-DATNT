@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { quanNuocDay, QUAN_EVENT, type QuanNuocState } from '../data/quanNuoc';
+import { quanDayNews, quanNuocDay, QUAN_EVENT, type QuanNuocDay, type QuanNuocState } from '../data/quanNuoc';
 import { newGameData, useGame } from '../core/store';
 import { setSimSeed, clearSimSeed } from '../core/rand';
 
@@ -87,6 +87,10 @@ describe('endDay gắn sự kiện quán nước vào tin sáng mai (GĐ703)', (
       g().sleep();
       const st = g();
       const ev = st.biz.quanNuocLast?.event;
+      // ngân sách cứng Luật 9: mọi dòng tin quán nước ≤90 ký tự
+      for (const line of st.lastSummary?.news ?? []) {
+        if (line.startsWith('🧋')) expect([...line].length).toBeLessThanOrEqual(90);
+      }
       const news = (st.lastSummary?.news ?? []).join(' ') ?? '';
       if (ev === 'brewer') { expect(news).toContain('máy pha hỏng'); hit++; }
       else if (ev === 'cart') { expect(news).toContain('xe nước'); hit++; }
@@ -105,5 +109,46 @@ describe('endDay gắn sự kiện quán nước vào tin sáng mai (GĐ703)', (
       if (st.biz.quanNuocLast && st.biz.quanNuocLast.event === undefined && !(st.lastSummary?.news ?? []).join(' ').includes('máy pha hỏng') && !(st.lastSummary?.news ?? []).join(' ').includes('xe nước')) ok = true;
     }
     expect(ok).toBe(true);
+  });
+});
+
+describe('quanDayNews — tin sáng mai ≤90 ký tự, không nói dối (GĐ707)', () => {
+  const day = (over: Partial<QuanNuocDay>): QuanNuocDay => ({
+    revenue: 1_050_000, customers: 52, served: 78, wanted: 78, wages: 150_000,
+    short: false, brewed: { tra_da: 78 }, brewShort: [], ...over,
+  });
+  const head = '🧋 Quán nước: 78/78 ly · 1.050.000₫ · lương −150.000₫';
+
+  it('ngày thường kho đủ: chỉ head', () => {
+    expect(quanDayNews(head, day({}))).toBe(head);
+  });
+
+  it('ngày có sự kiện: đuôi sự kiện, kể cả khi head dài quá 90 — không bị thay bằng "kho thiếu"', () => {
+    const longHead = head + ' · tự pha 3 mẻ · ⚽ tối có trận'; // đủ dài để vượt 90
+    const out = quanDayNews(longHead, day({ event: 'brewer' }));
+    expect([...out].length).toBeLessThanOrEqual(90);
+    expect(out).toContain('máy pha hỏng');
+    expect(out).not.toContain('kho thiếu');
+    const outCart = quanDayNews(longHead, day({ event: 'cart' }));
+    expect([...outCart].length).toBeLessThanOrEqual(90);
+    expect(outCart).toContain('xe nước');
+  });
+
+  it('kho thiếu món pha: đuôi ghi tên món, quá dài thì chỉ ghi số món', () => {
+    const out = quanDayNews(head, day({ short: true, brewed: {}, brewShort: ['tra_da', 'nuoc_chanh'] }));
+    expect(out).toContain('thiếu Trà đá +1');
+    const longHead = head + ' · tự pha 3 mẻ · ⚽ tối có trận';
+    const outShort = quanDayNews(longHead, day({ short: true, brewed: {}, brewShort: ['tra_da', 'nuoc_chanh'] }));
+    expect([...outShort].length).toBeLessThanOrEqual(90);
+    expect(outShort).toContain('thiếu 2 món');
+  });
+
+  it('thiếu nước chai (không món pha): đuôi nhắc nhập thêm, quá dài thì gọn "kho thiếu"', () => {
+    const out = quanDayNews(head, day({ short: true, brewed: {} }));
+    expect(out).toContain('kho thiếu đồ uống, nhập thêm');
+    const longHead = head + ' · tự pha 3 mẻ · ⚽ tối có trận';
+    const outShort = quanDayNews(longHead, day({ short: true, brewed: {} }));
+    expect([...outShort].length).toBeLessThanOrEqual(90);
+    expect(outShort).toContain('kho thiếu');
   });
 });
