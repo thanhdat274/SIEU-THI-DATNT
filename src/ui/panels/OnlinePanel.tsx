@@ -105,6 +105,7 @@ export function OnlinePanel() {
                 <div key={o.id} style={{ ...styles.card, display: 'block' }}>
                   <div style={{ display: 'flex', gap: 8, fontSize: 13, alignItems: 'baseline', flexWrap: 'wrap' }}>
                     <b>{o.customer}</b><span>· {o.km} km</span>
+                    {o.regularId && <span style={{ fontSize: 11, fontWeight: 700, color: '#f1c40f' }}>👤 khách quen</span>}
                     {o.kind === 'rush' && <span style={{ fontSize: 11, fontWeight: 700, color: '#e74c3c' }}>⚡ GẤP · hẹn rất sớm</span>}
                     {o.kind === 'bulk' && <span style={{ fontSize: 11, fontWeight: 700, color: '#3498db' }}>📦 LỚN · cần đủ kho</span>}
                     <span style={{ marginLeft: 'auto' }}>{formatMoney(a.gross)}</span>

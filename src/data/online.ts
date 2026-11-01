@@ -66,6 +66,27 @@ export const onlineEventLine = (ev?: OnlineDayEvent) =>
     : ev === 'grabSurge'
       ? '🛵 Hôm nay Grab tăng giá cước +50% — cân nhắc cho người tiệm chở'
       : '';
+
+/** Khách quen đặt app (GĐ718): thân thiết từ mốc này mới ghé qua app. */
+export const ONLINE_REGULAR_FRIENDSHIP = 30;
+/** Xác suất một đơn app là của khách quen (khi có khách đủ thân). */
+export const ONLINE_REGULAR_CHANCE = 0.25;
+export interface OnlineRegularRef { id: string; name: string; favorites: string[] }
+/** Có khách quen nào đủ thân đặt app không — soát TRƯỚC để không rút rng khi không cần
+ *  (không có ứng viên thì dòng mô phỏng cũ giữ nguyên từng nhịp — bài học simGolden GĐ717). */
+export function hasOnlineRegularCandidate(regulars: Record<string, { friendship: number } | undefined>, level: number, byId: (id: string) => { unlock: number } | undefined): boolean {
+  return Object.entries(regulars).some(([id, p]) => (p?.friendship ?? 0) >= ONLINE_REGULAR_FRIENDSHIP && (byId(id)?.unlock ?? 99) <= level);
+}
+/** Chọn khách quen cho đơn app bằng MỘT lần rút: roll < 25% thì có khách quen, đồng thời roll chọn người
+ *  (cùng seed cùng người). Chỉ tính khách thân ≥ mốc và đã mở khoá theo cấp tiệm. */
+export function pickOnlineRegular(regulars: Record<string, { friendship: number } | undefined>, level: number, roll: number, byId: (id: string) => { id: string; name: string; favorites: string[]; unlock: number } | undefined): OnlineRegularRef | undefined {
+  const cands = Object.entries(regulars)
+    .filter(([id, p]) => (p?.friendship ?? 0) >= ONLINE_REGULAR_FRIENDSHIP && (byId(id)?.unlock ?? 99) <= level);
+  if (!cands.length || roll >= ONLINE_REGULAR_CHANCE) return undefined;
+  const [id] = cands[Math.floor((roll / ONLINE_REGULAR_CHANCE) * cands.length)];
+  const def = byId(id);
+  return def ? { id: def.id, name: def.name, favorites: def.favorites } : undefined;
+}
 /** App chỉ nhận đơn trong khung giờ này (phút trong ngày). */
 export const ONLINE_HOURS: [number, number] = [7 * 60, 21 * 60 + 30];
 /** Đơn mới chờ tiệm nhận tối đa chừng này phút rồi app tự huỷ. */
@@ -85,6 +106,8 @@ export interface OnlineOrder {
   /** Loại đặc biệt: 'rush' = gấp (hẹn rất sớm, giỏ nhỏ, gần) · 'bulk' = lớn (một món 6–10 phần, hẹn thoáng).
    *  Không set = đơn thường; bản lưu cũ thiếu trường coi như đơn thường (không cần migration). */
   kind?: 'rush' | 'bulk';
+  /** Đặt bởi khách quen này (GĐ718): giao đúng hẹn +2 thân thiết, trễ −2; bản lưu cũ thiếu = khách vãng lai. */
+  regularId?: string;
   via?: 'own' | 'grab';
   /** Giờ hàng tới tay khách. */
   arriveAt?: number;
@@ -152,15 +175,24 @@ export const orderKindTag = (kind?: 'rush' | 'bulk') => (kind === 'rush' ? ' (g�
 /** Tạo một đơn app: 1–3 món đang mở khoá (không phải món nhà làm nếu cấp đã mở), 1–8 km.
  *  GĐ715: ~16% đơn GẤP — gần (1–5 km), giỏ nhỏ 1–2 phần, hẹn rất sớm: Grab luôn kịp, người giao tay nghề
  *  thấp hoặc nhận muộn thì trễ (quyết định trả phí Grab hay chịu mất điểm). ~12% đơn LỚN — một món
- *  6–10 phần, hẹn thoáng thêm 30′: cửa ở kho có đủ hàng (trừ kho như thường, chấp nhận để nguyên kho khách quầy). */
-export function makeOnlineOrder(id: number, level: number, minutes: number, rng: () => number = simRng()): OnlineOrder {
+ *  6–10 phần, hẹn thoáng thêm 30′: cửa ở kho có đủ hàng (trừ kho như thường, chấp nhận để nguyên kho khách quầy).
+ *  GĐ718: `regular` truyền vào thì đơn là của khách quen — tên khách là người thật, giỏ nghiêng về món
+ *  khách ưa (chỉ chọn món đang mở khoá; không trùng món ưa nào thì về giỏ thường). */
+export function makeOnlineOrder(id: number, level: number, minutes: number, rng: () => number = simRng(), regular?: OnlineRegularRef): OnlineOrder {
   const pool = unlockedProducts(level);
   const kr = rng();
   const kind: OnlineOrder['kind'] = kr < 0.16 ? 'rush' : kr < 0.28 ? 'bulk' : undefined;
+  const favPool = regular ? pool.filter((p) => regular.favorites.includes(p.id)) : [];
   const items: Record<string, number> = {};
   if (kind === 'rush' || kind === 'bulk') {
-    const p = pool[Math.floor(rng() * pool.length)];
+    const src = regular && favPool.length ? favPool : pool;
+    const p = src[Math.floor(rng() * src.length)];
     if (p) items[p.id] = kind === 'rush' ? 1 + Math.floor(rng() * 2) : 6 + Math.floor(rng() * 5);
+  } else if (regular && favPool.length) {
+    for (let n = 1 + Math.floor(rng() * 2); n > 0 && favPool.length; n--) {
+      const p = favPool[Math.floor(rng() * favPool.length)];
+      items[p.id] = (items[p.id] ?? 0) + 1 + Math.floor(rng() * 3);
+    }
   } else {
     for (let n = 1 + Math.floor(rng() * 3); n > 0 && pool.length; n--) {
       const p = pool[Math.floor(rng() * pool.length)];
@@ -171,8 +203,10 @@ export function makeOnlineOrder(id: number, level: number, minutes: number, rng:
   // Hẹn giao: thường = 20′ nhận + 20′ đường; gấp co còn 10′ + đường ngắn; lớn thoáng thêm 30′
   const due = ACCEPT_WINDOW + (kind === 'rush' ? 10 + Math.round(km * 3) : kind === 'bulk' ? 50 + km * 8 : 20 + km * 8);
   return {
-    id, customer: NAMES[Math.floor(rng() * NAMES.length)], items, km, placedAt: Math.round(minutes),
-    dueAt: Math.round(minutes + due), status: 'new', ...(kind ? { kind } : {}),
+    id,
+    customer: regular ? regular.name : NAMES[Math.floor(rng() * NAMES.length)],
+    items, km, placedAt: Math.round(minutes),
+    dueAt: Math.round(minutes + due), status: 'new', ...(kind ? { kind } : {}), ...(regular ? { regularId: regular.id } : {}),
   };
 }
 
