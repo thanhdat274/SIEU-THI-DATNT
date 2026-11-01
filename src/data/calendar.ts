@@ -84,7 +84,7 @@ export const offSeason = (id: string, day: number) => SEASONAL_GOODS.has(id) && 
 
 /** Hàng nên nhập sẵn cho dịp: hàng của dịp trước, rồi tới món hot. */
 export const festivalStock = (f: Festival, level: number) =>
-  [...(f.goods ?? []), ...f.hot].filter((id) => productById(id).unlock <= level);
+  [...new Set([...(f.goods ?? []), ...f.hot])].filter((id) => productById(id).unlock <= level); // GĐ653: Tết có giỏ quà ở cả goods lẫn hot
 
 export type MarketKind = 'shortage' | 'glut' | 'viral' | 'roadworks';
 

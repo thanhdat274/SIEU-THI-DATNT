@@ -184,3 +184,13 @@ describe('GĐ652: lịch năm đánh dấu hàng lễ có/thiếu cho dịp ≤1
     expect(src).toContain('f.tiers.some((t) => t.productId === id && t.count > 0)');
   });
 });
+
+describe('GĐ653: festivalStock không lặp món', () => {
+  it('mọi lễ ở cấp cao: danh sách hàng nên nhập không trùng', async () => {
+    const { FESTIVALS, festivalStock } = await import('../data/calendar');
+    for (const f of FESTIVALS) {
+      const g = festivalStock(f, 99);
+      expect(new Set(g).size).toBe(g.length);
+    }
+  });
+});
