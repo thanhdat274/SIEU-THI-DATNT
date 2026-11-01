@@ -54,6 +54,7 @@ export { tutorialActive, tutorialStep, tutorialSteps } from './tutorialSteps';
 import { tutorialActive, tutorialStep } from './tutorialSteps';
 const Tutorial = lazy(() => import('./Tutorial').then((m) => ({ default: m.Tutorial })));
 const VendorAlert = lazy(() => import('./VendorAlert').then((m) => ({ default: m.VendorAlert })));
+const HudKeys = lazy(() => import('./HudKeys').then((m) => ({ default: m.HudKeys }))); // GĐ635: bảng phím chỉ nạp khi mở
 const ChapterDialogue = lazy(() => import('./ChapterDialogue').then((m) => ({ default: m.ChapterDialogue })));
 
 /** Màn hình cảm ứng: không có phím, thay chữ phím [X] bằng biểu tượng chạm. */
@@ -68,19 +69,6 @@ const SPEEDS = [
   { label: '8×', value: 8, name: 'Rất nhanh' },
 ];
 
-const CONTROLS = [
-  ['WASD / bấm chuột', 'Đi lại'],
-  ['N', 'Đi ngủ (ở giường)'],
-  ['B', 'Bày hàng (ở kệ, tủ)'],
-  ['K', 'Đặt hàng / xem kho (ở kho)'],
-  ['G', 'Giao hàng (ở cửa nhà khách)'],
-  ['M', 'Nấu ăn (ở trạm nấu)'],
-  ['O', 'Đóng / mở cửa tiệm'],
-  ['Kéo chuột trái', 'Nhìn quanh'],
-  ['Chuột phải / Q E', 'Xoay camera'],
-  ['Cuộn chuột', 'Phóng to, thu nhỏ'],
-  ['Esc', 'Đóng bảng'],
-];
 
 /** Nút tắt/bật tiếng: âm thanh lưu riêng trong máy, không nằm trong bản lưu game. */
 function SoundToggle() {
@@ -637,11 +625,7 @@ function MoreMenu({ tools, level, onHelp }: { tools: ToolDef[]; level: number; o
       {open && (
         <div className="hud-menu hud-more" role="menu">
           {keys ? (
-            <div className="hud-help">
-              {CONTROLS.map(([k, v]) => (
-                <div key={k}><kbd>{k}</kbd><span>{v}</span></div>
-              ))}
-            </div>
+            <Suspense fallback={null}><HudKeys /></Suspense>
           ) : (
             <>
               {/* Tiêu đề nhóm nhỏ trước từng cụm liên tiếp; thứ tự nút giữ nguyên như cũ */}
