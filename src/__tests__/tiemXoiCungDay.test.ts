@@ -36,7 +36,7 @@ describe('GĐ589: Sổ đầu ngày nhắc ngày cúng', () => {
     const { readFileSync } = await import('node:fs');
     const src = readFileSync(`${__dirname}/../ui/panels/ReportPanels.tsx`, 'utf8');
     expect(src).toContain('biz.tiemXoi?.open && isXoiCungDay(day)');
-    expect([...'Hôm nay ngày cúng — khách mua xôi ×1,3, nấu đủ kho'].length).toBeLessThanOrEqual(90);
+    for (const t of ['Hôm nay ngày cúng — khách mua xôi ×1,3, thêm thợ để nấu kịp', 'Hôm nay ngày cúng — khách mua xôi ×1,3, thợ nấu đầy kho']) expect([...t].length).toBeLessThanOrEqual(90);
   });
 });
 
@@ -61,5 +61,13 @@ describe('GĐ598: panel tiệm xôi hiện mục tiêu kho ngày cúng', () => {
     const src = readFileSync('src/ui/panels/TiemXoiSection.tsx', 'utf8');
     expect(src).toContain('tiemXoiTarget(t) * tiemXoiCungMul(day)');
     expect(src).toContain('thợ tự nấu đầy kho ×1,3');
+  });
+});
+
+describe('GĐ599: Sổ đầu ngày ngày cúng nhắc thêm thợ khi thiếu', () => {
+  it('ReportPanels chọn câu theo số thợ', async () => {
+    const { readFileSync } = await import('node:fs');
+    const src = readFileSync('src/ui/panels/ReportPanels.tsx', 'utf8');
+    expect(src).toContain('biz.tiemXoi.staff < TIEM_XOI_MAX_STAFF ?');
   });
 });
