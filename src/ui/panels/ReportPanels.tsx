@@ -890,7 +890,7 @@ export function MorningPanel() {
           {demand.bands.map((b, i) => (
             <div key={i} title={`${b.label}: ~${b.expected} khách (${b.perHour}/giờ)`} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
               <div style={{ width: '100%', height: Math.max(4, Math.round(b.pressure / 100 * 34)), background: b.peak ? '#2ecc71' : 'rgba(46,204,113,0.45)', borderRadius: 3 }} />
-              <span style={{ fontSize: 9, opacity: 0.8, whiteSpace: 'nowrap' }}>{b.label}</span>
+              <span style={{ fontSize: 11, opacity: 0.8, whiteSpace: 'nowrap' }}>{b.label}</span>
             </div>
           ))}
         </div>
@@ -1398,9 +1398,9 @@ export function HourChart({ hours, peak, quiet }: { hours: HourStat[]; peak?: nu
       <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3, height: 70, marginTop: 6 }}>
         {hours.map((h) => (
           <div key={h.hour} title={`${h.hour}h: ${h.customers} khách · ${formatMoney(h.revenue)}`} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'flex-end' }}>
-            <span style={{ fontSize: 10 }}>{h.customers || ''}</span>
+            <span style={{ fontSize: 11 }}>{h.customers || ''}</span>
             <div style={{ width: '100%', height: `${(h.customers / max) * 50}px`, minHeight: h.customers ? 2 : 0, borderRadius: 3, background: h.hour === peak ? '#e67e22' : h.hour === quiet ? '#95a5a6' : '#3498db' }} />
-            <span style={{ fontSize: 10, opacity: 0.7 }}>{h.hour}h</span>
+            <span style={{ fontSize: 11, opacity: 0.7 }}>{h.hour}h</span>
           </div>
         ))}
       </div>
@@ -1522,7 +1522,7 @@ export function HistoryChart({ history }: { history: DayRecord[] }) {
               <div style={{ width: 7, height: (h.revenue / max) * H, background: '#f1c40f', borderRadius: 2 }} />
               <div style={{ width: 7, height: (Math.abs(h.profit) / max) * H, background: h.profit >= 0 ? '#2ecc71' : '#e74c3c', borderRadius: 2 }} />
             </div>
-            <span style={{ fontSize: 10, opacity: 0.6 }}>{h.day}</span>
+            <span style={{ fontSize: 11, opacity: 0.6 }}>{h.day}</span>
           </div>
         ))}
       </div>

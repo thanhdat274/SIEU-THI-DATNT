@@ -330,7 +330,7 @@ function Market() {
                           const live = !!on && t.matched;
                           return (
                             <span key={t.id} title={live ? 'Đã có khách nghề này ghé trong ván' : 'Nghề mục tiêu'} style={{
-                              ...pill, fontSize: 10,
+                              ...pill, fontSize: 11,
                               background: live ? 'rgba(46,204,113,0.18)' : 'rgba(255,255,255,0.08)',
                               color: live ? '#2ecc71' : undefined,
                             }}>

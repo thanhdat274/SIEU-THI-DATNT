@@ -32,3 +32,15 @@ describe('fmtMul (GĐ539)', () => {
     expect(fmtMul(2.46, 1)).toBe('2,5');
   });
 });
+
+describe('chữ inline không quá nhỏ (GĐ546)', () => {
+  it('không có fontSize < 11 trong src/ui', () => {
+    const bad: string[] = [];
+    for (const f of files(join(__dirname, '../ui'))) {
+      readFileSync(f, 'utf8').split('\n').forEach((line, i) => {
+        for (const m of line.matchAll(/fontSize: (\d+)(?![.\d])/g)) if (Number(m[1]) < 11) bad.push(`${f}:${i + 1}`);
+      });
+    }
+    expect(bad).toEqual([]);
+  });
+});

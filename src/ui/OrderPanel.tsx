@@ -876,7 +876,7 @@ const st: Record<string, React.CSSProperties> = {
     padding: '6px 10px', borderBottom: '1px solid #ffffff10', fontSize: 13,
   },
   head: { position: 'sticky', top: 0, background: '#2b2b3a', fontSize: 11, opacity: 0.8, zIndex: 1 },
-  badge: { marginLeft: 6, padding: '1px 6px', borderRadius: 4, fontSize: 10, color: '#fff', whiteSpace: 'nowrap' },
+  badge: { marginLeft: 6, padding: '1px 6px', borderRadius: 4, fontSize: 11, color: '#fff', whiteSpace: 'nowrap' },
   step: { width: 24, height: 24, border: 'none', borderRadius: 5, cursor: 'pointer', fontSize: 14, padding: 0 },
   qty: { width: 48, height: 26, padding: 0, textAlign: 'center' },
   // Dính đáy panel: cuộn danh sách tới đâu vẫn luôn thấy tổng tiền + nút nhập.

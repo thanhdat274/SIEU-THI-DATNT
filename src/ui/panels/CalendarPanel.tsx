@@ -48,7 +48,7 @@ export function CalendarPanel() {
                   key={d}
                   title={`${d}/${m + 1} · ${weekdayOf(gd)}${f ? `: ${f.name}` : ''}${wknd ? ' · cuối tuần' : ''}`}
                   style={{
-                    height: 16, borderRadius: 3, fontSize: 9, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    height: 16, borderRadius: 3, fontSize: 11, display: 'flex', alignItems: 'center', justifyContent: 'center',
                     // GĐ264: #54546e — #4a4a63 quá gần nền #3a3a4d, mắt thường khó thấy ô cuối tuần
                     background: f ? `hsl(${(idx * 47) % 360} 55% 42%)` : wknd ? '#54546e' : '#3a3a4d',
                     outline: doy0 === doy ? '2px solid #fff' : undefined,
