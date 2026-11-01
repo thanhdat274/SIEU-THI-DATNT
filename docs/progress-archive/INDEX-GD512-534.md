@@ -1,0 +1,25 @@
+# Mục lục GĐ512–534
+
+- GĐ512: Dồn mục lục GĐ450–499 sang archive/INDEX-GD450-499.md (PROGRESS.md dưới 30KB).
+- GĐ513: Nâng bậc lô sạp Ngõ 2: Gánh → Xe đẩy (3tr, ×1,4) → Quầy (5tr, ×1,8), hoàn vốn ~25/~40 ngày nắng; nút ⬆ cạnh nút món; save biz.sapTiers? (thiếu = gánh), coop 'sap' + test; QA sandbox nút + số đúng. 3D chưa đổi theo bậc (hộp chặn lưới cố định). 2638 test xanh.
+- GĐ514: Sạp 3D theo bậc: xe đẩy hiện 2 bánh, quầy thêm biển hiệu (bật/tắt hiển thị, giữ khuôn bàn và hộp chặn lưới) + ngo2View.test.ts. 2639 test xanh.
+- GĐ515: 🧭 Rà ngân sách GĐ505–514: bundle tải đầu 598/598 KB (sát trần), chunk lớn 253/255; 269 file/2639 test xanh 142–260s; thông báo ≤90 xanh; không thêm nút HUD (Ngõ 2 nằm trong bảng quán). Ngõ 2 thêm mới chỉ được vào chunk lười.
+- GĐ516: Chuỗi cung ứng Ngõ 2: lô bán Xôi +20% khi đã mở tiệm xôi (xôi nhà làm, 🏠 trên nút lô) + test. Co-op: coopGuard chung đã phủ cycleSapKind/upgradeSapLot. 2640 test xanh.
+- GĐ517: QA 3D Ngõ 2 (sandbox, khung 372px): sạp ô dù + bàn + bánh xe gọn trong lô, không lấn đường; chưa đủ 3 góc vì khung hẹp + banner ngày 1 che → backlog.
+- GĐ518: QA 3D Ngõ 2 đủ 3 góc @1280×800 (4 lô, ngày 12 nắng, người dạo): sạp thẳng hàng vỉa hè cách 8m, không lấn đường. Lỗi art: ô dù Nước mía trùng màu lô 4, Bánh mì trùng lô 1 → đổi xanh lá mạ #6ab04c / nâu vỏ bánh #c68642 + test khoảng cách màu ≥80. 2641 test xanh.
+- GĐ519: Chụp lại Ngõ 2 sau đổi màu @1280×800: 4 ô dù xanh lá mạ/nâu/vàng/xanh ngọc phân biệt rõ, thẳng hàng vỉa hè.
+- GĐ520: Dọn backlog: kế hoạch cửa hàng nước B1–B5 đánh dấu xong (GĐ424–428).
+- GĐ521: Tự đứng sạp Ngõ 2: [L] ở lô có sạp, mỗi ngày 1 lần, mọi lô thu ×1,25 hôm đó, +4 XP; mưa/bão không được; save biz.sapHandDay?, coop 'sap' + test. Bù bundle (599→598): AlleyPanel tải lười trong LoginScreen. QA sandbox: phím L đặt sapHandDay đúng. 2642 test xanh.
+- GĐ522: QA gợi ý phím Ngõ 2 (cần pane hiện để vòng render chạy): lô có sạp hiện '[L] Đứng sạp hôm nay (+25%)', lô trống kế tiếp hiện '[L] Thuê lô sạp…'.
+- GĐ523: Đo FPS sandbox preset Thấp (auto): Ngõ 2 có sạp + người dạo 35–37 FPS, trước tiệm chính 36,5 — đạt ≥30, Ngõ 2 không làm nặng thêm.
+- GĐ524: Dồn mục lục GĐ359–399 + GĐ500–511 sang archive (PROGRESS.md dưới 30KB).
+- GĐ525: 🧭 Rà GĐ515–524: 269 file/2642 test xanh 160s, bundle 598/598 (sát trần), chunk 253/255, PROGRESS 26KB. Ngõ 2 đủ sâu (món, bậc, tự đứng sạp, chuỗi xôi, 3D, FPS 35+). Kế: chiều sâu khác ngoài Ngõ 2; review kế ~GĐ535.
+- GĐ526: Thông báo tự đứng sạp Ngõ 2 kèm số tiền thêm ước tính hôm nay (≈+…) + test. 2642 test xanh, bundle 598.
+- GĐ527: QA 3D cửa hàng tiện lợi (sandbox, openBranch @1280×800): nhà mái xanh, vạch qua đường, đèn đường gọn, không lấn đường, không lỗi. Nông trại chưa QA (sandbox chưa có trại) → kế.
+- GĐ528: QA 3D nông trại (sandbox, expandFarm @1280×800): luống có rào, chuồng mái đỏ, nhà kho gọn, không vật cản lối đi, không lỗi. Đóng nợ QA 3D của 3 cơ sở (GĐ413).
+- GĐ529: Tự đồ xôi khi chưa có món xôi nào mở ở cấp hiện tại giờ báo lý do thay vì im lặng + test. 2643 test xanh.
+- GĐ530: Tiệm xôi cuối tuần khách ngồi ăn ×1,15 (tiemXoiWeekendMul, nhân cùng mưa ×1,2; kho thiếu thì vẫn bán theo kho) + tiemXoiWeekend.test.ts. Không thêm save. 2645 test xanh, bundle 598/253.
+- GĐ531: Bảng tiệm xôi hiện '👨‍👩‍👧 cuối tuần ×1.15 suất' vào ngày cuối tuần (cạnh dòng mưa). Hàm đã có test GĐ530; 2645 test xanh, bundle 598.
+- GĐ532: Tiện lợi 24/7: đêm cuối tuần (22h–6h) khách ghé ×1,3 (branchWeekendMul trong runBranch) + branchWeekend.test.ts. Không thêm save. 2646 test xanh, bundle 598/253.
+- GĐ533: Bảng tiện lợi hiện '🌙 đêm cuối tuần khách ×1,3' trên dòng hôm nay vào ngày cuối tuần. Hàm đã có test GĐ532; 2646 test xanh, bundle 598/253.
+- GĐ534: QA sandbox dòng cuối tuần: tiện lợi '🌙 đêm cuối tuần khách ×1,3' + tiệm xôi '👨‍👩‍👧 cuối tuần' hiện ngày 13 (thứ 7), ẩn ngày 15. Sửa tiệm xôi ×1.2/×1.15 → ×1,2/×1,15 cho đồng bộ dấu phẩy. 2646 test xanh.
