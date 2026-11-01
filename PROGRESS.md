@@ -21,6 +21,7 @@
 
 ## Trạng thái hiện tại (01/11/2026)
 
+- **GĐ677:** 🧹 dọn import chết trong `economySim.test.ts` sau GĐ669 (questContext/dailyQuests/setSimSeed/clearSimSeed không còn dùng), tsc sạch + file test xanh (5 test, 72 s). Không đổi hành vi.
 - **GĐ675:** ⏱️ đo CPU render thật cho hàng "máy yếu" (không có DevTools throttle trong trình duyệt QA): `game.renderer.render()` × 30 ở gfx=low — trung vị 5,7 ms/khung (p90 7,4 ms) → ước tính CPU throttle 4× ≈ 28–33 FPS, đạt ≥30 nhưng sát; QualityGovernor (khoá test `graphicsQuality.test.ts`) tự hạ độ nét để giữ ≥45 FPS. Lưu ý: đo trên save ngày 2 (1 kệ) — lần đụng vòng render tiếp theo nên đo lại trên save cuối-game nhiều prop (ghi vào Cần theo dõi). Không đổi mã.
 - **GĐ674:** QA 320px trên nhánh mobile THẬT (nạp lại đúng cỡ màn — cỡ màn từng bắt lỗi GĐ297): 8 panel dày nhất (order/prices/storage/staff/calendar/business/levels/quests) — clipped 0, 0 lỗi console, khung 296×544 đúng chuẩn 100vw−24 × 100dvh−96. Cả 3 nhánh khung (desktop/mobile/ngoại lệ arrange) đều đã xác nhận trên cỡ máy thật. Không đổi mã.
 - **GĐ673:** QA khung cố định GĐ662 trên nhánh mobile THẬT (nạp lại trang đúng cỡ màn, IS_MOBILE tính đúng lúc nạp): tablet dọc 768×1024 → panel 744×928 gần full-màn, điện thoại ngang 812×375 → 788×279, nội dung cuộn bên trong, layoutAudit clipped 0 cả hai, dock HUD không bị che. Nhánh desktop/mobile của khung đều đã xác nhận trên cỡ máy thật. Không đổi mã.
@@ -123,3 +124,4 @@
 - GĐ674: 320px nhánh mobile thật — 8 panel dày clipped 0; lớp lỗi GĐ297 vẫn được chặn.
 - GĐ675: đo CPU render gfx=low 5,7 ms/khung → 4× throttle ~28–33 FPS đạt; đo lại trên save cuối-game khi đụng render.
 - GĐ676: dồn chi tiết GĐ666–671 sang docs/progress-archive/PROGRESS-GD666-671.md.
+- GĐ677: dọn import chết economySim.test.ts sau GĐ669 — tsc + test xanh.

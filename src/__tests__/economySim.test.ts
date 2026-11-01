@@ -64,10 +64,8 @@ afterAll(() => {
 });
 
 import { runEconomySim } from '../dev/simEconomy';
-import { questContext } from '../core/store';
-import { dailyQuests } from '../data/quests';
 import { emptyTiers } from '../core/stock';
-import { clearSimSeed, setSimSeed, mulberry32 } from '../core/rand';
+import { mulberry32 } from '../core/rand';
 
 describe('khảo sát kinh tế vòng ngày — simulator thật trên store', () => {
   // GĐ669: bài cấp 5 × 30 ngày tách sang economySimL5.test.ts (chạy song song, lấy lại biên thời gian);
