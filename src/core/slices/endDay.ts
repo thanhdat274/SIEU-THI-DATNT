@@ -39,6 +39,7 @@ import { ANIMAL_ORDER, farmCritChance, farmhandChores, FARM_ORDER_UNLOCK, farmOr
 import { logAnalyticsDay } from '../../data/analytics';
 import { appRating } from '../../data/online';
 import { onlineDayEnd } from './online';
+import { onlineDayEvent, onlineEventLine } from '../../data/online';
 import { runBranch, branchNewDay } from './branch';
 import { simRng } from '../rand';
 
@@ -365,9 +366,12 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
     socialNext = { ...socialNext, posts: [...socialNext.posts, post].slice(-POST_CAP), buzz: { kind: 'crisis', postId: id, until: s.day + BUZZ_DAYS, mul: CRISIS_MUL } };
     news.push('📱⚠️ Tin bắt được nhân viên gian lận lan trên mạng, khách đang xì xào — nên đăng bài xin lỗi ở Mạng xã hội');
   }
-  // Đơn app còn đang chở: coi như tới trễ; đơn chưa nhận thì app huỷ
-  const onlineDay = onlineDayEnd(s);
+  // Đơn app còn đang chở: coi như tới trễ; đơn chưa nhận thì app huỷ. GĐ717: sự kiện app cho ngày mai
+  // rút bằng băm riêng (weatherSeed + ngày — mẫu eventOn): không rút dòng simRng, mô phỏng cũ không lệch
+  const onlineEv = onlineDayEvent(s.weatherSeed, s.day + 1);
+  const onlineDay = onlineDayEnd(s, onlineEv);
   if (s.online.done || s.online.orders.length) news.push(`📲 App hôm nay: thu ${formatMoney(s.online.revenueToday + onlineDay.money)} (đã trừ hoa hồng)${s.online.grabFeesToday ? `, phí Grab ${formatMoney(s.online.grabFeesToday)}` : ''} · điểm ${appRating(onlineDay.online).toFixed(1)}★`);
+  if (onlineEv) news.push(onlineEventLine(onlineEv));
   if (s.fakeCash) news.push(`💸 Kiểm két thấy ${formatMoney(s.fakeCash)} tiền giả`);
   weatherLine = `Hôm nay: ${describeDay(s.weatherSeed, s.day + 1, today)}. ${WEATHER[today].tip}`; log.push(...news); // GĐ565/568: đủ tin ở lastSummary.news → Sổ đầu ngày
   // Giá tham chiếu thị trường nhích theo khan hiếm (kho + kệ) và cầu trung bình của từng món

@@ -1,7 +1,7 @@
 import type { Lot } from '../../data/freshness';
 import {
-  ACCEPT_WINDOW, appPay, appRating, deliveryStars, grabFee, grabTravel, makeOnlineOrder, ONLINE_HOURS, ONLINE_OPEN_COST,
-  ONLINE_UNLOCK, onlineValue, orderGap, orderKindTag, ownTravel, type OnlineState,
+  ACCEPT_WINDOW, appPay, appRating, deliveryStars, eventGapMul, eventGrabMul, grabFee, grabTravel, makeOnlineOrder, ONLINE_HOURS, ONLINE_OPEN_COST,
+  ONLINE_UNLOCK, onlineValue, orderGap, orderKindTag, ownTravel, type OnlineDayEvent, type OnlineState,
 } from '../../data/online';
 import { formatMoney, productById } from '../../data/products';
 import { playSfx } from '../audio';
@@ -29,10 +29,10 @@ export const updateOnline = (set: SetState, get: GetState) => {
   let items = 0;
   let doneCount = 0; // số đơn app tới tay khách tick này (đo nhiệm vụ ngày)
   const deliveredKeys: string[] = []; // món đã giao (cho Sổ tay Tiệm GĐ36)
-  // Đơn mới: chỉ khi gian hàng mở, tiệm mở cửa và trong giờ app
+  // Đơn mới: chỉ khi gian hàng mở, tiệm mở cửa và trong giờ app; hôm nay app khuyến mãi thì đơn dày hơn
   if (on.open && s.shopOpen && m >= ONLINE_HOURS[0] && m < ONLINE_HOURS[1] && m >= on.nextAt) {
     const order = makeOnlineOrder(on.nextId, s.level, m);
-    const gap = orderGap(appRating(on), s.level);
+    const gap = orderGap(appRating(on), s.level, eventGapMul(on.event));
     online = { ...online, orders: [...online.orders, order], nextId: on.nextId + 1, nextAt: m + gap * (0.6 + simRng()() * 0.8) };
     playSfx('ring');
     news.push(`📲 Đơn app mới${orderKindTag(order.kind)}: ${order.customer} (${order.km} km) — mở Bán online để nhận`);
@@ -110,7 +110,7 @@ export const createOnlineSlice = (set: SetState, get: GetState): Pick<GameState,
       if (!courier) { s.notify('Không còn nhân viên giao hàng rảnh — gọi Grab hoặc thuê thêm người giao'); return false; }
       travel = ownTravel(o.km, courier.skill);
     } else {
-      fee = grabFee(o.km);
+      fee = grabFee(o.km, eventGrabMul(s.online.event)); // hôm nay Grab đắt đỏ thì phí ×1,5 (GĐ717)
       if (s.money < fee) { s.notify('Không đủ tiền gọi Grab!'); return false; }
       travel = grabTravel(o.km);
     }
@@ -147,8 +147,9 @@ export const createOnlineSlice = (set: SetState, get: GetState): Pick<GameState,
   },
 });
 
-/** Cuối ngày: đơn đang chở coi như tới trễ (tính tiền, sao thấp); đơn chưa nhận thì app huỷ (chưa lấy hàng khỏi kho). */
-export function onlineDayEnd(s: GameState) {
+/** Cuối ngày: đơn đang chở coi như tới trễ (tính tiền, sao thấp); đơn chưa nhận thì app huỷ (chưa lấy hàng khỏi kho).
+ *  `event` — sự kiện online cho NGÀY MAI do endDay rút bằng simRng rồi truyền vào (GĐ717); không truyền = không có sự kiện (giữ hành vi cũ cho test cũ). */
+export function onlineDayEnd(s: GameState, event?: OnlineDayEvent) {
   const on = s.online;
   let money = 0;
   let { ratingSum, ratingCount, done, late } = on;
@@ -158,5 +159,5 @@ export function onlineDayEnd(s: GameState) {
       ratingSum += 3; ratingCount++; done++; late++;
     }
   }
-  return { money, online: { ...on, orders: [], ratingSum, ratingCount, done, late, revenueToday: 0, grabFeesToday: 0, nextAt: 0 } };
+  return { money, online: { ...on, orders: [], ratingSum, ratingCount, done, late, revenueToday: 0, grabFeesToday: 0, nextAt: 0, event } };
 }

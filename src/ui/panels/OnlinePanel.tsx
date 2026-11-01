@@ -1,6 +1,6 @@
 import { formatClock, useClock, useGame } from '../../core/store';
 import {
-  ACCEPT_WINDOW, appCommission, APP_TIERS, appTier, appRating, declineRating, describeOnline, grabFee, ONLINE_HOURS, ONLINE_OPEN_COST, ONLINE_UNLOCK, onlineOrderCap,
+  ACCEPT_WINDOW, appCommission, APP_TIERS, appTier, appRating, declineRating, describeOnline, eventGapMul, eventGrabMul, grabFee, ONLINE_HOURS, ONLINE_OPEN_COST, ONLINE_UNLOCK, onlineOrderCap, onlineEventLine,
   orderAssessment, orderGap, orderRateTone, ratingImpact,
 } from '../../data/online';
 import { formatMoney } from '../../data/products';
@@ -19,6 +19,8 @@ export function OnlinePanel() {
   const cap = onlineOrderCap(rating, level);
   const tier = appTier(online.done);
   const nextTier = APP_TIERS.find((t) => t.at > online.done) ?? null;
+  const evGap = eventGapMul(online.event);
+  const evGrab = eventGrabMul(online.event);
   return (
     <>
       <h2 style={styles.title}>📲 Bán online</h2>
@@ -76,10 +78,11 @@ export function OnlinePanel() {
                 </div>
               </Callout>
             );
-          })()}          {/* Minh bạch hộp đen đơn app: điểm → độ dày đơn, số đơn tối đa/ngày, khung giờ */}
+          })()}          {/* Minh bạch hộp đen đơn app: điểm → độ dày đơn, số đơn tối đa/ngày, khung giờ; sự kiện hôm nay nếu có */}
           <div style={{ ...styles.card, display: 'block', fontSize: 12, marginBottom: 10, background: '#323244' }}>
-            <div>⏱️ Khung nhận đơn: <b>{Math.floor(ONLINE_HOURS[0] / 60)}h–{Math.floor(ONLINE_HOURS[1] / 60)}h30</b> · cách nhau trung bình ~{Math.round(orderGap(rating, level))} phút.</div>
-            <div>📈 Điểm {rating.toFixed(1)}⭐ → <b>{orderRateTone(rating)}</b> ({Math.round(cap)} đơn/ngày gần đúng).</div>
+            {online.event && <div style={{ color: '#9b59b6', marginBottom: 2 }}>{onlineEventLine(online.event)}</div>}
+            <div>⏱️ Khung nhận đơn: <b>{Math.floor(ONLINE_HOURS[0] / 60)}h–{Math.floor(ONLINE_HOURS[1] / 60)}h30</b> · cách nhau trung bình ~{Math.round(orderGap(rating, level, evGap))} phút.</div>
+            <div>📈 Điểm {rating.toFixed(1)}⭐ → <b>{orderRateTone(rating)}</b> ({Math.round(onlineOrderCap(rating, level, evGap))} đơn/ngày gần đúng).</div>
             <div>🏅 Hạng: <b>{tier.name}</b> — hoa hồng {Math.round(appCommission(online.done) * 100)}%.{nextTier ? ` Còn ${nextTier.at - online.done} đơn tới "${nextTier.name}" (hoa hồng ${Math.round(nextTier.commission * 100)}%).` : ' Đã ở bậc cao nhất — app tri ân gian hàng uy tín.'}</div>
             {rating < 4.5 && <div style={{ opacity: 0.8, marginTop: 2 }}>💡 Giao đúng hẹn để điểm lên 4,5⭐ sẽ có đơn dày nhất.</div>}
           </div>
@@ -92,7 +95,7 @@ export function OnlinePanel() {
             {online.orders.map((o) => {
               const enough = Object.entries(o.items).every(([id, q]) => (storage[id] ?? 0) >= q);
               // GĐ59: đánh giá kinh tế + điểm app cho từng lựa chọn (thuần đọc từ công thức giao/checkout có sẵn)
-              const a = orderAssessment(o, priceOf, freeCourier ? freeCourier.skill : null, minutes, appCommission(online.done));
+              const a = orderAssessment(o, priceOf, freeCourier ? freeCourier.skill : null, minutes, appCommission(online.done), evGrab);
               const grabStars = 5;
               const grabNext = ratingImpact(grabStars, online).nextRating;
               const declineNext = declineRating(online).nextRating;
@@ -133,11 +136,11 @@ export function OnlinePanel() {
                       )}
                       {/* Grab */}
                       <div style={{ marginTop: 5 }}>
-                        <button style={{ ...btn, background: '#2ecc71' }} disabled={!enough || money < grabFee(o.km)} onClick={() => acceptOnline(o.id, 'grab')}>
-                          🟢 Grab {formatMoney(grabFee(o.km))} (~{a.grabTravelT}′)
+                        <button style={{ ...btn, background: '#2ecc71' }} disabled={!enough || money < grabFee(o.km, evGrab)} onClick={() => acceptOnline(o.id, 'grab')}>
+                          🟢 Grab {formatMoney(grabFee(o.km, evGrab))} (~{a.grabTravelT}′)
                         </button>
                         <small style={{ display: 'block', fontSize: 11, opacity: 0.8, marginTop: 1 }}>
-                          Grab ~{a.grabTravelT}′ · phí {formatMoney(grabFee(o.km))} → {grabStars}★ (điểm về {grabNext.toFixed(1)})
+                          Grab ~{a.grabTravelT}′ · phí {formatMoney(grabFee(o.km, evGrab))} → {grabStars}★ (điểm về {grabNext.toFixed(1)})
                         </small>
                       </div>
                       {/* Từ chối */}

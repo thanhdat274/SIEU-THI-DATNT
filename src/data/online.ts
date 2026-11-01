@@ -35,6 +35,37 @@ export const appTier = (done: number): AppTier => {
 export const appCommission = (done: number): number => appTier(done).commission;
 /** Tiền thật nhận cho đơn trị giá `value` sau hoa hồng theo bậc — khớp công thức các nơi giao. */
 export const appPay = (value: number, done: number): number => Math.round(value * (1 - appCommission(done)));
+
+/** Sự kiện một ngày ở mảng app (GĐ717, pattern GĐ703/711/712): rút cho NGÀY MAI khi chốt ngày.
+ *  🚀 khuyến mãi sàn — đơn đổ về dày hơn (khoảng cách ×0,65); 🛵 Grab đắt đỏ — phí Grab ×1,5.
+ *  Chỉ hiệu chỉnh nhịp đơn/phí giao của ngày đó, không đụng giá bán hay điểm app. */
+export type OnlineDayEvent = 'promo' | 'grabSurge';
+export const ONLINE_EVENT_PROMO_P = 0.06;
+export const ONLINE_EVENT_SURGE_P = 0.05;
+/** Băm riêng cho sự kiện app — KHÔNG rút từ dòng simRng chung (mẫu eventOn/weatherSeed): mô phỏng cũ
+ *  và số mốc simGolden không lệch vì thêm sự kiện; cùng seed + cùng ngày luôn ra cùng sự kiện. */
+function roll(seed: number, n: number, salt: number): number {
+  let h = Math.imul((seed >>> 0) ^ Math.imul(n, 2654435761), 2246822519) ^ salt;
+  h ^= h >>> 13;
+  h = Math.imul(h, 3266489917);
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+}
+/** Sự kiện app của ngày `day` theo seed ván (salt 3701 — lệch khỏi salt của eventOn). */
+export function onlineDayEvent(seed: number, day: number): OnlineDayEvent | undefined {
+  const r = roll(seed, day, 3701);
+  return r < ONLINE_EVENT_PROMO_P ? 'promo' : r < ONLINE_EVENT_PROMO_P + ONLINE_EVENT_SURGE_P ? 'grabSurge' : undefined;
+}
+/** Hệ số khoảng cách 2 đơn theo sự kiện hôm nay (khuyến mãi → đơn dày). */
+export const eventGapMul = (ev?: OnlineDayEvent) => (ev === 'promo' ? 0.65 : 1);
+/** Hệ số phí Grab theo sự kiện hôm nay (Grab đắt đỏ → ×1,5). */
+export const eventGrabMul = (ev?: OnlineDayEvent) => (ev === 'grabSurge' ? 1.5 : 1);
+/** Dòng tin sáng mai / thẻ panel cho sự kiện online (≤90 ký tự; không có sự kiện → rỗng). */
+export const onlineEventLine = (ev?: OnlineDayEvent) =>
+  ev === 'promo'
+    ? '🚀 Hôm nay app khuyến mãi — đơn app đổ về dày hơn thường ngày'
+    : ev === 'grabSurge'
+      ? '🛵 Hôm nay Grab tăng giá cước +50% — cân nhắc cho người tiệm chở'
+      : '';
 /** App chỉ nhận đơn trong khung giờ này (phút trong ngày). */
 export const ONLINE_HOURS: [number, number] = [7 * 60, 21 * 60 + 30];
 /** Đơn mới chờ tiệm nhận tối đa chừng này phút rồi app tự huỷ. */
@@ -70,6 +101,8 @@ export interface OnlineState {
   done: number;
   late: number;
   nextId: number;
+  /** Sự kiện một ngày đang áp dụng (endDay rút cho ngày mai; bản lưu cũ thiếu = không có — GĐ717). */
+  event?: OnlineDayEvent;
   /** Doanh thu online hôm nay (sau hoa hồng, trước phí Grab) và phí Grab. */
   revenueToday: number;
   grabFeesToday: number;
@@ -82,10 +115,10 @@ export const newOnline = (): OnlineState => ({
 /** Điểm trên app (chưa ai chấm thì 5★ như gian hàng mới). */
 export const appRating = (o: OnlineState) => (o.ratingCount ? o.ratingSum / o.ratingCount : 5);
 
-/** Khoảng cách trung bình giữa hai đơn (phút): cấp cao, điểm tốt thì đơn dày hơn. */
-export function orderGap(rating: number, level: number) {
+/** Khoảng cách trung bình giữa hai đơn (phút): cấp cao, điểm tốt thì đơn dày hơn; sự kiện hôm nay nhân thêm. */
+export function orderGap(rating: number, level: number, gapMul: number = 1) {
   const base = Math.max(35, 95 - level);
-  return base * (rating >= 4.5 ? 1 : rating >= 4 ? 1.4 : rating >= 3 ? 2.2 : 4);
+  return base * (rating >= 4.5 ? 1 : rating >= 4 ? 1.4 : rating >= 3 ? 2.2 : 4) * gapMul;
 }
 
 /** Mô tả mức độ "dày đơn" theo điểm app — mồi minh bạch cho người chơi hiểu hộp đen đơn app. */
@@ -100,16 +133,16 @@ export function orderRateTone(rating: number): string {
  * Số lượng đơn tối đa gần đúng app có thể trút về một ngày (độ rộng khung giờ / khoảng cách 2 đơn).
  * Dùng để hiển thị mức "dày đơn" minh bạch; đồng thời đúng là trần thực mà updateOnline chạm tới.
  */
-export function onlineOrderCap(rating: number, level: number): number {
+export function onlineOrderCap(rating: number, level: number, gapMul: number = 1): number {
   const span = ONLINE_HOURS[1] - ONLINE_HOURS[0];
-  return Math.round(span / orderGap(rating, level));
+  return Math.round(span / orderGap(rating, level, gapMul));
 }
 
 /** Nhân viên tiệm chở bằng xe máy: phút tới nơi theo km và tay nghề. */
 export const ownTravel = (km: number, skill: number) => Math.round(5 + (km * 6) / skillSpeed(skill));
-/** Grab: tới nhanh, có sẵn ngay. */
+/** Grab: tới nhanh, có sẵn ngay; sự kiện "Grab đắt đỏ" nhân phí (GĐ717). */
 export const grabTravel = (km: number) => Math.round(8 + km * 4);
-export const grabFee = (km: number) => Math.round((8000 + km * 4000) / 1000) * 1000;
+export const grabFee = (km: number, mul: number = 1) => Math.round(((8000 + km * 4000) * mul) / 1000) * 1000;
 
 const NAMES = ['Chị Mai Q.7', 'Anh Tuấn Q.3', 'Bạn Hân', 'Cô Lệ', 'Anh Khoa', 'Chị Thu', 'Em Bảo', 'Chú Sáu', 'Chị Hồng', 'Anh Phát'];
 
@@ -191,7 +224,7 @@ export interface OrderAssessment {
 
 /** Đánh giá kinh tế + thời điểm của một đơn: giúp quyết lấy / lấy qua Grab / từ chối. Thuần đọc, không đổi state.
  *  `commission` — hoa hồng theo bậc hiện có (appCommission(online.done)); mặc định bậc 0 để test cũ không vỡ. */
-export function orderAssessment(o: OnlineOrder, priceOf: (id: string) => number, courierSkill: number | null, minutes: number, commission: number = APP_COMMISSION): OrderAssessment {
+export function orderAssessment(o: OnlineOrder, priceOf: (id: string) => number, courierSkill: number | null, minutes: number, commission: number = APP_COMMISSION, grabMul: number = 1): OrderAssessment {
   const gross = Math.round(onlineValue(o, priceOf) * (1 - commission));
   const cost = orderCost(o);
   const net = gross - cost;
@@ -200,7 +233,7 @@ export function orderAssessment(o: OnlineOrder, priceOf: (id: string) => number,
   return {
     gross, cost, net,
     margin: gross > 0 ? net / gross : 0,
-    grabNet: net - grabFee(o.km),
+    grabNet: net - grabFee(o.km, grabMul),
     ownTravelT, grabTravelT,
     ownStars: deliveryStars(o, minutes + ownTravelT),
     grabStars: 5,
