@@ -27,7 +27,7 @@ describe('GĐ588: panel tiệm xôi báo ngày cúng', () => {
     const { readFileSync } = await import('node:fs');
     const src = readFileSync(`${__dirname}/../ui/panels/TiemXoiSection.tsx`, 'utf8');
     expect(src).toContain('isXoiCungDay(day + 1)');
-    expect([...'🙏 Mai là ngày cúng: khách mua xôi ×1,3 — nấu dư kho từ hôm nay'].length).toBeLessThanOrEqual(90);
+    expect([...'🙏 Mai là ngày cúng: khách mua xôi ×1,3 — thợ tự nấu đầy kho ×1,3'].length).toBeLessThanOrEqual(90);
   });
 });
 
@@ -52,5 +52,14 @@ describe('GĐ596: ngày cúng nấu đầy kho hơn', () => {
     const extra = tiemXoiDay(t, 50, full, () => {}, cung)!;
     const want = ids.length * (Math.round(TIEM_XOI_TARGET * TIEM_XOI_CUNG_MUL) - TIEM_XOI_TARGET);
     expect(extra.total).toBe(Math.min(want, 60 * 4));
+  });
+});
+
+describe('GĐ598: panel tiệm xôi hiện mục tiêu kho ngày cúng', () => {
+  it('TiemXoiSection nhân mục tiêu theo tiemXoiCungMul', async () => {
+    const { readFileSync } = await import('node:fs');
+    const src = readFileSync('src/ui/panels/TiemXoiSection.tsx', 'utf8');
+    expect(src).toContain('tiemXoiTarget(t) * tiemXoiCungMul(day)');
+    expect(src).toContain('thợ tự nấu đầy kho ×1,3');
   });
 });
