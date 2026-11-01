@@ -78,7 +78,7 @@ export const oddChange = (total: number) => (total % 5000 === 0 ? 0 : 5000 - (to
 // giữ NGUYÊN mọi tỉ lệ công thức (HAGGLE_CHANCE/SHARE/REFUSE_OK, CHANGE_CHANCE, CANDY_ANNOY).
 // Mặc định 'ask' = nhắc mỗi lần = đúng hành vi hôm nay → 0 thay đổi kinh tế/save.
 
-export type HagglePolicy = 'ask' | 'accept' | 'refuse';
+export type HagglePolicy = 'ask' | 'accept' | 'counter' | 'refuse';
 export type ChangePolicy = 'ask' | 'round' | 'candy';
 
 /** Thái độ quầy của chủ tiệm; 'ask' = vẫn hỏi như trước (prompt path). */
@@ -91,11 +91,12 @@ export interface CounterPolicy {
 export const defaultCounterPolicy = (): CounterPolicy => ({ haggle: 'ask', change: 'ask' });
 
 /** Mặc cả: 'ask' → null (giữ prompt path); 'accept' → 0 (bớt HAGGLE_SHARE, khách mặc cả đều gật);
+ * 'counter' → 1 (GĐ723: tự trả nửa mức khách xin — 70% gật giá giữa, phần còn lại như giữ giá);
  * 'refuse' → 2 (giữ giá, vẫn mất 1−HAGGLE_REFUSE_OK khách mặc cả; GĐ721: option "trả giá lại" chiếm vị 1).
  * `total` giữ để khớp chữ ký/tiện mở rộng. */
-export const haggleChoice = (policy: CounterPolicy, total: number): 0 | 2 | null => {
+export const haggleChoice = (policy: CounterPolicy, total: number): 0 | 1 | 2 | null => {
   if (policy.haggle === 'ask') return null;
-  return policy.haggle === 'accept' ? 0 : 2;
+  return policy.haggle === 'accept' ? 0 : policy.haggle === 'counter' ? 1 : 2;
 };
 
 /** Tiền lẻ: 'ask' → null; 'round' → 0 (bớt cho tròn, không phiền); 'candy' → 1 (thối kẹo → CANDY_ANNOY thấy phiền). */
@@ -108,6 +109,7 @@ export const changeChoice = (policy: CounterPolicy, total: number): 0 | 1 | null
 export const HAGGLE_OPTS: { value: HagglePolicy; label: string; note: string }[] = [
   { value: 'ask', label: 'Nhắc mỗi lần', note: 'Chủ tiệm quyết từng đơn như trước.' },
   { value: 'accept', label: 'Luôn bớt', note: 'Tự bớt 10% — khách mặc cả vui, thu nhập giảm nhẹ.' },
+  { value: 'counter', label: 'Luôn trả nửa', note: 'Tự trả nửa mức khách xin — 70% khách gật giá giữa, còn lại mua giá đầy hoặc bỏ về.' },
   { value: 'refuse', label: 'Không bớt', note: 'Giữ giá — vẫn mất 40% khách mặc cả.' },
 ];
 
@@ -123,6 +125,7 @@ export const counterPolicySummary = (policy: CounterPolicy): { haggleText: strin
   const haggleText: Record<HagglePolicy, string> = {
     ask: 'Mặc cả: vẫn hỏi từng đơn như trước.',
     accept: 'Mặc cả: luôn bớt 10% — khách mặc cả vui, thu nhập giảm nhẹ.',
+    counter: 'Mặc cả: luôn trả nửa mức khách xin — 70% gật giá giữa, còn lại mua đầy hoặc bỏ về.',
     refuse: 'Mặc cả: không bớt — giữ giá, mất 40% khách mặc cả.',
   };
   const changeText: Record<ChangePolicy, string> = {

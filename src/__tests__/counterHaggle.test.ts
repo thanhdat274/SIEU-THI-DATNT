@@ -2,7 +2,7 @@ import { describe, expect, it, beforeEach, vi } from 'vitest';
 import { newGameData, useGame } from '../core/store';
 import { CustomerManager } from '../agents/customers';
 import {
-  HAGGLE_COUNTER_ACCEPT_P, HAGGLE_REFUSE_OK, haggleCounterOff, haggleCounterOutcome, haggleOff, haggleSettle,
+  counterPolicySummary, HAGGLE_COUNTER_ACCEPT_P, HAGGLE_REFUSE_OK, haggleChoice, haggleCounterOff, haggleCounterOutcome, haggleOff, haggleSettle,
 } from '../data/counterDeals';
 import { askAtCounter } from '../core/counterAsk';
 
@@ -40,6 +40,14 @@ describe('haggleCounterOutcome — dải một lần rút', () => {
     expect(haggleCounterOutcome(HAGGLE_COUNTER_ACCEPT_P + (1 - HAGGLE_COUNTER_ACCEPT_P) * HAGGLE_REFUSE_OK - 0.001)).toBe('full');
     expect(haggleCounterOutcome(HAGGLE_COUNTER_ACCEPT_P + (1 - HAGGLE_COUNTER_ACCEPT_P) * HAGGLE_REFUSE_OK)).toBe('walk');
     expect(haggleCounterOutcome(0.999)).toBe('walk');
+  });
+});
+
+describe('GĐ723 — stance chính sách Luôn trả nửa', () => {
+  it('policy counter → choice 1 (hành trình trả giá lại tự chạy); summary nhắc đúng', () => {
+    const pol = { haggle: 'counter' as const, change: 'ask' as const };
+    expect(haggleChoice(pol, 50_000)).toBe(1);
+    expect(counterPolicySummary(pol).haggleText).toContain('trả nửa');
   });
 });
 
