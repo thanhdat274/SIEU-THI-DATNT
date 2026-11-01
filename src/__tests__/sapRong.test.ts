@@ -212,3 +212,21 @@ describe('GĐ592: gợi ý món ngày mai biết ngày cúng', () => {
     expect(bestSapKind('cloudy', 15).id).toBe('xoi');
   });
 });
+
+describe('GĐ593: tin sạp báo ngày cúng khi có lô xôi', () => {
+  it('ngày cúng + lô xôi: có 🙏; không có lô xôi: không', () => {
+    const run = (kinds: string[]) => {
+      msgs = [];
+      useGame.setState({ ...newGameData(), day: 15, level: 50, money: 1e8, notify: (m: string) => { msgs.push(m); } });
+      vi.spyOn(Math, 'random').mockReturnValue(0.99);
+      const s = g();
+      useGame.setState({ minutes: 20 * 60, weather: 'cloudy', biz: { ...s.biz, achievements: ACHIEVEMENTS.map((a) => a.id), zones: ['ngo2'], sapRong: 1, sapKinds: kinds as never } });
+      g().sleep();
+      return allMsgs(msgs).find((m) => m.includes('sạp hàng rong')) ?? '';
+    };
+    const a = run(['xoi']);
+    expect(a).toContain('🙏');
+    expect([...a].length).toBeLessThanOrEqual(90);
+    expect(run(['banhmi'])).not.toContain('🙏');
+  });
+});

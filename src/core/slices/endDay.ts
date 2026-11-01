@@ -157,7 +157,7 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
   if (s.biz.sapRong) {
     const sap = sapRongIncome(s.biz.sapRong, s.weather, s.day, s.biz.sapKinds, s.biz.sapTiers, s.biz.tiemXoi.open, s.biz.sapHandDay === s.day);
     quanRevenue += sap;
-    quanNews.push(sap ? `${sapKindIcons(s.biz.sapRong, s.biz.sapKinds)} sạp hàng rong Ngõ 2 · +${formatMoney(sap)}` : '🛒 Trời mưa: sạp hàng rong Ngõ 2 nghỉ bán');
+    quanNews.push(sap ? `${sapKindIcons(s.biz.sapRong, s.biz.sapKinds)} sạp hàng rong Ngõ 2 · +${formatMoney(sap)}${isXoiCungDay(s.day) && s.biz.sapKinds?.slice(0, s.biz.sapRong).includes('xoi') ? ' · 🙏' : ''}` : '🛒 Trời mưa: sạp hàng rong Ngõ 2 nghỉ bán');
   }
   if (s.biz.tiemXoi?.open) {
     const t = tiemXoiDay(s.biz.tiemXoi, s.level, k.storage, (id, qty) => putStock(k, id, qty));
