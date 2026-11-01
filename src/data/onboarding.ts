@@ -43,5 +43,5 @@ export function guideActiveOn(day: number, tutorialOff: boolean, deliveries: rea
   return day === 1 && !tutorialOff && deliveries.length === 0 && itemsSold === 0;
 }
 
-/** GĐ551: ngày 1 kệ trống nên 'Cần nhập gấp' trùng gợi ý, chợ phiên làm rối người mới — ẩn cả hai. */
+/** GĐ551: ngày 1 kệ trống nên 'Cần nhập gấp' trùng gợi ý, chợ phiên/dự báo/so mối làm rối người mới — ẩn (GĐ552 gom cả dự báo + so mối). */
 export const showRestockExtras = (day: number) => day > 1;

@@ -574,7 +574,7 @@ export function OrderPanel() {
         {supplier.bulk && ` Mua nhiều: ${supplier.bulk.map((b) => `từ ${b.minCases} thùng một món bớt ${b.discount * 100}%`).join(', ')}.`}
         {' '}Hàng nhập theo thùng, về kho rồi khui ra bày lẻ.
       </p>
-      <div style={{ ...st.banner, ...(day <= 1 ? { display: 'none' } : null) }}>{/* GĐ319: ngày đầu chỉ dạy nhập-bày-bán */}
+      <div style={{ ...st.banner, ...(showRestockExtras(day) ? null : { display: 'none' }) }}>{/* GĐ319: ngày đầu chỉ dạy nhập-bày-bán */}
         {(() => {
           const life = biz.supplierRel?.[supplier.id]?.spent ?? 0;
           const { cur, next, pct } = tierProgress(life);
@@ -634,7 +634,7 @@ export function OrderPanel() {
           </div>
         );
       })()}
-      {cheapest && cheapest.rival && cheapest.delta > 0 && (
+      {cheapest && cheapest.rival && cheapest.delta > 0 && showRestockExtras(day) && (
         <div style={{ ...st.banner, background: 'rgba(241, 196, 15, 0.09)', border: '1px solid rgba(255,255,255,0.07)' }}>
           🧮 Với giỏ này <b>{cheapest.best.name}</b> rẻ hơn <b>{cheapest.rival.name}</b> {formatMoney(cheapest.delta)} hôm nay
         </div>
