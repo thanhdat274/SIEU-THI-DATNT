@@ -143,3 +143,4 @@
 - GĐ615: thẻ '🔮 Mai tiệm có gì' cuối ngày có dòng '🙏 Mai ngày cúng — khách hỏi nhang, trái cây' (mở bảng nhập hàng). Test tomorrowTeaser 17/17 (bài 'không có gì' đổi ngày 366→367 vì 366 là mùng 1).
 - GĐ616: QA thẻ 'Mai tiệm có gì' (sandbox, store ngày 15): hiện '🙏 Mai ngày cúng — khách hỏi nhang, trái cây' cuối thẻ (5 dòng). Đúng.
 - GĐ617: thẻ 'Mai tiệm có gì' thêm '⚽ Tối mai có trận — quán nước, tiện lợi đông khuya' (cấp ≥29, đúng lịch trận + thời tiết mai). Test 18/18 (bài 'không có gì' sang ngày 368).
+- GĐ618: QA thẻ 'Mai tiệm có gì' (sandbox, store ngày 17 nắng, cấp 50): hiện '⚽ Tối mai có trận — quán nước, tiện lợi đông khuya'. Đúng.
