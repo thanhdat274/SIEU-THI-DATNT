@@ -158,3 +158,4 @@
 - GĐ605: đơn quán xóm (trang trại) hạn rơi vào ngày cúng trả ×1,35 như cuối tuần; tin sáng ghi 'ngày cúng trả ×1,35'. Theo số ngày → parity; vẫn ≤1,4 (không lấn bán hàng). Sửa farmOrderWeekend test (ngày 1 nay là ngày cúng). 2697 xanh (economySim ngày 2 flaky tải, chạy riêng xanh), bundle 597/597.
 - GĐ606: panel trang trại ghi đúng lý do giá hời đơn quán xóm: hạn ngày cúng (ngày thường) '(quán cần đồ cúng)', cuối tuần giữ '(quán đông cuối tuần)'. 2698 xanh (economySim ngày 2 flaky tải, chạy riêng 2 lần xanh), bundle 597/597.
 - GĐ607: sửa test flaky economySim — 3 bài (smoke autoplay, ngày 1 người mới, ngày 2 thông báo) thiếu timeout nên chạm mặc định 5s khi chạy cả bộ dưới tải; đặt 600s như các bài cùng file. Ngày 2 đo được 6 thông báo (trần 8). Cả bộ 2698/2698 xanh không cần chạy riêng.
+- GĐ608: QA panel trang trại (sandbox, đơn đặt tay): hạn ngày 15 ghi '×1,35 (quán cần đồ cúng)', hạn ngày 13 (Thứ 7) ghi '×1,35 (quán đông cuối tuần)'. Đúng.
