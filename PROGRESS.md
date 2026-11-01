@@ -21,6 +21,7 @@
 
 ## Trạng thái hiện tại (01/11/2026)
 
+- **GĐ690:** 🧭 AUDIT 10-GĐ (GĐ681–690) — mọi hàng ngân sách ĐẠT: bundle 596,7/597 KB · chunk 253/255 · cả bộ 289 file / **2743 test xanh** (~250 s ≤5 phút) · HUD 20 (=trần) · thông báo ngày 1 9/9 · tỉ số 0,99/0,89/0,64 · rò rỉ 0% · FPS gfx=low 69,8→73,4 có khách · PROGRESS 24,4 KB. Save trắng mới: mở cửa trong ~10 s, khách vào ngay giờ vàng, **11 món bán trong ~2 phút** (mục tiêu ≤5 phút ✅). Điểm nhấn chu kỳ GĐ681–690: **fix heartbeat server (GĐ686)** — hẻm online trước đây chết sau ~60 s cho mọi người chơi; sau fix, co-op vòng ngày (GĐ687) và bán hàng đồng bộ 2 máy (GĐ688) chạy trọn vẹn lần đầu. Prune (Leader + Designer): không gộp/bỏ gì — các trục đều còn đường đo riêng; nợ refactor ReportPanels/BusinessPanel giữ nguyên điều kiện "làm khi đụng tính năng". Co-op vòng ngày/bán hàng đã QA đầy đủ — không còn mục "chờ môi trường".
 - **GĐ681–688** (dồn archive ×2; test hành vi SW mutation-checked; hồi quy 2740→2743 xanh 218–241 s; QA live chợ phiên preview = thật; QA co-op vòng ngày THÀNH CÔNG lần đầu + bán hàng đồng bộ tuyệt đối — nhờ **fix heartbeat server GĐ686**: pong ghi sai object khiến hẻm chết ~60 s) đã dồn archive: docs/progress-archive/PROGRESS-GD681-688.md
 - **GĐ672–680** (dồn archive GĐ662–671; QA khung tablet/ngang; QA 320px mobile; đo CPU render gfx=low 5,7 ms; dọn import chết; **sửa SW stale assets — glb network-first + swStrategy.test mutation-checked**; hồi quy 2735 xanh/225 s; audit 10-GĐ ĐẠT) đã dồn archive: docs/progress-archive/PROGRESS-GD672-680.md
 - **GĐ677 chi tiết:** dọn import chết `economySim.test.ts` sau GĐ669 — tsc + test xanh. Không đổi hành vi.
@@ -135,4 +136,5 @@
 - GĐ684: QA live chợ phiên — preview = thật (±0đ), chống bán 2 lần/ngày đạt. Không đổi mã.
 - GĐ685: đo nợ refactor UI bằng số — ReportPanels 1.632 dòng (6 panel) & BusinessPanel 1.206 dòng là nợ thật; BranchPanel 297 dòng ổn, gỡ khỏi backlog.
 - GĐ689: dồn chi tiết GĐ681–688 sang docs/progress-archive/PROGRESS-GD681-688.md.
+- GĐ690: audit 10-GĐ ĐẠT — điểm nhấn chu kỳ = fix heartbeat + co-op trọn vẹn lần đầu; prune không bỏ gì.
 - GĐ686: 🐛 fix heartbeat server (pong ghi sai object → hẻm chết ~60 s) + heartbeatStep + wsHeartbeat.test. Server dev cần khởi động lại để có hiệu lực — sau đó QA co-op vòng ngày (GĐ690) khả thi.
