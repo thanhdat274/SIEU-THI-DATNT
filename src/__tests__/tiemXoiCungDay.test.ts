@@ -135,3 +135,12 @@ describe('GĐ638: nextEventLine báo lễ sắp tới trong 14 ngày', () => {
     for (let x = 1; x <= 366; x++) expect([...(nextEventLine(x, 99, 29) ?? '')].length).toBeLessThanOrEqual(90);
   });
 });
+
+describe('GĐ639: lịch năm đánh dấu ngày cúng', () => {
+  it('CalendarPanel dùng isXoiCungDay cho ô ngày + tooltip', async () => {
+    const { readFileSync } = await import('node:fs');
+    const src = readFileSync('src/ui/panels/CalendarPanel.tsx', 'utf8');
+    expect(src).toContain('isXoiCungDay(gd)');
+    expect(src).toContain("' · ngày cúng'");
+  });
+});

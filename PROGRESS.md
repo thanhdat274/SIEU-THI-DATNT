@@ -146,3 +146,4 @@
 - GĐ636: cả bộ 2706/2706 xanh (237s) sau GĐ635. Tạo chỗ trống gói đầu: CounterAskAlert chuyển từ Hud sang HudAlerts (nạp lười) → 596,8/597 KB. QA sandbox: giả câu hỏi quầy → khung 'Cô Ba muốn ghi sổ nợ… còn ~45s' + 2 nút hiện đúng.
 - GĐ637: Sổ đầu ngày thêm dòng đếm ngược ngày cúng / trận (dự kiến) — nextEventLine trong file nạp lười, bundle 596.8.
 - GĐ638: dòng đếm ngược Sổ đầu ngày báo thêm lễ sắp tới trong 14 ngày (gom hàng sớm hơn thông báo 3 ngày); bỏ '(dự kiến)' khi dòng >90.
+- GĐ639: lịch năm đánh dấu 🙏 ngày cúng (24 ô) + tooltip 'ngày cúng'.
