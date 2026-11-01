@@ -87,3 +87,47 @@ export function feedCost(tier: number, level: number): number {
 export function landmarkCustomerFactor(contributions: number): number {
   return contributions >= LANDMARK_TARGETS[LANDMARK_TARGETS.length - 1] ? LANDMARK_CUSTOMER_BONUS_FACTOR : 1;
 }
+
+// ── GĐ732 — dự án cộng đồng thứ 2: Đèn Đường Ngõ 1 (sau khi sân chơi khánh thành) ───────────────
+// Cùng một bộ đếm lượt góp (biz.landmark.contributions): sân chơi dùng mốc 0–28, đèn dùng 28–48.
+// Payoff: đèn thắp sáng → khách đêm chi nhánh đông hơn (nhân lưu lượng đêm ×1,15 — đèn thắp sáng hẻm).
+export const LANDMARK2_TARGETS = [35, 42, 48] as const;
+export const LANDMARK2_NIGHT_TRAFFIC = 1.15;
+
+export interface Landmark2Stage {
+  id: string;
+  icon: string;
+  title: string;
+  desc: string;
+  bonusMoney: number;
+  bonusXp: number;
+}
+
+export const LANDMARK2_STAGES: readonly Landmark2Stage[] = [
+  { id: 'cot', icon: '🏗️', title: 'Đóng cột đèn', desc: 'Đúc cột đèn dọc lối đi trong hẻm', bonusMoney: 80_000, bonusXp: 200 },
+  { id: 'den', icon: '💡', title: 'Treo đèn', desc: 'Lắp bóng đèn vàng ấm dọc hẻm', bonusMoney: 200_000, bonusXp: 350 },
+  { id: 'dien', icon: '🔌', title: 'Thắp sáng', desc: 'Đi dây điện, thắp sáng cả ngõ — đêm hẻm bớt tối', bonusMoney: 600_000, bonusXp: 800 },
+] as const;
+
+/** Giai đoạn hiện tại của dự án 2 (lượt góp 28→48): null khi sân chơi chưa xong. */
+export function landmark2Progress(contributions: number): { index: number; into: number; pct: number; done: boolean } | null {
+  if (contributions < LANDMARK_TARGETS[LANDMARK_TARGETS.length - 1]) return null;
+  const extra = contributions - LANDMARK_TARGETS[LANDMARK_TARGETS.length - 1];
+  const total2 = LANDMARK2_TARGETS[LANDMARK2_TARGETS.length - 1] - LANDMARK_TARGETS[LANDMARK_TARGETS.length - 1];
+  const done = extra >= total2;
+  let index = 0;
+  let prev = 0;
+  for (let i = 0; i < LANDMARK2_TARGETS.length; i++) {
+    const target = LANDMARK2_TARGETS[i] - LANDMARK_TARGETS[LANDMARK_TARGETS.length - 1];
+    if (extra >= target) { index = i; prev = target; }
+  }
+  const width = (LANDMARK2_TARGETS[index] - LANDMARK_TARGETS[LANDMARK_TARGETS.length - 1]) - prev;
+  const into = Math.min(extra - prev, width);
+  return { index, into, pct: Math.round(Math.min(1, extra / total2) * 1000) / 1000, done };
+}
+
+/** Hệ số lưu lượng ĐÊM ở chi nhánh khi đèn đã thắp sáng (dự án 2 xong): 1 nếu chưa. */
+export function landmarkNightTrafficFactor(contributions: number): number {
+  const p = landmark2Progress(contributions);
+  return p?.done ? LANDMARK2_NIGHT_TRAFFIC : 1;
+}

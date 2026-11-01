@@ -8,6 +8,7 @@ import { BLACKOUT_LOSS, BONUS_RELIEF, DRUNK_BLOCK, DRUNK_DAMAGE, EVENT_CHANCE, E
 import type { GameState, SetState, GetState } from '../gameTypes';
 import { copyStock, takeStock } from '../stock';
 import { autoHaulDue, autoHaulCfg } from '../../data/branchHaul';
+import { landmarkNightTrafficFactor } from '../../data/landmark';
 import { CHIEF_QUIT_MUL, LEAD_FATIGUE_MUL, hasRank } from '../../data/careers';
 import { gainExp } from '../../data/staffTraits';
 import { LICENSE_FINE, isAlcohol, licenseById, licenseStatus } from '../../data/licenses';
@@ -66,7 +67,9 @@ export const runBranch = (get: GetState, to: number): Partial<GameState> => {
       // Bán hàng từ máy: một phần khách qua đường rút hàng mỗi 10 phút
       let vTotal = vendingTotal(b.vendingStock);
       if (vTotal > 0) {
-        const vExpect = (branchTrafficAt(m) * STEP) / 60 * VENDING_OFFTAKE;
+        // GĐ732: đèn đường hẻm → khách đêm ghé máy bán hàng nhiều hơn
+        const lamp = landmarkNightTrafficFactor(s.biz.landmark.contributions);
+        const vExpect = (branchTrafficAt(m) * STEP) / 60 * VENDING_OFFTAKE * lamp;
         let vn = Math.floor(vExpect) + (simRng()() < vExpect % 1 ? 1 : 0);
         for (; vn > 0 && vTotal > 0; vn--) {
           const pool: string[] = Object.keys(b.vendingStock).filter((id) => (b.vendingStock?.[id] ?? 0) > 0);

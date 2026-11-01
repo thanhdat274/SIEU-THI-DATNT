@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { useGame } from '../core/store';
 import { BRANCH_LAYOUT, branchTrafficAt, CONVENIENCE, onShift, restingOn } from '../data/branches';
+import { landmarkNightTrafficFactor } from '../data/landmark';
 import { ROLES } from '../data/staff';
 import { Walker } from './walker';
 import { furnitureDef } from '../data/furniture';
@@ -101,7 +102,9 @@ export class BranchVisit {
     // Khách ghé theo lưu lượng giờ này (đông thì nhiều người), tối đa vài người cùng lúc cho nhẹ máy
     this.spawnIn -= gameDt;
     if (this.spawnIn <= 0 && this.shoppers.length < 6) {
-      this.spawnIn = 60 / Math.max(2, branchTrafficAt(s.minutes)) * (0.6 + Math.random() * 0.8);
+      // GĐ732: đèn đường hẻm thắp sáng (dự án cộng đồng 2) → khách đêm đông hơn hẳn
+      const lamp = landmarkNightTrafficFactor(s.biz.landmark.contributions);
+      this.spawnIn = 60 / Math.max(2, branchTrafficAt(s.minutes) * lamp) * (0.6 + Math.random() * 0.8);
       if (gameDt > 0) this.spawnShopper();
     }
     for (const w of this.shoppers) w.step(gameDt);
