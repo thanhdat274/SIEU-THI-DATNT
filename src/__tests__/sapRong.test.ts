@@ -258,3 +258,12 @@ describe('GĐ624: gợi ý sạp ngày mai ghi "(có trận)"', () => {
     expect(readFileSync('src/ui/panels/ZoneMapSection.tsx', 'utf8')).toContain("tip.id === 'nuocmia' && isQuanMatchDay(day + 1, tmr) ? ' (có trận)'");
   });
 });
+
+describe('GĐ625: Sổ đầu ngày nhắc đổi lô sang nước mía ngày trận', () => {
+  it('ReportPanels có việc khi chưa lô nào bán nước mía; câu ≤90', async () => {
+    const { readFileSync } = await import('node:fs');
+    const src = readFileSync('src/ui/panels/ReportPanels.tsx', 'utf8');
+    expect(src).toContain("sapKindOf(biz.sapKinds, i).id).includes('nuocmia')");
+    expect([...'Hôm nay có trận — đổi một lô sạp sang nước mía (×1,15)'].length).toBeLessThanOrEqual(90);
+  });
+});
