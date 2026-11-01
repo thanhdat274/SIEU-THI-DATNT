@@ -1,4 +1,5 @@
 import { dailyQuests, betBonusMoney, betStatus, BET_TIERS, BET_QUEST_ID, betCoreSetProgress, storyQuest } from '../../data/quests';
+import { levelUpToast } from '../../data/onboarding';
 import { MAX_LEVEL, unlocksAt, xpToNext } from '../../data/levels';
 import { formatMoney } from '../../data/products';
 import { SKILLS, skillPoints, TITLES, PRESTIGE_TITLES, type TitleContext } from '../../data/titles';
@@ -251,7 +252,7 @@ export const createProgressSlice = (set: SetState, get: GetState): Pick<GameStat
     set({ xp, level, stats: { ...s.stats, xp: s.stats.xp + amount } });
     if (level !== s.level) {
       playSfx('levelup');
-      s.notify(`⭐ Lên cấp ${level}!${gained.length ? ' Mở khóa: ' + gained.join(', ') : ''}`);
+      s.notify(levelUpToast(level, gained));
     }
   },
 });

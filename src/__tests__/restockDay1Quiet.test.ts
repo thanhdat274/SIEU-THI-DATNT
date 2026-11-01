@@ -17,3 +17,18 @@ describe('badge Phiên chợ trên HUD theo cùng luật (GĐ560)', () => {
     expect(line).toContain('showRestockExtras(s.day)');
   });
 });
+
+describe('thông báo lên cấp ≤90 ký tự (GĐ562)', () => {
+  it('bỏ mô tả, gộp +N, không vượt 90', async () => {
+    const { levelUpToast } = await import('../data/onboarding');
+    const g = ['Xà phòng', 'Bim bim que', 'Mở rộng tiệm: Tiệm nới rộng', 'Kệ hàng chớp nhoáng: khách xếp hàng mua kẹp thêm món nhỏ cạnh quầy thu ngân'];
+    const m = levelUpToast(6, g);
+    expect(m.length).toBeLessThanOrEqual(90);
+    expect(m).toContain('Mở rộng tiệm');
+    expect(m).not.toContain('cạnh quầy');
+    expect(levelUpToast(7, [])).toBe('⭐ Lên cấp 7!');
+    const many = Array.from({ length: 20 }, (_, i) => `Món số ${i}`);
+    expect(levelUpToast(9, many).length).toBeLessThanOrEqual(90);
+    expect(levelUpToast(9, many)).toMatch(/\+\d+$/);
+  });
+});
