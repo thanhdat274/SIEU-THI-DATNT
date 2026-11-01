@@ -139,3 +139,4 @@
 - GĐ575: đo FPS sandbox (đồ họa tự hạ Thấp, có chi nhánh mở): ~75 FPS (trần ≥30). Rà ⚠️ ở BusinessPanel/ReportPanels: đều là cảnh báo ngữ cảnh gắn số liệu, không gom.
 - GĐ576: FPS trong tiệm (mở cửa, 3×) ~74. Nghi mất tiến độ save khách mới sau reload → kiểm: save khách mới + chơi tiếp đều lưu đúng (777.777đ còn sau reload). Nguyên nhân: deleteDatabase bị chặn khi trang còn mở kết nối, chạy trễ lúc reload sau. QA xoá sandbox: xoá rồi reload NGAY, đợi xong mới chơi.
 - GĐ577: toast gộp nhiều tin (GĐ571) hiện 4,5s thay 3s để kịp đọc; tin đơn giữ 3s. Test notifyBurst (fake timers).
+- GĐ578: bộ test đầy đủ 2676 xanh sau GĐ577; trình duyệt: toast gộp còn ở 3,5s, tắt trước 4,8s.
