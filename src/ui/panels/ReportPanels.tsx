@@ -1,4 +1,4 @@
-import { cungGoodsAction, sapEventActions, tiemXoiCungAction } from '../../data/dayEventActions';
+import { cungGoodsAction, nextEventLine, sapEventActions, tiemXoiCungAction } from '../../data/dayEventActions';
 import { tiemXoiMorning, TIEM_XOI_WAGE } from '../../data/tiemXoi';
 import { ProductIcon } from '../ProductIcon';
 import { useState } from 'react';
@@ -19,7 +19,7 @@ import { debtLedger } from '../../data/debtLedger';
 import { regularRep, regularById, regularsExpectedToday, REGULARS } from '../../data/regulars';
 import { LOAN_DAILY_RATE, loyaltyPayoff } from '../../data/biz';
 import { happyPayoff } from '../../data/rhythm';
-import { QUAN_NUOC_WAGE, QUAN_PRICE_OPTIONS, isQuanMatchDay } from '../../data/quanNuoc';
+import { QUAN_NUOC_UNLOCK, QUAN_NUOC_WAGE, QUAN_PRICE_OPTIONS, isQuanMatchDay } from '../../data/quanNuoc';
 import { quanNuocDayAction, quanNuocHealth } from '../../data/quanNuocInsights';
 import { CREDIT_FRIENDSHIP, CREDIT_UNLOCK, creditLimit, DEBT_LATE_DAYS, DEBT_WRITE_OFF_DAYS } from '../../data/credit';
 import { CHANGE_OPTS, counterPolicySummary, defaultCounterPolicy, HAGGLE_OPTS } from '../../data/counterDeals';
@@ -670,6 +670,7 @@ export function MorningPanel() {
   );
   if (shiftAct) candidates.push(shiftAct);
   const actions = planDay(candidates);
+  const nextEvt = nextEventLine(day, level, QUAN_NUOC_UNLOCK); // GĐ637
   // GĐ132: mồi "🧭 Sắp mở khóa" cho người chơi MỚI (tuần đầu) — 1–2 hệ lớn sắp mở + XP còn thiếu (thuần đọc)
   const earlyUnlocks = earlyUnlockTeaser({ level, xp, day });
   const courier = staff.some((w) => w.role === 'courier');
@@ -861,6 +862,7 @@ export function MorningPanel() {
           </div>
         </div>
       )}
+      {nextEvt && <div style={{ fontSize: 11, opacity: 0.7, margin: '-4px 0 8px' }}>{nextEvt}</div>}
 
       {sickest.length > 0 && (
         <Callout tone="danger" title="🔎 Kệ cần chú ý" style={{ marginBottom: 8 }}>

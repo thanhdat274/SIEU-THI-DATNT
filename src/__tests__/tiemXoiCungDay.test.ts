@@ -110,3 +110,17 @@ describe('GĐ612/613/633: cungGoodsAction — nhắc đồ cúng thiếu hàng',
     for (const d of [14, 15]) expect([...cungGoodsAction(d, 99, none)!.text].length).toBeLessThanOrEqual(90);
   });
 });
+
+describe('GĐ637: nextEventLine — đếm ngược ngày cúng / trận', () => {
+  it('đếm đúng, ẩn trận khi chưa mở quán, hôm nay đúng dịp thì bỏ phần đó, ≤90', async () => {
+    const { nextEventLine } = await import('../data/dayEventActions');
+    expect(nextEventLine(14, 1, 29)).toBe('🙏 Ngày cúng: mai');
+    expect(nextEventLine(12, 1, 29)).toBe('🙏 Ngày cúng: còn 3 ngày');
+    expect(nextEventLine(15, 1, 29)).toBeNull();
+    expect(nextEventLine(16, 1, 29)).toBe('🙏 Ngày cúng: còn 16 ngày');
+    const l = nextEventLine(16, 99, 29)!;
+    expect(l).toContain('⚽ Trận: mai (dự kiến)');
+    expect(nextEventLine(17, 99, 29)).not.toContain('⚽');
+    for (let d = 1; d <= 60; d++) expect([...(nextEventLine(d, 99, 29) ?? '')].length).toBeLessThanOrEqual(90);
+  });
+});
