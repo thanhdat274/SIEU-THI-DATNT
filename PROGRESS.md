@@ -134,3 +134,4 @@
 - GĐ542: Đơn quán xóm đặt đúng món trại đang làm ra (farmOrderProduce: cây đang trồng + loài đang nuôi; ≥2 món mới lọc, ít hơn thì cả pool như cũ) — hết đơn sữa dê khi không nuôi dê, chỉ chờ quá hạn. Không đổi save; endDay ở máy chủ nên hẻm giống đơn. Test trong farmOrderWeekend.test.ts; 2651 test xanh.
 - GĐ543: Đơn quán xóm chỉ đặt món trại kịp làm ≥3 trong 2 ngày (kho nhà trồng + cây chín kịp + đàn đẻ/vắt sữa + lứa vỗ béo kịp xuất): 1 con ngỗng không còn bị đặt trứng ngỗng. Không đổi save; 2652 test xanh.
 - GĐ544: Số lượng mỗi món trong đơn quán xóm không vượt sức trại 2 ngày (farmOrderCapacity, tối thiểu 3); trại chưa đủ món thì giữ 3–8 như cũ. Không đổi save; 2653 test xanh.
+- GĐ545: 🧭 Rà GĐ535–544: 273 file/2653 test xanh (~140s), bundle 598/598, chunk 253/255, PROGRESS 26KB; không thêm nút HUD/thông báo, không đổi save. Chiều sâu: cuối tuần đủ 4 cơ sở; đơn trại theo món + sức trại; dấu phẩy hệ số (fmtMul). Review kế ~GĐ555.
