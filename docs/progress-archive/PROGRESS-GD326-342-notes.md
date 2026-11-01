@@ -1,0 +1,23 @@
+# Ghi chú GĐ329–342 (dồn từ PROGRESS.md GĐ667 — đã cũ về số liệu, giữ để tra cứu)
+
+> Số liệu bundle/test thời điểm đó đã bị vượt qua bởi các đợt GĐ650/660; chi tiết cân bằng trần thưởng xem PROGRESS-GD312-325.md.
+
+- 📦 GĐ336: ✅ BUNDLE ĐẠT 596 KB (<600): văn bản dài `STORIES` + `SURPRISES` chuyển sang `data/stories.ts`, nạp lười bằng `loadStories()` (gọi ở main.tsx; `STORIES`/`SURPRISES` là `let` live-binding, rỗng tới khi nạp xong, mọi chỗ đọc chịu được rỗng). Test cần `await loadStories()` (narrative + 3 test surprise). 2356 test xanh, trần bundle hạ 600/260.
+- 🧪 GĐ340: `lazyTextData.test.ts` khoá hợp đồng nạp lười — trước khi nạp xong `storyOnVisit`/`maybeSurprise` không ném lỗi, nạp xong có ≥10 chuyện + ≥1 bất ngờ, `loadStories()` idempotent.
+- 🔎 GĐ341: đo thông báo NGÀY 2 của bot (sim 2 ngày): 11, toàn phản hồi tiến trình (thành tựu/danh hiệu/thuê NV/2 lần lên cấp/Sổ tay/chi phí vận hành); chưa có trần riêng — nếu thêm thì ≥11, đừng bơm thêm toast ngày 2.
+- 📱 GĐ342: QA điện thoại 375×812 (+ máy tính bảng 768×1024 màn khởi đầu: scrollWidth = 768, không tràn) trên save sạch (ngày 2, tối): không tràn ngang (scrollWidth = 375), thanh nút dưới + joystick + [Đi ngủ] vừa khung, banner lễ không che nút.
+- 📦 GĐ333–335 (thử esnext/alias three/lazy farm không giảm; lazy farm hoàn tác) → GĐ334: GLTFLoader+DRACOLoader nạp lười (`world/gltfLoader.ts`, 4 chỗ gọi + manualChunks tách `three/examples/jsm/loaders`) → tải ban đầu 618→604 KB, chunk lớn nhất 267→253; QA trình duyệt: GLB kit/facade vẫn tải 200, không lỗi mới. Trần hạ 610/260. Còn 4KB tới 600.
+- 🪴 GĐ339: khoá luật mật độ prop kit (≤4 prop/4 m, mọi sự kiện bật) bằng `kitDensity.test.ts` — đo hiện tại đạt, test chặn thêm prop dồn cục.
+- 🖥️ GĐ338: QA máy yếu `?gfx=low` trên save sạch (ngày 2, dev server không nén, tab hiện): ~58 FPS (mục tiêu ≥30). Sau GĐ334–336 (nạp lười GLTF/stories) không thấy tụt hay lỗi tải.
+- 🧭 GĐ337 Leader review (GĐ328–336): cả 4 mục tiêu ĐẠT trên HEAD — thông báo ngày 1 = 10, tỉ số thưởng/lãi cấp 5/10/20 = 0.99/0.89/0.64, bundle 596/253 KB, PROGRESS 28.8KB; 2356 test xanh, tsc sạch. Rủi ro còn lại: (1) test toàn bộ đo 165s (trần ~150s, máy bận) — theo dõi, đừng thêm test nặng; (2) `STORIES`/`SURPRISES` rỗng ~ms đầu phiên (an toàn nhưng test mới đọc chúng phải `await loadStories()`); (3) % kèo hạ 25/40/65 — chờ phản hồi người chơi thật về cảm giác kèo. Việc kế: chờ save người thật, không có trục kỹ thuật nào còn mở.
+- GĐ332: ✅ tỉ số thưởng/lãi bán cấp 5 ĐẠT ≤1: hạ % kèo 30/50/80 → 25/40/65 (kèo tuỳ chọn, vẫn trần 1× bộ nhiệm vụ). Đo tất định cấp 5 0.99 · cấp 10 0.89 · cấp 20 0.64; trần test hạ 1.0/0.92/0.67; golden L30 money cập nhật. 2356 test xanh. Không đụng luật ngày 1 không trần.
+- GĐ330: QA ngày 1→2 trên save sạch (8× rồi N): sang ngày 2 đúng, hiện Tổng kết ngày 1 + "Mai tiệm có gì"; tiền 300k→260k (tiền nhà, ngày không bán). Không lỗi.
+- GĐ331: ✅ mục tiêu ≤10 thông báo ngày 1 ĐẠT: bộ đếm test chỉ tính khi còn ở ngày 1 (dự báo thời tiết + danh hiệu hiện SAU đi ngủ là của ngày 2) → đo 10, trần test hạ 12→10. Phần còn lại là 4 lần lên cấp + thành tựu + phản hồi tiến trình của bot.
+- 🧭 (GĐ318) QA người mới trên save sạch (origin 127.0.0.1:5173, tách IndexedDB khỏi save thật — không xoá gì): từ màn khởi đầu tới **mở cửa tiệm = ~10 cú bấm, 06:29 giờ game** (3 thoại Bà Năm → Nhập hàng → Điền theo gợi ý → Nhập ngay → Mở cửa); checklist "Ngày đầu mở tiệm" tự tick đúng. **Chưa đo được lần bán đầu** (cảnh 3D tab nền không chạy rAF, cần người chơi đứng quầy). Phát hiện: panel **Nhập hàng ngày 1 quá dày** (lô chợ phiên, mối quen, dự báo, khách săn tuần, cần nhập gấp cùng lúc) — ứng viên ẩn bớt khối ở ngày 1.
+- 🧪 (GĐ320) Thử hạ thêm trần thưởng (sàn 90k, ×0,5): tỉ số 1,95/1,65 (cấp 5), 1,24/1,14 (cấp 10), 1,12/0,62 (cấp 20) — KHÔNG tốt hơn GĐ312 (1,44/1,17/1,17) vì lãi bán ngày ở cấp 5 dao động 82k–150k giữa các lần chạy. Hoàn tác. Muốn chỉnh tiếp phải làm sim tất định (seed) hoặc lấy trung bình ≥5 lần.
+
+- 🧪 (GĐ323) Thử trần thưởng 0,35×/sàn 60k (sim tất định): tỉ số 1,03 (cấp 5) / 0,95 (cấp 10) / 0,65 (cấp 20) nhưng `economySimL50` đỏ (bot cấp 50 chỉ đạt 21 < 22 nhiệm vụ xương sống) → thưởng thấp hơn làm bot thiếu vốn, mất nhịp. Hoàn tác về 0,4×/70k (GĐ322). Ratio ≤1 ở cấp 5 chỉ còn cách khác: tăng lãi gộp (không đụng trần thưởng), vì cấp 5 bị ngày 1 không-trần kéo lên.
+
+- GĐ329: hộp thoại "thiếu tiền lẻ" mở từ cấp 2 thay vì cấp 1 (CHANGE_UNLOCK 1→2) — lần bán đầu của người mới không còn bị quyết định phức tạp chen vào.
+- 🧭 (GĐ318) QA người mới trên save sạch: mở cửa tiệm ~10 cú bấm; panel Nhập hàng ngày 1 quá dày (đã xử lý ở các GĐ sau).
+- 🧪 (GĐ320) Thử hạ thêm trần thưởng (sàn 90k, ×0,5): tệ hơn GĐ312 — hoàn tác. Muốn chỉnh tiếp phải sim tất định (GĐ321/322 làm rồi).

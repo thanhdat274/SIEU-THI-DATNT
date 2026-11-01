@@ -21,6 +21,7 @@
 
 ## Trạng thái hiện tại (01/11/2026)
 
+- **GĐ667:** 🗄️ dọn PROGRESS (31,6 → 24,3 KB): ghi chú GĐ329–342 còn trong "Cần theo dõi" (đã cũ về số liệu bundle/FPS/test) dồn sang `docs/progress-archive/PROGRESS-GD326-342-notes.md`; các mục ✅ ĐÃ ĐÓNG và con trỏ archive GĐ281–342 gộp thành 2 dòng mục lục. Không đổi mã, không đổi quyết định.
 - **GĐ666:** 🧪 coverage sweep (đầu tiên được ghi từ GĐ270): tổng 56,5% stmt / 88,9% branch / 80,6% fn. Thêm reporter `json` vào vitest coverage + tool xếp hạng `dev/covrank.cjs` (file logic thiếu test nhất) và `dev/covlines.cjs` (dòng chưa phủ theo file). Sửa `phoneReasons.test.ts`: quét 21.600 tổ hợp vượt timeout 5 s mặc định dưới instrumentation → 30 s riêng cho test đó. Test mới `endDayNightFlow.test.ts` (6 test, mutation-checked) phủ đường nối chốt ngày chưa chạm tới: phụ trại qua đêm (tưới/đổ cám/gom trứng về kho + tin 🧑‍🌾), đơn trại quá hạn huỷ + lập đơn mới (cấp đủ/thiếu), sổ nợ quỵt 14 ngày (xoá + −10 thân thiết) / nhắc ngày thứ 8, đơn gọi điện carrying về kho + 2 sao + −3 thân thiết. Các file 0% còn lại (branchVisit, residents, audio) là lớp diễn 3D/âm thanh — theo quy ước không đáng thêm test. 2731 test xanh (300s).
 - **GĐ665:** vòng ngày co-op 2 tab bị chặn bởi môi trường QA: tab IAB về nền là mất phiên WS hẻm — quay lại thì tab về màn khởi đầu hoặc nạp lại checkpoint server (đo được reset về đúng ngày 1, 06:00 nhiều lần trên cả 2 tab) → không chạy được vòng ngày đầy đủ qua IAB. Soi code chốt cơ chế: máy khách nhận state SỐNG broadcast từ máy chạy (`coop.ts` sendState, nhịp 0,2s khi ≥2 người) chứ không phải snapshot cũ; máy chạy checkpoint 30 s/lần + khi ẩn tab; vào lại hẻm nạp checkpoint gần nhất. Khoá bảo đảm này bằng test mới `coopClient.test.ts` (checkpoint giữa ngày round-trip + máy khách không tự checkpoint; đã kiểm đỏ khi tắt checkpoint). **Kết luận: không phải bug join-giữa-ngày cho người chơi thật; các lần reset là tab IAB đóng băng nền.** Vòng ngày hẻm 2 tab trên trình duyệt thật dời sang dịp QA toàn diện (GĐ670) — xem Cần theo dõi.
 - **GĐ664:** QA "danh sách dài, số tiền lớn" (chiều checklist GĐ662 chưa phủ): dựng save sandbox cấp 45 + lịch sử 30 ngày (revenue/profit/khách biến thiên, 98 triệu) → quét lại 34 panel ở 1280 & 390: clipped 0, 0 lỗi console; biểu đồ Sổ theo dõi vẽ đúng 30 ngày. Kèm kết luận phân tích bundle (chỉ để biết, khỏi phân tích lại): chunk `surpriseArcs` 34,5 KB là phần dữ liệu DÙNG CHUNG entry+stories (biz/catalog/recipes) — không tách được; `regulars.ts` 25KB đan sâu 10 file lõi; `world/farm.ts` 20KB chỉ đáng ~6KB gzip mà phải bất đồng bộ hoá main.tsx — không đáng. Quy tắc hiện hành giữ nguyên: code mới phải nằm trong chunk lười.
@@ -28,23 +29,10 @@
 - **GĐ662:** 🔍 QA toàn diện giao diện (lần đầu từ ~GĐ300): quét 34 panel × 4 kích thước (320/390/768/1280) bằng `layoutAudit()` + bấm mọi tab hub — layoutAudit sạch, 0 lỗi console, nhưng đo khung `.panel` lộ lỗi thật: khung co theo nội dung nên chuyển tab làm modal nhảy (1280px hub Sổ sách 658→1160px rộng, cao 243→692, ✕ nhảy theo). Sửa 1 chỗ trong `styles.panel` (shared.tsx): khung CỐ ĐỊNH theo cỡ màn — desktop `760×min(688, 100dvh−108)`, mobile full-rộng × `100dvh−96`, nội dung dài cuộn bên trong (overflowX desktop = auto, bảng rộng thành cuộn ngang chuẩn GĐ298). Test khoá `panelFrame.test.ts` (đã kiểm đỏ khi phá khung). FPS gfx=low đo lại 70–74 (có khách) — mức ~46 của GĐ660 là nhiễu tải máy, không phải regression. 2724 test xanh, bundle 596,7/597.
 - **GĐ661:** QA ván mới bổ sung cho GĐ660 — Tiếp/Xong → Ra tiệm → Mở cửa, bán được 9 món (nước, bánh, mì) trong ~65 s thật (≤5 phút ✅).
 
-- **GĐ329:** 🪙 Hộp thoại "thiếu tiền lẻ" mở từ cấp 2 thay vì cấp 1 (`CHANGE_UNLOCK` 1→2, cùng cấp với mặc cả): lần bán đầu của người mới không còn bị quyết định phức tạp chen vào (QA GĐ328 gặp ngay ở khách đầu, xác suất 6%/lần). Cấp 2 đạt ngay trong ngày 1. 2356 test xanh.
-- **GĐ326–328** (ẩn thông báo Sổ tay ngày 1, rà ngân sách, đo lần bán đầu ~4 phút) đã dồn archive: docs/progress-archive/PROGRESS-GD326-328.md
-- **GĐ312/321/322/325** (trần thưởng nhiệm vụ, sim tất định) đã dồn archive: docs/progress-archive/PROGRESS-GD312-325.md
-
-- **GĐ306–310** đã dồn archive: docs/progress-archive/PROGRESS-GD306-310.md (nút HUD 33→20, firebase động, thông báo ngày 1, rò rỉ).
-- **GĐ311/316/319** đã dồn archive: docs/progress-archive/PROGRESS-GD311-319.md.
-
-- **GĐ294–305** đã dồn archive: docs/progress-archive/PROGRESS-GD294-305.md (bundle/lazy, thông báo, test time, co-op morning shift).
 
 - Bức tranh tổng: các nhịp giữ chân (ngày/tuần/cuối tuần/tháng/mùa/năm/NG+) bão hòa; UI responsive audit kỹ; trục "giá trị vs chi phí" soi kín; 3D chỉ khi kèm gameplay.
 - Backup trước GĐ1: GAME_TU_DO_backup_2026-10-26.tar.gz (thư mục người dùng).
 
-### Giai đoạn gần đây · GĐ281 (chi tiết GĐ cũ: docs/progress-archive/ — GĐ230–249: PROGRESS-GD230-249.md · GĐ250–280: PROGRESS-GD250-257.md)
-
-- **GĐ177–271** đã dồn archive (docs/progress-archive/): 3D + đèn · supply chain · bộ soi tiền/vốn · PROGRESS-GD230-249.md · PROGRESS-GD250-257.md (phụ lục 258–271).
-
-- **GĐ281–293** đã dồn archive: docs/progress-archive/PROGRESS-GD281-293.md (khách quen, arc A–E, TIME_BANDS, nhịp tháng, co-op parity)
 
 ## Quy ước kỹ thuật cần nhớ
 
@@ -80,27 +68,8 @@
 - GĐ330: QA lưu máy khách (127.0.0.1:5173) — tải lại trang vẫn hiện "Chơi tiếp trong máy (ngày 1)" và vào lại đúng ván; lần "mất ván" trước là bấm nhầm nút ván mới, KHÔNG phải lỗi lưu.
 
 - ⏱️ (GĐ296–298) `npm run test` rất nhạy với tải máy: cùng một bộ test cho **355s / 405s / 532s / 655s / 733s / 994s**. Ở lần 994s có **1 test đỏ**, chạy lại ngay sau đó thì **2331/2331 xanh (532s)** → đỏ do tranh CPU, không phải lỗi logic (GĐ298 chỉ sửa CSS + dev tool, không đụng logic game). Nếu gặp 1 test đỏ lẻ mà không liên quan thay đổi vừa làm: chạy lại đúng file đó trước khi kết luận. Nếu máy rảnh mà vẫn >10 phút: đo file chậm nhất (`npx vitest run --reporter=json`) rồi tối ưu — nghi phạm vẫn là cụm sim cấp 50 (GĐ280 ~242s/file).
-- QA mắt 3D/panel chập tối (IAB nền dừng rAF): GĐ177–194 đã QA @5173 lúc làm; đối chiếu lại thì xem archive.
-- ✅ ĐÃ ĐÓNG (29/10) flake `weeklyGoalCap`: bot bày lại tầng kệ đầy → bỏ qua tầng đầy + timeout 1.8tr ms. Nếu cả bộ lại > ~10 phút: profile trước khi làm tiếp.
-- ✅ ĐÃ ĐÓNG (GĐ287): Tối ưu regression suite toàn bộ — gom vòng sim lặp cấp 50 giữa `weeklyGoalCap` và `economySim`; thời gian chạy `weeklyGoalCap.test.ts` giảm từ 320s xuống ~53s. Tổng thời gian test giảm từ 11+ phút xuống ~6.6 phút an toàn trong giới hạn 10 phút.
-- ✅ ĐÃ ĐÓNG (GĐ292): Khóa kiểm định scale mục tiêu vòng NG+ (GĐ171) — công thức runTargetScale (trần ×3) và runRewardScale (trần ×2.5) với targetCap đã khống chế chặt chẽ giới hạn cấp (MAX_LEVEL 100) và bậc mối (PARTNER_TIERS.length 5). Bộ 45 test prestige/ngGoalsRun/ngGoals bảo đảm độ khó vòng 2+ bền vững và không sinh lạm phát.
 - Co-op (30/10, đã xử lý 3 điểm để ngỏ): (a) đi ngủ ở hẻm là **bỏ phiếu** — cả hẻm cùng nằm giường mới sang ngày, nằm chờ thì bấm [N] để dậy rút phiếu, người chưa ngủ rời hẻm thì tự sang ngày; (b) bảng tổng kết **không dừng giờ ở hẻm**, máy khách cũng tự mở bảng tổng kết (qua `lastSummary`); (c) "Về giá gợi ý"/"Chỉnh tất cả giá" dùng `setPrices`: món người khác vừa đổi giá thì giữ giá của họ. Đã QA 2 tab (`?dev=a`/`?dev=b`) cho (a)(b). GĐ286 đã đóng nốt 2 điểm ngỏ (hội thoại cốt truyện không dừng giờ hẻm; ngất khuya có người ngủ thì không phạt).
 
-- 📦 GĐ336: ✅ BUNDLE ĐẠT 596 KB (<600): văn bản dài `STORIES` + `SURPRISES` chuyển sang `data/stories.ts`, nạp lười bằng `loadStories()` (gọi ở main.tsx; `STORIES`/`SURPRISES` là `let` live-binding, rỗng tới khi nạp xong, mọi chỗ đọc chịu được rỗng). Test cần `await loadStories()` (narrative + 3 test surprise). 2356 test xanh, trần bundle hạ 600/260.
-- 🧪 GĐ340: `lazyTextData.test.ts` khoá hợp đồng nạp lười — trước khi nạp xong `storyOnVisit`/`maybeSurprise` không ném lỗi, nạp xong có ≥10 chuyện + ≥1 bất ngờ, `loadStories()` idempotent.
-- 🔎 GĐ341: đo thông báo NGÀY 2 của bot (sim 2 ngày): 11, toàn phản hồi tiến trình (thành tựu/danh hiệu/thuê NV/2 lần lên cấp/Sổ tay/chi phí vận hành); chưa có trần riêng — nếu thêm thì ≥11, đừng bơm thêm toast ngày 2.
-- 📱 GĐ342: QA điện thoại 375×812 (+ máy tính bảng 768×1024 màn khởi đầu: scrollWidth = 768, không tràn) trên save sạch (ngày 2, tối): không tràn ngang (scrollWidth = 375), thanh nút dưới + joystick + [Đi ngủ] vừa khung, banner lễ không che nút.
-- 📦 GĐ333–335 (thử esnext/alias three/lazy farm không giảm; lazy farm hoàn tác) → GĐ334: GLTFLoader+DRACOLoader nạp lười (`world/gltfLoader.ts`, 4 chỗ gọi + manualChunks tách `three/examples/jsm/loaders`) → tải ban đầu 618→604 KB, chunk lớn nhất 267→253; QA trình duyệt: GLB kit/facade vẫn tải 200, không lỗi mới. Trần hạ 610/260. Còn 4KB tới 600.
-- 🪴 GĐ339: khoá luật mật độ prop kit (≤4 prop/4 m, mọi sự kiện bật) bằng `kitDensity.test.ts` — đo hiện tại đạt, test chặn thêm prop dồn cục.
-- 🖥️ GĐ338: QA máy yếu `?gfx=low` trên save sạch (ngày 2, dev server không nén, tab hiện): ~58 FPS (mục tiêu ≥30). Sau GĐ334–336 (nạp lười GLTF/stories) không thấy tụt hay lỗi tải.
-- 🧭 GĐ337 Leader review (GĐ328–336): cả 4 mục tiêu ĐẠT trên HEAD — thông báo ngày 1 = 10, tỉ số thưởng/lãi cấp 5/10/20 = 0.99/0.89/0.64, bundle 596/253 KB, PROGRESS 28.8KB; 2356 test xanh, tsc sạch. Rủi ro còn lại: (1) test toàn bộ đo 165s (trần ~150s, máy bận) — theo dõi, đừng thêm test nặng; (2) `STORIES`/`SURPRISES` rỗng ~ms đầu phiên (an toàn nhưng test mới đọc chúng phải `await loadStories()`); (3) % kèo hạ 25/40/65 — chờ phản hồi người chơi thật về cảm giác kèo. Việc kế: chờ save người thật, không có trục kỹ thuật nào còn mở.
-- GĐ332: ✅ tỉ số thưởng/lãi bán cấp 5 ĐẠT ≤1: hạ % kèo 30/50/80 → 25/40/65 (kèo tuỳ chọn, vẫn trần 1× bộ nhiệm vụ). Đo tất định cấp 5 0.99 · cấp 10 0.89 · cấp 20 0.64; trần test hạ 1.0/0.92/0.67; golden L30 money cập nhật. 2356 test xanh. Không đụng luật ngày 1 không trần.
-- GĐ330: QA ngày 1→2 trên save sạch (8× rồi N): sang ngày 2 đúng, hiện Tổng kết ngày 1 + "Mai tiệm có gì"; tiền 300k→260k (tiền nhà, ngày không bán). Không lỗi.
-- GĐ331: ✅ mục tiêu ≤10 thông báo ngày 1 ĐẠT: bộ đếm test chỉ tính khi còn ở ngày 1 (dự báo thời tiết + danh hiệu hiện SAU đi ngủ là của ngày 2) → đo 10, trần test hạ 12→10. Phần còn lại là 4 lần lên cấp + thành tựu + phản hồi tiến trình của bot.
-- 🧭 (GĐ318) QA người mới trên save sạch (origin 127.0.0.1:5173, tách IndexedDB khỏi save thật — không xoá gì): từ màn khởi đầu tới **mở cửa tiệm = ~10 cú bấm, 06:29 giờ game** (3 thoại Bà Năm → Nhập hàng → Điền theo gợi ý → Nhập ngay → Mở cửa); checklist "Ngày đầu mở tiệm" tự tick đúng. **Chưa đo được lần bán đầu** (cảnh 3D tab nền không chạy rAF, cần người chơi đứng quầy). Phát hiện: panel **Nhập hàng ngày 1 quá dày** (lô chợ phiên, mối quen, dự báo, khách săn tuần, cần nhập gấp cùng lúc) — ứng viên ẩn bớt khối ở ngày 1.
-- 🧪 (GĐ320) Thử hạ thêm trần thưởng (sàn 90k, ×0,5): tỉ số 1,95/1,65 (cấp 5), 1,24/1,14 (cấp 10), 1,12/0,62 (cấp 20) — KHÔNG tốt hơn GĐ312 (1,44/1,17/1,17) vì lãi bán ngày ở cấp 5 dao động 82k–150k giữa các lần chạy. Hoàn tác. Muốn chỉnh tiếp phải làm sim tất định (seed) hoặc lấy trung bình ≥5 lần.
-
-- 🧪 (GĐ323) Thử trần thưởng 0,35×/sàn 60k (sim tất định): tỉ số 1,03 (cấp 5) / 0,95 (cấp 10) / 0,65 (cấp 20) nhưng `economySimL50` đỏ (bot cấp 50 chỉ đạt 21 < 22 nhiệm vụ xương sống) → thưởng thấp hơn làm bot thiếu vốn, mất nhịp. Hoàn tác về 0,4×/70k (GĐ322). Ratio ≤1 ở cấp 5 chỉ còn cách khác: tăng lãi gộp (không đụng trần thưởng), vì cấp 5 bị ngày 1 không-trần kéo lên.
 
 ## Backlog tiếp theo
 - ✅ **Đã duyệt (GĐ483):** người dùng chọn (a) — tiệm xôi thành cửa hàng nhỏ có nhà. Sạp/quầy hàng rong sau này bán ở ngõ khác khi **mở rộng bản đồ** (hướng kiểu Cities: Skylines 2: thêm ngõ/khu mới mở dần) — backlog lớn.
@@ -120,6 +89,8 @@
 4. 👥 **Đủ 2 chế độ (ĐÃ CHỐT GĐ288):** khoá chính sách parity chơi đơn/hẻm online: Sân chơi chung tiến độ; Tái sinh NG+ chỉ chơi đơn; Chào mừng quay lại chạy cục bộ. Test: coopClient.test.ts. Chi tiết: docs/progress-archive/BACKLOG-parity-GD288.md.
 
 ## Mục lục giai đoạn đã xong (chi tiết trong archive)
+- GĐ177–293 (3D/đèn, supply chain, bộ soi tiền/vốn, khách quen, arc A–E, nhịp tháng, co-op parity): PROGRESS-GD230-249/250-257/281-293.md + INDEX-GD251-300.md
+- GĐ294–342 (bundle/lazy, thông báo, co-op ca sáng, trần thưởng, save sandbox, FPS, vàng ngày 1/2): PROGRESS-GD294-305/306-310/311-319/312-325/326-328.md + PROGRESS-GD326-342-notes.md
 - GĐ400–449 (test vườn, khách quen gọi tên, Tiệm xôi, quán nước thời tiết/pha chế/bậc/tự pha, sạp xôi 3D): docs/progress-archive/PROGRESS-GD400-449.md
 
 - GĐ1–250: xem docs/progress-archive/INDEX-GD1-250.md
@@ -138,7 +109,8 @@
 
 - GĐ620–636 (ngày trận cho sạp/quán/tiện lợi, nhắc ngày cúng ở Sổ đầu ngày, tách việc theo dịp sang file nạp lười, HudKeys/CounterAskAlert nạp lười giữ bundle ≤597) → docs/progress-archive/INDEX-GD620-636.md
 
-- GĐ640 (rà ngân sách + QA người mới): bundle 596,8/597, chunk 253/255, cả bộ 2709/2710 → sửa 🙏 lịch fontSize 8 (vi phạm ≥11, GĐ639) → xanh; FPS gfx=low ~72. Save sandbox mới: 3 thoại → Mở cửa 14s; khách xếp quầy khi chủ còn ở nhà, Ra tiệm → bán đầu ~35s. ≤5 phút. Lưu trữ GĐ620–636.- GĐ641: test đếm ngược qua năm mới (Tết dương lịch + mùng 1 năm sau cùng còn 3 ngày) — nextEventLine đúng khi vắt năm.
+- GĐ640 (rà ngân sách + QA người mới): bundle 596,8/597, chunk 253/255, cả bộ 2709/2710 → sửa 🙏 lịch fontSize 8 (vi phạm ≥11, GĐ639) → xanh; FPS gfx=low ~72. Save sandbox mới: 3 thoại → Mở cửa 14s; khách xếp quầy khi chủ còn ở nhà, Ra tiệm → bán đầu ~35s. ≤5 phút. Lưu trữ GĐ620–636.
+- GĐ641: test đếm ngược qua năm mới (Tết dương lịch + mùng 1 năm sau cùng còn 3 ngày) — nextEventLine đúng khi vắt năm.
 - GĐ650 (rà ngân sách + QA người mới): bundle 596,8/597, chunk 253/255, cả bộ 2715/2715 xanh, PROGRESS 27KB, FPS gfx=low ~67. Save sandbox mới đúng thứ tự (3 thoại → Ra tiệm → Mở cửa 8,5s) → bán đầu ~55s. ≤5 phút.
 - GĐ637–659: lịch/đếm ngược sự kiện, gợi ý nhập đồ lễ & đồ cúng, HUD gọn (chi tiết: docs/progress-archive/INDEX-GD637-659.md).
 - GĐ660: rà ngân sách — tải đầu 596.7/597 KB, chunk 253/255 KB; lưu trữ GĐ637–659; PROGRESS gọn 25.6 KB; ván mới vào được ngày 1, FPS ~46.
@@ -148,3 +120,4 @@
 - GĐ664: QA danh sách dài/số tiền lớn (cấp 45 + 30 ngày dữ liệu) — quét lại sạch; kết luận bundle: hết thắng rẻ, code mới nằm chunk lười.
 - GĐ665: co-op 2 tab qua IAB bị chặn môi trường (tab nền mất WS hẻm); khoá checkpoint round-trip bằng test mới — không phải bug join. Vòng ngày hẻm thật dời GĐ670.
 - GĐ666: coverage sweep — vá timeout phoneReasons, test mới đường nối chốt ngày (trại/nợ/đơn mang đi); tool xếp hạng dev/covrank.cjs + dev/covlines.cjs.
+- GĐ667: dọn PROGRESS 31,6 → 24,3 KB — ghi chú GĐ329–342 dồn archive, không đổi mã.
