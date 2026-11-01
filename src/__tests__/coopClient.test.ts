@@ -365,6 +365,36 @@ describe('đổi vai (máy chạy rời/ẩn tab)', () => {
     expect(acts().filter((a) => a.name === 'setPrice')).toEqual([]);
   });
 
+  it('checkpoint giữa ngày lưu đúng day/tiền/giờ; vào lại hẻm nạp lại đúng tiến trình đó (không mất vì rớt kết nối)', async () => {
+    await join('runner');
+    // chơi giữa ngày: đồng hồ, tiền và ngày đổi từ lúc tạo hẻm
+    store.useGame.setState({ day: 2, minutes: 11 * 60 + 30, money: 432_100 });
+    sent = [];
+    coop.checkpoint(); // như hẹn giờ 30s hoặc tab bị ẩn (GĐ665: tái hiện vòng ngày co-op bị reset trong QA trình duyệt)
+    const cps = ofType('checkpoint') as unknown as { data: Record<string, unknown> }[];
+    expect(cps).toHaveLength(1);
+    expect(cps[0].data).toMatchObject({ day: 2, minutes: 11 * 60 + 30, money: 432_100 });
+    // máy khách KHÔNG tự checkpoint (chỉ máy chạy ghi tiến trình hẻm)
+    await join('player');
+    store.useGame.setState({ minutes: 12 * 60 + 30, money: 999_999 });
+    sent = [];
+    coop.checkpoint();
+    expect(ofType('checkpoint')).toEqual([]);
+    // tab rớt kết nối rồi vào lại hẻm: server trả welcome kèm đúng checkpoint đã ghi
+    vi.resetModules();
+    sent = [];
+    store = await import('../core/store');
+    coop = await import('../net/coop');
+    store.useGame.setState(store.newGameData());
+    coop.initCoop({ scene: { add() {}, remove() {} } as never, player: { mesh: { position: { x: 0, z: 0 }, rotation: { y: 0 } } as never }, actors: () => [], resetSim: () => {} });
+    const entered = coop.enterAlley('ABC');
+    recv({ type: 'welcome', selfId: 1, room: 0, role: 'runner', alley: { id: 'ABC', name: 'Hẻm' }, peers: PEERS, data: cps[0].data });
+    await entered;
+    expect(store.useGame.getState().day).toBe(2);
+    expect(store.useGame.getState().minutes).toBe(11 * 60 + 30);
+    expect(store.useGame.getState().money).toBe(432_100);
+  });
+
   it('thôi chạy (bị hạ xuống máy khách): thao tác lại được gửi cho máy chạy mới', async () => {
     await join('runner');
     recv({ type: 'demote' });

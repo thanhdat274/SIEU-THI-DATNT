@@ -21,6 +21,7 @@
 
 ## Trạng thái hiện tại (01/11/2026)
 
+- **GĐ665:** vòng ngày co-op 2 tab bị chặn bởi môi trường QA: tab IAB về nền là mất phiên WS hẻm — quay lại thì tab về màn khởi đầu hoặc nạp lại checkpoint server (đo được reset về đúng ngày 1, 06:00 nhiều lần trên cả 2 tab) → không chạy được vòng ngày đầy đủ qua IAB. Soi code chốt cơ chế: máy khách nhận state SỐNG broadcast từ máy chạy (`coop.ts` sendState, nhịp 0,2s khi ≥2 người) chứ không phải snapshot cũ; máy chạy checkpoint 30 s/lần + khi ẩn tab; vào lại hẻm nạp checkpoint gần nhất. Khoá bảo đảm này bằng test mới `coopClient.test.ts` (checkpoint giữa ngày round-trip + máy khách không tự checkpoint; đã kiểm đỏ khi tắt checkpoint). **Kết luận: không phải bug join-giữa-ngày cho người chơi thật; các lần reset là tab IAB đóng băng nền.** Vòng ngày hẻm 2 tab trên trình duyệt thật dời sang dịp QA toàn diện (GĐ670) — xem Cần theo dõi.
 - **GĐ664:** QA "danh sách dài, số tiền lớn" (chiều checklist GĐ662 chưa phủ): dựng save sandbox cấp 45 + lịch sử 30 ngày (revenue/profit/khách biến thiên, 98 triệu) → quét lại 34 panel ở 1280 & 390: clipped 0, 0 lỗi console; biểu đồ Sổ theo dõi vẽ đúng 30 ngày. Kèm kết luận phân tích bundle (chỉ để biết, khỏi phân tích lại): chunk `surpriseArcs` 34,5 KB là phần dữ liệu DÙNG CHUNG entry+stories (biz/catalog/recipes) — không tách được; `regulars.ts` 25KB đan sâu 10 file lõi; `world/farm.ts` 20KB chỉ đáng ~6KB gzip mà phải bất đồng bộ hoá main.tsx — không đáng. Quy tắc hiện hành giữ nguyên: code mới phải nằm trong chunk lười.
 - **GĐ663:** QA co-op luồng ngắn cho khung panel GĐ662 (2 tab `?dev=a`/`?dev=b`, hẻm "QA GD662 khung panel"): máy khách (Thử B, hẻm T9VP65) mở history/records/branch — khung cùng 760×688 top=56 như chơi đơn, chuyển tab không nhảy, `layoutAudit` clipped 0, không lỗi console. Không đổi mã.
 - **GĐ662:** 🔍 QA toàn diện giao diện (lần đầu từ ~GĐ300): quét 34 panel × 4 kích thước (320/390/768/1280) bằng `layoutAudit()` + bấm mọi tab hub — layoutAudit sạch, 0 lỗi console, nhưng đo khung `.panel` lộ lỗi thật: khung co theo nội dung nên chuyển tab làm modal nhảy (1280px hub Sổ sách 658→1160px rộng, cao 243→692, ✕ nhảy theo). Sửa 1 chỗ trong `styles.panel` (shared.tsx): khung CỐ ĐỊNH theo cỡ màn — desktop `760×min(688, 100dvh−108)`, mobile full-rộng × `100dvh−96`, nội dung dài cuộn bên trong (overflowX desktop = auto, bảng rộng thành cuộn ngang chuẩn GĐ298). Test khoá `panelFrame.test.ts` (đã kiểm đỏ khi phá khung). FPS gfx=low đo lại 70–74 (có khách) — mức ~46 của GĐ660 là nhiễu tải máy, không phải regression. 2724 test xanh, bundle 596,7/597.
@@ -73,6 +74,7 @@
 - Họ màu hướng dẫn/chuỗi/biểu đồ: gộp về một sắc info `#3498db` (GĐ178); ngoại lệ duy nhất: buy-tone `#55efc4`/`#ff7675`; GardenPanel giữ họ riêng. GĐ258 quét nốt 6 màu cũ — src/ui chỉ còn bảng duyệt + màu nhận diện.
 
 ## Cần theo dõi / nợ mở
+- 🕳️ GĐ665: QA co-op vòng ngày (ngủ cả hẻm → tổng kết 2 tab) cần tab trình duyệt THẬT — tab IAB về nền mất phiên WS hẻm (checkpoint round-trip đã khoá bằng test). Ưu tiên làm trong đợt QA toàn diện GĐ670; trước đó ghi "chưa chạy được vì môi trường", không tính là lỗi game.
 - 📦 GĐ515: tải ban đầu 598/598 KB — code mới cho Ngõ 2/sạp phải nằm trong chunk lười (world/ngo2, QuanNuocPanel); trước khi thêm vào main/index tìm chỗ tách bớt.
 - GĐ330: QA lưu máy khách (127.0.0.1:5173) — tải lại trang vẫn hiện "Chơi tiếp trong máy (ngày 1)" và vào lại đúng ván; lần "mất ván" trước là bấm nhầm nút ván mới, KHÔNG phải lỗi lưu.
 
@@ -143,3 +145,4 @@
 - GĐ662: QA toàn diện giao diện — khung modal cố định, hết nhảy khung khi chuyển tab (chi tiết: mục Trạng thái hiện tại; test `panelFrame.test.ts`). FPS gfx=low đo lại 70–74 có khách → mức ~46 GĐ660 là nhiễu tải máy.
 - GĐ663: QA co-op luồng ngắn khung panel GĐ662 — máy khách cùng khung 760×688 như chơi đơn, clipped 0. Không đổi mã.
 - GĐ664: QA danh sách dài/số tiền lớn (cấp 45 + 30 ngày dữ liệu) — quét lại sạch; kết luận bundle: hết thắng rẻ, code mới nằm chunk lười.
+- GĐ665: co-op 2 tab qua IAB bị chặn môi trường (tab nền mất WS hẻm); khoá checkpoint round-trip bằng test mới — không phải bug join. Vòng ngày hẻm thật dời GĐ670.
