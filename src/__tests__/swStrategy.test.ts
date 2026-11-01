@@ -21,8 +21,10 @@ describe('service worker: chiến lược cache (GĐ678)', () => {
     const assetsBranch = sw.slice(sw.indexOf("url.pathname.startsWith('/assets/')"), sw.indexOf('// File tĩnh KHÔNG hash'));
     expect(assetsBranch).toContain('caches.match(request)');
     expect(assetsBranch).toContain('cached || fetched');
-    // nhánh /assets không được nuốt glb (glb không-hash phải đi network-first)
-    expect(assetsBranch).not.toMatch(/glb/);
+    // DÒNG ĐIỀU KIỆN của nhánh /assets không được nuốt glb (glb không-hash phải đi network-first)
+    const condLine = sw.split('\n').find((l) => l.includes("startsWith('/assets/')"));
+    expect(condLine).toBeTruthy();
+    expect(condLine, 'glb (không hash) lọt vào cache-first → người chơi cũ mãi thấy model cũ').not.toMatch(/glb/);
   });
 
   it('file tĩnh không-hash (glb/wasm/manifest) là network-first với fallback cache', () => {
