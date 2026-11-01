@@ -106,7 +106,20 @@ describe('GĐ612: Sổ đầu ngày nhắc đồ cúng thiếu hàng', () => {
     const { CUNG_GOODS } = await import('../data/tiemXoi');
     const { productById } = await import('../data/products');
     expect(readFileSync('src/ui/panels/ReportPanels.tsx', 'utf8')).toContain('CUNG_GOODS.filter((id) => productById(id).unlock <= level && !haveStock(id))');
+    expect(readFileSync('src/ui/panels/ReportPanels.tsx', 'utf8')).toContain('!isXoiCungDay(day) && isXoiCungDay(day + 1)');
     const longest = `Ngày cúng khách hỏi ${CUNG_GOODS.map((id) => productById(id).name.toLowerCase()).join(', ')} — chưa có hàng`;
     expect([...longest].length).toBeLessThanOrEqual(90);
+  });
+});
+
+describe('GĐ613: hôm trước ngày cúng nhắc nhập sẵn', () => {
+  it('ngày 14 là đêm trước rằm, ngày 15 thì không; câu ≤90', async () => {
+    const { CUNG_GOODS, isXoiCungDay } = await import('../data/tiemXoi');
+    const { productById } = await import('../data/products');
+    const eve = (d: number) => !isXoiCungDay(d) && isXoiCungDay(d + 1);
+    expect(eve(14)).toBe(true);
+    expect(eve(15)).toBe(false);
+    expect(eve(10)).toBe(false);
+    expect([...`Mai ngày cúng — nhập sẵn ${CUNG_GOODS.map((id) => productById(id).name.toLowerCase()).join(', ')}`].length).toBeLessThanOrEqual(90);
   });
 });
