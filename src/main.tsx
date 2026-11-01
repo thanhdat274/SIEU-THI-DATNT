@@ -988,3 +988,19 @@ void (renderer.init ? renderer.init() : Promise.resolve()).then(() => {
   const info = backend?.device?.adapterInfo;
   console.warn(`[render] ${backend?.isWebGPUBackend ? 'WebGPU' : 'WebGL2'}${info ? ` · ${info.vendor} ${info.architecture} ${info.description}` : ''}`);
 });
+
+// Để debug trong console khi chạy dev (GĐ714: khôi phục bị mất nhầm khi tách vỏ ở GĐ704)
+if (import.meta.env.DEV) {
+  Object.assign(window, { game: { player, world, controller, grid, useGame, customers, buildMode, staff, renderer, scene, lighting, perf: () => ({ ...gfxStatus(), log: readPerfLog() }) } });
+  import('./dev/autoplay').then(({ createAutoplay }) =>
+    Object.assign((window as unknown as { game: object }).game, { autoplay: createAutoplay(shop, customers, staff, player) }),
+  );
+  import('./dev/playtest').then(({ createPlaytest }) =>
+    Object.assign((window as unknown as { game: object }).game, { playtest: createPlaytest(shop, customers, staff, player) }),
+  );
+  // GĐ297: soi nút bị CẮT ở mép màn hình — `scrollWidth == clientWidth` không bắt được vì
+  // html/body overflow:hidden. QA gọi `game.layoutAudit()` sau mỗi lần đổi cỡ màn.
+  import('./dev/layoutAudit').then(({ layoutAudit }) =>
+    Object.assign((window as unknown as { game: object }).game, { layoutAudit }),
+  );
+}
