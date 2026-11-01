@@ -57,7 +57,7 @@ export function CalendarPanel() {
                     cursor: 'default',
                   }}
                 >
-                  {f ? f.icon : cung ? <span style={{ fontSize: 8, opacity: 0.8 }}>🙏</span> : ''}
+                  {f ? f.icon : cung ? <span style={{ opacity: 0.8 }}>🙏</span> : ''}
                 </div>
               );
             })}
