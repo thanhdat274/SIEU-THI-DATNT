@@ -144,3 +144,4 @@
 - GĐ591: sạp hàng rong lô xôi ăn theo ngày cúng (×1,3, cùng nguồn tiemXoiCungMul) → xôi thắng sạp vào mùng 1/rằm, parity theo số ngày. Bundle 597/597. 2686 xanh (leak test flaky tải, chạy riêng xanh).
 - GĐ592: gợi ý món sạp ngày mai (ZoneMapSection/bestSapKind) tự biết ngày cúng: trời mây ngày thường gợi bánh mì, ngày cúng đổi sang xôi. Test khoá hành vi.
 - GĐ593: tin cuối ngày sạp hàng rong thêm '· 🙏' vào ngày cúng nếu có lô bán xôi (giải thích vì sao thu cao). ≤90 ký tự. 2688 xanh, bundle 597/597.
+- GĐ594: QA trình duyệt sandbox (ngày 15, trời mây, 1 lô xôi): tin sáng '🍙 sạp hàng rong Ngõ 2 · +468.000đ · 🙏' — đúng ×1,3 (360k→468k).
