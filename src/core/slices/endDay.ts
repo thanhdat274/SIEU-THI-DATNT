@@ -1,5 +1,5 @@
 import { formatMoney, productById, unlockedProducts } from '../../data/products';
-import { fitList } from '../../data/onboarding';
+import { fitJoin, fitList } from '../../data/onboarding';
 import { SHOP_TIERS, rentOf, OPERATING_REVENUE_RATE } from '../../data/shopTiers';
 import { sapKindIcons, sapRongIncome } from '../../data/sapRong';
 import { describeDay, forecastFrom, WEATHER } from '../../data/weather';
@@ -362,7 +362,7 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
   const onlineDay = onlineDayEnd(s);
   if (s.online.done || s.online.orders.length) news.push(`📲 App hôm nay: thu ${formatMoney(s.online.revenueToday + onlineDay.money)} (đã trừ hoa hồng)${s.online.grabFeesToday ? `, phí Grab ${formatMoney(s.online.grabFeesToday)}` : ''} · điểm ${appRating(onlineDay.online).toFixed(1)}★`);
   if (s.fakeCash) news.push(`💸 Kiểm két thấy ${formatMoney(s.fakeCash)} tiền giả`);
-  s.notify([`Hôm nay: ${describeDay(s.weatherSeed, s.day + 1, today)}. ${WEATHER[today].tip}`, ...news].join(' · '));
+  s.notify(fitJoin([`Hôm nay: ${describeDay(s.weatherSeed, s.day + 1, today)}. ${WEATHER[today].tip}`, ...news])); // GĐ565: đủ tin ở lastSummary.news → Sổ đầu ngày
   // Giá tham chiếu thị trường nhích theo khan hiếm (kho + kệ) và cầu trung bình của từng món
   const market: Record<string, number> = { ...s.market };
   for (const p of unlockedProducts(s.level)) {
@@ -438,7 +438,7 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
     buildMode: false,
     placing: null,
     panel: { type: 'summary', day: s.day, stats },
-    lastSummary: { day: s.day, stats, ...staffIdleNote },
+    lastSummary: { day: s.day, stats, ...staffIdleNote, ...(news.length ? { news } : {}) },
     stats: emptyStats(),
     ...k, furniture, order, phoneOrders: [], phoneSlot: 0, debts, vendorOffer: null, event: nextEvent, contracts, fakeCash: 0, wheelBoost: 1, history: [...s.history, record].slice(-HISTORY_DAYS), venueTrend: [...s.venueTrend, venueDay].slice(-VENUE_TREND_DAYS), riskTrend: [...s.riskTrend, riskDay].slice(-RISK_TREND_DAYS), riskToday: emptyRiskToday(), deliveries: [], demand, demandToday: {}, sales, salesToday: {}, reservations, market,
     garden, analytics,

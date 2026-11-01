@@ -721,6 +721,13 @@ export function MorningPanel() {
           );
         })()}
       </p>
+      {/* GĐ565: tin sáng đầy đủ — toast chỉ hiện 3 giây và gộp '+N tin' */}
+      {lastSummary?.day === day - 1 && lastSummary.news?.length ? (
+        <div style={{ ...styles.card, display: 'block', fontSize: 12, lineHeight: 1.6 }}>
+          <b>📰 Tin sáng nay</b>
+          {lastSummary.news.map((n, i) => <div key={i}>{n}</div>)}
+        </div>
+      ) : null}
 
       {/* GĐ198: Đọc con hẻm — tín hiệu 3D hẻm đang bật hôm nay (chợ phiên / sửa đường / lễ hội).
           Thuần đọc từng nguồn chân lý của bên dựng cảnh (gđ181/184/197), dạy "con hẻm đổi cảnh theo lịch". */}

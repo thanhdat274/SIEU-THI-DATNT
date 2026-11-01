@@ -4,6 +4,8 @@ import { applySnapshot, snapshot } from '../core/save';
 import { quanNuocDay, quanNuocDrinkIds, newQuanNuoc, QUAN_NUOC_PRICE, QUAN_NUOC_WAGE, type QuanNuocState } from '../data/quanNuoc';
 import { productById } from '../data/products';
 import { ACHIEVEMENTS } from '../data/biz';
+/** GĐ565: tin sáng đủ nằm ở lastSummary.news (toast có thể gộp '+N tin'). */
+const allMsgs = (m: string[]) => [...m, ...(useGame.getState().lastSummary?.news ?? [])];
 import { rentOf } from '../data/shopTiers';
 
 /**
@@ -89,7 +91,7 @@ describe('actions qua store thật — mua, tuyển, nghỉ, đổi giá', () =>
     const msgs: string[] = [];
     useGame.setState({ notify: (m) => { msgs.push(m); } });
     expect(useGame.getState().buyQuanNuoc()).toBe(false);
-    expect(msgs.some((m) => m.includes('cấp 29'))).toBe(true);
+    expect(allMsgs(msgs).some((m) => m.includes('cấp 29'))).toBe(true);
     const s = useGame.getState();
     expect(s.money).toBe(300000);
     expect(s.biz.quanNuoc.open).toBe(false);
@@ -103,7 +105,7 @@ describe('actions qua store thật — mua, tuyển, nghỉ, đổi giá', () =>
     expect(s.money).toBe(26_000_000 - QUAN_NUOC_PRICE);
     expect(s.biz.quanNuoc.open).toBe(true);
     expect(s.stats.spent).toBe(QUAN_NUOC_PRICE);
-    expect(msgs.some((m) => m.includes('🧋'))).toBe(true);
+    expect(allMsgs(msgs).some((m) => m.includes('🧋'))).toBe(true);
   });
 
   it('đủ cấp nhưng thiếu tiền: từ chối mở quán', () => {
@@ -186,7 +188,7 @@ describe('endDay tích hợp — quán chạy theo ngày', () => {
     // Kho trừ đúng 68 ly đồ uống (kệ không bị đụng tới)
     const drinkLeft = quanNuocDrinkIds(29).reduce((n, id) => n + (s.storage[id] ?? 0), 0);
     expect(drinkLeft).toBe(120 - 68);
-    expect(msgs.some((m) => m.includes('🧋 Quán nước: 68/68 ly'))).toBe(true);
+    expect(allMsgs(msgs).some((m) => m.includes('🧋 Quán nước: 68/68 ly'))).toBe(true);
   });
 
   it('GĐ437: hôm nay có tự pha thì tin cuối ngày ghi số mẻ', () => {
@@ -195,7 +197,7 @@ describe('endDay tích hợp — quán chạy theo ngày', () => {
     const st = useGame.getState();
     useGame.setState({ biz: { ...st.biz, quanNuoc: { ...st.biz.quanNuoc, hand: { day: st.day, n: 2 } } } });
     expect(useGame.getState().sleep()).toBe(true);
-    expect(msgs.some((m) => m.includes('🧋 Quán nước:') && m.includes('tự pha 2 mẻ'))).toBe(true);
+    expect(allMsgs(msgs).some((m) => m.includes('🧋 Quán nước:') && m.includes('tự pha 2 mẻ'))).toBe(true);
   });
 
   it('GĐ438: tin quán dài nhất (3 nhân viên, tự pha, 4 món thiếu) vẫn ≤90 ký tự', () => {
@@ -203,7 +205,7 @@ describe('endDay tích hợp — quán chạy theo ngày', () => {
     const msgs = setupQuan({ nuoc: 400 }, { staff: 3, menu: ['tra_da', 'ca_phe_den', 'nuoc_chanh', 'nuoc_mia'], hand: { day: 1, n: 5 } });
     expect(useGame.getState().sleep()).toBe(true);
     // Tin quán nằm trong dòng tóm tắt sáng ghép bằng " · "; cắt riêng đoạn quán (tới mục kế tiếp có icon 📋)
-    const all = msgs.find((m) => m.includes('🧋 Quán nước:'))!;
+    const all = allMsgs(msgs).find((m) => m.includes('🧋 Quán nước:'))!;
     const line = all.slice(all.indexOf('🧋 Quán nước:')).split(' · 📋')[0];
     expect(line).toContain('tự pha 5 mẻ');
     expect([...line].length).toBeLessThanOrEqual(90);
@@ -232,7 +234,7 @@ describe('endDay tích hợp — quán chạy theo ngày', () => {
     const s = useGame.getState();
     expect(s.money).toBe(100_000_000 - q.wages - rentOf(0));
     expect(s.biz.quanNuocLast).toEqual({ day: 1, revenue: 0, served: 0, wanted: q.wanted, wages: q.wages, profit: -q.wages });
-    expect(msgs.some((m) => m.includes(`🧋 Quán nước: 0/${q.wanted} ly`) && m.includes('kho thiếu đồ uống'))).toBe(true);
+    expect(allMsgs(msgs).some((m) => m.includes(`🧋 Quán nước: 0/${q.wanted} ly`) && m.includes('kho thiếu đồ uống'))).toBe(true);
   });
 
   it('quán chưa mở: endDay không đụng tới quán nước', () => {

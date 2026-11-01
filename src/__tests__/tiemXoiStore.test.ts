@@ -3,6 +3,8 @@ import { newGameData, useGame } from '../core/store';
 import { applySnapshot, snapshot } from '../core/save';
 import { ACHIEVEMENTS } from '../data/biz';
 import { rentOf } from '../data/shopTiers';
+/** GĐ565: tin sáng đủ nằm ở lastSummary.news (toast có thể gộp '+N tin'). */
+const allMsgs = (m: string[]) => [...m, ...(useGame.getState().lastSummary?.news ?? [])];
 import {
   newTiemXoi, tiemXoiCapacity, tiemXoiDinePlan, tiemXoiDay, tiemXoiIds,
   TIEM_XOI_HIRE_FEE, TIEM_XOI_MAX_STAFF, TIEM_XOI_PRICE, TIEM_XOI_UNLOCK, TIEM_XOI_WAGE,
@@ -58,7 +60,7 @@ describe('endDay — nấu bù kho', () => {
     expect(xoi).toBe(tiemXoiCapacity(1) - dine.portions);
     expect(after.money).toBe(100_000_000 - t.cost - TIEM_XOI_WAGE - rentOf(0) + dine.revenue);
     expect(after.biz.tiemXoiLast).toMatchObject({ day: 1, total: t.total, cost: t.cost, wages: TIEM_XOI_WAGE });
-    const line = msgs.find((m) => m.includes('🍚 Tiệm xôi'))!;
+    const line = allMsgs(msgs).find((m) => m.includes('🍚 Tiệm xôi'))!;
     expect(line).toBeDefined();
     expect(line.split(' · ').find((p) => p.includes('🍚'))!.length).toBeLessThanOrEqual(90);
   });

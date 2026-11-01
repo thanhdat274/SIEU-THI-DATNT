@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ACHIEVEMENTS } from '../data/biz';
 import { newGameData, useGame } from '../core/store';
+/** GĐ565: tin sáng đủ nằm ở lastSummary.news (toast có thể gộp '+N tin'). */
+const allMsgs = (m: string[]) => [...m, ...(useGame.getState().lastSummary?.news ?? [])];
 import { SAP_BASE_INCOME, SAP_LOT_COST, SAP_LOTS, sapRongIncome } from '../data/sapRong';
 
 /** GĐ501 — sạp hàng rong Ngõ 2: thuê lô sau khi mở khu, mưa nghỉ bán, cuối tuần đông. */
@@ -46,7 +48,7 @@ describe('endDay — sạp hàng rong', () => {
     const s = g();
     useGame.setState({ minutes: 20 * 60, weather, biz: { ...s.biz, achievements: ACHIEVEMENTS.map((a) => a.id), zones: ['ngo2'], sapRong: 2 } });
     expect(g().sleep()).toBe(true);
-    return msgs.find((m) => m.includes('🛒')) ?? '';
+    return allMsgs(msgs).find((m) => m.includes('🛒')) ?? '';
   };
   it('nắng: có tin thu tiền sạp', () => {
     expect(run('sunny')).toContain('sạp hàng rong Ngõ 2');
@@ -180,7 +182,7 @@ describe('GĐ521: tự đứng sạp', () => {
     const xp = g().xp;
     expect(g().tendSapHand()).toBe(true);
     expect(g().biz.sapHandDay).toBe(g().day);
-    expect(msgs.some((x) => x.includes('≈+'))).toBe(true); // GĐ526: báo số tiền thêm
+    expect(allMsgs(msgs).some((x) => x.includes('≈+'))).toBe(true); // GĐ526: báo số tiền thêm
     expect(g().xp).toBeGreaterThan(xp);
     expect(g().tendSapHand()).toBe(false);
     expect(sapRongIncome(2, 'sunny', 1, undefined, undefined, false, true)).toBe(Math.round(sapRongIncome(2, 'sunny', 1) * SAP_HAND_MUL));

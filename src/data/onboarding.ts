@@ -62,3 +62,18 @@ export function levelUpToast(level: number, gained: string[], max = 90): string 
   if (!gained.length) return head;
   return fitList(`${head} Mở khóa: `, gained.map((g) => g.split(':')[0].trim()), max);
 }
+
+/** GĐ565: ghép tin bằng ' · ' ≤max ký tự; tin thừa gộp ' · +N tin' — bản đủ đọc lại ở Sổ đầu ngày. Tin đầu luôn giữ (cắt '…' nếu một mình đã dài). */
+export function fitJoin(parts: string[], max = 90): string {
+  const p = parts.filter(Boolean);
+  for (let n = p.length; n > 1; n--) {
+    const rest = p.length - n;
+    const msg = p.slice(0, n).join(' · ') + (rest ? ` · +${rest} tin` : '');
+    if ([...msg].length <= max) return msg;
+  }
+  const tail = p.length > 1 ? ` · +${p.length - 1} tin` : '';
+  const first = [...(p[0] ?? '')];
+  const room = max - [...tail].length;
+  return (first.length <= room ? first.join('') : first.slice(0, room - 1).join('') + '…') + tail;
+}
+

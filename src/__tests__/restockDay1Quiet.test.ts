@@ -43,3 +43,16 @@ describe('fitList (GĐ563)', () => {
     expect(m).toMatch(/\+\d+$/);
   });
 });
+
+describe('fitJoin tin sáng (GĐ565)', () => {
+  it('≤90, giữ tin đầu, gộp +N tin', async () => {
+    const { fitJoin } = await import('../data/onboarding');
+    expect(fitJoin(['a', 'b'])).toBe('a · b');
+    const w = 'Hôm nay: ⛅ Nhiều mây. Mát trời, khách như thường lệ.';
+    const m = fitJoin([w, '📜 Từ nay tiệm phải có Giấy phép kinh doanh — hạn chót ngày 8, xin ở bảng Giấy phép']);
+    expect([...m].length).toBeLessThanOrEqual(90);
+    expect(m.startsWith(w)).toBe(true);
+    expect(m).toMatch(/\+1 tin$/);
+    expect([...fitJoin(['x'.repeat(200), 'y'])].length).toBeLessThanOrEqual(90);
+  });
+});
