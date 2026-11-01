@@ -92,6 +92,7 @@ const LOCAL_ONLY: Record<string, string> = {
   setCounterPolicy: 'đổi thái độ quầy (mặc cả/tiền lẻ) — một chính sách toàn cục, ai đặt cũng là cái chung',
   checkoutOnCredit: 'tính tiền ghi sổ cho một khách quen (mô phỏng quầy ở máy chạy)',
   collectDebt: 'thu nợ một khách quen theo id người',
+  collectDebtPartial: 'chấp nhận trả góp nợ khách quen theo id người (amount giảm nửa, since = hôm nay — sửa đúng một chỗ trong sổ nợ)',
   remindDebt: 'nhắc nợ một khách quen theo id người',
   forgiveDebt: 'xoá nợ một khách quen theo id người',
   addReservation: 'nhận giữ món cho một khách quen (thêm hẹn mới)',

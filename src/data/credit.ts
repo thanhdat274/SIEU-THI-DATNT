@@ -32,6 +32,18 @@ export function wantsCredit(def: RegularDef, p: RegularProgress | undefined, deb
   return roll < CREDIT_ASK_CHANCE * def.priceSensitivity;
 }
 
+/** GĐ734 — kèo trả góp: nợ đủ lớn mới đáng trả góp; 30% lần thu khách xin trả nửa trước. */
+export const DEBT_PARTIAL_CHANCE = 0.3;
+export const DEBT_PARTIAL_MIN = 100_000;
+
+/** Khách có xin trả góp lần thu này không: nợ ≥ 100k và roll trúng (thuần). */
+export function wantsInstallment(debt: Debt | undefined, roll: number) {
+  return !!debt && debt.amount >= DEBT_PARTIAL_MIN && roll < DEBT_PARTIAL_CHANCE;
+}
+
+/** Số tiền nhận hôm nay nếu chấp nhận trả góp: nửa nợ, làm tròn XUỐNG nghìn, sàn 50k. */
+export const installmentNow = (amount: number) => Math.max(50_000, Math.floor(amount / 2 / 1000) * 1000);
+
 /** Lần ghé này khách có trả nợ cũ không: nợ từ hôm qua trở về trước; đã nhắc thì chắc chắn trả. */
 export function repaysToday(debt: Debt | undefined, day: number, roll: number) {
   if (!debt || debt.amount <= 0 || debt.since >= day) return false;

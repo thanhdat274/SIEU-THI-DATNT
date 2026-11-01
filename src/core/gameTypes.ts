@@ -408,6 +408,8 @@ export interface GameState {
   checkoutOnCredit: (regularId: string, items: CartItem[], discount?: number, combos?: number) => void;
   /** Khách quen trả hết nợ cũ; trả về số tiền thu được. */
   collectDebt: (regularId: string) => number;
+  /** GĐ734 — chấp nhận trả góp: nhận nửa hôm nay, phần còn lại mở cửa sổ 7 ngày mới. */
+  collectDebtPartial: (regularId: string) => number;
   remindDebt: (regularId: string) => void;
   forgiveDebt: (regularId: string) => void;
   /** Người bán rong đang chờ ở tiệm xin lấy sỉ (null = không có). */

@@ -1,7 +1,7 @@
 import { formatMoney, productById } from '../../data/products';
 import { composeReview, REVIEW_CAP } from '../../data/reviews';
 import { regularById, regularCheckout, regularFriendship, regularWalkout, INFLUENCER_ID, RESERVE_BONUS, RESERVE_MISS_LOSS } from '../../data/regulars';
-import { FORGIVE_FRIEND_GAIN, REMIND_FRIEND_LOSS } from '../../data/credit';
+import { FORGIVE_FRIEND_GAIN, installmentNow, REMIND_FRIEND_LOSS } from '../../data/credit';
 import { counterActive } from '../../data/biz';
 import { arcForRegular, arcById, currentArcStep, arcStepFulfilled } from '../../data/regularArc';
 import { satisfiedLine, walkoutLine } from '../../data/regularTrust';
@@ -10,7 +10,7 @@ import { type GameState, type SetState, type GetState, addHour } from '../gameTy
 
 /** Khách: lượt ghé, khách quen, lời hẹn giữ món, sổ nợ, đánh giá. */
 
-export const createRegularsSlice = (set: SetState, get: GetState): Pick<GameState, 'recordVisit' | 'regularVisit' | 'addReservation' | 'cancelReservation' | 'adjustFriendship' | 'checkoutOnCredit' | 'collectDebt' | 'remindDebt' | 'forgiveDebt' | 'addReview'> => ({
+export const createRegularsSlice = (set: SetState, get: GetState): Pick<GameState, 'recordVisit' | 'regularVisit' | 'addReservation' | 'cancelReservation' | 'adjustFriendship' | 'checkoutOnCredit' | 'collectDebt' | 'collectDebtPartial' | 'remindDebt' | 'forgiveDebt' | 'addReview'> => ({
   recordVisit: (happy, sample) => {
     const s = get();
     set({
@@ -138,6 +138,20 @@ export const createRegularsSlice = (set: SetState, get: GetState): Pick<GameStat
     set({ debts, money: s.money + debt.amount, stats: { ...s.stats, repaid: (s.stats.repaid ?? 0) + debt.amount } });
     s.notify(`💵 ${regularById(regularId)?.name} trả nợ ${formatMoney(debt.amount)}${debt.reminded ? '' : ', cảm ơn tiệm cho ghi sổ'}`);
     return debt.amount;
+  },
+  // GĐ734 — chấp nhận trả góp: nhận nửa hôm nay, phần còn lại mở sổ 7 ngày mới (since = hôm nay)
+  collectDebtPartial: (regularId) => {
+    const s = get();
+    const debt = s.debts[regularId];
+    if (!debt?.amount) return 0;
+    const now = installmentNow(debt.amount);
+    const rest = debt.amount - now;
+    const debts = { ...s.debts };
+    if (rest > 0) debts[regularId] = { amount: rest, since: s.day };
+    else delete debts[regularId];
+    set({ debts, money: s.money + now, stats: { ...s.stats, repaid: (s.stats.repaid ?? 0) + now } });
+    s.notify(`🤝 ${regularById(regularId)?.name} trả trước ${formatMoney(now)} — còn ${formatMoney(rest)} trả trong 7 ngày`);
+    return now;
   },
   remindDebt: (regularId) => {
     const s = get();

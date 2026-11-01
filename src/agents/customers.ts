@@ -21,7 +21,7 @@ import { noteComboDay } from '../core/slices/comboDay';
 import { bulkExtra, festivalVisit, perkValue, pickRegular, referFriends, regularById, reserveAsk, INFLUENCER_ID, unlockedFavorites, type RegularDef } from '../data/regulars';
 import { influencerActive } from '../data/social';
 import { pickProfession, PROFESSIONS, PROFESSION_LOOK, type ProfessionDef } from '../data/professions';
-import { CREDIT_UNLOCK, repaysToday, wantsCredit } from '../data/credit';
+import { DEBT_PARTIAL_CHANCE, DEBT_PARTIAL_MIN, installmentNow, CREDIT_UNLOCK, repaysToday, wantsCredit } from '../data/credit';
 import { askQueuedPatience, ASK_MINUTES, CANDY_ANNOY, CHANGE_CHANCE, CHANGE_UNLOCK, CREDIT_REFUSE_FRIEND_LOSS, changeChoice, defaultCounterPolicy, HAGGLE_CHANCE, HAGGLE_CHANCE_REG, HAGGLE_MIN_TOTAL, PRICEMATCH_CHANCE, HAGGLE_REFUSE_OK, HAGGLE_UNLOCK, haggleChoice, haggleCounterOff, haggleOff, haggleSettle, oddChange, pricematchSettle } from '../data/counterDeals';
 import { rollService, SERVICE_BUY_ALONG, type ServiceDef } from '../data/services';
 import { earnService } from '../core/biz';
@@ -76,7 +76,7 @@ type State = 'walkBy' | 'toShop' | 'shopping' | 'toQueue' | 'queued' | 'leaving'
 const pick = <T,>(list: T[]) => list[Math.floor(simRng()() * list.length)];
 
 /** Chuyện ở quầy đã chốt: choice là phương án được chọn (0 = phương án đầu). */
-interface Deal { kind: 'none' | 'credit' | 'haggle' | 'change' | 'pricematch'; amount: number; choice: number }
+interface Deal { kind: 'none' | 'credit' | 'installment' | 'haggle' | 'change' | 'pricematch'; amount: number; choice: number }
 
 class Customer extends Walker {
   state: State = 'walkBy';
@@ -602,7 +602,17 @@ export class CustomerManager {
     const total = first.basket.reduce((n, it) => n + it.price, 0) - combo.discount;
     // Khách quen đủ thân đôi khi quên ví, xin ghi sổ; lần ghé sau trả nợ cũ
     const reg = first.regular;
-    if (reg && repaysToday(st.debts[reg.id], st.day, simRng()())) {
+    // GĐ734 — deal trả góp đã hỏi ở counterDeal: chốt tại settle (choice 0 nhận nửa, choice 1 đòi đủ — không rút thêm)
+    if (reg && deal.kind === 'installment') {
+      if (deal.choice === 0) {
+        st.collectDebtPartial(reg.id);
+        first.say('🤲', 2);
+      } else {
+        st.collectDebt(reg.id);
+        st.adjustFriendship(reg.id, -1);
+        first.say('💵', 2);
+      }
+    } else if (reg && repaysToday(st.debts[reg.id], st.day, simRng()())) {
       st.collectDebt(reg.id);
       first.say('💵', 2);
     }
@@ -707,6 +717,17 @@ export class CustomerManager {
         kind: 'credit', amount: total, icon: '📒', who: reg.name,
         text: `quên ví, xin ghi sổ ${formatMoney(total)}${owed ? ` (đang nợ ${formatMoney(owed)})` : ''}`,
         options: ['📒 Cho ghi sổ', 'Không cho nợ'], fallback: 0,
+      };
+    // GĐ734 — kèo trả góp: nợ cũ đến hạn (kể từ hôm qua trở về trước) + đủ lớn + chủ đứng quầy
+    // (bài học GĐ722: autoplay không trả lời được thì KHÔNG rút rng — dòng mô phỏng giữ nguyên từng nhịp)
+    } else if (reg && st.debts[reg.id] && (st.debts[reg.id]!.since < st.day) && st.debts[reg.id]!.amount >= DEBT_PARTIAL_MIN
+      && this.playerAtCounter(counter) && simRng()() < DEBT_PARTIAL_CHANCE) {
+      const debt = st.debts[reg.id]!;
+      const now = installmentNow(debt.amount);
+      ask = {
+        kind: 'installment', amount: now, icon: '🤲', who: reg.name,
+        text: `xin trả góp: "Tiệm nhận ${formatMoney(now)} trước hôm nay, phần còn lại ${formatMoney(debt.amount - now)} trả trong 7 ngày nhé?"`,
+        options: [`🤲 Chấp nhận (nhận ${formatMoney(now)})`, 'Đòi đủ một lần'], fallback: 1,
       };
     // GĐ722: khách quen cũng mặc cả NHƯNG chỉ khi chủ đứng quầy — từ chối bà con là lựa chọn có chủ ý của người chơi,
     // không bao giờ là tai nạn autoplay (không ai ở quầy thì không rút rng — dòng mô phỏng giữ nguyên từng nhịp)
