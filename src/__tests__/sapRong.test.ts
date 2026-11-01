@@ -267,3 +267,10 @@ describe('GĐ625: Sổ đầu ngày nhắc đổi lô sang nước mía ngày tr
     expect([...'Hôm nay có trận — đổi một lô sạp sang nước mía (×1,15)'].length).toBeLessThanOrEqual(90);
   });
 });
+
+describe('GĐ627: tin cuối ngày sạp gắn ⚽ ngày trận có lô nước mía', () => {
+  it('endDay ghép " · ⚽" theo isQuanMatchDay + lô nuocmia', async () => {
+    const { readFileSync } = await import('node:fs');
+    expect(readFileSync('src/core/slices/endDay.ts', 'utf8')).toContain("isQuanMatchDay(s.day, s.weather) && s.biz.sapKinds?.slice(0, s.biz.sapRong).includes('nuocmia') ? ' · ⚽'");
+  });
+});
