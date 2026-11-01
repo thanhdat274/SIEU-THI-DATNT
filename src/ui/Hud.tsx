@@ -1,4 +1,5 @@
 import { ANIMALS, ANIMAL_ORDER, EGG_PER_TRAY, plotReady } from '../data/garden';
+import { showRestockExtras } from '../data/onboarding';
 import { activeBuzz } from '../data/social';
 import { licenseStatus, type LicenseId } from '../data/licenses';
 import { faintMinutes, weeklyChallenge } from '../data/biz';
@@ -277,7 +278,7 @@ Bản đang chơi được giữ lại, khôi phục lần nữa là trở lại
   const wheelReady = useGame((s) => s.wheelLastDay !== s.day);
   const wheelBoost = useGame((s) => s.wheelBoost);
   // Đầu tháng có chợ phiên đặc biệt còn chưa lấy thì nhắc trên nút Nhập hàng
-  const fairBadge = useGame((s) => (isFairOpen(s.day) && s.biz.fairTaken !== monthOf(s.day)) ? '🛒 Phiên chợ' : undefined);
+  const fairBadge = useGame((s) => (isFairOpen(s.day) && showRestockExtras(s.day) && s.biz.fairTaken !== monthOf(s.day)) ? '🛒 Phiên chợ' : undefined);
   // Sổ thương mến (GĐ69): bậc Tiệm hiện tại (bể khách quen cả ván) — hiện trên nút Khách quen
   const triBadge = useGame((s) => {
     const t = vipTierOf(lifetimeRegularVisits(s.regulars ?? {}));
