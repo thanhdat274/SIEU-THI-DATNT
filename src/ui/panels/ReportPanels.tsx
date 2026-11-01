@@ -1,4 +1,4 @@
-import { isXoiCungDay, tiemXoiMorning, TIEM_XOI_MAX_STAFF, TIEM_XOI_WAGE } from '../../data/tiemXoi';
+import { CUNG_GOODS, isXoiCungDay, tiemXoiMorning, TIEM_XOI_MAX_STAFF, TIEM_XOI_WAGE } from '../../data/tiemXoi';
 import { ProductIcon } from '../ProductIcon';
 import { useState } from 'react';
 import { useGame, useClock, formatClock, type DayRecord, type DayStats, type ItemLine } from '../../core/store';
@@ -621,6 +621,9 @@ export function MorningPanel() {
   // GĐ189: quán nước thiếu kho — trước giờ chỉ là thẻ thụ động, giờ thành việc sáng ưu tiên (nạp đồ uống).
   const quanAction = quanNuocDayAction(quanHealth, day, weather);
   if (quanAction) candidates.push(quanAction);
+  // GĐ612: ngày cúng khách hỏi nhang/trái cây (GĐ609) — nhắc nhập món đã mở mà chưa có hàng
+  const cungMissing = isXoiCungDay(day) ? CUNG_GOODS.filter((id) => productById(id).unlock <= level && !haveStock(id)) : [];
+  if (cungMissing.length) candidates.push({ icon: '🙏', text: `Ngày cúng khách hỏi ${cungMissing.map((id) => productById(id).name.toLowerCase()).join(', ')} — chưa có hàng`, panel: 'order', danger: false, priority: 2 });
   // GĐ604: đêm có trận — tiện lợi đông sau 22h (GĐ601)
   if (branch?.open && isQuanMatchDay(day, weather)) candidates.push({ icon: '⚽', text: 'Tối nay có trận — tiện lợi đông 22h–24h ×1,2, xếp đủ kệ', panel: 'branch', danger: false, priority: 3 });
   // GĐ589: ngày cúng — tiệm xôi đông; GĐ599: thợ tự nấu ×1,3 nên chỉ nhắc thêm thợ khi còn thiếu

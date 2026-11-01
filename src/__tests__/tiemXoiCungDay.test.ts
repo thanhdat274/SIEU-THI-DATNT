@@ -99,3 +99,14 @@ describe('GĐ609: ngày cúng khách tiệm chính hỏi đồ cúng', () => {
     expect(src).toContain('simRng()() < CUNG_PULL) return pick(cungGoods)');
   });
 });
+
+describe('GĐ612: Sổ đầu ngày nhắc đồ cúng thiếu hàng', () => {
+  it('ReportPanels nhắc món CUNG_GOODS đã mở mà chưa có; câu dài nhất ≤90', async () => {
+    const { readFileSync } = await import('node:fs');
+    const { CUNG_GOODS } = await import('../data/tiemXoi');
+    const { productById } = await import('../data/products');
+    expect(readFileSync('src/ui/panels/ReportPanels.tsx', 'utf8')).toContain('CUNG_GOODS.filter((id) => productById(id).unlock <= level && !haveStock(id))');
+    const longest = `Ngày cúng khách hỏi ${CUNG_GOODS.map((id) => productById(id).name.toLowerCase()).join(', ')} — chưa có hàng`;
+    expect([...longest].length).toBeLessThanOrEqual(90);
+  });
+});
