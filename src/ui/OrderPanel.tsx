@@ -516,7 +516,7 @@ export function OrderPanel() {
                           {fv.verdict === 'maybe' && 'Chưa rõ sức bán — đang tiết kiệm ~' + Math.round(fv.savePct * 100) + '%, xem nhịp bán rồi quyết.'}
                           {fv.weekendSnacksCount > 0 && (
                             <div style={{ marginTop: 3, color: '#f1c40f', fontWeight: 500 }}>
-                              🍬 Lô có {fv.weekendSnacksCount} món ăn vặt cuối tuần{fv.isWeekendFair ? ' — hôm nay cuối tuần khách mua nhiều!' : ' — trữ sẵn cho cuối tuần'} (GĐ291)
+                              🍬 Lô có {fv.weekendSnacksCount} món ăn vặt cuối tuần{fv.isWeekendFair ? ' — hôm nay cuối tuần khách mua nhiều!' : ' — trữ sẵn cho cuối tuần'}
                             </div>
                           )}
                         </div>
@@ -762,7 +762,7 @@ export function OrderPanel() {
                   <span style={{ ...st.badge, background: shelfLife(r.p.id) <= 3 ? '#e74c3c' : '#636e72' }} title="Hạn dùng khi mới nhập">⏳ {shelfLife(r.p.id)} ngày</span>
                 )}
                 {r.isHot && <span style={{ ...st.badge, background: '#e67e22' }}>🔥 Hot</span>}
-                {r.weekendPull && <span style={{ ...st.badge, background: '#f1c40f', color: '#222' }} title="Lô này bán vào Thứ 7/Chủ nhật — khách hay ghé mua ăn vặt (GĐ255), gợi ý đã nhân thêm">🍬 Cuối tuần</span>}
+                {r.weekendPull && <span style={{ ...st.badge, background: '#f1c40f', color: '#222' }} title="Lô này bán vào Thứ 7/Chủ nhật — khách hay ghé mua ăn vặt, gợi ý đã nhân thêm">🍬 Cuối tuần</span>}
                 {r.isNew && <span style={{ ...st.badge, background: '#2ecc71' }}>Mới</span>}
                 {r.demand > 0 && r.have > 0 && r.have < r.demand && <span style={{ ...st.badge, background: '#e67e22' }} title={`Còn ${r.have} món, khách mua ~${r.demand.toFixed(1)}/ngày — sắp hết`}>⚠️ Gần hết</span>}
                 {r.asked > 0 && r.have === 0 && <span style={{ ...st.badge, background: '#e74c3c' }}>Khách hỏi {r.asked} lần, hết hàng</span>}

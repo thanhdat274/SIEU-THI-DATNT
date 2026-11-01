@@ -69,7 +69,7 @@ export function StaffPanel() {
             <div style={{ marginTop: 2, fontSize: 12 }}>
               {pr.covered
                 ? `Cầm đủ lương tối nay${pr.runwayDays != null && pr.runwayDays > 0 ? `, tạm đủ ${pr.runwayDays} ngày lương nữa` : ''}.`
-                : `Chưa đủ trả lương tối nay — bớt nhập hàng, xả sỉ/gánh chợ (GĐ211) hoặc lót vay (GĐ217) trước khi ngủ.`}
+                : `Chưa đủ trả lương tối nay — bớt nhập hàng, xả sỉ/gánh chợ hoặc lót vay trước khi ngủ.`}
             </div>
           </Callout>
         );

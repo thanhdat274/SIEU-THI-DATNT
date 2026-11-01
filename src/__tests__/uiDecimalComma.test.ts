@@ -44,3 +44,14 @@ describe('chữ inline không quá nhỏ (GĐ546)', () => {
     expect(bad).toEqual([]);
   });
 });
+
+describe('chữ hiện cho người chơi không lộ mã giai đoạn (GĐ550)', () => {
+  it('ngoài chú thích, src/ui không có "GĐ" + số', () => {
+    const bad: string[] = [];
+    for (const f of files(join(__dirname, '../ui'))) {
+      const code = readFileSync(f, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:'"`])\/\/.*$/gm, '$1');
+      code.split('\n').forEach((line, i) => { if (/GĐ\d/.test(line)) bad.push(`${f}: ${line.trim().slice(0, 80)} (#${i})`); });
+    }
+    expect(bad).toEqual([]);
+  });
+});
