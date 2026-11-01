@@ -6,7 +6,7 @@ import { isWeekend } from './calendar';
  * Chạy THEO NGÀY như quán nước: `endDay` gọi đúng một lần `tiemXoiDay`, không Math.random → solo và
  * co-op ra cùng kết quả. File này chỉ có dữ liệu và hàm thuần; hành động nằm ở `core/slices/tiemXoi.ts`.
  */
-import { productById, unlockedProducts } from './products';
+import { formatMoney, productById, unlockedProducts } from './products';
 
 /** Cấp tối thiểu được mở tiệm xôi (sau Quây xôi cấp 36). */
 export const TIEM_XOI_UNLOCK = 40;
@@ -144,3 +144,7 @@ export function tiemXoiDinePlan(t: TiemXoiState, level: number, storage: Record<
   }
   return { take, portions, revenue };
 }
+
+/** GĐ554: dòng "Hôm qua" của tiệm xôi — kèm suất ăn tại chỗ (đã lưu từ GĐ486 nhưng chưa hiện). */
+export const tiemXoiLastLine = (l: { total: number; cost: number; wages: number; saved: number; dine?: number }) =>
+  `Hôm qua: ${l.total} phần · chi ${formatMoney(l.cost + l.wages)} · rẻ hơn nhập lẻ ${formatMoney(l.saved)}${l.dine ? ` · 🪑 ${l.dine} suất ăn tại chỗ` : ''}`;
