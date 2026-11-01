@@ -9,11 +9,12 @@ export default defineConfig({
     environment: 'node',
     include: ['src/**/__tests__/**/*.test.ts'],
     // `npm run test:coverage` (mỗi ~10 GĐ): đo dòng code nào chưa test nào chạm tới. Báo cáo HTML ở coverage/.
+    // GĐ666: thêm 'json' để dev/covlines.cjs xếp hạng dòng chưa phủ theo file (chỉ để biết, không vào tải đầu).
     coverage: {
       provider: 'v8',
       include: ['src/**/*.{ts,tsx}'],
       exclude: ['src/**/__tests__/**', 'src/dev/**', 'src/**/*.d.ts'],
-      reporter: ['text-summary', 'json-summary', 'html'],
+      reporter: ['text-summary', 'json-summary', 'json', 'html'],
     },
   },
 });
