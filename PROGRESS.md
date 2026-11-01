@@ -144,3 +144,4 @@
 - GĐ580 (rà ngân sách + QA người mới): bundle 597/597, chunk 253/255, PROGRESS 27,7KB; save trắng ?thu=1 (xoá rồi reload ngay): 3 thoại → Ra tiệm → Mở cửa → bán món đầu sau ≈49s thật (đo bằng soldEver, không nhầm thưởng chương 20k).
 - GĐ581: quán nước có sự kiện đầu tiên — tối có trận bóng (day%7=3, ngày thường, không mưa/bão) khách ×1,3; tin cuối ngày thêm '· ⚽ tối có trận'. Theo số ngày → chơi đơn/hẻm online như nhau; doanh thu bán thật, không phải thưởng. Test quanMatchNight; 2678 xanh.
 - GĐ582: QuanNuocPanel báo '⚽ Tối nay có trận…×1,3' và báo trước '⚽ Mai có trận bóng' để kịp nhập đồ uống. Test nguồn + độ dài ≤90.
+- GĐ583: QA trình duyệt sandbox (cấp 40, quán mở): ngày 3 hiện '⚽ Tối nay có trận…×1,3', ngày 2 hiện '⚽ Mai có trận bóng…'. Đúng.
