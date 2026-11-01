@@ -146,3 +146,4 @@
 - GĐ514: Sạp 3D theo bậc: xe đẩy hiện 2 bánh, quầy thêm biển hiệu (bật/tắt hiển thị, giữ khuôn bàn và hộp chặn lưới) + ngo2View.test.ts. 2639 test xanh.
 - GĐ513: Nâng bậc lô sạp Ngõ 2: Gánh → Xe đẩy (3tr, ×1,4) → Quầy (5tr, ×1,8), hoàn vốn ~25/~40 ngày nắng; nút ⬆ cạnh nút món; save biz.sapTiers? (thiếu = gánh), coop 'sap' + test; QA sandbox nút + số đúng. 3D chưa đổi theo bậc (hộp chặn lưới cố định). 2638 test xanh.
 - GĐ512: Dồn mục lục GĐ450–499 sang archive/INDEX-GD450-499.md (PROGRESS.md dưới 30KB).
+- GĐ535: 🧭 Rà GĐ525–534: 271 file/2646 test xanh 138s, bundle 598/598, chunk 253/255, PROGRESS <28KB; xoá dòng mục lục trùng. Nhịp cuối tuần đủ cho tiệm xôi + tiện lợi; kế: chiều sâu nông trại/quán nước theo cuối tuần.
