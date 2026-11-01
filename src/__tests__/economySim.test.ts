@@ -169,8 +169,22 @@ describe('khảo sát kinh tế vòng ngày — simulator thật trên store', (
     expect(Number.isFinite(revenue)).toBe(true);
     expect(revenue).toBeGreaterThan(0);
   });
+
+  // GĐ561: ngày 2 trước giờ không có trần (GĐ341 đo 11) — khoá mức đo để chỉ được giảm.
+  it('ngày 2 không bơm thêm thông báo', async () => {
+    let toasts = 0;
+    const seen: string[] = [];
+    const unsub = useGame.subscribe((st, prev) => { if (st.day === 2 && st.message && st.message !== prev.message && !/^(📜|🎯)/.test(String(st.message))) { toasts++; seen.push(String(st.message)); } });
+    await runEconomySim(1, 2, { betTier: 1.0 });
+    unsub();
+    // eslint-disable-next-line no-console
+    console.log(`[người mới] ngày 2: ${toasts} thông báo: ` + seen.join(' | '));
+    expect(toasts, 'ngày 2 nhiều thông báo hơn mức đo — gộp hoặc dời bớt').toBeLessThanOrEqual(DAY2_TOAST_CEILING);
+  });
 });
 
+/** GĐ561: mức đo ngày 2 (bot cấp 1); chỉ được hạ. */
+const DAY2_TOAST_CEILING = 11;
 const fmt = (v: number) => `${Math.round(v).toLocaleString('vi-VN')}đ`;
 
 /**
