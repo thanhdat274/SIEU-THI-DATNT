@@ -131,3 +131,4 @@
 - GĐ539: fmtMul (data/products) cho hệ số tính lúc chạy (×1,25 đơn trại, khách ×…, lương ×…, giá hời VIP, kèo, nâng sạp, mạng xã hội…) ở 12 file UI; fmtScale NG+ dùng chung. Test fmtMul trong uiDecimalComma.test.ts; 2650 test xanh.
 - GĐ540: QA sandbox ?thu=1 (kho riêng, an toàn cả ở localhost) khung 747px: bảng Trang trại hiện 'giá hời ×1,35 (quán đông cuối tuần)', thẻ đơn gọn, không tràn, 0 lỗi console. Đóng nợ QA mắt GĐ536–539.
 - GĐ541: Dồn mục lục GĐ512–534 sang archive/INDEX-GD512-534.md (PROGRESS.md dưới 30KB).
+- GĐ542: Đơn quán xóm đặt đúng món trại đang làm ra (farmOrderProduce: cây đang trồng + loài đang nuôi; ≥2 món mới lọc, ít hơn thì cả pool như cũ) — hết đơn sữa dê khi không nuôi dê, chỉ chờ quá hạn. Không đổi save; endDay ở máy chủ nên hẻm giống đơn. Test trong farmOrderWeekend.test.ts; 2651 test xanh.

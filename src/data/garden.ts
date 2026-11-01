@@ -326,9 +326,18 @@ export const FARM_BUYERS = ['Quán Cơm Bà Ba', 'Lò Bánh Chị Hoa', 'Quán N
 export const FARM_ORDER_POOL = ['trung', 'trung_vit', 'trung_goos', 'sua_tuoi', 'sua_de', 'rau', 'bap', 'mia', 'traicay', 'x_chuoi', 'x_vai', 'x_buoi', 'x_thit_heo', 'thit_ga_dt'];
 
 let farmOrderId = 1;
-/** Tạo đơn mới cho quán xóm: 2 món trong pool, số lượng 3–8, hạn 2 ngày. */
-export function makeFarmOrder(day: number, rng: () => number = simRng()): FarmOrder {
-  const pool = [...FARM_ORDER_POOL];
+/** Món trong pool đơn mà trại đang làm ra: cây đang trồng + loài đang nuôi (GĐ542). */
+export const farmOrderProduce = (g: Pick<GardenState, 'plots' | 'pens'>): string[] => {
+  const ids = new Set<string>();
+  for (const p of g.plots) if (p.crop) ids.add(cropById(p.crop).productId);
+  for (const k of ANIMAL_ORDER) if ((g.pens[k]?.count ?? 0) > 0) ids.add(ANIMALS[k].productId);
+  return FARM_ORDER_POOL.filter((id) => ids.has(id));
+};
+
+/** Tạo đơn mới cho quán xóm: 2 món, số lượng 3–8, hạn 2 ngày. Trại làm ra ≥2 món trong pool thì
+ *  quán chỉ đặt những món đó (đơn giao được), không thì lấy cả pool như cũ. */
+export function makeFarmOrder(day: number, rng: () => number = simRng(), produce: readonly string[] = []): FarmOrder {
+  const pool = produce.length >= 2 ? [...produce] : [...FARM_ORDER_POOL];
   const items: { productId: string; qty: number }[] = [];
   for (let i = 0; i < 2; i++) {
     const productId = pool.splice(Math.floor(rng() * pool.length), 1)[0];

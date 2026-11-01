@@ -21,3 +21,20 @@ describe('đơn quán xóm cuối tuần (GĐ536)', () => {
     expect([1, 2, 3, 4, 5, 6, 7].map(farmOrderBonus).filter((b) => b > FARM_ORDER_BONUS).length).toBe(2);
   });
 });
+
+describe('đơn quán xóm theo món trại làm ra (GĐ542)', () => {
+  it('trại có rau + gà thì đơn chỉ đặt rau/trứng; trại trống thì lấy cả pool', async () => {
+    const { farmOrderProduce, newGarden } = await import('../data/garden');
+    const g = newGarden();
+    expect(farmOrderProduce(g)).toEqual([]);
+    g.plots[0] = { crop: 'rau_cai', growth: 0, wateredDay: 0 };
+    g.pens.chicken = { count: 2, fedDay: 0, feedKg: 0, pending: 0 } as never;
+    const produce = farmOrderProduce(g);
+    expect(produce.sort()).toEqual(['rau', 'trung']);
+    for (let i = 0; i < 5; i++) {
+      const o = makeFarmOrder(3, () => (i + 0.5) / 5, produce);
+      expect(o.items.map((it) => it.productId).sort()).toEqual(['rau', 'trung']);
+    }
+    expect(makeFarmOrder(3, () => 0.99, ['rau']).items.some((it) => it.productId !== 'rau')).toBe(true);
+  });
+});
