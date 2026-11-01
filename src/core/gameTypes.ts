@@ -597,6 +597,8 @@ export interface GameState {
   bonusBranchStaff: (id: number) => void;
   /** Cho nhân viên nghỉ ngày mai (nghỉ không lương, hồi hết mệt). */
   restBranchStaff: (id: number) => void;
+  /** GĐ727 — cho nhân viên xin nghỉ nghỉ HÔM NAY (ca nay thiếu người). */
+  restBranchStaffToday: (id: number) => void;
   /** Đào tạo nhân viên: tốn tiền, cộng kinh nghiệm, mỗi người một buổi mỗi ngày. */
   trainStaff: (id: number) => void;
   /** Thăng chức nhân viên tiệm chính (thu ngân → trưởng quầy → quản lý). */

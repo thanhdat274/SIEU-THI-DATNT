@@ -5,6 +5,7 @@ import { useGame } from '../../core/store';
 import { dailyWage, maxStaff, ROLES, SHIFTS, type Shift, type Staff } from '../../data/staff';
 import { formatMoney, fmtMul } from '../../data/products';
 import { hasUpgrade } from '../../data/upgrades';
+import { branchStaffWish } from '../../data/branches';
 import { Footer, Callout, styles, Tabs } from './shared';
 import { wageCoverage } from '../../data/wageCoverage';
 import { expToNext, shownTrait, trainCost, TRAITS } from '../../data/staffTraits';
@@ -232,9 +233,10 @@ export function Fatigue({ value }: { value: number }) {
 
 /** Nhân viên tiện lợi 24/7 xếp theo ca, chung bảng với tiệm chính. */
 function BranchRoster() {
-  const { branch, day, money, level, setBranchShift, bonusBranchStaff, restBranchStaff, fireFromBranch, promoteBranchStaff } = useGame();
+  const { branch, day, money, level, weatherSeed, setBranchShift, bonusBranchStaff, restBranchStaff, restBranchStaffToday, fireFromBranch, promoteBranchStaff } = useGame();
   if (!branch) return null;
   // GĐ142: giá trị hôm nay của từng nhân viên chi nhánh so với lương (thuần đọc branch.hourly — revenue từng giờ)
+  const wish = branchStaffWish(branch, weatherSeed, day); // GĐ727 — ai xin nghỉ hôm nay (băm riêng)
   const bValues = branchStaffValueToday(branch.staff, branch.hourly);
   const bValById = new Map(bValues.map((v) => [v.id, v]));
   const bShiftSum = branchShiftSummary(branch.hourly, branch.staff);
@@ -272,6 +274,7 @@ function BranchRoster() {
                   options={BRANCH_SHIFTS.map((k) => ({ value: k, label: BRANCH_SHIFT_NAME[k] }))}
                 />
                 <button style={staffSt.train} title={`Tốn 1 ngày lương, giảm ${BONUS_RELIEF} mệt`} onClick={() => bonusBranchStaff(x.id)}>🎁 Thưởng</button>
+                {wish?.id === x.id && <button style={{ ...staffSt.train, background: '#f1c40f', color: '#3a3a4d', fontWeight: 700 }} title="Ca nay thiếu người thật — nhưng tối nay người được xả mệt" onClick={() => restBranchStaffToday(x.id)}>😴 Cho nghỉ hôm nay</button>}
                 <button style={staffSt.train} disabled={branch.restDay?.[x.id] === day + 1} title="Nghỉ ngày mai không lương, hồi hết mệt" onClick={() => restBranchStaff(x.id)}>🛌 Nghỉ mai</button>
                 <TransferButton id={x.id} from="branch" />
                 <button style={staffSt.fire} onClick={() => confirm(`Cho ${x.name} nghỉ việc?`) && fireFromBranch(x.id)}>Cho nghỉ</button>

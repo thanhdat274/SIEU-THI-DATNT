@@ -219,6 +219,27 @@ export const fatigueOf = (b: BranchState, id: number) => b.fatigue?.[id] ?? 0;
 /** Nhân viên đang nghỉ hôm nay. */
 export const restingOn = (b: BranchState, id: number, day: number) => b.restDay?.[id] === day;
 
+// ── GĐ727 — nhân viên xin nghỉ hôm nay (vẽ bằng băm riêng, mẫu GĐ717) ─────────────────────────
+// KHÔNG rút dòng simRng chung: cùng seed + cùng ngày luôn cùng người xin, mô phỏng autoplay giữ nguyên.
+export const STAFF_WISH_CHANCE = 0.15;
+function wishRoll(seed: number, n: number, salt: number): number {
+  let h = Math.imul((seed >>> 0) ^ Math.imul(n, 2654435761), 2246822519) ^ salt;
+  h ^= h >>> 13;
+  h = Math.imul(h, 3266489917);
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+}
+/** Nhân viên chi nhánh xin nghỉ HÔM NAY (ngày `day`): 15% ngày có người xin, chọn người theo hash.
+ *  Người đang nghỉ hôm nay thì không xin nữa. Người chơi quyết: cho nghỉ (restBranchStaffToday —
+ *  ca nay thiếu người thật) hoặc giữ lại (không bấm — mệt dồn tự nhiên, có rủi ro bỏ việc sẵn có). */
+export function branchStaffWish(branch: BranchState | null, seed: number, day: number): { id: number; name: string } | null {
+  if (!branch?.open || !branch.staff.length) return null;
+  if (wishRoll(seed, day, 4409) >= STAFF_WISH_CHANCE) return null;
+  const cands = branch.staff.filter((st) => !restingOn(branch, st.id, day));
+  if (!cands.length) return null;
+  const pick = cands[Math.floor(wishRoll(seed, day, 4409 + day * 7) * cands.length)];
+  return { id: pick.id, name: pick.name };
+}
+
 // ── Quản lý cửa hàng ──
 /** Có quản lý thì kệ vơi dưới tỉ lệ này là tự gọi xe, không cần chờ người giao hàng. */
 export const MANAGER_REFILL_BELOW = 0.5;

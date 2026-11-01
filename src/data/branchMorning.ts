@@ -1,5 +1,5 @@
 import type { BranchState } from './branches';
-import { nightNeed, onShift, shelfTotal, hasAlcohol } from './branches';
+import { branchStaffWish, nightNeed, onShift, restingOn, shelfTotal, hasAlcohol } from './branches';
 import { licenseStatus, type LicenseId } from './licenses';
 
 // ───── Tiện lợi 24/7: việc hôm nay (GĐ72) ─────
@@ -15,6 +15,7 @@ export function branchMorningPlan(
   storageCases: number,
   licenses: Partial<Record<LicenseId, number>>,
   day: number,
+  seed?: number,
 ): BranchChore[] {
   if (!branch?.open) return [];
   const items: BranchChore[] = [];
@@ -41,6 +42,13 @@ export function branchMorningPlan(
   const need = nightNeed();
   if (shelfTotal(branch.shelf) + storageCases < need) {
     items.push({ icon: '🕳️', text: `Kệ ${shelfTotal(branch.shelf)} món + kho chung ${storageCases} thùng < nhu cầu đêm (~${need}) — châm hàng hôm nay kẻo đêm hết`, danger: false });
+  }
+  // GĐ727 — nhân viên xin nghỉ hôm nay (băm riêng theo seed ván; seed không truyền = không bao giờ có — giữ hành vi cũ cho test cũ)
+  if (seed !== undefined) {
+    const wish = branchStaffWish(branch, seed, day);
+    if (wish && !restingOn(branch, wish.id, day)) {
+      items.push({ icon: '😴', text: `${wish.name} xin nghỉ hôm nay (mệt/nhà việc) — cho nghỉ ở 👥 Nhân viên hoặc giữ lại (người sẽ mệt thêm)`, danger: false });
+    }
   }
   return items;
 }

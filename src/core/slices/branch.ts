@@ -323,7 +323,7 @@ export const branchNewDay = (b: BranchState, day: number): { branch: BranchState
   return { branch: { ...b, staff, fatigue, restDay, event: null, blockedUntil: undefined, hourly: Array(24).fill(0), vendingRevenueToday: 0, groupToday: {}, alcoholToday: 0, deliveryToday: 0, deliveryRevenueToday: 0 }, news };
 };
 
-export const createBranchSlice = (set: SetState, get: GetState): Pick<GameState, 'openBranch' | 'toggleBranch' | 'hireForBranch' | 'fireFromBranch' | 'coverCalloff' | 'bonusBranchStaff' | 'restBranchStaff' | 'setBranchShift' | 'toggleVending' | 'toggleNightDelivery' | 'toggleBranchAutoHaul' | 'setBranchAutoHaul' | 'buyBranchPower'> => ({
+export const createBranchSlice = (set: SetState, get: GetState): Pick<GameState, 'openBranch' | 'toggleBranch' | 'hireForBranch' | 'fireFromBranch' | 'coverCalloff' | 'bonusBranchStaff' | 'restBranchStaff' | 'restBranchStaffToday' | 'setBranchShift' | 'toggleVending' | 'toggleNightDelivery' | 'toggleBranchAutoHaul' | 'setBranchAutoHaul' | 'buyBranchPower'> => ({
   openBranch: () => {
     const s = get();
     if (s.branch) return false;
@@ -382,6 +382,14 @@ export const createBranchSlice = (set: SetState, get: GetState): Pick<GameState,
       stats: { ...s.stats, spent: s.stats.spent + cost },
     });
     s.notify(`🎁 Thưởng ${st.name} ${formatMoney(cost)} — đỡ mệt hẳn!`);
+  },
+  // GĐ727 — cho nghỉ HÔM NAY (nhân viên xin nghỉ): ca nay thiếu người thật, tối nay mệt được xả (restingOn hôm nay → fatigue 0)
+  restBranchStaffToday: (id) => {
+    const b = get().branch;
+    const st = b?.staff.find((it) => it.id === id);
+    if (!b || !st) return;
+    set({ branch: { ...b, restDay: { ...b.restDay, [id]: get().day } } });
+    get().notify(`🛌 Cho ${st.name} nghỉ hôm nay — ca nay thiếu người, tối nay người được xả mệt`);
   },
   restBranchStaff: (id) => {
     const b = get().branch;
