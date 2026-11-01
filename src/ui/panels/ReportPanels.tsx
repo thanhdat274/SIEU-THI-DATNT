@@ -18,7 +18,7 @@ import { debtLedger } from '../../data/debtLedger';
 import { regularRep, regularById, regularsExpectedToday, REGULARS } from '../../data/regulars';
 import { LOAN_DAILY_RATE, loyaltyPayoff } from '../../data/biz';
 import { happyPayoff } from '../../data/rhythm';
-import { QUAN_NUOC_WAGE, QUAN_PRICE_OPTIONS } from '../../data/quanNuoc';
+import { QUAN_NUOC_WAGE, QUAN_PRICE_OPTIONS, isQuanMatchDay } from '../../data/quanNuoc';
 import { quanNuocDayAction, quanNuocHealth } from '../../data/quanNuocInsights';
 import { CREDIT_FRIENDSHIP, CREDIT_UNLOCK, creditLimit, DEBT_LATE_DAYS, DEBT_WRITE_OFF_DAYS } from '../../data/credit';
 import { CHANGE_OPTS, counterPolicySummary, defaultCounterPolicy, HAGGLE_OPTS } from '../../data/counterDeals';
@@ -621,6 +621,8 @@ export function MorningPanel() {
   // GĐ189: quán nước thiếu kho — trước giờ chỉ là thẻ thụ động, giờ thành việc sáng ưu tiên (nạp đồ uống).
   const quanAction = quanNuocDayAction(quanHealth, day, weather);
   if (quanAction) candidates.push(quanAction);
+  // GĐ604: đêm có trận — tiện lợi đông sau 22h (GĐ601)
+  if (branch?.open && isQuanMatchDay(day, weather)) candidates.push({ icon: '⚽', text: 'Tối nay có trận — tiện lợi đông 22h–24h ×1,2, xếp đủ kệ', panel: 'branch', danger: false, priority: 3 });
   // GĐ589: ngày cúng — tiệm xôi đông; GĐ599: thợ tự nấu ×1,3 nên chỉ nhắc thêm thợ khi còn thiếu
   if (biz.tiemXoi?.open && isXoiCungDay(day)) candidates.push({ icon: '🙏', text: biz.tiemXoi.staff < TIEM_XOI_MAX_STAFF ? 'Hôm nay ngày cúng — khách mua xôi ×1,3, thêm thợ để nấu kịp' : 'Hôm nay ngày cúng — khách mua xôi ×1,3, thợ nấu đầy kho', panel: 'quannuoc', danger: false, priority: 3 });
   for (const { cs, def } of dueContracts) candidates.push({ icon: '📦', text: `${def!.title}: giao trước ngày ${cs.dueDay}`, panel: 'contracts', danger: cs.dueDay <= day, priority: cs.dueDay <= day ? 0 : 2 });
