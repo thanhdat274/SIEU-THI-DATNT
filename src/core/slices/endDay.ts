@@ -10,7 +10,7 @@ import { morningNews } from '../../data/calendar';
 import { DEBT_LATE_DAYS, DEBT_WRITE_OFF_DAYS, WRITE_OFF_FRIEND_LOSS, type Debt } from '../../data/credit';
 import { INSPECTION_EVERY, INSPECTION_FINE, INSPECTION_REWARD, INSPECTION_UNLOCK, activeAds, inspectionResult, type BizState } from '../../data/biz';
 import { sceneFor, surpriseArcById } from '../../data/surpriseArcs';
-import { quanNuocDay } from '../../data/quanNuoc';
+import { isQuanMatchDay, quanNuocDay } from '../../data/quanNuoc';
 import { quanRecipeById } from '../../data/quanRecipes';
 import { tiemXoiDay, tiemXoiSaved, tiemXoiDinePlan } from '../../data/tiemXoi';
 import { bizEndOfDay, checkAchievements } from '../biz';
@@ -145,7 +145,7 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
       quanWages = q.wages;
       quanNuocLast = { day: s.day, revenue: q.revenue, served: q.served, wanted: q.wanted, wages: q.wages, profit: q.revenue - q.wages };
       const head = `🧋 Quán nước: ${q.served}/${q.wanted} ly · ${formatMoney(q.revenue)} · lương −${formatMoney(q.wages)}`
-        + (s.biz.quanNuoc.hand?.day === s.day ? ` · tự pha ${s.biz.quanNuoc.hand.n} mẻ` : '');
+        + (s.biz.quanNuoc.hand?.day === s.day ? ` · tự pha ${s.biz.quanNuoc.hand.n} mẻ` : '') + (isQuanMatchDay(s.day, s.weather) ? ' · ⚽ tối có trận' : '');
       const tail = q.brewShort.length ? ` · thiếu ${quanRecipeById(q.brewShort[0])?.name}${q.brewShort.length > 1 ? ` +${q.brewShort.length - 1}` : ''}` : q.short ? ' · kho thiếu đồ uống, nhập thêm' : '';
       // Giữ thông báo ≤90 ký tự: dài quá thì phần thiếu chỉ ghi số món
       quanNews.push([...(head + tail)].length <= 90 ? head + tail : head + (q.brewShort.length ? ` · thiếu ${q.brewShort.length} món` : ' · kho thiếu'));

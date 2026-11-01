@@ -77,7 +77,7 @@ export function quanNuocDay(
   const menu = cleanMenu(q.menu, level, quanMenuSlots(q));
   // Giá bán trung bình nước chai đã mở: tính một lần rồi nhân hệ số mức giá
   const avgPrice = drinks.length ? drinks.reduce((n, id) => n + productById(id).sell, 0) / drinks.length : 0;
-  const customers = Math.round(45 * opt.traffic * quanTierMul(q) * (1 + 0.15 * q.staff) * weatherMul(weather) * varietyMul(menu.length) * quanWeekendMul(day) * quanHotMul(menu, weather, day));
+  const customers = Math.round(45 * opt.traffic * quanTierMul(q) * (1 + 0.15 * q.staff) * weatherMul(weather) * varietyMul(menu.length) * quanWeekendMul(day) * quanMatchMul(day, weather) * quanHotMul(menu, weather, day));
   const wanted = Math.ceil(customers * 1.5);
   // Món pha chế phục vụ trước; khách còn lại mua nước chai
   const brew = brewMenu(menu, storage, wanted, opt.mul, take);
@@ -134,7 +134,7 @@ export interface QuanNuocProjection { customers: number; wanted: number; served:
 export function quanNuocProjection(q: QuanNuocState, level: number, drinkUnits: number, weather?: Weather, day?: number): QuanNuocProjection {
   const opt = QUAN_PRICE_OPTIONS[q.price];
   const avgPrice = quanNuocAvgSell(level, q.menu);
-  const customers = Math.round(45 * opt.traffic * quanTierMul(q) * (1 + 0.15 * q.staff) * weatherMul(weather) * varietyMul(cleanMenu(q.menu, level, quanMenuSlots(q)).length) * quanWeekendMul(day) * quanHotMul(cleanMenu(q.menu, level, quanMenuSlots(q)), weather, day));
+  const customers = Math.round(45 * opt.traffic * quanTierMul(q) * (1 + 0.15 * q.staff) * weatherMul(weather) * varietyMul(cleanMenu(q.menu, level, quanMenuSlots(q)).length) * quanWeekendMul(day) * quanMatchMul(day, weather) * quanHotMul(cleanMenu(q.menu, level, quanMenuSlots(q)), weather, day));
   const wanted = Math.ceil(customers * 1.5);
   const served = Math.min(wanted, Math.max(0, drinkUnits));
   const revenue = Math.round(served * avgPrice * opt.mul);
@@ -293,6 +293,11 @@ export const quanTierOf = (q: Pick<QuanNuocState, 'tier'>) => Math.max(0, Math.m
 export const quanTierMul = (q: Pick<QuanNuocState, 'tier'>) => QUAN_TIERS[quanTierOf(q)].mul;
 /** GĐ467: cuối tuần (T7/CN) khách ngồi quán đông hơn ×1.2; không truyền ngày = ×1 (giữ số liệu cũ). */
 export const QUAN_WEEKEND_MUL = 1.2;
+/** GĐ581: tối có trận bóng (1 ngày thường/tuần, không mưa bão) → khách quán nước ×1,3. Theo số ngày nên chơi đơn/hẻm online như nhau. */
+export const QUAN_MATCH_MUL = 1.3;
+export const isQuanMatchDay = (day?: number, weather?: Weather) =>
+  day !== undefined && day % 7 === 3 && !isWeekend(day) && weather !== 'storm' && weather !== 'rain';
+export const quanMatchMul = (day?: number, weather?: Weather) => (isQuanMatchDay(day, weather) ? QUAN_MATCH_MUL : 1);
 export const quanWeekendMul = (day?: number) => (day !== undefined && isWeekend(day) ? QUAN_WEEKEND_MUL : 1);
 /** GĐ449: quán cà phê (bậc 3) có thêm 1 ô thực đơn. */
 export const quanMenuSlots = (q: Pick<QuanNuocState, 'tier'>) => QUAN_MENU_SLOTS + (quanTierOf(q) >= 2 ? 1 : 0);
