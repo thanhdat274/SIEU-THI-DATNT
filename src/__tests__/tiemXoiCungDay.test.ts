@@ -157,3 +157,11 @@ describe('GĐ641: nextEventLine qua năm mới', () => {
     expect(l).toContain('🙏 Ngày cúng còn 3 ngày');
   });
 });
+
+describe('GĐ644: dòng đếm ngược bấm mở lịch năm', () => {
+  it('MorningPanel gắn openPanel calendar vào dòng nextEvt', async () => {
+    const { readFileSync } = await import('node:fs');
+    const src = readFileSync('src/ui/panels/ReportPanels.tsx', 'utf8');
+    expect(src).toContain("{nextEvt && <button onClick={() => openPanel({ type: 'calendar' })}");
+  });
+});

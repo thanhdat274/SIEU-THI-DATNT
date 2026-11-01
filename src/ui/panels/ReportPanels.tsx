@@ -862,7 +862,7 @@ export function MorningPanel() {
           </div>
         </div>
       )}
-      {nextEvt && <div style={{ fontSize: 11, opacity: 0.7, margin: '-4px 0 8px' }}>{nextEvt}</div>}
+      {nextEvt && <button onClick={() => openPanel({ type: 'calendar' })} title="Xem lịch năm" style={{ display: 'block', fontSize: 11, opacity: 0.7, margin: '-4px 0 8px', background: 'transparent', border: 'none', color: 'inherit', padding: 0, cursor: 'pointer', textAlign: 'left' }}>{nextEvt} →</button>}
 
       {sickest.length > 0 && (
         <Callout tone="danger" title="🔎 Kệ cần chú ý" style={{ marginBottom: 8 }}>
