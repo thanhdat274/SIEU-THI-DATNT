@@ -141,3 +141,4 @@
 - GĐ613: Sổ đầu ngày hôm TRƯỚC ngày cúng nhắc '🙏 Mai ngày cúng — nhập sẵn nhang thơm, trái cây' (hàng giao cần thời gian). QA sandbox ngày 14: hiện đúng. Test tiemXoiCungDay 11/11, tsc sạch.
 - GĐ614: kiểm cả bộ sau GĐ612–613: 2701/2701 xanh (247s), bundle 597/597, chunk 253/255.
 - GĐ615: thẻ '🔮 Mai tiệm có gì' cuối ngày có dòng '🙏 Mai ngày cúng — khách hỏi nhang, trái cây' (mở bảng nhập hàng). Test tomorrowTeaser 17/17 (bài 'không có gì' đổi ngày 366→367 vì 366 là mùng 1).
+- GĐ616: QA thẻ 'Mai tiệm có gì' (sandbox, store ngày 15): hiện '🙏 Mai ngày cúng — khách hỏi nhang, trái cây' cuối thẻ (5 dòng). Đúng.
