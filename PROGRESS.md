@@ -21,6 +21,7 @@
 
 ## Trạng thái hiện tại (01/11/2026)
 
+- **GĐ675:** ⏱️ đo CPU render thật cho hàng "máy yếu" (không có DevTools throttle trong trình duyệt QA): `game.renderer.render()` × 30 ở gfx=low — trung vị 5,7 ms/khung (p90 7,4 ms) → ước tính CPU throttle 4× ≈ 28–33 FPS, đạt ≥30 nhưng sát; QualityGovernor (khoá test `graphicsQuality.test.ts`) tự hạ độ nét để giữ ≥45 FPS. Lưu ý: đo trên save ngày 2 (1 kệ) — lần đụng vòng render tiếp theo nên đo lại trên save cuối-game nhiều prop (ghi vào Cần theo dõi). Không đổi mã.
 - **GĐ674:** QA 320px trên nhánh mobile THẬT (nạp lại đúng cỡ màn — cỡ màn từng bắt lỗi GĐ297): 8 panel dày nhất (order/prices/storage/staff/calendar/business/levels/quests) — clipped 0, 0 lỗi console, khung 296×544 đúng chuẩn 100vw−24 × 100dvh−96. Cả 3 nhánh khung (desktop/mobile/ngoại lệ arrange) đều đã xác nhận trên cỡ máy thật. Không đổi mã.
 - **GĐ673:** QA khung cố định GĐ662 trên nhánh mobile THẬT (nạp lại trang đúng cỡ màn, IS_MOBILE tính đúng lúc nạp): tablet dọc 768×1024 → panel 744×928 gần full-màn, điện thoại ngang 812×375 → 788×279, nội dung cuộn bên trong, layoutAudit clipped 0 cả hai, dock HUD không bị che. Nhánh desktop/mobile của khung đều đã xác nhận trên cỡ máy thật. Không đổi mã.
 - **GĐ671:** QA luồng cố định trọn vẹn trên HEAD (save trắng GĐ670): tối 22h → ngủ → sang ngày 2 đúng 06:00, bảng tổng kết ngày 1 tự mở với 3 tab (Tổng quan/Theo món/Mai tiệm có gì — doanh thu 82.000đ), chuyển tab + đóng không lỗi, 0 lỗi console. Chốt: luồng ngày (sáng→bán→ngủ→tổng kết) sạch trên HEAD.
@@ -69,6 +70,7 @@
 - Họ màu hướng dẫn/chuỗi/biểu đồ: gộp về một sắc info `#3498db` (GĐ178); ngoại lệ duy nhất: buy-tone `#55efc4`/`#ff7675`; GardenPanel giữ họ riêng. GĐ258 quét nốt 6 màu cũ — src/ui chỉ còn bảng duyệt + màu nhận diện.
 
 ## Cần theo dõi / nợ mở
+- ⏱️ GĐ675: số CPU render gfx=low (5,7 ms trung vị) đo trên save ngày 2 ít prop — đo lại trên save cuối-game (cấp cao, nhiều kệ/prop) trước khi khẳng định biên 4× throttle; làm khi đụng vòng render lần kế.
 - 🕳️ GĐ665/668: QA co-op vòng ngày (ngủ cả hẻm → tổng kết 2 tab) cần tab trình duyệt THẬT — tab IAB về nền bị đóng băng timer → server ngắt WS → game tự reload (`coop.ts:339`, thiết kế). Cơ chế đã chốt GĐ668; checkpoint round-trip đã khoá bằng test. Làm trong đợt QA toàn diện GĐ670; trước đó ghi "chưa chạy được vì môi trường", không tính là lỗi game.
 - 📦 GĐ515: tải ban đầu 598/598 KB — code mới cho Ngõ 2/sạp phải nằm trong chunk lười (world/ngo2, QuanNuocPanel); trước khi thêm vào main/index tìm chỗ tách bớt.
 - GĐ330: QA lưu máy khách (127.0.0.1:5173) — tải lại trang vẫn hiện "Chơi tiếp trong máy (ngày 1)" và vào lại đúng ván; lần "mất ván" trước là bấm nhầm nút ván mới, KHÔNG phải lỗi lưu.
@@ -134,3 +136,4 @@
 - GĐ672: dồn chi tiết GĐ662–665 sang docs/progress-archive/PROGRESS-GD662-665.md; PROGRESS về 27,4 KB.
 - GĐ673: khung panel trên tablet dọc + điện thoại ngang (nhánh mobile thật) — đạt, không đổi mã.
 - GĐ674: 320px nhánh mobile thật — 8 panel dày clipped 0; lớp lỗi GĐ297 vẫn được chặn.
+- GĐ675: đo CPU render gfx=low 5,7 ms/khung → 4× throttle ~28–33 FPS đạt; đo lại trên save cuối-game khi đụng render.
