@@ -30,3 +30,12 @@ describe('GĐ588: panel tiệm xôi báo ngày cúng', () => {
     expect([...'🙏 Mai là ngày cúng: khách mua xôi ×1,3 — nấu dư kho từ hôm nay'].length).toBeLessThanOrEqual(90);
   });
 });
+
+describe('GĐ589: Sổ đầu ngày nhắc ngày cúng', () => {
+  it('ReportPanels thêm việc 🙏 khi tiệm xôi mở và là ngày cúng, ≤90', async () => {
+    const { readFileSync } = await import('node:fs');
+    const src = readFileSync(`${__dirname}/../ui/panels/ReportPanels.tsx`, 'utf8');
+    expect(src).toContain('biz.tiemXoi?.open && isXoiCungDay(day)');
+    expect([...'Hôm nay ngày cúng — khách mua xôi ×1,3, nấu đủ kho'].length).toBeLessThanOrEqual(90);
+  });
+});

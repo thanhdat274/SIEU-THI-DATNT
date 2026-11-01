@@ -150,3 +150,4 @@
 - GĐ586: Giải bóng đá phường (lễ bong_da_phuong) = mọi ngày đều là đêm có trận ở quán nước (trời khô), khớp lễ có sẵn bán tăng lực/bia ở tiệm chính. 2681 test xanh.
 - GĐ587: tiệm xôi có sự kiện đầu tiên — ngày cúng (ngày 1 & 15 lịch game, giản lược mùng 1/rằm) khách ăn tại chỗ ×1,3; tin thêm '· 🙏 ngày cúng'. Theo số ngày → parity. Sửa 2 test cũ dùng ngày 1. 2683 xanh.
 - GĐ588: panel tiệm xôi: '· 🙏 ngày cúng ×1,3 suất' hôm đó + '🙏 Mai là ngày cúng…' báo trước. QA trình duyệt ngày 14/15 đúng.
+- GĐ589: Sổ đầu ngày thêm việc '🙏 Hôm nay ngày cúng — khách mua xôi ×1,3, nấu đủ kho' (tiệm xôi mở). QA trình duyệt ngày 15 hiện đầu danh sách.
