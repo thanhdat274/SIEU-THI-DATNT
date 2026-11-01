@@ -71,6 +71,22 @@ export function sapRongIncome(lots: number | undefined, weather?: Weather, day?:
   return hand ? Math.round(sum * SAP_HAND_MUL) : sum;
 }
 
+/** GĐ712 — sự kiện một ngày ở sạp rong (chỉ hiệu chỉnh doanh thu + dòng tin, không lưu state):
+ *  🚌 đoàn khách ghé Ngõ 2 — doanh thu hôm đó ×1,4 · 💨 gió mùa quét qua — khách vắng ×0,7.
+ *  Chỉ xảy ra ngày sạp bán được (mưa/bão nghỉ thì không). endDay truyền rng (simRng) mới có;
+ *  không truyền rng = không sự kiện (giữ hành vi cũ cho projection/test). */
+export const SAP_EVENT = { tour: 0.05, gio: 0.05 };
+export type SapEventKind = 'tour' | 'gio';
+export const SAP_EVENT_MUL: Record<SapEventKind, number> = { tour: 1.4, gio: 0.7 };
+export function sapRongEvent(rng?: () => number): SapEventKind | undefined {
+  const r1 = rng?.(), r2 = rng?.();
+  return r1 !== undefined && r1 < SAP_EVENT.tour ? 'tour' : r2 !== undefined && r2 < SAP_EVENT.gio ? 'gio' : undefined;
+}
+
+/** GĐ712: áp sự kiện vào lãi sạp của ngày — 0 (nghỉ mưa) thì giữ nguyên 0, không có sự kiện giữ nguyên raw. */
+export const sapEventIncome = (raw: number, event?: SapEventKind): number =>
+  raw && event ? Math.round(raw * SAP_EVENT_MUL[event]) : raw;
+
 /** GĐ502: hộp chặn lưới của bàn sạp thứ i (bàn 1,8×0,9 tại x 86+8i, z −0,5). */
 export const sapStallBox = (i: number) => ({ x1: 85.1 + i * 8, z1: -0.95, x2: 86.9 + i * 8, z2: -0.05 });
 

@@ -1,7 +1,7 @@
 import { formatMoney, productById, unlockedProducts } from '../../data/products';
 import { fitJoin, fitList } from '../../data/onboarding';
 import { SHOP_TIERS, rentOf, OPERATING_REVENUE_RATE } from '../../data/shopTiers';
-import { sapKindIcons, sapRongIncome } from '../../data/sapRong';
+import { sapKindIcons, sapEventIncome, sapRongEvent, sapRongIncome } from '../../data/sapRong';
 import { describeDay, forecastFrom, WEATHER } from '../../data/weather';
 import { fitLots, nearestLife } from '../../data/freshness';
 import { regularById } from '../../data/regulars';
@@ -153,9 +153,11 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
   let tiemXoiLast: BizState['tiemXoiLast'];
   // GĐ501: sạp hàng rong Ngõ 2 — nghỉ khi mưa/bão
   if (s.biz.sapRong) {
-    const sap = sapRongIncome(s.biz.sapRong, s.weather, s.day, s.biz.sapKinds, s.biz.sapTiers, s.biz.tiemXoi.open, s.biz.sapHandDay === s.day);
+    const sapEvent = sapRongEvent(simRng());
+    const raw = sapRongIncome(s.biz.sapRong, s.weather, s.day, s.biz.sapKinds, s.biz.sapTiers, s.biz.tiemXoi.open, s.biz.sapHandDay === s.day);
+    const sap = sapEventIncome(raw, sapEvent);
     quanRevenue += sap;
-    quanNews.push(sap ? `${sapKindIcons(s.biz.sapRong, s.biz.sapKinds)} sạp hàng rong Ngõ 2 · +${formatMoney(sap)}${isXoiCungDay(s.day) && s.biz.sapKinds?.slice(0, s.biz.sapRong).includes('xoi') ? ' · 🙏' : ''}${isQuanMatchDay(s.day, s.weather) && s.biz.sapKinds?.slice(0, s.biz.sapRong).includes('nuocmia') ? ' · ⚽' : ''}` : '🛒 Trời mưa: sạp hàng rong Ngõ 2 nghỉ bán');
+    quanNews.push(sap ? `${sapKindIcons(s.biz.sapRong, s.biz.sapKinds)} sạp hàng rong Ngõ 2 · +${formatMoney(sap)}${sapEvent === 'tour' ? ' · 🚌 đoàn khách ghé' : sapEvent === 'gio' ? ' · 💨 gió mùa, khách vắng' : ''}${isXoiCungDay(s.day) && s.biz.sapKinds?.slice(0, s.biz.sapRong).includes('xoi') ? ' · 🙏' : ''}${isQuanMatchDay(s.day, s.weather) && s.biz.sapKinds?.slice(0, s.biz.sapRong).includes('nuocmia') ? ' · ⚽' : ''}` : '🛒 Trời mưa: sạp hàng rong Ngõ 2 nghỉ bán');
   }
   if (s.biz.tiemXoi?.open) {
     const t = tiemXoiDay(s.biz.tiemXoi, s.level, k.storage, (id, qty) => putStock(k, id, qty), s.day, simRng());
