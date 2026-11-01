@@ -146,3 +146,4 @@
 - GĐ582: QuanNuocPanel báo '⚽ Tối nay có trận…×1,3' và báo trước '⚽ Mai có trận bóng' để kịp nhập đồ uống. Test nguồn + độ dài ≤90.
 - GĐ583: QA trình duyệt sandbox (cấp 40, quán mở): ngày 3 hiện '⚽ Tối nay có trận…×1,3', ngày 2 hiện '⚽ Mai có trận bóng…'. Đúng.
 - GĐ584: Sổ đầu ngày có việc '⚽ Tối nay có trận bóng — quán đông ×1,3, nạp đủ đồ uống' (ưu tiên 3, sau thiếu kho). quanNuocDayAction nhận day/weather tùy chọn. 2680 test xanh.
+- GĐ585: QA Sổ đầu ngày (sandbox, ngày 3 nắng, quán mở): kho đồ uống ít → hiện việc '🥤 Kho đồ uống còn 10 ly…' (ưu tiên cao hơn); nạp đủ → hiện '⚽ Tối nay có trận bóng — quán đông ×1,3…'. Đúng thứ tự.
