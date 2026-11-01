@@ -8,4 +8,7 @@ describe('GĐ646: cảnh báo khách chờ khi chủ vắng tiệm', () => {
     expect(src).toContain("{atHome || atFarm ? ' — bấm 🛵 Ra tiệm' : ''}");
     expect([...'🛒 99 khách đang chờ tính tiền ở quầy — bấm 🛵 Ra tiệm'].length).toBeLessThanOrEqual(90);
   });
+  it('GĐ648: nút Ra tiệm nhấp nháy khi ở nhà mà có khách chờ', () => {
+    expect(readFileSync('src/ui/Hud.tsx', 'utf8')).toContain('|| (atHome && waiting > 0)');
+  });
 });

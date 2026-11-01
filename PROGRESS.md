@@ -138,3 +138,4 @@
 - GĐ645: báo 'trận mai' dùng dự báo mai (forecast[0]) thay vì giả định nắng — mai mưa thì Sổ đầu ngày nhảy tới trận tuần sau, panel quán nước không báo.
 - GĐ646: cảnh báo '🛒 N khách đang chờ tính tiền' thêm ' — bấm 🛵 Ra tiệm' khi chủ ở nhà/trang trại (QA GĐ640: ngày 1 mở cửa ở nhà, khách xếp quầy). Bundle 596,8. QA sandbox cấp 45 có nhân viên đứng quầy nên không tái hiện được — chỉ test.
 - GĐ647: QA GĐ646 trên save sandbox mới: mở cửa ở nhà → '🛒 1 khách đang chờ tính tiền ở quầy — bấm 🛵 Ra tiệm'; bấm Ra tiệm → tới Tạp hóa, cảnh báo biến (khách được tính). Không đổi mã.
+- GĐ648: nút 🛵 Ra tiệm nhấp nháy khi chủ ở nhà mà có khách chờ quầy (không chỉ trong hướng dẫn). QA sandbox ngày 1: Về nhà → khách chờ → nút có hud-pulse (hướng dẫn vẫn đang chạy nên chưa tách riêng được). Bundle 596,8.

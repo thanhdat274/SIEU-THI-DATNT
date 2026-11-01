@@ -327,7 +327,7 @@ Bản đang chơi được giữ lại, khôi phục lần nữa là trở lại
       on: () => worldActions.travel(atHome ? 'shop' : 'home'),
       // Bước 3 "Đứng quầy": đang ở nhà thì nhấp nháy nút Ra tiệm dẫn đường (tới nơi rồi marker
       // vàng trên sàn quầy lo việc dẫn tiếp); bước 4 "Tối về nhà" cũng là nút này
-      pulse: tutActive && (tutStep === 4 || (tutStep === 3 && atHome)),
+      pulse: (tutActive && (tutStep === 4 || (tutStep === 3 && atHome))) || (atHome && waiting > 0), // GĐ648: khách chờ quầy
     },
     {
       icon: atFarm ? '🛵' : '🚜', label: atFarm ? 'Ra tiệm' : 'Ra trại',
