@@ -144,3 +144,14 @@ describe('GĐ639: lịch năm đánh dấu ngày cúng', () => {
     expect(src).toContain("' · ngày cúng'");
   });
 });
+
+describe('GĐ641: nextEventLine qua năm mới', () => {
+  it('cuối năm đếm tới Tết dương lịch và ngày cúng mùng 1 năm sau', async () => {
+    const { nextEventLine } = await import('../data/dayEventActions');
+    const { festivalOn } = await import('../data/calendar');
+    const ny = Array.from({ length: 400 }, (_, i) => i + 2).find((d) => festivalOn(d)?.id === 'tet_duong' && festivalOn(d - 1)?.id !== 'tet_duong')!;
+    const l = nextEventLine(ny - 3, 1, 29)!;
+    expect(l).toContain('Tết dương lịch còn 3 ngày');
+    expect(l).toContain('🙏 Ngày cúng còn 3 ngày');
+  });
+});
