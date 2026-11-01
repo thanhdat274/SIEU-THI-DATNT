@@ -218,6 +218,7 @@ export const TIRED_MISS = 0.25;
 /** Thưởng nóng: tốn một ngày lương, giảm mệt từng này. */
 export const BONUS_RELIEF = 35;
 export const fatigueOf = (b: BranchState, id: number) => b.fatigue?.[id] ?? 0;
+
 /** Nhân viên đang nghỉ hôm nay. */
 export const restingOn = (b: BranchState, id: number, day: number) => b.restDay?.[id] === day;
 
