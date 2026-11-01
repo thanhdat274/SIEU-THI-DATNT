@@ -230,3 +230,12 @@ describe('GĐ593: tin sạp báo ngày cúng khi có lô xôi', () => {
     expect(run(['banhmi'])).not.toContain('🙏');
   });
 });
+
+describe('GĐ595: panel sạp báo ngày cúng', () => {
+  it('ZoneMapSection đánh dấu 🙏 lô xôi và gợi ý mai ngày cúng', async () => {
+    const { readFileSync } = await import('node:fs');
+    const src = readFileSync('src/ui/panels/ZoneMapSection.tsx', 'utf8');
+    expect(src).toContain("k.id === 'xoi' && isXoiCungDay(day)");
+    expect(src).toContain("isXoiCungDay(day + 1) ? ' (ngày cúng)'");
+  });
+});

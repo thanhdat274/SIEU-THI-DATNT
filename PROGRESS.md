@@ -145,3 +145,4 @@
 - GĐ592: gợi ý món sạp ngày mai (ZoneMapSection/bestSapKind) tự biết ngày cúng: trời mây ngày thường gợi bánh mì, ngày cúng đổi sang xôi. Test khoá hành vi.
 - GĐ593: tin cuối ngày sạp hàng rong thêm '· 🙏' vào ngày cúng nếu có lô bán xôi (giải thích vì sao thu cao). ≤90 ký tự. 2688 xanh, bundle 597/597.
 - GĐ594: QA trình duyệt sandbox (ngày 15, trời mây, 1 lô xôi): tin sáng '🍙 sạp hàng rong Ngõ 2 · +468.000đ · 🙏' — đúng ×1,3 (360k→468k).
+- GĐ595: panel sạp (ZoneMapSection) gắn 🙏 cho lô xôi ngày cúng; gợi ý mai thêm '(ngày cúng)' khi nên bán xôi. QA sandbox ngày 15: 'Lô 1: 🧺 🍙 Xôi · hôm nay 468.000đ 🙏'. 2689 xanh, bundle 597/597.

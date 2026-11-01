@@ -2,6 +2,7 @@ import { playerPos } from '../../core/playerPos';
 import { useGame } from '../../core/store';
 import { formatMoney, fmtMul } from '../../data/products';
 import { SAP_HOME_XOI_MUL, SAP_LOTS, SAP_TIERS, bestSapKind, sapKindOf, sapLotIncome, sapTierOf } from '../../data/sapRong';
+import { isXoiCungDay } from '../../data/tiemXoi';
 import { WEATHER } from '../../data/weather';
 import { MAP_LANDMARKS, ZONES, zoneMapView } from '../../data/zones';
 import { styles } from './shared';
@@ -60,7 +61,7 @@ export function ZoneMapSection() {
             return (
               <span key={i} style={{ display: 'inline-flex', gap: 4 }}>
                 <button style={styles.btn} title={`${k.hint}${home ? ' · xôi nhà làm +20%' : ''} — bấm để đổi món`} onClick={() => cycleSapKind(i)}>
-                  Lô {i + 1}: {t.icon} {k.icon} {k.name} · hôm nay {formatMoney(Math.round(sapLotIncome(k, weather, day) * t.mul * (home ? SAP_HOME_XOI_MUL : 1)))}{home ? ' 🏠' : ''}
+                  Lô {i + 1}: {t.icon} {k.icon} {k.name} · hôm nay {formatMoney(Math.round(sapLotIncome(k, weather, day) * t.mul * (home ? SAP_HOME_XOI_MUL : 1)))}{home ? ' 🏠' : ''}{k.id === 'xoi' && isXoiCungDay(day) ? ' 🙏' : ''}
                 </button>
                 {up && (
                   <button style={styles.btn} disabled={money < up.cost} title={`Nâng lên ${up.name}: thu ×${fmtMul(up.mul)}`} onClick={() => upgradeSapLot(i)}>
@@ -72,7 +73,7 @@ export function ZoneMapSection() {
           })}
           {tmr && tip && (
             <div style={{ fontSize: 12, opacity: 0.8, width: '100%' }}>
-              {WEATHER[tmr].icon} Mai {WEATHER[tmr].name.toLowerCase()}: {tmr === 'rain' || tmr === 'storm' ? 'sạp nghỉ bán' : `nên bán ${tip.icon} ${tip.name}`}
+              {WEATHER[tmr].icon} Mai {WEATHER[tmr].name.toLowerCase()}: {tmr === 'rain' || tmr === 'storm' ? 'sạp nghỉ bán' : `nên bán ${tip.icon} ${tip.name}${tip.id === 'xoi' && isXoiCungDay(day + 1) ? ' (ngày cúng)' : ''}`}
             </div>
           )}
         </div>
