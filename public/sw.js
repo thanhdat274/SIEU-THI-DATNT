@@ -1,14 +1,17 @@
 /* Service worker cho game Tạp Hóa 3D.
  * Chiến lược:
  *  - Trang chính (/ và /*.html): network-first, fallback về bản cache (offline vẫn mở được).
- *  - Tài nguyên tĩnh (/assets/*, /icons/*, font): cache-first (nhanh, tiết kiệm mạng).
+ *  - /assets/* (JS/CSS có hash trong tên): cache-first — bản mới luôn có tên mới nên không bao giờ stale.
+ *  - File tĩnh KHÔNG hash (models/kit/*.glb, /decoders, /icons, manifest): network-first — sau khi cập nhật
+ *    tài sản (cùng tên file), người chơi cũ vẫn thấy bản MỚI; mất mạng thì fallback về bản cache.
+ *    (GĐ678: trước đây mọi tĩnh đều cache-first → model GLB cập nhật không bao giờ tới tay người chơi cũ.)
  *  - API (/api, /ws): không cache (dữ liệu thời gian thực).
  * Điều này giúp game có thể được "cài ra màn hình chính" trên iPhone/iOS
  * và vẫn mở được khi không có mạng (dùng bản đã tải).
  */
-const VERSION = 'tap-hoa-3d-v1';
+const VERSION = 'tap-hoa-3d-v2'; // GĐ678: nâng phiên bản để activate dọn cache cũ của chiến lược trước
 const CACHE_NAME = `static-${VERSION}`;
-const RUNTIME_CACHE = 'runtime-v1';
+const RUNTIME_CACHE = `runtime-${VERSION}`;
 
 // Luôn đi qua mạng (real-time, login, cloud) — không cache
 const NETWORK_ONLY = ['/api', '/ws'];
@@ -60,8 +63,8 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Tài nguyên tĩnh: cache-first, đẩy bản mới vào runtime cache
-  if (/\.(?:js|css|png|jpg|jpeg|webp|svg|glb|woff2?|json|ico)$/.test(url.pathname)) {
+  // /assets/* — tên file có hash do Vite sinh: cache-first là an toàn (bản mới = tên mới)
+  if (url.pathname.startsWith('/assets/') && /\.(?:js|css|png|jpg|jpeg|webp|svg|woff2?|json|ico)$/.test(url.pathname)) {
     event.respondWith(
       caches.match(request).then((cached) => {
         const fetched = fetch(request)
@@ -75,6 +78,23 @@ self.addEventListener('fetch', (event) => {
           .catch(() => cached);
         return cached || fetched;
       })
+    );
+    return;
+  }
+
+  // File tĩnh KHÔNG hash (glb, wasm decoder, icons, manifest...): network-first —
+  // cập nhật tài sản tới tay người chơi cũ ngay; offline thì dùng bản đã cache.
+  if (/\.(?:glb|gltf|png|jpg|jpeg|webp|svg|woff2?|json|ico|webmanifest|wasm)$/.test(url.pathname)) {
+    event.respondWith(
+      fetch(request)
+        .then((res) => {
+          if (res && res.status === 200) {
+            const copy = res.clone();
+            caches.open(RUNTIME_CACHE).then((c) => c.put(request, copy));
+          }
+          return res;
+        })
+        .catch(() => caches.match(request).then((r) => r || Response.error()))
     );
     return;
   }
