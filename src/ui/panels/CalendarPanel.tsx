@@ -31,7 +31,7 @@ export function CalendarPanel() {
       <p style={styles.sub}>
         Một năm trong game dài 365 ngày theo lịch thật. Hôm nay là {weekdayOf(day)}, ngày {today.day}/{today.month}
         {current ? ` — đang trong ${current.icon} ${current.name}` : ''}. Ô nền sáng hơn là Thứ 7/Chủ nhật — cuối tuần
-        khách ghé mua ăn vặt nhiều hơn. Xem trước dịp nào tới để nhập sẵn hàng:
+        khách ghé mua ăn vặt nhiều hơn. 🙏 là ngày cúng (mùng 1, rằm): khách hỏi nhang, trái cây, xôi. Xem trước dịp nào tới để nhập sẵn hàng:
         giá nhập thay đổi theo dịp, khách chịu giá cao với hàng mùa.
       </p>
       <div style={{ display: 'grid', gap: 3, marginBottom: 14, maxWidth: 660, overflowX: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: 6 }}>

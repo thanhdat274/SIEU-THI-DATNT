@@ -142,6 +142,7 @@ describe('GĐ639: lịch năm đánh dấu ngày cúng', () => {
     const src = readFileSync('src/ui/panels/CalendarPanel.tsx', 'utf8');
     expect(src).toContain('isXoiCungDay(gd)');
     expect(src).toContain("' · ngày cúng'");
+    expect(src).toContain('🙏 là ngày cúng (mùng 1, rằm)'); // GĐ642: chú thích
   });
 });
 
