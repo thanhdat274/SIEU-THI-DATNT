@@ -68,7 +68,6 @@
 - Họ màu hướng dẫn/chuỗi/biểu đồ: gộp về một sắc info `#3498db` (GĐ178); ngoại lệ duy nhất: buy-tone `#55efc4`/`#ff7675`; GardenPanel giữ họ riêng. GĐ258 quét nốt 6 màu cũ — src/ui chỉ còn bảng duyệt + màu nhận diện.
 
 ## Cần theo dõi / nợ mở
-- 🧭 GĐ550: bảng Nhập hàng NGÀY 1 vẫn hiện khối Chợ phiên đầu tháng + Cần nhập gấp (QA GĐ318 đã nêu) — ứng viên ẩn ở ngày 1 cho người mới.
 - 📦 GĐ515: tải ban đầu 598/598 KB — code mới cho Ngõ 2/sạp phải nằm trong chunk lười (world/ngo2, QuanNuocPanel); trước khi thêm vào main/index tìm chỗ tách bớt.
 - GĐ330: QA lưu máy khách (127.0.0.1:5173) — tải lại trang vẫn hiện "Chơi tiếp trong máy (ngày 1)" và vào lại đúng ván; lần "mất ván" trước là bấm nhầm nút ván mới, KHÔNG phải lỗi lưu.
 
@@ -141,3 +140,4 @@
 - GĐ548: Rà các biểu đồ cột còn lại ở 375px: biểu đồ ca tiện lợi đã minWidth 0; 'Nhu cầu quầy' 6 nhãn (rộng nhất 42px) cần ~272/317px — đạt, không cần sửa.
 - GĐ549: Tin sáng đơn quán xóm cuối tuần báo luôn 'cuối tuần trả ×1,35' (farmOrderNews, ≤90 ký tự, tên quán dài nhất 77). Test trong farmOrderWeekend.test.ts; 2657 test xanh.
 - GĐ550: QA người mới save trắng (sandbox xoá kho thu, 1×): 3 thoại → Nhập hàng → Điền gợi ý → Nhập → Mở cửa → Ra tiệm → bán món đầu sau 69s thật (mục tiêu ≤5 phút). Phát hiện mã '(GĐ291)' lộ trong chữ người chơi → gỡ 5 chỗ (nhập hàng, báo cáo, nhân viên, kho) + test quét src/ui ngoài chú thích. 2658 test xanh.
+- GĐ551: Nhập hàng ngày 1 gọn: ẩn Chợ phiên + Cần nhập gấp (kệ trống nên trùng gợi ý) qua showRestockExtras(day) ở data/onboarding; hiện lại từ ngày 2. Đóng nợ GĐ318/550. 2659 test xanh, bundle 598/253.

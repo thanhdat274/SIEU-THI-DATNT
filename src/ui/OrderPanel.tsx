@@ -13,6 +13,7 @@ import { buyCostTone, cheapestSupplier, orderAssessment, tomorrowCostDir, type A
 import { monthlyRelRebate, PARTNER_TIERS, tierProgress } from '../data/supplierRel';
 import { cheapestSupplierFor, commitRebateAdvice, type CheapestProductResult } from '../data/supplierValue';
 import { isFairOpen, makeFairOffer } from '../data/fairmerchant';
+import { showRestockExtras } from '../data/onboarding';
 import { fairLotValue } from '../data/fairLotValue';
 import { itemHealthList, shelfCount } from '../data/analytics';
 import { prodSuggestToday } from '../data/prodSuggest';
@@ -485,7 +486,7 @@ export function OrderPanel() {
       {(() => {
         const open = isFairOpen(day);
         const taken = biz.fairTaken === monthOf(day);
-        if (!open) return null;
+        if (!open || !showRestockExtras(day)) return null;
         const offer = makeFairOffer(level, day);
         if (!offer) return null;
         return (
@@ -679,7 +680,7 @@ export function OrderPanel() {
         </div>
       )}
 
-      {filter === 'suggest' && urgent.length > 0 && (
+      {filter === 'suggest' && urgent.length > 0 && showRestockExtras(day) && (
         <div style={{ ...st.banner, background: 'rgba(214, 48, 49, 0.16)' }}>
           <b>🚨 Cần nhập gấp</b>
           <div style={{ marginTop: 4, display: 'grid', gap: 2 }}>

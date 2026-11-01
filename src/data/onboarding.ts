@@ -42,3 +42,6 @@ export function guideReady(ids: string[], cart: Record<string, number>): boolean
 export function guideActiveOn(day: number, tutorialOff: boolean, deliveries: readonly unknown[], itemsSold: number): boolean {
   return day === 1 && !tutorialOff && deliveries.length === 0 && itemsSold === 0;
 }
+
+/** GĐ551: ngày 1 kệ trống nên 'Cần nhập gấp' trùng gợi ý, chợ phiên làm rối người mới — ẩn cả hai. */
+export const showRestockExtras = (day: number) => day > 1;
