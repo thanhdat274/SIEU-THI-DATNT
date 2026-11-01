@@ -131,3 +131,4 @@
 - GĐ553: QA chiều ngược của GĐ551–552 trên sandbox: chỉnh ngày=2 → panel Nhập hàng hiện lại Cần nhập gấp + Dự báo. (Ghi chú QA: sleep() buổi sáng không sang ngày — đúng luật, phải về giường.) Chỉ QA, không đổi code.
 - GĐ554: Tiệm xôi — dòng 'Hôm qua' hiện thêm '🪑 N suất ăn tại chỗ' (dữ liệu tiemXoiLast.dine lưu từ GĐ486 mà chưa hiện); hàm thuần tiemXoiLastLine, save cũ thiếu dine thì bỏ phần này. 2660 test xanh, bundle 598/253.
 - GĐ555: Rà ngân sách (10 GĐ): HUD ≤20 · thông báo ≤90 ký tự, 0 vượt · ngày 1 ≤10 (economySim) · thưởng/lãi ≤1 (test xanh) · bundle 598/253 (không dư 598) · PROGRESS 29,2→~25KB nhờ dồn GĐ535–549 sang archive. 2660 test xanh.
+- GĐ556: QA GĐ554 trên sandbox (đặt cấp 40 + tiệm xôi mở): bảng Quán nước hiện 'Hôm qua: 80 phần · chi 300.000đ · rẻ hơn nhập lẻ 64.000đ · 🪑 14 suất ăn tại chỗ'; 375px không tràn (scrollWidth 375). Chỉ QA, không đổi code.
