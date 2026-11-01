@@ -6,6 +6,8 @@ import {
 } from '../../data/garden';
 import { animalPerDay, bestAnimal, bestCrop, cropPerDay } from '../../data/farmValue';
 import { farmVsCook } from '../../data/farmKitchenValue';
+import { isWeekend } from '../../data/calendar';
+import { isXoiCungDay } from '../../data/tiemXoi';
 import { Callout, Footer, styles } from './shared';
 
 /** Trang trại đầu ngõ: trồng theo mùa vụ, nuôi 7 loài, công trình + dọn trại lấy gỗ đá nâng sao, đơn quán xóm. */
@@ -85,7 +87,7 @@ export function GardenPanel() {
                   const home = garden.homegrown[it.productId] ?? 0;
                   const ok = have >= it.qty && home >= it.qty;
                   return `${productById(it.productId).name} ${have}/${it.qty} (nhà trồng ${home})${ok ? '✓' : '⚠️'}`;
-                }).join(' · ')} — giá hời ×{fmtMul(order.bonus)}{order.bonus > 1.25 ? ' (quán đông cuối tuần)' : ''} cho nông sản nhà trồng, hạn ngày {order.dueDay} (còn {Math.max(0, order.dueDay - day)} ngày)
+                }).join(' · ')} — giá hời ×{fmtMul(order.bonus)}{order.bonus > 1.25 ? (isXoiCungDay(order.dueDay) && !isWeekend(order.dueDay) ? ' (quán cần đồ cúng)' : ' (quán đông cuối tuần)') : ''} cho nông sản nhà trồng, hạn ngày {order.dueDay} (còn {Math.max(0, order.dueDay - day)} ngày)
               </div>
             </Callout>
           ) : level >= FARM_ORDER_UNLOCK ? (

@@ -79,3 +79,11 @@ describe('tin đơn quán xóm (GĐ549)', () => {
     expect(wd.length).toBeLessThanOrEqual(90);
   });
 });
+
+describe('GĐ606: panel trang trại ghi lý do giá hời', () => {
+  it('đơn hạn ngày cúng (ngày thường) ghi "quán cần đồ cúng"', async () => {
+    const { readFileSync } = await import('node:fs');
+    const src = readFileSync('src/ui/panels/GardenPanel.tsx', 'utf8');
+    expect(src).toContain("isXoiCungDay(order.dueDay) && !isWeekend(order.dueDay) ? ' (quán cần đồ cúng)'");
+  });
+});
