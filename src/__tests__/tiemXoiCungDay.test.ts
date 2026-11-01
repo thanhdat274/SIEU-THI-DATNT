@@ -21,3 +21,12 @@ describe('tiệm xôi: ngày cúng', () => {
     expect(a).toBe(Math.round(b * TIEM_XOI_CUNG_MUL));
   });
 });
+
+describe('GĐ588: panel tiệm xôi báo ngày cúng', () => {
+  it('hiện hôm nay + báo trước hôm sau, chữ ≤90', async () => {
+    const { readFileSync } = await import('node:fs');
+    const src = readFileSync(`${__dirname}/../ui/panels/TiemXoiSection.tsx`, 'utf8');
+    expect(src).toContain('isXoiCungDay(day + 1)');
+    expect([...'🙏 Mai là ngày cúng: khách mua xôi ×1,3 — nấu dư kho từ hôm nay'].length).toBeLessThanOrEqual(90);
+  });
+});

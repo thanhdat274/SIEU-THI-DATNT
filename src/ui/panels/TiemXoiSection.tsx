@@ -2,7 +2,7 @@ import { useGame } from '../../core/store';
 import { formatMoney } from '../../data/products';
 import {
   TIEM_XOI_COST_MUL, TIEM_XOI_HIRE_FEE, TIEM_XOI_MAX_STAFF, TIEM_XOI_PRICE, TIEM_XOI_TARGET, TIEM_XOI_UNLOCK,
-  TIEM_XOI_WAGE, tiemXoiCapacity, tiemXoiHandQty, tiemXoiTarget, TIEM_XOI_BIG_COST, TIEM_XOI_BIG_LEVEL, tiemXoiDineCap, tiemXoiRainMul, tiemXoiWeekendMul, tiemXoiLastLine,
+  TIEM_XOI_WAGE, tiemXoiCapacity, tiemXoiHandQty, tiemXoiTarget, TIEM_XOI_BIG_COST, TIEM_XOI_BIG_LEVEL, tiemXoiDineCap, tiemXoiRainMul, tiemXoiWeekendMul, tiemXoiLastLine, isXoiCungDay,
 } from '../../data/tiemXoi';
 import { styles } from './shared';
 
@@ -32,7 +32,8 @@ export function TiemXoiSection() {
           <div style={{ fontSize: 13, marginTop: 4 }}>
             👩‍🍳 Thợ {t.staff}/{TIEM_XOI_MAX_STAFF} · nấu tối đa {tiemXoiCapacity(t.staff, !!t.big)} phần/đêm · giữ {tiemXoiTarget(t)} phần/món
           </div>
-          <div style={{ fontSize: 12, opacity: 0.85 }}>🪑 Khách ngồi ăn tại tiệm tối đa {tiemXoiDineCap(t.staff, !!t.big)} suất/ngày (lấy xôi trong kho, bán giá lẻ) · đã phục vụ {t.dineTotal ?? 0} suất{tiemXoiRainMul(weather) > 1 ? ' · 🌧️ mưa: khách vào trú, ×1,2 suất' : ''}{tiemXoiWeekendMul(day) > 1 ? ' · 👨‍👩‍👧 cuối tuần ×1,15 suất' : ''}</div>
+          <div style={{ fontSize: 12, opacity: 0.85 }}>🪑 Khách ngồi ăn tại tiệm tối đa {tiemXoiDineCap(t.staff, !!t.big)} suất/ngày (lấy xôi trong kho, bán giá lẻ) · đã phục vụ {t.dineTotal ?? 0} suất{tiemXoiRainMul(weather) > 1 ? ' · 🌧️ mưa: khách vào trú, ×1,2 suất' : ''}{tiemXoiWeekendMul(day) > 1 ? ' · 👨‍👩‍👧 cuối tuần ×1,15 suất' : ''}{isXoiCungDay(day) ? ' · 🙏 ngày cúng ×1,3 suất' : ''}</div>
+          {!isXoiCungDay(day) && isXoiCungDay(day + 1) && <div style={{ fontSize: 12, opacity: 0.85 }}>🙏 Mai là ngày cúng: khách mua xôi ×1,3 — nấu dư kho từ hôm nay</div>}
           {last && (
             <div style={{ fontSize: 13, marginTop: 4 }}>
               {tiemXoiLastLine(last)}
