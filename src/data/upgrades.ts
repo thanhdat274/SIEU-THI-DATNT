@@ -3,7 +3,7 @@
  * Hiệu ứng được áp ở chỗ dùng: camera ở khách trộm (agents/customers), máy POS ở tốc độ tính tiền (main).
  */
 import type { BizState } from './biz';
-import { NIGHT_UNLOCK } from './night';
+import { NIGHT_UPGRADE_PRICE, NIGHT_UNLOCK } from './night';
 
 export type UpgradeId = 'camera' | 'pos' | 'maintenance' | 'night';
 
@@ -30,7 +30,7 @@ export const UPGRADES: UpgradeDef[] = [
     desc: 'Quét mã tự động ở mọi quầy: tính tiền nhanh hơn 50%, khách chờ ít đi.',
   },
   {
-    id: 'night', icon: '🌙', name: 'Mở ca đêm 24h', price: 15000000, unlock: NIGHT_UNLOCK,
+    id: 'night', icon: '🌙', name: 'Mở ca đêm 24h', price: NIGHT_UPGRADE_PRICE, unlock: NIGHT_UNLOCK,
     desc: 'Tiệm mở cửa qua đêm: khách thưa nhưng giờ nào cũng có doanh thu, bán được đắt hơn buổi ngày (+15%). Đổi lại trộm hoạt động gấp đôi, nhân viên ca đêm đòi lương ×1.5, và ngủ sau nửa đêm thì hôm sau dậy trễ, mất buổi sáng đông khách.',
   },
 ];

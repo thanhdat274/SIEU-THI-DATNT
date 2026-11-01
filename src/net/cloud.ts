@@ -1,4 +1,4 @@
-import { applySnapshot, snapshot, type SaveData } from '../core/save';
+import { applySnapshot, SANDBOX, snapshot, type SaveData } from '../core/save';
 import { useGame } from '../core/store';
 import { idToken } from './firebase';
 import { apiUrl } from './serverUrl';
@@ -16,6 +16,7 @@ async function api(method: 'GET' | 'PUT', body?: object) {
 
 /** Tải bản lưu cloud của tài khoản; null nếu chưa có. */
 export async function fetchCloudSave(): Promise<(SaveSummary & { data: SaveData }) | null> {
+  if (SANDBOX) return null;
   const res = await api('GET');
   if (res.status === 404) return null;
   if (!res.ok) throw new Error(`Server trả lỗi ${res.status}`);
@@ -31,7 +32,8 @@ export async function fetchCloudSave(): Promise<(SaveSummary & { data: SaveData 
 export async function pushCloudSave(force = false): Promise<boolean> {
   const session = useSession.getState();
   // Ở hẻm online thì tiến trình hẻm lưu riêng trên server, không đè bản cloud cá nhân
-  if (!session.account || session.coop) return false;
+  // Chế độ chơi thử không bao giờ đè bản cloud thật
+  if (!session.account || session.coop || SANDBOX) return false;
   useSession.setState({ cloudStatus: 'saving' });
   try {
     const res = await api('PUT', { data: snapshot(), expectedUpdatedAt: session.cloudUpdatedAt, force });

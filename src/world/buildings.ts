@@ -257,6 +257,9 @@ export class Building {
     }
     this.lamp.intensity = level * 6;
     this.bulbMat.emissiveIntensity = level * 2;
+    // Đèn ngủ đầu giường (nếu nhà có): sáng cùng giờ với đèn tuýp trần
+    const shade = this.group.getObjectByName('lampShade') as THREE.Mesh | null;
+    if (shade) (shade.material as THREE.MeshStandardMaterial).emissiveIntensity = level * 2;
   }
 
   /**

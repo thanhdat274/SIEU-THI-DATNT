@@ -1,0 +1,220 @@
+# Mục lục GĐ1–250
+
+- GĐ1 — Nền vững + vòng ngày sâu hơn
+- GĐ2 — Người mới không lạc đường
+- GĐ3 — Nhịp tuần
+- GĐ4 — Đối thủ đời mới + hạ tầng server
+- GĐ5 — Nền cân bằng
+- GĐ6 — Cân bằng chi nhánh 24/7
+- GĐ7 — Quán Nước Đầu Ngõ
+- GĐ8 — Tinh chỉnh kết nối hệ thống
+- GĐ9 — Cốt truyện dài hơi
+- GĐ10 — Hẻm sống động hơn
+- GĐ11 — Bot phủ Quán Nước
+- GĐ12 — "Cái xác" 3D của Quán Nước đầu hẻm
+- GĐ13 — Gắn kết xã hội vào Sự kiện bất ngờ (wire field `friendship` chết)
+- GĐ14 — Prestige / NG+ "🌟 Tái sinh"
+- GĐ15 — Prestige mở khóa nội dung (danh hiệu + trang phục NG+ độc quyền)
+- GĐ16 — Gỡ "hộp đen" đơn app (minh bạch điểm → độ dày đơn)
+- GĐ17 — Quà điểm danh theo nền kinh tế (giữ "lý do quay lại" cho kỳ cựu)
+- GĐ18 — Chi nhánh "lên tiếng" (đẩy cảnh báo vận hành lên HUD)
+- GĐ19 — Lấp khoảng trống 79–100 (hàng cao cấp + mốc cuối run)
+- GĐ20 — Tháng vận hành (mốc nhịp tháng dương lịch)
+- GĐ21 — Giờ vàng hôm nay (dự báo khung giờ đông khách)
+- GĐ22 — Mồi "Sắp đạt" (cột mốc gần xong)
+- GĐ23 — Chuẩn bị giờ vàng (gợi ý châm kệ trước khung đông khách)
+- GĐ24 — Chuỗi giao hợp đồng đúng hẹn (thưởng mốc)
+- GĐ25 — Cứng hóa dữ liệu kinh tế lễ hội (integrity)
+- GĐ26 — Cửa hàng tiện lợi "có xác theo sở hữu"
+- GĐ27 — Nền Seeded RNG cho sim (bước 1
+- GĐ28 — Cuốn RNG lõi vào seam (chi nhánh/khách/weighted)
+- GĐ31 — Cân bằng kinh tế Quán Nước (khóa regress; đối xứng GĐ6)
+- GĐ32 — Quán Nước
+- GĐ33 — Sổ cái tiền (ledger) toàn ván — khóa bất biến tiền trên mọi luồng thu/chi
+- GĐ34 — Đo lại tỷ trọng chi nhánh ở ván cao (QA live, kết thúc backlog #7)
+- GĐ35 — Chi nhánh
+- GĐ36 — Sổ tay Tiệm
+- GĐ37 — QA polish
+- GĐ38 — Mua đơn đầu tiên (Guided First Purchase)
+- GĐ39 — "Chào mừng quay lại" (Welcome-Back Rewards)
+- GĐ40 — Công trình khu phố (Community Landmark
+- GĐ41 — Đà giá thị trường (giải hộp đen giá gợi ý trên Bảng giá)
+- GĐ42 — Cảnh báo đối thủ hạ giá cạnh tranh (rival lên tiếng trên HUD)
+- GĐ43 — Cảnh báo lô cận hạn (biến "giảm hao phí" thành quyết định hằng ngày)
+- GĐ44 — Combo "hiệu quả thực" (số lần kích hoạt để xoay combo)
+- GĐ45 — Happy-hour "đáng giá"
+- GĐ46 — Happy-hour "hôm nay hiệu quả thật"
+- GĐ47 — Combo "gợi ý xoay"
+- GĐ48 — Sổ kỷ lục (cá nhân hóa "lý do quay lại"
+- GĐ49 — Nhiệm vụ ngày "khép trọn" (tín hiệu X/M + chúc mừng xong cả bộ)
+- GĐ50 — Chip mục tiêu hiện X/M nhiệm vụ ngày (luôn nhìn thấy, không cần mở bảng)
+- GĐ51 — Sổ kỷ lục
+- GĐ52 — Xu hướng cơ sở (chi nhánh 24/7 + quán nước đang lên/xuống theo ngày)
+- GĐ53 — Đào tạo nhân viên "thấy được" (tốc độ thật + lợi ích vai + chi phí)
+- GĐ54 — Nhạy giá theo món trên bảng Giá (🔴 nhạy / 🟠 vừa / 🟢 bền)
+- GĐ55 — Cam kết kỳ hợp đồng (quyết định đổi-lấy
+- GĐ56 — Kế hoạch giao kỳ trên Sổ đầu ngày (đóng vòng GĐ55 ngay tại màn khởi ngày)
+- GĐ57 — "Mua khi rẻ"
+- GĐ58 — "Tiền bay đi đâu"
+- GĐ59 — "Đơn có đáng lấy"
+- GĐ60 — "⚔️ Rival đang tiến hay lui"
+- GĐ61 — "🧾 Chính sách quầy"
+- GĐ62 — "🧑 Khách của tôi là ai"
+- GĐ63 — "💡 Nên quảng cáo nghề nào"
+- GĐ64 — "🔓 Mới mở — thử ngay"
+- GĐ65 — "🌙 Ca đêm có đáng không"
+- GĐ66 — "🧾 Dịch vụ nào đáng"
+- GĐ67 — "🤝 Mối quen lâu dài"
+- GĐ68 — "🛒 Chợ phiên nhà cung cấp đặc biệt"
+- GĐ69 — "📖 Sổ thương mến"
+- GĐ70 — "🎊 Đón lễ
+- GĐ71 — "📖 Hồ sơ tiệm + Huy hiệu thâm niên"
+- GĐ72 — "🏪 Tiện lợi 24/7
+- GĐ73 — "🌾 Nên hôm nay"
+- GĐ74 — "🤝 Đối tác chi nhánh × quán nước
+- GĐ75 — "🌟 Sự kiện thử thách theo mùa (Seasonal Mini-Event)"
+- GĐ76 — "🗓️ Việc hôm nay
+- GĐ77 — "🛒 Nên hôm nay
+- GĐ78 — "🛒 Nhu cầu quầy
+- GĐ79 — "🧭 Nếp vận hành
+- GĐ80 — "📖 Câu chuyện khách quen
+- GĐ81 — "🗺️ Phía trước
+- GĐ82 — "📅 Tròn một năm — tổng kết năm vận hành (nhịp năm)"
+- GĐ83 — "📖 Sổ Mùa — Niên giám 4 mùa dài hạn
+- GĐ85 — Fix "màn hình trắng"
+- GĐ86 — Dock điện thoại
+- GĐ87 — QA đa kích thước
+- GĐ88 — Polish UI
+- GĐ91-92 — Fix "chức năng bị che khuất" (feedback người chơi 28/10)
+- GĐ92b — Menu "Thêm" tràn màn hình hẹp
+- GĐ93 — Audit đa thiết bị hệ thống + sửa lớp nền responsive
+- GĐ94 — Giảm chiều sâu cuộn panel dày nhất trên mobile
+- GĐ95 — Hết lớp tràn ngang còn lại
+- GĐ96 — Chốt 0 tràn ngang nhìn thấy được
+- GĐ97 — QA luồng chơi thật trên mobile 390px sau GĐ93–96
+- GĐ98 — Trả 2 nghi thức hằng ngày về dock trên màn ≤480
+- GĐ99 — Rút gọn mô tả Sổ nấu trên màn hẹp
+- GĐ100b — Prompt chốt deal quầy
+- GĐ101 — Chốt nợ GĐ100b
+- GĐ102 — QA tương tác chốt deal quầy trên mobile + thế giới dừng khi có câu hỏi
+- GĐ103 — Chiều sâu vòng ngày
+- GĐ104 — Polish UI 3 chỗ (footer Nhập hàng, thẻ kèo, heatmap kệ)
+- GĐ105 — Khảo sát kinh tế vòng ngày
+- GĐ106 — Neo thưởng nhiệm vụ vào kinh tế thật (trần theo lãi bình quân)
+- GĐ107 — Kèo dễ trúng hơn (bám bộ "việc chính hôm nay")
+- GĐ108 — Làm mềm quest "Khách vui vẻ" (`daily_smile`)
+- GĐ109 — Kèo không còn hộp đen (thẻ kèo hiện tiến độ sống X/Y)
+- GĐ110 — Khảo sát kèo & kinh tế giai đoạn cao (cấp 30/50/80)
+- GĐ111 — Sạch chuỗi lời kèo (đổi "trọn bộ" → "việc chính")
+- GĐ112 — Khóa bộ kèo trên dịp biến thể
+- GĐ113 — Kèo treo từ save cũ
+- GĐ114 — Người chơi MỚI
+- GĐ115 — QA trực quan thẻ kèo trên trình duyệt thật
+- GĐ116 — Audit đa kích thước panel mở rộng trên browser thật
+- GĐ117 — Xác minh browser thật target kèo ×1.0 ở cấp 50
+- GĐ118 — QA live quest "Khách vui vẻ" + đường "Nhận tất cả" an toàn
+- GĐ119 — Dấu hiệu "khách sốt ruột" ở quầy (UI-only)
+- GĐ120 — Phản hồi cuối ngày "mất khách vì chờ quầy"
+- GĐ121 — Nhịp chạy tuần (Weekly Pace)
+- GĐ122 — Khách chờ mặc cả/ghi sổ quá lâu
+- GĐ123 — Đưa analytics + kỷ lục vào vòng ngày cho cấp 60+
+- GĐ124 — Làm sâu COMBO theo NGÀY
+- GĐ125 — Làm sâu hệ HỢP ĐỒNG
+- GĐ126 — 🔮 "Mai tiệm có gì"
+- GĐ127 — Sổ kinh doanh Quán nước (đóng vòng phản hồi 25M)
+- GĐ128 — 📈 "Quảng cáo có đáng không" (ROI)
+- GĐ129 — 🎫 "Thẻ tích điểm có đáng không"
+- GĐ130 — 🌞 "Giờ vàng hôm nay có đáng không"
+- GĐ131 — 📦 "Hết hàng còn bỏ lỡ bao nhiêu"
+- GĐ132 — 🧭 "Sắp mở khóa" cho người chơi MỚI
+- GĐ133 — 🥀 "Đêm qua hỏng hàng bao nhiêu"
+- GĐ134 — 🧊 "Tủ lạnh kho đầy"
+- GĐ135 — 🧺 "Chợ phiên đầu ngõ" (slice 1 Gánh hàng rong)
+- GĐ136 — 🧺 "Bán chợ phiên" (hoàn thiện Gánh hàng rong)
+- GĐ137 — 🧺 "Chợ phiên ngày mai" (mồi cuối ngày)
+- GĐ138 — 🧺 "Chợ phiên hôm nay" (tổng kết cuối ngày)
+- GĐ139 — 🌳 "Chuẩn bị tái sinh" (dự phóng NG+)
+- GĐ140 — 🌱 "Mục tiêu vòng tái sinh"
+- GĐ141 — 💸 "Người này đáng đồng lương không?" (ca ngày)
+- GĐ142 — 🏪 "Tiện lợi đáng đồng lương?"
+- GĐ143 — 🤝 "Mối nào rẻ THẬT"
+- GĐ144 — 🌙 "Ca đêm ai xứng đồng lương?"
+- GĐ145 — 🍳 "Nấu món nào xứng cho trạm"
+- GĐ146 — "🌱 Trồng giống nào, nuôi con nào đáng?"
+- GĐ147 — "🧑🍳 Nấu hay bán lẻ nông sản nhà trồng/nuôi?"
+- GĐ148 — ⭐ "Danh tiếng đáng bao nhiêu khách?"
+- GĐ149 — 🔪 "Quầy thịt cá có người bán không?"
+- GĐ150 — 💳 "Ghi sổ đang khóa bao nhiêu tiền, ai sắp quỵt?"
+- GĐ151 — 🤝 "Hợp đồng này có đáng ký?" (ROI)
+- GĐ152 — 🏪 "Chi nhánh 24/7 hôm nay lời hay lỗ sau điện?"
+- GĐ153 — 🧮 Gọi đúng tên số dư chi nhánh (chưa phân bổ giá vốn)
+- GĐ154 — 📉 Xu hướng cơ sở
+- GĐ155 — 🚪 Chi nhánh bỏ lỡ bao nhiêu tiền mỗi tối
+- GĐ156 — 🏗️ Mở rộng thì tiền nhà tăng bao nhiêu
+- GĐ157 — 🐱 Thú cưng đáng bữa cơm không
+- GĐ158 — 🛝 Sân chơi
+- GĐ159 — 🔍 Đóng nốt 4 hộp mờ nhẹ (hụi · phản công · MXH · máy bán hàng)
+- GĐ160 — 🌱 Người mới
+- GĐ161 — 🍳 Kịch bản nấu theo giờ
+- GĐ162 — 🗓️ Dải Kế hoạch hôm nay trên HUD
+- GĐ163 — 🤝 Đợt nhờ khách quen rơi vào khung vắng
+- GĐ164 — 📖 Sự kiện bất ngờ thành chuyện kể (mini-arc)
+- GĐ165 — 🎲 Bổ sung 5 sự kiện một-phát cấp thấp
+- GĐ166 — 🧹 Đồng bộ hoá thẻ GĐ131–165 (Callout + bảng màu)
+- GĐ167 — 🧹 Nốt vụn màu + thẻ BusinessPanel
+- GĐ168 — 🗺️ Nạp lại Phía trước cho cấp 30+
+- GĐ169 — 🎯 Nhịp tuần/tháng sống mãi (bó ratchet + XP chuỗi)
+- GĐ170 — ⚔️ Rival có kết (Chương 13 Siêu Thị Sao Mai) + sửa rival qua NG+
+- GĐ171 — 🎯 NG+ mục tiêu vòng co giãn theo vòng + mục tiêu rival trong vòng (danh hiệu)
+- GĐ172 — 🧱 Kit prop GLB sinh bằng script (học pipeline Xóm Nông Trại)
+- GĐ173 — 💰 Juice bán hàng
+- GĐ174 — 📦 Tách chunk vendor (manualChunks)
+- GĐ175 — 🛡️ Guard mất ngữ cảnh render
+- GĐ176 — 🎨 Blender 5.2 vào pipeline
+- GĐ177 — 🏮 Đầu ngõ lên đèn
+- GĐ178 — 🎨 Gộp họ xanh dương hướng dẫn/chuỗi/biểu đồ về info #3498db
+- GĐ179 — 🪧 Biển treo mở/đóng cửa
+- GĐ180 — 💡 Đèn báo "khách đang đợi" trước hiên (tái dùng world state `waiting`, không thêm sim)
+- GĐ181 — 🛒 Chợ phiên sống
+- GĐ182 — 🧺 Chợ phiên thành nhịp gameplay
+- GĐ183 — 🧹 Đóng nợ UI cuối
+- GĐ184 — 🚧 Nâng hiệu ứng sửa đường lên 3D
+- GĐ185 — 🏠 Cơ ngơi lên đèn
+- GĐ186 — 🚨 Đèn báo khách đợi thêm mức KHẨN "sắp mất khách"
+- GĐ187 — 🍵 Quán nước lên đèn
+- GĐ188 — 🧑‍🤝‍🧑 Quán nước "người thứ N đáng đồng lương?"
+- GĐ189 — 📒 Quán nước thành việc sáng
+- GĐ190 — 🧃 Thanh nạp kho quán nước
+- GĐ199 — 🔗 Rốn kho chung
+- GĐ200 — ⏳ Kho chung nuôi quán nước mấy ngày
+- GĐ201 — 🏪 Nạp đúng thứ cho chi nhánh
+- GĐ202 — 🧾 Phiếu nạp kho
+- GĐ203 — 🎯 Nạp kho một chạm
+- GĐ204 — 🔗 Nối phiếu vào OrderPanel: thấy cả mạng lưới cần nhập/chở (rốn kho chung)
+- GĐ205 — ➕ Điền kệ chi nhánh vào giỏ: phiếu nạp kho thành hành động
+- GĐ206 — 🚚 Auto chuyển kho: chủ bật tự chở khi kệ vơi (trả phí xăng/chuyến, không cần nhân viên)
+- GĐ207 — 🎛️ Auto chuyển kho chỉnh ngưỡng/hẹn giờ (autoHaulCfg clamp)
+- GĐ208 — 🥤 Quán nước soi độ đủ đồ uống theo đêm (còn mấy đêm, nên chở không)
+- GĐ209 — ➕ Nạp đồ uống quán nước một-chạm (chở đồ uống về kho đủ tối nay)
+- GĐ210 — ✅ QA toàn diện + phủ test (reputation/wholesale/adviceMore)
+- GĐ211 — 🛺 Bán sỉ có đáng không? soi từng món (giá sỉ vs giá lẻ giảm cận hạn / độ ứ kho)
+- GĐ212 — 💰 Cận hạn đáng bao nhiêu? tiền rủi ro hỏng đêm nay (giá trị lô cận hạn sau giảm giá)
+- GĐ213 — 🪙 Kho chôn bao nhiêu vốn? vốn đóng băng theo giá nhập + trị giá bán lẻ
+- GĐ214 — 🪙 Tối nay có đáy không? cân đối thanh khoản (tiền + bán hết kho) vs nợ gốc vay
+- GĐ215 — 📞 Đơn gọi nhà lời ròng bao nhiêu? trừ giá vốn (đơn nấu theo số mẻ nguyên liệu)
+- GĐ216 — 💸 Đội lương cần ~N lượt khách tự nuôi? (wageCoverage: hòa vốn lương vs lượt hôm nay)
+- GĐ217 — 🏦 Lãi vay ngốn bao nhiêu % doanh thu hôm nay? (loanBurden + lãi tiết kiệm mỗi 1 triệu trả bớt)
+- GĐ218 — 📈 Lời 30 ngày bao nhiêu, món nào gánh gần hết? (profitMix: tổng lời + rủi ro tập trung + món âm)
+- GĐ219 — 🧾 Tiền mặt đủ trả lương cuối ngày chưa? (payrollRunway: thiếu bao nhiêu + đủ mấy ngày lương)
+- GĐ220 — ✅ QA TOÀN DIỆN mỗi 10 GĐ: test:coverage (branch 87%) + QA browser 2 cỡ màn + sim đa cấp xanh
+- GĐ221 — 🛒 Lô chợ phiên đáng múc không? (fairLotValue: lời so lẻ + món bán nhanh/dữ chôn vốn)
+- GĐ222 — 🏭 Bao giờ nên nâng kho? (warehouseUpgradeValue: %thùng/%lạnh + giá trị tràn lạnh + giá vs tiền)
+- GĐ223 — 🎓 Đào tạo nhân viên đáng không? (trainValue: mức tăng giá trị/ngày + số ngày hoà vốn)
+- GĐ224 — 🔥 Mỗi ngày gầm bao nhiêu tiền cố định? (dailyBurn: lương+thuê+lãi vay+hụi vs doanh thu bình quân)
+- GĐ225 — 🥊 Đối thủ hút mất bao nhiêu khách/ngày? (rivalDrag: % khách mất → tiền/ngày)
+- GĐ245 — 🎉 Dịp lễ ra bao nhiêu khách/tiền? (festivalValue: đang diễn ra + sắp tới, món hot, giá nhập)
+- GĐ246 — 🧍 Nhân viên rảnh bao nhiêu % ca? (staffIdle: agent đếm làm/rảnh, soi từng người bảng Nhân viên)
+- GĐ247 — ⏳ Trữ lễ một chạm (festivalRestock: phiếu trữ lễ thẳng vào giỏ Nhập hàng, đúng mẫu phiếu nạp kho)
+- GĐ248 — 🧍 Tổng kết đội cuối ngày (staffDayRecap: dư người vs lệch ca, gợi ý xếp ca mai)
+- GĐ249 — ⏳ Trữ lễ thành việc sáng (festivalPrepAction: vào danh sách việc hôm nay, danger khi sát lễ)
+- GĐ250 — ✅ QA TOÀN DIỆN: coverage branch 87.14%/fn 75.59%, vá test 3 helper yếu; QA mắt hoãn (không có server)

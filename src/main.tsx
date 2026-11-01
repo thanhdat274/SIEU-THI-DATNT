@@ -1,6 +1,12 @@
+import { loadStories } from './data/biz';
 import { skyAt } from './data/weather';
+import { isMarketDay } from './data/chophien';
+import { isRoadworks } from './data/roadwork';
+import { isFestivalDeco } from './data/festivalDeco';
+import { queueUrgency, accumulateBackup } from './world/storefrontWaitLamp';
 import { ANIMAL_ORDER, type AnimalKind } from './data/garden';
 import * as THREE from 'three';
+import { Component, type ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { shopLayout, worldActions } from './core/actions';
 import { initSaves, saveGame, startAutosave } from './core/save';
@@ -10,13 +16,14 @@ import { vehicleDef } from './data/biz';
 import { checkChapters, eatBreakfast, stockReminders } from './core/biz';
 import { hasSkill } from './data/titles';
 import { furnitureDef, isCookStation } from './data/furniture';
-import { initAudio, playSfx, setRain } from './core/audio';
+import { initAudio, playSfx, setAmbience, setRain } from './core/audio';
 import { hasUpgrade } from './data/upgrades';
 
 // Trình duyệt chỉ mở tiếng sau tương tác đầu tiên — mỗi cú click là một cơ hội khởi động AudioContext
 window.addEventListener('pointerdown', initAudio);
 import { BuildMode } from './shop/buildMode';
 import type { Counter } from './shop/groceryShop';
+import { askPending } from './core/counterAsk';
 import { CustomerManager } from './agents/customers';
 import { Player } from './agents/player';
 import { StaffManager } from './agents/staff';
@@ -25,17 +32,29 @@ import { BranchVisit } from './agents/branchVisit';
 import { BizView } from './render/bizView';
 import { CameraController } from './render/cameraController';
 import { InteriorView } from './render/interiorView';
-import { AdaptiveResolution, createRenderer, Lighting, LOW_POWER, type GameRenderer } from './render/scene';
+import { createRenderer, GFX_CHOICE, INITIAL_GFX, installRenderGuard, Lighting, LOW_POWER, type GameRenderer } from './render/scene';
+import { GFX_LABEL, GFX_PRESETS, QualityGovernor, detectLevel, gfxStatus, onGfxChoice, readDeviceHints, readPerfLog, recordPerf, reportGfx, type GfxChoice } from './render/graphicsQuality';
+import { applyCrowdLod } from './agents/walker';
+import { createTiltShift } from './render/fx/tiltShift';
 import { applyLightBudget, initLightPool } from './render/lightBudget';
 import { NavGrid } from './world/navGrid';
 import { createWorld } from './world/world';
-import { Hud } from './ui/Hud';
+import { tiemXoiStandState, tiemXoiHandQty, tiemXoiDinerFigures } from './data/tiemXoi';
+import { quanHandLeft, quanNuocStandState, quanPatrons, quanTierOf } from './data/quanNuoc';
+import { menuBoardLines } from './data/quanRecipes';
+import { QUAN_HOUSE, quanHouseBoxes, insideQuanHouse } from './world/quanNuocStand';
+import { branchStandState, LANE_X } from './data/branches';
+import { Hud, tutorialActive, tutorialStep } from './ui/Hud';
 import './ui/controls.css';
 import { LoginScreen } from './ui/LoginScreen';
 import { pushCloudSave } from './net/cloud';
-import { checkpoint, inAlley, initCoop, isGuest, partnerPositions, updateCoop } from './net/coop';
+import { cancelSleep, checkpoint, inAlley, initCoop, isGuest, partnerPositions, updateCoop } from './net/coop';
 import { watchUser } from './net/firebase';
 import { useSession } from './net/session';
+import { playerPos } from './core/playerPos';
+import { SAP_LOT_COST, sapStallBox, sapStrollerCount } from './data/sapRong';
+import { openZones, zoneBlockRects, zoneById } from './data/zones';
+import { formatMoney } from './data/products';
 
 // Thời gian đứng yên cho tới khi rời màn đăng nhập
 useGame.setState({ speed: 0 });
@@ -48,10 +67,31 @@ watchUser((user) => useSession.setState({
 const playing = () => useSession.getState().screen === 'game';
 const container = document.getElementById('game')!;
 const { renderer, scene, camera } = createRenderer(container);
+// Guard mất ngữ cảnh render (GĐ175): máy hết VRAM/driver reset/mobile ẩn tab lâu — hiện dải
+// cảnh báo trong UI (UiBoundary khống chế) thay vì màn hình đen im lặng.
+let lossNotified = false;
+installRenderGuard(renderer, (message) => {
+  if (lossNotified) return;
+  lossNotified = true;
+  console.error('[render]', message);
+  useGame.getState().notify(message);
+  // Mất context đôi khi three tự dựng lại được (WebGL): 8 giây sau cho phép báo lại nếu tái diễn
+  setTimeout(() => (lossNotified = false), 8000);
+});
 const controller = new CameraController(camera, renderer.domElement);
 const lighting = new Lighting(scene);
-// Lưới đi bộ phủ cả mặt đất 160×160 (±80m) để đi bộ tới được cửa hàng tiện lợi 24/7 (x=60, z=-64)
-const grid = new NavGrid(80);
+// Tilt-shift: mép trên/dưới mờ nhẹ cho cảnh như mô hình thu nhỏ. Mặc định bật trên máy tính,
+// tắt trên điện thoại (tốn thêm 1 lượt vẽ toàn màn hình); `?tilt=on|off` để chọn tay, nhớ cho lần sau.
+const tiltPick = new URLSearchParams(location.search).get('tilt');
+let tiltSaved: string | null = null;
+try {
+  if (tiltPick) localStorage.setItem('tilt', tiltPick);
+  tiltSaved = localStorage.getItem('tilt');
+} catch { /* chế độ ẩn danh */ }
+const tiltChoice = tiltPick ?? tiltSaved;
+const tiltShift = (tiltChoice ? tiltChoice === 'on' : !LOW_POWER) ? createTiltShift(renderer, scene, camera) : null;
+// Lưới đi bộ ±120m (GĐ500): hẻm ±80 + chỗ cho khu mở rộng; ngoài khu đã mở là tường vô hình (zoneBlockRects)
+const grid = new NavGrid(120);
 const world = createWorld(scene, grid);
 const { shop } = world;
 const customers = new CustomerManager(scene, grid, shop);
@@ -97,6 +137,7 @@ useGame.subscribe((s, prev) => {
   saveGame();
   if (useSession.getState().account) pushCloudSave();
 });
+void loadStories(); // GĐ336: chuyện khách quen nạp lười ngay sau khi vào game
 startAutosave(
   () => useSession.getState().screen === 'game' && !inAlley(),
   () => void (useSession.getState().account && pushCloudSave()),
@@ -173,7 +214,8 @@ const playerAt = (counter: Counter) => player.position.distanceTo(counter.center
 /** Thành viên khác trong hẻm đứng quầy cũng tính tiền được. */
 const partnerAt = (counter: Counter) => partnerPositions().some((p) => p.distanceTo(counter.center) < 2);
 const nearCounter = () => shop.counters().some(playerAt);
-customers.playerAtCounter = playerAt;
+// Hẻm online: thành viên khác đứng quầy cũng được khách hỏi (mặc cả/ghi sổ) như chơi đơn — câu hỏi hiện cho cả hẻm
+customers.playerAtCounter = (counter) => playerAt(counter) || partnerAt(counter);
 
 /** Chỗ đứng khi tới tiệm: sau quầy chính, tính tiền được ngay. */
 const shopSpot = () => shop.counters()[0].cashier;
@@ -234,6 +276,152 @@ useGame.subscribe((s) => {
   syncFarmAnimals(s);
 });
 
+// Quán nước đầu hẻm: khoảnh đất hiện khi đủ cấp (29) chưa mua, dựng quầy khi đã mở; bật số bàn ghế
+// theo nhân viên (setStaff chỉ chạy khi staff đổi — tránh gán lại mỗi khung). Đồng bộ như pattern farm:
+// chạy một lần ngay sau khi tạo world, rồi qua subscribe khi cấp / trạng thái quán đổi.
+let lastStandStaff = -1;
+let lastStandLevel = 0;
+let lastStandOpen = false;
+let lastStandLast: unknown = null;
+let lastStandTier: number | undefined;
+let lastStandMenu: string | null = null;
+let lastStandWalls = false;
+const syncQuanNuocStand = () => {
+  const s = useGame.getState();
+  const st = quanNuocStandState(s.level, s.biz.quanNuoc.open);
+  world.quanNuoc.lot.visible = st === 'lot';
+  world.quanNuoc.stand.visible = st === 'open';
+  world.kit.setQuanDecor(st === 'open');
+  // GĐ425: nhà quán nước chặn lưới đi lại khi đã mở (chỉ vào qua cửa); đổi trạng thái thì dựng lại lưới
+  if ((st === 'open') !== lastStandWalls) {
+    lastStandWalls = st === 'open';
+    const p = world.quanNuoc.group.position;
+    grid.setStatic('quanNuoc', lastStandWalls ? quanHouseBoxes(p.x, p.z) : []);
+    shop.attachGrid(grid);
+  }
+  if (s.biz.quanNuoc.staff !== lastStandStaff) {
+    lastStandStaff = s.biz.quanNuoc.staff;
+    world.quanNuoc.setStaff(s.biz.quanNuoc.staff);
+  }
+  world.quanNuoc.setTier(quanTierOf(s.biz.quanNuoc));
+  world.quanNuoc.setPatrons(quanPatrons(s.biz.quanNuoc.staff, s.biz.quanNuocLast?.served));
+  const menuKey = (s.biz.quanNuoc.menu ?? []).join();
+  if (menuKey !== lastStandMenu) {
+    lastStandMenu = menuKey;
+    world.quanNuoc.setMenu(menuBoardLines(s.biz.quanNuoc.menu));
+  }
+};
+syncQuanNuocStand();
+useGame.subscribe((s) => {
+  if (s.level !== lastStandLevel || s.biz.quanNuoc.open !== lastStandOpen || s.biz.quanNuoc.staff !== lastStandStaff || (s.biz.quanNuoc.menu ?? []).join() !== lastStandMenu || s.biz.quanNuocLast !== lastStandLast || s.biz.quanNuoc.tier !== lastStandTier) {
+    lastStandTier = s.biz.quanNuoc.tier;
+    lastStandLast = s.biz.quanNuocLast;
+    lastStandLevel = s.level;
+    lastStandOpen = s.biz.quanNuoc.open;
+    syncQuanNuocStand();
+  }
+});
+
+// Tiệm xôi 3D (GĐ430): biển đất khi đủ cấp, sạp xôi khi đã mở. Tải lười (cấp 40 mới cần), đặt phía tây
+// hẻm đối diện quán nước, chỉ hình ảnh, không chặn lưới.
+let tiemXoiStand: import('./world/tiemXoiStand').TiemXoiStand | null = null;
+let tiemXoiLoading = false;
+let lastXoiWalls = false;
+let insideXoiHouseFn: typeof import('./world/tiemXoiStand').insideXoiHouse | null = null;
+let xoiHouseBoxesFn: typeof import('./world/tiemXoiStand').xoiHouseBoxes | null = null;
+const syncTiemXoi = () => {
+  const s = useGame.getState();
+  const st = tiemXoiStandState(s.level, !!s.biz.tiemXoi?.open);
+  if (!tiemXoiStand) {
+    if (st !== 'hidden' && !tiemXoiLoading) {
+      tiemXoiLoading = true;
+      void import('./world/tiemXoiStand').then((m) => {
+        tiemXoiStand = m.createTiemXoiStand();
+        xoiHouseBoxesFn = m.xoiHouseBoxes;
+        insideXoiHouseFn = m.insideXoiHouse;
+        tiemXoiStand.group.position.set(LANE_X - 4, 0, 1);
+        scene.add(tiemXoiStand.group);
+        syncTiemXoi();
+      });
+    }
+    return;
+  }
+  tiemXoiStand.lot.visible = st === 'lot';
+  tiemXoiStand.stall.visible = st === 'open';
+  // GĐ483: nhà tiệm xôi chặn lưới khi đã mở (chỉ vào qua cửa)
+  if ((st === 'open') !== lastXoiWalls) {
+    lastXoiWalls = st === 'open';
+    const p = tiemXoiStand.group.position;
+    grid.setStatic('tiemXoi', lastXoiWalls ? xoiHouseBoxesFn!(p.x, p.z) : []);
+    shop.attachGrid(grid);
+  }
+  tiemXoiStand.setCooks(1 + (s.biz.tiemXoi?.staff ?? 0));
+  tiemXoiStand.setSteaming(s.biz.tiemXoi?.handDay === s.day);
+  tiemXoiStand.setBig(!!s.biz.tiemXoi?.big);
+  tiemXoiStand.setDiners(tiemXoiDinerFigures(s.biz.tiemXoiLast?.dine));
+};
+syncTiemXoi();
+useGame.subscribe(syncTiemXoi);
+
+// GĐ500: khu bản đồ — chặn lưới ngoài khu đã mở; Ngõ 2 (tải lười) có rào RAO BÁN khi chưa mở
+let lastZonesKey = '';
+let ngo2View: import('./world/ngo2').Ngo2View | null = null;
+let lastSapN = 0;
+let ngo2Strollers: import('./world/ngo2').Ngo2Strollers | null = null;
+const syncZones = () => {
+  const zones = useGame.getState().biz.zones;
+  const key = openZones(zones).join(',');
+  ngo2View?.setOpen(key.includes('ngo2'));
+  const sapN = useGame.getState().biz.sapRong ?? 0;
+  ngo2View?.setStalls(sapN);
+  if (sapN !== lastSapN) {
+    lastSapN = sapN;
+    grid.setStatic('sapRong', Array.from({ length: sapN }, (_, i) => {
+      const b = sapStallBox(i);
+      return new THREE.Box3(new THREE.Vector3(b.x1, 0, b.z1), new THREE.Vector3(b.x2, 1, b.z2));
+    }));
+    shop.attachGrid(grid);
+  }
+  if (key === lastZonesKey) return;
+  lastZonesKey = key;
+  grid.setStatic('zones', zoneBlockRects(zones, grid.extent).map((r) => new THREE.Box3(new THREE.Vector3(r.x1, 0, r.z1), new THREE.Vector3(r.x2, 2, r.z2))));
+  shop.attachGrid(grid);
+};
+syncZones();
+useGame.subscribe(syncZones);
+void import('./world/ngo2').then((m) => {
+  ngo2View = m.createNgo2();
+  ngo2Strollers = new m.Ngo2Strollers(scene);
+  scene.add(ngo2View.group);
+  syncZones();
+});
+
+// Cửa hàng tiện lợi theo trạng thái sở hữu (GĐ26): mảnh đất RAO BÁN khi đủ cấp chưa mua, toà nhà +
+// biển "ĐÓNG CỬA" khi đã mua, biển "MỞ CỬA 24/7" khi đang mở. Toà nhà cửa hàng tiện lợi (convenience)
+// là của chính nó, không chạm vào thế giới; chỉ bật/ẩn theo `branchStandState` trong subscribe.
+let lastBranchLevel = 0;
+let lastBranchBought: boolean | null = null;
+let lastBranchOpen: boolean | null = null;
+const syncBranchStand = () => {
+  const s = useGame.getState();
+  const st = branchStandState(s.level, !!s.branch, s.branch?.open ?? false);
+  world.convenience.group.visible = st === 'closed' || st === 'open';
+  world.branchStand.lot.visible = st === 'lot';
+  world.branchStand.openSign.visible = st === 'open';
+  world.branchStand.closedSign.visible = st === 'closed';
+};
+syncBranchStand();
+useGame.subscribe((s) => {
+  const bought = !!s.branch;
+  const open = s.branch?.open ?? false;
+  if (s.level !== lastBranchLevel || bought !== lastBranchBought || open !== lastBranchOpen) {
+    lastBranchLevel = s.level;
+    lastBranchBought = bought;
+    lastBranchOpen = open;
+    syncBranchStand();
+  }
+});
+
 /** Số món còn trên kệ và số ô trống, để báo lúc kiểm kê cuối ngày. */
 function stocktake() {
   const s = useGame.getState();
@@ -250,6 +438,14 @@ function stocktake() {
  * Mốc giờ xét theo trạng thái (đã qua giờ chưa) chứ không chỉ "vừa vượt mốc" — xem core/routine.ts.
  */
 let lastMinutes = useGame.getState().minutes;
+// Ngày gần nhất đã áp cảnh chợ phiên cho kit (gđ181): chỉ đổi khi isMarketDay(day) thay đổi
+let lastMarketDay = isMarketDay(useGame.getState().day);
+// Hôm nay có sửa đường trước hẻm không (gđ184): đổi cảnh rào chắn khi sự kiện market roadworks thay đổi
+let lastRoadwork = isRoadworks(useGame.getState().weatherSeed, useGame.getState().day, useGame.getState().level);
+let lastFestival = isFestivalDeco(useGame.getState().day);
+// GĐ186 "sắp mất khách": đếm thời lượng game mà quầy có ~BACKUP_WAITING khách đợi trở lên (0 khi dừng)
+let lastUrgMinutes = useGame.getState().minutes;
+let backedUpGameSec = 0;
 let routineMarks = newRoutineMarks();
 function runRoutine() {
   const s = useGame.getState();
@@ -263,7 +459,7 @@ function runRoutine() {
   }
   const atShop = s.location === shop.building.opts.name;
   const todo = planRoutine({
-    day: s.day, minutes: s.minutes, autoRoutine: s.autoRoutine, atShop, shopOpen: s.shopOpen,
+    day: s.day, minutes: s.minutes, autoRoutine: s.autoRoutine, autoOpenAt: s.autoOpenAt, atShop, shopOpen: s.shopOpen,
   }, routineMarks);
   routineMarks = todo.marks;
 
@@ -295,10 +491,42 @@ function runRoutine() {
 
 /** Quầy, kệ và tủ thay đổi khi xây dựng / mở rộng tiệm, nên tính lại mỗi lần. */
 const fixedInteractables: Interactable[] = [
-  { position: bedPos, radius: 2, hint: () => (player.asleep ? '💤 Đang ngủ...' : '[N] Đi ngủ'), key: 'KeyN', action: goToBed },
+  { position: bedPos, radius: 2, hint: () => (player.asleep ? (inAlley() ? '💤 Chờ cả hẻm ngủ... [N] Dậy' : '💤 Đang ngủ...') : '[N] Đi ngủ'), key: 'KeyN', action: goToBed },
   // Trang trại nam đường thứ hai: đứng cạnh cổng bấm V mở bảng trại (trồng, tưới, thu hoạch, cho gà ăn)
   { position: world.farmSpot, radius: 4, hint: () => '[V] Trang trại', key: 'KeyV', action: () => useGame.getState().openPanel({ type: 'garden' }) },
   // Giếng nước trong trại: tưới nhanh tất cả luống không cần mở bảng
+  // GĐ432 cửa hàng nước: đứng sau quầy pha bấm P tự pha một mẻ (B4 "tự đứng quầy")
+  { position: world.quanNuoc.group.position.clone().add(new THREE.Vector3(QUAN_HOUSE.x, 0, QUAN_HOUSE.z - 0.9)), radius: 1.6,
+    hint: () => {
+      const g = useGame.getState();
+      if (!g.biz.quanNuoc.open) return 'Quán nước chưa mở';
+      const left = quanHandLeft(g.biz.quanNuoc, g.day);
+      return left > 0 ? `[P] Tự pha 5 ly ở quầy (còn ${left} mẻ)` : 'Hôm nay đã pha hết mẻ, mai pha tiếp';
+    }, key: 'KeyP', action: () => { useGame.getState().brewQuanHand(); } },
+  // GĐ435/GĐ483: trước quầy trong nhà tiệm xôi (x=46, z≈0.5; chưa mở thì biển đất ở z≈1) bấm J
+  { position: new THREE.Vector3(LANE_X - 4, 0, 0.8), radius: 1.8,
+    hint: () => (useGame.getState().biz.tiemXoi?.open ? (useGame.getState().biz.tiemXoi.handDay === useGame.getState().day ? '[J] Xem tiệm xôi (hôm nay đã đồ)' : `[J] Tự đồ ${tiemXoiHandQty(useGame.getState().biz.tiemXoi.staff)} phần xôi`) : useGame.getState().level >= 40 ? '[J] Mở tiệm xôi' : ''), key: 'KeyJ',
+    action: () => {
+      const g = useGame.getState();
+      if (g.biz.tiemXoi?.open && g.biz.tiemXoi.handDay !== g.day) g.steamXoiHand();
+      else if (g.biz.tiemXoi?.open) g.openPanel({ type: 'quannuoc' });
+      else if (g.level >= 40) g.openPanel({ type: 'quannuoc' });
+    } },
+  // GĐ500: rào RAO BÁN đầu Ngõ 2 (x≈79, cuối đường chính phía đông) bấm L để mở khu
+  { position: new THREE.Vector3(78.6, 0, 4), radius: 3,
+    hint: () => {
+      const g = useGame.getState();
+      if (openZones(g.biz.zones).includes('ngo2')) return '';
+      const z = zoneById('ngo2')!;
+      return g.level < z.unlock ? `Ngõ 2: mở ở cấp ${z.unlock}` : `[L] Mở ${z.name} ${formatMoney(z.cost)}`;
+    }, key: 'KeyL', action: () => { useGame.getState().openZone('ngo2'); } },
+  // GĐ501: lô trống Ngõ 2 — đứng ở lô kế tiếp bấm L thuê sạp hàng rong
+  ...[0, 1, 2, 3].map((i) => ({ position: new THREE.Vector3(86 + i * 8, 0, 1.6), radius: 2.6,
+    hint: () => {
+      const g = useGame.getState();
+      if (!openZones(g.biz.zones).includes('ngo2') || (g.biz.sapRong ?? 0) !== i) return '';
+      return `[L] Thuê lô sạp hàng rong ${formatMoney(SAP_LOT_COST)}`;
+    }, key: 'KeyL', action: () => { useGame.getState().rentSapLot(); } })),
   { position: world.farm.wellSpot, radius: 2.6, hint: () => '[T] Tưới luống từ giếng', key: 'KeyT', action: () => useGame.getState().waterGarden() },
 ];
 
@@ -378,7 +606,14 @@ const nearestInteractable = () => {
 /** Nằm lên giường một lúc cho thấy nhân vật ngủ, rồi mới sang ngày mới. */
 function goToBed() {
   const s = useGame.getState();
-  if (player.asleep) return;
+  if (player.asleep) {
+    // Ở hẻm: đang nằm chờ người khác thì được dậy (rút phiếu ngủ)
+    if (inAlley()) {
+      cancelSleep();
+      player.standUp();
+    }
+    return;
+  }
   if (s.minutes < SLEEP_FROM) return void s.sleep(); // báo "chưa buồn ngủ"
   player.lieOn(bedPos);
   controller.follow = player.position;
@@ -416,7 +651,7 @@ function interact() {
 }
 
 window.addEventListener('keydown', (e) => {
-  if ((e.target as HTMLElement).closest('input, textarea')) return;
+  if ((e.target as HTMLElement).closest?.('input, textarea')) return;
   // Phím O: đóng / mở cửa tiệm ở bất cứ đâu
   if (e.code === 'KeyO') {
     const st = useGame.getState();
@@ -461,14 +696,37 @@ function updateStatus() {
     if (location !== s.location) useGame.setState({ location });
     return;
   }
-  const hint = s.panel ? null : nearestInteractable()?.hint() ?? null;
+  const hint = s.panel ? null : nearestInteractable()?.hint() || null;
   if (location !== s.location || hint !== s.hint) useGame.setState({ location, hint });
 }
 
 let reminderSlot = -1;
-// Tự co giãn độ phân giải theo FPS + bóng đổ cập nhật 30 hình/giây
-initLightPool(scene, LOW_POWER ? 4 : 8);
-const resScale = new AdaptiveResolution(renderer);
+// Mức đồ họa + bộ tự hạ nhiều tầng (độ nét → bóng → đám đông → đồ trang trí); bóng cập nhật 30 hình/giây
+initLightPool(scene, GFX_PRESETS[INITIAL_GFX].lightPool);
+const nativeDpr = window.devicePixelRatio || 1;
+let gfxChoice: GfxChoice = GFX_CHOICE;
+let gfx = new QualityGovernor(INITIAL_GFX, nativeDpr, gfxChoice === 'auto');
+/** Đã báo "tự giảm đồ họa" trong phiên này chưa — chỉ báo một lần, không làm phiền. */
+let gfxNotified = false;
+let lastPerfDay = -1;
+function applyGfx() {
+  const p = gfx.preset;
+  renderer.setPixelRatio(gfx.step.pixelRatio);
+  // Không đổi castShadow lúc chạy: đổi là mọi vật liệu biên dịch lại pipeline → đứng hình vài giây.
+  // Đã dựng có bóng thì chỉ làm mờ hẳn bóng + ngừng vẽ shadow pass (vòng render đọc preset.shadows);
+  // dựng không bóng (mức Thấp) thì bật bóng phải chờ tải lại trang.
+  if (lighting.sun.castShadow) lighting.sun.shadow.intensity = p.shadows ? 1 : 0;
+  world.kit.setDecor(p.decor);
+  reportGfx(gfxChoice, gfx.step.level, gfx.avgFps);
+}
+applyGfx();
+onGfxChoice((c) => {
+  gfxChoice = c;
+  const level = c === 'auto' ? detectLevel(readDeviceHints()) : c;
+  gfx = new QualityGovernor(level, nativeDpr, c === 'auto');
+  applyGfx();
+  useGame.getState().notify(`🎨 Đồ họa: ${GFX_LABEL[c]}. Bóng, mưa, mây đổi hẳn sau khi tải lại trang.`);
+});
 renderer.shadowMap.autoUpdate = false;
 let frameNo = 0;
 // Mảng người dùng lại mỗi khung cho updateDoor (không cấp phát mảng mới mỗi khung)
@@ -477,19 +735,44 @@ const peopleScratch: THREE.Vector3[] = [];
 let lastPhoneOrders: GameState['phoneOrders'] | null = null;
 const waitingHouses = new Set<string>();
 
+// Marker hướng dẫn ngày đầu (bước "Đứng quầy"): đĩa và vòng vàng phát sáng trên sàn ngay chỗ
+// đứng sau quầy chính. Tạo một lần như marker giao hàng, chỉ hiện/ẩn theo điều kiện — không dựng
+// lại nên không có gì phải dọn dẹp.
+const tutorialMarker = new THREE.Group();
+const tutorialDisc = new THREE.Mesh(
+  new THREE.CircleGeometry(0.42, 32),
+  new THREE.MeshBasicMaterial({ color: 0xffc107, transparent: true, opacity: 0.28, depthWrite: false }),
+);
+const tutorialRing = new THREE.Mesh(
+  new THREE.RingGeometry(0.42, 0.6, 32),
+  new THREE.MeshBasicMaterial({ color: 0xffc107, transparent: true, opacity: 0.9, depthWrite: false }),
+);
+tutorialDisc.rotation.x = tutorialRing.rotation.x = -Math.PI / 2;
+tutorialDisc.position.y = tutorialRing.position.y = 0.03;
+tutorialMarker.add(tutorialDisc, tutorialRing);
+tutorialMarker.visible = false;
+scene.add(tutorialMarker);
+
 const clock = new THREE.Clock();
 
 /** Vòng lặp một khung hình — WebGPU cần renderer.init() xong mới được render nên tách ra riêng. */
 function renderFrame() {
   const dt = Math.min(clock.getDelta(), 0.1);
+  // GĐ488: tương tự cho nhà quán nước
+  world.quanNuoc.setRoofHidden(insideQuanHouse(world.quanNuoc.group.position.x, world.quanNuoc.group.position.z, player.position.x, player.position.z));
+  // GĐ487: chủ đứng trong nhà tiệm xôi thì ẩn mái để nhìn thấy quầy, nồi và khách ngồi ăn
+  if (tiemXoiStand && insideXoiHouseFn) tiemXoiStand.setRoofHidden(insideXoiHouseFn(tiemXoiStand.group.position.x, tiemXoiStand.group.position.z, player.position.x, player.position.z));
   const state = useGame.getState();
   if (!playing()) {
     // Màn đăng nhập: thị trấn làm phông nền, camera lượn chậm quanh tiệm
     controller.follow = null;
     controller.yaw += dt * 0.06;
   } else {
-    // Bảng tổng kết hoặc hội thoại cốt truyện đang mở thì dừng thời gian
-    const speed = state.panel?.type === 'summary' || state.biz.chapterPending ? 0 : state.speed;
+    // Bảng tổng kết hoặc hội thoại cốt truyện đang mở thì dừng thời gian; có câu hỏi ở quầy
+    // cũng dừng — khách đứng chờ chủ quyết định, không đếm ngược vội (GĐ102: ở 8× cửa sổ 15 phút
+    // game chỉ còn ~1 giây thực, người chơi không kịp đọc là cơ hội rơi hết vào chọn hộ).
+    // Ở hẻm bảng tổng kết và hội thoại cốt truyện không dừng giờ: một người đọc tổng kết không bắt cả hẻm đứng chờ
+    const speed = (state.panel?.type === 'summary' && !inAlley()) || (state.biz.chapterPending && !inAlley()) || askPending() ? 0 : state.speed;
     const guest = isGuest();
     // Người vào phòng không tự chạy mô phỏng: giờ, khách, nhân viên đều do chủ phòng gửi sang
     if (speed && !guest) state.tick(dt);
@@ -505,6 +788,8 @@ function renderFrame() {
     // Tua 3×/8×: nhân vật đi bộ vẫn cùng nhịp đồng hồ game (đường tự động của lịch), còn người
     // chơi tự bấm phím thì đi tốc độ thật — xem Player.update.
     const moving = (speed > 0 || guest) && !state.panel && player.update(dt, controller.yaw, speed);
+    playerPos.x = player.position.x;
+    playerPos.z = player.position.z;
     if (moving) controller.follow = player.position;
     autoBreakfast();
     if (!guest) {
@@ -513,13 +798,20 @@ function renderFrame() {
         Math.max(playerAt(counter) || partnerAt(counter) ? (hasSkill(useGame.getState().skills, 'quick_hands') ? 1.2 : 1) : 0, staff.cashierSpeed(counter))
         * (hasUpgrade(useGame.getState().biz, 'pos') ? 1.5 : 1));
     }
+    // Bong bóng tiền ở quầy bay theo giờ THỰC: tua 8× vẫn kịp đọc "+12.000đ" trước khi tan
+    customers.coinFx.update(dt);
     if (!guest) residents.update(dt * speed);
+    if (ngo2Strollers) { const gs = useGame.getState(); ngo2Strollers.update(dt * speed, sapStrollerCount(gs.biz.sapRong, gs.weather, gs.minutes), gs.biz.sapRong ?? 0); }
     // Cửa hàng tiện lợi: chỉ dựng nhân vật khi chủ ghé; chủ đứng trong tiệm thì tự bán được khi thiếu thu ngân
     if (!guest) branchVisit.update(dt * speed, player.position);
     // Gà trong trang trại chỉ đi rong khi chủ ở gần (đứng ở tiệm thì trại đứng yên, đỡ tốn FPS)
     if (player.position.distanceTo(world.farmSpot) < 60) world.farm.update(dt * speed, (state.minutes / 60) % 24);
-    const atBranch = world.convenience.contains(player.position.x, player.position.z);
-    if (atBranch !== state.atBranch) useGame.setState({ atBranch });
+    // Hẻm online: chỉ máy chạy tính (ai trong hẻm đứng ở chi nhánh cũng tính), máy khách nhận qua state —
+    // máy khách tự ghi thì hai máy giành nhau giá trị này mỗi khung hình
+    if (!guest) {
+      const atBranch = [player.position, ...partnerPositions()].some((p) => world.convenience.contains(p.x, p.z));
+      if (atBranch !== state.atBranch) useGame.setState({ atBranch });
+    }
     updateCoop(dt);
     updateStatus();
   }
@@ -543,6 +835,7 @@ function renderFrame() {
   // Nhớ đủ: chủ thường thức dậy 6h — nếu tắt muộn hơn thì đèn còn sáng lửng giữa trời sáng,
   // vừa chói vừa thấy đèn bật–tắt khi đi lại.
   const hour = (useGame.getState().minutes / 60) % 24;
+  setAmbience(hour);
   const lamp = THREE.MathUtils.clamp(Math.max(hour - 17, 5.5 - hour), 0, 1);
   // Danh sách người dùng lại mỗi khung (không cấp phát mảng mới): cửa tự mở khi ai đó lại gần
   peopleScratch.length = 0;
@@ -569,6 +862,32 @@ function renderFrame() {
       }
     }
   }
+  // Quán nước đầu hẻm: hộp 🧋 của khoảnh đất nhấp nhô + xoay đánh mắt khi đang chờ mua (chỉ khoảnh đất hiện)
+  if (world.quanNuoc.lot.visible) {
+    const mbox = world.quanNuoc.lot.getObjectByName('markerBox');
+    if (mbox) {
+      mbox.position.y = 2.05 + bob;
+      mbox.rotation.y += dt * 1.5;
+    }
+  }
+  // Cửa hàng tiện lợi: marker 🏪 của mảnh đất RAO BÁN nhấp nhô + xoay khi đang chờ mua mặt bằng
+  if (world.branchStand.lot.visible) {
+    const mbox = world.branchStand.lot.getObjectByName('markerBox');
+    if (mbox) {
+      mbox.position.y = 2.05 + bob;
+      mbox.rotation.y += dt * 1.5;
+    }
+  }
+  // Hướng dẫn ngày đầu tới bước "Đứng quầy": đĩa vàng sáng dìm/nhạt ngay chỗ đứng sau quầy chính,
+  // chỉ hiện khi chủ đang ở trong tiệm (toạ độ quầy theo dõi cache của shop nên dời quầy vẫn đúng)
+  const tutStep = tutorialActive(g) ? tutorialStep(g) : -1;
+  tutorialMarker.visible = tutStep === 3 && g.location === shop.building.opts.name;
+  if (tutorialMarker.visible) {
+    tutorialMarker.position.copy(shopSpot());
+    const glow = 0.55 + Math.sin(performance.now() / 350) * 0.3;
+    (tutorialDisc.material as THREE.MeshBasicMaterial).opacity = glow * 0.35;
+    (tutorialRing.material as THREE.MeshBasicMaterial).opacity = glow;
+  }
   for (const b of world.buildings) {
     b.updateView(camera, b === interior.current);
     b.setLamp(lamp);
@@ -576,12 +895,66 @@ function renderFrame() {
   }
   // Đèn đường bật cùng giờ với đèn trong nhà; nguồn sáng thật chỉ dành cho đèn gần chỗ nhìn
   world.streetLamps.update(lamp);
+  // Đèn lồng cửa tiệm (gđ177): bật sáng ấm chập tối, cùng giờ với đèn đường
+  world.storefront.update(lamp);
+  // Đèn ấm của riêng người chơi (gđ185): hiên nhà + cổng trại sáng ấm cùng giờ
+  world.compoundWarm.update(lamp);
+  // Đèn ấm quán nước (gđ187): chỗ khách quen tụ họp cũng ấm chập tối — chỉ khi quán MỞ (có quán thật)
+  world.quanNuocWarm.update(lamp, world.quanNuoc.stand.visible);
+  // Biển mở/đóng cửa trước tiệm (gđ179): tấm trạng thái đổi màu theo tiệm đang mở/đóng, đung nhẹ khi mở
+  world.openSign.update(g.shopOpen, performance.now() / 1000);
+  // Đèn báo "khách đang đợi" cạnh cửa (gđ180): sáng ấm khi có khách chờ quầy và tiệm mở
+  // GĐ186: cộng thêm mức KHẨN "sắp mất khách" khi hàng đông lâu — nháy nhanh để chủ ghé về quầy
+  let urgAdv = g.minutes - lastUrgMinutes;
+  if (urgAdv < 0) lastUrgMinutes = g.minutes; // sang ngày đồng hồ về sáng: không tính cục giật
+  backedUpGameSec = accumulateBackup(backedUpGameSec, g.waiting ?? 0, Math.max(0, urgAdv) * 60);
+  lastUrgMinutes = g.minutes;
+  world.waitLamp.update(
+    { open: g.shopOpen, waiting: g.waiting ?? 0, urgency: queueUrgency(g.waiting ?? 0, backedUpGameSec) },
+    performance.now() / 1000,
+  );
+  // Chợ phiên (gđ181): 7 ngày một lần gánh hàng dựng thêm dọc hẻm — đổi cảnh một lần theo ngày
+  const marketDay = isMarketDay(g.day);
+  if (marketDay !== lastMarketDay) {
+    lastMarketDay = marketDay;
+    world.kit.setMarketDay(marketDay);
+    // (GĐ182) Sáng phiên chợ: nhắc để người chơi biết hôm nay đông khách + tối gánh hàng dư
+    if (marketDay) g.notify('🛒 Hôm nay có chợ phiên — khách đông! Tối xem "Chợ phiên" để bán bớt hàng dư.');
+  }
+  // Sửa đường trước hẻm (gđ184): hôm nào có sự kiện market roadworks, dựng rào chắn công trình ở mép vỉa hè —
+  // người chơi thấy "đường đang sửa" bằng hình (đồng thời kinh tế ngày vẫn ít khách đi ngang như sim đã tính)
+  const roadwork = isRoadworks(g.weatherSeed, g.day, g.level);
+  if (roadwork !== lastRoadwork) {
+    lastRoadwork = roadwork;
+    world.kit.setRoadwork(roadwork);
+  }
+  // Con hẻm vào dịp (gđ197): hôm nào có lễ hội (Tết, Trung thu, 20/11...), dựng dãy cờ ngang hẻm —
+  // kinh tế ngày vẫn đông khách theo sim, cảnh hẻm "vào dịp" hiện ra bằng màu.
+  const festival = isFestivalDeco(g.day);
+  if (festival !== lastFestival) {
+    lastFestival = festival;
+    world.kit.setFestival(festival);
+  }
   applyLightBudget(controller.target);
-  // Bóng đổ cập nhật 30 hình/giây là đủ (nắng di chuyển chậm): tiết kiệm một nửa vệt vẽ bóng
-  if ((frameNo++ & 1) === 0) renderer.shadowMap.needsUpdate = true;
-  resScale.update(dt);
+  // Bóng đổ cập nhật 30 hình/giây là đủ (nắng di chuyển chậm): tiết kiệm một nửa vệt vẽ bóng; mức Thấp tắt hẳn
+  if ((frameNo++ & 1) === 0 && gfx.preset.shadows) renderer.shadowMap.needsUpdate = true;
+  applyCrowdLod(controller.target, gfx.preset.npcCap, gfx.preset.animFarDist);
+  const prevLevel = gfx.step.level;
+  if (gfx.update(dt)) {
+    applyGfx();
+    if (gfx.step.level !== prevLevel && !gfxNotified && playing()) {
+      gfxNotified = true;
+      g.notify(`🎨 Máy hơi nặng nên game tự giảm đồ họa xuống "${GFX_LABEL[gfx.step.level]}" cho mượt hơn. Đổi ở ⋯ Thêm → Đồ họa.`);
+    }
+  } else reportGfx(gfxChoice, gfx.step.level, gfx.avgFps);
+  // Nhật ký hiệu năng riêng máy: mỗi ngày game ghi FPS trung bình + mức đang dùng (xem game.perf())
+  if (playing() && g.day !== lastPerfDay) {
+    if (lastPerfDay >= 0) recordPerf({ day: lastPerfDay, fps: gfx.avgFps, level: gfx.step.level });
+    lastPerfDay = g.day;
+  }
 
-  renderer.render(scene, camera);
+  if (tiltShift) tiltShift.render();
+  else renderer.render(scene, camera);
 }
 
 // WebGPU khởi tạo bất đồng bộ (xin device từ GPU): xong xuôi mới bắt đầu vẽ khung đầu tiên
@@ -624,13 +997,50 @@ void (renderer.init ? renderer.init() : Promise.resolve()).then(() => {
   console.warn(`[render] ${backend?.isWebGPUBackend ? 'WebGPU' : 'WebGL2'}${info ? ` · ${info.vendor} ${info.architecture} ${info.description}` : ''}`);
 });
 
+/** Ranh giới lỗi React: một component sập (vd save schema cũ thiếu field) không được phép trắng
+ * cả game — 3D vẫn chạy, chỉ hiện dải nhỏ kèm nút tải lại thay vì mất trắng màn hình. */
+class UiBoundary extends Component<{ children: ReactNode }, { err: Error | null }> {
+  state = { err: null as Error | null };
+  static getDerivedStateFromError(err: Error) {
+    return { err };
+  }
+  componentDidCatch(err: Error, info: { componentStack?: string | null }) {
+    console.error('[ui] lỗi giao diện:', err.message, info.componentStack ?? '');
+  }
+  render() {
+    if (this.state.err) {
+      return (
+        <div
+          style={{
+            position: 'fixed', left: '50%', bottom: 18, transform: 'translateX(-50%)', zIndex: 1000,
+            background: '#3a3a4d', color: '#fff', border: '1px solid #f1c40f', borderRadius: 10,
+            padding: '10px 14px', fontFamily: 'inherit', fontSize: 14, maxWidth: 'min(92vw, 480px)',
+            boxShadow: '0 4px 16px rgba(0,0,0,.4)', lineHeight: 1.4,
+          }}
+        >
+          ⚠️ Giao diện gặp lỗi: {this.state.err.message}
+          <button
+            onClick={() => location.reload()}
+            style={{ marginLeft: 10, padding: '6px 12px', borderRadius: 8, border: 'none', background: '#f1c40f', fontWeight: 600, cursor: 'pointer' }}
+          >
+            Tải lại
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 function App() {
   const screen = useSession((s) => s.screen);
   return screen === 'game' ? <Hud /> : <LoginScreen />;
 }
 
 // Nạp bản lưu từ IndexedDB trước khi hiện màn đăng nhập (màn này đọc bản lưu đồng bộ)
-initSaves().finally(() => createRoot(document.getElementById('ui')!).render(<App />));
+// Vite hot-reload có thể chạy lại main.tsx: dùng lại root cũ thay vì createRoot lần hai trên cùng container (GĐ403)
+const uiEl = document.getElementById('ui') as HTMLElement & { __root?: ReturnType<typeof createRoot> };
+initSaves().finally(() => (uiEl.__root ??= createRoot(uiEl)).render(<UiBoundary><App /></UiBoundary>));
 
 // PWA: đăng ký service worker để game cài ra màn hình chính iPhone/iOS
 // (chỉ ở bản build/run thật; dev thì tắt để không gây nhiễu khi sửa code)
@@ -645,11 +1055,16 @@ if (import.meta.env.PROD && 'serviceWorker' in navigator) {
 
 // Để debug trong console khi chạy dev
 if (import.meta.env.DEV) {
-  Object.assign(window, { game: { player, world, controller, grid, useGame, customers, buildMode, staff, renderer, scene, lighting } });
+  Object.assign(window, { game: { player, world, controller, grid, useGame, customers, buildMode, staff, renderer, scene, lighting, perf: () => ({ ...gfxStatus(), log: readPerfLog() }) } });
   import('./dev/autoplay').then(({ createAutoplay }) =>
     Object.assign((window as unknown as { game: object }).game, { autoplay: createAutoplay(shop, customers, staff, player) }),
   );
   import('./dev/playtest').then(({ createPlaytest }) =>
     Object.assign((window as unknown as { game: object }).game, { playtest: createPlaytest(shop, customers, staff, player) }),
+  );
+  // GĐ297: soi nút bị CẮT ở mép màn hình — `scrollWidth == clientWidth` không bắt được vì
+  // html/body overflow:hidden. QA gọi `game.layoutAudit()` sau mỗi lần đổi cỡ màn.
+  import('./dev/layoutAudit').then(({ layoutAudit }) =>
+    Object.assign((window as unknown as { game: object }).game, { layoutAudit }),
   );
 }

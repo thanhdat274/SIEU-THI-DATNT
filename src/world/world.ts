@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import { MeshStandardNodeMaterial } from 'three/webgpu';
+import { applyWind } from '../render/fx/windSway';
 import { createFarm, FARM_CENTER } from './farm';
 import { GroceryShop } from '../shop/groceryShop';
 import { Building } from './buildings';
@@ -10,6 +12,14 @@ import { BRANCH_LAYOUT, CONVENIENCE, LANE_X, ROAD2_Z } from '../data/branches';
 import { FurnitureView } from '../shop/furnitureView';
 import { StreetLamps } from './streetLamps';
 import { registerLight } from '../render/lightBudget';
+import { createQuanNuocStand } from './quanNuocStand';
+import { createBranchStand } from './branchStand';
+import { loadKitProps } from './kitProps';
+import { createStorefrontLantern } from './storefrontLantern';
+import { createOpenSign } from './storefrontSign';
+import { createWaitLamp } from './storefrontWaitLamp';
+import { createCompoundWarm } from './compoundWarm';
+import { createQuanNuocWarm } from './quanNuocWarm';
 
 /** Các điểm trong một phòng ngủ (toạ độ thế giới). */
 export interface RoomSpots { bed: THREE.Vector3; wake: THREE.Vector3; nightstand: THREE.Vector3 }
@@ -45,6 +55,22 @@ export interface World {
   houses: Map<string, { building: Building; door: THREE.Vector3; marker: THREE.Object3D }>;
   /** Đèn đường dọc khu phố, sáng lúc trời tối. */
   streetLamps: StreetLamps;
+  /** Quán nước đầu hẻm: khoảnh đất (đủ cấp chưa mua) / quầy (đã mở) — chỉ hình ảnh, không chặn lưới. */
+  quanNuoc: ReturnType<typeof createQuanNuocStand>;
+  /** Kit prop GLB trang trí (tải lười): group đã vào scene, `done` biết khi nào đủ prop. */
+  kit: ReturnType<typeof loadKitProps>;
+  /** Cửa hàng tiện lợi theo trạng thái sở hữu: mảnh đất RAO BÁN + biển MỞ/ĐÓNG CỬA — chỉ hình ảnh. */
+  branchStand: ReturnType<typeof createBranchStand>;
+  /** Đèn lồng cột trước cửa tiệm (gđ177): chỉ hình ảnh + nguồn sáng ấm chập tối — không chặn lưới. */
+  storefront: ReturnType<typeof createStorefrontLantern>;
+  /** Biển treo "mở/đóng cửa" trước cửa tiệm (gđ179): chỉ hình ảnh, tấm trạng thái đổi màu theo shopOpen — không chặn lưới. */
+  openSign: ReturnType<typeof createOpenSign>;
+  /** Đèn báo "khách đang đợi" cạnh cửa (gđ180): chỉ hình ảnh, sáng ấm khi waiting>0 — không chặn lưới. */
+  waitLamp: ReturnType<typeof createWaitLamp>;
+  /** Đèn ấm chập tối của riêng người chơi (gđ185): hiên nhà + cổng trại — chỉ nguồn sáng, không chặn lưới. */
+  compoundWarm: ReturnType<typeof createCompoundWarm>;
+  /** Đèn ấm chập tối của quán nước (gđ187): phủ ấm chỗ khách quen tụ họp khi quán MỞ — chỉ nguồn sáng, không chặn lưới. */
+  quanNuocWarm: ReturnType<typeof createQuanNuocWarm>;
 }
 
 /** Thế giới ban đầu: mặt đất, con đường, nhà riêng và tiệm tạp hóa nhỏ. */
@@ -135,6 +161,29 @@ export function createWorld(scene: THREE.Scene, grid: NavGrid): World {
   const { building: convenience, views: convenienceViews } = createConvenienceStore();
   scene.add(convenience.group);
 
+  // "Cái xác" chi nhánh theo trạng thái sở hữu (GĐ26): mảnh đất RAO BÁN đặt đúng footprint toà nhà,
+  // biển MỞ/ĐÓNG CỬA treo trên mặt tiền. Toà nhà cửa hàng tiện lợi trong mọi trạng thái vẫn (ẩn/hiện)
+  // qua main.tsx theo `branchStandState(level, bought, open)`; nav giữ nguyên (staticBoxes đã đăng ký).
+  const branchStand = createBranchStand();
+  branchStand.lot.position.set(CONVENIENCE.x, 0, CONVENIENCE.z);
+  const branchFront = CONVENIENCE.depth / 2;
+  branchStand.openSign.position.set(0, 2.15, branchFront + 0.3);
+  branchStand.closedSign.position.set(0, 2.15, branchFront + 0.3);
+  branchStand.lot.visible = false;
+  branchStand.openSign.visible = false;
+  branchStand.closedSign.visible = false;
+  scene.add(branchStand.lot);
+  convenience.facade.add(branchStand.openSign, branchStand.closedSign);
+
+  // Quán nước đầu hẻm: ở cửa hẻm dọc (x=LANE_X), phía đông, giữa đường chính và hẻm — không đè
+  // lối đi (lane 47.5..52.5) cũng không đè nhà hàng xóm (x=20..34). Đặt x = LANE_X + 4.4 = 54.4 để
+  // mép trái của quán (≈52.9) cách hẻm một chút; z=1 nằm ngay phần đầu hẻm nối đường chính (z≈3),
+  // trên đất trống ngoài khoảng cây (cây chỉ ở z ≤ -10 và đã chừa |x-LANE_X|<4). Cả hai lớp ẩn mặc
+  // định; main.tsx bật/ẩn theo cấp & trạng thái quán.
+  const quanNuoc = createQuanNuocStand();
+  quanNuoc.group.position.set(LANE_X + 4.4, 0, 1);
+  scene.add(quanNuoc.group);
+
   // Nhà riêng
   const home = new Building({
     name: 'Nhà của bạn', width: 6, depth: 6, height: 3, wallColor: 0xf5e6c8, roofColor: 0xb03a2e, doorStyle: 'wood',
@@ -158,6 +207,24 @@ export function createWorld(scene: THREE.Scene, grid: NavGrid): World {
 
   const warehouse = new Warehouse(scene);
   const shop = new GroceryShop(scene, warehouse);
+
+  // Kit prop GLB (chậu cây, thùng gỗ, tre, bồn nước, ghế nhựa, gánh hàng rong) — trang trí
+  // thôi, không chặn lưới; tải lười nên thế giới có sẵn, prop vừa về vừa chen vào.
+  const kit = loadKitProps();
+  scene.add(kit.group);
+
+  // Đèn lồng cột trước cửa tiệm (gđ177): "đầu ngõ lên đèn" chập tối — chỉ hình ảnh, không chặn lưới;
+  // GLB Blender tải lười, có cái xác thủ tục dự phòng nên đèn luôn có hình.
+  const storefront = createStorefrontLantern();
+  scene.add(storefront.group);
+  // Đèn ấm của riêng người chơi (gđ185 "Cơ ngơi lên đèn"): hiên nhà + cổng trại sáng ấm chập tối.
+  // Đăng ký vào quỹ ánh sáng (lightBudget) nên không cần scene.add — chỉ cần giữ api để bật theo giờ.
+  const compoundWarm = createCompoundWarm();
+  const quanNuocWarm = createQuanNuocWarm();
+  const openSign = createOpenSign();
+  scene.add(openSign.group);
+  const waitLamp = createWaitLamp();
+  scene.add(waitLamp.group);
   const maxTier = SHOP_TIERS[SHOP_TIERS.length - 1];
 
   // Vài cái cây cho sinh động
@@ -252,6 +319,14 @@ export function createWorld(scene: THREE.Scene, grid: NavGrid): World {
     convenience,
     convenienceViews,
     streetLamps,
+    quanNuoc,
+    kit,
+    branchStand,
+    storefront,
+    openSign,
+    waitLamp,
+    compoundWarm,
+    quanNuocWarm,
   };
 }
 
@@ -322,10 +397,15 @@ function createTree(x: number, z: number): THREE.Group {
   trunk.position.y = 0.6;
   // Hai tầng tán lệch màu nhẹ từng cây cho hàng phố không đều tăm tắp
   const green = new THREE.Color(0x2e7d32).offsetHSL((Math.random() - 0.5) * 0.02, 0, (Math.random() - 0.5) * 0.1);
-  const leafMat = new THREE.MeshStandardMaterial({ color: green });
+  // Tán lá dùng vật liệu node để gió lắc ngọn; mỗi tầng một vật liệu vì cao độ chuẩn hóa tính từ gốc cây
+  const TREE_HEIGHT = 3.45;
+  const leafMat = new MeshStandardNodeMaterial({ color: green });
+  const leafTopMat = new MeshStandardNodeMaterial({ color: green });
+  applyWind(leafMat, { height: TREE_HEIGHT, baseY: 1.9 });
+  applyWind(leafTopMat, { height: TREE_HEIGHT, baseY: 2.85 });
   const leaves = new THREE.Mesh(new THREE.ConeGeometry(1, 1.7, 8), leafMat);
   leaves.position.y = 1.9;
-  const leavesTop = new THREE.Mesh(new THREE.ConeGeometry(0.68, 1.2, 8), leafMat);
+  const leavesTop = new THREE.Mesh(new THREE.ConeGeometry(0.68, 1.2, 8), leafTopMat);
   leavesTop.position.y = 2.85;
   trunk.castShadow = leaves.castShadow = leavesTop.castShadow = true;
   tree.add(trunk, leaves, leavesTop);
@@ -335,7 +415,7 @@ function createTree(x: number, z: number): THREE.Group {
 }
 
 /** Nhựa đường: nền xám loang lổ + vạch tim đứt + vạch biên mờ, vẽ một lần rồi lặp theo chiều dài đường. */
-function asphaltTexture(): THREE.CanvasTexture {
+export function asphaltTexture(): THREE.CanvasTexture {
   const c = document.createElement('canvas');
   c.width = 256;
   c.height = 128;

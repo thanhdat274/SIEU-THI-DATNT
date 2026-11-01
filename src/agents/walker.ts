@@ -79,6 +79,38 @@ function emojiSprite(): { sprite: THREE.Sprite; set: (text: string | null) => vo
 }
 
 let walkerIds = 0;
+
+/** Mọi nhân vật đang sống — để bộ giới hạn đám đông (mức đồ họa) chọn ai được vẽ. */
+const liveWalkers = new Set<Walker>();
+/** Mảng dùng lại mỗi khung cho applyCrowdLod (không cấp phát rác). */
+const lodScratch: Walker[] = [];
+/** Đếm khung chung: nhân vật ở xa chỉ cử động 1/3 số khung, lệch pha theo id cho đều tải. */
+let lodFrame = 0;
+
+/**
+ * Giới hạn đám đông theo mức đồ họa: chỉ vẽ `cap` nhân vật gần `focus` nhất (còn lại vẫn đi,
+ * vẫn mua bán — chỉ ẩn hình), và nhân vật xa hơn `animFarDist` m thì cử động thưa để đỡ CPU.
+ * Không đụng `mesh.visible` (khách/hàng xóm dùng nó làm trạng thái ra vào) — chỉ ẩn phần thân.
+ */
+/** Số nhân vật còn sống (chưa dispose) — test rò rỉ bộ nhớ khi chơi nhiều ngày. */
+export function liveWalkerCount() { return liveWalkers.size; }
+/** Gốc hình của mọi nhân vật còn sống — để test tách nhân vật khỏi phần còn lại của scene. */
+export function liveWalkerMeshes(): Set<THREE.Object3D> { return new Set([...liveWalkers].map((w) => w.mesh)); }
+
+export function applyCrowdLod(focus: THREE.Vector3, cap: number, animFarDist: number) {
+  lodFrame++;
+  const far2 = animFarDist * animFarDist;
+  lodScratch.length = 0;
+  for (const w of liveWalkers) {
+    if (!w.mesh.parent || !w.mesh.visible) continue;
+    w.lodDist = w.position.distanceToSquared(focus);
+    w.animFar = w.lodDist > far2;
+    lodScratch.push(w);
+  }
+  if (lodScratch.length > cap) lodScratch.sort((a, b) => a.lodDist - b.lodDist);
+  for (let i = 0; i < lodScratch.length; i++) lodScratch[i].setCulled(i >= cap);
+}
+
 export type WalkerProfession = 'customer' | 'cashier' | 'stocker';
 
 /** Người đi bộ do máy điều khiển (khách, nhân viên): đi theo đường, làm lần lượt các bước trong plan. */
@@ -105,6 +137,12 @@ export class Walker {
   readonly id = ++walkerIds;
   readonly color: number;
   readonly hatColor?: number;
+  /** Bị giới hạn đám đông ẩn hình (vẫn chạy logic) — xem applyCrowdLod. */
+  culled = false;
+  /** Ở xa camera: cử động thưa. */
+  animFar = false;
+  lodDist = 0;
+  private animAcc = 0;
 
   constructor(
     bodyColor: THREE.ColorRepresentation,
@@ -126,6 +164,13 @@ export class Walker {
     });
 
     this.mesh.add(this.parts.root, this.emoji.sprite);
+    liveWalkers.add(this);
+  }
+
+  setCulled(on: boolean) {
+    if (on === this.culled) return;
+    this.culled = on;
+    this.parts.root.visible = !on;
   }
 
   get position() { return this.mesh.position; }
@@ -159,6 +204,7 @@ export class Walker {
       else freeMat(mat);
     });
     this.emoji.dispose();
+    liveWalkers.delete(this);
   }
 
   step(dt: number) {
@@ -173,7 +219,7 @@ export class Walker {
     if (this.emojiTimer > 0 && (this.emojiTimer -= dt) <= 0) this.emoji.set(this.badge);
     if (this.pause > 0) {
       this.pause -= dt;
-      this.animate(dt, false);
+      this.animateLod(dt, false);
       return false;
     }
     let step = this.speed * dt;
@@ -192,8 +238,20 @@ export class Walker {
         step = 0;
       }
     }
-    this.animate(dt, step < this.speed * dt || this.path.length > 0);
+    this.animateLod(dt, step < this.speed * dt || this.path.length > 0);
     return this.path.length === 0;
+  }
+
+  /** Bị ẩn thì khỏi cử động; ở xa thì gộp dt lại, 3 khung mới cử động một lần. */
+  private animateLod(dt: number, moving: boolean) {
+    if (this.culled) return;
+    if (this.animFar) {
+      this.animAcc += dt;
+      if ((lodFrame + this.id) % 3) return;
+      dt = this.animAcc;
+    }
+    this.animAcc = 0;
+    this.animate(dt, moving);
   }
 
   /**

@@ -15,6 +15,7 @@
  */
 import type { Weather } from './weather';
 import { dateOfDoy, YEAR_DAYS } from './calendar';
+import { simRng } from '../core/rand';
 
 /** Mở trang trại từ cấp này. */
 export const GARDEN_UNLOCK = 8;
@@ -165,6 +166,8 @@ export const CROPS: CropDef[] = [
   // (tiết kiệm tiền nhập + hàng tươi + premium) chứ KHÔNG phải máy in tiền áp đảo doanh thu tiệm.
   { id: 'rau_cai', productId: 'rau', name: 'Rau cải', icon: '🥬', days: 3, seedCost: 40000, yieldQty: 8, unlock: 1 },
   { id: 'bap', productId: 'bap', name: 'Bắp ngô', icon: '🌽', days: 4, seedCost: 24000, yieldQty: 6, unlock: 1 },
+  // Lúa: ra túi gạo (hàng khô giá cao) nên ít món/vụ hơn rau; lợi nhuận/ngày ngang mía–cây ăn trái
+  { id: 'lua', productId: 'gao', name: 'Lúa', icon: '🌾', days: 5, seedCost: 90000, yieldQty: 2, unlock: 8 },
   { id: 'mia', productId: 'mia', name: 'Mía', icon: '🎋', days: 6, seedCost: 48000, yieldQty: 8, unlock: 12 },
   { id: 'traicay', productId: 'traicay', name: 'Cây ăn trái', icon: '🌳', days: 7, seedCost: 75000, yieldQty: 6, unlock: 20 },
   { id: 'traicay_nam', productId: 'traicay', name: 'Cây ăn trái lâu năm', icon: '🌴', days: 7, regrowDays: 3, seedCost: 100000, yieldQty: 8, unlock: 20 },
@@ -321,7 +324,7 @@ export const FARM_ORDER_POOL = ['trung', 'trung_vit', 'trung_goos', 'sua_tuoi', 
 
 let farmOrderId = 1;
 /** Tạo đơn mới cho quán xóm: 2 món trong pool, số lượng 3–8, hạn 2 ngày. */
-export function makeFarmOrder(day: number, rng: () => number = Math.random): FarmOrder {
+export function makeFarmOrder(day: number, rng: () => number = simRng()): FarmOrder {
   const pool = [...FARM_ORDER_POOL];
   const items: { productId: string; qty: number }[] = [];
   for (let i = 0; i < 2; i++) {
@@ -364,7 +367,7 @@ export function gardenNight(
   g: GardenState,
   ctx: { day: number; weather: Weather; fed: Partial<Record<AnimalKind, boolean>>; rng?: () => number },
 ): { garden: GardenState; news: string[] } {
-  const rng = ctx.rng ?? Math.random;
+  const rng = ctx.rng ?? simRng();
   const news: string[] = [];
   const rain = ctx.weather === 'rain' || ctx.weather === 'storm';
   const pct = farmGrowthPct(g);
@@ -440,7 +443,7 @@ export function farmhandChores(
   day: number,
   opts: { crit?: number; rng?: () => number } = {},
 ): { garden: GardenState; picked: { productId: string; qty: number }[]; fedKinds: AnimalKind[]; feedUsed: { productId: string; bags: number }[]; news: string[] } {
-  const rng = opts.rng ?? Math.random;
+  const rng = opts.rng ?? simRng();
   const crit = opts.crit ?? 0;
   const news: string[] = [];
   const picked: { productId: string; qty: number }[] = [];

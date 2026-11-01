@@ -4,7 +4,7 @@ import { SELL_BACK, useGame, type Furniture } from '../core/store';
 import { FURNITURE, footprint, frontDir, furnitureDef, type FurnitureType } from '../data/furniture';
 import { EYE_LEVEL_BONUS, eyeRow, heatColor, isDisplay, shelfEfficiency, spotVisibility, visibilityLabel, type ShopGeom } from '../data/layout';
 import { formatMoney } from '../data/products';
-import { ExpandTab, PaintTab } from './Panels';
+import { ExpandTab, PaintTab } from './panels/BuildPanel';
 import './arrange.css';
 
 /** Bước dời bằng nút mũi tên / phím, và độ bám khi kéo (m). */
@@ -132,7 +132,7 @@ export function ArrangePanel() {
   // Phím: mũi tên dời, R xoay, Delete bán, Ctrl+Z hoàn tác, Esc bỏ chọn rồi mới đóng
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if ((e.target as HTMLElement).closest('input, textarea')) return;
+      if ((e.target as HTMLElement).closest?.('input, textarea')) return;
       const k = e.key.toLowerCase();
       if (k === 'escape') {
         e.stopImmediatePropagation();

@@ -1,7 +1,8 @@
-import { festivalOn } from './calendar';
+import { festivalOn, isWeekend } from './calendar';
 import { productById } from './products';
 import { regularById, type RegularProgress } from './regulars';
 import { orderTotal, supplierById, supplierSells } from './suppliers';
+import { STATION_BY_OUTPUT, type CookingStation } from './recipes';
 
 /** Đơn tiệc/đơn đặt trước: hàng xóm đặt số lượng lớn, giao từ kho trước hạn thì được thưởng. */
 export interface PartyOrderDef {
@@ -22,6 +23,9 @@ export interface PartyOrderDef {
   regular?: string;
   /** Đơn theo dịp lễ (vd. giỏ quà Tết): chỉ mời khi đúng dịp trên lịch. */
   festival?: string;
+  /** Đơn gắn với CUỐI TUẦN (GĐ267): chỉ mời khi NGÀY CHÓT rơi vào Thứ 7/CN — khớp chuyện kể
+   *  của đơn (vd "Nhóm học cuối tuần" không thể mời giữa tuần) và khớp nhịp cuối tuần GĐ254+. */
+  weekendOnly?: boolean;
 }
 
 /** Thân thiết tối thiểu để khách quen nhờ đơn riêng (mốc perk đầu tiên). */
@@ -112,7 +116,7 @@ export const PARTY_ORDERS: PartyOrderDef[] = [
   {
     id: 'hoc_nhom', icon: '📚', title: 'Nhóm học cuối tuần', from: regularById('be_na')!.name, regular: 'be_na', unlock: 15, days: 2,
     description: 'Cả nhóm bạn ôn thi ở nhà Na, má Na nhờ tiệm chuẩn bị đồ ăn vặt.',
-    items: { snack: 8, sua: 8, banh: 6 }, bonus: 50000, xp: 50,
+    items: { snack: 8, sua: 8, banh: 6 }, bonus: 50000, xp: 50, weekendOnly: true,
   },
   {
     id: 'hop_to', icon: '🏘️', title: 'Họp tổ dân phố', from: regularById('bac_tam')!.name, regular: 'bac_tam', unlock: 23, days: 2,
@@ -215,6 +219,16 @@ export interface ActiveOrder {
 export const orderValue = (def: PartyOrderDef) =>
   Object.entries(def.items).reduce((n, [id, q]) => n + productById(id).sell * q, 0);
 
+/** Trạm nấu đủ để làm mọi món nhà làm trong đơn (món không phải nhà làm thì bỏ qua). */
+export const orderFulfillable = (def: PartyOrderDef, stations: CookingStation[]) =>
+  Object.keys(def.items).every((id) => {
+    const st = STATION_BY_OUTPUT[id as keyof typeof STATION_BY_OUTPUT];
+    return st === undefined || stations.includes(st);
+  });
+
+// Mặc định "có đủ mọi trạm" — chỉ dùng khi người gọi không truyền trạm thật (test/ước lượng).
+const ALL_STATIONS = [...new Set(Object.values(STATION_BY_OUTPUT)) as unknown as CookingStation[]];
+
 function roll(seed: number, day: number, salt: number) {
   let h = Math.imul((seed >>> 0) ^ (day * 2654435761), 2246822519) ^ salt;
   h ^= h >>> 13;
@@ -231,14 +245,21 @@ const storyReady = (o: PartyOrderDef, level: number, regulars: Record<string, Re
  * Sáng nay có ai mời đặt đơn không (theo hạt giống ván nên hai máy chơi chung khớp nhau).
  * Khoảng 1/3 số ngày có lời mời; nửa số lời mời là đơn riêng của khách quen đã thân (nếu có).
  */
-export function offerForDay(seed: number, day: number, level: number, regulars: Record<string, RegularProgress> = {}): ActiveOrder | null {
-  // Đơn theo dịp lễ chỉ mời khi lịch đang đúng dịp (giỏ quà Tết chỉ hiện trong Tết)
-  const inSeason = (o: PartyOrderDef) => !o.festival || festivalOn(day)?.id === o.festival;
-  const story = PARTY_ORDERS.filter((o) => inSeason(o) && storyReady(o, level, regulars));
-  const party = PARTY_ORDERS.filter((o) => inSeason(o) && !o.regular && o.unlock <= level);
+export function offerForDay(seed: number, day: number, level: number, regulars: Record<string, RegularProgress> = {}, stations: CookingStation[] = ALL_STATIONS): ActiveOrder | null {
+  // Đơn theo dịp lễ chỉ mời khi lịch đang đúng dịp (giỏ quà Tết chỉ hiện trong Tết);
+  // đơn weekendOnly chỉ mời khi NGÀY CHÓT (day + days − 1) rơi vào Thứ 7/CN (GĐ267)
+  const inSeason = (o: PartyOrderDef) => (!o.festival || festivalOn(day)?.id === o.festival)
+    && (!o.weekendOnly || isWeekend(day + o.days - 1));
+  const story = PARTY_ORDERS.filter((o) => inSeason(o) && storyReady(o, level, regulars) && orderFulfillable(o, stations));
+  const party = PARTY_ORDERS.filter((o) => inSeason(o) && !o.regular && o.unlock <= level && orderFulfillable(o, stations));
   const pool = story.length && (roll(seed, day, 17) < 0.5 || !party.length) ? story : party;
   if (!pool.length || day < 2 || roll(seed, day, 7) > 0.35) return null;
-  const def = pool[Math.floor(roll(seed, day, 13) * pool.length)];
+  // GĐ267 — chọn đơn bằng roll có salt theo ngày: roll(seed, day, salt-cố định) khiến roll CHỌN
+  // và roll MỜI tương quan qua cùng cặp (seed, day) — một số đơn (vị trí thấp trong bảng) gần như
+  // không bao giờ được mời dù đủ điều kiện (đo thực tế: tat_nien gấp ~6 lần kỳ vọng, hoc_nhom
+  // và 7 đơn câu chuyện khác = 0 trên 8340 lượt). Salt theo ngày phá tương quan, mọi đơn trong
+  // pool đều có cơ hội ~đều nhau.
+  const def = pool[Math.floor(roll(seed, day, 1009 + day * 7) * pool.length)];
   return { id: def.id, dueDay: day + def.days - 1, accepted: false };
 }
 

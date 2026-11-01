@@ -1,0 +1,34 @@
+# Mục lục GĐ301–349 (đã dồn khỏi PROGRESS.md ở GĐ382)
+
+- GĐ301 — ✂️ Rút 22 thông báo dài về ≤90 ký tự, trần ngân sách 90/0
+- GĐ302 — 🔕 Báo hết hàng 1 lần/ngày, thông báo ngày đầu 27→22
+- GĐ303 — 📦 Hạ trần bundle 780/380 KB; full suite 2356 xanh
+- GĐ304 — ⚡ Bảng tải lười: tải đầu 758→646 KB, trần bundle 680/300
+- GĐ305 — ⏱️ Tách economySim thành 3 file song song: test 427s → 194s
+- GĐ306 — 🧹 Gộp 6 nút tra cứu thành "Sổ sách" (tab): nút HUD 33→28
+- GĐ307 — 🧹 Hub tab Danh tiếng/Mở rộng: nút HUD 28→20 (đạt mục tiêu)
+- GĐ308 — 📦 Firebase nạp động + chunk riêng: tải đầu 646→618 KB, trần 640/290
+- GĐ309 — 🔕 Dời 4 thông báo phụ khỏi ngày đầu: 22→18, trần 20
+- GĐ310 — 🔒 Hạ trần rò rỉ: object +2%, nhân vật +20 (đo 0% / +11)
+- GĐ344 — 🧪 QA bán hàng ngày 2/3 (save sạch): mở cửa, tiền đổi; tải mới 0 lỗi (emptyTiers/depthTexture trong console là dấu vết HMR cũ)
+- GĐ345 — ⏱️ Đo lại bộ test: 2359 xanh; nặng nhất economySimL50/L10L20/weeklyGoalCap/economySim (giữ nguyên, là tín hiệu cân bằng) · thử --pool=threads: 178s, không nhanh hơn (đừng thử lại); --no-isolate: 14 test hỏng + 198s; --maxWorkers=8: 203s
+- GĐ346 — 🧭 Leader review (giữa GĐ337–347): 2359 test xanh, tsc sạch, bundle 596/253 KB, nút HUD 20; mọi trục chiều sâu đã bão hòa → KHÔNG mở rộng mới, chờ dữ liệu save người thật (NG+, nhiệm vụ ngày 1–5); việc kế: giữ ngân sách, QA định kỳ
+- GĐ347 — 📱 QA 320×640 (save sạch, ngày 3): quét mọi phần tử ngoài viewport (kể cả bị cắt bởi overflow hidden) = 0
+- GĐ348 — 🔬 Coverage (test:coverage): dòng 55% (phần thiếu là UI/3D), nhánh 88,8%, hàm 83%; không file core/data nào >60 dòng mà <50% — không cần test bù
+- GĐ349 — 🌙 Sửa chữ cảnh báo khuya: ăn sáng dời giờ ngất tới 3:00 nhưng biển báo vẫn ghi 2:00 (Hud.tsx) · QA live: 02:24 ngày 4 hiện "trước 3:00"
+- GĐ343 — 📦 Siết trần bundle 598/255
+- GĐ336–342 — 📦 Bundle 596 KB (nạp lười STORIES/SURPRISES/GLTF, test hợp đồng); QA gfx=low ~58 FPS, mobile/tablet không tràn; Leader review GĐ337
+- GĐ332 — 💰 % kèo 25/40/65; tỉ số thưởng/lãi 0,99/0,89/0,64
+- GĐ331 — 🔕 Thông báo ngày 1 đếm đúng ngày → 10, trần 10
+- GĐ330 — 🧭 QA lưu máy khách + ngày 1→2: không lỗi
+- GĐ329 — 🪙 Thiếu tiền lẻ mở từ cấp 2 (lần bán đầu sạch)
+- GĐ328 — 🧭 Đo lần bán đầu: ~4 phút (≤5 ✅); khách đầu gặp hộp thoại thiếu tiền lẻ
+- GĐ327 — 🧮 Rà ngân sách đợt GĐ316–326; siết trần bundle 625/275
+- GĐ326 — 🔕 Ẩn thông báo Sổ tay mốc nhỏ ngày 1; thông báo ngày 1 = 11, trần 12
+- GĐ325 — 💰 Trần thưởng 0,37×/66k; tỉ số 1,07/0,98/0,67 (cấp 10 ≤1)
+- GĐ322 — 💰 Trần thưởng 0,4×/sàn 70k; tỉ số 1,13/1,02/0,71 (≈1)
+- GĐ321 — 🎯 Sim kinh tế tất định (seed); trần tỉ số 1,6/1,4/1,05, thông báo ngày 1 ≤13
+- GĐ319 — 🧭 Ngày 1: ẩn Mối quen/Dự báo/khách săn trong panel Nhập hàng
+- GĐ316 — 🔕 Đo thông báo ngày 1 đúng người chơi (bỏ 📜/🎯): 11–14, trần 15
+- GĐ312 — 💰 Hạ trần thưởng nhiệm vụ (sàn 110k, ×0,6); tỉ số 1,44/1,17/1,17
+- GĐ311 — 💰 Đo tỉ số thưởng/lãi bán: 1,7–2,0 / 1,4–2,0 / 0,94–1,53; trần 3/2,5/1,8

@@ -1,3 +1,5 @@
+> **⚠️ TÀI LIỆU LỊCH SỬ (24/10) — bản đồ tính năng dưới đây phản ánh hiện trạng NGÀY 24/10, tức là ĐÃ LẠC HẬU sau GĐ1-GĐ28 (khoảng 20 hệ thống liệt kê là "hỏng/thiếu" bên dưới nay ĐÃ ĐƯỢC làm xong — xem bảng "Hiện trạng cập nhật sau GĐ28" ở cuối tài liệu). Nhật ký tiến độ chính thức là `PROGRESS.md` ở thư mục gốc.**
+
 # Báo cáo nghiên cứu: hoàn thiện vòng chơi tiệm tạp hóa — 24/10/2026
 
 Phạm vi: **chỉ tiệm tạp hóa** (nhập hàng → tồn kho → trưng bày → phục vụ → thu ngân/giao hàng → sổ sách → danh tiếng → phát triển tiệm). Chi nhánh / chuỗi / loại cửa hàng khác là hướng tương lai, **ngoài phạm vi giai đoạn này**.
@@ -238,3 +240,25 @@ Câu hỏi chỉ người chơi/chủ dự định trả lời được (mã ngu
 ## Kết luận thẳng
 
 Với trạng thái code ngày 24/10/2026: **(1)** Ưu tiên trước hết là P0 — làm vòng chơi hiện tại minh bạch (kệ trống trong 3D, lý do khách bỏ đi tại chỗ, quest đo đúng, nhân viên không hứa dối) vì mọi hệ thống cần cho cảm giác "kinh doanh thật" đã có code và chạy. **(2)** Tính năng chiều sâu đầu tiên là nối `recipes.ts` vào tiệm (trạm nấu + vai cook) — data sẵn 100%, đó là lỗ hổng lớn nhất và là nguồn nội dung mới rẻ nhất. **(3)** Sau đó Sổ đầu ngày + reservation của khách quen để tạo vòng chuẩn bị–phục vụ–phản hồi và cho khách quen "có ích" ngoài perk. **(4)** Không thêm archetype mới; muộn nhất là P2 làm 4-5 biến thị giác (bắt đầu từ street_hairstylist đang sai hình) kèm sửa rò rỉ dispose. **(5)** Trước khi đổi bất kỳ con số kinh tế nào, dựng vitest — dự án đang không có một test nào.
+
+---
+
+## 9. Hiện trạng cập nhật sau GĐ28 (27/10/2026) — kiểm lại 10 hệ thống từng bị đánh giá "hỏng/thiếu"
+
+> Phần này thay cho các mục cũ "Ba vấn đề lớn nhất" + bảng hiện trạng §2 cho những dòng bên dưới. Mọi đánh giá "hỏng/thiếu" trong tài liệu gốc 24/10 **đã được làm xong** qua GĐ1-GĐ28 (đi kèm PROGRESS.md, 28 commit, 584/584 test + build sạch). Bằng chứng file:dòng lấy từ mã nguồn hiện tại.
+
+| # | Từng bị đánh giá (24/10) | Hiện trạng sau GĐ28 | Bằng chứng |
+|---|---|---|---|
+| 1 | Nấu ăn "DATA-ONLY", món nấu không vào PRODUCTS, không bán được | **Đã chạy đầy đủ**: startCook/cookJobs/đẩy nhanh theo tay nghề đầu bếp, trạm bếp 3D, món nhà làm bán được | `orders.ts:99,143`, `clock.ts:54-79`, `recipes.ts:263 COOKED_PRODUCT_IDS`, `staff.ts:366 watchStove` |
+| 2 | 4 vai nhân viên (cook/bartender/warehouse_mgr/customer_care) chỉ là data, chạy như stocker | **Đã có hành vi thật**: cook→watchStove, bartender→quầy uống, customer_care→care(), manager→điều phối; riêng warehouse_mgr là hiệu ứng giảm hao hụt thụ động + stocker | `staff.ts:277,279,290,474,486`; hiệu ứng kho `stock.ts:52-56` |
+| 3 | Quest đo nhầm chỉ số (first_contract→ordersDone, review_perfect→customers, treasure→revenue) | **Đã sửa đúng** contractsDone / fiveStars / spent | `quests.ts:171,182,183` |
+| 4 | Rò rỉ GPU memory (không dispose khách rời scene) | **Đã dispose** khi khách rời/tẩy | `customers.ts:248,834,725` |
+| 5 | Không có chi phí cố định (no rent) | **Đã có tiền thuê mặt bằng + chi phí vận hành** trừ cuối ngày theo cấp tiệm | `endDay.ts:331,335-348`, `shopTiers.ts:31 rentOf`, `OPERATING_REVENUE_RATE` |
+| 6 | Lý do khách bỏ đi chỉ trong thống kê tổng hợp | **Đã có sổ lý do bỏ đi theo món** (hết hàng/chê giá/chờ lâu) + gợi ý khắc phục + tổng "X khách bỏ về" | `sales.ts:81-94 noteMiss/missKey`, `advice.ts:12-52`, `endDay.ts:65,112` |
+| 7 | Đợt bán sỉ (vendorOffer) mất nếu reload | **Đã lưu/khôi phục** | `save.ts:62 vendorOffer` |
+| 8 | Không chỉ báo kệ trống trong 3D | **Đã có chỉ báo 3D TRÊN MAP**: tầng kệ gán món mà hết hàng tô đỏ + nổi dấu ⚠️ phía trên kệ (QA xác nhận 7 bảng đỏ hiện trong cảnh), kèm badge HUD "N ô trống" | `furnitureView.ts:430-450 refreshEmptyMark` (tô đỏ row + sprite ⚠️); `Hud.tsx:213-214,297` |
+| 9 | Dự án không có test tự động | **55 file test / ~601 test case, full suite xanh + build sạch** | `src/__tests__/`, `npm run test` (584/584 thời điểm GĐ28; số ~601 tính cả it/it.each) |
+| 10 | Mục tiêu cộng đồng "🍲 Món nhà làm" không thể hoàn thành | **Đã hoàn thành được**: món nấu đi vào tiến độ cooked, đếm là hàng bán; phải nấu tại trạm, không tự mua được | `community.ts:114-119,47,78`, `sales.ts:74 cookedSold`, `orders.ts:173-175,216` |
+
+**Kết luận cập nhật:** cả 10 "lỗ hổng" trong bản nghiên cứu 24/10 **đều đã được giải quyết** (gồm chỉ báo kệ trống 3D trên map — có từ `refreshEmptyMark`). Mọi ưu tiên đề xuất ở đó (P0 minh bạch - quest/nhân viên; P1 nối nấu ăn; P1 sổ đầu ngày/reservation; P0-4 dispose) tương ứng với các GĐ đã đóng. Còn lại là mục polish nhỏ (telemetry "thời gian rảnh") và cân bằng liên tục — xem PROGRESS.md.
+

@@ -3,7 +3,7 @@ import {
   newAlleyCode, CODE_CHARS, handOffPlan, tryLock, releaseLocksFor, canJoin, isValidCheckpoint, MAX_MEMBERS,
 } from '../../server/room';
 import { newGameData, useGame } from '../core/store';
-import { snapshot, applySnapshot } from '../core/save';
+import { SAVE_VERSION, snapshot, applySnapshot } from '../core/save';
 import { cleanActionArgs } from '../net/actionArgs';
 import { newOnline, appRating, orderGap, makeOnlineOrder } from '../data/online';
 
@@ -50,6 +50,23 @@ describe('hẻm online — handoff (chuyển quyền máy chạy)', () => {
   it('máy chạy ẩn tab và không ai khác mở tab thì giữ nguyên (không bầu peer ẩn)', () => {
     const p = [peer(1, 'A', false), peer(2, 'B', false)];
     expect(handOffPlan(p, 1, 'hidden', 'A').promote).toBeNull();
+  });
+
+  it('không bầu người chưa ready (chưa có trạng thái tiệm) làm máy chạy', () => {
+    // B vừa vào, chưa nhận trạng thái đầu tiên từ A
+    const p = [peer(1, 'A', false), { ...peer(2, 'B', true), ready: false }];
+    expect(handOffPlan(p, 1, 'left', 'A').promote).toBeNull();
+  });
+
+  it('bỏ qua người chưa ready, bầu người ready kế tiếp', () => {
+    const p = [{ ...peer(1, 'A', false), ready: false }, { ...peer(2, 'B', true), ready: false }, peer(3, 'C', true)];
+    const plan = handOffPlan(p, null, 'left', 'X');
+    expect(plan.promote).toBe(3);
+  });
+
+  it('không chỉ định ready mặc định coi là ready (tương thích ngược)', () => {
+    const p = [peer(1, 'A', false), peer(2, 'B', true)];
+    expect(handOffPlan(p, 1, 'left', 'A').promote).toBe(2);
   });
 });
 
@@ -122,7 +139,7 @@ describe('checkpoint hẻm — snapshot → applySnapshot (vòng tròn)', () => 
     expect(snap.day).toBe(33);
     expect(snap.level).toBe(12);
     expect(snap.money).toBe(250000);
-    expect(snap.saveVersion).toBe(1);
+    expect(snap.saveVersion).toBe(SAVE_VERSION);
 
     applySnapshot(snap);
     const s = useGame.getState();
@@ -137,6 +154,7 @@ describe('checkpoint hẻm — snapshot → applySnapshot (vòng tròn)', () => 
     // mô phỏng bản lưu đợt trước khi có hệ chuồng theo loài
     applySnapshot({
       ...snap,
+      saveVersion: 1, // bản lưu cũ ở thời trước khi nâng version
       garden: { ...(snap.garden as unknown as Record<string, unknown>), coop: { chickens: 3, fedDay: 5, eggs: 2, feedKg: 0.5 }, pens: undefined },
     } as unknown as Parameters<typeof applySnapshot>[0]);
     const g = useGame.getState().garden as unknown as { pens?: { chicken?: { count: number } } };

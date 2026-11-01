@@ -1,0 +1,48 @@
+# Giai đoạn 400–449
+
+- GĐ400: test plantCrop/waterPlot/waterGarden (cấp, tiền giống, luống có cây, mưa, tưới tự động), mutation bắt được — gardenActions.test.ts
+- GĐ401: test moveFurniture/moveMainCounter (miễn phí, giữ uid + hàng trên kệ, uid lạ) — moveFurniture.test.ts. Full suite 254 file/2517 test xanh 225s (máy bận), tsc sạch, build OK.
+- GĐ402 — 💛 Mối ruột (thân thiết ≥ 40) gọi đúng tên tiệm người chơi đặt khi mua xong: `satisfiedLine()` (data/regularTrust.ts) thay câu hài lòng cố định; khách chưa thân giữ câu riêng. Chỉ lời thoại, không đổi kinh tế/save. Co-op: shopName + regulars nằm trong snapshot máy chạy → cùng câu. 5 test (gồm ≤90 ký tự với tên 24 ký tự × mọi khách). 2522 test xanh 192s, tsc sạch.
+- GĐ403 — 🧭 Leader review + QA @5173 (save ngày 2): vào ván OK, HUD đúng, ~44 FPS mức Thấp. Lỗi console `createRoot()` gọi lặp khi Vite hot-reload chạy lại main.tsx → dùng lại root lưu trên #ui (chỉ dev; tải mới không lỗi). Bỏ ý hiện `lines.greeting` thành thông báo (nhân đôi toast mỗi lượt khách quen, trái ngân sách). Review kế ~GĐ413.
+- GĐ404 — 💬 Sổ khách quen hiện "câu cửa miệng" (lines.greeting, trước đây là dữ liệu chết) sau lần ghé đầu: `regularQuote()` (regularTrust.ts) + 1 dòng nghiêng trong RegularsPanel. Không thêm thông báo/nút. QA @5173: khách 0 lần ghé ẩn đúng. 2524 test xanh 176s.
+- GĐ405 — 😞 Khách quen bỏ về nói rõ món hụt đầu tiên: "Hết X rồi…" (hết hàng) / "X bán mắc quá…" (giá); lý do khác giữ câu riêng. `walkoutLine()` + tham số miss tuỳ chọn của regularVisit (customers.ts truyền c.missed). Không thêm toast; ≤90 ký tự với mọi khách × món dài nhất. Co-op: chạy trên máy chạy như cũ. 2526 test xanh 168s.
+- GĐ406: QA điện thoại 375×812 @5173 (save ngày 2): sổ Khách quen (Thêm → Danh tiếng → 💛) mở đủ thẻ không tràn ngang (scrollWidth 375). Không đổi code.
+- GĐ407 — 📒 Khách quen bỏ về vì hụt món ưa thích → sổ khách quen ghi món đó là đã biết (hết "???" sau khi khách đã nói thẳng). `regularWalkout(prev, day, def?, missedId?)`; discovered vốn được lưu → không đổi save. 2528 test xanh 177s.
+- GĐ408 — 🙋 Leader review: đề xuất mở rộng Tiệm xôi ghi vào Cần duyệt (xung đột Quây xôi cấp 36 + mốc Quán nước cấp 29) — chờ người dùng chọn a/b/c.
+- GĐ410–412 — 🍚 Tiệm xôi: `data/tiemXoi.ts` (nấu bù tới 80 phần/món, món thiếu nhiều nhất trước, vốn ×0.6), slice mua/tuyển/cho nghỉ, endDay cất vào kho + trừ vốn/lương, mục trong bảng Quán nước (không thêm nút HUD). Save cũ tự bù mặc định (merge sâu biz). 13 test mới; đã thử trong game.
+- GĐ413 — 🔍 Rà 3 cơ sở theo yêu cầu người dùng: tiện lợi & nông trại sâu, quán nước mỏng → thứ tự sửa ghi ở Backlog; dừng mở rộng tiệm xôi.
+- GĐ414 — 🌦️ Quán nước theo thời tiết: khách ×1.25 nắng / ×0.75 mưa / ×0.45 bão / ×0.9 sương (`QUAN_WEATHER_MUL`), dùng chung cho ngày bán thật, dự phóng, Sổ kinh doanh, nhắc nạp kho; panel nhắc "nạp thêm" / "bớt nhập". supplyChain/teahouseHaul vẫn ước ×1.
+- GĐ415 — 🍹 Pha chế quán nước (người dùng yêu cầu đa dạng đồ uống + công thức): 11 công thức (`data/quanRecipes.ts`, cấp 29–38) pha từ nguyên liệu kho chung (trà, cà phê, sữa đặc/tươi, đá, đường, chanh, cam, chanh dây, mía, ca cao, cốt dừa, trái cây); thực đơn tối đa 4 món, mỗi món thêm +8% khách; món pha phục vụ trước, khách dư mua nước chai; thiếu nguyên liệu báo trong tin cuối ngày. Panel có mục Thực đơn (lời/ly, kho đủ bao nhiêu ly, thiếu gì). Save cũ thiếu `menu` = chỉ bán nước chai. Co-op chặn `toggleQuanRecipe` chung khóa "quan". Bù ngân sách bundle: tách `ChapterDialogue` khỏi Hud, tải lười.
+- GĐ416 — 🪧 Quầy 3D quán nước có bảng phấn "THỰC ĐƠN" vẽ đúng các món đang bán + giá (chưa chọn món ghi nước chai), cập nhật khi đổi thực đơn. Bù ngân sách: tách `Tutorial` khỏi Hud, tải lười.
+- GĐ417 — 🧹 Gọn BranchPanel (297→221 dòng): tab Ban đêm sang `BranchNightTab.tsx`, style sang `branchStyles.ts`; sửa lỗi nút "Đóng" hiện hai lần.
+- GĐ418 — 🧪 Chế độ chơi thử `?thu=1`: IndexedDB riêng `taphoa3d-thu`, khóa khẩn cấp riêng, bỏ qua bản localStorage cũ, không kéo/đẩy cloud — QA không đụng save thật. Bù ngân sách: `VendorAlert` tải lười.
+- GĐ419 — QA bằng `?thu=1` (cấp 40, mở đủ 3 cơ sở): bảng phấn quầy vẽ đúng "Trà đá 5k / Cà phê sữa đá 20k / Sinh tố trái cây 28k"; ChapterDialogue tải lười vẫn hiện; save thật giữ nguyên (cấp 1, savedAt trước QA). Mẹo QA: lệnh browser luôn ghi `tabId`.
+- GĐ420 — QA `?thu=1` tiếp: cửa hàng tiện lợi (60,−64) hiện đủ kệ/quầy/biển ĐÓNG CỬA; nông trại (18,−63.5) đủ rào/chuồng/giếng/lối đất. Save thật vẫn cấp 1, savedAt cũ. Mẹo: tab nền không vẽ (màn đen) — `tabs_select` trước khi chụp. Rà 3 cơ sở xong.
+- GĐ421 — 🍚 Sổ đầu ngày có mục Tiệm xôi: hôm qua nấu bao nhiêu, tiết kiệm so với nhập lẻ − lương = lời/lỗ ròng; kho đủ mà thợ dư sức thì gợi ý cho nghỉ bớt (`tiemXoiMorning`).
+- GĐ423 — 🍚 Xu hướng cơ sở thêm dòng Tiệm xôi (tiết kiệm − lương, `xoiNet` tùy chọn cho save cũ). Người dùng duyệt nâng quán nước thành cửa hàng thật.
+- GĐ424 — 🏠 Cửa hàng nước B1: quầy ngoài trời thành nhà nhỏ 5.6×5 m (tường bạc hà, mái xanh ngọc, mặt tiền kính + cửa giữa, mái hiên cam, biển "QUÁN NƯỚC"); trong có quầy pha, máy xay, ly, tủ mát sáng đèn, kệ ly, bảng phấn thực đơn; bàn 1 trong nhà, bàn 2–3 ngoài hiên (ghế đỏ). Test giữ mép ngoài hẻm/đường. QA `?thu=1` ổn. Chưa vào trong được (B2).
+- GĐ425 — 🚪 Cửa hàng nước B2: tường/quầy/tủ mát chặn lưới đi lại khi quán mở (`quanHouseBoxes`, lớp static "quanNuoc", dựng lại lưới qua `shop.attachGrid`); chỉ vào qua cửa giữa (rộng 1.7 m), đi được ra sau quầy. Test lưới + QA `?thu=1` (tường chặn, cửa thông, tiệm chính vẫn tới được).
+- GĐ426 — 🧑‍🤝‍🧑 Cửa hàng nước B3: khách ngồi ở ghế các bàn đang mở (`quanPatrons`: 12 ly hôm qua = 1 khách, tối đa 2 ghế/bàn), hình khối nhẹ, không phải agent nên solo/co-op như nhau. Bù bundle: lazy `PhoneAlerts`.
+- GĐ427 — 🍹 Cửa hàng nước B4: nút "Tự pha 5 ly" trong thực đơn quán (`brewQuanHand`): pha món đầu tiên đủ nguyên liệu, bán ngay giá +20%, tối đa 3 mẻ/ngày (`biz.quanNuoc.hand`, trường tùy chọn, save cũ chạy bình thường), có guard co-op.
+- GĐ428 — ☕ Cửa hàng nước B5: nâng bậc Quầy → Quán (cấp 33, 15tr, khách ×1.25) → Quán cà phê (cấp 38, 40tr, ×1.5) qua `upgradeQuanTier`; `biz.quanNuoc.tier` tùy chọn, dự phóng khớp ngày bán. Lộ trình B1–B5 xong.
+- GĐ429 — 🪧 Cửa hàng nước đổi diện mạo theo bậc: biển QUẦY NƯỚC / QUÁN NƯỚC / CÀ PHÊ + mái hiên cam / xanh / nâu (`setTier`). Bù bundle: lazy `SurpriseAlert`, `ExpiryAlert`.
+- GĐ430 — 🍚 Tiệm xôi 3D: biển đất "TIỆM XÔI" khi đủ cấp 40, sạp xôi (nồi chõ bốc hơi, 4 mâm xôi màu, mái vàng, biển XÔI NÓNG) khi mở; phía tây hẻm (x=46, z=1), chỉ hình ảnh, tải lười từ main nên bundle ban đầu không đổi. QA `?thu=1`: sạp xôi bên trái hẻm, quán cà phê có khách ngồi bên phải, không đè đường.
+- GĐ431 — 🪴 Cửa hàng nước dùng kit Blender: 2 chậu cây hai bên cửa + băng ghế hiên (`KIT_QUAN_PLACEMENTS`, nhóm `quanProps` chỉ hiện khi quán mở). Xong mục (3) rà 3 cơ sở. QA `?thu=1` ok.
+- GĐ432 — 🍹 Tự đứng quầy pha thật: đứng sau quầy cửa hàng nước bấm [P] pha một mẻ (`brewQuanHand`), chỗ đứng đi tới được (test lưới). Bù bundle: lazy `UnlockActBanner`. QA `?thu=1`: đứng sau quầy hiện "[P] Tự pha 5 ly ở quầy", bấm P +30.000đ, kho trà −1.
+- GĐ433 — ☕ Bậc cửa hàng nước thêm mẻ tự pha: quầy 3 / quán 4 / cà phê 5 mẻ mỗi ngày (`quanHandMax`). Rà test rò rỉ phiên dài: chạy riêng 3 lần đều xanh (object 563 cố định, nhân vật +5..+12 ≤ +20), lần đỏ trong bộ đầy đủ là do máy bận.
+- GĐ434 — 👩‍🍳 Sạp xôi 3D có người nấu đội nón: chủ sạp + mỗi thợ một người (tối đa 3, `setCooks`). QA `?thu=1` 2 thợ → 3 người đứng sau sạp. Bộ test đầy đủ 2577 xanh.
+- GĐ435 — 🍚 Đứng trước sạp xôi bấm [J] mở bảng quán nước (mục tiệm xôi); chưa cấp 40 thì không hiện gợi ý (gợi ý rỗng coi như không có). QA `?thu=1` ok, 2577 test xanh.
+- GĐ436 — 🔄 Tự pha xoay vòng thực đơn: mẻ thứ n bắt đầu từ món thứ n, bỏ món thiếu nguyên liệu (trước luôn pha món đầu). 2578 test xanh.
+- GĐ437 — 📰 Tin cuối ngày quán nước ghi "tự pha N mẻ" nếu hôm nay có đứng quầy. 2579 test xanh.
+- GĐ438 — ✂️ Tin quán nước giữ ≤90 ký tự: dài quá thì phần thiếu chỉ ghi "thiếu N món". Test ca dài nhất (3 nhân viên, tự pha 5 mẻ, 4 món thiếu).
+- GĐ439: Phím J ở sạp xôi: chủ tự đồ 20 phần món thiếu nhất vào kho, mỗi ngày một lần (steamXoiHand).
+- GĐ440: Bảng tiệm xôi có nút Tự đồ 20 phần (cùng hành động phím J).
+- GĐ441: Phím J sau khi đã đồ trong ngày thì mở bảng tiệm xôi, gợi ý ghi 'hôm nay đã đồ'.
+- GĐ442: Tin cuối ngày tiệm xôi ghi 'chủ tự đồ 1 mẻ' khi chủ đã đồ trong ngày.
+- GĐ443: QA sandbox ?thu=1: phím J ở sạp xôi (cấp 40, tiệm mở) đặt handDay=1, đồ được mẻ; save thật không đụng.
+- GĐ444: Mẻ chủ tự đồ xôi +5 phần mỗi thợ phụ (tiemXoiHandQty).
+- GĐ445: Gợi ý phím J ghi số phần xôi sẽ đồ.
+- GĐ446: Gợi ý phím P ở quầy pha ghi số mẻ tự pha còn lại trong ngày.
+- GĐ447: Sạp xôi 3D bốc hơi to khi chủ đã đồ mẻ hôm nay (setSteaming).
+- GĐ448: QA sandbox: gợi ý J 'Tự đồ 35 phần xôi' (3 thợ) và 'hôm nay đã đồ' đúng.
+- GĐ449: Quán cà phê (bậc 3) có thêm 1 ô thực đơn pha chế (quanMenuSlots, 5 món).

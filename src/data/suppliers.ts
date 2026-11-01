@@ -69,6 +69,10 @@ export function unitCost(s: Supplier, productId: string, day: number) {
   return Math.round((productById(productId).buy * (1 - s.discount) * (1 + swing) * costModifier(productId, day)) / 100) * 100;
 }
 
+/** Độ lệch giá hôm nay so với chuẩn không-swing (từ −vol tới +vol) — cho GĐ57 phân loại rẻ/đắt. Thuần, không đổi kinh tế. */
+export const priceSwing = (s: Supplier, productId: string, day: number) =>
+  (seeded(day, s.id + productId) * 2 - 1) * s.volatility;
+
 /** Mức bớt khi nhập `cases` thùng một món. */
 export const bulkDiscount = (s: Supplier, cases: number) =>
   Math.max(0, ...(s.bulk ?? []).filter((b) => cases >= b.minCases).map((b) => b.discount));

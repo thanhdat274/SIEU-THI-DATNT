@@ -4,15 +4,39 @@ import {
   buyAd, buyHomeItem, buyRivalShop, buyService, buyPet, buyUpgrade, buyVehicle, feedPet, joinHui, repayLoan, setLoyalty, startCounter, takeLoan,
 } from '../core/biz';
 import { hasUpgrade, UPGRADES } from '../data/upgrades';
-import { HistoryChart } from './Panels';
+import { HistoryChart } from './panels/ReportPanels';
+import { Callout } from './panels/shared';
 import {
-  ACHIEVEMENTS, activeAds, ADS, BREAKFAST, COUNTERS, HOME_ITEMS, HUI_COLLAPSE, HUI_OPTIONS, HUI_UNLOCK, LOAN_DAILY_RATE,
-  LOAN_UNLOCK, loanInterest, loanLimit, loanOptions, loanTopUps, LOYALTY_OPTIONS, LOYALTY_UNLOCK, petActive, PETS,
-  RIVAL_PERSONALITIES, RIVAL_UNLOCK, rivalTrafficFactor, VEHICLES, WEEK_DAYS,
+  ACHIEVEMENTS, activeAds, ADS, adRoi, BREAKFAST, COUNTERS, HOME_ITEMS, HUI_COLLAPSE, HUI_OPTIONS, HUI_UNLOCK, LOAN_DAILY_RATE,
+  LOAN_UNLOCK, loanInterest, loanLimit, loanOptions, loanTopUps, LOYALTY_OPTIONS, LOYALTY_UNLOCK, loyaltyPayoff, petActive, PETS,
+  RIVAL_PERSONALITIES, RIVAL_UNLOCK, rivalLeverFlags, rivalMomentum, rivalTier, VEHICLES, WEEK_DAYS, weeklyChallenge, weekPace, monthlyChallenge, emptyMonth, monthPace,
+  STREAK_XP_FROM, STREAK_XP_RATE_WEEK, STREAK_XP_RATE_MONTH,
 } from '../data/biz';
+import { monthOf, weekdayOf, daysRemainingInMonth, MONTH_LENGTHS } from '../data/calendar';
+import { xpToNext } from '../data/levels';
+import { promoEffect } from '../data/analytics';
+import { emptyYear, yearOf } from '../data/yearReport';
+import { readAlmanac, nextAlmanacMilestone, almanacMilestoneReward, ALMANAC_MILESTONES, ALMANAC_SEASONS } from '../data/seasonAlmanac';
+import { summarizeReviews } from '../data/reviews';
+import { nearestMilestones, type MilestoneStep } from '../data/goals';
 import { REGULAR_NAMES } from '../core/biz';
+import { nextBonus, prestigeEligible, prestigePreview, PRESTIGE_BONUS, PRESTIGE_MAX_LEVEL, PRESTIGE_MIN_LEVEL, PRESTIGE_MIN_REVENUE, revenueFactor } from '../core/prestige';
+import { PARTNER_TIERS } from '../data/supplierRel';
+import { recentAvgProfit } from '../data/gifts';
+import { ngGoalProgress, runRewardScale, runTargetScale, type NgGoal } from '../data/ngGoals';
+import { PRESTIGE_TITLES } from '../data/titles';
+import { PRESTIGE_COSTUMES } from '../data/costumes';
+import { useSession } from '../net/session';
 import { formatMoney, productById } from '../data/products';
 import { BILL_RUSH_DAYS, dayOfMonth, SERVICE_BUY_ALONG, SERVICES } from '../data/services';
+import { roiOf } from '../data/serviceRoi';
+import { venueTrendSummary } from '../data/venueTrend';
+import { riskTrendSummary } from '../data/risk';
+import { catPayoff, dogPayoff, CAT_PITCH_MIN } from '../data/petPayoff';
+import { counterPayoff, huiRoundSummary, recentAvgRevenue } from '../data/minorPayoff';
+import { rivalDrag } from '../data/rivalDrag';
+import { theftRisk, THEFT_LEAK_HIGH, THEFT_LEAK_MODERATE, THEFT_UNLOCK } from '../data/theftRisk';
+import { summarizeDemographics, adReach, adTargetSuggest } from '../data/demographics';
 
 const card: React.CSSProperties = { background: '#3a3a4d', borderRadius: 10, padding: '12px 14px', marginBottom: 8, border: '1px solid rgba(255,255,255,0.06)' };
 const title: React.CSSProperties = { fontSize: 15, fontWeight: 700, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 };
@@ -27,6 +51,7 @@ const TABS = [
   ['services', '🧾 Dịch vụ'],
   ['money', '🏦 Vay & hụi'],
   ['week', '📊 Lãi lỗ'],
+  ['month', '📆 Tháng'],
   ['pets', '🐾 Thú cưng'],
   ['life', '🏡 Nhà & xe'],
   ['upgrades', '🔧 Nâng cấp'],
@@ -37,8 +62,9 @@ const TABS = [
 export function BusinessPanel() {
   const [tab, setTab] = useState<(typeof TABS)[number][0]>('market');
   return (
-    // Khung cố định để mọi tab cùng kích thước, không co giãn theo nội dung
-    <div style={{ width: 'min(760px, 86vw)', minHeight: 'min(520px, 70vh)' }}>
+    // Khung cố định để mọi tab cùng kích thước, không co giãn theo nội dung.
+    // width 100% + maxWidth (idiom GĐ95): 86vw ở 320px vượt content-box panel 7px làm cắt hàng tab.
+    <div style={{ width: '100%', maxWidth: 760, minHeight: 'min(520px, 70vh)' }}>
       <h2 style={{ margin: '0 0 8px' }}>📈 Kinh doanh</h2>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(96px, 1fr))', gap: 4, padding: 4, marginBottom: 12, background: 'rgba(0,0,0,0.25)', borderRadius: 10 }}>
         {TABS.map(([id, label]) => (
@@ -47,8 +73,13 @@ export function BusinessPanel() {
             style={{
               padding: '7px 8px', borderRadius: 7, border: 0, cursor: 'pointer', fontWeight: 600, fontSize: 12, whiteSpace: 'nowrap',
               background: tab === id ? '#f1c40f' : 'transparent', color: tab === id ? '#222' : '#ddd',
+              transition: 'background 0.12s, transform 0.08s',
             }}
             onClick={() => setTab(id)}
+            onMouseEnter={(e) => { if (tab !== id) e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = tab === id ? '#f1c40f' : 'transparent'; }}
+            onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.95)'; }}
+            onMouseUp={(e) => { e.currentTarget.style.transform = ''; }}
           >{label}</button>
         ))}
       </div>
@@ -57,6 +88,7 @@ export function BusinessPanel() {
         {tab === 'services' && <Services />}
         {tab === 'money' && <Money />}
         {tab === 'week' && <Week />}
+        {tab === 'month' && <Month />}
         {tab === 'pets' && <Pets />}
         {tab === 'life' && <Life />}
         {tab === 'upgrades' && <Upgrades />}
@@ -67,21 +99,89 @@ export function BusinessPanel() {
 }
 
 function Market() {
-  const { biz, day, level, money, branch } = useGame();
+  const { biz, day, level, money, branch, stats, prices, reviews, analytics, history } = useGame();
   const r = biz.rival;
+  // GĐ159: mốc quy đòn phản công ra tiền — bình quân doanh thu TIỆM CHÍNH 7 ngày (DayRecord.revenue),
+  // đúng luồng khách mà rivalTrafficFactor tác động; chưa có ngày nào thì đòn chỉ hiện %, không hiện tiền.
+  const avgRev7 = recentAvgRevenue(history);
+  const rivalOnSale = r?.saleUntil !== undefined && r.saleUntil >= day;
+  // Thế hệ rival hiện tại: số rival đã hạ + 1 (rival cốt truyện là thế hệ đầu)
+  const tier = rivalTier(biz.rivalsBeaten + 1);
   const running = activeAds(biz.ads, day);
+  // GĐ128: ROI quảng cáo — doanh thu ngày có quảng cáo vs ngày thường, so với chi phí ad/ngày.
+  const adRoiData = (() => {
+    const effect = promoEffect(analytics, history, 'ads');
+    return effect ? adRoi(effect, biz.ads, day) : null;
+  })();
+  // GĐ129: chi phí–lợi ích Thẻ tích điểm — quà đã tặng so khách kéo thêm nhờ +%. Thuần đọc.
+  const loyaltyPay = loyaltyPayoff(biz.loyalty, stats);
+  // GĐ60: 4 đòn bẩy hằng ngày quyết định sức mạnh rival (khớp rivalNightly ở core/biz).
+  const leverRating = summarizeReviews((reviews ?? []).slice(-30)).average || 3.5;
+  const leverMissed = (stats.missed?.stock ?? 0) + (stats.missed?.price ?? 0) + (stats.missed?.wait ?? 0);
+  const leverMissRate = leverMissed / Math.max(1, leverMissed + stats.itemsSold);
+  const leverPriceIndex = Object.keys(prices).length ? Object.keys(prices).reduce((n, id) => n + prices[id] / productById(id).sell, 0) / Object.keys(prices).length : 1;
+  const levers = rivalLeverFlags({ rating: leverRating, missRate: leverMissRate, priceIndex: leverPriceIndex, adsActive: running.length > 0 });
+  // GĐ62: nhân khẩu học khách vãng lai (ai đang là khách của tiệm) — cho quyết định nhắm ad đúng nghề.
+  const demoRows = summarizeDemographics(biz.demographics);
+  // GĐ63: mồi "nên quảng cáo nghề nào" — đóng vòng quyết định ad có dữ kiện.
+  const adSuggest = adTargetSuggest(biz.demographics, biz.ads, level, day);
   return (
     <>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 8 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(260px, 100%), 1fr))', gap: 8 }}>
       <div style={{ ...card, marginBottom: 0 }}>
         <div style={title}>⚔️ Tiệm đối thủ</div>
         {level < RIVAL_UNLOCK ? <div style={sub}>Từ cấp {RIVAL_UNLOCK} sẽ có tiệm khác mở cạnh tranh trong hẻm.</div>
           : r ? (
             <>
-              <div style={row}><span>{r.name} (mở ngày {r.openedDay})</span><span>Sức mạnh {Math.round(r.strength)}/100</span></div>
+              <div style={{ ...row, flexWrap: 'wrap' }}>
+                <span>
+                  {r.name} (mở ngày {r.openedDay}){' '}
+                  <span style={{ ...pill, background: 'rgba(255,255,255,0.1)' }}>{tier.icon} {tier.label}</span>
+                </span>
+                <span>Sức mạnh {Math.round(r.strength)}/100</span>
+              </div>
+              {r.blurb && <div style={{ ...sub, fontStyle: 'italic', opacity: 0.6, marginTop: 2 }}>"{r.blurb}"</div>}
               <div style={{ height: 8, background: '#555', borderRadius: 4, margin: '4px 0' }}>
                 <div style={{ width: `${r.strength}%`, height: '100%', borderRadius: 4, background: '#e74c3c' }} />
               </div>
+              {/* GĐ60: xu hướng + 4 đòn bẩy — nhân-quả "ai đang thắng / sửa cái gì" (ẩn khi chưa đủ tín hiệu) */}
+              {(() => {
+                const trend = biz.rivalTrend ?? [];
+                if (trend.length < 2 || !r) return null;
+                const m = rivalMomentum(trend);
+                const up = m.dir === 'gaining';
+                const down = m.dir === 'fading';
+                const fail = levers.find((l) => !l.ok);
+                return (
+                  <>
+                    <div style={{ ...row, flexWrap: 'wrap', marginTop: 4 }}>
+                      <b>⚔️ Xu hướng sức mạnh</b>
+                      <span style={{ ...pill, background: up ? 'rgba(231,76,60,0.2)' : down ? 'rgba(46,204,113,0.2)' : 'rgba(255,255,255,0.08)', color: up ? '#e74c3c' : down ? '#2ecc71' : '#ccc' }}>
+                        {up ? '📈 rival đang TIẾN (mạnh lên)' : down ? '📉 rival đang LUI (yếu dần)' : '➖ sức mạnh khá đều'}
+                      </span>
+                    </div>
+                    <div style={{ ...sub, marginTop: 2 }}>
+                      {Math.round(m.start)} → {Math.round(m.last)}{m.streak > 0 ? ` · ${m.streak} đêm liên tiếp ${up ? 'mạnh' : 'yếu'} dần` : ''} · biến {m.pct >= 0 ? '+' : ''}{m.pct}%
+                    </div>
+                    <div style={{ marginTop: 6 }}>
+                      <div style={{ fontSize: 12, opacity: 0.85 }}>🎯 4 đòn bẩy hôm nay</div>
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 3 }}>
+                        {levers.map((l) => (
+                          <span key={l.lever} style={{ ...pill, background: l.ok ? 'rgba(46,204,113,0.15)' : 'rgba(231,76,60,0.18)', color: l.ok ? '#2ecc71' : '#e74c3c' }}>
+                            {l.ok ? '✅' : '❌'} {l.label}
+                          </span>
+                        ))}
+                      </div>
+                      {up && fail && (
+                        <div style={{ ...sub, marginTop: 4, color: '#e74c3c' }}>
+                          ⚠️ Rival đang mạnh lên — {fail.label} đang kéo bạn xuống. Sửa cái này để họ yếu đi.
+                        </div>
+                      )}
+                      <div style={{ ...sub, marginTop: 2 }}>Tiệm mình phục vụ tốt (sao cao, ít lỡ bán, giá không đắt, có quảng cáo) thì đối thủ yếu dần mỗi đêm.</div>
+                    </div>
+                  </>
+                );
+              })()}
               {r.personality && (
                 <div style={{ ...sub, marginTop: 4 }}>
                   Tính cách: {RIVAL_PERSONALITIES[r.personality].icon} <b>{RIVAL_PERSONALITIES[r.personality].name}</b> — {RIVAL_PERSONALITIES[r.personality].desc}.
@@ -98,7 +198,7 @@ function Market() {
                 </div>
               )}
               <div style={sub}>
-                Đang hút mất {Math.round((1 - rivalTrafficFactor(r, day)) * 100)}% khách{r.saleUntil !== undefined && r.saleUntil >= day ? ` (đang giảm giá tới ngày ${r.saleUntil})` : ''}.
+                Đang hút mất {rivalDrag(r, day, avgRev7).lostPct.toFixed(0)}% khách{r.saleUntil !== undefined && r.saleUntil >= day ? ` (đang giảm giá tới ngày ${r.saleUntil})` : ''}{avgRev7 > 0 ? ` → ~${formatMoney(rivalDrag(r, day, avgRev7).moneyPerDay)}/ngày` : ''}.
                 Mỗi đêm họ yếu đi khi tiệm bạn được đánh giá cao, ít để khách hụt hàng, giá không đắt hơn giá gợi ý, và có chạy quảng cáo.
               </div>
               <div style={{ ...title, marginTop: 8 }}>🎯 Phản công (mỗi ngày một đợt)</div>
@@ -124,6 +224,19 @@ function Market() {
                       {c.cost > 0 ? ` · ${formatMoney(c.cost)}` : ' · miễn phí (lãi mỏng)'}
                       {runningNow ? ' · ✅ đang chạy' : usedToday ? ' · hôm nay đã chạy đợt khác' : !ready ? ` · hồi từ ngày ${biz.counterReady[c.id]}` : ''}
                       <div style={sub}>{c.desc}</div>
+                      {/* GĐ159: quy "bớt N sức mạnh" ra khách & tiền — rivalTrafficFactor tuyến tính theo sức mạnh
+                          (1 sức mạnh ≈ 0,25% khách, ×2 khi rival xả hàng) nên quy được sạch. Số là ƯỚC: hit thật có
+                          thể nặng thêm tới +3 nhờ đối đầu liền ngày và đòn giá chỉ tính nếu bán đủ 30 món. */}
+                      {(() => {
+                        if (avgRev7 <= 0) return null;
+                        const g = counterPayoff(r.strength, c.hit, rivalOnSale, avgRev7);
+                        const pct1 = Math.round(g.pctCustomers * 10) / 10;
+                        return (
+                          <div style={{ ...sub, marginTop: 2 }}>
+                            Bớt ~{c.hit} sức mạnh ≈ khách đông lại ~{pct1}% — ước ~{formatMoney(g.moneyPerDay)}/ngày (bình quân 7 ngày).
+                          </div>
+                        );
+                      })()}
                     </button>
                   );
                 })}
@@ -168,6 +281,18 @@ function Market() {
               Ít tem thì khách ghé nhiều hơn (+{Math.round(60 / biz.loyalty.stamps)}%) nhưng tặng nhiều hơn.
               Đã tặng {biz.loyalty.redeemed} lần · {formatMoney(biz.loyalty.given)}.
             </div>
+            {loyaltyPay && loyaltyPay.verdict !== 'soon' && (
+              <div style={{ ...sub, marginTop: 4, color: loyaltyPay.verdict === 'keep' ? '#2ecc71' : '#e67e22', fontWeight: 600 }}>
+                {loyaltyPay.verdict === 'keep'
+                  ? `✅ Thẻ tích điểm đang đáng: hôm nay kéo thêm ~${loyaltyPay.extraCustomers} khách (~${formatMoney(loyaltyPay.extraValue)}/ngày) so với quà tặng ~${formatMoney(loyaltyPay.costToday)}/ngày (món ~${formatMoney(loyaltyPay.avgGift)}).`
+                  : `⚠️ Thẻ tích điểm đang tốn: hôm nay kéo thêm ~${loyaltyPay.extraCustomers} khách (~${formatMoney(loyaltyPay.extraValue)}/ngày) nhưng quà tặng ~${formatMoney(loyaltyPay.costToday)}/ngày (món ~${formatMoney(loyaltyPay.avgGift)}) — cân nhắc nâng ${5}/${10}/${15} tem hoặc tắt để đỡ tốn.`}
+              </div>
+            )}
+            {loyaltyPay && loyaltyPay.verdict === 'soon' && (
+              <div style={{ ...sub, marginTop: 4, opacity: 0.8 }}>
+                🎫 Thẻ đang bật (+{loyaltyPay.boostPct}% khách) — sau vài lượt đổi quà sẽ có đánh giá đáng/không tại đây.
+              </div>
+            )}
           </>
         )}
       </div>
@@ -175,7 +300,7 @@ function Market() {
 
       <div style={{ ...card, marginTop: 8 }}>
         <div style={title}>📢 Quảng cáo</div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 6 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(300px, 100%), 1fr))', gap: 6 }}>
           {ADS.map((a) => {
             const on = running.find((x) => x.id === a.id);
             const locked = level < a.unlock;
@@ -196,6 +321,26 @@ function Market() {
                     <span style={{ ...pill, background: 'rgba(241,196,15,0.18)', color: '#f1c40f' }}>+{Math.round((a.traffic - 1) * 100)}% khách</span>
                     <span style={{ ...pill, background: 'rgba(255,255,255,0.1)' }}>{a.days} ngày</span>
                   </div>
+                  {/* GĐ62: nhóm nghề ad nhắm (targets trước đây vô hình); khi đang chạy hiện ✓ đã chạm / • chưa */}
+                  {(() => {
+                    const reach = adReach(a, biz.demographics);
+                    return (
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 4 }}>
+                        {reach.targets.map((t) => {
+                          const live = !!on && t.matched;
+                          return (
+                            <span key={t.id} title={live ? 'Đã có khách nghề này ghé trong ván' : 'Nghề mục tiêu'} style={{
+                              ...pill, fontSize: 10,
+                              background: live ? 'rgba(46,204,113,0.18)' : 'rgba(255,255,255,0.08)',
+                              color: live ? '#2ecc71' : undefined,
+                            }}>
+                              {t.icon} {t.name}{on && (t.matched ? ' ✓' : ' •')}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
                 </div>
                 {locked ? <span style={{ ...pill, background: 'rgba(255,255,255,0.1)' }}>Cấp {a.unlock}</span>
                   : on ? <span style={{ ...pill, background: 'rgba(46,204,113,0.2)', color: '#2ecc71' }}>✓ Tới ngày {on.untilDay}</span>
@@ -204,6 +349,57 @@ function Market() {
             );
           })}
         </div>
+      </div>
+
+      {/* GĐ128: ROI quảng cáo — trả lời "quảng cáo có đáng không" sau vài ngày chạy.
+          Chỉ hiện khi có ad đang chạy VÀ đã có dữ liệu so sánh ngày có/không quảng cáo. */}
+      {adRoiData && (
+        <Callout tone={adRoiData.worth === 'yes' ? 'ok' : 'warn'} title="📈 Quảng cáo có đáng không?" style={{ marginTop: 8 }}>
+          <div style={sub}>
+            Ngày có quảng cáo: doanh thu TB <b>{formatMoney(adRoiData.withAvg)}/ngày</b> vs{' '}
+            <b>{formatMoney(adRoiData.withoutAvg)}/ngày</b> ngày thường → kéo thêm ~{formatMoney(adRoiData.adExtraRev)}/ngày.
+          </div>
+          <div style={{ ...sub, marginTop: 4, color: adRoiData.worth === 'yes' ? '#2ecc71' : '#e67e22', fontWeight: 600 }}>
+            {adRoiData.net >= 0
+              ? `✅ Đang chạy chi phí ${formatMoney(adRoiData.dailyCost)}/ngày — quảng cáo có lời ~${formatMoney(adRoiData.net)}/ngày. Giữ hoặc mua thêm.`
+              : `⚠️ Đang chạy chi phí ${formatMoney(adRoiData.dailyCost)}/ngày — quảng cáo lỗ ~${formatMoney(-adRoiData.net)}/ngày. Cân nhắc bớt hoặc nhắm đúng nghề (xem Khách của tôi).`}
+          </div>
+        </Callout>
+      )}
+
+      {/* GĐ62: nhân khẩu học khách vãng lai — "khách của tôi là ai" để nhắm ad đúng nghề */}
+      <div style={{ ...card, marginTop: 8 }}>
+        <div style={title}>🧑 Khách của tôi</div>
+        {demoRows.length === 0 ? (
+          <div style={sub}>Chưa có số liệu — chơi vài ngày để thấy ai là khách của tiệm.</div>
+        ) : (
+          <>
+            <div style={{ display: 'grid', gap: 4 }}>
+              {demoRows.slice(0, 6).map((r) => {
+                const highWalkout = r.walkouts > 0 && r.walkoutRate > 0.25;
+                return (
+                  <div key={r.id} style={{ ...row, gap: 8 }}>
+                    <span style={{ whiteSpace: 'nowrap' }}>{r.icon} <b>{r.name}</b></span>
+                    <span style={{ ...sub, flex: 1, textAlign: 'right' }}>
+                      {r.visits} lượt · {formatMoney(r.revenue)} · {r.revenuePct}%
+                      {highWalkout && <span title="Nhiều khách nhóm này bỏ về không mua" style={{ color: '#e74c3c' }}> ⚠️</span>}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+            <div style={{ ...sub, marginTop: 6 }}>
+              Thống kê khách vãng lai. Mua 📢 quảng cáo nhắm đúng nghề đông nhất để kéo thêm người giống họ; ⚠️ = nhóm hay bỏ về — kiểm tra kệ/giá có đúng sở thích họ không.
+            </div>
+            {adSuggest && (
+              <Callout tone="ok" style={{ marginTop: 6 }}>
+                <div style={{ fontSize: 12 }}>
+                  💡 Nên quảng cáo: <b>{adSuggest.ad.icon} {adSuggest.ad.name}</b> — nhắm {adSuggest.reason}.
+                </div>
+              </Callout>
+            )}
+          </>
+        )}
       </div>
     </>
   );
@@ -270,6 +466,20 @@ function Money() {
           <>
             <div>Góp {formatMoney(hui.daily)}/ngày · đã góp {hui.paidDays}/{hui.members} ngày</div>
             <div>{hui.received ? '✅ Đã hốt hụi' : `Ngày ${hui.turnDay} tới lượt hốt ${formatMoney(hui.daily * hui.members)}`}</div>
+            {/* GĐ159: "đã góp bao nhiêu trong vòng này". contributed = daily × paidDays là số CHÍNH XÁC (mỗi tối
+                trừ đúng daily rồi mới tăng paidDays — news vỡ hụi cũng tính vậy), không phải ước. Vòng đều tay hòa
+                về danh nghĩa: góp đủ members ngày, hốt đúng 1 lần = cả vòng góp. Lệch audit 28/10: trong game này
+                chủ hụi ôm trốn là MẤT THẬT phần đã góp (không có "lời từ người vỡ hụi") — chỗ có lời thật là giá
+                trị thời điểm (hốt sớm thì được dùng tiền trước). */}
+            {(() => {
+              const hr = huiRoundSummary(hui);
+              return (
+                <div style={sub}>
+                  Đã góp <b>{formatMoney(hr.contributed)}</b> trong vòng này · còn góp {hr.daysLeft} ngày nữa. Vòng đều tay thì
+                  hòa (hốt 1 lần = cả vòng góp) — hốt sớm là có tiền dùng trước, còn chủ hụi ôm trốn thì mất thật phần đã góp.
+                </div>
+              );
+            })()}
             <div style={sub}>Tiền góp trừ mỗi tối. Mỗi ngày có {(HUI_COLLAPSE * 100).toFixed(1)}% chủ hụi ôm tiền trốn!</div>
           </>
         ) : (
@@ -288,9 +498,17 @@ function Money() {
 }
 
 function Week() {
-  const { biz, day, history } = useGame();
+  const { biz, day, level, history, venueTrend, riskTrend } = useGame();
+  const vt = venueTrendSummary(venueTrend);
   const w = biz.week;
   const r = biz.lastWeek;
+  // Thử thách tuần hiện tại; save cũ thiếu counter trong tally thì tiến độ coi như 0.
+  const ch = weeklyChallenge(Math.ceil(day / 7), level);
+  const chTarget = ch.target(level);
+  const chCurrent = ch.measure === 'revenue' ? w.revenue : (w[ch.measure] ?? 0);
+  const chMet = chTarget > 0 && chCurrent >= chTarget;
+  // GĐ121: nhịp chạy tuần — có theo kịp không? có nguy cơ mất chuỗi không? (thuần đọc tally+streak)
+  const pace = weekPace(chCurrent, chTarget, w.startDay + WEEK_DAYS - day, biz.weekStreak, level);
   const total = history.reduce((n, h) => n + h.profit, 0);
   const best = history.reduce<(typeof history)[number] | null>((b, h) => (!b || h.profit > b.profit ? h : b), null);
   return (
@@ -304,7 +522,7 @@ function Week() {
         {history.length < 2 ? <div style={sub}>Chơi thêm vài ngày để xem biểu đồ.</div> : <HistoryChart history={history} />}
       </div>
       <div style={card}>
-        <b>📅 Tuần này (ngày {w.startDay}–{w.startDay + WEEK_DAYS - 1}, hôm nay ngày {day})</b>
+        <b>📅 Tuần này (ngày {w.startDay}–{w.startDay + WEEK_DAYS - 1}{(w.startDay - 1) % WEEK_DAYS === 0 ? ' · Thứ 2 → Chủ nhật' : ''}) — hôm nay {weekdayOf(day)}</b>
         <div>Doanh thu {formatMoney(w.revenue)} · Lãi {formatMoney(w.profit)} · {w.customers} khách</div>
         {w.goal !== null ? (
           <>
@@ -316,22 +534,276 @@ function Week() {
         ) : <div style={sub}>Tuần đầu chưa có mục tiêu; hết tuần sẽ đặt mục tiêu cao hơn 10%.</div>}
         <div style={sub}>Số liệu cộng vào lúc tổng kết mỗi tối.</div>
       </div>
+      {/* Thử thách tuần: mục tiêu phụ của tuần hiện tại, thưởng tự cộng lúc chốt tuần (không có nút nhận). */}
+      <div style={card}>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+          <div style={iconTile}>{ch.icon}</div>
+          <div style={{ flex: 1, minWidth: 160 }}>
+            <b>🎯 {ch.title}</b>
+            <div style={sub}>{ch.desc(level)}</div>
+          </div>
+        </div>
+        <div style={{ height: 8, background: '#555', borderRadius: 4, marginTop: 6 }}>
+          <div style={{ width: `${chTarget > 0 ? Math.min(100, (chCurrent / chTarget) * 100) : 0}%`, height: '100%', borderRadius: 4, background: chMet ? '#2ecc71' : '#f1c40f' }} />
+        </div>
+        <div style={{ ...row, marginTop: 4, flexWrap: 'wrap' }}>
+          <span>{Math.round(chCurrent).toLocaleString('vi-VN')}/{Math.round(chTarget).toLocaleString('vi-VN')} {ch.unit}</span>
+          {chMet && <span style={{ ...pill, background: 'rgba(46,204,113,0.2)', color: '#2ecc71' }}>✅ Đã đủ — giữ đều nhé!</span>}
+        </div>
+        {/* GĐ121: nhịp chạy tuần — dòng dự báo + nguy cơ mất chuỗi (thuần đọc, không đổi state) */}
+        {!chMet && pace && (() => {
+          const pctPace = Math.round(pace.pace * 100);
+          const pctProj = Math.round(pace.projected).toLocaleString('vi-VN');
+          // GĐ262: nói "tới Chủ nhật" chỉ khi cửa sổ tuần khối-aligned (startDay 1/8/15… — play thường
+          // luôn đúng vì endDay tăng 1 ngày each; save lệch do can thiệp tay thì nói trung tính).
+          const aligned = (w.startDay - 1) % WEEK_DAYS === 0;
+          const due = aligned ? ' (tới Chủ nhật)' : '';
+          const dueLong = aligned ? ' trước Chủ nhật' : '';
+          return (
+            <>
+              <div style={{ ...row, marginTop: 4, flexWrap: 'wrap', gap: 4 }}>
+                <span style={{ opacity: 0.85 }}>⏱ Nhịp {pctPace}% mục tiêu · còn {pace.remainingDays} ngày{due}</span>
+                {pace.onTrack
+                  ? <span style={{ ...pill, background: 'rgba(46,204,113,0.2)', color: '#2ecc71' }}>📈 Dự kiến kịp ({pctProj} {ch.unit})</span>
+                  : <span style={{ ...pill, background: 'rgba(241,196,15,0.2)', color: '#f1c40f' }}>📉 Dự kiến hụt — còn {pace.remainingDays} ngày để bù{dueLong}</span>}
+              </div>
+              {pace.streakAtRisk && (
+                <div style={{ ...sub, color: '#e74c3c', marginTop: 3 }}>
+                  ⚠️ Đang hụt MÀ có chuỗi {biz.weekStreak} tuần — trượt tuần này sẽ mất +{pace.streakXp} XP chuỗi.
+                </div>
+              )}
+              <div style={{ ...sub, marginTop: 3 }}>
+                Còn thiếu {Math.round(pace.missing).toLocaleString('vi-VN')} {ch.unit} nữa là đủ mục tiêu tuần này.
+              </div>
+            </>
+          );
+        })()}
+        <div style={sub}>
+          Thưởng {formatMoney(ch.reward(level))}
+          {biz.weekStreak > 0 && ` · chuỗi ${biz.weekStreak} tuần`}
+          {/* GĐ169 — chuỗi đền bằng XP thay vì nhân tiền: từ tuần đạt thứ 3 liên tiếp mỗi tuần +35% XP cần lên cấp. */}
+          {biz.weekStreak + 1 >= STREAK_XP_FROM && ` · đạt tuần này: +${Math.round(STREAK_XP_RATE_WEEK * xpToNext(level))} XP`}
+        </div>
+      </div>
       {r && (
         <div style={card}>
           <b>📊 Báo cáo tuần {r.week}</b>
           <div>Doanh thu {formatMoney(r.revenue)} · Lãi {formatMoney(r.profit)} · {r.customers} khách ({r.unhappy} không vui)</div>
           {r.goal !== null && <div>{r.goalMet ? `✅ Đạt mục tiêu ${formatMoney(r.goal)}, thưởng ${formatMoney(r.reward)}` : `❌ Chưa đạt mục tiêu ${formatMoney(r.goal)}`}</div>}
+          {r.challenge && (
+            <div>
+              {r.challenge.met
+                ? `🎯 ${r.challenge.icon} ${r.challenge.title}: XONG, +${formatMoney(r.challenge.reward)}`
+                : `🎯 ${r.challenge.icon} ${r.challenge.title}: ${Math.round(r.challenge.current).toLocaleString('vi-VN')}/${Math.round(r.challenge.target).toLocaleString('vi-VN')} ${r.challenge.unit} — chưa xong`}
+            </div>
+          )}
+          {(r.challengeStreak ?? biz.weekStreak) >= 2 && <div>🔥 Chuỗi {(r.challengeStreak ?? biz.weekStreak)} tuần{r.streakXp ? ` — +${r.streakXp} XP` : ''}</div>}
           {r.best && <div>💰 Lãi nhiều nhất: {productById(r.best).name}</div>}
           {r.worst && <div>📉 Lãi mỗi món thấp nhất: {productById(r.worst).name} · cân nhắc tăng giá hoặc bỏ bớt</div>}
           <div>🎯 Mục tiêu tuần tới: {formatMoney(r.nextGoal)}</div>
         </div>
       )}
+      {/* Xu hướng cơ sở: chi nhánh 24/7 + quán nước có đang đỡ hơn theo ngày không (cửa sổ 14 ngày). */}
+      {vt.length > 0 && (
+        <div style={card}>
+          <div style={title}>📈 Xu hướng cơ sở (14 ngày)</div>
+          {vt.map((t) => (
+            <div key={t.label} style={{ marginTop: 6 }}>
+              <div style={{ ...row, flexWrap: 'wrap' }}>
+                <b>{t.icon} {t.label}</b>
+                <span
+                  style={{ ...pill, background: t.direction === 'up' ? 'rgba(46,204,113,0.2)' : t.direction === 'down' ? 'rgba(231,76,60,0.2)' : 'rgba(255,255,255,0.08)', color: t.direction === 'up' ? '#2ecc71' : t.direction === 'down' ? '#e74c3c' : '#ccc' }}
+                >
+                  {t.direction === 'up' ? '📈 đang tăng' : t.direction === 'down' ? '📉 đang giảm' : '➖ khá đều'}
+                </span>
+              </div>
+              <div style={{ marginTop: 3 }}>
+                Mới nhất <b>{formatMoney(t.last)}</b>
+                {t.days >= 2 && (
+                  <>
+                    {' '}· trung bình {formatMoney(t.recent)} so {formatMoney(t.earlier)} ({t.delta >= 0 ? '+' : ''}{formatMoney(t.delta)})
+                    {t.pct !== 0 && ` · ${t.pct > 0 ? '+' : ''}${t.pct}%`}
+                  </>
+                )}
+                {t.best && <div style={sub}>Cao nhất cửa sổ: ngày {t.best.day} · {formatMoney(t.best.value)}</div>}
+                <div style={sub}>{t.label.startsWith('Chi nhánh') ? 'Lãi thô chi nhánh = thu − lương, chưa trừ tiền điện cuối ngày.' : 'Lãi quán nước = doanh thu − lương nhân viên.'} Cần ≥2 ngày để thấy xu hướng.</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      {/* Xu hướng rủi ro (GĐ58): chi an ninh có "đang đỡ" không — lọt rủi ro tăng/giảm + số lọt/chặn tuần này. */}
+      {riskTrend.length > 0 && (() => {
+        const rs = riskTrendSummary(riskTrend);
+        const last = riskTrend[riskTrend.length - 1];
+        const isUp = rs.leakDir === 'up';
+        const isDown = rs.leakDir === 'down';
+        return (
+          <div style={card}>
+            <div style={title}>📉 Xu hướng rủi ro (14 ngày)</div>
+            <div style={{ ...row, flexWrap: 'wrap' }}>
+              <b>🛡️ Lọt rủi ro (trộm + tiền giả + gian lận)</b>
+              <span
+                style={{ ...pill, background: isUp ? 'rgba(231,76,60,0.2)' : isDown ? 'rgba(46,204,113,0.2)' : 'rgba(255,255,255,0.08)', color: isUp ? '#e74c3c' : isDown ? '#2ecc71' : '#ccc' }}
+              >
+                {isUp ? '📈 đang tăng' : isDown ? '📉 đang giảm' : '➖ khá đều'}
+              </span>
+            </div>
+            <div style={{ marginTop: 3 }}>
+              Mới nhất <b>{formatMoney(last?.leak ?? 0)}</b>/ngày
+              {rs.days >= 2 && (
+                <> · nửa gần {formatMoney(rs.leakLast)} so nửa trước {formatMoney(rs.leakEarly)} ({rs.leakDelta >= 0 ? '+' : ''}{formatMoney(rs.leakDelta)})</>
+              )}
+              {' · '}tuần này lọt <b>{formatMoney(rs.weekLeak)}</b> · chặn <b>{formatMoney(rs.weekBlocked)}</b>
+            </div>
+            {isUp && (
+              <div style={{ ...sub, marginTop: 4, color: '#e74c3c' }}>
+                🛡️ Lọt {formatMoney(rs.weekLeak)} tuần này — camera/chó/mắt tinh có đang đỡ?
+              </div>
+            )}
+            <div style={sub}>Chỉ báo 2 chiều: lọt = thứ thật mất; chặn = thứ thu lại/bắt được. Cần ≥2 ngày để thấy xu hướng.</div>
+          </div>
+        );
+      })()}
+    </>
+  );
+}
+
+/** Tab Tháng vận hành: mốc nhịp tháng (dương lịch 1–12) — mục tiêu doanh thu + thử thách + chuỗi tháng. */
+function Month() {
+  const { biz, day, level } = useGame();
+  const mo = biz.month ?? emptyMonth(day, monthOf(day));
+  const r = biz.lastMonth;
+  const m = monthOf(day);
+  const ch = monthlyChallenge(mo.month, level);
+  const chTarget = ch.target(level);
+  const chCurrent = ch.measure === 'revenue' ? mo.revenue : (mo[ch.measure] ?? 0);
+  const chMet = chTarget > 0 && chCurrent >= chTarget;
+  const remainingDays = daysRemainingInMonth(day);
+  const totalDays = MONTH_LENGTHS[m - 1];
+  const mPace = monthPace(chCurrent, chTarget, remainingDays, totalDays, biz.monthStreak, level);
+  return (
+    <>
+      <div style={card}>
+        <b>📆 Tháng {m} này (bắt đầu ngày {mo.startDay}, hôm nay ngày {day})</b>
+        <div>Doanh thu {formatMoney(mo.revenue)} · Lãi {formatMoney(mo.profit)} · {mo.customers} khách</div>
+        {mo.goal !== null ? (
+          <>
+            <div style={{ marginTop: 4 }}>🎯 Mục tiêu: {formatMoney(mo.goal)} (thưởng 6% nếu đạt)</div>
+            <div style={{ height: 8, background: '#555', borderRadius: 4, marginTop: 4 }}>
+              <div style={{ width: `${Math.min(100, (mo.revenue / Math.max(1, mo.goal)) * 100)}%`, height: '100%', borderRadius: 4, background: '#2ecc71' }} />
+            </div>
+          </>
+        ) : <div style={sub}>Tháng đầu chưa có mục tiêu; hết tháng sẽ đặt mục tiêu cao hơn 15%.</div>}
+        <div style={sub}>Số liệu cộng vào lúc tổng kết mỗi tối. Một năm có 12 tháng, lễ hội theo từng tháng.</div>
+      </div>
+      <div style={card}>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+          <div style={iconTile}>{ch.icon}</div>
+          <div style={{ flex: 1, minWidth: 160 }}>
+            <b>🎯 {ch.title}</b>
+            <div style={sub}>{ch.desc(level)}</div>
+          </div>
+        </div>
+        <div style={{ height: 8, background: '#555', borderRadius: 4, marginTop: 6 }}>
+          <div style={{ width: `${chTarget > 0 ? Math.min(100, (chCurrent / chTarget) * 100) : 0}%`, height: '100%', borderRadius: 4, background: chMet ? '#2ecc71' : '#f1c40f' }} />
+        </div>
+        <div style={{ ...row, marginTop: 4, flexWrap: 'wrap' }}>
+          <span>{Math.round(chCurrent).toLocaleString('vi-VN')}/{Math.round(chTarget).toLocaleString('vi-VN')} {ch.unit}</span>
+          {chMet && <span style={{ ...pill, background: 'rgba(46,204,113,0.2)', color: '#2ecc71' }}>✅ Đã đủ — giữ đều nhé!</span>}
+        </div>
+        {!chMet && mPace && (() => {
+          const pctPace = Math.round(mPace.pace * 100);
+          const pctProj = Math.round(mPace.projected).toLocaleString('vi-VN');
+          return (
+            <>
+              <div style={{ ...row, marginTop: 4, flexWrap: 'wrap', gap: 4 }}>
+                <span style={{ opacity: 0.85 }}>⏱ Nhịp {pctPace}% mục tiêu · còn {mPace.remainingDays} ngày (hết tháng {m})</span>
+                {mPace.onTrack
+                  ? <span style={{ ...pill, background: 'rgba(46,204,113,0.2)', color: '#2ecc71' }}>📈 Dự kiến kịp ({pctProj} {ch.unit})</span>
+                  : <span style={{ ...pill, background: 'rgba(241,196,15,0.2)', color: '#f1c40f' }}>📉 Dự kiến hụt — còn {mPace.remainingDays} ngày để bù</span>}
+              </div>
+              {mPace.streakAtRisk && (
+                <div style={{ ...sub, color: '#e74c3c', marginTop: 3 }}>
+                  ⚠️ Đang hụt MÀ có chuỗi {biz.monthStreak} tháng — trượt tháng này sẽ mất +{mPace.streakXp} XP chuỗi.
+                </div>
+              )}
+              <div style={{ ...sub, marginTop: 3 }}>
+                Còn thiếu {Math.round(mPace.missing).toLocaleString('vi-VN')} {ch.unit} nữa là đủ mục tiêu tháng này.
+              </div>
+            </>
+          );
+        })()}
+        <div style={sub}>
+          Thưởng {formatMoney(ch.reward(level))}
+          {biz.monthStreak > 0 && ` · chuỗi ${biz.monthStreak} tháng`}
+          {/* GĐ169 — chuỗi tháng đền bằng XP gấp đôi tuần (bỏ nhân tiền chuỗi cũ). */}
+          {biz.monthStreak + 1 >= STREAK_XP_FROM && ` · đạt tháng này: +${Math.round(STREAK_XP_RATE_MONTH * xpToNext(level))} XP`}
+        </div>
+      </div>
+      {r && (
+        <div style={card}>
+          <b>📊 Báo cáo tháng {r.month}</b>
+          <div>Doanh thu {formatMoney(r.revenue)} · Lãi {formatMoney(r.profit)} · {r.customers} khách ({r.unhappy} không vui)</div>
+          {r.goal !== null && <div>{r.goalMet ? `✅ Đạt mục tiêu ${formatMoney(r.goal)}, thưởng ${formatMoney(r.reward)}` : `❌ Chưa đạt mục tiêu ${formatMoney(r.goal)}`}</div>}
+          {r.challenge && (
+            <div>
+              {r.challenge.met
+                ? `🎯 ${r.challenge.icon} ${r.challenge.title}: XONG, +${formatMoney(r.challenge.reward)}`
+                : `🎯 ${r.challenge.icon} ${r.challenge.title}: ${Math.round(r.challenge.current).toLocaleString('vi-VN')}/${Math.round(r.challenge.target).toLocaleString('vi-VN')} ${r.challenge.unit} — chưa xong`}
+            </div>
+          )}
+          {(r.monthStreak ?? biz.monthStreak) >= 2 && <div>🔥 Chuỗi {(r.monthStreak ?? biz.monthStreak)} tháng{r.streakXp ? ` — +${r.streakXp} XP` : ''}</div>}
+          {r.best && <div>💰 Lãi nhiều nhất: {productById(r.best).name}</div>}
+          {r.worst && <div>📉 Lãi mỗi món thấp nhất: {productById(r.worst).name} · cân nhắc tăng giá hoặc bỏ bớt</div>}
+          <div>🎯 Mục tiêu tháng tới: {formatMoney(r.nextGoal)}</div>
+        </div>
+      )}
+      {(() => {
+        const yr = biz.year ?? emptyYear(day, yearOf(day));
+        const lr = biz.lastYear;
+        return (
+          <>
+            <div style={card}>
+              <b>📅 Năm {yr.year} này (bắt đầu ngày {yr.startDay})</b>
+              <div>Doanh thu {formatMoney(yr.revenue)} · Lãi {formatMoney(yr.profit)} · {yr.customers} khách ({yr.unhappy} không vui)</div>
+              <div style={sub}>⭐ {yr.seasonStars} sao 4 mùa năm này · một năm = 365 ngày, khép năm có thưởng tròn năm</div>
+            </div>
+            {lr && (
+              <div style={card}>
+                <b>🏅 Báo cáo năm {lr.year}</b>
+                <div>Doanh thu {formatMoney(lr.revenue)} · Lãi {formatMoney(lr.profit)} · {lr.customers} khách ({lr.unhappy} không vui)</div>
+                <div>⭐ {lr.seasonStars} sao 4 mùa · 🎉 Thưởng tròn năm +{formatMoney(lr.reward)}</div>
+              </div>
+            )}
+          </>
+        );
+      })()}
+      {(() => {
+        const a = readAlmanac(biz.seasonAlmanac ?? {});
+        const nxt = nextAlmanacMilestone(a.total, biz.almanacClaimed ?? []);
+        const SI: Record<string, string> = { spring: '🌱 Xuân', summer: '☀️ Hè', autumn: '🍂 Thu', winter: '❄️ Đông' };
+        return (
+          <div style={card}>
+            <b>📖 Sổ Mùa — sao mọi mùa (đời)</b>
+            <div style={sub}>Tích lũy vĩnh viễn qua các năm, không reset khi sang mùa/năm mới.</div>
+            <div>{ALMANAC_SEASONS.map((s) => `${SI[s]} ${a.perSeason[s]}`).join(' · ')}</div>
+            <div>⭐ Tổng {a.total} sao {a.favorite ? `· mùa hợp nhất: ${SI[a.favorite]}` : ''}</div>
+            {nxt
+              ? <div style={sub}>🎯 Mốc tiếp: {nxt.at} sao (còn {nxt.remaining} sao) → +{formatMoney(almanacMilestoneReward(nxt.at, level))}</div>
+              : <div style={sub}>🏁 Đã chạm mốc cuối {ALMANAC_MILESTONES[ALMANAC_MILESTONES.length - 1]} sao</div>}
+          </div>
+        );
+      })()}
     </>
   );
 }
 
 function Pets() {
-  const { biz, day, level, storage } = useGame();
+  const { biz, day, level, storage, analytics, riskTrend } = useGame();
+  // GĐ157: "Con này đáng bữa cơm không?" — quy công nuôi ra tiền, đối chiếu tiền thức ăn (thuần đọc).
+  const cat = catPayoff(analytics, biz.pets, day, storage);
+  const dog = dogPayoff(riskTrend);
   return (
     <>
       {PETS.map((p) => {
@@ -346,8 +818,50 @@ function Pets() {
             </div>
             <div style={sub}>{p.desc}</div>
             {pet && (
-              <div style={{ fontSize: 12, marginTop: 2, color: fed ? '#2ecc71' : '#e17055' }}>
+              <div style={{ fontSize: 12, marginTop: 2, color: fed ? '#2ecc71' : '#e67e22' }}>
                 {fed ? 'No bụng, đang làm việc' : 'Đói, không chịu làm việc'} · kho còn {storage[p.food] ?? 0} {productById(p.food).name} (không có thì mua lẻ giá gấp đôi)
+              </div>
+            )}
+            {/* GĐ157: payoff thú cưng — số tiền là ƯỚC từ sổ hỏng hàng / sổ rủi ro có sẵn. */}
+            {p.kind === 'cat' && pet && cat.verdict !== 'nothing-spoiled' && (
+              <div style={{ fontSize: 12, marginTop: 4, borderTop: '1px dashed rgba(255,255,255,0.12)', paddingTop: 4 }}>
+                <div>
+                  Hôm qua cứu <b>~{formatMoney(cat.savedYesterday)}</b> hàng hỏng · bữa cơm hôm nay ~{formatMoney(cat.foodCostToday)} →{' '}
+                  <b style={{ color: cat.savedYesterday >= cat.foodCostToday ? '#2ecc71' : '#e67e22' }}>
+                    {cat.savedYesterday >= cat.foodCostToday ? `đang lời ~${formatMoney(cat.savedYesterday - cat.foodCostToday)}` : `đang lỗ ~${formatMoney(cat.foodCostToday - cat.savedYesterday)}`}
+                  </b>
+                </div>
+                <div style={{ marginTop: 2 }}>
+                  7 ngày: cứu <b>~{formatMoney(cat.savedWeek)}</b> —{' '}
+                  {cat.verdict === 'saved' && <b style={{ color: '#2ecc71' }}>lời ~{formatMoney(cat.savedWeek - cat.foodWeek)}</b>}
+                  {cat.verdict === 'breakeven' && <b style={{ color: '#f1c40f' }}>vừa đủ ăn</b>}
+                  {cat.verdict === 'losing' && <b style={{ color: '#e67e22' }}>lỗ cơm ~{formatMoney(cat.foodWeek - cat.savedWeek)}</b>}
+                  {' '}(thức ăn ~{formatMoney(cat.foodWeek)}).
+                </div>
+                {!fed && <div style={{ color: '#e67e22', marginTop: 2 }}>😾 Đói 1 ngày mất công dụng — cho ăn đều.</div>}
+              </div>
+            )}
+            {p.kind === 'cat' && pet && cat.verdict === 'nothing-spoiled' && (
+              <div style={{ fontSize: 12, marginTop: 4 }}>
+                7 ngày qua kho sạch, không hỏng gì — chưa thấy công, thức ăn vẫn ~{formatMoney(cat.foodCostToday)}/ngày.
+              </div>
+            )}
+            {p.kind === 'cat' && !pet && cat.weekSpoilCost >= CAT_PITCH_MIN && (
+              <Callout tone="danger" strong style={{ marginTop: 4 }}>
+                <div style={{ fontSize: 12 }}>
+                  🥀 Tuần này hàng hỏng <b>~{formatMoney(cat.weekSpoilCost)}</b> — nuôi mèo cứu được ~1/4 (~{formatMoney(Math.round(cat.weekSpoilCost * 0.25))}) với ~{formatMoney(cat.foodCostToday)}/ngày thức ăn.
+                </div>
+              </Callout>
+            )}
+            {p.kind === 'dog' && pet && dog.days > 0 && dog.weekBlocked > 0 && (
+              <div style={{ fontSize: 12, marginTop: 4, borderTop: '1px dashed rgba(255,255,255,0.12)', paddingTop: 4 }}>
+                🛡️ Tuần này chặn/thu lại <b>~{formatMoney(dog.weekBlocked)}</b> trộm & tiền giả.
+                <div style={{ ...sub, marginTop: 2 }}>Sổ rủi ro chung cả tiệm (gồm cả camera, mắt tinh) — không tách riêng được công con chó.</div>
+              </div>
+            )}
+            {p.kind === 'dog' && pet && dog.days > 0 && dog.weekBlocked <= 0 && dog.weekLeak > 0 && (
+              <div style={{ fontSize: 12, marginTop: 4 }}>
+                🛡️ Tuần này lọt <b>~{formatMoney(dog.weekLeak)}</b>, chưa chặn được gì — chó giữ cửa giúp giảm nguy cơ.
               </div>
             )}
           </div>
@@ -380,6 +894,17 @@ function Services() {
                 : <button style={btn} onClick={() => buyService(sv.id)}>Mở · {formatMoney(sv.price)}</button>}
           </div>
           <div style={sub}>{sv.desc}</div>
+          {owned.includes(sv.id) && (() => {
+            const roi = roiOf(sv, biz.serviceLife, stats.byService);
+            const goal = roi.paidBack
+              ? <span style={{ color: '#2ecc71' }}>đã hoàn vốn ✓</span>
+              : <span style={{ color: '#f1c40f' }}>còn kém {formatMoney(roi.deficit)} nữa là hoàn vốn{roi.daysToRecoup ? ` (~${roi.daysToRecoup} ngày theo nhịp hôm nay)` : ''}</span>;
+            return (
+              <div style={{ fontSize: 12, marginTop: 2 }}>
+                Đã lời {formatMoney(roi.life)} · hôm nay {roi.today >= 0 ? '+' : ''}{formatMoney(roi.today)} · {goal}
+              </div>
+            );
+          })()}
           {sv.id === 'bills' && (
             <div style={{ fontSize: 12, marginTop: 2 }}>
               Hôm nay ngày {dayOfMonth(day)} trong tháng{dayOfMonth(day) <= BILL_RUSH_DAYS ? ' · 🔥 đầu tháng, khách đóng tiền đông gấp 4' : ` · đợt đông tới sau ${30 - dayOfMonth(day) + 1} ngày`}
@@ -430,7 +955,7 @@ function Life() {
 
 /** Tab nâng cấp: thiết bị mua một lần dùng vĩnh viễn. */
 function Upgrades() {
-  const { level, money, biz } = useGame();
+  const { level, money, biz, stats, day } = useGame();
   return (
     <>
       <div style={{ ...card, marginBottom: 8 }}>
@@ -439,6 +964,12 @@ function Upgrades() {
       </div>
       {UPGRADES.map((u) => {
         const owned = hasUpgrade(biz, u.id);
+        const cameraRisk = u.id === 'camera' && level >= THEFT_UNLOCK
+          ? theftRisk({
+              level, customers: stats.customers, revenue: stats.revenue,
+              hasCamera: owned, hasDog: !!petActive(biz.pets?.dog, day),
+            })
+          : null;
         return (
           <div key={u.id} style={card}>
             <div style={row}>
@@ -458,6 +989,21 @@ function Upgrades() {
                 </button>
               )}
             </div>
+            {cameraRisk && (
+              <Callout
+                tone={cameraRisk.hasCamera ? 'ok' : cameraRisk.leakExposureToday >= THEFT_LEAK_HIGH ? 'danger' : cameraRisk.leakExposureToday >= THEFT_LEAK_MODERATE ? 'warn' : 'info'}
+                style={{ marginTop: 8 }}
+                title={cameraRisk.hasCamera
+                  ? '📹 Đã lắp camera — kẻ trộm né tiệm'
+                  : `🦹 Mỗi ngày trộm rút ~${formatMoney(cameraRisk.leakExposureToday)} hàng`}
+              >
+                <div style={{ marginTop: 2, fontSize: 12 }}>
+                  {cameraRisk.hasCamera
+                    ? 'Đã lắp: kẻ trộm né tiệm (mất bớt ~30% vụ trộm).'
+                    : `~${Math.round(cameraRisk.expectedThievesToday * 10) / 10} khách/ngày là kẻ trộm (giỏ trung bình ${formatMoney(cameraRisk.avgBasketRetail)}). Lắp camera kìm còn 70% → tiết kiệm ước ~${formatMoney(cameraRisk.cameraSavesPerDay)}/ngày, hoàn vốn sau ~${cameraRisk.cameraPaybackDays ?? '?'} ngày.`}
+                </div>
+              </Callout>
+            )}
           </div>
         );
       })}
@@ -470,6 +1016,7 @@ function Achievements() {
   const done = new Set(biz.achievements);
   return (
     <>
+      <NearMilestones />
       <p style={sub}>Đã đạt {done.size}/{ACHIEVEMENTS.length} thành tựu.</p>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 6 }}>
         {ACHIEVEMENTS.map((a) => (
@@ -479,6 +1026,181 @@ function Achievements() {
           </div>
         ))}
       </div>
+      <PrestigeSection />
     </>
+  );
+}
+
+/** "Sắp đạt": nhắc những cột mốc người chơi còn cách không xa — mồi "thêm chút nữa là xong". */
+const UNIT: Record<MilestoneStep['m']['key'], string> = { level: 'cấp', day: 'ngày', revenue: 'đồng', itemsSold: 'món', customers: 'khách' };
+function NearMilestones() {
+  const { level, day, totals } = useGame();
+  const steps = nearestMilestones({ level, day, revenue: totals.revenue, itemsSold: totals.itemsSold, customers: totals.customers });
+  if (steps.length === 0) return null;
+  return (
+    <div style={card}>
+      <b>🎯 Sắp đạt: {steps.length} mốc gần nhất</b>
+      {steps.map(({ m, pct, remaining }) => (
+        <div key={m.id} style={{ marginTop: 6 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+            <span>{m.icon} {m.name}</span>
+            <span style={sub}>còn {remaining.toLocaleString('vi-VN')} {UNIT[m.key]}</span>
+          </div>
+          <div style={{ height: 6, background: '#555', borderRadius: 4, marginTop: 3 }}>
+            <div style={{ width: `${Math.round(pct * 100)}%`, height: '100%', borderRadius: 4, background: '#f1c40f' }} />
+          </div>
+        </div>
+      ))}
+      <div style={sub}>Tiến độ tính theo tổng doanh thu từng đạt, không theo tiền đang có.</div>
+    </div>
+  );
+}
+
+/** 🌱 Mục tiêu vòng tái sinh (GĐ140): danh sách mốc NG+ theo vòng, nhận thưởng khi đạt — chỉ hiện ở vòng NG+ (prestige ≥ 1).
+ * GĐ171: mục tiêu/thưởng nhân theo vòng (mục tiêu ×k, thưởng ×m) — dòng đầu báo rõ để người chơi thấy vòng sau khác vòng trước. */
+function NgGoalsCard({ prestigeLevel, cachedGoals }: { prestigeLevel: number; cachedGoals: Array<Omit<NgGoal, 'done'> & { done: boolean; target?: number }> }) {
+  const { claimNgGoal, biz } = useGame();
+  if (prestigeLevel < 1) return null;
+  const claimed = new Set(biz.prestige.goalsClaimed ?? []);
+  const doneCount = cachedGoals.filter((g) => g.done).length;
+  const tScale = runTargetScale(prestigeLevel);
+  const rScale = runRewardScale(prestigeLevel);
+  const fmtScale = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1));
+  return (
+    <Callout tone="info" title="🌱 Mục tiêu vòng tái sinh" style={{ marginTop: 10 }}>
+      <div style={sub}>
+        Vòng {prestigeLevel + 1} — mục tiêu ×{fmtScale(tScale)}, thưởng ×{fmtScale(rScale)} (vòng sau khó hơn, đền xứng hơn; trần ×3 / ×2.5).
+      </div>
+      <div style={sub}>Đạt {doneCount}/{cachedGoals.length} mốc của vòng này — nhận thưởng tiền, reset khi tái sinh lần sau.</div>
+      {cachedGoals.map((g) => {
+        const isClaimed = claimed.has(g.id);
+        return (
+          <div key={g.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, marginTop: 6 }}>
+            <div>
+              <span style={{ opacity: g.done ? 1 : 0.55 }}>{g.icon} <b>{g.name}</b> — {g.desc}</span>
+              <div style={{ ...sub, color: g.done ? '#2ecc71' : undefined }}>{g.done ? '✓ Đạt' : 'Chưa đạt'}</div>
+            </div>
+            {g.done && !isClaimed ? (
+              <button style={btn} onClick={() => claimNgGoal(g.id)}>Nhận +{formatMoney(g.reward)}</button>
+            ) : isClaimed ? (
+              <span style={{ ...pill, background: 'rgba(46,204,113,0.2)', color: '#2ecc71' }}>✓ Đã nhận</span>
+            ) : (
+              <span style={{ ...pill, background: 'rgba(241,196,15,0.15)', color: '#f1c40f' }}>+{formatMoney(g.reward)}</span>
+            )}
+          </div>
+        );
+      })}
+    </Callout>
+  );
+}
+
+/** Tái sinh (NG+): bắt đầu lại tiệm từ cấp 1, giữ bộ sưu tập tài khoản, doanh thu tăng dần theo số lần. */
+function PrestigeSection() {
+  const { biz, level, totals, day, marketClearedDay, history, analytics, ordersDone, staff } = useGame();
+  const online = !!useSession((ss) => ss.coop);
+  const p = biz.prestige;
+  const eligible = prestigeEligible(level, totals.revenue, p.level);
+  const capped = p.level >= PRESTIGE_MAX_LEVEL;
+  const nextMult = capped ? null : revenueFactor(nextBonus(p.level));
+  const preview = prestigePreview({
+    level,
+    lifetimeRevenue: totals.revenue,
+    prestigeLevel: p.level,
+    bonus: p.bonus,
+    avgDailyProfit: recentAvgProfit(history),
+    supplierRel: biz.supplierRel ?? {},
+    marketClearedDay,
+    currentDay: day,
+    analyticsDays: Math.max(0, Object.keys(analytics?.flags ?? {}).length),
+  });
+  const goals = ngGoalProgress({
+    prestigeLevel: p.level,
+    level,
+    staffCount: staff.length,
+    ordersDone,
+    supplierRel: biz.supplierRel ?? {},
+    marketClearedDay,
+    rivalsBeaten: biz.rivalsBeaten, // GĐ171: mục tiêu rival đo theo vòng (reset mỗi tái sinh — GĐ170)
+  });
+  return (
+    <div style={{ ...card, marginTop: 8, border: '1px solid rgba(241,196,15,0.4)' }}>
+      <div style={title}>🌟 Tái sinh (NG+)</div>
+      {capped ? (
+        <div style={sub}>
+          Đã tái sinh tối đa {PRESTIGE_MAX_LEVEL} lần — doanh thu đang +{Math.round(p.bonus * 100)}%.
+        </div>
+      ) : eligible ? (
+        <>
+          <div style={sub}>
+            Vòng {p.level + 1}. Doanh thu đang +{Math.round(p.bonus * 100)}%, tái sinh thêm sẽ là +{Math.round((nextMult! - 1) * 100)}% (tối đa +{Math.round(PRESTIGE_MAX_LEVEL * PRESTIGE_BONUS * 100)}%).
+          </div>
+          {!capped && (
+            <Callout tone="ok" title="🌳 Chuẩn bị tái sinh" style={{ marginTop: 8 }}>
+              {preview.projectedDailyGain > 0 && (
+                <div style={sub}>
+                  Nhận: vòng sau lời thêm ≈ <b>{formatMoney(preview.projectedDailyGain)}/ngày</b> (thêm +{preview.nextBonus}% so với lãi hiện tại).
+                </div>
+              )}
+              <div style={sub}>
+                Bỏ lại:{' '}
+                {preview.suppliersActive > 0 ? <b>{preview.suppliersActive} mối quen</b> : 'chưa có mối quen'}
+                {preview.topRelTier > 0 && <span>{` (bậc ${preview.topRelTier}${preview.topRelTier >= PARTNER_TIERS.length ? '' : ', còn hoàn tháng'})`}</span>}
+                {' · '}
+                {preview.analyticsDays > 0 ? <b>{preview.analyticsDays} ngày</b> : '0 ngày'} dữ liệu phân tích
+                {preview.unsoldMarketDay && <span style={{ color: '#f1c40f' }}> · 🧺 phiên chợ hôm nay chưa kịp gánh!</span>}
+              </div>
+            </Callout>
+          )}
+          {online && <div style={sub}>Chơi hẻm online không tái sinh được — chỉ ở chế độ chơi đơn.</div>}
+          {!online && (
+            <button
+              style={{ ...btn, marginLeft: 0, marginTop: 6 }}
+              onClick={() => {
+                if (!confirm('🌟 Tái sinh: bắt đầu lại tiệm từ cấp 1, KHÔNG THỂ HOÀN TÁC!\n\nThành tựu, danh hiệu, cốt truyện, nhà, xe, thú cưng, bộ sưu tập và doanh thu cả đời giữ nguyên; tiền, cấp, ngày, nội thất, kho, nhân viên, trang trại... đều làm lại từ đầu.')) return;
+                useGame.getState().doPrestige();
+              }}
+            >🌟 Tái sinh</button>
+          )}
+        </>
+      ) : (
+        <div style={{ ...sub, color: '#999' }}>
+          Cần cấp {PRESTIGE_MIN_LEVEL} + doanh thu cả đời {formatMoney(PRESTIGE_MIN_REVENUE)} để tái sinh (mở khi cuối game). Giữ bộ sưu tập tài khoản và bán đắt dần mỗi vòng.
+        </div>
+      )}
+      <NgGoalsCard prestigeLevel={p.level} cachedGoals={goals} />
+      <NextUnlockTeaser prestige={p.level} />
+    </div>
+  );
+}
+
+/** Mồi tiến trình: cho thấy thứ NG+ độc quyền sẽ mở ở mức tái sinh kế tiếp (và các mức xa hơn). */
+function NextUnlockTeaser({ prestige }: { prestige: number }) {
+  const locked = ([
+    ...PRESTIGE_TITLES.map((t) => ({ icon: t.lockIcon ?? '🔒', need: t.prestige ?? 0, name: t.name, kind: 'Danh hiệu' as const })),
+    ...PRESTIGE_COSTUMES.map((c) => ({ icon: '👕', need: c.prestige ?? 0, name: c.name, kind: 'Trang phục' as const })),
+  ]).filter((x) => !x.need || x.need > prestige);
+  const next = locked.filter((x) => x.need === prestige + 1);
+  const farther = locked.filter((x) => x.need > prestige + 1);
+  if (!next.length && !farther.length) return null;
+  return (
+    <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px dashed rgba(255,255,255,0.12)' }}>
+      {next.length > 0 && (
+        <div style={sub}>
+          <b style={{ color: '#f1c40f' }}>Mở khóa NG+ ở lần tái sinh tiếp theo:</b>
+          <div style={{ marginTop: 4, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {next.map((x) => (
+              <span key={`${x.kind}-${x.name}`} style={{ background: 'rgba(241,196,15,0.12)', padding: '4px 8px', borderRadius: 6, fontSize: 12 }}>
+                {x.icon} <b>{x.name}</b> <span style={{ opacity: 0.7 }}>({x.kind})</span>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+      {farther.length > 0 && (
+        <div style={{ ...sub, marginTop: 6, opacity: 0.55 }}>
+          Còn chờ ở mức tái sinh cao hơn: {farther.map((x) => `${x.icon} ${x.name} (${x.need} lần)`).join(' · ')}
+        </div>
+      )}
+    </div>
   );
 }

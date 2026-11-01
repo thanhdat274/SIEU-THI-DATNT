@@ -4,6 +4,7 @@ import type { FurnitureType } from './furniture';
 import { SHIFTS, type Shift, type Staff, type StaffRole } from './staff';
 import { isAlcohol } from './licenses';
 import { CHIEF_COVER_MUL } from './careers';
+import { simRng } from '../core/rand';
 
 /** Cửa hàng tiện lợi 24/7: chi nhánh xa tiệm chính, chủ không đứng bán, nhân viên lo hết. */
 export const CONVENIENCE = {
@@ -36,8 +37,29 @@ export const CONVENIENCE = {
 export const ROAD2_Z = -56;
 export const LANE_X = 50;
 
-/** Khách mỗi giờ theo giờ trong ngày (0–23): đêm vẫn có khách, ít hơn ban ngày. */
-const HOURLY = [8, 6, 5, 4, 4, 6, 12, 18, 16, 14, 14, 18, 20, 16, 14, 14, 16, 20, 22, 22, 20, 18, 14, 10];
+/**
+ * Trạng thái hình ảnh của cửa hàng tiện lợi trong thế giới 3D (GĐ26) — cho khớp "chủ sở hữu":
+ * cạnh quan trọng là không để một tiệm 24/7 mở sẵn trông hệt hệt dù người chơi chưa mua mặt bằng.
+ *  - `hidden`: dưới cấp mở — chưa thấy gì.
+ *  - `lot`   : đủ cấp mà chưa mua — mảnh đất trống rao bán.
+ *  - `closed`: đã mua, đang đóng cửa — toà nhà hiện nhưng biển "ĐÓNG CỬA".
+ *  - `open`  : đang mở — toà nhà + biển "MỞ CỬA 24/7" phát sáng.
+ */
+export type BranchStandState = 'hidden' | 'lot' | 'closed' | 'open';
+export function branchStandState(level: number, bought: boolean, open: boolean): BranchStandState {
+  if (open) return 'open';
+  if (bought) return 'closed';
+  if (level >= CONVENIENCE.unlock) return 'lot';
+  return 'hidden';
+}
+
+/**
+ * Khách mỗi giờ theo giờ trong ngày (0–23): đêm vẫn có khách, ít hơn ban ngày.
+ * Tổng ~88 khách/ngày (chi nhánh xa tiệm chính, vắng hơn hẳn hẻm): cân bằng để lãi ròng chi nhánh
+ * chiếm ~30–45% lãi ròng tổng ở cận cấp 26–40 — đáng đầu tư nhưng không lấn át tiệm chính
+ * (bot playtest cũ 331 khách/ngày cho ~82% lãi ròng tổng dù doanh thu thô chỉ ~69%).
+ */
+const HOURLY = [2, 1, 1, 1, 1, 2, 4, 5, 4, 4, 4, 5, 5, 4, 4, 4, 4, 5, 6, 6, 5, 5, 4, 2];
 export const branchTrafficAt = (minute: number) => HOURLY[Math.floor(((minute % 1440) + 1440) % 1440 / 60)];
 /** Giờ đêm (22h–6h): không có bảo vệ thì dễ mất trộm. */
 export const isBranchNight = (minute: number) => { const m = ((minute % 1440) + 1440) % 1440; return m >= 22 * 60 || m < 6 * 60; };
@@ -58,6 +80,12 @@ export interface BranchState {
   missedToday: number;
   /** Ngày đã nhắc kho chung sắp cạn (nhắc một lần mỗi tối). */
   warnedDay?: number;
+  /** GĐ206: chủ bật auto chuyển kho — tự chở hàng khi kệ vơi (không cần người giao/xếp/quản lý), trả phí xăng mỗi chuyến. */
+  autoHaul?: boolean;
+  /** GĐ207: ngưỡng kệ vơi (%) để auto chuyển kho nổ chuyến — thiếu thì mặc định HAUL_REFILL_BELOW, clamp 30–80%. */
+  autoHaulBelow?: number;
+  /** GĐ207: tối thiểu bao nhiêu phút giữa 2 chuyến auto — thiếu thì mặc định HAUL_TRIP_EVERY, clamp 120–720'. */
+  autoHaulEvery?: number;
   /** Mức mệt của từng nhân viên (0–100). */
   fatigue?: Record<number, number>;
   /** Nhân viên được nghỉ (id → ngày nghỉ). */
@@ -106,6 +134,13 @@ export const newBranch = (): BranchState => ({
   open: false, shelf: {}, staff: [], simAt: 0, lastTrip: -999, revenueToday: 0, customersToday: 0, lostToday: 0, missedToday: 0,
   vendingEnabled: false, vendingStock: {}, vendingRevenueToday: 0,
 });
+
+/** Save schema cũ có thể chứa object `branch` thiếu field mới (vd {open,shelf} không có staff) —
+ * mặc định branch là null nên deep-merge không bù được; chuẩn hóa ở applySnapshot để UI không đọc undefined. */
+export function normalizeBranch(b: Partial<BranchState> | null | undefined): BranchState | null {
+  if (!b || typeof b !== 'object') return null;
+  return { ...newBranch(), ...b };
+}
 
 /** Nhân viên `st` có trong ca lúc `minute` không (ca đêm nối qua nửa đêm). */
 export function onShift(st: Staff, minute: number) {
@@ -193,9 +228,45 @@ export function autoSchedule(staff: Staff[], fatigue: Record<number, number>): S
   return staff.map((s) => ({ ...s, shift: maps.map((m) => m.get(s.id)).find(Boolean) ?? s.shift }));
 }
 
+/**
+ * Cảnh báo chi nhánh 24/7 cần lên HUD (không phải mở panel mới thấy). Gộp theo trạng thái live,
+ * ưu tiên "nguy hiểm" hơn "nhắc việc". Chỉ làm việc khi chi nhánh đã mở. Trả list rỗng nếu ổn.
+ */
+export function branchAlerts(b: BranchState, minute: number): { text: string; danger: boolean }[] {
+  if (!b.open) return [];
+  const out: { text: string; danger: boolean }[] = [];
+  const min = ((minute % 1440) + 1440) % 1440;
+  const night = isBranchNight(min);
+  const crew = b.staff ?? [];
+  const cashierLive = crew.some((s) => s.role === 'cashier' && onShift(s, min));
+  const guardLive = crew.some((s) => s.role === 'guard' && onShift(s, min));
+  const stocked = shelfTotal(b.shelf ?? {}) > 0;
+  const manager = crew.some((s) => s.role === 'manager');
+  const ev = b.event;
+
+  // Sự kiện đêm đang/đã xảy ra
+  if (ev?.kind === 'calloff' && !ev.covered && ev.done !== true) {
+    const who = crew.find((s) => s.id === ev.staffId);
+    out.push({ text: `📵 Chi nhánh: nhân viên ${who?.name ?? 'ca đêm'} xin nghỉ đột xuất — gọi người thay`, danger: !cashierLive });
+  }
+  if (ev?.kind === 'drunk' && ev.done) {
+    out.push({ text: `🍺 Chi nhánh vừa có khách say quậy ${b.blockedUntil && min < b.blockedUntil ? '— quầy đang ngưng bán' : ''}`, danger: true });
+  }
+  if (ev?.kind === 'blackout' && ev.done) {
+    out.push({ text: `⚡ Chi nhánh vừa mất điện làm hỏng hàng mát/đông/tươi`, danger: true });
+  }
+  // Thiếu người trực / hàng
+  if (!cashierLive && !manager) out.push({ text: `🛒 Chi nhánh: không có thu ngân trực lúc này — khách bỏ về`, danger: true });
+  if (!stocked) out.push({ text: `🕳️ Chi nhánh: kệ trống hàng — cần chở hàng từ kho chung`, danger: night });
+  // Bảo vệ đêm khi nguy cơ trộm
+  if (night && !guardLive && !manager) out.push({ text: `🌙 Chi nhánh ban đêm không bảo vệ — dễ mất trộm`, danger: true });
+  return out;
+}
+
+
 // ── Hàng tiện lợi ──
 /** Món khách đêm hay mua ở tiện lợi (mì ly, nước tăng lực, bao cao su, thuốc cảm, cơm nắm...). */
-const NIGHT_ITEMS = new Set(['mi', 'nuoc', 'x_mi_ly_tp', 'x_sting_dau', 'x_sting_nhan_sam', 'x_redbull_lon', 'x_bao_cao_su', 'x_thuoc_cam', 'x_com_nam', 'x_xuc_xich_nuong_tp']);
+export const NIGHT_ITEMS = new Set(['mi', 'nuoc', 'x_mi_ly_tp', 'x_sting_dau', 'x_sting_nhan_sam', 'x_redbull_lon', 'x_bao_cao_su', 'x_thuoc_cam', 'x_com_nam', 'x_xuc_xich_nuong_tp']);
 export const isNightItem = (id: string) => NIGHT_ITEMS.has(id);
 /** Đồ nóng nấu ở bếp tiệm chính, chở sang bán đắt hơn. */
 export const isHotFood = (id: string) => COOKED_PRODUCT_IDS.has(id);
@@ -263,7 +334,7 @@ const weightIn = (g: NightGroup, hour: number) =>
   g.ranges.reduce((n, [from, to, w]) => n + ((hour >= from && hour < to) || (hour + 24 >= from && hour + 24 < to) ? w : 0), 0);
 
 /** Một khách ghé giờ này thuộc nhóm đêm nào (undefined = khách thường). */
-export function pickNightGroup(minute: number, rng: () => number = Math.random): NightGroup | undefined {
+export function pickNightGroup(minute: number, rng: () => number = simRng()): NightGroup | undefined {
   const hour = Math.floor((((minute % 1440) + 1440) % 1440) / 60);
   const ws = NIGHT_GROUPS.map((g) => weightIn(g, hour));
   const total = ws.reduce((n, w) => n + w, 0);
@@ -275,7 +346,7 @@ export function pickNightGroup(minute: number, rng: () => number = Math.random):
 
 /** Khách nhóm chọn món ưa thích (nếu kệ có), không thì chọn như khách thường. */
 export const GROUP_FAVORITE_BIAS = 0.75;
-export function pickForGroup(pool: string[], minute: number, group?: NightGroup, rng: () => number = Math.random): string {
+export function pickForGroup(pool: string[], minute: number, group?: NightGroup, rng: () => number = simRng()): string {
   if (group && rng() < GROUP_FAVORITE_BIAS) {
     const fav = pool.filter((id) => group.favorites.has(id));
     if (fav.length) return pickWeighted(fav, minute);
@@ -349,7 +420,7 @@ export const itemWeight = (id: string, minute: number) =>
 /** Chọn ngẫu nhiên một món theo trọng số. */
 export function pickWeighted(ids: string[], minute: number): string {
   const w = ids.map((id) => itemWeight(id, minute));
-  let r = Math.random() * w.reduce((n, x) => n + x, 0);
+  let r = simRng()() * w.reduce((n, x) => n + x, 0);
   for (let i = 0; i < ids.length; i++) if ((r -= w[i]) <= 0) return ids[i];
   return ids[ids.length - 1];
 }

@@ -1,7 +1,13 @@
 import type { DayStats } from '../core/store';
 import { COOKED_PRODUCT_IDS, COOK_UNLOCK } from './recipes';
-import { unlockedCombos } from './combos';
+import { unlockedCombos, COMBO_UNLOCK } from './combos';
 import { SERVICES } from './services';
+import { ONLINE_UNLOCK } from './online';
+import { GARDEN_UNLOCK } from './garden';
+import { SOCIAL_UNLOCK } from './social';
+import type { Weather } from './weather';
+import { isWeekend } from './calendar';
+import { WEEKEND_SNACKS } from './products';
 
 /** Số liệu cộng dồn cả ván, để đo nhiệm vụ cốt truyện. */
 export interface Totals {
@@ -32,9 +38,94 @@ export interface QuestLog {
   day: number;
   claimedDaily: string[];
   claimedStory: string[];
+  /** Kèo hôm nay (null = chưa chốt). Field mới bên trong questLog — bản save cũ tự bù null qua MERGE_DEEP, không cần lên SAVE_VERSION. */
+  bet?: QuestBet | null;
 }
 
-export const emptyQuestLog = (): QuestLog => ({ day: 1, claimedDaily: [], claimedStory: [] });
+export const emptyQuestLog = (): QuestLog => ({ day: 1, claimedDaily: [], claimedStory: [], bet: null });
+
+// ───── Đặt kèo hôm nay ─────
+// MỘT QUYẾT ĐỊNH CÓ CƯỢC ở nhịp ngày: mỗi sáng người chơi có thể CHỐT 1 kèo — làm trọn BỘ nhiệm vụ
+// ngày hôm nay (dailySetProgress.allDone) ở mục tiêu CAO HƠN thì nhận thêm tiền, hụt thì không mất gì
+// ngoài cơ hội (không phạt). Kèo là nguồn "thưởng sáng" có cược, bấm máy không quyết định — quyết định
+// là chọn mức kèo cân với sức hôm nay.
+
+/** Kèo đặt trên BỘ nhiệm vụ ngày của một ngày cụ thể. */
+export interface QuestBet {
+  day: number;
+  /** Kèo đặt trên cả bộ nhiệm vụ ngày — id cố định 'daily_set' ghi rõ đối tượng của kèo trong sổ. */
+  questId: string;
+  /** Hệ số nhân mục tiêu cả bộ (xem BET_TIERS). */
+  tier: number;
+  /** Thưởng kèo đã trúng (0 = đang chạy, chưa phân định trúng/hụt). */
+  bonus: number;
+}
+
+/** Kèo luôn gắn với cả bộ nhiệm vụ ngày. */
+export const BET_QUEST_ID = 'daily_set';
+
+export interface BetTier {
+  icon: string;
+  name: string;
+  /** Nhân mục tiêu CẢ BỘ nhiệm vụ ngày so với bộ thường. */
+  tier: number;
+  /** Trúng kèo thì nhận thêm phần trăm TỔNG thưởng nhiệm vụ ngày này. */
+  bonusPct: number;
+}
+
+/** 3 mức kèo theo độ khó. Cân bằng: bộ nhiệm vụ ngày là nguồn tiền lớn nhất giữa game, nên phần thêm
+ * chỉ là % của chính tổng thưởng bộ ngày (không in tiền mới từ hư không) và giữ thang 30/50/80%:
+ * ×1.0 là "kèo nhẹ" cho người mới (thêm 1/3), ×1.5 là bước ngoặt vất vả thật sự (+50%), ×2.0 gần chạm
+ * trần — khó nhất mà vẫn không vượt trần cứng bên dưới. */
+export const BET_TIERS: readonly BetTier[] = [
+  { icon: '☕', name: 'Kèo nhẹ', tier: 1.0, bonusPct: 0.25 },
+  { icon: '🔥', name: 'Kèo vừa', tier: 1.5, bonusPct: 0.40 },
+  { icon: '💥', name: 'Kèo to', tier: 2.0, bonusPct: 0.65 },
+];
+
+/** Trần cứng: tổng tiền thêm của kèo tối đa = 1× tổng thưởng nhiệm vụ ngày — kèo không bao giờ
+ * nhảy lên thành nguồn tiền to hơn chính bộ nhiệm vụ (mức kèo cao nhất 80% vẫn dưới trần này). */
+export const BET_BONUS_CAP = 1.0;
+
+// ───── Neo thưởng nhiệm vụ ngày vào "kinh tế thật" (GĐ106) ─────
+// Khảo sát GĐ103 + mô phỏng 30 ngày GĐ105 cho thấy tổng thưởng bộ nhiệm vụ ngày (nhiệm vụ + kèo) thường
+// gấp 5–6× lãi bán hàng thật của tiệm → tiền dư thừa, quyết định tài chính hằng ngày (giá/nhập/kho) gần
+// như vô nghĩa. Áp pattern giftEcoScale (GĐ17) nhưng theo hướng TRẦN: tổng thưởng bộ ngày bị chặn ở một
+// bội số của lãi bình quân gần đây (recentAvgProfit) — tiệm càng lớn thì tổng thưởng càng đáng nhưng
+// KHÔNG được lấn át sức bán thật. Tiệm nhỏ (chưa tới QUEST_ECO_FLOOR) hoặc chưa có lịch sử lãi → không
+// giới hạn (Infinity) → người mới/ngày đầu giữ nguyên hành vi.
+
+// 2026-10-31 — đo lại bằng cột salesProfit (lãi bán hàng thật): trần cũ 3× và chỉ bật khi lãi > 150k nên
+// cấp 10 (lãi ~146k) không bị chặn, thưởng nhiệm vụ + kèo gấp 7–20× lãi bán. Luật cứng 10 của
+// promt_game.md: bán hàng là nguồn thu chính → trần 0.7× lãi (GĐ325: hạ 0.37× và sàn 66k) (kèo vừa +50% đưa tổng về ~1× lãi), luôn
+// bật khi đã có lịch sử lãi; sàn QUEST_ECO_FLOOR giữ thưởng đáng kể cho tiệm nhỏ.
+
+/** Sàn của trần tổng thưởng bộ ngày (≈ giá trị kho khởi đầu) — tiệm nhỏ vẫn có thưởng đáng nhận. */
+export const QUEST_ECO_FLOOR = 66_000;
+/** Trần tổng thưởng bộ ngày = QUEST_ECO_MULT × lãi bình quân/ngày (không thấp hơn sàn). */
+export const QUEST_ECO_MULT = 0.37;
+
+/** Trần tổng thưởng tiền của bộ nhiệm vụ ngày. Chưa có lịch sử lãi (ngày đầu) → Infinity. */
+export function questEcoCap(avgDailyProfit: number): number {
+  if (!(avgDailyProfit > 0)) return Infinity;
+  return Math.max(QUEST_ECO_FLOOR, avgDailyProfit * QUEST_ECO_MULT);
+}
+
+/** Tiền thưởng kẽ nếu trúng ở mức `tier`: % tổng thưởng nhiệm vụ ngày, chặn bởi trần cứng. */
+export function betBonusMoney(tier: number, totalDailyMoney: number): number {
+  const def = BET_TIERS.find((t) => t.tier === tier) ?? BET_TIERS[0];
+  return Math.min(Math.round(totalDailyMoney * def.bonusPct), Math.round(totalDailyMoney * BET_BONUS_CAP));
+}
+
+export type BetStatus = 'none' | 'pending' | 'won' | 'lost';
+
+/** Phân định kèo THUẦN ĐỌC (không cần action): trong ngày thì pending (đã trúng nếu bonus > 0);
+ * qua ngày thì kèo hết giá trị — hụt hôm qua chỉ nhắc lại đúng 1 sáng ("mai thử lại"), trúng hôm qua khuất luôn. */
+export function betStatus(day: number, bet: QuestBet | null | undefined): BetStatus {
+  if (!bet) return 'none';
+  if (bet.day === day) return bet.bonus > 0 ? 'won' : 'pending';
+  return bet.bonus > 0 || bet.day < day - 1 ? 'none' : 'lost';
+}
 
 export interface Quest {
   id: string;
@@ -66,6 +157,14 @@ export interface QuestContext {
   reservationsToday: number;
   /** Tiền nhà hôm nay (để nhiệm vụ "trụ được" tính đủ chi phí). */
   rent: number;
+  /** Lãi bình quân/ngày gần đây (recentAvgProfit) — nguồn neo tổng thưởng bộ (GĐ106); thiếu → bỏ qua trần. */
+  avgDailyProfit?: number;
+  /** Thời tiết hôm nay (GĐ160): nhiệm vụ "Bán đồ mưa" chỉ vào pool trong ngày mưa/giông. */
+  weather?: Weather;
+  /** Số khách quen ĐÃ phục vụ hôm nay (lastVisitDay === day — GĐ160). */
+  regularsServedToday?: number;
+  /** Tổng khách quen DỰ KIẾN ghé hôm nay (đã phục vụ + chưa ghé; deterministic theo weatherSeed — GĐ160). */
+  regularsComingToday?: number;
 }
 
 const scale = (base: number, level: number, step: number) => Math.round(base * (1 + step * (level - 1)));
@@ -73,6 +172,42 @@ const scale = (base: number, level: number, step: number) => Math.round(base * (
 /** Món nhà làm bán được trong ngày (đọc từ sổ bán theo món). */
 const cookedSoldToday = (c: QuestContext) =>
   Object.entries(c.stats.byItem ?? {}).reduce((n, [id, line]) => n + (COOKED_PRODUCT_IDS.has(id) ? line.qty : 0), 0);
+
+// ─── GĐ160 — Người mới: nới nhiệm vụ doanh thu ngày 1 + mở pool tuỳ chọn từ cấp 1 ───
+// Audit trải nghiệm 28/10: tuần đầu (ngày 1–5) nhiệm vụ ngày lặp y nguyên — pool tuỳ chọn rỗng ở cấp
+// thấp, và nhiệm vụ doanh thu ngày 1 đòi bán 100% kho khởi đầu (phạt người thử chỉnh giá).
+
+/** Mục tiêu doanh thu ngày 1 riêng cho người mới. Kho khởi đầu (newGameData): 25 món trong kho
+ * (mi 10 × 5.000 + nuoc 10 × 6.000 + banh 5 × 8.000 theo bảng giá products.ts) = 150.000đ nếu bán
+ * sạch — mục tiêu cũ 150.000đ đòi đúng vậy. Hạ về ~65% (làm tròn đẹp 100.000đ): ngày 1 còn đang học
+ * nhập-bày-bán, đòi bán sạch kho phạt người thử chỉnh giá. Từ cấp 2 trở lên GIỮ NGUYÊN thang cũ
+ * scale(150000, lv, 0.25) — không đổi dốc cân bằng cho cấp cao. */
+export const NEWBIE_REVENUE_TARGET = 100_000;
+
+/** Doanh thu bán được trong khung sáng sớm 6h–9h (3 ghế đầu ngày, đọc từ sổ theo giờ GĐ78):
+ * bám "giờ vàng sáng" 6h–8h30 (band "sang" — rhythm.ts). Ghế giờ chỉ tới đúng giờ nên khung đo
+ * rộng hơn nửa tiếng cuối — nhiệm vụ khuyến khích MỞ CỚM SỚM, đúng hành vi lịch tự động 8h đang lỡ. */
+const morningRevenue = (stats: DayStats) =>
+  [6, 7, 8].reduce((n, h) => n + (stats.byHour?.[h]?.revenue ?? 0), 0);
+
+/** Đồ mưa (ô dù + áo mưa — products.ts, mở từ cấp 1; khách mưa hỏi theo danh sách rainy trong
+ * chooseWants). Dùng danh sách riêng cho nhiệm vụ để câu chữ khớp đúng "đồ mưa". */
+const RAIN_GEAR_IDS = ['o', 'aomua'];
+
+// ── GĐ254 — biến thể CUỐI TUẦN: Thứ 7/CN nhà bằng nghỉ học, khách ghé ăn vặt dày hơn thật
+// (chooseWants ưu tiên nhóm này — agents/customers.ts, GĐ255). Khác "Bán sạch kệ" (TỔNG món) vì
+// dạy trữ đúng NHÓM hàng đón cuối tuần. Chỉ vào pool ngày Thứ 7/Chủ nhật (isWeekend — calendar.ts).
+/** Số món ăn vặt bán được hôm nay (đọc sổ bán theo món; nhóm chung WEEKEND_SNACKS — products.ts). */
+const weekendSnacksSold = (stats: DayStats) =>
+  WEEKEND_SNACKS.reduce((n, id) => n + (stats.byItem?.[id]?.qty ?? 0), 0);
+
+/** Mục tiêu nhiệm vụ "Cuối tuần ăn vặt" — xuất công khai để tổng kết cuối ngày (GĐ268) đối chiếu
+ *  cùng một thang, không lặp công thức. */
+export const weekendQuestTarget = (lv: number) => scale(6, lv, 0.15);
+
+/** Số món đồ mưa bán được hôm nay (đọc sổ bán theo món). */
+const rainGearSold = (stats: DayStats) =>
+  RAIN_GEAR_IDS.reduce((n, id) => n + (stats.byItem?.[id]?.qty ?? 0), 0);
 
 interface DailyDef {
   id: string; icon: string; title: string; unit: string;
@@ -83,8 +218,11 @@ interface DailyDef {
 }
 
 /** Nhiệm vụ mỗi ngày, mục tiêu và thưởng tăng theo cấp. Đủ mở gì thì thêm việc đó:
- *  luôn có khách/doanh thu/khách vui, lên cấp 3 có dịch vụ quầy, cấp 6 có combo, cấp 21 có món nhà làm;
- *  đang lễ thì đổi nhiệm vụ giữa sang bán hàng của dịp, có lời hẹn thì giữ đúng hẹn. */
+ *  luôn có khách/doanh thu/khách vui, lên cấp 3 có dịch vụ quầy, cấp 6 có combo, cấp 8 thêm trại + mạng xã hội,
+ *  cấp 10 thêm đơn app, cấp 21 có món nhà làm và đơn nấu; đang lễ thì đổi nhiệm vụ giữa sang bán hàng của dịp,
+ *  có lời hẹn thì giữ đúng hẹn. Các việc tuỳ chọn xoay vòng theo ngày để mỗi ngày có thành phần mới.
+ *  GĐ160: pool tuỳ chọn KHÔNG còn rỗng ở cấp thấp — 3 việc mới mở từ cấp 1 (sớm hôm đón khách luôn có;
+ *  bán đồ mưa chỉ ngày mưa; khách quen chỉ ngày có người hẹn ghé) như biến thể theo hoàn cảnh. */
 export function dailyQuests(c: QuestContext): Quest[] {
   const lv = Math.max(1, c.level);
   const claimed = c.log.day === c.day ? new Set(c.log.claimedDaily) : new Set<string>();
@@ -95,21 +233,133 @@ export function dailyQuests(c: QuestContext): Quest[] {
     : c.reservationsToday > 0
       ? { id: 'daily_reserve', icon: '🤝', title: 'Giữ đúng hẹn', unit: 'lời hẹn', target: c.reservationsToday, current: c.stats.reservationsFilled ?? 0, money: scale(100000, lv, 0.25), xp: scale(60, lv, 0.1), show: true }
       : { id: 'daily_items', icon: '🛒', title: 'Bán sạch kệ', unit: 'món', target: scale(15, lv, 0.2), current: c.stats.itemsSold, money: scale(80000, lv, 0.25), xp: scale(50, lv, 0.1), show: true };
-  const defs: DailyDef[] = [
+  // Nhóm luôn hiện: xương sống mỗi ngày, không xoay
+  const always: DailyDef[] = [
     { id: 'daily_customers', icon: '🧍', title: 'Đông khách', unit: 'khách', target: scale(5, lv, 0.2), current: c.stats.customers, money: scale(60000, lv, 0.25), xp: scale(40, lv, 0.1), show: true },
     middle,
-    { id: 'daily_revenue', icon: '💵', title: 'Doanh thu trong ngày', unit: 'đ', target: scale(150000, lv, 0.25), current: c.stats.revenue, money: scale(120000, lv, 0.25), xp: scale(70, lv, 0.1), show: true },
-    { id: 'daily_smile', icon: '😊', title: 'Khách vui vẻ', unit: 'khách', target: scale(8, lv, 0.15), current: c.stats.unhappy ? 0 : c.stats.customers, money: scale(80000, lv, 0.25), xp: scale(50, lv, 0.1), show: true, desc: 'Phục vụ {n} khách mà không ai phàn nàn' },
+    // GĐ160 — ngày 1 còn đang học nhập-bày-bán; đòi bán sạch kho khởi đầu (150.000đ) phạt người thử
+    // chỉnh giá → mục tiêu riêng cấp 1 (NEWBIE_REVENUE_TARGET ~65% kho), từ cấp 2 giữ nguyên thang cũ
+    { id: 'daily_revenue', icon: '💵', title: 'Doanh thu trong ngày', unit: 'đ', target: lv <= 1 ? NEWBIE_REVENUE_TARGET : scale(150000, lv, 0.25), current: c.stats.revenue, money: scale(120000, lv, 0.25), xp: scale(70, lv, 0.1), show: true },
+    { id: 'daily_smile', icon: '😊', title: 'Khách vui vẻ', unit: 'khách', target: scale(8, lv, 0.15), current: Math.max(0, (c.stats.customers ?? 0) - (c.stats.unhappy ?? 0)), money: scale(80000, lv, 0.25), xp: scale(50, lv, 0.1), show: true, desc: 'Phục vụ {n} khách vui vẻ (không tính khách phàn nàn)' },
+  ];
+  // Nhóm tuỳ chọn: lọc theo điều kiện mở rồi XOAY VÒNG THEO NGÀY — start = ngày % độ dài pool,
+  // lấy 3 mục kế tiếp vòng tròn. Xoay xác định (không random) nên mỗi ngày đổi thành phần,
+  // cùng một ngày nào đó luôn ra cùng tổ hợp, và pool xoay hết một vòng thì lặp lại.
+  const optional: DailyDef[] = [
     { id: 'daily_services', icon: '🏦', title: 'Lời từ dịch vụ', unit: 'đ', target: scale(20000, lv, 0.15), current: c.stats.services ?? 0, money: scale(50000, lv, 0.25), xp: scale(35, lv, 0.1), show: lv >= (SERVICES[0]?.unlock ?? 99) },
-    { id: 'daily_combo', icon: '🎁', title: 'Bán theo combo', unit: 'combo', target: scale(3, lv, 0.1), current: c.stats.combos ?? 0, money: scale(90000, lv, 0.25), xp: scale(55, lv, 0.1), show: unlockedCombos(lv).length > 0 },
+    { id: 'daily_combo', icon: '🎁', title: 'Bán theo combo', unit: 'combo', target: scale(3, lv, 0.1), current: c.stats.combos ?? 0, money: scale(90000, lv, 0.25), xp: scale(55, lv, 0.1), show: lv >= COMBO_UNLOCK && unlockedCombos(lv).length > 0 },
     { id: 'daily_cooked', icon: '🍳', title: 'Bán món nhà làm', unit: 'món', target: scale(5, lv, 0.15), current: cookedSoldToday(c), money: scale(100000, lv, 0.25), xp: scale(60, lv, 0.1), show: lv >= COOK_UNLOCK },
+    // Trần đơn app/ngày (data/online.ts): đơn chỉ đổ về trong ONLINE_HOURS (870 phút), cách nhau
+    // orderGap(5★, cấp) × hệ số ngẫu nhiên trung bình 1.0 ⇒ tối đa ~870/max(35, 95−cấp) đơn:
+    // cấp 10 ≈ 10 đơn, cấp 40 ≈ 16 đơn, từ cấp ≥ 60 chạm sàn 35 phút ⇒ trần ~25 đơn/ngày.
+    // Chốt step 0.07 (cũ 0.1 làm cấp 40 phải giao 15/16 đơn — gần như toàn bộ trần):
+    //   cấp mở khoá 10 → round(3 × (1 + 0.07×9)) = 5 đơn (~nửa trần lúc mới mở, dải 4–6),
+    //   cấp 40         → round(3 × (1 + 0.07×39)) = 11 đơn ≈ 70% trần 16 đơn/ngày (dải 60–75%).
+    { id: 'daily_online', icon: '🛵', title: 'Giao đơn app', unit: 'đơn', target: scale(3, lv, 0.07), current: c.stats.onlineDone ?? 0, money: scale(120000, lv, 0.25), xp: scale(60, lv, 0.1), show: lv >= ONLINE_UNLOCK },
+    { id: 'daily_farm', icon: '🌾', title: 'Thu hoạch trại', unit: 'sản phẩm', target: scale(6, lv, 0.15), current: c.stats.farmHarvest ?? 0, money: scale(90000, lv, 0.25), xp: scale(50, lv, 0.1), show: lv >= GARDEN_UNLOCK },
+    // promote() chỉ cho đăng 1 bài/ngày (data/social.ts) nên mục tiêu cố định 1, đo cả bài xin lỗi khi khủng hoảng
+    { id: 'daily_social', icon: '📱', title: 'Lên mạng xã hội', unit: 'bài', target: 1, current: c.stats.socialPosts ?? 0, money: scale(70000, lv, 0.25), xp: scale(40, lv, 0.1), show: lv >= SOCIAL_UNLOCK, desc: 'Đăng bài quảng bá (hoặc xin lỗi khi khủng hoảng) hôm nay' },
+    { id: 'daily_cook_orders', icon: '🥡', title: 'Giao đơn nấu', unit: 'đơn', target: scale(2, lv, 0.1), current: c.stats.cookOrders ?? 0, money: scale(110000, lv, 0.25), xp: scale(55, lv, 0.1), show: lv >= COOK_UNLOCK },
+    // ── GĐ160 — việc tuỳ chọn mở TỪ CẤP 1 + biến thể theo hoàn cảnh ──
+    // "Sớm hôm đón khách": đo doanh thu khung sáng sớm 6h–9h (sổ theo giờ) — khuyến khích mở cửa sớm
+    // đón nửa giờ vàng đầu ngày (6h–8h30) mà lịch tự động 8h đang bỏ lỡ (cùng nhịp với cảnh báo lịch).
+    { id: 'daily_morning', icon: '🌅', title: 'Sớm hôm đón khách', unit: 'đ', target: scale(20000, lv, 0.2), current: morningRevenue(c.stats), money: scale(80000, lv, 0.25), xp: scale(50, lv, 0.1), show: true, desc: 'Bán được {n}đ từ 6h–9h sáng — mở cửa sớm đón nửa giờ vàng đầu ngày' },
+    // "Bán đồ mưa": biến thể THỜI TIẾT — chỉ vào pool ngày mưa/giông; đo ô dù + áo mưa bán được
+    // (cả hai mở từ cấp 1, khách mưa hay hỏi theo chooseWants — dạy người mới trữ hàng đúng hoàn cảnh).
+    { id: 'daily_rain', icon: '🌧️', title: 'Bán đồ mưa', unit: 'món', target: scale(1, lv, 0.05), current: rainGearSold(c.stats), money: scale(60000, lv, 0.25), xp: scale(40, lv, 0.1), show: c.weather === 'rain' || c.weather === 'storm', desc: 'Ngày mưa: bán {n} món đồ mưa (ô dù, áo mưa) cho khách lội mưa' },
+    // "Đón khách quen": biến thể theo khách quen — chỉ vào pool ngày CÓ khách quen hẹn ghé (visitsToday
+    // deterministic theo weatherSeed, dữ liệu thật từ regulars.ts). Mục tiêu = số người ghé hôm nay,
+    // chặn trần thang cấp để không đòi phục vụ cả đội khách quen ở cấp cao.
+    { id: 'daily_regulars', icon: '💛', title: 'Đón khách quen', unit: 'lượt', target: Math.min(scale(2, lv, 0.05), Math.max(0, c.regularsComingToday ?? 0)), current: c.regularsServedToday ?? 0, money: scale(70000, lv, 0.25), xp: scale(45, lv, 0.1), show: (c.regularsComingToday ?? 0) > 0, desc: 'Phục vụ {n} khách quen ghé hôm nay — mỗi người chỉ ghé đúng khung giờ của mình' },
+    // GĐ254 — "Cuối tuần ăn vặt": biến thể theo THỨ (Thứ 7/CN), cuối pool nên ngày thường
+    // xoay vòng GIỮ NGUYÊN, chỉ cuối tuần mới có thêm mục này trong pool.
+    { id: 'daily_weekend', icon: '🍬', title: 'Cuối tuần ăn vặt', unit: 'món', target: weekendQuestTarget(lv), current: weekendSnacksSold(c.stats), money: scale(70000, lv, 0.25), xp: scale(40, lv, 0.1), show: isWeekend(c.day), desc: 'Cuối tuần: bán {n} món ăn vặt (mì gói, bánh kẹo, nước ngọt, bim bim...)' },
   ].filter((d) => d.show);
-  return defs.map((d) => ({
-    id: d.id, icon: d.icon, title: d.title,
-    description: ('desc' in d && d.desc ? d.desc.replace('{n}', d.target.toLocaleString('vi-VN')) : `Đạt ${d.target.toLocaleString('vi-VN')} ${d.unit} trong ngày`),
-    current: Math.min(d.current, d.target), target: d.target, money: d.money, xp: d.xp,
-    done: d.current >= d.target, claimed: claimed.has(d.id),
-  }));
+  const start = optional.length ? c.day % optional.length : 0;
+  const picked = Array.from({ length: Math.min(3, optional.length) }, (_, i) => optional[(start + i) % optional.length]);
+  const defs = [...always, ...picked].filter((d) => d.show);
+  // Kèo hôm nay: nhân mục tiêu CẢ BỘ (chỉ mục tiêu — thưởng từng việc giữ nguyên, phần thêm của kèo tính riêng ở betBonusMoney).
+  const betTier = c.log.bet && c.log.bet.day === c.day ? c.log.bet.tier : 1;
+  // GĐ106 — Neo tổng thưởng tiền của bộ ngày vào lãi bình quân gần đây (kinh tế thật): dù mỗi việc định
+  // mức theo cấp, tổng bộ bị chặn ở questEcoCap(c.avgDailyProfit). Vượt trần → giảm ĐỀU tiền từng việc để
+  // tổng đúng trần (per-quest giữ nguyên tỉ lệ). Tiệm nhỏ/chưa có lãi (cap=Infinity) → tỉ lệ 1, không đổi.
+  const rawTotal = defs.reduce((n, d) => n + d.money, 0);
+  const scaledRatio = rawTotal > 0 ? Math.min(1, questEcoCap(c.avgDailyProfit ?? 0) / rawTotal) : 1;
+  return defs.map((d) => {
+    const target = Math.round(d.target * betTier);
+    const money = Math.max(0, Math.floor(d.money * scaledRatio));
+    return {
+      id: d.id, icon: d.icon, title: d.title,
+      description: ('desc' in d && d.desc ? d.desc.replace('{n}', target.toLocaleString('vi-VN')) : `Đạt ${target.toLocaleString('vi-VN')} ${d.unit} trong ngày`),
+      current: Math.min(d.current, target), target, money, xp: d.xp,
+      done: d.current >= target, claimed: claimed.has(d.id),
+    };
+  });
+}
+
+// ───── Tiến độ "trọn bộ" nhiệm vụ hôm nay ─────
+
+export interface DailySetProgress {
+  /** Số việc hôm nay (đã hiện). */
+  total: number;
+  /** Số việc đã đạt mục tiêu (chưa tính đã nhận thưởng). */
+  done: number;
+  /** Số việc đã nhận thưởng. */
+  claimed: number;
+  pct: number;
+  allDone: boolean;
+  allClaimed: boolean;
+}
+
+/** Đếm cả bộ nhiệm vụ ngày: đã xong X/M, đã nhận thưởng, và trạng thái khép trọn bộ. */
+export function dailySetProgress(c: QuestContext): DailySetProgress {
+  const qs = dailyQuests(c);
+  const total = qs.length;
+  const done = qs.filter((q) => q.done).length;
+  const claimed = qs.filter((q) => q.claimed).length;
+  return {
+    total,
+    done,
+    claimed,
+    pct: total ? Math.round((done / total) * 100) : 0,
+    allDone: total > 0 && done === total,
+    allClaimed: total > 0 && claimed === total,
+  };
+}
+
+// ───── Kèo: bộ "việc chính hôm nay" (GĐ107) ─────
+// GĐ105 mô phỏng cho thấy kèo gắn TRỌN BỘ nhiệm vụ ngày (gồm cả việc xoay tuỳ chọn: app/social/nấu/combo/
+// dịch vụ) không bao giờ trúng — kể cả tier ×1.0 — vì muốn thắng phải làm MỌI việc cùng lúc một ngày.
+// Giữ chân "kèo có cược" (GĐ103) cần một thưởng thực sự đạt được: tái định nghĩa KÈO bám vào bộ VIỆC
+// CHÍNH hằng ngày (đông khách + bán hàng/giữ hẹn + doanh thu) — "tiệm hôm nay chạy tốt" — thay vì đòi
+// thêm các việc phụ xoay vòng. Tier (×1.0/1.5/2.0, xem BET_TIERS) vẫn nhân mục tiêu bộ như cũ.
+
+/** Các id nhiệm vụ "việc chính" luôn hiện mỗi ngày (kèo chỉ bám nhóm này). */
+// LƯU Ý GĐ107: KHÔNG gồm daily_smile — quest "Khách vui vẻ" tự về 0 ngay khi có 1 khách phàn nàn trong
+// ngày (`current: unhappy ? 0 : customers`), nên có khách quạu là kèo chết vô điều kiện dù chơi tốt.
+// Kèo bám "đông khách + bán hàng/giữ hẹn + doanh thu" — tiêu chí "tiệm hôm nay bán chạy" — thay vì đòi
+// một ngày không ai phàn nàn (quá khắt với mục tiêu của kèo).
+export const BET_CORE_IDS: readonly string[] = [
+  'daily_customers', 'daily_revenue', 'daily_items', 'daily_festival', 'daily_reserve',
+];
+
+/** Kiểm tra một nhiệm vụ có thuộc bộ "việc chính" mà kèo bám không. */
+export const isBetCore = (id: string) => BET_CORE_IDS.includes(id);
+
+/** Tiến độ của bộ VIỆC CHÍNH hôm nay (kèo dùng nhóm này để phân định trúng/hụt). */
+export function betCoreSetProgress(c: QuestContext): DailySetProgress {
+  const qs = dailyQuests(c).filter((q) => isBetCore(q.id));
+  const total = qs.length;
+  const done = qs.filter((q) => q.done).length;
+  const claimed = qs.filter((q) => q.claimed).length;
+  return {
+    total,
+    done,
+    claimed,
+    pct: total ? Math.round((done / total) * 100) : 0,
+    allDone: total > 0 && done === total,
+    allClaimed: total > 0 && claimed === total,
+  };
 }
 
 interface StoryStep {

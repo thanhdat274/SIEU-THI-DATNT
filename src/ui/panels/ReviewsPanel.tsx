@@ -9,6 +9,7 @@ import { ReputationCard } from './ReportPanels';
 export function ReviewsPanel() {
   const { reviews, closePanel, repLog } = useGame();
   const [filter, setFilter] = useState<'all' | 'good' | 'bad'>('all');
+  const [showAll, setShowAll] = useState(false);
   const sum = summarizeReviews(reviews);
   const perProduct = productSummary(reviews);
   const max = Math.max(1, ...sum.byStars);
@@ -70,7 +71,8 @@ export function ReviewsPanel() {
           )}
           <Tabs tabs={filters} value={filter} onChange={setFilter} />
           <div style={{ display: 'grid', gap: 6, maxWidth: 560 }}>
-            {shown.map((r) => (
+            {/* Mặc định chỉ hiện 12 đánh giá gần nhất: sổ đánh giá ngày 60+ dài ~7.000px trên điện thoại */}
+            {(showAll ? shown : shown.slice(0, 12)).map((r) => (
               <div key={r.id} style={{ ...styles.card, display: 'block' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <b>{r.author}</b>
@@ -85,6 +87,16 @@ export function ReviewsPanel() {
               </div>
             ))}
             {shown.length === 0 && <p style={styles.sub}>Không có lời nào trong mục này.</p>}
+            {!showAll && shown.length > 12 && (
+              <button style={{ ...styles.btn, marginLeft: 0 }} onClick={() => setShowAll(true)}>
+                Xem thêm {shown.length - 12} đánh giá cũ hơn
+              </button>
+            )}
+            {showAll && shown.length > 12 && (
+              <button style={{ ...styles.btn, marginLeft: 0 }} onClick={() => setShowAll(false)}>
+                Thu gọn — chỉ hiện 12 đánh giá gần nhất
+              </button>
+            )}
           </div>
         </>
       )}

@@ -1,0 +1,168 @@
+import { lazyGltfLoader } from './gltfLoader';
+import * as THREE from 'three';
+
+/**
+ * Đèn báo "khách đang đợi" trước hiên tiệm (gđ180 "Có khách chờ quầy — nhìn là biết").
+ * Một quả đèn lồng nhỏ gắn tường cạnh cửa; lõi phát sáng ấm bật khi có khách đang đợi ở quầy
+ * (`waiting > 0`, sim đã có — KHÔNG thêm mô phỏng, chỉ tái dùng world state). Tín hiệu không lời:
+ * chủ đang ở sau nhà / xa quầy vẫn thấy "đèn sáng là có khách chờ", ghé về kịp câu quầy.
+ * Chỉ hình ảnh; **không chặn lưới đi lại** (boxes rỗng — convention kit prop GĐ172/177/179).
+ */
+
+/** Vị trí đặt: bên trái cửa tiệm (đối xứng cột đèn lồng GĐ177 bên phải x=5.9), sát tường z=1. */
+export const WAIT_LAMP_POS: [number, number, number] = [3.1, 0, 1.3];
+/** Tên node phát sáng trong GLB — code bật/tắt theo có khách đợi. */
+export const GLOW_NODE = 'cho_doi_glow';
+/** Quá nhiều đèn phát sáng cũng được, nhưng đừng để đèn rời đèn khác quá dày — rà bằng test. */
+
+/** Đèn báo chỉ có ý nghĩa khi tiệm đang mở; cuối ngày đóng cửa thì không còn khách chờ. */
+export interface WaitLampActive { open: boolean; waiting: number; urgency?: 0 | 1 | 2 }
+
+/**
+ * GĐ186 — "Sắp mất khách": quầy bắt đầu tắc khi có từ `BACKUP_WAITING` khách đợi trở lên, và được
+ * coi là sắp mất khách khi giữ mức đó đủ `BACKUP_AFTER_GAME_S` giây game (hàng không tiêu tán).
+ * Đèn báo lúc đó chuyển sang nháy KHẨN để chủ "nhìn là biết phải về quầy / mở quầy thêm", chứ không
+ * chỉ sáng đều như GĐ180. Thời gian game thuần đọc từ đồng hồ (pause an toàn — dừng game thì tích 0).
+ */
+export const BACKUP_WAITING = 3;
+export const BACKUP_AFTER_GAME_S = 15;
+const MAX_BACKUP = 60;
+
+/** Mức báo: 0 = không ai chờ; 1 = có khách chờ (bình thường); 2 = sắp mất khách (hàng đông lâu). */
+export function queueUrgency(waiting: number, backedUpGameSeconds: number): 0 | 1 | 2 {
+  if (waiting <= 0) return 0;
+  if (waiting >= BACKUP_WAITING && backedUpGameSeconds >= BACKUP_AFTER_GAME_S) return 2;
+  return 1;
+}
+
+/** Giữ thời lượng "hàng đông" trong khoảng 0..MAX: cộng khi tắc, rút dần (2×) khi tiêu tán. */
+export function accumulateBackup(prev: number, waiting: number, gameSeconds: number): number {
+  if (waiting >= BACKUP_WAITING) return Math.min(prev + gameSeconds, MAX_BACKUP);
+  return Math.max(0, prev - gameSeconds * 2);
+}
+
+/** Độ sáng lõi đèn (để test thuần — update() dùng luôn): tắt khi đóng/khi không ai chờ; khẩn thì giữ tối đa. */
+export function waitLampIntensity(a: { open: boolean; waiting: number; urgency?: 0 | 1 | 2 }): number {
+  if (!a.open || a.waiting <= 0) return 0;
+  const u = a.urgency ?? 1;
+  const base = Math.min(1, 0.55 + a.waiting * 0.25);
+  return (u === 2 ? 1 : base) * 1.6;
+}
+
+/** Rà vị trí đặt: ngoài thế giới / giữa lòng đường / đè mặt tiền / chắn cửa / chồng cột đèn biển là bug. */
+export function waitLampProblems(): string[] {
+  const problems: string[] = [];
+  const [x, , z] = WAIT_LAMP_POS;
+  if (Math.abs(x) > 80 || Math.abs(z) > 80) problems.push(`đèn báo khách đợi @${x},${z}: ngoài thế giới ±80`);
+  if (z > 3 && z < 9) problems.push(`đèn báo @${x},${z}: giữa lòng đường`);
+  if (Math.hypot(x - 4, z - 1) < 0.7) problems.push(`đèn báo @${x},${z}: chắn trước cửa tiệm (x=4,z=1)`);
+  if (x === 5.9 && z === 2.1) problems.push(`đèn báo @${x},${z}: đè đúng cột đèn lồng`);
+  if (x === 5.05 && z === 1.45) problems.push(`đèn báo @${x},${z}: đè đúng biển mở/đóng cửa`);
+  return problems;
+}
+
+export interface WaitLamp {
+  group: THREE.Group;
+  /** Bật theo trạng thái "khách đang đợi": waiting>0 và tiệm mở → sáng ấm (kèm nhấp nhô nhẹ). */
+  update(active: WaitLampActive, time: number): void;
+  /** GLB đã về chưa (fallback thủ tục hiện nếu chưa/không về được). */
+  loaded: boolean;
+}
+
+/** Quầng sáng ấm loang quanh đèn báo, dễ nhìn từ xa khi có khách chờ. */
+function glowTexture(): THREE.CanvasTexture {
+  const c = document.createElement('canvas');
+  c.width = c.height = 96;
+  const g = c.getContext('2d')!;
+  const grad = g.createRadialGradient(48, 48, 3, 48, 48, 46);
+  grad.addColorStop(0, 'rgba(255, 200, 130, 0.95)');
+  grad.addColorStop(0.45, 'rgba(255, 185, 110, 0.4)');
+  grad.addColorStop(1, 'rgba(255, 176, 96, 0)');
+  g.fillStyle = grad;
+  g.fillRect(0, 0, 96, 96);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+/** Quả đèn thủ tục làm "cái xác" dự phòng — GLB về thì thay phần mình, không về vẫn có đèn. */
+function fallbackWaitLamp(glowMat: THREE.MeshStandardMaterial): THREE.Group {
+  const g = new THREE.Group();
+  const wood = new THREE.MeshStandardMaterial({ color: 0x6b4a26 });
+  const metal = new THREE.MeshStandardMaterial({ color: 0x455a64 });
+  const glass = new THREE.MeshStandardMaterial({ color: 0xffd18b, transparent: true, opacity: 0.5, roughness: 0.3 });
+  const arm = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.06, 0.44), wood);
+  arm.position.set(0, 1.52, 0.22);
+  const glassBall = new THREE.Mesh(new THREE.SphereGeometry(0.17, 12, 9), glass);
+  glassBall.position.set(0, 1.28, 0.44);
+  const glow = new THREE.Mesh(new THREE.SphereGeometry(0.105, 10, 8), glowMat);
+  glow.position.set(0, 1.28, 0.44);
+  for (const m of [arm, glassBall, glow, new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.055, 0.05, 6), metal)]) {
+    if (m instanceof THREE.Mesh) { m.castShadow = true; m.receiveShadow = false; g.add(m); }
+  }
+  return g;
+}
+
+export function createWaitLamp(baseUrl = '/models/facade/'): WaitLamp {
+  const group = new THREE.Group();
+  group.name = 'waitLamp';
+  const [x, , z] = WAIT_LAMP_POS;
+  group.position.set(x, 0, z);
+
+  const glowMat = new THREE.MeshStandardMaterial({ color: 0xffb35c, emissive: 0xffa53c, emissiveIntensity: 0 });
+  // Vật liệu phát sáng của chính GLB (node cho_doi_glow) — điều khiển chung với glowMat (QA gđ177
+  // bắt kiểu lỗi này: emissive mặc định của GLB cháy sáng cố định nếu không bật/tắt theo state).
+  let glbGlow: THREE.MeshStandardMaterial | null = null;
+  const pulse = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: glowTexture(), color: 0xffc178, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false,
+  }));
+  pulse.position.set(0, 1.3, 0.44);
+  pulse.scale.setScalar(1.7);
+  group.add(pulse);
+
+  const fallback = fallbackWaitLamp(glowMat);
+  group.add(fallback);
+
+  const api: WaitLamp = { group, loaded: false, update: (a, time) => {
+    const on = a.open && a.waiting > 0;
+    const u = a.urgency ?? (a.waiting > 0 ? 1 : 0);
+    const intensity = waitLampIntensity(a);
+    glowMat.emissiveIntensity = intensity;
+    if (glbGlow) glbGlow.emissiveIntensity = intensity;
+    // Nhấp nhô: khẩn (sắp mất khách) thì nháy NHANH và RÕ hơn hẳn để đánh mắt; bình thường dịu êm
+    const freq = u === 2 ? 9 : 3;
+    pulse.material.opacity = on
+      ? (u === 2 ? 0.5 + 0.5 * Math.sin(time * freq) : 0.35 + 0.25 * Math.sin(time * freq))
+      : 0;
+    // Không có nguồn sáng thật — chỉ là tín hiệu không lời, tránh thêm light cho một prop nhỏ
+  } };
+
+  const loader = lazyGltfLoader();
+  fetch(`${baseUrl}facade-manifest.json`)
+    .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`manifest ${r.status}`))))
+    .then(() => loader.load(
+      `${baseUrl}den_cho.glb`,
+      (gltf) => {
+        const root = gltf.scene;
+        root.traverse((o) => {
+          if ((o as THREE.Mesh).isMesh) {
+            o.castShadow = true; o.receiveShadow = false;
+            if (o.name === GLOW_NODE || o.userData.name === GLOW_NODE) {
+              const m = (o as THREE.Mesh).material;
+              if (m && !Array.isArray(m)) glbGlow = m as THREE.MeshStandardMaterial;
+            }
+          }
+        });
+        if (glbGlow) glbGlow.emissiveIntensity = 0;
+        group.add(root);
+        fallback.visible = false;
+        api.loaded = true;
+      },
+      undefined,
+      () => { /* giữ fallback */ },
+    ))
+    .catch(() => { /* offline: chỉ cái xác thủ tục */ });
+
+  api.update({ open: false, waiting: 0 }, 0);
+  return api;
+}

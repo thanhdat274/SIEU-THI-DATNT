@@ -2,8 +2,9 @@ import { useGame } from '../../core/store';
 import { INSPECTION_EVERY, INSPECTION_UNLOCK } from '../../data/biz';
 import { isCookStation } from '../../data/furniture';
 import { LICENSE_FINE, LICENSE_GRACE, LICENSES, licenseStatus, requiredLicenses, SUSPEND_AFTER } from '../../data/licenses';
+import { licenseHealth } from '../../data/licenseHealth';
 import { formatMoney } from '../../data/products';
-import { Footer, styles } from './shared';
+import { Callout, Footer, styles } from './shared';
 
 const STATUS = {
   none: { label: 'Chưa có', color: '#e74c3c' },
@@ -24,6 +25,25 @@ export function LicensesPanel() {
         Thanh tra định kỳ mỗi {INSPECTION_EVERY} ngày (từ cấp {INSPECTION_UNLOCK}), và ghé đột xuất khi khách phản ánh nhiều. Thiếu giấy phép bắt buộc
         quá {LICENSE_GRACE} ngày ân hạn thì phạt {formatMoney(LICENSE_FINE)} mỗi tờ. Trượt {SUSPEND_AFTER} lần liền là bị đình chỉ một ngày.
       </p>
+      {(() => {
+        const lh = licenseHealth(licenses, need, day);
+        if (lh.lines.length === 0) return null;
+        const tone = lh.verdict === 'danger' ? 'danger' : lh.verdict === 'warn' ? 'warn' : 'ok';
+        const title = lh.verdict === 'danger'
+          ? `🚨 Thiếu/hết hạn ${lh.missing.length} giấy phép bắt buộc — phạt tới ${formatMoney(lh.fineExposure)}`
+          : lh.verdict === 'warn'
+            ? `⏰ ${lh.expiring.length} giấy phép sắp hết hạn, nên gia hạn sớm`
+            : `✅ Đủ ${lh.lines.length} giấy phép bắt buộc đang cần`;
+        return (
+          <Callout tone={tone} style={{ marginBottom: 10 }} title={title}>
+            <div style={{ marginTop: 2, fontSize: 12 }}>
+              {lh.verdict === 'danger' && <>{lh.missing.map((m) => `${m.icon} ${m.name} (${formatMoney(m.renewCost)})`).join(' · ')} — bấm gia hạn kẻo thanh tra phạt từng tờ.</>}
+              {lh.verdict === 'warn' && <>{lh.expiring.map((e) => `${e.name} còn ${e.daysLeft} ngày (${formatMoney(e.renewCost)})`).join(' · ')}</>}
+              {lh.verdict === 'ok' && <>Cứ giữ hạn để thanh tra định kỳ/đột xuất không phạt được.</>}
+            </div>
+          </Callout>
+        );
+      })()}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 10 }}>
         <div style={{ ...styles.card, display: 'block' }}>
           <small style={{ opacity: 0.7 }}>📋 Đợt định kỳ tới</small>

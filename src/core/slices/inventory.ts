@@ -1,8 +1,9 @@
 import { furnitureDef } from '../../data/furniture';
-import { warehouseTier, WAREHOUSE_TIERS } from '../../data/warehouse';
+import { WAREHOUSE_TIERS } from '../../data/warehouse';
 import { customersPerDay } from '../../data/levels';
 import { formatMoney, productById, unlockedProducts } from '../../data/products';
 import { orderTotal, supplierById } from '../../data/suppliers';
+import { addRel } from '../../data/supplierRel';
 import { fitLots, mergeLots, tierMarkdown, takeOldest } from '../../data/freshness';
 import { COOKED_PRODUCT_IDS } from '../../data/recipes';
 import { type GameState, type Furniture, type SetState, type GetState, storageCapacity, storageUsed } from '../gameTypes';
@@ -14,7 +15,7 @@ import { updateFurniture } from './build';
 export const createInventorySlice = (set: SetState, get: GetState): Pick<GameState, 'toggleShop' | 'buy' | 'placeOrder' | 'noteDemand' | 'upgradeWarehouse' | 'replaceEmptySlots' | 'unstockTier' | 'stockTier' | 'takeFromShelf' | 'consumeStock'> => ({
   toggleShop: () => {
     const s = get();
-    if (!s.shopOpen && s.inspection?.suspendedDay === s.day) return s.notify('⛔ Tiệm đang bị đình chỉ kinh doanh hôm nay vì trượt thanh tra nhiều lần — mai mới mở cửa lại được');
+    if (!s.shopOpen && s.inspection?.suspendedDay === s.day) return s.notify('⛔ Tiệm bị đình chỉ hôm nay vì trượt thanh tra — mai mở lại.');
     set({ shopOpen: !s.shopOpen });
     s.notify(s.shopOpen ? '🔒 Đã đóng cửa tiệm' : `🏪 Mở cửa! Hôm nay dự kiến khoảng ${customersPerDay(s.level)} khách`);
   },
@@ -34,7 +35,7 @@ export const createInventorySlice = (set: SetState, get: GetState): Pick<GameSta
     const need = storageUsed(s.storage, { [productId]: qty });
     const cap = storageCapacity(s.warehouseTier);
     if (need > cap) {
-      s.notify(`📦 Nhà kho không đủ chỗ: cần thêm ${qty} thùng nhưng chỉ còn trống ${Math.max(0, cap - storageUsed(s.storage))}. Nâng cấp nhà kho hoặc nhập ít hơn nhé!`);
+      s.notify(`📦 Kho thiếu chỗ: cần ${qty} thùng, trống ${Math.max(0, cap - storageUsed(s.storage))}. Nâng kho hoặc nhập ít lại.`);
       return false;
     }
     const k = copyStock(s);
@@ -66,19 +67,25 @@ export const createInventorySlice = (set: SetState, get: GetState): Pick<GameSta
     const cap = storageCapacity(s.warehouseTier);
     const need = storageUsed(s.storage, ...pending, lines);
     if (need > cap) {
-      s.notify(`📦 Nhà kho không đủ chỗ: đơn cần ${need - storageUsed(s.storage, ...pending)} thùng, kho còn trống ${Math.max(0, cap - storageUsed(s.storage, ...pending))} thùng. Nâng cấp nhà kho nhé!`);
+      s.notify(`📦 Kho thiếu chỗ: cần ${need - storageUsed(s.storage, ...pending)} thùng, trống ${Math.max(0, cap - storageUsed(s.storage, ...pending))}. Nâng kho nhé!`);
       return false;
     }
     const stats = { ...s.stats, spent: s.stats.spent + cost };
     const totals = { ...s.totals, spent: s.totals.spent + cost };
+    // Mối quen lâu dài (GĐ67): ghi doanh mua + số đơn của mối (tích lũy cả ván + theo tháng để so cam kết)
+    const nbiz = {
+      ...s.biz,
+      supplierRel: { ...(s.biz.supplierRel ?? {}), [supplierId]: addRel(s.biz.supplierRel?.[supplierId], cost) },
+      supplierRelMonth: { ...(s.biz.supplierRelMonth ?? {}), [supplierId]: (s.biz.supplierRelMonth?.[supplierId] ?? 0) + cost },
+    };
     if (sup.delayDays === 0) {
       const k = copyStock(s);
       for (const [id, qty] of Object.entries(lines)) putStock(k, id, qty);
-      set({ money: s.money - cost, ...k, stats, totals });
+      set({ money: s.money - cost, ...k, stats, totals, biz: nbiz });
       const swapped = s.autoSwap ? get().replaceEmptySlots() : [];
       s.notify(`📦 Đã nhập hàng từ ${sup.name}: ${formatMoney(cost)}${swapped.length ? ` · 🔄 Thay ô hết hàng: ${swapped.join(', ')}` : ''}`);
     } else {
-      set({ money: s.money - cost, stats, totals, deliveries: [...s.deliveries, { supplierId, items: lines }] });
+      set({ money: s.money - cost, stats, totals, biz: nbiz, deliveries: [...s.deliveries, { supplierId, items: lines }] });
       s.notify(`🚚 Đã đặt ${sup.name} (${formatMoney(cost)}), hàng về lúc 6h sáng mai`);
     }
     return true;
@@ -103,7 +110,7 @@ export const createInventorySlice = (set: SetState, get: GetState): Pick<GameSta
     s.notify(`🏭 Đã nâng cấp ${next.name}: chứa ${next.cases} thùng, giữ lạnh ${next.cold} món`);
     return true;
   },
-  replaceEmptySlots: () => {
+  replaceEmptySlots: (announce = false) => {
     const done: string[] = [];
     const incoming = new Set(get().deliveries.flatMap((d) => Object.keys(d.items)));
     for (const f0 of get().furniture) {
@@ -124,6 +131,9 @@ export const createInventorySlice = (set: SetState, get: GetState): Pick<GameSta
         done.push(`${productById(old).name} → ${pick.name}`);
       });
     }
+    // Báo ngay trong thao tác (không để UI tự báo theo giá trị trả về): hẻm online máy khách chỉ nhận
+    // lời nhắn máy chạy gửi về, giá trị trả về luôn là bản tạm
+    if (announce) get().notify(done.length ? `🔄 Đã thay: ${done.join(', ')}` : 'Không có ô nào cần thay (hoặc kho chưa có món phù hợp)');
     return done;
   },
   unstockTier: (uid, tierIndex) => {

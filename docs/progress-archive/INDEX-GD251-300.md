@@ -1,0 +1,43 @@
+- GĐ251 — 💲 Giá dịp lễ (suggestPrice/priceForecast theo tolerance: trần tăng nới rộng, bớt bảo hạ giá; bảng giá nói rõ khách lễ chịu giá)
+- GĐ252 — 🧍 Vai hiện diện (thu ngân/bảo vệ/chăm khách) khỏi bảng rảnh + sửa OrderPanel vỡ TDZ phiếu trữ lễ
+- GĐ253 — 🔀 Xếp lại ca mai một chạm (staffShiftFix: bớt/dồn ca theo %rảnh + giờ đông, nút trên thẻ recap)
+- GĐ254 — 📅 Biến thể cuối tuần (weekdayOf/isWeekend + quest "Cuối tuần ăn vặt" Thứ 7/CN, HUD hiện thứ)
+- GĐ255 — 🍬 Cuối tuần thành nhịp thật (chooseWants ưu tiên nhóm ăn vặt Thứ 7/CN, list chung với quest)
+- GĐ256 — 🗓️ Lịch cả năm hiện cuối tuần (ô Thứ 7/CN nền sáng, tooltip có thứ, gameDayOfDoy)
+- GĐ257 — ☀️ Cuối tuần thành việc sáng (Sổ đầu ngày nhắc châm kệ ăn vặt Thứ 7/CN, tiêu đề có thứ)
+- GĐ258 — 🎨 Gọn 6 họ màu cũ còn sót về bảng duyệt GĐ166 (e17055/fdcb6e/00b894/d63031/ff8a7a/c0392b)
+- GĐ259 — 🧪 Coverage sweep: test credit/services/professions + xoá 6 id chết trong likes nghề
+- GĐ260 — ✅ QA TOÀN DIỆN: 34 panel × 3 cỡ màn 0 tràn/0 lỗi, autoplay ngày thật, coverage 87.17/75.75
+- GĐ261 — 🔮 Mồi cuối tuần tối thứ Sáu (Mai tiệm có gì nhắc châm kệ ăn vặt khi mai Thứ 7/CN)
+- GĐ262–265 — 📅🎨 Thẻ tuần biết thứ · khoá tuần×thứ · 2 đợt quét thẩm mỹ (chi tiết archive)
+- GĐ272 — 🖼️ Quét đăng nhập + menu Thêm @320/390/768 — 0 lỗi, chốt chuỗi rà soát màn hình
+- GĐ273 — 🔮 Dự báo "tuần mai khách săn" trên Nhập hàng tối CN + audit trending/weeklyChallenge
+- GĐ274 — 🔮 Mồi tuần mới tối CN trong Mai tiệm có gì (khớp GĐ273)
+- GĐ275 — ⏰ Lịch tự động chỉnh giờ mở cửa 6h–8h (autoOpenAt + xoay vòng preset trong menu hồ sơ)
+- GĐ276 — ⏰ Dòng lịch tự động trên Sổ đầu ngày (autoOpenNote)
+- GĐ279 — 🧾 Note biết thu ngân tự mở cửa sáng sớm (cashierOpensMorning)
+- GĐ280 — 📊 Đóng GĐ110/117 bằng số liệu (xương sống 24–26/28; quest hành động bot không làm)
+- GĐ281 — 👥 Lock độ phủ 28 khách quen (tất cả ghé được, phân phối <2×)
+- GĐ282 — 📖 QA mắt 4 arc A–D trọn vẹn — MỞ gate arc E
+- GĐ283 — 🎊 Arc E "Hàng xóm khai trương" (thay cam_do_mo)
+- GĐ284 — 🧹 Dồn GĐ283 sang archive
+- GĐ285 — ⏰ Khoá cấu trúc TIME_BANDS (liên tục 6h–22h, wants món thật, phân loại)
+- GĐ280 — 📊 Đóng GĐ110/117: đo nhiệm vụ cấp 50 (xương sống 24–26/28; 8 quest hành động bot không làm) + test khoá tín hiệu
+- GĐ277 — 💾 Khoá autoOpenAt qua save (3 test) + lock chợ phiên luôn rơi Chủ nhật
+- GĐ278 — 👀 QA mắt thẻ CÓ dữ liệu GĐ155–159 (thú cưng/hụi/khủng hoảng/bỏ lỡ) — đóng watch-item
+- GĐ286 — Co-op: hội thoại cốt truyện không dừng giờ hẻm + ngất khuya khi có người ngủ
+- GĐ287 — 🏗️ Sân chơi dùng chung ở hẻm online (1 lượt/ngày theo state chung; chặn góp kép, test co-op)
+
+- GĐ288 — 👥 Co-op parity: khoá chính sách tái sinh NG+ & chào mừng quay lại
+- GĐ289 — 📆 Nhịp tháng vận hành: monthPace, dự báo hoàn thành thử thách tháng & cảnh báo chuỗi
+- GĐ290 — 🧺 Chợ phiên đầu ngõ thành việc sáng trong Việc hôm nay (Sổ đầu ngày)
+- GĐ291 — 🍬 Lô chợ phiên đầu tháng nhận biết món ăn vặt cuối tuần & gợi ý trữ hàng
+- GĐ292 — 🧺 Đồng bộ bán chợ phiên ở co-op (sellMarketSurplus qua runner, chặn trùng phiên)
+- GĐ293 — 🛒 Thương lái đầu tháng thành việc sáng trong Việc hôm nay (fairMerchantAction)
+- GĐ294 — 🩹 Hoàn tất tích hợp fairMerchantAction bị sót ở GĐ293 + test guard đọc source
+- GĐ295 — 🧍 Tổng kết đội hôm qua thành việc sáng (morningShiftAction, khép vòng GĐ248/253)
+- GĐ296 — ✅ Coverage sweep: khoá `buyLicense` (cấp mới/gia hạn cộng nối tiếp) + trọng số & fee dịch vụ
+- GĐ297 — 🔎 Nút HUD bị cắt ở 320px (`.hud-meta` cap 120px + nowrap) + `game.layoutAudit()` chốt lỗ mù "0 tràn"
+- GĐ298 — 🔍 QA layout 38 panel × 320/390/768/1280 (140 lượt): 0 nút bị cắt; tách `clipped` vs `inScroller` trong audit
+- GĐ299 — 🧭 QA người chơi mới trên save mới @390px: đúng 7 click tới khách đầu tiên, checklist tự tick 4/5, 0 lỗi
+- GĐ300 — 👥 Co-op parity: việc sáng 🧍 chốt sẵn ở máy chạy (`lastSummary.staffIdle`) để máy khách thấy y hệt

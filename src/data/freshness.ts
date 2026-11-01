@@ -138,3 +138,41 @@ export function tierMarkdown(productId: string | null, lots: Lot[] | undefined, 
  */
 export const nearExpiryRefuseChance = (life: number, category: Category) =>
   life <= 1 ? (category === 'fresh' ? 0.2 : 0.12) : 0;
+
+/** Một món sắp hết hạn (cảnh báo HUD GĐ43) — nguồn + nơi cất để người chơi xử lý kịp. */
+export interface NearExpiryItem {
+  id: string;
+  name: string;
+  /** Tổng số đang giữ/bày (cường độ để ưu tiên, không phải chính xác số sẽ hỏng). */
+  qty: number;
+  /** Hạn gần nhất còn lại (ngày, sàn 1). */
+  days: number;
+  place: 'storage' | 'shelf';
+}
+
+/**
+ * Quét kho + các tầng kệ tìm lô cận hạn (nearestLife ≤ ngưỡng).
+ * Thuần đọc — chỉ cảnh báo, không đổi lô/kinh tế. Lọc món không hết hạn (life null),
+ * sắp theo hạn ngắn trước rồi nhiều hàng trước, tối đa `max` món.
+ */
+export function nearExpiryItems(
+  storage: Record<string, number>,
+  storageLots: Record<string, Lot[]> | undefined,
+  shelves: { productId: string | null; count: number; lots?: Lot[] }[],
+  threshold = 2,
+  max = 5,
+): NearExpiryItem[] {
+  const out: NearExpiryItem[] = [];
+  for (const [id, qty] of Object.entries(storage)) {
+    if (qty <= 0) continue;
+    const life = nearestLife(storageLots?.[id]);
+    if (life !== null && life <= threshold) out.push({ id, name: productById(id).name, qty, days: life, place: 'storage' });
+  }
+  for (const t of shelves) {
+    if (!t.productId || t.count <= 0) continue;
+    const life = nearestLife(t.lots);
+    if (life !== null && life <= threshold) out.push({ id: t.productId, name: productById(t.productId).name, qty: t.count, days: life, place: 'shelf' });
+  }
+  out.sort((a, b) => a.days - b.days || b.qty - a.qty);
+  return out.slice(0, max);
+}

@@ -38,6 +38,8 @@ export interface Costume {
   unlock: number;
   /** Giá mặc thử / mua (đồng). */
   price: number;
+  /** Số lần tái sinh (prestige) tối thiểu để mở — trang phục NG+ độc quyền, giữ qua mọi vòng. */
+  prestige?: number;
   /** Các tùy chọn ngoại hình truyền vào buildChibiCharacter. */
   options: CostumeOptions;
 }
@@ -420,18 +422,62 @@ export const COSTUMES: Costume[] = [
 ];
 
 /**
- * Lọc các bộ trang phục đã mở khóa theo cấp hiện tại của người chơi.
- * @param level Cấp (level) hiện tại của nhân vật chính.
+ * Trang phục NG+ độc quyền — chỉ mở khi đã tái sinh đủ số lần (prestige.level ≥ N) và đạt cấp.
+ * Giữ lại qua mọi vòng NG+ (bộ sưu tập tài khoản được prestigeRestart bảo toàn), là mồi chạy thêm vòng.
  */
-export function costumesFor(level: number): Costume[] {
-  return COSTUMES.filter((c) => c.unlock <= level);
+export const PRESTIGE_COSTUMES: Costume[] = [
+  {
+    id: 'ao_thuong_gia_vang',
+    name: 'Áo thương gia vàng',
+    icon: '👑',
+    unlock: 60,
+    price: 5000000,
+    prestige: 1,
+    options: { bodyColor: 0xc9a227, hasGlasses: false },
+  },
+  {
+    id: 'ao_truong_lao_do_dai',
+    name: 'Trưởng lão đỏ (đạo bào)',
+    icon: '🧧',
+    unlock: 60,
+    price: 12000000,
+    prestige: 2,
+    options: { bodyColor: 0xb03a2e, hasGlasses: false },
+  },
+  {
+    id: 'ao_vua_ho',
+    name: 'Hoàng bào (áo vua)',
+    icon: '🐉',
+    unlock: 60,
+    price: 30000000,
+    prestige: 3,
+    options: { bodyColor: 0xf1c40f, hatColor: 0xe74c3c, hasGlasses: false },
+  },
+  {
+    id: 'ao_tieu_phi_hop_tin',
+    name: 'Bộ hợp kim thể thao',
+    icon: '🌌',
+    unlock: 60,
+    price: 80000000,
+    prestige: 5,
+    options: { bodyColor: 0x2c3e50, hatColor: 0x16a085, hasGlasses: true },
+  },
+];
+
+/**
+ * Lọc các bộ trang phục đã mở khóa theo cấp và số lần tái sinh hiện tại của người chơi.
+ * @param level Cấp (level) hiện tại của nhân vật chính.
+ * @param prestige Số lần tái sinh đã thực hiện (prestige.level).
+ */
+export function costumesFor(level: number, prestige = 0): Costume[] {
+  return [...COSTUMES, ...PRESTIGE_COSTUMES].filter((c) => c.unlock <= level && (c.prestige ?? 0) <= prestige);
 }
 
 /**
- * Tìm một bộ trang phục theo id.
+ * Tìm một bộ trang phục theo id (bao gồm cả NG+).
  * @param id Định danh của bộ trang phục.
  * @returns Costume tương ứng hoặc undefined nếu không tìm thấy.
  */
 export function costumeById(id: string): Costume | undefined {
-  return COSTUMES.find((c) => c.id === id);
+  return COSTUMES.find((c) => c.id === id) ?? PRESTIGE_COSTUMES.find((c) => c.id === id);
 }

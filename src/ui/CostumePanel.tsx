@@ -1,19 +1,25 @@
 import { useGame } from '../core/store';
-import { COSTUMES, costumeById, costumesFor } from '../data/costumes';
+import { COSTUMES, PRESTIGE_COSTUMES, costumeById } from '../data/costumes';
 import { formatMoney } from '../data/products';
+
+/** Thời điểm người chơi có thể mặc bộ trang phục: cần đủ cấp VÀ đủ số lần tái sinh (nếu là NG+). */
+function isAvailable(c: { unlock: number; prestige?: number }, level: number, prestige: number): boolean {
+  return c.unlock <= level && (c.prestige ?? 0) <= prestige;
+}
 
 /** Panel Trang phục — chọn và đổi trang phục cho nhân vật chính. */
 export function CostumePanel() {
-  const { level, costume, money, setCostume } = useGame();
-  const allCostumes = COSTUMES;
-  const available = costumesFor(level);
-  const locked = allCostumes.filter((c) => c.unlock > level);
+  const { level, costume, money, setCostume, biz } = useGame();
+  const prestige = biz.prestige.level;
+  const allCostumes = [...COSTUMES, ...PRESTIGE_COSTUMES];
+  const available = allCostumes.filter((c) => isAvailable(c, level, prestige));
+  const locked = allCostumes.filter((c) => !isAvailable(c, level, prestige));
   return (
     <>
       <h2 style={{ margin: '0 0 4px' }}>👕 Trang phục</h2>
       <p style={{ margin: '0 0 12px', opacity: 0.75, fontSize: 13, maxWidth: 520 }}>
-        Đổi ngoại hình nhân vật chính. Mỗi bộ trang phục mở khóa ở một cấp nhất định.
-        Trang phục hiện tại: <b>{costumeById(costume)?.name ?? 'Mặc định'}</b>.
+        Đổi ngoại hình nhân vật chính. Mỗi bộ trang phục mở khóa ở một cấp nhất định (một số bộ NG+ cần
+        tái sinh đủ số lần). Trang phục hiện tại: <b>{costumeById(costume)?.name ?? 'Mặc định'}</b>.
       </p>
 
       <h3 style={head}>✨ Trang phục đã mở khóa</h3>
@@ -31,11 +37,11 @@ export function CostumePanel() {
         <>
           <h3 style={head}>🔒 Trang phục khóa</h3>
           <div style={{ display: 'grid', gap: 6 }}>
-            {locked.slice(0, 5).map((c) => (
+            {locked.slice(0, 6).map((c) => (
               <LockedCostume key={c.id} costume={c} />
             ))}
-            {locked.length > 5 && (
-              <p style={{ opacity: 0.6, fontSize: 12 }}>...và {locked.length - 5} trang phục khác</p>
+            {locked.length > 6 && (
+              <p style={{ opacity: 0.6, fontSize: 12 }}>...và {locked.length - 6} trang phục khác</p>
             )}
           </div>
         </>
@@ -46,9 +52,10 @@ export function CostumePanel() {
 
 /** Một bộ trang phục: hiển thị chi tiết, nút chọn nếu chưa mặc. */
 function CostumeRow({ costume: c }: { costume: import('../data/costumes').Costume }) {
-  const { costume: current, setCostume, level, money } = useGame();
+  const { costume: current, setCostume, level, money, biz } = useGame();
+  const prestige = biz.prestige.level;
   const isEquipped = current === c.id;
-  const unlocked = level >= c.unlock;
+  const unlocked = isAvailable(c, level, prestige);
   const canAfford = money >= c.price;
   return (
     <div style={{
@@ -57,15 +64,16 @@ function CostumeRow({ costume: c }: { costume: import('../data/costumes').Costum
       padding: '8px 12px',
       outline: isEquipped ? '2px solid #2ecc71' : undefined,
       opacity: unlocked ? 1 : 0.4,
+      border: c.prestige ? '1px solid rgba(241,196,15,0.3)' : undefined,
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <span style={{ fontSize: 28 }}>{c.icon}</span>
         <div style={{ flex: 1 }}>
           <b>{c.name}</b>
           <div style={{ fontSize: 12, opacity: 0.75 }}>
-            {c.unlock <= level
+            {unlocked
               ? (c.price > 0 ? `Giá: ${formatMoney(c.price)}` : 'Miễn phí')
-              : `🔒 Cấp ${c.unlock}`}
+              : (c.unlock > level ? `🔒 Cấp ${c.unlock}` : `🔒 Tái sinh ${c.prestige} lần`)}
           </div>
         </div>
         {unlocked ? (
@@ -76,7 +84,7 @@ function CostumeRow({ costume: c }: { costume: import('../data/costumes').Costum
             {isEquipped ? '✓ Đang mặc' : 'Mặc'}
           </button>
         ) : (
-          <span style={{ fontSize: 12, opacity: 0.5 }}>🔒 Cấp {c.unlock}</span>
+          <span style={{ fontSize: 12, opacity: 0.5 }}>{c.unlock > level ? `🔒 Cấp ${c.unlock}` : `🔒 Tái sinh ${c.prestige}`}</span>
         )}
       </div>
     </div>
@@ -91,7 +99,9 @@ function LockedCostume({ costume: c }: { costume: import('../data/costumes').Cos
         <span style={{ fontSize: 22 }}>🔒</span>
         <div>
           <b>{c.name}</b>
-          <div style={{ fontSize: 12, opacity: 0.75 }}>Mở khóa cấp {c.unlock} · {formatMoney(c.price)}</div>
+          <div style={{ fontSize: 12, opacity: 0.75 }}>
+            {c.unlock > 60 ? 'Mở theo cấp' : ''} Mở khóa cấp {c.unlock} · {formatMoney(c.price)}
+          </div>
         </div>
       </div>
     </div>

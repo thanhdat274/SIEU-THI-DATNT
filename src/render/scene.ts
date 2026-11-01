@@ -1,9 +1,18 @@
 import { WEATHER, type Sky, type WeatherInfo } from '../data/weather';
 import * as THREE from 'three';
 import { WebGPURenderer } from 'three/webgpu';
+import { windGust } from './fx/windSway';
+import { GFX_PRESETS, detectLevel, loadChoice, readDeviceHints, type GfxLevel } from './graphicsQuality';
 
-/** Điện thoại / máy tính bảng: giảm độ phân giải, bóng và hạt mưa cho đỡ nóng máy. */
-export const LOW_POWER = matchMedia('(pointer: coarse)').matches;
+/**
+ * Mức đồ họa lúc mở game: người chơi chọn (Cài đặt ⋯ → Đồ họa / `?gfx=`) hoặc tự nhận diện máy.
+ * Hạt mưa, mây, sao, cỡ bóng đọc một lần từ đây; bóng/NPC/đồ trang trí/độ nét còn đổi tiếp lúc chạy.
+ */
+export const GFX_CHOICE = loadChoice();
+export const INITIAL_GFX: GfxLevel = GFX_CHOICE === 'auto' ? detectLevel(readDeviceHints()) : GFX_CHOICE;
+const START = GFX_PRESETS[INITIAL_GFX];
+/** Máy không ở mức Cao: tắt khử răng cưa, tilt-shift mặc định, bóng mây... cho đỡ nóng máy. */
+export const LOW_POWER = INITIAL_GFX !== 'high';
 
 /** Mọi renderer đều biết làm những việc này — dùng để đánh type chung cho WebGL/WebGPU. */
 export interface GameRenderer {
@@ -34,7 +43,7 @@ export function createRenderer(container: HTMLElement) {
   const choice = pick ?? saved;
   const forceWebGL = choice ? choice === 'webgl' : /Windows/.test(navigator.userAgent);
   const renderer = new WebGPURenderer({ antialias: !LOW_POWER, powerPreference: 'high-performance', forceWebGL }) as unknown as WebGPURenderer & GameRenderer;
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, LOW_POWER ? 1.5 : 2));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, START.maxPixelRatio));
   renderer.setSize(container.clientWidth, container.clientHeight);
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFShadowMap; // PCFSoft đã bị bỏ, three tự đổi về PCF kèm cảnh báo
@@ -52,6 +61,30 @@ export function createRenderer(container: HTMLElement) {
   return { renderer, scene, camera };
 }
 
+/** Thông báo khi mất ngữ cảnh render — lời thoại ở renderLoss.ts (tách để test thuần). */
+import { renderLossMessage } from './renderLoss';
+export { renderLossMessage };
+
+/**
+ * Cảnh báo mất ngữ cảnh render (GĐ175, học từ rendererGuard của Xóm Nông Trại): máy yếu hết
+ * VRAM, driver reset, mobile ẩn tab lâu... WebGL thì preventDefault để three được quyền dựng
+ * lại context; WebGPU thì device.lost là mất hẳn — người chơi cần được mời tải lại thay vì
+ * nhìn màn hình đen im lặng. onLost chỉ chạy một lần mỗi sự kiện.
+ */
+export function installRenderGuard(
+  renderer: GameRenderer,
+  onLost: (message: string) => void,
+) {
+  renderer.domElement.addEventListener('webglcontextlost', (e) => {
+    e.preventDefault();
+    onLost(renderLossMessage('webgl'));
+  });
+  // WebGPURenderer giữ GPUDevice trong backend sau khi init; chưa init xong thì chưa có —
+  // tra tại lúc cài guard là đủ vì device mất sau đó vẫn được bắn qua promise này.
+  const device = (renderer as { backend?: { device?: { lost?: Promise<GPUDeviceLostInfo> } } }).backend?.device;
+  device?.lost?.then((info) => onLost(renderLossMessage('webgpu', info.reason ?? undefined)));
+}
+
 const DAY_SKY = new THREE.Color(0x87b5e0);
 const DUSK_SKY = new THREE.Color(0xf0a060);
 const NIGHT_SKY = new THREE.Color(0x0b1530);
@@ -61,49 +94,13 @@ const FLASH_SKY = new THREE.Color(0xe8eeff);
 const sunDir = new THREE.Vector3();
 const stormShade = new THREE.Color();
 
-/**
- * Tự co giãn độ phân giải theo FPS: máy yếu hạ pixel ratio để giữ khung mượt,
- * khỏe lại thì nâng dần về nét. Tránh tình trạng 20 FPS cứng đầu trên card yếu.
- * Các bậc sắp từ cao xuống thấp và không vượt nét gốc của màn hình.
- */
-export class AdaptiveResolution {
-  private idx = 0;
-  private elapsed = 0;
-  private frames = 0;
-  private goodStreak = 0;
-  private readonly steps: number[];
-
-  constructor(private renderer: GameRenderer) {
-    const native = Math.min(window.devicePixelRatio, LOW_POWER ? 1.5 : 2);
-    const all = [native, 1.5, 1.25, 1];
-    this.steps = [...new Set(all.filter((v) => v <= native + 0.01))].sort((a, b) => b - a);
-    this.renderer.setPixelRatio(this.steps[0]);
-  }
-
-  update(dt: number) {
-    this.elapsed += dt;
-    this.frames++;
-    if (this.elapsed < 2) return;
-    const fps = this.frames / this.elapsed;
-    this.elapsed = 0;
-    this.frames = 0;
-    if (fps < 45 && this.idx < this.steps.length - 1) {
-      this.renderer.setPixelRatio(this.steps[++this.idx]);
-      this.goodStreak = 0;
-    } else if (fps > 57 && this.idx > 0 && ++this.goodStreak >= 3) {
-      this.renderer.setPixelRatio(this.steps[--this.idx]);
-      this.goodStreak = 0;
-    }
-  }
-}
-
 /** Bóng nắng phủ quanh camera bấy nhiêu mét: nhỏ thì bóng sắc nét. */
 const SHADOW_RANGE = 26;
-const RAIN_DROPS = LOW_POWER ? 2000 : 5000;
+const RAIN_DROPS = START.rainDrops;
 const RAIN_BOX = { w: 70, h: 30 };
-const CLOUDS = LOW_POWER ? 8 : 14;
+const CLOUDS = START.clouds;
 const CLOUD_HEIGHT = 30;
-const STARS = LOW_POWER ? 160 : 280;
+const STARS = START.stars;
 const DOME_R = 470;
 /** Màu sương chân trời (trời đêm hơi sáng nhẹ như đô thị, trưa trắng hơn). */
 const SKY_HAZE = new THREE.Color(0xe6eef4);
@@ -132,8 +129,8 @@ export class Lighting {
   private moonDir = new THREE.Vector3();
 
   constructor(private scene: THREE.Scene) {
-    this.sun.castShadow = true;
-    this.sun.shadow.mapSize.setScalar(LOW_POWER ? 512 : 2048);
+    this.sun.castShadow = START.shadows;
+    this.sun.shadow.mapSize.setScalar(START.shadowMapSize);
     this.sun.shadow.bias = -0.0004;
     this.sun.shadow.normalBias = 0.03;
     const cam = this.sun.shadow.camera;
@@ -220,6 +217,8 @@ export class Lighting {
     this.now.rain += (target.rain - this.now.rain) * k;
     this.now.fog += (target.fog - this.now.fog) * k;
     const { clouds, rain, fog } = this.now;
+    // Mưa càng to gió càng giật: cây lắc mạnh hơn khi giông
+    windGust.value = 1 + rain * 1.5;
 
     const hour = (minutes / 60) % 24;
     // 5h mọc, 19h lặn

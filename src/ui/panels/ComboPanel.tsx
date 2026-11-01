@@ -1,21 +1,31 @@
 import { useGame } from '../../core/store';
 import { formatMoney, productById } from '../../data/products';
-import { COMBO_PULL, COMBO_UNLOCK, maxActiveCombos, nextComboSlotLevel, unlockedCombos } from '../../data/combos';
+import { COMBO_PULL, COMBO_UNLOCK, comboSuggest, maxActiveCombos, nextComboSlotLevel, unlockedCombos } from '../../data/combos';
+import { comboDaySnapshot } from '../../core/slices/comboDay';
 import { Footer, styles } from './shared';
 
 /** Bật/tắt combo khuyến mãi. */
 export function ComboPanel() {
-  const { level, activeCombos, toggleCombo, closePanel, priceOf } = useGame();
+  const { level, activeCombos, toggleCombo, closePanel, priceOf, comboHitCount, sales } = useGame();
   const combos = unlockedCombos(level);
   const max = maxActiveCombos(level);
   const nextSlot = nextComboSlotLevel(level);
+  const suggestions = activeCombos.length < max ? comboSuggest(level, sales, activeCombos) : [];
+  // GĐ124: hiệu quả combo hôm nay (transient) — re-render theo store (mua bán làm store đổi), đọc bản snap.
+  const comboToday = comboDaySnapshot();
   return (
     <>
       <h2 style={styles.title}>🎁 Combo khuyến mãi</h2>
       <p style={styles.sub}>
         Khách lấy một món trong combo đang chạy thì khoảng {Math.round(COMBO_PULL * 100)}% sẽ lấy thêm món kia, và được giảm giá khi mua đủ cặp.
         Chạy tối đa {max} combo cùng lúc ({activeCombos.length}/{max}){nextSlot ? `, lên cấp ${nextSlot} được chạy thêm 1` : ''}. Nhớ bày đủ cả hai món lên kệ.
+        Mỗi combo hiện số lần đã kích hoạt ở quầy — tắt combo ít khách mua để đổi slot cho món mới.
       </p>
+      {suggestions.length > 0 && (
+        <p style={{ ...styles.sub, color: '#9ecbff', margin: '4px 0' }}>
+          💡 Còn slot, nên bật: {suggestions.map((s) => `"${s.name}" (${s.reason})`).join(' · ')}
+        </p>
+      )}
       {activeCombos.length >= max && (
         <p style={{ ...styles.sub, color: '#f1c40f' }}>⚠️ Đã chạy đủ {max}/{max} combo. Bấm "Đang chạy" để tắt một combo thì mới bật được combo khác{nextSlot ? `, hoặc lên cấp ${nextSlot} để chạy thêm.` : '.'}</p>
       )}
@@ -36,6 +46,19 @@ export function ComboPanel() {
                   <div style={{ fontSize: 12, opacity: 0.8 }}>
                     {formatMoney(full)} → <b>{formatMoney(full - cut)}</b> (giảm {Math.round(c.discount * 100)}%) · lãi cả cặp{' '}
                     <span style={{ color: margin > 0 ? '#2ecc71' : '#e74c3c' }}>{formatMoney(margin)}</span>
+                  </div>
+                  <div style={{ fontSize: 12, opacity: 0.65 }}>🔥 đã kích hoạt {comboHitCount?.[c.id] ?? 0} lần ở quầy</div>
+                  <div style={{ fontSize: 12 }}>
+                    <span style={{ opacity: 0.85 }}>Hôm nay: </span>
+                    {(() => {
+                      const t = comboToday[c.id];
+                      if (!t || !t.count) return <span style={{ opacity: 0.5 }}>chưa kích hoạt</span>;
+                      return (
+                        <span style={{ fontWeight: 600 }}>
+                          {t.count} lần · giảm {formatMoney(t.discount)}
+                        </span>
+                      );
+                    })()}
                   </div>
                 </div>
                 <button

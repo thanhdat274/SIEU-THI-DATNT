@@ -1,9 +1,13 @@
 import { useGame } from '../../core/store';
-import { formatMoney } from '../../data/products';
+import { formatMoney, productById } from '../../data/products';
 import { analyticsAdvice, itemHealthList, promoEffect, shelfCount, type ItemHealth } from '../../data/analytics';
+import { profitMix } from '../../data/profitMix';
+import { categoryMix } from '../../data/categoryMix';
+import { shelfSlotValue } from '../../data/shelfSlotValue';
+import { lostSalesValue } from '../../data/lostSalesValue';
 import { furnitureDef } from '../../data/furniture';
 import { shelfEfficiency } from '../../data/layout';
-import { Footer, styles } from './shared';
+import { Callout, Footer, styles } from './shared';
 
 const abcColor = { A: '#2ecc71', B: '#f1c40f', C: '#95a5a6' } as const;
 
@@ -17,6 +21,7 @@ export function AnalyticsPanel() {
   const efficiency = shelfEfficiency(furniture, shelfProfit, day);
   const comboFx = promoEffect(analytics, history, 'combo');
   const happyFx = promoEffect(analytics, history, 'happyHour');
+  const adsFx = promoEffect(analytics, history, 'ads');
   const counts = { A: 0, B: 0, C: 0 } as Record<ItemHealth['abc'], number>;
   for (const h of list) counts[h.abc]++;
   return (
@@ -68,6 +73,70 @@ export function AnalyticsPanel() {
             Phân tích ABC: nhóm <b style={{ color: abcColor.A }}>A</b> là {counts.A} món mang ~80% tổng lời,
             nhóm <b style={{ color: abcColor.B }}>B</b> {counts.B} món, còn lại <b>{counts.C}</b> món nhóm C — nhóm C nhiều quá thì dọn bớt cho kệ thoáng.
           </p>
+          {(() => {
+            const mix = profitMix(list);
+            if (mix.top.length === 0) return null;
+            return (
+              <Callout tone={mix.fragile ? 'warn' : 'accent'} style={{ marginBottom: 10 }} title={`📈 Lời 30 ngày: ${formatMoney(mix.totalProfit30)} · top ${mix.top.length} món gánh ${Math.round(mix.topShare * 100)}%`}>
+                <div style={{ marginTop: 2, fontSize: 12 }}>
+                  {mix.top.map((t) => `${t.name} ${formatMoney(t.profit30)} (${Math.round(t.share * 100)}%)`).join(' · ')}
+                  {mix.negativeCount > 0 && ` · ${mix.negativeCount} món đang lỗ tổng ${formatMoney(mix.negativeLoss30)}.`}
+                  {mix.fragile
+                    ? ' Chỉ dựa vài món — đứt nguồn món đó là mất phần lớn lời, nên đa dạng thêm.'
+                    : ' Lời dàn đều, bớt rủi ro tập trung.'}
+                </div>
+              </Callout>
+            );
+          })()}
+          {(() => {
+            const cm = categoryMix(list, (id) => productById(id)?.category ?? 'dry');
+            if (cm.lines.length === 0) return null;
+            const warn = cm.losing.length > 0;
+            return (
+              <Callout tone={warn ? 'warn' : 'info'} style={{ marginBottom: 10 }} title={warn
+                ? `🚨 Khu hàng đang lỗ 30 ngày: ${cm.losing.map((l) => `${l.label} ${formatMoney(l.profit30)}`).join(', ')}`
+                : `🗂️ Khu gánh lời nhất: ${cm.best?.label} ${formatMoney(cm.best?.profit30 ?? 0)}/30 ngày`}>
+                <div style={{ marginTop: 2, fontSize: 12 }}>
+                  {cm.lines.slice(0, 5).map((l) => `${l.label} ${formatMoney(l.profit30)}`).join(' · ')}
+                  {warn
+                    ? ' — cân nhắc bớt nhập khu lỗ, đổi thêm mặt hàng khu đang chạy.'
+                    : cm.lines.length > 5 ? ` (+${cm.lines.length - 5} khu)` : '.'}
+                </div>
+              </Callout>
+            );
+          })()}
+          {(() => {
+            const slot = shelfSlotValue(list, onShelf);
+            if (!slot.actionable) return null;
+            const worst = slot.slow.slice(0, 3);
+            return (
+              <Callout tone="warn" style={{ marginBottom: 10 }} title={`🔎 Món đang chiếm kệ lép vốn (${worst.length}${slot.slow.length > worst.length ? '+' : ''}): nên bày bớt / đổi món`}>
+                <div style={{ marginTop: 2, fontSize: 12 }}>
+                  {worst.map((s) => `${s.name} (${s.onShelf} ô · ${formatMoney(s.perSlot ?? 0)}/ô/ngày)`).join(' · ')}
+                  {slot.best != null
+                    ? ` · món khoẻ nhất kệ đạt ${formatMoney(slot.best)}/ô/ngày — ${worst.length} món trên đang chiếm chỗ mà sinh lời non nửa ngưỡng đó.`
+                    : ' · đang lỗ, dọn sớm cho kệ thoáng.'}
+                </div>
+              </Callout>
+            );
+          })()}
+          {(() => {
+            const ls = lostSalesValue(list);
+            if (!ls.actionable) return null;
+            const top = ls.items.slice(0, 3);
+            const stockouts = ls.items.filter((i) => i.stockout).length;
+            return (
+              <Callout tone="danger" style={{ marginBottom: 10 }} title={`⛔ Khách tìm không mua được đang bỏ lỡ ~${formatMoney(ls.totalPerDay)}/ngày (${ls.count} món)`}>
+                <div style={{ marginTop: 2, fontSize: 12 }}>
+                  {top.map((i) => `${i.name} ~${formatMoney(i.moneyLostDay)}/ngày`).join(' · ')}
+                  {ls.items.length > top.length ? ` (+${ls.items.length - top.length} món)` : ''}.
+                  {stockouts > 0
+                    ? ` ${stockouts} món đang thiếu hàng — nhập lại là thu về chừng đó; còn lại có thể do giá, xem Bảng giá.`
+                    : ' Còn hàng mà vẫn bị mất khách — có thể do giá/xếp, xem Bảng giá.'}
+                </div>
+              </Callout>
+            );
+          })()}
           <div style={{ overflowX: 'auto' }}>
             <table style={styles.table}>
               <thead>
@@ -106,6 +175,7 @@ export function AnalyticsPanel() {
             {' '}{happyFx
               ? `Giờ vàng: ${formatMoney(happyFx.withAvg)}/ngày vs ${formatMoney(happyFx.withoutAvg)}/ngày.`
               : ''}{' '}
+            {adsFx ? `Quảng cáo: ${formatMoney(adsFx.withAvg)}/ngày vs ${formatMoney(adsFx.withoutAvg)}/ngày (${adsFx.withDays} vs ${adsFx.withoutDays} ngày).` : ''}
             {activeCombos.length ? 'Đang chạy combo.' : ''}{happyHour ? ' Đang đặt giờ vàng.' : ''}
           </p>
         </>

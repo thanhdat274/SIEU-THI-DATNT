@@ -37,6 +37,8 @@ export class FurnitureView {
   private emptyMark: THREE.Sprite | null = null;
   /** Hàng hóa trên kệ vẽ bằng InstancedMesh theo từng món: 1 draw call / món thay vì 1 draw call / hộp. */
   private instanced = new Map<string, THREE.InstancedMesh[]>();
+  /** Chữ ký danh sách hộp đã vẽ cho từng món — trùng thì bỏ qua dựng lại InstancedMesh. */
+  private instSig = new Map<string, string>();
   private readonly _m = new THREE.Matrix4();
 
   constructor(public type: FurnitureType) {
@@ -405,6 +407,11 @@ export class FurnitureView {
       });
       this.instanced.set(productId, parts);
     }
+    // Kệ không đổi (cùng hộp, cùng chỗ) thì khỏi dựng lại ma trận + hình cầu bao: update() chạy mỗi lần state đổi
+    let sig = '';
+    for (const b of boxes) sig += b.id + ',';
+    if (this.instSig.get(productId) === sig) return;
+    this.instSig.set(productId, sig);
     for (const im of parts) {
       for (let i = 0; i < boxes.length; i++) {
         this._m.identity().setPosition(boxes[i].position);
@@ -424,6 +431,7 @@ export class FurnitureView {
       im.dispose();
     }
     this.instanced.delete(productId);
+    this.instSig.delete(productId);
   }
 
   /** Ô đã gán món mà hết hàng: tô đỏ mặt tầng đó và nổi dấu ⚠️ trên kệ — chủ tiệm nhìn phát biết chỗ cần châm. */

@@ -1,0 +1,194 @@
+# PROGRESS GĐ154–176 (archive)
+
+> Chi tiết đầy đủ của các giai đoạn GĐ154–176. Đọc khi cần tra công thức/số liệu QA của một giai đoạn cụ thể (grep theo `GĐxx`). Chỉ giữ 1 dòng mỗi giai đoạn trong Mục lục PROGRESS.md.
+
+---
+
+### GĐ154 — 📉 Xu hướng cơ sở: lỗ không được biến mất — (1 dòng ở Mục lục)
+### GĐ155 — 🚪 Chi nhánh bỏ lỡ bao nhiêu tiền mỗi tối — (1 dòng ở Mục lục)
+### GĐ156 — 🏗️ Mở rộng thì tiền nhà tăng bao nhiêu — (1 dòng ở Mục lục)
+### GĐ157 — 🐱 Thú cưng đáng bữa cơm không — (1 dòng ở Mục lục)
+### GĐ158 — 🛝 Sân chơi: góp bao nhiêu, còn bao nhiêu, đáng không — (1 dòng ở Mục lục)
+
+---
+
+### GĐ159 — 🔍 Đóng nốt 4 hộp mờ nhẹ (hụi · phản công · khủng hoảng MXH · máy bán hàng) — XONG
+
+- Lý do: audit tài chính 28/10 còn sót 4 chỗ "mờ nhẹ" — không đáng giai đoạn riêng từng cái, gộp 1 giai đoạn để khép trục tài chính sạch trước khi chuyển sang audit trải nghiệm.
+- Triển khai: helper thuần đọc `src/data/minorPayoff.ts` + 4 chỗ UI: (1) hụi — "Đã góp Xđ trong vòng này · còn góp N ngày" (chính xác, không phải ước; sửa chữ audit: chủ hụi ôm trốn là MẤT THẬT, không có "lời từ người vỡ"); (2) phản công — "Bớt ~N sức mạnh ≈ khách đông lại ~P% — ước ~Qđ/ngày" (rivalTrafficFactor tuyến tính, gọi hàm thật với rival giả); (3) khủng hoảng MXH (SocialPanel, không phải BusinessPanel như audit ghi) — "Còn N ngày — xin lỗi cứu ~20% khách/ngày, ước ~Qđ/ngày" (hệ số thật 0.72→0.92); (4) máy bán hàng — "Hoàn vốn sau ~N ngày (đã trừ điện máy ~10k/6.5k nếu efficient)". File: `minorPayoff.ts`, `BusinessPanel.tsx`, `SocialPanel.tsx`, `BranchPanel.tsx`, test 17 test.
+- Kinh tế/save không đổi; số ước đều có "~".
+
+### GĐ160 — 🌱 Người mới: vá 3 mớt ngày đầu + nhiệm vụ tuỳ chọn từ cấp 1 — XONG
+
+- Lý do: audit trải nghiệm — ngày 1–5 là cửa sổ bỏ game: nhiệm vụ lặp (pool tuỳ chọn rỗng cấp thấp), nhiệm vụ doanh thu ngày 1 đòi bán 100% kho (phạt người thử giá), Ra trại không khoá cấp, lịch tự động 8h lỡ giờ vàng sáng 6h–8h30 không báo.
+- Triển khai: (a) hint 1 dòng ở mục Lịch tự động (AccountMenu) khi Bật + cùng cảnh báo trong toast bật lịch — KHÔNG đổi ROUTINE; (b) khoá "Ra trại" cấp 8 theo cơ chế lock chung (chỉ khoá chiều ĐI — chiều về luôn mở để không mắc kẹt save cũ); (c) `NEWBIE_REVENUE_TARGET = 100.000đ` (~65% kho khởi đầu 150k) chỉ cấp 1, từ cấp 2 nguyên thang cũ — sim ngày 1 bot bán 646–861k → đạt thoải mái; (d) 3 nhiệm vụ tuỳ chọn mở từ cấp 1: "🌅 Sớm hôm đón khách" (doanh thu 6–9h qua sổ theo giờ GĐ78; thay ý gốc vì KHÔNG có field giờ châm kệ — trung thực thay vì váng), "🌧️ Bán đồ mưa" (chỉ ngày mưa/giông; ô dù + áo mưa có sẵn), "💛 Đón khách quen" (chỉ ngày có người hẹn ghé; `visitsToday` deterministic theo weatherSeed, loại người đã phục vụ nên không đếm trùng). `questContext` thêm 3 field tuỳ chọn (save cũ an toàn). BET_CORE_IDS nguyên vẹn.
+- File: `quests.ts`, `store.ts`, `Hud.tsx`, `hud.css`, test mới `newbieQuests.test.ts` (15) + điều chỉnh 4 test quest + smoke sim ngày 1.
+
+### GĐ161 — 🍳 "Kịch bản nấu theo giờ": hẹn-giờ-thu-hoạch trong phiên — XONG
+
+- Lý do: audit trải nghiệm — khung vắng 8:30–11h & 13–17h (×0.6) là "ca trực không quyết định". Nguyên lý Hay Day (đã ghi nguồn ở audit): mẻ nấu chạy trong phiên — bắt đầu TRƯỚC khung đông để kịp châm kệ giờ vàng là quyết định thời điểm có kỹ năng.
+- Triển khai: helper thuần đọc `src/data/cookSchedule.ts` — `cookAdvice` theo khung giờ (chỉ nói thời điểm xong + khung bán, KHÔNG hứa doanh số; null khi quá 17h hoặc mẻ xong sau 20h), `pickEveningPrep` chọn mẻ dài nhất vẫn kịp 17h (hòa duration lấy lời nhất/phút trạm GĐ145). CookPanel: dòng "⏰ ..." cho món nấu được ngay (phút trạm thật = cookSpeed × bartenderBoost cùng nguồn tick đồng hồ, giờ vẽ lại 1 lần/phút game). Sổ đầu ngày (MorningPanel): 1 dòng duy nhất khung 13–17h "Muốn kịp giờ vàng tối: bắt đầu nấu {món} trước ~HH:MM".
+- File: `cookSchedule.ts`, `CookPanel.tsx`, `ReportPanels.tsx`, test 27 test.
+
+### Audit trải nghiệm (Game Designer, 28/10 sau GĐ159): vòng ngày còn 2 chỗ nông thật
+
+- Khung giờ vắng (8:30–11h, 13–17h ×0.6) là "ca trực không quyết định" — chờ khách, không có việc có đích; tua nhanh làm kiên nhẫn khách co lại (mâu thuẫn cấu trúc).
+- Tuần đầu (ngày 1–5) nhiệm vụ ngày lặp y nguyên — pool tuỳ chọn rỗng ở cấp thấp; nhiệm vụ doanh thu ngày 1 = bán 100% kho khởi đầu (phạt người chỉnh giá thử).
+- Sự kiện bất ngờ: mật độ ổn nhưng một-phát quay số, không kéo dài thành chuyện kể.
+- 5 đề xuất làm sâu (không mở rộng): (1) mở pool nhiệm vụ tuỳ chọn từ cấp 1 + biến thể theo hoàn cảnh; (2) "kịch bản nấu theo giờ" (bám GĐ145); (3) dải "Kế hoạch hôm nay" gom mọi hẹn giờ lên 1 bề mặt; (4) đợt nhờ của khách quen rơi vào khung vắng (bám GĐ80); (5) vá 3 mớt ngày đầu (cảnh báo lịch tự động lỡ giờ vàng sáng · khoá Ra trại cấp 8 · nới nhiệm vụ doanh thu ngày 1). Nguyên lý tham chiếu: Stardew (thời gian rảnh = chi tiêu tự chọn), Hay Day (hẹn giờ thu hoạch trong phiên), My Happy Town (bảng tin mới mỗi sáng, NPC có việc). Ghi chi tiết đề xuất vào backlog GĐ160+.
+
+### GĐ162 — 🗓️ Dải "Kế hoạch hôm nay" trên HUD — XONG
+
+- Lý do: audit trải nghiệm — các mốc hẹn giờ nằm rải ở 6+ bảng; không có MỘT bề mặt trả lời "BÂY GIỜ việc kế tiếp là gì?" (nguyên lý Stardew "bảng việc-ngày" + My Happy Town đơn hẹn giờ — nguồn ghi ở audit GĐ159).
+- Triển khai: helper thuần đọc `src/data/todayAgenda.ts` ghép 6 nguồn có sẵn: khách quen ghé (visitsToday deterministic + lời hẹn giữ món), giờ vàng (3 band ×≥1.35), mẻ nấu đang chạy/xong + "nấu kịp 17h" (tái dùng GĐ161), khe điện thoại (chỉ khi có nhân viên giao — không có thì chip sẽ nói dối nên bỏ), hợp đồng/đơn tiệc hạn hôm nay (không có giờ trong state → xếp mốc 20h nhắc deadline, comment ghi rõ). Chợ phiên/sự kiện BỎ (cả ngày, không phải hẹn giờ).
+- UI: dải chip ngang trên HUD THAY slot IdleChip khi có hẹn (0 hẹn/hướng dẫn ngày đầu/panel mở → IdleChip như cũ hoặc ẩn); chip đầu (đến hạn/đang trong khung) viền vàng; bấm mở đúng panel; mobile cuộn ngang scrollbar ẩn — không đè dock (dùng ResizeObserver có sẵn); giờ qua useClock 1 lần/phút. QA mắt: 8 chip đúng thứ tự (5 khách quen + 3 giờ vàng), chip đầu nổi đúng, @390 không tràn, 0 lỗi console.
+- File: `todayAgenda.ts`, `Hud.tsx` (tối thiểu), `hud.css`, test 28 test.
+
+### GĐ163 — 🤝 Đợt nhờ của khách quen rơi vào khung vắng — XONG
+
+- Lý do: audit trải nghiệm — khung vắng 8:30–11h & 13–17h (×0.6) là "ca trực không quyết định". Nguyên lý NPC-có-việc (My Happy Town, ưu tiên Cao trong PHAN-TICH-THAM-KHAO-HAPPYTOWN.md) + Stardew "thời gian rảnh = chi tiêu tự chọn".
+- Fact-check: arc GĐ80 chốt bước mới chỉ tại lúc thanh toán của chính khách đó (regularVisit) — KHÔNG thể hẹn giờ lúc sinh. → Phương án ít đụng nhất (0 dòng core, 0 đổi save): SUY RA cửa sổ "tiện làm" thuần đọc `errandWindow(def)` = khung ghé ∩ khung vắng (lấy chồng dài nhất; không chạm → nguyên khung ghé, inSlow:false). Cả 3 đợt nhờ hiện có cửa sổ trọn trong khung vắng (Bà Năm 8h30–10h · Chú Ba 13–17h · Bé Na 16–17h).
+- Triển khai: `slowBands()` đối xứng goldenHourBands (rhythm.ts); `errandWindow`/`pendingErrands` thuần đọc (regularArc.ts); IdleChip mức ưu tiên 0 khi đang trong cửa sổ nhờ ("🤝 Bà Năm ... — 8h30–10h tiện làm", bấm mở Khách quen); chip "🤝 {giờ} Việc {khách} nhờ" trên dải GĐ162 mọi ngày đợt còn dở (cửa sổ là giờ TIỆN, không hứa khách ghé — chip ghé thật đã có ở nguồn riêng). Nhịp tiến/hết hạn/thưởng GĐ80 nguyên vẹn 100%.
+- File: `rhythm.ts`, `regularArc.ts`, `idle.ts`, `todayAgenda.ts`, `Hud.tsx` (1 dòng), test mới `errandTiming.test.ts` (17 test, quét 40 seed × 10 ngày). Lưu ý: khi có hẹn hôm nay, mặt hiển thị chính là chip trên dải GĐ162 (IdleChip nhường slot) — đã thiết kế cùng nhau.
+
+### GĐ164 — 📖 "Sự kiện bất ngờ" thành chuyện kể (mini-arc 2–3 ngày) — XONG
+
+- Lý do: audit trải nghiệm — sự kiện bất ngờ mật độ ổn nhưng một-phát quay số, không chuyện kể. 4 arc A–D thay 4 def một-phát cùng id (kể xong không lặp — giảm đúng pool lặp mà audit chê): "Mưa rào trước hiên" (mua_roi, cấp 1, 2 ngày), "Cái kính vỡ" (bong_da_kinh, cấp 4, 2 ngày), "Hẻm ngập ba ngày" (mua_dai, cấp 6, 3 ngày), "Đoạn clip hot" (livestream, cấp 10, 3 ngày, ngại lên hình = khép sớm). Mỗi ngày 1 cảnh, hệ quả hôm qua hiện trong văn cảnh hôm nay, chọn ấm (good) cộng thưởng cuối; tổng 1.5–2× def cũ.
+- Kỹ thuật: file mới `src/data/surpriseArcs.ts` (thuần dữ liệu + helper; pattern GĐ80 nhưng state riêng vì vòng khép regularArc xoá entry lạ); `BizState` thêm `surpriseArc?` + `surpriseArcsTold?` (cả hai tuỳ chọn, MERGE_DEEP — save cũ an toàn, không SAVE_VERSION); core `maybeSurprise`/`chooseSurprise` (+~60 dòng): arc dở → không quay pool, cảnh phát 10h–11h30 tất định, giữ tới 20h, lỡ hôm nay mai phát lại tới hết hạn, quá hạn khép nhẹ không phạt; `EventChoice` thêm `good?`/`needStock?` (lựa chọn cần hàng kho — xám khi thiếu).
+- UI 4 bề mặt tái dùng: SurpriseAlert (findSurprise), chip "📖 chuyện còn dở" trên dải GĐ162 (nguồn 8), tin sáng "Chuyện hôm qua còn dở", mồi GĐ126 "mai có tiếp".
+- Dev lệch spec có lý: thêm `surpriseArcsTold` (không có thì arc kể lại — spec "không lặp" yêu cầu vết); test ngưỡng 30→26 def (hệ quả xoá 4 def).
+- Test: `surpriseArc.test.ts` 27 test (helper + core setSimSeed + round-trip + sim 2 ngày Arc A ròng +28k đúng công thức) + 109 test liên quan xanh. QA live: save mới cấp 1 (phiên song song đã reset) load sạch với field mới, 0 lỗi console, đồng hồ chạy; gặp arc trực tiếp cần chơi nhiều ngày — để tự nhiên.
+- File: `surpriseArcs.ts`, `biz.ts` (data + core), `endDay.ts`, `todayAgenda.ts`, `tomorrowTeaser.ts`, `Hud.tsx`, `ReportPanels.tsx`, `surprises.test.ts` (ngưỡng).
+
+### GĐ165 — 🎲 Bổ sung 5 sự kiện một-phát cấp thấp — XONG
+
+- Lý do: GĐ164 thay 4 def một-phát bằng arc → pool cấp thấp mỏng; khôi phục độ đa dạng ngày 1–5 (cùng mục tiêu "mỗi sáng có thứ mới" của GĐ160).
+- 5 def mới (chỉ dùng effect có sẵn, quy mô ±2k–25k / xp 5–10 / friendship +1): `chuot_kho` 🐭 (cấp 1), `tre_dau_cau` 🎈 (cấp 1), `ban_ghe_hong` 🪑 (cấp 2), `mat_dien_trua` 🧊 (cấp 3), `xe_khach_do` 🚌 (cấp 5). Friendship nối vào khách quen thật (bác Tám / Bé Na / chú Ba).
+- Test: ngưỡng pool ≥31, arc+one-shot tổng 35; 4 assert dữ liệu mới. **1713/1713 (152 files)** xanh; build sạch. Thuần data — không đụng core/UI.
+- File: `src/data/biz.ts`, `surprises.test.ts`, `surpriseArc.test.ts`.
+
+### GĐ166 — 🧹 Đồng bộ hoá thẻ GĐ131–165 (audit UI 29/10) — XONG
+
+- Audit UI/UX: 0 lỗi vỡ layout; nợ thật = "card nhấn mạnh có 6 biến thể vẽ khác nhau" + vài màu/font lệch bảng + nút disabled không tín hiệu.
+- Fix: (1) controls.css 2 rule chung — `button:disabled` (opacity .45 + not-allowed) và hover nút panel (brightness 1.1) phủ toàn bộ panel; (2) 7 vá màu/font lệch bảng (#4caf50→#2ecc71, #f5b041→#e67e22, fontSize 12.5→12, bỏ borderColor chết, 2 xanh dương GĐ140 về #3498db, st.warn #f39c12→#e67e22); (3) `styles.cardTitle` (13px) áp 13 tiêu đề thẻ SummaryPanel/MorningPanel; (4) component `Callout` (shared.tsx, 6 tone) — chuyển 22/22 thẻ borderLeft của ReportPanels, 0 sót, chữ giữ nguyên 100%; (5) BranchPanel: thẻ "Bỏ lỡ" GĐ155 bỏ tái dùng st.event đỏ, khách đêm GĐ152 bỏ minWidth cứng (wrap @320). Giữ nguyên: hệ card BusinessPanel/StaffPanel, thẻ tint/dashed BusinessPanel + OrderPanel GĐ143 (đợt sau), HUD (đã chuẩn).
+- Quy ước màu + Callout đã ghi vào "Quy ước kỹ thuật" — thẻ mới KHÔNG tự vẽ viền riêng.
+- Test 1713/1713 (chữ không đổi nên không test vỡ) + build sạch + QA live: load sạch, 0 lỗi console, panel render chuẩn. Còn lại cho đợt sau: chuyển tint/dashed BusinessPanel/OrderPanel sang Callout; #27ae60 còn sót 3 chỗ nhỏ.
+- File: `controls.css`, `shared.tsx`, `ReportPanels.tsx`, `BranchPanel.tsx`, `BusinessPanel.tsx`, `StoragePanel.tsx`, `LandmarkPanel.tsx`.
+
+### GĐ167 — 🧹 Nốt vụn màu + thẻ BusinessPanel — XONG
+
+- Chuyển 5 thẻ BusinessPanel sang Callout (GĐ128 quảng cáo, GĐ63 nên quảng cáo nghề nào, GĐ157 pitch mèo — danger strong, GĐ140 mục tiêu vòng — info, GĐ139 chuẩn bị tái sinh — ok). GIỮ banner GĐ143 OrderPanel (mint #55efc4 là màu nhận diện "mối rẻ"; cả họ 9 banner st.banner — chuyển 2/9 chỉ làm lệch hơn).
+- Quét màu lệch bảng rộng hơn đề bài: `#27ae60`→`#2ecc71` (15 chỗ), `#f39c12`→`#e67e22` (17 chỗ), `#c9a20a`→`#f1c40f` (7 chỗ, gồm 2 dead fallback gọn lại) — grep 6 màu lệch toàn src/ui/ = 0 kết quả. HistoryChart kiểm tra không trùng màu đường.
+- Còn cho đợt sau: Callout GardenPanel:79; họ banner guide xanh dương #0984e3/#74b9ff/#2e86de (OrderPanel/ReportPanels) cần quyết định bảng riêng — không phải "nốt vụn".
+- Test 1713/1713 + build sạch; chỉ style/màu, 0 chữ, 0 logic. File: 14 file UI.
+
+### GĐ168 — 🗺️ Nạp lại "Phía trước" cho cấp 30+ — XONG
+
+- Lý do: audit tiến trình — RoadmapPanel rỗng từ cấp 30 (mốc cuối cũ = 29) đúng đoạn khô 31–44 (14 cấp không hệ mới); các mốc thật (tier, chương, NG+) không nằm trong bản đồ nào. Nguyên lý GĐ81/132 "nhìn thấy cái sắp tới" bị rút mất đúng chỗ cần nhất.
+- Triển khai: SYSTEM_UNLOCKS thêm 10 mốc lấy đúng data thật (đất 16/24, Mini mart 30, chương 40/55/75, Siêu thị 45/58 + Đại siêu thị 75, Tái sinh 60 kèm điều kiện doanh thu 100tr) — tổng 20 mục, mốc cuối 75; `panel` thành optional (chương không có bảng riêng); RoadmapPanel chữ "hệ"→"mục", nút Xem chỉ khi có panel; badge HUD 🗺️ tự sống lại. Thuần data/đọc, không đụng logic mở khóa.
+- Test 34/34 liên quan (9 test mới: snapshot 20 mục, probe when() chương, mọi cấp 30–44 còn ≥1 mục, 75+ không crash).
+- File: `unlockMap.ts`, `RoadmapPanel.tsx`, `ReportPanels.tsx`, `Hud.tsx`, `unlockMap.test.ts`.
+
+### GĐ169 — 🎯 Nhịp tuần/tháng sống mãi: bó ratchet + thưởng chuỗi đổi XP — XONG
+
+- Lý do: audit tiến trình — goal doanh thu tuần/tháng nhân ×1.1/×1.15 trên max() cũ không trần → hụt vĩnh viễn sau vài chục tuần (nhịp tuần tự tắt); thưởng chuỗi trả tiền cho người thừa tiền.
+- Fix A (trần goal): `nextGoalCapped` — trần = doanh thu kỳ vừa chốt ×1.15 (bám năng lực thật từng save, tự kéo goal spike về tầm với sau 1 tuần hụt); ĐẠT mới tăng (hụt giữ goal cũ nhưng vẫn bó trần); goal đang lưu giữ nguyên tới lần đặt mới (save-an-toàn).
+- Fix B (XP chuỗi): bỏ nhân tiền chuỗi ×1.2→×1.8 (giữ thưởng gốc ×1.0); chuỗi ≥3 tuần → +35% xpToNext mỗi tuần (tháng ×2) — bù đúng cỡ 10–15%+ tốc độ lên cấp khi giữ chuỗi; notify "🔥 Chuỗi N tuần — +X XP"; XP qua addXp sau set state (1 luồng lên cấp).
+- Sim xác minh (harness GĐ105, seed 169, 28 ngày, trước/sau): trần ăn ngay (goalMới 31M→24.4M cấp 30; 58.7M→41M cấp 50); XP/cấp 2.80→2.55–2.80 ngày (cấp 30), 3.50→3.11 (cấp 50); dòng tiền bot ~0 (bot giữ chuỗi 0) — đối chiếu công thức: người giữ chuỗi mất ≤0.8× thưởng cũ/tuần, người đạt mục tiêu (giờ trong tầm với) nhận +5–6% doanh thu kỳ.
+- Test: `weeklyGoalCap.test.ts` 16 test (100 tuần hội tụ, hụt giữ goal, save cũ clamp, XP đúng/claim 1 lần, simSmoke cấp 30/50) + cập nhật weekly/monthly/weekPace (187 test liên quan xanh). **Full 1738/1738 (153 files)**.
+- File: `data/biz.ts`, `core/biz.ts`, `endDay.ts`, `BusinessPanel.tsx` (dòng "+X XP" + cảnh báo GĐ121 đổi chữ), 4 test file.
+
+### GĐ170 — ⚔️ Rival có kết + sửa rival qua NG+ — XONG
+
+- Lý do: audit tiến trình — rival là hệ đối kháng sâu nhất nhưng không có đích cuối (hạ gen nào cũng 800k+400XP, tên lặp từ gen 13, truyện im sau ch5/ch8); bug thiết kế: prestigeRestart giữ rival thế hệ N → "thuế ~24–47% khách" đè lên cấp 1 vòng 2.
+- Chương 13 "Siêu Thị Sao Mai": fact-check thấy rival bị hạ thứ 12 ĐÃ SẴN là Siêu Thị Sao Mai (mục cuối catalog, blurb "hậu phương công ty lớn") → trùm cuối dùng đúng chất liệu có sẵn. Điều kiện `rivalsBeaten >= 12` (RIVAL_BOSS_GEN), thưởng 5M + 3.000 XP đúng 1 lần (cơ chế chương giữ qua NG+ nên không lặp; đối xứng 6×/7,5× thưởng hạ thường, giữa ch10 và ch12).
+- Gen 13+: news đời mới đổi nhãn ("Hàng mới về, hẻm lại đông" — không còn kêu gọi triệt hạ); tên gắn hậu tố "(cơ sở 2/3)" thay vì lặp vô nghĩa; rivalTier giữ trần gen 10.
+- Sửa NG+: prestigeRestart đặt rival null + rivalsBeaten = 0 (câu chuyện rival khởi lại từ thế hệ 1, hợp lý với việc khởi đầu lại từ tiệm nhỏ); chương đã xem không phát lại; cổng rival đời mới thêm `prestige.level > 0` (bắt buộc của phương án reset — nếu không rival không bao giờ quay lại ở vòng 2 vì ch4 không tái phát); notify tái sinh nhắc "rival đời mới quay lại từ cấp 8". Save schema 0 thay đổi.
+- Test: `rivalBoss.test.ts` 17 test (chương + ranh giới 11/12, thưởng đúng 1 lần, nhãn gen 13+, tái sinh + round-trip, cổng đời mới) + prestige/narrative cập nhật (331 test/24 file liên quan). **Full 1755/1755 (154 files)**.
+- File: `chapters.ts`, `data/biz.ts`, `core/biz.ts`, `core/prestige.ts`, `slices/prestige.ts`, `rivalBoss.test.ts`, `narrative.test.ts`, `prestige.test.ts`.
+
+### GĐ171 — 🎯 NG+ mục tiêu vòng co giãn theo vòng + mục tiêu rival trong vòng — XONG
+
+- Lý do: audit tiến trình (kế hoạch GĐ168–171, mục backlog 5) — khi NG+ chạy lâu, mục tiêu vòng (GĐ140) nhân cố định → vòng 2+ mốc dễ hụt/hoặc nhàm; rival có kết (GĐ170) nhưng không có mốc vòng nào đếm rival.
+- Triển khai (`src/data/ngGoals.ts`): `NG_GOAL_RUN_SCALE_MAX=3`, `NG_GOAL_REWARD_SCALE_MAX=2.5`; `runTargetScale` = target ×(1+0.5×(N−1)) trần 3, `runRewardScale` = reward ×(1+0.3×(N−1)) trần 2.5 (đền xứng hơn khi khó hơn); `baseTarget`/`targetCap`; `rivalsBeaten` đưa vào NgGoalCtx; mục tiêu rival mới "⚔️ Sát phạt đầu hẻm — Hạ 3 đối thủ trong vòng này".
+- `core/slices/progress.ts`: checkTitles thêm `ngGoalsAllDone` (qua ngGoalProgress), claimNgGoal gọi checkTitles(); `data/titles.ts`: danh hiệu mới `chu_hem_lao_lang` 🧭 khi muốn đạt mọi mục tiêu vòng trong 1 vòng.
+- UI (`BusinessPanel.tsx` NgGoalsCard, tab 'ach'): dòng scale "Vòng 2 — mục tiêu ×1.5, thưởng ×1.3 (trần ×3 / ×2.5)". Save schema 0 thay đổi — mọi scale tính runtime từ số vòng.
+- Test: `ngGoalsRun.test.ts` (13) + `ngGoals.test.ts` cập nhật (15). **Full 1783/1783 (158 files)**, build sạch. QA live @5173: đúng dòng scale + mục tiêu rival mới hiển thị.
+- File: `ngGoals.ts`, `slices/progress.ts`, `titles.ts`, `BusinessPanel.tsx`, `ngGoalsRun.test.ts`, `ngGoals.test.ts`, `rivalBoss.test.ts` (cập nhật).
+
+### GĐ172 — 🧱 Kit prop GLB sinh bằng script (học pipeline Xóm Nông Trại) — XONG
+
+- Lý do: nghiên cứu nongtrai.jackle.dev (29/10, file `PHAN-TICH-THAM-KHAO-XOM-NONG-TRAI.md`) — đồ hoạ "nhìn đẹp" của nó không đến từ engine (cùng React+Zustand+Three) mà từ **quy trình asset**: kit low-poly → GLB nhẹ + manifest kiểm kê. Mình 100% procedural, `public/models` rỗng — đúng mảnh thiếu cho không gian ngoài trời (sân, trại, chợ phiên).
+- Script `scripts/build-kit-assets.ts` (chạy `npx tsx`, dùng three trong repo, KHÔNG cần Blender): 6 prop hẻm Việt — chậu cây, thùng gỗ, khóm tre, bồn nước tôn, ghế nhựa đỏ, gánh hàng rong — mỗi món nhiều khối gán màu đỉnh (vertex color, không texture) gộp thành 1 mesh; export GLB qua GLTFExporter (shim FileReader cho Node) + `kit-manifest.json` kiểm kê tris/KB, cảnh báo vượt cap 2500 tris. Tổng 3.7k tris / ~550KB, prop nặng nhất 928 tris. Xem mắt: `asset-preview.html` (dev).
+- Loader `src/world/kitProps.ts`: fetch manifest trước (bỏ module đã mất), GLTFLoader nạp lười sau khi thế giới đứng yên — prop vừa về vừa chen vào, lỗi mạng chỉ warn (không có kit vẫn chơi được). **Đặt theo convention quán nước: chỉ hình ảnh, không chặn lưới** (boxes rỗng). 14 placement quanh nhà/tiệm/vỉa hè/khu cây, soi bằng test thuần `kitProps.test.ts` (5 test: không đè nhà/lòng đường, không chèn nhau, đúng module...) — bắt ngay 1 bug destructure `[x,z]` lấy nhầm trục Y lúc code.
+- File: `scripts/build-kit-assets.ts`, `public/models/kit/` (6 GLB + manifest), `src/world/kitProps.ts`, `world.ts`, `asset-preview.html`, `kitProps.test.ts`.
+
+### GĐ173 — 💰 Juice bán hàng: bong bóng tiền bay ở quầy (học Xóm Nông Trại) — XONG
+
+- Lý do: nguyên tắc "mọi quyết định có dữ liệu phản hồi" — chip tiền HUD đã nhấp nháy, nhưng không nói ra **tiền vừa vào bao nhiêu, ở quầy nào**; game nông trại cho thấy "+số" bay lên tại chỗ thu là phản hồi rẻ mà đã tay nhất.
+- `src/render/fx/coinPop.ts`: sprite canvas vẽ pill "+12.000đ" (nền tím-than viền vàng, đúng bảng màu GĐ166), bay ease-out 1.4s mờ dần cuối; pool 10 tái dùng (hết pool giật của bay lâu nhất); update bằng giây THẬT (tua 8× vẫn kịp đọc). `customers.updateCheckout` gọi `coinFx.spawn(counter.center, total)` ngay sau `checkout` + sfx 'sale'; main gọi `coinFx.update(dt)` mỗi khung.
+- Thuần để test: `coinPopLabel` (kẹp âm về 0, dùng `formatMoney` chuẩn game) + `coinPopPose` (sinh thấp→lên chậm dần→tan trên cao), 4 test.
+- File: `fx/coinPop.ts`, `customers.ts`, `main.tsx`, `coinPop.test.ts`.
+
+### GĐ174 — 📦 Tách chunk vendor (manualChunks của Vite) — XONG
+
+- Lý do: 1 bundle ~2.3MB đổi mỗi lần sửa code → cache trình duyệt xả hết; học từ cách Xóm Nông Trại chia `vendor-react`/`vendor-state`.
+- `vite.config.ts` thêm `manualChunks`: `vendor-react` (react/react-dom/scheduler, 211KB), `vendor-three` (997KB), `vendor-data` (zustand/dexie/firebase, 200KB), còn lại `vendor-misc` — code game 1035KB ở `index`. Thư viện ít đổi ở lại cache qua các bản update; tải song song. Build sạch (cảnh báo >500KB có sẵn, 2 chunk lớn không mới).
+- File: `vite.config.ts`.
+
+### GĐ175 — 🛡️ Guard mất ngữ cảnh render (học rendererGuard của Xóm Nông Trại) — XONG
+
+- Lý do: máy hết VRAM/driver reset/mobile ẩn tab lâu → context GPU bị giết, trước đây người chơi chỉ thấy màn đen im lặng. LÀM XONG LIỀN GẶP THẬT trong buổi verify (reload dev dồn dập, Chrome giết context cũ nhất — màn đen đúng kịch bản này).
+- `installRenderGuard(renderer, onLost)` trong `scene.ts`: WebGL — `webglcontextlost` + preventDefault để three được quyền dựng lại; WebGPU — `backend.device.lost` (mất hẳn, mời F5). `main.tsx` báo qua `notify` (toast 3s) + console.error, chống spam 8s. Lời thoại theo backend ở `renderLoss.ts` (tách riêng vì scene.ts có matchMedia/WebGPU cấp module — node test không nạp được), 3 test.
+- File: `scene.ts`, `renderLoss.ts`, `main.tsx`, `renderGuard.test.ts`.
+
+### GĐ176 — 🎨 Blender 5.2 vào pipeline: nén Draco cả kit, nướng atlas khi cần — XONG
+
+- Lý do: cài Blender 5.2 (winget, plugin Blender của ZCode chỉ là skill hướng dẫn CLI) — mở được nốt phần "béo" của pipeline Xóm Nông Trại mà three.js thuần không làm được: nén Draco + nướng atlas.
+- `scripts/blender_kit_atlas.py` (chạy `blender --background --python`): import GLB → gộp mesh → Smart UV Project → nướng màu đỉnh ra atlas 512 (bake **EMIT** với node VertexColor — bake DIFFUSE của 5.2 trả về đen; `--no-bake` để giữ vertex color cho prop màu phẳng) → xuất GLB Draco level 6 + render preview PNG vào `dev/kit-previews/` để soi mắt.
+- Kết quả kit 6 prop: **550KB → 68.6KB (gấp 8)**, màu giữ nguyên. Chọn `--no-bake` làm chuẩn cho kit hiện tại (màu phẳng — atlas 512 chỉ to thêm không đẹp hơn); bake atlas để sẵn khi prop có vân/texture vẽ tay. 3 vướng API 5.2 đã ghi trong script: color_attributes.new đổi thứ tự tham số, bỏ use_margin, importer đặt tên attribute 'Color' và chỉ nhận COLOR_0 VEC4 (script sinh kit bên ba.js đã sửa paint() ghi RGBA).
+- Game: `public/decoders/draco/` (copy từ node_modules/three, không phụ thuộc CDN), `kitProps.ts` cắm DRACOLoader. Verify mắt: 14/14 prop nén load đúng màu trong game (ban ngày + ban đêm).
+- File: `blender_kit_atlas.py`, `public/models/kit/` (6 GLB Draco + manifest), `public/decoders/draco/`, `kitProps.ts`, `dev/kit-previews/`.
+
+### GĐ177 — 🏮 Đầu ngõ lên đèn: đèn lồng cột bên cửa tiệm — XONG
+
+- Lý do: mở rộng "cảnh ấm" của con hẻm lúc chập tối — học cảm giác đèn đường ấm của Xóm Nông Trại, tựa giữ chân không lời.
+- `scripts/blender_lantern.py` → `public/models/facade/den_long.glb` (Draco 16KB): cột gỗ + nón chóp đỏ + thân thuỷ tinh cam ấm + lõi `den_long_glow`. `storefrontLantern.ts`: lazy GLB + fallback thủ tục + nguồn sáng thật warm #ffb35c đăng ký lightBudget + pulse sprite. `lanternGlow(minutes)` cùng công thức đèn đường (17h–5h30). QA bắt 1 bug: emissive mặc định GLB cháy cả ngày → track `glbGlow` bật/tắt theo lamp.
+- File: `storefrontLantern.ts`, `world.ts`, `main.tsx`, `storefrontLantern.test.ts`.
+
+### GĐ178 — 🎨 Gộp họ xanh dương hướng dẫn/chuỗi/biểu đồ về info #3498db — XONG
+
+- Lý do: đóng nợ màu GĐ167 — họ banner guide `#0984e3/#74b9ff/#2e86de` cần quyết định; chốt KHÔNG lập bảng riêng mà gộp về một sắc info duy nhất (chống "màu tự chế"). Giữ họ buy-tone `#55efc4/#ff7675` (ngoại lệ duyệt GĐ166).
+- sed 16 chỗ ở OrderPanel/ReportPanels/ContractsPanel/PricePanel. GardenPanel giữ họ "system card" riêng (cùng mẫu BusinessPanel) — không churn. tsc+build+reload @5175 sạch, grep 0-màu-cũ/16-màu-mới.
+- File: 4 UI panel.
+
+### GĐ179 — 🪧 Biển treo mở/đóng cửa: kit prop có mục đích gameplay — XONG
+
+- Lý do: kit prop (GĐ172-176) đang thuần hình ảnh → gắn mục đích gameplay: biển nói ra trạng thái tiệm, củng cố nhịp mở/đóng 8h/22h30.
+- `scripts/blender_sign.py` → `bien_mo_cua.glb` (6.9KB): cột gỗ + biển treo, tấm `bien_mo_cua_state` sáng xanh #2ecc71 (mở)/đỏ dìm #e74c3c (đóng) + đung nhẹ khi mở. Đặt (5.05,0,1.45) vỉa hè sát cửa, cao quá đầu (không chặn lưới). Nối `world.openSign.update(g.shopOpen, …)` trong loop main cùng chỗ cột đèn lồng. QA: update(true/false) xanh/đỏ đúng. Lưu ý: tab IAB nền dừng rAF (rafCount=0) nên không soi được loop khi QA — xác nhận trên save thật.
+- File: `storefrontSign.ts`, `world.ts`, `main.tsx`, `storefrontSign.test.ts`.
+
+### GĐ180 — 💡 Đèn báo "khách đang đợi" trước hiên — XONG
+
+- Lý do: tín hiệu không lời cho chủ khi khách chờ quầy (đang ở sau nhà/xa vẫn biết có khách); tái dùng world state `waiting` (sim có sẵn ở customers.ts) — KHÔNG thêm mô phỏng.
+- `scripts/blender_waitlamp.py` → `den_cho.glb` (13.4KB): quả đèn lồng nhỏ gắn tường trái cửa (3.1,0,1.3), lõi `cho_doi_glow` sáng ấm khi `waiting>0` và tiệm mở — càng đông càng sáng rõ (~1.0→1.8), tắt khi đóng/không ai chờ; pulse nhẹ. Không thêm nguồn sáng thật (chỉ tín hiệu). QA: waiting3+mở→glow1.6, đóng/0→0.
+- File: `storefrontWaitLamp.ts`, `world.ts`, `main.tsx`, `storefrontWaitLamp.test.ts`.
+
+### GĐ181 — 🛒 Chợ phiên sống: gánh hàng xe_day theo lịch tuần — XONG
+
+- Lý do: gắn nhịp tuần vào thế giới — ngày chợ (mỗi 7 ngày, `isMarketDay` GĐ135) con hẻm đổi cảnh, báo giữ chân "quay lại tuần sau".
+- `KIT_MARKET_PLACEMENTS` (3 chỗ xe_day: −3.2/0.4/8.4, z~2.5, mép vỉa hè sát lòng đường) + `marketGroup` con của group kit + `kit.setMarketDay(on)`. Tái dùng module `xe_day` có sẵn (không Blender mới); vẫn không chặn lưới. main.tsx đổi cảnh đúng 1 lần theo ngày (guard `lastMarketDay`). `kitPlacementProblems()` gộp kiểm cả base lẫn chợ phiên.
+- File: `kitProps.ts`, `main.tsx`, `kitProps.test.ts` (+4 test, tổng 10).
+
+### GĐ182 — 🧺 Chợ phiên thành nhịp gameplay (đông khách + toast nhắc) — XONG
+
+- Lý do: nhịp tuần hiện chỉ là gánh hàng hình ảnh (GĐ181) + xả kho (GĐ135/136) — chưa ai biết đến; add đông khách để phiên chợ "cảm thấy" khác, toast để người chơi khám phá cơ hội.
+- `marketTrafficFactor(day)` (1.15 chợ / 1 thường, thuần đọc — không đổi SAVE_VERSION/kinh tế nền) nhân vào `rush` sinh khách trong `customers.ts`. Toast 1 lần/ngày chợ (guard `lastMarketDay` trong render loop): "🛒 Hôm nay phiên chợ cuối ngõ — khách đông hơn! Tối nhớ xem Chợ phiên để gánh bớt hàng dư".
+- File: `chophien.ts`, `customers.ts`, `main.tsx`, `marketClearValue.test.ts` (+1 test, tổng 9).
+
+### GĐ183 — 🧹 Đóng nợ UI cuối: mọi "callout vẽ tay" chuyển sang Callout chuẩn, dọn màu lệch — XONG
+
+- Lý do: sau GĐ166/167, vài thẻ nhấn mạnh vẫn vẽ tay vỏ riêng (trước Callout có), và màu teal #16a085 lọt lưới scan GĐ167 (GardenPanel ngoài phạm vi quét cũ).
+- Chuyển 8 thẻ sang `Callout` chuẩn: GardenPanel 5 (💡 Hôm nay đáng warn · 🧑🍳 Nấu hay bán lẻ event · 📦 Đơn quán xóm warn · 🌤️ Mùa vụ ok · 🧹 Dọn trại info), BranchPanel:82 (🚪 Bỏ lỡ warn), StoragePanel 2 (📦 Bỏ lỡ kho danger · 🧊 Tủ lạnh đầy warn). 2 nút `#16a085` (Xây/Lên sao) → accent `#f1c40f` (#222 text).
+- grep sạch: 0 `borderLeft:'3px solid #'` + 0 teal trong src/ui. `#16a085` còn ở data/agents = màu NPC/hàng hoá hợp lệ (không phải UI).
+- File: `GardenPanel.tsx`, `BranchPanel.tsx`, `StoragePanel.tsx`.

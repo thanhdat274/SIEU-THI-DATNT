@@ -6,6 +6,7 @@
  * Chỉ có dữ liệu và hàm thuần; áp vào trạng thái ở `core/slices/social` và `core/slices/endDay`.
  */
 import type { Review } from './reviews';
+import { simRng } from '../core/rand';
 
 /** Mở trang mạng xã hội của tiệm từ cấp này. */
 export const SOCIAL_UNLOCK = 8;
@@ -93,7 +94,7 @@ export interface SocialDayResult {
  * Hết ngày: vài lời đánh giá nổi bật của hôm nay lên mạng, cộng người theo dõi, có thể lan truyền.
  * Đang có khủng hoảng thì không bài khen nào lan được (người ta còn đang chê).
  */
-export function socialDayEnd(social: SocialState, reviews: Review[], day: number, rng: () => number = Math.random): SocialDayResult {
+export function socialDayEnd(social: SocialState, reviews: Review[], day: number, rng: () => number = simRng()): SocialDayResult {
   const news: string[] = [];
   const posts = [...social.posts];
   let followers = social.followers;
