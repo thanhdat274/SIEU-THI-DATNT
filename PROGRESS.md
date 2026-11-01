@@ -140,3 +140,4 @@
 - GĐ631: Sổ đầu ngày ngày cúng nhắc '🙏 Hôm nay ngày cúng — đổi một lô sạp sang xôi (×1,3)' khi có sạp mà chưa lô nào bán xôi (bỏ qua mưa/bão). QA sandbox ngày 15 nắng: bánh mì+nước mía → hiện; có lô xôi → ẩn. sapRong 26/26.
 - GĐ632: tách 2 việc nhắc đổi lô sạp (ngày cúng→xôi, ngày trận→nước mía) khỏi ReportPanels thành hàm thuần sapEventActions (data/sapRong.ts); test hành vi thật thay test đọc nguồn (6 trường hợp). QA sandbox ngày 15: vẫn hiện. sapRong 25/25, bundle 597/597.
 - GĐ633: tách nhắc đồ cúng thiếu hàng (GĐ612/613) khỏi ReportPanels thành hàm thuần cungGoodsAction (data/tiemXoi.ts); test hành vi 6 trường hợp thay test đọc nguồn. QA sandbox ngày 14/15: 2 câu hiện đúng. tiemXoiCungDay 10/10.
+- GĐ634 (hoàn tác): tách tiemXoiCungAction làm tải ban đầu 597→598 KB (vượt trần, phát hiện SAU khi đã push) → revert d01c30f, về 597. Bài học: đọc kết quả check:bundle trước khi commit, đừng nối && sau grep.
