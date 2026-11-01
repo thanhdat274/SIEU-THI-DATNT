@@ -51,12 +51,12 @@ export interface TiemXoiDay { made: Record<string, number>; total: number; cost:
  * Gọi `put(id, qty)` để cất vào kho. Trả null khi tiệm chưa mở.
  */
 export function tiemXoiDay(
-  t: TiemXoiState, level: number, storage: Record<string, number>, put: (id: string, qty: number) => void,
+  t: TiemXoiState, level: number, storage: Record<string, number>, put: (id: string, qty: number) => void, day?: number,
 ): TiemXoiDay | null {
   if (!t.open) return null;
   const ids = tiemXoiIds(level);
   const need: Record<string, number> = {};
-  for (const id of ids) need[id] = Math.max(0, tiemXoiTarget(t) - (storage[id] ?? 0));
+  for (const id of ids) need[id] = Math.max(0, Math.round(tiemXoiTarget(t) * tiemXoiCungMul(day)) - (storage[id] ?? 0)); // GĐ596: ngày cúng nấu đầy kho hơn
   const made: Record<string, number> = {};
   let left = tiemXoiCapacity(t.staff, !!t.big);
   while (left > 0) {

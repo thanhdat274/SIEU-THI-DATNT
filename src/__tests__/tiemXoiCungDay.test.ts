@@ -39,3 +39,18 @@ describe('GĐ589: Sổ đầu ngày nhắc ngày cúng', () => {
     expect([...'Hôm nay ngày cúng — khách mua xôi ×1,3, nấu đủ kho'].length).toBeLessThanOrEqual(90);
   });
 });
+
+describe('GĐ596: ngày cúng nấu đầy kho hơn', () => {
+  it('mục tiêu kho ×1,3 ngày cúng, ngày thường như cũ, không truyền ngày = như cũ', async () => {
+    const { tiemXoiDay, tiemXoiIds, TIEM_XOI_TARGET, TIEM_XOI_CUNG_MUL, isXoiCungDay } = await import('../data/tiemXoi');
+    const t = { open: true, staff: 3, big: false };
+    const ids = tiemXoiIds(50);
+    const full = Object.fromEntries(ids.map((id) => [id, TIEM_XOI_TARGET]));
+    const cung = Array.from({ length: 40 }, (_, i) => i + 1).find((d) => isXoiCungDay(d))!;
+    expect(tiemXoiDay(t, 50, full, () => {})!.total).toBe(0);
+    expect(tiemXoiDay(t, 50, full, () => {}, cung + 1)!.total).toBe(0);
+    const extra = tiemXoiDay(t, 50, full, () => {}, cung)!;
+    const want = ids.length * (Math.round(TIEM_XOI_TARGET * TIEM_XOI_CUNG_MUL) - TIEM_XOI_TARGET);
+    expect(extra.total).toBe(Math.min(want, 60 * 4));
+  });
+});

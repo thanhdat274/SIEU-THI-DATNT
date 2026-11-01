@@ -160,7 +160,7 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
     quanNews.push(sap ? `${sapKindIcons(s.biz.sapRong, s.biz.sapKinds)} sạp hàng rong Ngõ 2 · +${formatMoney(sap)}${isXoiCungDay(s.day) && s.biz.sapKinds?.slice(0, s.biz.sapRong).includes('xoi') ? ' · 🙏' : ''}` : '🛒 Trời mưa: sạp hàng rong Ngõ 2 nghỉ bán');
   }
   if (s.biz.tiemXoi?.open) {
-    const t = tiemXoiDay(s.biz.tiemXoi, s.level, k.storage, (id, qty) => putStock(k, id, qty));
+    const t = tiemXoiDay(s.biz.tiemXoi, s.level, k.storage, (id, qty) => putStock(k, id, qty), s.day);
     if (t) {
       tiemXoiLast = { day: s.day, total: t.total, cost: t.cost, wages: t.wages, saved: tiemXoiSaved(t.made) };
       quanWages += t.cost + t.wages;
