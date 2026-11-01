@@ -21,6 +21,7 @@
 
 ## Trạng thái hiện tại (01/11/2026)
 
+- **GĐ668:** 🔬 chốt nguyên nhân reset co-op trên IAB (theo dõi 100 s không can thiệp: ngữ cảnh trang biến mất hoàn toàn): tab nền IAB bị đóng băng timer → heartbeat `sendState`/pose (`coop.ts` setInterval 0,1s) ngừng → server ngắt WS → `onclose` tự `location.reload()` về màn chính sau 2,5 s (`coop.ts:339`, thiết kế "Mất kết nối hẻm online… quay về màn hình chính"). Không phải bug game; người chơi thật (tab thường) không bị đóng băng timer mức này. QA co-op qua IAB chỉ đứng vững khi tab giữ hiển thị. Không đổi mã.
 - **GĐ667:** 🗄️ dọn PROGRESS (31,6 → 24,3 KB): ghi chú GĐ329–342 còn trong "Cần theo dõi" (đã cũ về số liệu bundle/FPS/test) dồn sang `docs/progress-archive/PROGRESS-GD326-342-notes.md`; các mục ✅ ĐÃ ĐÓNG và con trỏ archive GĐ281–342 gộp thành 2 dòng mục lục. Không đổi mã, không đổi quyết định.
 - **GĐ666:** 🧪 coverage sweep (đầu tiên được ghi từ GĐ270): tổng 56,5% stmt / 88,9% branch / 80,6% fn. Thêm reporter `json` vào vitest coverage + tool xếp hạng `dev/covrank.cjs` (file logic thiếu test nhất) và `dev/covlines.cjs` (dòng chưa phủ theo file). Sửa `phoneReasons.test.ts`: quét 21.600 tổ hợp vượt timeout 5 s mặc định dưới instrumentation → 30 s riêng cho test đó. Test mới `endDayNightFlow.test.ts` (6 test, mutation-checked) phủ đường nối chốt ngày chưa chạm tới: phụ trại qua đêm (tưới/đổ cám/gom trứng về kho + tin 🧑‍🌾), đơn trại quá hạn huỷ + lập đơn mới (cấp đủ/thiếu), sổ nợ quỵt 14 ngày (xoá + −10 thân thiết) / nhắc ngày thứ 8, đơn gọi điện carrying về kho + 2 sao + −3 thân thiết. Các file 0% còn lại (branchVisit, residents, audio) là lớp diễn 3D/âm thanh — theo quy ước không đáng thêm test. 2731 test xanh (300s).
 - **GĐ665:** vòng ngày co-op 2 tab bị chặn bởi môi trường QA: tab IAB về nền là mất phiên WS hẻm — quay lại thì tab về màn khởi đầu hoặc nạp lại checkpoint server (đo được reset về đúng ngày 1, 06:00 nhiều lần trên cả 2 tab) → không chạy được vòng ngày đầy đủ qua IAB. Soi code chốt cơ chế: máy khách nhận state SỐNG broadcast từ máy chạy (`coop.ts` sendState, nhịp 0,2s khi ≥2 người) chứ không phải snapshot cũ; máy chạy checkpoint 30 s/lần + khi ẩn tab; vào lại hẻm nạp checkpoint gần nhất. Khoá bảo đảm này bằng test mới `coopClient.test.ts` (checkpoint giữa ngày round-trip + máy khách không tự checkpoint; đã kiểm đỏ khi tắt checkpoint). **Kết luận: không phải bug join-giữa-ngày cho người chơi thật; các lần reset là tab IAB đóng băng nền.** Vòng ngày hẻm 2 tab trên trình duyệt thật dời sang dịp QA toàn diện (GĐ670) — xem Cần theo dõi.
@@ -63,7 +64,7 @@
 - Họ màu hướng dẫn/chuỗi/biểu đồ: gộp về một sắc info `#3498db` (GĐ178); ngoại lệ duy nhất: buy-tone `#55efc4`/`#ff7675`; GardenPanel giữ họ riêng. GĐ258 quét nốt 6 màu cũ — src/ui chỉ còn bảng duyệt + màu nhận diện.
 
 ## Cần theo dõi / nợ mở
-- 🕳️ GĐ665: QA co-op vòng ngày (ngủ cả hẻm → tổng kết 2 tab) cần tab trình duyệt THẬT — tab IAB về nền mất phiên WS hẻm (checkpoint round-trip đã khoá bằng test). Ưu tiên làm trong đợt QA toàn diện GĐ670; trước đó ghi "chưa chạy được vì môi trường", không tính là lỗi game.
+- 🕳️ GĐ665/668: QA co-op vòng ngày (ngủ cả hẻm → tổng kết 2 tab) cần tab trình duyệt THẬT — tab IAB về nền bị đóng băng timer → server ngắt WS → game tự reload (`coop.ts:339`, thiết kế). Cơ chế đã chốt GĐ668; checkpoint round-trip đã khoá bằng test. Làm trong đợt QA toàn diện GĐ670; trước đó ghi "chưa chạy được vì môi trường", không tính là lỗi game.
 - 📦 GĐ515: tải ban đầu 598/598 KB — code mới cho Ngõ 2/sạp phải nằm trong chunk lười (world/ngo2, QuanNuocPanel); trước khi thêm vào main/index tìm chỗ tách bớt.
 - GĐ330: QA lưu máy khách (127.0.0.1:5173) — tải lại trang vẫn hiện "Chơi tiếp trong máy (ngày 1)" và vào lại đúng ván; lần "mất ván" trước là bấm nhầm nút ván mới, KHÔNG phải lỗi lưu.
 
@@ -121,3 +122,4 @@
 - GĐ665: co-op 2 tab qua IAB bị chặn môi trường (tab nền mất WS hẻm); khoá checkpoint round-trip bằng test mới — không phải bug join. Vòng ngày hẻm thật dời GĐ670.
 - GĐ666: coverage sweep — vá timeout phoneReasons, test mới đường nối chốt ngày (trại/nợ/đơn mang đi); tool xếp hạng dev/covrank.cjs + dev/covlines.cjs.
 - GĐ667: dọn PROGRESS 31,6 → 24,3 KB — ghi chú GĐ329–342 dồn archive, không đổi mã.
+- GĐ668: chốt nguyên nhân reset co-op IAB — tab nền đóng băng timer → server ngắt WS → tự reload (thiết kế coop.ts:339). Không phải bug.
