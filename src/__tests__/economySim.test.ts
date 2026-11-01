@@ -174,12 +174,14 @@ describe('khảo sát kinh tế vòng ngày — simulator thật trên store', (
   it('ngày 2 không bơm thêm thông báo', async () => {
     let toasts = 0;
     const seen: string[] = [];
-    const unsub = useGame.subscribe((st, prev) => { if (st.day === 2 && st.message && st.message !== prev.message && !/^(📜|🎯)/.test(String(st.message))) { toasts++; seen.push(String(st.message)); } });
+    const long = new Set<string>(); // GĐ563: thông báo sinh lúc chạy cũng ≤90 ký tự
+    const unsub = useGame.subscribe((st, prev) => { if (st.message && st.message !== prev.message && [...String(st.message)].length > 90) long.add(String(st.message)); if (st.day === 2 && st.message && st.message !== prev.message && !/^(📜|🎯)/.test(String(st.message))) { toasts++; seen.push(String(st.message)); } });
     await runEconomySim(1, 2, { betTier: 1.0 });
     unsub();
     // eslint-disable-next-line no-console
     console.log(`[người mới] ngày 2: ${toasts} thông báo: ` + seen.join(' | '));
     expect(toasts, 'ngày 2 nhiều thông báo hơn mức đo — gộp hoặc dời bớt').toBeLessThanOrEqual(DAY2_TOAST_CEILING);
+    expect([...long], 'thông báo dài hơn 90 ký tự').toEqual([]);
   });
 });
 

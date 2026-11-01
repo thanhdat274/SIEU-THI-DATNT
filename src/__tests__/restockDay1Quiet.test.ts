@@ -32,3 +32,14 @@ describe('thông báo lên cấp ≤90 ký tự (GĐ562)', () => {
     expect(levelUpToast(9, many)).toMatch(/\+\d+$/);
   });
 });
+
+describe('fitList (GĐ563)', () => {
+  it('giữ ≤90, gộp +N, giữ nguyên khi vừa', async () => {
+    const { fitList } = await import('../data/onboarding');
+    expect(fitList('🔄 Thay ô hết hàng: ', ['A → B'])).toBe('🔄 Thay ô hết hàng: A → B');
+    const many = Array.from({ length: 12 }, (_, i) => `Món dài số ${i} → Món thay ${i}`);
+    const m = fitList('🔄 Thay ô hết hàng: ', many);
+    expect([...m].length).toBeLessThanOrEqual(90);
+    expect(m).toMatch(/\+\d+$/);
+  });
+});

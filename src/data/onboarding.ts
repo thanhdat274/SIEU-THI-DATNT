@@ -46,15 +46,19 @@ export function guideActiveOn(day: number, tutorialOff: boolean, deliveries: rea
 /** GĐ551: ngày 1 kệ trống nên 'Cần nhập gấp' trùng gợi ý, chợ phiên/dự báo/so mối làm rối người mới — ẩn (GĐ552 gom cả dự báo + so mối). */
 export const showRestockExtras = (day: number) => day > 1;
 
+/** GĐ563: ghép `head + danh sách` ≤max ký tự; mục thừa gộp thành ' +N'. Không mục nào vừa thì chỉ còn head + số mục. */
+export function fitList(head: string, items: string[], max = 90): string {
+  for (let n = items.length; n > 0; n--) {
+    const rest = items.length - n;
+    const msg = `${head}${items.slice(0, n).join(', ')}${rest ? ` +${rest}` : ''}`;
+    if ([...msg].length <= max) return msg;
+  }
+  return `${head}${items.length} mục`;
+}
+
 /** GĐ562: thông báo lên cấp ≤90 ký tự — chỉ tên mở khoá (bỏ phần mô tả sau ':'), thừa thì gộp '+N'. Danh sách đủ ở bảng Cấp độ. */
 export function levelUpToast(level: number, gained: string[], max = 90): string {
   const head = `⭐ Lên cấp ${level}!`;
-  const names = gained.map((g) => g.split(':')[0].trim());
-  if (!names.length) return head;
-  for (let n = names.length; n > 0; n--) {
-    const rest = names.length - n;
-    const msg = `${head} Mở khóa: ${names.slice(0, n).join(', ')}${rest ? ` +${rest}` : ''}`;
-    if (msg.length <= max) return msg;
-  }
-  return `${head} Mở khóa ${names.length} thứ mới`;
+  if (!gained.length) return head;
+  return fitList(`${head} Mở khóa: `, gained.map((g) => g.split(':')[0].trim()), max);
 }

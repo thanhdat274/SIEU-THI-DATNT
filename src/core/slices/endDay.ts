@@ -1,4 +1,5 @@
 import { formatMoney, productById, unlockedProducts } from '../../data/products';
+import { fitList } from '../../data/onboarding';
 import { SHOP_TIERS, rentOf, OPERATING_REVENUE_RATE } from '../../data/shopTiers';
 import { sapKindIcons, sapRongIncome } from '../../data/sapRong';
 import { describeDay, forecastFrom, WEATHER } from '../../data/weather';
@@ -456,6 +457,6 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
   get().checkTitles();
   if (s.autoSwap) {
     const swapped = get().replaceEmptySlots();
-    if (swapped.length && s.day > 1) s.notify(`🔄 Thay ô hết hàng: ${swapped.join(', ')}`);
+    if (swapped.length && s.day > 1) s.notify(fitList('🔄 Thay ô hết hàng: ', swapped));
   }
 };
