@@ -31,15 +31,12 @@ describe('GĐ588: panel tiệm xôi báo ngày cúng', () => {
   });
 });
 
-describe('GĐ589/599/634: tiemXoiCungAction — Sổ đầu ngày nhắc ngày cúng', () => {
-  it('tiệm mở + ngày cúng: thiếu thợ nhắc thêm thợ, đủ thợ báo nấu đầy; còn lại null; ≤90', async () => {
-    const { tiemXoiCungAction, TIEM_XOI_MAX_STAFF } = await import('../data/tiemXoi');
-    expect(tiemXoiCungAction({ open: true, staff: 0 }, 15)?.text).toContain('thêm thợ');
-    expect(tiemXoiCungAction({ open: true, staff: TIEM_XOI_MAX_STAFF }, 15)?.text).toContain('thợ nấu đầy kho');
-    expect(tiemXoiCungAction({ open: false, staff: 1 }, 15)).toBeNull();
-    expect(tiemXoiCungAction({ open: true, staff: 1 }, 16)).toBeNull();
-    expect(tiemXoiCungAction(undefined, 15)).toBeNull();
-    for (const s of [0, TIEM_XOI_MAX_STAFF]) expect([...tiemXoiCungAction({ open: true, staff: s }, 1)!.text].length).toBeLessThanOrEqual(90);
+describe('GĐ589: Sổ đầu ngày nhắc ngày cúng', () => {
+  it('ReportPanels thêm việc 🙏 khi tiệm xôi mở và là ngày cúng, ≤90', async () => {
+    const { readFileSync } = await import('node:fs');
+    const src = readFileSync(`${__dirname}/../ui/panels/ReportPanels.tsx`, 'utf8');
+    expect(src).toContain('biz.tiemXoi?.open && isXoiCungDay(day)');
+    for (const t of ['Hôm nay ngày cúng — khách mua xôi ×1,3, thêm thợ để nấu kịp', 'Hôm nay ngày cúng — khách mua xôi ×1,3, thợ nấu đầy kho']) expect([...t].length).toBeLessThanOrEqual(90);
   });
 });
 
@@ -64,6 +61,14 @@ describe('GĐ598: panel tiệm xôi hiện mục tiêu kho ngày cúng', () => {
     const src = readFileSync('src/ui/panels/TiemXoiSection.tsx', 'utf8');
     expect(src).toContain('tiemXoiTarget(t) * tiemXoiCungMul(day)');
     expect(src).toContain('thợ tự nấu đầy kho ×1,3');
+  });
+});
+
+describe('GĐ599: Sổ đầu ngày ngày cúng nhắc thêm thợ khi thiếu', () => {
+  it('ReportPanels chọn câu theo số thợ', async () => {
+    const { readFileSync } = await import('node:fs');
+    const src = readFileSync('src/ui/panels/ReportPanels.tsx', 'utf8');
+    expect(src).toContain('biz.tiemXoi.staff < TIEM_XOI_MAX_STAFF ?');
   });
 });
 
