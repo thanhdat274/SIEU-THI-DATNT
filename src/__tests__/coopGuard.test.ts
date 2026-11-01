@@ -122,6 +122,7 @@ const LOCAL_ONLY: Record<string, string> = {
   bonusBranchStaff: 'thưởng nóng một nhân viên chi nhánh theo id người',
   restBranchStaff: 'cho nhân viên chi nhánh nghỉ ngày mai theo id người',
   restBranchStaffToday: 'cho nhân viên xin nghỉ nghỉ HÔM NAY theo id người (restDay[id] = day — sửa đúng một chỗ trong branch.restDay)',
+  denyStaffRest: 'giữ lại nhân viên xin nghỉ theo id người (wishDenied[id] = day + fatigue +10 — sửa đúng một chỗ trong branch)',
   toggleVending: 'lắp/tắt máy bán hàng — công tắc toàn cục',
   toggleNightDelivery: 'bật/tắt nhận đơn app đêm ở chi nhánh — công tắc toàn cục',
   toggleBranchAutoHaul: 'bật/tắt auto chuyển kho chi nhánh — công tắc toàn cục',

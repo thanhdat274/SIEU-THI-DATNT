@@ -46,8 +46,8 @@ export function branchMorningPlan(
   // GĐ727 — nhân viên xin nghỉ hôm nay (băm riêng theo seed ván; seed không truyền = không bao giờ có — giữ hành vi cũ cho test cũ)
   if (seed !== undefined) {
     const wish = branchStaffWish(branch, seed, day);
-    if (wish && !restingOn(branch, wish.id, day)) {
-      items.push({ icon: '😴', text: `${wish.name} xin nghỉ hôm nay (mệt/nhà việc) — cho nghỉ ở 👥 Nhân viên hoặc giữ lại (người sẽ mệt thêm)`, danger: false });
+    if (wish && !restingOn(branch, wish.id, day) && branch.wishDenied?.[wish.id] !== day) {
+      items.push({ icon: '😴', text: `${wish.name} xin nghỉ hôm nay (mệt/nhà việc) — cho nghỉ hoặc giữ lại ở 👥 Nhân viên`, danger: false });
     }
   }
   return items;

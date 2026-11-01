@@ -2,7 +2,7 @@ import { simRng } from '../rand';
 import { formatMoney, productById } from '../../data/products';
 import { HOMEGROWN_PREMIUM } from '../../data/garden';
 import { dailyWage, GUARD_DETECT, ROLES, type Staff } from '../../data/staff';
-import { BLACKOUT_LOSS, BONUS_RELIEF, DRUNK_BLOCK, DRUNK_DAMAGE, EVENT_CHANCE, EVENT_ROLL_AT, FATIGUE_PER_DAY, FATIGUE_QUIT, FATIGUE_SLOW, HOT_FOOD_MUL, MANAGER_REFILL_BELOW, QUIT_CHANCE, TIRED_MISS, autoSchedule, fatigueOf, isHotFood, pickWeighted, restingOn, spoilsInBlackout, BRANCH_NIGHT_THEFT, BRANCH_ROLES, BRANCH_SHIFT_NAME, BRANCH_SHIFTS, CONVENIENCE, VENDING_CAP, VENDING_COST, VENDING_ITEMS, VENDING_OFFTAKE, VENDING_THEFT, branchTrafficAt, branchMatchMul, branchWeekendMul, isBranchNight, newBranch, onShift, shelfTotal, vendingTotal, type BranchState,
+import { BLACKOUT_LOSS, BONUS_RELIEF, DRUNK_BLOCK, DRUNK_DAMAGE, EVENT_CHANCE, EVENT_ROLL_AT, FATIGUE_PER_DAY, FATIGUE_QUIT, FATIGUE_SLOW, STAFF_WISH_DENY_FATIGUE, HOT_FOOD_MUL, MANAGER_REFILL_BELOW, QUIT_CHANCE, TIRED_MISS, autoSchedule, fatigueOf, isHotFood, pickWeighted, restingOn, spoilsInBlackout, BRANCH_NIGHT_THEFT, BRANCH_ROLES, BRANCH_SHIFT_NAME, BRANCH_SHIFTS, CONVENIENCE, VENDING_CAP, VENDING_COST, VENDING_ITEMS, VENDING_OFFTAKE, VENDING_THEFT, branchTrafficAt, branchMatchMul, branchWeekendMul, isBranchNight, newBranch, onShift, shelfTotal, vendingTotal, type BranchState,
   ALCOHOL_BRAWL_CHANCE, ALCOHOL_NIGHT_MUL, BRAWL_BLOCK, BRAWL_DAMAGE, GENERATOR_FUEL, GENERATOR_LOSS_MUL, NIGHT_DELIVERY_MISHAP, NIGHT_DELIVERY_PER_HOUR, NIGHT_DELIVERY_SURCHARGE, PATROL_AT, PATROL_CHANCE, POWER_UPGRADES,
   coverMul, hasAlcohol, hasPower, pickForGroup, pickNightGroup, powerUpgradeById, type PowerUpgradeId } from '../../data/branches';
 import type { GameState, SetState, GetState } from '../gameTypes';
@@ -323,7 +323,7 @@ export const branchNewDay = (b: BranchState, day: number): { branch: BranchState
   return { branch: { ...b, staff, fatigue, restDay, event: null, blockedUntil: undefined, hourly: Array(24).fill(0), vendingRevenueToday: 0, groupToday: {}, alcoholToday: 0, deliveryToday: 0, deliveryRevenueToday: 0 }, news };
 };
 
-export const createBranchSlice = (set: SetState, get: GetState): Pick<GameState, 'openBranch' | 'toggleBranch' | 'hireForBranch' | 'fireFromBranch' | 'coverCalloff' | 'bonusBranchStaff' | 'restBranchStaff' | 'restBranchStaffToday' | 'setBranchShift' | 'toggleVending' | 'toggleNightDelivery' | 'toggleBranchAutoHaul' | 'setBranchAutoHaul' | 'buyBranchPower'> => ({
+export const createBranchSlice = (set: SetState, get: GetState): Pick<GameState, 'openBranch' | 'toggleBranch' | 'hireForBranch' | 'fireFromBranch' | 'coverCalloff' | 'bonusBranchStaff' | 'restBranchStaff' | 'restBranchStaffToday' | 'denyStaffRest' | 'setBranchShift' | 'toggleVending' | 'toggleNightDelivery' | 'toggleBranchAutoHaul' | 'setBranchAutoHaul' | 'buyBranchPower'> => ({
   openBranch: () => {
     const s = get();
     if (s.branch) return false;
@@ -382,6 +382,17 @@ export const createBranchSlice = (set: SetState, get: GetState): Pick<GameState,
       stats: { ...s.stats, spent: s.stats.spent + cost },
     });
     s.notify(`🎁 Thưởng ${st.name} ${formatMoney(cost)} — đỡ mệt hẳn!`);
+  },
+  // GĐ728 — GIỮ lại người xin nghỉ: họ làm trong buồn → mệt thêm một bậc ngay (STAFF_WISH_DENY_FATIGUE),
+  // wishDenied[id] = ngày để ẩn dòng xin nghỉ trong Sổ đầu ngày. Rủi ro mệt cao là cơ chế có sẵn (SLOW/QUIT).
+  denyStaffRest: (id) => {
+    const b = get().branch;
+    const st = b?.staff.find((it) => it.id === id);
+    if (!b || !st) return;
+    const fatigue = { ...(b.fatigue ?? {}) };
+    fatigue[id] = Math.min(100, Math.round((b.fatigue?.[id] ?? 0) + STAFF_WISH_DENY_FATIGUE));
+    set({ branch: { ...b, fatigue, wishDenied: { ...(b.wishDenied ?? {}), [id]: get().day } } });
+    get().notify(`😔 ${st.name} hơi buồn vì không được nghỉ — mệt thêm ${STAFF_WISH_DENY_FATIGUE}`);
   },
   // GĐ727 — cho nghỉ HÔM NAY (nhân viên xin nghỉ): ca nay thiếu người thật, tối nay mệt được xả (restingOn hôm nay → fatigue 0)
   restBranchStaffToday: (id) => {

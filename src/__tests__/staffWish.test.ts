@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { newGameData, useGame } from '../core/store';
 import { branchMorningPlan } from '../data/branchMorning';
+import { branchMorningPlan } from '../data/branchMorning';
 import { branchStaffWish, newBranch, STAFF_WISH_CHANCE, type BranchState } from '../data/branches';
 
 /**
@@ -55,6 +56,44 @@ describe('branchMorningPlan — dòng xin nghỉ (chỉ khi truyền seed)', () 
     for (let d = 2; d <= 60; d++) {
       expect(branchMorningPlan(b, 10, {}, d).some((c) => c.text.includes('xin nghỉ hôm nay'))).toBe(false);
     }
+  });
+});
+
+describe('GĐ728 — denyStaffRest: giữ lại thì mệt thêm và ẩn dòng xin nghỉ', () => {
+  beforeEach(() => {
+    useGame.setState({ ...newGameData(), day: 10, notify: () => {} });
+    useGame.setState({ branch: { ...newBranch(), open: true, staff: [{ ...newBranch().staff[0], id: 5, name: 'nv5' }] } as never });
+  });
+  it('bấm Giữ lại: wishDenied[5] = 10, mệt +10 (chặn trần 100), tin báo buồn', () => {
+    let said = '';
+    useGame.setState({ notify: (m: string) => { said = m; } });
+    useGame.getState().denyStaffRest(5);
+    const b = useGame.getState().branch!;
+    expect(b.wishDenied?.[5]).toBe(10);
+    expect(b.fatigue?.[5]).toBe(10);
+    expect(said).toContain('mệt thêm 10');
+  });
+  it('mệt cộng dồn và chặn ở 100; dòng wish trong Sổ đầu ngày ẩn khi đã giữ lại', () => {
+    useGame.setState({ branch: { ...useGame.getState().branch!, fatigue: { 5: 95 } } as never });
+    useGame.getState().denyStaffRest(5);
+    expect(useGame.getState().branch!.fatigue?.[5]).toBe(100);
+    // dòng ẩn: seed đúng ngày, wish active nhưng wishDenied chặn
+    const b = useGame.getState().branch!;
+    for (let sd = 1; sd <= 300; sd++) {
+      const w = branchStaffWish(b, sd, 10);
+      if (w?.id === 5) {
+        const chores = branchMorningPlan(b, 10, {}, 10, sd);
+        expect(chores.some((c) => c.text.includes('xin nghỉ hôm nay'))).toBe(false);
+        // xoá marker denied → dòng hiện lại đúng ngày đó (marker điều khiển việc ẩn, không phải ngày)
+        const b2 = { ...b, wishDenied: {} } as unknown as BranchState;
+        expect(branchMorningPlan(b2, 10, {}, 10, sd).some((c) => c.text.includes('xin nghỉ hôm nay'))).toBe(true);
+        return;
+      }
+    }
+  });
+  it('id lạ: không đổi gì', () => {
+    useGame.getState().denyStaffRest(99);
+    expect(useGame.getState().branch?.wishDenied?.[99]).toBeUndefined();
   });
 });
 

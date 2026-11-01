@@ -100,6 +100,8 @@ export interface BranchState {
   fatigue?: Record<number, number>;
   /** Nhân viên được nghỉ (id → ngày nghỉ). */
   restDay?: Record<number, number>;
+  /** GĐ728 — ngày nhân viên bị GIỮ lại dù xin nghỉ (id → ngày): ẩn dòng wish, mệt thêm một bậc. */
+  wishDenied?: Record<number, number>;
   /** Doanh thu từng giờ hôm nay (0–23). */
   hourly?: number[];
   /** Sự kiện đêm nay. */
@@ -222,6 +224,8 @@ export const restingOn = (b: BranchState, id: number, day: number) => b.restDay?
 // ── GĐ727 — nhân viên xin nghỉ hôm nay (vẽ bằng băm riêng, mẫu GĐ717) ─────────────────────────
 // KHÔNG rút dòng simRng chung: cùng seed + cùng ngày luôn cùng người xin, mô phỏng autoplay giữ nguyên.
 export const STAFF_WISH_CHANCE = 0.15;
+/** GĐ728 — giữ lại người xin nghỉ: họ làm việc trong buồn → mệt thêm một bậc (giữa ca sáng 8 và ca full 15). */
+export const STAFF_WISH_DENY_FATIGUE = 10;
 function wishRoll(seed: number, n: number, salt: number): number {
   let h = Math.imul((seed >>> 0) ^ Math.imul(n, 2654435761), 2246822519) ^ salt;
   h ^= h >>> 13;
