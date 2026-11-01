@@ -35,6 +35,21 @@ function App() {
       location.reload();
     });
   }, [screen]);
+  // GĐ713: ngồi màn đăng nhập thì rảnh CPU/mạng — tải trước thế giới 3D (import('./main') được
+  // cache, trùng với hiệu ứng trên cũng chỉ chạy một lần) để bấm vào chơi là có ngay, không chờ.
+  // main.tsx vẫn tự chờ screen='game' mới đếm giờ — đúng như trước GĐ704 khi nó chạy từ đầu trang.
+  useEffect(() => {
+    if (screen === 'game') return;
+    const ric = (window as { requestIdleCallback?: (cb: () => void) => number }).requestIdleCallback
+      ?? ((cb: () => void) => window.setTimeout(cb, 1500));
+    const id = ric(() => {
+      import('./main').then(() => setWorldReady(true), (err) => console.error('[boot] nạp trước thế giới lỗi (sẽ thử lại khi vào chơi):', err));
+    });
+    return () => {
+      const cic = (window as { cancelIdleCallback?: (id: number) => void }).cancelIdleCallback;
+      if (cic) cic(id); else window.clearTimeout(id);
+    };
+  }, [screen]);
   if (screen !== 'game') return <LoginScreen />;
   if (!worldReady) {
     return (
