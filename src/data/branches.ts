@@ -6,6 +6,8 @@ import { SHIFTS, type Shift, type Staff, type StaffRole } from './staff';
 import { isAlcohol } from './licenses';
 import { CHIEF_COVER_MUL } from './careers';
 import { simRng } from '../core/rand';
+import { isQuanMatchDay } from './quanNuoc';
+import type { Weather } from './weather';
 
 /** Cửa hàng tiện lợi 24/7: chi nhánh xa tiệm chính, chủ không đứng bán, nhân viên lo hết. */
 export const CONVENIENCE = {
@@ -67,6 +69,10 @@ export const isBranchNight = (minute: number) => { const m = ((minute % 1440) + 
 /** GĐ532: đêm cuối tuần dân đi chơi khuya ghé tiện lợi đông hơn. */
 export const BRANCH_WEEKEND_NIGHT_MUL = 1.3;
 export const branchWeekendMul = (day: number, minute: number) => (isWeekend(day) && isBranchNight(minute) ? BRANCH_WEEKEND_NIGHT_MUL : 1);
+/** GĐ601: đêm có trận (cùng lịch quán nước) — tan trận 22h–24h khách ghé tiện lợi ×1,2. */
+export const BRANCH_MATCH_MUL = 1.2;
+export const branchMatchMul = (day: number, minute: number, weather?: Weather) =>
+  (isQuanMatchDay(day, weather) && ((minute % 1440) + 1440) % 1440 >= 22 * 60 ? BRANCH_MATCH_MUL : 1);
 
 export interface BranchState {
   open: boolean;

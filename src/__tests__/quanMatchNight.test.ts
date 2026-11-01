@@ -59,3 +59,24 @@ describe('GĐ586: Giải bóng đá phường = đêm có trận', () => {
     }
   });
 });
+
+describe('GĐ601: tiện lợi đông sau trận', () => {
+  it('đêm có trận 22h–24h ×1,2; trước 22h, sau nửa đêm, ngày thường, trời mưa = 1', async () => {
+    const { branchMatchMul, BRANCH_MATCH_MUL } = await import('../data/branches');
+    const { isQuanMatchDay } = await import('../data/quanNuoc');
+    const d = Array.from({ length: 30 }, (_, i) => i + 1).find((x) => isQuanMatchDay(x, 'sunny'))!;
+    const no = Array.from({ length: 30 }, (_, i) => i + 1).find((x) => !isQuanMatchDay(x, 'sunny'))!;
+    expect(branchMatchMul(d, 23 * 60, 'sunny')).toBe(BRANCH_MATCH_MUL);
+    expect(branchMatchMul(d, 21 * 60, 'sunny')).toBe(1);
+    expect(branchMatchMul(d, 1 * 60, 'sunny')).toBe(1);
+    expect(branchMatchMul(no, 23 * 60, 'sunny')).toBe(1);
+    expect(branchMatchMul(d, 23 * 60, 'rain')).toBe(1);
+  });
+});
+
+describe('GĐ601: BranchPanel báo tan trận', () => {
+  it('panel tiện lợi dùng branchMatchMul', async () => {
+    const { readFileSync } = await import('node:fs');
+    expect(readFileSync('src/ui/BranchPanel.tsx', 'utf8')).toContain('branchMatchMul(day, 23 * 60, weather) > 1');
+  });
+});

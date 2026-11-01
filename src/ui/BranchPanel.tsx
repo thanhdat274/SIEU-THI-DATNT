@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useGame } from '../core/store';
-import { CONVENIENCE, ALCOHOL_BRAWL_CHANCE, coverMul, NIGHT_DELIVERY_SURCHARGE, NIGHT_GROUPS, POWER_UPGRADES, VENDING_CAP, VENDING_COST, branchPowerBill, hasAlcohol, hasPower, isHotFood, nightNeed, shelfTotal, uncoveredHours, vendingTotal, branchWeekendMul } from '../data/branches';
+import { CONVENIENCE, ALCOHOL_BRAWL_CHANCE, coverMul, NIGHT_DELIVERY_SURCHARGE, NIGHT_GROUPS, POWER_UPGRADES, VENDING_CAP, VENDING_COST, branchPowerBill, hasAlcohol, hasPower, isHotFood, nightNeed, shelfTotal, uncoveredHours, vendingTotal, branchWeekendMul, branchMatchMul } from '../data/branches';
 import { dailyWage } from '../data/staff';
 import { branchOperatingBalanceToday, branchBuildPayback } from '../data/branchNet';
 import { branchMissSummary } from '../data/venueTrend';
@@ -14,7 +14,7 @@ import { st } from './branchStyles';
 
 /** Cửa hàng tiện lợi 24/7: thuê mặt bằng, tuyển người, xem doanh thu. */
 export function BranchPanel() {
-  const { branch, level, money, day, candidates, storage, stats, atBranch, online, licenses, venueTrend, openBranch, toggleBranch, toggleVending, toggleNightDelivery, toggleBranchAutoHaul, setBranchAutoHaul, buyBranchPower, hireForBranch, fireFromBranch, setBranchShift, coverCalloff, bonusBranchStaff, restBranchStaff, closePanel, openPanel } = useGame();
+  const { branch, level, money, day, weather, candidates, storage, stats, atBranch, online, licenses, venueTrend, openBranch, toggleBranch, toggleVending, toggleNightDelivery, toggleBranchAutoHaul, setBranchAutoHaul, buyBranchPower, hireForBranch, fireFromBranch, setBranchShift, coverCalloff, bonusBranchStaff, restBranchStaff, closePanel, openPanel } = useGame();
   const [tab, setTab] = useState<'info' | 'night' | 'report'>('info');
 
   if (!branch) {
@@ -66,7 +66,7 @@ export function BranchPanel() {
       {tab === 'info' && (
         <div style={{ display: 'grid', gap: 6 }}>
           <div>Hôm nay: <b>{branch.customersToday}</b> khách · thu <b>{formatMoney(branch.revenueToday)}</b>
-            {branch.missedToday > 0 && <> · {branch.missedToday} khách bỏ về</>}{branch.lostToday > 0 && <> · mất trộm {branch.lostToday} món</>}{branchWeekendMul(day, 23 * 60) > 1 && <> · 🌙 đêm cuối tuần khách ×1,3</>}</div>
+            {branch.missedToday > 0 && <> · {branch.missedToday} khách bỏ về</>}{branch.lostToday > 0 && <> · mất trộm {branch.lostToday} món</>}{branchWeekendMul(day, 23 * 60) > 1 && <> · 🌙 đêm cuối tuần khách ×1,3</>}{branchMatchMul(day, 23 * 60, weather) > 1 && <> · ⚽ tan trận 22h–24h khách ×1,2</>}</div>
           <div>Chi phí mỗi ngày: {formatMoney(wages)} lương (mặt bằng đã mua đứt, không thuê)</div>
           {(() => {
             const op = branchOperatingBalanceToday(branch);
