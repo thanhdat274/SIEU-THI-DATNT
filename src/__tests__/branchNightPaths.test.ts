@@ -133,6 +133,30 @@ describe('chi nhánh đêm: gây gổ & giao hàng app (GĐ691)', () => {
   });
 });
 
+describe('chi nhánh: ca đêm xin nghỉ đột xuất — quản lý tự gọi người thay (GĐ692)', () => {
+  beforeEach(() => { setSimSeed(1); });
+  afterEach(() => clearSimSeed());
+
+  it('calloff đêm khi có quản lý: tự gọi người làm thay (covered), trả tiền thay và báo rõ (quét seed)', () => {
+    const { res } = sweep((seed) => {
+      const b = newBranch();
+      b.open = true;
+      b.shelf = { nuoc: 20 };
+      b.staff = [crew('cashier', 'night', 1), crew('manager', 'night', 2)];
+      const { out, msgs } = simulate(b, 22 * 60, 22 * 60 + 20, seed);
+      const ev = out.branch!.event;
+      if (ev?.kind === 'calloff' && ev.covered) return { out, msgs };
+      return undefined;
+    });
+    const b2 = res.out.branch!;
+    expect(b2.event?.kind).toBe('calloff');
+    expect(b2.event?.covered).toBe(true);
+    expect(res.msgs.join(' ')).toContain('người làm thay');
+    // Phí người thay được trừ thẳng vào tiền (fees) — kèm doanh thu, chỉ cần tin định danh trong báo
+    expect(res.msgs.join(' ')).toMatch(/📋 .+ \(ca đêm\) xin nghỉ đột xuất/);
+  });
+});
+
 describe('chi nhánh: sang ngày mới — quản lý cho người mệt nghỉ (GĐ691)', () => {
   beforeEach(() => { setSimSeed(11); });
   afterEach(() => clearSimSeed());
