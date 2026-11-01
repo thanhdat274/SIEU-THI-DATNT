@@ -10,6 +10,7 @@ export function CalendarPanel() {
   const day = useGame((s) => s.day);
   const level = useGame((s) => s.level);
   const closePanel = useGame((s) => s.closePanel);
+  const openPanel = useGame((s) => s.openPanel);
   const storage = useGame((s) => s.storage);
   const furniture = useGame((s) => s.furniture);
   // GĐ652: như Sổ đầu ngày — có trong kho hay trên kệ thì ✓
@@ -91,6 +92,9 @@ export function CalendarPanel() {
                   {f.tolerance && ' · 😤 khách chịu giá cao'}
                   {goods.length > 0 && <small style={{ opacity: 0.75 }}> · hàng nên nhập: {goods.map((id) => `${productById(id).name}${running || inDays <= 14 ? (haveStock(id) ? ' ✓' : ' ⚠️') : ''}`).join(', ')}</small>}
                 </div>
+                {(running || inDays <= 14) && goods.some((id) => !haveStock(id)) && (
+                  <button style={{ ...styles.btn, marginTop: 4 }} onClick={() => openPanel({ type: 'order' })}>🛒 Đặt hàng còn thiếu</button>
+                )}
               </div>
             </div>
           );

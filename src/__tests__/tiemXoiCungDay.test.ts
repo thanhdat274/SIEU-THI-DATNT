@@ -208,3 +208,12 @@ describe('GĐ654: tin lễ sắp tới gọn hàng nên nhập', () => {
     expect(low).not.toContain('món');
   });
 });
+
+describe('GĐ656: thẻ lễ gần có nút đặt hàng còn thiếu', () => {
+  it('CalendarPanel chỉ hiện nút khi lễ ≤14 ngày và có món ⚠️, bấm mở panel order', async () => {
+    const { readFileSync } = await import('node:fs');
+    const src = readFileSync('src/ui/panels/CalendarPanel.tsx', 'utf8');
+    expect(src).toContain('(running || inDays <= 14) && goods.some((id) => !haveStock(id))');
+    expect(src).toContain("openPanel({ type: 'order' })}>🛒 Đặt hàng còn thiếu");
+  });
+});
