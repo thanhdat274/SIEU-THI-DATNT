@@ -135,3 +135,4 @@
 - GĐ626: cả bộ sau GĐ622–625: 2706/2706 xanh (248s).
 - GĐ627: tin cuối ngày sạp hàng rong gắn ' · ⚽' vào ngày trận khi có lô nước mía (giải thích thu tăng), như ' · 🙏' của lô xôi ngày cúng. sapRong 25/25, tsc sạch.
 - GĐ628: QA tin sạp ngày trận (sandbox, ngày 17 nắng, lô nước mía + bánh mì, ngủ 20h): '🥤🥖 sạp hàng rong Ngõ 2 · +877.500đ · ⚽' (517,5k + 360k). Đúng.
+- GĐ629: QA máy yếu ?gfx=low (sandbox ngày 18, cấp 50, có sạp Ngõ 2, tab hiện): ~75 FPS đo rAF 5s (mục tiêu ≥30).
