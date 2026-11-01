@@ -146,3 +146,4 @@
 - GĐ568: Lỗi: endDay gọi notify ~12 chỗ liên tiếp vào MỘT ô thông báo → tin sau đè tin trước ngay (vd. '💡 Chi phí vận hành' đè dòng sáng; nợ quỵt, hàng hết hạn, hàng về… gần như không ai thấy). Gom mọi tin đêm vào log → một toast cuối (thời tiết trước, '+N tin', ≤90) + đủ ở lastSummary.news (Sổ đầu ngày). Lên cấp/danh hiệu/thay ô sau ngủ vẫn bật riêng như cũ. Đo lại: ngày 1 = 9 (trần 10→9), ngày 2 = 10 (trần 11→10). Test mới nightNewsOneToast. 2671 test xanh.
 - GĐ569: gom tin sau ngủ (XP chuỗi, thành tích, danh hiệu, thay ô) vào cùng toast sáng; trần ngày 2 = 8 (đo 10 → 8).
 - GĐ570 (rà ngân sách + QA người mới): bundle 597/597 KB, chunk lớn nhất 253/255 KB; save mới ?thu=1 bán lần đầu ≈80 giây (đích ≤5 phút); ngày 1 = 9 tin, ngày 2 = 8 tin.
+- GĐ571: notify gọi liên tiếp trong cùng một lượt xử lý (vd. bán hàng + lên cấp) gộp một toast, tin mới nhất đứng đầu, bỏ trùng, ≤90 — hết đè nhau ngoài endDay. Test notifyBurst; 2674 test xanh.

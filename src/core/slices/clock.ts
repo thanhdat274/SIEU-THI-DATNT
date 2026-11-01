@@ -1,4 +1,5 @@
 import { formatMoney, productById } from '../../data/products';
+import { fitJoin } from '../../data/onboarding';
 import { faintMinutes } from '../../data/biz';
 import { maybeSurprise } from '../biz';
 import { DIRT_MAX } from '../../data/staff';
@@ -16,6 +17,8 @@ import { updatePhones, cookSpeed, bartenderBoost } from './orders';
 /** Đồng hồ và nhịp ngày: tick mỗi khung hình (chi nhánh, điện thoại, mẻ nấu), đi ngủ, thông báo, mở bảng. */
 
 let messageTimer: ReturnType<typeof setTimeout> | undefined;
+/** GĐ571: tin gọi liên tiếp trong cùng một lượt xử lý gộp một toast thay vì đè nhau. */
+let burst: string[] = [];
 
 export const createClockSlice = (set: SetState, get: GetState): Pick<GameState, 'addDirt' | 'setSpeed' | 'tick' | 'sleep' | 'notify' | 'openPanel' | 'closePanel'> => ({
   addDirt: (amount) => {
@@ -95,7 +98,9 @@ export const createClockSlice = (set: SetState, get: GetState): Pick<GameState, 
     return true;
   },
   notify: (message) => {
-    set({ message });
+    if (!burst.length) queueMicrotask(() => { burst = []; });
+    if (!burst.includes(message)) burst.push(message);
+    set({ message: burst.length > 1 ? fitJoin([message, ...burst.filter((m) => m !== message).reverse()]) : message });
     clearTimeout(messageTimer);
     messageTimer = setTimeout(() => set({ message: null }), 3000);
   },
