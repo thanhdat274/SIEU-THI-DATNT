@@ -93,16 +93,22 @@ export const styles: Record<string, React.CSSProperties> = {
         background: '#2b2b3a', color: '#fff', borderRadius: 12, padding: '12px var(--panel-px)',
         // Màn ngang: panel chiếm gần full chiều ngang như desktop để nhiều thông tin trên
         // một tầm nhìn, đỡ phải cuộn dọc. Desktop giữ nguyên kích thước cũ.
-        minWidth: 'min(320px, calc(100vw - 24px))', maxWidth: 'calc(100vw - 24px)',
-        maxHeight: 'calc(100dvh - 96px)', overflowY: 'auto', overflowX: 'hidden',
+        // GĐ662: khung CỐ ĐỊNH (width lẫn height) — chuyển tab trong hub không làm modal co giãn,
+        // nhảy vị trí hay đổi chỗ nút ✕; nội dung dài cuộn BÊN TRONG (overflowY/X).
+        width: 'calc(100vw - 24px)', height: 'calc(100dvh - 96px)',
+        overflowY: 'auto', overflowX: 'hidden',
         boxSizing: 'border-box',
         boxShadow: '0 10px 40px rgba(0,0,0,0.5)',
       }
     : {
         ...PANEL_VARS('22px'),
         background: '#2b2b3a', color: '#fff', borderRadius: 12, padding: '18px var(--panel-px)',
-        // Chừa đáy màn hình cho dock nút của HUD — hết cảnh dãy nút cuối panel bị dock đè lên
-        minWidth: 'min(360px, calc(100vw - 32px))', maxWidth: 'calc(100vw - 32px)', maxHeight: 'calc(100dvh - 108px)', overflowY: 'auto', overflowX: 'hidden',
+        // Chừa đáy màn hình cho dock nút của HUD — hết cảnh dãy nút cuối panel bị dock đè lên.
+        // GĐ662: khung cố định min(760, màn−32) × min(688, cao−108) cho MỌI panel — hết tình trạng
+        // cùng hub mà khung 658→1160px, cao 243→692 (QA toàn diện GĐ662). Bảng rộng hơn khung
+        // cuộn ngang bên trong (chuẩn GĐ298: inScroller là đạt) nên không còn nội dung bị cắt.
+        width: 'min(760px, calc(100vw - 32px))', height: 'min(688px, calc(100dvh - 108px))',
+        overflowY: 'auto', overflowX: 'auto',
         boxSizing: 'border-box',
         boxShadow: '0 10px 40px rgba(0,0,0,0.5)',
       },
