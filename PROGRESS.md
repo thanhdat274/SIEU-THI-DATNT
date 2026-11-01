@@ -144,3 +144,4 @@
 - GĐ651: ruột menu Thêm (danh sách nút, Đồ họa, Phím, Hướng dẫn) tách sang HudMoreBody nạp lười; ToolButton sang HudToolButton dùng chung. Bundle 596,8 → 596,7. QA sandbox: menu 13 nút, Đồ họa xoay vòng, Phím mở bảng phím.
 - GĐ652: thẻ lễ ở Lịch năm gắn ✓/⚠️ cho từng 'hàng nên nhập' (kho + kệ, như Sổ đầu ngày) khi lễ đang diễn ra hoặc ≤14 ngày. QA sandbox ngày 16: Tết 'Bánh kẹo ✓', lễ xa không gắn.
 - GĐ653: QA ⚠️ của GĐ652 ở cấp 45 (Tết thiếu hàng) → lộ lỗi 'Giỏ quà Tết' lặp 2 lần (có trong cả goods lẫn hot). festivalStock khử trùng bằng Set — sửa luôn tin báo lễ sắp tới. Test mọi lễ không trùng.
+- GĐ654: tin sáng 'lễ sắp tới, nhập sẵn …' chỉ nêu 4 món đầu + '+N món' (Tết cấp cao ~15 món làm dòng tin dài cả đoạn); đủ danh sách ở Lịch năm. 283 test liên quan + golden/economy xanh.

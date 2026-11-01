@@ -194,3 +194,17 @@ describe('GĐ653: festivalStock không lặp món', () => {
     }
   });
 });
+
+describe('GĐ654: tin lễ sắp tới gọn hàng nên nhập', () => {
+  it('Tết cấp cao: tối đa 4 tên món + "+N món"; cấp thấp vẫn liệt kê đủ', async () => {
+    const { morningNews, FESTIVALS, festivalStock, gameDayOfDoy, FESTIVAL_NOTICE_DAYS } = await import('../data/calendar');
+    const tet = FESTIVALS.find((f) => f.id === 'tet')!;
+    const d = gameDayOfDoy(tet.from) - FESTIVAL_NOTICE_DAYS;
+    const line = morningNews(1, d, 99).find((l) => l.includes(tet.name))!;
+    const n = festivalStock(tet, 99).length;
+    expect(line).toContain(`+${n - 4} món`);
+    expect(line.split('nhập sẵn ')[1].split(', ').length).toBe(4);
+    const low = morningNews(1, d, 1).find((l) => l.includes(tet.name))!;
+    expect(low).not.toContain('món');
+  });
+});
