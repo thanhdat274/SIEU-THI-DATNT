@@ -141,3 +141,4 @@
 - GĐ577: toast gộp nhiều tin (GĐ571) hiện 4,5s thay 3s để kịp đọc; tin đơn giữ 3s. Test notifyBurst (fake timers).
 - GĐ578: bộ test đầy đủ 2676 xanh sau GĐ577; trình duyệt: toast gộp còn ở 3,5s, tắt trước 4,8s.
 - GĐ579: đo module chunk chính (build --sourcemap): regulars 25,0 · biz 24,2 · Hud 24,0 · world/farm 21,5 · characterModel 20,6 KB thô. farm.ts lazy cần createWorld bất đồng bộ + guard mọi world.farm (~6 KB gzip) → rủi ro, chưa tách; ghi làm ứng viên khi cần chỗ ngân sách.
+- GĐ580 (rà ngân sách + QA người mới): bundle 597/597, chunk 253/255, PROGRESS 27,7KB; save trắng ?thu=1 (xoá rồi reload ngay): 3 thoại → Ra tiệm → Mở cửa → bán món đầu sau ≈49s thật (đo bằng soldEver, không nhầm thưởng chương 20k).
