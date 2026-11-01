@@ -135,3 +135,4 @@
 - GĐ571: notify gọi liên tiếp trong cùng một lượt xử lý (vd. bán hàng + lên cấp) gộp một toast, tin mới nhất đứng đầu, bỏ trùng, ≤90 — hết đè nhau ngoài endDay. Test notifyBurst; 2674 test xanh.
 
 - GĐ572: QA trình duyệt GĐ571 (2 tin cùng lượt → '⭐ Lên cấp 2 · 🛒 Bán được gói mì', lượt sau tách riêng); lưu trữ GĐ550–564 cho PROGRESS <30KB.- GĐ573: BranchPanel tab Tình hình: 5 dòng ⚠️ rời (thiếu thu ngân/giờ trống/giao hàng/bảo vệ/kho cạn) gom vào một Callout '⚠️ Cần xử lý (N)'. Test branchWarnGroup.
+- GĐ574: QA trình duyệt GĐ573 (sandbox mở chi nhánh): khung '⚠️ Cần xử lý (3)' hiện đúng 3 cảnh báo thiếu thu ngân/giao hàng/bảo vệ, gọn thay 3 dòng rời.
