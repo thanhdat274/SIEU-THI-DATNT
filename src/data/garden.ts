@@ -328,7 +328,7 @@ export const FARM_ORDER_POOL = ['trung', 'trung_vit', 'trung_goos', 'sua_tuoi', 
 let farmOrderId = 1;
 /** Món trong pool đơn mà trại kịp làm ra ≥3 (số lượng đơn nhỏ nhất) trong hạn đơn: hàng nhà trồng
  *  trong kho + cây chín kịp + đàn đẻ/vắt sữa + lứa vỗ béo kịp xuất (GĐ542, ước lượng sức trại GĐ543). */
-export const farmOrderProduce = (g: Pick<GardenState, 'plots' | 'pens'> & { homegrown?: Record<string, number> }): string[] => {
+export const farmOrderCapacity = (g: Pick<GardenState, 'plots' | 'pens'> & { homegrown?: Record<string, number> }): Record<string, number> => {
   const cap: Record<string, number> = { ...(g.homegrown ?? {}) };
   const add = (id: string, n: number) => { cap[id] = (cap[id] ?? 0) + n; };
   for (const p of g.plots) {
@@ -343,17 +343,23 @@ export const farmOrderProduce = (g: Pick<GardenState, 'plots' | 'pens'> & { home
     add(def.productId, pen.pending + pen.count * perDay * FARM_ORDER_DAYS);
     if (def.fattenDays && (pen.fattened ?? 0) + FARM_ORDER_DAYS >= def.fattenDays) add(def.productId, pen.count * (def.meatPerHead ?? 0));
   }
+  return cap;
+};
+export const farmOrderProduce = (g: Parameters<typeof farmOrderCapacity>[0]): string[] => {
+  const cap = farmOrderCapacity(g);
   return FARM_ORDER_POOL.filter((id) => (cap[id] ?? 0) >= 3);
 };
 
 /** Tạo đơn mới cho quán xóm: 2 món, số lượng 3–8, hạn 2 ngày. Trại làm ra ≥2 món trong pool thì
  *  quán chỉ đặt những món đó (đơn giao được), không thì lấy cả pool như cũ. */
-export function makeFarmOrder(day: number, rng: () => number = simRng(), produce: readonly string[] = []): FarmOrder {
+/** `cap` (GĐ544): số món trại kịp làm — đơn lọc theo trại thì mỗi món không đặt quá sức này (vẫn ≥3). */
+export function makeFarmOrder(day: number, rng: () => number = simRng(), produce: readonly string[] = [], cap: Record<string, number> = {}): FarmOrder {
   const pool = produce.length >= 2 ? [...produce] : [...FARM_ORDER_POOL];
   const items: { productId: string; qty: number }[] = [];
   for (let i = 0; i < 2; i++) {
     const productId = pool.splice(Math.floor(rng() * pool.length), 1)[0];
-    items.push({ productId, qty: 3 + Math.floor(rng() * 6) });
+    const qty = 3 + Math.floor(rng() * 6);
+    items.push({ productId, qty: produce.length >= 2 && cap[productId] !== undefined ? Math.max(3, Math.min(qty, Math.floor(cap[productId]))) : qty });
   }
   return { id: farmOrderId++, from: FARM_BUYERS[Math.floor(rng() * FARM_BUYERS.length)], items, dueDay: day + FARM_ORDER_DAYS, bonus: farmOrderBonus(day + FARM_ORDER_DAYS) };
 }

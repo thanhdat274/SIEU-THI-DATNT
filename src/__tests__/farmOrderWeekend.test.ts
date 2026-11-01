@@ -52,3 +52,15 @@ describe('đơn quán xóm theo sức trại (GĐ543)', () => {
     expect(farmOrderProduce({ ...newGarden(), homegrown: { sua_de: 5 } })).toEqual(['sua_de']);
   });
 });
+
+describe('số lượng đơn theo sức trại (GĐ544)', () => {
+  it('đơn lọc theo trại không đặt quá số kịp làm, vẫn tối thiểu 3', async () => {
+    const { farmOrderCapacity, farmOrderProduce, newGarden } = await import('../data/garden');
+    const g = newGarden();
+    g.pens.chicken = { count: 2, fedDay: 0, feedKg: 0, pending: 0 } as never; // ≈3,6 trứng/2 ngày
+    g.pens.cow = { count: 1, fedDay: 0, feedKg: 0, pending: 0 } as never; // 4 lốc/2 ngày
+    const o = makeFarmOrder(3, () => 0.99, farmOrderProduce(g), farmOrderCapacity(g));
+    for (const it of o.items) expect(it.qty).toBeLessThanOrEqual(Math.max(3, Math.floor(farmOrderCapacity(g)[it.productId])));
+    expect(makeFarmOrder(3, () => 0.99).items.every((it) => it.qty === 8)).toBe(true);
+  });
+});
