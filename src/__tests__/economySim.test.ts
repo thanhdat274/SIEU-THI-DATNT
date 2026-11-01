@@ -183,6 +183,17 @@ describe('khảo sát kinh tế vòng ngày — simulator thật trên store', (
     expect(toasts, 'ngày 2 nhiều thông báo hơn mức đo — gộp hoặc dời bớt').toBeLessThanOrEqual(DAY2_TOAST_CEILING);
     expect([...long], 'thông báo dài hơn 90 ký tự').toEqual([]);
   });
+
+  // GĐ564: thông báo sinh lúc chạy ≤90 cả ở cấp giữa (nhiều hệ thống mở hơn).
+  // Ngoại lệ có chủ đích: dòng sáng 'Hôm nay: …' gộp kết quả các cơ sở (sạp/xôi/quán) — cắt bớt thì mất tin quan trọng;
+  // cách đúng là sổ tin để đọc lại (nợ mở GĐ564), chưa phải rút chữ.
+  it.each([10, 25])('cấp %i: thông báo sinh lúc chạy ≤90 ký tự', async (lv) => {
+    const long = new Set<string>();
+    const unsub = useGame.subscribe((st, prev) => { const m = String(st.message ?? ''); if (m && m !== prev.message && !m.startsWith('Hôm nay:') && [...m].length > 90) long.add(m); });
+    await runEconomySim(lv, 3, { betTier: 1.0 });
+    unsub();
+    expect([...long]).toEqual([]);
+  }, 600_000);
 });
 
 /** GĐ561: mức đo ngày 2 (bot cấp 1); chỉ được hạ. */

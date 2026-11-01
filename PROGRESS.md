@@ -68,6 +68,7 @@
 - Họ màu hướng dẫn/chuỗi/biểu đồ: gộp về một sắc info `#3498db` (GĐ178); ngoại lệ duy nhất: buy-tone `#55efc4`/`#ff7675`; GardenPanel giữ họ riêng. GĐ258 quét nốt 6 màu cũ — src/ui chỉ còn bảng duyệt + màu nhận diện.
 
 ## Cần theo dõi / nợ mở
+- 📰 GĐ564: dòng sáng 'Hôm nay: thời tiết · tin…' gộp kết quả cơ sở (sạp/xôi/quán/giấy phép/khách quen) → ở cấp 10–25 dài 130–160 ký tự, chỉ hiện 3 giây, không đọc lại được. Cắt bớt (đã thử fitJoin) làm mất tin quan trọng → hoàn tác. Hướng đúng: sổ tin buổi sáng đọc lại được (vd. trong Sổ đầu ngày) rồi toast chỉ giữ thời tiết + '+N tin'.
 - 📦 GĐ515: tải ban đầu 598/598 KB — code mới cho Ngõ 2/sạp phải nằm trong chunk lười (world/ngo2, QuanNuocPanel); trước khi thêm vào main/index tìm chỗ tách bớt.
 - GĐ330: QA lưu máy khách (127.0.0.1:5173) — tải lại trang vẫn hiện "Chơi tiếp trong máy (ngày 1)" và vào lại đúng ván; lần "mất ván" trước là bấm nhầm nút ván mới, KHÔNG phải lỗi lưu.
 
@@ -139,3 +140,4 @@
 - GĐ561: Khoá trần thông báo NGÀY 2 = 11 (đo lại bằng bot, khớp GĐ341) trong economySim — trước đây chỉ ngày 1 có trần. Soi regulars.ts (25KB) để nạp lười: KHÔNG được — REGULARS là dữ liệu gameplay (món ưa, lịch ghé) sim cần từ ngày 1. 2663 test xanh.
 - GĐ562: Thông báo lên cấp vượt luật ≤90 ký tự (cấp 6 ~140: liệt kê cả mô tả 'Kệ hàng chớp nhoáng: khách xếp hàng…'; test featureBudget chỉ quét chữ tĩnh nên lọt). levelUpToast (data/onboarding): chỉ tên mở khoá, thừa gộp '+N', luôn ≤90; đủ danh sách ở bảng Cấp độ. Test khoá. 2664 test xanh.
 - GĐ563: Test chạy (economySim ngày 1–2) bắt mọi thông báo sinh lúc chạy >90 ký tự → lộ '🔄 Thay ô hết hàng: …' ~190 ký tự (cuối ngày + khi nhập hàng). fitList(head, items) gộp '+N' ≤90, dùng cho thay ô (endDay, inventory) và levelUpToast. 2665 test xanh, bundle 597/253.
+- GĐ564: Test thông báo sinh lúc chạy ≤90 ở cấp 10 và 25 (bot 3 ngày) — xanh, trừ ngoại lệ có chủ đích dòng sáng 'Hôm nay:' (nợ mở, xem trên). Thử cắt dòng sáng bằng fitJoin làm đỏ 9 test tin cơ sở → hoàn tác. 2667 test xanh.
