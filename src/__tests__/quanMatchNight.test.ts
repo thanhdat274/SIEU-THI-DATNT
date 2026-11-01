@@ -21,3 +21,13 @@ describe('quán nước: tối có trận', () => {
     expect(quanNuocProjection(q, 40, 999, 'cloudy', d).customers).toBeGreaterThan(quanNuocProjection(q, 40, 999, 'cloudy', other).customers);
   });
 });
+
+describe('GĐ582: panel quán báo trước trận', () => {
+  it('QuanNuocPanel hiện dòng ⚽ hôm nay và báo trước hôm sau', async () => {
+    const { readFileSync } = await import('node:fs');
+    const src = readFileSync(`${__dirname}/../ui/panels/QuanNuocPanel.tsx`, 'utf8');
+    expect(src).toContain('isQuanMatchDay(day, weather)');
+    expect(src).toContain('isQuanMatchDay(day + 1');
+    for (const line of ['⚽ Tối nay có trận bóng: khách quán đông hơn ×1,3 — nạp thêm đồ uống', '⚽ Mai có trận bóng (nếu trời không mưa) — chuẩn bị đồ uống từ hôm nay']) expect([...line].length).toBeLessThanOrEqual(90);
+  });
+});

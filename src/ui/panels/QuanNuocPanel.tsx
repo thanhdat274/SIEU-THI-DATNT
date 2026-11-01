@@ -3,7 +3,7 @@ import { useGame } from '../../core/store';
 import { formatMoney, fmtMul } from '../../data/products';
 import {
   QUAN_NUOC_HIRE_FEE, QUAN_NUOC_MAX_STAFF, QUAN_NUOC_PRICE, QUAN_NUOC_UNLOCK, QUAN_NUOC_WAGE,
-  QUAN_PRICE_OPTIONS, QUAN_WEATHER_MUL, quanWeekendMul, quanNuocProjection, quanNuocCupSupply, quanNuocRestockTip, quanNuocBuildPayback, type QuanNuocPrice,
+  QUAN_PRICE_OPTIONS, QUAN_WEATHER_MUL, quanWeekendMul, quanMatchMul, isQuanMatchDay, quanNuocProjection, quanNuocCupSupply, quanNuocRestockTip, quanNuocBuildPayback, type QuanNuocPrice,
 } from '../../data/quanNuoc';
 import { quanNuocStaffValues } from '../../data/quanNuocStaffValue';
 import { teahouseHaulRead } from '../../data/teahouseHaul';
@@ -58,6 +58,12 @@ export function QuanNuocPanel() {
       )}
       {quan.open && quanWeekendMul(day) !== 1 && (
         <p style={{ fontSize: 12, margin: '0 0 6px' }}>🎉 Cuối tuần: khách ngồi quán đông hơn ×{fmtMul(quanWeekendMul(day))} — nạp thêm nguyên liệu</p>
+      )}
+      {quan.open && isQuanMatchDay(day, weather) && (
+        <p style={{ fontSize: 12, margin: '0 0 6px' }}>⚽ Tối nay có trận bóng: khách quán đông hơn ×{fmtMul(quanMatchMul(day, weather))} — nạp thêm đồ uống</p>
+      )}
+      {quan.open && !isQuanMatchDay(day, weather) && isQuanMatchDay(day + 1, 'sunny') && (
+        <p style={{ fontSize: 12, margin: '0 0 6px' }}>⚽ Mai có trận bóng (nếu trời không mưa) — chuẩn bị đồ uống từ hôm nay</p>
       )}
       {quan.open && quanHotNote(quan.menu ?? [], weather, level, day) && (
         <p style={{ fontSize: 12, margin: '0 0 6px' }}>{quanHotNote(quan.menu ?? [], weather, level, day)}</p>
