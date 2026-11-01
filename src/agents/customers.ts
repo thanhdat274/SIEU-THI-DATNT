@@ -22,7 +22,7 @@ import { bulkExtra, festivalVisit, perkValue, pickRegular, referFriends, regular
 import { influencerActive } from '../data/social';
 import { pickProfession, PROFESSIONS, PROFESSION_LOOK, type ProfessionDef } from '../data/professions';
 import { CREDIT_UNLOCK, repaysToday, wantsCredit } from '../data/credit';
-import { askQueuedPatience, ASK_MINUTES, CANDY_ANNOY, CHANGE_CHANCE, CHANGE_UNLOCK, CREDIT_REFUSE_FRIEND_LOSS, changeChoice, defaultCounterPolicy, HAGGLE_CHANCE, HAGGLE_MIN_TOTAL, HAGGLE_REFUSE_OK, HAGGLE_UNLOCK, haggleChoice, haggleCounterOff, haggleOff, haggleSettle, oddChange } from '../data/counterDeals';
+import { askQueuedPatience, ASK_MINUTES, CANDY_ANNOY, CHANGE_CHANCE, CHANGE_UNLOCK, CREDIT_REFUSE_FRIEND_LOSS, changeChoice, defaultCounterPolicy, HAGGLE_CHANCE, HAGGLE_CHANCE_REG, HAGGLE_MIN_TOTAL, HAGGLE_REFUSE_OK, HAGGLE_UNLOCK, haggleChoice, haggleCounterOff, haggleOff, haggleSettle, oddChange } from '../data/counterDeals';
 import { rollService, SERVICE_BUY_ALONG, type ServiceDef } from '../data/services';
 import { earnService } from '../core/biz';
 import { paymentById, pickPayment } from '../data/payments';
@@ -701,12 +701,16 @@ export class CustomerManager {
         text: `quên ví, xin ghi sổ ${formatMoney(total)}${owed ? ` (đang nợ ${formatMoney(owed)})` : ''}`,
         options: ['📒 Cho ghi sổ', 'Không cho nợ'], fallback: 0,
       };
-    } else if (!reg && st.level >= HAGGLE_UNLOCK && total >= HAGGLE_MIN_TOTAL && simRng()() < HAGGLE_CHANCE) {
+    // GĐ722: khách quen cũng mặc cả NHƯNG chỉ khi chủ đứng quầy — từ chối bà con là lựa chọn có chủ ý của người chơi,
+    // không bao giờ là tai nạn autoplay (không ai ở quầy thì không rút rng — dòng mô phỏng giữ nguyên từng nhịp)
+    } else if (st.level >= HAGGLE_UNLOCK && total >= HAGGLE_MIN_TOTAL && (!reg || this.playerAtCounter(counter)) && simRng()() < (reg ? HAGGLE_CHANCE_REG : HAGGLE_CHANCE)) {
       const off = haggleOff(total);
       const counterOff = haggleCounterOff(total);
       ask = {
-        kind: 'haggle', amount: off, icon: '🗣️', who: c.profession?.name ?? 'Khách',
-        text: `mặc cả: "${formatMoney(total)} hả? Bớt ${formatMoney(off)} đi cô/chú!"`,
+        kind: 'haggle', amount: off, icon: '🗣️', who: c.profession?.name ?? reg?.name ?? 'Khách',
+        text: reg
+          ? `mặc cả: "Bà con quen rồi, bớt ${formatMoney(off)} cho nhẹ đi nhé!"`
+          : `mặc cả: "${formatMoney(total)} hả? Bớt ${formatMoney(off)} đi cô/chú!"`,
         // GĐ721: thêm nút "trả giá lại" — bớt nửa mức khách xin; khách có thể gật giá giữa (thương lượng thật)
         options: [`🤝 Bớt ${formatMoney(off)}`, `💬 Trả nửa (−${formatMoney(counterOff)})`, 'Giá đúng rồi'], fallback: 2,
       };

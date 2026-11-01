@@ -93,4 +93,24 @@ describe('prompt 3 nút qua đường thật (harness counterPolicy)', () => {
     expect(ask.options[2]).toContain('Giá đúng rồi');
     expect(ask.fallback).toBe(2);
   });
+
+  it('GĐ722 — khách quen cũng mặc cả: lời "Bà con" với 3 nút như khách lẻ', () => {
+    const c = { ...cust([50_000]), regular: { id: 'ba_nam', name: 'Bà Năm bán xôi' } };
+    const rand = Math.random; Math.random = () => 0.01; // < HAGGLE_CHANCE_REG 0,06
+    try { manager.counterDeal(c as never, counter); } finally { Math.random = rand; }
+    expect(c.deal).toBe('waiting');
+    const ask = mockedAsk.mock.calls[0][0] as { options: string[]; text: string; who: string; fallback: number };
+    expect(ask.text).toContain('Bà con');
+    expect(ask.who).toBe('Bà Năm bán xôi');
+    expect(ask.options).toHaveLength(3);
+    expect(ask.fallback).toBe(2);
+  });
+
+  it('GĐ722 — khách quen bill lớn + roll ngoài 6%: không hỏi mặc cả (rơi qua nhánh khác)', () => {
+    const c = { ...cust([50_000]), regular: { id: 'ba_nam', name: 'Bà Năm bán xôi' } };
+    const rand = Math.random; Math.random = () => 0.5; // ≥ HAGGLE_CHANCE_REG, < CHANGE? total tròn 50k → không lẻ
+    try { manager.counterDeal(c as never, counter); } finally { Math.random = rand; }
+    expect(mockedAsk).not.toHaveBeenCalled();
+    expect((c.deal as { kind: string }).kind).toBe('none');
+  });
 });

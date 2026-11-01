@@ -4,6 +4,8 @@
 export const HAGGLE_UNLOCK = 2;
 export const HAGGLE_MIN_TOTAL = 20000;
 export const HAGGLE_CHANCE = 0.08;
+/** GĐ722 — khách quen cũng mặc cả ("bà con bớt đi"): thưa hơn khách lẻ một chút. */
+export const HAGGLE_CHANCE_REG = 0.06;
 /** Khách xin bớt chừng này phần hóa đơn (làm tròn nghìn). */
 export const HAGGLE_SHARE = 0.1;
 /** Không bớt thì chừng này phần khách vẫn vui vẻ mua. */
