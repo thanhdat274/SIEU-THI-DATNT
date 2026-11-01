@@ -2,6 +2,8 @@ import { isWeekend } from './calendar';
 import type { Weather } from './weather';
 import { tiemXoiCungMul } from './tiemXoi';
 import { isQuanMatchDay } from './quanNuoc';
+import { isXoiCungDay } from './tiemXoi';
+import type { DayAction } from './dayPlan';
 /** GĐ622: ngày có trận, lô nước mía bán cho người đi xem bóng ×1,15. */
 export const SAP_MATCH_MUL = 1.15;
 
@@ -84,3 +86,18 @@ export function sapStrollerCount(lots: number | undefined, weather: Weather | un
 /** GĐ509: icon món các lô cho tin cuối ngày, vd "🥤🥤🥖" (thiếu món = 🛒). */
 export const sapKindIcons = (lots: number | undefined, kinds?: readonly string[]) =>
   Array.from({ length: Math.max(0, Math.min(SAP_LOTS, lots ?? 0)) }, (_, i) => sapKindOf(kinds, i).icon).join('');
+
+/**
+ * GĐ625/631 (tách GĐ632): việc Sổ đầu ngày khi có sạp mà chưa lô nào bán món "đúng dịp":
+ * ngày cúng → xôi (×1,3, mưa/bão sạp nghỉ thì thôi); ngày trận → nước mía (×1,15).
+ */
+export function sapEventActions(lots: number | undefined, kinds: readonly string[] | undefined, day: number, weather?: Weather): DayAction[] {
+  const n = Math.max(0, Math.min(SAP_LOTS, lots ?? 0));
+  if (!n) return [];
+  const ids = Array.from({ length: n }, (_, i) => sapKindOf(kinds, i).id);
+  const out: DayAction[] = [];
+  if (isXoiCungDay(day) && weather !== 'rain' && weather !== 'storm' && !ids.includes('xoi')) out.push({ icon: '🙏', text: 'Hôm nay ngày cúng — đổi một lô sạp sang xôi (×1,3)', panel: 'quannuoc', danger: false, priority: 3 });
+  if (isQuanMatchDay(day, weather) && !ids.includes('nuocmia')) out.push({ icon: '⚽', text: 'Hôm nay có trận — đổi một lô sạp sang nước mía (×1,15)', panel: 'quannuoc', danger: false, priority: 3 });
+  return out;
+}
+

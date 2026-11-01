@@ -138,3 +138,4 @@
 - GĐ629: QA máy yếu ?gfx=low (sandbox ngày 18, cấp 50, có sạp Ngõ 2, tab hiện): ~75 FPS đo rAF 5s (mục tiêu ≥30).
 - GĐ630 (rà ngân sách + QA người mới): bundle 597/597, chunk 253/255, PROGRESS 26,5KB, economySim (thông báo ngày 1/2) + golden 9/9 xanh, cả bộ 2706 xanh (GĐ626); FPS gfx=low ~75 (GĐ629). Save sandbox mới: bán món đầu ~136s từ lúc xoá save (trong đó ~80s do script QA kẹt ở thoại 3/3 'Xong'); từ Mở cửa tới bán đầu ~40s. Vẫn ≤5 phút.
 - GĐ631: Sổ đầu ngày ngày cúng nhắc '🙏 Hôm nay ngày cúng — đổi một lô sạp sang xôi (×1,3)' khi có sạp mà chưa lô nào bán xôi (bỏ qua mưa/bão). QA sandbox ngày 15 nắng: bánh mì+nước mía → hiện; có lô xôi → ẩn. sapRong 26/26.
+- GĐ632: tách 2 việc nhắc đổi lô sạp (ngày cúng→xôi, ngày trận→nước mía) khỏi ReportPanels thành hàm thuần sapEventActions (data/sapRong.ts); test hành vi thật thay test đọc nguồn (6 trường hợp). QA sandbox ngày 15: vẫn hiện. sapRong 25/25, bundle 597/597.

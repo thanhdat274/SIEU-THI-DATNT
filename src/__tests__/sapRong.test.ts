@@ -259,12 +259,18 @@ describe('GĐ624: gợi ý sạp ngày mai ghi "(có trận)"', () => {
   });
 });
 
-describe('GĐ625: Sổ đầu ngày nhắc đổi lô sang nước mía ngày trận', () => {
-  it('ReportPanels có việc khi chưa lô nào bán nước mía; câu ≤90', async () => {
-    const { readFileSync } = await import('node:fs');
-    const src = readFileSync('src/ui/panels/ReportPanels.tsx', 'utf8');
-    expect(src).toContain("sapKindOf(biz.sapKinds, i).id).includes('nuocmia')");
-    expect([...'Hôm nay có trận — đổi một lô sạp sang nước mía (×1,15)'].length).toBeLessThanOrEqual(90);
+describe('GĐ625/631/632: sapEventActions — nhắc đổi lô sạp theo dịp', () => {
+  it('ngày cúng thiếu lô xôi, ngày trận thiếu lô nước mía; có món thì ẩn; không sạp/mưa thì rỗng; câu ≤90', async () => {
+    const { sapEventActions } = await import('../data/sapRong');
+    const { isQuanMatchDay } = await import('../data/quanNuoc');
+    const match = Array.from({ length: 30 }, (_, i) => i + 2).find((x) => isQuanMatchDay(x, 'sunny') && x !== 15)!;
+    expect(sapEventActions(2, ['banhmi', 'nuocmia'], 15, 'sunny').map((a) => a.icon)).toContain('🙏');
+    expect(sapEventActions(2, ['xoi', 'banhmi'], 15, 'sunny').some((a) => a.icon === '🙏')).toBe(false);
+    expect(sapEventActions(2, ['banhmi', 'banhmi'], 15, 'rain')).toEqual([]);
+    expect(sapEventActions(2, ['banhmi', 'xoi'], match, 'sunny').map((a) => a.icon)).toEqual(['⚽']);
+    expect(sapEventActions(2, ['nuocmia', 'xoi'], match, 'sunny')).toEqual([]);
+    expect(sapEventActions(0, [], match, 'sunny')).toEqual([]);
+    for (const a of sapEventActions(1, ['banhmi'], 15, 'sunny')) expect([...a.text].length).toBeLessThanOrEqual(90);
   });
 });
 
@@ -272,13 +278,5 @@ describe('GĐ627: tin cuối ngày sạp gắn ⚽ ngày trận có lô nước 
   it('endDay ghép " · ⚽" theo isQuanMatchDay + lô nuocmia', async () => {
     const { readFileSync } = await import('node:fs');
     expect(readFileSync('src/core/slices/endDay.ts', 'utf8')).toContain("isQuanMatchDay(s.day, s.weather) && s.biz.sapKinds?.slice(0, s.biz.sapRong).includes('nuocmia') ? ' · ⚽'");
-  });
-});
-
-describe('GĐ631: Sổ đầu ngày nhắc đổi lô sang xôi ngày cúng', () => {
-  it('ReportPanels có việc khi chưa lô nào bán xôi; câu ≤90', async () => {
-    const { readFileSync } = await import('node:fs');
-    expect(readFileSync('src/ui/panels/ReportPanels.tsx', 'utf8')).toContain("sapKindOf(biz.sapKinds, i).id).includes('xoi')");
-    expect([...'Hôm nay ngày cúng — đổi một lô sạp sang xôi (×1,3)'].length).toBeLessThanOrEqual(90);
   });
 });

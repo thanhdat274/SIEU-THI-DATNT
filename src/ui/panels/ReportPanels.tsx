@@ -1,4 +1,4 @@
-import { SAP_LOTS, sapKindOf } from '../../data/sapRong';
+import { sapEventActions } from '../../data/sapRong';
 import { CUNG_GOODS, isXoiCungDay, tiemXoiMorning, TIEM_XOI_MAX_STAFF, TIEM_XOI_WAGE } from '../../data/tiemXoi';
 import { ProductIcon } from '../ProductIcon';
 import { useState } from 'react';
@@ -628,11 +628,7 @@ export function MorningPanel() {
   const cungNames = cungMissing.map((id) => productById(id).name.toLowerCase()).join(', ');
   if (cungMissing.length) candidates.push({ icon: '🙏', text: cungEve ? `Mai ngày cúng — nhập sẵn ${cungNames}` : `Ngày cúng khách hỏi ${cungNames} — chưa có hàng`, panel: 'order', danger: false, priority: 2 });
   // GĐ604: đêm có trận — tiện lợi đông sau 22h (GĐ601)
-  // GĐ625: ngày trận mà chưa lô sạp nào bán nước mía (lô nước mía ×1,15) — nhắc đổi món.
-  const sapN = Math.min(biz.sapRong ?? 0, SAP_LOTS);
-  // GĐ631: ngày cúng mà chưa lô sạp nào bán xôi (lô xôi ×1,3) — nhắc đổi món; mưa/bão sạp nghỉ thì thôi.
-  if (sapN > 0 && isXoiCungDay(day) && weather !== 'rain' && weather !== 'storm' && !Array.from({ length: sapN }, (_, i) => sapKindOf(biz.sapKinds, i).id).includes('xoi')) candidates.push({ icon: '🙏', text: 'Hôm nay ngày cúng — đổi một lô sạp sang xôi (×1,3)', panel: 'quannuoc', danger: false, priority: 3 });
-  if (sapN > 0 && isQuanMatchDay(day, weather) && !Array.from({ length: sapN }, (_, i) => sapKindOf(biz.sapKinds, i).id).includes('nuocmia')) candidates.push({ icon: '⚽', text: 'Hôm nay có trận — đổi một lô sạp sang nước mía (×1,15)', panel: 'quannuoc', danger: false, priority: 3 });
+  candidates.push(...sapEventActions(biz.sapRong, biz.sapKinds, day, weather)); // GĐ625/631 → GĐ632 tách hàm thuần
   if (branch?.open && isQuanMatchDay(day, weather)) candidates.push({ icon: '⚽', text: 'Tối nay có trận — tiện lợi đông 22h–24h ×1,2, xếp đủ kệ', panel: 'branch', danger: false, priority: 3 });
   // GĐ589: ngày cúng — tiệm xôi đông; GĐ599: thợ tự nấu ×1,3 nên chỉ nhắc thêm thợ khi còn thiếu
   if (biz.tiemXoi?.open && isXoiCungDay(day)) candidates.push({ icon: '🙏', text: biz.tiemXoi.staff < TIEM_XOI_MAX_STAFF ? 'Hôm nay ngày cúng — khách mua xôi ×1,3, thêm thợ để nấu kịp' : 'Hôm nay ngày cúng — khách mua xôi ×1,3, thợ nấu đầy kho', panel: 'quannuoc', danger: false, priority: 3 });
