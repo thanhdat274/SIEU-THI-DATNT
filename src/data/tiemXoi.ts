@@ -141,6 +141,11 @@ export function cungGoodsAction(day: number, level: number, haveStock: (id: stri
   const names = missing.map((id) => productById(id).name.toLowerCase()).join(', ');
   return { icon: '🙏', text: eve ? `Mai ngày cúng — nhập sẵn ${names}` : `Ngày cúng khách hỏi ${names} — chưa có hàng`, panel: 'order', danger: false, priority: 2 };
 }
+/** GĐ599 (tách GĐ634): Sổ đầu ngày ngày cúng khi tiệm xôi mở — chưa đủ thợ thì nhắc thêm thợ. */
+export function tiemXoiCungAction(t: Pick<TiemXoiState, 'open' | 'staff'> | undefined, day: number): DayAction | null {
+  if (!t?.open || !isXoiCungDay(day)) return null;
+  return { icon: '🙏', text: t.staff < TIEM_XOI_MAX_STAFF ? 'Hôm nay ngày cúng — khách mua xôi ×1,3, thêm thợ để nấu kịp' : 'Hôm nay ngày cúng — khách mua xôi ×1,3, thợ nấu đầy kho', panel: 'quannuoc', danger: false, priority: 3 };
+}
 export const tiemXoiCungMul = (day?: number) => (isXoiCungDay(day) ? TIEM_XOI_CUNG_MUL : 1);
 export const TIEM_XOI_WEEKEND_MUL = 1.15;
 export const tiemXoiWeekendMul = (day?: number) => (day !== undefined && isWeekend(day) ? TIEM_XOI_WEEKEND_MUL : 1);
