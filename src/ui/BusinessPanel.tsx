@@ -1065,11 +1065,11 @@ function NgGoalsCard({ prestigeLevel, cachedGoals }: { prestigeLevel: number; ca
   const doneCount = cachedGoals.filter((g) => g.done).length;
   const tScale = runTargetScale(prestigeLevel);
   const rScale = runRewardScale(prestigeLevel);
-  const fmtScale = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1));
+  const fmtScale = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1).replace('.', ','));
   return (
     <Callout tone="info" title="🌱 Mục tiêu vòng tái sinh" style={{ marginTop: 10 }}>
       <div style={sub}>
-        Vòng {prestigeLevel + 1} — mục tiêu ×{fmtScale(tScale)}, thưởng ×{fmtScale(rScale)} (vòng sau khó hơn, đền xứng hơn; trần ×3 / ×2.5).
+        Vòng {prestigeLevel + 1} — mục tiêu ×{fmtScale(tScale)}, thưởng ×{fmtScale(rScale)} (vòng sau khó hơn, đền xứng hơn; trần ×3 / ×2,5).
       </div>
       <div style={sub}>Đạt {doneCount}/{cachedGoals.length} mốc của vòng này — nhận thưởng tiền, reset khi tái sinh lần sau.</div>
       {cachedGoals.map((g) => {

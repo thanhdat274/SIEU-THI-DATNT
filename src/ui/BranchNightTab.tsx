@@ -29,7 +29,7 @@ export function BranchNightTab() {
       <div style={{ ...st.event, display: 'block' }}>
         <b>🍺 Rượu bia ban đêm</b>
         <div style={st.sub}>
-          Bán rượu bia giờ đêm lời hơn (×1.15). Cần <b>{licenseById('alcohol').name}</b> (cấp {licenseById('alcohol').unlock}+): công an tuần tra đêm có thể phạt và tịch thu nếu thiếu phép.
+          Bán rượu bia giờ đêm lời hơn (×1,15). Cần <b>{licenseById('alcohol').name}</b> (cấp {licenseById('alcohol').unlock}+): công an tuần tra đêm có thể phạt và tịch thu nếu thiếu phép.
           Không có bảo vệ ca đêm thì khách say dễ gây gổ ({Math.round(ALCOHOL_BRAWL_CHANCE * 100)}% mỗi lượt bán).
         </div>
         <div style={st.sub}>

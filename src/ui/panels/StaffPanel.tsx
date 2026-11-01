@@ -416,7 +416,7 @@ function NightStaffLine({ sv }: { sv?: import('../../data/nightStaffValue').Nigh
   if (!sv || sv.verdict === 'nodata') return null;
   const m = VERDICT_META[sv.verdict];
   return (
-    <div style={{ fontSize: 12, marginTop: 2, color: m.color }} title="Ước tính: doanh thu các giờ đêm (≥22h) chia cho số người cùng ca đêm, so với lương thực trả ×1.5 (thuần đọc sổ giờ)">
+    <div style={{ fontSize: 12, marginTop: 2, color: m.color }} title="Ước tính: doanh thu các giờ đêm (≥22h) chia cho số người cùng ca đêm, so với lương thực trả ×1,5 (thuần đọc sổ giờ)">
       🌙 Đêm qua ~{formatMoney(sv.value)} · lương {formatMoney(sv.wage)} → <b>{sv.net >= 0 ? '+' : ''}{formatMoney(sv.net)}</b> · {m.label}
     </div>
   );
@@ -465,7 +465,7 @@ function NightStrip({ p }: { p: import('../../data/nightReport').NightPnl }) {
     <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8 }}>
       <div style={{ padding: '8px 10px', borderRadius: 10, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', fontSize: 12 }}>
         <div style={{ opacity: 0.75 }}>🌙 Ca đêm · doanh thu {formatMoney(p.revenue)}</div>
-        <div style={{ color }}><b>lời/lỗ {p.net >= 0 ? '+' : ''}{formatMoney(p.net)}</b> vs lương {formatMoney(p.wages)} (×1.5)</div>
+        <div style={{ color }}><b>lời/lỗ {p.net >= 0 ? '+' : ''}{formatMoney(p.net)}</b> vs lương {formatMoney(p.wages)} (×1,5)</div>
       </div>
     </div>
   );

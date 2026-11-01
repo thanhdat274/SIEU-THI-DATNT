@@ -351,7 +351,7 @@ export function SummaryPanel({ day }: { day: number }) {
             </div>
           )}
           {/* Báo cáo ca đêm tiệm chính (GĐ65): lời/lỗ của khoản đầu tư 15 triệu "Mở ca đêm 24h".
-              Thuần đọc từ byHour (giờ ≥22) + nhân viên ca đêm (pay ×1.5) — không thêm state/save. */}
+              Thuần đọc từ byHour (giờ ≥22) + nhân viên ca đêm (pay ×1,5) — không thêm state/save. */}
           {(() => {
             const np = nightPnl(st.byHour, staff, skills);
             if (np.verdict === 'idle') return null; // chưa mở ca đêm / chưa thuê ai, không bày thẻ tránh nhiễu
@@ -364,7 +364,7 @@ export function SummaryPanel({ day }: { day: number }) {
                 <div style={{ fontSize: 12, opacity: 0.75, marginTop: 2 }}>
                   {np.verdict === 'ok'
                     ? 'Mở xuyên đêm đang có lời — bán được đắt hơn buổi ngày, khách khuya lười trả giá.'
-                    : '⚠️ Ca đêm đang lỗ — cân nhắc bớt nhân viên ca đêm, rút bảo vệ thừa, hoặc đóng cửa đúng giờ để khỏi trả lương ×1.5.'}
+                    : '⚠️ Ca đêm đang lỗ — cân nhắc bớt nhân viên ca đêm, rút bảo vệ thừa, hoặc đóng cửa đúng giờ để khỏi trả lương ×1,5.'}
                 </div>
                 <div style={{ fontSize: 12, marginTop: 3, color: pbColor }}>
                   💸 15tr nâng cấp "Mở ca đêm": <b>{nightPaybackLabel(pb)}</b>

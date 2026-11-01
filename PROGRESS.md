@@ -148,3 +148,4 @@
 - GĐ512: Dồn mục lục GĐ450–499 sang archive/INDEX-GD450-499.md (PROGRESS.md dưới 30KB).
 - GĐ535: 🧭 Rà GĐ525–534: 271 file/2646 test xanh 138s, bundle 598/598, chunk 253/255, PROGRESS <28KB; xoá dòng mục lục trùng. Nhịp cuối tuần đủ cho tiệm xôi + tiện lợi; kế: chiều sâu nông trại/quán nước theo cuối tuần.
 - GĐ536: Đơn quán xóm của nông trại tới hạn Thứ 7/CN trả ×1,35 (farmOrderBonus, thường ×1,25); bảng trại ghi '(quán đông cuối tuần)', dấu phẩy. Bonus nằm sẵn trong đơn → không đổi save; endDay chạy ở máy chủ nên hẻm giống chơi đơn. farmOrderWeekend.test.ts; 2648 test xanh.
+- GĐ537: Hệ số hiện cho người chơi đổi sang dấu phẩy (×1,15 rượu đêm, ×1,5 lương đêm/bếp lớn, ×2,5 trần NG+, giá quán ×1,3) + uiDecimalComma.test.ts quét src/ui. Không QA mắt được: pane trình duyệt bị chặn mở localhost. 2649 test xanh.

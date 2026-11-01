@@ -27,7 +27,7 @@ const pill = (on: boolean): React.CSSProperties => ({
 const priceTip = (mul: number, traffic: number) => {
   const pct = Math.round(Math.abs(traffic - 1) * 100);
   const khach = traffic === 1 ? 'khách như cũ' : `khách ${traffic > 1 ? '+' : '−'}${pct}%`;
-  return `Giá ×${mul} nhưng ${khach}`;
+  return `Giá ×${String(mul).replace('.', ',')} nhưng ${khach}`;
 };
 
 /** Quán Nước Đầu Ngõ: quán nước ở đầu hẻm, nguyên liệu lấy thẳng từ kho tiệm. */

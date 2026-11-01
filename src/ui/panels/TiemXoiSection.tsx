@@ -48,7 +48,7 @@ export function TiemXoiSection() {
             </button>
             {!t.big && (
               <button style={styles.btn} disabled={level < TIEM_XOI_BIG_LEVEL || money < TIEM_XOI_BIG_COST} onClick={() => expandTiemXoi()}>
-                {level < TIEM_XOI_BIG_LEVEL ? `Mở rộng bếp: cấp ${TIEM_XOI_BIG_LEVEL}` : `Mở rộng bếp ${formatMoney(TIEM_XOI_BIG_COST)} (120 phần, nấu ×1.5)`}
+                {level < TIEM_XOI_BIG_LEVEL ? `Mở rộng bếp: cấp ${TIEM_XOI_BIG_LEVEL}` : `Mở rộng bếp ${formatMoney(TIEM_XOI_BIG_COST)} (120 phần, nấu ×1,5)`}
               </button>
             )}
           </div>
