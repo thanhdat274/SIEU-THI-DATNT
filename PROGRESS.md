@@ -132,3 +132,4 @@
 - GĐ540: QA sandbox ?thu=1 (kho riêng, an toàn cả ở localhost) khung 747px: bảng Trang trại hiện 'giá hời ×1,35 (quán đông cuối tuần)', thẻ đơn gọn, không tràn, 0 lỗi console. Đóng nợ QA mắt GĐ536–539.
 - GĐ541: Dồn mục lục GĐ512–534 sang archive/INDEX-GD512-534.md (PROGRESS.md dưới 30KB).
 - GĐ542: Đơn quán xóm đặt đúng món trại đang làm ra (farmOrderProduce: cây đang trồng + loài đang nuôi; ≥2 món mới lọc, ít hơn thì cả pool như cũ) — hết đơn sữa dê khi không nuôi dê, chỉ chờ quá hạn. Không đổi save; endDay ở máy chủ nên hẻm giống đơn. Test trong farmOrderWeekend.test.ts; 2651 test xanh.
+- GĐ543: Đơn quán xóm chỉ đặt món trại kịp làm ≥3 trong 2 ngày (kho nhà trồng + cây chín kịp + đàn đẻ/vắt sữa + lứa vỗ béo kịp xuất): 1 con ngỗng không còn bị đặt trứng ngỗng. Không đổi save; 2652 test xanh.

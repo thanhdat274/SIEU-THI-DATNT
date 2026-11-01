@@ -27,7 +27,7 @@ describe('đơn quán xóm theo món trại làm ra (GĐ542)', () => {
     const { farmOrderProduce, newGarden } = await import('../data/garden');
     const g = newGarden();
     expect(farmOrderProduce(g)).toEqual([]);
-    g.plots[0] = { crop: 'rau_cai', growth: 0, wateredDay: 0 };
+    g.plots[0] = { crop: 'rau_cai', growth: 1, wateredDay: 0 };
     g.pens.chicken = { count: 2, fedDay: 0, feedKg: 0, pending: 0 } as never;
     const produce = farmOrderProduce(g);
     expect(produce.sort()).toEqual(['rau', 'trung']);
@@ -36,5 +36,19 @@ describe('đơn quán xóm theo món trại làm ra (GĐ542)', () => {
       expect(o.items.map((it) => it.productId).sort()).toEqual(['rau', 'trung']);
     }
     expect(makeFarmOrder(3, () => 0.99, ['rau']).items.some((it) => it.productId !== 'rau')).toBe(true);
+  });
+});
+
+describe('đơn quán xóm theo sức trại (GĐ543)', () => {
+  it('1 con ngỗng (≈1 trứng/2 ngày) không đủ đặt; rau còn non thì chưa tính', async () => {
+    const { farmOrderProduce, newGarden } = await import('../data/garden');
+    const g = newGarden();
+    g.pens.goose = { count: 1, fedDay: 0, feedKg: 0, pending: 0 } as never;
+    g.plots[0] = { crop: 'rau_cai', growth: 0, wateredDay: 0 };
+    expect(farmOrderProduce(g)).toEqual([]);
+    g.plots[0] = { crop: 'rau_cai', growth: 1, wateredDay: 0 };
+    g.pens.goose = { count: 4, fedDay: 0, feedKg: 0, pending: 0 } as never;
+    expect(farmOrderProduce(g).sort()).toEqual(['rau', 'trung_goos']);
+    expect(farmOrderProduce({ ...newGarden(), homegrown: { sua_de: 5 } })).toEqual(['sua_de']);
   });
 });

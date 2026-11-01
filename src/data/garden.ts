@@ -326,12 +326,24 @@ export const FARM_BUYERS = ['Quán Cơm Bà Ba', 'Lò Bánh Chị Hoa', 'Quán N
 export const FARM_ORDER_POOL = ['trung', 'trung_vit', 'trung_goos', 'sua_tuoi', 'sua_de', 'rau', 'bap', 'mia', 'traicay', 'x_chuoi', 'x_vai', 'x_buoi', 'x_thit_heo', 'thit_ga_dt'];
 
 let farmOrderId = 1;
-/** Món trong pool đơn mà trại đang làm ra: cây đang trồng + loài đang nuôi (GĐ542). */
-export const farmOrderProduce = (g: Pick<GardenState, 'plots' | 'pens'>): string[] => {
-  const ids = new Set<string>();
-  for (const p of g.plots) if (p.crop) ids.add(cropById(p.crop).productId);
-  for (const k of ANIMAL_ORDER) if ((g.pens[k]?.count ?? 0) > 0) ids.add(ANIMALS[k].productId);
-  return FARM_ORDER_POOL.filter((id) => ids.has(id));
+/** Món trong pool đơn mà trại kịp làm ra ≥3 (số lượng đơn nhỏ nhất) trong hạn đơn: hàng nhà trồng
+ *  trong kho + cây chín kịp + đàn đẻ/vắt sữa + lứa vỗ béo kịp xuất (GĐ542, ước lượng sức trại GĐ543). */
+export const farmOrderProduce = (g: Pick<GardenState, 'plots' | 'pens'> & { homegrown?: Record<string, number> }): string[] => {
+  const cap: Record<string, number> = { ...(g.homegrown ?? {}) };
+  const add = (id: string, n: number) => { cap[id] = (cap[id] ?? 0) + n; };
+  for (const p of g.plots) {
+    if (!p.crop) continue;
+    const def = cropById(p.crop);
+    if (p.growth + FARM_ORDER_DAYS >= def.days) add(def.productId, def.yieldQty);
+  }
+  for (const k of ANIMAL_ORDER) {
+    const pen = g.pens[k], def = ANIMALS[k];
+    if (!pen || pen.count <= 0) continue;
+    const perDay = def.layChance ?? def.outputPerDay ?? 0;
+    add(def.productId, pen.pending + pen.count * perDay * FARM_ORDER_DAYS);
+    if (def.fattenDays && (pen.fattened ?? 0) + FARM_ORDER_DAYS >= def.fattenDays) add(def.productId, pen.count * (def.meatPerHead ?? 0));
+  }
+  return FARM_ORDER_POOL.filter((id) => (cap[id] ?? 0) >= 3);
 };
 
 /** Tạo đơn mới cho quán xóm: 2 món, số lượng 3–8, hạn 2 ngày. Trại làm ra ≥2 món trong pool thì
