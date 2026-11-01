@@ -5,6 +5,7 @@ import {
   feedCost,
   landmark2Progress,
   landmarkCustomerFactor,
+  landmarkNightLine,
   landmarkNightTrafficFactor,
   landmarkProgress,
   LANDMARK2_TARGETS,
@@ -208,7 +209,7 @@ describe('contributeLandmark qua store', () => {
     expect(after.biz.landmark.contributions).toBe(28);
     expect(after.money).toBe(beforeMoney - feedCost(landmarkProgress(27).index, s.level) + stage.bonusMoney);
     expect(after.stats.xp - beforeXpAcc).toBe(stage.bonusXp);
-    expect(after.message).toContain('khánh thành — cả hẻm cảm ơn bạn');
+    expect(after.message).toContain('Sân chơi khánh thành'); // GĐ732: lời nhắc dự án đèn thay lời chúc cũ
   });
 
   it('giai đoạn không phải mốc thì không thưởng (không double-grant ở cùng giá trị)', () => {
@@ -254,6 +255,15 @@ describe('persistence — biz.landmark qua snapshot/applySnapshot', () => {
   });
 });
 
+
+describe('GĐ736 — dòng soi sáng đèn trong tab đêm', () => {
+  it('3 trạng thái: mời dự án / đang góp còn N lượt / đã thắp sáng payoff', () => {
+    expect(landmarkNightLine(10)).toContain('dự án cộng đồng kế');
+    expect(landmarkNightLine(30)).toContain('còn 18 lượt'); // 20 − (30 − 28)
+    expect(landmarkNightLine(48)).toContain('+15% lưu lượng đêm');
+    expect(landmarkNightLine(48)!.length).toBeLessThanOrEqual(90);
+  });
+});
 
 describe('GĐ732 — dự án 2: Đèn Đường Ngõ 1', () => {
   it('landmark2Progress: null khi sân chơi chưa xong; 28→48 chia 3 giai đoạn 7/7/6 lượt', () => {

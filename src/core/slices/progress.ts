@@ -111,7 +111,7 @@ export const createProgressSlice = (set: SetState, get: GetState): Pick<GameStat
       s.notify(`🎉 ${stage.title} hoàn thành! Nhận +${formatMoney(stage.bonusMoney)} + ${stage.bonusXp} XP`);
       if (stageIdx === LANDMARK_STAGES.length - 1) {
         get().checkTitles();
-        s.notify('🎊 Sân chơi đầu hẻm khánh thành — cả hẻm cảm ơn bạn!');
+        s.notify('🎊 Sân chơi khánh thành — dự án kế: 💡 Đèn Đường Ngõ 1!');
       }
     }
     return true;

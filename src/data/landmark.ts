@@ -126,6 +126,19 @@ export function landmark2Progress(contributions: number): { index: number; into:
   return { index, into, pct: Math.round(Math.min(1, extra / total2) * 1000) / 1000, done };
 }
 
+/** GĐ736 — dòng soi sáng trạng thái đèn cho tab đêm của chi nhánh (thuần đọc):
+ *  sân chơi chưa xong → mời dự án mới · đang góp → còn bao nhiêu lượt · đã thắp sáng → payoff. */
+export function landmarkNightLine(contributions: number): string | null {
+  const p2 = landmark2Progress(contributions);
+  if (p2 === null) return '💡 Sân chơi xong rồi — dự án cộng đồng kế: Đèn Đường Ngõ 1 (xem 🏗️ Công trình ở hub Mở rộng)';
+  if (!p2.done) {
+    const extra = contributions - LANDMARK_TARGETS[LANDMARK_TARGETS.length - 1];
+    const total2 = LANDMARK2_TARGETS[LANDMARK2_TARGETS.length - 1] - LANDMARK_TARGETS[LANDMARK_TARGETS.length - 1];
+    return `💡 Đèn đường đang góp: còn ${total2 - extra} lượt nữa thắp sáng hẻm (góp ở 🏗️ Công trình)`;
+  }
+  return '💡 Đèn đường đã thắp sáng: khách đêm ghé đông hơn (+15% lưu lượng đêm)';
+}
+
 /** Hệ số lưu lượng ĐÊM ở chi nhánh khi đèn đã thắp sáng (dự án 2 xong): 1 nếu chưa. */
 export function landmarkNightTrafficFactor(contributions: number): number {
   const p = landmark2Progress(contributions);
