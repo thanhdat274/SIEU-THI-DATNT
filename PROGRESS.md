@@ -123,26 +123,8 @@
 - GĐ535–549 (đơn trại cuối tuần + theo sức trại, dấu phẩy thập phân, chữ ≥11px, biểu đồ 375px, tin đồn quán xóm): xem docs/progress-archive/INDEX-GD535-549.md
 - GĐ550–564: QA người mới, ngày 1 gọn, fitList/fitJoin ≤90 → xem docs/progress-archive/INDEX-GD550-564.md
 - GĐ580–599 (quán nước đêm có trận, tiệm xôi/sạp ngày cúng, tách quanNuocInsights): xem docs/progress-archive/INDEX-GD580-599.md
+- GĐ600–619 (tiện lợi đêm có trận, đồ cúng tiệm chính/trang trại, Sổ đầu ngày & thẻ "Mai tiệm có gì" báo ngày cúng/trận): xem docs/progress-archive/INDEX-GD600-619.md
 - GĐ565–579: gom tin một toast (đêm/sau ngủ/cùng lượt), cảnh báo chi nhánh gom khung, đo FPS/module → docs/progress-archive/INDEX-GD565-579.md
 
-- GĐ600 (rà ngân sách + QA người mới): bundle 597/597, chunk 253/255, PROGRESS 28,5KB, economySim (thông báo ngày 1/2) 8/8 xanh, 2692 test xanh. Save sandbox mới: 3 lời thoại → Ra tiệm → Mở cửa → bán đầu (2 nước) sau ≈61s (mục tiêu ≤5 phút).
-- GĐ601: cửa hàng tiện lợi ăn theo đêm có trận (cùng lịch quán nước, không mưa/bão): 22h–24h khách ×1,2; panel tiện lợi báo '⚽ tan trận 22h–24h khách ×1,2'. Theo số ngày → parity. 2694 xanh, bundle 597/597.
-- GĐ602: QA panel tiện lợi (sandbox): ngày 3 nắng hiện '⚽ tan trận 22h–24h khách ×1,2'; ngày 3 mưa và ngày 4 nắng không hiện. Đúng.
-- GĐ603: tin sáng tiện lợi gắn '⚽' sau số khách vào đêm có trận (giải thích khách tăng). QA sandbox ngày 3: '🏪 Tiện lợi 24/7: 0 khách ⚽, thu…'. 2695 xanh, bundle 597/597.
-- GĐ604: Sổ đầu ngày có việc '⚽ Tối nay có trận — tiện lợi đông 22h–24h ×1,2, xếp đủ kệ' khi tiện lợi mở + đêm có trận (ưu tiên 3, mở panel tiện lợi). QA sandbox ngày 3 hiện đúng. 2696 xanh, bundle 597/597.
-- GĐ605: đơn quán xóm (trang trại) hạn rơi vào ngày cúng trả ×1,35 như cuối tuần; tin sáng ghi 'ngày cúng trả ×1,35'. Theo số ngày → parity; vẫn ≤1,4 (không lấn bán hàng). Sửa farmOrderWeekend test (ngày 1 nay là ngày cúng). 2697 xanh (economySim ngày 2 flaky tải, chạy riêng xanh), bundle 597/597.
-- GĐ606: panel trang trại ghi đúng lý do giá hời đơn quán xóm: hạn ngày cúng (ngày thường) '(quán cần đồ cúng)', cuối tuần giữ '(quán đông cuối tuần)'. 2698 xanh (economySim ngày 2 flaky tải, chạy riêng 2 lần xanh), bundle 597/597.
-- GĐ607: sửa test flaky economySim — 3 bài (smoke autoplay, ngày 1 người mới, ngày 2 thông báo) thiếu timeout nên chạm mặc định 5s khi chạy cả bộ dưới tải; đặt 600s như các bài cùng file. Ngày 2 đo được 6 thông báo (trần 8). Cả bộ 2698/2698 xanh không cần chạy riêng.
-- GĐ608: QA panel trang trại (sandbox, đơn đặt tay): hạn ngày 15 ghi '×1,35 (quán cần đồ cúng)', hạn ngày 13 (Thứ 7) ghi '×1,35 (quán đông cuối tuần)'. Đúng.
-- GĐ609: ngày cúng (mùng 1/rằm) khách tiệm chính hay hỏi nhang thơm, trái cây (CUNG_GOODS, kéo 0,08 — thử 0,15 thì ngày cúng lãi ~+40%, quá mạnh). Đổi kinh tế có chủ ý → chép mốc simGolden cấp 30 mới: tiền 3 ngày 24,81tr → 26,26tr (+5,8%, cả 3 ngày; ngày 1 là ngày cúng), cấp 31 như cũ; xp trong cấp 1917→1221 (lạ, chưa rõ vì sao, để ý). 2699 xanh, bundle 597/597.
-- GĐ610 (rà ngân sách + QA người mới): bundle 597/597, chunk 253/255; PROGRESS 31,3KB → lưu trữ GĐ580–599 (INDEX-GD580-599.md) còn 27KB; 2699/2699 xanh một lượt. Save sandbox mới: 3 thoại → Ra tiệm → Mở cửa → bán đầu (2 mì) sau ≈59s (mục tiêu ≤5 phút).
-- GĐ611: điều tra xp 1917→1221 ở GĐ609 — KHÔNG phải cơ chế: sim seed cố định rất nhạy chuỗi rút số ngẫu nhiên (đặt CUNG_PULL=0 mà vẫn rút → tiền 3 ngày 29,6tr, khác cả mốc cũ 24,8tr lẫn 26,3tr). Đo đúng: trung bình 6 seed (11–16), cấp 30, 1 ngày (ngày cúng): kéo 0,08 = 38,35tr vs 0 = 38,20tr → +148k/ngày cúng (~0,4%), nhỏ hợp lý. Ghi nhận ở GĐ609 '+40%/+5,8%' là nhiễu. Lưu ý: near() sàn 50k nên xp (~2000) thực tế không bị kiểm; mốc 1 seed không đo được tác động nhỏ — đo đổi kinh tế nên lấy trung bình nhiều seed.
-- GĐ612: Sổ đầu ngày ngày cúng nhắc '🙏 Ngày cúng khách hỏi nhang thơm, trái cây — chưa có hàng' (chỉ món đã mở mà kho/kệ/đơn đang giao đều không có; mở bảng nhập hàng). QA sandbox: ngày 15 hiện, ngày 16 không. 2700 xanh, bundle 597/597.
-- GĐ613: Sổ đầu ngày hôm TRƯỚC ngày cúng nhắc '🙏 Mai ngày cúng — nhập sẵn nhang thơm, trái cây' (hàng giao cần thời gian). QA sandbox ngày 14: hiện đúng. Test tiemXoiCungDay 11/11, tsc sạch.
-- GĐ614: kiểm cả bộ sau GĐ612–613: 2701/2701 xanh (247s), bundle 597/597, chunk 253/255.
-- GĐ615: thẻ '🔮 Mai tiệm có gì' cuối ngày có dòng '🙏 Mai ngày cúng — khách hỏi nhang, trái cây' (mở bảng nhập hàng). Test tomorrowTeaser 17/17 (bài 'không có gì' đổi ngày 366→367 vì 366 là mùng 1).
-- GĐ616: QA thẻ 'Mai tiệm có gì' (sandbox, store ngày 15): hiện '🙏 Mai ngày cúng — khách hỏi nhang, trái cây' cuối thẻ (5 dòng). Đúng.
-- GĐ617: thẻ 'Mai tiệm có gì' thêm '⚽ Tối mai có trận — quán nước, tiện lợi đông khuya' (cấp ≥29, đúng lịch trận + thời tiết mai). Test 18/18 (bài 'không có gì' sang ngày 368).
-- GĐ618: QA thẻ 'Mai tiệm có gì' (sandbox, store ngày 17 nắng, cấp 50): hiện '⚽ Tối mai có trận — quán nước, tiện lợi đông khuya'. Đúng.
-- GĐ619: cả bộ sau GĐ615–618: 2703/2703 xanh (246s).
 - GĐ620 (rà ngân sách + QA người mới): bundle 597/597, chunk 253/255, PROGRESS 29,4KB (sát trần — lần sau lưu trữ GĐ600–619), 2703/2703 xanh (GĐ619). Save sandbox mới: Chơi không đăng nhập → Ra tiệm → 3 thoại Bà Năm → Mở cửa → bán món đầu ~62s (mục tiêu ≤5 phút).
+- GĐ621: lưu trữ GĐ600–619 → docs/progress-archive/INDEX-GD600-619.md.
