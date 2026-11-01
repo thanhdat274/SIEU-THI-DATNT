@@ -102,7 +102,7 @@ export const createClockSlice = (set: SetState, get: GetState): Pick<GameState, 
     if (!burst.includes(message)) burst.push(message);
     set({ message: burst.length > 1 ? fitJoin([message, ...burst.filter((m) => m !== message).reverse()]) : message });
     clearTimeout(messageTimer);
-    messageTimer = setTimeout(() => set({ message: null }), 3000);
+    messageTimer = setTimeout(() => set({ message: null }), burst.length > 1 ? 4500 : 3000); // GĐ577: toast gộp cần thêm giờ đọc
   },
   openPanel: (panel) => set({ panel }),
   closePanel: () => set({ panel: null }),

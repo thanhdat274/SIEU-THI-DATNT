@@ -18,3 +18,23 @@ describe('notify gộp tin cùng lượt', () => {
     expect([...(useGame.getState().message ?? '')].length).toBeLessThanOrEqual(90);
   });
 });
+
+describe('GĐ577: toast gộp hiện lâu hơn', () => {
+  it('tin đơn tắt sau 3s, tin gộp còn tới 4,5s', async () => {
+    const { vi } = await import('vitest');
+    vi.useFakeTimers();
+    try {
+      await Promise.resolve();
+      const n = useGame.getState().notify;
+      n('🔔 Một tin');
+      vi.advanceTimersByTime(3100);
+      expect(useGame.getState().message).toBeNull();
+      await Promise.resolve();
+      n('🛒 A'); n('⭐ B');
+      vi.advanceTimersByTime(3100);
+      expect(useGame.getState().message).not.toBeNull();
+      vi.advanceTimersByTime(1500);
+      expect(useGame.getState().message).toBeNull();
+    } finally { vi.useRealTimers(); }
+  });
+});
