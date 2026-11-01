@@ -196,7 +196,7 @@ describe('khảo sát kinh tế vòng ngày — simulator thật trên store', (
 });
 
 /** GĐ561: mức đo ngày 2 (bot cấp 1); chỉ được hạ. */
-const DAY2_TOAST_CEILING = 10; // GĐ568: tin đêm gom một toast (đo 11 → 10)
+const DAY2_TOAST_CEILING = 8; // GĐ568–569: tin đêm + sau ngủ gom một toast (đo 11 → 10 → 8)
 const fmt = (v: number) => `${Math.round(v).toLocaleString('vi-VN')}đ`;
 
 /**

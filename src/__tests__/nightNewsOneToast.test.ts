@@ -25,3 +25,14 @@ describe('tin đêm gom một toast (GĐ568)', () => {
     expect(msgs.some((m) => m.startsWith('💡 Chi phí vận hành'))).toBe(false);
   });
 });
+
+describe('tin sau ngủ vào cùng toast (GĐ569)', () => {
+  it('danh hiệu mới không đè dòng sáng: chỉ một toast từ sleep, có trong Sổ đầu ngày', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.99);
+    useGame.setState({ minutes: 20 * 60, titles: [] } as never);
+    expect(g().sleep()).toBe(true);
+    expect(msgs.length).toBe(1);
+    expect(msgs[0].startsWith('Hôm nay:')).toBe(true);
+    expect(g().notify).not.toBe(undefined);
+  });
+});

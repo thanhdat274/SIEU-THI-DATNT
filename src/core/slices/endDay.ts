@@ -455,13 +455,23 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
   });
   // GĐ169 — thưởng chuỗi tuần/tháng đổi XP: cộng sau khi state ngày mới đã set (đi qua addXp để
   // lên cấp/mở khóa đúng một luồng; XP Chuỗi là thành phần kinh tế NHẸ Leader duyệt theo audit).
-  s.notify(fitJoin([weatherLine, ...log]));
-  if (biz.streakXp) get().addXp(biz.streakXp);
-  checkAchievements();
-  // Hàng mới về sáng nay: ô kệ hết hàng mà kho không còn món đó thì đổi sang món khác
-  get().checkTitles();
-  if (s.autoSwap) {
-    const swapped = get().replaceEmptySlots();
-    if (swapped.length && s.day > 1) s.notify(fitList('🔄 Thay ô hết hàng: ', swapped));
+  // GĐ569: tin sau ngủ (lên cấp, thành tựu, danh hiệu, thay ô) cũng gom vào cùng toast — đứng ngay sau thời tiết.
+  const nightLen = log.length;
+  const realNotify = get().notify;
+  set({ notify: say });
+  try {
+    if (biz.streakXp) get().addXp(biz.streakXp);
+    checkAchievements();
+    // Hàng mới về sáng nay: ô kệ hết hàng mà kho không còn món đó thì đổi sang món khác
+    get().checkTitles();
+    if (s.autoSwap) {
+      const swapped = get().replaceEmptySlots();
+      if (swapped.length && s.day > 1) say(fitList('🔄 Thay ô hết hàng: ', swapped));
+    }
+  } finally {
+    set({ notify: realNotify });
   }
+  const after = log.splice(nightLen);
+  log.unshift(...after);
+  realNotify(fitJoin([weatherLine, ...log]));
 };
