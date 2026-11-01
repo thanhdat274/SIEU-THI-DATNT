@@ -142,3 +142,4 @@
 - GĐ550: QA người mới save trắng (sandbox xoá kho thu, 1×): 3 thoại → Nhập hàng → Điền gợi ý → Nhập → Mở cửa → Ra tiệm → bán món đầu sau 69s thật (mục tiêu ≤5 phút). Phát hiện mã '(GĐ291)' lộ trong chữ người chơi → gỡ 5 chỗ (nhập hàng, báo cáo, nhân viên, kho) + test quét src/ui ngoài chú thích. 2658 test xanh.
 - GĐ551: Nhập hàng ngày 1 gọn: ẩn Chợ phiên + Cần nhập gấp (kệ trống nên trùng gợi ý) qua showRestockExtras(day) ở data/onboarding; hiện lại từ ngày 2. Đóng nợ GĐ318/550. 2659 test xanh, bundle 598/253.
 - GĐ552: dự báo + so giá mối ('🧮 rẻ hơn') cũng qua showRestockExtras → một luật cho mọi khối phụ ngày 1. QA sandbox save trắng ngày 1: panel Nhập hàng chỉ còn gợi ý + Điền (không Chợ phiên/Cần nhập gấp/Dự báo). 2659 test xanh.
+- GĐ553: QA chiều ngược của GĐ551–552 trên sandbox: chỉnh ngày=2 → panel Nhập hàng hiện lại Cần nhập gấp + Dự báo. (Ghi chú QA: sleep() buổi sáng không sang ngày — đúng luật, phải về giường.) Chỉ QA, không đổi code.
