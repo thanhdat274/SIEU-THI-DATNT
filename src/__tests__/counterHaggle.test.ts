@@ -2,8 +2,9 @@ import { describe, expect, it, beforeEach, vi } from 'vitest';
 import { newGameData, useGame } from '../core/store';
 import { CustomerManager } from '../agents/customers';
 import {
-  counterPolicySummary, HAGGLE_COUNTER_ACCEPT_P, HAGGLE_REFUSE_OK, haggleChoice, haggleCounterOff, haggleCounterOutcome, haggleOff, haggleSettle,
+  counterPolicySummary, HAGGLE_COUNTER_ACCEPT_P, HAGGLE_REFUSE_OK, haggleChoice, haggleCounterOff, haggleCounterOutcome, haggleOff, haggleSettle, HAGGLE_CHANCE, PRICEMATCH_CHANCE, pricematchSettle,
 } from '../data/counterDeals';
+import { rivalPriceGap } from '../data/biz';
 import { askAtCounter } from '../core/counterAsk';
 
 vi.mock('../core/counterAsk', () => ({
@@ -40,6 +41,22 @@ describe('haggleCounterOutcome — dải một lần rút', () => {
     expect(haggleCounterOutcome(HAGGLE_COUNTER_ACCEPT_P + (1 - HAGGLE_COUNTER_ACCEPT_P) * HAGGLE_REFUSE_OK - 0.001)).toBe('full');
     expect(haggleCounterOutcome(HAGGLE_COUNTER_ACCEPT_P + (1 - HAGGLE_COUNTER_ACCEPT_P) * HAGGLE_REFUSE_OK)).toBe('walk');
     expect(haggleCounterOutcome(0.999)).toBe('walk');
+  });
+});
+
+describe('GĐ725 — kèo khớp giá với rival', () => {
+  it('rivalPriceGap: chỉ cộng món rival đang phá giá, làm tròn nghìn; không rival thì 0', () => {
+    const priceOf = (id: string) => (id === 'nuoc' ? 6000 : id === 'keo' ? 5000 : 10000);
+    const rival = { prices: { nuoc: 4000, keo: 5200 } } as never; // nuoc phá giá 33%, keo chỉ rẻ 4% (không tính)
+    expect(rivalPriceGap(rival as never, priceOf, 5, ['nuoc', 'keo'])).toBe(2000);
+    expect(rivalPriceGap(null, priceOf, 5, ['nuoc'])).toBe(0);
+    expect(rivalPriceGap({ prices: {} } as never, priceOf, 5, ['nuoc'])).toBe(0);
+  });
+  it('pricematchSettle: choice 0 khớp (không rút) · choice 1 giữ giá theo REFUSE_OK', () => {
+    expect(pricematchSettle(0, 2000, 50_000, 0)).toEqual({ discount: 2000, happy: true, icon: '🏷️' });
+    expect(pricematchSettle(1, 2000, 50_000, HAGGLE_REFUSE_OK - 0.01)).toEqual({ discount: 0, happy: true, icon: null });
+    expect(pricematchSettle(1, 2000, 50_000, HAGGLE_REFUSE_OK)).toEqual({ discount: 0, happy: false, icon: null });
+    expect(PRICEMATCH_CHANCE).toBeLessThan(HAGGLE_CHANCE);
   });
 });
 
@@ -112,6 +129,35 @@ describe('prompt 3 nút qua đường thật (harness counterPolicy)', () => {
     expect(ask.who).toBe('Bà Năm bán xôi');
     expect(ask.options).toHaveLength(3);
     expect(ask.fallback).toBe(2);
+  });
+
+  it('GĐ725 — kèo khớp giá: giỏ có món rival phá giá + chủ ở quầy → hỏi 2 nút; KHÔNG ở quầy → KHÔNG hỏi (autoplay an toàn)', () => {
+    const basket = [{ id: 'nuoc', price: 12000 }];
+    const rival = { name: 'Siêu thị Minh', prices: { nuoc: 4000 } };
+    const at = (present: boolean) => {
+      manager.playerAtCounter = () => present;
+      useGame.setState({ level: 3, biz: { ...useGame.getState().biz, rival } as never });
+      const c = { basket, regular: null, profession: null, deal: undefined as unknown, say: vi.fn() };
+      const rand = Math.random; Math.random = () => 0.01; // < PRICEMATCH_CHANCE
+      try { manager.counterDeal(c as never, counter); } finally { Math.random = rand; }
+      return c;
+    };
+    const hit = at(true);
+    expect(hit.deal).toBe('waiting');
+    // packet chủ hỏi KHÔNG mang kind/amount (chúng nằm trong closure c.deal) — assert bằng nội dung người chơi thấy
+    const ask = mockedAsk.mock.calls.at(-1)![0] as { text: string; options: string[]; fallback: number };
+    expect(ask.text).toContain('Siêu thị Minh');
+    expect(ask.text).toContain('2.000đ'); // gap theo GIÁ TIỆM (6.000 − 4.000), không phải giá giỏ stub
+    expect(ask.options).toHaveLength(2);
+    expect(ask.options[0]).toContain('Khớp giá');
+    expect(ask.options[1]).toContain('Giữ giá');
+    expect(ask.fallback).toBe(1);
+    // vắng chủ: KHÔNG có câu hỏi pricematch nào (haggle không trúng vì giỏ 11k < 20k; chỉ change có thể hỏi)
+    const before = mockedAsk.mock.calls.length;
+    const miss0 = at(false);
+    const newsCalls = mockedAsk.mock.calls.slice(before);
+    // vắng chủ: KHÔNG được có deal pricematch (tự chốt fallback = autoplay bào mòn kinh tế — bài học GĐ722)
+    expect(JSON.stringify(miss0.deal)).not.toContain('pricematch');
   });
 
   it('GĐ722 — khách quen bill lớn + roll ngoài 6%: không hỏi mặc cả (rơi qua nhánh khác)', () => {

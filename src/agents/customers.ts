@@ -22,7 +22,7 @@ import { bulkExtra, festivalVisit, perkValue, pickRegular, referFriends, regular
 import { influencerActive } from '../data/social';
 import { pickProfession, PROFESSIONS, PROFESSION_LOOK, type ProfessionDef } from '../data/professions';
 import { CREDIT_UNLOCK, repaysToday, wantsCredit } from '../data/credit';
-import { askQueuedPatience, ASK_MINUTES, CANDY_ANNOY, CHANGE_CHANCE, CHANGE_UNLOCK, CREDIT_REFUSE_FRIEND_LOSS, changeChoice, defaultCounterPolicy, HAGGLE_CHANCE, HAGGLE_CHANCE_REG, HAGGLE_MIN_TOTAL, HAGGLE_REFUSE_OK, HAGGLE_UNLOCK, haggleChoice, haggleCounterOff, haggleOff, haggleSettle, oddChange } from '../data/counterDeals';
+import { askQueuedPatience, ASK_MINUTES, CANDY_ANNOY, CHANGE_CHANCE, CHANGE_UNLOCK, CREDIT_REFUSE_FRIEND_LOSS, changeChoice, defaultCounterPolicy, HAGGLE_CHANCE, HAGGLE_CHANCE_REG, HAGGLE_MIN_TOTAL, PRICEMATCH_CHANCE, HAGGLE_REFUSE_OK, HAGGLE_UNLOCK, haggleChoice, haggleCounterOff, haggleOff, haggleSettle, oddChange, pricematchSettle } from '../data/counterDeals';
 import { rollService, SERVICE_BUY_ALONG, type ServiceDef } from '../data/services';
 import { earnService } from '../core/biz';
 import { paymentById, pickPayment } from '../data/payments';
@@ -31,7 +31,7 @@ import { VENDOR_CHANCE, VENDOR_FROM, VENDOR_UNTIL, WHOLESALE_UNLOCK } from '../d
 import { meatDemandFactor } from '../data/meat';
 import { bestSkillOnDuty, CARE_PATIENCE_PER_STAR, DIRT_MAX, DIRT_PER_VISIT, dirtVisitFactor, GUARD_DETECT } from '../data/staff';
 import { socialTraffic } from '../data/social';
-import { adTargets, bizTraffic, LOYALTY_UNLOCK, loyaltyRedeemChance, petActive, rivalUndercuts } from '../data/biz';
+import { adTargets, bizTraffic, LOYALTY_UNLOCK, loyaltyRedeemChance, petActive, rivalPriceGap, rivalUndercuts } from '../data/biz';
 import { landmarkCustomerFactor } from '../data/landmark';
 import { redeemLoyalty, storyOnVisit, theftFactor } from '../core/biz';
 import { hasUpgrade } from '../data/upgrades';
@@ -76,7 +76,7 @@ type State = 'walkBy' | 'toShop' | 'shopping' | 'toQueue' | 'queued' | 'leaving'
 const pick = <T,>(list: T[]) => list[Math.floor(simRng()() * list.length)];
 
 /** Chuyện ở quầy đã chốt: choice là phương án được chọn (0 = phương án đầu). */
-interface Deal { kind: 'none' | 'credit' | 'haggle' | 'change'; amount: number; choice: number }
+interface Deal { kind: 'none' | 'credit' | 'haggle' | 'change' | 'pricematch'; amount: number; choice: number }
 
 class Customer extends Walker {
   state: State = 'walkBy';
@@ -611,6 +611,13 @@ export class CustomerManager {
       st.adjustFriendship(reg!.id, -CREDIT_REFUSE_FRIEND_LOSS);
       st.notify(`😔 ${reg!.name}: "Thôi để chạy về nhà lấy tiền vậy..."`);
     }
+    // GĐ725 — kèo khớp giá qua helper thuần: choice 0 khớp (không rút) · choice 1 giữ giá (60% vẫn mua, 40% bỏ về)
+    if (deal.kind === 'pricematch') {
+      const settle = pricematchSettle(deal.choice, deal.amount, total, deal.choice === 0 ? 0 : simRng()());
+      if (settle.discount) combo.discount += settle.discount;
+      if (!settle.happy) happy = false;
+      if (settle.icon) first.say(settle.icon, 2);
+    }
     // GĐ721 — chốt deal mặc cả qua helper thuần: 0 bớt luôn · 1 trả giá lại (khách gật giá giữa/mua đầy/bỏ về) · 2 giữ giá
     if (deal.kind === 'haggle') {
       const settle = haggleSettle(deal.choice, deal.amount, total, deal.choice === 0 ? 0 : simRng()());
@@ -714,6 +721,19 @@ export class CustomerManager {
         // GĐ721: thêm nút "trả giá lại" — bớt nửa mức khách xin; khách có thể gật giá giữa (thương lượng thật)
         options: [`🤝 Bớt ${formatMoney(off)}`, `💬 Trả nửa (−${formatMoney(counterOff)})`, 'Giá đúng rồi'], fallback: 2,
       };
+    } else if (!reg && st.biz.rival && st.level >= HAGGLE_UNLOCK && total >= 10_000 && this.playerAtCounter(counter)) {
+      // GĐ725 — kèo khớp giá: khách soi thấy rival bán rẻ món trong giỏ. Chỉ khi chủ đứng quầy (bài học GĐ722:
+      // autoplay không trả lời được thì KHÔNG rút rng — dòng mô phỏng giữ nguyên từng nhịp).
+      const gap = rivalPriceGap(st.biz.rival, (id) => st.priceOf(id), st.day, c.basket.map((it) => it.id));
+      if (gap > 0) {
+        const rivalName = st.biz.rival.name;
+        ask = {
+          kind: 'pricematch', amount: gap, icon: '🏷️', who: c.profession?.name ?? 'Khách',
+          text: `soi giá: "Bên ${rivalName} bán rẻ hơn ${formatMoney(gap)} kìa — khớp giá giúp mình không?"`,
+          options: [`🏷️ Khớp giá (−${formatMoney(gap)})`, 'Giữ giá của tiệm'], fallback: 1,
+        };
+      }
+      // gap 0 (vignette không trúng) → rơi qua nhánh tiền lẻ như thường
     } else if (st.level >= CHANGE_UNLOCK && oddChange(total) && simRng()() < CHANGE_CHANCE) {
       const odd = oddChange(total);
       ask = {

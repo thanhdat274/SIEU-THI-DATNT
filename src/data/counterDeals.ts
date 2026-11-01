@@ -6,6 +6,14 @@ export const HAGGLE_MIN_TOTAL = 20000;
 export const HAGGLE_CHANCE = 0.08;
 /** GĐ722 — khách quen cũng mặc cả ("bà con bớt đi"): thưa hơn khách lẻ một chút. */
 export const HAGGLE_CHANCE_REG = 0.06;
+/** GĐ725 — kèo khớp giá với rival: tỉ lệ mỗi lần tính tiền (chỉ khi chủ đứng quầy, giỏ có món rival phá giá). */
+export const PRICEMATCH_CHANCE = 0.05;
+
+/** GĐ725 — chốt kèo khớp giá (thuần): choice 0 khớp (giảm đúng gap, khách vui, KHÔNG rút) · 1 giữ giá (1 rút: <REFUSE_OK vẫn mua, ngược lại bỏ về). */
+export function pricematchSettle(choice: number, amount: number, total: number, roll: number): { discount: number; happy: boolean; icon: string | null } {
+  if (choice === 0) return { discount: Math.min(amount, total), happy: true, icon: '🏷️' };
+  return { discount: 0, happy: roll < HAGGLE_REFUSE_OK, icon: null };
+}
 /** Khách xin bớt chừng này phần hóa đơn (làm tròn nghìn). */
 export const HAGGLE_SHARE = 0.1;
 /** Không bớt thì chừng này phần khách vẫn vui vẻ mua. */

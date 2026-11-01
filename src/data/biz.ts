@@ -118,6 +118,15 @@ export function rivalUndercuts(r: Rival | null, priceOf: (id: string) => number,
   return out;
 }
 
+/** GĐ725 — tổng chênh giá rival đang phá giá trên các món trong giỏ (chỉ món rival đang bán rẻ hơn ≥5%):
+ *  dùng cho kèo "khớp giá" ở quầy — khách nói rival rẻ hơn, chủ chọn khớp (mất gap, giữ khách) hay giữ giá. */
+export function rivalPriceGap(r: Rival | null, priceOf: (id: string) => number, day: number, basketIds: string[]): number {
+  const under = rivalUndercuts(r, priceOf, day);
+  let gap = 0;
+  for (const id of basketIds) if (under.has(id)) gap += Math.max(0, priceOf(id) - (r?.prices?.[id] ?? priceOf(id)));
+  return Math.round(gap / 1000) * 1000;
+}
+
 /**
  * Cảnh báo cạnh tranh cho HUD (GĐ42): rival đang bán rẻ ≥5% những món tiệm mình CÓ bày/bán
  * (lọc nhiễu — chỉ nhắc món mình thực sự đang giữ). Trả null khi chưa có rival hoặc không trúng món nào.
