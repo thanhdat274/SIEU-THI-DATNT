@@ -27,7 +27,7 @@ import { ngGoalProgress, runRewardScale, runTargetScale, type NgGoal } from '../
 import { PRESTIGE_TITLES } from '../data/titles';
 import { PRESTIGE_COSTUMES } from '../data/costumes';
 import { useSession } from '../net/session';
-import { formatMoney, productById } from '../data/products';
+import { formatMoney, productById, fmtMul } from '../data/products';
 import { BILL_RUSH_DAYS, dayOfMonth, SERVICE_BUY_ALONG, SERVICES } from '../data/services';
 import { roiOf } from '../data/serviceRoi';
 import { venueTrendSummary } from '../data/venueTrend';
@@ -1065,7 +1065,7 @@ function NgGoalsCard({ prestigeLevel, cachedGoals }: { prestigeLevel: number; ca
   const doneCount = cachedGoals.filter((g) => g.done).length;
   const tScale = runTargetScale(prestigeLevel);
   const rScale = runRewardScale(prestigeLevel);
-  const fmtScale = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1).replace('.', ','));
+  const fmtScale = (n: number) => fmtMul(n, 1);
   return (
     <Callout tone="info" title="🌱 Mục tiêu vòng tái sinh" style={{ marginTop: 10 }}>
       <div style={sub}>

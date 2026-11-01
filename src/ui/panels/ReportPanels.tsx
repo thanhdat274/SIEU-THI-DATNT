@@ -9,7 +9,7 @@ import { RECIPES } from '../../data/recipes';
 import { kitchenValue } from '../../data/kitchenValue';
 import { pickEveningPrep } from '../../data/cookSchedule';
 import { cookSpeed, bartenderBoost } from '../../core/slices/orders';
-import { caseSize, formatMoney, productById } from '../../data/products';
+import { caseSize, formatMoney, productById, fmtMul } from '../../data/products';
 import { describeRep, meetsRep, REP_FACTORS, REP_INFO, REP_MIN_SAMPLES, reputationOf, type RepSample } from '../../data/reputation';
 import { repPayoff, repPayoffFocus } from '../../data/repPayoff';
 import { repMoney, avgPerVisit } from '../../data/repMoney';
@@ -1148,7 +1148,7 @@ export function MorningPanel() {
           </div>
           {fv && (
             <div style={{ fontSize: 12, marginTop: 2 }}>
-              <b>Còn {fv.inDays} ngày:</b> khách ×{fv.traffic} ({fvDelta})
+              <b>Còn {fv.inDays} ngày:</b> khách ×{fmtMul(fv.traffic)} ({fvDelta})
               {fv.cost > 1 && <> · giá nhập +{Math.round((fv.cost - 1) * 100)}% (bán đắt vẫn đông)</>}
             </div>
           )}

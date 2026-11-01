@@ -1,5 +1,5 @@
 import { useGame } from '../../core/store';
-import { formatMoney } from '../../data/products';
+import { formatMoney, fmtMul } from '../../data/products';
 import { activeBuzz, APOLOGY_COST, promoBoost, PROMO_MIN_FOLLOWERS, SOCIAL_UNLOCK } from '../../data/social';
 import { crisisStatus, recentAvgRevenue } from '../../data/minorPayoff';
 import { socialValue } from '../../data/socialValue';
@@ -21,7 +21,7 @@ export function SocialPanel() {
         <div style={{ ...styles.card, display: 'block' }}><small style={{ opacity: 0.7 }}>👥 Người theo dõi</small><div><b style={{ fontSize: 18 }}>{social.followers}</b></div></div>
         <div style={{ ...styles.card, display: 'block' }}>
           <small style={{ opacity: 0.7 }}>📈 Hôm nay</small>
-          <div><b>{buzz ? (buzz.kind === 'hype' ? `🔥 Đang hot, khách ×${buzz.mul}` : buzz.responded ? `🙏 Đang lắng xuống, khách ×${buzz.mul}` : `⚠️ Khủng hoảng, khách ×${buzz.mul}`) : 'Bình thường'}</b></div>
+          <div><b>{buzz ? (buzz.kind === 'hype' ? `🔥 Đang hot, khách ×${fmtMul(buzz.mul)}` : buzz.responded ? `🙏 Đang lắng xuống, khách ×${fmtMul(buzz.mul)}` : `⚠️ Khủng hoảng, khách ×${fmtMul(buzz.mul)}`) : 'Bình thường'}</b></div>
           {buzz && <small style={{ opacity: 0.7 }}>tới hết ngày {buzz.until}</small>}
         </div>
       </div>
@@ -34,13 +34,13 @@ export function SocialPanel() {
         if (buzz?.kind === 'hype')
           return (
             <Callout tone="accent" title="🔥 Buzz khen đang sinh tiền" style={{ marginBottom: 10 }}>
-              Hệ số khách ×{sv.traffic} — thêm ~{Math.round(sv.deltaKhachPerDay)} khách/ngày, ước ~{formatMoney(Math.round(sv.moneyDeltaPerDay))}/ngày theo giá giỏ hôm nay.
+              Hệ số khách ×{fmtMul(sv.traffic)} — thêm ~{Math.round(sv.deltaKhachPerDay)} khách/ngày, ước ~{formatMoney(Math.round(sv.moneyDeltaPerDay))}/ngày theo giá giỏ hôm nay.
             </Callout>
           );
         if (buzz?.kind === 'crisis' && buzz.responded)
           return (
             <Callout tone="ok" title="🙏 Đã xin lỗi, khách đang quay lại" style={{ marginBottom: 10 }}>
-              Khách giữ ở ×{sv.traffic} — nhờ xin lỗi mà giữ thêm ~{Math.round(sv.apologyGainKhach)} khách/ngày so với mặc kệ (ước ~{formatMoney(Math.round(sv.apologyGainMoney))}/ngày).
+              Khách giữ ở ×{fmtMul(sv.traffic)} — nhờ xin lỗi mà giữ thêm ~{Math.round(sv.apologyGainKhach)} khách/ngày so với mặc kệ (ước ~{formatMoney(Math.round(sv.apologyGainMoney))}/ngày).
             </Callout>
           );
         return null;
@@ -57,7 +57,7 @@ export function SocialPanel() {
             <button style={{ ...styles.btn, background: '#f1c40f' }} disabled={money < APOLOGY_COST} onClick={apologize}>🙏 Xin lỗi ({formatMoney(APOLOGY_COST)})</button>
             {cs.daysLeft > 0 && (
               <div style={{ flexBasis: '100%', fontSize: 12, opacity: 0.85 }}>
-                Còn {cs.daysLeft} ngày khủng hoảng (hết hạn ngày {cs.until}) — xin lỗi đưa khách từ ×{cs.crisisMul} lên ×{cs.apologyMul}:
+                Còn {cs.daysLeft} ngày khủng hoảng (hết hạn ngày {cs.until}) — xin lỗi đưa khách từ ×{fmtMul(cs.crisisMul)} lên ×{fmtMul(cs.apologyMul)}:
                 cứu lại ~{Math.round(cs.savedOfNormal * 100)}% khách mỗi ngày còn lại
                 {avgRev7 > 0 && <>, ước ~{formatMoney(Math.round(avgRev7 * cs.savedOfNormal))}/ngày (bình quân 7 ngày)</>}.
               </div>

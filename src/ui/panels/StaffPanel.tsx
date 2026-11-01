@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Dropdown } from '../Dropdown';
 import { useGame } from '../../core/store';
 import { dailyWage, maxStaff, ROLES, SHIFTS, type Shift, type Staff } from '../../data/staff';
-import { formatMoney } from '../../data/products';
+import { formatMoney, fmtMul } from '../../data/products';
 import { hasUpgrade } from '../../data/upgrades';
 import { Footer, Callout, styles, Tabs } from './shared';
 import { wageCoverage } from '../../data/wageCoverage';
@@ -349,7 +349,7 @@ export function PromoteRow({ st, level, money, onPromote }: { st: Staff; level: 
     <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', fontSize: 12 }}>
       <span style={{ flex: 1, minWidth: 180, opacity: 0.85 }} title={chk.def.desc}>
         {chk.def.icon} Lên <b>{chk.def.name}</b>
-        {chk.ok ? ` — đủ điều kiện (lương ×${chk.def.raise})` : ` — cần ${chk.missing.join(', ')}`}
+        {chk.ok ? ` — đủ điều kiện (lương ×${fmtMul(chk.def.raise)})` : ` — cần ${chk.missing.join(', ')}`}
       </span>
       <button style={styles.btn} disabled={!chk.ok || money < chk.def.cost} onClick={() => onPromote(st.id)}>
         Thăng chức · {formatMoney(chk.def.cost)}
@@ -382,7 +382,7 @@ export function StaffInfo({ st, right }: { st: Staff; right?: React.ReactNode })
           <div style={{ fontSize: 11, opacity: 0.7, marginTop: 2 }}>Kinh nghiệm {st.exp ?? 0}/{expToNext(st.skill)} · đã làm {st.daysWorked} ngày</div>
         )}
         <div style={{ fontSize: 11, opacity: 0.85, marginTop: 2, color: '#f1c40f' }}>
-          ⚡ Làm nhanh ×{eff.speed.toFixed(2)}
+          ⚡ Làm nhanh ×{fmtMul(eff.speed)}
           {!eff.maxed && eff.roleBonus ? ` · ${eff.roleBonus}` : eff.roleBonus}
           {!eff.maxed && ` · +1★ nhanh thêm ${eff.nextDeltaPct}%`}
           {!eff.maxed && ` · đào tạo ${formatMoney(eff.trainCost)}/buổi (cộng 4 exp, cần ${eff.expNeeded})`}

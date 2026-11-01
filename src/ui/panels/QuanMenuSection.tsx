@@ -1,5 +1,5 @@
 import { useGame } from '../../core/store';
-import { formatMoney, productById } from '../../data/products';
+import { formatMoney, productById, fmtMul } from '../../data/products';
 import { QUAN_HAND_CUPS, QUAN_PRICE_OPTIONS, QUAN_TIERS, quanHandLeft, quanMenuSlots, quanTierOf } from '../../data/quanNuoc';
 import {
   cleanMenu, QUAN_RECIPES, QUAN_VARIETY_BONUS, recipeCapacity, recipeCupCost,
@@ -27,7 +27,7 @@ export function QuanMenuSection() {
         <span style={{ fontSize: 11, opacity: 0.7 }}> (bậc {tier + 1}/{QUAN_TIERS.length}: {QUAN_TIERS.map((t) => t.name).join(' → ')} — cùng một cửa hàng)</span>
         {nextTier && (
           <button style={styles.btn} disabled={level < nextTier.level} onClick={() => upgradeQuanTier()}>
-            {level < nextTier.level ? `${nextTier.name}: cấp ${nextTier.level}` : `Nâng lên ${nextTier.name} ${formatMoney(nextTier.cost)} (khách ×${nextTier.mul}${quanMenuSlots({ tier: tier + 1 }) > slots ? ', +1 ô món' : ''})`}
+            {level < nextTier.level ? `${nextTier.name}: cấp ${nextTier.level}` : `Nâng lên ${nextTier.name} ${formatMoney(nextTier.cost)} (khách ×${fmtMul(nextTier.mul)}${quanMenuSlots({ tier: tier + 1 }) > slots ? ', +1 ô món' : ''})`}
           </button>
         )}
       </div>

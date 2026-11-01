@@ -1,5 +1,5 @@
 import { useGame } from '../../core/store';
-import { productById, formatMoney } from '../../data/products';
+import { productById, formatMoney, fmtMul } from '../../data/products';
 import {
   ANIMALS, ANIMAL_ORDER, animalMode, CROPS, EGG_PER_TRAY, FARM_BUILDING_MAX_STAR, FARM_BUILDINGS, FARM_BUILDING_ORDER, FARM_ORDER_UNLOCK,
   FERTILIZER_PRODUCT, GARDEN_UNLOCK, cropById, inSeason, LAND_TIERS, monthOf, penCap, fattenReady, plotLabel, plotReady,
@@ -85,7 +85,7 @@ export function GardenPanel() {
                   const home = garden.homegrown[it.productId] ?? 0;
                   const ok = have >= it.qty && home >= it.qty;
                   return `${productById(it.productId).name} ${have}/${it.qty} (nhà trồng ${home})${ok ? '✓' : '⚠️'}`;
-                }).join(' · ')} — giá hời ×{String(order.bonus).replace('.', ',')}{order.bonus > 1.25 ? ' (quán đông cuối tuần)' : ''} cho nông sản nhà trồng, hạn ngày {order.dueDay} (còn {Math.max(0, order.dueDay - day)} ngày)
+                }).join(' · ')} — giá hời ×{fmtMul(order.bonus)}{order.bonus > 1.25 ? ' (quán đông cuối tuần)' : ''} cho nông sản nhà trồng, hạn ngày {order.dueDay} (còn {Math.max(0, order.dueDay - day)} ngày)
               </div>
             </Callout>
           ) : level >= FARM_ORDER_UNLOCK ? (

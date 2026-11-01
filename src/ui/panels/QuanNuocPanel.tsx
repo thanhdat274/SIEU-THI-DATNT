@@ -1,6 +1,6 @@
 import type * as React from 'react';
 import { useGame } from '../../core/store';
-import { formatMoney } from '../../data/products';
+import { formatMoney, fmtMul } from '../../data/products';
 import {
   QUAN_NUOC_HIRE_FEE, QUAN_NUOC_MAX_STAFF, QUAN_NUOC_PRICE, QUAN_NUOC_UNLOCK, QUAN_NUOC_WAGE,
   QUAN_PRICE_OPTIONS, QUAN_WEATHER_MUL, quanWeekendMul, quanNuocProjection, quanNuocCupSupply, quanNuocRestockTip, quanNuocBuildPayback, type QuanNuocPrice,
@@ -27,7 +27,7 @@ const pill = (on: boolean): React.CSSProperties => ({
 const priceTip = (mul: number, traffic: number) => {
   const pct = Math.round(Math.abs(traffic - 1) * 100);
   const khach = traffic === 1 ? 'khách như cũ' : `khách ${traffic > 1 ? '+' : '−'}${pct}%`;
-  return `Giá ×${String(mul).replace('.', ',')} nhưng ${khach}`;
+  return `Giá ×${fmtMul(mul)} nhưng ${khach}`;
 };
 
 /** Quán Nước Đầu Ngõ: quán nước ở đầu hẻm, nguyên liệu lấy thẳng từ kho tiệm. */
@@ -53,11 +53,11 @@ export function QuanNuocPanel() {
       <p style={styles.sub}>Quán chuyên nước ở đầu hẻm — nguyên liệu lấy thẳng từ kho của mình.</p>
       {quan.open && QUAN_WEATHER_MUL[weather] !== 1 && (
         <p style={{ fontSize: 12, margin: '0 0 6px' }}>
-          {WEATHER[weather].icon} {WEATHER[weather].name}: khách quán {QUAN_WEATHER_MUL[weather] > 1 ? 'đông' : 'vắng'} hơn ×{QUAN_WEATHER_MUL[weather]} — {QUAN_WEATHER_MUL[weather] > 1 ? 'nạp thêm đồ uống' : 'bớt nhập cho đỡ tồn'}
+          {WEATHER[weather].icon} {WEATHER[weather].name}: khách quán {QUAN_WEATHER_MUL[weather] > 1 ? 'đông' : 'vắng'} hơn ×{fmtMul(QUAN_WEATHER_MUL[weather])} — {QUAN_WEATHER_MUL[weather] > 1 ? 'nạp thêm đồ uống' : 'bớt nhập cho đỡ tồn'}
         </p>
       )}
       {quan.open && quanWeekendMul(day) !== 1 && (
-        <p style={{ fontSize: 12, margin: '0 0 6px' }}>🎉 Cuối tuần: khách ngồi quán đông hơn ×{quanWeekendMul(day)} — nạp thêm nguyên liệu</p>
+        <p style={{ fontSize: 12, margin: '0 0 6px' }}>🎉 Cuối tuần: khách ngồi quán đông hơn ×{fmtMul(quanWeekendMul(day))} — nạp thêm nguyên liệu</p>
       )}
       {quan.open && quanHotNote(quan.menu ?? [], weather, level, day) && (
         <p style={{ fontSize: 12, margin: '0 0 6px' }}>{quanHotNote(quan.menu ?? [], weather, level, day)}</p>

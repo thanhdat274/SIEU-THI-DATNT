@@ -21,3 +21,14 @@ describe('UI dùng dấu phẩy thập phân cho hệ số', () => {
     expect(bad).toEqual([]);
   });
 });
+
+describe('fmtMul (GĐ539)', () => {
+  it('viết hệ số kiểu Việt, bỏ số 0 thừa', async () => {
+    const { fmtMul } = await import('../data/products');
+    expect(fmtMul(1.25)).toBe('1,25');
+    expect(fmtMul(1.5)).toBe('1,5');
+    expect(fmtMul(2)).toBe('2');
+    expect(fmtMul(1.333)).toBe('1,33');
+    expect(fmtMul(2.46, 1)).toBe('2,5');
+  });
+});

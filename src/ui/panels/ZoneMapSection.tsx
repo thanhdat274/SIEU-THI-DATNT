@@ -1,6 +1,6 @@
 import { playerPos } from '../../core/playerPos';
 import { useGame } from '../../core/store';
-import { formatMoney } from '../../data/products';
+import { formatMoney, fmtMul } from '../../data/products';
 import { SAP_HOME_XOI_MUL, SAP_LOTS, SAP_TIERS, bestSapKind, sapKindOf, sapLotIncome, sapTierOf } from '../../data/sapRong';
 import { WEATHER } from '../../data/weather';
 import { MAP_LANDMARKS, ZONES, zoneMapView } from '../../data/zones';
@@ -63,7 +63,7 @@ export function ZoneMapSection() {
                   Lô {i + 1}: {t.icon} {k.icon} {k.name} · hôm nay {formatMoney(Math.round(sapLotIncome(k, weather, day) * t.mul * (home ? SAP_HOME_XOI_MUL : 1)))}{home ? ' 🏠' : ''}
                 </button>
                 {up && (
-                  <button style={styles.btn} disabled={money < up.cost} title={`Nâng lên ${up.name}: thu ×${up.mul}`} onClick={() => upgradeSapLot(i)}>
+                  <button style={styles.btn} disabled={money < up.cost} title={`Nâng lên ${up.name}: thu ×${fmtMul(up.mul)}`} onClick={() => upgradeSapLot(i)}>
                     ⬆ {up.icon} {formatMoney(up.cost)}
                   </button>
                 )}
