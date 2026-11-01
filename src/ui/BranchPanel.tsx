@@ -130,11 +130,16 @@ export function BranchPanel() {
             </div>
           )}
           {!has('manager') && <p style={st.sub}>💡 Thuê 📋 Quản lý: tự xếp ca, cho người mệt nghỉ luân phiên, tự gọi xe khi kệ vơi, tự gọi người thay khi có ai xin nghỉ.</p>}
-          {!has('cashier') && <p style={st.warn}>⚠️ Chưa có thu ngân — khách tới không ai bán.</p>}
-          {has('cashier') && gaps.length > 0 && <p style={st.warn}>⚠️ Không có thu ngân lúc: {gaps.map((h) => `${h}h`).join(', ')}. Thêm người ca đêm/ca chiều.</p>}
-          {!has('courier') && !has('stocker') && <p style={st.warn}>⚠️ Chưa có người giao/xếp hàng — kệ sẽ không được chở hàng từ kho chung.</p>}
-          {!has('guard') && <p style={st.warn}>⚠️ Không có bảo vệ — ban đêm dễ mất trộm.</p>}
-          {stockLeft < nightNeed() && <p style={st.warn}>⚠️ Kho chung sắp cạn (còn {stockLeft} món, mỗi đêm cần ~{nightNeed()}), đêm nay chi nhánh có thể hết hàng.</p>}
+          {(() => { // GĐ573: gom cảnh báo thiếu người/hàng vào một khung, đỡ rối
+            const warns = [
+              !has('cashier') && <>Chưa có thu ngân — khách tới không ai bán.</>,
+              has('cashier') && gaps.length > 0 && <>Không có thu ngân lúc: {gaps.map((h) => `${h}h`).join(', ')}. Thêm người ca đêm/ca chiều.</>,
+              !has('courier') && !has('stocker') && <>Chưa có người giao/xếp hàng — kệ sẽ không được chở hàng từ kho chung.</>,
+              !has('guard') && <>Không có bảo vệ — ban đêm dễ mất trộm.</>,
+              stockLeft < nightNeed() && <>Kho chung sắp cạn (còn {stockLeft} món, mỗi đêm cần ~{nightNeed()}), đêm nay chi nhánh có thể hết hàng.</>,
+            ].filter(Boolean);
+            return warns.length > 0 && <Callout tone="warn" title={`⚠️ Cần xử lý (${warns.length})`}>{warns.map((w, i) => <div key={i} style={st.sub}>• {w}</div>)}</Callout>;
+          })()}
           <div style={{ ...st.event, display: 'block' }}>
             <div style={st.row}>
               <b>🥤 Máy bán hàng tự động ngoài cửa</b>

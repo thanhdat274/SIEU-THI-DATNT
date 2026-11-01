@@ -134,4 +134,4 @@
 - GĐ570 (rà ngân sách + QA người mới): bundle 597/597 KB, chunk lớn nhất 253/255 KB; save mới ?thu=1 bán lần đầu ≈80 giây (đích ≤5 phút); ngày 1 = 9 tin, ngày 2 = 8 tin.
 - GĐ571: notify gọi liên tiếp trong cùng một lượt xử lý (vd. bán hàng + lên cấp) gộp một toast, tin mới nhất đứng đầu, bỏ trùng, ≤90 — hết đè nhau ngoài endDay. Test notifyBurst; 2674 test xanh.
 
-- GĐ572: QA trình duyệt GĐ571 (2 tin cùng lượt → '⭐ Lên cấp 2 · 🛒 Bán được gói mì', lượt sau tách riêng); lưu trữ GĐ550–564 cho PROGRESS <30KB.
+- GĐ572: QA trình duyệt GĐ571 (2 tin cùng lượt → '⭐ Lên cấp 2 · 🛒 Bán được gói mì', lượt sau tách riêng); lưu trữ GĐ550–564 cho PROGRESS <30KB.- GĐ573: BranchPanel tab Tình hình: 5 dòng ⚠️ rời (thiếu thu ngân/giờ trống/giao hàng/bảo vệ/kho cạn) gom vào một Callout '⚠️ Cần xử lý (N)'. Test branchWarnGroup.
