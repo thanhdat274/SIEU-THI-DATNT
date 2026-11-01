@@ -22,7 +22,7 @@ import { bulkExtra, festivalVisit, perkValue, pickRegular, referFriends, regular
 import { influencerActive } from '../data/social';
 import { pickProfession, PROFESSIONS, PROFESSION_LOOK, type ProfessionDef } from '../data/professions';
 import { CREDIT_UNLOCK, repaysToday, wantsCredit } from '../data/credit';
-import { askQueuedPatience, ASK_MINUTES, CANDY_ANNOY, CHANGE_CHANCE, CHANGE_UNLOCK, CREDIT_REFUSE_FRIEND_LOSS, changeChoice, defaultCounterPolicy, HAGGLE_CHANCE, HAGGLE_MIN_TOTAL, HAGGLE_REFUSE_OK, HAGGLE_UNLOCK, haggleChoice, haggleOff, oddChange } from '../data/counterDeals';
+import { askQueuedPatience, ASK_MINUTES, CANDY_ANNOY, CHANGE_CHANCE, CHANGE_UNLOCK, CREDIT_REFUSE_FRIEND_LOSS, changeChoice, defaultCounterPolicy, HAGGLE_CHANCE, HAGGLE_MIN_TOTAL, HAGGLE_REFUSE_OK, HAGGLE_UNLOCK, haggleChoice, haggleCounterOff, haggleOff, haggleSettle, oddChange } from '../data/counterDeals';
 import { rollService, SERVICE_BUY_ALONG, type ServiceDef } from '../data/services';
 import { earnService } from '../core/biz';
 import { paymentById, pickPayment } from '../data/payments';
@@ -611,11 +611,13 @@ export class CustomerManager {
       st.adjustFriendship(reg!.id, -CREDIT_REFUSE_FRIEND_LOSS);
       st.notify(`😔 ${reg!.name}: "Thôi để chạy về nhà lấy tiền vậy..."`);
     }
-    if ((deal.kind === 'haggle' || deal.kind === 'change') && deal.choice === 0) {
-      combo.discount += Math.min(deal.amount, total);
-      first.say('🤝', 2);
+    // GĐ721 — chốt deal mặc cả qua helper thuần: 0 bớt luôn · 1 trả giá lại (khách gật giá giữa/mua đầy/bỏ về) · 2 giữ giá
+    if (deal.kind === 'haggle') {
+      const settle = haggleSettle(deal.choice, deal.amount, total, deal.choice === 0 ? 0 : simRng()());
+      if (settle.discount) combo.discount += settle.discount;
+      if (!settle.happy) happy = false;
+      if (settle.icon) first.say(settle.icon, 2);
     }
-    if (deal.kind === 'haggle' && deal.choice === 1 && simRng()() >= HAGGLE_REFUSE_OK) happy = false;
     if (deal.kind === 'change' && deal.choice === 1) {
       first.say('🍬', 2);
       if (simRng()() < CANDY_ANNOY) happy = false;
@@ -701,10 +703,12 @@ export class CustomerManager {
       };
     } else if (!reg && st.level >= HAGGLE_UNLOCK && total >= HAGGLE_MIN_TOTAL && simRng()() < HAGGLE_CHANCE) {
       const off = haggleOff(total);
+      const counterOff = haggleCounterOff(total);
       ask = {
         kind: 'haggle', amount: off, icon: '🗣️', who: c.profession?.name ?? 'Khách',
         text: `mặc cả: "${formatMoney(total)} hả? Bớt ${formatMoney(off)} đi cô/chú!"`,
-        options: [`🤝 Bớt ${formatMoney(off)}`, 'Giá đúng rồi'], fallback: 1,
+        // GĐ721: thêm nút "trả giá lại" — bớt nửa mức khách xin; khách có thể gật giá giữa (thương lượng thật)
+        options: [`🤝 Bớt ${formatMoney(off)}`, `💬 Trả nửa (−${formatMoney(counterOff)})`, 'Giá đúng rồi'], fallback: 2,
       };
     } else if (st.level >= CHANGE_UNLOCK && oddChange(total) && simRng()() < CHANGE_CHANCE) {
       const odd = oddChange(total);

@@ -43,6 +43,30 @@ export function askQueuedPatience(realS: number): '😕' | '😤' | 'resolved' |
 
 export const haggleOff = (total: number) => Math.max(1000, Math.round((total * HAGGLE_SHARE) / 1000) * 1000);
 
+/** GĐ721 — trả giá lại: chủ trả nửa mức khách xin (làm tròn XUỐNG nghìn, sàn 1.000đ) — vừa phải, có giá trị thương lượng thật. */
+export const HAGGLE_COUNTER_ACCEPT_P = 0.7;
+export const haggleCounterOff = (total: number) => Math.max(1000, Math.floor(haggleOff(total) / 2 / 1000) * 1000);
+/** Kết quả một lần trả giá lại (MỘT lần rút): <0,7 khách gật giá giữa · 0,7–0,88 mua giá đầy đủ (phần 0,3 còn lại × 60% REFUSE_OK) · ≥0,88 bỏ về.
+ *  EV nằm giữa "bớt luôn" (mất X, giữ 100% khách) và "giữ giá" (60%×total, 40% mất khách) → nút giữa có nghĩa thật, không phải trang trí. */
+export function haggleCounterOutcome(roll: number): 'deal' | 'full' | 'walk' {
+  if (roll < HAGGLE_COUNTER_ACCEPT_P) return 'deal';
+  if (roll < HAGGLE_COUNTER_ACCEPT_P + (1 - HAGGLE_COUNTER_ACCEPT_P) * HAGGLE_REFUSE_OK) return 'full';
+  return 'walk';
+}
+
+/** GĐ721 — chốt một deal mặc cả (thuần, dễ test): choice 0 bớt luôn (không rút) · 1 trả giá lại (1 rút:
+ *  gật giá giữa / mua đầy / bỏ về) · 2 giữ giá (1 rút: <REFUSE_OK vui vẻ mua, ngược lại bỏ về).
+ *  Trả { discount, happy, icon } — người gọi cộng discount vào combo, unhappy → khách bỏ về, icon là bong bóng ở quầy. */
+export function haggleSettle(choice: number, amount: number, total: number, roll: number): { discount: number; happy: boolean; icon: string | null } {
+  if (choice === 0) return { discount: Math.min(amount, total), happy: true, icon: '🤝' };
+  if (choice === 1) {
+    const outcome = haggleCounterOutcome(roll);
+    if (outcome === 'deal') return { discount: Math.min(haggleCounterOff(total), total), happy: true, icon: '💬' };
+    return { discount: 0, happy: outcome === 'full', icon: null };
+  }
+  return { discount: 0, happy: roll < HAGGLE_REFUSE_OK, icon: null };
+}
+
 /** Tiền lẻ phải thối khi khách đưa tờ chẵn 5.000đ; 0 = hóa đơn tròn, không thiếu lẻ. */
 export const oddChange = (total: number) => (total % 5000 === 0 ? 0 : 5000 - (total % 5000));
 
@@ -65,10 +89,11 @@ export interface CounterPolicy {
 export const defaultCounterPolicy = (): CounterPolicy => ({ haggle: 'ask', change: 'ask' });
 
 /** Mặc cả: 'ask' → null (giữ prompt path); 'accept' → 0 (bớt HAGGLE_SHARE, khách mặc cả đều gật);
- * 'refuse' → 1 (giữ giá, vẫn mất 1−HAGGLE_REFUSE_OK khách mặc cả). `total` giữ để khớp chữ ký/tiện mở rộng. */
-export const haggleChoice = (policy: CounterPolicy, total: number): 0 | 1 | null => {
+ * 'refuse' → 2 (giữ giá, vẫn mất 1−HAGGLE_REFUSE_OK khách mặc cả; GĐ721: option "trả giá lại" chiếm vị 1).
+ * `total` giữ để khớp chữ ký/tiện mở rộng. */
+export const haggleChoice = (policy: CounterPolicy, total: number): 0 | 2 | null => {
   if (policy.haggle === 'ask') return null;
-  return policy.haggle === 'accept' ? 0 : 1;
+  return policy.haggle === 'accept' ? 0 : 2;
 };
 
 /** Tiền lẻ: 'ask' → null; 'round' → 0 (bớt cho tròn, không phiền); 'candy' → 1 (thối kẹo → CANDY_ANNOY thấy phiền). */
