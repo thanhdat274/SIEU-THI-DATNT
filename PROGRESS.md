@@ -128,3 +128,4 @@
 
 - GĐ620 (rà ngân sách + QA người mới): bundle 597/597, chunk 253/255, PROGRESS 29,4KB (sát trần — lần sau lưu trữ GĐ600–619), 2703/2703 xanh (GĐ619). Save sandbox mới: Chơi không đăng nhập → Ra tiệm → 3 thoại Bà Năm → Mở cửa → bán món đầu ~62s (mục tiêu ≤5 phút).
 - GĐ621: lưu trữ GĐ600–619 → docs/progress-archive/INDEX-GD600-619.md.
+- GĐ622: ngày có trận (lịch quán nước, không mưa/bão) lô sạp nước mía thu ×1,15 (SAP_MATCH_MUL); bản đồ khu ghi ' ⚽' sau lô. Theo số ngày → parity; bán thật, không phải thưởng. sapRong 22/22, golden + economySim 9/9 xanh, bundle 597/597.

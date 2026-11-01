@@ -1,3 +1,4 @@
+import { isQuanMatchDay } from '../../data/quanNuoc';
 import { playerPos } from '../../core/playerPos';
 import { useGame } from '../../core/store';
 import { formatMoney, fmtMul } from '../../data/products';
@@ -61,7 +62,7 @@ export function ZoneMapSection() {
             return (
               <span key={i} style={{ display: 'inline-flex', gap: 4 }}>
                 <button style={styles.btn} title={`${k.hint}${home ? ' · xôi nhà làm +20%' : ''} — bấm để đổi món`} onClick={() => cycleSapKind(i)}>
-                  Lô {i + 1}: {t.icon} {k.icon} {k.name} · hôm nay {formatMoney(Math.round(sapLotIncome(k, weather, day) * t.mul * (home ? SAP_HOME_XOI_MUL : 1)))}{home ? ' 🏠' : ''}{k.id === 'xoi' && isXoiCungDay(day) ? ' 🙏' : ''}
+                  Lô {i + 1}: {t.icon} {k.icon} {k.name} · hôm nay {formatMoney(Math.round(sapLotIncome(k, weather, day) * t.mul * (home ? SAP_HOME_XOI_MUL : 1)))}{home ? ' 🏠' : ''}{k.id === 'xoi' && isXoiCungDay(day) ? ' 🙏' : ''}{k.id === 'nuocmia' && isQuanMatchDay(day, weather) ? ' ⚽' : ''}
                 </button>
                 {up && (
                   <button style={styles.btn} disabled={money < up.cost} title={`Nâng lên ${up.name}: thu ×${fmtMul(up.mul)}`} onClick={() => upgradeSapLot(i)}>
