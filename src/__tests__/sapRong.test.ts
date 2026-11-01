@@ -274,3 +274,11 @@ describe('GĐ627: tin cuối ngày sạp gắn ⚽ ngày trận có lô nước 
     expect(readFileSync('src/core/slices/endDay.ts', 'utf8')).toContain("isQuanMatchDay(s.day, s.weather) && s.biz.sapKinds?.slice(0, s.biz.sapRong).includes('nuocmia') ? ' · ⚽'");
   });
 });
+
+describe('GĐ631: Sổ đầu ngày nhắc đổi lô sang xôi ngày cúng', () => {
+  it('ReportPanels có việc khi chưa lô nào bán xôi; câu ≤90', async () => {
+    const { readFileSync } = await import('node:fs');
+    expect(readFileSync('src/ui/panels/ReportPanels.tsx', 'utf8')).toContain("sapKindOf(biz.sapKinds, i).id).includes('xoi')");
+    expect([...'Hôm nay ngày cúng — đổi một lô sạp sang xôi (×1,3)'].length).toBeLessThanOrEqual(90);
+  });
+});
