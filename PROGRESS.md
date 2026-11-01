@@ -151,3 +151,4 @@
 - GĐ537: Hệ số hiện cho người chơi đổi sang dấu phẩy (×1,15 rượu đêm, ×1,5 lương đêm/bếp lớn, ×2,5 trần NG+, giá quán ×1,3) + uiDecimalComma.test.ts quét src/ui. Không QA mắt được: pane trình duyệt bị chặn mở localhost. 2649 test xanh.
 - GĐ538: Chạy lại toàn bộ sau GĐ537: 273 file/2649 test xanh. QA trình duyệt localhost:5173: màn khởi đầu tải sạch, 0 lỗi console, không còn ×N.N. Không vào ván ở localhost (origin save thật); 127.0.0.1 vẫn bị chặn → QA mắt bảng trại/quán để khi mở được 127.0.0.1.
 - GĐ539: fmtMul (data/products) cho hệ số tính lúc chạy (×1,25 đơn trại, khách ×…, lương ×…, giá hời VIP, kèo, nâng sạp, mạng xã hội…) ở 12 file UI; fmtScale NG+ dùng chung. Test fmtMul trong uiDecimalComma.test.ts; 2650 test xanh.
+- GĐ540: QA sandbox ?thu=1 (kho riêng, an toàn cả ở localhost) khung 747px: bảng Trang trại hiện 'giá hời ×1,35 (quán đông cuối tuần)', thẻ đơn gọn, không tràn, 0 lỗi console. Đóng nợ QA mắt GĐ536–539.
