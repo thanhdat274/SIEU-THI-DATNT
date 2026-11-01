@@ -136,3 +136,4 @@
 - GĐ643: tooltip ô lịch năm ghi 'tối có trận (nếu không mưa)' cho 54 ngày trận (không thêm icon để lưới gọn).
 - GĐ644: dòng đếm ngược Sổ đầu ngày thành nút '→' mở Lịch năm (QA sandbox ngày 16: bấm → Lịch sự kiện).
 - GĐ645: báo 'trận mai' dùng dự báo mai (forecast[0]) thay vì giả định nắng — mai mưa thì Sổ đầu ngày nhảy tới trận tuần sau, panel quán nước không báo.
+- GĐ646: cảnh báo '🛒 N khách đang chờ tính tiền' thêm ' — bấm 🛵 Ra tiệm' khi chủ ở nhà/trang trại (QA GĐ640: ngày 1 mở cửa ở nhà, khách xếp quầy). Bundle 596,8. QA sandbox cấp 45 có nhân viên đứng quầy nên không tái hiện được — chỉ test.

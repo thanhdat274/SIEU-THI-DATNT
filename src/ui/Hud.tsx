@@ -441,7 +441,7 @@ ${forecastText}`}>
             <span className="hud-alert-actions"><button className="hud-btn" onClick={() => worldActions.mop()}>Lau nhà</button></span>
           </div>
         )}
-        {waiting > 0 && !hint?.startsWith('💵') &&<div className="hud-alert warn">🛒 {waiting} khách đang chờ tính tiền ở quầy</div>}
+        {waiting > 0 && !hint?.startsWith('💵') &&<div className="hud-alert warn">🛒 {waiting} khách đang chờ tính tiền ở quầy{atHome || atFarm ? ' — bấm 🛵 Ra tiệm' : ''}</div>}
         <Suspense fallback={null}><PhoneAlerts /></Suspense>
         <Suspense fallback={null}><BranchAlert /></Suspense>
         <Suspense fallback={null}><RivalAlert /></Suspense>
