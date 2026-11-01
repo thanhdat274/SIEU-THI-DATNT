@@ -85,7 +85,7 @@ export function GardenPanel() {
                   const home = garden.homegrown[it.productId] ?? 0;
                   const ok = have >= it.qty && home >= it.qty;
                   return `${productById(it.productId).name} ${have}/${it.qty} (nhà trồng ${home})${ok ? '✓' : '⚠️'}`;
-                }).join(' · ')} — giá hời ×{order.bonus} cho nông sản nhà trồng, hạn ngày {order.dueDay} (còn {Math.max(0, order.dueDay - day)} ngày)
+                }).join(' · ')} — giá hời ×{String(order.bonus).replace('.', ',')}{order.bonus > 1.25 ? ' (quán đông cuối tuần)' : ''} cho nông sản nhà trồng, hạn ngày {order.dueDay} (còn {Math.max(0, order.dueDay - day)} ngày)
               </div>
             </Callout>
           ) : level >= FARM_ORDER_UNLOCK ? (

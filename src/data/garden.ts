@@ -14,7 +14,7 @@
  * Chỉ có dữ liệu và hàm thuần; hành động đổi trạng thái nằm ở `core/slices/garden`.
  */
 import type { Weather } from './weather';
-import { dateOfDoy, YEAR_DAYS } from './calendar';
+import { dateOfDoy, isWeekend, YEAR_DAYS } from './calendar';
 import { simRng } from '../core/rand';
 
 /** Mở trang trại từ cấp này. */
@@ -312,6 +312,9 @@ export interface FarmOrder {
 }
 
 export const FARM_ORDER_BONUS = 1.25;
+/** Đơn tới hạn Thứ 7/CN: quán xóm đông khách cuối tuần, trả hời hơn (GĐ536). */
+export const FARM_ORDER_WEEKEND_BONUS = 1.35;
+export const farmOrderBonus = (dueDay: number) => (isWeekend(dueDay) ? FARM_ORDER_WEEKEND_BONUS : FARM_ORDER_BONUS);
 /** Đơn sống chừng này ngày rồi tới hạn. */
 export const FARM_ORDER_DAYS = 2;
 /** Mở đơn quán xóm từ cấp này (khi trại đã khang trang). */
@@ -331,7 +334,7 @@ export function makeFarmOrder(day: number, rng: () => number = simRng()): FarmOr
     const productId = pool.splice(Math.floor(rng() * pool.length), 1)[0];
     items.push({ productId, qty: 3 + Math.floor(rng() * 6) });
   }
-  return { id: farmOrderId++, from: FARM_BUYERS[Math.floor(rng() * FARM_BUYERS.length)], items, dueDay: day + FARM_ORDER_DAYS, bonus: FARM_ORDER_BONUS };
+  return { id: farmOrderId++, from: FARM_BUYERS[Math.floor(rng() * FARM_BUYERS.length)], items, dueDay: day + FARM_ORDER_DAYS, bonus: farmOrderBonus(day + FARM_ORDER_DAYS) };
 }
 
 export const emptyPlot = (): Plot => ({ crop: null, growth: 0, wateredDay: 0 });
