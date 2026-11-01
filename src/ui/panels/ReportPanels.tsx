@@ -38,6 +38,7 @@ import { weekendRecap } from '../../data/weekendRestock';
 import { weekendQuestTarget } from '../../data/quests';
 import { comboById } from '../../data/combos';
 import { branchMorningPlan } from '../../data/branchMorning';
+import { feedCost, landmark2Progress, landmarkProgress } from '../../data/landmark';
 import { storageUsed } from '../../core/gameTypes';
 import { hiepLucEligible, HIEPLUC_COC, HIEPLUC_MIN } from '../../data/hiepLuc';
 import { earlyUnlockTeaser } from '../../data/unlockMap';
@@ -633,6 +634,16 @@ export function MorningPanel() {
   if (xoiCungAct) candidates.push(xoiCungAct);
   for (const { cs, def } of dueContracts) candidates.push({ icon: '📦', text: `${def!.title}: giao trước ngày ${cs.dueDay}`, panel: 'contracts', danger: cs.dueDay <= day, priority: cs.dueDay <= day ? 0 : 2 });
   if (biz.loan && biz.loan.dueDay - day <= 3) candidates.push({ icon: '🏦', text: `Nợ ngân hàng sắp hạn (${Math.max(0, biz.loan.dueDay - day)} ngày)`, panel: 'business', danger: true, priority: 0 });
+  // GĐ741 — góp vật liệu công trình vào việc sáng: lượt góp hàng ngày nằm sâu trong panel, đưa lên Sổ đầu
+  // ngày để góp đều (càng sớm hưởng lâu). Cả hai công trình xong thì không còn việc này.
+  if (biz.landmark && biz.landmark.lastContributeDay < day) {
+    const p1 = landmarkProgress(biz.landmark.contributions);
+    const p2 = landmark2Progress(biz.landmark.contributions);
+    const isP2 = p1.done;
+    const idx = isP2 ? (p2?.index ?? 0) : p1.index;
+    const proj = isP2 ? 'Đèn Đường Ngõ 1' : 'Sân chơi';
+    candidates.push({ icon: isP2 ? '💡' : '🏗️', text: `Góp vật liệu ${proj} hôm nay (${formatMoney(feedCost(idx, level))})`, panel: 'landmark', danger: false, priority: 3 });
+  }
   if (hiepLucEligible(branch, biz.quanNuoc, level) && !(biz.hiepLuc?.active && biz.hiepLuc.m === monthOf(day))) candidates.push({ icon: '🤝', text: 'Lập đối tác chi nhánh × quán nước', panel: 'morning', danger: false, priority: 3 });
   const se = seasonEvent(day);
   if (se) {

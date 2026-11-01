@@ -1,3 +1,4 @@
+import { formatMoney } from './products';
 /**
  * Công trình khu phố (GĐ40) — "Sân Chơi Trẻ Em": một mục tiêu dài hạn (nhiều tuần)
  * có nhịp "mỗi ngày góp một lần", kéo dài cảm giác tiến bộ chậm rãi và kết thúc bằng
@@ -143,4 +144,29 @@ export function landmarkNightLine(contributions: number): string | null {
 export function landmarkNightTrafficFactor(contributions: number): number {
   const p = landmark2Progress(contributions);
   return p?.done ? LANDMARK2_NIGHT_TRAFFIC : 1;
+}
+
+export interface LandmarkDayAction { icon: string; text: string; panel: string; danger: boolean; priority: number }
+
+/** GĐ741 — việc sáng "góp vật liệu công trình" (thuần đọc): hiện khi hôm nay chưa góp và còn công trình
+ *  chưa xong. Đưa lượt góp hàng ngày lên Sổ đầu ngày — góp đều, sớm hưởng lâu. */
+export function landmarkDayAction(
+  landmark: { contributions: number; lastContributeDay: number },
+  day: number,
+  level: number,
+): LandmarkDayAction | null {
+  if (landmark.lastContributeDay >= day) return null;
+  const p1 = landmarkProgress(landmark.contributions);
+  const p2 = landmark2Progress(landmark.contributions);
+  if (p1.done && p2?.done) return null;
+  const isP2 = p1.done;
+  const idx = isP2 ? (p2?.index ?? 0) : p1.index;
+  const proj = isP2 ? 'Đèn Đường Ngõ 1' : 'Sân chơi';
+  return {
+    icon: isP2 ? '💡' : '🏗️',
+    text: `Góp vật liệu ${proj} hôm nay (${formatMoney(feedCost(idx, level))})`,
+    panel: 'landmark',
+    danger: false,
+    priority: 3,
+  };
 }

@@ -5,6 +5,7 @@ import {
   feedCost,
   landmark2Progress,
   landmarkCustomerFactor,
+  landmarkDayAction,
   landmarkNightLine,
   landmarkNightTrafficFactor,
   landmarkProgress,
@@ -255,6 +256,22 @@ describe('persistence — biz.landmark qua snapshot/applySnapshot', () => {
   });
 });
 
+
+describe('GĐ741 — việc sáng góp vật liệu công trình', () => {
+  it('hôm nay chưa góp → có việc; đã góp hôm nay → không; cả hai xong → không', () => {
+    const lm = { contributions: 10, lastContributeDay: 9 };
+    const act = landmarkDayAction(lm, 10, 5);
+    expect(act).not.toBeNull();
+    expect(act!.text).toContain('Sân chơi');
+    expect(act!.panel).toBe('landmark');
+    expect(landmarkDayAction({ contributions: 10, lastContributeDay: 10 }, 10, 5)).toBeNull();
+    expect(landmarkDayAction({ contributions: 60, lastContributeDay: 9 }, 10, 5)).toBeNull(); // cả hai xong
+    // sân chơi xong → việc sáng chuyển sang dự án đèn
+    const p2 = landmarkDayAction({ contributions: 30, lastContributeDay: 9 }, 10, 5);
+    expect(p2!.text).toContain('Đèn Đường Ngõ 1');
+    expect(p2!.icon).toBe('💡');
+  });
+});
 
 describe('GĐ736 — dòng soi sáng đèn trong tab đêm', () => {
   it('3 trạng thái: mời dự án / đang góp còn N lượt / đã thắp sáng payoff', () => {
