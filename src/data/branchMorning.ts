@@ -1,5 +1,5 @@
 import type { BranchState } from './branches';
-import { branchStaffWish, nightNeed, onShift, restingOn, shelfTotal, hasAlcohol } from './branches';
+import { BRANCH_SHIFT_NAME, branchStaffWish, nightNeed, onShift, restingOn, shelfTotal, hasAlcohol } from './branches';
 import { licenseStatus, type LicenseId } from './licenses';
 
 // ───── Tiện lợi 24/7: việc hôm nay (GĐ72) ─────
@@ -43,11 +43,14 @@ export function branchMorningPlan(
   if (shelfTotal(branch.shelf) + storageCases < need) {
     items.push({ icon: '🕳️', text: `Kệ ${shelfTotal(branch.shelf)} món + kho chung ${storageCases} thùng < nhu cầu đêm (~${need}) — châm hàng hôm nay kẻo đêm hết`, danger: false });
   }
-  // GĐ727 — nhân viên xin nghỉ hôm nay (băm riêng theo seed ván; seed không truyền = không bao giờ có — giữ hành vi cũ cho test cũ)
+  // GĐ727+731 — nhân viên xin nghỉ/chuyển ca hôm nay (băm riêng theo seed ván; seed không truyền = không bao giờ có — giữ hành vi cũ cho test cũ)
   if (seed !== undefined) {
     const wish = branchStaffWish(branch, seed, day);
     if (wish && !restingOn(branch, wish.id, day) && branch.wishDenied?.[wish.id] !== day) {
-      items.push({ icon: '😴', text: `${wish.name} xin nghỉ hôm nay (mệt/nhà việc) — cho nghỉ hoặc giữ lại ở 👥 Nhân viên`, danger: false });
+      const body = wish.kind === 'ca'
+        ? `xin chuyển sang ${BRANCH_SHIFT_NAME[wish.toShift ?? 'afternoon']} (nhà xa/học hành) — cho chuyển hoặc giữ lại ở 👥 Nhân viên`
+        : `xin nghỉ hôm nay (mệt/nhà việc) — cho nghỉ hoặc giữ lại ở 👥 Nhân viên`;
+      items.push({ icon: wish.kind === 'ca' ? '⏰' : '😴', text: `${wish.name} ${body}`, danger: false });
     }
   }
   return items;

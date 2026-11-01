@@ -600,7 +600,7 @@ export interface GameState {
   /** GĐ727 — cho nhân viên xin nghỉ nghỉ HÔM NAY (ca nay thiếu người). */
   restBranchStaffToday: (id: number) => void;
   /** GĐ728 — giữ lại nhân viên xin nghỉ: mệt thêm một bậc, ẩn dòng wish hôm nay. */
-  denyStaffRest: (id: number) => void;
+  denyStaffRest: (id: number, bump?: number) => void;
   /** Đào tạo nhân viên: tốn tiền, cộng kinh nghiệm, mỗi người một buổi mỗi ngày. */
   trainStaff: (id: number) => void;
   /** Thăng chức nhân viên tiệm chính (thu ngân → trưởng quầy → quản lý). */

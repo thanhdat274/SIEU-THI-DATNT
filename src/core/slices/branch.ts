@@ -385,14 +385,14 @@ export const createBranchSlice = (set: SetState, get: GetState): Pick<GameState,
   },
   // GĐ728 — GIỮ lại người xin nghỉ: họ làm trong buồn → mệt thêm một bậc ngay (STAFF_WISH_DENY_FATIGUE),
   // wishDenied[id] = ngày để ẩn dòng xin nghỉ trong Sổ đầu ngày. Rủi ro mệt cao là cơ chế có sẵn (SLOW/QUIT).
-  denyStaffRest: (id) => {
+  denyStaffRest: (id, bump = STAFF_WISH_DENY_FATIGUE) => {
     const b = get().branch;
     const st = b?.staff.find((it) => it.id === id);
     if (!b || !st) return;
     const fatigue = { ...(b.fatigue ?? {}) };
-    fatigue[id] = Math.min(100, Math.round((b.fatigue?.[id] ?? 0) + STAFF_WISH_DENY_FATIGUE));
+    fatigue[id] = Math.min(100, Math.round((b.fatigue?.[id] ?? 0) + bump));
     set({ branch: { ...b, fatigue, wishDenied: { ...(b.wishDenied ?? {}), [id]: get().day } } });
-    get().notify(`😔 ${st.name} hơi buồn vì không được nghỉ — mệt thêm ${STAFF_WISH_DENY_FATIGUE}`);
+    get().notify(bump > 0 ? `😔 ${st.name} hơi buồn vì không được nghỉ — mệt thêm ${bump}` : `😶 ${st.name} ngại ngùng chấp nhận — thôi để xem ca sau`);
   },
   // GĐ727 — cho nghỉ HÔM NAY (nhân viên xin nghỉ): ca nay thiếu người thật, tối nay mệt được xả (restingOn hôm nay → fatigue 0)
   restBranchStaffToday: (id) => {

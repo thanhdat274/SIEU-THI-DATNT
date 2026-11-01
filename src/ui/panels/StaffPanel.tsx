@@ -276,8 +276,12 @@ function BranchRoster() {
                 <button style={staffSt.train} title={`Tốn 1 ngày lương, giảm ${BONUS_RELIEF} mệt`} onClick={() => bonusBranchStaff(x.id)}>🎁 Thưởng</button>
                 {wish?.id === x.id && branch.wishDenied?.[x.id] !== day && (
                   <>
-                    <button style={{ ...staffSt.train, background: '#f1c40f', color: '#3a3a4d', fontWeight: 700 }} title="Ca nay thiếu người thật — nhưng tối nay người được xả mệt" onClick={() => restBranchStaffToday(x.id)}>😴 Cho nghỉ hôm nay</button>
-                    <button style={staffSt.train} title="Mệt thêm một bậc, người hơi buồn" onClick={() => denyStaffRest(x.id)}>😔 Giữ lại</button>
+                    {wish.kind === 'nghỉ' ? (
+                      <button style={{ ...staffSt.train, background: '#f1c40f', color: '#3a3a4d', fontWeight: 700 }} title="Ca nay thiếu người thật — nhưng tối nay người được xả mệt" onClick={() => restBranchStaffToday(x.id)}>😴 Cho nghỉ hôm nay</button>
+                    ) : (
+                      <button style={{ ...staffSt.train, background: '#f1c40f', color: '#3a3a4d', fontWeight: 700 }} title={`Chuyển sang ${BRANCH_SHIFT_NAME[wish.toShift ?? 'afternoon']} — dùng action đổi ca có sẵn`} onClick={() => setBranchShift(x.id, wish.toShift ?? 'afternoon')}>⏰ Chuyển ca</button>
+                    )}
+                    <button style={staffSt.train} title={wish.kind === 'nghỉ' ? 'Mệt thêm một bậc, người hơi buồn' : 'Không sao — để xem ca sau'} onClick={() => denyStaffRest(x.id, wish.kind === 'nghỉ' ? 10 : 0)}>😔 Giữ lại</button>
                   </>
                 )}
                 <button style={staffSt.train} disabled={branch.restDay?.[x.id] === day + 1} title="Nghỉ ngày mai không lương, hồi hết mệt" onClick={() => restBranchStaff(x.id)}>🛌 Nghỉ mai</button>

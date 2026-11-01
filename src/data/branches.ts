@@ -233,15 +233,22 @@ function wishRoll(seed: number, n: number, salt: number): number {
   return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
 }
 /** Nhân viên chi nhánh xin nghỉ HÔM NAY (ngày `day`): 15% ngày có người xin, chọn người theo hash.
- *  Người đang nghỉ hôm nay thì không xin nữa. Người chơi quyết: cho nghỉ (restBranchStaffToday —
- *  ca nay thiếu người thật) hoặc giữ lại (không bấm — mệt dồn tự nhiên, có rủi ro bỏ việc sẵn có). */
-export function branchStaffWish(branch: BranchState | null, seed: number, day: number): { id: number; name: string } | null {
+ *  GĐ731: 60% xin NGHỈ (restBranchStaffToday) · 40% xin CHUYỂN CA sang ca khác (setBranchShift có sẵn).
+ *  Người đang nghỉ hôm nay thì không xin nữa. Người chơi quyết ở Sổ đầu ngày/Bảng nhân viên;
+ *  giữ lại = không bấm (xin nghỉ → mệt thêm qua denyStaffRest; xin ca → không sao, để lần sau). */
+export function branchStaffWish(branch: BranchState | null, seed: number, day: number): { id: number; name: string; kind: 'nghỉ' | 'ca'; toShift?: Shift } | null {
   if (!branch?.open || !branch.staff.length) return null;
   if (wishRoll(seed, day, 4409) >= STAFF_WISH_CHANCE) return null;
   const cands = branch.staff.filter((st) => !restingOn(branch, st.id, day));
   if (!cands.length) return null;
   const pick = cands[Math.floor(wishRoll(seed, day, 4409 + day * 7) * cands.length)];
-  return { id: pick.id, name: pick.name };
+  const kindRoll = wishRoll(seed, day, 4409 + day * 11);
+  if (kindRoll >= 0.6) {
+    const others = BRANCH_SHIFTS.filter((sh) => sh !== pick.shift);
+    const toShift = others[Math.floor(wishRoll(seed, day, 4409 + day * 13) * others.length)] ?? 'afternoon';
+    return { id: pick.id, name: pick.name, kind: 'ca', toShift };
+  }
+  return { id: pick.id, name: pick.name, kind: 'nghỉ' };
 }
 
 // ── Quản lý cửa hàng ──

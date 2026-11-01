@@ -618,7 +618,7 @@ export function MorningPanel() {
     .filter(({ cs, def }) => def && cs.dueDay <= day + 1);
   // GĐ76: gộp mọi nhắc chuẩn bị ngày thành một danh sách ưu tiên (danger trước, khử trùng, cap 7).
   const candidates: DayAction[] = [];
-  for (const c of branchChores) candidates.push({ icon: c.icon, text: c.text, panel: c.text.includes('xin nghỉ hôm nay') ? 'staff' : 'branch', danger: c.danger, priority: 1 });
+  for (const c of branchChores) candidates.push({ icon: c.icon, text: c.text, panel: c.text.includes('xin nghỉ hôm nay') || c.text.includes('xin chuyển sang') ? 'staff' : 'branch', danger: c.danger, priority: 1 });
   // GĐ189: quán nước thiếu kho — trước giờ chỉ là thẻ thụ động, giờ thành việc sáng ưu tiên (nạp đồ uống).
   const quanAction = quanNuocDayAction(quanHealth, day, weather);
   if (quanAction) candidates.push(quanAction);
