@@ -1,5 +1,5 @@
 import { dailyQuests, betBonusMoney, betStatus, BET_TIERS, BET_QUEST_ID, betCoreSetProgress, storyQuest } from '../../data/quests';
-import { levelUpToast } from '../../data/onboarding';
+import { fitList, levelUpToast } from '../../data/onboarding';
 import { MAX_LEVEL, unlocksAt, xpToNext } from '../../data/levels';
 import { formatMoney } from '../../data/products';
 import { SKILLS, skillPoints, TITLES, PRESTIGE_TITLES, type TitleContext } from '../../data/titles';
@@ -161,7 +161,7 @@ export const createProgressSlice = (set: SetState, get: GetState): Pick<GameStat
     const all = [...fresh, ...freshPrestige];
     if (!all.length) return;
     set({ titles: [...s.titles, ...all.map((t) => t.id)] });
-    if (s.day > 1 || freshPrestige.length) s.notify(`🏅 Danh hiệu mới: ${all.map((t) => `${t.icon} ${t.name}`).join(', ')}`);
+    if (s.day > 1 || freshPrestige.length) s.notify(fitList('🏅 Danh hiệu mới: ', all.map((t) => `${t.icon} ${t.name}`)));
     playSfx('achieve');
   },
   claimQuest: (id) => {
