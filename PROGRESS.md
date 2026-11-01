@@ -21,6 +21,7 @@
 
 ## Trạng thái hiện tại (01/11/2026)
 
+- **GĐ673:** QA khung cố định GĐ662 trên nhánh mobile THẬT (nạp lại trang đúng cỡ màn, IS_MOBILE tính đúng lúc nạp): tablet dọc 768×1024 → panel 744×928 gần full-màn, điện thoại ngang 812×375 → 788×279, nội dung cuộn bên trong, layoutAudit clipped 0 cả hai, dock HUD không bị che. Nhánh desktop/mobile của khung đều đã xác nhận trên cỡ máy thật. Không đổi mã.
 - **GĐ671:** QA luồng cố định trọn vẹn trên HEAD (save trắng GĐ670): tối 22h → ngủ → sang ngày 2 đúng 06:00, bảng tổng kết ngày 1 tự mở với 3 tab (Tổng quan/Theo món/Mai tiệm có gì — doanh thu 82.000đ), chuyển tab + đóng không lỗi, 0 lỗi console. Chốt: luồng ngày (sáng→bán→ngủ→tổng kết) sạch trên HEAD.
 - **GĐ670:** 🧭 AUDIT 10-GĐ (GĐ661–670) — mọi hàng ngân sách ĐẠT: bundle 596,7/597 KB · chunk 253/255 · test 243 s/≤5 phút · HUD 20 nút (=trần) · thông báo ngày 1 đo 9 (trần 9) · tỉ số thưởng/lãi 0,99/0,89/0,64 (trần 1,0/0,92/0,67) · rò rỉ 0%. QA trình duyệt trên save trắng mới (HEAD): mở cửa ~4 s → bán món đầu ~28 s thực (tổng từ màn khởi đầu ~37 s, mục tiêu ≤5 phút ✅); FPS gfx=low ~74 khi có khách (≥30 ✅); 16 panel hub + layoutAudit clipped 0, 0 lỗi console. Rà tính năng (Leader + Designer): không gộp/bỏ gì đợt này — mỗi nút HUD còn đường đo riêng, không chồng chéo mới; nợ duy nhất là độ rối BranchPanel (nợ kỹ thuật, không phải tính năng thừa). Co-op vòng ngày trên trình duyệt thật vẫn mở (GĐ665/668 — môi trường IAB không giữ WS nền); đã khoá bằng test checkpoint.
 - **GĐ669:** ⏱️ lấy lại biên thời gian test: `npm run test` đo 300,1 s — SÁT trần ≤5 phút. Tách bài sim cấp 5 × 30 ngày (~170 s, dài nhất) khỏi `economySim.test.ts` sang `economySimL5.test.ts` — vitest chạy file song song, không đụng số mốc/trần/golden (trần 1.0 cấp 5 chuyển nguyên vẹn sang file mới). Cả bộ: 300 → **243 s**, 286 file / 2731 test xanh; nút thắt còn lại là `economySimL50` (230 s, 1 `it` 28 ngày — không tách được thêm không đổi độ dài sim).
@@ -130,3 +131,4 @@
 - GĐ670: audit 10-GĐ ĐẠT (bundle/test/HUD/thông báo/tỉ số/FPS/save trắng/16 panel); prune: không bỏ gì, nợ BranchPanel ghi lại.
 - GĐ671: luồng cố định trọn vẹn trên HEAD (ngủ → tổng kết 3 tab) — sạch, 0 lỗi console.
 - GĐ672: dồn chi tiết GĐ662–665 sang docs/progress-archive/PROGRESS-GD662-665.md; PROGRESS về 27,4 KB.
+- GĐ673: khung panel trên tablet dọc + điện thoại ngang (nhánh mobile thật) — đạt, không đổi mã.
