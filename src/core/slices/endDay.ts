@@ -35,7 +35,7 @@ import type { CookingStation } from '../../data/recipes';
 import { COMPLAINTS_FOR_SURPRISE, isAlcohol, LICENSE_FINE, LICENSE_GRACE, licenseById, licenseStatus, missingLicenses, newInspection, RENEW_WARN_DAYS, requiredLicenses, SURPRISE_INSPECTION, SUSPEND_AFTER } from '../../data/licenses';
 import { staffDayEnd } from '../../data/staffTraits';
 import { BUZZ_DAYS, CRISIS_MUL, POST_CAP, SOCIAL_UNLOCK, socialDayEnd, type SocialPost } from '../../data/social';
-import { ANIMAL_ORDER, farmCritChance, farmhandChores, FARM_ORDER_UNLOCK, farmOrderCapacity, farmOrderProduce, gardenNight, makeFarmOrder, type AnimalKind } from '../../data/garden';
+import { ANIMAL_ORDER, farmCritChance, farmhandChores, FARM_ORDER_UNLOCK, farmOrderCapacity, farmOrderNews, farmOrderProduce, gardenNight, makeFarmOrder, type AnimalKind } from '../../data/garden';
 import { logAnalyticsDay } from '../../data/analytics';
 import { appRating } from '../../data/online';
 import { onlineDayEnd } from './online';
@@ -188,7 +188,7 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
   if (!garden.farmOrder && s.level >= FARM_ORDER_UNLOCK) {
     const order = makeFarmOrder(s.day + 1, undefined, farmOrderProduce(garden), farmOrderCapacity(garden));
     garden = { ...garden, farmOrder: order };
-    gardenNews.push(`📦 ${order.from} đặt mua nông sản, hạn ngày ${order.dueDay} — xem ở bảng Trang trại`);
+    gardenNews.push(farmOrderNews(order));
   }
   // Sổ nợ: nợ lâu thì nhắc chủ tiệm, quá hạn chót coi như mất
   const debts: Record<string, Debt> = {};

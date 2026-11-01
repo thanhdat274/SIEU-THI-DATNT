@@ -138,3 +138,4 @@
 - GĐ546: Chữ inline tối thiểu 11px: 7 chỗ 9–10px (lịch, nhãn biểu đồ giờ/ngày, badge nhập hàng, pill kinh doanh) nâng lên 11 + test khoá (bỏ qua cỡ SVG đơn vị thế giới). QA sandbox 375px: lịch không tràn (scrollWidth 375). Biểu đồ báo cáo chưa QA mắt (save thử chưa có lịch sử). 2654 test xanh.
 - GĐ547: QA biểu đồ báo cáo 375px (render thẳng qua Vite, 17 giờ số khách 3 chữ số): cột Khách theo giờ tràn 7px, mất 22h (có từ trước, chữ 9–10px che đi). Sửa: >12 giờ thì số khách chỉ ghi giờ đông nhất (tooltip giữ đủ), nhãn giờ chẵn, cột minWidth 0 → vừa 375. Biểu đồ 14 ngày đạt. hourChartDense.test.ts; 2656 test xanh.
 - GĐ548: Rà các biểu đồ cột còn lại ở 375px: biểu đồ ca tiện lợi đã minWidth 0; 'Nhu cầu quầy' 6 nhãn (rộng nhất 42px) cần ~272/317px — đạt, không cần sửa.
+- GĐ549: Tin sáng đơn quán xóm cuối tuần báo luôn 'cuối tuần trả ×1,35' (farmOrderNews, ≤90 ký tự, tên quán dài nhất 77). Test trong farmOrderWeekend.test.ts; 2657 test xanh.

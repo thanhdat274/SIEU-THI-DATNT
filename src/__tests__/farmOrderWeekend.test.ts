@@ -64,3 +64,16 @@ describe('số lượng đơn theo sức trại (GĐ544)', () => {
     expect(makeFarmOrder(3, () => 0.99).items.every((it) => it.qty === 8)).toBe(true);
   });
 });
+
+describe('tin đơn quán xóm (GĐ549)', () => {
+  it('đơn cuối tuần báo giá hời, đơn thường chỉ đường tới bảng; ≤90 ký tự', async () => {
+    const { farmOrderNews, FARM_BUYERS } = await import('../data/garden');
+    const longest = FARM_BUYERS.reduce((a, b) => (b.length > a.length ? b : a));
+    const we = farmOrderNews({ id: 1, from: longest, items: [], dueDay: 1234, bonus: FARM_ORDER_WEEKEND_BONUS });
+    const wd = farmOrderNews({ id: 2, from: longest, items: [], dueDay: 1234, bonus: FARM_ORDER_BONUS });
+    expect(we).toContain('cuối tuần trả ×1,35');
+    expect(wd).toContain('xem ở bảng Trang trại');
+    expect(we.length).toBeLessThanOrEqual(90);
+    expect(wd.length).toBeLessThanOrEqual(90);
+  });
+});

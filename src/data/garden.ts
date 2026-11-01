@@ -16,6 +16,7 @@
 import type { Weather } from './weather';
 import { dateOfDoy, isWeekend, YEAR_DAYS } from './calendar';
 import { simRng } from '../core/rand';
+import { fmtMul } from './products';
 
 /** Mở trang trại từ cấp này. */
 export const GARDEN_UNLOCK = 8;
@@ -324,6 +325,10 @@ export const FARM_ORDER_UNLOCK = 16;
 export const FARM_BUYERS = ['Quán Cơm Bà Ba', 'Lò Bánh Chị Hoa', 'Quán Nhậu Anh Tư', 'Tiệm Bánh Mì Chú Sáu', 'Cơm Tấm Cô Sáu', 'Quán Chè Bà Tư', 'Lẩu Dê Anh Sáu'];
 /** Món quán đặt (nông sản nhà trồng/nhà nuôi). */
 export const FARM_ORDER_POOL = ['trung', 'trung_vit', 'trung_goos', 'sua_tuoi', 'sua_de', 'rau', 'bap', 'mia', 'traicay', 'x_chuoi', 'x_vai', 'x_buoi', 'x_thit_heo', 'thit_ga_dt'];
+
+/** Tin sáng khi quán xóm đặt đơn; đơn cuối tuần báo luôn giá hời (GĐ549). */
+export const farmOrderNews = (o: FarmOrder) =>
+  `📦 ${o.from} đặt mua nông sản, hạn ngày ${o.dueDay} — ${o.bonus > FARM_ORDER_BONUS ? `cuối tuần trả ×${fmtMul(o.bonus)}` : 'xem ở bảng Trang trại'}`;
 
 let farmOrderId = 1;
 /** Món trong pool đơn mà trại kịp làm ra ≥3 (số lượng đơn nhỏ nhất) trong hạn đơn: hàng nhà trồng
