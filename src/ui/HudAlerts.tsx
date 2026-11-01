@@ -1,3 +1,6 @@
+import { useEffect, useState } from 'react';
+import { ASK_RESOLVE_REAL_S } from '../data/counterDeals';
+import { answerAsk, useCounterAsk, askWallElapsed } from '../core/counterAsk';
 import { branchAlerts } from '../data/branches';
 import { rivalUndercutAlerts, STORIES } from '../data/biz';
 import { closeStory, REGULAR_NAMES } from '../core/biz';
@@ -79,3 +82,29 @@ export function FestivalBanner() {
   );
 }
 
+/** GĐ636: chuyển từ Hud (nạp lười cùng các cảnh báo khác). */
+export function CounterAskAlert() {
+  const ask = useCounterAsk((s) => s.ask);
+  // GĐ122 — đồng hồ THỰC cho khách đang bị treo câu hỏi: khách vẫn mất kiên nhẫn theo giây thật
+  // (khác giờ game đang dừng), hiện còn bao nhiêu giây nữa sẽ tự chốt theo mặc định — để người chơi
+  // biết hậu quả trước khi muộn (không phạt bất ngờ), và khớp cùng ngân sách bong bóng 3D.
+  const rem = Math.ceil(ASK_RESOLVE_REAL_S - askWallElapsed());
+  const [, force] = useState(0);
+  useEffect(() => {
+    if (!ask) return;
+    const id = setInterval(() => force((n) => n + 1), 400);
+    return () => clearInterval(id);
+  }, [ask]);
+  if (!ask) return null;
+  return (
+    <div className="hud-alert phone ringing">
+      {ask.icon} <b>{ask.who}</b> {ask.text}
+      <small> · tiệm tạm dừng chờ cậu chọn · còn ~{Math.max(1, rem)}s nữa khách tự chốt theo mặc định</small>
+      <span className="hud-alert-actions">
+        {ask.options.map((label, i) => (
+          <button key={label} className={`hud-btn${i === 0 ? ' primary' : ''}`} onClick={() => answerAsk(i)}>{label}</button>
+        ))}
+      </span>
+    </div>
+  );
+}

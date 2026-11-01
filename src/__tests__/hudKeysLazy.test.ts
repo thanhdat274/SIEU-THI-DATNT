@@ -9,3 +9,10 @@ describe('GĐ635: bảng phím tắt nạp lười', () => {
     for (const k of ['N', 'B', 'K', 'O', 'Esc']) expect(keys).toContain(k);
   });
 });
+
+describe('GĐ636: cảnh báo khách hỏi ở quầy nạp lười', () => {
+  it('Hud không định nghĩa CounterAskAlert; HudAlerts export nó', () => {
+    expect(readFileSync('src/ui/Hud.tsx', 'utf8')).not.toContain('function CounterAskAlert');
+    expect(readFileSync('src/ui/HudAlerts.tsx', 'utf8')).toContain('export function CounterAskAlert');
+  });
+});

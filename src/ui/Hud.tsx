@@ -24,7 +24,6 @@ import { isFairOpen } from '../data/fairmerchant';
 import { lifetimeRegularVisits, vipTierOf, EMOTIONAL_FRIENDSHIP } from '../data/regularTrust';
 import { relTier } from '../data/supplierRel';
 import { serviceById } from '../data/services';
-import { ASK_RESOLVE_REAL_S } from '../data/counterDeals';
 import { dossierEarnedCount, type DossierInput } from '../data/dossier';
 import { describeHours, goldenHourBands, goldenPrepWants, inGoldenHour, minutesToGolden, nextGoldenBand } from '../data/rhythm';
 import { skillPoints } from '../data/titles';
@@ -37,7 +36,6 @@ import { useSession } from '../net/session';
 import { initAudio, isMuted, isMusic, setMuted, setMusic } from '../core/audio';
 import { Panels } from './Panels';
 import { hubFirst, hubOf } from './hubs';
-import { answerAsk, useCounterAsk, askWallElapsed } from '../core/counterAsk';
 import { GFX_CYCLE, GFX_LABEL, gfxStatus, setGfxChoice } from '../render/graphicsQuality';
 import './hud.css';
 const SurpriseAlert = lazy(() => import('./SurpriseAlert').then((m) => ({ default: m.SurpriseAlert })));
@@ -55,6 +53,7 @@ import { tutorialActive, tutorialStep } from './tutorialSteps';
 const Tutorial = lazy(() => import('./Tutorial').then((m) => ({ default: m.Tutorial })));
 const VendorAlert = lazy(() => import('./VendorAlert').then((m) => ({ default: m.VendorAlert })));
 const HudKeys = lazy(() => import('./HudKeys').then((m) => ({ default: m.HudKeys }))); // GĐ635: bảng phím chỉ nạp khi mở
+const CounterAskAlert = lazy(() => import('./HudAlerts').then((m) => ({ default: m.CounterAskAlert }))); // GĐ636
 const ChapterDialogue = lazy(() => import('./ChapterDialogue').then((m) => ({ default: m.ChapterDialogue })));
 
 /** Màn hình cảm ứng: không có phím, thay chữ phím [X] bằng biểu tượng chạm. */
@@ -449,7 +448,7 @@ ${forecastText}`}>
         <Suspense fallback={null}><ExpiryAlert /></Suspense>
         <Suspense fallback={null}><UnlockActBanner /></Suspense>
         <Suspense fallback={null}><VendorAlert /></Suspense>
-        <CounterAskAlert />
+        <Suspense fallback={null}><CounterAskAlert /></Suspense>
         <Suspense fallback={null}><FestivalBanner /></Suspense>
         <Suspense fallback={null}><Tutorial review={helpTutorial} onDone={() => setHelpTutorial(false)} /></Suspense>
         <Suspense fallback={null}><SurpriseAlert /></Suspense>
@@ -765,28 +764,3 @@ Bước ${stepNo}/${STORY_STEPS.length} của cốt truyện · bấm xem Nhiệ
 }
 
 /** Khách ở quầy xin ghi sổ / mặc cả / thiếu tiền lẻ: chọn nhanh, thế giới dừng chờ chủ quyết định (GĐ102). */
-function CounterAskAlert() {
-  const ask = useCounterAsk((s) => s.ask);
-  // GĐ122 — đồng hồ THỰC cho khách đang bị treo câu hỏi: khách vẫn mất kiên nhẫn theo giây thật
-  // (khác giờ game đang dừng), hiện còn bao nhiêu giây nữa sẽ tự chốt theo mặc định — để người chơi
-  // biết hậu quả trước khi muộn (không phạt bất ngờ), và khớp cùng ngân sách bong bóng 3D.
-  const rem = Math.ceil(ASK_RESOLVE_REAL_S - askWallElapsed());
-  const [, force] = useState(0);
-  useEffect(() => {
-    if (!ask) return;
-    const id = setInterval(() => force((n) => n + 1), 400);
-    return () => clearInterval(id);
-  }, [ask]);
-  if (!ask) return null;
-  return (
-    <div className="hud-alert phone ringing">
-      {ask.icon} <b>{ask.who}</b> {ask.text}
-      <small> · tiệm tạm dừng chờ cậu chọn · còn ~{Math.max(1, rem)}s nữa khách tự chốt theo mặc định</small>
-      <span className="hud-alert-actions">
-        {ask.options.map((label, i) => (
-          <button key={label} className={`hud-btn${i === 0 ? ' primary' : ''}`} onClick={() => answerAsk(i)}>{label}</button>
-        ))}
-      </span>
-    </div>
-  );
-}
