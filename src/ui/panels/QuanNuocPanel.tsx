@@ -170,6 +170,12 @@ export function QuanNuocPanel() {
                   lương −{formatMoney(last.wages)} · lời ròng <b style={{ color: last.profit >= 0 ? '#2ecc71' : '#e74c3c' }}>{formatMoney(last.profit)}</b>
                 </div>
               )}
+              {last.event === 'brewer' && (
+                <div style={{ fontSize: 12, marginTop: 4, color: '#e67e22' }}>⚙️ Hôm qua máy pha hỏng — quán pha chậm, đã sửa xong.</div>
+              )}
+              {last.event === 'cart' && (
+                <div style={{ fontSize: 12, marginTop: 4, color: '#e67e22' }}>🛺 Hôm qua có xe nước mọc đối diện — khách vắng hơn.</div>
+              )}
               {last.served < last.wanted && (
                 <div style={{ fontSize: 12, marginTop: 4, color: '#e67e22' }}>⚠️ Kho thiếu đồ uống — nhập nước/ngọt/cà phê… để bán đủ.</div>
               )}

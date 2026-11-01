@@ -51,7 +51,14 @@ export interface QuanNuocDay {
   revenue: number; customers: number; served: number; wanted: number; wages: number; short: boolean;
   /** Ly pha chế theo món (GĐ415) và các món thiếu nguyên liệu hôm nay. */
   brewed: Record<string, number>; brewShort: string[];
+  /** GĐ703: sự kiện bất ngờ hôm nay (máy pha hỏng / xe nước đối diện) — không có thì undefined. */
+  event?: QuanNuocEventKind;
 }
+
+/** GĐ703 — sự kiện một ngày ở quán nước: endDay truyền rng (simRng) mới có; không truyền = không sự kiện
+ *  (giữ hành vi cũ cho các test/projection không cần). Xác định hoàn toàn theo seed, không Math.random. */
+export const QUAN_EVENT = { brewer: 0.06, cart: 0.05 };
+export type QuanNuocEventKind = 'brewer' | 'cart';
 
 /** Món đồ uống (category 'drink' trong data/products.ts) đã mở ở `level`, giữ thứ tự bảng mẫu hàng. */
 export const quanNuocDrinkIds = (level: number): string[] =>
@@ -66,21 +73,28 @@ export const quanNuocDrinkIds = (level: number): string[] =>
  *    trong bảng mẫu hàng được rút trước — sort ổn định): ưu tiên tiêu thụ món đang tồn nhiều.
  *  - Doanh thu = served × giá bán TB (trung bình `sell` các món drink đã mở, lấy MỘT lần) × mul.
  *  - Lương luôn trả đủ: wages = staff × QUAN_NUOC_WAGE; short = còn khách muốn mua mà kho hết.
+ *  - GĐ703: truyền `rng` thì có sự kiện — máy pha hỏng (pha được nửa số ly món pha) hoặc xe nước
+ *    đối diện (khách −20%). Hai lần gieo luôn được gọi đủ để thứ tự rng không phụ thuộc thực đơn.
  * Trả về null khi quán chưa mở.
  */
 export function quanNuocDay(
-  q: QuanNuocState, level: number, storage: Record<string, number>, take: (id: string, qty: number) => void, weather?: Weather, day?: number,
+  q: QuanNuocState, level: number, storage: Record<string, number>, take: (id: string, qty: number) => void, weather?: Weather, day?: number, rng?: () => number,
 ): QuanNuocDay | null {
   if (!q.open) return null;
   const drinks = quanNuocDrinkIds(level);
   const opt = QUAN_PRICE_OPTIONS[q.price];
   const menu = cleanMenu(q.menu, level, quanMenuSlots(q));
+  // GĐ703: gieo 2 lần trước — có sự kiện nào không phải phụ thuộc menu.length
+  const r1 = rng?.(), r2 = rng?.();
+  const event: QuanNuocEventKind | undefined =
+    r1 !== undefined && r1 < QUAN_EVENT.brewer && menu.length > 0 ? 'brewer'
+    : r2 !== undefined && r2 < QUAN_EVENT.cart ? 'cart' : undefined;
   // Giá bán trung bình nước chai đã mở: tính một lần rồi nhân hệ số mức giá
   const avgPrice = drinks.length ? drinks.reduce((n, id) => n + productById(id).sell, 0) / drinks.length : 0;
-  const customers = Math.round(45 * opt.traffic * quanTierMul(q) * (1 + 0.15 * q.staff) * weatherMul(weather) * varietyMul(menu.length) * quanWeekendMul(day) * quanMatchMul(day, weather) * quanHotMul(menu, weather, day));
+  const customers = Math.round(45 * opt.traffic * quanTierMul(q) * (1 + 0.15 * q.staff) * weatherMul(weather) * varietyMul(menu.length) * quanWeekendMul(day) * quanMatchMul(day, weather) * quanHotMul(menu, weather, day) * (event === 'cart' ? 0.8 : 1));
   const wanted = Math.ceil(customers * 1.5);
-  // Món pha chế phục vụ trước; khách còn lại mua nước chai
-  const brew = brewMenu(menu, storage, wanted, opt.mul, take);
+  // Món pha chế phục vụ trước; khách còn lại mua nước chai. Máy pha hỏng → pha chậm, nửa số ly món pha
+  const brew = brewMenu(menu, storage, event === 'brewer' ? Math.ceil(wanted / 2) : wanted, opt.mul, take);
   const rest = wanted - brew.total;
   const have = drinks.reduce((n, id) => n + (storage[id] ?? 0), 0);
   const bottled = Math.min(rest, have);
@@ -97,7 +111,7 @@ export function quanNuocDay(
     customers, served, wanted,
     wages: q.staff * QUAN_NUOC_WAGE,
     short: served < wanted,
-    brewed: brew.cups, brewShort: brew.short,
+    brewed: brew.cups, brewShort: brew.short, event,
   };
 }
 

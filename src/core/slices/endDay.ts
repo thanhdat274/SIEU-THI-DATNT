@@ -139,14 +139,15 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
   let quanNuocLast: BizState['quanNuocLast'];
   const quanNews: string[] = [];
   if (s.biz.quanNuoc?.open) {
-    const q = quanNuocDay(s.biz.quanNuoc, s.level, k.storage, (id, qty) => takeStock(k, id, qty).reduce((n, l) => n + l.qty, 0), s.weather, s.day);
+    const q = quanNuocDay(s.biz.quanNuoc, s.level, k.storage, (id, qty) => takeStock(k, id, qty).reduce((n, l) => n + l.qty, 0), s.weather, s.day, simRng());
     if (q) {
       quanRevenue = q.revenue;
       quanWages = q.wages;
-      quanNuocLast = { day: s.day, revenue: q.revenue, served: q.served, wanted: q.wanted, wages: q.wages, profit: q.revenue - q.wages };
+      quanNuocLast = { day: s.day, revenue: q.revenue, served: q.served, wanted: q.wanted, wages: q.wages, profit: q.revenue - q.wages, event: q.event };
       const head = `🧋 Quán nước: ${q.served}/${q.wanted} ly · ${formatMoney(q.revenue)} · lương −${formatMoney(q.wages)}`
         + (s.biz.quanNuoc.hand?.day === s.day ? ` · tự pha ${s.biz.quanNuoc.hand.n} mẻ` : '') + (isQuanMatchDay(s.day, s.weather) ? ' · ⚽ tối có trận' : '');
-      const tail = q.brewShort.length ? ` · thiếu ${quanRecipeById(q.brewShort[0])?.name}${q.brewShort.length > 1 ? ` +${q.brewShort.length - 1}` : ''}` : q.short ? ' · kho thiếu đồ uống, nhập thêm' : '';
+      const tail = q.event === 'brewer' ? ' · ⚙️ máy pha hỏng, pha chậm' : q.event === 'cart' ? ' · 🛺 xe nước mọc đối diện'
+        : q.brewShort.length ? ` · thiếu ${quanRecipeById(q.brewShort[0])?.name}${q.brewShort.length > 1 ? ` +${q.brewShort.length - 1}` : ''}` : q.short ? ' · kho thiếu đồ uống, nhập thêm' : '';
       // Giữ thông báo ≤90 ký tự: dài quá thì phần thiếu chỉ ghi số món
       quanNews.push([...(head + tail)].length <= 90 ? head + tail : head + (q.brewShort.length ? ` · thiếu ${q.brewShort.length} món` : ' · kho thiếu'));
     }

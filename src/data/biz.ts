@@ -1176,7 +1176,7 @@ export interface BizState {
   tiemXoiLast?: { day: number; total: number; cost: number; wages: number; saved: number; /** GĐ486: suất khách ăn tại chỗ. */ dine?: number };
   /** Kết quả ngày vừa rồi của quán nước (để UI hiển thị); chưa từng chạy thì undefined.
    *  wages = tổng lương nhân viên phải trả hôm đó, profit = revenue − wages (lời ròng thật). */
-  quanNuocLast?: { day: number; revenue: number; served: number; wanted: number; wages: number; profit: number };
+  quanNuocLast?: { day: number; revenue: number; served: number; wanted: number; wages: number; profit: number; /** GĐ703: sự kiện hôm qua (máy pha hỏng / xe nước) — bản lưu cũ thiếu thì coi như không có. */ event?: 'brewer' | 'cart' };
   /** Các mốc 'Sổ tay Tiệm' đã nhận thưởng (GĐ36): danh sách ngưỡng món đã bán. Bản lưu cũ thiếu thì coi như []. */
   discoveryClaimed?: number[];
   /** Công trình khu phố (GĐ40) — sân chơi trẻ em: mỗi ngày góp một lần cho tới khi khánh thành.
