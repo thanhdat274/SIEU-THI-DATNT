@@ -71,3 +71,17 @@ describe('GĐ599: Sổ đầu ngày ngày cúng nhắc thêm thợ khi thiếu',
     expect(src).toContain('biz.tiemXoi.staff < TIEM_XOI_MAX_STAFF ?');
   });
 });
+
+describe('GĐ605: đơn trang trại hạn ngày cúng trả như cuối tuần', () => {
+  it('farmOrderBonus ngày cúng ngày thường = WEEKEND_BONUS; tin ghi "ngày cúng", ≤90', async () => {
+    const { farmOrderBonus, farmOrderNews, FARM_ORDER_BONUS, FARM_ORDER_WEEKEND_BONUS } = await import('../data/garden');
+    const { isWeekend } = await import('../data/calendar');
+    const d = Array.from({ length: 120 }, (_, i) => i + 1).find((x) => isXoiCungDay(x) && !isWeekend(x))!;
+    const plain = Array.from({ length: 120 }, (_, i) => i + 1).find((x) => !isXoiCungDay(x) && !isWeekend(x))!;
+    expect(farmOrderBonus(d)).toBe(FARM_ORDER_WEEKEND_BONUS);
+    expect(farmOrderBonus(plain)).toBe(FARM_ORDER_BONUS);
+    const news = farmOrderNews({ id: 1, from: 'Quán Chè Bà Tư', items: {}, dueDay: d, bonus: farmOrderBonus(d) } as never);
+    expect(news).toContain('ngày cúng');
+    expect([...news].length).toBeLessThanOrEqual(90);
+  });
+});

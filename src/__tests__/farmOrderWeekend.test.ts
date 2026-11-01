@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { isWeekend } from '../data/calendar';
+import { isXoiCungDay } from '../data/tiemXoi';
 import { FARM_ORDER_BONUS, FARM_ORDER_DAYS, FARM_ORDER_WEEKEND_BONUS, farmOrderBonus, makeFarmOrder } from '../data/garden';
 
 describe('đơn quán xóm cuối tuần (GĐ536)', () => {
@@ -9,7 +10,7 @@ describe('đơn quán xóm cuối tuần (GĐ536)', () => {
       const o = makeFarmOrder(d, () => 0.3);
       const due = d + FARM_ORDER_DAYS;
       expect(o.dueDay).toBe(due);
-      expect(o.bonus).toBe(isWeekend(due) ? FARM_ORDER_WEEKEND_BONUS : FARM_ORDER_BONUS);
+      expect(o.bonus).toBe(isWeekend(due) || isXoiCungDay(due) ? FARM_ORDER_WEEKEND_BONUS : FARM_ORDER_BONUS); // GĐ605: ngày cúng như cuối tuần
       if (isWeekend(due)) we++; else wd++;
     }
     expect(we).toBeGreaterThan(0);
@@ -18,7 +19,7 @@ describe('đơn quán xóm cuối tuần (GĐ536)', () => {
   it('thưởng cuối tuần chỉ nhỉnh hơn, không lấn bán hàng', () => {
     expect(FARM_ORDER_WEEKEND_BONUS).toBeGreaterThan(FARM_ORDER_BONUS);
     expect(FARM_ORDER_WEEKEND_BONUS).toBeLessThanOrEqual(1.4);
-    expect([1, 2, 3, 4, 5, 6, 7].map(farmOrderBonus).filter((b) => b > FARM_ORDER_BONUS).length).toBe(2);
+    expect([8, 9, 10, 11, 12, 13, 14].map(farmOrderBonus).filter((b) => b > FARM_ORDER_BONUS).length).toBe(2);
   });
 });
 
@@ -69,7 +70,8 @@ describe('tin đơn quán xóm (GĐ549)', () => {
   it('đơn cuối tuần báo giá hời, đơn thường chỉ đường tới bảng; ≤90 ký tự', async () => {
     const { farmOrderNews, FARM_BUYERS } = await import('../data/garden');
     const longest = FARM_BUYERS.reduce((a, b) => (b.length > a.length ? b : a));
-    const we = farmOrderNews({ id: 1, from: longest, items: [], dueDay: 1234, bonus: FARM_ORDER_WEEKEND_BONUS });
+    const weDay = Array.from({ length: 14 }, (_, i) => 1230 + i).find((d) => isWeekend(d))!;
+    const we = farmOrderNews({ id: 1, from: longest, items: [], dueDay: weDay, bonus: FARM_ORDER_WEEKEND_BONUS });
     const wd = farmOrderNews({ id: 2, from: longest, items: [], dueDay: 1234, bonus: FARM_ORDER_BONUS });
     expect(we).toContain('cuối tuần trả ×1,35');
     expect(wd).toContain('xem ở bảng Trang trại');

@@ -17,6 +17,7 @@ import type { Weather } from './weather';
 import { dateOfDoy, isWeekend, YEAR_DAYS } from './calendar';
 import { simRng } from '../core/rand';
 import { fmtMul } from './products';
+import { isXoiCungDay } from './tiemXoi';
 
 /** Mở trang trại từ cấp này. */
 export const GARDEN_UNLOCK = 8;
@@ -315,7 +316,8 @@ export interface FarmOrder {
 export const FARM_ORDER_BONUS = 1.25;
 /** Đơn tới hạn Thứ 7/CN: quán xóm đông khách cuối tuần, trả hời hơn (GĐ536). */
 export const FARM_ORDER_WEEKEND_BONUS = 1.35;
-export const farmOrderBonus = (dueDay: number) => (isWeekend(dueDay) ? FARM_ORDER_WEEKEND_BONUS : FARM_ORDER_BONUS);
+/** GĐ605: hạn rơi vào ngày cúng (1 & 15) — quán cần đồ cúng, trả như cuối tuần. */
+export const farmOrderBonus = (dueDay: number) => (isWeekend(dueDay) || isXoiCungDay(dueDay) ? FARM_ORDER_WEEKEND_BONUS : FARM_ORDER_BONUS);
 /** Đơn sống chừng này ngày rồi tới hạn. */
 export const FARM_ORDER_DAYS = 2;
 /** Mở đơn quán xóm từ cấp này (khi trại đã khang trang). */
@@ -328,7 +330,7 @@ export const FARM_ORDER_POOL = ['trung', 'trung_vit', 'trung_goos', 'sua_tuoi', 
 
 /** Tin sáng khi quán xóm đặt đơn; đơn cuối tuần báo luôn giá hời (GĐ549). */
 export const farmOrderNews = (o: FarmOrder) =>
-  `📦 ${o.from} đặt mua nông sản, hạn ngày ${o.dueDay} — ${o.bonus > FARM_ORDER_BONUS ? `cuối tuần trả ×${fmtMul(o.bonus)}` : 'xem ở bảng Trang trại'}`;
+  `📦 ${o.from} đặt mua nông sản, hạn ngày ${o.dueDay} — ${o.bonus > FARM_ORDER_BONUS ? `${isWeekend(o.dueDay) ? 'cuối tuần' : 'ngày cúng'} trả ×${fmtMul(o.bonus)}` : 'xem ở bảng Trang trại'}`;
 
 let farmOrderId = 1;
 /** Món trong pool đơn mà trại kịp làm ra ≥3 (số lượng đơn nhỏ nhất) trong hạn đơn: hàng nhà trồng

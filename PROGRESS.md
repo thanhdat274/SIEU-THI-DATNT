@@ -155,3 +155,4 @@
 - GĐ602: QA panel tiện lợi (sandbox): ngày 3 nắng hiện '⚽ tan trận 22h–24h khách ×1,2'; ngày 3 mưa và ngày 4 nắng không hiện. Đúng.
 - GĐ603: tin sáng tiện lợi gắn '⚽' sau số khách vào đêm có trận (giải thích khách tăng). QA sandbox ngày 3: '🏪 Tiện lợi 24/7: 0 khách ⚽, thu…'. 2695 xanh, bundle 597/597.
 - GĐ604: Sổ đầu ngày có việc '⚽ Tối nay có trận — tiện lợi đông 22h–24h ×1,2, xếp đủ kệ' khi tiện lợi mở + đêm có trận (ưu tiên 3, mở panel tiện lợi). QA sandbox ngày 3 hiện đúng. 2696 xanh, bundle 597/597.
+- GĐ605: đơn quán xóm (trang trại) hạn rơi vào ngày cúng trả ×1,35 như cuối tuần; tin sáng ghi 'ngày cúng trả ×1,35'. Theo số ngày → parity; vẫn ≤1,4 (không lấn bán hàng). Sửa farmOrderWeekend test (ngày 1 nay là ngày cúng). 2697 xanh (economySim ngày 2 flaky tải, chạy riêng xanh), bundle 597/597.
