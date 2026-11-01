@@ -9,6 +9,7 @@ import { skyAt } from '../data/weather';
 import { marketTrafficFactor } from '../data/chophien';
 import { tierMarkdown, fitLots, nearestLife, nearExpiryRefuseChance } from '../data/freshness';
 import { demandPriceFactor, keepChance } from '../data/pricing';
+import { CUNG_GOODS, CUNG_PULL, isXoiCungDay } from '../data/tiemXoi';
 import { dayEffects, isWeekend, OFF_SEASON_CLEARANCE, OFF_SEASON_HUNT, offSeason } from '../data/calendar';
 import { COOKED_PRODUCT_IDS, RECIPES } from '../data/recipes';
 import { happyHourActive, happyTraffic, timeBandAt } from '../data/rhythm';
@@ -375,6 +376,8 @@ export class CustomerManager {
     // Cuối tuần (Thứ 7/CN — GĐ255): nhà bằng nghỉ học, tụi nhỏ rủ nhau ghé mua ăn vặt — nhiệm vụ
     // "Cuối tuần ăn vặt" (GĐ254) dạy trữ đúng nhóm này nên thế giới phải trả lời đúng hứa
     const weekendSnacks = isWeekend(s.day) ? WEEKEND_SNACKS.filter(unlocked) : [];
+    // GĐ609: mùng 1/rằm (ngày cúng) bà con ghé mua nhang, trái cây
+    const cungGoods = isXoiCungDay(s.day) ? CUNG_GOODS.filter(unlocked) : [];
     // Hàng cận hạn đang giảm giá: có khách chuyên săn đồ giảm
     const onSale = [
       ...new Set(s.furniture.flatMap((f) => f.tiers.filter((t) => tierMarkdown(t.productId, t.lots, t.count) > 0).map((t) => t.productId!))),
@@ -394,6 +397,7 @@ export class CustomerManager {
       if (seasonal.length && simRng()() < effects.pull) return pick(seasonal);
       if (timely.length && simRng()() < 0.2) return pick(timely);
       if (weekendSnacks.length && simRng()() < 0.2) return pick(weekendSnacks);
+      if (cungGoods.length && simRng()() < CUNG_PULL) return pick(cungGoods);
       if (hot.length && simRng()() < 0.15) return pick(hot);
       return stocked.length && simRng()() < WANTS_STOCKED
         ? weightedPick(stocked, (id) => (attention[id] ?? 1) * meatDemandFactor(id, butcher), simRng())

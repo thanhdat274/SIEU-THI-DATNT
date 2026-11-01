@@ -125,6 +125,9 @@ export const tiemXoiRainMul = (weather?: string) => (weather === 'rain' || weath
 /** GĐ587: ngày cúng (mùng 1 & rằm — giản lược theo lịch game) bà con mua xôi cúng → khách ×1,3. */
 export const TIEM_XOI_CUNG_MUL = 1.3;
 export const isXoiCungDay = (day?: number) => day !== undefined && [1, 15].includes(dateOfDoy(dayOfYear(day)).day);
+/** GĐ609: ngày cúng khách tiệm chính hay hỏi đồ cúng (nhang, trái cây). */
+export const CUNG_GOODS = ['x_nhang', 'traicay'];
+export const CUNG_PULL = 0.08;
 export const tiemXoiCungMul = (day?: number) => (isXoiCungDay(day) ? TIEM_XOI_CUNG_MUL : 1);
 export const TIEM_XOI_WEEKEND_MUL = 1.15;
 export const tiemXoiWeekendMul = (day?: number) => (day !== undefined && isWeekend(day) ? TIEM_XOI_WEEKEND_MUL : 1);

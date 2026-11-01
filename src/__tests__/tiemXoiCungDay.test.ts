@@ -85,3 +85,17 @@ describe('GĐ605: đơn trang trại hạn ngày cúng trả như cuối tuần'
     expect([...news].length).toBeLessThanOrEqual(90);
   });
 });
+
+describe('GĐ609: ngày cúng khách tiệm chính hỏi đồ cúng', () => {
+  it('CUNG_GOODS là món có thật, kéo nhẹ (≤ cuối tuần 0,2), customers.ts chỉ bật vào ngày cúng', async () => {
+    const { CUNG_GOODS, CUNG_PULL } = await import('../data/tiemXoi');
+    const { productById } = await import('../data/products');
+    for (const id of CUNG_GOODS) expect(productById(id)?.id).toBe(id);
+    expect(CUNG_PULL).toBeGreaterThan(0);
+    expect(CUNG_PULL).toBeLessThanOrEqual(0.2);
+    const { readFileSync } = await import('node:fs');
+    const src = readFileSync('src/agents/customers.ts', 'utf8');
+    expect(src).toContain('isXoiCungDay(s.day) ? CUNG_GOODS.filter(unlocked) : []');
+    expect(src).toContain('simRng()() < CUNG_PULL) return pick(cungGoods)');
+  });
+});
