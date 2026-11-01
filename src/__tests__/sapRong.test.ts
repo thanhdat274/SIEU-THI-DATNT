@@ -261,7 +261,7 @@ describe('GĐ624: gợi ý sạp ngày mai ghi "(có trận)"', () => {
 
 describe('GĐ625/631/632: sapEventActions — nhắc đổi lô sạp theo dịp', () => {
   it('ngày cúng thiếu lô xôi, ngày trận thiếu lô nước mía; có món thì ẩn; không sạp/mưa thì rỗng; câu ≤90', async () => {
-    const { sapEventActions } = await import('../data/sapRong');
+    const { sapEventActions } = await import('../data/dayEventActions');
     const { isQuanMatchDay } = await import('../data/quanNuoc');
     const match = Array.from({ length: 30 }, (_, i) => i + 2).find((x) => isQuanMatchDay(x, 'sunny') && x !== 15)!;
     expect(sapEventActions(2, ['banhmi', 'nuocmia'], 15, 'sunny').map((a) => a.icon)).toContain('🙏');

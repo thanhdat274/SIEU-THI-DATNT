@@ -1,5 +1,5 @@
-import { sapEventActions } from '../../data/sapRong';
-import { cungGoodsAction, isXoiCungDay, tiemXoiMorning, TIEM_XOI_MAX_STAFF, TIEM_XOI_WAGE } from '../../data/tiemXoi';
+import { cungGoodsAction, sapEventActions, tiemXoiCungAction } from '../../data/dayEventActions';
+import { tiemXoiMorning, TIEM_XOI_WAGE } from '../../data/tiemXoi';
 import { ProductIcon } from '../ProductIcon';
 import { useState } from 'react';
 import { useGame, useClock, formatClock, type DayRecord, type DayStats, type ItemLine } from '../../core/store';
@@ -629,7 +629,8 @@ export function MorningPanel() {
   candidates.push(...sapEventActions(biz.sapRong, biz.sapKinds, day, weather)); // GĐ625/631 → GĐ632 tách hàm thuần
   if (branch?.open && isQuanMatchDay(day, weather)) candidates.push({ icon: '⚽', text: 'Tối nay có trận — tiện lợi đông 22h–24h ×1,2, xếp đủ kệ', panel: 'branch', danger: false, priority: 3 });
   // GĐ589: ngày cúng — tiệm xôi đông; GĐ599: thợ tự nấu ×1,3 nên chỉ nhắc thêm thợ khi còn thiếu
-  if (biz.tiemXoi?.open && isXoiCungDay(day)) candidates.push({ icon: '🙏', text: biz.tiemXoi.staff < TIEM_XOI_MAX_STAFF ? 'Hôm nay ngày cúng — khách mua xôi ×1,3, thêm thợ để nấu kịp' : 'Hôm nay ngày cúng — khách mua xôi ×1,3, thợ nấu đầy kho', panel: 'quannuoc', danger: false, priority: 3 });
+  const xoiCungAct = tiemXoiCungAction(biz.tiemXoi, day); // GĐ599 → GĐ635
+  if (xoiCungAct) candidates.push(xoiCungAct);
   for (const { cs, def } of dueContracts) candidates.push({ icon: '📦', text: `${def!.title}: giao trước ngày ${cs.dueDay}`, panel: 'contracts', danger: cs.dueDay <= day, priority: cs.dueDay <= day ? 0 : 2 });
   if (biz.loan && biz.loan.dueDay - day <= 3) candidates.push({ icon: '🏦', text: `Nợ ngân hàng sắp hạn (${Math.max(0, biz.loan.dueDay - day)} ngày)`, panel: 'business', danger: true, priority: 0 });
   if (hiepLucEligible(branch, biz.quanNuoc, level) && !(biz.hiepLuc?.active && biz.hiepLuc.m === monthOf(day))) candidates.push({ icon: '🤝', text: 'Lập đối tác chi nhánh × quán nước', panel: 'morning', danger: false, priority: 3 });
