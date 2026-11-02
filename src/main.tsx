@@ -887,6 +887,8 @@ function renderFrame() {
     b.updateDoor(dt, peopleScratch);
   }
   shop.syncFurnitureVisible();
+  // GĐ904: trang trại (~195 mesh) ở xa tiệm: không vẽ khi người chơi cách >= 60 m (cùng ngưỡng farm.update) (chỉ cảnh, logic farm giữ nguyên)
+  world.farm.group.visible = player.position.distanceTo(world.farmSpot) < 60;
   // Đèn đường bật cùng giờ với đèn trong nhà; nguồn sáng thật chỉ dành cho đèn gần chỗ nhìn
   world.streetLamps.update(lamp);
   // Đèn lồng cửa tiệm (gđ177): bật sáng ấm chập tối, cùng giờ với đèn đường
