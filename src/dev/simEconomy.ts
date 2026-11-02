@@ -84,6 +84,8 @@ export interface EconomyRow {
   /** Khách phục vụ / khách bực hôm đó (đo mức bỏ đi — GĐ768). */
   customers: number;
   unhappy: number;
+  /** Lỡ bán theo lý do (stock/price/wait/…): nguyên nhân khách bực (GĐ778). */
+  missed: Record<string, number>;
 }
 
 export interface EconomyAverages {
@@ -100,6 +102,8 @@ export interface EconomyAverages {
   totalProfit: number;
   /** Tỉ lệ khách bực / tổng khách cả kỳ (0..1; 0 nếu chưa có khách). */
   unhappyRate: number;
+  /** Tổng lỡ bán cả kỳ theo lý do. */
+  missedByReason: Record<string, number>;
 }
 
 /** Dựng world 3D headless (three.js chạy không cần WebGL — chỉ thao tác đồ thị đối tượng). */
@@ -134,6 +138,7 @@ export async function runEconomySim(level: number, days: number, opts: AutoplayO
     bet: r.bet as number,
     customers: (r.customers as number) ?? 0,
     unhappy: (r.unhappy as number) ?? 0,
+    missed: (r.missed as Record<string, number> | undefined) ?? {},
   }));
   const n = rows.length;
   const totalProfit = rows.reduce((n0, r) => n0 + r.operationalProfit, 0);
@@ -141,6 +146,8 @@ export async function runEconomySim(level: number, days: number, opts: AutoplayO
   const totalBet = rows.reduce((n0, r) => n0 + r.bet, 0);
   const totalCust = rows.reduce((n0, r) => n0 + r.customers, 0);
   const totalUnhappy = rows.reduce((n0, r) => n0 + r.unhappy, 0);
+  const missedByReason: Record<string, number> = {};
+  for (const r of rows) for (const [k0, v] of Object.entries(r.missed)) missedByReason[k0] = (missedByReason[k0] ?? 0) + v;
   const professionPerDay = n ? totalProfit / n : 0;
   const questPerDay = n ? totalQuest / n : 0;
   const betPerDay = n ? totalBet / n : 0;
@@ -157,6 +164,7 @@ export async function runEconomySim(level: number, days: number, opts: AutoplayO
     totalBet,
     totalProfit,
     unhappyRate: totalCust > 0 ? totalUnhappy / totalCust : 0,
+    missedByReason,
   };
   // in-line BẢNG SỐ TRUNG BÌNH
   // eslint-disable-next-line no-console
@@ -165,7 +173,7 @@ export async function runEconomySim(level: number, days: number, opts: AutoplayO
   console.log(
     `  operationalProfit/ngày ~ ${fmt(professionPerDay)} · nhiệm vụ/ngày ~ ${fmt(questPerDay)} · kèo/ngày ~ ${fmt(betPerDay)}` +
       ` · tỉ số (nhiệm vụ+kèo)/lãi bán ~ ${ratio === null ? 'N/A (lãi ≤ 0)' : ratio.toFixed(2)}` +
-      ` · khách bực ~ ${(averages.unhappyRate * 100).toFixed(1)}%`,
+      ` · khách bực ~ ${(averages.unhappyRate * 100).toFixed(1)}% · lỡ bán ${JSON.stringify(missedByReason)}`,
   );
   return { rows, averages };
 }

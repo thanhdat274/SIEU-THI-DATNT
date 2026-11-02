@@ -94,6 +94,7 @@ describe('khảo sát kinh tế vòng ngày — simulator thật trên store', (
       // GĐ768: tỉ lệ khách bực là số hợp lệ 0..1 (làm cơ sở đo mức bỏ đi)
       expect(averages.unhappyRate).toBeGreaterThanOrEqual(0);
       expect(averages.unhappyRate).toBeLessThanOrEqual(1);
+      for (const v of Object.values(averages.missedByReason)) expect(v).toBeGreaterThanOrEqual(0); // GĐ778: lỡ bán theo lý do
       expect(Number.isNaN(averages.professionPerDay)).toBe(false);
       expect(Number.isFinite(averages.professionPerDay)).toBe(true);
       expect(Number.isNaN(averages.questPerDay)).toBe(false);
