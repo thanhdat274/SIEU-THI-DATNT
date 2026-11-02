@@ -164,3 +164,4 @@
 - GĐ840 (rà soát Leader+Designer): 2943 test xanh; thông báo dài nhất 90, 0 vượt; HUD ≤20 nút; chunk 252/255 KB. Còn mở: FPS ≥30 gfx Low cần đo khi pane hiện; QA chơi chung cần server (cấm).
 - GĐ841: thử đo lại FPS: rAF không chạy dù visibilityState=visible (cửa sổ app không ở tiền cảnh), game.perf tụt 13,7 do throttle → số đo ở môi trường này không đáng tin; cần đo trên máy thật khi cửa sổ ở tiền cảnh.
 - GĐ842: autoplay 1 ngày trên save QA ngày 100 mất 4,7 s CPU (tab nền, gồm bot) — chỉ là mốc so sánh cho lần sau, chưa quy ra ms/khung.
+- GĐ843: thêm hudMobileCss.test.ts khoá chip ≥36 px và trần max-height dải cảnh báo mobile.
