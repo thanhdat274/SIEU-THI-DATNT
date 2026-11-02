@@ -27,6 +27,7 @@
 - **GĐ800 (rà 10 GĐ):** HUD ≤ 20 nút, bundle 533/597 KB, chunk 253/255, 2940 test xanh — không tính năng nào cần gộp/bỏ (GĐ793–794 chỉ thêm vào panel có sẵn, không nút/thông báo mới); không hạ trần được thêm. Nợ mở: FPS thật máy yếu, đo cấp ≥40, QA co-op hai tab (cần `npm run server`).
 - **GĐ715–788** (tóm tắt từng khối: docs/progress-archive/PROGRESS-GD715-788-summaries.md): bán online, đường đời nhân viên, trả góp/sổ nợ, sinh nhật khách quen, audit GĐ720/730/740 đều ĐẠT (bundle ≤ 597 KB, chunk ≤ 255 KB).
 
+- **GĐ877:** tách `MorningPanel` (846 dòng) khỏi `ReportPanels.tsx` (1.327 → 550); 3 test đọc nguồn đổi đường dẫn; 2954 test xanh, bundle không đổi. Nợ refactor UI ĐÃ HẾT.
 - **GĐ876:** tách `BusinessPanel.tsx` 1.206 → 573 dòng (MarketTab, PeriodTabs, businessStyles); không đổi hành vi. tsc sạch, 2954 test xanh, bundle 533/597 KB, chunk 253/255. Nợ refactor UI còn `ReportPanels.tsx`.
 
 ## Quy ước kỹ thuật cần nhớ

@@ -91,7 +91,7 @@ describe('GĐ603: tin tiện lợi gắn ⚽ đêm có trận', () => {
 describe('GĐ604: Sổ đầu ngày nhắc tiện lợi đêm có trận', () => {
   it('ReportPanels thêm việc ⚽ cho tiện lợi, câu ≤90', async () => {
     const { readFileSync } = await import('node:fs');
-    expect(readFileSync('src/ui/panels/ReportPanels.tsx', 'utf8')).toContain('branch?.open && isQuanMatchDay(day, weather)');
+    expect(readFileSync('src/ui/panels/MorningPanel.tsx', 'utf8')).toContain('branch?.open && isQuanMatchDay(day, weather)');
     expect([...'Tối nay có trận — tiện lợi đông 22h–24h ×1,2, xếp đủ kệ'].length).toBeLessThanOrEqual(90);
   });
 });

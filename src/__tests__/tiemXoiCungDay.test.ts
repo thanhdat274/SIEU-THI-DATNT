@@ -161,7 +161,7 @@ describe('GĐ641: nextEventLine qua năm mới', () => {
 describe('GĐ644: dòng đếm ngược bấm mở lịch năm', () => {
   it('MorningPanel gắn openPanel calendar vào dòng nextEvt', async () => {
     const { readFileSync } = await import('node:fs');
-    const src = readFileSync('src/ui/panels/ReportPanels.tsx', 'utf8');
+    const src = readFileSync('src/ui/panels/MorningPanel.tsx', 'utf8');
     expect(src).toContain("{nextEvt && <button onClick={() => openPanel({ type: 'calendar' })}");
   });
 });
