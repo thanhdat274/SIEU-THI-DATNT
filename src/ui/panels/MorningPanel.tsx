@@ -1,5 +1,4 @@
 import { cungGoodsAction, nextEventLine, sapEventActions, tiemXoiCungAction } from '../../data/dayEventActions';
-import { tiemXoiMorning, TIEM_XOI_WAGE } from '../../data/tiemXoi';
 import { useState } from 'react';
 import { useGame, useClock, formatClock, type DayStats } from '../../core/store';
 import { rentOf } from '../../data/shopTiers';
@@ -68,6 +67,7 @@ import { dailyBurn } from '../../data/dailyBurn';
 import { recentAvgRevenue } from '../../data/minorPayoff';
 import { AdviceCard, HourChart, ItemTable, HistoryChart } from './HistoryPanel';
 import { QuanNuocCard } from './QuanNuocCard';
+import { TiemXoiCard } from './TiemXoiCard';
 import { Callout, Stat, Footer, Swatch, styles, Tabs } from './shared';
 
 
@@ -467,20 +467,7 @@ export function MorningPanel() {
 
       {biz.quanNuoc.open && <QuanNuocCard quanNuoc={biz.quanNuoc} quanNuocLast={biz.quanNuocLast ?? null} quanHealth={quanHealth} />}
 
-      {biz.tiemXoi?.open && (() => {
-        const last = biz.tiemXoiLast;
-        const m = tiemXoiMorning(biz.tiemXoi, last);
-        return (
-          <Callout tone={m.net !== null && m.net < 0 ? 'warn' : 'ok'} style={{ marginBottom: 8 }} title="🍚 Tiệm xôi">
-            <div style={{ fontSize: 12, marginTop: 2 }}>
-              {last
-                ? <>Hôm qua nấu {last.total} phần · rẻ hơn nhập lẻ {formatMoney(last.saved)} − lương {formatMoney(last.wages)} = <b style={{ color: m.net! >= 0 ? '#2ecc71' : '#e74c3c' }}>{formatMoney(m.net!)}</b></>
-                : 'Mới mở — kết quả có sau đêm đầu.'}
-            </div>
-            {m.idle && <div style={{ fontSize: 12, marginTop: 2, color: '#e67e22' }}>👷 Kho xôi đã đủ, thợ còn dư sức — cho nghỉ bớt một người đỡ lương {formatMoney(TIEM_XOI_WAGE)}/ngày.</div>}
-          </Callout>
-        );
-      })()}
+      {biz.tiemXoi?.open && <TiemXoiCard tiemXoi={biz.tiemXoi} last={biz.tiemXoiLast} />}
 
       {branchChores.length > 0 && (
         <Callout tone="warn" title="🏪 Tiện lợi 24/7: việc hôm nay" style={{ marginBottom: 8 }}>
