@@ -23,7 +23,7 @@ g.window = { addEventListener: () => {}, removeEventListener: () => {}, requestA
  * chuỗi ghép và fitList. Test này cho bot chơi vài ngày, gom MỌI toast đã hiện và kiểm ≤ 90 ký tự.
  */
 describe('độ dài thông báo lúc chạy', () => {
-  it.each([3, 8, 15])('bot chơi 6 ngày từ cấp %i: mọi toast ≤ 90 ký tự (code point)', { timeout: 300_000 }, async (lv) => {
+  it.each([3, 8, 15, 30, 50])('bot chơi 6 ngày từ cấp %i: mọi toast ≤ 90 ký tự (code point)', { timeout: 300_000 }, async (lv) => {
     const { seedLevel, buildEconomyWorld } = await import('../dev/simEconomy');
     const { createAutoplay } = await import('../dev/autoplay');
     const { useGame } = await import('../core/store');
