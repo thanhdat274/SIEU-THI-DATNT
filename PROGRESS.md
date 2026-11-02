@@ -21,6 +21,7 @@
 
 ## Trạng thái hiện tại (02/11/2026)
 - **GĐ790–799** (kiểm kê 790; ngất 791–792; đòi khách quen bị rival kéo 793 + cảnh báo ⚠️ 794; timeout test co-op 795; đo CPU render gfx=low cấp 18/24/34 796–798 — ghi nhận 4× vẫn ≪ 33 ms; QA co-op hai tab bị chặn bởi server không chạy 799): docs/progress-archive/PROGRESS-GD790-799.md
+- **GĐ801:** QA người chơi mới bằng save trắng CHƯA làm: ván lưu trong trình duyệt QA (ngày 128 sau autoplay) chỉ xoá được bằng xoá dữ liệu trang = xoá dữ liệu, cần người dùng cho phép (hoặc tab/profile trình duyệt riêng). Phần đếm thông báo ngày đầu vẫn có test economySim ≤ 10. Bấm giờ món đầu tiên (≤ 5 phút) còn nợ.
 - **GĐ800 (rà 10 GĐ):** HUD ≤ 20 nút, bundle 533/597 KB, chunk 253/255, 2940 test xanh — không tính năng nào cần gộp/bỏ (GĐ793–794 chỉ thêm vào panel có sẵn, không nút/thông báo mới); không hạ trần được thêm. Nợ mở: FPS thật máy yếu, đo cấp ≥40, QA co-op hai tab (cần `npm run server`).
 - **GĐ781–788** (docs/progress-archive/PROGRESS-GD781-788.md): đêm trước sinh nhật khách quen (nhắc nhập hàng), QA trình duyệt ngày 1 ở 8×, tự hạ về 1× lúc 24:00, làm rõ mốc ngất 26:00 + test khoá.
 - **GĐ771–780** (docs/progress-archive/PROGRESS-GD771-780.md): sinh nhật khách quen nhắc món cần nhập (773–774), dọn import/biến thừa (775–777), chỉ số khách bực/lỡ bán/kho-còn trong sim (778–780) → bot hết hàng vì hết tiền mặt, không đổi game. 🧭 AUDIT 10-GĐ ĐẠT: 313 file/2921 test xanh, bundle 532,4/597 · chunk 253/255, 0 nút HUD mới, thông báo ≤90 ký tự. Còn nợ cần máy thật/Firebase: FPS Low, QA co-op 2 tab, CPU render cuối-game.
