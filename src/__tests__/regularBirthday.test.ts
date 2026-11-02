@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { REGULARS, BIRTHDAY_BONUS, birthdayLabel, birthdayDoy, birthdaysToday, birthdayHint, isBirthday, regularCheckout, visitsToday, emptyProgress } from '../data/regulars';
+import { REGULARS, BIRTHDAY_BONUS, birthdayLabel, birthdayDoy, birthdaysToday, birthdayHint, birthdayEve, isBirthday, regularCheckout, visitsToday, emptyProgress } from '../data/regulars';
 import { YEAR_DAYS, dateOfDoy, dayOfYear } from '../data/calendar';
 import { newGameData, useGame } from '../core/store';
 
@@ -112,5 +112,20 @@ describe('birthdayLabel — cùng lịch với Sổ đầu ngày', () => {
     const day = bdayDay();
     const r = regularCheckout(def, known({ lastFriendshipDay: 0 }), [fav], day);
     expect(r.points).toBe(BIRTHDAY_BONUS + 2);
+  });
+
+  it('birthdayEve (GĐ781): mai sinh nhật + thiếu món thích → nhắc nhập sẵn; đủ hàng / chưa quen / chưa mở khóa → im', () => {
+    const eve = bdayDay() - 1;
+    const prog = { [def.id]: known() };
+    const out = birthdayEve(eve, LEVEL, prog, () => false);
+    expect(out.map((o) => o.def.id)).toContain(def.id);
+    const t = out.find((o) => o.def.id === def.id)!.text;
+    expect(t).toContain('Mai sinh nhật');
+    expect(t).toContain(`+${BIRTHDAY_BONUS + 2}`);
+    expect(t.length).toBeLessThanOrEqual(90);
+    expect(birthdayEve(eve, LEVEL, prog, (id) => id === def.favorites[0]).some((o) => o.def.id === def.id)).toBe(false);
+    expect(birthdayEve(eve, LEVEL, { [def.id]: known({ visits: 0 }) }, () => false).some((o) => o.def.id === def.id)).toBe(false);
+    expect(birthdayEve(eve, 1, prog, () => false).some((o) => o.def.id === def.id)).toBe(def.unlock <= 1);
+    expect(birthdayEve(eve - 3, LEVEL, prog, () => false).some((o) => o.def.id === def.id)).toBe(false);
   });
 });

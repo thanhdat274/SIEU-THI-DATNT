@@ -589,3 +589,15 @@ export function birthdayHint(def: RegularDef, haveStock: (id: string) => boolean
   const want = productById(def.favorites[0]).name;
   return { text: `Sinh nhật ${def.name} hôm nay — hết hàng họ thích, nhập ${want} để +${BIRTHDAY_BONUS + 2}`, priority: 2 };
 }
+
+/** GĐ781 — MAI là sinh nhật khách đã quen mà kho/kệ chưa có món họ thích: nhắc nhập sẵn (khách chắc chắn ghé,
+ *  +5 thân thiết). Chỉ nhắc khi THIẾU hàng (đủ hàng thì không làm ồn Sổ đầu ngày). Thuần. */
+export function birthdayEve(day: number, level: number, progress: Record<string, RegularProgress>, haveStock: (id: string) => boolean): { def: RegularDef; text: string }[] {
+  const out: { def: RegularDef; text: string }[] = [];
+  for (const def of REGULARS) {
+    if (level < def.unlock || (progress[def.id]?.visits ?? 0) <= 0 || !isBirthday(def, day + 1)) continue;
+    if (def.favorites.some(haveStock)) continue;
+    out.push({ def, text: `Mai sinh nhật ${def.name} — nhập sẵn ${productById(def.favorites[0]).name} để +${BIRTHDAY_BONUS + 2} thân thiết` });
+  }
+  return out;
+}
