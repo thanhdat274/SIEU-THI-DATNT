@@ -98,7 +98,7 @@ export const createGardenSlice = (set: SetState, get: GetState): Pick<GameState,
         homegrown,
       },
     });
-    s.notify(`🧺 Thu hoạch ${qty} ${productById(def.productId).name} nhà trồng${doubled ? ' — bù nhìn trúng: thu gấp đôi!' : inSeason(def, s.day) && def.season ? ' (đúng mùa vụ, trái sai)' : ''}: bán được giá hơn ${Math.round(HOMEGROWN_PREMIUM * 100)}%`);
+    s.notify(`🧺 Thu hoạch ${qty} ${productById(def.productId).name} nhà trồng${doubled ? ' — bù nhìn: thu gấp đôi!' : inSeason(def, s.day) && def.season ? ' (đúng mùa vụ, trái sai)' : ''}: bán được giá hơn ${Math.round(HOMEGROWN_PREMIUM * 100)}%`);
     s.addXp(5);
   },
   buyAnimal: (kind) => {

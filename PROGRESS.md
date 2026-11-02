@@ -166,3 +166,4 @@
 
 - GĐ860 (rà Leader+Designer): 2949 test xanh 110 s, tsc sạch, 358 thông báo, 0 vượt 90, bundle đầu ≈538/600 KB. Không thêm tính năng: các trục đã đủ sâu; việc mở duy nhất là FPS ≥30 gfx Low (cần máy thật, cửa sổ tiền cảnh) và QA co-op 2 tab (cần server, bị cấm). Kế: rà GĐ870.- GĐ861: rút thông báo cảnh báo lương ở OrderPanel (ước ~96 ký tự khi tiền dài → ~80): bỏ 'này', 'lần nữa'→'lại'.
 - GĐ862: hai thông báo nuôi vỗ béo có đuôi 'mua giữa kỳ' dài ~125/95 ký tự thực (audit bỏ sót phần điều kiện) → ~80/~75; farm+featureBudget xanh.
+- GĐ863: audit-notify.mjs tính nhánh chuỗi dài nhất của ${cond ? 'a' : 'b'} (trước coi như 6 ký tự → bỏ sót); lộ 1 thông báo thu hoạch 91 → 90 (bỏ 'trúng'). 0 vượt 90, tsc sạch, garden/farm/featureBudget xanh.
