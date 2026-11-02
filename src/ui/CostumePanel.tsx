@@ -9,7 +9,7 @@ function isAvailable(c: { unlock: number; prestige?: number }, level: number, pr
 
 /** Panel Trang phục — chọn và đổi trang phục cho nhân vật chính. */
 export function CostumePanel() {
-  const { level, costume, money, setCostume, biz } = useGame();
+  const { level, costume, biz } = useGame();
   const prestige = biz.prestige.level;
   const allCostumes = [...COSTUMES, ...PRESTIGE_COSTUMES];
   const available = allCostumes.filter((c) => isAvailable(c, level, prestige));
@@ -52,11 +52,10 @@ export function CostumePanel() {
 
 /** Một bộ trang phục: hiển thị chi tiết, nút chọn nếu chưa mặc. */
 function CostumeRow({ costume: c }: { costume: import('../data/costumes').Costume }) {
-  const { costume: current, setCostume, level, money, biz } = useGame();
+  const { costume: current, setCostume, level, biz } = useGame();
   const prestige = biz.prestige.level;
   const isEquipped = current === c.id;
   const unlocked = isAvailable(c, level, prestige);
-  const canAfford = money >= c.price;
   return (
     <div style={{
       background: isEquipped ? '#3a3a4d' : '#2b2b3a',

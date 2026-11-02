@@ -8,7 +8,6 @@ import { Fragment, lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { formatClock, questContext, useClock, useGame } from '../core/store';
 import { claimableCount, dailyQuests, dailySetProgress, storyQuest, STORY_STEPS } from '../data/quests';
 import { dirtLoss } from '../data/dirtLoss';
-import { cookSpeed, bartenderBoost } from '../core/slices/orders';
 import { worldActions } from '../core/actions';
 import { saveGame, resetGame, readBackupSave, restoreBackup } from '../core/save';
 import { FEATURES, xpToNext } from '../data/levels';

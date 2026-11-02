@@ -16,7 +16,6 @@ export function OnlinePanel() {
   const busyOwn = online.orders.filter((o) => o.status === 'shipping' && o.via === 'own').length;
   const freeCourier = couriers[busyOwn];
   const rating = appRating(online);
-  const cap = onlineOrderCap(rating, level);
   const tier = appTier(online.done);
   const nextTier = APP_TIERS.find((t) => t.at > online.done) ?? null;
   const evGap = eventGapMul(online.event);

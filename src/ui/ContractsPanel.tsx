@@ -8,7 +8,7 @@ import { contractPortfolio } from '../data/contractPortfolio';
 
 /** Panel Hợp đồng — xem, chấp nhận và giao hợp đồng cung cấp dài hạn. */
 export function ContractsPanel() {
-  const { level, money, contracts, storage, day, acceptContract, deliverContract } = useGame();
+  const { level, contracts } = useGame();
   const all = SUPPLY_CONTRACTS;
   const available = all.filter((c) => c.unlock <= level);
   const locked = all.filter((c) => c.unlock > level);
@@ -163,11 +163,10 @@ function ActiveContracts() {
 
 /** Một hợp đồng: hiển thị chi tiết, nút chấp nhận. */
 function ContractRow({ contract }: { contract: SupplyContract }) {
-  const { level, money, contracts, acceptContract, repLog } = useGame();
+  const { contracts, acceptContract, repLog } = useGame();
   const rep = reputationOf(repLog);
   const trusted = meetsRep(rep, contract.rep);
   const alreadyAccepted = !!contracts[contract.id];
-  const canAfford = money >= contractValue(contract) * 0.3; // chỉ kiểm tra sơ bộ
   return (
     <div style={{ background: '#3a3a4d', borderRadius: 8, padding: '8px 12px', opacity: alreadyAccepted ? 0.6 : 1 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>

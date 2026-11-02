@@ -51,7 +51,6 @@ function signFace(text: string, bg: string, font = 120): THREE.CanvasTexture {
 function buildLot(): THREE.Group {
   const g = new THREE.Group();
   const soil = new THREE.MeshStandardMaterial({ color: 0xc0a878, roughness: 0.92 });
-  const stone = new THREE.MeshStandardMaterial({ color: 0x9e9585, roughness: 0.9 });
   const wood = new THREE.MeshStandardMaterial({ color: 0x8a5a36, roughness: 0.8 });
   const postMat = new THREE.MeshStandardMaterial({ color: 0x6d4c2b, roughness: 0.8 });
   const box = (w: number, h: number, d: number, m: THREE.Material, x: number, y: number, z: number, parent: THREE.Object3D = g) => {

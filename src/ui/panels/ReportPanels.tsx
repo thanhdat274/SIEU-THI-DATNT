@@ -72,7 +72,7 @@ export const EMPTY_DAY_STATS: DayStats = { revenue: 0, spent: 0, wages: 0, items
 
 export function SummaryPanel({ day }: { day: number }) {
   const panel = useGame((s) => s.panel);
-  const { level, xp, history, closePanel, openPanel, setShift, notify, storage, storageLots, furniture, priceOf, riskTrend, staff, skills, soldEver, comboHitCount, biz, weatherSeed, weather, regulars, totals, repLog, giftStreak, giftLastDay, giftGraceDay, happyHour, analytics, demand: stateDemand, marketClearedDay, marketLast, debts } = useGame();
+  const { level, xp, history, openPanel, setShift, notify, storage, storageLots, furniture, priceOf, riskTrend, staff, skills, soldEver, comboHitCount, biz, weatherSeed, weather, regulars, totals, repLog, giftStreak, giftLastDay, giftGraceDay, happyHour, analytics, demand: stateDemand, marketLast, debts } = useGame();
   const [tab, setTab] = useState<'overview' | 'items'>('overview');
   if (panel?.type !== 'summary') return null;
   // GĐ126: `day` prop = ngày VỪA KẾT THÚC (N), nhưng endDay đã sang ngày mới trong cùng set().

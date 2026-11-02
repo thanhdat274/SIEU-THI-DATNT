@@ -50,7 +50,6 @@ export interface MarketTrend {
 }
 
 export function marketTrend(prev: number, onHand: number, incoming: number, demandPerDay: number): MarketTrend {
-  const target = Math.min(MARKET_MAX, Math.max(MARKET_MIN, scarcityMul(onHand, incoming) * demandMul(demandPerDay)));
   const next = nextMarketIndex(prev, onHand, incoming, demandPerDay);
   const sc = scarcityMul(onHand, incoming);
   const scarcity: MarketScarcity = sc > 1 ? 'scarce' : sc < 1 ? 'oversupply' : 'steady';

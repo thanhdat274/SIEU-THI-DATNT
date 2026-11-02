@@ -5,7 +5,6 @@ import { dailyWage } from '../data/staff';
 import { branchOperatingBalanceToday, branchBuildPayback } from '../data/branchNet';
 import { branchMissSummary } from '../data/venueTrend';
 import { vendingPayoff } from '../data/minorPayoff';
-import { licenseById, licenseStatus } from '../data/licenses';
 import { formatMoney, productById, fmtMul } from '../data/products';
 import { haulTripPlan, autoHaulCfg, HAUL_REFILL_BELOW, HAUL_TRIP_EVERY, HAUL_BELOW_MIN, HAUL_BELOW_MAX, HAUL_EVERY_MIN, HAUL_EVERY_MAX } from '../data/branchHaul';
 import { Callout } from './panels/shared';
@@ -14,7 +13,7 @@ import { st } from './branchStyles';
 
 /** Cửa hàng tiện lợi 24/7: thuê mặt bằng, tuyển người, xem doanh thu. */
 export function BranchPanel() {
-  const { branch, level, money, day, weather, candidates, storage, stats, atBranch, online, licenses, venueTrend, openBranch, toggleBranch, toggleVending, toggleNightDelivery, toggleBranchAutoHaul, setBranchAutoHaul, buyBranchPower, hireForBranch, fireFromBranch, setBranchShift, coverCalloff, bonusBranchStaff, restBranchStaff, closePanel, openPanel } = useGame();
+  const { branch, level, money, day, weather, storage, stats, atBranch, venueTrend, openBranch, toggleBranch, toggleVending, toggleBranchAutoHaul, setBranchAutoHaul, coverCalloff, closePanel } = useGame();
   const [tab, setTab] = useState<'info' | 'night' | 'report'>('info');
 
   if (!branch) {
