@@ -91,12 +91,28 @@ export function debtWriteOffSoon(debts: Record<string, Debt> | undefined, day: n
 export function debtDayAction(debts: Record<string, Debt> | undefined, day: number):
   { icon: string; text: string; panel: string; danger: boolean; priority: number } | null {
   const soon = debtWriteOffSoon(debts, day);
-  if (!soon) return null;
+  if (!soon) return debtUnremindedAction(debts, day);
   return {
     icon: '📕',
     text: `Nợ sắp mất: ${formatMoney(soon.amount)}${soon.count > 1 ? ` (${soon.count} người)` : ''} — nhắc nợ hôm nay (còn ${soon.minDaysLeft} ngày)`,
     panel: 'regulars',
     danger: true,
     priority: 1,
+  };
+}
+
+/** GĐ749 — nợ quá hạn mà chưa nhắc: khách đã được nhắc thì chắc chắn trả (chưa nhắc chỉ ~70%). Việc nhẹ
+ *  (cam, không phải mất-thật) — chỉ hiện khi không có nợ sắp bị xoá (việc đỏ đó đã bao gồm nhắc nợ). Thuần. */
+export function debtUnremindedAction(debts: Record<string, Debt> | undefined, day: number):
+  { icon: string; text: string; panel: string; danger: boolean; priority: number } | null {
+  const rows = debtLedger(debts, day).rows.filter((r) => r.late && !r.reminded);
+  if (!rows.length) return null;
+  const amount = rows.reduce((n, r) => n + r.amount, 0);
+  return {
+    icon: '📒',
+    text: `Nợ quá hạn chưa nhắc: ${formatMoney(amount)}${rows.length > 1 ? ` (${rows.length} người)` : ''} — nhắc thì khách chắc chắn trả`,
+    panel: 'regulars',
+    danger: false,
+    priority: 2,
   };
 }
