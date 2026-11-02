@@ -3,6 +3,7 @@ import { productById } from './products';
 import { COOKED_TIP_RANGE, STATION_BY_OUTPUT } from './recipes';
 import type { CharacterArchetype, HairStyle, PropKind } from '../render/characterModel';
 import { simRng } from '../core/rand';
+import { dayOfYear, YEAR_DAYS } from './calendar';
 
 export type PerkEffect = 'bonus_tip' | 'extra_item' | 'frequent_visit' | 'refer_friend' | 'bulk_buy' | 'festival';
 
@@ -432,12 +433,24 @@ function hash(seed: number, day: number, id: string) {
   return h;
 }
 
+/** GĐ759 — sinh nhật khách quen (kiểu Stardew Valley, tiếng Việt đời thường): mỗi người một ngày cố định
+ *  trong năm, suy ra từ id (không cần lưu, hai máy hẻm luôn khớp). Khách ĐÃ QUEN ghé chắc chắn hôm đó. */
+export const BIRTHDAY_BONUS = 3;
+export function birthdayDoy(def: RegularDef): number {
+  let h = 7;
+  for (let i = 0; i < def.id.length; i++) h = (h * 31 + def.id.charCodeAt(i)) & 0x7fffffff;
+  return h % YEAR_DAYS;
+}
+export const isBirthday = (def: RegularDef, day: number) => dayOfYear(day) === birthdayDoy(def);
+
 /**
  * Hôm nay khách quen có ghé không: tính từ hạt giống ván + ngày nên hai máy chơi chung luôn khớp.
  * Chưa có perk "ghé thường hơn" thì không ghé hai ngày liền.
  */
 export function visitsToday(def: RegularDef, day: number, seed: number, level: number, prog?: RegularProgress, rep?: Reputation): boolean {
   if (level < def.unlock || !unlockedFavorites(def, level).length) return false;
+  // GĐ759: sinh nhật — khách đã quen (từng mua) nhất định ghé, một lần/ngày
+  if (isBirthday(def, day) && (prog?.visits ?? 0) > 0) return prog?.lastVisitDay !== day;
   // Đã quen rồi thì vẫn ghé; khách mới chỉ tìm tới tiệm đủ uy tín
   if (rep && !prog?.visits && !meetsRep(rep, regularRep(def))) return false;
   const frequent = hasPerk(def, prog, 'frequent_visit');
@@ -467,7 +480,8 @@ export function regularCheckout(def: RegularDef, prev: RegularProgress | undefin
   prog.visits++;
   prog.lastVisitDay = day;
   for (const it of basket) if (def.favorites.includes(it.id) && !prog.discovered.includes(it.id)) prog.discovered.push(it.id);
-  const points = prog.lastFriendshipDay === day ? 0 : basket.some((it) => def.favorites.includes(it.id)) ? 2 : 1;
+  const base = prog.lastFriendshipDay === day ? 0 : basket.some((it) => def.favorites.includes(it.id)) ? 2 : 1;
+  const points = base + (base > 0 && isBirthday(def, day) ? BIRTHDAY_BONUS : 0); // GĐ759: quà sinh nhật = +3 thân thiết
   prog.friendship += points;
   if (points) prog.lastFriendshipDay = day;
   const newPerks = def.perks.filter((p) => prog.friendship >= p.threshold && !prog.perks.includes(p.title));
@@ -556,4 +570,9 @@ export function regularsExpectedToday(
   day: number, seed: number, level: number, progress: Record<string, RegularProgress>, rep?: Reputation,
 ): RegularDef[] {
   return REGULARS.filter((def) => visitsToday(def, day, seed, level, progress[def.id], rep));
+}
+
+/** GĐ759 — khách quen có sinh nhật HÔM NAY và sẽ ghé (để Sổ đầu ngày nhắc nhập món thích). Thuần. */
+export function birthdaysToday(expected: RegularDef[], day: number): RegularDef[] {
+  return expected.filter((d) => isBirthday(d, day));
 }

@@ -16,7 +16,7 @@ import { repPayoff, repPayoffFocus } from '../../data/repPayoff';
 import { repMoney, avgPerVisit } from '../../data/repMoney';
 import { butcherValueToday, MAX_BUTCHER_STAR, meatFromByItem, missedMeatRevenue, recentMeatRevenue } from '../../data/butcherValue';
 import { debtLedger, debtDayAction, debtRowsByUrgency } from '../../data/debtLedger';
-import { regularRep, regularById, regularsExpectedToday, REGULARS } from '../../data/regulars';
+import { regularRep, regularById, regularsExpectedToday, birthdaysToday, BIRTHDAY_BONUS, REGULARS } from '../../data/regulars';
 import { LOAN_DAILY_RATE, loyaltyPayoff } from '../../data/biz';
 import { happyPayoff } from '../../data/rhythm';
 import { QUAN_NUOC_UNLOCK, QUAN_NUOC_WAGE, QUAN_PRICE_OPTIONS, isQuanMatchDay } from '../../data/quanNuoc';
@@ -634,6 +634,8 @@ export function MorningPanel() {
   if (xoiCungAct) candidates.push(xoiCungAct);
   for (const { cs, def } of dueContracts) candidates.push({ icon: '📦', text: `${def!.title}: giao trước ngày ${cs.dueDay}`, panel: 'contracts', danger: cs.dueDay <= day, priority: cs.dueDay <= day ? 0 : 2 });
   if (biz.loan && biz.loan.dueDay - day <= 3) candidates.push({ icon: '🏦', text: `Nợ ngân hàng sắp hạn (${Math.max(0, biz.loan.dueDay - day)} ngày)`, panel: 'business', danger: true, priority: 0 });
+  // GĐ759 — sinh nhật khách quen: khách đã quen ghé chắc chắn, mua là +3 thân thiết → nhắc nhập món họ thích
+  for (const d of birthdaysToday(expected, day)) candidates.push({ icon: '🎂', text: `Sinh nhật ${d.name} hôm nay — ghé mua là +${BIRTHDAY_BONUS} thân thiết`, panel: 'regulars', danger: false, priority: 3 });
   // GĐ747 — nợ khách quen sắp bị xoá (Sổ nợ nằm trong panel Khách quen, không ai mở): nhắc lên Sổ đầu ngày
   const debtAct = debtDayAction(debts, day);
   if (debtAct) candidates.push(debtAct);
