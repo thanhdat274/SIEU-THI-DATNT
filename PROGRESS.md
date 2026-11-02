@@ -21,12 +21,6 @@
 
 ## Trạng thái hiện tại (02/11/2026)
 - Các mục GĐ790–929 đã chuyển sang `docs/progress-archive/PROGRESS-GD790-929.md` (giữ file này gọn).
-- GĐ974: tách data/regularsList.ts (REGULARS + hàm perks, 333 dòng) khỏi data/regulars.ts (615→288) bằng re-export + test `regularsListSplit.test.ts`. tsc exit 0, full test đạt (363 file khác + test mới 3/3). Chưa soi bằng mắt.
-- GĐ975: tách net/alleyApi.ts (REST danh sách hẻm, 28 dòng) khỏi net/coop.ts (698→672) bằng re-export + test `alleyApiSplit.test.ts`. tsc exit 0, full test đạt (364 file khác + test mới). Chưa soi bằng mắt.
-- GĐ976: tách world/buildingTextures.ts (5 hàm canvas texture, 97 dòng) khỏi world/buildings.ts (803→708) + test `buildingTexturesSplit.test.ts`. tsc exit 0, full test đạt (366 file, 3085 test).
-- GĐ977: tách core/bizAchieve.ts (achievementCtx, checkAchievements, stockReminders, 78 dòng) khỏi core/biz.ts (797→722) + test `bizAchieveSplit.test.ts`. tsc exit 0, full test đạt.
-- GĐ978: tách core/bizLoan.ts (takeLoan, repayLoan, joinHui, 52 dòng) khỏi core/biz.ts (722→673) + test `bizLoanSplit.test.ts`. tsc exit 0, full test đạt.
-- GĐ979: tách core/bizPurchases.ts (pay, thú cưng, thiết bị, đồ nhà, dịch vụ quầy) khỏi core/biz.ts (673→592) + test `bizPurchasesSplit.test.ts`. tsc exit 0, full test đạt.
 - **GĐ980 (rà 971–979)** Chỉ tách code thuần: data/bizWeeks, bizAchievements, regularsList, net/alleyApi, world/buildingTextures, core/bizAchieve, bizLoan, bizPurchases (core/biz.ts 797→592, buildings.ts 803→708, coop.ts 698→672). Không đổi hành vi, bundle chỉ chia lại module (build ok, vendor-three 261 KB gzip không do các tách này). Full test 369 file/3088. Chưa soi bằng mắt; QA save trắng kế ở ~GĐ981.
 - GĐ981: QA save trắng bằng mắt (xoá localStorage, tải lại, "Chơi tiếp trong máy"): vào được ngày 1 06:00, HUD/chương 1/hướng dẫn hiện đủ, tiền 280.000đ. Console chỉ còn log HMR cũ (`createOrdersSlice`) từ lúc sửa giữa chừng, không lỗi mới sau khi tải lại. Khung nhìn nhỏ nên chưa đo FPS thật.
 - GĐ982: tách data/bizFinance.ts (phản công, thẻ tích điểm, quảng cáo, vay, hụi, 211 dòng) khỏi data/biz.ts (520→312) + test `bizFinanceSplit.test.ts`. tsc exit 0, full test đạt.
@@ -37,18 +31,9 @@
 - GĐ987: tách world/farmCrops.ts (hình cây trồng theo giống + giai đoạn, 130 dòng) khỏi world/farm.ts (834→714) + test `farmCropsSplit.test.ts`. tsc exit 0, full test đạt.
 - GĐ988: tách agents/customerEntity (lớp Customer + hằng chờ) khỏi agents/customers + test; 3101 test, tsc 0.
 - GĐ989: tách ui/orderPanelStyles khỏi ui/OrderPanel + test; 3102 test, tsc 0.
-- GĐ973: tách data/bizAchievements.ts (thú cưng, thành tựu, thanh tra, 139 dòng) khỏi data/biz.ts (652→520) bằng `export *` + test `bizAchievementsSplit.test.ts`. tsc exit 0, full test đạt (363/3080). Chưa soi bằng mắt.
-- GĐ972: tách data/bizWeeks.ts (báo cáo + thử thách tuần/tháng, 347 dòng) khỏi data/biz.ts (999→652) bằng `export *` + test `bizWeeksSplit.test.ts`. tsc exit 0, full test đạt (362/3077). Chưa soi bằng mắt.
+- GĐ990 (review 10 giai đoạn): bundle vendor-three 261KB gzip (lớn nhất), tổng initial ~570KB < 600; 3102 test qua; chỉ tách file thuần, hành vi giữ nguyên. Lưu trữ GĐ960–979.
 - **GĐ971 (QA save trắng bằng mắt)** Xoá localStorage/IndexedDB → màn đăng nhập → "Chơi không cần đăng nhập" → vào ngày 1 (6:00, Tết dương lịch, hướng dẫn 5 bước, hội thoại Bà Năm chương 1, HUD 12 nút, dock có "Thêm"). Không có lỗi mới sau khi vào game; các lỗi `REGULAR_NAMES`/`main.tsx` trong console là dấu vết HMR cũ của GĐ962 (máy chủ nay trả 200, export có đủ).
 - **GĐ970 (rà 961–969)** Chỉ tách code thuần (main.tsx 1012→971 dòng: stocktakeMessage, effectiveSpeed, lampLevel, interactHints, tutorialMarker); sửa 1 lỗi tsc sót ở GĐ965 (từ nay đọc exit code tsc riêng). Bundle không đổi: đầu 533/597 KB gzip, chunk lớn nhất 253/255. Full test 361 file/3075. GĐ950–959 chuyển sang `docs/progress-archive/PROGRESS-GD950-959.md`. Chưa soi bằng mắt trong game.
-- GĐ969: tách `locationLabel` (tên vị trí người chơi) khỏi updateStatus sang core/interactHints.ts + test. tsc exit 0, full test đạt (361/3075). Chưa soi bằng mắt.
-- GĐ968: tách `mopPlan` (quyết định lau nhà) khỏi mopFloor trong main.tsx sang core/interactHints.ts + test. tsc exit 0, full test đạt (361/3074). Chưa soi bằng mắt.
-- GĐ967: tách `sapLotHint` + `deliveryHint` (gợi ý tương tác) khỏi main.tsx sang core/interactHints.ts + test. tsc exit 0, full test đạt (361/3070). Chưa soi bằng mắt.
-- GĐ966: gom công thức độ sáng đèn (17h–5h30) lặp ở main/compoundWarm/storefrontLantern vào render/lampLevel.ts + test; sửa lỗi tsc sót ở GĐ965 (chapterPending string|null). tsc exit 0, full test đạt (360/3066). Chưa soi bằng mắt.
-- GĐ965: tách `effectiveSpeed` (dừng giờ khi tổng kết/cốt truyện/câu hỏi quầy; ở hẻm không dừng) khỏi renderFrame sang core/routine.ts + test. tsc sạch, full test đạt (359/3064). Chưa soi bằng mắt.
-- GĐ964: tách marker hướng dẫn ngày đầu khỏi main.tsx sang render/tutorialMarker.ts (createTutorialMarker, markerGlow) + test. tsc sạch, full test đạt (358 file/3059). Chưa soi bằng mắt trong game.
-- GĐ963: tách `stocktakeMessage` khỏi main.tsx sang core/routine.ts (hàm thuần) + test `stocktakeMessage.test.ts`. tsc sạch, full test đạt. Chưa soi bằng mắt trong game.
-- GĐ962: tách core/bizStory.ts (sự kiện bất ngờ, chuyện khách quen, chương, REGULAR_NAMES) khỏi core/biz.ts (973→~800), biz re-export nên import cũ giữ nguyên + test. Full 356 file/3055 test, tsc sạch.
 - **GĐ961 (QA save trắng bằng mắt, panel trình duyệt)** Vào chơi khách từ màn đầu: không lỗi console, ngày 1 06:00 280.000đ, hướng dẫn 5 bước hiện, HUD 12 nút (≤20), chương 1 bà Năm mở đầu. Chưa đi hết một ngày (không kiểm FPS/bán hàng). Chưa soi nút Nhập hàng trong game.
 - **GĐ960 (rà 951–959 + dọn PROGRESS)** Chỉ tách UI/data thuần (Hud, BusinessPanel, ReportPanels, StaffPanel, OrderPanel, ArrangePanel, data/rivals), không đổi luật chơi; full 355 file/3053 test, tsc sạch. Bundle tải đầu 533/597 KB, chunk lớn nhất 253/255 KB (không đổi); thông báo ≤90. PROGRESS 38.9→33KB (GĐ930–949 sang archive). Còn nợ ngoài tầm: FPS thật trên cửa sổ có mắt, save thật, tín hiệu người chơi thật. Chưa soi bằng mắt trong game.
 - **GĐ715–788** (tóm tắt từng khối: docs/progress-archive/PROGRESS-GD715-788-summaries.md): bán online, đường đời nhân viên, trả góp/sổ nợ, sinh nhật khách quen, audit GĐ720/730/740 đều ĐẠT (bundle ≤ 597 KB, chunk ≤ 255 KB).
@@ -203,3 +188,4 @@
 - GĐ873: thêm npm run audit:notify; check:bundle chính thức: tải đầu 533/597 KB gzip, chunk lớn nhất 253/255 (số GĐ857 ≈538 là ước tay, dùng số này).
 - GĐ874: xem dòng 'Bản sao Draco thừa' của check:bundle — chỉ để biết: game tải decoder từ /decoders/draco/, bản trong assets/ không tới người chơi (không phải lỗi, không cần xử lý).
 - GĐ875: xem lại dư địa chunk (253/255): vendor-three là lõi three, loader GLTF/Draco đã nạp lười, vendor-react/data/firebase đã tách riêng → không còn chỗ cắt rẻ; thêm tính năng phải vào chunk store/lazy, không đụng vendor-three.
+- GĐ960–979 (tách file lớn: alleyApi, buildingTextures, bizAchieve/Loan/Purchases, regularsList…): xem docs/progress-archive/PROGRESS-GD960-979.md
