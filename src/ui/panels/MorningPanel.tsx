@@ -46,6 +46,7 @@ import { HotGoodsCards } from './HotGoodsCards';
 import { LoanNoteCard, EveningPrepCallout, MorningNewsCard } from './MorningNotes';
 import { ExpectedRegularsList } from './ExpectedRegularsList';
 import { TodayActionsCard } from './TodayActionsCard';
+import { MorningSubtitle } from './MorningSubtitle';
 import { FestivalNowCard, FestivalSoonCard } from './FestivalCards';
 import { CounterDemandCard } from './CounterDemandCard';
 import { MarketSurplusCard } from './MarketSurplusCard';
@@ -57,8 +58,6 @@ import { hasSkill } from '../../data/titles';
 import { cleanBonus, CLEAN_TIERS, nextCleanTier } from '../../data/cleanOps';
 import { monthOf } from '../../data/calendar';
 import { trending } from '../../data/suppliers';
-import { describeDay, WEATHER } from '../../data/weather';
-import { trafficForecast } from '../../data/trafficForecast';
 import { tomorrowTeaser } from '../../data/tomorrowTeaser';
 import { supplyContractById } from '../../data/contracts';
 import { leakTone, riskLiveToday } from '../../data/risk';
@@ -267,23 +266,8 @@ export function MorningPanel() {
   return (
     <>
       <h2 style={styles.title}>☀️ {shopName} · Sổ đầu ngày {day} ({today.day}/{today.month}) · {weekdayOf(day)}</h2>
-      <p style={styles.sub}>
-        {WEATHER[weather].icon} Hôm nay {describeDay(weatherSeed, day, weather)} · mai {WEATHER[forecast[0]].icon} {describeDay(weatherSeed, day + 1, forecast[0])}.
-        {(() => {
-          // GĐ276: phản chiếu lịch tự động ở mức lập kế hoạch — mở sớm thì khẳng định, 8h thì nhắc chỉnh.
-          const note = autoOpenNote(autoOpenAt, autoRoutine, cashierOpensMorning(staff));
-          return note ? <div style={{ marginTop: 2 }}>{note}</div> : null;
-        })()}{' '}
-        Đọc xong nên nhập hàng bày kệ trước khi mở cửa — khách quen ghé đúng giờ quen.
-        🏠 Tiền nhà trả cuối ngày: <b>{formatMoney(rentOf(shopTier))}</b>.
-        {(() => {
-          const tf = trafficForecast({ weather, tomorrow: forecast[0], level });
-          return (
-            <> Mai {WEATHER[forecast[0]].icon}: khách ghé ~{Math.round(tf.tomorrowTraffic * 100)}% mức thường (~{Math.round(tf.tomorrowKhach)} khách).
-              {tf.verdict === 'hot' ? ' Trời đông, nên trữ thêm món bán chạy.' : tf.verdict === 'slow' ? ' Trời vắng — đừng chất thêm hàng kẻo tồn.' : ''}</>
-          );
-        })()}
-      </p>
+      <MorningSubtitle weatherSeed={weatherSeed} day={day} weather={weather} tomorrow={forecast[0]} level={level} rent={rentOf(shopTier)}
+        autoNote={autoOpenNote(autoOpenAt, autoRoutine, cashierOpensMorning(staff))} />
       {/* GĐ565: tin sáng đầy đủ — toast chỉ hiện 3 giây và gộp '+N tin' */}
       {lastSummary?.day === day - 1 && <MorningNewsCard news={lastSummary.news} />}
 
