@@ -173,3 +173,4 @@
 - GĐ872: notifyRuntimeLen mở rộng cấp 3/8/15/30/50: 139–353 toast khác nhau mỗi cấp, dài nhất 90, 0 vượt.
 - GĐ873: thêm npm run audit:notify; check:bundle chính thức: tải đầu 533/597 KB gzip, chunk lớn nhất 253/255 (số GĐ857 ≈538 là ước tay, dùng số này).
 - GĐ874: xem dòng 'Bản sao Draco thừa' của check:bundle — chỉ để biết: game tải decoder từ /decoders/draco/, bản trong assets/ không tới người chơi (không phải lỗi, không cần xử lý).
+- GĐ875: xem lại dư địa chunk (253/255): vendor-three là lõi three, loader GLTF/Draco đã nạp lười, vendor-react/data/firebase đã tách riêng → không còn chỗ cắt rẻ; thêm tính năng phải vào chunk store/lazy, không đụng vendor-three.
