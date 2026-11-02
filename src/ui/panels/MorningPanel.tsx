@@ -67,6 +67,7 @@ import { loanBurden } from '../../data/loanBurden';
 import { dailyBurn } from '../../data/dailyBurn';
 import { recentAvgRevenue } from '../../data/minorPayoff';
 import { AdviceCard, HourChart, ItemTable, HistoryChart } from './HistoryPanel';
+import { QuanNuocCard } from './QuanNuocCard';
 import { Callout, Stat, Footer, Swatch, styles, Tabs } from './shared';
 
 
@@ -464,37 +465,7 @@ export function MorningPanel() {
         );
       })()}
 
-      {biz.quanNuoc.open && (
-        <Callout tone={biz.quanNuocLast && biz.quanNuocLast.served < biz.quanNuocLast.wanted ? 'warn' : 'ok'} style={{ marginBottom: 8 }} title="🧋 Quán nước">
-          {biz.quanNuocLast ? (
-            <>
-              <div style={{ fontSize: 12, marginTop: 2 }}>
-                Hôm qua: {biz.quanNuocLast.served}/{biz.quanNuocLast.wanted} ly · {formatMoney(biz.quanNuocLast.revenue)}
-              </div>
-              {quanHealth?.shortYesterday && quanHealth.missedRevenue > 0 && (
-                <div style={{ fontSize: 12, marginTop: 2, color: '#e67e22' }}>💸 Hôm qua bỏ lỡ ~{formatMoney(quanHealth.missedRevenue)} vì kho thiếu — nhập nước/ngọt/cà phê để bán đủ.</div>
-              )}
-            </>
-          ) : (
-            <div style={{ fontSize: 12, marginTop: 2 }}>Mới mở — kết quả có sau đêm đầu.</div>
-          )}
-          <div style={{ fontSize: 12, marginTop: 2 }}>
-            Hôm nay: {biz.quanNuoc.staff} nhân viên · giá {QUAN_PRICE_OPTIONS[biz.quanNuoc.price].label} · lương {formatMoney(biz.quanNuoc.staff * QUAN_NUOC_WAGE)}/ngày
-          </div>
-          {quanHealth && !quanHealth.driesMain && quanHealth.hire && quanHealth.hireMarginal !== null && (
-            <div style={{ fontSize: 12, marginTop: 2, color: quanHealth.hireMarginal >= 0 ? '#2ecc71' : '#e67e22' }}>
-              {quanHealth.hireMarginal >= 0
-                ? `💰 Tuyển 1 người: lời ròng ~${formatMoney(quanHealth.hire.profit)} (đang ~${formatMoney(quanHealth.tonight.profit)}, +${formatMoney(quanHealth.hireMarginal)}/ngày) — đáng so với lương ${formatMoney(QUAN_NUOC_WAGE)}.`
-                : `💰 Tuyển thêm 1 người chưa đáng: bán thêm ${formatMoney(quanHealth.hire.served - quanHealth.tonight.served)} ly nhưng lương ${formatMoney(QUAN_NUOC_WAGE)}/ngày cao hơn lời tăng (lời ròng ~${formatMoney(quanHealth.hire.profit)} vs ~${formatMoney(quanHealth.tonight.profit)}).`}
-            </div>
-          )}
-          {quanHealth?.driesMain && (
-            <div style={{ fontSize: 12, marginTop: 2, color: '#e74c3c' }}>
-              🥤 Kho chỉ còn {quanHealth.drinkUnitsNow} ly đồ uống (quán tiêu {quanHealth.consumedYesterday} ly hôm qua) — tối nay ăn hết là kệ tiệm chính cạn nước. Nhập nước/ngọt/cà phê.
-            </div>
-          )}
-        </Callout>
-      )}
+      {biz.quanNuoc.open && <QuanNuocCard quanNuoc={biz.quanNuoc} quanNuocLast={biz.quanNuocLast ?? null} quanHealth={quanHealth} />}
 
       {biz.tiemXoi?.open && (() => {
         const last = biz.tiemXoiLast;
