@@ -3,6 +3,8 @@ import { dailyQuests, betStatus } from '../data/quests';
 import { furnitureDef, FURNITURE } from '../data/furniture';
 import { FEATURES } from '../data/levels';
 import { unlockedProducts } from '../data/products';
+import { takeLoan } from '../core/biz';
+import { LOAN_OPTIONS_MIN } from '../data/biz';
 import { SHOP_TIERS } from '../data/shopTiers';
 import { maxStaff } from '../data/staff';
 import type { CustomerManager } from '../agents/customers';
@@ -49,6 +51,8 @@ export function createAutoplay(
 
   /** Bày hàng: mỗi tầng một mặt hàng hợp ngành, nhập đủ để bày đầy rồi để dư một ít. */
   function restock() {
+    // GĐ847: người chơi thật vay gấp khi quỹ âm để nhập hàng — bot làm như vậy thay vì kẹt xoáy nợ
+    if (st().money < 0 && !st().biz.loan) takeLoan(LOAN_OPTIONS_MIN, true);
     const s = st();
     const unlocked = unlockedProducts(s.level);
     let kk = 0;
