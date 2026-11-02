@@ -81,6 +81,9 @@ export interface EconomyRow {
   quest: number;
   /** Tiền kèo trúng hôm đó. */
   bet: number;
+  /** Khách phục vụ / khách bực hôm đó (đo mức bỏ đi — GĐ768). */
+  customers: number;
+  unhappy: number;
 }
 
 export interface EconomyAverages {
@@ -95,6 +98,8 @@ export interface EconomyAverages {
   totalQuest: number;
   totalBet: number;
   totalProfit: number;
+  /** Tỉ lệ khách bực / tổng khách cả kỳ (0..1; 0 nếu chưa có khách). */
+  unhappyRate: number;
 }
 
 /** Dựng world 3D headless (three.js chạy không cần WebGL — chỉ thao tác đồ thị đối tượng). */
@@ -127,11 +132,15 @@ export async function runEconomySim(level: number, days: number, opts: AutoplayO
     salesProfit: profitNum(r.salesProfit as string),
     quest: r.quest as number,
     bet: r.bet as number,
+    customers: (r.customers as number) ?? 0,
+    unhappy: (r.unhappy as number) ?? 0,
   }));
   const n = rows.length;
   const totalProfit = rows.reduce((n0, r) => n0 + r.operationalProfit, 0);
   const totalQuest = rows.reduce((n0, r) => n0 + r.quest, 0);
   const totalBet = rows.reduce((n0, r) => n0 + r.bet, 0);
+  const totalCust = rows.reduce((n0, r) => n0 + r.customers, 0);
+  const totalUnhappy = rows.reduce((n0, r) => n0 + r.unhappy, 0);
   const professionPerDay = n ? totalProfit / n : 0;
   const questPerDay = n ? totalQuest / n : 0;
   const betPerDay = n ? totalBet / n : 0;
@@ -147,6 +156,7 @@ export async function runEconomySim(level: number, days: number, opts: AutoplayO
     totalQuest,
     totalBet,
     totalProfit,
+    unhappyRate: totalCust > 0 ? totalUnhappy / totalCust : 0,
   };
   // in-line BẢNG SỐ TRUNG BÌNH
   // eslint-disable-next-line no-console
@@ -154,7 +164,8 @@ export async function runEconomySim(level: number, days: number, opts: AutoplayO
   // eslint-disable-next-line no-console
   console.log(
     `  operationalProfit/ngày ~ ${fmt(professionPerDay)} · nhiệm vụ/ngày ~ ${fmt(questPerDay)} · kèo/ngày ~ ${fmt(betPerDay)}` +
-      ` · tỉ số (nhiệm vụ+kèo)/lãi bán ~ ${ratio === null ? 'N/A (lãi ≤ 0)' : ratio.toFixed(2)}`,
+      ` · tỉ số (nhiệm vụ+kèo)/lãi bán ~ ${ratio === null ? 'N/A (lãi ≤ 0)' : ratio.toFixed(2)}` +
+      ` · khách bực ~ ${(averages.unhappyRate * 100).toFixed(1)}%`,
   );
   return { rows, averages };
 }
