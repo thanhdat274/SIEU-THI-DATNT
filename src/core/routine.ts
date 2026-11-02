@@ -126,3 +126,16 @@ export function stocktakeMessage(s: Pick<GameState, 'furniture' | 'storage'>): s
   const inStore = Object.values(s.storage).reduce((n, q) => n + q, 0);
   return `📋 Kiểm kê xong: ${onShelf} món trên kệ, ${inStore} món trong kho${empty ? `, ${empty} ô kệ trống` : ''}. Về nhà nghỉ thôi!`;
 }
+
+/**
+ * Tốc độ đồng hồ thực áp ở khung hình này: 0 (dừng) khi bảng tổng kết / hội thoại cốt truyện đang mở
+ * hoặc có câu hỏi ở quầy; ở hẻm hai thứ đầu không dừng giờ (một người đọc không bắt cả hẻm chờ).
+ */
+export function effectiveSpeed(
+  s: { panelType: string | undefined; chapterPending: boolean; speed: number },
+  inAlley: boolean,
+  askPending: boolean,
+): number {
+  const paused = (s.panelType === 'summary' && !inAlley) || (s.chapterPending && !inAlley) || askPending;
+  return paused ? 0 : s.speed;
+}

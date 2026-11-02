@@ -21,6 +21,7 @@
 
 ## Trạng thái hiện tại (02/11/2026)
 - Các mục GĐ790–929 đã chuyển sang `docs/progress-archive/PROGRESS-GD790-929.md` (giữ file này gọn).
+- GĐ965: tách `effectiveSpeed` (dừng giờ khi tổng kết/cốt truyện/câu hỏi quầy; ở hẻm không dừng) khỏi renderFrame sang core/routine.ts + test. tsc sạch, full test đạt (359/3064). Chưa soi bằng mắt.
 - GĐ964: tách marker hướng dẫn ngày đầu khỏi main.tsx sang render/tutorialMarker.ts (createTutorialMarker, markerGlow) + test. tsc sạch, full test đạt (358 file/3059). Chưa soi bằng mắt trong game.
 - GĐ963: tách `stocktakeMessage` khỏi main.tsx sang core/routine.ts (hàm thuần) + test `stocktakeMessage.test.ts`. tsc sạch, full test đạt. Chưa soi bằng mắt trong game.
 - GĐ962: tách core/bizStory.ts (sự kiện bất ngờ, chuyện khách quen, chương, REGULAR_NAMES) khỏi core/biz.ts (973→~800), biz re-export nên import cũ giữ nguyên + test. Full 356 file/3055 test, tsc sạch.

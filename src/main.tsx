@@ -10,7 +10,7 @@ import { shopLayout, worldActions } from './core/actions';
 import { saveGame, startAutosave } from './core/save';
 import { formatClock, SLEEP_FROM, useGame, type GameState } from './core/store';
 import { createTutorialMarker } from './render/tutorialMarker';
-import { newRoutineMarks, planRoutine, stocktakeMessage } from './core/routine';
+import { effectiveSpeed, newRoutineMarks, planRoutine, stocktakeMessage } from './core/routine';
 import { vehicleDef } from './data/biz';
 import { checkChapters, eatBreakfast, stockReminders } from './core/biz';
 import { hasSkill } from './data/titles';
@@ -740,7 +740,7 @@ function renderFrame() {
     // cũng dừng — khách đứng chờ chủ quyết định, không đếm ngược vội (GĐ102: ở 8× cửa sổ 15 phút
     // game chỉ còn ~1 giây thực, người chơi không kịp đọc là cơ hội rơi hết vào chọn hộ).
     // Ở hẻm bảng tổng kết và hội thoại cốt truyện không dừng giờ: một người đọc tổng kết không bắt cả hẻm đứng chờ
-    const speed = (state.panel?.type === 'summary' && !inAlley()) || (state.biz.chapterPending && !inAlley()) || askPending() ? 0 : state.speed;
+    const speed = effectiveSpeed({ panelType: state.panel?.type, chapterPending: state.biz.chapterPending, speed: state.speed }, inAlley(), askPending());
     const guest = isGuest();
     // Người vào phòng không tự chạy mô phỏng: giờ, khách, nhân viên đều do chủ phòng gửi sang
     if (speed && !guest) state.tick(dt);
