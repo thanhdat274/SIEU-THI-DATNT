@@ -12,6 +12,7 @@ export function VendorAlert() {
   const storage = useGame((s) => s.storage);
   const storageLots = useGame((s) => s.storageLots);
   const priceOf = useGame((s) => s.priceOf);
+  const money = useGame((s) => s.money);
   const accept = useGame((s) => s.acceptWholesale);
   const decline = useGame((s) => s.declineWholesale);
   if (!offer) return null;
@@ -37,7 +38,7 @@ export function VendorAlert() {
       )}
       <span className="hud-alert-actions">
         {short
-          ? <button className="hud-btn primary" disabled={!rush || rush.net <= 0} onClick={() => accept(true)}>⚡ Nhập gấp & giao ({formatMoney(rush?.cost ?? 0)})</button>
+          ? <button className="hud-btn primary" disabled={!rush || rush.net <= 0 || money < rush.cost} onClick={() => accept(true)}>⚡ Nhập gấp & giao ({formatMoney(rush?.cost ?? 0)})</button>
           : <button className="hud-btn primary" onClick={() => accept()}>🤝 Bán sỉ từ kho</button>}
         <button className="hud-btn" onClick={decline}>Không bán</button>
       </span>
