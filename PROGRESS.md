@@ -169,3 +169,4 @@
 - GĐ845: playtest 3 ngày trên save bot ngày 100: tiền −9→−11,5 triệu, 0 doanh thu, 100% khách bất mãn (kệ trống, lương+thuê trừ vô điều kiện ở endDay.ts:458). Là xoáy nợ của bot (đã biết GĐ817), người chơi thật có cảnh báo lương + vay gấp/vay thêm (biz.ts takeLoan). Chưa thêm cơ chế cứu trợ; nếu muốn, cần duyệt thiết kế (trần vay theo nợ, giảm lương tạm).
 - GĐ846: loanWhenBroke.test.ts — quỹ âm vẫn vay được và vay thêm được (lối thoát có thật cho người chơi; xoáy nợ GĐ845 là của bot).
 - GĐ847: autoplay vay gấp (1 triệu) khi quỹ âm và chưa nợ, như người chơi thật → playtest không còn kẹt xoáy nợ giả; test sim/autoplay xanh.
+- GĐ848: thử kiểm chứng bot vay gấp trên save ngày 100 — HMR nạp lại thành ván mới (ngày 1–3 lãi bình thường), chưa kiểm chứng được trên save nợ; sửa GĐ847 mới chỉ có test sim chung xanh.
