@@ -26,6 +26,7 @@
 - GĐ976: tách world/buildingTextures.ts (5 hàm canvas texture, 97 dòng) khỏi world/buildings.ts (803→708) + test `buildingTexturesSplit.test.ts`. tsc exit 0, full test đạt (366 file, 3085 test).
 - GĐ977: tách core/bizAchieve.ts (achievementCtx, checkAchievements, stockReminders, 78 dòng) khỏi core/biz.ts (797→722) + test `bizAchieveSplit.test.ts`. tsc exit 0, full test đạt.
 - GĐ978: tách core/bizLoan.ts (takeLoan, repayLoan, joinHui, 52 dòng) khỏi core/biz.ts (722→673) + test `bizLoanSplit.test.ts`. tsc exit 0, full test đạt.
+- GĐ979: tách core/bizPurchases.ts (pay, thú cưng, thiết bị, đồ nhà, dịch vụ quầy) khỏi core/biz.ts (673→592) + test `bizPurchasesSplit.test.ts`. tsc exit 0, full test đạt.
 - GĐ973: tách data/bizAchievements.ts (thú cưng, thành tựu, thanh tra, 139 dòng) khỏi data/biz.ts (652→520) bằng `export *` + test `bizAchievementsSplit.test.ts`. tsc exit 0, full test đạt (363/3080). Chưa soi bằng mắt.
 - GĐ972: tách data/bizWeeks.ts (báo cáo + thử thách tuần/tháng, 347 dòng) khỏi data/biz.ts (999→652) bằng `export *` + test `bizWeeksSplit.test.ts`. tsc exit 0, full test đạt (362/3077). Chưa soi bằng mắt.
 - **GĐ971 (QA save trắng bằng mắt)** Xoá localStorage/IndexedDB → màn đăng nhập → "Chơi không cần đăng nhập" → vào ngày 1 (6:00, Tết dương lịch, hướng dẫn 5 bước, hội thoại Bà Năm chương 1, HUD 12 nút, dock có "Thêm"). Không có lỗi mới sau khi vào game; các lỗi `REGULAR_NAMES`/`main.tsx` trong console là dấu vết HMR cũ của GĐ962 (máy chủ nay trả 200, export có đủ).
