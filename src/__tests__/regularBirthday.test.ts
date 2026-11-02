@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { REGULARS, BIRTHDAY_BONUS, birthdayDoy, birthdaysToday, isBirthday, regularCheckout, visitsToday, emptyProgress } from '../data/regulars';
 import { YEAR_DAYS } from '../data/calendar';
+import { newGameData, useGame } from '../core/store';
 
 /** GĐ759 — sinh nhật khách quen: ngày cố định theo id, khách đã quen ghé chắc, mua xong +3 thân thiết. */
 const def = REGULARS[0]!;
@@ -63,5 +64,29 @@ describe('birthdaysToday', () => {
     const others = REGULARS.filter((d) => !isBirthday(d, day));
     expect(birthdaysToday([def, ...others], day).map((d) => d.id)).toContain(def.id);
     expect(birthdaysToday(others, day)).toEqual([]);
+  });
+});
+
+describe('regularVisit — lời báo sinh nhật qua store', () => {
+  const msgs: string[] = [];
+  const setup = (day: number) => {
+    msgs.length = 0;
+    useGame.setState({ ...newGameData(), level: 40, day, notify: (m: string) => { msgs.push(m); },
+      regulars: { [def.id]: { ...known({ lastVisitDay: day - 1 }), perks: def.perks.map((p) => p.title) } } });
+  };
+  it('sinh nhật: thay câu thường bằng câu 🎂 (+3 thân thiết), ≤ 90 ký tự, đúng 1 thông báo', () => {
+    setup(bdayDay());
+    useGame.getState().regularVisit(def.id, [fav], true);
+    expect(msgs).toHaveLength(1);
+    expect(msgs[0]).toContain('🎂');
+    expect(msgs[0]).toContain(`+${BIRTHDAY_BONUS}`);
+    expect(msgs[0]!.length).toBeLessThanOrEqual(90);
+    expect(useGame.getState().regulars[def.id]!.friendship).toBe(5 + 2 + BIRTHDAY_BONUS);
+  });
+  it('ngày thường: vẫn câu hài lòng 😊, không 🎂', () => {
+    setup(bdayDay() + 1);
+    useGame.getState().regularVisit(def.id, [fav], true);
+    expect(msgs[0]).toContain('😊');
+    expect(msgs[0]).not.toContain('🎂');
   });
 });

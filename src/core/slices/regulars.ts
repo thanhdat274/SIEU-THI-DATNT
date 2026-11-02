@@ -1,6 +1,6 @@
 import { formatMoney, productById } from '../../data/products';
 import { composeReview, REVIEW_CAP } from '../../data/reviews';
-import { regularById, regularCheckout, regularFriendship, regularWalkout, INFLUENCER_ID, RESERVE_BONUS, RESERVE_MISS_LOSS } from '../../data/regulars';
+import { regularById, regularCheckout, BIRTHDAY_BONUS, isBirthday, regularFriendship, regularWalkout, INFLUENCER_ID, RESERVE_BONUS, RESERVE_MISS_LOSS } from '../../data/regulars';
 import { FORGIVE_FRIEND_GAIN, installmentNow, REMIND_FRIEND_LOSS } from '../../data/credit';
 import { counterActive } from '../../data/biz';
 import { arcForRegular, arcById, currentArcStep, arcStepFulfilled } from '../../data/regularArc';
@@ -91,6 +91,7 @@ export const createRegularsSlice = (set: SetState, get: GetState): Pick<GameStat
     }
     const tip = r.tip ? ` · boa ${formatMoney(r.tip)}` : '';
     if (r.newPerks.length) s.notify(`💛 ${def.name} thân thiết hơn: ${r.newPerks.map((p) => p.description).join(' ')}${tip}${resNote}${giftNote}${arcNote}`);
+    else if (r.points >= BIRTHDAY_BONUS && isBirthday(def, s.day)) s.notify(`🎂 Sinh nhật ${def.name}: +${BIRTHDAY_BONUS} thân thiết${tip}${resNote}${giftNote}${arcNote}`); // GĐ759: thay câu thường, không thêm thông báo
     else s.notify(`😊 ${def.name}: "${satisfiedLine(def.lines.satisfied, get().regulars[id], s.shopName)}"${tip}${resNote}${giftNote}${arcNote}`);
     return r.tip;
   },
