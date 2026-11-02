@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { debtDayAction, debtWriteOffSoon } from '../data/debtLedger';
+import { debtDayAction, debtRowsByUrgency, debtWriteOffSoon } from '../data/debtLedger';
 import { DEBT_WRITE_OFF_DAYS } from '../data/credit';
 
 /**
@@ -30,6 +30,21 @@ describe('debtWriteOffSoon — cửa sổ 3 ngày cuối', () => {
       c: { amount: 999_000, since: sinceFor(day, 9) }, // còn xa → không tính
     }, day);
     expect(got).toEqual({ count: 2, amount: 140_000, minDaysLeft: 1 });
+  });
+});
+
+describe('debtRowsByUrgency — Sổ nợ xếp món gần mất lên trước', () => {
+  const day = 40;
+  it('daysLeft tăng dần; hoà thì món tiền lớn trước; bỏ món nợ 0', () => {
+    const rows = debtRowsByUrgency({
+      xa: { amount: 300_000, since: sinceFor(day, 9) },
+      gan: { amount: 20_000, since: sinceFor(day, 1) },
+      giua: { amount: 50_000, since: sinceFor(day, 4) },
+      giua2: { amount: 80_000, since: sinceFor(day, 4) },
+      khong: { amount: 0, since: sinceFor(day, 1) },
+    }, day);
+    expect(rows.map((r) => r.regularId)).toEqual(['gan', 'giua2', 'giua', 'xa']);
+    expect(rows.some((r) => r.regularId === 'khong')).toBe(false);
   });
 });
 

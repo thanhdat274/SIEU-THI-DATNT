@@ -15,13 +15,13 @@ import { describeRep, meetsRep, REP_FACTORS, REP_INFO, REP_MIN_SAMPLES, reputati
 import { repPayoff, repPayoffFocus } from '../../data/repPayoff';
 import { repMoney, avgPerVisit } from '../../data/repMoney';
 import { butcherValueToday, MAX_BUTCHER_STAR, meatFromByItem, missedMeatRevenue, recentMeatRevenue } from '../../data/butcherValue';
-import { debtLedger, debtDayAction } from '../../data/debtLedger';
+import { debtLedger, debtDayAction, debtRowsByUrgency } from '../../data/debtLedger';
 import { regularRep, regularById, regularsExpectedToday, REGULARS } from '../../data/regulars';
 import { LOAN_DAILY_RATE, loyaltyPayoff } from '../../data/biz';
 import { happyPayoff } from '../../data/rhythm';
 import { QUAN_NUOC_UNLOCK, QUAN_NUOC_WAGE, QUAN_PRICE_OPTIONS, isQuanMatchDay } from '../../data/quanNuoc';
 import { quanNuocDayAction, quanNuocHealth } from '../../data/quanNuocInsights';
-import { CREDIT_FRIENDSHIP, CREDIT_UNLOCK, creditLimit, DEBT_LATE_DAYS, DEBT_WRITE_OFF_DAYS } from '../../data/credit';
+import { CREDIT_FRIENDSHIP, CREDIT_UNLOCK, creditLeft, creditLimit, DEBT_LATE_DAYS, DEBT_WRITE_OFF_DAYS } from '../../data/credit';
 import { CHANGE_OPTS, counterPolicySummary, defaultCounterPolicy, HAGGLE_OPTS } from '../../data/counterDeals';
 import { ACTION_LABEL, expiringSoon, expiryAdvice, peakAdvice, peakHours, spoilNightReport, storeMissRevenue, waitLossStats, walkoutAdvice, type Advice, type HourStat } from '../../data/advice';
 import { dateOfDoy, dayEffects, dayOfYear, festivalStock, isWeekend, upcomingFestival, weekdayOf } from '../../data/calendar';
@@ -1352,17 +1352,20 @@ export function DebtBook() {
         </div>
       )}
       {!rows.length && <div style={{ fontSize: 12, marginTop: 4 }}>Chưa ai nợ.</div>}
-      {rows.map(([id, d]) => {
+      {debtRowsByUrgency(debts, day).map((row) => {
+        const id = row.regularId;
+        const d = debts[id]!;
         const r = regularById(id);
-        const age = day - d.since;
-        const daysLeft = DEBT_WRITE_OFF_DAYS - age;
-        const aboutToLose = daysLeft <= 0;
+        const age = row.age;
+        const daysLeft = row.daysLeft;
+        const aboutToLose = row.writeOffTonight;
+        const left = creditLeft(regulars[id], d);
         return (
           <div key={id} style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, fontSize: 13, background: aboutToLose ? 'rgba(231,76,60,0.10)' : undefined, borderRadius: 4 }}>
             <span style={{ flex: 1 }}>
               {r?.name}: <b>{formatMoney(d.amount)}</b>
               <span style={{ opacity: 0.7, fontSize: 12, color: aboutToLose ? '#e74c3c' : age >= DEBT_LATE_DAYS ? '#e67e22' : undefined }}>
-                {' '}· {age} ngày · hạn mức {formatMoney(creditLimit(regulars[id]))}{d.reminded ? ' · đã nhắc' : ''}
+                {' '}· {age} ngày · hạn mức {formatMoney(creditLimit(regulars[id]))} · {left > 0 ? `còn ghi ${formatMoney(left)}` : 'hết hạn mức'}{d.reminded ? ' · đã nhắc' : ''}
                 {aboutToLose
                   ? <b style={{ color: '#e74c3c' }}> — MẤT HẲN tối nay!</b>
                   : age >= DEBT_LATE_DAYS

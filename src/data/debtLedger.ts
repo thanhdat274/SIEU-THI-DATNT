@@ -69,6 +69,11 @@ export function debtLedger(debts: Record<string, Debt> | undefined, day: number)
   return { count: rows.length, lockedTotal, lateCount, lateAmount, writeOffTonightAmount, rows };
 }
 
+/** GĐ748 — dòng Sổ nợ xếp theo độ gấp: món gần bị xoá lên trước (hoà thì món tiền lớn trước). Thuần. */
+export function debtRowsByUrgency(debts: Record<string, Debt> | undefined, day: number): DebtRow[] {
+  return [...debtLedger(debts, day).rows].sort((a, b) => a.daysLeft - b.daysLeft || b.amount - a.amount);
+}
+
 /** GĐ747 — nợ sắp bị xoá (còn 1..`within` ngày): null nếu không có món nào. Thuần đọc. */
 export function debtWriteOffSoon(debts: Record<string, Debt> | undefined, day: number, within = 3):
   { count: number; amount: number; minDaysLeft: number } | null {
