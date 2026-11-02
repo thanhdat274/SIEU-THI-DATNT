@@ -1,6 +1,6 @@
 import { faintMinutes } from '../data/biz';
 import { Joystick } from './Joystick';
-import { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { formatClock, questContext, useClock, useGame } from '../core/store';
 import { claimableCount, dailyQuests, dailySetProgress, storyQuest, STORY_STEPS } from '../data/quests';
 import { dirtLoss } from '../data/dirtLoss';
@@ -23,7 +23,7 @@ import { pushCloudSave, takeCloudSave } from '../net/cloud';
 import { leaveRoom } from '../net/coop';
 import { logoutGoogle } from '../net/firebase';
 import { useSession } from '../net/session';
-import { initAudio, isMuted, isMusic, setMuted, setMusic } from '../core/audio';
+import { MoneyChip, MusicToggle, SoundToggle } from './HudChips';
 import { Panels } from './Panels';
 import { hubFirst, hubOf } from './hubs';
 import { ToolButton, type ToolDef } from './HudToolButton';
@@ -59,59 +59,6 @@ const SPEEDS = [
   { label: '8×', value: 8, name: 'Rất nhanh' },
 ];
 
-
-/** Nút tắt/bật tiếng: âm thanh lưu riêng trong máy, không nằm trong bản lưu game. */
-function SoundToggle() {
-  const [muted, setLocal] = useState(isMuted());
-  return (
-    <button
-      className="hud-chip hud-sound"
-      title={muted ? 'Bật âm thanh' : 'Tắt âm thanh'}
-      onClick={() => { initAudio(); const next = !muted; setMuted(next); setLocal(next); }}
-    >
-      <span aria-hidden="true">{muted ? '🔇' : '🔊'}</span>
-    </button>
-  );
-}
-
-/** Nút nhạc nền: giai điệu nhẹ tự sinh, bật riêng khỏi hiệu ứng tiếng. */
-function MusicToggle() {
-  const [on, setLocal] = useState(isMusic());
-  return (
-    <button
-      className="hud-chip hud-sound"
-      title={on ? 'Tắt nhạc nền' : 'Bật nhạc nền'}
-      onClick={() => { const next = !on; setMusic(next); setLocal(next); }}
-    >
-      <span aria-hidden="true">{on ? '🎵' : '🎶'}</span>
-    </button>
-  );
-}
-
-/** Tiền "pop" mỗi khi đổi: xanh khi kiếm, đỏ khi chi, kèm số +/− nổi lên rồi tan. */
-function MoneyChip({ money }: { money: number }) {
-  const [bump, setBump] = useState(0);
-  const [delta, setDelta] = useState<{ v: number; dir: 1 | -1 } | null>(null);
-  const prev = useRef(money);
-  useEffect(() => {
-    if (money === prev.current) return;
-    const diff = money - prev.current;
-    prev.current = money;
-    if (Math.abs(diff) >= 100) {
-      setDelta({ v: diff, dir: diff >= 0 ? 1 : -1 });
-      setBump((n) => n + 1);
-    }
-    const t = setTimeout(() => setDelta(null), 1300);
-    return () => clearTimeout(t);
-  }, [money]);
-  return (
-    <div className="hud-chip hud-money" title="Tiền hiện có">
-      <span aria-hidden="true">💰</span>
-      <b key={bump} className={delta ? (delta.dir === 1 ? 'money-up' : 'money-down') : undefined}>{formatMoney(money)}</b>
-      {delta && <span className={`hud-delta ${delta.dir === 1 ? 'up' : 'down'}`}>{delta.dir === 1 ? '+' : '−'}{formatMoney(Math.abs(delta.v))}</span>}
-    </div>
-  );
-}
 
 /** Đo chiều cao thật của thanh dưới (dock + gợi ý) để hội thoại và cột thông báo né ra, mọi cỡ màn hình đều khớp. */
 function useNarrowScreen() {
