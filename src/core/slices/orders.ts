@@ -59,7 +59,7 @@ export const updatePhones = (set: SetState, get: GetState) => {
     } else if (s.shopOpen && !hasCourier && (s.weather === 'rain' || s.weather === 'storm') && s.phoneHintDay !== s.day) {
       // Mưa mà không ai giao hàng thì lỡ hết đơn — nhắc một lần mỗi ngày cho khỏi làm phiền
       set({ phoneHintDay: s.day });
-      s.notify('🌧️ Trời mưa, nhiều người muốn gọi đặt hàng — thuê nhân viên giao hàng để nhận đơn!');
+      s.notify('🌧️ Mưa to, nhiều người đặt hàng — thuê nhân viên giao để nhận đơn!');
     }
     phoneSlot++;
     changed = true;
