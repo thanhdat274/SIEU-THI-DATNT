@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (02/11/2026)
+- **GĐ748:** Sổ nợ (panel Khách quen) xếp món **gần bị xoá lên trước** (helper thuần `debtRowsByUrgency`: ít ngày còn lại trước, hoà thì tiền lớn trước) — hết cảnh món sắp mất nằm cuối danh sách. Test debtSoon +1 (6 xanh), tsc sạch; không đổi kinh tế/save.
 - **GĐ747:** nợ khách quen **sắp bị xoá** lên Sổ đầu ngày (Sổ nợ nằm sâu trong panel Khách quen, không ai mở → mất tiền im lặng): helper thuần `debtWriteOffSoon` (daysLeft 1..3) + `debtDayAction` (danger, priority 1, "Nợ sắp mất: X — nhắc nợ hôm nay (còn N ngày)", routes panel regulars). Test debtSoon 5 (biên 4/3/1/0, nhiều món, nợ 0); mutation `<` → 2 đỏ. Suite 311 file / 2904 xanh (201 s). QA ?thu=1 (level 12, nợ since day−12): dòng hiện trong Sổ đầu ngày, bấm mở đúng Sổ nợ (còn 2 ngày), clipped 0, 0 lỗi.
 - **GĐ746:** câu xin ghi sổ ở quầy nói rõ **hạn mức còn lại** (trước chỉ báo "đang nợ"): helper thuần `creditLeft` (hạn mức − đang nợ, kẹp 0) + `creditAskText` ("… (đang nợ X · còn ghi Y)") ở data/credit, customers dùng. Test creditLeft 7 (thuần + đường thật counterDeal: không nợ → "còn ghi", nợ 50k → cả hai, vượt hạn mức → không hỏi); mutation creditLeft bỏ trừ nợ → 2 đỏ. Suite 310 file / 2899 xanh (214 s). QA ?thu=1: câu dài nhất 53 ký tự, hiện đủ nút, clipped 0, 0 lỗi.
 - **GĐ745:** rà sức chứa Sổ đầu ngày sau 3 nguồn việc mới (wish 727/731 · góp công trình 741 · trả góp 734) — KHÔNG đổi mã: dayPlanCrowding 4 khoá danger-xếp-trước, tầng priority, khử trùng, wish 1 người/ngày; mutation → đỏ. Cap 7 vẫn đủ. 309 file / 2892 xanh (187 s).
@@ -147,3 +148,4 @@
 - GĐ689: dồn chi tiết GĐ681–688 sang docs/progress-archive/PROGRESS-GD681-688.md.
 - GĐ690: audit 10-GĐ ĐẠT — điểm nhấn chu kỳ = fix heartbeat + co-op trọn vẹn lần đầu; prune không bỏ gì.
 - GĐ686: 🐛 fix heartbeat server (pong ghi sai object → hẻm chết ~60 s) + heartbeatStep + wsHeartbeat.test. Server dev cần khởi động lại để có hiệu lực — sau đó QA co-op vòng ngày (GĐ690) khả thi.
+- GĐ748: Sổ nợ xếp món gần mất lên trước (debtRowsByUrgency, test debtSoon).
