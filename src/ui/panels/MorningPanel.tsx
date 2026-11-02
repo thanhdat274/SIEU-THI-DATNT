@@ -45,6 +45,7 @@ import { alleySignalsToday } from '../../data/alleySignals';
 import { SupplyChainCard } from './SupplyChainCard';
 import { CounterDemandCard } from './CounterDemandCard';
 import { MarketSurplusCard } from './MarketSurplusCard';
+import { EarlyUnlocksCard } from './EarlyUnlocksCard';
 import { signHiepLuc } from '../../core/biz';
 import { seasonEvent, seasonObjective, seasonEventName, SEASON_EVENT_DAYS, SEASON_REWARD_PER_STAR } from '../../data/seasonEvent';
 import { planDay, type DayAction } from '../../data/dayPlan';
@@ -303,29 +304,7 @@ export function MorningPanel() {
       {/* GĐ199/GĐ202: Rốn kho chung + phiếu nạp kho (tách GĐ919 sang SupplyChainCard) */}
       <SupplyChainCard storage={storage} branch={branch ?? undefined} quanNuoc={biz.quanNuoc} quanNuocLast={biz.quanNuocLast ?? null} level={level} weather={weather} day={day} />
 
-      {earlyUnlocks && (
-        <div style={{ ...styles.card, display: 'block', marginBottom: 8, outline: '2px solid #f1c40f' }}>
-          <b style={styles.cardTitle}>🧭 Sắp mở khóa</b>
-          <div style={{ marginTop: 4, display: 'grid', gap: 2 }}>
-            {earlyUnlocks.map((u) => (
-              u.panel ? (
-                <button key={u.id} onClick={() => openPanel(u.panel!())}
-                  style={{ display: 'flex', gap: 8, alignItems: 'baseline', background: 'transparent', border: 'none', color: '#f1c40f', fontSize: 12, cursor: 'pointer', padding: 0, textAlign: 'left' }}>
-                  <span style={{ minWidth: 150 }}>{u.icon} {u.name} →</span>
-                  <span style={{ opacity: 0.8 }}>cấp {u.atLevel} · còn {u.xpAway.toLocaleString('vi-VN')} XP</span>
-                </button>
-              ) : (
-                // Mốc tự vận hành (chương truyện) không có bảng mở nhanh — hiện chỉ đọc
-                <div key={u.id} style={{ display: 'flex', gap: 8, alignItems: 'baseline', fontSize: 12 }}>
-                  <span style={{ minWidth: 150 }}>{u.icon} {u.name}</span>
-                  <span style={{ opacity: 0.8 }}>cấp {u.atLevel} · còn {u.xpAway.toLocaleString('vi-VN')} XP</span>
-                </div>
-              )
-            ))}
-          </div>
-          <div style={{ fontSize: 11, opacity: 0.7, marginTop: 3 }}>Bán hàng & làm khách vui để lấy XP.</div>
-        </div>
-      )}
+      {earlyUnlocks && <EarlyUnlocksCard earlyUnlocks={earlyUnlocks} />}
 
       {chophien && <MarketSurplusCard chophien={chophien} />}
 
