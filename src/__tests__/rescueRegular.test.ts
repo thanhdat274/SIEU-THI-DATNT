@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { newGameData, useGame } from '../core/store';
-import { newBiz, RESCUE_FEE, RESCUE_FRIENDSHIP } from '../data/biz';
+import { atRiskOfPoach, newBiz, RESCUE_FEE, RESCUE_FRIENDSHIP } from '../data/biz';
 import {
   birthdayEve, isBirthday, regularById, regularsExpectedToday, REGULARS,
 } from '../data/regulars';
@@ -109,5 +109,18 @@ describe('Sổ đầu ngày / mồi ngày mai không hứa khách đang bị lô
     const eve = birthdayEve(day, 40, progress, () => false);
     expect(eve.map((e) => e.def.id)).toContain(def.id);
     expect(birthdayEve(day, 40, progress, () => false, [def.id])).toEqual([]);
+  });
+});
+
+describe('GĐ794 — atRiskOfPoach: cảnh báo trước khi mất khách', () => {
+  const rival = (strength: number, poached: Record<string, number> = {}) => ({ ...RIVAL, strength, poached });
+  it('chỉ khách thân thiết < mốc, chưa bị kéo, khi rival đủ mạnh', () => {
+    expect(atRiskOfPoach(rival(60), { a: 5, b: 80, c: 24, d: 25 }).sort()).toEqual(['a', 'c']);
+    expect(atRiskOfPoach(rival(60, { a: 3 }), { a: 5, c: 10 })).toEqual(['c']);
+  });
+  it('rival yếu (<35), không có rival hoặc đã kéo đủ 3 người thì không cảnh báo', () => {
+    expect(atRiskOfPoach(rival(34), { a: 5 })).toEqual([]);
+    expect(atRiskOfPoach(undefined, { a: 5 })).toEqual([]);
+    expect(atRiskOfPoach(rival(90, { x: 1, y: 1, z: 1 }), { a: 5 })).toEqual([]);
   });
 });

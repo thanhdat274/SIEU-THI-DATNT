@@ -86,6 +86,16 @@ export const RIVAL_UNDERCUT = { cutter: 0.88, quality: 0.97, aggressive: 0.92 };
 export const POACH_FRIENDSHIP = 25;
 /** Xác suất cơ bản mỗi đêm một khách quen bị lôi kéo (nhân theo sức mạnh rival). */
 export const POACH_CHANCE = 0.05;
+/** GĐ794 — khách quen đang "dễ bị kéo": rival đủ mạnh, còn chỗ (<3 người), khách mới quen (thân thiết < mốc) và chưa bị kéo.
+ *  Cùng điều kiện với rivalNightAI nên cảnh báo không hứa hão; thuần, dùng chung chơi đơn/hẻm online. */
+export function atRiskOfPoach(rival: Rival | null | undefined, friendships: Record<string, number | undefined>): string[] {
+  if (!rival || rival.strength < 35) return [];
+  const poached = rival.poached ?? {};
+  if (Object.keys(poached).length >= 3) return [];
+  return Object.entries(friendships)
+    .filter(([id, f]) => f !== undefined && f < POACH_FRIENDSHIP && !poached[id])
+    .map(([id]) => id);
+}
 /** Rival mạnh quá mốc này mới dám giựt nhân viên (chỉ rival máu liều). */
 export const STAFF_POACH_STRENGTH = 60;
 export const STAFF_POACH_CHANCE = 0.04;
