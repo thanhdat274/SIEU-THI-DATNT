@@ -168,3 +168,4 @@
 - GĐ862: hai thông báo nuôi vỗ béo có đuôi 'mua giữa kỳ' dài ~125/95 ký tự thực (audit bỏ sót phần điều kiện) → ~80/~75; farm+featureBudget xanh.
 - GĐ863: audit-notify.mjs tính nhánh chuỗi dài nhất của ${cond ? 'a' : 'b'} (trước coi như 6 ký tự → bỏ sót); lộ 1 thông báo thu hoạch 91 → 90 (bỏ 'trúng'). 0 vượt 90, tsc sạch, garden/farm/featureBudget xanh.
 - GĐ864: featureBudget.test.ts đếm thông báo theo nhánh điều kiện dài nhất như audit-notify.mjs → khoá bằng test, không còn kẽ hở đuôi 'late ? …'. 4 test xanh, tsc sạch.
+- GĐ865: đếm nhánh điều kiện nhận cả template literal lồng nhau (script + featureBudget); vẫn 0 thông báo >90, 4 test xanh, tsc sạch.

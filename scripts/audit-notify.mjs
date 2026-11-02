@@ -17,7 +17,7 @@ const seg = new Intl.Segmenter('vi', { granularity: 'grapheme' });
 const rows = all.map(({ f, t }) => {
   // Biểu thức điều kiện ${c ? 'a' : 'b'}: tính theo nhánh chuỗi dài nhất (trường hợp xấu nhất), không phải 6 ký tự.
   const x = t.replace(/\$\{(?:[^{}]|\{[^{}]*\})*\}/g, (e) => {
-    const lits = [...e.matchAll(/'((?:[^'\\]|\\.)*)'/g)].map((m) => m[1]);
+    const lits = [...e.matchAll(/'((?:[^'\\]|\\.)*)'|`((?:[^`\\]|\\.)*)`/g)].map((m) => (m[1] ?? m[2]).replace(/\$\{[^}]*\}/g, 'xxxxxx'));
     return lits.length && e.includes('?') ? lits.sort((a, b) => b.length - a.length)[0] : 'xxxxxx';
   });
   return { f, t, cp: [...x].length, gr: [...seg.segment(x)].length, nf: t !== t.normalize('NFC'), ph: (t.match(/\$\{/g) || []).length };

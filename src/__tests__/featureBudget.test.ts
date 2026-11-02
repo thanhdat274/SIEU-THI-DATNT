@@ -70,7 +70,7 @@ export function notifyTexts(): { file: string; text: string; len: number }[] {
       const text = m[1].slice(1, -1);
       // ${c ? 'a' : 'b'} tính theo nhánh chuỗi dài nhất (trường hợp xấu nhất), khớp scripts/audit-notify.mjs
       const flat = text.replace(/\$\{(?:[^{}]|\{[^{}]*\})*\}/g, (e) => {
-        const lits = [...e.matchAll(/'((?:[^'\\]|\\.)*)'/g)].map((x) => x[1]);
+        const lits = [...e.matchAll(/'((?:[^'\\]|\\.)*)'|`((?:[^`\\]|\\.)*)`/g)].map((x) => (x[1] ?? x[2]).replace(/\$\{[^}]*\}/g, 'xxxxxx'));
         return lits.length && e.includes('?') ? lits.sort((a, b) => b.length - a.length)[0] : 'xxxxxx';
       });
       const len = [...flat].length;
