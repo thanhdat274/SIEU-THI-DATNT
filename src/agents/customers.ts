@@ -67,6 +67,8 @@ export function impatienceEmoji(ratio: number): '😕' | '😤' | null {
   return null;
 }
 const OPEN_FROM = 6 * 60;
+/** Trần khoảng chờ khách kế tiếp (phút game) khi vừa sang giờ mở — khách đầu ngày không đợi phần dư của đêm. */
+const DAYTIME_FIRST_GAP_CAP = 20;
 const OPEN_UNTIL = 22 * 60;
 /** Tỉ lệ khách muốn mua món đang có trên kệ (còn lại là món ngẫu nhiên, có thể tiệm không bán). */
 const WANTS_STOCKED = 0.8;
@@ -177,6 +179,8 @@ export class CustomerManager {
     // Ban ngày người đi đường nhiều hơn; có ca đêm thì "ngày" kéo dài tới 6h sáng hôm sau
     const nightOpen = hasUpgrade(s.biz, 'night');
     const daytime = s.minutes >= OPEN_FROM && (s.minutes < OPEN_UNTIL || (nightOpen && s.minutes < 30 * 60));
+    // GĐ806: khoảng chờ ngoài giờ mở là 60–90 phút; sang giờ mở thì không bắt khách đầu ngày đợi hết phần dư đó
+    if (daytime && this.spawnIn > DAYTIME_FIRST_GAP_CAP) this.spawnIn = DAYTIME_FIRST_GAP_CAP;
     this.spawnIn -= gameMinutes;
     if (this.spawnIn <= 0) {
       // Khách quen rủ bạn đi cùng: ngay khi có suất sinh, ưu tiên cho bạn vào tiệm
