@@ -21,6 +21,7 @@
 
 ## Trạng thái hiện tại (02/11/2026)
 - Các mục GĐ790–929 đã chuyển sang `docs/progress-archive/PROGRESS-GD790-929.md` (giữ file này gọn).
+- GĐ964: tách marker hướng dẫn ngày đầu khỏi main.tsx sang render/tutorialMarker.ts (createTutorialMarker, markerGlow) + test. tsc sạch, full test đạt (358 file/3059). Chưa soi bằng mắt trong game.
 - GĐ963: tách `stocktakeMessage` khỏi main.tsx sang core/routine.ts (hàm thuần) + test `stocktakeMessage.test.ts`. tsc sạch, full test đạt. Chưa soi bằng mắt trong game.
 - GĐ962: tách core/bizStory.ts (sự kiện bất ngờ, chuyện khách quen, chương, REGULAR_NAMES) khỏi core/biz.ts (973→~800), biz re-export nên import cũ giữ nguyên + test. Full 356 file/3055 test, tsc sạch.
 - **GĐ961 (QA save trắng bằng mắt, panel trình duyệt)** Vào chơi khách từ màn đầu: không lỗi console, ngày 1 06:00 280.000đ, hướng dẫn 5 bước hiện, HUD 12 nút (≤20), chương 1 bà Năm mở đầu. Chưa đi hết một ngày (không kiểm FPS/bán hàng). Chưa soi nút Nhập hàng trong game.

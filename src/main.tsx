@@ -9,6 +9,7 @@ import * as THREE from 'three';
 import { shopLayout, worldActions } from './core/actions';
 import { saveGame, startAutosave } from './core/save';
 import { formatClock, SLEEP_FROM, useGame, type GameState } from './core/store';
+import { createTutorialMarker } from './render/tutorialMarker';
 import { newRoutineMarks, planRoutine, stocktakeMessage } from './core/routine';
 import { vehicleDef } from './data/biz';
 import { checkChapters, eatBreakfast, stockReminders } from './core/biz';
@@ -718,23 +719,7 @@ const peopleScratch: THREE.Vector3[] = [];
 let lastPhoneOrders: GameState['phoneOrders'] | null = null;
 const waitingHouses = new Set<string>();
 
-// Marker hướng dẫn ngày đầu (bước "Đứng quầy"): đĩa và vòng vàng phát sáng trên sàn ngay chỗ
-// đứng sau quầy chính. Tạo một lần như marker giao hàng, chỉ hiện/ẩn theo điều kiện — không dựng
-// lại nên không có gì phải dọn dẹp.
-const tutorialMarker = new THREE.Group();
-const tutorialDisc = new THREE.Mesh(
-  new THREE.CircleGeometry(0.42, 32),
-  new THREE.MeshBasicMaterial({ color: 0xffc107, transparent: true, opacity: 0.28, depthWrite: false }),
-);
-const tutorialRing = new THREE.Mesh(
-  new THREE.RingGeometry(0.42, 0.6, 32),
-  new THREE.MeshBasicMaterial({ color: 0xffc107, transparent: true, opacity: 0.9, depthWrite: false }),
-);
-tutorialDisc.rotation.x = tutorialRing.rotation.x = -Math.PI / 2;
-tutorialDisc.position.y = tutorialRing.position.y = 0.03;
-tutorialMarker.add(tutorialDisc, tutorialRing);
-tutorialMarker.visible = false;
-scene.add(tutorialMarker);
+const tutorialMarker = createTutorialMarker(scene);
 
 const clock = new THREE.Clock();
 
@@ -864,13 +849,7 @@ function renderFrame() {
   // Hướng dẫn ngày đầu tới bước "Đứng quầy": đĩa vàng sáng dìm/nhạt ngay chỗ đứng sau quầy chính,
   // chỉ hiện khi chủ đang ở trong tiệm (toạ độ quầy theo dõi cache của shop nên dời quầy vẫn đúng)
   const tutStep = tutorialActive(g) ? tutorialStep(g) : -1;
-  tutorialMarker.visible = tutStep === 3 && g.location === shop.building.opts.name;
-  if (tutorialMarker.visible) {
-    tutorialMarker.position.copy(shopSpot());
-    const glow = 0.55 + Math.sin(performance.now() / 350) * 0.3;
-    (tutorialDisc.material as THREE.MeshBasicMaterial).opacity = glow * 0.35;
-    (tutorialRing.material as THREE.MeshBasicMaterial).opacity = glow;
-  }
+  tutorialMarker.update(tutStep === 3 && g.location === shop.building.opts.name, shopSpot(), performance.now());
   for (const b of world.buildings) {
     b.updateView(camera, b === interior.current);
     b.setLamp(lamp);
