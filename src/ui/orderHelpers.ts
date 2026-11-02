@@ -110,3 +110,13 @@ export function supplierTomorrow(s: Supplier, level: number, day: number): Dir {
   return pricier > cheaper ? 'pricier' : cheaper > pricier ? 'cheaper' : 'flat';
 }
 
+
+/** GĐ948: lý do một món "cần nhập gấp" (tách từ OrderPanel). */
+export function urgentReasonOf(r: { asked: number; have: number; demand: number; isHot: boolean }): string {
+  if (r.asked > 0 && r.have === 0) return `hôm nay ${r.asked} khách hỏi mà hết hàng`;
+  if (r.have === 0) return 'đã hết hàng';
+  if (r.demand > 0 && r.have < r.demand) return `còn ${r.have} món, ít hơn một ngày bán (${r.demand.toFixed(1)}/ngày)`;
+  if (r.asked > 0) return `hôm nay ${r.asked} khách hỏi mua`;
+  if (r.isHot) return 'hàng hot tuần này';
+  return `bán ${r.demand.toFixed(1)}/ngày, đang có ${r.have}`;
+}

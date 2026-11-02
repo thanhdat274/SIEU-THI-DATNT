@@ -22,7 +22,8 @@ import { teahouseFillPlan } from '../data/teahouseHaul';
 import { quanNuocDrinkIds } from '../data/quanNuoc';
 import { festivalRestockPlan } from '../data/festivalRestock';
 import { GuideBanner, QuanDrinkTipCallout, FestivalPrepCallout, NetworkFillCallout } from './OrderBanners';
-import { displayable, onHand, incoming, suggestQty, assessText, supplierTone, supplierTomorrow } from './orderHelpers';
+import { ProdSuggCard, HotWeekBanner, UrgentCard } from './OrderCards';
+import { urgentReasonOf, displayable, onHand, incoming, suggestQty, assessText, supplierTone, supplierTomorrow } from './orderHelpers';
 import { acceptFairOffer } from '../core/biz';
 import { CUNG_GOODS, isXoiCungDay } from '../data/tiemXoi';
 import { festivalOn, festivalStock, monthOf, upcomingFestival } from '../data/calendar';
@@ -128,14 +129,7 @@ export function OrderPanel() {
     .filter((r) => r.suggest > 0 && displayable(r.p.id))
     .sort((a, b) => b.asked - a.asked || b.demand - a.demand || a.have - b.have)
     .slice(0, 5);
-  const urgentReason = (r: (typeof rows)[number]) => {
-    if (r.asked > 0 && r.have === 0) return `hôm nay ${r.asked} khách hỏi mà hết hàng`;
-    if (r.have === 0) return 'đã hết hàng';
-    if (r.demand > 0 && r.have < r.demand) return `còn ${r.have} món, ít hơn một ngày bán (${r.demand.toFixed(1)}/ngày)`;
-    if (r.asked > 0) return `hôm nay ${r.asked} khách hỏi mua`;
-    if (r.isHot) return 'hàng hot tuần này';
-    return `bán ${r.demand.toFixed(1)}/ngày, đang có ${r.have}`;
-  };
+  const urgentReason = urgentReasonOf;
 
   // Giỏ đặt tính theo thùng; đơn gửi đi tính theo món
   const toLines = (c: Record<string, number>) => Object.fromEntries(
@@ -492,49 +486,11 @@ export function OrderPanel() {
       </div>
 
       {/* 🌾 Nên hôm nay — chuỗi sản xuất hội tụ (GĐ73) */}
-      {prodSugg.length > 0 && (
-        <div style={{ ...st.banner, background: 'rgba(46, 204, 113, 0.12)', outline: '1px solid rgba(46,204,113,0.35)' }}>
-          <b>🌾 Nên hôm nay — tự làm khi nên</b>
-          <div style={{ marginTop: 4, display: 'grid', gap: 2 }}>
-            {prodSugg.map((s, i) => (
-              <button key={i} onClick={() => openPanel({ type: s.panel })}
-                style={{ display: 'flex', gap: 8, alignItems: 'baseline', background: 'transparent', border: 'none', color: 'inherit', fontSize: 12, cursor: 'pointer', padding: 0, textAlign: 'left' }}>
-                <span style={{ minWidth: 130 }}>{s.icon} {s.label} →</span>
-                <span style={{ opacity: 0.85 }}>{s.detail}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
+      {prodSugg.length > 0 && <ProdSuggCard items={prodSugg} onOpen={(panel) => openPanel({ type: panel })} />}
 
-      {hot.length > 0 && day > 1 && (
-        <div style={st.banner}>
-          🔥 Tuần này khách săn: <b>{hot.map((id) => productById(id).name).join(', ')}</b>
-          {hotNextWeek.length > 0 && (
-            <span style={{ opacity: 0.85 }} title="Tuần mới bắt đầu Thứ 2 — nhập sẵn hôm nay để không lỡ nhịp">
-              {' '}· 🔮 Tuần mai: <b>{hotNextWeek.map((id) => productById(id).name).join(', ')}</b>
-            </span>
-          )}
-          {unlockedSuppliers.length < SUPPLIERS.length && (
-            <span style={{ opacity: 0.75 }}> · Mối mới mở ở cấp {SUPPLIERS.find((s) => s.unlock > level)!.unlock}</span>
-          )}
-        </div>
-      )}
+      {hot.length > 0 && day > 1 && <HotWeekBanner hot={hot} hotNextWeek={hotNextWeek} nextSupplierUnlock={unlockedSuppliers.length < SUPPLIERS.length ? SUPPLIERS.find((s) => s.unlock > level)!.unlock : undefined} />}
 
-      {filter === 'suggest' && urgent.length > 0 && showRestockExtras(day) && (
-        <div style={{ ...st.banner, background: 'rgba(214, 48, 49, 0.16)' }}>
-          <b>🚨 Cần nhập gấp</b>
-          <div style={{ marginTop: 4, display: 'grid', gap: 2 }}>
-            {urgent.map((r) => (
-              <div key={r.p.id} style={{ display: 'flex', gap: 8, alignItems: 'baseline' }}>
-                <span style={{ minWidth: 130 }}>{productById(r.p.id).name}</span>
-                <span style={{ opacity: 0.85 }}>{urgentReason(r)}</span>
-                <span style={{ marginLeft: 'auto', opacity: 0.75 }}>✨ nên nhập {r.suggest} thùng</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {filter === 'suggest' && urgent.length > 0 && showRestockExtras(day) && <UrgentCard rows={urgent.map((r) => ({ id: r.p.id, reason: urgentReason(r), suggest: r.suggest }))} />}
 
       <div style={st.toolbar}>
         <Dropdown<Filter>
