@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (02/11/2026)
+- **GĐ752:** bù số đo audit GĐ750: coverage (`npm run test:coverage`, 309 file / 2885 xanh) = **58,27% stmt / 90,16% br / 83,12% fn** — ngang GĐ740 (58,22/90,09), chuỗi 741–751 không làm tụt. FPS + QA trình duyệt vẫn chờ phiên có dev server.
 - **GĐ751:** soát co-op (5 câu qa-guide) cho chuỗi Sổ đầu ngày 741/747/749: ĐẠT — 0 thao tác mới (helper chỉ đọc), `debts`/`biz.landmark` đã nằm trong snapshot `useGame` như Sổ nợ có sẵn nên máy khách thấy đúng cùng dòng; không phụ thuộc vị trí người chơi. Nhóm test co-op + serverGuard xanh. Không đổi mã.
 - **GĐ750:** 🧭 AUDIT 10-GĐ (GĐ741–750) — số đo: bundle **532,1/597 KB** · chunk **253/255** · 312 file / **2908 test xanh** (97 s) · build sạch · featureBudget/economySim/longSessionLeak xanh trong bộ. KHÔNG đo được: coverage, FPS, QA trình duyệt/save trắng (cloud không có dev server localhost:5173, Luật 11 cấm tự khởi động) → để phiên có server. Điểm nhấn: chuỗi "đưa việc/khoản mất nằm sâu lên Sổ đầu ngày" (góp công trình 741, nợ sắp mất 747, nợ quá hạn chưa nhắc 749) + Sổ nợ xếp theo độ gấp (748), tất cả thuần-soi-sáng, 0 nút HUD/panel mới. Prune (Leader + Designer): không gộp/bỏ gì; Sổ đầu ngày cap 7 giữ (dayPlanCrowding xanh). Chu kỳ tới: nhận định các trục lớn vẫn ĐỦ SÂU; ưu tiên QA trình duyệt các dòng Sổ đầu ngày mới khi có server.
 - **GĐ749:** nợ **quá hạn chưa nhắc** lên Sổ đầu ngày (khách được nhắc thì chắc chắn trả, chưa nhắc chỉ ~70%): helper thuần `debtUnremindedAction` (cam, priority 2, routes regulars), `debtDayAction` rơi về nó khi không có nợ sắp mất (việc đỏ thắng). Test debtUnreminded 3 + mutation (bỏ `!reminded`) → 1 đỏ. Suite 312 file / 2908 xanh (97 s), build sạch, bundle 532/597 · chunk 253/255. Không đổi kinh tế/save/nút HUD. Chưa QA trình duyệt.
@@ -150,3 +151,4 @@
 - GĐ749: nợ quá hạn chưa nhắc lên Sổ đầu ngày (debtUnremindedAction).
 - GĐ750: audit 10-GĐ (741–750) — số đo suite/bundle đạt; coverage/FPS/QA trình duyệt chưa đo (không có server).
 - GĐ751: soát co-op chuỗi Sổ đầu ngày (741/747/749) — đạt, không đổi mã.
+- GĐ752: coverage 58,27/90,16 (bù audit 750).
