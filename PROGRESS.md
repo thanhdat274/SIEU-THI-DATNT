@@ -21,6 +21,7 @@
 
 ## Trạng thái hiện tại (02/11/2026)
 - Các mục GĐ790–929 đã chuyển sang `docs/progress-archive/PROGRESS-GD790-929.md` (giữ file này gọn).
+- **GĐ961 (QA save trắng bằng mắt, panel trình duyệt)** Vào chơi khách từ màn đầu: không lỗi console, ngày 1 06:00 280.000đ, hướng dẫn 5 bước hiện, HUD 12 nút (≤20), chương 1 bà Năm mở đầu. Chưa đi hết một ngày (không kiểm FPS/bán hàng). Chưa soi nút Nhập hàng trong game.
 - **GĐ960 (rà 951–959 + dọn PROGRESS)** Chỉ tách UI/data thuần (Hud, BusinessPanel, ReportPanels, StaffPanel, OrderPanel, ArrangePanel, data/rivals), không đổi luật chơi; full 355 file/3053 test, tsc sạch. Bundle tải đầu 533/597 KB, chunk lớn nhất 253/255 KB (không đổi); thông báo ≤90. PROGRESS 38.9→33KB (GĐ930–949 sang archive). Còn nợ ngoài tầm: FPS thật trên cửa sổ có mắt, save thật, tín hiệu người chơi thật. Chưa soi bằng mắt trong game.
 - GĐ959: tách data/rivals.ts (tiệm đối thủ) khỏi data/biz.ts (1345→999), biz re-export nên import cũ giữ nguyên + test. Full 355 file/3053 test, tsc sạch.
 - GĐ958: tách arrangeGeometry (snap/box/aisle/overlap/findSpot) khỏi ArrangePanel (454→406) + test. Full 354 file/3051 test, tsc sạch. Chưa soi bằng mắt trong game.
