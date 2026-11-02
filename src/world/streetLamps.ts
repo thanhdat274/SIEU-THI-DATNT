@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { registerLight } from '../render/lightBudget';
 
 /**
@@ -32,8 +33,23 @@ export class StreetLamps {
   private lights: THREE.PointLight[] = [];
 
   constructor() {
+    // GĐ907: thân đèn (đế/cột/que/chao) gộp 1 hình + bóng 1 hình, vẽ bằng InstancedMesh: 24 cột × 5 mesh → 2 draw call
+    const { metalGeo, bulbGeo } = lampGeometries();
+    const metal = new THREE.InstancedMesh(metalGeo, new THREE.MeshStandardMaterial({ color: 0x455a64 }), SPOTS.length);
+    const bulbs = new THREE.InstancedMesh(bulbGeo, this.headMat, SPOTS.length);
+    metal.castShadow = true;
+    const m = new THREE.Matrix4();
+    SPOTS.forEach(([x, z, rot], i) => {
+      m.makeRotationY(rot).setPosition(x, 0, z);
+      metal.setMatrixAt(i, m);
+      bulbs.setMatrixAt(i, m);
+    });
+    metal.instanceMatrix.needsUpdate = bulbs.instanceMatrix.needsUpdate = true;
+    metal.computeBoundingSphere();
+    bulbs.computeBoundingSphere();
+    this.group.add(metal, bulbs);
     for (const [x, z, rot] of SPOTS) {
-      const lamp = createLamp(this.headMat, this.glowMat);
+      const lamp = createLamp(this.glowMat);
       lamp.position.set(x, 0, z);
       lamp.rotation.y = rot;
       this.group.add(lamp);
@@ -71,28 +87,27 @@ function glowTexture(): THREE.CanvasTexture {
   return tex;
 }
 
-/** Một cột đèn: đế, cột, que vươn về +z và chao đèn có bóng sáng bên dưới. */
-function createLamp(headMat: THREE.MeshStandardMaterial, glowMat: THREE.SpriteMaterial): THREE.Group {
+/** Hình học cột đèn ở gốc toạ độ cột (que vươn +z): thân kim loại gộp một khối, bóng đèn riêng (vật liệu phát sáng). */
+function lampGeometries(): { metalGeo: THREE.BufferGeometry; bulbGeo: THREE.BufferGeometry } {
+  const base = new THREE.CylinderGeometry(0.11, 0.15, 0.3, 8).translate(0, 0.15, 0);
+  const pole = new THREE.CylinderGeometry(0.05, 0.08, 4.3, 8).translate(0, 2.45, 0);
+  const arm = new THREE.CylinderGeometry(0.04, 0.04, 1.0, 6).rotateX(Math.PI / 2).translate(0, 4.5, 0.5);
+  const head = new THREE.BoxGeometry(0.26, 0.12, 0.72).translate(0, 4.48, 0.95);
+  const parts = [base, pole, arm, head];
+  const metalGeo = mergeGeometries(parts, false)!;
+  for (const p of parts) p.dispose();
+  return { metalGeo, bulbGeo: new THREE.BoxGeometry(0.18, 0.06, 0.56).translate(0, 4.4, 0.95) };
+}
+
+/** Một cột đèn: chỉ còn quầng sáng và nguồn sáng thật (thân đèn do InstancedMesh vẽ). */
+function createLamp(glowMat: THREE.SpriteMaterial): THREE.Group {
   const g = new THREE.Group();
-  const metal = new THREE.MeshStandardMaterial({ color: 0x455a64 });
-  const base = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.15, 0.3, 8), metal);
-  base.position.y = 0.15;
-  const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.08, 4.3, 8), metal);
-  pole.position.y = 2.45;
-  const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.0, 6), metal);
-  arm.rotation.x = Math.PI / 2;
-  arm.position.set(0, 4.5, 0.5);
-  const head = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.12, 0.72), metal);
-  head.position.set(0, 4.48, 0.95);
-  const bulb = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.06, 0.56), headMat);
-  bulb.position.set(0, 4.4, 0.95);
   const glow = new THREE.Sprite(glowMat);
   glow.position.set(0, 4.3, 0.95);
   glow.scale.setScalar(2.4);
   const light = new THREE.PointLight(0xffd9a0, 0, 16, 1.8);
   light.position.set(0, 4.15, 0.95);
   light.name = 'light';
-  base.castShadow = pole.castShadow = head.castShadow = true;
-  g.add(base, pole, arm, head, bulb, glow, light);
+  g.add(glow, light);
   return g;
 }
