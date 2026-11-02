@@ -208,7 +208,7 @@ export function createWorld(scene: THREE.Scene, grid: NavGrid): World {
   scene.add(home.group);
 
   const warehouse = new Warehouse(scene);
-  const shop = new GroceryShop(scene, warehouse);
+  const shop = new GroceryShop(scene, warehouse, true);
 
   // Kit prop GLB (chậu cây, thùng gỗ, tre, bồn nước, ghế nhựa, gánh hàng rong) — trang trí
   // thôi, không chặn lưới; tải lười nên thế giới có sẵn, prop vừa về vừa chen vào.

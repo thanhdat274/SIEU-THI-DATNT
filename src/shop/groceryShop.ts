@@ -5,6 +5,7 @@ import { Building, WINDOW_W, createCounter } from '../world/buildings';
 import type { Warehouse } from '../world/warehouse';
 import type { NavGrid } from '../world/navGrid';
 import { FurnitureView } from './furnitureView';
+import { ShelfInstancer } from './shelfInstancer';
 
 import { SHOP_CENTER_X, SHOP_FRONT_Z, SHOP_TIERS } from '../data/shopTiers';
 
@@ -41,10 +42,13 @@ export class GroceryShop {
   counter!: THREE.Group;
   views = new Map<number, FurnitureView>();
   private furnitureGroup = new THREE.Group();
+  /** GĐ886: hàng mọi kệ gộp theo món (ít draw call). Chỉ bật ở bản trình duyệt: sim headless seed Math.random mà three sinh UUID bằng Math.random, đổi số mesh sẽ lệch dòng ngẫu nhiên của sim kinh tế. */
+  private shelfGoods: ShelfInstancer | undefined;
   private grid: NavGrid | null = null;
   private tier = -1;
 
-  constructor(private scene: THREE.Scene, private warehouse: Warehouse) {
+  constructor(private scene: THREE.Scene, private warehouse: Warehouse, sharedGoods = false) {
+    if (sharedGoods) this.shelfGoods = new ShelfInstancer();
     this.rebuildShell();
     this.sync();
     useGame.subscribe((s, prev) => {
@@ -127,6 +131,7 @@ export class GroceryShop {
 
   /** Tạo / xoá / cập nhật hình 3D theo danh sách nội thất trong store. */
   private sync() {
+    if (this.shelfGoods && this.shelfGoods.root.parent !== this.furnitureGroup) this.furnitureGroup.add(this.shelfGoods.root);
     const list = useGame.getState().furniture;
     const alive = new Set(list.map((f) => f.uid));
     for (const [uid, view] of this.views) {
@@ -139,7 +144,7 @@ export class GroceryShop {
     for (const f of list) {
       let view = this.views.get(f.uid);
       if (!view) {
-        view = new FurnitureView(f.type);
+        view = new FurnitureView(f.type, this.shelfGoods);
         view.group.userData.uid = f.uid;
         this.views.set(f.uid, view);
         this.furnitureGroup.add(view.group);
@@ -149,6 +154,7 @@ export class GroceryShop {
       view.update(f.tiers);
       view.setWallColor(useGame.getState().style.wall);
     }
+    this.shelfGoods?.flush();
     if (this.grid) this.applyToGrid(list);
   }
 

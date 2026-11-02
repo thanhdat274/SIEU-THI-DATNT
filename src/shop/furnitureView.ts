@@ -4,6 +4,7 @@ import { furnitureDef, isCookStation, type FurnitureType } from '../data/furnitu
 import { STATIONS } from '../data/recipes';
 import { createCounter } from '../world/buildings';
 import { productParts } from '../render/productModels';
+import type { ShelfInstancer } from './shelfInstancer';
 
 /** Vật liệu dùng chung cho chi tiết trang trí kệ/tủ — dùng chung nên KHÔNG dispose theo từng kệ. */
 const PRICE_STRIP = new THREE.MeshStandardMaterial({ color: 0xf5efdc, roughness: 1 });
@@ -41,7 +42,7 @@ export class FurnitureView {
   private instSig = new Map<string, string>();
   private readonly _m = new THREE.Matrix4();
 
-  constructor(public type: FurnitureType) {
+  constructor(public type: FurnitureType, private readonly shared?: ShelfInstancer) {
     if (type === 'plant') this.buildPlant();
     else if (type === 'wall') this.buildWall();
     else if (type === 'checkout') this.buildCheckout();
@@ -64,6 +65,7 @@ export class FurnitureView {
 
   /** Giải phóng tài nguyên GPU khi món nội thất rời khỏi tiệm. */
   dispose() {
+    this.shared?.removeOwner(this);
     // InstancedMesh: geometry/vật liệu là DÙNG CHUNG cho mọi kệ, chỉ giải phóng bộ đệm instance
     for (const parts of this.instanced.values()) for (const im of parts) im.dispose();
     this.instanced.clear();
@@ -389,12 +391,13 @@ export class FurnitureView {
       }
     });
     // Gỡ InstancedMesh của món không còn trên kệ nữa
-    for (const pid of [...this.instanced.keys()]) if (!seen.has(pid)) this.dropInstanced(pid);
+    for (const pid of [...(this.shared ? this.instSig.keys() : this.instanced.keys())]) if (!seen.has(pid)) this.dropInstanced(pid);
     for (const [pid, boxes] of seen) this.renderInstanced(pid, boxes);
     this.refreshEmptyMark(tiers);
   }
 
   private renderInstanced(productId: string, boxes: THREE.Group[]) {
+    if (this.shared) return this.renderShared(productId, boxes);
     let parts = this.instanced.get(productId);
     if (!parts) {
       const [w, h, d] = boxes[0].userData.size as number[];
@@ -423,7 +426,24 @@ export class FurnitureView {
     }
   }
 
+  /** Gộp xuyên kệ (GĐ886): gửi ma trận (toạ độ cha của kệ) cho ShelfInstancer; kệ không đổi thì bỏ qua. */
+  private renderShared(productId: string, boxes: THREE.Group[]) {
+    const g = this.group;
+    let sig = `${g.position.x},${g.position.z},${g.rotation.y}|`;
+    for (const b of boxes) sig += b.id + ',';
+    if (this.instSig.get(productId) === sig) return;
+    this.instSig.set(productId, sig);
+    g.updateMatrix();
+    const mats = boxes.map((b) => new THREE.Matrix4().multiplyMatrices(g.matrix, this._m.identity().setPosition(b.position)));
+    this.shared!.set(this, productId, boxes[0].userData.size as number[], mats);
+  }
+
   private dropInstanced(productId: string) {
+    if (this.shared) {
+      this.shared.set(this, productId, [], null);
+      this.instSig.delete(productId);
+      return;
+    }
     const parts = this.instanced.get(productId);
     if (!parts) return;
     for (const im of parts) {
