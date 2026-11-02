@@ -44,6 +44,8 @@ export interface TeaserInput {
   giftGraceDay: number;
   /** Chuyện sự kiện đang kể dở (biz.surpriseArc — GĐ164); thiếu ở save cũ. */
   surpriseArc?: SurpriseArcState;
+  /** GĐ793 — khách quen đang bị rival lôi kéo: mai KHÔNG ghé, đừng mồi "Mai X ghé" hão. */
+  poached?: string[];
 }
 
 export interface TeaserRow {
@@ -137,7 +139,7 @@ export function tomorrowTeaser(input: TeaserInput): TeaserRow[] {
   }
 
   // R3 — Khách quen dự kiến ghé mai.
-  const expected = regularsExpectedToday(nowDay, input.weatherSeed, input.level, input.regulars, reputationOf(input.repLog));
+  const expected = regularsExpectedToday(nowDay, input.weatherSeed, input.level, input.regulars, reputationOf(input.repLog), input.poached ?? []);
   if (expected.length) {
     const cut = expected.length > 3;
     const names = expected.slice(0, 3).map((r) => r.name).join(', ') + (cut ? '…' : '');

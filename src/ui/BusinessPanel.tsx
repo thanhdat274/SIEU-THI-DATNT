@@ -185,7 +185,7 @@ function Market() {
               {r.personality && (
                 <div style={{ ...sub, marginTop: 4 }}>
                   Tính cách: {RIVAL_PERSONALITIES[r.personality].icon} <b>{RIVAL_PERSONALITIES[r.personality].name}</b> — {RIVAL_PERSONALITIES[r.personality].desc}.
-                  {' '}Khách quen bị lôi kéo: {Object.keys(r.poached ?? {}).length ? Object.keys(r.poached!).map((id) => REGULAR_NAMES[id] ?? id).join(', ') : 'chưa có'}.
+                  {' '}Khách quen bị lôi kéo: {Object.keys(r.poached ?? {}).length ? Object.keys(r.poached!).map((id) => `${REGULAR_NAMES[id] ?? id} (từ ngày ${r.poached![id]})`).join(', ') + ' — đòi lại ở bảng Khách quen' : 'chưa có'}.
                 </div>
               )}
               {!!Object.keys(r.prices ?? {}).length && (

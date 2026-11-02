@@ -568,13 +568,23 @@ export function reserveAsk(
 }
 
 /**
+ * GĐ793 — đòi lại khách quen bị rival lôi kéo: cần tặng 1 món trong danh sách họ thích ĐANG CÓ trong kho.
+ * Trả về id món để tặng (ưu tiên món mở ở cấp hiện tại, đúng thứ tự sở thích); null = thiếu quà.
+ */
+export function rescueGiftFor(def: RegularDef, level: number, hasStock: (id: string) => boolean): string | null {
+  return unlockedFavorites(def, level).find((id) => hasStock(id)) ?? null;
+}
+
+/**
  * Danh sách khách quen dự kiến ghé hôm nay (cùng hàm hash với lịch ghé thật nên dự đoán luôn đúng).
  * Dùng cho Sổ đầu ngày: người chơi nhập sẵn hàng đúng món khách quen thích.
+ * `poached`: khách đang bị rival lôi kéo thì KHÔNG ghé (customers.ts cũng loại đúng danh sách này) — Sổ không hứa hão.
  */
 export function regularsExpectedToday(
   day: number, seed: number, level: number, progress: Record<string, RegularProgress>, rep?: Reputation,
+  poached: string[] = [],
 ): RegularDef[] {
-  return REGULARS.filter((def) => visitsToday(def, day, seed, level, progress[def.id], rep));
+  return REGULARS.filter((def) => !poached.includes(def.id) && visitsToday(def, day, seed, level, progress[def.id], rep));
 }
 
 /** GĐ759 — khách quen có sinh nhật HÔM NAY và sẽ ghé (để Sổ đầu ngày nhắc nhập món thích). Thuần. */
@@ -591,10 +601,12 @@ export function birthdayHint(def: RegularDef, haveStock: (id: string) => boolean
 }
 
 /** GĐ781 — MAI là sinh nhật khách đã quen mà kho/kệ chưa có món họ thích: nhắc nhập sẵn (khách chắc chắn ghé,
- *  +5 thân thiết). Chỉ nhắc khi THIẾU hàng (đủ hàng thì không làm ồn Sổ đầu ngày). Thuần. */
-export function birthdayEve(day: number, level: number, progress: Record<string, RegularProgress>, haveStock: (id: string) => boolean): { def: RegularDef; text: string }[] {
+ *  +5 thân thiết). Chỉ nhắc khi THIẾU hàng (đủ hàng thì không làm ồn Sổ đầu ngày). Thuần.
+ *  `poached` (GĐ793): đang bị rival lôi kéo thì mai KHÔNG ghé — đừng nhắc nhập đồ cho người không tới. */
+export function birthdayEve(day: number, level: number, progress: Record<string, RegularProgress>, haveStock: (id: string) => boolean, poached: string[] = []): { def: RegularDef; text: string }[] {
   const out: { def: RegularDef; text: string }[] = [];
   for (const def of REGULARS) {
+    if (poached.includes(def.id)) continue;
     if (level < def.unlock || (progress[def.id]?.visits ?? 0) <= 0 || !isBirthday(def, day + 1)) continue;
     if (def.favorites.some(haveStock)) continue;
     out.push({ def, text: `Mai sinh nhật ${def.name} — nhập sẵn ${productById(def.favorites[0]).name} để +${BIRTHDAY_BONUS + 2} thân thiết` });

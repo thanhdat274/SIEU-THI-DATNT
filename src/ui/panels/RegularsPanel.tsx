@@ -1,10 +1,17 @@
 import { useGame, formatClock } from '../../core/store';
 import { productById, formatMoney } from '../../data/products';
-import { nextPerk, birthdayLabel, REGULARS, type PerkEffect } from '../../data/regulars';
+import { nextPerk, birthdayLabel, REGULARS, regularById, rescueGiftFor, type PerkEffect } from '../../data/regulars';
+import { RESCUE_FEE } from '../../data/biz';
 import { arcById, currentArcStep } from '../../data/regularArc';
 import { lifetimeRegularVisits, vipTierOf, nextTierOf, monthlyTriAn, regularQuote, EMOTIONAL_FRIENDSHIP } from '../../data/regularTrust';
-import { Footer, Swatch, styles } from './shared';
+import { Callout, Footer, Swatch, styles } from './shared';
 import { DebtBook } from './DebtBook';
+
+/** GĐ793 — nút đòi khách quen bị rival lôi kéo (cùng kiểu nút vàng accent của hệ thống). */
+const rescueBtn: React.CSSProperties = {
+  marginTop: 6, padding: '7px 14px', borderRadius: 8, border: 0, cursor: 'pointer',
+  background: '#f1c40f', fontWeight: 600, fontSize: 13, minHeight: 34,
+};
 
 /** Biểu tượng nhận diện nhanh cho từng loại perk của khách quen. */
 export const PERK_ICONS: Record<PerkEffect, string> = {
@@ -18,8 +25,11 @@ export const PERK_ICONS: Record<PerkEffect, string> = {
 
 /** Khách quen: điểm thân thiết, món ưa thích đã biết, perk đã mở. */
 export function RegularsPanel() {
-  const { level, day, regulars, biz, closePanel } = useGame();
+  const { level, day, regulars, biz, money, storage, closePanel, rescuePoachedRegular } = useGame();
   const arcs = biz.regularArcs ?? {};
+  const rival = biz.rival;
+  const poached = rival?.poached ?? {};
+  const poachedList = Object.entries(poached);
   const met = REGULARS.filter((r) => r.unlock <= level);
   const triVisits = lifetimeRegularVisits(regulars);
   const triTier = vipTierOf(triVisits);
@@ -59,6 +69,42 @@ export function RegularsPanel() {
             : <span style={{ opacity: 0.75 }}>(cần 1 khách thân 💛 ≥{EMOTIONAL_FRIENDSHIP} và bậc Tiệm ≥1 để nhận quà)</span>}
         </div>
       </div>
+      {poachedList.length > 0 && rival && (
+        <div style={{ display: 'grid', gap: 6, maxWidth: 560, marginBottom: 8 }}>
+          {poachedList.map(([id, sinceDay]) => {
+            const def = regularById(id);
+            if (!def) return null;
+            const gift = rescueGiftFor(def, level, (pid) => (storage[pid] ?? 0) > 0);
+            const wantName = productById(gift ?? def.favorites[0]).name;
+            const usedToday = biz.rescueDay === day;
+            const canRescue = !usedToday && !!gift && money >= RESCUE_FEE;
+            return (
+              <Callout
+                key={id}
+                tone="danger"
+                strong
+                title={`😠 ${def.name} đang sang tiệm ${rival.name}`}
+                actions={
+                  <button
+                    disabled={!canRescue}
+                    onClick={() => rescuePoachedRegular(id)}
+                    style={{ ...rescueBtn, opacity: canRescue ? 1 : 0.55 }}
+                  >
+                    {usedToday
+                      ? 'Hôm nay đã đòi một người — mai tiếp'
+                      : gift ? `Đòi về — tặng 1 ${wantName} + ${formatMoney(RESCUE_FEE)}` : `Thiếu ${wantName} trong kho`}
+                  </button>
+                }
+              >
+                <div style={{ fontSize: 12, opacity: 0.9 }}>
+                  Từ ngày {sinceDay} khách không ghé tiệm mình. Tặng 1 {wantName} + {formatMoney(RESCUE_FEE)} tiền quà là khách quay lại ngay,
+                  cộng thêm thân thiết. Mỗi ngày đòi lại được một người.
+                </div>
+              </Callout>
+            );
+          })}
+        </div>
+      )}
       <div style={{ display: 'grid', gap: 6, maxWidth: 560 }}>
         {met.map((r) => {
           const prog = regulars[r.id];
@@ -74,7 +120,7 @@ export function RegularsPanel() {
               <summary style={{ display: 'flex', justifyContent: 'space-between', gap: 8, cursor: 'pointer', listStyle: 'none', fontWeight: 700 }}>
                 <span><Swatch color={r.color} /> {r.name}</span>
                 <span style={{ opacity: 0.75, fontSize: 12, fontWeight: 400 }}>
-                  {arcSt && !arcSt.done ? '📖 ' : ''}💛 {pts} · {prog?.visits ?? 0} lần ghé
+                  {poached[r.id] ? '😠 ' : ''}{arcSt && !arcSt.done ? '📖 ' : ''}💛 {pts} · {prog?.visits ?? 0} lần ghé
                 </span>
               </summary>
               <div style={{ marginTop: 6 }}>

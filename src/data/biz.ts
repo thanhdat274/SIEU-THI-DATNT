@@ -4,6 +4,7 @@
  * File này chỉ có dữ liệu và hàm thuần; hành động đổi trạng thái nằm ở `core/biz.ts`.
  */
 import { formatMoney, productById } from './products';
+import { regularById } from './regulars';
 import { newQuanNuoc, type QuanNuocState } from './quanNuoc';
 import { newTiemXoi, type TiemXoiState } from './tiemXoi';
 import type { HiepLucState } from './hiepLuc';
@@ -88,6 +89,10 @@ export const POACH_CHANCE = 0.05;
 /** Rival mạnh quá mốc này mới dám giựt nhân viên (chỉ rival máu liều). */
 export const STAFF_POACH_STRENGTH = 60;
 export const STAFF_POACH_CHANCE = 0.04;
+/** Đòi lại khách quen bị lôi kéo: tặng 1 món họ thích trong kho + tiền quà, mỗi ngày đòi được 1 người.
+ *  Thân thiết cộng lại khi đòi được (đường chờ tự quay về thì +5 nhưng ngẫu nhiên). */
+export const RESCUE_FEE = 20000;
+export const RESCUE_FRIENDSHIP = 3;
 /** Mua lại mặt bằng rival: giá bán và số ngày giữ chào bán. */
 export const RIVAL_SHOP_PRICE = 12000000;
 export const RIVAL_SHOP_OFFER_DAYS = 10;
@@ -321,7 +326,8 @@ export function rivalNightAI(r: Rival, ctx: RivalNightCtx): RivalNightResult {
     if (winBack || rng() < 0.5) {
       delete poached[id];
       returned.push(id);
-      news.push(`💛 Một khách quen chán ${r.name}, quay lại tiệm mình!`);
+      const back = regularById(id);
+      news.push(`💛 ${back?.name ?? 'Một khách quen'} chán ${r.name}, quay lại tiệm mình!`);
     }
   }
   if (r.strength >= 35 && Object.keys(poached).length < 3) {
@@ -331,7 +337,8 @@ export function rivalNightAI(r: Rival, ctx: RivalNightCtx): RivalNightResult {
     const victim = candidates[0];
     if (victim && rng() < POACH_CHANCE * (r.strength / 100) * (pers === 'aggressive' ? 1.6 : pers === 'quality' ? 0.5 : 1)) {
       poached[victim[0]] = ctx.day;
-      news.push(`😠 Đáng tiếc: khách quen của mình bị ${r.name} kéo rớt giá mớ hàng rẻ hơn — ghé Mạng xã hội quảng bá và nhớ tri ân khách!`);
+      const def = regularById(victim[0]);
+      news.push(`😠 ${r.name} lôi kéo ${def?.name ?? 'một khách quen'} — mở Khách quen để đòi về`);
     }
   }
 
@@ -1113,6 +1120,8 @@ export interface BizState {
   counterStreak?: number;
   /** Ngày sớm nhất được dùng lại từng chiến thuật phản công (thời gian hồi). */
   counterReady: Partial<Record<CounterTactic, number>>;
+  /** Ngày gần nhất đã đòi lại một khách quen bị rival lôi kéo (mỗi ngày một người). Thiếu ở save cũ. */
+  rescueDay?: number;
   ads: ActiveAd[];
   loyalty: Loyalty;
   loan: Loan | null;

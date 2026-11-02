@@ -366,6 +366,9 @@ export interface GameState {
   regularVisit: (id: string, basket: CartItem[], paid: boolean, miss?: { id: string; why: string }) => number;
   /** Cộng/trừ thân thiết ngoài lần ghé (đơn riêng), mở perk nếu tới mốc. */
   adjustFriendship: (id: string, delta: number) => void;
+  /** GĐ793 — đòi lại khách quen bị rival lôi kéo: tặng 1 món họ thích trong kho + RESCUE_FEE, mỗi ngày 1 người.
+   *  Trả về true khi đòi được (khách quay lại ghé). */
+  rescuePoachedRegular: (regularId: string) => boolean;
   /** Đối thủ, quảng cáo, tích điểm, vay, hụi, tuần, thú cưng, thành tựu, nhà, xe (xem data/biz.ts). */
   biz: BizState;
   /** Mua mặt bằng quán nước đầu ngõ (cấp 29, bán đồ uống rút từ kho); trả false nếu chưa đủ điều kiện. */

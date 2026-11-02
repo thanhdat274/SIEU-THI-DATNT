@@ -575,6 +575,83 @@ describe('chính sách vận hành co-op parity: tái sinh & chào mừng quay l
   });
 });
 
+// ───── GĐ793: đòi khách quen bị rival lôi kéo (rescuePoachedRegular) ─────
+
+describe('GĐ793 — đòi khách quen bị đối thủ lôi kéo ở hẻm online', () => {
+  const RIVAL = { name: 'Tạp hóa Thử', strength: 60, openedDay: 9 };
+  /**
+   * Trạng thái chung đủ điều kiện đòi: ngày 10, 500.000đ, kho có 3 sữa (món Bà Năm thích),
+   * Bà Năm đang bị kéo từ ngày 8. `extra` để thêm khách thứ hai đang bị kéo (ca hai người bấm).
+   */
+  const cooped = (extraPoached: Record<string, number> = {}) => {
+    const base = store.newGameData();
+    return {
+      ...base, day: 10, level: 10, money: 500_000,
+      storage: { sua: 3, nuoc: 2 }, storageLots: {},
+      biz: { ...base.biz, rival: { ...RIVAL, poached: { ba_nam: 8, ...extraPoached } } },
+    };
+  };
+
+  it('máy khách bấm: gửi đúng act (tên + id) cho máy chạy; KHÔNG tự trừ tiền/kho hay xoá poach tại chỗ', async () => {
+    await join('player');
+    recv({ type: 'state', game: cooped(), actors: [] });
+    store.useGame.getState().rescuePoachedRegular('ba_nam');
+    expect(acts()).toEqual([expect.objectContaining({ name: 'rescuePoachedRegular', args: ['ba_nam'] })]);
+    const s = store.useGame.getState();
+    expect(s.money).toBe(500_000);
+    expect(s.storage.sua).toBe(3);
+    expect(s.biz.rival?.poached).toEqual({ ba_nam: 8 });
+    expect(s.biz.rescueDay).toBeUndefined(); // cả ngày đã đòi cũng do máy chạy ghi
+  });
+
+  it('máy chạy nhận act của bạn: chạy thật, poach sạch trong state chung; gói state mới cho cả hẻm thấy y như máy chạy', async () => {
+    await join('runner');
+    store.useGame.setState(cooped());
+    recv({ type: 'act', from: 2, seq: 1, name: 'rescuePoachedRegular', args: ['ba_nam'] });
+    const s = store.useGame.getState();
+    expect(s.biz.rival?.poached).toEqual({});
+    expect(s.money).toBe(480_000); // 500.000 − 20.000 tiền quà
+    expect(s.storage.sua).toBe(2);
+    expect(s.biz.rescueDay).toBe(10);
+    expect(ofType('result').find((r) => r.to === 2)).toMatchObject({ ok: true, messages: [expect.stringContaining('Bà Năm')] });
+    // Gói state máy chạy gửi đi phải mang poach rỗng — người khác nhận là thấy thẻ biến mất ngay
+    const shared = ofType('state').at(-1)!.game as Record<string, unknown>;
+    expect((shared.biz as { rival: { poached: Record<string, number> } }).rival.poached).toEqual({});
+    await join('player');
+    recv({ type: 'state', game: shared, actors: [] });
+    const guest = store.useGame.getState();
+    expect(guest.biz.rival?.poached).toEqual({});
+    expect(guest.money).toBe(480_000);
+    expect(guest.storage.sua).toBe(2);
+    expect(guest.regulars.ba_nam.friendship).toBe(3); // +3 thân thiết, như chơi đơn
+  });
+
+  it('hai người bấm trong 3 giây (GUARDED rival:poach): người sau bị chặn, chỉ trừ tiền/kho MỘT lần', async () => {
+    await join('runner');
+    // Còn Chu Bá đang bị kéo: nếu thiếu khoá thì người thứ hai sẽ đòi được ngay và trừ tiền lần hai
+    store.useGame.setState(cooped({ chu_ba: 8 }));
+    recv({ type: 'act', from: 2, seq: 1, name: 'rescuePoachedRegular', args: ['ba_nam'] });
+    expect(store.useGame.getState().money).toBe(480_000);
+    expect(store.useGame.getState().biz.rival?.poached).toEqual({ chu_ba: 8 });
+
+    // Người thứ hai bấm cùng nút của Bà Năm: bị chặn kèm tên người vừa đòi
+    recv({ type: 'act', from: 3, seq: 2, name: 'rescuePoachedRegular', args: ['ba_nam'] });
+    expect(store.useGame.getState().money).toBe(480_000);
+    const deniedSame = ofType('result').find((r) => r.to === 3 && r.seq === 2)!;
+    expect(deniedSame.ok).toBe(false);
+    expect(deniedSame.messages).toEqual([expect.stringContaining('Bình')]);
+
+    // Người thứ hai đòi Chu Bá (vẫn còn bị kéo) trong 3 giây đó: khoá chung 'rival:poach' cũng chặn
+    recv({ type: 'act', from: 3, seq: 3, name: 'rescuePoachedRegular', args: ['chu_ba'] });
+    const afterSecond = store.useGame.getState();
+    expect(afterSecond.money).toBe(480_000);
+    expect(afterSecond.storage.sua).toBe(2); // không tặng thêm món nào
+    expect(afterSecond.biz.rival?.poached).toEqual({ chu_ba: 8 }); // vẫn còn, chưa bị đòi
+    expect(afterSecond.biz.rescueDay).toBe(10);
+    expect(ofType('result').find((r) => r.to === 3 && r.seq === 3)).toMatchObject({ ok: false });
+  });
+});
+
 // ───── GĐ702: vào hẻm — đường lỗi & danh sách hẻm (REST) ─────
 
 describe('vào hẻm: đường lỗi + REST (GĐ702)', () => {

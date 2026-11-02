@@ -82,6 +82,7 @@ export function SummaryPanel({ day }: { day: number }) {
     day: nowDay, level, weatherSeed, weather, regulars, repLog, totals, history,
     giftStreak, giftLastDay, giftGraceDay,
     surpriseArc: biz.surpriseArc, // GĐ164: chuyện sự kiện còn dở → mồi "mai có tiếp"
+    poached: Object.keys(biz.rival?.poached ?? {}), // GĐ793: khách bị lôi kéo thì mai không ghé
   });
   const st = panel.stats ?? EMPTY_DAY_STATS;
   // GĐ123: thẻ "phá kỷ lục" trong tổng kết cuối ngày — mồi quay lại mỗi ngày cho người chơi cấp cao,
@@ -613,7 +614,7 @@ export function MorningPanel() {
     </>
   );
   const hot = trending(day, level).filter((id) => !effects.hot.includes(id));
-  const expected = regularsExpectedToday(day, weatherSeed, level, regulars, rep);
+  const expected = regularsExpectedToday(day, weatherSeed, level, regulars, rep, Object.keys(biz.rival?.poached ?? {})); // GĐ793
   const resList = Object.entries(reservations).filter(([, r]) => r.day === day);
   const haveStock = (id: string) => (storage[id] ?? 0) > 0 || furniture.some((f) => f.tiers.some((t) => t.productId === id && t.count > 0))
     || deliveries.some((d) => (d.items[id] ?? 0) > 0);
@@ -638,7 +639,7 @@ export function MorningPanel() {
   for (const { cs, def } of dueContracts) candidates.push({ icon: '📦', text: `${def!.title}: giao trước ngày ${cs.dueDay}`, panel: 'contracts', danger: cs.dueDay <= day, priority: cs.dueDay <= day ? 0 : 2 });
   if (biz.loan && biz.loan.dueDay - day <= 3) candidates.push({ icon: '🏦', text: `Nợ ngân hàng sắp hạn (${Math.max(0, biz.loan.dueDay - day)} ngày)`, panel: 'business', danger: true, priority: 0 });
   // GĐ759 — sinh nhật khách quen: khách đã quen ghé chắc chắn, mua là +3 thân thiết → nhắc nhập món họ thích
-  for (const e of birthdayEve(day, level, regulars, haveStock)) candidates.push({ icon: '🎂', text: e.text, panel: 'order', danger: false, priority: 3 }); // GĐ781
+  for (const e of birthdayEve(day, level, regulars, haveStock, Object.keys(biz.rival?.poached ?? {}))) candidates.push({ icon: '🎂', text: e.text, panel: 'order', danger: false, priority: 3 }); // GĐ781/793
   for (const d of birthdaysToday(expected, day)) { const h = birthdayHint(d, haveStock); candidates.push({ icon: '🎂', text: h.text, panel: 'regulars', danger: false, priority: h.priority }); }
   // GĐ747 — nợ khách quen sắp bị xoá (Sổ nợ nằm trong panel Khách quen, không ai mở): nhắc lên Sổ đầu ngày
   const debtAct = debtDayAction(debts, day);

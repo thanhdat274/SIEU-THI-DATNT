@@ -51,6 +51,9 @@ export const GUARDED: Record<string, (args: unknown[]) => string> = {
   repairFurniture: (a) => `furn:${a[0]}`,
   paint: (a) => `style:${a[0]}`,
   setPrice: (a) => `price:${a[0]}`,
+  // GĐ793 — đòi khách quen bị rival lôi kéo: cả hẻm dùng chung danh sách bị lôi kéo, hai người bấm cùng lúc
+  // thì người sau được báo "đợi một chút" thay vì đòi trùng một người.
+  rescuePoachedRegular: () => 'rival:poach',
   expandFarm: () => 'farm:land',
   feedPen: (a) => `pen:${a[0]}`,
   buyAnimal: (a) => `buyAnimal:${a[0]}`,
