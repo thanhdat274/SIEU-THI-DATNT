@@ -35,3 +35,17 @@ Chạy lại: `node scripts/audit-notify.mjs`.
 - 87 69 src\core\biz.ts | ${item.icon} Đã sắm ${item.name} cho nhà: ngủ ngon hơn, sáng đi nhanh hơn ${Math.round(item.rest * 100)}%
 - 87 75 src\core\slices\inventory.ts | 📦 Kho thiếu chỗ: cần ${qty} thùng, trống ${Math.max(0, cap - storageUsed(s.storage))}. Nâng kho hoặc nhập ít lại.
 - 86 68 src\core\biz.ts | 🏦 Vay gấp ${formatMoney(amount)} để nhập hàng, lãi ${(LOAN_DAILY_RATE * 100).toFixed(1)}%/ngày, hạn trả ngày ${s.day + LOAN_DAYS}
+
+## Đề xuất viết lại (GĐ833) — CHỈ ĐỀ XUẤT, chờ duyệt; giữ đủ nghĩa, tách mỗi câu một ý, không rút bằng cách bỏ ý
+Nguyên tắc: không cắt chữ để đủ 90; nếu một câu cần 2 ý thì để ý thứ hai ở panel/tooltip, hoặc tách 2 thông báo.
+
+| Hiện tại (file) | Vấn đề | Đề xuất |
+|---|---|---|
+| `⚠️ Sau đơn này chỉ còn ${tiền}, chưa đủ ${lương} lương cuối ngày. Bấm lần nữa nếu vẫn nhập.` (OrderPanel) | 2 ý: cảnh báo + hướng dẫn | Giữ nguyên (cảnh báo xác nhận cần cả hai; độ dài thật ≈ 80) |
+| `${icon} Đã mở dịch vụ ${tên}: khách sẽ ghé quầy dùng dịch vụ, nhiều người mua kèm` (biz.ts) | ý thứ hai lặp ý đầu | `${icon} Đã mở dịch vụ ${tên}: khách dùng dịch vụ hay mua kèm hàng` |
+| `Máng còn X kg, kho hết cám — mua lẻ cần ${tiền} hoặc nhập ${cám} trước` (garden.ts) | 3 ý | Giữ (là cảnh báo hành động, cần đủ cả hai lối ra) |
+| `${icon} Đã trồng ${cây} (${giá}): ~${n} ngày nữa thu được, nhớ tưới mỗi sáng${extra}` (garden.ts) | `${extra}` không giới hạn | Chuyển phần `${extra}` sang dòng riêng/panel vườn |
+| `🧺 Thu hoạch ... bán được giá hơn X%${note}` (garden.ts) | 2 nhánh phụ cộng dồn | Đặt `note` vào panel, chỉ để câu chính |
+| `🎂 Sinh nhật ...${tip}${resNote}${giftNote}${arcNote}` (regulars.ts) | 4 đoạn nối, độ dài không chặn | Chỉ giữ 1 đoạn ưu tiên cao nhất, phần còn lại vào Sổ khách quen |
+
+Cần bạn chọn câu nào duyệt viết lại; tôi sẽ sửa theo từng câu và chạy lại `scripts/audit-notify.mjs` + `featureBudget.test.ts`.
