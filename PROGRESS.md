@@ -170,3 +170,4 @@
 - GĐ846: loanWhenBroke.test.ts — quỹ âm vẫn vay được và vay thêm được (lối thoát có thật cho người chơi; xoáy nợ GĐ845 là của bot).
 - GĐ847: autoplay vay gấp (1 triệu) khi quỹ âm và chưa nợ, như người chơi thật → playtest không còn kẹt xoáy nợ giả; test sim/autoplay xanh.
 - GĐ848: thử kiểm chứng bot vay gấp trên save ngày 100 — HMR nạp lại thành ván mới (ngày 1–3 lãi bình thường), chưa kiểm chứng được trên save nợ; sửa GĐ847 mới chỉ có test sim chung xanh.
+- GĐ849: ép tiền −3 triệu trên ván mới rồi playtest 3 ngày: bot hồi dần (−2,36M → −1,13M, doanh thu ~600–700k/ngày), không kẹt xoáy nợ; xoáy ở save ngày 100 do kệ trống + 12 nhân viên, khác tình huống này.
