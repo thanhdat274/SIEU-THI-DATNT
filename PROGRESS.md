@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (02/11/2026)
+- **GĐ754:** QA trình duyệt thật (người dùng DUYỆT ngoại lệ Luật 11 cho cloud: dev server cổng 4173 chỉ để QA, đã tắt) — save thử ?thu=1&gfx=low, Playwright headless: save trắng vào game đúng (HUD đủ, hướng dẫn ngày đầu, lời Bà Năm). Dòng Sổ đầu ngày GĐ747 ("Nợ sắp mất…còn 2 ngày") + GĐ749 ("Nợ quá hạn chưa nhắc…") hiện đúng chữ, nằm trong "Việc hôm nay · ưu tiên", không vỡ bố cục; bấm → mở đúng panel regulars + Sổ nợ; 0 lỗi console. FPS 24,5 chỉ là tham khảo: headless GPU phần mềm trong container, KHÔNG đại diện máy yếu → vẫn cần đo FPS trên máy thật. Lưu ý: `window.game` chỉ có ở dev (không có ở build/preview). Quan sát nhỏ: tiêu đề Sổ đầu ngày thiếu dấu cách "đẹp.Đọc" (cũ, vào backlog).
 - **GĐ753:** rà "khoản mất nằm sâu chưa lên Sổ đầu ngày": hàng sắp hỏng ĐÃ có thẻ riêng trong Sổ (expiryAdvice) → KHÔNG thêm dòng (Luật 9). Chuỗi "đưa lên Sổ" coi như KHÉP (741/747/749). Việc còn lại đều cần dev server localhost:5173 (cloud không có, Luật 11): QA trình duyệt dòng Sổ mới + save trắng (mốc ≤5 phút) + FPS gfx=low + đo CPU save cuối-game (GĐ675). Phiên có server làm các việc này TRƯỚC khi thêm tính năng.
 - **GĐ752:** bù số đo audit GĐ750: coverage (`npm run test:coverage`, 309 file / 2885 xanh) = **58,27% stmt / 90,16% br / 83,12% fn** — ngang GĐ740 (58,22/90,09), chuỗi 741–751 không làm tụt. FPS + QA trình duyệt vẫn chờ phiên có dev server.
 - **GĐ751:** soát co-op (5 câu qa-guide) cho chuỗi Sổ đầu ngày 741/747/749: ĐẠT — 0 thao tác mới (helper chỉ đọc), `debts`/`biz.landmark` đã nằm trong snapshot `useGame` như Sổ nợ có sẵn nên máy khách thấy đúng cùng dòng; không phụ thuộc vị trí người chơi. Nhóm test co-op + serverGuard xanh. Không đổi mã.
@@ -69,6 +70,7 @@
 
 
 ## Backlog tiếp theo
+- 🔧 Nhỏ: tiêu đề Sổ đầu ngày thiếu dấu cách giữa "Nắng đẹp." và "Đọc xong…" (GĐ754 thấy ở ngày 30 nắng đẹp).
 - 🔍 **Chiều sâu bán online — vòng 4 GĐ Hoàn thành + QA trọn vòng đạt (GĐ719).** Kế tiếp: (a) **GĐ720: audit 10-GĐ** (GĐ711–720) + dồn archive GĐ711–719; (b) sau audit: đánh giá trục kế tiếp theo tầm nhìn (kệ/giá/nhân sự/nhịp tuần — hoặc cạn mới đề xuất mở rộng, ghi lý do).
 - 🔍 **Trục kế tiếp GĐ727+: đường đời nhân viên (rà 8 trục GĐ720 xếp nhân sự nhì)** — lát cắt đầu: **nhân viên chi nhánh xin nghỉ mai** — vẽ bằng băm riêng weatherSeed+ngày (mẫu GĐ717, ~15% ngày một nhân viên trực xin), sáng mai hiện ở phần chi nhánh của Sổ đầu ngày kèm 2 nút: Cho nghỉ (dùng sẵn action restBranchStaff — ca mai thiếu người thật) / Giữ lại (fatigue +1 — ghi vào cơ chế calloff có sẵn; cần action mới → classification coopGuard GUARDED). Ràng buộc bài học GĐ722: mọi rng mới hoặc băm riêng hoặc gate theo sự hiện diện của người chơi; không đụng kinh tế chung; không migration (trường tuỳ chọn).
 - ✅ **Trục tín dụng/nợ — lát cắt trả góp ĐÃ XONG (GĐ734) + QA (735).** Đánh giá bằng số (audit GĐ740): mọi trục lớn ĐỦ SÂU theo coverage 58,22/90,09 và autoplay/simGolden xanh — chuỗi GĐ741+ ưu tiên: rà backlog nợ mở (GĐ675 CPU render cuối-game, refactor UI khi đụng panel) và QA tự nhiên các trục mới trước khi tính mở rộng.
@@ -154,3 +156,4 @@
 - GĐ751: soát co-op chuỗi Sổ đầu ngày (741/747/749) — đạt, không đổi mã.
 - GĐ752: coverage 58,27/90,16 (bù audit 750).
 - GĐ753: khép chuỗi đưa việc lên Sổ đầu ngày; việc tiếp theo cần dev server.
+- GĐ754: QA trình duyệt dòng Sổ 747/749 đạt (cloud, ngoại lệ Luật 11 được duyệt); FPS thật vẫn chờ.
