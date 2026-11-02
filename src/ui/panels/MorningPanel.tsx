@@ -70,6 +70,7 @@ import { QuanNuocCard } from './QuanNuocCard';
 import { TiemXoiCard } from './TiemXoiCard';
 import { SickShelvesCard, YesterCombosCard } from './MorningWarnCards';
 import { SolvencyCard, LoanBurdenCard, DailyBurnCard } from './MorningFinanceCards';
+import { ButcherCard, HuiCard } from './MorningMeatHuiCards';
 import { Callout, Stat, Footer, Swatch, styles, Tabs } from './shared';
 
 
@@ -353,44 +354,9 @@ export function MorningPanel() {
         </Callout>
       )}
 
-      {hasMeatCounter && butcherV.skill < MAX_BUTCHER_STAR && (
-        <Callout tone={butcherV.present ? 'warn' : 'danger'} strong={!butcherV.present} style={{ marginBottom: 8 }}
-          title={<>🔪 {butcherV.present
-            ? `Người bán thịt cá ${butcherV.skill}★ trực hôm nay — bán được ~${butcherV.pct}% nhu cầu thịt cá`
-            : 'Không có người bán thịt cá trực hôm nay — khách chỉ mua ~22% nhu cầu thịt cá'}</>}
-          actions={
-            <div style={{ marginTop: 6, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-              <button onClick={() => openPanel({ type: 'staff' })} style={{ ...styles.btn, fontSize: 11, padding: '2px 8px' }}>
-                {butcherV.present ? '👥 Nâng/bồi dưỡng người bán thịt cá →' : '👥 Xếp người bán thịt cá →'}
-              </button>
-              <button onClick={() => openPanel({ type: 'analytics' })} style={{ ...styles.btn, fontSize: 11, padding: '2px 8px' }}>
-                📊 Xem sổ thịt cá →
-              </button>
-            </div>
-          }>
-          <div style={{ fontSize: 12, marginTop: 2 }}>
-            {butcherV.present
-              ? `Hệ số cầu ${butcherV.factor.toFixed(2).replace('.', ',')} so với mốc ${butcherV.maxFactor.toFixed(2).replace('.', ',')} (người bán 5★).`
-              : 'Quầy thịt cá (650k) đang hầu như đứng im — người bán thịt cá làm tăng gấp ~4,6 lần nhu cầu ban đầu.'}
-          </div>
-          {recentMeat.revenue > 0 && meatMissed > 0 && (
-            <div style={{ fontSize: 12, marginTop: 2, color: '#f1c40f' }}>
-              💸 Gần đây thịt cá thu ~{formatMoney(recentMeat.revenue)}/ngày{butcherV.present
-                ? ` — lên 5★ thêm ~${formatMoney(meatMissed)}/ngày`
-                : ` — thuê người bán 5★ có thể thêm ~${formatMoney(meatMissed)}/ngày`}
-            </div>
-          )}
-        </Callout>
-      )}
+      {hasMeatCounter && butcherV.skill < MAX_BUTCHER_STAR && <ButcherCard butcherV={butcherV} recentMeat={recentMeat} meatMissed={meatMissed} />}
 
-      {biz.hui && (
-        <div style={{ ...styles.card, display: 'block', marginBottom: 8 }}>
-          <b style={styles.cardTitle}>🤝 Đang góp hụi {formatMoney(biz.hui.daily)}/ngày</b>
-          <div style={{ fontSize: 12, marginTop: 2 }}>
-            Đã góp {biz.hui.paidDays}/{biz.hui.members} ngày{!biz.hui.received && ` · ngày ${biz.hui.turnDay} tới lượt hốt ${formatMoney(biz.hui.daily * biz.hui.members)}`}.
-          </div>
-        </div>
-      )}
+      {biz.hui && <HuiCard hui={biz.hui} />}
 
       {(biz.loan || biz.hui) && <SolvencyCard sol={solvency({ money, storage, priceOf, loan: biz.loan, hui: biz.hui, day })} />}
 
