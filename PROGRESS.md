@@ -166,3 +166,4 @@
 - GĐ856: kiểm tra sức khỏe — tsc sạch, thông báo dài nhất 88/90, cây làm việc sạch; tiếp theo audit GĐ860.
 - GĐ857: build vite xanh; đo lại gzip các chunk nạp đầu từ dist/index.html: tổng ≈538 KB (three 258, store 99, react 65, surpriseArcs 46, index 35, data 34) ≤ 600 KB.
 - GĐ858: đo thời gian bộ test: 2949 test xanh, 110 s tường (ngân sách ≤5 phút), không timeout sau khi nâng coop lên 60 s.
+- GĐ859: xác nhận remote khớp HEAD (20fd99f), nhánh đồng bộ; chuẩn bị audit GĐ860.
