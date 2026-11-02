@@ -43,6 +43,7 @@ import { SupplyChainCard } from './SupplyChainCard';
 import { AlleyTodayCard, SeasonEventCard } from './MorningEventCards';
 import { DueDebtsCard, ReservationsCard } from './MorningRegularCards';
 import { DueContractsCard } from './DueContractsCard';
+import { HotGoodsCards } from './HotGoodsCards';
 import { CounterDemandCard } from './CounterDemandCard';
 import { MarketSurplusCard } from './MarketSurplusCard';
 import { EarlyUnlocksCard } from './EarlyUnlocksCard';
@@ -379,18 +380,7 @@ export function MorningPanel() {
           )}
         </div>
       )}
-      {effects.hot.length > 0 && (
-        <div style={{ ...styles.card, display: 'block', marginBottom: 8 }}>
-          <b style={styles.cardTitle}>🎯 Hàng của dịp hôm nay</b>
-          <div style={{ fontSize: 12, marginTop: 2 }}>{effects.hot.map((id) => `${productById(id).name}${haveStock(id) ? ' ✓' : ' ⚠️ chưa có'}`).join(', ')}</div>
-        </div>
-      )}
-      {hot.length > 0 && (
-        <div style={{ ...styles.card, display: 'block', marginBottom: 8 }}>
-          <b style={styles.cardTitle}>🔥 Hàng hot tuần này</b>
-          <div style={{ fontSize: 12, marginTop: 2 }}>{hot.map((id) => `${productById(id).name}${haveStock(id) ? ' ✓' : ' ⚠️ chưa có'}`).join(', ')}</div>
-        </div>
-      )}
+      <HotGoodsCards eventHot={effects.hot} weekHot={hot} haveStock={haveStock} />
       {soon && (
         <div style={{ ...styles.card, display: 'block', marginBottom: 8 }}>
           <b style={styles.cardTitle}>⏳ {soon.festival.icon} {soon.festival.name} {soon.inDays === 1 ? 'ngày mai' : `sau ${soon.inDays} ngày`}</b>
