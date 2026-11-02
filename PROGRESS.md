@@ -21,6 +21,7 @@
 
 ## Trạng thái hiện tại (02/11/2026)
 - Các mục GĐ790–929 đã chuyển sang `docs/progress-archive/PROGRESS-GD790-929.md` (giữ file này gọn).
+- **GĐ952 (tách Hud #2)** 10 badge dock (đối thủ, social, đơn online, giấy phép, nợ, thử thách tuần, phiên chợ, sổ thương mến, hồ sơ tiệm, trang trại) thành hàm thuần `*BadgeOf(state)` trong `src/ui/hudBadges.ts` + 4 ca test; Hud 643 → 570 dòng; test restockDay1Quiet trỏ file mới. Không đổi số nút HUD. tsc sạch, full npm test xanh (3034). Chưa soi bằng mắt trong game.
 - **GĐ951 (tách Hud #1)** `MoreMenu`, `usePopover`, `AccountMenu` sang `src/ui/HudMenus.tsx` (nạp lười MoreMenuBody đi theo; test hudKeysLazy trỏ lại file mới) + 2 ca test SSR; Hud 713 → 643 dòng. Không đổi số nút HUD. tsc sạch, full npm test xanh (3030). Chưa soi bằng mắt trong game.
 - **GĐ950 (rà 941–949 + dọn PROGRESS)** Chỉ tách UI thuần (MorningPanel 846→232, OrderPanel 899→668), không đổi hành vi, không thêm nút HUD/thư viện; tsc sạch, 3028 test xanh. PROGRESS.md 60KB→36KB bằng cách chuyển 55 mục GĐ790–929 sang archive. Nợ mở vẫn cần điều kiện ngoài: FPS thật ở cửa sổ thấy được, save thật, tín hiệu người chơi thật.
 - **GĐ715–788** (tóm tắt từng khối: docs/progress-archive/PROGRESS-GD715-788-summaries.md): bán online, đường đời nhân viên, trả góp/sổ nợ, sinh nhật khách quen, audit GĐ720/730/740 đều ĐẠT (bundle ≤ 597 KB, chunk ≤ 255 KB).

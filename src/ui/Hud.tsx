@@ -1,8 +1,4 @@
-import { ANIMALS, ANIMAL_ORDER, EGG_PER_TRAY, plotReady } from '../data/garden';
-import { showRestockExtras } from '../data/onboarding';
-import { activeBuzz } from '../data/social';
-import { licenseStatus, type LicenseId } from '../data/licenses';
-import { faintMinutes, weeklyChallenge } from '../data/biz';
+import { faintMinutes } from '../data/biz';
 import { Joystick } from './Joystick';
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { formatClock, questContext, useClock, useGame } from '../core/store';
@@ -14,15 +10,10 @@ import { FEATURES, xpToNext } from '../data/levels';
 import { formatMoney, productById } from '../data/products';
 import { summarizeReviews } from '../data/reviews';
 import { AUTO_OPEN_PRESETS } from '../core/gameTypes';
-import { dayEffects, describeDate, festivalStock, monthOf, upcomingFestival, weekdayOf } from '../data/calendar';
+import { dayEffects, describeDate, festivalStock, upcomingFestival, weekdayOf } from '../data/calendar';
 
 /** GĐ275 — "7h30" / "8h": nhãn giờ mở cửa cho menu lịch tự động. */
 const fmtOpenAt = (m: number) => `${Math.floor(m / 60)}h${m % 60 ? '30' : ''}`;
-import { isFairOpen } from '../data/fairmerchant';
-import { lifetimeRegularVisits, vipTierOf, EMOTIONAL_FRIENDSHIP } from '../data/regularTrust';
-import { relTier } from '../data/supplierRel';
-import { serviceById } from '../data/services';
-import { dossierEarnedCount, type DossierInput } from '../data/dossier';
 import { describeHours, goldenHourBands, goldenPrepWants, inGoldenHour, minutesToGolden, nextGoldenBand } from '../data/rhythm';
 import { skillPoints } from '../data/titles';
 import { COMBO_UNLOCK } from '../data/combos';
@@ -35,6 +26,7 @@ import { initAudio, isMuted, isMusic, setMuted, setMusic } from '../core/audio';
 import { Panels } from './Panels';
 import { hubFirst, hubOf } from './hubs';
 import { ToolButton, type ToolDef } from './HudToolButton';
+import { rivalBadgeOf, socialBadgeOf, onlineBadgeOf, licenseBadgeOf, loanBadgeOf, challengeBadgeOf, fairBadgeOf, triBadgeOf, dossierBadgeOf, gardenBadgeOf } from './hudBadges';
 import { AccountMenu, MoreMenu } from './HudMenus';
 import './hud.css';
 const SurpriseAlert = lazy(() => import('./SurpriseAlert').then((m) => ({ default: m.SurpriseAlert })));
@@ -224,92 +216,27 @@ Bản đang chơi được giữ lại, khôi phục lần nữa là trở lại
   const emptySlots = useGame((s) => s.furniture.reduce((n, f) => n + f.tiers.filter((t) => !t.productId || t.count === 0).length, 0));
   // Nhiệm vụ đã xong chờ nhận thưởng
   const questsReady = useGame((s) => claimableCount(questContext(s)));
-  const rivalBadge = useGame((s) => (s.biz.rival ? `⚔️ ${Math.round(s.biz.rival.strength)}` : undefined));
-  const socialBadge = useGame((s) => {
-    const buzz = activeBuzz(s.social, s.day);
-    return buzz?.kind === 'crisis' && !buzz.responded ? '⚠️ Khủng hoảng' : buzz?.kind === 'hype' ? '🔥 Hot' : undefined;
-  });
-  const onlineBadge = useGame((s) => {
-    const n = s.online.orders.filter((o) => o.status === 'new').length;
-    return n ? `${n} đơn mới` : undefined;
-  });
-  const licenseBadge = useGame((s) => {
-    if (s.inspection.suspendedDay === s.day) return '⛔ Đình chỉ';
-    const due = Object.keys(s.inspection.noticed ?? {}).filter((id) => {
-      const st = licenseStatus(s.licenses, id as LicenseId, s.day);
-      return st === 'none' || st === 'expired';
-    }).length;
-    return due ? `${due} cần xin` : undefined;
-  });
+  const rivalBadge = useGame(rivalBadgeOf);
+  const socialBadge = useGame(socialBadgeOf);
+  const onlineBadge = useGame(onlineBadgeOf);
+  const licenseBadge = useGame(licenseBadgeOf);
   // Vẫn còn nợ ngân hàng thì nhắc số gốc ngay trên nút Kinh doanh
-  const loanBadge = useGame((s) => {
-    const l = s.biz.loan;
-    if (!l) return undefined;
-    const goc = l.principal >= 1000000 ? `${Math.round((l.principal / 1000000) * 10) / 10}tr` : `${Math.round(l.principal / 1000)}k`;
-    return `🏦 ${goc}${s.day >= l.dueDay - 3 ? ' ⚠️' : ''}`;
-  });
+  const loanBadge = useGame(loanBadgeOf);
   // Thử thách tuần sắp xong (≥80% mục tiêu) hoặc đã xong thì nhắc trên nút Kinh doanh;
   // dưới 80% thì khỏi nhồi — nút khoá (cấp < 3) ToolButton tự ẩn badge.
-  const challengeBadge = useGame((s) => {
-    const ch = weeklyChallenge(Math.ceil(s.day / 7), s.level);
-    const target = ch.target(s.level);
-    // Save cũ thiếu counter trong tally thì tiến độ coi như 0 (giống tab Lãi lỗ)
-    const current = ch.measure === 'revenue' ? s.biz.week.revenue : (s.biz.week[ch.measure] ?? 0);
-    if (current >= target) return '🎯 xong';
-    return current >= target * 0.8 ? `🎯 ${ch.icon}` : undefined;
-  });
+  const challengeBadge = useGame(challengeBadgeOf);
   // Điểm danh quà / lượt vòng quay hôm nay còn trống thì nhắc trên nút
   const giftClaimable = useGame((s) => s.giftLastDay !== s.day);
   const wheelReady = useGame((s) => s.wheelLastDay !== s.day);
   const wheelBoost = useGame((s) => s.wheelBoost);
   // Đầu tháng có chợ phiên đặc biệt còn chưa lấy thì nhắc trên nút Nhập hàng
-  const fairBadge = useGame((s) => (isFairOpen(s.day) && showRestockExtras(s.day) && s.biz.fairTaken !== monthOf(s.day)) ? '🛒 Phiên chợ' : undefined);
+  const fairBadge = useGame(fairBadgeOf);
   // Sổ thương mến (GĐ69): bậc Tiệm hiện tại (bể khách quen cả ván) — hiện trên nút Khách quen
-  const triBadge = useGame((s) => {
-    const t = vipTierOf(lifetimeRegularVisits(s.regulars ?? {}));
-    return t.level >= 1 ? `${t.icon} ${t.name}` : undefined;
-  });
+  const triBadge = useGame(triBadgeOf);
   // Hồ sơ tiệm (GĐ71): số huy hiệu thâm niên đã đạt — hiện trên nút Hồ sơ tiệm
-  const dossierBadge = useGame((s) => {
-    const d: DossierInput = {
-      supplierTier: Math.max(0, ...Object.values(s.biz.supplierRel ?? {}).map((r) => relTier(r.spent).level)),
-      regularTier: vipTierOf(lifetimeRegularVisits(s.regulars ?? {})).level,
-      closeRegulars: Object.values(s.regulars ?? {}).filter((r) => r.friendship >= EMOTIONAL_FRIENDSHIP).length,
-      fairTaken: s.biz.fairTaken !== undefined,
-      prepClaimed: s.biz.prepClaimed !== undefined,
-      servicesOwned: (s.biz.services ?? []).length,
-      servicesPaidBack: Object.entries(s.biz.serviceLife ?? {}).filter(([sid, life]) => (serviceById(sid)?.price ?? Infinity) <= life).length,
-      demographicsCount: Object.keys(s.biz.demographics ?? {}).length,
-      landmarkContrib: s.biz.landmark?.contributions ?? 0,
-      prestigeLevel: s.biz.prestige?.level ?? 0,
-      rivalArcs: (s.biz.rivalTrend ?? []).length,
-      perfectDays: s.biz.perfectDays ?? 0,
-    };
-    const n = dossierEarnedCount(d);
-    return n > 0 ? `${n} huy hiệu` : undefined;
-  });
+  const dossierBadge = useGame(dossierBadgeOf);
   // Trang trại: luống chờ thu, trứng/sữa chờ lấy, heo xuất chuồng được, gà đói mà kho hết cám, hoặc chưa tưới
-  const gardenBadge = useGame((s) => {
-    if (s.level < 8) return undefined;
-    if (s.garden.farmOrder && s.garden.farmOrder.dueDay === s.day + 1) return '📦 Đơn sắp hết hạn';
-    for (const kind of ANIMAL_ORDER) {
-      const pen = s.garden.pens[kind];
-      if (!pen?.count) continue;
-      const def = ANIMALS[kind];
-      if (kind === 'pig' && (pen.fattened ?? 0) >= (def.fattenDays ?? 0)) return '🐖 Xuất chuồng được';
-      if (kind !== 'pig' && pen.pending >= (kind === 'cow' ? 1 : EGG_PER_TRAY)) return kind === 'cow' ? '🥛 Sữa chờ vắt' : '🥚 Trứng chờ thu';
-    }
-    if (s.garden.plots.some(plotReady)) return '🧺 Thu được';
-    const outOfFeed = ANIMAL_ORDER.some((kind) => {
-      const pen = s.garden.pens[kind];
-      if (!pen?.count || pen.fedDay === s.day) return false;
-      const def = ANIMALS[kind];
-      return pen.feedKg < pen.count * def.feedKgPerDay && (s.storage[def.feedProduct] ?? 0) === 0;
-    });
-    if (outOfFeed) return '🌽 Hết cám';
-    const dry = s.weather !== 'rain' && s.weather !== 'storm' && s.garden.plots.some((p) => p.crop && p.wateredDay !== s.day);
-    return dry ? '💧 Chưa tưới' : undefined;
-  });
+  const gardenBadge = useGame(gardenBadgeOf);
   // Ở hẻm online nhà chung mang tên riêng; cả hai đều là "đang ở nhà" nên mới hiện nút Ra tiệm
   const atHome = location === 'Nhà của bạn' || location === 'Nhà chung của hẻm';
   const atFarm = location === 'Trang trại đầu ngõ';
