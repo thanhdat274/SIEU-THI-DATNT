@@ -3,7 +3,7 @@ import { MeshStandardNodeMaterial } from 'three/webgpu';
 import { applyWind } from '../render/fx/windSway';
 import { createFarm, FARM_CENTER } from './farm';
 import { GroceryShop } from '../shop/groceryShop';
-import { Building } from './buildings';
+import { Building, setMergeWindowFrames } from './buildings';
 import { Warehouse, WAREHOUSE_DEPTH } from './warehouse';
 import type { NavGrid } from './navGrid';
 import { SHOP_CENTER_X, SHOP_FRONT_Z, SHOP_TIERS } from '../data/shopTiers';
@@ -16,6 +16,7 @@ import { createQuanNuocStand } from './quanNuocStand';
 import { createBranchStand } from './branchStand';
 import { loadKitProps } from './kitProps';
 import { createStorefrontLantern } from './storefrontLantern';
+import { createAlleyLamps } from './alleyLamps';
 import { createOpenSign } from './storefrontSign';
 import { createWaitLamp } from './storefrontWaitLamp';
 import { createCompoundWarm } from './compoundWarm';
@@ -63,6 +64,7 @@ export interface World {
   branchStand: ReturnType<typeof createBranchStand>;
   /** Đèn lồng cột trước cửa tiệm (gđ177): chỉ hình ảnh + nguồn sáng ấm chập tối — không chặn lưới. */
   storefront: ReturnType<typeof createStorefrontLantern>;
+  alleyLamps: ReturnType<typeof createAlleyLamps>;
   /** Biển treo "mở/đóng cửa" trước cửa tiệm (gđ179): chỉ hình ảnh, tấm trạng thái đổi màu theo shopOpen — không chặn lưới. */
   openSign: ReturnType<typeof createOpenSign>;
   /** Đèn báo "khách đang đợi" cạnh cửa (gđ180): chỉ hình ảnh, sáng ấm khi waiting>0 — không chặn lưới. */
@@ -75,6 +77,7 @@ export interface World {
 
 /** Thế giới ban đầu: mặt đất, con đường, nhà riêng và tiệm tạp hóa nhỏ. */
 export function createWorld(scene: THREE.Scene, grid: NavGrid): World {
+  setMergeWindowFrames(true); // GĐ906: gộp khung cửa sổ (chỉ cảnh 3D thật, sim headless giữ đường cũ)
   const ground = new THREE.Mesh(
     new THREE.PlaneGeometry(160, 160),
     new THREE.MeshStandardMaterial({ color: 0x7cb05a }),
@@ -206,7 +209,7 @@ export function createWorld(scene: THREE.Scene, grid: NavGrid): World {
   scene.add(home.group);
 
   const warehouse = new Warehouse(scene);
-  const shop = new GroceryShop(scene, warehouse);
+  const shop = new GroceryShop(scene, warehouse, true);
 
   // Kit prop GLB (chậu cây, thùng gỗ, tre, bồn nước, ghế nhựa, gánh hàng rong) — trang trí
   // thôi, không chặn lưới; tải lười nên thế giới có sẵn, prop vừa về vừa chen vào.
@@ -217,6 +220,9 @@ export function createWorld(scene: THREE.Scene, grid: NavGrid): World {
   // GLB Blender tải lười, có cái xác thủ tục dự phòng nên đèn luôn có hình.
   const storefront = createStorefrontLantern();
   scene.add(storefront.group);
+  // GĐ737 — đèn hẻm dọc lối đi: payoff thị giác của dự án "Đèn Đường Ngõ 1" (ẩn cho tới khi thắp sáng)
+  const alleyLamps = createAlleyLamps();
+  scene.add(alleyLamps.group);
   // Đèn ấm của riêng người chơi (gđ185 "Cơ ngơi lên đèn"): hiên nhà + cổng trại sáng ấm chập tối.
   // Đăng ký vào quỹ ánh sáng (lightBudget) nên không cần scene.add — chỉ cần giữ api để bật theo giờ.
   const compoundWarm = createCompoundWarm();
@@ -319,6 +325,7 @@ export function createWorld(scene: THREE.Scene, grid: NavGrid): World {
     convenience,
     convenienceViews,
     streetLamps,
+    alleyLamps,
     quanNuoc,
     kit,
     branchStand,

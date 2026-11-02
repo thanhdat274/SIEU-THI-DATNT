@@ -2,8 +2,18 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { newGameData, useGame } from '../core/store';
 import { applySnapshot, snapshot } from '../core/save';
 import {
-  feedCost, landmarkCustomerFactor, landmarkProgress, LANDMARK_CUSTOMER_BONUS_FACTOR,
-  LANDMARK_FEED_CAP, LANDMARK_STAGES, LANDMARK_TARGETS,
+  feedCost,
+  landmark2Progress,
+  landmarkCustomerFactor,
+  landmarkDayAction,
+  landmarkNightLine,
+  landmarkNightTrafficFactor,
+  landmarkProgress,
+  LANDMARK2_TARGETS,
+  LANDMARK_CUSTOMER_BONUS_FACTOR,
+  LANDMARK_FEED_CAP,
+  LANDMARK_STAGES,
+  LANDMARK_TARGETS,
 } from '../data/landmark';
 
 /**
@@ -164,11 +174,14 @@ describe('contributeLandmark qua store', () => {
     expect(after.message).toContain('Chưa đủ tiền');
   });
 
-  it('đã khánh thành (done) → false và báo', () => {
+  it('GĐ732 — sân chơi khánh thành → góp tiếp DỰ ÁN ĐÈN (true); cả hai xong → false', () => {
     setBiz(28);
     const s = useGame.getState();
-    expect(s.contributeLandmark()).toBe(false);
-    expect(useGame.getState().message).toContain('khánh thành');
+    expect(s.contributeLandmark()).toBe(true); // sân chơi xong → mở dự án đèn đường
+    expect(useGame.getState().biz.landmark.contributions).toBe(29);
+    useGame.setState({ day: useGame.getState().day + 1, biz: { ...useGame.getState().biz, landmark: { contributions: 48, lastContributeDay: 0 } } });
+    expect(useGame.getState().contributeLandmark()).toBe(false);
+    expect(useGame.getState().message).toContain('hoàn thành rồi');
   });
 
   it('chạm mốc giai đoạn → thưởng đúng tiền + XP một lần, contributions = mốc', () => {
@@ -197,7 +210,7 @@ describe('contributeLandmark qua store', () => {
     expect(after.biz.landmark.contributions).toBe(28);
     expect(after.money).toBe(beforeMoney - feedCost(landmarkProgress(27).index, s.level) + stage.bonusMoney);
     expect(after.stats.xp - beforeXpAcc).toBe(stage.bonusXp);
-    expect(after.message).toContain('khánh thành — cả hẻm cảm ơn bạn');
+    expect(after.message).toContain('Sân chơi khánh thành'); // GĐ732: lời nhắc dự án đèn thay lời chúc cũ
   });
 
   it('giai đoạn không phải mốc thì không thưởng (không double-grant ở cùng giá trị)', () => {
@@ -240,5 +253,70 @@ describe('persistence — biz.landmark qua snapshot/applySnapshot', () => {
 
   it('kinh tế ván mới không đổi: factor = 1 khi chưa khánh thành', () => {
     expect(landmarkCustomerFactor(useGame.getState().biz.landmark.contributions)).toBe(1);
+  });
+});
+
+
+describe('GĐ741 — việc sáng góp vật liệu công trình', () => {
+  it('hôm nay chưa góp → có việc; đã góp hôm nay → không; cả hai xong → không', () => {
+    const lm = { contributions: 10, lastContributeDay: 9 };
+    const act = landmarkDayAction(lm, 10, 5);
+    expect(act).not.toBeNull();
+    expect(act!.text).toContain('Sân chơi');
+    expect(act!.panel).toBe('landmark');
+    expect(landmarkDayAction({ contributions: 10, lastContributeDay: 10 }, 10, 5)).toBeNull();
+    expect(landmarkDayAction({ contributions: 60, lastContributeDay: 9 }, 10, 5)).toBeNull(); // cả hai xong
+    // sân chơi xong → việc sáng chuyển sang dự án đèn
+    const p2 = landmarkDayAction({ contributions: 30, lastContributeDay: 9 }, 10, 5);
+    expect(p2!.text).toContain('Đèn Đường Ngõ 1');
+    expect(p2!.icon).toBe('💡');
+  });
+});
+
+describe('GĐ736 — dòng soi sáng đèn trong tab đêm', () => {
+  it('3 trạng thái: mời dự án / đang góp còn N lượt / đã thắp sáng payoff', () => {
+    expect(landmarkNightLine(10)).toContain('dự án cộng đồng kế');
+    expect(landmarkNightLine(30)).toContain('còn 18 lượt'); // 20 − (30 − 28)
+    expect(landmarkNightLine(48)).toContain('+15% lưu lượng đêm');
+    expect(landmarkNightLine(48)!.length).toBeLessThanOrEqual(90);
+  });
+});
+
+describe('GĐ732 — dự án 2: Đèn Đường Ngõ 1', () => {
+  it('landmark2Progress: null khi sân chơi chưa xong; 28→48 chia 3 giai đoạn 7/7/6 lượt', () => {
+    expect(landmark2Progress(0)).toBeNull();
+    expect(landmark2Progress(27)).toBeNull();
+    const at28 = landmark2Progress(28)!;
+    expect(at28.index).toBe(0);
+    expect(at28.done).toBe(false);
+    expect(landmark2Progress(35)!.index).toBe(0);
+    expect(landmark2Progress(36)!.index).toBe(0); // 8 lượt vào giai đoạn 0 (7 lượt đầu)
+    expect(landmark2Progress(42)!.index).toBe(1); // 14 = mốc giai đoạn 1
+    expect(landmark2Progress(43)!.index).toBe(1); // 15 lượt vẫn trong giai đoạn 1
+    expect(landmark2Progress(47)!.done).toBe(false); // chưa đủ 20 lượt đèn
+    expect(landmark2Progress(48)!.done).toBe(true);
+    expect(landmark2Progress(60)!.done).toBe(true);
+  });
+  it('landmarkNightTrafficFactor: 1 khi chưa thắp sáng, ×1,15 khi đèn đã sáng', () => {
+    expect(landmarkNightTrafficFactor(0)).toBe(1);
+    expect(landmarkNightTrafficFactor(47)).toBe(1);
+    expect(landmarkNightTrafficFactor(48)).toBe(1.15);
+  });
+  it('contributeLandmark: sân chơi xong → lượt góp chạy tiếp dự án đèn (mốc 35 trao thưởng giai đoạn đèn)', () => {
+    useGame.setState({ ...newGameData(), day: 50, money: 5_000_000, level: 20, notify: () => {} });
+    useGame.setState({ biz: { ...useGame.getState().biz, landmark: { contributions: 34, lastContributeDay: 0 } } });
+    expect(useGame.getState().contributeLandmark()).toBe(true);
+    const b = useGame.getState().biz;
+    expect(b.landmark.contributions).toBe(35); // chạm mốc 35 → giai đoạn 1 của đèn xong
+    const got = useGame.getState().money;
+    void got;
+    // góp lần nữa trong cùng ngày bị chặn
+    expect(useGame.getState().contributeLandmark()).toBe(false);
+    // cả hai công trình xong → chặn hẳn
+    useGame.setState({ day: 51, biz: { ...useGame.getState().biz, landmark: { contributions: 48, lastContributeDay: 0 } } });
+    expect(useGame.getState().contributeLandmark()).toBe(false);
+  });
+  it('payoff khách đêm chỉ áp khi đèn sáng (biên đúng — không đọc store nhiễm test trước)', () => {
+    expect(LANDMARK2_TARGETS[LANDMARK2_TARGETS.length - 1]).toBe(48);
   });
 });

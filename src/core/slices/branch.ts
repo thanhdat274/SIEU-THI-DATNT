@@ -2,16 +2,17 @@ import { simRng } from '../rand';
 import { formatMoney, productById } from '../../data/products';
 import { HOMEGROWN_PREMIUM } from '../../data/garden';
 import { dailyWage, GUARD_DETECT, ROLES, type Staff } from '../../data/staff';
-import { BLACKOUT_LOSS, BONUS_RELIEF, DRUNK_BLOCK, DRUNK_DAMAGE, EVENT_CHANCE, EVENT_ROLL_AT, FATIGUE_PER_DAY, FATIGUE_QUIT, FATIGUE_SLOW, HOT_FOOD_MUL, MANAGER_REFILL_BELOW, QUIT_CHANCE, TIRED_MISS, autoSchedule, fatigueOf, isHotFood, pickWeighted, restingOn, spoilsInBlackout, BRANCH_NIGHT_THEFT, BRANCH_ROLES, BRANCH_SHIFT_NAME, BRANCH_SHIFTS, CONVENIENCE, VENDING_CAP, VENDING_COST, VENDING_ITEMS, VENDING_OFFTAKE, VENDING_THEFT, branchTrafficAt, isBranchNight, newBranch, onShift, shelfTotal, vendingTotal, type BranchState,
+import { BLACKOUT_LOSS, BONUS_RELIEF, DRUNK_BLOCK, DRUNK_DAMAGE, EVENT_CHANCE, EVENT_ROLL_AT, FATIGUE_PER_DAY, FATIGUE_QUIT, FATIGUE_SLOW, STAFF_WISH_DENY_FATIGUE, HOT_FOOD_MUL, MANAGER_REFILL_BELOW, QUIT_CHANCE, TIRED_MISS, autoSchedule, fatigueOf, isHotFood, pickWeighted, restingOn, spoilsInBlackout, BRANCH_NIGHT_THEFT, BRANCH_ROLES, BRANCH_SHIFT_NAME, BRANCH_SHIFTS, CONVENIENCE, VENDING_CAP, VENDING_COST, VENDING_ITEMS, VENDING_OFFTAKE, VENDING_THEFT, branchTrafficAt, branchMatchMul, branchWeekendMul, isBranchNight, newBranch, onShift, shelfTotal, vendingTotal, type BranchState,
   ALCOHOL_BRAWL_CHANCE, ALCOHOL_NIGHT_MUL, BRAWL_BLOCK, BRAWL_DAMAGE, GENERATOR_FUEL, GENERATOR_LOSS_MUL, NIGHT_DELIVERY_MISHAP, NIGHT_DELIVERY_PER_HOUR, NIGHT_DELIVERY_SURCHARGE, PATROL_AT, PATROL_CHANCE, POWER_UPGRADES,
   coverMul, hasAlcohol, hasPower, pickForGroup, pickNightGroup, powerUpgradeById, type PowerUpgradeId } from '../../data/branches';
 import type { GameState, SetState, GetState } from '../gameTypes';
 import { copyStock, takeStock } from '../stock';
 import { autoHaulDue, autoHaulCfg } from '../../data/branchHaul';
+import { landmarkNightTrafficFactor } from '../../data/landmark';
 import { CHIEF_QUIT_MUL, LEAD_FATIGUE_MUL, hasRank } from '../../data/careers';
 import { gainExp } from '../../data/staffTraits';
 import { LICENSE_FINE, isAlcohol, licenseById, licenseStatus } from '../../data/licenses';
-import { APP_COMMISSION, appRating } from '../../data/online';
+import { appPay, appRating } from '../../data/online';
 
 /** Cửa hàng tiện lợi 24/7: mô phỏng ngầm theo bước 10 phút, sang ngày, thuê/xếp ca/thưởng nhân viên chi nhánh. */
 
@@ -66,7 +67,9 @@ export const runBranch = (get: GetState, to: number): Partial<GameState> => {
       // Bán hàng từ máy: một phần khách qua đường rút hàng mỗi 10 phút
       let vTotal = vendingTotal(b.vendingStock);
       if (vTotal > 0) {
-        const vExpect = (branchTrafficAt(m) * STEP) / 60 * VENDING_OFFTAKE;
+        // GĐ732: đèn đường hẻm → khách đêm ghé máy bán hàng nhiều hơn
+        const lamp = landmarkNightTrafficFactor(s.biz.landmark.contributions);
+        const vExpect = (branchTrafficAt(m) * STEP) / 60 * VENDING_OFFTAKE * lamp;
         let vn = Math.floor(vExpect) + (simRng()() < vExpect % 1 ? 1 : 0);
         for (; vn > 0 && vTotal > 0; vn--) {
           const pool: string[] = Object.keys(b.vendingStock).filter((id) => (b.vendingStock?.[id] ?? 0) > 0);
@@ -179,7 +182,7 @@ export const runBranch = (get: GetState, to: number): Partial<GameState> => {
       if (autoHaul && moved) news.push(`🚚 Chi nhánh đã tự chở ${moved} món từ kho chung sang (auto chuyển kho, phí xăng ${formatMoney(CONVENIENCE.tripFee)})`);
     }
     // Khách ghé trong 10 phút; không ai đứng quầy, quầy đang ngưng hoặc hết hàng thì khách bỏ về
-    const expect = (branchTrafficAt(m) * STEP) / 60;
+    const expect = (branchTrafficAt(m) * branchWeekendMul(s.day, m) * branchMatchMul(s.day, m, s.weather) * STEP) / 60;
     let n = Math.floor(expect) + (simRng()() < expect % 1 ? 1 : 0);
     const cashiers = on.filter((st) => st.role === 'cashier');
     // Chủ đang có mặt ở chi nhánh thì tự đứng quầy được (không mệt)
@@ -243,7 +246,7 @@ export const runBranch = (get: GetState, to: number): Partial<GameState> => {
           news.push('🛵 Shipper giao đêm gặp sự cố giữa đường — mất một đơn app');
           continue;
         }
-        const pay = Math.round(value * (1 - APP_COMMISSION));
+        const pay = appPay(value, s.online.done + onl.done); // hoa hồng theo bậc app (GĐ716 — cùng hồ sơ với tiệm)
         revenue += pay;
         onl.pay += pay;
         onl.ratingSum += 5; onl.ratingCount++; onl.done++;
@@ -323,7 +326,7 @@ export const branchNewDay = (b: BranchState, day: number): { branch: BranchState
   return { branch: { ...b, staff, fatigue, restDay, event: null, blockedUntil: undefined, hourly: Array(24).fill(0), vendingRevenueToday: 0, groupToday: {}, alcoholToday: 0, deliveryToday: 0, deliveryRevenueToday: 0 }, news };
 };
 
-export const createBranchSlice = (set: SetState, get: GetState): Pick<GameState, 'openBranch' | 'toggleBranch' | 'hireForBranch' | 'fireFromBranch' | 'coverCalloff' | 'bonusBranchStaff' | 'restBranchStaff' | 'setBranchShift' | 'toggleVending' | 'toggleNightDelivery' | 'toggleBranchAutoHaul' | 'setBranchAutoHaul' | 'buyBranchPower'> => ({
+export const createBranchSlice = (set: SetState, get: GetState): Pick<GameState, 'openBranch' | 'toggleBranch' | 'hireForBranch' | 'fireFromBranch' | 'coverCalloff' | 'bonusBranchStaff' | 'restBranchStaff' | 'restBranchStaffToday' | 'denyStaffRest' | 'setBranchShift' | 'toggleVending' | 'toggleNightDelivery' | 'toggleBranchAutoHaul' | 'setBranchAutoHaul' | 'buyBranchPower'> => ({
   openBranch: () => {
     const s = get();
     if (s.branch) return false;
@@ -382,6 +385,25 @@ export const createBranchSlice = (set: SetState, get: GetState): Pick<GameState,
       stats: { ...s.stats, spent: s.stats.spent + cost },
     });
     s.notify(`🎁 Thưởng ${st.name} ${formatMoney(cost)} — đỡ mệt hẳn!`);
+  },
+  // GĐ728 — GIỮ lại người xin nghỉ: họ làm trong buồn → mệt thêm một bậc ngay (STAFF_WISH_DENY_FATIGUE),
+  // wishDenied[id] = ngày để ẩn dòng xin nghỉ trong Sổ đầu ngày. Rủi ro mệt cao là cơ chế có sẵn (SLOW/QUIT).
+  denyStaffRest: (id, bump = STAFF_WISH_DENY_FATIGUE) => {
+    const b = get().branch;
+    const st = b?.staff.find((it) => it.id === id);
+    if (!b || !st) return;
+    const fatigue = { ...(b.fatigue ?? {}) };
+    fatigue[id] = Math.min(100, Math.round((b.fatigue?.[id] ?? 0) + bump));
+    set({ branch: { ...b, fatigue, wishDenied: { ...(b.wishDenied ?? {}), [id]: get().day } } });
+    get().notify(bump > 0 ? `😔 ${st.name} hơi buồn vì không được nghỉ — mệt thêm ${bump}` : `😶 ${st.name} ngại ngùng chấp nhận — thôi để xem ca sau`);
+  },
+  // GĐ727 — cho nghỉ HÔM NAY (nhân viên xin nghỉ): ca nay thiếu người thật, tối nay mệt được xả (restingOn hôm nay → fatigue 0)
+  restBranchStaffToday: (id) => {
+    const b = get().branch;
+    const st = b?.staff.find((it) => it.id === id);
+    if (!b || !st) return;
+    set({ branch: { ...b, restDay: { ...b.restDay, [id]: get().day } } });
+    get().notify(`🛌 Cho ${st.name} nghỉ hôm nay — ca nay thiếu người, tối nay người được xả mệt`);
   },
   restBranchStaff: (id) => {
     const b = get().branch;

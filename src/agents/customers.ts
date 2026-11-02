@@ -9,6 +9,7 @@ import { skyAt } from '../data/weather';
 import { marketTrafficFactor } from '../data/chophien';
 import { tierMarkdown, fitLots, nearestLife, nearExpiryRefuseChance } from '../data/freshness';
 import { demandPriceFactor, keepChance } from '../data/pricing';
+import { CUNG_GOODS, CUNG_PULL, isXoiCungDay } from '../data/tiemXoi';
 import { dayEffects, isWeekend, OFF_SEASON_CLEARANCE, OFF_SEASON_HUNT, offSeason } from '../data/calendar';
 import { COOKED_PRODUCT_IDS, RECIPES } from '../data/recipes';
 import { happyHourActive, happyTraffic, timeBandAt } from '../data/rhythm';
@@ -20,8 +21,8 @@ import { noteComboDay } from '../core/slices/comboDay';
 import { bulkExtra, festivalVisit, perkValue, pickRegular, referFriends, regularById, reserveAsk, INFLUENCER_ID, unlockedFavorites, type RegularDef } from '../data/regulars';
 import { influencerActive } from '../data/social';
 import { pickProfession, PROFESSIONS, PROFESSION_LOOK, type ProfessionDef } from '../data/professions';
-import { CREDIT_UNLOCK, repaysToday, wantsCredit } from '../data/credit';
-import { askQueuedPatience, ASK_MINUTES, CANDY_ANNOY, CHANGE_CHANCE, CHANGE_UNLOCK, CREDIT_REFUSE_FRIEND_LOSS, changeChoice, defaultCounterPolicy, HAGGLE_CHANCE, HAGGLE_MIN_TOTAL, HAGGLE_REFUSE_OK, HAGGLE_UNLOCK, haggleChoice, haggleOff, oddChange } from '../data/counterDeals';
+import { DEBT_PARTIAL_CHANCE, DEBT_PARTIAL_MIN, installmentNow, CREDIT_UNLOCK, repaysToday, wantsCredit, creditLeft, creditAskText } from '../data/credit';
+import { askQueuedPatience, ASK_MINUTES, CANDY_ANNOY, CHANGE_CHANCE, CHANGE_UNLOCK, CREDIT_REFUSE_FRIEND_LOSS, changeChoice, defaultCounterPolicy, HAGGLE_CHANCE, HAGGLE_CHANCE_REG, HAGGLE_MIN_TOTAL, HAGGLE_UNLOCK, haggleChoice, haggleCounterOff, haggleOff, haggleSettle, oddChange, pricematchSettle } from '../data/counterDeals';
 import { rollService, SERVICE_BUY_ALONG, type ServiceDef } from '../data/services';
 import { earnService } from '../core/biz';
 import { paymentById, pickPayment } from '../data/payments';
@@ -30,7 +31,7 @@ import { VENDOR_CHANCE, VENDOR_FROM, VENDOR_UNTIL, WHOLESALE_UNLOCK } from '../d
 import { meatDemandFactor } from '../data/meat';
 import { bestSkillOnDuty, CARE_PATIENCE_PER_STAR, DIRT_MAX, DIRT_PER_VISIT, dirtVisitFactor, GUARD_DETECT } from '../data/staff';
 import { socialTraffic } from '../data/social';
-import { adTargets, bizTraffic, LOYALTY_UNLOCK, loyaltyRedeemChance, petActive, rivalUndercuts } from '../data/biz';
+import { adTargets, bizTraffic, LOYALTY_UNLOCK, loyaltyRedeemChance, petActive, rivalPriceGap, rivalUndercuts } from '../data/biz';
 import { landmarkCustomerFactor } from '../data/landmark';
 import { redeemLoyalty, storyOnVisit, theftFactor } from '../core/biz';
 import { hasUpgrade } from '../data/upgrades';
@@ -66,6 +67,8 @@ export function impatienceEmoji(ratio: number): '😕' | '😤' | null {
   return null;
 }
 const OPEN_FROM = 6 * 60;
+/** Trần khoảng chờ khách kế tiếp (phút game) khi vừa sang giờ mở — khách đầu ngày không đợi phần dư của đêm. */
+const DAYTIME_FIRST_GAP_CAP = 20;
 const OPEN_UNTIL = 22 * 60;
 /** Tỉ lệ khách muốn mua món đang có trên kệ (còn lại là món ngẫu nhiên, có thể tiệm không bán). */
 const WANTS_STOCKED = 0.8;
@@ -75,7 +78,7 @@ type State = 'walkBy' | 'toShop' | 'shopping' | 'toQueue' | 'queued' | 'leaving'
 const pick = <T,>(list: T[]) => list[Math.floor(simRng()() * list.length)];
 
 /** Chuyện ở quầy đã chốt: choice là phương án được chọn (0 = phương án đầu). */
-interface Deal { kind: 'none' | 'credit' | 'haggle' | 'change'; amount: number; choice: number }
+interface Deal { kind: 'none' | 'credit' | 'installment' | 'haggle' | 'change' | 'pricematch'; amount: number; choice: number }
 
 class Customer extends Walker {
   state: State = 'walkBy';
@@ -176,6 +179,8 @@ export class CustomerManager {
     // Ban ngày người đi đường nhiều hơn; có ca đêm thì "ngày" kéo dài tới 6h sáng hôm sau
     const nightOpen = hasUpgrade(s.biz, 'night');
     const daytime = s.minutes >= OPEN_FROM && (s.minutes < OPEN_UNTIL || (nightOpen && s.minutes < 30 * 60));
+    // GĐ806: khoảng chờ ngoài giờ mở là 60–90 phút; sang giờ mở thì không bắt khách đầu ngày đợi hết phần dư đó
+    if (daytime && this.spawnIn > DAYTIME_FIRST_GAP_CAP) this.spawnIn = DAYTIME_FIRST_GAP_CAP;
     this.spawnIn -= gameMinutes;
     if (this.spawnIn <= 0) {
       // Khách quen rủ bạn đi cùng: ngay khi có suất sinh, ưu tiên cho bạn vào tiệm
@@ -375,6 +380,8 @@ export class CustomerManager {
     // Cuối tuần (Thứ 7/CN — GĐ255): nhà bằng nghỉ học, tụi nhỏ rủ nhau ghé mua ăn vặt — nhiệm vụ
     // "Cuối tuần ăn vặt" (GĐ254) dạy trữ đúng nhóm này nên thế giới phải trả lời đúng hứa
     const weekendSnacks = isWeekend(s.day) ? WEEKEND_SNACKS.filter(unlocked) : [];
+    // GĐ609: mùng 1/rằm (ngày cúng) bà con ghé mua nhang, trái cây
+    const cungGoods = isXoiCungDay(s.day) ? CUNG_GOODS.filter(unlocked) : [];
     // Hàng cận hạn đang giảm giá: có khách chuyên săn đồ giảm
     const onSale = [
       ...new Set(s.furniture.flatMap((f) => f.tiers.filter((t) => tierMarkdown(t.productId, t.lots, t.count) > 0).map((t) => t.productId!))),
@@ -394,6 +401,7 @@ export class CustomerManager {
       if (seasonal.length && simRng()() < effects.pull) return pick(seasonal);
       if (timely.length && simRng()() < 0.2) return pick(timely);
       if (weekendSnacks.length && simRng()() < 0.2) return pick(weekendSnacks);
+      if (cungGoods.length && simRng()() < CUNG_PULL) return pick(cungGoods);
       if (hot.length && simRng()() < 0.15) return pick(hot);
       return stocked.length && simRng()() < WANTS_STOCKED
         ? weightedPick(stocked, (id) => (attention[id] ?? 1) * meatDemandFactor(id, butcher), simRng())
@@ -598,7 +606,17 @@ export class CustomerManager {
     const total = first.basket.reduce((n, it) => n + it.price, 0) - combo.discount;
     // Khách quen đủ thân đôi khi quên ví, xin ghi sổ; lần ghé sau trả nợ cũ
     const reg = first.regular;
-    if (reg && repaysToday(st.debts[reg.id], st.day, simRng()())) {
+    // GĐ734 — deal trả góp đã hỏi ở counterDeal: chốt tại settle (choice 0 nhận nửa, choice 1 đòi đủ — không rút thêm)
+    if (reg && deal.kind === 'installment') {
+      if (deal.choice === 0) {
+        st.collectDebtPartial(reg.id);
+        first.say('🤲', 2);
+      } else {
+        st.collectDebt(reg.id);
+        st.adjustFriendship(reg.id, -1);
+        first.say('💵', 2);
+      }
+    } else if (reg && repaysToday(st.debts[reg.id], st.day, simRng()())) {
       st.collectDebt(reg.id);
       first.say('💵', 2);
     }
@@ -607,11 +625,20 @@ export class CustomerManager {
       st.adjustFriendship(reg!.id, -CREDIT_REFUSE_FRIEND_LOSS);
       st.notify(`😔 ${reg!.name}: "Thôi để chạy về nhà lấy tiền vậy..."`);
     }
-    if ((deal.kind === 'haggle' || deal.kind === 'change') && deal.choice === 0) {
-      combo.discount += Math.min(deal.amount, total);
-      first.say('🤝', 2);
+    // GĐ725 — kèo khớp giá qua helper thuần: choice 0 khớp (không rút) · choice 1 giữ giá (60% vẫn mua, 40% bỏ về)
+    if (deal.kind === 'pricematch') {
+      const settle = pricematchSettle(deal.choice, deal.amount, total, deal.choice === 0 ? 0 : simRng()());
+      if (settle.discount) combo.discount += settle.discount;
+      if (!settle.happy) happy = false;
+      if (settle.icon) first.say(settle.icon, 2);
     }
-    if (deal.kind === 'haggle' && deal.choice === 1 && simRng()() >= HAGGLE_REFUSE_OK) happy = false;
+    // GĐ721 — chốt deal mặc cả qua helper thuần: 0 bớt luôn · 1 trả giá lại (khách gật giá giữa/mua đầy/bỏ về) · 2 giữ giá
+    if (deal.kind === 'haggle') {
+      const settle = haggleSettle(deal.choice, deal.amount, total, deal.choice === 0 ? 0 : simRng()());
+      if (settle.discount) combo.discount += settle.discount;
+      if (!settle.happy) happy = false;
+      if (settle.icon) first.say(settle.icon, 2);
+    }
     if (deal.kind === 'change' && deal.choice === 1) {
       first.say('🍬', 2);
       if (simRng()() < CANDY_ANNOY) happy = false;
@@ -692,16 +719,46 @@ export class CustomerManager {
       const owed = st.debts[reg.id]?.amount ?? 0;
       ask = {
         kind: 'credit', amount: total, icon: '📒', who: reg.name,
-        text: `quên ví, xin ghi sổ ${formatMoney(total)}${owed ? ` (đang nợ ${formatMoney(owed)})` : ''}`,
+        text: creditAskText(total, owed, creditLeft(st.regulars[reg.id], st.debts[reg.id])),
         options: ['📒 Cho ghi sổ', 'Không cho nợ'], fallback: 0,
       };
-    } else if (!reg && st.level >= HAGGLE_UNLOCK && total >= HAGGLE_MIN_TOTAL && simRng()() < HAGGLE_CHANCE) {
-      const off = haggleOff(total);
+    // GĐ734 — kèo trả góp: nợ cũ đến hạn (kể từ hôm qua trở về trước) + đủ lớn + chủ đứng quầy
+    // (bài học GĐ722: autoplay không trả lời được thì KHÔNG rút rng — dòng mô phỏng giữ nguyên từng nhịp)
+    } else if (reg && st.debts[reg.id] && (st.debts[reg.id]!.since < st.day) && st.debts[reg.id]!.amount >= DEBT_PARTIAL_MIN
+      && this.playerAtCounter(counter) && simRng()() < DEBT_PARTIAL_CHANCE) {
+      const debt = st.debts[reg.id]!;
+      const now = installmentNow(debt.amount);
       ask = {
-        kind: 'haggle', amount: off, icon: '🗣️', who: c.profession?.name ?? 'Khách',
-        text: `mặc cả: "${formatMoney(total)} hả? Bớt ${formatMoney(off)} đi cô/chú!"`,
-        options: [`🤝 Bớt ${formatMoney(off)}`, 'Giá đúng rồi'], fallback: 1,
+        kind: 'installment', amount: now, icon: '🤲', who: reg.name,
+        text: `xin trả góp: "Tiệm nhận ${formatMoney(now)} trước hôm nay, phần còn lại ${formatMoney(debt.amount - now)} trả trong 7 ngày nhé?"`,
+        options: [`🤲 Chấp nhận (nhận ${formatMoney(now)})`, 'Đòi đủ một lần'], fallback: 1,
       };
+    // GĐ722: khách quen cũng mặc cả NHƯNG chỉ khi chủ đứng quầy — từ chối bà con là lựa chọn có chủ ý của người chơi,
+    // không bao giờ là tai nạn autoplay (không ai ở quầy thì không rút rng — dòng mô phỏng giữ nguyên từng nhịp)
+    } else if (st.level >= HAGGLE_UNLOCK && total >= HAGGLE_MIN_TOTAL && (!reg || this.playerAtCounter(counter)) && simRng()() < (reg ? HAGGLE_CHANCE_REG : HAGGLE_CHANCE)) {
+      const off = haggleOff(total);
+      const counterOff = haggleCounterOff(total);
+      ask = {
+        kind: 'haggle', amount: off, icon: '🗣️', who: c.profession?.name ?? reg?.name ?? 'Khách',
+        text: reg
+          ? `mặc cả: "Bà con quen rồi, bớt ${formatMoney(off)} cho nhẹ đi nhé!"`
+          : `mặc cả: "${formatMoney(total)} hả? Bớt ${formatMoney(off)} đi cô/chú!"`,
+        // GĐ721: thêm nút "trả giá lại" — bớt nửa mức khách xin; khách có thể gật giá giữa (thương lượng thật)
+        options: [`🤝 Bớt ${formatMoney(off)}`, `💬 Trả nửa (−${formatMoney(counterOff)})`, 'Giá đúng rồi'], fallback: 2,
+      };
+    } else if (!reg && st.biz.rival && st.level >= HAGGLE_UNLOCK && total >= 10_000 && this.playerAtCounter(counter)) {
+      // GĐ725 — kèo khớp giá: khách soi thấy rival bán rẻ món trong giỏ. Chỉ khi chủ đứng quầy (bài học GĐ722:
+      // autoplay không trả lời được thì KHÔNG rút rng — dòng mô phỏng giữ nguyên từng nhịp).
+      const gap = rivalPriceGap(st.biz.rival, (id) => st.priceOf(id), st.day, c.basket.map((it) => it.id));
+      if (gap > 0) {
+        const rivalName = st.biz.rival.name;
+        ask = {
+          kind: 'pricematch', amount: gap, icon: '🏷️', who: c.profession?.name ?? 'Khách',
+          text: `soi giá: "Bên ${rivalName} bán rẻ hơn ${formatMoney(gap)} kìa — khớp giá giúp mình không?"`,
+          options: [`🏷️ Khớp giá (−${formatMoney(gap)})`, 'Giữ giá của tiệm'], fallback: 1,
+        };
+      }
+      // gap 0 (vignette không trúng) → rơi qua nhánh tiền lẻ như thường
     } else if (st.level >= CHANGE_UNLOCK && oddChange(total) && simRng()() < CHANGE_CHANCE) {
       const odd = oddChange(total);
       ask = {

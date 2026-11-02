@@ -4,6 +4,7 @@
  * File này chỉ có dữ liệu và hàm thuần; hành động đổi trạng thái nằm ở `core/biz.ts`.
  */
 import { formatMoney, productById } from './products';
+import { regularById } from './regulars';
 import { newQuanNuoc, type QuanNuocState } from './quanNuoc';
 import { newTiemXoi, type TiemXoiState } from './tiemXoi';
 import type { HiepLucState } from './hiepLuc';
@@ -85,9 +86,23 @@ export const RIVAL_UNDERCUT = { cutter: 0.88, quality: 0.97, aggressive: 0.92 };
 export const POACH_FRIENDSHIP = 25;
 /** Xác suất cơ bản mỗi đêm một khách quen bị lôi kéo (nhân theo sức mạnh rival). */
 export const POACH_CHANCE = 0.05;
+/** GĐ794 — khách quen đang "dễ bị kéo": rival đủ mạnh, còn chỗ (<3 người), khách mới quen (thân thiết < mốc) và chưa bị kéo.
+ *  Cùng điều kiện với rivalNightAI nên cảnh báo không hứa hão; thuần, dùng chung chơi đơn/hẻm online. */
+export function atRiskOfPoach(rival: Rival | null | undefined, friendships: Record<string, number | undefined>): string[] {
+  if (!rival || rival.strength < 35) return [];
+  const poached = rival.poached ?? {};
+  if (Object.keys(poached).length >= 3) return [];
+  return Object.entries(friendships)
+    .filter(([id, f]) => f !== undefined && f < POACH_FRIENDSHIP && !poached[id])
+    .map(([id]) => id);
+}
 /** Rival mạnh quá mốc này mới dám giựt nhân viên (chỉ rival máu liều). */
 export const STAFF_POACH_STRENGTH = 60;
 export const STAFF_POACH_CHANCE = 0.04;
+/** Đòi lại khách quen bị lôi kéo: tặng 1 món họ thích trong kho + tiền quà, mỗi ngày đòi được 1 người.
+ *  Thân thiết cộng lại khi đòi được (đường chờ tự quay về thì +5 nhưng ngẫu nhiên). */
+export const RESCUE_FEE = 20000;
+export const RESCUE_FRIENDSHIP = 3;
 /** Mua lại mặt bằng rival: giá bán và số ngày giữ chào bán. */
 export const RIVAL_SHOP_PRICE = 12000000;
 export const RIVAL_SHOP_OFFER_DAYS = 10;
@@ -116,6 +131,15 @@ export function rivalUndercuts(r: Rival | null, priceOf: (id: string) => number,
     if (rp * sale < priceOf(id) * 0.95) out.add(id);
   }
   return out;
+}
+
+/** GĐ725 — tổng chênh giá rival đang phá giá trên các món trong giỏ (chỉ món rival đang bán rẻ hơn ≥5%):
+ *  dùng cho kèo "khớp giá" ở quầy — khách nói rival rẻ hơn, chủ chọn khớp (mất gap, giữ khách) hay giữ giá. */
+export function rivalPriceGap(r: Rival | null, priceOf: (id: string) => number, day: number, basketIds: string[]): number {
+  const under = rivalUndercuts(r, priceOf, day);
+  let gap = 0;
+  for (const id of basketIds) if (under.has(id)) gap += Math.max(0, priceOf(id) - (r?.prices?.[id] ?? priceOf(id)));
+  return Math.round(gap / 1000) * 1000;
 }
 
 /**
@@ -312,7 +336,8 @@ export function rivalNightAI(r: Rival, ctx: RivalNightCtx): RivalNightResult {
     if (winBack || rng() < 0.5) {
       delete poached[id];
       returned.push(id);
-      news.push(`💛 Một khách quen chán ${r.name}, quay lại tiệm mình!`);
+      const back = regularById(id);
+      news.push(`💛 ${back?.name ?? 'Một khách quen'} chán ${r.name}, quay lại tiệm mình!`);
     }
   }
   if (r.strength >= 35 && Object.keys(poached).length < 3) {
@@ -322,7 +347,8 @@ export function rivalNightAI(r: Rival, ctx: RivalNightCtx): RivalNightResult {
     const victim = candidates[0];
     if (victim && rng() < POACH_CHANCE * (r.strength / 100) * (pers === 'aggressive' ? 1.6 : pers === 'quality' ? 0.5 : 1)) {
       poached[victim[0]] = ctx.day;
-      news.push(`😠 Đáng tiếc: khách quen của mình bị ${r.name} kéo rớt giá mớ hàng rẻ hơn — ghé Mạng xã hội quảng bá và nhớ tri ân khách!`);
+      const def = regularById(victim[0]);
+      news.push(`😠 ${r.name} lôi kéo ${def?.name ?? 'một khách quen'} — mở Khách quen để đòi về`);
     }
   }
 
@@ -1062,7 +1088,8 @@ export interface StoryChapter { at: number; title: string; text: string; reward?
 
 /** Mỗi khách quen 3 chương (nội dung ở stories.ts, nạp lười để gói tải ban đầu nhẹ hơn). Rỗng tới khi loadStories() xong — mọi chỗ đọc đã chịu được `undefined`. */
 export let STORIES: Record<string, StoryChapter[]> = {};
-export const loadStories = () => import('./stories').then((m) => { STORIES = m.STORIES; SURPRISES = m.SURPRISES; });
+export const loadStories = () => Promise.all([import('./stories'), import('./surpriseArcsData'), import('./surpriseArcs')])
+  .then(([m, d, a]) => { STORIES = m.STORIES; SURPRISES = m.SURPRISES; a.setSurpriseArcs(d.SURPRISE_ARCS); });
 
 // ───────────────────────── Nhà riêng, bữa sáng, xe cộ ─────────────────────────
 
@@ -1103,6 +1130,8 @@ export interface BizState {
   counterStreak?: number;
   /** Ngày sớm nhất được dùng lại từng chiến thuật phản công (thời gian hồi). */
   counterReady: Partial<Record<CounterTactic, number>>;
+  /** Ngày gần nhất đã đòi lại một khách quen bị rival lôi kéo (mỗi ngày một người). Thiếu ở save cũ. */
+  rescueDay?: number;
   ads: ActiveAd[];
   loyalty: Loyalty;
   loan: Loan | null;
@@ -1166,10 +1195,16 @@ export interface BizState {
   zones?: string[];
   /** GĐ501: số lô sạp hàng rong đã thuê ở Ngõ 2 (0–4). */
   sapRong?: number;
-  tiemXoiLast?: { day: number; total: number; cost: number; wages: number; saved: number; /** GĐ486: suất khách ăn tại chỗ. */ dine?: number };
+  /** GĐ507: món từng lô sạp (id SAP_KINDS); thiếu = Tổng hợp. */
+  sapKinds?: string[];
+  /** GĐ513: bậc từng lô sạp (0 gánh, 1 xe đẩy, 2 quầy); thiếu = gánh. */
+  sapTiers?: number[];
+  /** GĐ521: ngày chủ tự đứng sạp gần nhất. */
+  sapHandDay?: number;
+  tiemXoiLast?: { day: number; total: number; cost: number; wages: number; saved: number; /** GĐ486: suất khách ăn tại chỗ. */ dine?: number; /** GĐ711: sự kiện hôm qua (nồi hỏng / gạo khan) — bản lưu cũ thiếu thì coi như không có. */ event?: 'cooker' | 'gao' };
   /** Kết quả ngày vừa rồi của quán nước (để UI hiển thị); chưa từng chạy thì undefined.
    *  wages = tổng lương nhân viên phải trả hôm đó, profit = revenue − wages (lời ròng thật). */
-  quanNuocLast?: { day: number; revenue: number; served: number; wanted: number; wages: number; profit: number };
+  quanNuocLast?: { day: number; revenue: number; served: number; wanted: number; wages: number; profit: number; /** GĐ703: sự kiện hôm qua (máy pha hỏng / xe nước) — bản lưu cũ thiếu thì coi như không có. */ event?: 'brewer' | 'cart' };
   /** Các mốc 'Sổ tay Tiệm' đã nhận thưởng (GĐ36): danh sách ngưỡng món đã bán. Bản lưu cũ thiếu thì coi như []. */
   discoveryClaimed?: number[];
   /** Công trình khu phố (GĐ40) — sân chơi trẻ em: mỗi ngày góp một lần cho tới khi khánh thành.

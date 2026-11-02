@@ -68,7 +68,12 @@ export function notifyTexts(): { file: string; text: string; len: number }[] {
     const src = readFileSync(f, 'utf8');
     for (const m of src.matchAll(re)) {
       const text = m[1].slice(1, -1);
-      const len = [...text.replace(/\$\{(?:[^{}]|\{[^{}]*\})*\}/g, 'xxxxxx')].length;
+      // ${c ? 'a' : 'b'} tính theo nhánh chuỗi dài nhất (trường hợp xấu nhất), khớp scripts/audit-notify.mjs
+      const flat = text.replace(/\$\{(?:[^{}]|\{[^{}]*\})*\}/g, (e) => {
+        const lits = [...e.matchAll(/'((?:[^'\\]|\\.)*)'|`((?:[^`\\]|\\.)*)`/g)].map((x) => (x[1] ?? x[2]).replace(/\$\{[^}]*\}/g, 'xxxxxx'));
+        return lits.length && e.includes('?') ? lits.sort((a, b) => b.length - a.length)[0] : 'xxxxxx';
+      });
+      const len = [...flat].length;
       out.push({ file: f.slice(root.length + 1), text, len });
     }
   }
@@ -84,5 +89,10 @@ describe('thông báo ngắn gọn', () => {
     const worst = [...all].sort((a, b) => b.len - a.len).slice(0, 3).map((t) => `${t.file}: ${t.len}`).join(' · ');
     expect(longest, `thông báo dài nhất ${longest} ký tự (${worst})`).toBeLessThanOrEqual(NOTIFY_CEILING.maxLen);
     expect(over.length, `${over.length} thông báo dài hơn ${NOTIFY_TARGET} ký tự — rút gọn, đừng thêm`).toBeLessThanOrEqual(NOTIFY_CEILING.overTarget);
+  });
+
+  it('thông báo viết dạng NFC (chữ có dấu không tách rời) để đếm ký tự không lệch', () => {
+    const bad = notifyTexts().filter((t) => t.text !== t.text.normalize('NFC')).map((t) => `${t.file}: ${t.text}`);
+    expect(bad).toEqual([]);
   });
 });

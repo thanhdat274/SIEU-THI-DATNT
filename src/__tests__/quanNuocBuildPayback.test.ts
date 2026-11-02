@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { quanNuocBuildPayback, quanNuocProjection, quanNuocDrinkIds, QUAN_NUOC_PRICE, QUAN_NUOC_UNLOCK, type QuanNuocState } from '../data/quanNuoc';
+import { quanNuocDrinkIds, QUAN_NUOC_PRICE, QUAN_NUOC_UNLOCK, type QuanNuocState } from '../data/quanNuoc';
+import { quanNuocBuildPayback, quanNuocProjection } from '../data/quanNuocInsights';
 
 /**
  * GĐ193 — "Xây quán nước 25tr hồi vốn sau bao lâu?": màn XÂY QUÁN chỉ cho giá + cấp yêu cầu, không nói

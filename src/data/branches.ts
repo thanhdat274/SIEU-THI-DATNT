@@ -1,3 +1,4 @@
+import { isWeekend } from './calendar';
 import { COOKED_PRODUCT_IDS } from './recipes';
 import { productById } from './products';
 import type { FurnitureType } from './furniture';
@@ -5,6 +6,8 @@ import { SHIFTS, type Shift, type Staff, type StaffRole } from './staff';
 import { isAlcohol } from './licenses';
 import { CHIEF_COVER_MUL } from './careers';
 import { simRng } from '../core/rand';
+import { isQuanMatchDay } from './quanNuoc';
+import type { Weather } from './weather';
 
 /** Cửa hàng tiện lợi 24/7: chi nhánh xa tiệm chính, chủ không đứng bán, nhân viên lo hết. */
 export const CONVENIENCE = {
@@ -63,6 +66,13 @@ const HOURLY = [2, 1, 1, 1, 1, 2, 4, 5, 4, 4, 4, 5, 5, 4, 4, 4, 4, 5, 6, 6, 5, 5
 export const branchTrafficAt = (minute: number) => HOURLY[Math.floor(((minute % 1440) + 1440) % 1440 / 60)];
 /** Giờ đêm (22h–6h): không có bảo vệ thì dễ mất trộm. */
 export const isBranchNight = (minute: number) => { const m = ((minute % 1440) + 1440) % 1440; return m >= 22 * 60 || m < 6 * 60; };
+/** GĐ532: đêm cuối tuần dân đi chơi khuya ghé tiện lợi đông hơn. */
+export const BRANCH_WEEKEND_NIGHT_MUL = 1.3;
+export const branchWeekendMul = (day: number, minute: number) => (isWeekend(day) && isBranchNight(minute) ? BRANCH_WEEKEND_NIGHT_MUL : 1);
+/** GĐ601: đêm có trận (cùng lịch quán nước) — tan trận 22h–24h khách ghé tiện lợi ×1,2. */
+export const BRANCH_MATCH_MUL = 1.2;
+export const branchMatchMul = (day: number, minute: number, weather?: Weather) =>
+  (isQuanMatchDay(day, weather) && ((minute % 1440) + 1440) % 1440 >= 22 * 60 ? BRANCH_MATCH_MUL : 1);
 
 export interface BranchState {
   open: boolean;
@@ -90,6 +100,8 @@ export interface BranchState {
   fatigue?: Record<number, number>;
   /** Nhân viên được nghỉ (id → ngày nghỉ). */
   restDay?: Record<number, number>;
+  /** GĐ728 — ngày nhân viên bị GIỮ lại dù xin nghỉ (id → ngày): ẩn dòng wish, mệt thêm một bậc. */
+  wishDenied?: Record<number, number>;
   /** Doanh thu từng giờ hôm nay (0–23). */
   hourly?: number[];
   /** Sự kiện đêm nay. */
@@ -206,8 +218,39 @@ export const TIRED_MISS = 0.25;
 /** Thưởng nóng: tốn một ngày lương, giảm mệt từng này. */
 export const BONUS_RELIEF = 35;
 export const fatigueOf = (b: BranchState, id: number) => b.fatigue?.[id] ?? 0;
+
 /** Nhân viên đang nghỉ hôm nay. */
 export const restingOn = (b: BranchState, id: number, day: number) => b.restDay?.[id] === day;
+
+// ── GĐ727 — nhân viên xin nghỉ hôm nay (vẽ bằng băm riêng, mẫu GĐ717) ─────────────────────────
+// KHÔNG rút dòng simRng chung: cùng seed + cùng ngày luôn cùng người xin, mô phỏng autoplay giữ nguyên.
+export const STAFF_WISH_CHANCE = 0.15;
+/** GĐ728 — giữ lại người xin nghỉ: họ làm việc trong buồn → mệt thêm một bậc (giữa ca sáng 8 và ca full 15). */
+export const STAFF_WISH_DENY_FATIGUE = 10;
+function wishRoll(seed: number, n: number, salt: number): number {
+  let h = Math.imul((seed >>> 0) ^ Math.imul(n, 2654435761), 2246822519) ^ salt;
+  h ^= h >>> 13;
+  h = Math.imul(h, 3266489917);
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+}
+/** Nhân viên chi nhánh xin nghỉ HÔM NAY (ngày `day`): 15% ngày có người xin, chọn người theo hash.
+ *  GĐ731: 60% xin NGHỈ (restBranchStaffToday) · 40% xin CHUYỂN CA sang ca khác (setBranchShift có sẵn).
+ *  Người đang nghỉ hôm nay thì không xin nữa. Người chơi quyết ở Sổ đầu ngày/Bảng nhân viên;
+ *  giữ lại = không bấm (xin nghỉ → mệt thêm qua denyStaffRest; xin ca → không sao, để lần sau). */
+export function branchStaffWish(branch: BranchState | null, seed: number, day: number): { id: number; name: string; kind: 'nghỉ' | 'ca'; toShift?: Shift } | null {
+  if (!branch?.open || !branch.staff.length) return null;
+  if (wishRoll(seed, day, 4409) >= STAFF_WISH_CHANCE) return null;
+  const cands = branch.staff.filter((st) => !restingOn(branch, st.id, day));
+  if (!cands.length) return null;
+  const pick = cands[Math.floor(wishRoll(seed, day, 4409 + day * 7) * cands.length)];
+  const kindRoll = wishRoll(seed, day, 4409 + day * 11);
+  if (kindRoll >= 0.6) {
+    const others = BRANCH_SHIFTS.filter((sh) => sh !== pick.shift);
+    const toShift = others[Math.floor(wishRoll(seed, day, 4409 + day * 13) * others.length)] ?? 'afternoon';
+    return { id: pick.id, name: pick.name, kind: 'ca', toShift };
+  }
+  return { id: pick.id, name: pick.name, kind: 'nghỉ' };
+}
 
 // ── Quản lý cửa hàng ──
 /** Có quản lý thì kệ vơi dưới tỉ lệ này là tự gọi xe, không cần chờ người giao hàng. */

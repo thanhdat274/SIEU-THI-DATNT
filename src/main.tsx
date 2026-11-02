@@ -6,10 +6,8 @@ import { isFestivalDeco } from './data/festivalDeco';
 import { queueUrgency, accumulateBackup } from './world/storefrontWaitLamp';
 import { ANIMAL_ORDER, type AnimalKind } from './data/garden';
 import * as THREE from 'three';
-import { Component, type ReactNode } from 'react';
-import { createRoot } from 'react-dom/client';
 import { shopLayout, worldActions } from './core/actions';
-import { initSaves, saveGame, startAutosave } from './core/save';
+import { saveGame, startAutosave } from './core/save';
 import { formatClock, SLEEP_FROM, useGame, type GameState } from './core/store';
 import { newRoutineMarks, planRoutine } from './core/routine';
 import { vehicleDef } from './data/biz';
@@ -44,26 +42,17 @@ import { quanHandLeft, quanNuocStandState, quanPatrons, quanTierOf } from './dat
 import { menuBoardLines } from './data/quanRecipes';
 import { QUAN_HOUSE, quanHouseBoxes, insideQuanHouse } from './world/quanNuocStand';
 import { branchStandState, LANE_X } from './data/branches';
-import { Hud, tutorialActive, tutorialStep } from './ui/Hud';
 import './ui/controls.css';
-import { LoginScreen } from './ui/LoginScreen';
 import { pushCloudSave } from './net/cloud';
 import { cancelSleep, checkpoint, inAlley, initCoop, isGuest, partnerPositions, updateCoop } from './net/coop';
-import { watchUser } from './net/firebase';
 import { useSession } from './net/session';
 import { playerPos } from './core/playerPos';
-import { SAP_LOT_COST, sapStallBox, sapStrollerCount } from './data/sapRong';
+import { SAP_LOT_COST, sapKindOf, sapStallBox, sapStrollerCount } from './data/sapRong';
 import { openZones, zoneBlockRects, zoneById } from './data/zones';
 import { formatMoney } from './data/products';
 
-// Thời gian đứng yên cho tới khi rời màn đăng nhập
-useGame.setState({ speed: 0 });
-watchUser((user) => useSession.setState({
-  authChecked: true,
-  account: user && { uid: user.uid, name: user.displayName ?? user.email ?? 'Chủ tiệm', email: user.email, photo: user.photoURL },
-  cloudStatus: user ? 'idle' : 'off',
-  cloudUpdatedAt: null,
-}));
+// GĐ704: watchUser + speed 0 chuyển sang boot.tsx (vỏ UI nạp trước, thế giới 3D nạp lười)
+import { tutorialActive, tutorialStep } from './ui/Hud';
 const playing = () => useSession.getState().screen === 'game';
 const container = document.getElementById('game')!;
 const { renderer, scene, camera } = createRenderer(container);
@@ -373,7 +362,7 @@ const syncZones = () => {
   const key = openZones(zones).join(',');
   ngo2View?.setOpen(key.includes('ngo2'));
   const sapN = useGame.getState().biz.sapRong ?? 0;
-  ngo2View?.setStalls(sapN);
+  ngo2View?.setStalls(sapN, Array.from({ length: sapN }, (_, i) => sapKindOf(useGame.getState().biz.sapKinds, i).colors), useGame.getState().biz.sapTiers);
   if (sapN !== lastSapN) {
     lastSapN = sapN;
     grid.setStatic('sapRong', Array.from({ length: sapN }, (_, i) => {
@@ -524,9 +513,12 @@ const fixedInteractables: Interactable[] = [
   ...[0, 1, 2, 3].map((i) => ({ position: new THREE.Vector3(86 + i * 8, 0, 1.6), radius: 2.6,
     hint: () => {
       const g = useGame.getState();
-      if (!openZones(g.biz.zones).includes('ngo2') || (g.biz.sapRong ?? 0) !== i) return '';
+      const n = g.biz.sapRong ?? 0;
+      if (!openZones(g.biz.zones).includes('ngo2') || n < i) return '';
+      // GĐ521: lô đã có sạp → tự đứng sạp (mỗi ngày một lần)
+      if (i < n) return g.biz.sapHandDay === g.day ? '' : '[L] Đứng sạp hôm nay (+25%)';
       return `[L] Thuê lô sạp hàng rong ${formatMoney(SAP_LOT_COST)}`;
-    }, key: 'KeyL', action: () => { useGame.getState().rentSapLot(); } })),
+    }, key: 'KeyL', action: () => { const g = useGame.getState(); if (i < (g.biz.sapRong ?? 0)) g.tendSapHand(); else g.rentSapLot(); } })),
   { position: world.farm.wellSpot, radius: 2.6, hint: () => '[T] Tưới luống từ giếng', key: 'KeyT', action: () => useGame.getState().waterGarden() },
 ];
 
@@ -717,6 +709,7 @@ function applyGfx() {
   // dựng không bóng (mức Thấp) thì bật bóng phải chờ tải lại trang.
   if (lighting.sun.castShadow) lighting.sun.shadow.intensity = p.shadows ? 1 : 0;
   world.kit.setDecor(p.decor);
+  world.alleyLamps.setDecor(p.decor);
   reportGfx(gfxChoice, gfx.step.level, gfx.avgFps);
 }
 applyGfx();
@@ -893,10 +886,15 @@ function renderFrame() {
     b.setLamp(lamp);
     b.updateDoor(dt, peopleScratch);
   }
+  shop.syncFurnitureVisible();
+  // GĐ904: trang trại (~195 mesh) ở xa tiệm: không vẽ khi người chơi cách >= 60 m (cùng ngưỡng farm.update) (chỉ cảnh, logic farm giữ nguyên)
+  world.farm.group.visible = player.position.distanceTo(world.farmSpot) < 60;
   // Đèn đường bật cùng giờ với đèn trong nhà; nguồn sáng thật chỉ dành cho đèn gần chỗ nhìn
   world.streetLamps.update(lamp);
   // Đèn lồng cửa tiệm (gđ177): bật sáng ấm chập tối, cùng giờ với đèn đường
   world.storefront.update(lamp);
+  // Đèn hẻm (GĐ737): sáng khi dự án "Đèn Đường Ngõ 1" thắp sáng (landmark ≥ 48 lượt góp)
+  world.alleyLamps.update(lamp, useGame.getState().biz.landmark.contributions >= 48);
   // Đèn ấm của riêng người chơi (gđ185): hiên nhà + cổng trại sáng ấm cùng giờ
   world.compoundWarm.update(lamp);
   // Đèn ấm quán nước (gđ187): chỗ khách quen tụ họp cũng ấm chập tối — chỉ khi quán MỞ (có quán thật)
@@ -997,63 +995,7 @@ void (renderer.init ? renderer.init() : Promise.resolve()).then(() => {
   console.warn(`[render] ${backend?.isWebGPUBackend ? 'WebGPU' : 'WebGL2'}${info ? ` · ${info.vendor} ${info.architecture} ${info.description}` : ''}`);
 });
 
-/** Ranh giới lỗi React: một component sập (vd save schema cũ thiếu field) không được phép trắng
- * cả game — 3D vẫn chạy, chỉ hiện dải nhỏ kèm nút tải lại thay vì mất trắng màn hình. */
-class UiBoundary extends Component<{ children: ReactNode }, { err: Error | null }> {
-  state = { err: null as Error | null };
-  static getDerivedStateFromError(err: Error) {
-    return { err };
-  }
-  componentDidCatch(err: Error, info: { componentStack?: string | null }) {
-    console.error('[ui] lỗi giao diện:', err.message, info.componentStack ?? '');
-  }
-  render() {
-    if (this.state.err) {
-      return (
-        <div
-          style={{
-            position: 'fixed', left: '50%', bottom: 18, transform: 'translateX(-50%)', zIndex: 1000,
-            background: '#3a3a4d', color: '#fff', border: '1px solid #f1c40f', borderRadius: 10,
-            padding: '10px 14px', fontFamily: 'inherit', fontSize: 14, maxWidth: 'min(92vw, 480px)',
-            boxShadow: '0 4px 16px rgba(0,0,0,.4)', lineHeight: 1.4,
-          }}
-        >
-          ⚠️ Giao diện gặp lỗi: {this.state.err.message}
-          <button
-            onClick={() => location.reload()}
-            style={{ marginLeft: 10, padding: '6px 12px', borderRadius: 8, border: 'none', background: '#f1c40f', fontWeight: 600, cursor: 'pointer' }}
-          >
-            Tải lại
-          </button>
-        </div>
-      );
-    }
-    return this.props.children;
-  }
-}
-
-function App() {
-  const screen = useSession((s) => s.screen);
-  return screen === 'game' ? <Hud /> : <LoginScreen />;
-}
-
-// Nạp bản lưu từ IndexedDB trước khi hiện màn đăng nhập (màn này đọc bản lưu đồng bộ)
-// Vite hot-reload có thể chạy lại main.tsx: dùng lại root cũ thay vì createRoot lần hai trên cùng container (GĐ403)
-const uiEl = document.getElementById('ui') as HTMLElement & { __root?: ReturnType<typeof createRoot> };
-initSaves().finally(() => (uiEl.__root ??= createRoot(uiEl)).render(<UiBoundary><App /></UiBoundary>));
-
-// PWA: đăng ký service worker để game cài ra màn hình chính iPhone/iOS
-// (chỉ ở bản build/run thật; dev thì tắt để không gây nhiễu khi sửa code)
-if (import.meta.env.PROD && 'serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker
-      .register('/sw.js')
-      .then((reg) => { reg.update(); })
-      .catch(() => { /* không bắt buộc — chỉ bật được PWA khi server cho phép */ });
-  });
-}
-
-// Để debug trong console khi chạy dev
+// Để debug trong console khi chạy dev (GĐ714: khôi phục bị mất nhầm khi tách vỏ ở GĐ704)
 if (import.meta.env.DEV) {
   Object.assign(window, { game: { player, world, controller, grid, useGame, customers, buildMode, staff, renderer, scene, lighting, perf: () => ({ ...gfxStatus(), log: readPerfLog() }) } });
   import('./dev/autoplay').then(({ createAutoplay }) =>

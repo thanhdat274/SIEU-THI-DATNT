@@ -3,7 +3,7 @@ import { useGame, formatClock } from '../../core/store';
 import { productById } from '../../data/products';
 import { productSummary, REASON_LABEL, summarizeReviews, type Review } from '../../data/reviews';
 import { stars, starColor, Footer, styles, Tabs } from './shared';
-import { ReputationCard } from './ReportPanels';
+import { ReputationCard } from './HistoryPanel';
 
 /** Lời khách nhận xét: điểm trung bình, biểu đồ số sao, lọc khen/chê. */
 export function ReviewsPanel() {

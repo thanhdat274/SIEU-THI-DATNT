@@ -1,4 +1,5 @@
 import type { RegularDef, RegularProgress } from './regulars';
+import { formatMoney } from './products';
 
 /** Sổ nợ: khách quen đủ thân được ghi sổ, lần ghé sau trả. */
 export interface Debt {
@@ -24,6 +25,16 @@ export const WRITE_OFF_FRIEND_LOSS = 10;
 /** Hạn mức ghi sổ: càng thân càng được nợ nhiều. */
 export const creditLimit = (p: RegularProgress | undefined) => 50000 + Math.max(0, p?.friendship ?? 0) * 2000;
 
+/** GĐ746 — hạn mức còn lại (hạn mức − đang nợ, không âm): người chơi biết còn ghi được bao nhiêu. */
+export const creditLeft = (p: RegularProgress | undefined, debt: Debt | undefined) =>
+  Math.max(0, creditLimit(p) - (debt?.amount ?? 0));
+
+/** GĐ746 — câu xin ghi sổ ở quầy: luôn nói còn ghi được bao nhiêu (không hộp đen). */
+export function creditAskText(total: number, owed: number, left: number): string {
+  const base = `quên ví, xin ghi sổ ${formatMoney(total)}`;
+  return owed > 0 ? `${base} (đang nợ ${formatMoney(owed)} · còn ghi ${formatMoney(left)})` : `${base} (còn ghi ${formatMoney(left)})`;
+}
+
 /** Khách quen này hôm nay có xin ghi sổ không (đủ thân, chưa vượt hạn mức, quên ví). */
 export function wantsCredit(def: RegularDef, p: RegularProgress | undefined, debt: Debt | undefined, total: number, roll: number) {
   if ((p?.friendship ?? 0) < CREDIT_FRIENDSHIP) return false;
@@ -31,6 +42,18 @@ export function wantsCredit(def: RegularDef, p: RegularProgress | undefined, deb
   // Khách kỹ tính về giá (nhạy giá cao) thì hay xin ghi sổ hơn một chút
   return roll < CREDIT_ASK_CHANCE * def.priceSensitivity;
 }
+
+/** GĐ734 — kèo trả góp: nợ đủ lớn mới đáng trả góp; 30% lần thu khách xin trả nửa trước. */
+export const DEBT_PARTIAL_CHANCE = 0.3;
+export const DEBT_PARTIAL_MIN = 100_000;
+
+/** Khách có xin trả góp lần thu này không: nợ ≥ 100k và roll trúng (thuần). */
+export function wantsInstallment(debt: Debt | undefined, roll: number) {
+  return !!debt && debt.amount >= DEBT_PARTIAL_MIN && roll < DEBT_PARTIAL_CHANCE;
+}
+
+/** Số tiền nhận hôm nay nếu chấp nhận trả góp: nửa nợ, làm tròn XUỐNG nghìn, sàn 50k. */
+export const installmentNow = (amount: number) => Math.max(50_000, Math.floor(amount / 2 / 1000) * 1000);
 
 /** Lần ghé này khách có trả nợ cũ không: nợ từ hôm qua trở về trước; đã nhắc thì chắc chắn trả. */
 export function repaysToday(debt: Debt | undefined, day: number, roll: number) {

@@ -1,10 +1,8 @@
 import type * as React from 'react';
 import { useGame } from '../../core/store';
-import { formatMoney } from '../../data/products';
-import {
-  QUAN_NUOC_HIRE_FEE, QUAN_NUOC_MAX_STAFF, QUAN_NUOC_PRICE, QUAN_NUOC_UNLOCK, QUAN_NUOC_WAGE,
-  QUAN_PRICE_OPTIONS, QUAN_WEATHER_MUL, quanWeekendMul, quanNuocProjection, quanNuocCupSupply, quanNuocRestockTip, quanNuocBuildPayback, type QuanNuocPrice,
-} from '../../data/quanNuoc';
+import { formatMoney, fmtMul } from '../../data/products';
+import { QUAN_NUOC_HIRE_FEE, QUAN_NUOC_MAX_STAFF, QUAN_NUOC_PRICE, QUAN_NUOC_UNLOCK, QUAN_NUOC_WAGE, QUAN_PRICE_OPTIONS, QUAN_WEATHER_MUL, quanWeekendMul, quanMatchMul, isQuanMatchDay, type QuanNuocPrice } from '../../data/quanNuoc';
+import { quanNuocProjection, quanNuocCupSupply, quanNuocRestockTip, quanNuocBuildPayback } from '../../data/quanNuocInsights';
 import { quanNuocStaffValues } from '../../data/quanNuocStaffValue';
 import { teahouseHaulRead } from '../../data/teahouseHaul';
 import { Callout, Footer, styles } from './shared';
@@ -27,12 +25,12 @@ const pill = (on: boolean): React.CSSProperties => ({
 const priceTip = (mul: number, traffic: number) => {
   const pct = Math.round(Math.abs(traffic - 1) * 100);
   const khach = traffic === 1 ? 'khách như cũ' : `khách ${traffic > 1 ? '+' : '−'}${pct}%`;
-  return `Giá ×${mul} nhưng ${khach}`;
+  return `Giá ×${fmtMul(mul)} nhưng ${khach}`;
 };
 
 /** Quán Nước Đầu Ngõ: quán nước ở đầu hẻm, nguyên liệu lấy thẳng từ kho tiệm. */
 export function QuanNuocPanel() {
-  const { biz, level, money, storage, weather, day, buyQuanNuoc, hireQuanNuoc, fireQuanNuoc, setQuanNuocPrice, closePanel, openPanel } = useGame();
+  const { biz, level, money, storage, weather, forecast, day, buyQuanNuoc, hireQuanNuoc, fireQuanNuoc, setQuanNuocPrice, closePanel, openPanel } = useGame();
   const quan = biz.quanNuoc;
   const last = biz.quanNuocLast;
   const locked = level < QUAN_NUOC_UNLOCK;
@@ -53,11 +51,17 @@ export function QuanNuocPanel() {
       <p style={styles.sub}>Quán chuyên nước ở đầu hẻm — nguyên liệu lấy thẳng từ kho của mình.</p>
       {quan.open && QUAN_WEATHER_MUL[weather] !== 1 && (
         <p style={{ fontSize: 12, margin: '0 0 6px' }}>
-          {WEATHER[weather].icon} {WEATHER[weather].name}: khách quán {QUAN_WEATHER_MUL[weather] > 1 ? 'đông' : 'vắng'} hơn ×{QUAN_WEATHER_MUL[weather]} — {QUAN_WEATHER_MUL[weather] > 1 ? 'nạp thêm đồ uống' : 'bớt nhập cho đỡ tồn'}
+          {WEATHER[weather].icon} {WEATHER[weather].name}: khách quán {QUAN_WEATHER_MUL[weather] > 1 ? 'đông' : 'vắng'} hơn ×{fmtMul(QUAN_WEATHER_MUL[weather])} — {QUAN_WEATHER_MUL[weather] > 1 ? 'nạp thêm đồ uống' : 'bớt nhập cho đỡ tồn'}
         </p>
       )}
       {quan.open && quanWeekendMul(day) !== 1 && (
-        <p style={{ fontSize: 12, margin: '0 0 6px' }}>🎉 Cuối tuần: khách ngồi quán đông hơn ×{quanWeekendMul(day)} — nạp thêm nguyên liệu</p>
+        <p style={{ fontSize: 12, margin: '0 0 6px' }}>🎉 Cuối tuần: khách ngồi quán đông hơn ×{fmtMul(quanWeekendMul(day))} — nạp thêm nguyên liệu</p>
+      )}
+      {quan.open && isQuanMatchDay(day, weather) && (
+        <p style={{ fontSize: 12, margin: '0 0 6px' }}>⚽ Tối nay có trận bóng: khách quán đông hơn ×{fmtMul(quanMatchMul(day, weather))} — nạp thêm đồ uống</p>
+      )}
+      {quan.open && !isQuanMatchDay(day, weather) && isQuanMatchDay(day + 1, forecast[0] ?? 'sunny') && ( // GĐ645: mai dự báo mưa thì không báo trận
+        <p style={{ fontSize: 12, margin: '0 0 6px' }}>⚽ Mai có trận bóng (nếu trời không mưa) — chuẩn bị đồ uống từ hôm nay</p>
       )}
       {quan.open && quanHotNote(quan.menu ?? [], weather, level, day) && (
         <p style={{ fontSize: 12, margin: '0 0 6px' }}>{quanHotNote(quan.menu ?? [], weather, level, day)}</p>
@@ -165,6 +169,12 @@ export function QuanNuocPanel() {
                 <div style={{ fontSize: 12, marginTop: 4 }}>
                   lương −{formatMoney(last.wages)} · lời ròng <b style={{ color: last.profit >= 0 ? '#2ecc71' : '#e74c3c' }}>{formatMoney(last.profit)}</b>
                 </div>
+              )}
+              {last.event === 'brewer' && (
+                <div style={{ fontSize: 12, marginTop: 4, color: '#e67e22' }}>⚙️ Hôm qua máy pha hỏng — quán pha chậm, đã sửa xong.</div>
+              )}
+              {last.event === 'cart' && (
+                <div style={{ fontSize: 12, marginTop: 4, color: '#e67e22' }}>🛺 Hôm qua có xe nước mọc đối diện — khách vắng hơn.</div>
               )}
               {last.served < last.wanted && (
                 <div style={{ fontSize: 12, marginTop: 4, color: '#e67e22' }}>⚠️ Kho thiếu đồ uống — nhập nước/ngọt/cà phê… để bán đủ.</div>

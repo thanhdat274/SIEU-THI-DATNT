@@ -6,7 +6,7 @@ import { loanToCover } from '../data/biz';
 import { goalLocked, goalLockText, upcomingGoals, type CommunityGoal } from '../data/community';
 import { reputationOf } from '../data/reputation';
 import { betBonusMoney, betStatus, BET_TIERS, betCoreSetProgress, dailyQuests, dailySetProgress, isBetCore, questEcoCap, QUEST_ECO_MULT, STORY_STEPS, storyQuest, type BetTier, type Quest } from '../data/quests';
-import { formatMoney, productById } from '../data/products';
+import { formatMoney, productById, fmtMul } from '../data/products';
 import { recentAvgSalesProfit } from '../data/gifts';
 import { missingForOrder, orderValue, rushQuote, partyOrderById, STORY_ORDER_FRIEND_GAIN, STORY_ORDER_FRIEND_LOSS } from '../data/orders';
 
@@ -207,7 +207,7 @@ function BetCard() {
     const bet = s.questLog.bet!;
     return (
       <div style={{ background: 'rgba(46,204,113,0.18)', borderRadius: 8, padding: '10px 12px', marginBottom: 8, fontSize: 13, border: '2px solid #2ecc71' }}>
-        🎉 trúng kèo +{formatMoney(bet.bonus)} — làm trọn việc chính hôm nay ở mục tiêu ×{bet.tier}
+        🎉 trúng kèo +{formatMoney(bet.bonus)} — làm trọn việc chính hôm nay ở mục tiêu ×{fmtMul(bet.tier)}
       </div>
     );
   }
@@ -287,7 +287,7 @@ function BetOption({ tier, totalMoney, current }: { tier: BetTier; totalMoney: n
     >
       <span style={{ fontSize: 16 }}>{tier.icon}</span>
       <b>{tier.name}</b>
-      <span style={{ marginLeft: 'auto', fontSize: 11.5, opacity: 0.85 }}>mục tiêu ×{tier.tier} · thưởng thêm {formatMoney(betBonusMoney(tier.tier, totalMoney))}</span>
+      <span style={{ marginLeft: 'auto', fontSize: 11.5, opacity: 0.85 }}>mục tiêu ×{fmtMul(tier.tier)} · thưởng thêm {formatMoney(betBonusMoney(tier.tier, totalMoney))}</span>
     </button>
   );
 }

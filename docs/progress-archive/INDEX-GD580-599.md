@@ -1,0 +1,23 @@
+# GĐ580–599 (lưu trữ)
+
+- GĐ580 (rà ngân sách + QA người mới): bundle 597/597, chunk 253/255, PROGRESS 27,7KB; save trắng ?thu=1 (xoá rồi reload ngay): 3 thoại → Ra tiệm → Mở cửa → bán món đầu sau ≈49s thật (đo bằng soldEver, không nhầm thưởng chương 20k).
+- GĐ581: quán nước có sự kiện đầu tiên — tối có trận bóng (day%7=3, ngày thường, không mưa/bão) khách ×1,3; tin cuối ngày thêm '· ⚽ tối có trận'. Theo số ngày → chơi đơn/hẻm online như nhau; doanh thu bán thật, không phải thưởng. Test quanMatchNight; 2678 xanh.
+- GĐ582: QuanNuocPanel báo '⚽ Tối nay có trận…×1,3' và báo trước '⚽ Mai có trận bóng' để kịp nhập đồ uống. Test nguồn + độ dài ≤90.
+- GĐ583: QA trình duyệt sandbox (cấp 40, quán mở): ngày 3 hiện '⚽ Tối nay có trận…×1,3', ngày 2 hiện '⚽ Mai có trận bóng…'. Đúng.
+- GĐ584: Sổ đầu ngày có việc '⚽ Tối nay có trận bóng — quán đông ×1,3, nạp đủ đồ uống' (ưu tiên 3, sau thiếu kho). quanNuocDayAction nhận day/weather tùy chọn. 2680 test xanh.
+- GĐ585: QA Sổ đầu ngày (sandbox, ngày 3 nắng, quán mở): kho đồ uống ít → hiện việc '🥤 Kho đồ uống còn 10 ly…' (ưu tiên cao hơn); nạp đủ → hiện '⚽ Tối nay có trận bóng — quán đông ×1,3…'. Đúng thứ tự.
+- GĐ586: Giải bóng đá phường (lễ bong_da_phuong) = mọi ngày đều là đêm có trận ở quán nước (trời khô), khớp lễ có sẵn bán tăng lực/bia ở tiệm chính. 2681 test xanh.
+- GĐ587: tiệm xôi có sự kiện đầu tiên — ngày cúng (ngày 1 & 15 lịch game, giản lược mùng 1/rằm) khách ăn tại chỗ ×1,3; tin thêm '· 🙏 ngày cúng'. Theo số ngày → parity. Sửa 2 test cũ dùng ngày 1. 2683 xanh.
+- GĐ588: panel tiệm xôi: '· 🙏 ngày cúng ×1,3 suất' hôm đó + '🙏 Mai là ngày cúng…' báo trước. QA trình duyệt ngày 14/15 đúng.
+- GĐ589: Sổ đầu ngày thêm việc '🙏 Hôm nay ngày cúng — khách mua xôi ×1,3, nấu đủ kho' (tiệm xôi mở). QA trình duyệt ngày 15 hiện đầu danh sách.
+- GĐ590 (rà ngân sách): bundle vượt 598/597 sau GĐ581–589 → tách helper Sổ kinh doanh quán nước (avgSell/cupSupply/projection/health/dayAction/restockTip/buildPayback) sang data/quanNuocInsights.ts chỉ panel lazy dùng → 597/597, chunk 253. Lưu trữ GĐ565–579 (PROGRESS ~30KB). 2684/2685 (ngày-2 economySim flaky tải CPU, chạy riêng xanh).
+- GĐ590 QA: save mới, bán đầu sau >63s và <3 phút (đạt ≤5 phút); 11 món bán trước 9:01 sáng.
+- GĐ591: sạp hàng rong lô xôi ăn theo ngày cúng (×1,3, cùng nguồn tiemXoiCungMul) → xôi thắng sạp vào mùng 1/rằm, parity theo số ngày. Bundle 597/597. 2686 xanh (leak test flaky tải, chạy riêng xanh).
+- GĐ592: gợi ý món sạp ngày mai (ZoneMapSection/bestSapKind) tự biết ngày cúng: trời mây ngày thường gợi bánh mì, ngày cúng đổi sang xôi. Test khoá hành vi.
+- GĐ593: tin cuối ngày sạp hàng rong thêm '· 🙏' vào ngày cúng nếu có lô bán xôi (giải thích vì sao thu cao). ≤90 ký tự. 2688 xanh, bundle 597/597.
+- GĐ594: QA trình duyệt sandbox (ngày 15, trời mây, 1 lô xôi): tin sáng '🍙 sạp hàng rong Ngõ 2 · +468.000đ · 🙏' — đúng ×1,3 (360k→468k).
+- GĐ595: panel sạp (ZoneMapSection) gắn 🙏 cho lô xôi ngày cúng; gợi ý mai thêm '(ngày cúng)' khi nên bán xôi. QA sandbox ngày 15: 'Lô 1: 🧺 🍙 Xôi · hôm nay 468.000đ 🙏'. 2689 xanh, bundle 597/597.
+- GĐ596: tiệm xôi ngày cúng thợ nấu kho mục tiêu ×1,3 (vẫn giới hạn sức nấu) để khách ×1,3 không vét cạn kho; ngày thường/không truyền ngày như cũ. 2690 xanh, bundle 597/597.
+- GĐ597: QA sandbox (cấp 50, 3 thợ, ngày 15): kho 6 món đủ 80 → thợ vẫn nấu 144 phần (6×24 = lên 104 = 80×1,3); kho trống → nấu 240 (chạm sức nấu); khách ăn 33 suất '🙏 ngày cúng'. Đúng.
+- GĐ598: panel tiệm xôi ngày cúng hiện 'giữ 104 phần/món 🙏' (mục tiêu ×1,3 khớp GĐ596); báo trước đổi thành 'thợ tự nấu đầy kho ×1,3'. QA sandbox đúng. 2691 xanh, bundle 597/597.
+- GĐ599: Sổ đầu ngày ngày cúng: thiếu thợ → 'thêm thợ để nấu kịp', đủ 3 thợ → 'thợ nấu đầy kho' (bỏ câu 'nấu đủ kho' vì giờ tự động). 2692 xanh, bundle 597/597.

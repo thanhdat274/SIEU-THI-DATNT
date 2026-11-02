@@ -13,7 +13,7 @@ const abcColor = { A: '#2ecc71', B: '#f1c40f', C: '#95a5a6' } as const;
 
 /** Sổ phân tích 30 ngày: bảng sức khoẻ món, gợi ý việc cần làm, phân tích ABC và tác động combo/giờ vàng. */
 export function AnalyticsPanel() {
-  const { analytics, storage, furniture, demand, level, shelfHeat, shelfProfit, day, history, activeCombos, happyHour, biz, closePanel } = useGame();
+  const { analytics, storage, furniture, demand, level, shelfHeat, shelfProfit, day, history, activeCombos, happyHour, closePanel } = useGame();
   const onShelf = shelfCount(furniture);
   const list = itemHealthList(analytics, level, storage, onShelf, demand);
   const shelfIds = [...new Set(furniture.filter((f) => f.tiers.some((t) => t.count > 0)).map((f) => f.uid))];

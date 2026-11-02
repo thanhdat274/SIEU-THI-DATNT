@@ -18,6 +18,8 @@ import type { RepSample } from './reputation';
 import { nearestMilestones } from './goals';
 import type { MilestoneDossier } from './goals';
 import { DAILY_GIFTS, scaledGiftEco, giftText, recentAvgProfit } from './gifts';
+import { isXoiCungDay } from './tiemXoi';
+import { isQuanMatchDay, QUAN_NUOC_UNLOCK } from './quanNuoc';
 import { arcScenePending, surpriseArcById, type SurpriseArcState } from './surpriseArcs';
 
 /**
@@ -42,10 +44,12 @@ export interface TeaserInput {
   giftGraceDay: number;
   /** Chuyện sự kiện đang kể dở (biz.surpriseArc — GĐ164); thiếu ở save cũ. */
   surpriseArc?: SurpriseArcState;
+  /** GĐ793 — khách quen đang bị rival lôi kéo: mai KHÔNG ghé, đừng mồi "Mai X ghé" hão. */
+  poached?: string[];
 }
 
 export interface TeaserRow {
-  id: 'gift' | 'weather' | 'festival' | 'regulars' | 'milestone' | 'arc' | 'weekend' | 'trend';
+  id: 'gift' | 'weather' | 'festival' | 'regulars' | 'milestone' | 'arc' | 'weekend' | 'trend' | 'cung' | 'match';
   icon: string;
   text: string;
   hint?: string;
@@ -135,7 +139,7 @@ export function tomorrowTeaser(input: TeaserInput): TeaserRow[] {
   }
 
   // R3 — Khách quen dự kiến ghé mai.
-  const expected = regularsExpectedToday(nowDay, input.weatherSeed, input.level, input.regulars, reputationOf(input.repLog));
+  const expected = regularsExpectedToday(nowDay, input.weatherSeed, input.level, input.regulars, reputationOf(input.repLog), input.poached ?? []);
   if (expected.length) {
     const cut = expected.length > 3;
     const names = expected.slice(0, 3).map((r) => r.name).join(', ') + (cut ? '…' : '');
@@ -164,6 +168,11 @@ export function tomorrowTeaser(input: TeaserInput): TeaserRow[] {
     const def = surpriseArcById(input.surpriseArc.arcId);
     if (def) rows.push({ id: 'arc', icon: '📖', text: `Chuyện ${def.title} còn dở, mai có tiếp`, panel: 'morning' });
   }
+
+  // R6 — GĐ615: mai ngày cúng (mùng 1/rằm) — khách hỏi đồ cúng, xôi bán chạy.
+  if (isXoiCungDay(input.day)) rows.push({ id: 'cung', icon: '🙏', text: 'Mai ngày cúng — khách hỏi nhang, trái cây', panel: 'order' });
+  // R7 — GĐ617: tối mai có trận bóng (đã mở được quán nước) — quán/tiện lợi đông khuya.
+  if (input.level >= QUAN_NUOC_UNLOCK && isQuanMatchDay(input.day, input.weather)) rows.push({ id: 'match', icon: '⚽', text: 'Tối mai có trận — quán nước, tiện lợi đông khuya', panel: 'business' });
 
   return rows;
 }

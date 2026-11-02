@@ -1,8 +1,9 @@
 import { formatMoney, productById } from '../../data/products';
 import { composeReview, REVIEW_CAP } from '../../data/reviews';
-import { regularById, regularCheckout, regularFriendship, regularWalkout, INFLUENCER_ID, RESERVE_BONUS, RESERVE_MISS_LOSS } from '../../data/regulars';
-import { FORGIVE_FRIEND_GAIN, REMIND_FRIEND_LOSS } from '../../data/credit';
-import { counterActive } from '../../data/biz';
+import { regularById, regularCheckout, BIRTHDAY_BONUS, isBirthday, regularFriendship, regularWalkout, INFLUENCER_ID, RESERVE_BONUS, RESERVE_MISS_LOSS, rescueGiftFor } from '../../data/regulars';
+import { FORGIVE_FRIEND_GAIN, installmentNow, REMIND_FRIEND_LOSS } from '../../data/credit';
+import { counterActive, RESCUE_FEE, RESCUE_FRIENDSHIP } from '../../data/biz';
+import { copyStock, takeStock } from '../stock';
 import { arcForRegular, arcById, currentArcStep, arcStepFulfilled } from '../../data/regularArc';
 import { satisfiedLine, walkoutLine } from '../../data/regularTrust';
 import { REP_CAP } from '../../data/reputation';
@@ -10,7 +11,7 @@ import { type GameState, type SetState, type GetState, addHour } from '../gameTy
 
 /** Khách: lượt ghé, khách quen, lời hẹn giữ món, sổ nợ, đánh giá. */
 
-export const createRegularsSlice = (set: SetState, get: GetState): Pick<GameState, 'recordVisit' | 'regularVisit' | 'addReservation' | 'cancelReservation' | 'adjustFriendship' | 'checkoutOnCredit' | 'collectDebt' | 'remindDebt' | 'forgiveDebt' | 'addReview'> => ({
+export const createRegularsSlice = (set: SetState, get: GetState): Pick<GameState, 'recordVisit' | 'regularVisit' | 'addReservation' | 'cancelReservation' | 'adjustFriendship' | 'rescuePoachedRegular' | 'checkoutOnCredit' | 'collectDebt' | 'collectDebtPartial' | 'remindDebt' | 'forgiveDebt' | 'addReview'> => ({
   recordVisit: (happy, sample) => {
     const s = get();
     set({
@@ -91,6 +92,7 @@ export const createRegularsSlice = (set: SetState, get: GetState): Pick<GameStat
     }
     const tip = r.tip ? ` · boa ${formatMoney(r.tip)}` : '';
     if (r.newPerks.length) s.notify(`💛 ${def.name} thân thiết hơn: ${r.newPerks.map((p) => p.description).join(' ')}${tip}${resNote}${giftNote}${arcNote}`);
+    else if (r.points >= BIRTHDAY_BONUS && isBirthday(def, s.day)) s.notify(`🎂 Sinh nhật ${def.name}: +${BIRTHDAY_BONUS} thân thiết${tip}${resNote || giftNote || arcNote}`); // GĐ759: thay câu thường, không thêm thông báo
     else s.notify(`😊 ${def.name}: "${satisfiedLine(def.lines.satisfied, get().regulars[id], s.shopName)}"${tip}${resNote}${giftNote}${arcNote}`);
     return r.tip;
   },
@@ -115,6 +117,41 @@ export const createRegularsSlice = (set: SetState, get: GetState): Pick<GameStat
     set({ regulars: { ...s.regulars, [id]: r.progress } });
     if (r.newPerks.length) s.notify(`💛 ${def.name} thân thiết hơn: ${r.newPerks.map((p) => p.description).join(' ')}`);
   },
+  // GĐ793 — đòi lại khách quen bị rival lôi kéo: tặng 1 món họ thích trong kho + tiền quà, mỗi ngày 1 người.
+  // Chạy ở máy chạy (GUARDED 'rival:poach') nên chơi đơn và hẻm online ra cùng kết quả.
+  rescuePoachedRegular: (id) => {
+    const s = get();
+    const rival = s.biz.rival;
+    const def = regularById(id);
+    if (!rival || !def || !(id in (rival.poached ?? {}))) return false;
+    if (s.biz.rescueDay === s.day) {
+      s.notify('Hôm nay đã đòi một khách rồi — mai tính tiếp');
+      return false;
+    }
+    const gift = rescueGiftFor(def, s.level, (pid) => (s.storage[pid] ?? 0) > 0);
+    if (!gift) {
+      s.notify(`Cần 1 ${productById(def.favorites[0]).name} trong kho để làm quà đòi khách về`);
+      return false;
+    }
+    if (s.money < RESCUE_FEE) {
+      s.notify(`Cần ${formatMoney(RESCUE_FEE)} mua quà đòi khách về`);
+      return false;
+    }
+    const stock = copyStock({ storage: s.storage, storageLots: s.storageLots });
+    takeStock(stock, gift, 1);
+    const poached = { ...(rival.poached ?? {}) };
+    delete poached[id];
+    set({
+      storage: stock.storage,
+      storageLots: stock.storageLots,
+      money: s.money - RESCUE_FEE,
+      stats: { ...s.stats, spent: s.stats.spent + RESCUE_FEE },
+      biz: { ...s.biz, rival: { ...rival, poached }, rescueDay: s.day },
+    });
+    get().adjustFriendship(id, RESCUE_FRIENDSHIP);
+    get().notify(`💛 Tặng ${productById(gift).name}, ${def.name} quay lại tiệm — +${RESCUE_FRIENDSHIP} thân thiết`);
+    return true;
+  },
   checkoutOnCredit: (regularId, items, discount = 0, combos = 0) => {
     // Ghi nhận bán hàng như thường (sổ thanh toán ghi vào "Ghi sổ"), rồi lấy lại tiền khỏi két và ghi vào sổ nợ
     get().checkout(items, discount, combos, 'credit');
@@ -138,6 +175,20 @@ export const createRegularsSlice = (set: SetState, get: GetState): Pick<GameStat
     set({ debts, money: s.money + debt.amount, stats: { ...s.stats, repaid: (s.stats.repaid ?? 0) + debt.amount } });
     s.notify(`💵 ${regularById(regularId)?.name} trả nợ ${formatMoney(debt.amount)}${debt.reminded ? '' : ', cảm ơn tiệm cho ghi sổ'}`);
     return debt.amount;
+  },
+  // GĐ734 — chấp nhận trả góp: nhận nửa hôm nay, phần còn lại mở sổ 7 ngày mới (since = hôm nay)
+  collectDebtPartial: (regularId) => {
+    const s = get();
+    const debt = s.debts[regularId];
+    if (!debt?.amount) return 0;
+    const now = installmentNow(debt.amount);
+    const rest = debt.amount - now;
+    const debts = { ...s.debts };
+    if (rest > 0) debts[regularId] = { amount: rest, since: s.day };
+    else delete debts[regularId];
+    set({ debts, money: s.money + now, stats: { ...s.stats, repaid: (s.stats.repaid ?? 0) + now } });
+    s.notify(`🤝 ${regularById(regularId)?.name} trả trước ${formatMoney(now)} — còn ${formatMoney(rest)} trả trong 7 ngày`);
+    return now;
   },
   remindDebt: (regularId) => {
     const s = get();

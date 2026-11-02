@@ -216,3 +216,5 @@ export function describeUnits(productId: string, units: number): string {
 }
 
 export const formatMoney = (v: number) => `${Math.round(v).toLocaleString('vi-VN')}đ`;
+/** Hệ số kiểu Việt: 1.25 → "1,25", 1.5 → "1,5", 2 → "2" (GĐ539). */
+export const fmtMul = (v: number, digits = 2) => String(Number(v.toFixed(digits))).replace('.', ',');

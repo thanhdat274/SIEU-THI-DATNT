@@ -45,7 +45,7 @@ export function StoragePanel() {
             <div style={{ marginTop: 2, fontSize: 12 }}>
               {cap.lines.length > 0 && <>Chôn nhiều nhất: {cap.lines.slice(0, 3).map((l) => `${l.name} ${formatMoney(l.costTotal)}`).join(' · ')}.</>}{' '}
               {overCash
-                ? `Trị giá kho còn vượt cả tiền mặt (${formatMoney(money)}) — kho ứ vốn, cân nhắc xả sỉ (GĐ211) hay bày kệ bán bớt trước khi nhập thêm.`
+                ? `Trị giá kho còn vượt cả tiền mặt (${formatMoney(money)}) — kho ứ vốn, cân nhắc xả sỉ hay bày kệ bán bớt trước khi nhập thêm.`
                 : 'Vốn nằm trong hàng hoá đang chờ bán; xem nếu muốn bơm vốn vào chỗ khác.'}
             </div>
           </Callout>

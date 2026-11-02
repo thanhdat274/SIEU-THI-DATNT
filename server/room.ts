@@ -137,6 +137,23 @@ export function pruneBuckets(
   if (bucket.size > BUCKET_MAX) bucket.clear();
 }
 
+// ---------- Heartbeat WS ----------
+/**
+ * GĐ686 — một nhịp heartbeat cho MỘT kết nối: trả 'terminate' nếu kết nối KHÔNG pong trong chu kỳ
+ * vừa qua (chết im lặng — mất Wi-Fi/mobile không gửi FIN/RST), ngược lại đánh dấu chờ ping rồi 'ping'.
+ *
+ * Vì sao tách hàm thuần: bug thật tìm được bằng probe (client im lặng bị terminate ở ~49 s, code 1006)
+ * — pong trong index.ts cũ ghi `peer.isAlive` (object Peer) trong khi heartbeat đọc `ws.isAlive`
+ * (object WebSocket) → cờ sống KHÔNG BAO GIỜ được set → mọi kết nối hẻm online chết sau ~60 giây,
+ * client tự reload về màn chính (coop.ts onclose). Helper + test tích hợp dưới đây khoá đúng cặp
+ * "pong ghi — heartbeat đọc" phải cùng một cờ.
+ */
+export function heartbeatStep(ws: { isAlive?: boolean }): 'terminate' | 'ping' {
+  if (ws.isAlive === false) return 'terminate';
+  ws.isAlive = false;
+  return 'ping';
+}
+
 // ---------- Giới hạn tin nhắn WS (mỗi kết nối một bộ đếm) ----------
 /** Cửa sổ đếm tin nhắn WS. */
 export const WS_WINDOW_MS = 5_000;

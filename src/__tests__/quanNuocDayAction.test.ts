@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { quanNuocDayAction, QUAN_NUOC_UNLOCK } from '../data/quanNuoc';
+import { QUAN_NUOC_UNLOCK } from '../data/quanNuoc';
+import { quanNuocDayAction } from '../data/quanNuocInsights';
 import { quanNuocDrinkIds } from '../data/quanNuoc';
 
 /**

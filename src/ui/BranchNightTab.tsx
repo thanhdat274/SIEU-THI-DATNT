@@ -1,5 +1,6 @@
 import { useGame } from '../core/store';
 import { ALCOHOL_BRAWL_CHANCE, NIGHT_DELIVERY_SURCHARGE, NIGHT_GROUPS, POWER_UPGRADES, branchPowerBill, hasAlcohol, hasPower } from '../data/branches';
+import { landmarkNightLine } from '../data/landmark';
 import { licenseById, licenseStatus } from '../data/licenses';
 import { formatMoney } from '../data/products';
 import { st } from './branchStyles';
@@ -13,8 +14,16 @@ export function BranchNightTab() {
   const guardNight = branch.staff.some((s) => s.role === 'guard' && s.shift === 'night');
   const groups = branch.groupToday ?? {};
   const bill = branchPowerBill(branch);
+  // GĐ736 — soi sáng trạng thái đèn đường (dự án cộng đồng 2): chưa mở / đang góp / đã thắp sáng
+  const biz = useGame((x) => x.biz);
+  const nightLine = landmarkNightLine(biz.landmark.contributions);
   return (
     <div style={{ display: 'grid', gap: 10 }}>
+      {nightLine && (
+        <div style={{ ...st.event, display: 'block', background: 'rgba(241,196,15,0.10)', border: '1px solid rgba(241,196,15,0.45)' }}>
+          {nightLine}
+        </div>
+      )}
       <div style={{ ...st.event, display: 'block', background: 'rgba(52,152,219,0.12)', border: '1px solid rgba(52,152,219,0.45)' }}>
         <b>👥 Khách đêm theo nhóm</b>
         <div style={st.sub}>Từ 21h khách chia thành các nhóm có giờ cao điểm và món ưa thích riêng — kệ có đúng món thì họ mua nhiều hơn.</div>
@@ -29,7 +38,7 @@ export function BranchNightTab() {
       <div style={{ ...st.event, display: 'block' }}>
         <b>🍺 Rượu bia ban đêm</b>
         <div style={st.sub}>
-          Bán rượu bia giờ đêm lời hơn (×1.15). Cần <b>{licenseById('alcohol').name}</b> (cấp {licenseById('alcohol').unlock}+): công an tuần tra đêm có thể phạt và tịch thu nếu thiếu phép.
+          Bán rượu bia giờ đêm lời hơn (×1,15). Cần <b>{licenseById('alcohol').name}</b> (cấp {licenseById('alcohol').unlock}+): công an tuần tra đêm có thể phạt và tịch thu nếu thiếu phép.
           Không có bảo vệ ca đêm thì khách say dễ gây gổ ({Math.round(ALCOHOL_BRAWL_CHANCE * 100)}% mỗi lượt bán).
         </div>
         <div style={st.sub}>

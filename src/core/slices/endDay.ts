@@ -1,6 +1,7 @@
 import { formatMoney, productById, unlockedProducts } from '../../data/products';
+import { fitJoin, fitList } from '../../data/onboarding';
 import { SHOP_TIERS, rentOf, OPERATING_REVENUE_RATE } from '../../data/shopTiers';
-import { sapRongIncome } from '../../data/sapRong';
+import { sapKindIcons, sapEventIncome, sapRongEvent, sapRongIncome } from '../../data/sapRong';
 import { describeDay, forecastFrom, WEATHER } from '../../data/weather';
 import { fitLots, nearestLife } from '../../data/freshness';
 import { regularById } from '../../data/regulars';
@@ -9,9 +10,8 @@ import { morningNews } from '../../data/calendar';
 import { DEBT_LATE_DAYS, DEBT_WRITE_OFF_DAYS, WRITE_OFF_FRIEND_LOSS, type Debt } from '../../data/credit';
 import { INSPECTION_EVERY, INSPECTION_FINE, INSPECTION_REWARD, INSPECTION_UNLOCK, activeAds, inspectionResult, type BizState } from '../../data/biz';
 import { sceneFor, surpriseArcById } from '../../data/surpriseArcs';
-import { quanNuocDay } from '../../data/quanNuoc';
-import { quanRecipeById } from '../../data/quanRecipes';
-import { tiemXoiDay, tiemXoiSaved, tiemXoiDinePlan } from '../../data/tiemXoi';
+import { isQuanMatchDay, quanDayNews, quanNuocDay } from '../../data/quanNuoc';
+import { isXoiCungDay, tiemXoiDay, tiemXoiSaved, tiemXoiDinePlan } from '../../data/tiemXoi';
 import { bizEndOfDay, checkAchievements } from '../biz';
 import { PHONE_FRIEND_GAIN } from '../../data/phoneOrders';
 import { nextMarketIndex } from '../../data/market';
@@ -35,10 +35,11 @@ import type { CookingStation } from '../../data/recipes';
 import { COMPLAINTS_FOR_SURPRISE, isAlcohol, LICENSE_FINE, LICENSE_GRACE, licenseById, licenseStatus, missingLicenses, newInspection, RENEW_WARN_DAYS, requiredLicenses, SURPRISE_INSPECTION, SUSPEND_AFTER } from '../../data/licenses';
 import { staffDayEnd } from '../../data/staffTraits';
 import { BUZZ_DAYS, CRISIS_MUL, POST_CAP, SOCIAL_UNLOCK, socialDayEnd, type SocialPost } from '../../data/social';
-import { ANIMAL_ORDER, farmCritChance, farmhandChores, FARM_ORDER_UNLOCK, gardenNight, makeFarmOrder, type AnimalKind } from '../../data/garden';
+import { ANIMAL_ORDER, farmCritChance, farmhandChores, FARM_ORDER_UNLOCK, farmOrderCapacity, farmOrderNews, farmOrderProduce, gardenNight, makeFarmOrder, type AnimalKind } from '../../data/garden';
 import { logAnalyticsDay } from '../../data/analytics';
 import { appRating } from '../../data/online';
 import { onlineDayEnd } from './online';
+import { onlineDayEvent, onlineEventLine } from '../../data/online';
 import { runBranch, branchNewDay } from './branch';
 import { simRng } from '../rand';
 
@@ -56,6 +57,10 @@ function movingAverage(avg: Record<string, number>, today: Record<string, number
 
 /** Kết thúc ngày: hiện bảng tổng kết, sang ngày mới. */
 export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> = {}) => {
+  // GĐ568: ô thông báo chỉ một chỗ — mọi tin đêm gom vào log, cuối hàm bật MỘT toast (thời tiết trước, '+N tin'); đủ ở Sổ đầu ngày.
+  const log: string[] = [];
+  const say = (m: string) => { log.push(m); };
+  let weatherLine = '';
   // Cửa hàng tiện lợi bán xuyên đêm trong lúc chủ ngủ: chạy nốt tới giờ thức dậy sáng mai
   if (get().branch) {
     const lateWake = get().minutes >= 24 * 60;
@@ -69,8 +74,8 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
   const paid = br ? br.staff.filter((st) => !restingOn(br, st.id, s.day) && !(br.event?.kind === 'calloff' && br.event.staffId === st.id)) : [];
   const branchWages = Math.round(paid.reduce((n, st) => n + dailyWage(st), 0) * (hasSkill(s.skills, 'good_boss') ? 0.9 : 1));
   const nextBranch = br ? branchNewDay(br, s.day) : null;
-  if (nextBranch?.news.length) s.notify(nextBranch.news.join(' · '));
-  if (br) s.notify(`🏪 Tiện lợi 24/7: ${br.customersToday} khách, thu ${formatMoney(br.revenueToday)}, lương ${formatMoney(branchWages)}`
+  if (nextBranch?.news.length) say(nextBranch.news.join(' · '));
+  if (br) say(`🏪 Tiện lợi 24/7: ${br.customersToday} khách${isQuanMatchDay(s.day, s.weather) ? ' ⚽' : ''}, thu ${formatMoney(br.revenueToday)}, lương ${formatMoney(branchWages)}`
     + (br.missedToday ? ` · ${br.missedToday} khách bỏ về (thiếu thu ngân/hết hàng)` : '')
     + (br.lostToday ? ` · mất ${br.lostToday} món (trộm/hỏng)` : '')
     + (br.event?.kind === 'drunk' ? ' · đêm qua có khách say quậy' : br.event?.kind === 'blackout' ? ' · đêm qua mất điện' : br.event?.kind === 'calloff' ? (br.event.covered ? ' · có người làm thay ca đêm' : ' · ca đêm thiếu người') : ''));
@@ -84,7 +89,7 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
       mainCounter: s.mainCounter && { ...s.mainCounter, z: s.mainCounter.z + shift },
       opening: { day: s.day + 1, tier: s.shopTier + 1 },
     });
-    s.notify(`🏗️ Thợ đã xây xong: ${SHOP_TIERS[s.shopTier + 1].name}! Mai khai trương, cả hẻm sẽ tới mừng, xem mục tiêu ở Nhiệm vụ`);
+    say(`🏗️ Thợ đã xây xong: ${SHOP_TIERS[s.shopTier + 1].name}! Mai khai trương, cả hẻm sẽ tới mừng, xem mục tiêu ở Nhiệm vụ`);
   }
   // Qua đêm hàng cũ đi một ngày hạn, rồi hàng đặt hôm nay về kho lúc sáng mai (hạn đầy)
   const aged = spoilOvernight(get());
@@ -134,39 +139,43 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
   let quanNuocLast: BizState['quanNuocLast'];
   const quanNews: string[] = [];
   if (s.biz.quanNuoc?.open) {
-    const q = quanNuocDay(s.biz.quanNuoc, s.level, k.storage, (id, qty) => takeStock(k, id, qty).reduce((n, l) => n + l.qty, 0), s.weather, s.day);
+    const q = quanNuocDay(s.biz.quanNuoc, s.level, k.storage, (id, qty) => takeStock(k, id, qty).reduce((n, l) => n + l.qty, 0), s.weather, s.day, simRng());
     if (q) {
       quanRevenue = q.revenue;
       quanWages = q.wages;
-      quanNuocLast = { day: s.day, revenue: q.revenue, served: q.served, wanted: q.wanted, wages: q.wages, profit: q.revenue - q.wages };
+      quanNuocLast = { day: s.day, revenue: q.revenue, served: q.served, wanted: q.wanted, wages: q.wages, profit: q.revenue - q.wages, event: q.event };
       const head = `🧋 Quán nước: ${q.served}/${q.wanted} ly · ${formatMoney(q.revenue)} · lương −${formatMoney(q.wages)}`
-        + (s.biz.quanNuoc.hand?.day === s.day ? ` · tự pha ${s.biz.quanNuoc.hand.n} mẻ` : '');
-      const tail = q.brewShort.length ? ` · thiếu ${quanRecipeById(q.brewShort[0])?.name}${q.brewShort.length > 1 ? ` +${q.brewShort.length - 1}` : ''}` : q.short ? ' · kho thiếu đồ uống, nhập thêm' : '';
-      // Giữ thông báo ≤90 ký tự: dài quá thì phần thiếu chỉ ghi số món
-      quanNews.push([...(head + tail)].length <= 90 ? head + tail : head + (q.brewShort.length ? ` · thiếu ${q.brewShort.length} món` : ' · kho thiếu'));
+        + (s.biz.quanNuoc.hand?.day === s.day ? ` · tự pha ${s.biz.quanNuoc.hand.n} mẻ` : '') + (isQuanMatchDay(s.day, s.weather) ? ' · ⚽ tối có trận' : '');
+      // GĐ707: dựng tin qua hàm thuần — sự kiện không bị thay bằng dòng "kho thiếu" sai khi quá 90 ký tự
+      quanNews.push(quanDayNews(head, q));
     }
   }
   // Tiệm xôi (GĐ410): nấu bù xôi vào kho thật `k` sau quán nước, giá vốn + lương trừ két.
   let tiemXoiLast: BizState['tiemXoiLast'];
   // GĐ501: sạp hàng rong Ngõ 2 — nghỉ khi mưa/bão
   if (s.biz.sapRong) {
-    const sap = sapRongIncome(s.biz.sapRong, s.weather, s.day);
+    const sapEvent = sapRongEvent(simRng());
+    const raw = sapRongIncome(s.biz.sapRong, s.weather, s.day, s.biz.sapKinds, s.biz.sapTiers, s.biz.tiemXoi.open, s.biz.sapHandDay === s.day);
+    const sap = sapEventIncome(raw, sapEvent);
     quanRevenue += sap;
-    quanNews.push(sap ? `🛒 ${s.biz.sapRong} sạp hàng rong Ngõ 2 · +${formatMoney(sap)}` : '🛒 Trời mưa: sạp hàng rong Ngõ 2 nghỉ bán');
+    quanNews.push(sap ? `${sapKindIcons(s.biz.sapRong, s.biz.sapKinds)} sạp hàng rong Ngõ 2 · +${formatMoney(sap)}${sapEvent === 'tour' ? ' · 🚌 đoàn khách ghé' : sapEvent === 'gio' ? ' · 💨 gió mùa, khách vắng' : ''}${isXoiCungDay(s.day) && s.biz.sapKinds?.slice(0, s.biz.sapRong).includes('xoi') ? ' · 🙏' : ''}${isQuanMatchDay(s.day, s.weather) && s.biz.sapKinds?.slice(0, s.biz.sapRong).includes('nuocmia') ? ' · ⚽' : ''}` : '🛒 Trời mưa: sạp hàng rong Ngõ 2 nghỉ bán');
   }
   if (s.biz.tiemXoi?.open) {
-    const t = tiemXoiDay(s.biz.tiemXoi, s.level, k.storage, (id, qty) => putStock(k, id, qty));
+    const t = tiemXoiDay(s.biz.tiemXoi, s.level, k.storage, (id, qty) => putStock(k, id, qty), s.day, simRng());
     if (t) {
-      tiemXoiLast = { day: s.day, total: t.total, cost: t.cost, wages: t.wages, saved: tiemXoiSaved(t.made) };
+      tiemXoiLast = { day: s.day, total: t.total, cost: t.cost, wages: t.wages, saved: tiemXoiSaved(t.made, t.event === 'gao' ? 1.25 : 1), event: t.event };
       quanWages += t.cost + t.wages;
       // GĐ484: khách ngồi ăn tại chỗ trong nhà tiệm, lấy xôi từ kho, bán giá lẻ
-      const dine = tiemXoiDinePlan(s.biz.tiemXoi, s.level, k.storage, s.weather);
+      const dine = tiemXoiDinePlan(s.biz.tiemXoi, s.level, k.storage, s.weather, s.day);
       for (const [id, qty] of Object.entries(dine.take)) takeStock(k, id, qty);
       quanRevenue += dine.revenue;
       tiemXoiLast = { ...tiemXoiLast!, dine: dine.portions };
-      if (dine.portions) quanNews.push(`🍚 Khách ăn tại tiệm xôi ${dine.portions} suất · +${formatMoney(dine.revenue)}`);
+      if (dine.portions) quanNews.push(`🍚 Khách ăn tại tiệm xôi ${dine.portions} suất · +${formatMoney(dine.revenue)}${isXoiCungDay(s.day) ? ' · 🙏 ngày cúng' : ''}`);
+      // GĐ711: đuôi sự kiện giữ ở mọi giá (bài học GĐ707 — không thay bằng dòng khác), quá dài thì bỏ phần tự đồ trước
+      const evTail = t.event === 'cooker' ? ' · 🍚 nồi hỏng, nấu chậm' : t.event === 'gao' ? ' · 🌾 gạo khan, giá vốn tăng' : '';
       const hand = s.biz.tiemXoi.handDay === s.day ? ' · chủ tự đồ 1 mẻ' : '';
-      quanNews.push((t.total ? `🍚 Tiệm xôi nấu ${t.total} phần vào kho · −${formatMoney(t.cost + t.wages)}` : '🍚 Tiệm xôi: kho đủ xôi, hôm nay không nấu') + hand);
+      const xoiLine = (t.total ? `🍚 Tiệm xôi nấu ${t.total} phần vào kho · −${formatMoney(t.cost + t.wages)}` : '🍚 Tiệm xôi: kho đủ xôi, hôm nay không nấu') + evTail + hand;
+      quanNews.push([...xoiLine].length <= 90 ? xoiLine : (t.total ? `🍚 Tiệm xôi nấu ${t.total} phần vào kho · −${formatMoney(t.cost + t.wages)}` : '🍚 Tiệm xôi: kho đủ xôi, hôm nay không nấu') + evTail);
     }
   }
   // Phụ trại đổ cám hộ + gom nông sản về kho (kèm nhãn nhà trồng/nhà nuôi bán được giá hơn)
@@ -186,9 +195,9 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
     garden = { ...garden, farmOrder: null };
   }
   if (!garden.farmOrder && s.level >= FARM_ORDER_UNLOCK) {
-    const order = makeFarmOrder(s.day + 1);
+    const order = makeFarmOrder(s.day + 1, undefined, farmOrderProduce(garden), farmOrderCapacity(garden));
     garden = { ...garden, farmOrder: order };
-    gardenNews.push(`📦 ${order.from} đặt mua nông sản, hạn ngày ${order.dueDay} — xem ở bảng Trang trại`);
+    gardenNews.push(farmOrderNews(order));
   }
   // Sổ nợ: nợ lâu thì nhắc chủ tiệm, quá hạn chót coi như mất
   const debts: Record<string, Debt> = {};
@@ -196,10 +205,10 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
     const age = s.day + 1 - d.since;
     if (age > DEBT_WRITE_OFF_DAYS) {
       s.adjustFriendship(rid, -WRITE_OFF_FRIEND_LOSS);
-      s.notify(`📕 ${regularById(rid)?.name} quỵt nợ ${formatMoney(d.amount)} sau ${DEBT_WRITE_OFF_DAYS} ngày`);
+      say(`📕 ${regularById(rid)?.name} quỵt nợ ${formatMoney(d.amount)} sau ${DEBT_WRITE_OFF_DAYS} ngày`);
       continue;
     }
-    if (age === DEBT_LATE_DAYS + 1) s.notify(`📒 ${regularById(rid)?.name} nợ ${formatMoney(d.amount)} đã ${DEBT_LATE_DAYS} ngày, nên nhắc nợ`);
+    if (age === DEBT_LATE_DAYS + 1) say(`📒 ${regularById(rid)?.name} nợ ${formatMoney(d.amount)} đã ${DEBT_LATE_DAYS} ngày, nên nhắc nợ`);
     debts[rid] = d;
   }
   // Đơn gọi điện chưa giao: hàng đã soạn mang về kho, khách phật ý
@@ -212,8 +221,8 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
   const reservations = Object.fromEntries(
     Object.entries(s.reservations).filter(([, r]) => r.day === s.day + 1),
   );
-  if (s.deliveries.length) s.notify(`🚚 Hàng đã về kho: ${s.deliveries.length} đơn`);
-  if (aged.items) s.notify(`🗑️ ${aged.items} món hết hạn phải bỏ đi (vốn ${formatMoney(aged.cost)})`);
+  if (s.deliveries.length) say(`🚚 Hàng đã về kho: ${s.deliveries.length} đơn`);
+  if (aged.items) say(`🗑️ ${aged.items} món hết hạn phải bỏ đi (vốn ${formatMoney(aged.cost)})`);
   // Nhu cầu: trung bình trượt, ngày gần nặng hơn
   const demand = movingAverage(s.demand, s.demandToday);
   const sales = movingAverage(s.sales, s.salesToday);
@@ -225,7 +234,7 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
     if (order.accepted && def) {
       s.addReview(1, 'stock');
       if (def.regular) s.adjustFriendship(def.regular, -STORY_ORDER_FRIEND_LOSS);
-      s.notify(`😠 Lỡ hẹn đơn "${def.title}" của ${def.from}${def.regular ? ` · -${STORY_ORDER_FRIEND_LOSS} thân thiết` : ''}`);
+      say(`😠 Lỡ hẹn đơn "${def.title}" của ${def.from}${def.regular ? ` · -${STORY_ORDER_FRIEND_LOSS} thân thiết` : ''}`);
     }
     order = null;
   }
@@ -357,11 +366,14 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
     socialNext = { ...socialNext, posts: [...socialNext.posts, post].slice(-POST_CAP), buzz: { kind: 'crisis', postId: id, until: s.day + BUZZ_DAYS, mul: CRISIS_MUL } };
     news.push('📱⚠️ Tin bắt được nhân viên gian lận lan trên mạng, khách đang xì xào — nên đăng bài xin lỗi ở Mạng xã hội');
   }
-  // Đơn app còn đang chở: coi như tới trễ; đơn chưa nhận thì app huỷ
-  const onlineDay = onlineDayEnd(s);
+  // Đơn app còn đang chở: coi như tới trễ; đơn chưa nhận thì app huỷ. GĐ717: sự kiện app cho ngày mai
+  // rút bằng băm riêng (weatherSeed + ngày — mẫu eventOn): không rút dòng simRng, mô phỏng cũ không lệch
+  const onlineEv = onlineDayEvent(s.weatherSeed, s.day + 1);
+  const onlineDay = onlineDayEnd(s, onlineEv);
   if (s.online.done || s.online.orders.length) news.push(`📲 App hôm nay: thu ${formatMoney(s.online.revenueToday + onlineDay.money)} (đã trừ hoa hồng)${s.online.grabFeesToday ? `, phí Grab ${formatMoney(s.online.grabFeesToday)}` : ''} · điểm ${appRating(onlineDay.online).toFixed(1)}★`);
+  if (onlineEv) news.push(onlineEventLine(onlineEv));
   if (s.fakeCash) news.push(`💸 Kiểm két thấy ${formatMoney(s.fakeCash)} tiền giả`);
-  s.notify([`Hôm nay: ${describeDay(s.weatherSeed, s.day + 1, today)}. ${WEATHER[today].tip}`, ...news].join(' · '));
+  weatherLine = `Hôm nay: ${describeDay(s.weatherSeed, s.day + 1, today)}. ${WEATHER[today].tip}`; log.push(...news); // GĐ565/568: đủ tin ở lastSummary.news → Sổ đầu ngày
   // Giá tham chiếu thị trường nhích theo khan hiếm (kho + kệ) và cầu trung bình của từng món
   const market: Record<string, number> = { ...s.market };
   for (const p of unlockedProducts(s.level)) {
@@ -380,14 +392,14 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
     revenue: s.stats.revenue + onlineDay.money + crew.tips + quanRevenue, online: (s.stats.online ?? 0) + onlineDay.money,
     ...(crew.cashLoss || shrinkItems ? { shrinkCash: crew.cashLoss, shrinkItems } : {}),
   };
-  if (opCost >= 5000 && s.day > 1) s.notify(`💡 Chi phí vận hành (điện/nước) ${formatMoney(opCost)}${branchPower ? ` — riêng tiện lợi 24/7 ${formatMoney(branchPower)} tiền điện` : ''}`);
+  if (opCost >= 5000 && s.day > 1) say(`💡 Chi phí vận hành (điện/nước) ${formatMoney(opCost)}${branchPower ? ` — riêng tiện lợi 24/7 ${formatMoney(branchPower)} tiền điện` : ''}`);
   // GĐ300: chốt sẵn việc sáng 🧍 NGAY TẠI MÁY CHẠY. Snapshot staffDay là transient ngoài useGame
   // (chỉ máy chạy mô phỏng mới có), nên nếu để Sổ đầu ngày tự đọc thì máy khách hẻm online sẽ không
   // bao giờ thấy việc này. Tính ở đây rồi gửi kèm lastSummary → hai chế độ ra KẾT QUẢ GIỐNG NHAU.
   const staffIdleAct = morningShiftAction(staffDaySnapshot(), s.staff, stats);
   const staffIdleNote = staffIdleAct ? { staffIdle: staffIdleAct } : {};
   const biz = bizEndOfDay(s, stats, (br?.revenueToday ?? 0) + quanRevenue);
-  if (biz.news.length) s.notify(biz.news.join(' · '));
+  if (biz.news.length) say(biz.news.join(' · '));
   // Kết quả quán nước hôm nay ghi vào biz để UI hiển thị (xem lại "hôm qua bán được bao nhiêu ly")
   if (quanNuocLast) biz.biz = { ...biz.biz, quanNuocLast };
   if (tiemXoiLast) {
@@ -427,7 +439,7 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
   };
   // Thức qua nửa đêm (ca đêm) thì hôm sau dậy trễ, bỏ lỡ buổi sáng đông khách
   const wokeLate = s.minutes >= 24 * 60;
-  if (wokeLate) s.notify('😴 Ngủ muộn vì ca đêm: hôm nay dậy trễ, bỏ lỡ buổi sáng đông khách!');
+  if (wokeLate) say('😴 Ngủ muộn vì ca đêm: hôm nay dậy trễ, bỏ lỡ buổi sáng đông khách!');
   set({
     candidates: generateCandidates(s.level, nextId),
     day: s.day + 1,
@@ -437,7 +449,7 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
     buildMode: false,
     placing: null,
     panel: { type: 'summary', day: s.day, stats },
-    lastSummary: { day: s.day, stats, ...staffIdleNote },
+    lastSummary: { day: s.day, stats, ...staffIdleNote, ...(log.length ? { news: log } : {}) },
     stats: emptyStats(),
     ...k, furniture, order, phoneOrders: [], phoneSlot: 0, debts, vendorOffer: null, event: nextEvent, contracts, fakeCash: 0, wheelBoost: 1, history: [...s.history, record].slice(-HISTORY_DAYS), venueTrend: [...s.venueTrend, venueDay].slice(-VENUE_TREND_DAYS), riskTrend: [...s.riskTrend, riskDay].slice(-RISK_TREND_DAYS), riskToday: emptyRiskToday(), deliveries: [], demand, demandToday: {}, sales, salesToday: {}, reservations, market,
     garden, analytics,
@@ -450,12 +462,23 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
   });
   // GĐ169 — thưởng chuỗi tuần/tháng đổi XP: cộng sau khi state ngày mới đã set (đi qua addXp để
   // lên cấp/mở khóa đúng một luồng; XP Chuỗi là thành phần kinh tế NHẸ Leader duyệt theo audit).
-  if (biz.streakXp) get().addXp(biz.streakXp);
-  checkAchievements();
-  // Hàng mới về sáng nay: ô kệ hết hàng mà kho không còn món đó thì đổi sang món khác
-  get().checkTitles();
-  if (s.autoSwap) {
-    const swapped = get().replaceEmptySlots();
-    if (swapped.length && s.day > 1) s.notify(`🔄 Thay ô hết hàng: ${swapped.join(', ')}`);
+  // GĐ569: tin sau ngủ (lên cấp, thành tựu, danh hiệu, thay ô) cũng gom vào cùng toast — đứng ngay sau thời tiết.
+  const nightLen = log.length;
+  const realNotify = get().notify;
+  set({ notify: say });
+  try {
+    if (biz.streakXp) get().addXp(biz.streakXp);
+    checkAchievements();
+    // Hàng mới về sáng nay: ô kệ hết hàng mà kho không còn món đó thì đổi sang món khác
+    get().checkTitles();
+    if (s.autoSwap) {
+      const swapped = get().replaceEmptySlots();
+      if (swapped.length && s.day > 1) say(fitList('🔄 Thay ô hết hàng: ', swapped));
+    }
+  } finally {
+    set({ notify: realNotify });
   }
+  const after = log.splice(nightLen);
+  log.unshift(...after);
+  realNotify(fitJoin([weatherLine, ...log]));
 };

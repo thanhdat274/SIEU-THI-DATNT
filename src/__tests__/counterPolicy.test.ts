@@ -27,9 +27,9 @@ beforeEach(() => {
 const pol = (haggle: HagglePolicy = 'ask', change: ChangePolicy = 'ask'): CounterPolicy => ({ haggle, change });
 
 describe('haggleChoice / changeChoice — map thái độ → option 0|1|null', () => {
-  it('haggle: accept→0 (bớt), refuse→1 (giữ giá), ask→null (prompt path)', () => {
+  it('haggle: accept→0 (bớt), refuse→2 (giữ giá; GĐ721 vị 1 là trả giá lại), ask→null (prompt path)', () => {
     expect(haggleChoice(pol('accept'), 25000)).toBe(0);
-    expect(haggleChoice(pol('refuse'), 25000)).toBe(1);
+    expect(haggleChoice(pol('refuse'), 25000)).toBe(2);
     expect(haggleChoice(pol('ask'), 25000)).toBeNull();
   });
 
@@ -83,13 +83,13 @@ describe('instrument counterDeal — chính sách tự chốt option (không qua
     expect(mockedAsk).not.toHaveBeenCalled();
   });
 
-  it('mặc cả: policy refuse → choice 1 (giữ giá)', () => {
+  it('mặc cả: policy refuse → choice 2 (giữ giá — GĐ721 vị 1 là trả giá lại)', () => {
     useGame.setState({ level: 3, counterPolicy: pol('refuse') });
     const c = cust([25000]);
     const rand = Math.random; Math.random = () => 0.01;
     try { run(c); } finally { Math.random = rand; }
     expect((c.deal as { kind: string; choice: number }).kind).toBe('haggle');
-    expect((c.deal as { choice: number }).choice).toBe(1);
+    expect((c.deal as { choice: number }).choice).toBe(2);
     expect(mockedAsk).not.toHaveBeenCalled();
   });
 

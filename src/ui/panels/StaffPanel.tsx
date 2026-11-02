@@ -3,8 +3,9 @@ import { useState } from 'react';
 import { Dropdown } from '../Dropdown';
 import { useGame } from '../../core/store';
 import { dailyWage, maxStaff, ROLES, SHIFTS, type Shift, type Staff } from '../../data/staff';
-import { formatMoney } from '../../data/products';
+import { formatMoney, fmtMul } from '../../data/products';
 import { hasUpgrade } from '../../data/upgrades';
+import { branchStaffWish } from '../../data/branches';
 import { Footer, Callout, styles, Tabs } from './shared';
 import { wageCoverage } from '../../data/wageCoverage';
 import { expToNext, shownTrait, trainCost, TRAITS } from '../../data/staffTraits';
@@ -69,7 +70,7 @@ export function StaffPanel() {
             <div style={{ marginTop: 2, fontSize: 12 }}>
               {pr.covered
                 ? `Cầm đủ lương tối nay${pr.runwayDays != null && pr.runwayDays > 0 ? `, tạm đủ ${pr.runwayDays} ngày lương nữa` : ''}.`
-                : `Chưa đủ trả lương tối nay — bớt nhập hàng, xả sỉ/gánh chợ (GĐ211) hoặc lót vay (GĐ217) trước khi ngủ.`}
+                : `Chưa đủ trả lương tối nay — bớt nhập hàng, xả sỉ/gánh chợ hoặc lót vay trước khi ngủ.`}
             </div>
           </Callout>
         );
@@ -232,9 +233,10 @@ export function Fatigue({ value }: { value: number }) {
 
 /** Nhân viên tiện lợi 24/7 xếp theo ca, chung bảng với tiệm chính. */
 function BranchRoster() {
-  const { branch, day, money, level, setBranchShift, bonusBranchStaff, restBranchStaff, fireFromBranch, promoteBranchStaff } = useGame();
+  const { branch, day, money, level, weatherSeed, setBranchShift, bonusBranchStaff, restBranchStaff, restBranchStaffToday, denyStaffRest, fireFromBranch, promoteBranchStaff } = useGame();
   if (!branch) return null;
   // GĐ142: giá trị hôm nay của từng nhân viên chi nhánh so với lương (thuần đọc branch.hourly — revenue từng giờ)
+  const wish = branchStaffWish(branch, weatherSeed, day); // GĐ727 — ai xin nghỉ hôm nay (băm riêng)
   const bValues = branchStaffValueToday(branch.staff, branch.hourly);
   const bValById = new Map(bValues.map((v) => [v.id, v]));
   const bShiftSum = branchShiftSummary(branch.hourly, branch.staff);
@@ -272,6 +274,16 @@ function BranchRoster() {
                   options={BRANCH_SHIFTS.map((k) => ({ value: k, label: BRANCH_SHIFT_NAME[k] }))}
                 />
                 <button style={staffSt.train} title={`Tốn 1 ngày lương, giảm ${BONUS_RELIEF} mệt`} onClick={() => bonusBranchStaff(x.id)}>🎁 Thưởng</button>
+                {wish?.id === x.id && branch.wishDenied?.[x.id] !== day && (
+                  <>
+                    {wish.kind === 'nghỉ' ? (
+                      <button style={{ ...staffSt.train, background: '#f1c40f', color: '#3a3a4d', fontWeight: 700 }} title="Ca nay thiếu người thật — nhưng tối nay người được xả mệt" onClick={() => restBranchStaffToday(x.id)}>😴 Cho nghỉ hôm nay</button>
+                    ) : (
+                      <button style={{ ...staffSt.train, background: '#f1c40f', color: '#3a3a4d', fontWeight: 700 }} title={`Chuyển sang ${BRANCH_SHIFT_NAME[wish.toShift ?? 'afternoon']} — dùng action đổi ca có sẵn`} onClick={() => setBranchShift(x.id, wish.toShift ?? 'afternoon')}>⏰ Chuyển ca</button>
+                    )}
+                    <button style={staffSt.train} title={wish.kind === 'nghỉ' ? 'Mệt thêm một bậc, người hơi buồn' : 'Không sao — để xem ca sau'} onClick={() => denyStaffRest(x.id, wish.kind === 'nghỉ' ? 10 : 0)}>😔 Giữ lại</button>
+                  </>
+                )}
                 <button style={staffSt.train} disabled={branch.restDay?.[x.id] === day + 1} title="Nghỉ ngày mai không lương, hồi hết mệt" onClick={() => restBranchStaff(x.id)}>🛌 Nghỉ mai</button>
                 <TransferButton id={x.id} from="branch" />
                 <button style={staffSt.fire} onClick={() => confirm(`Cho ${x.name} nghỉ việc?`) && fireFromBranch(x.id)}>Cho nghỉ</button>
@@ -349,7 +361,7 @@ export function PromoteRow({ st, level, money, onPromote }: { st: Staff; level: 
     <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', fontSize: 12 }}>
       <span style={{ flex: 1, minWidth: 180, opacity: 0.85 }} title={chk.def.desc}>
         {chk.def.icon} Lên <b>{chk.def.name}</b>
-        {chk.ok ? ` — đủ điều kiện (lương ×${chk.def.raise})` : ` — cần ${chk.missing.join(', ')}`}
+        {chk.ok ? ` — đủ điều kiện (lương ×${fmtMul(chk.def.raise)})` : ` — cần ${chk.missing.join(', ')}`}
       </span>
       <button style={styles.btn} disabled={!chk.ok || money < chk.def.cost} onClick={() => onPromote(st.id)}>
         Thăng chức · {formatMoney(chk.def.cost)}
@@ -382,7 +394,7 @@ export function StaffInfo({ st, right }: { st: Staff; right?: React.ReactNode })
           <div style={{ fontSize: 11, opacity: 0.7, marginTop: 2 }}>Kinh nghiệm {st.exp ?? 0}/{expToNext(st.skill)} · đã làm {st.daysWorked} ngày</div>
         )}
         <div style={{ fontSize: 11, opacity: 0.85, marginTop: 2, color: '#f1c40f' }}>
-          ⚡ Làm nhanh ×{eff.speed.toFixed(2)}
+          ⚡ Làm nhanh ×{fmtMul(eff.speed)}
           {!eff.maxed && eff.roleBonus ? ` · ${eff.roleBonus}` : eff.roleBonus}
           {!eff.maxed && ` · +1★ nhanh thêm ${eff.nextDeltaPct}%`}
           {!eff.maxed && ` · đào tạo ${formatMoney(eff.trainCost)}/buổi (cộng 4 exp, cần ${eff.expNeeded})`}
@@ -416,7 +428,7 @@ function NightStaffLine({ sv }: { sv?: import('../../data/nightStaffValue').Nigh
   if (!sv || sv.verdict === 'nodata') return null;
   const m = VERDICT_META[sv.verdict];
   return (
-    <div style={{ fontSize: 12, marginTop: 2, color: m.color }} title="Ước tính: doanh thu các giờ đêm (≥22h) chia cho số người cùng ca đêm, so với lương thực trả ×1.5 (thuần đọc sổ giờ)">
+    <div style={{ fontSize: 12, marginTop: 2, color: m.color }} title="Ước tính: doanh thu các giờ đêm (≥22h) chia cho số người cùng ca đêm, so với lương thực trả ×1,5 (thuần đọc sổ giờ)">
       🌙 Đêm qua ~{formatMoney(sv.value)} · lương {formatMoney(sv.wage)} → <b>{sv.net >= 0 ? '+' : ''}{formatMoney(sv.net)}</b> · {m.label}
     </div>
   );
@@ -465,7 +477,7 @@ function NightStrip({ p }: { p: import('../../data/nightReport').NightPnl }) {
     <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8 }}>
       <div style={{ padding: '8px 10px', borderRadius: 10, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', fontSize: 12 }}>
         <div style={{ opacity: 0.75 }}>🌙 Ca đêm · doanh thu {formatMoney(p.revenue)}</div>
-        <div style={{ color }}><b>lời/lỗ {p.net >= 0 ? '+' : ''}{formatMoney(p.net)}</b> vs lương {formatMoney(p.wages)} (×1.5)</div>
+        <div style={{ color }}><b>lời/lỗ {p.net >= 0 ? '+' : ''}{formatMoney(p.net)}</b> vs lương {formatMoney(p.wages)} (×1,5)</div>
       </div>
     </div>
   );

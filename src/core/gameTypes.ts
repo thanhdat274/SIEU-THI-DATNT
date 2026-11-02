@@ -243,7 +243,7 @@ export type Panel =
   | { type: 'records' }
   | { type: 'dossier' }
   | { type: 'roadmap' }
-  | { type: 'summary'; day: number; stats: DayStats };
+  | { type: 'summary'; day: number; stats: DayStats; /** GĐ791: số tiền thuốc nếu ngày này kết thúc vì ngất (chỉ hiển thị, không lưu). */ fainted?: number };
 
 /** Đang cầm một món đồ để đặt (mua mới hoặc di chuyển món có sẵn). */
 export interface Placing {
@@ -268,7 +268,7 @@ export interface GameState {
   /** Tổng kết ngày vừa qua (máy chạy hẻm gửi sang để máy khách cũng mở bảng tổng kết).
    *  `staffIdle` = việc sáng 🧍 tính SẴN ở máy chạy lúc chốt ngày (GĐ300): snapshot staffDay là
    *  transient ngoài useGame, chỉ máy chạy có → phải gửi kèm gói state để máy khách thấy y hệt. */
-  lastSummary: { day: number; stats: DayStats; staffIdle?: MorningShiftNote } | null;  /** Đang ở chế độ xây dựng. */
+  lastSummary: { day: number; stats: DayStats; /** GĐ792: tiền thuốc nếu ngày đó kết thúc vì ngất (máy khách hẻm online đọc để hiện thẻ). */ fainted?: number; staffIdle?: MorningShiftNote; /** GĐ565: tin sáng đầy đủ (toast chỉ hiện phần vừa 90 ký tự). */ news?: string[] } | null;  /** Đang ở chế độ xây dựng. */
   buildMode: boolean;
   placing: Placing | null;
 
@@ -366,6 +366,9 @@ export interface GameState {
   regularVisit: (id: string, basket: CartItem[], paid: boolean, miss?: { id: string; why: string }) => number;
   /** Cộng/trừ thân thiết ngoài lần ghé (đơn riêng), mở perk nếu tới mốc. */
   adjustFriendship: (id: string, delta: number) => void;
+  /** GĐ793 — đòi lại khách quen bị rival lôi kéo: tặng 1 món họ thích trong kho + RESCUE_FEE, mỗi ngày 1 người.
+   *  Trả về true khi đòi được (khách quay lại ghé). */
+  rescuePoachedRegular: (regularId: string) => boolean;
   /** Đối thủ, quảng cáo, tích điểm, vay, hụi, tuần, thú cưng, thành tựu, nhà, xe (xem data/biz.ts). */
   biz: BizState;
   /** Mua mặt bằng quán nước đầu ngõ (cấp 29, bán đồ uống rút từ kho); trả false nếu chưa đủ điều kiện. */
@@ -389,6 +392,9 @@ export interface GameState {
   /** GĐ498: mở một khu bản đồ mới (mở rộng bản đồ). */
   openZone: (id: string) => boolean;
   rentSapLot: () => boolean;
+  cycleSapKind: (i: number) => boolean;
+  upgradeSapLot: (i: number) => boolean;
+  tendSapHand: () => boolean;
   /** Lấy bớt hàng khỏi kho (vd. thức ăn cho thú cưng). */
   consumeStock: (productId: string, qty: number) => void;
   /** Sổ nợ khách quen (theo id khách quen). */
@@ -405,6 +411,8 @@ export interface GameState {
   checkoutOnCredit: (regularId: string, items: CartItem[], discount?: number, combos?: number) => void;
   /** Khách quen trả hết nợ cũ; trả về số tiền thu được. */
   collectDebt: (regularId: string) => number;
+  /** GĐ734 — chấp nhận trả góp: nhận nửa hôm nay, phần còn lại mở cửa sổ 7 ngày mới. */
+  collectDebtPartial: (regularId: string) => number;
   remindDebt: (regularId: string) => void;
   forgiveDebt: (regularId: string) => void;
   /** Người bán rong đang chờ ở tiệm xin lấy sỉ (null = không có). */
@@ -594,6 +602,10 @@ export interface GameState {
   bonusBranchStaff: (id: number) => void;
   /** Cho nhân viên nghỉ ngày mai (nghỉ không lương, hồi hết mệt). */
   restBranchStaff: (id: number) => void;
+  /** GĐ727 — cho nhân viên xin nghỉ nghỉ HÔM NAY (ca nay thiếu người). */
+  restBranchStaffToday: (id: number) => void;
+  /** GĐ728 — giữ lại nhân viên xin nghỉ: mệt thêm một bậc, ẩn dòng wish hôm nay. */
+  denyStaffRest: (id: number, bump?: number) => void;
   /** Đào tạo nhân viên: tốn tiền, cộng kinh nghiệm, mỗi người một buổi mỗi ngày. */
   trainStaff: (id: number) => void;
   /** Thăng chức nhân viên tiệm chính (thu ngân → trưởng quầy → quản lý). */

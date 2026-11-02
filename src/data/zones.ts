@@ -1,3 +1,5 @@
+import { LANE_X } from './branches';
+
 /**
  * Khu bản đồ (GĐ497, bước 1 "mở rộng bản đồ" kiểu Cities: Skylines 2): thị trấn chia thành các khu mở
  * dần theo cấp + tiền. Khu "hem" (hẻm đầu tiên) luôn mở; các khu sau mở bằng `openZone` (bước 2+).
@@ -20,6 +22,16 @@ export interface Zone {
 export const ZONES: Zone[] = [
   { id: 'hem', name: 'Hẻm đầu ngõ', icon: '🏘️', unlock: 1, cost: 0, bounds: { x1: -80, z1: -80, x2: 80, z2: 80 }, desc: 'Hẻm nhà mình: tạp hoá, quán nước, tiệm xôi' },
   { id: 'ngo2', name: 'Ngõ 2', icon: '🛤️', unlock: 45, cost: 50_000_000, bounds: { x1: 80, z1: -40, x2: 120, z2: 40 }, desc: 'Ngõ mới phía đông nối đường chính: lô trống, chỗ cho sạp hàng rong' },
+];
+
+/** Mốc chính trên bản đồ khu phố (GĐ505/506, toạ độ thế giới). */
+export const MAP_LANDMARKS = [
+  { icon: '🏠', name: 'Nhà', x: -12, z: -2 },
+  { icon: '🏪', name: 'Tạp hoá', x: 0, z: -6 },
+  { icon: '🍚', name: 'Tiệm xôi', x: LANE_X - 4, z: -1 },
+  { icon: '🧋', name: 'Quán nước', x: LANE_X + 4.4, z: -1 },
+  { icon: '🌾', name: 'Nông trại', x: 24, z: -70 },
+  { icon: '🏬', name: 'Cửa hàng tiện lợi', x: 60, z: -64 },
 ];
 
 export const zoneById = (id: string) => ZONES.find((z) => z.id === id);

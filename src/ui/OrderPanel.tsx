@@ -13,10 +13,11 @@ import { buyCostTone, cheapestSupplier, orderAssessment, tomorrowCostDir, type A
 import { monthlyRelRebate, PARTNER_TIERS, tierProgress } from '../data/supplierRel';
 import { cheapestSupplierFor, commitRebateAdvice, type CheapestProductResult } from '../data/supplierValue';
 import { isFairOpen, makeFairOffer } from '../data/fairmerchant';
+import { showRestockExtras } from '../data/onboarding';
 import { fairLotValue } from '../data/fairLotValue';
 import { itemHealthList, shelfCount } from '../data/analytics';
 import { prodSuggestToday } from '../data/prodSuggest';
-import { quanNuocRestockTip } from '../data/quanNuoc';
+import { quanNuocRestockTip } from '../data/quanNuocInsights';
 import { supplyRestockManifest, supplyNetworkOrderVisible } from '../data/supplyChain';
 import { teahouseFillPlan } from '../data/teahouseHaul';
 import { quanNuocDrinkIds } from '../data/quanNuoc';
@@ -24,7 +25,8 @@ import { festivalRestockPlan } from '../data/festivalRestock';
 import { PREP_MIN_QTY } from '../data/festivalPrep';
 import { Callout } from './panels/shared';
 import { acceptFairOffer } from '../core/biz';
-import { monthOf } from '../data/calendar';
+import { CUNG_GOODS, isXoiCungDay } from '../data/tiemXoi';
+import { festivalOn, festivalStock, monthOf, upcomingFestival } from '../data/calendar';
 import { weekendPullOf, weekendSellingDays } from '../data/weekendRestock';
 
 /** Món mở khóa trong vòng chừng này cấp gần đây được gắn nhãn "Mới". */
@@ -195,7 +197,11 @@ export function OrderPanel() {
 
   // Memo: quét toàn bộ kệ/kho mỗi lần gõ số lượng (setCart) là tốn — chỉ tính lại khi dữ liệu nguồn thay đổi
   const rows = useMemo(() => {
-    const isHot = trending(day, level);
+    // GĐ657: lễ đang diễn ra hoặc ≤7 ngày nữa — hàng của dịp tính như hàng hot để hiện ở Gợi ý
+    const fest = festivalOn(day) ?? upcomingFestival(day, 7)?.festival;
+    // GĐ658: ngày cúng và hôm trước — đồ cúng (nhang, trái cây) cũng vào Gợi ý
+    const cung = isXoiCungDay(day) || isXoiCungDay(day + 1) ? CUNG_GOODS.filter((id) => productById(id).unlock <= level) : [];
+    const isHot = [...trending(day, level), ...(fest ? festivalStock(fest, level) : []), ...cung];
     return unlockedProducts(level)
       .filter((p) => supplierSells(supplier, p.id))
       .map((p) => {
@@ -394,7 +400,7 @@ export function OrderPanel() {
   const order = () => {
     if (needConfirm) {
       setConfirmedTotal(total);
-      notify(`⚠️ Sau đơn này chỉ còn ${formatMoney(Math.max(0, moneyLeft))}, chưa đủ ${formatMoney(wages)} lương cuối ngày. Bấm lần nữa nếu vẫn nhập.`);
+      notify(`⚠️ Sau đơn chỉ còn ${formatMoney(Math.max(0, moneyLeft))}, chưa đủ ${formatMoney(wages)} lương cuối ngày. Bấm lại nếu vẫn nhập.`);
       return;
     }
     // Hẻm online, máy khách: placeOrder trả `true` tạm — chỉ xoá giỏ khi máy chạy báo đặt được thật
@@ -485,7 +491,7 @@ export function OrderPanel() {
       {(() => {
         const open = isFairOpen(day);
         const taken = biz.fairTaken === monthOf(day);
-        if (!open) return null;
+        if (!open || !showRestockExtras(day)) return null;
         const offer = makeFairOffer(level, day);
         if (!offer) return null;
         return (
@@ -516,7 +522,7 @@ export function OrderPanel() {
                           {fv.verdict === 'maybe' && 'Chưa rõ sức bán — đang tiết kiệm ~' + Math.round(fv.savePct * 100) + '%, xem nhịp bán rồi quyết.'}
                           {fv.weekendSnacksCount > 0 && (
                             <div style={{ marginTop: 3, color: '#f1c40f', fontWeight: 500 }}>
-                              🍬 Lô có {fv.weekendSnacksCount} món ăn vặt cuối tuần{fv.isWeekendFair ? ' — hôm nay cuối tuần khách mua nhiều!' : ' — trữ sẵn cho cuối tuần'} (GĐ291)
+                              🍬 Lô có {fv.weekendSnacksCount} món ăn vặt cuối tuần{fv.isWeekendFair ? ' — hôm nay cuối tuần khách mua nhiều!' : ' — trữ sẵn cho cuối tuần'}
                             </div>
                           )}
                         </div>
@@ -573,7 +579,7 @@ export function OrderPanel() {
         {supplier.bulk && ` Mua nhiều: ${supplier.bulk.map((b) => `từ ${b.minCases} thùng một món bớt ${b.discount * 100}%`).join(', ')}.`}
         {' '}Hàng nhập theo thùng, về kho rồi khui ra bày lẻ.
       </p>
-      <div style={{ ...st.banner, ...(day <= 1 ? { display: 'none' } : null) }}>{/* GĐ319: ngày đầu chỉ dạy nhập-bày-bán */}
+      <div style={{ ...st.banner, ...(showRestockExtras(day) ? null : { display: 'none' }) }}>{/* GĐ319: ngày đầu chỉ dạy nhập-bày-bán */}
         {(() => {
           const life = biz.supplierRel?.[supplier.id]?.spent ?? 0;
           const { cur, next, pct } = tierProgress(life);
@@ -633,7 +639,7 @@ export function OrderPanel() {
           </div>
         );
       })()}
-      {cheapest && cheapest.rival && cheapest.delta > 0 && (
+      {cheapest && cheapest.rival && cheapest.delta > 0 && showRestockExtras(day) && (
         <div style={{ ...st.banner, background: 'rgba(241, 196, 15, 0.09)', border: '1px solid rgba(255,255,255,0.07)' }}>
           🧮 Với giỏ này <b>{cheapest.best.name}</b> rẻ hơn <b>{cheapest.rival.name}</b> {formatMoney(cheapest.delta)} hôm nay
         </div>
@@ -679,7 +685,7 @@ export function OrderPanel() {
         </div>
       )}
 
-      {filter === 'suggest' && urgent.length > 0 && (
+      {filter === 'suggest' && urgent.length > 0 && showRestockExtras(day) && (
         <div style={{ ...st.banner, background: 'rgba(214, 48, 49, 0.16)' }}>
           <b>🚨 Cần nhập gấp</b>
           <div style={{ marginTop: 4, display: 'grid', gap: 2 }}>
@@ -762,7 +768,7 @@ export function OrderPanel() {
                   <span style={{ ...st.badge, background: shelfLife(r.p.id) <= 3 ? '#e74c3c' : '#636e72' }} title="Hạn dùng khi mới nhập">⏳ {shelfLife(r.p.id)} ngày</span>
                 )}
                 {r.isHot && <span style={{ ...st.badge, background: '#e67e22' }}>🔥 Hot</span>}
-                {r.weekendPull && <span style={{ ...st.badge, background: '#f1c40f', color: '#222' }} title="Lô này bán vào Thứ 7/Chủ nhật — khách hay ghé mua ăn vặt (GĐ255), gợi ý đã nhân thêm">🍬 Cuối tuần</span>}
+                {r.weekendPull && <span style={{ ...st.badge, background: '#f1c40f', color: '#222' }} title="Lô này bán vào Thứ 7/Chủ nhật — khách hay ghé mua ăn vặt, gợi ý đã nhân thêm">🍬 Cuối tuần</span>}
                 {r.isNew && <span style={{ ...st.badge, background: '#2ecc71' }}>Mới</span>}
                 {r.demand > 0 && r.have > 0 && r.have < r.demand && <span style={{ ...st.badge, background: '#e67e22' }} title={`Còn ${r.have} món, khách mua ~${r.demand.toFixed(1)}/ngày — sắp hết`}>⚠️ Gần hết</span>}
                 {r.asked > 0 && r.have === 0 && <span style={{ ...st.badge, background: '#e74c3c' }}>Khách hỏi {r.asked} lần, hết hàng</span>}
@@ -876,7 +882,7 @@ const st: Record<string, React.CSSProperties> = {
     padding: '6px 10px', borderBottom: '1px solid #ffffff10', fontSize: 13,
   },
   head: { position: 'sticky', top: 0, background: '#2b2b3a', fontSize: 11, opacity: 0.8, zIndex: 1 },
-  badge: { marginLeft: 6, padding: '1px 6px', borderRadius: 4, fontSize: 10, color: '#fff', whiteSpace: 'nowrap' },
+  badge: { marginLeft: 6, padding: '1px 6px', borderRadius: 4, fontSize: 11, color: '#fff', whiteSpace: 'nowrap' },
   step: { width: 24, height: 24, border: 'none', borderRadius: 5, cursor: 'pointer', fontSize: 14, padding: 0 },
   qty: { width: 48, height: 26, padding: 0, textAlign: 'center' },
   // Dính đáy panel: cuộn danh sách tới đâu vẫn luôn thấy tổng tiền + nút nhập.

@@ -1,5 +1,5 @@
 import { formatClock, useClock, useGame } from '../core/store';
-import { formatMoney, productById } from '../data/products';
+import { formatMoney, productById, fmtMul } from '../data/products';
 import { describeItems, houseById, phoneOrderValue } from '../data/phoneOrders';
 import { phoneNetProfit } from '../data/phoneNet';
 
@@ -25,8 +25,8 @@ export function PhoneAlerts() {
           return (
             <div key={o.id} className="hud-alert phone ringing">
               {vip ? '👑' : cook ? '🍳' : '📞'} <b>{o.caller}</b> ({house}, {o.reason}): {describeItems(o.items)} · {formatMoney(phoneOrderValue(o, priceOf))}
-              {vip && <b> (đơn VIP, giá hời ×{o.premium})</b>}
-              {cook && <b> (đơn nấu, giá hời ×{o.premium})</b>}
+              {vip && <b> (đơn VIP, giá hời ×{fmtMul(o.premium ?? 1)})</b>}
+              {cook && <b> (đơn nấu, giá hời ×{fmtMul(o.premium ?? 1)})</b>}
               <small className="hud-wholesale-tip"> · lời ròng ~{formatMoney(net.net)} (đã trừ chi phí {cook ? 'nguyên liệu bếp' : 'giá mua nhập'}){net.net < 0 ? ' — đơn này lỗ, cân nhắc!' : ''}</small>
               <small> · còn {Math.max(0, Math.ceil(o.answerBy - minutes))} phút để nghe máy</small>
               <span className="hud-alert-actions">

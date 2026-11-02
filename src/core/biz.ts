@@ -134,9 +134,12 @@ export function buyRivalShop() {
 /** `emergency`: vay gấp để nhập hàng giao đơn, được vay gói nhỏ nhất kể cả khi chưa tới cấp mở vay. */
 export function takeLoan(amount: number, emergency = false) {
   const s = S();
-  if (s.level < LOAN_UNLOCK && !(emergency && !s.biz.loan && amount === LOAN_OPTIONS_MIN)) return;
+  // GĐ852: quỹ còn âm thì được vay gấp thêm (gộp vào gốc, trần 3 gói) — tránh bế tắc không nhập nổi hàng
+  const old = s.biz.loan;
+  const canEmergency = emergency && amount === LOAN_OPTIONS_MIN && (!old || (s.money < 0 && old.principal < 3 * LOAN_OPTIONS_MIN));
+  if (s.level < LOAN_UNLOCK && !canEmergency) return;
   if (s.level < LOAN_UNLOCK) {
-    patch({ loan: { principal: amount, takenDay: s.day, dueDay: s.day + LOAN_DAYS, interestPaid: 0 } });
+    patch({ loan: old ? { ...old, principal: old.principal + amount, dueDay: s.day + LOAN_DAYS } : { principal: amount, takenDay: s.day, dueDay: s.day + LOAN_DAYS, interestPaid: 0 } });
     useGame.setState({ money: S().money + amount });
     s.notify(`🏦 Vay gấp ${formatMoney(amount)} để nhập hàng, lãi ${(LOAN_DAILY_RATE * 100).toFixed(1)}%/ngày, hạn trả ngày ${s.day + LOAN_DAYS}`);
     return;
@@ -477,7 +480,7 @@ export function buyService(id: string) {
   const owned = s.biz.services ?? [];
   if (!def || owned.includes(id) || s.level < def.unlock || !pay(def.price, def.name.toLowerCase())) return;
   patch({ services: [...owned, id] });
-  s.notify(`${def.icon} Đã mở dịch vụ ${def.name}: khách sẽ ghé quầy dùng dịch vụ, nhiều người mua kèm`);
+  s.notify(`${def.icon} Đã mở dịch vụ ${def.name}: khách dùng dịch vụ hay mua kèm hàng`);
 }
 
 /** Một lượt dịch vụ xong ở quầy: cộng tiền lời vào két, doanh thu hôm nay, và ghi sổ theo dịch vụ

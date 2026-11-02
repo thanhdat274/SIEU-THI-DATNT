@@ -1,4 +1,5 @@
 import { furnitureDef } from '../../data/furniture';
+import { fitList } from '../../data/onboarding';
 import { WAREHOUSE_TIERS } from '../../data/warehouse';
 import { customersPerDay } from '../../data/levels';
 import { formatMoney, productById, unlockedProducts } from '../../data/products';
@@ -83,7 +84,7 @@ export const createInventorySlice = (set: SetState, get: GetState): Pick<GameSta
       for (const [id, qty] of Object.entries(lines)) putStock(k, id, qty);
       set({ money: s.money - cost, ...k, stats, totals, biz: nbiz });
       const swapped = s.autoSwap ? get().replaceEmptySlots() : [];
-      s.notify(`📦 Đã nhập hàng từ ${sup.name}: ${formatMoney(cost)}${swapped.length ? ` · 🔄 Thay ô hết hàng: ${swapped.join(', ')}` : ''}`);
+      { const head = `📦 Đã nhập hàng từ ${sup.name}: ${formatMoney(cost)}`; s.notify(swapped.length ? fitList(`${head} · 🔄 Thay ô: `, swapped) : head); }
     } else {
       set({ money: s.money - cost, stats, totals, biz: nbiz, deliveries: [...s.deliveries, { supplierId, items: lines }] });
       s.notify(`🚚 Đã đặt ${sup.name} (${formatMoney(cost)}), hàng về lúc 6h sáng mai`);

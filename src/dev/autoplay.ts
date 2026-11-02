@@ -3,6 +3,8 @@ import { dailyQuests, betStatus } from '../data/quests';
 import { furnitureDef, FURNITURE } from '../data/furniture';
 import { FEATURES } from '../data/levels';
 import { unlockedProducts } from '../data/products';
+import { takeLoan } from '../core/biz';
+import { LOAN_OPTIONS_MIN } from '../data/biz';
 import { SHOP_TIERS } from '../data/shopTiers';
 import { maxStaff } from '../data/staff';
 import type { CustomerManager } from '../agents/customers';
@@ -49,6 +51,8 @@ export function createAutoplay(
 
   /** Bày hàng: mỗi tầng một mặt hàng hợp ngành, nhập đủ để bày đầy rồi để dư một ít. */
   function restock() {
+    // GĐ847: người chơi thật vay gấp khi quỹ âm để nhập hàng — bot làm như vậy thay vì kẹt xoáy nợ
+    if (st().money < 0) takeLoan(LOAN_OPTIONS_MIN, true);
     const s = st();
     const unlocked = unlockedProducts(s.level);
     let kk = 0;
@@ -91,6 +95,7 @@ export function createAutoplay(
   function hire() {
     const s = st();
     if (s.level < FEATURES.staff || s.staff.length >= maxStaff(s.level)) return;
+    if (s.money < 400_000) return; // GĐ817: người chơi thật không thuê thêm khi quỹ cạn (bot từng thuê 10 người rồi âm tiền)
     const cashiers = s.staff.filter((x) => x.role === 'cashier').length;
     const want = cashiers <= s.staff.length - cashiers ? 'cashier' : 'stocker';
     const c = s.candidates.filter((x) => x.role === want).sort((a, b) => b.skill - a.skill)[0];
@@ -119,7 +124,7 @@ export function createAutoplay(
   }
 
   /** Chơi ĐÚNG 1 ngày. `yieldHook` (nếu có) chạy sau mỗi batch tick để nhả main thread cho worker. */
-  async function playOneDay(yieldHook: (() => Promise<void>) | null): Promise<Record<string, number | string>> {
+  async function playOneDay(yieldHook: (() => Promise<void>) | null): Promise<Record<string, number | string | Record<string, number>>> {
     const step = yieldEvery > 0 ? yieldEvery : 40;
     st().closePanel();
     hire();
@@ -168,6 +173,9 @@ export function createAutoplay(
       bet: betDay,
       customers: sum?.customers ?? 0,
       unhappy: sum?.unhappy ?? 0,
+      missed: sum?.missed ?? {},
+      // GĐ779: lỡ bán 'stock' mà KHO vẫn còn hàng (= kệ không được châm) — phân biệt với hết hẳn hàng
+      stockInStorage: Object.entries(sum?.missLog ?? {}).reduce((n0, [key, c]) => n0 + (key.startsWith('stock:') && (s.storage[key.slice(6)] ?? 0) > 0 ? c : 0), 0),
       shelves: s.furniture.length,
       staff: s.staff.length,
       tier: s.shopTier,
@@ -175,8 +183,8 @@ export function createAutoplay(
   }
 
   /** Chơi n ngày ĐỒNG BỘ như cũ; trả về bảng nhật ký (thêm cột quest/bet). Gọi: game.autoplay(30). */
-  function autoplay(days: number): Record<string, number | string>[] {
-    const log: Record<string, number | string>[] = [];
+  function autoplay(days: number): Record<string, number | string | Record<string, number>>[] {
+    const log: Record<string, number | string | Record<string, number>>[] = [];
     for (let d = 0; d < days; d++) {
       log.push(runOneDaySync());
     }
@@ -184,7 +192,7 @@ export function createAutoplay(
     return log;
   }
 
-  function runOneDaySync(): Record<string, number | string> {
+  function runOneDaySync(): Record<string, number | string | Record<string, number>> {
     st().closePanel();
     hire();
     invest();
@@ -226,6 +234,7 @@ export function createAutoplay(
       bet: betDay,
       customers: sum?.customers ?? 0,
       unhappy: sum?.unhappy ?? 0,
+      missed: sum?.missed ?? {},
       shelves: s.furniture.length,
       staff: s.staff.length,
       tier: s.shopTier,
@@ -233,8 +242,8 @@ export function createAutoplay(
   }
 
   /** Chơi n ngày BẤT ĐỒNG BỘ, nhả main thread mỗi `yieldEvery` tick — cho worker test/automation. */
-  async function autoplayAsync(days: number): Promise<Record<string, number | string>[]> {
-    const log: Record<string, number | string>[] = [];
+  async function autoplayAsync(days: number): Promise<Record<string, number | string | Record<string, number>>[]> {
+    const log: Record<string, number | string | Record<string, number>>[] = [];
     for (let d = 0; d < days; d++) {
       log.push(await playOneDay(() => new Promise((r) => setTimeout(r, 0))));
     }
@@ -248,4 +257,4 @@ export function createAutoplay(
   return autoplay;
 }
 
-export type AutoplayRunner = ReturnType<typeof createAutoplay> & { async: (days: number) => Promise<Record<string, number | string>[]> };
+export type AutoplayRunner = ReturnType<typeof createAutoplay> & { async: (days: number) => Promise<Record<string, number | string | Record<string, number>>[]> };

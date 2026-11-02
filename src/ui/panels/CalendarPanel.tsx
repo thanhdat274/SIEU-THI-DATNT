@@ -1,5 +1,7 @@
 import { useGame } from '../../core/store';
 import { productById } from '../../data/products';
+import { isXoiCungDay } from '../../data/tiemXoi';
+import { isQuanMatchDay } from '../../data/quanNuoc';
 import { CUM_DAYS, dateOfDoy, dayOfYear, FESTIVALS, festivalOn, festivalStock, gameDayOfDoy, isWeekend, MONTH_LENGTHS, weekdayOf, YEAR_DAYS } from '../../data/calendar';
 import { Footer, styles } from './shared';
 
@@ -8,6 +10,11 @@ export function CalendarPanel() {
   const day = useGame((s) => s.day);
   const level = useGame((s) => s.level);
   const closePanel = useGame((s) => s.closePanel);
+  const openPanel = useGame((s) => s.openPanel);
+  const storage = useGame((s) => s.storage);
+  const furniture = useGame((s) => s.furniture);
+  // GĐ652: như Sổ đầu ngày — có trong kho hay trên kệ thì ✓
+  const haveStock = (id: string) => (storage[id] ?? 0) > 0 || furniture.some((f) => f.tiers.some((t) => t.productId === id && t.count > 0));
   const doy = dayOfYear(day);
   const current = festivalOn(day);
   const sorted = [...FESTIVALS].sort((a, b) => {
@@ -15,10 +22,6 @@ export function CalendarPanel() {
     return dist(a) - dist(b);
   });
   const pct = (x: number) => `${x >= 1 ? '+' : ''}${Math.round((x - 1) * 100)}%`;
-  const dateText = (doy0: number) => {
-    const { month, day: d } = dateOfDoy(doy0);
-    return `${d}/${month}`;
-  };
   const rangeText = (f: typeof FESTIVALS[number]) => {
     const a = dateOfDoy(f.from), b = dateOfDoy(f.to);
     return a.month === b.month ? `${a.day}–${b.day}/${a.month}` : `${a.day}/${a.month}–${b.day}/${b.month}`;
@@ -30,7 +33,7 @@ export function CalendarPanel() {
       <p style={styles.sub}>
         Một năm trong game dài 365 ngày theo lịch thật. Hôm nay là {weekdayOf(day)}, ngày {today.day}/{today.month}
         {current ? ` — đang trong ${current.icon} ${current.name}` : ''}. Ô nền sáng hơn là Thứ 7/Chủ nhật — cuối tuần
-        khách ghé mua ăn vặt nhiều hơn. Xem trước dịp nào tới để nhập sẵn hàng:
+        khách ghé mua ăn vặt nhiều hơn. 🙏 là ngày cúng (mùng 1, rằm): khách hỏi nhang, trái cây, xôi. Xem trước dịp nào tới để nhập sẵn hàng:
         giá nhập thay đổi theo dịp, khách chịu giá cao với hàng mùa.
       </p>
       <div style={{ display: 'grid', gap: 3, marginBottom: 14, maxWidth: 660, overflowX: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: 6 }}>
@@ -43,19 +46,20 @@ export function CalendarPanel() {
               const idx = f ? FESTIVALS.indexOf(f) : -1;
               const gd = gameDayOfDoy(doy0);
               const wknd = isWeekend(gd);
+              const cung = isXoiCungDay(gd); // GĐ639: mùng 1 & rằm
               return (
                 <div
                   key={d}
-                  title={`${d}/${m + 1} · ${weekdayOf(gd)}${f ? `: ${f.name}` : ''}${wknd ? ' · cuối tuần' : ''}`}
+                  title={`${d}/${m + 1} · ${weekdayOf(gd)}${f ? `: ${f.name}` : ''}${wknd ? ' · cuối tuần' : ''}${cung ? ' · ngày cúng' : ''}${isQuanMatchDay(gd, 'sunny') ? ' · tối có trận (nếu không mưa)' : ''}`}
                   style={{
-                    height: 16, borderRadius: 3, fontSize: 9, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    height: 16, borderRadius: 3, fontSize: 11, display: 'flex', alignItems: 'center', justifyContent: 'center',
                     // GĐ264: #54546e — #4a4a63 quá gần nền #3a3a4d, mắt thường khó thấy ô cuối tuần
                     background: f ? `hsl(${(idx * 47) % 360} 55% 42%)` : wknd ? '#54546e' : '#3a3a4d',
                     outline: doy0 === doy ? '2px solid #fff' : undefined,
                     cursor: 'default',
                   }}
                 >
-                  {f ? f.icon : ''}
+                  {f ? f.icon : cung ? <span style={{ opacity: 0.8 }}>🙏</span> : ''}
                 </div>
               );
             })}
@@ -82,8 +86,11 @@ export function CalendarPanel() {
                   👥 khách {pct(f.traffic)}
                   {f.cost !== 1 && ` · 💰 giá nhập ${pct(f.cost)}`}
                   {f.tolerance && ' · 😤 khách chịu giá cao'}
-                  {goods.length > 0 && <small style={{ opacity: 0.75 }}> · hàng nên nhập: {goods.map((id) => productById(id).name).join(', ')}</small>}
+                  {goods.length > 0 && <small style={{ opacity: 0.75 }}> · hàng nên nhập: {goods.map((id) => `${productById(id).name}${running || inDays <= 14 ? (haveStock(id) ? ' ✓' : ' ⚠️') : ''}`).join(', ')}</small>}
                 </div>
+                {(running || inDays <= 14) && goods.some((id) => !haveStock(id)) && (
+                  <button style={{ ...styles.btn, marginTop: 4 }} onClick={() => openPanel({ type: 'order' })}>🛒 Đặt hàng còn thiếu</button>
+                )}
               </div>
             </div>
           );

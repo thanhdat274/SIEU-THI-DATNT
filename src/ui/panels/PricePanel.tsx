@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Dropdown } from '../Dropdown';
 import { HAPPY_FROM_MAX, HAPPY_FROM_MIN, HAPPY_HOURS, HAPPY_OFF_OPTIONS, happyHourActive, happyWindowFit, happyHourReport } from '../../data/rhythm';
 import { useClock, useGame } from '../../core/store';
-import { CATEGORIES, formatMoney, unlockedProducts, type Product } from '../../data/products';
+import { CATEGORIES, formatMoney, unlockedProducts, type Product, fmtMul } from '../../data/products';
 import { suggestPrice, referenceSell, productSensitivity, sensitivityLevel, priceForecast, formatDeltaK, FORECAST_FLAT_BAND } from '../../data/pricing';
 import { dayEffects } from '../../data/calendar';
 import { marketTrend } from '../../data/market';
@@ -45,7 +45,7 @@ export function PricePanel() {
       </p>
       {priceEffects.festival && (
         <div style={{ fontSize: 12, padding: '6px 12px', borderRadius: 10, background: 'rgba(241,196,15,0.12)', color: '#f1c40f', margin: '4px 0 8px' }}>
-          🎉 Đang {priceEffects.festival.name} — khách chịu giá cao hơn (món của dịp nhạy giá giảm còn ×{priceEffects.festival.tolerance ?? 1}): cột "Nên" đã tính điều chỉnh, tăng giá mạnh hơn ngày thường vẫn bán được.
+          🎉 Đang {priceEffects.festival.name} — khách chịu giá cao hơn (món của dịp nhạy giá giảm còn ×{fmtMul(priceEffects.festival.tolerance ?? 1)}): cột "Nên" đã tính điều chỉnh, tăng giá mạnh hơn ngày thường vẫn bán được.
         </div>
       )}
       {(() => {
@@ -175,7 +175,7 @@ export function PricePanel() {
                     const c = conf[lv];
                     return (
                       <span
-                        title={`Độ nhạy giá ${s.toFixed(1)} — ${lv === 'hot' ? 'khách bỏ hàng nhanh khi tăng giá, nên cẩn' : lv === 'soft' ? 'khách gần như vẫn mua dù giá cao, tăng được' : 'khách bớt mua khi tăng giá vừa phải'}${tolOf(p.id) < 1 ? ` · Hôm nay lễ (${priceEffects.festival?.name}): khách chịu giá cao, nhạy giá thực tế ×${tolOf(p.id).toFixed(2)}` : ''}`}
+                        title={`Độ nhạy giá ${s.toFixed(1)} — ${lv === 'hot' ? 'khách bỏ hàng nhanh khi tăng giá, nên cẩn' : lv === 'soft' ? 'khách gần như vẫn mua dù giá cao, tăng được' : 'khách bớt mua khi tăng giá vừa phải'}${tolOf(p.id) < 1 ? ` · Hôm nay lễ (${priceEffects.festival?.name}): khách chịu giá cao, nhạy giá thực tế ×${fmtMul(tolOf(p.id))}` : ''}`}
                         style={{ fontSize: 11, marginLeft: 6, padding: '1px 6px', borderRadius: 999, background: c.bg, color: c.col, whiteSpace: 'nowrap' }}
                       >{c.txt}</span>
                     );

@@ -1,4 +1,5 @@
 import { ANIMALS, ANIMAL_ORDER, EGG_PER_TRAY, plotReady } from '../data/garden';
+import { showRestockExtras } from '../data/onboarding';
 import { activeBuzz } from '../data/social';
 import { licenseStatus, type LicenseId } from '../data/licenses';
 import { faintMinutes, weeklyChallenge } from '../data/biz';
@@ -6,9 +7,7 @@ import { Joystick } from './Joystick';
 import { Fragment, lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { formatClock, questContext, useClock, useGame } from '../core/store';
 import { claimableCount, dailyQuests, dailySetProgress, storyQuest, STORY_STEPS } from '../data/quests';
-import { reputationOf } from '../data/reputation';
 import { dirtLoss } from '../data/dirtLoss';
-import { cookSpeed, bartenderBoost } from '../core/slices/orders';
 import { worldActions } from '../core/actions';
 import { saveGame, resetGame, readBackupSave, restoreBackup } from '../core/save';
 import { FEATURES, xpToNext } from '../data/levels';
@@ -23,7 +22,6 @@ import { isFairOpen } from '../data/fairmerchant';
 import { lifetimeRegularVisits, vipTierOf, EMOTIONAL_FRIENDSHIP } from '../data/regularTrust';
 import { relTier } from '../data/supplierRel';
 import { serviceById } from '../data/services';
-import { ASK_RESOLVE_REAL_S } from '../data/counterDeals';
 import { dossierEarnedCount, type DossierInput } from '../data/dossier';
 import { describeHours, goldenHourBands, goldenPrepWants, inGoldenHour, minutesToGolden, nextGoldenBand } from '../data/rhythm';
 import { skillPoints } from '../data/titles';
@@ -36,8 +34,7 @@ import { useSession } from '../net/session';
 import { initAudio, isMuted, isMusic, setMuted, setMusic } from '../core/audio';
 import { Panels } from './Panels';
 import { hubFirst, hubOf } from './hubs';
-import { answerAsk, useCounterAsk, askWallElapsed } from '../core/counterAsk';
-import { GFX_CYCLE, GFX_LABEL, gfxStatus, setGfxChoice } from '../render/graphicsQuality';
+import { ToolButton, type ToolDef } from './HudToolButton';
 import './hud.css';
 const SurpriseAlert = lazy(() => import('./SurpriseAlert').then((m) => ({ default: m.SurpriseAlert })));
 const ExpiryAlert = lazy(() => import('./ExpiryAlert').then((m) => ({ default: m.ExpiryAlert })));
@@ -53,6 +50,8 @@ export { tutorialActive, tutorialStep, tutorialSteps } from './tutorialSteps';
 import { tutorialActive, tutorialStep } from './tutorialSteps';
 const Tutorial = lazy(() => import('./Tutorial').then((m) => ({ default: m.Tutorial })));
 const VendorAlert = lazy(() => import('./VendorAlert').then((m) => ({ default: m.VendorAlert })));
+const MoreMenuBody = lazy(() => import('./HudMoreBody').then((m) => ({ default: m.MoreMenuBody }))); // GĐ651: ruột menu Thêm
+const CounterAskAlert = lazy(() => import('./HudAlerts').then((m) => ({ default: m.CounterAskAlert }))); // GĐ636
 const ChapterDialogue = lazy(() => import('./ChapterDialogue').then((m) => ({ default: m.ChapterDialogue })));
 
 /** Màn hình cảm ứng: không có phím, thay chữ phím [X] bằng biểu tượng chạm. */
@@ -67,19 +66,6 @@ const SPEEDS = [
   { label: '8×', value: 8, name: 'Rất nhanh' },
 ];
 
-const CONTROLS = [
-  ['WASD / bấm chuột', 'Đi lại'],
-  ['N', 'Đi ngủ (ở giường)'],
-  ['B', 'Bày hàng (ở kệ, tủ)'],
-  ['K', 'Đặt hàng / xem kho (ở kho)'],
-  ['G', 'Giao hàng (ở cửa nhà khách)'],
-  ['M', 'Nấu ăn (ở trạm nấu)'],
-  ['O', 'Đóng / mở cửa tiệm'],
-  ['Kéo chuột trái', 'Nhìn quanh'],
-  ['Chuột phải / Q E', 'Xoay camera'],
-  ['Cuộn chuột', 'Phóng to, thu nhỏ'],
-  ['Esc', 'Đóng bảng'],
-];
 
 /** Nút tắt/bật tiếng: âm thanh lưu riêng trong máy, không nằm trong bản lưu game. */
 function SoundToggle() {
@@ -277,7 +263,7 @@ Bản đang chơi được giữ lại, khôi phục lần nữa là trở lại
   const wheelReady = useGame((s) => s.wheelLastDay !== s.day);
   const wheelBoost = useGame((s) => s.wheelBoost);
   // Đầu tháng có chợ phiên đặc biệt còn chưa lấy thì nhắc trên nút Nhập hàng
-  const fairBadge = useGame((s) => (isFairOpen(s.day) && s.biz.fairTaken !== monthOf(s.day)) ? '🛒 Phiên chợ' : undefined);
+  const fairBadge = useGame((s) => (isFairOpen(s.day) && showRestockExtras(s.day) && s.biz.fairTaken !== monthOf(s.day)) ? '🛒 Phiên chợ' : undefined);
   // Sổ thương mến (GĐ69): bậc Tiệm hiện tại (bể khách quen cả ván) — hiện trên nút Khách quen
   const triBadge = useGame((s) => {
     const t = vipTierOf(lifetimeRegularVisits(s.regulars ?? {}));
@@ -339,7 +325,7 @@ Bản đang chơi được giữ lại, khôi phục lần nữa là trở lại
       on: () => worldActions.travel(atHome ? 'shop' : 'home'),
       // Bước 3 "Đứng quầy": đang ở nhà thì nhấp nháy nút Ra tiệm dẫn đường (tới nơi rồi marker
       // vàng trên sàn quầy lo việc dẫn tiếp); bước 4 "Tối về nhà" cũng là nút này
-      pulse: tutActive && (tutStep === 4 || (tutStep === 3 && atHome)),
+      pulse: (tutActive && (tutStep === 4 || (tutStep === 3 && atHome))) || (atHome && waiting > 0), // GĐ648: khách chờ quầy
     },
     {
       icon: atFarm ? '🛵' : '🚜', label: atFarm ? 'Ra tiệm' : 'Ra trại',
@@ -453,14 +439,14 @@ ${forecastText}`}>
             <span className="hud-alert-actions"><button className="hud-btn" onClick={() => worldActions.mop()}>Lau nhà</button></span>
           </div>
         )}
-        {waiting > 0 && !hint?.startsWith('💵') &&<div className="hud-alert warn">🛒 {waiting} khách đang chờ tính tiền ở quầy</div>}
+        {waiting > 0 && !hint?.startsWith('💵') &&<div className="hud-alert warn">🛒 {waiting} khách đang chờ tính tiền ở quầy{atHome || atFarm ? ' — bấm 🛵 Ra tiệm' : ''}</div>}
         <Suspense fallback={null}><PhoneAlerts /></Suspense>
         <Suspense fallback={null}><BranchAlert /></Suspense>
         <Suspense fallback={null}><RivalAlert /></Suspense>
         <Suspense fallback={null}><ExpiryAlert /></Suspense>
         <Suspense fallback={null}><UnlockActBanner /></Suspense>
         <Suspense fallback={null}><VendorAlert /></Suspense>
-        <CounterAskAlert />
+        <Suspense fallback={null}><CounterAskAlert /></Suspense>
         <Suspense fallback={null}><FestivalBanner /></Suspense>
         <Suspense fallback={null}><Tutorial review={helpTutorial} onDone={() => setHelpTutorial(false)} /></Suspense>
         <Suspense fallback={null}><SurpriseAlert /></Suspense>
@@ -602,25 +588,6 @@ Online: ${coop.peers.map((p) => (p.id === coop.selfId ? 'bạn' : p.name)).join(
   );
 }
 
-type ToolDef = { icon: string; label: string; on: () => void; badge?: string; lock?: number; active?: boolean; /** Nhóm trong menu Thêm: tiêu đề nhỏ hiện trước cụm nút cùng nhóm */ group?: string; /** Bước hướng dẫn ngày đầu đang chỉ tới nút này: viền vàng nhấp nháy */ pulse?: boolean };
-
-function ToolButton({ tool: t, level, onPicked }: { tool: ToolDef; level: number; onPicked?: () => void }) {
-  const locked = t.lock !== undefined && level < t.lock;
-  return (
-    <button
-      className={`hud-tool${t.active ? ' active' : ''}${t.pulse ? ' hud-pulse' : ''}`}
-      disabled={locked}
-      title={locked ? `Mở khóa ở cấp ${t.lock}` : t.label}
-      onClick={() => { onPicked?.(); t.on(); }}
-    >
-      <span className="hud-tool-icon" aria-hidden="true">{locked ? '🔒' : t.icon}</span>
-      <span>{t.label}</span>
-      {locked && <span className="hud-badge muted">Cấp {t.lock}</span>}
-      {!locked && t.badge && <span className="hud-badge">{t.badge}</span>}
-    </button>
-  );
-}
-
 /** Các bảng ít dùng gom vào một nút để thanh công cụ vừa màn hình; có việc cần xem thì hiện chấm báo. */
 function MoreMenu({ tools, level, onHelp }: { tools: ToolDef[]; level: number; onHelp: () => void }) {
   const { open, setOpen, ref } = usePopover();
@@ -635,47 +602,11 @@ function MoreMenu({ tools, level, onHelp }: { tools: ToolDef[]; level: number; o
       </button>
       {open && (
         <div className="hud-menu hud-more" role="menu">
-          {keys ? (
-            <div className="hud-help">
-              {CONTROLS.map(([k, v]) => (
-                <div key={k}><kbd>{k}</kbd><span>{v}</span></div>
-              ))}
-            </div>
-          ) : (
-            <>
-              {/* Tiêu đề nhóm nhỏ trước từng cụm liên tiếp; thứ tự nút giữ nguyên như cũ */}
-              {tools.map((t, i) => (
-                <Fragment key={t.label}>
-                  {t.group && t.group !== tools[i - 1]?.group && <div className="hud-more-group">{t.group}</div>}
-                  <ToolButton tool={t} level={level} onPicked={() => setOpen(false)} />
-                </Fragment>
-              ))}
-              <GfxButton level={level} />
-              {!TOUCH && <ToolButton tool={{ icon: '⌨️', label: 'Phím', on: () => setKeys(true) }} level={level} />}
-              {/* Xem lại hướng dẫn mở tiệm: cả máy cảm xúc lẫn desktop đều cần */}
-              <ToolButton tool={{ icon: '📖', label: 'Hướng dẫn', on: onHelp }} level={level} onPicked={() => setOpen(false)} />
-            </>
-          )}
+          <Suspense fallback={null}><MoreMenuBody tools={tools} level={level} onHelp={onHelp} keys={keys} setKeys={setKeys} setOpen={setOpen} /></Suspense>
         </div>
       )}
     </div>
   );
-}
-
-/**
- * Nút đồ họa trong menu Thêm: bấm để xoay vòng Tự động → Thấp → Vừa → Cao. Tự động thì ghi kèm
- * mức máy đang chạy. Tuỳ chọn riêng máy, không vào save — menu vẫn mở để bấm tiếp cho tới mức ưng.
- */
-function GfxButton({ level }: { level: number }) {
-  const [choice, setChoice] = useState(gfxStatus().choice);
-  const st = gfxStatus();
-  const label = choice === 'auto' ? `Đồ họa: Tự động (${GFX_LABEL[st.level]})` : `Đồ họa: ${GFX_LABEL[choice]}`;
-  const next = () => {
-    const c = GFX_CYCLE[(GFX_CYCLE.indexOf(choice) + 1) % GFX_CYCLE.length];
-    setGfxChoice(c);
-    setChoice(c);
-  };
-  return <ToolButton tool={{ icon: '🎨', label, on: next }} level={level} />;
 }
 
 /** Đóng popover khi bấm ra ngoài hoặc nhấn Esc. */
@@ -780,28 +711,3 @@ Bước ${stepNo}/${STORY_STEPS.length} của cốt truyện · bấm xem Nhiệ
 }
 
 /** Khách ở quầy xin ghi sổ / mặc cả / thiếu tiền lẻ: chọn nhanh, thế giới dừng chờ chủ quyết định (GĐ102). */
-function CounterAskAlert() {
-  const ask = useCounterAsk((s) => s.ask);
-  // GĐ122 — đồng hồ THỰC cho khách đang bị treo câu hỏi: khách vẫn mất kiên nhẫn theo giây thật
-  // (khác giờ game đang dừng), hiện còn bao nhiêu giây nữa sẽ tự chốt theo mặc định — để người chơi
-  // biết hậu quả trước khi muộn (không phạt bất ngờ), và khớp cùng ngân sách bong bóng 3D.
-  const rem = Math.ceil(ASK_RESOLVE_REAL_S - askWallElapsed());
-  const [, force] = useState(0);
-  useEffect(() => {
-    if (!ask) return;
-    const id = setInterval(() => force((n) => n + 1), 400);
-    return () => clearInterval(id);
-  }, [ask]);
-  if (!ask) return null;
-  return (
-    <div className="hud-alert phone ringing">
-      {ask.icon} <b>{ask.who}</b> {ask.text}
-      <small> · tiệm tạm dừng chờ cậu chọn · còn ~{Math.max(1, rem)}s nữa khách tự chốt theo mặc định</small>
-      <span className="hud-alert-actions">
-        {ask.options.map((label, i) => (
-          <button key={label} className={`hud-btn${i === 0 ? ' primary' : ''}`} onClick={() => answerAsk(i)}>{label}</button>
-        ))}
-      </span>
-    </div>
-  );
-}

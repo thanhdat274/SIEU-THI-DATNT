@@ -1,9 +1,10 @@
 import type { Lot } from '../../data/freshness';
 import {
-  ACCEPT_WINDOW, APP_COMMISSION, appRating, deliveryStars, grabFee, grabTravel, makeOnlineOrder, ONLINE_HOURS, ONLINE_OPEN_COST,
-  ONLINE_UNLOCK, onlineValue, orderGap, ownTravel, type OnlineState,
+  ACCEPT_WINDOW, appPay, appRating, deliveryStars, eventGapMul, eventGrabMul, grabFee, grabTravel, hasOnlineRegularCandidate, makeOnlineOrder, ONLINE_HOURS, ONLINE_OPEN_COST,
+  ONLINE_UNLOCK, onlineValue, orderGap, orderKindTag, ownTravel, pickOnlineRegular, type OnlineDayEvent, type OnlineState,
 } from '../../data/online';
 import { formatMoney, productById } from '../../data/products';
+import { regularById, regularFriendship } from '../../data/regulars';
 import { playSfx } from '../audio';
 import type { GameState, GetState, SetState } from '../gameTypes';
 import { copyStock, takeStock } from '../stock';
@@ -29,13 +30,16 @@ export const updateOnline = (set: SetState, get: GetState) => {
   let items = 0;
   let doneCount = 0; // số đơn app tới tay khách tick này (đo nhiệm vụ ngày)
   const deliveredKeys: string[] = []; // món đã giao (cho Sổ tay Tiệm GĐ36)
-  // Đơn mới: chỉ khi gian hàng mở, tiệm mở cửa và trong giờ app
+  const regularsNext: Record<string, ReturnType<typeof regularFriendship>['progress']> = {}; // thân thiết khách quen đổi vì đơn app (GĐ718)
+  // Đơn mới: chỉ khi gian hàng mở, tiệm mở cửa và trong giờ app; hôm nay app khuyến mãi thì đơn dày hơn
   if (on.open && s.shopOpen && m >= ONLINE_HOURS[0] && m < ONLINE_HOURS[1] && m >= on.nextAt) {
-    const order = makeOnlineOrder(on.nextId, s.level, m);
-    const gap = orderGap(appRating(on), s.level);
+    // chỉ rút rng cho khách quen khi CÓ ứng viên — không có thì dòng mô phỏng giữ nguyên từng nhịp
+    const reg = hasOnlineRegularCandidate(s.regulars, s.level, regularById) ? pickOnlineRegular(s.regulars, s.level, simRng()(), regularById) : undefined;
+    const order = makeOnlineOrder(on.nextId, s.level, m, simRng(), reg);
+    const gap = orderGap(appRating(on), s.level, eventGapMul(on.event));
     online = { ...online, orders: [...online.orders, order], nextId: on.nextId + 1, nextAt: m + gap * (0.6 + simRng()() * 0.8) };
     playSfx('ring');
-    news.push(`📲 Đơn app mới: ${order.customer} (${order.km} km) — mở Bán online để nhận`);
+    news.push(`📲 Đơn app mới${orderKindTag(order.kind)}: ${order.customer} (${order.km} km) — mở Bán online để nhận`);
   }
   const kept = [];
   for (const o of online.orders) {
@@ -47,7 +51,7 @@ export const updateOnline = (set: SetState, get: GetState) => {
     }
     if (o.status === 'shipping' && o.arriveAt !== undefined && m >= o.arriveAt) {
       const stars = deliveryStars(o, o.arriveAt);
-      const pay = Math.round(onlineValue(o, s.priceOf) * (1 - APP_COMMISSION));
+      const pay = appPay(onlineValue(o, s.priceOf), online.done); // hoa hồng theo bậc hiện có (GĐ716)
       money += pay;
       items += Object.values(o.items).reduce((n, q) => n + q, 0);
       doneCount++;
@@ -57,6 +61,15 @@ export const updateOnline = (set: SetState, get: GetState) => {
         late: online.late + (stars < 5 ? 1 : 0), revenueToday: online.revenueToday + pay,
       };
       news.push(stars === 5 ? `✅ Đơn app tới tay ${o.customer} đúng hẹn: +${formatMoney(pay)} · 5★` : `🐢 Đơn app tới trễ cho ${o.customer}: +${formatMoney(pay)} · ${stars}★`);
+      // GĐ718: đơn của khách quen — đúng hẹn +2 thân thiết, trễ −2 (không tính là lần ghé, không đổi câu chuyện)
+      if (o.regularId) {
+        const def = regularById(o.regularId);
+        if (def) {
+          const delta = stars === 5 ? 2 : -2;
+          regularsNext[o.regularId] = regularFriendship(def, s.regulars[o.regularId], delta).progress;
+          news.push(stars === 5 ? `👤 Đơn app của khách quen ${def.name} giao đúng hẹn — thân thiết +2` : `😞 Đơn app khách quen ${def.name} tới trễ — thân thiết −2`);
+        }
+      }
       continue;
     }
     kept.push(o);
@@ -65,6 +78,7 @@ export const updateOnline = (set: SetState, get: GetState) => {
   online = { ...online, orders: kept };
   set({
     online, money: s.money + money,
+    regulars: Object.keys(regularsNext).length ? { ...s.regulars, ...regularsNext } : s.regulars,
     stats: { ...s.stats, revenue: s.stats.revenue + money, itemsSold: s.stats.itemsSold + items, online: (s.stats.online ?? 0) + money, onlineDone: (s.stats.onlineDone ?? 0) + doneCount },
     totals: { ...s.totals, revenue: s.totals.revenue + money, itemsSold: s.totals.itemsSold + items },
   });
@@ -110,7 +124,7 @@ export const createOnlineSlice = (set: SetState, get: GetState): Pick<GameState,
       if (!courier) { s.notify('Không còn nhân viên giao hàng rảnh — gọi Grab hoặc thuê thêm người giao'); return false; }
       travel = ownTravel(o.km, courier.skill);
     } else {
-      fee = grabFee(o.km);
+      fee = grabFee(o.km, eventGrabMul(s.online.event)); // hôm nay Grab đắt đỏ thì phí ×1,5 (GĐ717)
       if (s.money < fee) { s.notify('Không đủ tiền gọi Grab!'); return false; }
       travel = grabTravel(o.km);
     }
@@ -147,16 +161,17 @@ export const createOnlineSlice = (set: SetState, get: GetState): Pick<GameState,
   },
 });
 
-/** Cuối ngày: đơn đang chở coi như tới trễ (tính tiền, sao thấp); đơn chưa nhận thì app huỷ (chưa lấy hàng khỏi kho). */
-export function onlineDayEnd(s: GameState) {
+/** Cuối ngày: đơn đang chở coi như tới trễ (tính tiền, sao thấp); đơn chưa nhận thì app huỷ (chưa lấy hàng khỏi kho).
+ *  `event` — sự kiện online cho NGÀY MAI do endDay rút bằng băm riêng rồi truyền vào (GĐ717); không truyền = không có sự kiện (giữ hành vi cũ cho test cũ). */
+export function onlineDayEnd(s: GameState, event?: OnlineDayEvent) {
   const on = s.online;
   let money = 0;
   let { ratingSum, ratingCount, done, late } = on;
   for (const o of on.orders) {
     if (o.status === 'shipping') {
-      money += Math.round(onlineValue(o, s.priceOf) * (1 - APP_COMMISSION));
+      money += appPay(onlineValue(o, s.priceOf), done); // bậc tính cả đơn đã giao trước trong ngày
       ratingSum += 3; ratingCount++; done++; late++;
     }
   }
-  return { money, online: { ...on, orders: [], ratingSum, ratingCount, done, late, revenueToday: 0, grabFeesToday: 0, nextAt: 0 } };
+  return { money, online: { ...on, orders: [], ratingSum, ratingCount, done, late, revenueToday: 0, grabFeesToday: 0, nextAt: 0, event } };
 }

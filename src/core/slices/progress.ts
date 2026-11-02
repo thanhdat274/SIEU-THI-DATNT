@@ -1,11 +1,12 @@
 import { dailyQuests, betBonusMoney, betStatus, BET_TIERS, BET_QUEST_ID, betCoreSetProgress, storyQuest } from '../../data/quests';
+import { fitList, levelUpToast } from '../../data/onboarding';
 import { MAX_LEVEL, unlocksAt, xpToNext } from '../../data/levels';
 import { formatMoney } from '../../data/products';
 import { SKILLS, skillPoints, TITLES, PRESTIGE_TITLES, type TitleContext } from '../../data/titles';
 import { summarizeReviews } from '../../data/reviews';
 import { costumeById } from '../../data/costumes';
 import { giftOfStreak, giftText, recentAvgProfit, scaledGiftEco, scaledPrize, spinWheelPrize, welcomeBackReward, daysAway } from '../../data/gifts';
-import { feedCost, landmarkProgress, LANDMARK_STAGES, LANDMARK_TARGETS } from '../../data/landmark';
+import { feedCost, landmark2Progress, landmarkProgress, LANDMARK_STAGES, LANDMARK2_STAGES, LANDMARK_TARGETS, LANDMARK2_TARGETS } from '../../data/landmark';
 import { ngGoalProgress } from '../../data/ngGoals';
 import { playSfx } from '../audio';
 import type { GameState, SetState, GetState } from '../gameTypes';
@@ -71,33 +72,46 @@ export const createProgressSlice = (set: SetState, get: GetState): Pick<GameStat
     const s = get();
     const { contributions, lastContributeDay } = s.biz.landmark;
     const prog = landmarkProgress(contributions);
-    if (prog.done) {
-      s.notify('Sân chơi đã khánh thành rồi!');
+    const prog2 = landmark2Progress(contributions);
+    if (prog.done && prog2?.done) {
+      s.notify('Cả sân chơi và đèn đường đều hoàn thành rồi!');
       return false;
     }
     if (lastContributeDay === s.day) {
       s.notify('Hôm nay đã góp rồi — mai quay lại góp tiếp nhé!');
       return false;
     }
-    const cost = feedCost(prog.index, s.level);
+    // GĐ732: sân chơi xong → lượt góp tiếp theo chuyển sang dự án Đèn Đường Ngõ 1
+    const isP2 = prog.done;
+    const index = isP2 ? (prog2?.index ?? 0) : prog.index;
+    const cost = feedCost(index, s.level);
     if (s.money < cost) {
       s.notify('Chưa đủ tiền mua vật liệu');
       return false;
     }
     const next = contributions + 1;
     set({ biz: { ...s.biz, landmark: { contributions: next, lastContributeDay: s.day } }, money: s.money - cost });
-    s.notify('🏗️ Đã góp vật liệu cho sân chơi (+1/28)');
+    s.notify(isP2 ? '💡 Đã góp vật liệu cho đèn đường (+1/20)' : '🏗️ Đã góp vật liệu cho sân chơi (+1/28)');
     playSfx('gift');
     // Vừa chạm đúng mốc một giai đoạn → trao thưởng tiền + XP (chỉ đúng lúc chạm, không cộng dồn)
     const stageIdx = LANDMARK_TARGETS.findIndex((t) => t === next);
-    if (stageIdx >= 0) {
+    const stageIdx2 = isP2 ? LANDMARK2_TARGETS.findIndex((t) => t === next) : -1;
+    if (stageIdx2 >= 0) {
+      const stage = LANDMARK2_STAGES[stageIdx2];
+      get().addXp(stage.bonusXp);
+      set({ money: get().money + stage.bonusMoney });
+      s.notify(`💡 ${stage.title} hoàn thành! Nhận +${formatMoney(stage.bonusMoney)} + ${stage.bonusXp} XP`);
+      if (stageIdx2 === LANDMARK2_STAGES.length - 1) {
+        s.notify('💡💡 Đèn đường Ngõ 1 thắp sáng — đêm hẻm sáng sủa, khách đêm đông hơn!');
+      }
+    } else if (stageIdx >= 0) {
       const stage = LANDMARK_STAGES[stageIdx];
       get().addXp(stage.bonusXp);
       set({ money: get().money + stage.bonusMoney });
       s.notify(`🎉 ${stage.title} hoàn thành! Nhận +${formatMoney(stage.bonusMoney)} + ${stage.bonusXp} XP`);
       if (stageIdx === LANDMARK_STAGES.length - 1) {
         get().checkTitles();
-        s.notify('🎊 Sân chơi đầu hẻm khánh thành — cả hẻm cảm ơn bạn!');
+        s.notify('🎊 Sân chơi khánh thành — dự án kế: 💡 Đèn Đường Ngõ 1!');
       }
     }
     return true;
@@ -160,7 +174,7 @@ export const createProgressSlice = (set: SetState, get: GetState): Pick<GameStat
     const all = [...fresh, ...freshPrestige];
     if (!all.length) return;
     set({ titles: [...s.titles, ...all.map((t) => t.id)] });
-    if (s.day > 1 || freshPrestige.length) s.notify(`🏅 Danh hiệu mới: ${all.map((t) => `${t.icon} ${t.name}`).join(', ')}`);
+    if (s.day > 1 || freshPrestige.length) s.notify(fitList('🏅 Danh hiệu mới: ', all.map((t) => `${t.icon} ${t.name}`)));
     playSfx('achieve');
   },
   claimQuest: (id) => {
@@ -251,7 +265,7 @@ export const createProgressSlice = (set: SetState, get: GetState): Pick<GameStat
     set({ xp, level, stats: { ...s.stats, xp: s.stats.xp + amount } });
     if (level !== s.level) {
       playSfx('levelup');
-      s.notify(`⭐ Lên cấp ${level}!${gained.length ? ' Mở khóa: ' + gained.join(', ') : ''}`);
+      s.notify(levelUpToast(level, gained));
     }
   },
 });

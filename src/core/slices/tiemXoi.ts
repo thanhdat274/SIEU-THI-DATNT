@@ -1,13 +1,13 @@
 import { formatMoney, productById } from '../../data/products';
 import { copyStock, putStock } from '../stock';
 import { TIEM_XOI_HIRE_FEE, TIEM_XOI_MAX_STAFF, TIEM_XOI_PRICE, TIEM_XOI_UNLOCK, TIEM_XOI_COST_MUL, tiemXoiHandQty, tiemXoiHandPick, TIEM_XOI_BIG_COST, TIEM_XOI_BIG_LEVEL } from '../../data/tiemXoi';
-import { SAP_LOT_COST, SAP_LOTS } from '../../data/sapRong';
+import { SAP_LOT_COST, SAP_LOTS, SAP_TIERS, nextSapKinds, sapKindOf, sapTierOf, sapRongIncome } from '../../data/sapRong';
 import { canOpenZone, openZones, zoneById } from '../../data/zones';
 import type { GameState, SetState, GetState } from '../gameTypes';
 
 /** Tiệm xôi (GĐ411): mua mặt bằng, tuyển/cho nghỉ thợ nấu. Mô phỏng nấu chạy trong endDay. */
 
-export const createTiemXoiSlice = (set: SetState, get: GetState): Pick<GameState, 'buyTiemXoi' | 'hireTiemXoi' | 'fireTiemXoi' | 'steamXoiHand' | 'expandTiemXoi' | 'openZone' | 'rentSapLot'> => ({
+export const createTiemXoiSlice = (set: SetState, get: GetState): Pick<GameState, 'buyTiemXoi' | 'hireTiemXoi' | 'fireTiemXoi' | 'steamXoiHand' | 'expandTiemXoi' | 'openZone' | 'rentSapLot' | 'cycleSapKind' | 'upgradeSapLot' | 'tendSapHand'> => ({
   buyTiemXoi: () => {
     const s = get();
     if (s.biz.tiemXoi.open) return false;
@@ -52,7 +52,7 @@ export const createTiemXoiSlice = (set: SetState, get: GetState): Pick<GameState
     if (!t.open) { s.notify('Chưa mở tiệm xôi!'); return false; }
     if (t.handDay === s.day) { s.notify('Hôm nay đã tự đồ một mẻ rồi, mai đồ tiếp'); return false; }
     const id = tiemXoiHandPick(s.level, s.storage);
-    if (!id) return false;
+    if (!id) { s.notify('Chưa có món xôi nào mở ở cấp này'); return false; }
     const qty = tiemXoiHandQty(t.staff);
     const cost = Math.round(qty * productById(id).buy * TIEM_XOI_COST_MUL);
     if (s.money < cost) { s.notify(`Cần ${formatMoney(cost)} nguyên liệu để đồ xôi`); return false; }
@@ -96,6 +96,40 @@ export const createTiemXoiSlice = (set: SetState, get: GetState): Pick<GameState
     if (s.money < SAP_LOT_COST) { s.notify(`Cần ${formatMoney(SAP_LOT_COST)} để thuê lô sạp`); return false; }
     set({ money: s.money - SAP_LOT_COST, biz: { ...s.biz, sapRong: n + 1 } });
     s.notify(`🛒 Thuê lô sạp ${n + 1}/${SAP_LOTS}: sạp bán ngày nắng, mưa thì nghỉ`);
+    return true;
+  },
+  upgradeSapLot: (i: number) => {
+    const s = get();
+    if (!Number.isInteger(i) || i < 0 || i >= (s.biz.sapRong ?? 0)) return false;
+    const t = sapTierOf(s.biz.sapTiers, i);
+    const next = SAP_TIERS[t + 1];
+    if (!next) { s.notify('Sạp này đã là quầy, bậc cao nhất'); return false; }
+    if (s.money < next.cost) { s.notify(`Cần ${formatMoney(next.cost)} để nâng lên ${next.name}`); return false; }
+    const tiers = Array.from({ length: Math.max(i + 1, s.biz.sapTiers?.length ?? 0) }, (_, j) => sapTierOf(s.biz.sapTiers, j));
+    tiers[i] = t + 1;
+    set({ money: s.money - next.cost, biz: { ...s.biz, sapTiers: tiers } });
+    s.notify(`${next.icon} Lô ${i + 1} lên ${next.name}: thu ×${String(next.mul).replace('.', ',')}`);
+    return true;
+  },
+  /** GĐ521: chủ tự đứng sạp Ngõ 2 một buổi — hôm nay mọi lô thu +25%; mưa/bão sạp nghỉ. */
+  tendSapHand: () => {
+    const s = get();
+    if (!(s.biz.sapRong ?? 0)) { s.notify('Chưa thuê lô sạp nào ở Ngõ 2'); return false; }
+    if (s.biz.sapHandDay === s.day) { s.notify('Hôm nay đã đứng sạp rồi, mai ghé tiếp'); return false; }
+    if (s.weather === 'rain' || s.weather === 'storm') { s.notify('Trời mưa, sạp nghỉ bán hôm nay'); return false; }
+    set({ biz: { ...s.biz, sapHandDay: s.day } });
+    get().addXp(4);
+    const b = s.biz, inc = (h: boolean) => sapRongIncome(b.sapRong, s.weather, s.day, b.sapKinds, b.sapTiers, b.tiemXoi.open, h);
+    s.notify(`🙋 Đứng sạp Ngõ 2: hôm nay mọi lô thu thêm 25% (≈+${formatMoney(inc(true) - inc(false))})`);
+    return true;
+  },
+  cycleSapKind: (i: number) => {
+    const s = get();
+    if (!Number.isInteger(i) || i < 0 || i >= (s.biz.sapRong ?? 0)) return false;
+    const kinds = nextSapKinds(s.biz.sapKinds, i);
+    set({ biz: { ...s.biz, sapKinds: kinds } });
+    const k = sapKindOf(kinds, i);
+    s.notify(`${k.icon} Lô ${i + 1} bán ${k.name}: ${k.hint}`);
     return true;
   },
 });

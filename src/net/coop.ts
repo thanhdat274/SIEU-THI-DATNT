@@ -51,6 +51,9 @@ export const GUARDED: Record<string, (args: unknown[]) => string> = {
   repairFurniture: (a) => `furn:${a[0]}`,
   paint: (a) => `style:${a[0]}`,
   setPrice: (a) => `price:${a[0]}`,
+  // GĐ793 — đòi khách quen bị rival lôi kéo: cả hẻm dùng chung danh sách bị lôi kéo, hai người bấm cùng lúc
+  // thì người sau được báo "đợi một chút" thay vì đòi trùng một người.
+  rescuePoachedRegular: () => 'rival:poach',
   expandFarm: () => 'farm:land',
   feedPen: (a) => `pen:${a[0]}`,
   buyAnimal: (a) => `buyAnimal:${a[0]}`,
@@ -68,7 +71,7 @@ export const GUARDED: Record<string, (args: unknown[]) => string> = {
   // Quán nước đầu ngõ: cả cụm mua/tuyển/nghỉ/đổi giá là một chỗ chung "quan"
   buyQuanNuoc: () => 'quan',
   hireQuanNuoc: () => 'quan',
-  buyTiemXoi: () => 'xoi', hireTiemXoi: () => 'xoi', fireTiemXoi: () => 'xoi', steamXoiHand: () => 'xoi', expandTiemXoi: () => 'xoi', openZone: (a) => `zone:${a[0]}`, rentSapLot: () => 'sap',
+  buyTiemXoi: () => 'xoi', hireTiemXoi: () => 'xoi', fireTiemXoi: () => 'xoi', steamXoiHand: () => 'xoi', expandTiemXoi: () => 'xoi', openZone: (a) => `zone:${a[0]}`, rentSapLot: () => 'sap', cycleSapKind: () => 'sap', upgradeSapLot: () => 'sap', tendSapHand: () => 'sap',
   fireQuanNuoc: () => 'quan',
   setQuanNuocPrice: () => 'quan',
   toggleQuanRecipe: () => 'quan',
@@ -546,9 +549,9 @@ function onMessage(msg: Msg) {
 
 /** Máy khách: hẻm vừa sang ngày thì mở bảng tổng kết ngày hôm qua (máy chạy ghi ở lastSummary). */
 function showDaySummary(prevDay: number, next: Partial<GameState>) {
-  const sum = next.lastSummary as { day: number; stats: DayStats } | null | undefined;
+  const sum = next.lastSummary as { day: number; stats: DayStats; fainted?: number } | null | undefined;
   if (!sum || next.day !== prevDay + 1 || sum.day !== prevDay) return;
-  useGame.setState({ panel: { type: 'summary', day: sum.day, stats: sum.stats } });
+  useGame.setState({ panel: { type: 'summary', day: sum.day, stats: sum.stats, ...(sum.fainted !== undefined ? { fainted: sum.fainted } : {}) } });
 }
 
 /** Nhân vật của thành viên khác, mặc đúng trang phục người đó đang chọn. */

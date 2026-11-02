@@ -3,6 +3,7 @@ import { productById } from './products';
 import { COOKED_TIP_RANGE, STATION_BY_OUTPUT } from './recipes';
 import type { CharacterArchetype, HairStyle, PropKind } from '../render/characterModel';
 import { simRng } from '../core/rand';
+import { dateOfDoy, dayOfYear, YEAR_DAYS } from './calendar';
 
 export type PerkEffect = 'bonus_tip' | 'extra_item' | 'frequent_visit' | 'refer_friend' | 'bulk_buy' | 'festival';
 
@@ -432,12 +433,29 @@ function hash(seed: number, day: number, id: string) {
   return h;
 }
 
+/** GĐ759 — sinh nhật khách quen (kiểu Stardew Valley, tiếng Việt đời thường): mỗi người một ngày cố định
+ *  trong năm, suy ra từ id (không cần lưu, hai máy hẻm luôn khớp). Khách ĐÃ QUEN ghé chắc chắn hôm đó. */
+export const BIRTHDAY_BONUS = 3;
+export function birthdayDoy(def: RegularDef): number {
+  let h = 7;
+  for (let i = 0; i < def.id.length; i++) h = (h * 31 + def.id.charCodeAt(i)) & 0x7fffffff;
+  return h % YEAR_DAYS;
+}
+export const isBirthday = (def: RegularDef, day: number) => dayOfYear(day) === birthdayDoy(def);
+/** Ngày sinh nhật dạng "ngày/tháng" (cùng lịch với Sổ đầu ngày) để thẻ khách quen hiện cho người chơi lên kế hoạch. */
+export function birthdayLabel(def: RegularDef): string {
+  const d = dateOfDoy(birthdayDoy(def));
+  return `${d.day}/${d.month}`;
+}
+
 /**
  * Hôm nay khách quen có ghé không: tính từ hạt giống ván + ngày nên hai máy chơi chung luôn khớp.
  * Chưa có perk "ghé thường hơn" thì không ghé hai ngày liền.
  */
 export function visitsToday(def: RegularDef, day: number, seed: number, level: number, prog?: RegularProgress, rep?: Reputation): boolean {
   if (level < def.unlock || !unlockedFavorites(def, level).length) return false;
+  // GĐ759: sinh nhật — khách đã quen (từng mua) nhất định ghé, một lần/ngày
+  if (isBirthday(def, day) && (prog?.visits ?? 0) > 0) return prog?.lastVisitDay !== day;
   // Đã quen rồi thì vẫn ghé; khách mới chỉ tìm tới tiệm đủ uy tín
   if (rep && !prog?.visits && !meetsRep(rep, regularRep(def))) return false;
   const frequent = hasPerk(def, prog, 'frequent_visit');
@@ -467,7 +485,8 @@ export function regularCheckout(def: RegularDef, prev: RegularProgress | undefin
   prog.visits++;
   prog.lastVisitDay = day;
   for (const it of basket) if (def.favorites.includes(it.id) && !prog.discovered.includes(it.id)) prog.discovered.push(it.id);
-  const points = prog.lastFriendshipDay === day ? 0 : basket.some((it) => def.favorites.includes(it.id)) ? 2 : 1;
+  const base = prog.lastFriendshipDay === day ? 0 : basket.some((it) => def.favorites.includes(it.id)) ? 2 : 1;
+  const points = base + (base > 0 && isBirthday(def, day) ? BIRTHDAY_BONUS : 0); // GĐ759: quà sinh nhật = +3 thân thiết
   prog.friendship += points;
   if (points) prog.lastFriendshipDay = day;
   const newPerks = def.perks.filter((p) => prog.friendship >= p.threshold && !prog.perks.includes(p.title));
@@ -549,11 +568,48 @@ export function reserveAsk(
 }
 
 /**
+ * GĐ793 — đòi lại khách quen bị rival lôi kéo: cần tặng 1 món trong danh sách họ thích ĐANG CÓ trong kho.
+ * Trả về id món để tặng (ưu tiên món mở ở cấp hiện tại, đúng thứ tự sở thích); null = thiếu quà.
+ */
+export function rescueGiftFor(def: RegularDef, level: number, hasStock: (id: string) => boolean): string | null {
+  return unlockedFavorites(def, level).find((id) => hasStock(id)) ?? null;
+}
+
+/**
  * Danh sách khách quen dự kiến ghé hôm nay (cùng hàm hash với lịch ghé thật nên dự đoán luôn đúng).
  * Dùng cho Sổ đầu ngày: người chơi nhập sẵn hàng đúng món khách quen thích.
+ * `poached`: khách đang bị rival lôi kéo thì KHÔNG ghé (customers.ts cũng loại đúng danh sách này) — Sổ không hứa hão.
  */
 export function regularsExpectedToday(
   day: number, seed: number, level: number, progress: Record<string, RegularProgress>, rep?: Reputation,
+  poached: string[] = [],
 ): RegularDef[] {
-  return REGULARS.filter((def) => visitsToday(def, day, seed, level, progress[def.id], rep));
+  return REGULARS.filter((def) => !poached.includes(def.id) && visitsToday(def, day, seed, level, progress[def.id], rep));
+}
+
+/** GĐ759 — khách quen có sinh nhật HÔM NAY và sẽ ghé (để Sổ đầu ngày nhắc nhập món thích). Thuần. */
+export function birthdaysToday(expected: RegularDef[], day: number): RegularDef[] {
+  return expected.filter((d) => isBirthday(d, day));
+}
+
+/** GĐ773 — dòng Sổ đầu ngày cho sinh nhật: nếu CÓ món họ thích trong hàng thì báo mức +5 (3 sinh nhật + 2 món thích);
+ *  nếu hết thì nêu tên món thích đầu tiên cần nhập (việc ưu tiên hơn). Thuần — haveStock do UI truyền. */
+export function birthdayHint(def: RegularDef, haveStock: (id: string) => boolean): { text: string; priority: number } {
+  if (def.favorites.some(haveStock)) return { text: `Sinh nhật ${def.name} hôm nay — mua món họ thích là +${BIRTHDAY_BONUS + 2} thân thiết`, priority: 3 };
+  const want = productById(def.favorites[0]).name;
+  return { text: `Sinh nhật ${def.name} hôm nay — hết hàng họ thích, nhập ${want} để +${BIRTHDAY_BONUS + 2}`, priority: 2 };
+}
+
+/** GĐ781 — MAI là sinh nhật khách đã quen mà kho/kệ chưa có món họ thích: nhắc nhập sẵn (khách chắc chắn ghé,
+ *  +5 thân thiết). Chỉ nhắc khi THIẾU hàng (đủ hàng thì không làm ồn Sổ đầu ngày). Thuần.
+ *  `poached` (GĐ793): đang bị rival lôi kéo thì mai KHÔNG ghé — đừng nhắc nhập đồ cho người không tới. */
+export function birthdayEve(day: number, level: number, progress: Record<string, RegularProgress>, haveStock: (id: string) => boolean, poached: string[] = []): { def: RegularDef; text: string }[] {
+  const out: { def: RegularDef; text: string }[] = [];
+  for (const def of REGULARS) {
+    if (poached.includes(def.id)) continue;
+    if (level < def.unlock || (progress[def.id]?.visits ?? 0) <= 0 || !isBirthday(def, day + 1)) continue;
+    if (def.favorites.some(haveStock)) continue;
+    out.push({ def, text: `Mai sinh nhật ${def.name} — nhập sẵn ${productById(def.favorites[0]).name} để +${BIRTHDAY_BONUS + 2} thân thiết` });
+  }
+  return out;
 }

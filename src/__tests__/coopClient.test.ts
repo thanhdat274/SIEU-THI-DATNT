@@ -1,4 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+// Cả file dựng store co-op nặng: khi chạy chung 316 file, giới hạn 5 s mặc định thi thoảng vỡ (khác test mỗi lượt).
+vi.setConfig({ testTimeout: 60_000 });
 
 /**
  * Phía trình duyệt của hẻm online (net/coop.ts) — phần quyết định chơi online có ra KẾT QUẢ GIỐNG chơi
@@ -365,6 +367,36 @@ describe('đổi vai (máy chạy rời/ẩn tab)', () => {
     expect(acts().filter((a) => a.name === 'setPrice')).toEqual([]);
   });
 
+  it('checkpoint giữa ngày lưu đúng day/tiền/giờ; vào lại hẻm nạp lại đúng tiến trình đó (không mất vì rớt kết nối)', async () => {
+    await join('runner');
+    // chơi giữa ngày: đồng hồ, tiền và ngày đổi từ lúc tạo hẻm
+    store.useGame.setState({ day: 2, minutes: 11 * 60 + 30, money: 432_100 });
+    sent = [];
+    coop.checkpoint(); // như hẹn giờ 30s hoặc tab bị ẩn (GĐ665: tái hiện vòng ngày co-op bị reset trong QA trình duyệt)
+    const cps = ofType('checkpoint') as unknown as { data: Record<string, unknown> }[];
+    expect(cps).toHaveLength(1);
+    expect(cps[0].data).toMatchObject({ day: 2, minutes: 11 * 60 + 30, money: 432_100 });
+    // máy khách KHÔNG tự checkpoint (chỉ máy chạy ghi tiến trình hẻm)
+    await join('player');
+    store.useGame.setState({ minutes: 12 * 60 + 30, money: 999_999 });
+    sent = [];
+    coop.checkpoint();
+    expect(ofType('checkpoint')).toEqual([]);
+    // tab rớt kết nối rồi vào lại hẻm: server trả welcome kèm đúng checkpoint đã ghi
+    vi.resetModules();
+    sent = [];
+    store = await import('../core/store');
+    coop = await import('../net/coop');
+    store.useGame.setState(store.newGameData());
+    coop.initCoop({ scene: { add() {}, remove() {} } as never, player: { mesh: { position: { x: 0, z: 0 }, rotation: { y: 0 } } as never }, actors: () => [], resetSim: () => {} });
+    const entered = coop.enterAlley('ABC');
+    recv({ type: 'welcome', selfId: 1, room: 0, role: 'runner', alley: { id: 'ABC', name: 'Hẻm' }, peers: PEERS, data: cps[0].data });
+    await entered;
+    expect(store.useGame.getState().day).toBe(2);
+    expect(store.useGame.getState().minutes).toBe(11 * 60 + 30);
+    expect(store.useGame.getState().money).toBe(432_100);
+  }, 60_000); // nạp lại cả store (resetModules) — chậm khi cả bộ test chạy song song
+
   it('thôi chạy (bị hạ xuống máy khách): thao tác lại được gửi cho máy chạy mới', async () => {
     await join('runner');
     recv({ type: 'demote' });
@@ -542,5 +574,140 @@ describe('chính sách vận hành co-op parity: tái sinh & chào mừng quay l
     store.useGame.setState({ titles: [] });
     store.useGame.getState().checkTitles();
     expect(store.useGame.getState().titles).toContain('tap_su');
+  });
+});
+
+// ───── GĐ793: đòi khách quen bị rival lôi kéo (rescuePoachedRegular) ─────
+
+describe('GĐ793 — đòi khách quen bị đối thủ lôi kéo ở hẻm online', () => {
+  const RIVAL = { name: 'Tạp hóa Thử', strength: 60, openedDay: 9 };
+  /**
+   * Trạng thái chung đủ điều kiện đòi: ngày 10, 500.000đ, kho có 3 sữa (món Bà Năm thích),
+   * Bà Năm đang bị kéo từ ngày 8. `extra` để thêm khách thứ hai đang bị kéo (ca hai người bấm).
+   */
+  const cooped = (extraPoached: Record<string, number> = {}) => {
+    const base = store.newGameData();
+    return {
+      ...base, day: 10, level: 10, money: 500_000,
+      storage: { sua: 3, nuoc: 2 }, storageLots: {},
+      biz: { ...base.biz, rival: { ...RIVAL, poached: { ba_nam: 8, ...extraPoached } } },
+    };
+  };
+
+  it('máy khách bấm: gửi đúng act (tên + id) cho máy chạy; KHÔNG tự trừ tiền/kho hay xoá poach tại chỗ', async () => {
+    await join('player');
+    recv({ type: 'state', game: cooped(), actors: [] });
+    store.useGame.getState().rescuePoachedRegular('ba_nam');
+    expect(acts()).toEqual([expect.objectContaining({ name: 'rescuePoachedRegular', args: ['ba_nam'] })]);
+    const s = store.useGame.getState();
+    expect(s.money).toBe(500_000);
+    expect(s.storage.sua).toBe(3);
+    expect(s.biz.rival?.poached).toEqual({ ba_nam: 8 });
+    expect(s.biz.rescueDay).toBeUndefined(); // cả ngày đã đòi cũng do máy chạy ghi
+  });
+
+  it('máy chạy nhận act của bạn: chạy thật, poach sạch trong state chung; gói state mới cho cả hẻm thấy y như máy chạy', async () => {
+    await join('runner');
+    store.useGame.setState(cooped());
+    recv({ type: 'act', from: 2, seq: 1, name: 'rescuePoachedRegular', args: ['ba_nam'] });
+    const s = store.useGame.getState();
+    expect(s.biz.rival?.poached).toEqual({});
+    expect(s.money).toBe(480_000); // 500.000 − 20.000 tiền quà
+    expect(s.storage.sua).toBe(2);
+    expect(s.biz.rescueDay).toBe(10);
+    expect(ofType('result').find((r) => r.to === 2)).toMatchObject({ ok: true, messages: [expect.stringContaining('Bà Năm')] });
+    // Gói state máy chạy gửi đi phải mang poach rỗng — người khác nhận là thấy thẻ biến mất ngay
+    const shared = ofType('state').at(-1)!.game as Record<string, unknown>;
+    expect((shared.biz as { rival: { poached: Record<string, number> } }).rival.poached).toEqual({});
+    await join('player');
+    recv({ type: 'state', game: shared, actors: [] });
+    const guest = store.useGame.getState();
+    expect(guest.biz.rival?.poached).toEqual({});
+    expect(guest.money).toBe(480_000);
+    expect(guest.storage.sua).toBe(2);
+    expect(guest.regulars.ba_nam.friendship).toBe(3); // +3 thân thiết, như chơi đơn
+  });
+
+  it('hai người bấm trong 3 giây (GUARDED rival:poach): người sau bị chặn, chỉ trừ tiền/kho MỘT lần', async () => {
+    await join('runner');
+    // Còn Chu Bá đang bị kéo: nếu thiếu khoá thì người thứ hai sẽ đòi được ngay và trừ tiền lần hai
+    store.useGame.setState(cooped({ chu_ba: 8 }));
+    recv({ type: 'act', from: 2, seq: 1, name: 'rescuePoachedRegular', args: ['ba_nam'] });
+    expect(store.useGame.getState().money).toBe(480_000);
+    expect(store.useGame.getState().biz.rival?.poached).toEqual({ chu_ba: 8 });
+
+    // Người thứ hai bấm cùng nút của Bà Năm: bị chặn kèm tên người vừa đòi
+    recv({ type: 'act', from: 3, seq: 2, name: 'rescuePoachedRegular', args: ['ba_nam'] });
+    expect(store.useGame.getState().money).toBe(480_000);
+    const deniedSame = ofType('result').find((r) => r.to === 3 && r.seq === 2)!;
+    expect(deniedSame.ok).toBe(false);
+    expect(deniedSame.messages).toEqual([expect.stringContaining('Bình')]);
+
+    // Người thứ hai đòi Chu Bá (vẫn còn bị kéo) trong 3 giây đó: khoá chung 'rival:poach' cũng chặn
+    recv({ type: 'act', from: 3, seq: 3, name: 'rescuePoachedRegular', args: ['chu_ba'] });
+    const afterSecond = store.useGame.getState();
+    expect(afterSecond.money).toBe(480_000);
+    expect(afterSecond.storage.sua).toBe(2); // không tặng thêm món nào
+    expect(afterSecond.biz.rival?.poached).toEqual({ chu_ba: 8 }); // vẫn còn, chưa bị đòi
+    expect(afterSecond.biz.rescueDay).toBe(10);
+    expect(ofType('result').find((r) => r.to === 3 && r.seq === 3)).toMatchObject({ ok: false });
+  });
+});
+
+// ───── GĐ702: vào hẻm — đường lỗi & danh sách hẻm (REST) ─────
+
+describe('vào hẻm: đường lỗi + REST (GĐ702)', () => {
+  it('server trả lỗi khi vào hẻm: từ chối với đúng thông báo và đóng kết nối', async () => {
+    vi.resetModules();
+    store = await import('../core/store');
+    coop = await import('../net/coop');
+    store.useGame.setState(store.newGameData());
+    coop.initCoop({ scene: { add() {}, remove() {} } as never, player: { mesh: { position: { x: 0, z: 0 }, rotation: { y: 0 } } as never }, actors: () => [], resetSim: () => {} });
+    const entered = coop.enterAlley('ABC');
+    recv({ type: 'error', error: 'Hẻm đã đủ 4 người' });
+    await expect(entered).rejects.toThrow('Hẻm đã đủ 4 người');
+  });
+
+  it('rớt kết nối TRƯỚC khi vào được: từ chối "Mất kết nối khi vào hẻm."', async () => {
+    vi.resetModules();
+    store = await import('../core/store');
+    coop = await import('../net/coop');
+    store.useGame.setState(store.newGameData());
+    coop.initCoop({ scene: { add() {}, remove() {} } as never, player: { mesh: { position: { x: 0, z: 0 }, rotation: { y: 0 } } as never }, actors: () => [], resetSim: () => {} });
+    const entered = coop.enterAlley('ABC');
+    FakeWS.last.onclose!();
+    await expect(entered).rejects.toThrow('Mất kết nối khi vào hẻm.');
+  });
+
+  it('rớt kết nối SAU khi vào được (máy chạy): thoát session + báo người chơi, hẹn reload', async () => {
+    vi.useFakeTimers();
+    await join('runner');
+    const session = await import('../net/session');
+    const notes: string[] = [];
+    store.useGame.setState({ notify: (m: string) => notes.push(m) });
+    expect(session.useSession.getState().coop).not.toBeNull();
+    FakeWS.last.onclose!();
+    expect(session.useSession.getState().coop).toBeNull();
+    expect(notes.join(' ')).toContain('Mất kết nối hẻm online');
+    vi.advanceTimersByTime(2500); // reload đã được lên lịch (stub noop) — không treo
+  });
+
+  it('danh sách hẻm (REST): gọi GET có token, trả dữ liệu; lỗi server thì ném đúng thông báo', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify([{ id: 'a1', name: 'Hẻm 1' }]), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ error: 'Sai mã hẻm' }), { status: 404 }));
+    vi.stubGlobal('fetch', fetchMock);
+    const list = await coop.listAlleys();
+    expect(list[0].name).toBe('Hẻm 1');
+    expect(fetchMock.mock.calls[0][1]?.method).toBe('GET');
+    await expect(coop.joinAlley('ab')).rejects.toThrow('Sai mã hẻm');
+    expect(String(fetchMock.mock.calls[1][0])).toContain('/AB/join'); // mã được in hoa + mã hoá
+    vi.unstubAllGlobals();
+  });
+
+  it('mất mạng khi gọi REST: ném lỗi gợi ý chạy server (không treo)', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')));
+    await expect(coop.listAlleys()).rejects.toThrow('Không kết nối được server');
+    vi.unstubAllGlobals();
   });
 });

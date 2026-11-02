@@ -1,6 +1,7 @@
 import type { Weather } from './weather';
 import { shelfTotal, CONVENIENCE } from './branches';
-import { quanNuocProjection, quanNuocDrinkIds, quanNuocRestockTip, type QuanNuocState } from './quanNuoc';
+import { quanNuocDrinkIds, type QuanNuocState } from './quanNuoc';
+import { quanNuocProjection, quanNuocRestockTip } from './quanNuocInsights';
 import { productById } from './products';
 
 /**

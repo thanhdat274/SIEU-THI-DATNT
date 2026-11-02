@@ -1,4 +1,5 @@
-import { quanNuocProjection, quanNuocDrinkIds, type QuanNuocState } from './quanNuoc';
+import { quanNuocDrinkIds, type QuanNuocState } from './quanNuoc';
+import { quanNuocProjection } from './quanNuocInsights';
 
 /**
  * GĐ208 — "Quán nước soi độ đủ đồ uống theo đêm" (áp cơ chế chở sang quán nước, vế THUẦN đọc).

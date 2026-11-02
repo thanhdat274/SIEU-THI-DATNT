@@ -1,8 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import {
-  quanNuocProjection, quanNuocHealth, quanNuocAvgSell, quanNuocDrinkIds,
-  newQuanNuoc, QUAN_NUOC_MAX_STAFF, QUAN_NUOC_WAGE, QUAN_PRICE_OPTIONS, type QuanNuocState,
-} from '../data/quanNuoc';
+import { quanNuocDrinkIds, newQuanNuoc, QUAN_NUOC_MAX_STAFF, QUAN_NUOC_WAGE, QUAN_PRICE_OPTIONS, type QuanNuocState } from '../data/quanNuoc';
+import { quanNuocProjection, quanNuocHealth, quanNuocAvgSell } from '../data/quanNuocInsights';
 import { productById } from '../data/products';
 
 /**

@@ -8,7 +8,7 @@ import { join } from 'node:path';
 import { gzipSync } from 'node:zlib';
 
 /** Mức đo 2026-10-31 + ~10% đệm. Rút gọn được thì HẠ số này — không bao giờ nâng lên. */
-export const BUNDLE_BUDGET_KB = { initialGzip: 598, largestChunkGzip: 255 };
+export const BUNDLE_BUDGET_KB = { initialGzip: 597, largestChunkGzip: 255 };
 
 export function measureBundle() {
   const out = mkdtempSync(join(tmpdir(), 'taphoa-bundle-'));
@@ -35,7 +35,7 @@ export function measureBundle() {
 if (process.argv[1]?.endsWith('check-bundle.mjs')) {
   const m = measureBundle();
   for (const c of m.chunks) console.log(`  ${c.file.padEnd(40)} ${c.gzipKb.toFixed(1)} KB gzip`);
-  console.log(`Tải ban đầu: ${m.initialGzipKb.toFixed(0)} KB gzip (ngân sách ${BUNDLE_BUDGET_KB.initialGzip})`);
+  console.log(`Tải ban đầu: ${m.initialGzipKb.toFixed(0)} (${m.initialGzipKb.toFixed(1)}) KB gzip (ngân sách ${BUNDLE_BUDGET_KB.initialGzip})`);
   console.log(`Chunk lớn nhất: ${m.largestChunkGzipKb.toFixed(0)} KB gzip (ngân sách ${BUNDLE_BUDGET_KB.largestChunkGzip})`);
   // Chỉ để biết: game tải decoder từ /decoders/draco/, các bản trong assets/ không tới tay người chơi
   console.log(`Bản sao Draco thừa trong assets/: ${m.dracoCopies} · tổng assets ${(m.totalAssetsKb / 1024).toFixed(1)} MB`);

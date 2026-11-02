@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { quanNuocRestockTip, quanNuocProjection, quanNuocDrinkIds, type QuanNuocState } from '../data/quanNuoc';
+import { quanNuocDrinkIds, type QuanNuocState } from '../data/quanNuoc';
+import { quanNuocRestockTip, quanNuocProjection } from '../data/quanNuocInsights';
 
 /**
  * GĐ190 — "Nạp bao nhiêu để bán đủ tối nay?": companion nạp kho của GĐ189. Sổ đầu ngày nhắc quán thiếu

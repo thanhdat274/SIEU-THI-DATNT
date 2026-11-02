@@ -84,7 +84,7 @@ export const offSeason = (id: string, day: number) => SEASONAL_GOODS.has(id) && 
 
 /** Hàng nên nhập sẵn cho dịp: hàng của dịp trước, rồi tới món hot. */
 export const festivalStock = (f: Festival, level: number) =>
-  [...(f.goods ?? []), ...f.hot].filter((id) => productById(id).unlock <= level);
+  [...new Set([...(f.goods ?? []), ...f.hot])].filter((id) => productById(id).unlock <= level); // GĐ653: Tết có giỏ quà ở cả goods lẫn hot
 
 export type MarketKind = 'shortage' | 'glut' | 'viral' | 'roadworks';
 
@@ -221,7 +221,9 @@ export function morningNews(seed: number, day: number, level: number): string[] 
   if (f && (dayOfYear(day) === f.from || day === 1)) out.push(`${f.icon} ${f.name} bắt đầu! ${f.blurb}`);
   const soon = upcomingFestival(day);
   if (soon && (soon.inDays === FESTIVAL_NOTICE_DAYS || soon.inDays === 1)) {
-    const goods = festivalStock(soon.festival, level).map((id) => productById(id).name).join(', ');
+    const all = festivalStock(soon.festival, level);
+    // GĐ654: Tết cấp cao tới ~15 món — tin chỉ nêu 4 món đầu (hàng riêng của dịp đứng trước), còn lại xem Lịch
+    const goods = all.slice(0, 4).map((id) => productById(id).name).join(', ') + (all.length > 4 ? ` +${all.length - 4} món` : '');
     const when = soon.inDays === 1 ? 'Ngày mai' : `${soon.inDays} ngày nữa`;
     out.push(`${soon.festival.icon} ${when} là ${soon.festival.name}${goods ? `, nhập sẵn ${goods}` : ''}`);
   }

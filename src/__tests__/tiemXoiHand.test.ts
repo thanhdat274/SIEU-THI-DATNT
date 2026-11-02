@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { newGameData, useGame } from '../core/store';
+/** GĐ565: tin sáng đủ nằm ở lastSummary.news (toast có thể gộp '+N tin'). */
+const allMsgs = (m: string[]) => [...m, ...(useGame.getState().lastSummary?.news ?? [])];
 import { TIEM_XOI_HAND, tiemXoiHandQty, TIEM_XOI_UNLOCK, tiemXoiHandPick, tiemXoiIds } from '../data/tiemXoi';
 
 /** GĐ439 — chủ tự đồ một mẻ xôi ở sạp, mỗi ngày một lần. */
@@ -32,6 +34,16 @@ describe('steamXoiHand', () => {
   });
 });
 
+describe('GĐ529: không có món xôi', () => {
+  it('báo lý do thay vì im lặng', () => {
+    g().buyTiemXoi();
+    useGame.setState({ level: 0 });
+    if (tiemXoiIds(0).length) return;
+    expect(g().steamXoiHand()).toBe(false);
+    expect(allMsgs(msgs).some((m) => m.includes('Chưa có món xôi'))).toBe(true);
+  });
+});
+
 describe('tin cuối ngày', () => {
   it('ghi chủ tự đồ khi đã đồ trong ngày, ≤90 ký tự', () => {
     g().buyTiemXoi();
@@ -39,7 +51,7 @@ describe('tin cuối ngày', () => {
     msgs = [];
     useGame.setState({ minutes: 20 * 60 });
     expect(g().sleep()).toBe(true);
-    const seg = msgs.join('|').match(/🍚 Tiệm xôi.*?chủ tự đồ 1 mẻ/)?.[0];
+    const seg = allMsgs(msgs).join('|').match(/🍚 Tiệm xôi.*?chủ tự đồ 1 mẻ/)?.[0];
     expect(seg).toBeTruthy();
     expect(seg!.length).toBeLessThanOrEqual(90);
   });
@@ -122,7 +134,7 @@ describe('GĐ484: khách ăn tại chỗ', () => {
     const m0 = g().money;
     useGame.setState({ minutes: 20 * 60 });
     g().sleep();
-    const seg = msgs.join('|').match(/🍚 Khách ăn tại tiệm xôi[^|·]*· \+[^|·]*/)?.[0];
+    const seg = allMsgs(msgs).join('|').match(/🍚 Khách ăn tại tiệm xôi[^|·]*· \+[^|·]*/)?.[0];
     expect(seg).toBeTruthy();
     expect(seg!.length).toBeLessThanOrEqual(90);
     expect(typeof m0).toBe('number');

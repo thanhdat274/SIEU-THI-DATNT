@@ -1,12 +1,11 @@
 import { useState } from 'react';
 import { useGame } from '../core/store';
-import { CONVENIENCE, ALCOHOL_BRAWL_CHANCE, coverMul, NIGHT_DELIVERY_SURCHARGE, NIGHT_GROUPS, POWER_UPGRADES, VENDING_CAP, VENDING_COST, branchPowerBill, hasAlcohol, hasPower, isHotFood, nightNeed, shelfTotal, uncoveredHours, vendingTotal } from '../data/branches';
+import { CONVENIENCE, coverMul, VENDING_CAP, VENDING_COST, hasPower, isHotFood, nightNeed, shelfTotal, uncoveredHours, vendingTotal, branchWeekendMul, branchMatchMul } from '../data/branches';
 import { dailyWage } from '../data/staff';
 import { branchOperatingBalanceToday, branchBuildPayback } from '../data/branchNet';
 import { branchMissSummary } from '../data/venueTrend';
 import { vendingPayoff } from '../data/minorPayoff';
-import { licenseById, licenseStatus } from '../data/licenses';
-import { formatMoney, productById } from '../data/products';
+import { formatMoney, productById, fmtMul } from '../data/products';
 import { haulTripPlan, autoHaulCfg, HAUL_REFILL_BELOW, HAUL_TRIP_EVERY, HAUL_BELOW_MIN, HAUL_BELOW_MAX, HAUL_EVERY_MIN, HAUL_EVERY_MAX } from '../data/branchHaul';
 import { Callout } from './panels/shared';
 import { BranchNightTab } from './BranchNightTab';
@@ -14,7 +13,7 @@ import { st } from './branchStyles';
 
 /** Cửa hàng tiện lợi 24/7: thuê mặt bằng, tuyển người, xem doanh thu. */
 export function BranchPanel() {
-  const { branch, level, money, day, candidates, storage, stats, atBranch, online, licenses, venueTrend, openBranch, toggleBranch, toggleVending, toggleNightDelivery, toggleBranchAutoHaul, setBranchAutoHaul, buyBranchPower, hireForBranch, fireFromBranch, setBranchShift, coverCalloff, bonusBranchStaff, restBranchStaff, closePanel, openPanel } = useGame();
+  const { branch, level, money, day, weather, storage, stats, atBranch, venueTrend, openBranch, toggleBranch, toggleVending, toggleBranchAutoHaul, setBranchAutoHaul, coverCalloff, closePanel } = useGame();
   const [tab, setTab] = useState<'info' | 'night' | 'report'>('info');
 
   if (!branch) {
@@ -28,7 +27,7 @@ export function BranchPanel() {
         <ul style={st.sub}>
           <li>Giá mua mặt bằng (mua đứt, sở hữu luôn): <b>{formatMoney(CONVENIENCE.openCost)}</b></li>
           <li>Mua đứt nên không có tiền thuê — mỗi ngày chỉ trả lương nhân viên chi nhánh</li>
-          <li>Kệ chứa tới {CONVENIENCE.shelfCap} món, giá bán ×{CONVENIENCE.priceMul} so với tiệm chính</li>
+          <li>Kệ chứa tới {CONVENIENCE.shelfCap} món, giá bán ×{fmtMul(CONVENIENCE.priceMul)} so với tiệm chính</li>
         </ul>
         {level < CONVENIENCE.unlock
           ? <p style={st.warn}>🔒 Mở ở cấp {CONVENIENCE.unlock}</p>
@@ -66,7 +65,7 @@ export function BranchPanel() {
       {tab === 'info' && (
         <div style={{ display: 'grid', gap: 6 }}>
           <div>Hôm nay: <b>{branch.customersToday}</b> khách · thu <b>{formatMoney(branch.revenueToday)}</b>
-            {branch.missedToday > 0 && <> · {branch.missedToday} khách bỏ về</>}{branch.lostToday > 0 && <> · mất trộm {branch.lostToday} món</>}</div>
+            {branch.missedToday > 0 && <> · {branch.missedToday} khách bỏ về</>}{branch.lostToday > 0 && <> · mất trộm {branch.lostToday} món</>}{branchWeekendMul(day, 23 * 60) > 1 && <> · 🌙 đêm cuối tuần khách ×1,3</>}{branchMatchMul(day, 23 * 60, weather) > 1 && <> · ⚽ tan trận 22h–24h khách ×1,2</>}</div>
           <div>Chi phí mỗi ngày: {formatMoney(wages)} lương (mặt bằng đã mua đứt, không thuê)</div>
           {(() => {
             const op = branchOperatingBalanceToday(branch);
@@ -130,11 +129,16 @@ export function BranchPanel() {
             </div>
           )}
           {!has('manager') && <p style={st.sub}>💡 Thuê 📋 Quản lý: tự xếp ca, cho người mệt nghỉ luân phiên, tự gọi xe khi kệ vơi, tự gọi người thay khi có ai xin nghỉ.</p>}
-          {!has('cashier') && <p style={st.warn}>⚠️ Chưa có thu ngân — khách tới không ai bán.</p>}
-          {has('cashier') && gaps.length > 0 && <p style={st.warn}>⚠️ Không có thu ngân lúc: {gaps.map((h) => `${h}h`).join(', ')}. Thêm người ca đêm/ca chiều.</p>}
-          {!has('courier') && !has('stocker') && <p style={st.warn}>⚠️ Chưa có người giao/xếp hàng — kệ sẽ không được chở hàng từ kho chung.</p>}
-          {!has('guard') && <p style={st.warn}>⚠️ Không có bảo vệ — ban đêm dễ mất trộm.</p>}
-          {stockLeft < nightNeed() && <p style={st.warn}>⚠️ Kho chung sắp cạn (còn {stockLeft} món, mỗi đêm cần ~{nightNeed()}), đêm nay chi nhánh có thể hết hàng.</p>}
+          {(() => { // GĐ573: gom cảnh báo thiếu người/hàng vào một khung, đỡ rối
+            const warns = [
+              !has('cashier') && <>Chưa có thu ngân — khách tới không ai bán.</>,
+              has('cashier') && gaps.length > 0 && <>Không có thu ngân lúc: {gaps.map((h) => `${h}h`).join(', ')}. Thêm người ca đêm/ca chiều.</>,
+              !has('courier') && !has('stocker') && <>Chưa có người giao/xếp hàng — kệ sẽ không được chở hàng từ kho chung.</>,
+              !has('guard') && <>Không có bảo vệ — ban đêm dễ mất trộm.</>,
+              stockLeft < nightNeed() && <>Kho chung sắp cạn (còn {stockLeft} món, mỗi đêm cần ~{nightNeed()}), đêm nay chi nhánh có thể hết hàng.</>,
+            ].filter(Boolean);
+            return warns.length > 0 && <Callout tone="warn" title={`⚠️ Cần xử lý (${warns.length})`}>{warns.map((w, i) => <div key={i} style={st.sub}>• {w}</div>)}</Callout>;
+          })()}
           <div style={{ ...st.event, display: 'block' }}>
             <div style={st.row}>
               <b>🥤 Máy bán hàng tự động ngoài cửa</b>

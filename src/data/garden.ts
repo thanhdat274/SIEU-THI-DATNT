@@ -14,8 +14,10 @@
  * Chỉ có dữ liệu và hàm thuần; hành động đổi trạng thái nằm ở `core/slices/garden`.
  */
 import type { Weather } from './weather';
-import { dateOfDoy, YEAR_DAYS } from './calendar';
+import { dateOfDoy, isWeekend, YEAR_DAYS } from './calendar';
 import { simRng } from '../core/rand';
+import { fmtMul } from './products';
+import { isXoiCungDay } from './tiemXoi';
 
 /** Mở trang trại từ cấp này. */
 export const GARDEN_UNLOCK = 8;
@@ -312,6 +314,10 @@ export interface FarmOrder {
 }
 
 export const FARM_ORDER_BONUS = 1.25;
+/** Đơn tới hạn Thứ 7/CN: quán xóm đông khách cuối tuần, trả hời hơn (GĐ536). */
+export const FARM_ORDER_WEEKEND_BONUS = 1.35;
+/** GĐ605: hạn rơi vào ngày cúng (1 & 15) — quán cần đồ cúng, trả như cuối tuần. */
+export const farmOrderBonus = (dueDay: number) => (isWeekend(dueDay) || isXoiCungDay(dueDay) ? FARM_ORDER_WEEKEND_BONUS : FARM_ORDER_BONUS);
 /** Đơn sống chừng này ngày rồi tới hạn. */
 export const FARM_ORDER_DAYS = 2;
 /** Mở đơn quán xóm từ cấp này (khi trại đã khang trang). */
@@ -322,16 +328,47 @@ export const FARM_BUYERS = ['Quán Cơm Bà Ba', 'Lò Bánh Chị Hoa', 'Quán N
 /** Món quán đặt (nông sản nhà trồng/nhà nuôi). */
 export const FARM_ORDER_POOL = ['trung', 'trung_vit', 'trung_goos', 'sua_tuoi', 'sua_de', 'rau', 'bap', 'mia', 'traicay', 'x_chuoi', 'x_vai', 'x_buoi', 'x_thit_heo', 'thit_ga_dt'];
 
+/** Tin sáng khi quán xóm đặt đơn; đơn cuối tuần báo luôn giá hời (GĐ549). */
+export const farmOrderNews = (o: FarmOrder) =>
+  `📦 ${o.from} đặt mua nông sản, hạn ngày ${o.dueDay} — ${o.bonus > FARM_ORDER_BONUS ? `${isWeekend(o.dueDay) ? 'cuối tuần' : 'ngày cúng'} trả ×${fmtMul(o.bonus)}` : 'xem ở bảng Trang trại'}`;
+
 let farmOrderId = 1;
-/** Tạo đơn mới cho quán xóm: 2 món trong pool, số lượng 3–8, hạn 2 ngày. */
-export function makeFarmOrder(day: number, rng: () => number = simRng()): FarmOrder {
-  const pool = [...FARM_ORDER_POOL];
+/** Món trong pool đơn mà trại kịp làm ra ≥3 (số lượng đơn nhỏ nhất) trong hạn đơn: hàng nhà trồng
+ *  trong kho + cây chín kịp + đàn đẻ/vắt sữa + lứa vỗ béo kịp xuất (GĐ542, ước lượng sức trại GĐ543). */
+export const farmOrderCapacity = (g: Pick<GardenState, 'plots' | 'pens'> & { homegrown?: Record<string, number> }): Record<string, number> => {
+  const cap: Record<string, number> = { ...(g.homegrown ?? {}) };
+  const add = (id: string, n: number) => { cap[id] = (cap[id] ?? 0) + n; };
+  for (const p of g.plots) {
+    if (!p.crop) continue;
+    const def = cropById(p.crop);
+    if (p.growth + FARM_ORDER_DAYS >= def.days) add(def.productId, def.yieldQty);
+  }
+  for (const k of ANIMAL_ORDER) {
+    const pen = g.pens[k], def = ANIMALS[k];
+    if (!pen || pen.count <= 0) continue;
+    const perDay = def.layChance ?? def.outputPerDay ?? 0;
+    add(def.productId, pen.pending + pen.count * perDay * FARM_ORDER_DAYS);
+    if (def.fattenDays && (pen.fattened ?? 0) + FARM_ORDER_DAYS >= def.fattenDays) add(def.productId, pen.count * (def.meatPerHead ?? 0));
+  }
+  return cap;
+};
+export const farmOrderProduce = (g: Parameters<typeof farmOrderCapacity>[0]): string[] => {
+  const cap = farmOrderCapacity(g);
+  return FARM_ORDER_POOL.filter((id) => (cap[id] ?? 0) >= 3);
+};
+
+/** Tạo đơn mới cho quán xóm: 2 món, số lượng 3–8, hạn 2 ngày. Trại làm ra ≥2 món trong pool thì
+ *  quán chỉ đặt những món đó (đơn giao được), không thì lấy cả pool như cũ. */
+/** `cap` (GĐ544): số món trại kịp làm — đơn lọc theo trại thì mỗi món không đặt quá sức này (vẫn ≥3). */
+export function makeFarmOrder(day: number, rng: () => number = simRng(), produce: readonly string[] = [], cap: Record<string, number> = {}): FarmOrder {
+  const pool = produce.length >= 2 ? [...produce] : [...FARM_ORDER_POOL];
   const items: { productId: string; qty: number }[] = [];
   for (let i = 0; i < 2; i++) {
     const productId = pool.splice(Math.floor(rng() * pool.length), 1)[0];
-    items.push({ productId, qty: 3 + Math.floor(rng() * 6) });
+    const qty = 3 + Math.floor(rng() * 6);
+    items.push({ productId, qty: produce.length >= 2 && cap[productId] !== undefined ? Math.max(3, Math.min(qty, Math.floor(cap[productId]))) : qty });
   }
-  return { id: farmOrderId++, from: FARM_BUYERS[Math.floor(rng() * FARM_BUYERS.length)], items, dueDay: day + FARM_ORDER_DAYS, bonus: FARM_ORDER_BONUS };
+  return { id: farmOrderId++, from: FARM_BUYERS[Math.floor(rng() * FARM_BUYERS.length)], items, dueDay: day + FARM_ORDER_DAYS, bonus: farmOrderBonus(day + FARM_ORDER_DAYS) };
 }
 
 export const emptyPlot = (): Plot => ({ crop: null, growth: 0, wateredDay: 0 });

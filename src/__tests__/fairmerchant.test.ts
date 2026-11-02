@@ -125,7 +125,7 @@ describe('GĐ68 — Chợ phiên nhà cung cấp đặc biệt (fairmerchant)', 
       // GĐ293 sót: helper có test xanh nhưng MorningPanel chưa push vào candidates
       // → việc 🛒 không bao giờ hiện trong game. Test đọc source chặn lại lỗi này.
       const { readFileSync } = await import('node:fs');
-      const src = readFileSync(new URL('../ui/panels/ReportPanels.tsx', import.meta.url), 'utf8');
+      const src = readFileSync(new URL('../ui/panels/MorningPanel.tsx', import.meta.url), 'utf8');
       expect(src).toMatch(/fairMerchantAction\s*\(\s*day/); // lời gọi thật với day
     });
     it('ngày 1 hoặc ngày 2 chưa lấy lô tháng này → sinh việc sáng ưu tiên 3 trỏ đến order', () => {

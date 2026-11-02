@@ -1,11 +1,13 @@
 import { useGame } from '../../core/store';
-import { productById, formatMoney } from '../../data/products';
+import { productById, formatMoney, fmtMul } from '../../data/products';
 import {
   ANIMALS, ANIMAL_ORDER, animalMode, CROPS, EGG_PER_TRAY, FARM_BUILDING_MAX_STAR, FARM_BUILDINGS, FARM_BUILDING_ORDER, FARM_ORDER_UNLOCK,
   FERTILIZER_PRODUCT, GARDEN_UNLOCK, cropById, inSeason, LAND_TIERS, monthOf, penCap, fattenReady, plotLabel, plotReady,
 } from '../../data/garden';
 import { animalPerDay, bestAnimal, bestCrop, cropPerDay } from '../../data/farmValue';
 import { farmVsCook } from '../../data/farmKitchenValue';
+import { isWeekend } from '../../data/calendar';
+import { isXoiCungDay } from '../../data/tiemXoi';
 import { Callout, Footer, styles } from './shared';
 
 /** Trang trại đầu ngõ: trồng theo mùa vụ, nuôi 7 loài, công trình + dọn trại lấy gỗ đá nâng sao, đơn quán xóm. */
@@ -85,7 +87,7 @@ export function GardenPanel() {
                   const home = garden.homegrown[it.productId] ?? 0;
                   const ok = have >= it.qty && home >= it.qty;
                   return `${productById(it.productId).name} ${have}/${it.qty} (nhà trồng ${home})${ok ? '✓' : '⚠️'}`;
-                }).join(' · ')} — giá hời ×{order.bonus} cho nông sản nhà trồng, hạn ngày {order.dueDay} (còn {Math.max(0, order.dueDay - day)} ngày)
+                }).join(' · ')} — giá hời ×{fmtMul(order.bonus)}{order.bonus > 1.25 ? (isXoiCungDay(order.dueDay) && !isWeekend(order.dueDay) ? ' (quán cần đồ cúng)' : ' (quán đông cuối tuần)') : ''} cho nông sản nhà trồng, hạn ngày {order.dueDay} (còn {Math.max(0, order.dueDay - day)} ngày)
               </div>
             </Callout>
           ) : level >= FARM_ORDER_UNLOCK ? (

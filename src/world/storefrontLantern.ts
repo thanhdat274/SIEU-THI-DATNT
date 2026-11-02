@@ -57,7 +57,8 @@ function lanternGlowTexture(): THREE.CanvasTexture {
 }
 
 /** Cột + lồng lồng thủ tục làm "cái xác" dự phòng — GLB về thì thay phần mình, không về vẫn có hình đèn. */
-function fallbackLantern(glowMat: THREE.MeshStandardMaterial): THREE.Group {
+/** GĐ737 — xuất công khai để đèn hẻm (alleyLamps) tái dùng đúng thân đèn đã đóng. */
+export function fallbackLantern(glowMat: THREE.MeshStandardMaterial): THREE.Group {
   const g = new THREE.Group();
   const wood = new THREE.MeshStandardMaterial({ color: 0x6b4a26 });
   const metal = new THREE.MeshStandardMaterial({ color: 0x455a64 });

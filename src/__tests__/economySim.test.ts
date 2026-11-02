@@ -64,79 +64,14 @@ afterAll(() => {
 });
 
 import { runEconomySim } from '../dev/simEconomy';
-import { questContext } from '../core/store';
-import { dailyQuests } from '../data/quests';
 import { emptyTiers } from '../core/stock';
-import { clearSimSeed, setSimSeed, mulberry32 } from '../core/rand';
+import { mulberry32 } from '../core/rand';
 
 describe('khảo sát kinh tế vòng ngày — simulator thật trên store', () => {
-  // 3 mức cấp (5/10/20) × ~30 ngày. Autoplay chạy tick thật + customer thật headless.
+  // GĐ669: bài cấp 5 × 30 ngày tách sang economySimL5.test.ts (chạy song song, lấy lại biên thời gian);
+  // file này giữ các smoke thông báo/người mới — chúng đọc runEconomySim với ít ngày.
   // Số liệu mới — KHÔNG assert cứng tỉ số; test là regression (harness chạy được, số hữu hạn, không NaN)
   // + in BẢNG TRUNG BÌNH ra stdout để Leader dùng.
-  const CASES = [{ level: 5, days: 30 }];
-
-  for (const { level, days } of CASES) {
-    it(`level ${level} — chạy ${days} ngày không crash, số hữu hạn & in bảng trung bình`, { timeout: 900_000 }, async () => {
-      const { rows, averages } = await runEconomySim(level, days, { betTier: 1.5 });
-
-      expect(rows.length).toBeGreaterThanOrEqual(15); // ghi rõ: ≥15 ngày, thực tế chạy days
-      expect(rows.length).toBe(days);
-
-      // ── Assert mềm: mọi số hữu hạn, không NaN ──
-      for (const r of rows) {
-        expect(Number.isNaN(r.operationalProfit), `day ${r.day} profit NaN`).toBe(false);
-        expect(Number.isFinite(r.operationalProfit), `day ${r.day} profit không hữu hạn`).toBe(true);
-        expect(Number.isNaN(r.quest)).toBe(false);
-        expect(Number.isNaN(r.bet)).toBe(false);
-        expect(Number.isFinite(r.quest)).toBe(true);
-        expect(Number.isFinite(r.bet)).toBe(true);
-      }
-      expect(Number.isNaN(averages.professionPerDay)).toBe(false);
-      expect(Number.isFinite(averages.professionPerDay)).toBe(true);
-      expect(Number.isNaN(averages.questPerDay)).toBe(false);
-      expect(Number.isNaN(averages.betPerDay)).toBe(false);
-      expect(Number.isFinite(averages.questPerDay)).toBe(true);
-      expect(Number.isFinite(averages.betPerDay)).toBe(true);
-      if (averages.ratio !== null) {
-        expect(Number.isNaN(averages.ratio)).toBe(false);
-        expect(Number.isFinite(averages.ratio)).toBe(true);
-      }
-
-      // Tiền két thật không NaN, hàng hoá không vỡ (guồng chạy ổn định)
-      const s = useGame.getState();
-      expect(Number.isFinite(s.money)).toBe(true);
-      expect(Number.isNaN(s.money)).toBe(false);
-      expect(s.level).toBeGreaterThanOrEqual(level); // không thụt cấp
-      // Cửa sổ questLog sau nhiều ngày phải còn hợp lệ (không rác NaN)
-      expect(Number.isFinite(s.money)).toBe(true);
-
-      // ── Bán hàng phải là nghề chính (luật cứng kinh tế trong promt_game.md) ──
-      // Lãi bán hàng thật (lãi gộp − lương − tiền nhà, không trừ đầu tư) phải dương, và thưởng
-      // nhiệm vụ + kèo không được lấn lãi bán hàng thêm nữa: trần là mức đo hiện tại (khoá chiều xấu đi).
-      const sales = rows.reduce((n0, r) => n0 + r.salesProfit, 0);
-      const bonus = rows.reduce((n0, r) => n0 + r.quest + r.bet, 0);
-      // eslint-disable-next-line no-console
-      console.log(`[bán hàng] level=${level} · lãi bán hàng/ngày=${fmt(sales / rows.length)} · (nhiệm vụ+kèo)/lãi bán = ${(bonus / Math.max(1, sales)).toFixed(2)}`);
-      expect(sales, 'lãi bán hàng cộng dồn phải dương').toBeGreaterThan(0);
-      expect(bonus / sales, `thưởng lấn lãi bán hàng quá trần ở cấp ${level}`).toBeLessThanOrEqual(BONUS_TO_SALES_CEILING[level]);
-
-      // ── In BẢNG TRUNG BÌNH ra stdout cho Leader ──
-      // eslint-disable-next-line no-console
-      console.log(
-        `[khảo sát] level=${level} days=${rows.length} · lãi bán/ngày=${fmt(averages.professionPerDay)}` +
-          ` · nhiệm vụ/ngày=${fmt(averages.questPerDay)} · kèo/ngày=${fmt(averages.betPerDay)}` +
-          ` · tỉ số (nhiệm vụ+kèo)/lãi=${averages.ratio === null ? 'N/A' : averages.ratio.toFixed(2)}` +
-          ` · kết thúc cấp=${averages.finalLevel}`,
-      );
-      // ── Nhật ký từng ngày (để tra dấu vết lãi/nhiệm vụ/kèo) ──
-      // eslint-disable-next-line no-console
-      console.log(
-        rows
-          .map((r) => `  d${r.day}[lv${r.level}] profit=${fmt(r.operationalProfit)} quest=${fmt(r.quest)} bet=${fmt(r.bet)}`)
-          .join('\n'),
-      );
-    });
-  }
 
   it('harness giữ nguyên hành vi: autoplay vẫn trả về đủ cột cũ + quest/bet (smoke của chính autoplay)', async () => {
     // không cần world — chỉ kiểm tra autoplay().length và shape sau khi seed bằng hàm build
@@ -146,7 +81,7 @@ describe('khảo sát kinh tế vòng ngày — simulator thật trên store', (
     expect(rows.length).toBe(1);
     expect(Object.keys(rows[0])).toEqual(expect.arrayContaining(['day', 'level', 'operationalProfit', 'quest', 'bet']));
     expect([rows[0].quest, rows[0].bet].every(Number.isFinite)).toBe(true);
-  });
+  }, 600_000);
 
   // GĐ160 — ngày 1 cấp 1: bot autoplay bán đúng vòng nhập-bày-bán, doanh thu phải chạm được mục tiêu
   // doanh thu người mới (100.000đ = ~65% kho khởi đầu) — smoke ngắn, in số để Leader đối chiếu.
@@ -168,19 +103,36 @@ describe('khảo sát kinh tế vòng ngày — simulator thật trên store', (
     // Assert mềm: bot chơi đúng nhịp thì số hữu hạn, và doanh thu ngày 1 không phải số 0 vô lý
     expect(Number.isFinite(revenue)).toBe(true);
     expect(revenue).toBeGreaterThan(0);
-  });
+  }, 600_000);
+
+  // GĐ561: ngày 2 trước giờ không có trần (GĐ341 đo 11) — khoá mức đo để chỉ được giảm.
+  it('ngày 2 không bơm thêm thông báo', async () => {
+    let toasts = 0;
+    const seen: string[] = [];
+    const long = new Set<string>(); // GĐ563: thông báo sinh lúc chạy cũng ≤90 ký tự
+    const unsub = useGame.subscribe((st, prev) => { if (st.message && st.message !== prev.message && [...String(st.message)].length > 90) long.add(String(st.message)); if (st.day === 2 && st.message && st.message !== prev.message && !/^(📜|🎯)/.test(String(st.message))) { toasts++; seen.push(String(st.message)); } });
+    await runEconomySim(1, 2, { betTier: 1.0 });
+    unsub();
+    // eslint-disable-next-line no-console
+    console.log(`[người mới] ngày 2: ${toasts} thông báo: ` + seen.join(' | '));
+    expect(toasts, 'ngày 2 nhiều thông báo hơn mức đo — gộp hoặc dời bớt').toBeLessThanOrEqual(DAY2_TOAST_CEILING);
+    expect([...long], 'thông báo dài hơn 90 ký tự').toEqual([]);
+  }, 600_000); // GĐ607: mặc định 5s quá ngắn khi chạy cả bộ dưới tải
+
+  // GĐ564: thông báo sinh lúc chạy ≤90 cả ở cấp giữa (nhiều hệ thống mở hơn).
+  // GĐ565: dòng sáng cũng ≤90 — bản đủ ở lastSummary.news (Sổ đầu ngày).
+  it.each([10, 25, 40, 60])('cấp %i: thông báo sinh lúc chạy ≤90 ký tự', async (lv) => {
+    const long = new Set<string>();
+    const unsub = useGame.subscribe((st, prev) => { const m = String(st.message ?? ''); if (m && m !== prev.message && [...m].length > 90) long.add(m); });
+    await runEconomySim(lv, 3, { betTier: 1.0 });
+    unsub();
+    expect([...long]).toEqual([]);
+  }, 600_000);
 });
 
+/** GĐ561: mức đo ngày 2 (bot cấp 1); chỉ được hạ. */
+const DAY2_TOAST_CEILING = 8; // GĐ568–569: tin đêm + sau ngủ gom một toast (đo 11 → 10 → 8)
 const fmt = (v: number) => `${Math.round(v).toLocaleString('vi-VN')}đ`;
 
-/**
- * Trần tỉ số (thưởng nhiệm vụ + kèo) / lãi bán hàng thật, đo ngày 2026-10-31: mô phỏng KHÔNG tất định
- * giữa các lần chạy (đo được 5.1–7.5 / 18–20 / 3.1–5.2) nên trần = mức cao nhất +25%.
- * Mục tiêu dài hạn trong promt_game.md: tỉ số ≤ 1 (bán hàng là nguồn thu chính). Cân bằng lại xong thì
- * HẠ trần này theo số đo mới — không bao giờ nâng lên.
- */
 /** Số thông báo tối đa trong ngày đầu của bot chơi cấp 1 (mức đo 2026-10-31; chỉ được hạ). */
-const DAY1_TOAST_CEILING = 10; // GĐ331: chỉ đếm thông báo khi còn ở ngày 1 (dự báo/danh hiệu sau đi ngủ là của ngày 2) → đo 10; // GĐ316: không đếm thông báo nhận thưởng (📜/🎯), đo 11–14; đo 18 sau GĐ309 (dời danh hiệu/kèo/chi phí/thay ô sang ngày 2+; GĐ302: 22; ban đầu 27)
-
-// GĐ332: hạ phần trăm kèo 25/40/65% → đo cấp 5 0.99 · cấp 10 0.89 · cấp 20 0.64. GĐ321: sim TẤT ĐỊNH (Math.random seed 20261031) đo cấp 5 1.13 · cấp 10 1.02 · cấp 20 0.71 (sau GĐ322; trước 1.53/1.29/0.96); trần = đo + đệm nhỏ. Chỉ được hạ.
-const BONUS_TO_SALES_CEILING: Record<number, number> = { 5: 1.0, 10: 0.92, 20: 0.67 };
+const DAY1_TOAST_CEILING = 9; // GĐ568: gom tin đêm → đo 9; GĐ331: chỉ đếm thông báo khi còn ở ngày 1 (dự báo/danh hiệu sau đi ngủ là của ngày 2) → đo 10; // GĐ316: không đếm thông báo nhận thưởng (📜/🎯), đo 11–14; đo 18 sau GĐ309 (dời danh hiệu/kèo/chi phí/thay ô sang ngày 2+; GĐ302: 22; ban đầu 27)

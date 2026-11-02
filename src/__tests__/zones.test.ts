@@ -74,3 +74,12 @@ describe('zoneMapView (GĐ504)', () => {
     expect(st(['ngo2'], 50, 0)).toEqual(['open', 'open']);
   });
 });
+
+describe('MAP_LANDMARKS (GĐ506)', () => {
+  it('mọi mốc nằm trong khu hẻm đầu (luôn mở) và không trùng icon', async () => {
+    const { MAP_LANDMARKS } = await import('../data/zones');
+    expect(MAP_LANDMARKS.length).toBeGreaterThanOrEqual(6);
+    for (const l of MAP_LANDMARKS) expect(zoneAt(l.x, l.z)?.id).toBe('hem');
+    expect(new Set(MAP_LANDMARKS.map((l) => l.icon)).size).toBe(MAP_LANDMARKS.length);
+  });
+});

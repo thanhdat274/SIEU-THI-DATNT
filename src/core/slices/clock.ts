@@ -1,4 +1,5 @@
 import { formatMoney, productById } from '../../data/products';
+import { fitJoin } from '../../data/onboarding';
 import { faintMinutes } from '../../data/biz';
 import { maybeSurprise } from '../biz';
 import { DIRT_MAX } from '../../data/staff';
@@ -16,6 +17,8 @@ import { updatePhones, cookSpeed, bartenderBoost } from './orders';
 /** Đồng hồ và nhịp ngày: tick mỗi khung hình (chi nhánh, điện thoại, mẻ nấu), đi ngủ, thông báo, mở bảng. */
 
 let messageTimer: ReturnType<typeof setTimeout> | undefined;
+/** GĐ571: tin gọi liên tiếp trong cùng một lượt xử lý gộp một toast thay vì đè nhau. */
+let burst: string[] = [];
 
 export const createClockSlice = (set: SetState, get: GetState): Pick<GameState, 'addDirt' | 'setSpeed' | 'tick' | 'sleep' | 'notify' | 'openPanel' | 'closePanel'> => ({
   addDirt: (amount) => {
@@ -37,8 +40,15 @@ export const createClockSlice = (set: SetState, get: GetState): Pick<GameState, 
       }
       const lost = Math.floor(s.money * 0.1);
       endDay(set, get, { money: s.money - lost });
+      set((st) => ({ ...(st.panel?.type === 'summary' ? { panel: { ...st.panel, fainted: lost } } : {}), ...(st.lastSummary ? { lastSummary: { ...st.lastSummary, fainted: lost } } : {}) }));
       s.notify(`😵 Bạn thức quá khuya và ngất đi... Mất ${formatMoney(lost)} tiền thuốc.`);
       return;
+    }
+    // GĐ786: qua 24:00 mà đang chạy nhanh thì hạ về 1× — ở 8× chỉ còn ~7 giây thực tới lúc ngất, người chơi
+    // (nhất là người mới) không kịp thấy banner "Đã khuya". Chỉ hạ MỘT lần lúc vượt mốc, chạy trên máy chủ (khách không tick).
+    if (s.minutes < 24 * 60 && minutes >= 24 * 60 && s.speed > 1) {
+      set({ speed: 1 });
+      s.notify('🌙 Đã khuya — đã chậm về 1×. Về nhà ngủ kẻo ngất!');
     }
     // Đồng hồ chạy mỗi khung hình: ghi thẳng vào state (không set) để cả đống component
     // dùng nguyên `useGame()` không phải vẽ lại 60 lần/giây. UI đọc giờ qua useClock bên dưới.
@@ -95,9 +105,11 @@ export const createClockSlice = (set: SetState, get: GetState): Pick<GameState, 
     return true;
   },
   notify: (message) => {
-    set({ message });
+    if (!burst.length) queueMicrotask(() => { burst = []; });
+    if (!burst.includes(message)) burst.push(message);
+    set({ message: burst.length > 1 ? fitJoin([message, ...burst.filter((m) => m !== message).reverse()]) : message });
     clearTimeout(messageTimer);
-    messageTimer = setTimeout(() => set({ message: null }), 3000);
+    messageTimer = setTimeout(() => set({ message: null }), burst.length > 1 ? 4500 : 3000); // GĐ577: toast gộp cần thêm giờ đọc
   },
   openPanel: (panel) => set({ panel }),
   closePanel: () => set({ panel: null }),

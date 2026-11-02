@@ -25,6 +25,7 @@ describe('reasonsFor — pool theo ngữ cảnh (GĐ271)', () => {
     }
   });
 
+  // GĐ666: quét 21.600 tổ hợp — thường ~1s nhưng dưới instrumentation coverage vượt mốc 5s mặc định.
   it('quét 20 seed × 30 ngày × 9 slot × 4 thời tiết: lý do luôn hợp ngữ cảnh, 0 lệch', () => {
     const stations: never[] = [];
     let checked = 0;
@@ -43,5 +44,5 @@ describe('reasonsFor — pool theo ngữ cảnh (GĐ271)', () => {
       }
     }
     expect(checked).toBeGreaterThan(200);
-  });
+  }, 30_000); // GĐ666: instrumentation coverage làm quét vượt mốc 5s mặc định
 });

@@ -42,3 +42,38 @@ export function guideReady(ids: string[], cart: Record<string, number>): boolean
 export function guideActiveOn(day: number, tutorialOff: boolean, deliveries: readonly unknown[], itemsSold: number): boolean {
   return day === 1 && !tutorialOff && deliveries.length === 0 && itemsSold === 0;
 }
+
+/** GĐ551: ngày 1 kệ trống nên 'Cần nhập gấp' trùng gợi ý, chợ phiên/dự báo/so mối làm rối người mới — ẩn (GĐ552 gom cả dự báo + so mối). */
+export const showRestockExtras = (day: number) => day > 1;
+
+/** GĐ563: ghép `head + danh sách` ≤max ký tự; mục thừa gộp thành ' +N'. Không mục nào vừa thì chỉ còn head + số mục. */
+export function fitList(head: string, items: string[], max = 90): string {
+  for (let n = items.length; n > 0; n--) {
+    const rest = items.length - n;
+    const msg = `${head}${items.slice(0, n).join(', ')}${rest ? ` +${rest}` : ''}`;
+    if ([...msg].length <= max) return msg;
+  }
+  return `${head}${items.length} mục`;
+}
+
+/** GĐ562: thông báo lên cấp ≤90 ký tự — chỉ tên mở khoá (bỏ phần mô tả sau ':'), thừa thì gộp '+N'. Danh sách đủ ở bảng Cấp độ. */
+export function levelUpToast(level: number, gained: string[], max = 90): string {
+  const head = `⭐ Lên cấp ${level}!`;
+  if (!gained.length) return head;
+  return fitList(`${head} Mở khóa: `, gained.map((g) => g.split(':')[0].trim()), max);
+}
+
+/** GĐ565: ghép tin bằng ' · ' ≤max ký tự; tin thừa gộp ' · +N tin' — bản đủ đọc lại ở Sổ đầu ngày. Tin đầu luôn giữ (cắt '…' nếu một mình đã dài). */
+export function fitJoin(parts: string[], max = 90): string {
+  const p = parts.filter(Boolean);
+  for (let n = p.length; n > 1; n--) {
+    const rest = p.length - n;
+    const msg = p.slice(0, n).join(' · ') + (rest ? ` · +${rest} tin` : '');
+    if ([...msg].length <= max) return msg;
+  }
+  const tail = p.length > 1 ? ` · +${p.length - 1} tin` : '';
+  const first = [...(p[0] ?? '')];
+  const room = max - [...tail].length;
+  return (first.length <= room ? first.join('') : first.slice(0, room - 1).join('') + '…') + tail;
+}
+

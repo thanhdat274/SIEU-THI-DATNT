@@ -1,3 +1,4 @@
+import { formatMoney } from './products';
 /**
  * Công trình khu phố (GĐ40) — "Sân Chơi Trẻ Em": một mục tiêu dài hạn (nhiều tuần)
  * có nhịp "mỗi ngày góp một lần", kéo dài cảm giác tiến bộ chậm rãi và kết thúc bằng
@@ -86,4 +87,86 @@ export function feedCost(tier: number, level: number): number {
  */
 export function landmarkCustomerFactor(contributions: number): number {
   return contributions >= LANDMARK_TARGETS[LANDMARK_TARGETS.length - 1] ? LANDMARK_CUSTOMER_BONUS_FACTOR : 1;
+}
+
+// ── GĐ732 — dự án cộng đồng thứ 2: Đèn Đường Ngõ 1 (sau khi sân chơi khánh thành) ───────────────
+// Cùng một bộ đếm lượt góp (biz.landmark.contributions): sân chơi dùng mốc 0–28, đèn dùng 28–48.
+// Payoff: đèn thắp sáng → khách đêm chi nhánh đông hơn (nhân lưu lượng đêm ×1,15 — đèn thắp sáng hẻm).
+export const LANDMARK2_TARGETS = [35, 42, 48] as const;
+export const LANDMARK2_NIGHT_TRAFFIC = 1.15;
+
+export interface Landmark2Stage {
+  id: string;
+  icon: string;
+  title: string;
+  desc: string;
+  bonusMoney: number;
+  bonusXp: number;
+}
+
+export const LANDMARK2_STAGES: readonly Landmark2Stage[] = [
+  { id: 'cot', icon: '🏗️', title: 'Đóng cột đèn', desc: 'Đúc cột đèn dọc lối đi trong hẻm', bonusMoney: 80_000, bonusXp: 200 },
+  { id: 'den', icon: '💡', title: 'Treo đèn', desc: 'Lắp bóng đèn vàng ấm dọc hẻm', bonusMoney: 200_000, bonusXp: 350 },
+  { id: 'dien', icon: '🔌', title: 'Thắp sáng', desc: 'Đi dây điện, thắp sáng cả ngõ — đêm hẻm bớt tối', bonusMoney: 600_000, bonusXp: 800 },
+] as const;
+
+/** Giai đoạn hiện tại của dự án 2 (lượt góp 28→48): null khi sân chơi chưa xong. */
+export function landmark2Progress(contributions: number): { index: number; into: number; pct: number; done: boolean } | null {
+  if (contributions < LANDMARK_TARGETS[LANDMARK_TARGETS.length - 1]) return null;
+  const extra = contributions - LANDMARK_TARGETS[LANDMARK_TARGETS.length - 1];
+  const total2 = LANDMARK2_TARGETS[LANDMARK2_TARGETS.length - 1] - LANDMARK_TARGETS[LANDMARK_TARGETS.length - 1];
+  const done = extra >= total2;
+  let index = 0;
+  let prev = 0;
+  for (let i = 0; i < LANDMARK2_TARGETS.length; i++) {
+    const target = LANDMARK2_TARGETS[i] - LANDMARK_TARGETS[LANDMARK_TARGETS.length - 1];
+    if (extra >= target) { index = i; prev = target; }
+  }
+  const width = (LANDMARK2_TARGETS[index] - LANDMARK_TARGETS[LANDMARK_TARGETS.length - 1]) - prev;
+  const into = Math.min(extra - prev, width);
+  return { index, into, pct: Math.round(Math.min(1, extra / total2) * 1000) / 1000, done };
+}
+
+/** GĐ736 — dòng soi sáng trạng thái đèn cho tab đêm của chi nhánh (thuần đọc):
+ *  sân chơi chưa xong → mời dự án mới · đang góp → còn bao nhiêu lượt · đã thắp sáng → payoff. */
+export function landmarkNightLine(contributions: number): string | null {
+  const p2 = landmark2Progress(contributions);
+  if (p2 === null) return '💡 Sân chơi xong rồi — dự án cộng đồng kế: Đèn Đường Ngõ 1 (xem 🏗️ Công trình ở hub Mở rộng)';
+  if (!p2.done) {
+    const extra = contributions - LANDMARK_TARGETS[LANDMARK_TARGETS.length - 1];
+    const total2 = LANDMARK2_TARGETS[LANDMARK2_TARGETS.length - 1] - LANDMARK_TARGETS[LANDMARK_TARGETS.length - 1];
+    return `💡 Đèn đường đang góp: còn ${total2 - extra} lượt nữa thắp sáng hẻm (góp ở 🏗️ Công trình)`;
+  }
+  return '💡 Đèn đường đã thắp sáng: khách đêm ghé đông hơn (+15% lưu lượng đêm)';
+}
+
+/** Hệ số lưu lượng ĐÊM ở chi nhánh khi đèn đã thắp sáng (dự án 2 xong): 1 nếu chưa. */
+export function landmarkNightTrafficFactor(contributions: number): number {
+  const p = landmark2Progress(contributions);
+  return p?.done ? LANDMARK2_NIGHT_TRAFFIC : 1;
+}
+
+export interface LandmarkDayAction { icon: string; text: string; panel: string; danger: boolean; priority: number }
+
+/** GĐ741 — việc sáng "góp vật liệu công trình" (thuần đọc): hiện khi hôm nay chưa góp và còn công trình
+ *  chưa xong. Đưa lượt góp hàng ngày lên Sổ đầu ngày — góp đều, sớm hưởng lâu. */
+export function landmarkDayAction(
+  landmark: { contributions: number; lastContributeDay: number },
+  day: number,
+  level: number,
+): LandmarkDayAction | null {
+  if (landmark.lastContributeDay >= day) return null;
+  const p1 = landmarkProgress(landmark.contributions);
+  const p2 = landmark2Progress(landmark.contributions);
+  if (p1.done && p2?.done) return null;
+  const isP2 = p1.done;
+  const idx = isP2 ? (p2?.index ?? 0) : p1.index;
+  const proj = isP2 ? 'Đèn Đường Ngõ 1' : 'Sân chơi';
+  return {
+    icon: isP2 ? '💡' : '🏗️',
+    text: `Góp vật liệu ${proj} hôm nay (${formatMoney(feedCost(idx, level))})`,
+    panel: 'landmark',
+    danger: false,
+    priority: 3,
+  };
 }
