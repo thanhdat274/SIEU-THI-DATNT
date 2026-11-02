@@ -1,7 +1,7 @@
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
-import { LoanNoteCard, EveningPrepCallout } from '../ui/panels/MorningNotes';
+import { LoanNoteCard, EveningPrepCallout, MorningNewsCard } from '../ui/panels/MorningNotes';
 
 describe('GĐ938 — MorningNotes', () => {
   it('nợ sắp hạn: viền đỏ; còn xa: không viền', () => {
@@ -11,5 +11,10 @@ describe('GĐ938 — MorningNotes', () => {
   });
   it('gợi ý nấu tối: có tên món', () => {
     expect(renderToStaticMarkup(createElement(EveningPrepCallout, { name: 'Phở', startBy: 15 * 60 }))).toContain('Phở');
+  });
+  it('tin sáng: rỗng thì không dựng, có tin thì liệt kê', () => {
+    expect(renderToStaticMarkup(createElement(MorningNewsCard, { news: [] }))).toBe('');
+    const h = renderToStaticMarkup(createElement(MorningNewsCard, { news: ['A', 'B'] }));
+    expect(h).toContain('Tin sáng nay'); expect(h).toContain('>A<'); expect(h).toContain('>B<');
   });
 });

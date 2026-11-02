@@ -43,7 +43,7 @@ import { AlleyTodayCard, SeasonEventCard } from './MorningEventCards';
 import { DueDebtsCard, ReservationsCard } from './MorningRegularCards';
 import { DueContractsCard } from './DueContractsCard';
 import { HotGoodsCards } from './HotGoodsCards';
-import { LoanNoteCard, EveningPrepCallout } from './MorningNotes';
+import { LoanNoteCard, EveningPrepCallout, MorningNewsCard } from './MorningNotes';
 import { FestivalNowCard, FestivalSoonCard } from './FestivalCards';
 import { CounterDemandCard } from './CounterDemandCard';
 import { MarketSurplusCard } from './MarketSurplusCard';
@@ -283,12 +283,7 @@ export function MorningPanel() {
         })()}
       </p>
       {/* GĐ565: tin sáng đầy đủ — toast chỉ hiện 3 giây và gộp '+N tin' */}
-      {lastSummary?.day === day - 1 && lastSummary.news?.length ? (
-        <div style={{ ...styles.card, display: 'block', fontSize: 12, lineHeight: 1.6 }}>
-          <b>📰 Tin sáng nay</b>
-          {lastSummary.news.map((n, i) => <div key={i}>{n}</div>)}
-        </div>
-      ) : null}
+      {lastSummary?.day === day - 1 && <MorningNewsCard news={lastSummary.news} />}
 
       <AlleyTodayCard weatherSeed={weatherSeed} day={day} level={level} />
 

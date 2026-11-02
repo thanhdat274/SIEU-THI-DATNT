@@ -26,3 +26,14 @@ export function EveningPrepCallout({ name, startBy }: { name?: string; startBy: 
     </Callout>
   );
 }
+
+/** GĐ565/938: tin sáng đầy đủ — toast chỉ hiện 3 giây và gộp '+N tin'. Rỗng thì không dựng. */
+export function MorningNewsCard({ news }: { news?: string[] }) {
+  if (!news?.length) return null;
+  return (
+    <div style={{ ...styles.card, display: 'block', fontSize: 12, lineHeight: 1.6 }}>
+      <b>📰 Tin sáng nay</b>
+      {news.map((n, i) => <div key={i}>{n}</div>)}
+    </div>
+  );
+}
