@@ -5,7 +5,8 @@ import { RECIPES, COOKED_PRODUCT_IDS, COOK_UNLOCK } from '../data/recipes';
 import { productById, unlockedProducts } from '../data/products';
 import { SHOP_TIERS } from '../data/shopTiers';
 import { maxStaff } from '../data/staff';
-import { startCounter } from '../core/biz';
+import { startCounter, takeLoan } from '../core/biz';
+import { LOAN_OPTIONS_MIN } from '../data/biz';
 import { BRANCH_SHIFTS, CONVENIENCE } from '../data/branches';
 import { QUAN_NUOC_HIRE_FEE, QUAN_NUOC_MAX_STAFF, QUAN_NUOC_PRICE, QUAN_NUOC_UNLOCK, quanNuocDrinkIds } from '../data/quanNuoc';
 import {
@@ -106,6 +107,8 @@ export function createPlaytest(shop: GroceryShop, customers: CustomerManager, st
   const st = () => useGame.getState();
 
   function restock() {
+    // GĐ850: như người chơi thật, vay gấp khi quỹ âm để nhập hàng (bot từng kẹt xoáy nợ giả ở GĐ845)
+    if (st().money < 0 && !st().biz.loan) takeLoan(LOAN_OPTIONS_MIN, true);
     const s = st();
     const unlocked = unlockedProducts(s.level);
     // Trong dịp lễ: bày nửa kệ bằng hàng mùa (giỏ quà, bánh Tết...) để đo kinh tế lễ
