@@ -21,6 +21,7 @@
 
 ## Trạng thái hiện tại (02/11/2026)
 - Các mục GĐ790–929 đã chuyển sang `docs/progress-archive/PROGRESS-GD790-929.md` (giữ file này gọn).
+- GĐ959: tách data/rivals.ts (tiệm đối thủ) khỏi data/biz.ts (1345→999), biz re-export nên import cũ giữ nguyên + test. Full 355 file/3053 test, tsc sạch.
 - GĐ958: tách arrangeGeometry (snap/box/aisle/overlap/findSpot) khỏi ArrangePanel (454→406) + test. Full 354 file/3051 test, tsc sạch. Chưa soi bằng mắt trong game.
 - GĐ957: tách SupplierRelLine + ForecastLine khỏi OrderPanel (668→646) + test. Full 353 file/3046 test, tsc sạch. Chưa soi bằng mắt trong game.
 - GĐ956: tách StaffLines (dòng/thanh giá trị nhân viên, tiệm chính + chi nhánh) khỏi StaffPanel (536→427) + test. Full 353 file/3044 test, tsc sạch. Chưa soi bằng mắt trong game.
