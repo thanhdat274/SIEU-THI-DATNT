@@ -4,7 +4,7 @@ import { nextPerk, birthdayLabel, REGULARS, type PerkEffect } from '../../data/r
 import { arcById, currentArcStep } from '../../data/regularArc';
 import { lifetimeRegularVisits, vipTierOf, nextTierOf, monthlyTriAn, regularQuote, EMOTIONAL_FRIENDSHIP } from '../../data/regularTrust';
 import { Footer, Swatch, styles } from './shared';
-import { DebtBook } from './ReportPanels';
+import { DebtBook } from './DebtBook';
 
 /** Biểu tượng nhận diện nhanh cho từng loại perk của khách quen. */
 export const PERK_ICONS: Record<PerkEffect, string> = {
