@@ -162,8 +162,6 @@
 - GĐ762: thẻ khách quen hiện ngày sinh nhật (sau khi đã gặp).
 - GĐ834–839: duyệt+áp dụng viết lại 4 thông báo (docs/notify-audit.md); FPS mobile late save ~28–30, CPU render ~1 ms (chưa kết luận, đo rAF cần pane hiện); chip kế hoạch mobile 36 px; hud-alerts mobile max-height 32vh; tsc/build ok, chunk lớn nhất 252 KB.
 - GĐ840–854: audit GĐ840 xanh (2943 test, thông báo ≤90, HUD ≤20 nút); thêm hudMobileCss.test.ts (chip ≥36px, dải cảnh báo có trần vh); sửa bế tắc quỹ âm: bot autoplay/playtest vay gấp, cấp <5 được vay thêm tới trần 3 gói (loanWhenBroke.test.ts); nâng timeout coop. Còn mở: FPS ≥30 gfx Low cần máy thật. Chi tiết: docs/progress-archive/PROGRESS-GD840-854.md.
-- GĐ855: coopClient.test.ts nâng timeout chung 20→60 s (cả bộ chạy song song làm 28 test quá hạn; chạy riêng luôn xanh 51/51); gộp log GĐ840–854 để PROGRESS.md ≤30 KB.
-- GĐ856: kiểm tra sức khỏe — tsc sạch, thông báo dài nhất 88/90, cây làm việc sạch; tiếp theo audit GĐ860.
-- GĐ857: build vite xanh; đo lại gzip các chunk nạp đầu từ dist/index.html: tổng ≈538 KB (three 258, store 99, react 65, surpriseArcs 46, index 35, data 34) ≤ 600 KB.
-- GĐ858: đo thời gian bộ test: 2949 test xanh, 110 s tường (ngân sách ≤5 phút), không timeout sau khi nâng coop lên 60 s.
-- GĐ859: xác nhận remote khớp HEAD (20fd99f), nhánh đồng bộ; chuẩn bị audit GĐ860.
+- GĐ855–859: nâng timeout coop 60 s; kiểm tsc/build/gzip bầu đầu ≈538 KB/bộ test 110 s/remote đồng bộ. Chi tiết trong docs/progress-archive/PROGRESS-GD840-854.md.
+
+- GĐ860 (rà Leader+Designer): 2949 test xanh 110 s, tsc sạch, 358 thông báo, 0 vượt 90, bundle đầu ≈538/600 KB. Không thêm tính năng: các trục đã đủ sâu; việc mở duy nhất là FPS ≥30 gfx Low (cần máy thật, cửa sổ tiền cảnh) và QA co-op 2 tab (cần server, bị cấm). Kế: rà GĐ870.

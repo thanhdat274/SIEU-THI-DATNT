@@ -15,3 +15,9 @@
 - GĐ852: chọn hướng nhẹ cho bế tắc quỹ âm (GĐ851): cấp <5 quỹ còn âm thì vay gấp thêm 1M, gộp vào gốc, trần 3 gói (3M); quỹ dương thì không. Lương/thuê giữ nguyên. +2 test; toàn bộ test xanh, riêng coopClient "đổi vai" timeout 20 s một lần khi chạy cả bộ (chập chờn như GĐ830, 2 lần chạy riêng đều xanh).
 - GĐ853: kiểm chứng trình duyệt (ván mới cấp 6, ép −3M): bot vay 3M, quỹ dương ngay ngày 1, doanh thu 250k→1,07M/ngày trong 5 ngày, không còn bế tắc. (Cấp ≥5 dùng đường vay thường; luật vay gấp thêm cấp <5 được khoá bằng test.)
 - GĐ854: test coopClient "đổi vai" (nạp lại cả store) quá hạn 20 s khi cả bộ chạy song song (chập chờn GĐ830/852) → nâng timeout riêng test đó lên 60 s; không đổi logic.
+
+- GĐ855: coopClient.test.ts nâng timeout chung 20→60 s (cả bộ chạy song song làm 28 test quá hạn; chạy riêng luôn xanh 51/51); gộp log GĐ840–854 để PROGRESS.md ≤30 KB.
+- GĐ856: kiểm tra sức khỏe — tsc sạch, thông báo dài nhất 88/90, cây làm việc sạch; tiếp theo audit GĐ860.
+- GĐ857: build vite xanh; đo lại gzip các chunk nạp đầu từ dist/index.html: tổng ≈538 KB (three 258, store 99, react 65, surpriseArcs 46, index 35, data 34) ≤ 600 KB.
+- GĐ858: đo thời gian bộ test: 2949 test xanh, 110 s tường (ngân sách ≤5 phút), không timeout sau khi nâng coop lên 60 s.
+- GĐ859: xác nhận remote khớp HEAD (20fd99f), nhánh đồng bộ; chuẩn bị audit GĐ860.
