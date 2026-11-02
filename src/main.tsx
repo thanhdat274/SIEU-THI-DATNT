@@ -50,7 +50,7 @@ import { cancelSleep, checkpoint, inAlley, initCoop, isGuest, partnerPositions, 
 import { useSession } from './net/session';
 import { playerPos } from './core/playerPos';
 import { sapKindOf, sapStallBox, sapStrollerCount } from './data/sapRong';
-import { deliveryHint, DIRT_PER_MOP, MOP_DONE_NOTE, mopPlan, sapLotHint } from './core/interactHints';
+import { deliveryHint, DIRT_PER_MOP, locationLabel, MOP_DONE_NOTE, mopPlan, sapLotHint } from './core/interactHints';
 import { openZones, zoneBlockRects, zoneById } from './data/zones';
 import { formatMoney } from './data/products';
 
@@ -662,7 +662,7 @@ function updateStatus() {
   const inside = world.buildings.find((b) => b.contains(player.position.x, player.position.z));
   // Trang trại không có tòa nhà: đứng gần cổng là coi như đang ở trại (nút đi lại hiện "Về nhà")
   const nearFarm = !inside && player.position.distanceTo(world.farmSpot) < 12;
-  const location = inside ? inside.opts.name : nearFarm ? 'Trang trại đầu ngõ' : 'Ngoài đường';
+  const location = locationLabel(inside?.opts.name, nearFarm);
   if (s.buildMode) {
     // Gợi ý do chế độ xây quản lý
     if (!s.placing && s.hint !== null) useGame.setState({ hint: null });

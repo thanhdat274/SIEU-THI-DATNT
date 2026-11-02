@@ -34,3 +34,8 @@ export function mopPlan(dirt: number, inShop: boolean, canAct: boolean): { mop: 
 
 /** Lời báo sau khi lau, khi sàn đã sạch hẳn (còn < 1 bẩn). */
 export const MOP_DONE_NOTE = '✨ Lau xong rồi, sàn tiệm sạch bong';
+
+/** Tên chỗ người chơi đang đứng: trong tòa nhà → tên tòa; gần cổng trại → trại; còn lại ngoài đường. */
+export function locationLabel(insideName: string | null | undefined, nearFarm: boolean): string {
+  return insideName ? insideName : nearFarm ? 'Trang trại đầu ngõ' : 'Ngoài đường';
+}

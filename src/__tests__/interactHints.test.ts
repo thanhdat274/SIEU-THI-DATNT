@@ -40,3 +40,14 @@ describe('GĐ968 — mopPlan', () => {
     expect(MOP_DONE_NOTE.length).toBeLessThanOrEqual(90);
   });
 });
+
+import { locationLabel } from '../core/interactHints';
+
+describe('GĐ969 — locationLabel', () => {
+  it('trong nhà → tên nhà; gần trại → trại; còn lại ngoài đường', () => {
+    expect(locationLabel('Tạp hóa', false)).toBe('Tạp hóa');
+    expect(locationLabel('Tạp hóa', true)).toBe('Tạp hóa');
+    expect(locationLabel(undefined, true)).toBe('Trang trại đầu ngõ');
+    expect(locationLabel(null, false)).toBe('Ngoài đường');
+  });
+});
