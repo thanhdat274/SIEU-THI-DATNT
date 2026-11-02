@@ -27,6 +27,7 @@
 - **GĐ800 (rà 10 GĐ):** HUD ≤ 20 nút, bundle 533/597 KB, chunk 253/255, 2940 test xanh — không tính năng nào cần gộp/bỏ (GĐ793–794 chỉ thêm vào panel có sẵn, không nút/thông báo mới); không hạ trần được thêm. Nợ mở: FPS thật máy yếu, đo cấp ≥40, QA co-op hai tab (cần `npm run server`).
 - **GĐ715–788** (tóm tắt từng khối: docs/progress-archive/PROGRESS-GD715-788-summaries.md): bán online, đường đời nhân viên, trả góp/sổ nợ, sinh nhật khách quen, audit GĐ720/730/740 đều ĐẠT (bundle ≤ 597 KB, chunk ≤ 255 KB).
 
+- **GĐ880:** FPS cấp 30 (ngày 45, autoplay): `?gfx=low` 50 FPS, 0 lần tự hạ — đạt ≥30 (máy dev, chưa throttle 4×).
 - **GĐ879:** FPS giữa game: autoplay 14 ngày → ngày 15 cấp 17, `?gfx=low` vẫn 60 FPS, 0 lần tự hạ (máy dev, chưa throttle 4×; chưa đo cấp ≥30).
 - **GĐ878:** đo FPS thật `?gfx=low` trong trình duyệt app: 60 FPS ổn định, 0 lần tự hạ (máy dev, chưa phải máy yếu thật; chưa throttle CPU).
 - **GĐ877:** tách `MorningPanel` (846 dòng) khỏi `ReportPanels.tsx` (1.327 → 550); 3 test đọc nguồn đổi đường dẫn; 2954 test xanh, bundle không đổi. Nợ refactor UI ĐÃ HẾT. QA trình duyệt: Sổ đầu ngày + Tổng kết mở được, console 0 lỗi.
