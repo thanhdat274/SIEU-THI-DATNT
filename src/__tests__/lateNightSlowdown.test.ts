@@ -36,3 +36,15 @@ describe('hạ tốc độ khi khuya', () => {
     expect(useGame.getState().speed).toBe(8);
   });
 });
+
+describe('mốc ngất 02:00 (GĐ788)', () => {
+  it('tick qua 26:00 → sang ngày mới, mất 10% tiền, đồng hồ không kẹt ở 26:xx', () => {
+    useGame.setState({ minutes: 26 * 60 - 1, speed: 1, money: 100000, day: 5 });
+    useGame.getState().tick(1);
+    const s = useGame.getState();
+    expect(s.day).toBe(6);
+    expect(s.money).toBeLessThan(100000);
+    expect(s.minutes).toBeLessThan(24 * 60);
+    expect(msgs.some((m) => m.includes('ngất'))).toBe(true);
+  });
+});
