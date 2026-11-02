@@ -108,7 +108,7 @@ export function createPlaytest(shop: GroceryShop, customers: CustomerManager, st
 
   function restock() {
     // GĐ850: như người chơi thật, vay gấp khi quỹ âm để nhập hàng (bot từng kẹt xoáy nợ giả ở GĐ845)
-    if (st().money < 0 && !st().biz.loan) takeLoan(LOAN_OPTIONS_MIN, true);
+    if (st().money < 0) takeLoan(LOAN_OPTIONS_MIN, true);
     const s = st();
     const unlocked = unlockedProducts(s.level);
     // Trong dịp lễ: bày nửa kệ bằng hàng mùa (giỏ quà, bánh Tết...) để đo kinh tế lễ

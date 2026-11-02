@@ -24,3 +24,20 @@ describe('vay khi hết tiền (GĐ846)', () => {
     expect(g().money).toBe(m + top);
   });
 });
+
+describe('vay gấp thêm khi quỹ vẫn âm, cấp thấp (GĐ852)', () => {
+  beforeEach(() => useGame.setState({ level: 2, money: -3_000_000 }));
+
+  it('vay gấp lần 2 gộp vào gốc khi quỹ còn âm, dừng ở trần 3 gói', () => {
+    for (let i = 0; i < 6; i++) takeLoan(LOAN_OPTIONS_MIN, true);
+    expect(g().biz.loan?.principal).toBe(3 * LOAN_OPTIONS_MIN);
+    expect(g().money).toBe(-3_000_000 + 3 * LOAN_OPTIONS_MIN);
+  });
+
+  it('quỹ đã dương thì không vay gấp thêm', () => {
+    takeLoan(LOAN_OPTIONS_MIN, true);
+    useGame.setState({ money: 500_000 });
+    takeLoan(LOAN_OPTIONS_MIN, true);
+    expect(g().biz.loan?.principal).toBe(LOAN_OPTIONS_MIN);
+  });
+});

@@ -52,7 +52,7 @@ export function createAutoplay(
   /** Bày hàng: mỗi tầng một mặt hàng hợp ngành, nhập đủ để bày đầy rồi để dư một ít. */
   function restock() {
     // GĐ847: người chơi thật vay gấp khi quỹ âm để nhập hàng — bot làm như vậy thay vì kẹt xoáy nợ
-    if (st().money < 0 && !st().biz.loan) takeLoan(LOAN_OPTIONS_MIN, true);
+    if (st().money < 0) takeLoan(LOAN_OPTIONS_MIN, true);
     const s = st();
     const unlocked = unlockedProducts(s.level);
     let kk = 0;
