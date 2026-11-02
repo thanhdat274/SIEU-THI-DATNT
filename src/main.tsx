@@ -49,7 +49,8 @@ import { pushCloudSave } from './net/cloud';
 import { cancelSleep, checkpoint, inAlley, initCoop, isGuest, partnerPositions, updateCoop } from './net/coop';
 import { useSession } from './net/session';
 import { playerPos } from './core/playerPos';
-import { SAP_LOT_COST, sapKindOf, sapStallBox, sapStrollerCount } from './data/sapRong';
+import { sapKindOf, sapStallBox, sapStrollerCount } from './data/sapRong';
+import { deliveryHint, sapLotHint } from './core/interactHints';
 import { openZones, zoneBlockRects, zoneById } from './data/zones';
 import { formatMoney } from './data/products';
 
@@ -503,14 +504,7 @@ const fixedInteractables: Interactable[] = [
     }, key: 'KeyL', action: () => { useGame.getState().openZone('ngo2'); } },
   // GĐ501: lô trống Ngõ 2 — đứng ở lô kế tiếp bấm L thuê sạp hàng rong
   ...[0, 1, 2, 3].map((i) => ({ position: new THREE.Vector3(86 + i * 8, 0, 1.6), radius: 2.6,
-    hint: () => {
-      const g = useGame.getState();
-      const n = g.biz.sapRong ?? 0;
-      if (!openZones(g.biz.zones).includes('ngo2') || n < i) return '';
-      // GĐ521: lô đã có sạp → tự đứng sạp (mỗi ngày một lần)
-      if (i < n) return g.biz.sapHandDay === g.day ? '' : '[L] Đứng sạp hôm nay (+25%)';
-      return `[L] Thuê lô sạp hàng rong ${formatMoney(SAP_LOT_COST)}`;
-    }, key: 'KeyL', action: () => { const g = useGame.getState(); if (i < (g.biz.sapRong ?? 0)) g.tendSapHand(); else g.rentSapLot(); } })),
+    hint: () => sapLotHint(useGame.getState(), i), key: 'KeyL', action: () => { const g = useGame.getState(); if (i < (g.biz.sapRong ?? 0)) g.tendSapHand(); else g.rentSapLot(); } })),
   { position: world.farm.wellSpot, radius: 2.6, hint: () => '[T] Tưới luống từ giếng', key: 'KeyT', action: () => useGame.getState().waterGarden() },
 ];
 
@@ -538,10 +532,7 @@ function buildInteractables(): Interactable[] {
       .map((o) => ({
         position: world.houses.get(o.houseId)!.door,
         radius: 1.6,
-        hint: () => {
-          const late = useGame.getState().minutes > o.dueAt;
-          return `[G] Giao hàng cho ${o.caller}${late ? ' (đã trễ hẹn)' : ` · hẹn ${formatClock(o.dueAt)}`}`;
-        },
+        hint: () => deliveryHint(o, useGame.getState().minutes),
         key: 'KeyG',
         action: () => useGame.getState().deliverPhone(o.id),
       })),

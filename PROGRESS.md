@@ -21,6 +21,7 @@
 
 ## Trạng thái hiện tại (02/11/2026)
 - Các mục GĐ790–929 đã chuyển sang `docs/progress-archive/PROGRESS-GD790-929.md` (giữ file này gọn).
+- GĐ967: tách `sapLotHint` + `deliveryHint` (gợi ý tương tác) khỏi main.tsx sang core/interactHints.ts + test. tsc exit 0, full test đạt (361/3070). Chưa soi bằng mắt.
 - GĐ966: gom công thức độ sáng đèn (17h–5h30) lặp ở main/compoundWarm/storefrontLantern vào render/lampLevel.ts + test; sửa lỗi tsc sót ở GĐ965 (chapterPending string|null). tsc exit 0, full test đạt (360/3066). Chưa soi bằng mắt.
 - GĐ965: tách `effectiveSpeed` (dừng giờ khi tổng kết/cốt truyện/câu hỏi quầy; ở hẻm không dừng) khỏi renderFrame sang core/routine.ts + test. tsc sạch, full test đạt (359/3064). Chưa soi bằng mắt.
 - GĐ964: tách marker hướng dẫn ngày đầu khỏi main.tsx sang render/tutorialMarker.ts (createTutorialMarker, markerGlow) + test. tsc sạch, full test đạt (358 file/3059). Chưa soi bằng mắt trong game.
