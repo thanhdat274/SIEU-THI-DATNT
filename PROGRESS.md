@@ -166,3 +166,4 @@
 - GĐ842: autoplay 1 ngày trên save QA ngày 100 mất 4,7 s CPU (tab nền, gồm bot) — chỉ là mốc so sánh cho lần sau, chưa quy ra ms/khung.
 - GĐ843: thêm hudMobileCss.test.ts khoá chip ≥36 px và trần max-height dải cảnh báo mobile.
 - GĐ844: rà backlog: còn lại chỉ nợ refactor UI (ReportPanels/BusinessPanel — luật: chỉ tách khi đụng panel), đo FPS thật (cần cửa sổ tiền cảnh) và QA chơi chung (cần server). Không có việc chơi sâu mới đã duyệt; chờ người dùng chọn hướng mở rộng.
+- GĐ845: playtest 3 ngày trên save bot ngày 100: tiền −9→−11,5 triệu, 0 doanh thu, 100% khách bất mãn (kệ trống, lương+thuê trừ vô điều kiện ở endDay.ts:458). Là xoáy nợ của bot (đã biết GĐ817), người chơi thật có cảnh báo lương + vay gấp/vay thêm (biz.ts takeLoan). Chưa thêm cơ chế cứu trợ; nếu muốn, cần duyệt thiết kế (trần vay theo nợ, giảm lương tạm).
