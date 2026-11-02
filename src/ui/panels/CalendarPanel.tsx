@@ -22,10 +22,6 @@ export function CalendarPanel() {
     return dist(a) - dist(b);
   });
   const pct = (x: number) => `${x >= 1 ? '+' : ''}${Math.round((x - 1) * 100)}%`;
-  const dateText = (doy0: number) => {
-    const { month, day: d } = dateOfDoy(doy0);
-    return `${d}/${month}`;
-  };
   const rangeText = (f: typeof FESTIVALS[number]) => {
     const a = dateOfDoy(f.from), b = dateOfDoy(f.to);
     return a.month === b.month ? `${a.day}–${b.day}/${a.month}` : `${a.day}/${a.month}–${b.day}/${b.month}`;
