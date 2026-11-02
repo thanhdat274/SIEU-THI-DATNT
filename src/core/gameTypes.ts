@@ -425,7 +425,7 @@ export interface GameState {
   marketLast: { day: number; units: number; revenue: number };
   /** Người bán rong vào tới quầy: đưa đề nghị lấy sỉ. */
   offerWholesale: () => VendorOffer | null;
-  acceptWholesale: () => boolean;
+  acceptWholesale: (rush?: boolean) => boolean;
   declineWholesale: () => void;
   /** Bán chợ phiên: xả hàng DƯ định kỳ, một lần mỗi ngày chợ. */
   sellMarketSurplus: () => { ok: boolean; reason?: 'already' | 'no-surplus'; units?: number; pay?: number };

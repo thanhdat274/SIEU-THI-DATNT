@@ -60,3 +60,32 @@ export function wholesaleUnit(id: string, priceOf: (id: string) => number): numb
 export function wholesaleTotal(items: Record<string, number>, priceOf: (id: string) => number) {
   return Object.entries(items).reduce((n, [id, q]) => n + wholesaleUnit(id, priceOf) * q, 0);
 }
+
+/** GĐ929: nhập gấp phần kho thiếu để giao kịp đơn sỉ — trả giá nhập × hệ số này (chạy xe, nhập lẻ gấp). */
+export const WHOLESALE_RUSH_MARKUP = 1.15;
+
+export interface WholesaleRush {
+  /** Số món còn thiếu theo từng mã hàng (rỗng = đủ hàng, không cần nhập gấp). */
+  missing: Record<string, number>;
+  /** Tiền nhập gấp phần thiếu. */
+  cost: number;
+  /** Tiền sỉ thu về cả đơn trừ tiền nhập gấp (âm = nhận đơn này lỗ). */
+  net: number;
+}
+
+/** Nhập gấp phần thiếu của một đơn sỉ: thiếu bao nhiêu, tốn bao nhiêu, lời ròng bao nhiêu. */
+export function wholesaleRush(
+  items: Record<string, number>,
+  storage: Record<string, number>,
+  priceOf: (id: string) => number,
+): WholesaleRush {
+  const missing: Record<string, number> = {};
+  let cost = 0;
+  for (const [id, q] of Object.entries(items)) {
+    const lack = q - (storage[id] ?? 0);
+    if (lack <= 0) continue;
+    missing[id] = lack;
+    cost += Math.round(productById(id).buy * WHOLESALE_RUSH_MARKUP) * lack;
+  }
+  return { missing, cost, net: wholesaleTotal(items, priceOf) - cost };
+}

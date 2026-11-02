@@ -1,7 +1,7 @@
 import { useClock, useGame } from '../core/store';
 import { describeItems } from '../data/phoneOrders';
 import { formatMoney } from '../data/products';
-import { vendorById, wholesaleTotal } from '../data/wholesale';
+import { vendorById, wholesaleRush, wholesaleTotal } from '../data/wholesale';
 import { wholesaleAdvice } from '../data/wholesaleValue';
 
 /** Tách khỏi Hud, tải lười (GĐ418): lời xin lấy sỉ chỉ hiện thỉnh thoảng. */
@@ -17,6 +17,7 @@ export function VendorAlert() {
   if (!offer) return null;
   const v = vendorById(offer.vendorId);
   const short = Object.entries(offer.items).some(([id, q]) => (storage[id] ?? 0) < q);
+  const rush = short ? wholesaleRush(offer.items, storage, priceOf) : null;
   const advice = wholesaleAdvice(offer, storage, storageLots, priceOf);
   const sellLines = advice ? advice.lines.filter((l) => l.verdict === 'sell') : [];
   return (
@@ -26,7 +27,7 @@ export function VendorAlert() {
       {advice && (advice.clearEmerging || !advice.canFulfill || sellLines.length > 0) && (
         <small className="hud-wholesale-tip">
           {!advice.canFulfill
-            ? '⚠️ Kho thiếu — không nên nhận lời bán sỉ.'
+            ? (rush && rush.net > 0 ? `⚡ Kho thiếu — nhập gấp ${formatMoney(rush.cost)} vẫn lời ~${formatMoney(rush.net)}.` : '⚠️ Kho thiếu — nhập gấp không còn lời.')
             : advice.clearEmerging
               ? '💡 Có hàng cận hạn — bán sỉ đỡ mất trắng.'
               : sellLines.length > 0
@@ -35,7 +36,9 @@ export function VendorAlert() {
         </small>
       )}
       <span className="hud-alert-actions">
-        <button className="hud-btn primary" onClick={accept}>{short ? '⚠️ Kho thiếu' : '🤝 Bán sỉ từ kho'}</button>
+        {short
+          ? <button className="hud-btn primary" disabled={!rush || rush.net <= 0} onClick={() => accept(true)}>⚡ Nhập gấp & giao ({formatMoney(rush?.cost ?? 0)})</button>
+          : <button className="hud-btn primary" onClick={() => accept()}>🤝 Bán sỉ từ kho</button>}
         <button className="hud-btn" onClick={decline}>Không bán</button>
       </span>
     </div>
