@@ -129,6 +129,11 @@ export class GroceryShop {
     this.applyToGrid(useGame.getState().furniture);
   }
 
+  /** GĐ889: kệ/hàng hóa theo nội thất tiệm — ở xa (nội thất ẩn) thì khỏi vẽ cả kệ. */
+  syncFurnitureVisible() {
+    this.furnitureGroup.visible = this.building.interior.visible;
+  }
+
   /** Tạo / xoá / cập nhật hình 3D theo danh sách nội thất trong store. */
   private sync() {
     if (this.shelfGoods && this.shelfGoods.root.parent !== this.furnitureGroup) this.furnitureGroup.add(this.shelfGoods.root);

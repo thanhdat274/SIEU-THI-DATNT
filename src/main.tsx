@@ -886,6 +886,7 @@ function renderFrame() {
     b.setLamp(lamp);
     b.updateDoor(dt, peopleScratch);
   }
+  shop.syncFurnitureVisible();
   // Đèn đường bật cùng giờ với đèn trong nhà; nguồn sáng thật chỉ dành cho đèn gần chỗ nhìn
   world.streetLamps.update(lamp);
   // Đèn lồng cửa tiệm (gđ177): bật sáng ấm chập tối, cùng giờ với đèn đường
