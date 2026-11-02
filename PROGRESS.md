@@ -168,3 +168,4 @@
 - GĐ861–865: rà độ dài thông báo kỹ hơn — rút 4 thông báo (lương khi nhập hàng, mua/xuất chuồng giữa kỳ, thu hoạch bù nhìn); audit-notify.mjs và featureBudget.test.ts tính nhánh điều kiện dài nhất (cả template lồng nhau) → 0 thông báo >90. Chi tiết: docs/progress-archive/PROGRESS-GD840-854.md.
 - GĐ866: gọn PROGRESS.md (31,1→29,9 KB): gộp GĐ861–865, chuyển bản dài rà GĐ820 sang archive; sửa lỗi dòng GĐ861 dính vào GĐ860.
 - GĐ867: cả bộ sau GĐ861–866: 2949 test xanh, 107 s, lần thứ hai liên tiếp không timeout coop.
+- GĐ868: notifyRuntimeLen.test.ts — bot chơi 6 ngày (cấp 8) gom mọi toast thật: 118 thông báo khác nhau, dài nhất 90, 0 vượt; bù chỗ audit tĩnh không thấy (notify(cond ? a : b), fitList). tsc sạch.
