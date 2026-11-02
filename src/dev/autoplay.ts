@@ -91,6 +91,7 @@ export function createAutoplay(
   function hire() {
     const s = st();
     if (s.level < FEATURES.staff || s.staff.length >= maxStaff(s.level)) return;
+    if (s.money < 400_000) return; // GĐ817: người chơi thật không thuê thêm khi quỹ cạn (bot từng thuê 10 người rồi âm tiền)
     const cashiers = s.staff.filter((x) => x.role === 'cashier').length;
     const want = cashiers <= s.staff.length - cashiers ? 'cashier' : 'stocker';
     const c = s.candidates.filter((x) => x.role === want).sort((a, b) => b.skill - a.skill)[0];
