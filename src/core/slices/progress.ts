@@ -102,7 +102,7 @@ export const createProgressSlice = (set: SetState, get: GetState): Pick<GameStat
       set({ money: get().money + stage.bonusMoney });
       s.notify(`💡 ${stage.title} hoàn thành! Nhận +${formatMoney(stage.bonusMoney)} + ${stage.bonusXp} XP`);
       if (stageIdx2 === LANDMARK2_STAGES.length - 1) {
-        s.notify('💡💡 Đèn đường Ngõ 1 thắp sáng — khách đêm đông hơn!');
+        s.notify('💡💡 Đèn đường Ngõ 1 thắp sáng — đêm hẻm sáng sủa, khách đêm đông hơn!');
       }
     } else if (stageIdx >= 0) {
       const stage = LANDMARK_STAGES[stageIdx];
@@ -241,7 +241,7 @@ export const createProgressSlice = (set: SetState, get: GetState): Pick<GameStat
   placeBet: (tier) => {
     const s = get();
     const status = betStatus(s.day, s.questLog.bet);
-    if (status === 'pending') { s.notify('🎯 Hôm nay đã chốt kèo — làm trọn việc chính là trúng!'); return false; }
+    if (status === 'pending') { s.notify('🎯 Hôm nay đã chốt kèo rồi — làm trọn việc chính là trúng, hụt thì mai đặt lại!'); return false; }
     if (status === 'won') { s.notify('🎉 Kèo hôm nay đã trúng, không đổi nữa — mai quay lại đặt kèo mới!'); return false; }
     const def = BET_TIERS.find((t) => t.tier === tier);
     if (!def) return false;

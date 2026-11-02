@@ -10,7 +10,7 @@ export const createPrestigeSlice = (set: SetState, get: GetState): Pick<GameStat
   doPrestige: () => {
     const s = get();
     // Đang ở hẻm online: tiến trình là của cả hẻm, không cho ai làm lệch vòng riêng (như resetGame)
-    if (useSession.getState().coop) return s.notify('🌟 Tái sinh chỉ dùng ở chế độ chơi đơn, không ở hẻm online.');
+    if (useSession.getState().coop) return s.notify('🌟 Tái sinh chỉ dùng ở chế độ chơi đơn, không dùng khi đang ở hẻm online.');
     const p = s.biz.prestige;
     if (p.level >= PRESTIGE_MAX_LEVEL) return s.notify('🌟 Đã tái sinh tối đa số lần, không thể thêm nữa.');
     if (!prestigeEligible(s.level, s.totals.revenue, p.level)) {

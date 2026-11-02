@@ -99,7 +99,7 @@ export const createOnlineSlice = (set: SetState, get: GetState): Pick<GameState,
       stats: { ...s.stats, spent: s.stats.spent + ONLINE_OPEN_COST },
       totals: { ...s.totals, spent: s.totals.spent + ONLINE_OPEN_COST },
     });
-    s.notify('📲 Đã mở gian hàng trên app! Đơn sẽ đổ về khi tiệm mở cửa — giao đúng hẹn giữ điểm cao');
+    s.notify('📲 Đã mở gian hàng trên app! Đơn sẽ đổ về khi tiệm mở cửa — giao đúng hẹn để giữ điểm cao');
     return true;
   },
   toggleOnline: () => {

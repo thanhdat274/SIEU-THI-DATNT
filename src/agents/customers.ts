@@ -560,7 +560,7 @@ export class CustomerManager {
     useGame.setState({ totals: { ...st.totals, impulseSold: st.totals.impulseSold + 1 } });
     if (!st.impulseHinted) {
       useGame.setState({ impulseHinted: true });
-      st.notify('🍬 Khách xếp hàng hay mua kẹp! Bày kẹo, nước ≤15k sát quầy.');
+      st.notify('🍬 Khách xếp hàng hay mua kẹp! Bày kẹo, bánh, nước ≤15k sát quầy để bán thêm.');
     }
   }
 

@@ -523,7 +523,7 @@ export function acceptFairOffer() {  const s = S();
 export function signHiepLuc() {
   const s = S();
   if (!hiepLucEligible(s.branch, s.biz.quanNuoc, s.level)) {
-    return s.notify('Đối tác hiệp lực cần CẢ chi nhánh 24/7 lẫn quán nước (cấp 29)');
+    return s.notify('Để lập đối tác hiệp lực cần mở CẢ chi nhánh 24/7 lẫn quán nước (cấp 29)');
   }
   const m = monthOf(s.day);
   if (s.biz.hiepLuc?.active) {

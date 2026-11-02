@@ -939,7 +939,7 @@ function renderFrame() {
     applyGfx();
     if (gfx.step.level !== prevLevel && !gfxNotified && playing()) {
       gfxNotified = true;
-      g.notify(`🎨 Game tự giảm đồ họa xuống "${GFX_LABEL[gfx.step.level]}" cho mượt. Đổi ở ⋯ Thêm.`);
+      g.notify(`🎨 Máy hơi nặng nên game tự giảm đồ họa xuống "${GFX_LABEL[gfx.step.level]}" cho mượt hơn. Đổi ở ⋯ Thêm → Đồ họa.`);
     }
   } else reportGfx(gfxChoice, gfx.step.level, gfx.avgFps);
   // Nhật ký hiệu năng riêng máy: mỗi ngày game ghi FPS trung bình + mức đang dùng (xem game.perf())
