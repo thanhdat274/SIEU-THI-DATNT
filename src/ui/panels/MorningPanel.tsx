@@ -40,12 +40,12 @@ import { hiepLucEligible } from '../../data/hiepLuc';
 import { earlyUnlockTeaser } from '../../data/unlockMap';
 import { marketClearValue, marketDayAction } from '../../data/chophien';
 import { fairMerchantAction } from '../../data/fairmerchant';
-import { alleySignalsToday } from '../../data/alleySignals';
 import { SupplyChainCard } from './SupplyChainCard';
+import { AlleyTodayCard, SeasonEventCard } from './MorningEventCards';
 import { CounterDemandCard } from './CounterDemandCard';
 import { MarketSurplusCard } from './MarketSurplusCard';
 import { EarlyUnlocksCard } from './EarlyUnlocksCard';
-import { seasonEvent, seasonObjective, seasonEventName, SEASON_EVENT_DAYS, SEASON_REWARD_PER_STAR } from '../../data/seasonEvent';
+import { seasonEvent, seasonObjective, seasonEventName } from '../../data/seasonEvent';
 import { planDay, type DayAction } from '../../data/dayPlan';
 import { demandForecast } from '../../data/counterDemand';
 import { hasSkill } from '../../data/titles';
@@ -288,22 +288,7 @@ export function MorningPanel() {
         </div>
       ) : null}
 
-      {/* GĐ198: Đọc con hẻm — tín hiệu 3D hẻm đang bật hôm nay (chợ phiên / sửa đường / lễ hội).
-          Thuần đọc từng nguồn chân lý của bên dựng cảnh (gđ181/184/197), dạy "con hẻm đổi cảnh theo lịch". */}
-      {(() => {
-        const sigs = alleySignalsToday(weatherSeed ?? 0, day, level);
-        const busy = sigs.filter((s) => s.active);
-        return (
-          <Callout tone={busy.length ? 'accent' : 'info'} style={{ marginBottom: 8 }}
-            title={<>🌇 Con hẻm hôm nay{busy.length ? `: ${busy.map((s) => `${s.icon} ${s.name}`).join(' · ')}` : ''}</>}>
-            <div style={{ marginTop: 4, display: 'grid', gap: 2 }}>
-              {busy.length === 0
-                ? <div style={{ fontSize: 12, opacity: 0.78 }}>Hẻm thường vắng — vài chậu cây trước hiên, đèn ấm lên lúc chập tối. Ngày có chợ phiên / lễ hội / sửa đường thì cảnh đổi liền theo.</div>
-                : busy.map((s) => <div key={s.id} style={{ fontSize: 12 }}>{s.icon} <b>{s.name}</b>: {s.desc}</div>)}
-            </div>
-          </Callout>
-        );
-      })()}
+      <AlleyTodayCard weatherSeed={weatherSeed} day={day} level={level} />
 
       {/* GĐ199/GĐ202: Rốn kho chung + phiếu nạp kho (tách GĐ919 sang SupplyChainCard) */}
       <SupplyChainCard storage={storage} branch={branch ?? undefined} quanNuoc={biz.quanNuoc} quanNuocLast={biz.quanNuocLast ?? null} level={level} weather={weather} day={day} />
@@ -372,24 +357,7 @@ export function MorningPanel() {
 
       {hiepLucEligible(branch, biz.quanNuoc, level) && <HiepLucCard biz={biz} day={day} />}
 
-      {seasonEvent(day) && (() => {
-        const ev = seasonEvent(day)!;
-        const obj = seasonObjective(weatherSeed ?? 0, day);
-        const stars = biz.seasonEvt?.season === ev.season ? (biz.seasonEvt?.stars ?? 0) : 0;
-        const claimedToday = biz.seasonEvt?.claimedDay === ev.dayIndex;
-        const name = seasonEventName(ev.season);
-        return (
-          <Callout tone="ok" title={`🌟 ${name} · ngày ${ev.dayIndex + 1}/${SEASON_EVENT_DAYS}`} style={{ marginBottom: 8 }}>
-            {obj && (
-              <div style={{ fontSize: 12, marginTop: 2 }}>
-                {obj.icon} Mục tiêu hôm nay: <b>{obj.title}</b> ({obj.detail})
-                {claimedToday ? ' ✓ xong' : ' — làm để +1 sao'}
-              </div>
-            )}
-            <div style={{ fontSize: 12, marginTop: 2, opacity: 0.85 }}>⭐ {stars} sao mùa · mỗi mục tiêu thưởng {formatMoney(SEASON_REWARD_PER_STAR)}</div>
-          </Callout>
-        );
-      })()}
+      {seasonEvent(day) && <SeasonEventCard day={day} weatherSeed={weatherSeed} biz={biz} />}
 
       {effects.festival && (
         <div style={{ ...styles.card, display: 'block', marginBottom: 8, outline: '2px solid #f1c40f' }}>
