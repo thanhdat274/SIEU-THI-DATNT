@@ -21,7 +21,7 @@ import { noteComboDay } from '../core/slices/comboDay';
 import { bulkExtra, festivalVisit, perkValue, pickRegular, referFriends, regularById, reserveAsk, INFLUENCER_ID, unlockedFavorites, type RegularDef } from '../data/regulars';
 import { influencerActive } from '../data/social';
 import { pickProfession, PROFESSIONS, PROFESSION_LOOK, type ProfessionDef } from '../data/professions';
-import { DEBT_PARTIAL_CHANCE, DEBT_PARTIAL_MIN, installmentNow, CREDIT_UNLOCK, repaysToday, wantsCredit } from '../data/credit';
+import { DEBT_PARTIAL_CHANCE, DEBT_PARTIAL_MIN, installmentNow, CREDIT_UNLOCK, repaysToday, wantsCredit, creditLeft, creditAskText } from '../data/credit';
 import { askQueuedPatience, ASK_MINUTES, CANDY_ANNOY, CHANGE_CHANCE, CHANGE_UNLOCK, CREDIT_REFUSE_FRIEND_LOSS, changeChoice, defaultCounterPolicy, HAGGLE_CHANCE, HAGGLE_CHANCE_REG, HAGGLE_MIN_TOTAL, PRICEMATCH_CHANCE, HAGGLE_REFUSE_OK, HAGGLE_UNLOCK, haggleChoice, haggleCounterOff, haggleOff, haggleSettle, oddChange, pricematchSettle } from '../data/counterDeals';
 import { rollService, SERVICE_BUY_ALONG, type ServiceDef } from '../data/services';
 import { earnService } from '../core/biz';
@@ -715,7 +715,7 @@ export class CustomerManager {
       const owed = st.debts[reg.id]?.amount ?? 0;
       ask = {
         kind: 'credit', amount: total, icon: '📒', who: reg.name,
-        text: `quên ví, xin ghi sổ ${formatMoney(total)}${owed ? ` (đang nợ ${formatMoney(owed)})` : ''}`,
+        text: creditAskText(total, owed, creditLeft(st.regulars[reg.id], st.debts[reg.id])),
         options: ['📒 Cho ghi sổ', 'Không cho nợ'], fallback: 0,
       };
     // GĐ734 — kèo trả góp: nợ cũ đến hạn (kể từ hôm qua trở về trước) + đủ lớn + chủ đứng quầy

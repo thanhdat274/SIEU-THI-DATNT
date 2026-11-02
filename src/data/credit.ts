@@ -1,4 +1,5 @@
 import type { RegularDef, RegularProgress } from './regulars';
+import { formatMoney } from './products';
 
 /** Sổ nợ: khách quen đủ thân được ghi sổ, lần ghé sau trả. */
 export interface Debt {
@@ -23,6 +24,16 @@ export const WRITE_OFF_FRIEND_LOSS = 10;
 
 /** Hạn mức ghi sổ: càng thân càng được nợ nhiều. */
 export const creditLimit = (p: RegularProgress | undefined) => 50000 + Math.max(0, p?.friendship ?? 0) * 2000;
+
+/** GĐ746 — hạn mức còn lại (hạn mức − đang nợ, không âm): người chơi biết còn ghi được bao nhiêu. */
+export const creditLeft = (p: RegularProgress | undefined, debt: Debt | undefined) =>
+  Math.max(0, creditLimit(p) - (debt?.amount ?? 0));
+
+/** GĐ746 — câu xin ghi sổ ở quầy: luôn nói còn ghi được bao nhiêu (không hộp đen). */
+export function creditAskText(total: number, owed: number, left: number): string {
+  const base = `quên ví, xin ghi sổ ${formatMoney(total)}`;
+  return owed > 0 ? `${base} (đang nợ ${formatMoney(owed)} · còn ghi ${formatMoney(left)})` : `${base} (còn ghi ${formatMoney(left)})`;
+}
 
 /** Khách quen này hôm nay có xin ghi sổ không (đủ thân, chưa vượt hạn mức, quên ví). */
 export function wantsCredit(def: RegularDef, p: RegularProgress | undefined, debt: Debt | undefined, total: number, roll: number) {
