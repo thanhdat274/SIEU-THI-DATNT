@@ -1,7 +1,7 @@
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
-import { HourChart } from '../ui/panels/ReportPanels';
+import { HourChart } from '../ui/panels/HistoryPanel';
 
 /** GĐ547: biểu đồ khách theo giờ nhiều cột (>12) không tràn khung điện thoại. */
 const hours = (n: number) => Array.from({ length: n }, (_, i) => ({ hour: 6 + i, customers: 100 + i, revenue: 0 }));

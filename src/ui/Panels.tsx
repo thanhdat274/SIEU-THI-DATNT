@@ -21,7 +21,7 @@ const PricePanel = lazy(() => import('./panels/PricePanel').then((m) => ({ defau
 const RegularsPanel = lazy(() => import('./panels/RegularsPanel').then((m) => ({ default: m.RegularsPanel })));
 const SummaryPanel = lazy(() => import('./panels/ReportPanels').then((m) => ({ default: m.SummaryPanel })));
 const MorningPanel = lazy(() => import('./panels/ReportPanels').then((m) => ({ default: m.MorningPanel })));
-const HistoryPanel = lazy(() => import('./panels/ReportPanels').then((m) => ({ default: m.HistoryPanel })));
+const HistoryPanel = lazy(() => import('./panels/HistoryPanel').then((m) => ({ default: m.HistoryPanel })));
 const ComboPanel = lazy(() => import('./panels/ComboPanel').then((m) => ({ default: m.ComboPanel })));
 const LevelsPanel = lazy(() => import('./panels/LevelsPanel').then((m) => ({ default: m.LevelsPanel })));
 const ReviewsPanel = lazy(() => import('./panels/ReviewsPanel').then((m) => ({ default: m.ReviewsPanel })));
