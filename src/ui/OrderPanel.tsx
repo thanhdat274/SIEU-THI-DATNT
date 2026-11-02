@@ -21,8 +21,7 @@ import { supplyRestockManifest, supplyNetworkOrderVisible } from '../data/supply
 import { teahouseFillPlan } from '../data/teahouseHaul';
 import { quanNuocDrinkIds } from '../data/quanNuoc';
 import { festivalRestockPlan } from '../data/festivalRestock';
-import { PREP_MIN_QTY } from '../data/festivalPrep';
-import { Callout } from './panels/shared';
+import { GuideBanner, QuanDrinkTipCallout, FestivalPrepCallout, NetworkFillCallout } from './OrderBanners';
 import { displayable, onHand, incoming, suggestQty, assessText, supplierTone, supplierTomorrow } from './orderHelpers';
 import { acceptFairOffer } from '../core/biz';
 import { CUNG_GOODS, isXoiCungDay } from '../data/tiemXoi';
@@ -308,71 +307,10 @@ export function OrderPanel() {
   return (
     <div style={{ width: '100%', maxWidth: 860 }}>
       <h2 style={{ margin: '0 0 4px' }}>📦 Nhập hàng</h2>
-      {guideOn && (
-        <div style={{ ...st.guideBanner, ...(guideIn.length ? st.guideBannerReady : {}) }}>
-          <div style={{ fontWeight: 700 }}>🧭 Ngày đầu tiên: nhập 3 món trước</div>
-          <div style={{ marginTop: 3, fontSize: 12 }}>
-            {guideItems.map((g, gi) => (
-              <span key={g.id}>
-                {guideIn.includes(g.id) ? '✅' : '⬜'} {g.name}
-                {gi < guideItems.length - 1 && <span style={{ opacity: 0.6 }}> · </span>}
-              </span>
-            ))}
-          </div>
-          <div style={{ marginTop: 4, fontSize: 12, fontWeight: 600, color: guideIn.length ? '#2ecc71' : '#f1c40f' }}>
-            {guideIn.length ? 'Sẵn sàng đặt hàng!' : 'Mỗi món một thùng là đủ cho ngày đầu.'}
-          </div>
-        </div>
-      )}
-      {restockTip && (
-        <Callout
-          tone={restockTip.verdict}
-          title={restockTip.verdict === 'danger' ? '🚨 Nạp thêm đồ uống cho quán nước' : '🥤 Quán nước sắp ăn khô kho chung'}
-          style={{ margin: '8px 0 6px' }}
-        >
-          <div style={{ fontSize: 12 }}>
-            {restockTip.verdict === 'danger'
-              ? `Hôm qua quán nước bỏ lỡ ~${restockTip.missedRevenue.toLocaleString('vi-VN')}đ vì kho thiếu đồ uống. `
-              : 'Quán nước chung kho với kệ tiệm chính — '}
-            tối nay quán cần ~{restockTip.wanted} ly mà kho chỉ còn {restockTip.have}{restockTip.shortfall > 0
-              ? <> — nhập thêm ít nhất <b>{restockTip.shortfall} ly</b> nước/ngọt/cà phê</>
-              : ' (đã đủ, chỉ nhắc lại tín hiệu hôm qua)'}.
-          </div>
-          {restockTip.shortfall > 0 && (
-            <button style={{ ...st.btn, fontSize: 11, marginTop: 6, padding: '2px 8px' }} onClick={fillQuanNuocDrinks}>
-              ➕ Nạp đồ uống quán nước vào giỏ
-            </button>
-          )}
-        </Callout>
-      )}
-      {festivalPlan && (
-        <Callout tone="accent" title={`⏳ ${festivalPlan.festival.icon} ${festivalPlan.festival.name} ${festivalPlan.inDays === 1 ? 'ngày mai' : `sau ${festivalPlan.inDays} ngày`} — trữ lễ còn thiếu ${festivalPlan.lines.length} món`} style={{ margin: '8px 0 6px' }}>
-          <div style={{ fontSize: 12 }}>
-            Trữ đủ mỗi món ≥ {PREP_MIN_QTY} trong kho trước khi lễ bắt đầu → thưởng đón lễ <b style={{ color: '#2ecc71' }}>+{formatMoney(festivalPlan.bonus)}</b>.
-            {festivalPlan.skipped.length > 0 && <> Món mối này không bán: {festivalPlan.skipped.map((id) => productById(id).name).join(', ')} — đổi mối để trữ nốt.</>}
-          </div>
-          <button style={{ ...st.btn, fontSize: 11, marginTop: 6, padding: '2px 8px' }} onClick={fillFestivalPrep}>
-            ➕ Trữ lễ vào giỏ
-          </button>
-        </Callout>
-      )}
-      {netNeeds && (
-        <Callout tone={netManifest.buyNeed > 0 ? 'warn' : 'info'} title="🔗 Nạp liền mạng lưới (rốn kho chung)" style={{ margin: '8px 0 6px' }}>
-          <div style={{ fontSize: 12 }}>
-            <div>{netManifest.line}.</div>
-            {netManifest.lines.filter((l) => l.outlet === 'branch').length > 0 && (
-              <div style={{ marginTop: 3, fontSize: 11, opacity: 0.9 }}>
-                Chi nhánh kệ cần: {netManifest.lines.filter((l) => l.outlet === 'branch').map((l) => `${l.label} ${l.need}${l.source === 'buy' ? ' (mua)' : ''}`).join(' · ')}
-              </div>
-            )}
-            {netManifest.lines.some((l) => l.outlet === 'branch') && (
-              <button style={{ ...st.btn, fontSize: 11, marginTop: 6, padding: '2px 8px' }} onClick={fillBranchSheet}>
-                ➕ Điền kệ chi nhánh vào giỏ
-              </button>
-            )}
-          </div>
-        </Callout>
-      )}
+      {guideOn && <GuideBanner guideItems={guideItems} guideIn={guideIn} />}
+      {restockTip && <QuanDrinkTipCallout tip={restockTip} onFill={fillQuanNuocDrinks} />}
+      {festivalPlan && <FestivalPrepCallout plan={festivalPlan} onFill={fillFestivalPrep} />}
+      {netNeeds && <NetworkFillCallout manifest={netManifest} onFillBranch={fillBranchSheet} />}
       <div style={st.meters}>
         <Meter
           label="💰 Tiền"
@@ -767,8 +705,6 @@ const st: Record<string, React.CSSProperties> = {
   btn: { border: 'none', borderRadius: 6, padding: '6px 12px', cursor: 'pointer', fontSize: 13 },
   list: { maxHeight: '45vh', overflow: 'auto', borderRadius: 8, background: '#232330' },
   // Lớp hướng dẫn ngày đầu (GĐ38): banner + khối 3 món thiết yếu nổi bật, chỉ hiện khi guideOn
-  guideBanner: { background: 'rgba(52, 152, 219, 0.14)', border: '1px solid #3498db', borderRadius: 8, padding: '10px 12px', margin: '6px 0 10px', fontSize: 13 },
-  guideBannerReady: { border: '1px solid #2ecc71', background: 'rgba(46, 204, 113, 0.12)' },
   guideBox: { display: 'grid', gap: 6, margin: '0 0 10px', padding: 6, borderRadius: 8, background: 'rgba(52, 152, 219, 0.06)', border: '1px solid #3498db55' },
   guideRow: {
     display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', padding: '8px 10px',
