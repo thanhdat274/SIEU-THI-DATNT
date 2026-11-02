@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (02/11/2026)
+- **GĐ758:** đóng rủi ro GĐ757 bằng đọc mã (không đổi mã): bước hướng dẫn 3 "Đứng quầy" ĐÃ có dẫn đường — `Hud.tsx:328` nhấp nháy nút Ra tiệm khi người chơi còn ở nhà (ảnh QA thấy viền vàng) → không thêm gợi ý nữa (Luật 9). Gỡ mục backlog tương ứng.
 - **GĐ757:** QA save trắng chơi đơn trên HEAD (Playwright, ?thu=1&gfx=low, dev server QA đã tắt): thoại Bà Năm (3 lần Tiếp→Xong) → Ra tiệm → Mở cửa → tăng tốc 8× → **món đầu bán sau ~20 s thật** (tính từ lúc vào game; mục tiêu ≤5 phút ĐẠT), 0 lỗi console. Phát hiện: hộp thoại còn mở thì thế giới DỪNG (thiết kế); không "Ra tiệm" đứng quầy thì cả ngày 0 doanh thu, sáng ngày 2 chỉ còn trừ tiền nhà −50k — đúng thiết kế (bước hướng dẫn "Đứng quầy" nói rõ) nhưng người mới bỏ qua sẽ mất 1 ngày: cân nhắc gợi ý nổi bật hơn khi tiệm mở mà chưa ai đứng quầy (backlog, cần đo thêm trước khi làm — Luật 9). Giới hạn: chạy 8× và máy headless, chưa đo thông báo/panel tự bật.
 - **GĐ756:** QA co-op 2 tab KHÔNG chạy được trong cloud: `server/index.ts` (cổng 3002, DEV_AUTH_BYPASS) sập lúc khởi động với Firebase `app/invalid-credential` — container không có credential Firebase (người dùng đã duyệt chạy server, nhưng không có credential để cấp; KHÔNG tự dựng giả). Co-op chỉ được kiểm bằng test (105 xanh) + soát 5 câu (GĐ751). Việc chờ: phiên trên máy có server 3002 chạy sẵn làm vòng 2 tab (?dev=a/?dev=b). Đã tắt dev server QA.
 - **GĐ755:** sửa lỗi nhỏ GĐ754 thấy: câu mở Sổ đầu ngày dính chữ ("Nắng đẹp.Đọc xong…") khi không có ghi chú lịch tự động → thêm `{' '}`. Xác nhận trình duyệt thật: "Nắng đẹp. Đọc xong…", 0 lỗi; tsc sạch, panelFrame xanh. Không đổi logic/save.
@@ -73,7 +74,6 @@
 
 
 ## Backlog tiếp theo
-- 🔍 (GĐ757) Người mới mở cửa mà không đứng quầy → cả ngày 0 doanh thu. Đo xem hướng dẫn "Đứng quầy tính tiền" đã đủ nổi chưa (QA người thật, 1x tốc độ) trước khi thêm gì.
 - 🔍 **Chiều sâu bán online — vòng 4 GĐ Hoàn thành + QA trọn vòng đạt (GĐ719).** Kế tiếp: (a) **GĐ720: audit 10-GĐ** (GĐ711–720) + dồn archive GĐ711–719; (b) sau audit: đánh giá trục kế tiếp theo tầm nhìn (kệ/giá/nhân sự/nhịp tuần — hoặc cạn mới đề xuất mở rộng, ghi lý do).
 - 🔍 **Trục kế tiếp GĐ727+: đường đời nhân viên (rà 8 trục GĐ720 xếp nhân sự nhì)** — lát cắt đầu: **nhân viên chi nhánh xin nghỉ mai** — vẽ bằng băm riêng weatherSeed+ngày (mẫu GĐ717, ~15% ngày một nhân viên trực xin), sáng mai hiện ở phần chi nhánh của Sổ đầu ngày kèm 2 nút: Cho nghỉ (dùng sẵn action restBranchStaff — ca mai thiếu người thật) / Giữ lại (fatigue +1 — ghi vào cơ chế calloff có sẵn; cần action mới → classification coopGuard GUARDED). Ràng buộc bài học GĐ722: mọi rng mới hoặc băm riêng hoặc gate theo sự hiện diện của người chơi; không đụng kinh tế chung; không migration (trường tuỳ chọn).
 - ✅ **Trục tín dụng/nợ — lát cắt trả góp ĐÃ XONG (GĐ734) + QA (735).** Đánh giá bằng số (audit GĐ740): mọi trục lớn ĐỦ SÂU theo coverage 58,22/90,09 và autoplay/simGolden xanh — chuỗi GĐ741+ ưu tiên: rà backlog nợ mở (GĐ675 CPU render cuối-game, refactor UI khi đụng panel) và QA tự nhiên các trục mới trước khi tính mở rộng.
@@ -163,3 +163,4 @@
 - GĐ755: sửa dính chữ câu mở Sổ đầu ngày.
 - GĐ756: QA co-op 2 tab bị chặn (thiếu credential Firebase cho server hẻm trong cloud).
 - GĐ757: QA save trắng chơi đơn — món đầu bán ~20 s thật (8×), 0 lỗi; ghi nhận rủi ro người mới bỏ qua 'Đứng quầy'.
+- GĐ758: đóng rủi ro 'bỏ qua Đứng quầy' — đã có nút Ra tiệm nhấp nháy.
