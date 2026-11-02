@@ -36,7 +36,7 @@ import { comboById } from '../../data/combos';
 import { branchMorningPlan } from '../../data/branchMorning';
 import { feedCost, landmark2Progress, landmarkProgress } from '../../data/landmark';
 import { storageUsed } from '../../core/gameTypes';
-import { hiepLucEligible, HIEPLUC_COC, HIEPLUC_MIN } from '../../data/hiepLuc';
+import { hiepLucEligible } from '../../data/hiepLuc';
 import { earlyUnlockTeaser } from '../../data/unlockMap';
 import { marketClearValue, marketDayAction } from '../../data/chophien';
 import { fairMerchantAction } from '../../data/fairmerchant';
@@ -45,7 +45,6 @@ import { SupplyChainCard } from './SupplyChainCard';
 import { CounterDemandCard } from './CounterDemandCard';
 import { MarketSurplusCard } from './MarketSurplusCard';
 import { EarlyUnlocksCard } from './EarlyUnlocksCard';
-import { signHiepLuc } from '../../core/biz';
 import { seasonEvent, seasonObjective, seasonEventName, SEASON_EVENT_DAYS, SEASON_REWARD_PER_STAR } from '../../data/seasonEvent';
 import { planDay, type DayAction } from '../../data/dayPlan';
 import { demandForecast } from '../../data/counterDemand';
@@ -71,6 +70,7 @@ import { TiemXoiCard } from './TiemXoiCard';
 import { SickShelvesCard, YesterCombosCard } from './MorningWarnCards';
 import { SolvencyCard, LoanBurdenCard, DailyBurnCard } from './MorningFinanceCards';
 import { ButcherCard, HuiCard } from './MorningMeatHuiCards';
+import { BranchChoresCard, HiepLucCard } from './MorningBranchCards';
 import { Callout, Stat, Footer, Swatch, styles, Tabs } from './shared';
 
 
@@ -368,33 +368,9 @@ export function MorningPanel() {
 
       {biz.tiemXoi?.open && <TiemXoiCard tiemXoi={biz.tiemXoi} last={biz.tiemXoiLast} />}
 
-      {branchChores.length > 0 && (
-        <Callout tone="warn" title="🏪 Tiện lợi 24/7: việc hôm nay" style={{ marginBottom: 8 }}>
-          {branchChores.map((c, i) => (
-            <button key={i} onClick={() => openPanel({ type: 'branch' })}
-              style={{ display: 'block', width: '100%', textAlign: 'left', background: 'transparent', border: 'none', color: c.danger ? '#e74c3c' : '#f1c40f', fontSize: 12, marginTop: 2, cursor: 'pointer', padding: 0 }}>
-              {c.icon} {c.text}
-            </button>
-          ))}
-        </Callout>
-      )}
+      {branchChores.length > 0 && <BranchChoresCard branchChores={branchChores} />}
 
-      {hiepLucEligible(branch, biz.quanNuoc, level) && (
-        <Callout tone="event" title="🤝 Đối tác chi nhánh × quán nước" style={{ marginBottom: 8 }}>
-          {biz.hiepLuc?.active && biz.hiepLuc.m === monthOf(day) ? (
-            <div style={{ fontSize: 12, marginTop: 2 }}>
-              Đang hiệp lực tháng này: gom {formatMoney(biz.hiepLucMonth ?? 0)}/{formatMoney(HIEPLUC_MIN)} doanh thu chung{biz.hiepLucStreak ? ` · chuỗi ${biz.hiepLucStreak} tháng` : ''}. Cuối tháng đủ ngưỡng được thưởng (cọc {formatMoney(HIEPLUC_COC)} hoàn lại).
-            </div>
-          ) : (
-            <div style={{ fontSize: 12, marginTop: 2 }}>
-              Cả 2 cơ sở đang mở — lập đối tác để gom doanh thu chung mỗi tháng, đủ {formatMoney(HIEPLUC_MIN)} được thưởng + chuỗi tháng.
-              <button onClick={signHiepLuc} style={{ display: 'block', marginTop: 4, ...styles.btn }}>
-                🤝 Lập đối tác (cọc {formatMoney(HIEPLUC_COC)}, hoàn cuối tháng)
-              </button>
-            </div>
-          )}
-        </Callout>
-      )}
+      {hiepLucEligible(branch, biz.quanNuoc, level) && <HiepLucCard biz={biz} day={day} />}
 
       {seasonEvent(day) && (() => {
         const ev = seasonEvent(day)!;
