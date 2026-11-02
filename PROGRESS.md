@@ -21,6 +21,7 @@
 
 ## Trạng thái hiện tại (02/11/2026)
 - Các mục GĐ790–929 đã chuyển sang `docs/progress-archive/PROGRESS-GD790-929.md` (giữ file này gọn).
+- **GĐ971 (QA save trắng bằng mắt)** Xoá localStorage/IndexedDB → màn đăng nhập → "Chơi không cần đăng nhập" → vào ngày 1 (6:00, Tết dương lịch, hướng dẫn 5 bước, hội thoại Bà Năm chương 1, HUD 12 nút, dock có "Thêm"). Không có lỗi mới sau khi vào game; các lỗi `REGULAR_NAMES`/`main.tsx` trong console là dấu vết HMR cũ của GĐ962 (máy chủ nay trả 200, export có đủ).
 - **GĐ970 (rà 961–969)** Chỉ tách code thuần (main.tsx 1012→971 dòng: stocktakeMessage, effectiveSpeed, lampLevel, interactHints, tutorialMarker); sửa 1 lỗi tsc sót ở GĐ965 (từ nay đọc exit code tsc riêng). Bundle không đổi: đầu 533/597 KB gzip, chunk lớn nhất 253/255. Full test 361 file/3075. GĐ950–959 chuyển sang `docs/progress-archive/PROGRESS-GD950-959.md`. Chưa soi bằng mắt trong game.
 - GĐ969: tách `locationLabel` (tên vị trí người chơi) khỏi updateStatus sang core/interactHints.ts + test. tsc exit 0, full test đạt (361/3075). Chưa soi bằng mắt.
 - GĐ968: tách `mopPlan` (quyết định lau nhà) khỏi mopFloor trong main.tsx sang core/interactHints.ts + test. tsc exit 0, full test đạt (361/3074). Chưa soi bằng mắt.
