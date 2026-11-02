@@ -400,7 +400,7 @@ export function OrderPanel() {
   const order = () => {
     if (needConfirm) {
       setConfirmedTotal(total);
-      notify(`⚠️ Sau đơn này chỉ còn ${formatMoney(Math.max(0, moneyLeft))}, chưa đủ ${formatMoney(wages)} lương cuối ngày. Bấm lần nữa nếu vẫn nhập.`);
+      notify(`⚠️ Sau đơn chỉ còn ${formatMoney(Math.max(0, moneyLeft))}, chưa đủ ${formatMoney(wages)} lương cuối ngày. Bấm lại nếu vẫn nhập.`);
       return;
     }
     // Hẻm online, máy khách: placeOrder trả `true` tạm — chỉ xoá giỏ khi máy chạy báo đặt được thật
