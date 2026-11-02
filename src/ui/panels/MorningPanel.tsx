@@ -7,7 +7,7 @@ import { RECIPES } from '../../data/recipes';
 import { kitchenValue } from '../../data/kitchenValue';
 import { pickEveningPrep } from '../../data/cookSchedule';
 import { cookSpeed, bartenderBoost } from '../../core/slices/orders';
-import { caseSize, formatMoney, productById, fmtMul } from '../../data/products';
+import { caseSize, formatMoney, productById } from '../../data/products';
 import { reputationOf } from '../../data/reputation';
 import { repPayoff } from '../../data/repPayoff';
 import { repMoney, avgPerVisit } from '../../data/repMoney';
@@ -19,10 +19,9 @@ import { happyPayoff } from '../../data/rhythm';
 import { QUAN_NUOC_UNLOCK, QUAN_NUOC_WAGE, QUAN_PRICE_OPTIONS, isQuanMatchDay } from '../../data/quanNuoc';
 import { quanNuocDayAction, quanNuocHealth } from '../../data/quanNuocInsights';
 import { expiringSoon, expiryAdvice, peakAdvice, peakHours, spoilNightReport, storeMissRevenue, waitLossStats, walkoutAdvice, type Advice } from '../../data/advice';
-import { dateOfDoy, dayEffects, dayOfYear, festivalStock, isWeekend, upcomingFestival, weekdayOf } from '../../data/calendar';
+import { dateOfDoy, dayEffects, dayOfYear, isWeekend, upcomingFestival, weekdayOf } from '../../data/calendar';
 import { festivalValue } from '../../data/festivalValue';
 import { festivalPrepAction, festivalRestockPlan } from '../../data/festivalRestock';
-import { prepItems, prepBonus, PREP_MIN_QTY } from '../../data/festivalPrep';
 import { itemHealthList, shelfAttention, shelfCount } from '../../data/analytics';
 import { computeRecords, recordFeedToday } from '../../data/records';
 import { comboDaySnapshot, resetComboDay } from '../../core/slices/comboDay';
@@ -44,6 +43,7 @@ import { AlleyTodayCard, SeasonEventCard } from './MorningEventCards';
 import { DueDebtsCard, ReservationsCard } from './MorningRegularCards';
 import { DueContractsCard } from './DueContractsCard';
 import { HotGoodsCards } from './HotGoodsCards';
+import { FestivalNowCard, FestivalSoonCard } from './FestivalCards';
 import { CounterDemandCard } from './CounterDemandCard';
 import { MarketSurplusCard } from './MarketSurplusCard';
 import { EarlyUnlocksCard } from './EarlyUnlocksCard';
@@ -223,7 +223,6 @@ export function MorningPanel() {
   // GĐ132: mồi "🧭 Sắp mở khóa" cho người chơi MỚI (tuần đầu) — 1–2 hệ lớn sắp mở + XP còn thiếu (thuần đọc)
   const earlyUnlocks = earlyUnlockTeaser({ level, xp, day });
   const courier = staff.some((w) => w.role === 'courier');
-  const pct = (x: number) => `${x >= 1 ? '+' : ''}${Math.round((x - 1) * 100)}%`;
   const today = dateOfDoy(dayOfYear(day));
   const expiring = expiringSoon(storage, storageLots, furniture.flatMap((f) => f.tiers));
   const expiryTips = expiryAdvice(expiring);
@@ -361,50 +360,9 @@ export function MorningPanel() {
 
       {seasonEvent(day) && <SeasonEventCard day={day} weatherSeed={weatherSeed} biz={biz} />}
 
-      {effects.festival && (
-        <div style={{ ...styles.card, display: 'block', marginBottom: 8, outline: '2px solid #f1c40f' }}>
-          <b style={styles.cardTitle}>{effects.festival.icon} {effects.festival.name} đang diễn ra</b>
-          <div style={{ fontSize: 12, marginTop: 2 }}>
-            👥 khách {pct(effects.festival.traffic)}{effects.festival.cost !== 1 && ` · 💰 giá nhập ${pct(effects.festival.cost)}`}
-            {effects.festival.tolerance && ' · 😤 khách chịu giá cao'}
-          </div>
-          {festivalStock(effects.festival, level).length > 0 && (
-            <div style={{ fontSize: 12, marginTop: 2 }}>
-              Hàng nên bày sẵn: {festivalStock(effects.festival, level).map((id) => `${productById(id).name}${haveStock(id) ? ' ✓' : ' ⚠️ kho không có'}`).join(', ')}
-            </div>
-          )}
-          {fv && fvDelta && (
-            <div style={{ fontSize: 12, marginTop: 2 }}>
-              🎉 ước thêm {fvDelta}
-            </div>
-          )}
-        </div>
-      )}
+      {effects.festival && <FestivalNowCard festival={effects.festival} level={level} haveStock={haveStock} fv={fv} fvDelta={fvDelta} />}
       <HotGoodsCards eventHot={effects.hot} weekHot={hot} haveStock={haveStock} />
-      {soon && (
-        <div style={{ ...styles.card, display: 'block', marginBottom: 8 }}>
-          <b style={styles.cardTitle}>⏳ {soon.festival.icon} {soon.festival.name} {soon.inDays === 1 ? 'ngày mai' : `sau ${soon.inDays} ngày`}</b>
-          <div style={{ fontSize: 12, marginTop: 2 }}>
-            🎊 Đón lễ: trữ sẵn{' '}
-            {prepItems(soon.festival, level).map((id, i) => (
-              <span key={id}>
-                {i > 0 && ', '}
-                {productById(id).name}
-                {(storage[id] ?? 0) >= PREP_MIN_QTY
-                  ? <b style={{ color: '#2ecc71' }}> ✓</b>
-                  : <b style={{ color: '#f1c40f' }}> ⚠️ còn {Math.max(0, PREP_MIN_QTY - (storage[id] ?? 0))} thiếu</b>}
-              </span>
-            ))}
-            <span style={{ opacity: 0.7 }}> · đủ trước {soon.inDays === 1 ? 'ngày mai' : 'lễ'} → <b style={{ color: '#2ecc71' }}>+{formatMoney(prepBonus(soon.festival, level))}</b> đón lễ</span>
-          </div>
-          {fv && (
-            <div style={{ fontSize: 12, marginTop: 2 }}>
-              <b>Còn {fv.inDays} ngày:</b> khách ×{fmtMul(fv.traffic)} ({fvDelta})
-              {fv.cost > 1 && <> · giá nhập +{Math.round((fv.cost - 1) * 100)}% (bán đắt vẫn đông)</>}
-            </div>
-          )}
-        </div>
-      )}
+      {soon && <FestivalSoonCard soon={soon} level={level} storage={storage} fv={fv} fvDelta={fvDelta} />}
 
       <h3 style={{ margin: '10px 0 4px', fontSize: 14 }}>💛 Khách quen dự kiến ghé hôm nay ({expected.length})</h3>
       {expected.length === 0 && <p style={styles.sub}>Không ai trong nhóm khách quen có lịch ghé hôm nay.</p>}
