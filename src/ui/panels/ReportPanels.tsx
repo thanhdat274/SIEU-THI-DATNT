@@ -736,7 +736,7 @@ export function MorningPanel() {
           // GĐ276: phản chiếu lịch tự động ở mức lập kế hoạch — mở sớm thì khẳng định, 8h thì nhắc chỉnh.
           const note = autoOpenNote(autoOpenAt, autoRoutine, cashierOpensMorning(staff));
           return note ? <div style={{ marginTop: 2 }}>{note}</div> : null;
-        })()}
+        })()}{' '}
         Đọc xong nên nhập hàng bày kệ trước khi mở cửa — khách quen ghé đúng giờ quen.
         🏠 Tiền nhà trả cuối ngày: <b>{formatMoney(rentOf(shopTier))}</b>.
         {(() => {
