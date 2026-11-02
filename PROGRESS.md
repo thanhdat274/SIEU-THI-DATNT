@@ -28,6 +28,7 @@
 - **GĐ715–788** (tóm tắt từng khối: docs/progress-archive/PROGRESS-GD715-788-summaries.md): bán online, đường đời nhân viên, trả góp/sổ nợ, sinh nhật khách quen, audit GĐ720/730/740 đều ĐẠT (bundle ≤ 597 KB, chunk ≤ 255 KB).
 
 - **GĐ892 (điều tra, không đổi code):** pane đếm 1.597 mesh hiện; 5 nhóm lớn nhất 154–489 mesh (tại (60,-64), (24,-70), (7,-8), (4,-2), (-12,-4)) đều có số geometry = số mesh và hầu hết vật liệu riêng (vd 489 mesh/489 geo/411 mat) ⇒ KHÔNG instancing được, muốn giảm phải gộp geometry theo vật liệu (bake tĩnh) — việc lớn, rủi ro với cửa/quạt/đèn, và đổi luồng Math.random của sim. Quyết định: chỉ làm khi có số FPS thật báo khựng; hiện giữ nguyên. FPS 4× throttle vẫn cần cửa sổ hiện.
+- **GĐ925 (tách MorningPanel #7)** Tách hai Callout cảnh báo "Kệ cần chú ý" + "Combo hôm qua kém hiệu quả" thành `src/ui/panels/MorningWarnCards.tsx` + test SSR; MorningPanel 703 → 682 dòng (từ 846, −164). tsc sạch, 327 file xanh.
 - **GĐ924 (tách MorningPanel #6)** Tách thẻ "Tiệm xôi" thành `src/ui/panels/TiemXoiCard.tsx` + test SSR; MorningPanel 716 → 703 dòng (từ 846, −143). tsc sạch, 326 file xanh.
 - **GĐ923 (tách MorningPanel #5)** Tách thẻ "Quán nước" thành `src/ui/panels/QuanNuocCard.tsx` + test SSR (mới mở / có kết quả hôm qua); MorningPanel 745 → 716 dòng (từ 846, −130). tsc sạch, 325 file xanh.
 - **GĐ922 (tách MorningPanel #4)** Tách thẻ "Sắp mở khóa" (ngày đầu) thành `src/ui/panels/EarlyUnlocksCard.tsx` + test SSR dùng dữ liệu teaser thật; MorningPanel 766 → 745 dòng (từ 846, −101). tsc sạch, 324 file xanh.

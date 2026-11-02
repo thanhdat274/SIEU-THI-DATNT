@@ -68,6 +68,7 @@ import { recentAvgRevenue } from '../../data/minorPayoff';
 import { AdviceCard, HourChart, ItemTable, HistoryChart } from './HistoryPanel';
 import { QuanNuocCard } from './QuanNuocCard';
 import { TiemXoiCard } from './TiemXoiCard';
+import { SickShelvesCard, YesterCombosCard } from './MorningWarnCards';
 import { Callout, Stat, Footer, Swatch, styles, Tabs } from './shared';
 
 
@@ -325,31 +326,9 @@ export function MorningPanel() {
       )}
       {nextEvt && <button onClick={() => openPanel({ type: 'calendar' })} title="Xem lịch năm" style={{ display: 'block', fontSize: 11, opacity: 0.7, margin: '-4px 0 8px', background: 'transparent', border: 'none', color: 'inherit', padding: 0, cursor: 'pointer', textAlign: 'left' }}>{nextEvt} →</button>}
 
-      {sickest.length > 0 && (
-        <Callout tone="danger" title="🔎 Kệ cần chú ý" style={{ marginBottom: 8 }}>
-          <div style={{ marginTop: 4, display: 'grid', gap: 2 }}>
-            {sickest.map((s, i) => (
-              <button key={i} onClick={() => openPanel({ type: 'analytics' })}
-                style={{ display: 'flex', gap: 8, alignItems: 'baseline', background: 'transparent', border: 'none', color: '#e74c3c', fontSize: 12, cursor: 'pointer', padding: 0, textAlign: 'left' }}>
-                <span>{s.icon} {s.text} → sổ phân tích</span>
-              </button>
-            ))}
-          </div>
-        </Callout>
-      )}
+      {sickest.length > 0 && <SickShelvesCard sickest={sickest} />}
 
-      {yesterCombos.length > 0 && (
-        <Callout tone="accent" title="💡 Combo hôm qua kém hiệu quả" style={{ marginBottom: 8 }}>
-          <div style={{ marginTop: 4, display: 'grid', gap: 2 }}>
-            {yesterCombos.map(({ def, t, margin }) => (
-              <button key={def.id} onClick={() => openPanel({ type: 'combos' })}
-                style={{ display: 'flex', gap: 8, alignItems: 'baseline', background: 'transparent', border: 'none', color: '#f1c40f', fontSize: 12, cursor: 'pointer', padding: 0, textAlign: 'left' }}>
-                <span>{def.icon} "{def.name}" hôm qua {t.count} lần · giảm {formatMoney(t.discount)} · <b>lãi cả cặp {formatMoney(margin)}</b> {margin < 0 ? '(lỗ)' : '(bán chậm)'} → xét xoay slot ở combo</span>
-              </button>
-            ))}
-          </div>
-        </Callout>
-      )}
+      {yesterCombos.length > 0 && <YesterCombosCard yesterCombos={yesterCombos} />}
 
       {biz.loan && (
         <div style={{ ...styles.card, display: 'block', marginBottom: 8, outline: biz.loan.dueDay - day <= 3 ? '2px solid #e74c3c' : undefined }}>
