@@ -18,3 +18,19 @@ export function deliveryHint(o: { caller: string; dueAt: number }, minutes: numb
   const late = minutes > o.dueAt;
   return `[G] Giao hàng cho ${o.caller}${late ? ' (đã trễ hẹn)' : ` · hẹn ${formatClock(o.dueAt)}`}`;
 }
+
+export const DIRT_PER_MOP = 5;
+
+/**
+ * Kết quả một lần lau nhà: `notify` là lời báo (nếu có), `mop` = true khi thực sự bớt bẩn.
+ * `canAct` là false khi đang mở bảng / chế độ xây / chưa vào game / đang ngủ → không làm gì.
+ */
+export function mopPlan(dirt: number, inShop: boolean, canAct: boolean): { mop: boolean; notify?: string } {
+  if (!canAct) return { mop: false };
+  if (!inShop) return { mop: false, notify: '🧹 Vào trong tiệm mới lau nhà được' };
+  if (dirt < 1) return { mop: false, notify: '✨ Sàn tiệm đã sạch bong' };
+  return { mop: true };
+}
+
+/** Lời báo sau khi lau, khi sàn đã sạch hẳn (còn < 1 bẩn). */
+export const MOP_DONE_NOTE = '✨ Lau xong rồi, sàn tiệm sạch bong';

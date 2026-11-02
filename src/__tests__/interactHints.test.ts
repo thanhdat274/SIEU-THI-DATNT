@@ -21,3 +21,22 @@ describe('GĐ967 — interactHints', () => {
     expect(deliveryHint({ caller: 'Cô Lan', dueAt: 600 }, 700)).toContain('(đã trễ hẹn)');
   });
 });
+
+import { DIRT_PER_MOP, MOP_DONE_NOTE, mopPlan } from '../core/interactHints';
+
+describe('GĐ968 — mopPlan', () => {
+  it('không làm gì khi không được phép hành động', () => {
+    expect(mopPlan(50, true, false)).toEqual({ mop: false });
+  });
+  it('ngoài tiệm thì báo vào tiệm', () => {
+    expect(mopPlan(50, false, true)).toEqual({ mop: false, notify: '🧹 Vào trong tiệm mới lau nhà được' });
+  });
+  it('sàn sạch thì báo sạch bong, không lau', () => {
+    expect(mopPlan(0.5, true, true)).toEqual({ mop: false, notify: '✨ Sàn tiệm đã sạch bong' });
+  });
+  it('còn bẩn thì lau', () => {
+    expect(mopPlan(1, true, true)).toEqual({ mop: true });
+    expect(DIRT_PER_MOP).toBe(5);
+    expect(MOP_DONE_NOTE.length).toBeLessThanOrEqual(90);
+  });
+});

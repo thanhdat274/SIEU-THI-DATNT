@@ -50,7 +50,7 @@ import { cancelSleep, checkpoint, inAlley, initCoop, isGuest, partnerPositions, 
 import { useSession } from './net/session';
 import { playerPos } from './core/playerPos';
 import { sapKindOf, sapStallBox, sapStrollerCount } from './data/sapRong';
-import { deliveryHint, sapLotHint } from './core/interactHints';
+import { deliveryHint, DIRT_PER_MOP, MOP_DONE_NOTE, mopPlan, sapLotHint } from './core/interactHints';
 import { openZones, zoneBlockRects, zoneById } from './data/zones';
 import { formatMoney } from './data/products';
 
@@ -608,15 +608,13 @@ function autoBreakfast() {
 }
 
 /** Tự lau nhà: đứng trong tiệm bấm C (giữ để lau liên tục), mỗi lần bớt một ít bẩn. */
-const DIRT_PER_MOP = 5;
 function mopFloor() {
   const s = useGame.getState();
-  if (s.panel || s.buildMode || !playing() || player.asleep) return;
-  if (s.location !== shop.building.opts.name) return void s.notify('🧹 Vào trong tiệm mới lau nhà được');
-  if (s.dirt < 1) return void s.notify('✨ Sàn tiệm đã sạch bong');
+  const plan = mopPlan(s.dirt, s.location === shop.building.opts.name, !(s.panel || s.buildMode || !playing() || player.asleep));
+  if (plan.notify) return void s.notify(plan.notify);
+  if (!plan.mop) return;
   s.addDirt(-DIRT_PER_MOP);
-  const left = useGame.getState().dirt;
-  if (left < 1) s.notify('✨ Lau xong rồi, sàn tiệm sạch bong');
+  if (useGame.getState().dirt < 1) s.notify(MOP_DONE_NOTE);
 }
 
 function interact() {
