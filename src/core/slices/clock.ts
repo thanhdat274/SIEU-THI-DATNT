@@ -43,6 +43,12 @@ export const createClockSlice = (set: SetState, get: GetState): Pick<GameState, 
       s.notify(`😵 Bạn thức quá khuya và ngất đi... Mất ${formatMoney(lost)} tiền thuốc.`);
       return;
     }
+    // GĐ786: qua 24:00 mà đang chạy nhanh thì hạ về 1× — ở 8× chỉ còn ~7 giây thực tới lúc ngất, người chơi
+    // (nhất là người mới) không kịp thấy banner "Đã khuya". Chỉ hạ MỘT lần lúc vượt mốc, chạy trên máy chủ (khách không tick).
+    if (s.minutes < 24 * 60 && minutes >= 24 * 60 && s.speed > 1) {
+      set({ speed: 1 });
+      s.notify('🌙 Đã khuya — đã chậm về 1×. Về nhà ngủ kẻo ngất!');
+    }
     // Đồng hồ chạy mỗi khung hình: ghi thẳng vào state (không set) để cả đống component
     // dùng nguyên `useGame()` không phải vẽ lại 60 lần/giây. UI đọc giờ qua useClock bên dưới.
     get().minutes = minutes;
