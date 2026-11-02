@@ -85,4 +85,9 @@ describe('thông báo ngắn gọn', () => {
     expect(longest, `thông báo dài nhất ${longest} ký tự (${worst})`).toBeLessThanOrEqual(NOTIFY_CEILING.maxLen);
     expect(over.length, `${over.length} thông báo dài hơn ${NOTIFY_TARGET} ký tự — rút gọn, đừng thêm`).toBeLessThanOrEqual(NOTIFY_CEILING.overTarget);
   });
+
+  it('thông báo viết dạng NFC (chữ có dấu không tách rời) để đếm ký tự không lệch', () => {
+    const bad = notifyTexts().filter((t) => t.text !== t.text.normalize('NFC')).map((t) => `${t.file}: ${t.text}`);
+    expect(bad).toEqual([]);
+  });
 });
