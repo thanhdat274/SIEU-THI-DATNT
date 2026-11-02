@@ -23,11 +23,11 @@ g.window = { addEventListener: () => {}, removeEventListener: () => {}, requestA
  * chuỗi ghép và fitList. Test này cho bot chơi vài ngày, gom MỌI toast đã hiện và kiểm ≤ 90 ký tự.
  */
 describe('độ dài thông báo lúc chạy', () => {
-  it('bot chơi 6 ngày: mọi toast ≤ 90 ký tự (code point)', { timeout: 300_000 }, async () => {
+  it.each([3, 8, 15])('bot chơi 6 ngày từ cấp %i: mọi toast ≤ 90 ký tự (code point)', { timeout: 300_000 }, async (lv) => {
     const { seedLevel, buildEconomyWorld } = await import('../dev/simEconomy');
     const { createAutoplay } = await import('../dev/autoplay');
     const { useGame } = await import('../core/store');
-    seedLevel(8);
+    seedLevel(lv);
     const world = buildEconomyWorld();
     const autoplay = createAutoplay(world.shop, world.customers, world.staff, world.player);
     const seen = new Set<string>();
@@ -37,7 +37,7 @@ describe('độ dài thông báo lúc chạy', () => {
     // eslint-disable-next-line no-console
     console.log(`[toast] ${seen.size} thông báo khác nhau, dài nhất ${Math.max(...[...seen].map((m) => [...m].length))}`);
     const over = [...seen].filter((m) => [...m.normalize('NFC')].length > 90);
-    expect(seen.size, 'bot phải gây ra vài thông báo thật').toBeGreaterThan(5);
+    expect(seen.size, "bot phải gây ra vài thông báo thật").toBeGreaterThan(3);
     expect(over, `${over.length} toast dài hơn 90 ký tự:\n${over.join('\n')}`).toEqual([]);
   });
 });

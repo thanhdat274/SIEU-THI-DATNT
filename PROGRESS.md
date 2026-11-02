@@ -169,3 +169,4 @@
 - GĐ866: gọn PROGRESS.md (31,1→29,9 KB): gộp GĐ861–865, chuyển bản dài rà GĐ820 sang archive; sửa lỗi dòng GĐ861 dính vào GĐ860.
 - GĐ867: cả bộ sau GĐ861–866: 2949 test xanh, 107 s, lần thứ hai liên tiếp không timeout coop.
 - GĐ868: notifyRuntimeLen.test.ts — bot chơi 6 ngày (cấp 8) gom mọi toast thật: 118 thông báo khác nhau, dài nhất 90, 0 vượt; bù chỗ audit tĩnh không thấy (notify(cond ? a : b), fitList). tsc sạch.
+- GĐ869: notifyRuntimeLen mở rộng cấp 3/8/15: 156/132/195 toast khác nhau, dài nhất 90, 0 vượt. Kế: rà GĐ870.
