@@ -63,7 +63,7 @@
 - Họ màu hướng dẫn/chuỗi/biểu đồ: gộp về một sắc info `#3498db` (GĐ178); ngoại lệ duy nhất: buy-tone `#55efc4`/`#ff7675`; GardenPanel giữ họ riêng. GĐ258 quét nốt 6 màu cũ — src/ui chỉ còn bảng duyệt + màu nhận diện.
 
 ## Cần theo dõi / nợ mở
-- ⏱️ GĐ675: số CPU render gfx=low (5,7 ms trung vị) đo trên save ngày 2 ít prop — đo lại trên save cuối-game (cấp cao, nhiều kệ/prop) trước khi khẳng định biên 4× throttle; làm khi đụng vòng render lần kế.
+- ⏱️ GĐ675 (đo thêm GĐ794: cấp 10, gfx=low, 5.895 draw call → 3,6 ms trung vị/4,3 ms p90 ⇒ 4× ≈ 14–17 ms < 33 ms, đạt; vẫn thiếu save cuối-game): số CPU render gfx=low (5,7 ms trung vị) đo trên save ngày 2 ít prop — đo lại trên save cuối-game (cấp cao, nhiều kệ/prop) trước khi khẳng định biên 4× throttle; làm khi đụng vòng render lần kế.
 - 🕳️ GĐ665/668: QA co-op vòng ngày (ngủ cả hẻm → tổng kết 2 tab) cần tab trình duyệt THẬT — tab IAB về nền bị đóng băng timer → server ngắt WS → game tự reload (`coop.ts:339`, thiết kế). Cơ chế đã chốt GĐ668; checkpoint round-trip đã khoá bằng test. Làm trong đợt QA toàn diện GĐ670; trước đó ghi "chưa chạy được vì môi trường", không tính là lỗi game.
 - 📦 GĐ515 (cập nhật GĐ709): GĐ704 tách vỏ boot → tải ban đầu 529,4/597 KB, dư địa ~68 KB; khi gần chạm trần lại thì code mới vào main/index phải tìm chỗ tách chunk lười trước.
 - GĐ330: QA lưu máy khách (127.0.0.1:5173) — tải lại trang vẫn hiện "Chơi tiếp trong máy (ngày 1)" và vào lại đúng ván; lần "mất ván" trước là bấm nhầm nút ván mới, KHÔNG phải lỗi lưu.
