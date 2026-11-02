@@ -334,6 +334,8 @@ export class Building {
     const dist = camera.position.distanceTo(this.group.position) - size;
     const inside = indoors ? 1 : THREE.MathUtils.clamp((25 - dist) / 8, 0, 1); // 0 = ngoài, 1 = trong
     this.facade.visible = !indoors;
+    // GĐ888: ở xa (mái + tường đặc kín) đồ nội thất không thấy được → khỏi vẽ, bớt hàng trăm draw call
+    this.interior.visible = indoors || inside > 0;
     setOpacity(this.roof, 1 - inside);
     setOpacity(this.door, indoors ? 0 : 1 - inside * 0.85);
 
