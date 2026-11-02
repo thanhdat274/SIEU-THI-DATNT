@@ -45,6 +45,7 @@ import { DueContractsCard } from './DueContractsCard';
 import { HotGoodsCards } from './HotGoodsCards';
 import { LoanNoteCard, EveningPrepCallout, MorningNewsCard } from './MorningNotes';
 import { ExpectedRegularsList } from './ExpectedRegularsList';
+import { TodayActionsCard } from './TodayActionsCard';
 import { FestivalNowCard, FestivalSoonCard } from './FestivalCards';
 import { CounterDemandCard } from './CounterDemandCard';
 import { MarketSurplusCard } from './MarketSurplusCard';
@@ -295,20 +296,7 @@ export function MorningPanel() {
 
       {chophien && <MarketSurplusCard chophien={chophien} />}
 
-      {actions.length > 0 && (
-        <div style={{ ...styles.card, display: 'block', marginBottom: 8, outline: '1px solid rgba(26,188,156,0.4)' }}>
-          <b style={styles.cardTitle}>🗓️ Việc hôm nay · ưu tiên</b>
-          <div style={{ marginTop: 4, display: 'grid', gap: 2 }}>
-            {actions.map((a, i) => (
-              <button key={i} onClick={() => openPanel({ type: a.panel as never })}
-                style={{ display: 'flex', gap: 8, alignItems: 'baseline', background: 'transparent', border: 'none', color: a.danger ? '#e74c3c' : 'inherit', fontSize: 12, cursor: 'pointer', padding: 0, textAlign: 'left' }}>
-                <span style={{ minWidth: 140 }}>{a.icon} {a.text} →</span>
-                <span style={{ opacity: 0.8 }}>{a.danger ? 'bức thiết' : 'nên làm'}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
+      <TodayActionsCard actions={actions} onOpen={(panel) => openPanel({ type: panel as never })} />
       {nextEvt && <button onClick={() => openPanel({ type: 'calendar' })} title="Xem lịch năm" style={{ display: 'block', fontSize: 11, opacity: 0.7, margin: '-4px 0 8px', background: 'transparent', border: 'none', color: 'inherit', padding: 0, cursor: 'pointer', textAlign: 'left' }}>{nextEvt} →</button>}
 
       {sickest.length > 0 && <SickShelvesCard sickest={sickest} />}
