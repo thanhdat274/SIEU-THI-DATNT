@@ -1,5 +1,6 @@
 import { useGame } from '../core/store';
-import { caseSize, productById, unlockedProducts } from '../data/products';
+import { caseSize, formatMoney, productById, unlockedProducts } from '../data/products';
+import { commitRebateAdvice } from '../data/supplierValue';
 import { shelfLife } from '../data/freshness';
 import { furnitureDef } from '../data/furniture';
 import { dayTraffic } from '../data/weather';
@@ -119,4 +120,33 @@ export function urgentReasonOf(r: { asked: number; have: number; demand: number;
   if (r.asked > 0) return `hôm nay ${r.asked} khách hỏi mua`;
   if (r.isHot) return 'hàng hot tuần này';
   return `bán ${r.demand.toFixed(1)}/ngày, đang có ${r.have}`;
+}
+
+/** GĐ949: lời khuyên "Gom cam kết" (GĐ143) tách khỏi OrderPanel thành hàm thuần; null nếu mối chưa đủ bậc mối quen. */
+export function commitNote(a: {
+  life: number; monthSpent: number; total: number; supplier: { id: string; name: string };
+  cheapest: { best: { id: string; name: string }; total: number } | null;
+}): { icon: string; text: string } | null {
+  const { life, monthSpent, total, supplier, cheapest } = a;
+  const advice = commitRebateAdvice(life, monthSpent, total);
+  if (!advice.eligible) return null;
+  const rivalBest = cheapest && cheapest.best;
+  const curIsCheapest = rivalBest && rivalBest.id === supplier.id;
+  const committed = monthSpent >= advice.tier.commit;
+  const bridges = !committed && advice.projectedSpent >= advice.tier.commit;
+  const tailRival = cheapest && rivalBest && !curIsCheapest && total > cheapest.total
+    ? ` · nhưng giỏ này mua ở ${rivalBest.name} chỉ ${formatMoney(cheapest.total)}, rẻ hơn ${formatMoney(total - cheapest.total)} so với mối ${supplier.name} — cân với hoàn tháng nếu chưa đạt cam kết`
+    : '';
+  const rate = Math.round(advice.tier.rate * 100);
+  let icon = '🤝'; let body: string;
+  if (committed) {
+    body = `mối ${supplier.name} đã đạt cam kết tháng ${formatMoney(advice.tier.commit)} → giỏ ${formatMoney(total)} này góp thêm, cuối tháng hoàn ~${formatMoney(advice.rebateIf)} (${rate}%)`;
+  } else if (bridges) {
+    icon = '🎯';
+    body = `giỏ ${formatMoney(total)} này đẩy doanh tháng lên ${formatMoney(advice.projectedSpent)} → ĐẠT cam kết ${formatMoney(advice.tier.commit)}: hoàn ~${formatMoney(advice.rebateIf)} (${rate}%) cuối tháng`;
+  } else {
+    icon = '🧲';
+    body = `còn ${formatMoney(advice.gapAfter)} nữa đạt cam kết tháng ${formatMoney(advice.tier.commit)} (${rate}% hoàn) — giỏ này góp ${formatMoney(total)}, gom doanh tháng về mối ${supplier.name} để lấy hoàn`;
+  }
+  return { icon, text: `${icon} Gom cam kết: ${body}${tailRival}` };
 }

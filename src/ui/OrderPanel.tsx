@@ -10,7 +10,7 @@ import { bulkDiscount, orderTotal, SUPPLIERS, supplierSells, trending, unitCost 
 import { guideActiveOn, guideInCart, guideIdsOf, guideProducts } from '../data/onboarding';
 import { cheapestSupplier, orderAssessment, type AssessLevel, type AssessLine, type BuyTone, type Dir } from '../data/procure';
 import { monthlyRelRebate, PARTNER_TIERS, tierProgress } from '../data/supplierRel';
-import { cheapestSupplierFor, commitRebateAdvice, type CheapestProductResult } from '../data/supplierValue';
+import { cheapestSupplierFor, type CheapestProductResult } from '../data/supplierValue';
 import { isFairOpen, makeFairOffer } from '../data/fairmerchant';
 import { showRestockExtras } from '../data/onboarding';
 import { fairLotValue } from '../data/fairLotValue';
@@ -23,7 +23,7 @@ import { quanNuocDrinkIds } from '../data/quanNuoc';
 import { festivalRestockPlan } from '../data/festivalRestock';
 import { GuideBanner, QuanDrinkTipCallout, FestivalPrepCallout, NetworkFillCallout } from './OrderBanners';
 import { ProdSuggCard, HotWeekBanner, UrgentCard } from './OrderCards';
-import { urgentReasonOf, displayable, onHand, incoming, suggestQty, assessText, supplierTone, supplierTomorrow } from './orderHelpers';
+import { commitNote, urgentReasonOf, displayable, onHand, incoming, suggestQty, assessText, supplierTone, supplierTomorrow } from './orderHelpers';
 import { acceptFairOffer } from '../core/biz';
 import { CUNG_GOODS, isXoiCungDay } from '../data/tiemXoi';
 import { festivalOn, festivalStock, monthOf, upcomingFestival } from '../data/calendar';
@@ -430,32 +430,11 @@ export function OrderPanel() {
       </div>
 
       {showCost && count > 0 && (() => {
-        // GĐ143 "Mối nào rẻ THẬT" — mồi gom cam kết tháng: nối zoom của banner Mối quen (bộ đếm tháng)
-        // thành QUYẾT ĐỊNH với giỏ hiện tại: gom doanh tháng về mối này lấy hoàn hay xẻ giỏ sang mối rẻ.
-        const life = biz.supplierRel?.[supplier.id]?.spent ?? 0;
-        const monthSpent = biz.supplierRelMonth?.[supplier.id] ?? 0;
-        const advice = commitRebateAdvice(life, monthSpent, total);
-        if (!advice.eligible) return null; // mối chưa đủ bậc mối quen → không lừa có hoàn
-        const rivalBest = cheapest && cheapest.best;
-        const curIsCheapest = rivalBest && rivalBest.id === supplier.id;
-        const committed = monthSpent >= advice.tier.commit;
-        const bridges = !committed && advice.projectedSpent >= advice.tier.commit;
-        const tailRival = rivalBest && !curIsCheapest && total > cheapest.total
-          ? ` · nhưng giỏ này mua ở ${rivalBest.name} chỉ ${formatMoney(cheapest.total)}, rẻ hơn ${formatMoney(total - cheapest.total)} so với mối ${supplier.name} — cân với hoàn tháng nếu chưa đạt cam kết`
-          : '';
-        let icon = '🤝'; let body: string;
-        if (committed) {
-          body = `mối ${supplier.name} đã đạt cam kết tháng ${formatMoney(advice.tier.commit)} → giỏ ${formatMoney(total)} này góp thêm, cuối tháng hoàn ~${formatMoney(advice.rebateIf)} (${Math.round(advice.tier.rate * 100)}%)`;
-        } else if (bridges) {
-          icon = '🎯';
-          body = `giỏ ${formatMoney(total)} này đẩy doanh tháng lên ${formatMoney(advice.projectedSpent)} → ĐẠT cam kết ${formatMoney(advice.tier.commit)}: hoàn ~${formatMoney(advice.rebateIf)} (${Math.round(advice.tier.rate * 100)}%) cuối tháng`;
-        } else {
-          icon = '🧲';
-          body = `còn ${formatMoney(advice.gapAfter)} nữa đạt cam kết tháng ${formatMoney(advice.tier.commit)} (${Math.round(advice.tier.rate * 100)}% hoàn) — giỏ này góp ${formatMoney(total)}, gom doanh tháng về mối ${supplier.name} để lấy hoàn`;
-        }
+        const note = commitNote({ life: biz.supplierRel?.[supplier.id]?.spent ?? 0, monthSpent: biz.supplierRelMonth?.[supplier.id] ?? 0, total, supplier, cheapest });
+        if (!note) return null; // mối chưa đủ bậc mối quen → không lừa có hoàn
         return (
           <div style={{ ...st.banner, background: 'rgba(46, 204, 113, 0.07)', border: '1px solid rgba(85,239,196,0.25)' }}>
-            <span>{icon} Gom cam kết: {body}{tailRival}</span>
+            <span>{note.text}</span>
           </div>
         );
       })()}

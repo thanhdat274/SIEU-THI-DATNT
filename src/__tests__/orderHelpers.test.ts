@@ -34,3 +34,18 @@ describe('GĐ946 — orderHelpers', () => {
     expect(['cheaper', 'pricier', 'flat']).toContain(supplierTomorrow(SUPPLIERS[0], 10, 5));
   });
 });
+
+import { commitNote } from '../ui/orderHelpers';
+describe('GĐ949 — commitNote', () => {
+  const sup = { id: 'cho_dau_moi', name: 'Chợ đầu mối' };
+  it('chưa đủ bậc mối quen → null', () => {
+    expect(commitNote({ life: 0, monthSpent: 0, total: 1000, supplier: sup, cheapest: null })).toBeNull();
+  });
+  it('mối quen lớn: có lời khuyên hoàn tháng; mối rival rẻ hơn thì thêm đuôi so sánh', () => {
+    const n = commitNote({ life: 1e9, monthSpent: 0, total: 500000, supplier: sup, cheapest: null });
+    expect(n).not.toBeNull(); expect(n!.text).toContain('Gom cam kết');
+    const r = commitNote({ life: 1e9, monthSpent: 0, total: 500000, supplier: sup, cheapest: { best: { id: 'x', name: 'Mối X' }, total: 400000 } });
+    expect(r!.text).toContain('Mối X'); expect(r!.text).toContain('rẻ hơn');
+    expect(commitNote({ life: 1e9, monthSpent: 0, total: 500000, supplier: sup, cheapest: { best: sup, total: 500000 } })!.text).not.toContain('rẻ hơn');
+  });
+});
