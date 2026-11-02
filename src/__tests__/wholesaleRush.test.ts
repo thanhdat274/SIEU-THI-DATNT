@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { newGameData, useGame } from '../core/store';
-import { WHOLESALE_RUSH_MARKUP, wholesaleRush, wholesaleTotal, type VendorOffer } from '../data/wholesale';
+import { WHOLESALE_RUSH_MARKUP, canRush, wholesaleRush, wholesaleTotal, type VendorOffer } from '../data/wholesale';
 import { productById } from '../data/products';
 
 /** GĐ929 — kho thiếu thì nhập gấp phần thiếu (giá nhập × 1,15) rồi giao đơn sỉ: thêm doanh thu, không bán lỗ. */
@@ -53,5 +53,18 @@ describe('acceptWholesale(true) — nhập gấp & giao', () => {
     silent();
     expect(useGame.getState().acceptWholesale()).toBe(false);
     expect(useGame.getState().money).toBe(100_000);
+  });
+});
+
+describe('canRush — điều kiện bật nút (GĐ931)', () => {
+  const p = () => useGame.getState().priceOf;
+  const r = () => wholesaleRush({ nuoc: 9 }, { nuoc: 3 }, p());
+  it('null → tắt; hết tiền → tắt; đủ tiền và còn lời → bật', () => {
+    expect(canRush(null, 1e9)).toBe(false);
+    expect(canRush(r(), r().cost - 1)).toBe(false);
+    expect(canRush(r(), r().cost)).toBe(true);
+  });
+  it('không còn lời → tắt dù dư tiền', () => {
+    expect(canRush({ ...r(), net: 0 }, 1e9)).toBe(false);
   });
 });

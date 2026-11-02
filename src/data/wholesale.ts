@@ -89,3 +89,7 @@ export function wholesaleRush(
   }
   return { missing, cost, net: wholesaleTotal(items, priceOf) - cost };
 }
+
+/** GĐ931: nút "Nhập gấp & giao" chỉ bấm được khi còn lời ròng và đủ tiền nhập. */
+export const canRush = (rush: WholesaleRush | null, money: number): boolean =>
+  !!rush && rush.net > 0 && money >= rush.cost;

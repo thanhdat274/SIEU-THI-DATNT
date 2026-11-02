@@ -1,7 +1,7 @@
 import { useClock, useGame } from '../core/store';
 import { describeItems } from '../data/phoneOrders';
 import { formatMoney } from '../data/products';
-import { vendorById, wholesaleRush, wholesaleTotal } from '../data/wholesale';
+import { canRush, vendorById, wholesaleRush, wholesaleTotal } from '../data/wholesale';
 import { wholesaleAdvice } from '../data/wholesaleValue';
 
 /** Tách khỏi Hud, tải lười (GĐ418): lời xin lấy sỉ chỉ hiện thỉnh thoảng. */
@@ -38,7 +38,7 @@ export function VendorAlert() {
       )}
       <span className="hud-alert-actions">
         {short
-          ? <button className="hud-btn primary" disabled={!rush || rush.net <= 0 || money < rush.cost} onClick={() => accept(true)}>⚡ Nhập gấp & giao ({formatMoney(rush?.cost ?? 0)})</button>
+          ? <button className="hud-btn primary" disabled={!canRush(rush, money)} onClick={() => accept(true)}>⚡ Nhập gấp & giao ({formatMoney(rush?.cost ?? 0)})</button>
           : <button className="hud-btn primary" onClick={() => accept()}>🤝 Bán sỉ từ kho</button>}
         <button className="hud-btn" onClick={decline}>Không bán</button>
       </span>
