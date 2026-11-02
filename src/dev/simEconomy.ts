@@ -86,6 +86,8 @@ export interface EconomyRow {
   unhappy: number;
   /** Lỡ bán theo lý do (stock/price/wait/…): nguyên nhân khách bực (GĐ778). */
   missed: Record<string, number>;
+  /** Lỡ bán do hết hàng nhưng kho còn (kệ chưa châm). */
+  stockInStorage: number;
 }
 
 export interface EconomyAverages {
@@ -139,6 +141,7 @@ export async function runEconomySim(level: number, days: number, opts: AutoplayO
     customers: (r.customers as number) ?? 0,
     unhappy: (r.unhappy as number) ?? 0,
     missed: (r.missed as Record<string, number> | undefined) ?? {},
+    stockInStorage: (r.stockInStorage as number) ?? 0,
   }));
   const n = rows.length;
   const totalProfit = rows.reduce((n0, r) => n0 + r.operationalProfit, 0);
@@ -173,7 +176,7 @@ export async function runEconomySim(level: number, days: number, opts: AutoplayO
   console.log(
     `  operationalProfit/ngày ~ ${fmt(professionPerDay)} · nhiệm vụ/ngày ~ ${fmt(questPerDay)} · kèo/ngày ~ ${fmt(betPerDay)}` +
       ` · tỉ số (nhiệm vụ+kèo)/lãi bán ~ ${ratio === null ? 'N/A (lãi ≤ 0)' : ratio.toFixed(2)}` +
-      ` · khách bực ~ ${(averages.unhappyRate * 100).toFixed(1)}% · lỡ bán ${JSON.stringify(missedByReason)}`,
+      ` · khách bực ~ ${(averages.unhappyRate * 100).toFixed(1)}% · lỡ bán ${JSON.stringify(missedByReason)} (kho còn mà kệ trống: ${rows.reduce((n0, r) => n0 + r.stockInStorage, 0)})`,
   );
   return { rows, averages };
 }

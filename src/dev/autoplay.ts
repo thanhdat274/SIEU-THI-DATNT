@@ -169,6 +169,8 @@ export function createAutoplay(
       customers: sum?.customers ?? 0,
       unhappy: sum?.unhappy ?? 0,
       missed: sum?.missed ?? {},
+      // GĐ779: lỡ bán 'stock' mà KHO vẫn còn hàng (= kệ không được châm) — phân biệt với hết hẳn hàng
+      stockInStorage: Object.entries(sum?.missLog ?? {}).reduce((n0, [key, c]) => n0 + (key.startsWith('stock:') && (s.storage[key.slice(6)] ?? 0) > 0 ? c : 0), 0),
       shelves: s.furniture.length,
       staff: s.staff.length,
       tier: s.shopTier,
