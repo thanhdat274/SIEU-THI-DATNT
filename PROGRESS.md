@@ -21,6 +21,7 @@
 
 ## Trạng thái hiện tại (02/11/2026)
 - Các mục GĐ790–929 đã chuyển sang `docs/progress-archive/PROGRESS-GD790-929.md` (giữ file này gọn).
+- **GĐ970 (rà 961–969)** Chỉ tách code thuần (main.tsx 1012→971 dòng: stocktakeMessage, effectiveSpeed, lampLevel, interactHints, tutorialMarker); sửa 1 lỗi tsc sót ở GĐ965 (từ nay đọc exit code tsc riêng). Bundle không đổi: đầu 533/597 KB gzip, chunk lớn nhất 253/255. Full test 361 file/3075. GĐ950–959 chuyển sang `docs/progress-archive/PROGRESS-GD950-959.md`. Chưa soi bằng mắt trong game.
 - GĐ969: tách `locationLabel` (tên vị trí người chơi) khỏi updateStatus sang core/interactHints.ts + test. tsc exit 0, full test đạt (361/3075). Chưa soi bằng mắt.
 - GĐ968: tách `mopPlan` (quyết định lau nhà) khỏi mopFloor trong main.tsx sang core/interactHints.ts + test. tsc exit 0, full test đạt (361/3074). Chưa soi bằng mắt.
 - GĐ967: tách `sapLotHint` + `deliveryHint` (gợi ý tương tác) khỏi main.tsx sang core/interactHints.ts + test. tsc exit 0, full test đạt (361/3070). Chưa soi bằng mắt.
@@ -31,19 +32,10 @@
 - GĐ962: tách core/bizStory.ts (sự kiện bất ngờ, chuyện khách quen, chương, REGULAR_NAMES) khỏi core/biz.ts (973→~800), biz re-export nên import cũ giữ nguyên + test. Full 356 file/3055 test, tsc sạch.
 - **GĐ961 (QA save trắng bằng mắt, panel trình duyệt)** Vào chơi khách từ màn đầu: không lỗi console, ngày 1 06:00 280.000đ, hướng dẫn 5 bước hiện, HUD 12 nút (≤20), chương 1 bà Năm mở đầu. Chưa đi hết một ngày (không kiểm FPS/bán hàng). Chưa soi nút Nhập hàng trong game.
 - **GĐ960 (rà 951–959 + dọn PROGRESS)** Chỉ tách UI/data thuần (Hud, BusinessPanel, ReportPanels, StaffPanel, OrderPanel, ArrangePanel, data/rivals), không đổi luật chơi; full 355 file/3053 test, tsc sạch. Bundle tải đầu 533/597 KB, chunk lớn nhất 253/255 KB (không đổi); thông báo ≤90. PROGRESS 38.9→33KB (GĐ930–949 sang archive). Còn nợ ngoài tầm: FPS thật trên cửa sổ có mắt, save thật, tín hiệu người chơi thật. Chưa soi bằng mắt trong game.
-- GĐ959: tách data/rivals.ts (tiệm đối thủ) khỏi data/biz.ts (1345→999), biz re-export nên import cũ giữ nguyên + test. Full 355 file/3053 test, tsc sạch.
-- GĐ958: tách arrangeGeometry (snap/box/aisle/overlap/findSpot) khỏi ArrangePanel (454→406) + test. Full 354 file/3051 test, tsc sạch. Chưa soi bằng mắt trong game.
-- GĐ957: tách SupplierRelLine + ForecastLine khỏi OrderPanel (668→646) + test. Full 353 file/3046 test, tsc sạch. Chưa soi bằng mắt trong game.
-- GĐ956: tách StaffLines (dòng/thanh giá trị nhân viên, tiệm chính + chi nhánh) khỏi StaffPanel (536→427) + test. Full 353 file/3044 test, tsc sạch. Chưa soi bằng mắt trong game.
-- GĐ955: tách SummaryMoneyCards (tích điểm/giờ vàng/hết hàng/hỏng đêm) khỏi ReportPanels (550→504) + test. Full 352 file/3042 test, tsc sạch. Chưa soi bằng mắt trong game.
-- **GĐ954 (tách BusinessPanel)** `NearMilestonesView`, `NgGoalsCard` (props: claimedIds/onClaim thay vì đọc store) và `NextUnlockTeaser` sang `src/ui/panels/PrestigeParts.tsx` + 3 ca test SSR; BusinessPanel 573 → 484 dòng. tsc sạch, full npm test xanh (3040; `longSessionLeak` từng rớt 1 lần khi cả bộ chạy cùng lúc rồi xanh khi chạy lại — nhiễu thời gian như GĐ883). Chưa soi bằng mắt trong game.
-- **GĐ953 (tách Hud #3)** logic chip thời tiết (cơn mưa đang diễn ra / nhiều mây, chữ dự báo) thành hàm thuần `skyState` + `forecastTextOf` trong `src/ui/hudSky.ts` + 3 ca test; Hud 570 → ~567 dòng. Không đổi số nút HUD. tsc sạch, full npm test xanh (3037). Chưa soi bằng mắt trong game.
-- **GĐ952 (tách Hud #2)** 10 badge dock (đối thủ, social, đơn online, giấy phép, nợ, thử thách tuần, phiên chợ, sổ thương mến, hồ sơ tiệm, trang trại) thành hàm thuần `*BadgeOf(state)` trong `src/ui/hudBadges.ts` + 4 ca test; Hud 643 → 570 dòng; test restockDay1Quiet trỏ file mới. Không đổi số nút HUD. tsc sạch, full npm test xanh (3034). Chưa soi bằng mắt trong game.
-- **GĐ951 (tách Hud #1)** `MoreMenu`, `usePopover`, `AccountMenu` sang `src/ui/HudMenus.tsx` (nạp lười MoreMenuBody đi theo; test hudKeysLazy trỏ lại file mới) + 2 ca test SSR; Hud 713 → 643 dòng. Không đổi số nút HUD. tsc sạch, full npm test xanh (3030). Chưa soi bằng mắt trong game.
-- **GĐ950 (rà 941–949 + dọn PROGRESS)** Chỉ tách UI thuần (MorningPanel 846→232, OrderPanel 899→668), không đổi hành vi, không thêm nút HUD/thư viện; tsc sạch, 3028 test xanh. PROGRESS.md 60KB→36KB bằng cách chuyển 55 mục GĐ790–929 sang archive. Nợ mở vẫn cần điều kiện ngoài: FPS thật ở cửa sổ thấy được, save thật, tín hiệu người chơi thật.
 - **GĐ715–788** (tóm tắt từng khối: docs/progress-archive/PROGRESS-GD715-788-summaries.md): bán online, đường đời nhân viên, trả góp/sổ nợ, sinh nhật khách quen, audit GĐ720/730/740 đều ĐẠT (bundle ≤ 597 KB, chunk ≤ 255 KB).
 
 - Các mục GĐ930–949 (nhập gấp, tách MorningPanel #11–22, tách OrderPanel #1–4, rà 931–939) đã chuyển sang `docs/progress-archive/PROGRESS-GD930-949.md`
+- Các mục GĐ950–959 (tách Hud #1–3, BusinessPanel, SummaryCards, StaffLines, OrderBanners, arrangeGeometry, rivals) đã chuyển sang `docs/progress-archive/PROGRESS-GD950-959.md`.
 
 ## Quy ước kỹ thuật cần nhớ
 
