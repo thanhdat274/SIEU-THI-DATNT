@@ -15,6 +15,17 @@ export function VendorAlert() {
   const money = useGame((s) => s.money);
   const accept = useGame((s) => s.acceptWholesale);
   const decline = useGame((s) => s.declineWholesale);
+  return <VendorAlertView {...{ offer, minutes, storage, storageLots, priceOf, money, accept, decline }} />;
+}
+
+type GS = ReturnType<typeof useGame.getState>;
+export interface VendorAlertViewProps {
+  offer: GS['vendorOffer']; minutes: number; storage: GS['storage']; storageLots: GS['storageLots'];
+  priceOf: GS['priceOf']; money: number; accept: (rush?: boolean) => unknown; decline: () => unknown;
+}
+
+/** Phần hiển thị thuần (nhận props) để test render được — GĐ931. */
+export function VendorAlertView({ offer, minutes, storage, storageLots, priceOf, money, accept, decline }: VendorAlertViewProps) {
   if (!offer) return null;
   const v = vendorById(offer.vendorId);
   const short = Object.entries(offer.items).some(([id, q]) => (storage[id] ?? 0) < q);
