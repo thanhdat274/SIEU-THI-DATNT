@@ -172,3 +172,4 @@
 - GĐ848: thử kiểm chứng bot vay gấp trên save ngày 100 — HMR nạp lại thành ván mới (ngày 1–3 lãi bình thường), chưa kiểm chứng được trên save nợ; sửa GĐ847 mới chỉ có test sim chung xanh.
 - GĐ849: ép tiền −3 triệu trên ván mới rồi playtest 3 ngày: bot hồi dần (−2,36M → −1,13M, doanh thu ~600–700k/ngày), không kẹt xoáy nợ; xoáy ở save ngày 100 do kệ trống + 12 nhân viên, khác tình huống này.
 - GĐ850: sửa bot playtest.ts (bot riêng của game.playtest, GĐ847 chỉ sửa autoplay.ts): vay gấp khi quỹ âm; kiểm trên ván mới ép −3M → khoản vay 1M được tạo. Rà soát 850: tsc sạch, test playtest xanh.
+- GĐ851: tái hiện bế tắc THẬT trên ván mới (cấp <5): quỹ −3M + vay gấp 1M (chỉ vay được 1 lần ở cấp <5) vẫn âm → không nhập nổi hàng, 5 ngày doanh thu 0, 100% khách bất mãn. Đề xuất chờ duyệt: lương/tiền thuê không kéo quỹ xuống dưới 0 (nợ treo/nhân viên xin nghỉ) hoặc cho vay thêm khi quỹ âm. Chưa sửa vì đổi cân bằng kinh tế.
