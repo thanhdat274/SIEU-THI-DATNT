@@ -131,4 +131,4 @@ const fmt = (v: number) => `${Math.round(v).toLocaleString('vi-VN')}đ`;
  * HẠ trần này theo số đo mới — không bao giờ nâng lên.
  */
 // GĐ332: hạ phần trăm kèo 25/40/65% → đo cấp 5 0.99 · cấp 10 0.89 · cấp 20 0.64. GĐ321: sim TẤT ĐỊNH (Math.random seed 20261031) đo cấp 5 1.13 · cấp 10 1.02 · cấp 20 0.71 (sau GĐ322; trước 1.53/1.29/0.96); trần = đo + đệm nhỏ. Chỉ được hạ.
-const BONUS_TO_SALES_CEILING: Record<number, number> = { 5: 1.0 };
+const BONUS_TO_SALES_CEILING: Record<number, number> = { 5: 0.85 }; // GĐ913: đo 0.77 (trước 1.0)

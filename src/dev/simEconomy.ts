@@ -144,7 +144,8 @@ export async function runEconomySim(level: number, days: number, opts: AutoplayO
     stockInStorage: (r.stockInStorage as number) ?? 0,
   }));
   const n = rows.length;
-  const totalProfit = rows.reduce((n0, r) => n0 + r.operationalProfit, 0);
+  // GĐ913: lãi bán hàng thật (không trừ tiền đầu tư bot mua mỗi ngày) — khớp số mà test ép trần tỉ số
+  const totalProfit = rows.reduce((n0, r) => n0 + r.salesProfit, 0);
   const totalQuest = rows.reduce((n0, r) => n0 + r.quest, 0);
   const totalBet = rows.reduce((n0, r) => n0 + r.bet, 0);
   const totalCust = rows.reduce((n0, r) => n0 + r.customers, 0);
@@ -174,7 +175,7 @@ export async function runEconomySim(level: number, days: number, opts: AutoplayO
   console.log(`\n[BẢNG KHẢO SÁT GIĐ105] level=${level} · ${n} ngày (kết thúc cấp ${averages.finalLevel})`);
   // eslint-disable-next-line no-console
   console.log(
-    `  operationalProfit/ngày ~ ${fmt(professionPerDay)} · nhiệm vụ/ngày ~ ${fmt(questPerDay)} · kèo/ngày ~ ${fmt(betPerDay)}` +
+    `  lãi bán hàng/ngày ~ ${fmt(professionPerDay)} · nhiệm vụ/ngày ~ ${fmt(questPerDay)} · kèo/ngày ~ ${fmt(betPerDay)}` +
       ` · tỉ số (nhiệm vụ+kèo)/lãi bán ~ ${ratio === null ? 'N/A (lãi ≤ 0)' : ratio.toFixed(2)}` +
       ` · khách bực ~ ${(averages.unhappyRate * 100).toFixed(1)}% · lỡ bán ${JSON.stringify(missedByReason)} (kho còn mà kệ trống: ${rows.reduce((n0, r) => n0 + r.stockInStorage, 0)})`,
   );
