@@ -6,8 +6,7 @@ import { festivalOn, isWeekend } from './calendar';
  * — thiết kế tường minh, không dùng Math.random nên kết quả luôn xác định, dễ test.
  * File này chỉ có dữ liệu và hàm thuần; hành động mua/tuyển nằm ở `core/slices/quanNuoc.ts`.
  */
-import { fmtMul, productById, unlockedProducts } from './products';
-import type { DayAction } from './dayPlan';
+import { productById, unlockedProducts } from './products';
 import type { Weather } from './weather';
 import { brewMenu, cleanMenu, quanRecipeById, varietyMul, quanHotMul, QUAN_MENU_SLOTS } from './quanRecipes';
 

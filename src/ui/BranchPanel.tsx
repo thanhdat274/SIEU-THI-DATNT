@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useGame } from '../core/store';
-import { CONVENIENCE, ALCOHOL_BRAWL_CHANCE, coverMul, NIGHT_DELIVERY_SURCHARGE, NIGHT_GROUPS, POWER_UPGRADES, VENDING_CAP, VENDING_COST, branchPowerBill, hasAlcohol, hasPower, isHotFood, nightNeed, shelfTotal, uncoveredHours, vendingTotal, branchWeekendMul, branchMatchMul } from '../data/branches';
+import { CONVENIENCE, coverMul, VENDING_CAP, VENDING_COST, hasPower, isHotFood, nightNeed, shelfTotal, uncoveredHours, vendingTotal, branchWeekendMul, branchMatchMul } from '../data/branches';
 import { dailyWage } from '../data/staff';
 import { branchOperatingBalanceToday, branchBuildPayback } from '../data/branchNet';
 import { branchMissSummary } from '../data/venueTrend';

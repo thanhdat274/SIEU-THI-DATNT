@@ -7,7 +7,6 @@ import { Joystick } from './Joystick';
 import { Fragment, lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { formatClock, questContext, useClock, useGame } from '../core/store';
 import { claimableCount, dailyQuests, dailySetProgress, storyQuest, STORY_STEPS } from '../data/quests';
-import { reputationOf } from '../data/reputation';
 import { dirtLoss } from '../data/dirtLoss';
 import { cookSpeed, bartenderBoost } from '../core/slices/orders';
 import { worldActions } from '../core/actions';
