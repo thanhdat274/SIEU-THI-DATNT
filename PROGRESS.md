@@ -32,6 +32,7 @@
 - GĐ982: tách data/bizFinance.ts (phản công, thẻ tích điểm, quảng cáo, vay, hụi, 211 dòng) khỏi data/biz.ts (520→312) + test `bizFinanceSplit.test.ts`. tsc exit 0, full test đạt.
 - GĐ983: tách core/dayStats.ts (DayStats, DayRecord, addHour, emptyStats…, ~100 dòng) khỏi core/gameTypes.ts (696→598) + test `dayStatsSplit.test.ts`. tsc exit 0, full test đạt.
 - GĐ984: tách render/characterTypes.ts (kiểu nhân vật + SKIN_TONES, 87 dòng) khỏi render/characterModel.ts (1062→977) + test `characterTypesSplit.test.ts`. tsc exit 0, full test đạt.
+- GĐ985: tách render/characterGear.ts (đồng phục, mũ, dụng cụ theo nghề, vật liệu dùng chung, 347 dòng) khỏi render/characterModel.ts (977→636) + test `characterGearSplit.test.ts`. tsc exit 0, full test đạt.
 - GĐ973: tách data/bizAchievements.ts (thú cưng, thành tựu, thanh tra, 139 dòng) khỏi data/biz.ts (652→520) bằng `export *` + test `bizAchievementsSplit.test.ts`. tsc exit 0, full test đạt (363/3080). Chưa soi bằng mắt.
 - GĐ972: tách data/bizWeeks.ts (báo cáo + thử thách tuần/tháng, 347 dòng) khỏi data/biz.ts (999→652) bằng `export *` + test `bizWeeksSplit.test.ts`. tsc exit 0, full test đạt (362/3077). Chưa soi bằng mắt.
 - **GĐ971 (QA save trắng bằng mắt)** Xoá localStorage/IndexedDB → màn đăng nhập → "Chơi không cần đăng nhập" → vào ngày 1 (6:00, Tết dương lịch, hướng dẫn 5 bước, hội thoại Bà Năm chương 1, HUD 12 nút, dock có "Thêm"). Không có lỗi mới sau khi vào game; các lỗi `REGULAR_NAMES`/`main.tsx` trong console là dấu vết HMR cũ của GĐ962 (máy chủ nay trả 200, export có đủ).
