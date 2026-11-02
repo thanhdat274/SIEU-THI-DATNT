@@ -21,6 +21,7 @@
 
 ## Trạng thái hiện tại (02/11/2026)
 - Các mục GĐ790–929 đã chuyển sang `docs/progress-archive/PROGRESS-GD790-929.md` (giữ file này gọn).
+- **GĐ954 (tách BusinessPanel)** `NearMilestonesView`, `NgGoalsCard` (props: claimedIds/onClaim thay vì đọc store) và `NextUnlockTeaser` sang `src/ui/panels/PrestigeParts.tsx` + 3 ca test SSR; BusinessPanel 573 → 484 dòng. tsc sạch, full npm test xanh (3040; `longSessionLeak` từng rớt 1 lần khi cả bộ chạy cùng lúc rồi xanh khi chạy lại — nhiễu thời gian như GĐ883). Chưa soi bằng mắt trong game.
 - **GĐ953 (tách Hud #3)** logic chip thời tiết (cơn mưa đang diễn ra / nhiều mây, chữ dự báo) thành hàm thuần `skyState` + `forecastTextOf` trong `src/ui/hudSky.ts` + 3 ca test; Hud 570 → ~567 dòng. Không đổi số nút HUD. tsc sạch, full npm test xanh (3037). Chưa soi bằng mắt trong game.
 - **GĐ952 (tách Hud #2)** 10 badge dock (đối thủ, social, đơn online, giấy phép, nợ, thử thách tuần, phiên chợ, sổ thương mến, hồ sơ tiệm, trang trại) thành hàm thuần `*BadgeOf(state)` trong `src/ui/hudBadges.ts` + 4 ca test; Hud 643 → 570 dòng; test restockDay1Quiet trỏ file mới. Không đổi số nút HUD. tsc sạch, full npm test xanh (3034). Chưa soi bằng mắt trong game.
 - **GĐ951 (tách Hud #1)** `MoreMenu`, `usePopover`, `AccountMenu` sang `src/ui/HudMenus.tsx` (nạp lười MoreMenuBody đi theo; test hudKeysLazy trỏ lại file mới) + 2 ca test SSR; Hud 713 → 643 dòng. Không đổi số nút HUD. tsc sạch, full npm test xanh (3030). Chưa soi bằng mắt trong game.
