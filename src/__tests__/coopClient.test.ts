@@ -395,7 +395,7 @@ describe('đổi vai (máy chạy rời/ẩn tab)', () => {
     expect(store.useGame.getState().day).toBe(2);
     expect(store.useGame.getState().minutes).toBe(11 * 60 + 30);
     expect(store.useGame.getState().money).toBe(432_100);
-  }, 20_000); // nạp lại cả store (resetModules) — chậm khi cả bộ test chạy song song
+  }, 60_000); // nạp lại cả store (resetModules) — chậm khi cả bộ test chạy song song
 
   it('thôi chạy (bị hạ xuống máy khách): thao tác lại được gửi cho máy chạy mới', async () => {
     await join('runner');
