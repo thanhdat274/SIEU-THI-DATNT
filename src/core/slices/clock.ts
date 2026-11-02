@@ -40,6 +40,7 @@ export const createClockSlice = (set: SetState, get: GetState): Pick<GameState, 
       }
       const lost = Math.floor(s.money * 0.1);
       endDay(set, get, { money: s.money - lost });
+      set((st) => (st.panel?.type === 'summary' ? { panel: { ...st.panel, fainted: lost } } : {}));
       s.notify(`😵 Bạn thức quá khuya và ngất đi... Mất ${formatMoney(lost)} tiền thuốc.`);
       return;
     }

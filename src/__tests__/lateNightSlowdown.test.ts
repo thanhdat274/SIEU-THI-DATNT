@@ -48,3 +48,18 @@ describe('mốc ngất 02:00 (GĐ788)', () => {
     expect(msgs.some((m) => m.includes('ngất'))).toBe(true);
   });
 });
+
+describe('tổng kết sau ngất (GĐ791)', () => {
+  it('ngất → panel tổng kết mang số tiền thuốc; ngủ bình thường thì không', () => {
+    useGame.setState({ minutes: 26 * 60 - 1, speed: 1, money: 100000, day: 5 });
+    useGame.getState().tick(1);
+    const p = useGame.getState().panel;
+    expect(p?.type).toBe('summary');
+    expect(p?.type === 'summary' && p.fainted).toBe(10000);
+    base();
+    useGame.setState({ minutes: 23 * 60, money: 100000, day: 5 });
+    useGame.getState().sleep();
+    const q = useGame.getState().panel;
+    expect(q?.type === 'summary' && q.fainted).toBeUndefined();
+  });
+});

@@ -142,6 +142,11 @@ export function SummaryPanel({ day }: { day: number }) {
   return (
     <>
       <h2 style={styles.title}>🌙 {shopName} · Tổng kết ngày {day}</h2>
+      {panel.fainted !== undefined && (
+        <div style={{ background: '#4a2a2a', borderRadius: 8, padding: '8px 12px', margin: '0 0 8px', fontSize: 13 }}>
+          😵 Hôm qua bạn thức quá khuya và ngất — mất {formatMoney(panel.fainted)} tiền thuốc. Tối nay nhớ về nhà ngủ trước 2:00 sáng (ăn sáng thì được thêm 1 giờ).
+        </div>
+      )}
       <Tabs tabs={tabs} value={tab} onChange={setTab} />
       {tab === 'overview' ? (
         <>

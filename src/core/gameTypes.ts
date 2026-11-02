@@ -243,7 +243,7 @@ export type Panel =
   | { type: 'records' }
   | { type: 'dossier' }
   | { type: 'roadmap' }
-  | { type: 'summary'; day: number; stats: DayStats };
+  | { type: 'summary'; day: number; stats: DayStats; /** GĐ791: số tiền thuốc nếu ngày này kết thúc vì ngất (chỉ hiển thị, không lưu). */ fainted?: number };
 
 /** Đang cầm một món đồ để đặt (mua mới hoặc di chuyển món có sẵn). */
 export interface Placing {
