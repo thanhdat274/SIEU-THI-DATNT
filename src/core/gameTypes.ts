@@ -268,7 +268,7 @@ export interface GameState {
   /** Tổng kết ngày vừa qua (máy chạy hẻm gửi sang để máy khách cũng mở bảng tổng kết).
    *  `staffIdle` = việc sáng 🧍 tính SẴN ở máy chạy lúc chốt ngày (GĐ300): snapshot staffDay là
    *  transient ngoài useGame, chỉ máy chạy có → phải gửi kèm gói state để máy khách thấy y hệt. */
-  lastSummary: { day: number; stats: DayStats; staffIdle?: MorningShiftNote; /** GĐ565: tin sáng đầy đủ (toast chỉ hiện phần vừa 90 ký tự). */ news?: string[] } | null;  /** Đang ở chế độ xây dựng. */
+  lastSummary: { day: number; stats: DayStats; /** GĐ792: tiền thuốc nếu ngày đó kết thúc vì ngất (máy khách hẻm online đọc để hiện thẻ). */ fainted?: number; staffIdle?: MorningShiftNote; /** GĐ565: tin sáng đầy đủ (toast chỉ hiện phần vừa 90 ký tự). */ news?: string[] } | null;  /** Đang ở chế độ xây dựng. */
   buildMode: boolean;
   placing: Placing | null;
 

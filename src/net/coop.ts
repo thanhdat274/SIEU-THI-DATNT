@@ -546,9 +546,9 @@ function onMessage(msg: Msg) {
 
 /** Máy khách: hẻm vừa sang ngày thì mở bảng tổng kết ngày hôm qua (máy chạy ghi ở lastSummary). */
 function showDaySummary(prevDay: number, next: Partial<GameState>) {
-  const sum = next.lastSummary as { day: number; stats: DayStats } | null | undefined;
+  const sum = next.lastSummary as { day: number; stats: DayStats; fainted?: number } | null | undefined;
   if (!sum || next.day !== prevDay + 1 || sum.day !== prevDay) return;
-  useGame.setState({ panel: { type: 'summary', day: sum.day, stats: sum.stats } });
+  useGame.setState({ panel: { type: 'summary', day: sum.day, stats: sum.stats, ...(sum.fainted !== undefined ? { fainted: sum.fainted } : {}) } });
 }
 
 /** Nhân vật của thành viên khác, mặc đúng trang phục người đó đang chọn. */

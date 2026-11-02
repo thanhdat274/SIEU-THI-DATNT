@@ -56,6 +56,7 @@ describe('tổng kết sau ngất (GĐ791)', () => {
     const p = useGame.getState().panel;
     expect(p?.type).toBe('summary');
     expect(p?.type === 'summary' && p.fainted).toBe(10000);
+    expect(useGame.getState().lastSummary?.fainted).toBe(10000); // GĐ792: mang theo để máy khách hẻm thấy
     base();
     useGame.setState({ minutes: 23 * 60, money: 100000, day: 5 });
     useGame.getState().sleep();
