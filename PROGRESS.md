@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (02/11/2026)
+- **GĐ799:** QA co-op hai tab thật bị CHẶN bởi môi trường, không phải lỗi game: server hẻm online (`npm run server`) không chạy (chỉ cổng 5173 mở) và Luật cứng 11 cấm tự bật server; cần người dùng chạy `npm run server` + đăng nhập, rồi hai tab ở tiền cảnh luân phiên. Đến lúc đó làm ngay; trước đó coi là chờ môi trường, test co-op tự động (coopClient, 51 test) vẫn xanh.
 - **GĐ798:** đẩy autoplay tới ngày 128 cấp 34 (fire-and-forget qua setTimeout, chờ ~100 s vì trang bị chặn) rồi đo CPU render gfx=low: 2,1 ms (4× ≈ 8–15 ms ≪ 33 ms) — lo ngại GĐ797 (biên thu hẹp) không lặp lại ở cấp cao; nợ GĐ675 gần đóng.
 - **GĐ797:** đo CPU render gfx=low cấp 24: 5,7 ms (4× ≈ 23–27 ms vs 33 ms) — còn đạt nhưng biên thu hẹp theo cấp; ghi vào nợ GĐ675 (đo lại cấp ≥40 trước khi thêm prop/hiệu ứng).
 - **GĐ796:** kiểm kê: tsc sạch, 315 file/2940 test xanh; đo CPU render gfx=low sau autoplay tới cấp 18 (GĐ675) vẫn dưới biên 4× throttle. Nợ còn lại: cấp ≥40 và co-op hai tab thật.
