@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { REGULARS, BIRTHDAY_BONUS, birthdayLabel, birthdayDoy, birthdaysToday, isBirthday, regularCheckout, visitsToday, emptyProgress } from '../data/regulars';
+import { REGULARS, BIRTHDAY_BONUS, birthdayLabel, birthdayDoy, birthdaysToday, birthdayHint, isBirthday, regularCheckout, visitsToday, emptyProgress } from '../data/regulars';
 import { YEAR_DAYS, dateOfDoy, dayOfYear } from '../data/calendar';
 import { newGameData, useGame } from '../core/store';
 
@@ -98,5 +98,19 @@ describe('birthdayLabel — cùng lịch với Sổ đầu ngày', () => {
       const cal = dateOfDoy(dayOfYear(day));
       expect(birthdayLabel(d), d.id).toBe(`${cal.day}/${cal.month}`);
     }
+  });
+
+  it('birthdayHint (GĐ773): có món thích → +5 ưu tiên 3; hết hàng → nêu tên món cần nhập, ưu tiên 2; khớp điểm thật', () => {
+    const have = birthdayHint(def, (id) => id === def.favorites[0]);
+    expect(have.priority).toBe(3);
+    expect(have.text).toContain(`+${BIRTHDAY_BONUS + 2}`);
+    const miss = birthdayHint(def, () => false);
+    expect(miss.priority).toBe(2);
+    expect(miss.text).toContain('hết hàng');
+    expect(miss.text.length).toBeLessThanOrEqual(90);
+    // +5 phải đúng với điểm thanh toán thật: món thích (2) + sinh nhật (3)
+    const day = bdayDay();
+    const r = regularCheckout(def, known({ lastFriendshipDay: 0 }), [fav], day);
+    expect(r.points).toBe(BIRTHDAY_BONUS + 2);
   });
 });

@@ -581,3 +581,11 @@ export function regularsExpectedToday(
 export function birthdaysToday(expected: RegularDef[], day: number): RegularDef[] {
   return expected.filter((d) => isBirthday(d, day));
 }
+
+/** GĐ773 — dòng Sổ đầu ngày cho sinh nhật: nếu CÓ món họ thích trong hàng thì báo mức +5 (3 sinh nhật + 2 món thích);
+ *  nếu hết thì nêu tên món thích đầu tiên cần nhập (việc ưu tiên hơn). Thuần — haveStock do UI truyền. */
+export function birthdayHint(def: RegularDef, haveStock: (id: string) => boolean): { text: string; priority: number } {
+  if (def.favorites.some(haveStock)) return { text: `Sinh nhật ${def.name} hôm nay — mua món họ thích là +${BIRTHDAY_BONUS + 2} thân thiết`, priority: 3 };
+  const want = productById(def.favorites[0]).name;
+  return { text: `Sinh nhật ${def.name} hôm nay — hết hàng họ thích, nhập ${want} để +${BIRTHDAY_BONUS + 2}`, priority: 2 };
+}
