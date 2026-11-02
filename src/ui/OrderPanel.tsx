@@ -5,11 +5,10 @@ import { lastActionResult } from '../net/coop';
 import { storageCapacity, storageUsed, useGame, wagesDue } from '../core/store';
 import { caseSize, casesFor, CATEGORIES, describeUnits, formatMoney, productById, unlockedProducts, type Category } from '../data/products';
 import { shelfLife } from '../data/freshness';
-import { dayTraffic, describeDay } from '../data/weather';
 import { bulkDiscount, orderTotal, SUPPLIERS, supplierSells, trending, unitCost } from '../data/suppliers';
 import { guideActiveOn, guideInCart, guideIdsOf, guideProducts } from '../data/onboarding';
 import { cheapestSupplier, orderAssessment, type AssessLevel, type AssessLine, type BuyTone, type Dir } from '../data/procure';
-import { monthlyRelRebate, PARTNER_TIERS, tierProgress } from '../data/supplierRel';
+import { PARTNER_TIERS } from '../data/supplierRel';
 import { cheapestSupplierFor, type CheapestProductResult } from '../data/supplierValue';
 import { isFairOpen, makeFairOffer } from '../data/fairmerchant';
 import { showRestockExtras } from '../data/onboarding';
@@ -21,7 +20,7 @@ import { supplyRestockManifest, supplyNetworkOrderVisible } from '../data/supply
 import { teahouseFillPlan } from '../data/teahouseHaul';
 import { quanNuocDrinkIds } from '../data/quanNuoc';
 import { festivalRestockPlan } from '../data/festivalRestock';
-import { GuideBanner, QuanDrinkTipCallout, FestivalPrepCallout, NetworkFillCallout } from './OrderBanners';
+import { SupplierRelLine, ForecastLine, GuideBanner, QuanDrinkTipCallout, FestivalPrepCallout, NetworkFillCallout } from './OrderBanners';
 import { ProdSuggCard, HotWeekBanner, UrgentCard } from './OrderCards';
 import { commitNote, urgentReasonOf, displayable, onHand, incoming, suggestQty, assessText, supplierTone, supplierTomorrow } from './orderHelpers';
 import { acceptFairOffer } from '../core/biz';
@@ -410,23 +409,7 @@ export function OrderPanel() {
         {' '}Hàng nhập theo thùng, về kho rồi khui ra bày lẻ.
       </p>
       <div style={{ ...st.banner, ...(showRestockExtras(day) ? null : { display: 'none' }) }}>{/* GĐ319: ngày đầu chỉ dạy nhập-bày-bán */}
-        {(() => {
-          const life = biz.supplierRel?.[supplier.id]?.spent ?? 0;
-          const { cur, next, pct } = tierProgress(life);
-          const monthSpent = biz.supplierRelMonth?.[supplier.id] ?? 0;
-          const rebate = monthlyRelRebate(life, monthSpent);
-          const monthLeft = Math.max(0, cur.commit - monthSpent);
-          return (
-            <span>
-              🤝 Mối quen: <b style={{ color: cur.level >= 3 ? '#e74c3c' : '#fff' }}>{cur.icon} {cur.name}</b>
-              {next ? ` · ${pct}% tới ${next.icon} ${next.name}` : ' · đã tối đa'}
-              {" "}· tháng này mua <b>{formatMoney(monthSpent)}</b>
-              {cur.level > 0 && (rebate > 0
-                ? <span style={{ color: '#2ecc71' }}> → sẽ hoàn {formatMoney(rebate)} cuối tháng ✓</span>
-                : <span style={{ opacity: 0.8 }}> · còn {formatMoney(monthLeft)} nữa đạt cam kết ({Math.round(cur.rate * 100)}% hoàn)</span>)}
-            </span>
-          );
-        })()}
+        <SupplierRelLine life={biz.supplierRel?.[supplier.id]?.spent ?? 0} monthSpent={biz.supplierRelMonth?.[supplier.id] ?? 0} />
       </div>
 
       {showCost && count > 0 && (() => {
@@ -455,13 +438,7 @@ export function OrderPanel() {
       )}
 
       <div style={{ ...st.banner, ...(day <= 1 ? { display: 'none' } : null) }}>
-        🌦️ Dự báo: {forecast.map((w, i) => (
-          <span key={i}>
-            {i > 0 && ' · '}
-            <b>{i ? 'Ngày kia' : 'Mai'}</b> {describeDay(weatherSeed, day + 1 + i, w)} · khách {Math.round(dayTraffic(weatherSeed, day + 1 + i, w) * 100)}% ngày thường
-          </span>
-        ))}
-        <span style={{ opacity: 0.75 }}> · Số gợi ý đã tính theo thời tiết. Hàng mát, đông lạnh, tươi để trong kho hỏng nhanh: nên bày vào tủ.</span>
+        <ForecastLine forecast={forecast} weatherSeed={weatherSeed} day={day} />
       </div>
 
       {/* 🌾 Nên hôm nay — chuỗi sản xuất hội tụ (GĐ73) */}

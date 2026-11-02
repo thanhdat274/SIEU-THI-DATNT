@@ -32,3 +32,17 @@ describe('GĐ947 — OrderBanners', () => {
     expect(h).toContain('Mì 4 (mua)'); expect(h).toContain('Điền kệ chi nhánh');
   });
 });
+
+import { SupplierRelLine, ForecastLine } from '../ui/OrderBanners';
+describe('SupplierRelLine / ForecastLine (GĐ957)', () => {
+  it('mối quen hiện bậc + chi tháng', () => {
+    const html = renderToStaticMarkup(createElement(SupplierRelLine, { life: 0, monthSpent: 0 }));
+    expect(html).toContain('Mối quen');
+  });
+  it('dự báo rỗng vẫn không lỗi, có 2 ngày thì nhãn Mai/Ngày kia', () => {
+    expect(renderToStaticMarkup(createElement(ForecastLine, { forecast: [], weatherSeed: 1, day: 2 }))).toContain('Dự báo');
+    const html = renderToStaticMarkup(createElement(ForecastLine, { forecast: ['sunny', 'rain'] as never, weatherSeed: 1, day: 2 }));
+    expect(html).toContain('Mai');
+    expect(html).toContain('Ngày kia');
+  });
+});

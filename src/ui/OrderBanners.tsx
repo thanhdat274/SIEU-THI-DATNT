@@ -5,6 +5,8 @@ import type { festivalRestockPlan } from '../data/festivalRestock';
 import type { quanNuocRestockTip } from '../data/quanNuocInsights';
 import type { supplyRestockManifest } from '../data/supplyChain';
 import type { guideProducts } from '../data/onboarding';
+import { dayTraffic, describeDay } from '../data/weather';
+import { monthlyRelRebate, tierProgress } from '../data/supplierRel';
 import { Callout } from './panels/shared';
 
 /** GĐ947: các banner/callout đầu OrderPanel, tách nguyên văn. Hành động (điền giỏ) truyền qua props. */
@@ -86,5 +88,37 @@ export function NetworkFillCallout({ manifest: netManifest, onFillBranch }: { ma
         )}
       </div>
     </Callout>
+  );
+}
+
+/** GĐ957: dòng mối quen nhà cung cấp (bậc, tiến độ, hoàn cuối tháng), tách nguyên văn. */
+export function SupplierRelLine({ life, monthSpent }: { life: number; monthSpent: number }) {
+  const { cur, next, pct } = tierProgress(life);
+  const rebate = monthlyRelRebate(life, monthSpent);
+  const monthLeft = Math.max(0, cur.commit - monthSpent);
+  return (
+    <span>
+      🤝 Mối quen: <b style={{ color: cur.level >= 3 ? '#e74c3c' : '#fff' }}>{cur.icon} {cur.name}</b>
+      {next ? ` · ${pct}% tới ${next.icon} ${next.name}` : ' · đã tối đa'}
+      {" "}· tháng này mua <b>{formatMoney(monthSpent)}</b>
+      {cur.level > 0 && (rebate > 0
+        ? <span style={{ color: '#2ecc71' }}> → sẽ hoàn {formatMoney(rebate)} cuối tháng ✓</span>
+        : <span style={{ opacity: 0.8 }}> · còn {formatMoney(monthLeft)} nữa đạt cam kết ({Math.round(cur.rate * 100)}% hoàn)</span>)}
+    </span>
+  );
+}
+
+/** GĐ957: dòng dự báo thời tiết 2 ngày tới, tách nguyên văn. */
+export function ForecastLine({ forecast, weatherSeed, day }: { forecast: Parameters<typeof describeDay>[2][]; weatherSeed: number; day: number }) {
+  return (
+    <>
+          🌦️ Dự báo: {forecast.map((w, i) => (
+            <span key={i}>
+              {i > 0 && ' · '}
+              <b>{i ? 'Ngày kia' : 'Mai'}</b> {describeDay(weatherSeed, day + 1 + i, w)} · khách {Math.round(dayTraffic(weatherSeed, day + 1 + i, w) * 100)}% ngày thường
+            </span>
+          ))}
+          <span style={{ opacity: 0.75 }}> · Số gợi ý đã tính theo thời tiết. Hàng mát, đông lạnh, tươi để trong kho hỏng nhanh: nên bày vào tủ.</span>
+    </>
   );
 }
