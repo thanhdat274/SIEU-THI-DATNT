@@ -477,7 +477,7 @@ export function buyService(id: string) {
   const owned = s.biz.services ?? [];
   if (!def || owned.includes(id) || s.level < def.unlock || !pay(def.price, def.name.toLowerCase())) return;
   patch({ services: [...owned, id] });
-  s.notify(`${def.icon} Đã mở dịch vụ ${def.name}: khách sẽ ghé quầy dùng dịch vụ, nhiều người mua kèm`);
+  s.notify(`${def.icon} Đã mở dịch vụ ${def.name}: khách dùng dịch vụ hay mua kèm hàng`);
 }
 
 /** Một lượt dịch vụ xong ở quầy: cộng tiền lời vào két, doanh thu hôm nay, và ghi sổ theo dịch vụ

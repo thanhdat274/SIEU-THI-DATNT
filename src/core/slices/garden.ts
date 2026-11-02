@@ -31,8 +31,7 @@ export const createGardenSlice = (set: SetState, get: GetState): Pick<GameState,
       money: s.money - def.seedCost,
       stats: { ...s.stats, spent: s.stats.spent + def.seedCost },
     });
-    const extra = def.regrowDays ? `, trồng một lần mãi mãi mỗi ${def.regrowDays} ngày cho trái` : '';
-    s.notify(`${def.icon} Đã trồng ${def.name} (${formatMoney(def.seedCost)}): ~${def.days} ngày nữa thu được, nhớ tưới mỗi sáng${extra}`);
+    s.notify(`${def.icon} Đã trồng ${def.name} (${formatMoney(def.seedCost)}): ~${def.days} ngày nữa thu được, nhớ tưới mỗi sáng`); // GĐ834: cây lâu năm đã có nhãn ở panel vườn
   },
   waterGarden: () => {
     const s = get();
@@ -99,8 +98,7 @@ export const createGardenSlice = (set: SetState, get: GetState): Pick<GameState,
         homegrown,
       },
     });
-    const note = def.regrowDays ? ` — cây lâu năm, ${def.regrowDays} ngày nữa ra trái tiếp` : '';
-    s.notify(`🧺 Thu hoạch ${qty} ${productById(def.productId).name} nhà trồng${doubled ? ' — bù nhìn trúng: thu gấp đôi!' : inSeason(def, s.day) && def.season ? ' (đúng mùa vụ, trái sai)' : ''}: bán được giá hơn ${Math.round(HOMEGROWN_PREMIUM * 100)}%${note}`);
+    s.notify(`🧺 Thu hoạch ${qty} ${productById(def.productId).name} nhà trồng${doubled ? ' — bù nhìn trúng: thu gấp đôi!' : inSeason(def, s.day) && def.season ? ' (đúng mùa vụ, trái sai)' : ''}: bán được giá hơn ${Math.round(HOMEGROWN_PREMIUM * 100)}%`);
     s.addXp(5);
   },
   buyAnimal: (kind) => {

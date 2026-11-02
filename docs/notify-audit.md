@@ -36,7 +36,7 @@ Chạy lại: `node scripts/audit-notify.mjs`.
 - 87 75 src\core\slices\inventory.ts | 📦 Kho thiếu chỗ: cần ${qty} thùng, trống ${Math.max(0, cap - storageUsed(s.storage))}. Nâng kho hoặc nhập ít lại.
 - 86 68 src\core\biz.ts | 🏦 Vay gấp ${formatMoney(amount)} để nhập hàng, lãi ${(LOAN_DAILY_RATE * 100).toFixed(1)}%/ngày, hạn trả ngày ${s.day + LOAN_DAYS}
 
-## Đề xuất viết lại (GĐ833) — CHỈ ĐỀ XUẤT, chờ duyệt; giữ đủ nghĩa, tách mỗi câu một ý, không rút bằng cách bỏ ý
+## Đề xuất viết lại (GĐ833) — ĐÃ DUYỆT và áp dụng GĐ834 (dịch vụ, trồng cây, thu hoạch, sinh nhật; 2 cảnh báo hành động giữ nguyên); giữ đủ nghĩa, tách mỗi câu một ý, không rút bằng cách bỏ ý
 Nguyên tắc: không cắt chữ để đủ 90; nếu một câu cần 2 ý thì để ý thứ hai ở panel/tooltip, hoặc tách 2 thông báo.
 
 | Hiện tại (file) | Vấn đề | Đề xuất |

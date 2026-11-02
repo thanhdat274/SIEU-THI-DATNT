@@ -92,7 +92,7 @@ export const createRegularsSlice = (set: SetState, get: GetState): Pick<GameStat
     }
     const tip = r.tip ? ` · boa ${formatMoney(r.tip)}` : '';
     if (r.newPerks.length) s.notify(`💛 ${def.name} thân thiết hơn: ${r.newPerks.map((p) => p.description).join(' ')}${tip}${resNote}${giftNote}${arcNote}`);
-    else if (r.points >= BIRTHDAY_BONUS && isBirthday(def, s.day)) s.notify(`🎂 Sinh nhật ${def.name}: +${BIRTHDAY_BONUS} thân thiết${tip}${resNote}${giftNote}${arcNote}`); // GĐ759: thay câu thường, không thêm thông báo
+    else if (r.points >= BIRTHDAY_BONUS && isBirthday(def, s.day)) s.notify(`🎂 Sinh nhật ${def.name}: +${BIRTHDAY_BONUS} thân thiết${tip}${resNote || giftNote || arcNote}`); // GĐ759: thay câu thường, không thêm thông báo
     else s.notify(`😊 ${def.name}: "${satisfiedLine(def.lines.satisfied, get().regulars[id], s.shopName)}"${tip}${resNote}${giftNote}${arcNote}`);
     return r.tip;
   },

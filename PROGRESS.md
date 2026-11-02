@@ -160,3 +160,4 @@
 - GĐ760: lời báo sinh nhật khi thanh toán (thay câu thường).
 - GĐ761: QA trình duyệt luồng sinh nhật — ghé đúng ngày, thanh toán +3, 0 lỗi.
 - GĐ762: thẻ khách quen hiện ngày sinh nhật (sau khi đã gặp).
+- GĐ834: người dùng duyệt viết lại thông báo → áp dụng 4 câu (dịch vụ, trồng, thu hoạch, sinh nhật); 2943 test xanh. FPS mobile 375x812 late save đo lại 30 (ẩn HUD 27,6) → HUD không phải nút cổ chai, số đo dao động theo pane; chưa kết luận regression.
