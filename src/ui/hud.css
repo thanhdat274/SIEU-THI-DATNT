@@ -352,7 +352,7 @@
 }
 @media (max-width: 480px) {
   #ui .hud-agenda { max-width: calc(100vw - 24px); }
-  #ui .hud-agenda-chip { font-size: 11px; min-height: 28px; padding: 3px 9px; }
+  #ui .hud-agenda-chip { font-size: 11px; min-height: 36px; padding: 3px 9px; }
 }
 
 #ui .hud-dock {

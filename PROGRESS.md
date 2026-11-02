@@ -162,3 +162,4 @@
 - GĐ762: thẻ khách quen hiện ngày sinh nhật (sau khi đã gặp).
 - GĐ834: người dùng duyệt viết lại thông báo → áp dụng 4 câu (dịch vụ, trồng, thu hoạch, sinh nhật); 2943 test xanh. FPS mobile 375x812 late save đo lại 30 (ẩn HUD 27,6) → HUD không phải nút cổ chai, số đo dao động theo pane; chưa kết luận regression.
 - GĐ835: đo CPU render save cuối game (3826 draw call, 21,8k tri): ~1 ms/khung → render không phải cổ chai; game.perf 28 FPS ở gfx low khi pane ẩn/throttle, không đo rAF được. Chưa có bằng chứng regression; cần đo lại khi pane hiện.
+- GĐ836: chip kế hoạch hôm nay trên mobile ≤480px cao 28→36 px (đạt cỡ chạm tối thiểu).
