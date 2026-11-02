@@ -1,0 +1,37 @@
+import { formatClock, type GameState } from '../../core/store';
+import { productById } from '../../data/products';
+import type { RegularDef } from '../../data/regulars';
+import { Swatch, styles } from './shared';
+
+/** GĐ941: tách khỏi MorningPanel (nguyên văn danh sách khách quen dự kiến ghé hôm nay). */
+export function ExpectedRegularsList({ expected, regulars, reservations, favsOf, haveStock }: {
+  expected: RegularDef[]; regulars: GameState['regulars']; reservations: GameState['reservations'];
+  favsOf: (rid: string) => string[]; haveStock: (id: string) => boolean;
+}) {
+  return (
+    <>
+      <h3 style={{ margin: '10px 0 4px', fontSize: 14 }}>💛 Khách quen dự kiến ghé hôm nay ({expected.length})</h3>
+      {expected.length === 0 && <p style={styles.sub}>Không ai trong nhóm khách quen có lịch ghé hôm nay.</p>}
+      <div style={{ display: 'grid', gap: 6, maxWidth: 560 }}>
+        {expected.map((r) => {
+          const prog = regulars[r.id];
+          const res = reservations[r.id];
+          const favs = favsOf(r.id);
+          return (
+            <div key={r.id} style={{ ...styles.card, display: 'block' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+                <b><Swatch color={r.color} /> {r.name}</b>
+                <span style={{ fontSize: 12, opacity: 0.7 }}>{formatClock(r.visitFrom)}–{formatClock(r.visitUntil)}{res ? ' · 🤝 đang giữ món hẹn' : ''}</span>
+              </div>
+              <div style={{ fontSize: 12, marginTop: 2 }}>
+                Món thích: {favs.length
+                  ? favs.map((id) => `${prog?.discovered.includes(id) || res?.productId === id ? productById(id).name : '???'}${haveStock(id) ? ' ✓' : ' ⚠️'}`).join(', ')
+                  : 'chưa biết'}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </>
+  );
+}
