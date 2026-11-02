@@ -169,3 +169,4 @@
 - GĐ866–869: gọn PROGRESS.md; cả bộ xanh 107 s; thêm notifyRuntimeLen.test.ts (bot chơi 6 ngày ở cấp 3/8/15, gom toast thật, 0 vượt 90). Chi tiết trong archive.
 
 - GĐ870 (rà Leader+Designer): 2952 test xanh 99 s, tsc sạch, 358 thông báo tĩnh + toast thật đều ≤90, bundle đầu ≈538/600 KB (đo GĐ857). Không thêm tính năng: trục đã đủ sâu. Mở: FPS ≥30 gfx Low (máy thật), QA co-op 2 tab (cần server, cấm). Kế: rà GĐ880.
+- GĐ871: thử đo 'toast ngày 1' bằng bot (16 toast) → KHÔNG dùng: bot lên 4 cấp và nhận hết nhiệm vụ trong 1 ngày nên không đại diện người chơi thật; giữ ngân sách ngày 1 ở dạng tĩnh (featureBudget). Không đổi code.
