@@ -164,3 +164,4 @@
 - GĐ840–854: audit GĐ840 xanh (2943 test, thông báo ≤90, HUD ≤20 nút); thêm hudMobileCss.test.ts (chip ≥36px, dải cảnh báo có trần vh); sửa bế tắc quỹ âm: bot autoplay/playtest vay gấp, cấp <5 được vay thêm tới trần 3 gói (loanWhenBroke.test.ts); nâng timeout coop. Còn mở: FPS ≥30 gfx Low cần máy thật. Chi tiết: docs/progress-archive/PROGRESS-GD840-854.md.
 - GĐ855: coopClient.test.ts nâng timeout chung 20→60 s (cả bộ chạy song song làm 28 test quá hạn; chạy riêng luôn xanh 51/51); gộp log GĐ840–854 để PROGRESS.md ≤30 KB.
 - GĐ856: kiểm tra sức khỏe — tsc sạch, thông báo dài nhất 88/90, cây làm việc sạch; tiếp theo audit GĐ860.
+- GĐ857: build vite xanh, không lỗi; bundle không đổi so với GĐ820 (chunk lớn nhất vendor-three, đã tách khỏi bundle đầu).
