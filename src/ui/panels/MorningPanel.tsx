@@ -14,7 +14,7 @@ import { repMoney, avgPerVisit } from '../../data/repMoney';
 import { butcherValueToday, MAX_BUTCHER_STAR, meatFromByItem, missedMeatRevenue, recentMeatRevenue } from '../../data/butcherValue';
 import { debtLedger, debtDayAction } from '../../data/debtLedger';
 import { regularsExpectedToday, birthdaysToday, birthdayHint, birthdayEve, REGULARS } from '../../data/regulars';
-import { LOAN_DAILY_RATE, loyaltyPayoff } from '../../data/biz';
+import { loyaltyPayoff } from '../../data/biz';
 import { happyPayoff } from '../../data/rhythm';
 import { QUAN_NUOC_UNLOCK, QUAN_NUOC_WAGE, QUAN_PRICE_OPTIONS, isQuanMatchDay } from '../../data/quanNuoc';
 import { quanNuocDayAction, quanNuocHealth } from '../../data/quanNuocInsights';
@@ -43,6 +43,7 @@ import { AlleyTodayCard, SeasonEventCard } from './MorningEventCards';
 import { DueDebtsCard, ReservationsCard } from './MorningRegularCards';
 import { DueContractsCard } from './DueContractsCard';
 import { HotGoodsCards } from './HotGoodsCards';
+import { LoanNoteCard, EveningPrepCallout } from './MorningNotes';
 import { FestivalNowCard, FestivalSoonCard } from './FestivalCards';
 import { CounterDemandCard } from './CounterDemandCard';
 import { MarketSurplusCard } from './MarketSurplusCard';
@@ -73,7 +74,7 @@ import { SickShelvesCard, YesterCombosCard } from './MorningWarnCards';
 import { SolvencyCard, LoanBurdenCard, DailyBurnCard } from './MorningFinanceCards';
 import { ButcherCard, HuiCard } from './MorningMeatHuiCards';
 import { BranchChoresCard, HiepLucCard } from './MorningBranchCards';
-import { Callout, Stat, Footer, Swatch, styles, Tabs } from './shared';
+import { Stat, Footer, Swatch, styles, Tabs } from './shared';
 
 
 
@@ -318,27 +319,13 @@ export function MorningPanel() {
 
       {yesterCombos.length > 0 && <YesterCombosCard yesterCombos={yesterCombos} />}
 
-      {biz.loan && (
-        <div style={{ ...styles.card, display: 'block', marginBottom: 8, outline: biz.loan.dueDay - day <= 3 ? '2px solid #e74c3c' : undefined }}>
-          <b style={styles.cardTitle}>🏦 Đang nợ ngân hàng {formatMoney(biz.loan.principal)}</b>
-          <div style={{ fontSize: 12, marginTop: 2 }}>
-            Tối nay trừ lãi {formatMoney(Math.round(biz.loan.principal * LOAN_DAILY_RATE))} · hạn trả ngày {biz.loan.dueDay} (còn {Math.max(0, biz.loan.dueDay - day)} ngày)
-            · trả gốc ở Kinh doanh → Vay &amp; hụi.
-          </div>
-        </div>
-      )}
+      {biz.loan && <LoanNoteCard loan={biz.loan} day={day} />}
 
       {/* 🛒 Nhu cầu quầy (GĐ78) — tách GĐ920 sang CounterDemandCard */}
       <CounterDemandCard demand={demand} cleanStreak={cleanStreak} cleanBest={biz.cleanBest ?? 0} cleanExtra={cleanExtra} />
 
       {/* GĐ161: 1 dòng gợi ý duy nhất khi mở sổ trong khung vắng 13–17h — nấu kịp giờ vàng tối */}
-      {eveningPrep && (
-        <Callout tone="accent" style={{ marginBottom: 8 }}>
-          <div style={{ fontSize: 12 }}>
-            🍳 Muốn kịp giờ vàng tối: bắt đầu nấu <b>{eveningPrep.name}</b> trước ~{formatClock(eveningPrep.startBy)}.
-          </div>
-        </Callout>
-      )}
+      {eveningPrep && <EveningPrepCallout name={eveningPrep.name} startBy={eveningPrep.startBy} />}
 
       {hasMeatCounter && butcherV.skill < MAX_BUTCHER_STAR && <ButcherCard butcherV={butcherV} recentMeat={recentMeat} meatMissed={meatMissed} />}
 
