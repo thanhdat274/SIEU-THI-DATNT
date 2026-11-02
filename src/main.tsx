@@ -9,7 +9,7 @@ import * as THREE from 'three';
 import { shopLayout, worldActions } from './core/actions';
 import { saveGame, startAutosave } from './core/save';
 import { formatClock, SLEEP_FROM, useGame, type GameState } from './core/store';
-import { newRoutineMarks, planRoutine } from './core/routine';
+import { newRoutineMarks, planRoutine, stocktakeMessage } from './core/routine';
 import { vehicleDef } from './data/biz';
 import { checkChapters, eatBreakfast, stockReminders } from './core/biz';
 import { hasSkill } from './data/titles';
@@ -411,16 +411,6 @@ useGame.subscribe((s) => {
   }
 });
 
-/** Số món còn trên kệ và số ô trống, để báo lúc kiểm kê cuối ngày. */
-function stocktake() {
-  const s = useGame.getState();
-  const tiers = s.furniture.flatMap((f) => f.tiers);
-  const empty = tiers.filter((t) => !t.productId || t.count === 0).length;
-  const onShelf = tiers.reduce((n, t) => n + t.count, 0);
-  const inStore = Object.values(s.storage).reduce((n, q) => n + q, 0);
-  return `📋 Kiểm kê xong: ${onShelf} món trên kệ, ${inStore} món trong kho${empty ? `, ${empty} ô kệ trống` : ''}. Về nhà nghỉ thôi!`;
-}
-
 /**
  * Lịch tự động: chạy khi đồng hồ vượt qua mỗi mốc (kể cả khi tua 3×/8×).
  * Người chơi vẫn tự đóng/mở cửa, đi lại được; lịch chỉ làm việc chưa làm.
@@ -468,7 +458,7 @@ function runRoutine() {
   }
   if (todo.closeShop && s.shopOpen) s.toggleShop();
   if (todo.goHome) {
-    if (todo.stocktake) s.notify(stocktake());
+    if (todo.stocktake) s.notify(stocktakeMessage(s));
     // Về nhà từ bất cứ đâu (trong tiệm, ngoài đường, trang trại...), không chỉ khi đang đứng trong tiệm.
     // Đi bộ theo nhịp đồng hồ game nên tua 3×/8× vẫn về tới nhà trong cùng số phút như 1×.
     if (player.position.distanceTo(wakeSpot) > 2) {

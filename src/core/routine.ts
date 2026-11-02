@@ -1,4 +1,4 @@
-import { ROUTINE } from './gameTypes';
+import { ROUTINE, type GameState } from './gameTypes';
 
 /**
  * Lịch tự động trong ngày: 7h ra tiệm, 8h mở cửa, 22h30 đóng cửa, 23h kiểm kê rồi về nhà.
@@ -116,4 +116,13 @@ export function autoOpenNote(
   return at < ROUTINE.open
     ? `⏰ Lịch tự động mở cửa ${Math.floor(at / 60)}h${at % 60 ? '30' : ''} — đón trọn giờ vàng sáng 6h–8h30.`
     : `⏰ Lịch tự động mở cửa 8h — lỡ nửa đầu giờ vàng sáng (chỉnh trong menu hồ sơ).`;
+}
+
+/** Số món còn trên kệ và số ô trống, để báo lúc kiểm kê cuối ngày. */
+export function stocktakeMessage(s: Pick<GameState, 'furniture' | 'storage'>): string {
+  const tiers = s.furniture.flatMap((f) => f.tiers);
+  const empty = tiers.filter((t) => !t.productId || t.count === 0).length;
+  const onShelf = tiers.reduce((n, t) => n + t.count, 0);
+  const inStore = Object.values(s.storage).reduce((n, q) => n + q, 0);
+  return `📋 Kiểm kê xong: ${onShelf} món trên kệ, ${inStore} món trong kho${empty ? `, ${empty} ô kệ trống` : ''}. Về nhà nghỉ thôi!`;
 }
