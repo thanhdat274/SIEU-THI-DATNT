@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 // Cả file dựng store co-op nặng: khi chạy chung 316 file, giới hạn 5 s mặc định thi thoảng vỡ (khác test mỗi lượt).
-vi.setConfig({ testTimeout: 20_000 });
+vi.setConfig({ testTimeout: 60_000 });
 
 /**
  * Phía trình duyệt của hẻm online (net/coop.ts) — phần quyết định chơi online có ra KẾT QUẢ GIỐNG chơi
