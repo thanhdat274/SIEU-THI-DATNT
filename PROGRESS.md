@@ -164,3 +164,4 @@
 - GĐ835: đo CPU render save cuối game (3826 draw call, 21,8k tri): ~1 ms/khung → render không phải cổ chai; game.perf 28 FPS ở gfx low khi pane ẩn/throttle, không đo rAF được. Chưa có bằng chứng regression; cần đo lại khi pane hiện.
 - GĐ836: chip kế hoạch hôm nay trên mobile ≤480px cao 28→36 px (đạt cỡ chạm tối thiểu).
 - GĐ837: chưa xử lý chồng thẻ HUD mobile: tab QA quay về màn đăng nhập, không dựng lại được HUD để đo; cần mở save QA rồi đo vị trí thẻ ở 375x812.
+- GĐ838: mobile ≤600px dải cảnh báo hud-alerts cao 342 px (42% màn 375x812) → max-height 32vh, cuộn trong (đo: 342→260 px).
