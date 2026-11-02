@@ -68,7 +68,12 @@ export function notifyTexts(): { file: string; text: string; len: number }[] {
     const src = readFileSync(f, 'utf8');
     for (const m of src.matchAll(re)) {
       const text = m[1].slice(1, -1);
-      const len = [...text.replace(/\$\{(?:[^{}]|\{[^{}]*\})*\}/g, 'xxxxxx')].length;
+      // ${c ? 'a' : 'b'} tính theo nhánh chuỗi dài nhất (trường hợp xấu nhất), khớp scripts/audit-notify.mjs
+      const flat = text.replace(/\$\{(?:[^{}]|\{[^{}]*\})*\}/g, (e) => {
+        const lits = [...e.matchAll(/'((?:[^'\\]|\\.)*)'/g)].map((x) => x[1]);
+        return lits.length && e.includes('?') ? lits.sort((a, b) => b.length - a.length)[0] : 'xxxxxx';
+      });
+      const len = [...flat].length;
       out.push({ file: f.slice(root.length + 1), text, len });
     }
   }
