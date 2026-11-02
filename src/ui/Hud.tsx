@@ -17,7 +17,8 @@ const fmtOpenAt = (m: number) => `${Math.floor(m / 60)}h${m % 60 ? '30' : ''}`;
 import { describeHours, goldenHourBands, goldenPrepWants, inGoldenHour, minutesToGolden, nextGoldenBand } from '../data/rhythm';
 import { skillPoints } from '../data/titles';
 import { COMBO_UNLOCK } from '../data/combos';
-import { describeDay, describeRain, rainSpell, WEATHER } from '../data/weather';
+import { describeDay, describeRain, WEATHER } from '../data/weather';
+import { forecastTextOf, skyState } from './hudSky';
 import { pushCloudSave, takeCloudSave } from '../net/cloud';
 import { leaveRoom } from '../net/coop';
 import { logoutGoogle } from '../net/firebase';
@@ -157,11 +158,8 @@ export function Hud() {
   const skillsLeft = useGame((s) => skillPoints(s.level) - s.skills.length);
   const effects = dayEffects(weatherSeed, day, level);
   const soon = upcomingFestival(day);
-  const spell = rainSpell(weatherSeed, day, weather);
-  // Ngày mưa mà chưa tới hoặc đã qua cơn mưa thì trời chỉ nhiều mây
-  const raining = !!spell && minutes >= spell.start && minutes < spell.end;
-  const skyIcon = spell && !raining ? WEATHER.cloudy.icon : WEATHER[weather].icon;
-  const forecastText = forecast.map((w, i) => `${i ? 'Ngày kia' : 'Ngày mai'}: ${describeDay(weatherSeed, day + 1 + i, w)}`).join('\n');
+  const { spell, raining, skyIcon } = skyState(weatherSeed, day, weather, minutes);
+  const forecastText = forecastTextOf(weatherSeed, day, forecast);
   const { account, cloudStatus, conflict, coop } = useSession();
   /** Đang ở hẻm online: tiến trình là của cả hẻm, lưu trên server thay vì trong máy. */
   const online = !!coop;
