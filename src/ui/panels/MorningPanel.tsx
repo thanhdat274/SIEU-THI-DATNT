@@ -69,6 +69,7 @@ import { AdviceCard, HourChart, ItemTable, HistoryChart } from './HistoryPanel';
 import { QuanNuocCard } from './QuanNuocCard';
 import { TiemXoiCard } from './TiemXoiCard';
 import { SickShelvesCard, YesterCombosCard } from './MorningWarnCards';
+import { SolvencyCard, LoanBurdenCard, DailyBurnCard } from './MorningFinanceCards';
 import { Callout, Stat, Footer, Swatch, styles, Tabs } from './shared';
 
 
@@ -391,58 +392,11 @@ export function MorningPanel() {
         </div>
       )}
 
-      {(biz.loan || biz.hui) && (() => {
-        const sol = solvency({ money, storage, priceOf, loan: biz.loan, hui: biz.hui, day });
-        return (
-          <Callout tone={sol.cover ? 'ok' : 'danger'} style={{ marginBottom: 8 }} title={`🪙 Cân đối: tiền + bán hết kho = ${formatMoney(sol.liquid)} (nợ gốc ${formatMoney(sol.liabilities)})`}>
-            <div style={{ marginTop: 2, fontSize: 12 }}>
-              {sol.cover
-                ? `Bán hết kho cộng tiền mặt đủ trả gốc vay, còn thừa ${formatMoney(sol.margin)}.`
-                : `Còn thiếu ${formatMoney(-sol.margin)} để trả gốc vay nếu hôm nay không bán thêm — kíp bơm doanh thu hoặc xả sỉ/gánh chợ.`}
-              {' '}Mỗi tối cần gom ngoài quầy: lãi vay {formatMoney(sol.loanInterestToday)}
-              {sol.huiDueToday > 0 && ` + góp hụi ${formatMoney(sol.huiDueToday)}`}
-              {sol.daysToLoanDue != null && ` · hạn trả gốc còn ${sol.daysToLoanDue} ngày`}.
-            </div>
-          </Callout>
-        );
-      })()}
+      {(biz.loan || biz.hui) && <SolvencyCard sol={solvency({ money, storage, priceOf, loan: biz.loan, hui: biz.hui, day })} />}
 
-      {biz.loan && (() => {
-        const lb = loanBurden(biz.loan.principal, stats?.revenue ?? 0);
-        return (
-          <Callout tone={lb.pctOfRevenue != null && lb.pctOfRevenue > 10 ? 'warn' : 'accent'} style={{ marginBottom: 8 }} title={`🏦 Lãi vay ngốn ${formatMoney(lb.interest)}/ngày${lb.pctOfRevenue != null ? ` = ${lb.pctOfRevenue.toFixed(0)}% doanh thu hôm nay` : ''}`}>
-            <div style={{ marginTop: 2, fontSize: 12 }}>
-              Mỗi 1.000.000đ trả bớt gốc tiết kiệm ~{formatMoney(lb.interestSavedPerMillion)} lãi mỗi ngày —
-              {lb.pctOfRevenue != null && lb.pctOfRevenue > 10
-                ? ' đang nặng (lãi ăn trên 10% dòng tiền): trả bớt càng sớm càng nhẹ.'
-                : ' đang nhẹ so với dòng tiền hôm nay.'}
-            </div>
-          </Callout>
-        );
-      })()}
+      {biz.loan && <LoanBurdenCard lb={loanBurden(biz.loan.principal, stats?.revenue ?? 0)} />}
 
-      {(() => {
-        const db = dailyBurn(
-          staff,
-          branch?.staff ?? [],
-          shopTier,
-          biz.loan,
-          biz.hui,
-          recentAvgRevenue(history, 7),
-        );
-        const tone = db.avgRevenue > 0 && db.burnShare != null && db.burnShare > 0.8 ? 'warn' : 'accent';
-        return (
-          <Callout tone={tone} style={{ marginBottom: 8 }} title={`🔥 Chi phí cố định/ngày: ${formatMoney(db.total)}${db.burnShare != null ? ` = ${Math.round(db.burnShare * 100)}% doanh thu bình quân` : ''}`}>
-            <div style={{ marginTop: 2, fontSize: 12 }}>
-              Lương {formatMoney(db.wages)} · thuê {formatMoney(db.rent)} · lãi vay {formatMoney(db.loanInterest)} · góp hụi {formatMoney(db.huiDue)}.
-              {db.burnShare == null && ` Chưa có doanh thu bình quân để so — mở vài ngày rồi xem lại.`}
-              {db.burnShare != null && (db.covered
-                ? ` Doanh thu bình quân ${formatMoney(db.avgRevenue)} còn thừa ${formatMoney(db.margin)} sau chi phí cố định.`
-                : ` Doanh thu bình quân ${formatMoney(db.avgRevenue)} thiếu ${formatMoney(-db.margin)} để trùm chi phí cố định — tăng doanh thu hoặc cắt bớt lương/nợ.`)}
-            </div>
-          </Callout>
-        );
-      })()}
+      <DailyBurnCard db={dailyBurn(staff, branch?.staff ?? [], shopTier, biz.loan, biz.hui, recentAvgRevenue(history, 7))} />
 
       {biz.quanNuoc.open && <QuanNuocCard quanNuoc={biz.quanNuoc} quanNuocLast={biz.quanNuocLast ?? null} quanHealth={quanHealth} />}
 
