@@ -165,3 +165,4 @@
 - GĐ841: thử đo lại FPS: rAF không chạy dù visibilityState=visible (cửa sổ app không ở tiền cảnh), game.perf tụt 13,7 do throttle → số đo ở môi trường này không đáng tin; cần đo trên máy thật khi cửa sổ ở tiền cảnh.
 - GĐ842: autoplay 1 ngày trên save QA ngày 100 mất 4,7 s CPU (tab nền, gồm bot) — chỉ là mốc so sánh cho lần sau, chưa quy ra ms/khung.
 - GĐ843: thêm hudMobileCss.test.ts khoá chip ≥36 px và trần max-height dải cảnh báo mobile.
+- GĐ844: rà backlog: còn lại chỉ nợ refactor UI (ReportPanels/BusinessPanel — luật: chỉ tách khi đụng panel), đo FPS thật (cần cửa sổ tiền cảnh) và QA chơi chung (cần server). Không có việc chơi sâu mới đã duyệt; chờ người dùng chọn hướng mở rộng.
