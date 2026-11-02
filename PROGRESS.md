@@ -21,6 +21,7 @@
 
 ## Trạng thái hiện tại (02/11/2026)
 - Các mục GĐ790–929 đã chuyển sang `docs/progress-archive/PROGRESS-GD790-929.md` (giữ file này gọn).
+- GĐ973: tách data/bizAchievements.ts (thú cưng, thành tựu, thanh tra, 139 dòng) khỏi data/biz.ts (652→520) bằng `export *` + test `bizAchievementsSplit.test.ts`. tsc exit 0, full test đạt (363/3080). Chưa soi bằng mắt.
 - GĐ972: tách data/bizWeeks.ts (báo cáo + thử thách tuần/tháng, 347 dòng) khỏi data/biz.ts (999→652) bằng `export *` + test `bizWeeksSplit.test.ts`. tsc exit 0, full test đạt (362/3077). Chưa soi bằng mắt.
 - **GĐ971 (QA save trắng bằng mắt)** Xoá localStorage/IndexedDB → màn đăng nhập → "Chơi không cần đăng nhập" → vào ngày 1 (6:00, Tết dương lịch, hướng dẫn 5 bước, hội thoại Bà Năm chương 1, HUD 12 nút, dock có "Thêm"). Không có lỗi mới sau khi vào game; các lỗi `REGULAR_NAMES`/`main.tsx` trong console là dấu vết HMR cũ của GĐ962 (máy chủ nay trả 200, export có đủ).
 - **GĐ970 (rà 961–969)** Chỉ tách code thuần (main.tsx 1012→971 dòng: stocktakeMessage, effectiveSpeed, lampLevel, interactHints, tutorialMarker); sửa 1 lỗi tsc sót ở GĐ965 (từ nay đọc exit code tsc riêng). Bundle không đổi: đầu 533/597 KB gzip, chunk lớn nhất 253/255. Full test 361 file/3075. GĐ950–959 chuyển sang `docs/progress-archive/PROGRESS-GD950-959.md`. Chưa soi bằng mắt trong game.
