@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { registerLight, unregisterLight } from '../render/lightBudget';
 
 // Biến tạm dùng lại mỗi khung cho updateDoor/updateView, tránh cấp phát rác
@@ -431,6 +432,10 @@ const DOOR_OPEN = 1.4;
 
 
 /** Cửa sổ khung trắng, kính xanh nhạt chia 4 ô, có bậu; xuyên qua tường dày t, tâm cao 1.6m. */
+let mergeWindowFrames = false;
+/** Chỉ bật ở world.ts: sim kinh tế headless seed Math.random mà three sinh UUID bằng Math.random, đổi số mesh làm lệch dòng ngẫu nhiên (cùng lý do `sharedGoods`). */
+export function setMergeWindowFrames(on: boolean) { mergeWindowFrames = on; }
+
 function createWindow(alongX: boolean, offset: number, t: number) {
   const g = new THREE.Group();
   const frameMat = new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true });
@@ -441,14 +446,16 @@ function createWindow(alongX: boolean, offset: number, t: number) {
   const bars: [number, number, number, number][] = [
     [W + 0.1, 0.08, 0, H / 2], [W + 0.1, 0.08, 0, -H / 2], [0.08, H, W / 2, 0], [0.08, H, -W / 2, 0], [0.05, H, 0, 0], [W, 0.05, 0, 0],
   ];
-  for (const [sx, sy, x, y] of bars) {
-    const bar = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, t + 0.08), frameMat);
-    bar.position.set(x, y, 0);
-    g.add(bar);
+  // GĐ906: 6 thanh khung + bệ cửa cùng vật liệu → gộp 1 mesh (8 → 2 mesh/cửa sổ); vật liệu giữ nguyên nên mờ theo tường vẫn chạy
+  const frameParts: THREE.BufferGeometry[] = bars.map(([sx, sy, x, y]) => new THREE.BoxGeometry(sx, sy, t + 0.08).translate(x, y, 0));
+  frameParts.push(new THREE.BoxGeometry(W + 0.25, 0.06, t + 0.2).translate(0, -H / 2 - 0.07, 0));
+  const frameGeo = mergeWindowFrames ? mergeGeometries(frameParts, false) : null;
+  if (frameGeo) {
+    for (const p of frameParts) p.dispose();
+    g.add(new THREE.Mesh(frameGeo, frameMat));
+  } else {
+    for (const p of frameParts) g.add(new THREE.Mesh(p, frameMat));
   }
-  const sill = new THREE.Mesh(new THREE.BoxGeometry(W + 0.25, 0.06, t + 0.2), frameMat);
-  sill.position.y = -H / 2 - 0.07;
-  g.add(sill);
   // Toạ độ tính từ tâm tường (cao 1.5m)
   g.position.y = 0.1;
   if (alongX) g.position.x = offset;

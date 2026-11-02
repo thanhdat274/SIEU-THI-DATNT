@@ -3,7 +3,7 @@ import { MeshStandardNodeMaterial } from 'three/webgpu';
 import { applyWind } from '../render/fx/windSway';
 import { createFarm, FARM_CENTER } from './farm';
 import { GroceryShop } from '../shop/groceryShop';
-import { Building } from './buildings';
+import { Building, setMergeWindowFrames } from './buildings';
 import { Warehouse, WAREHOUSE_DEPTH } from './warehouse';
 import type { NavGrid } from './navGrid';
 import { SHOP_CENTER_X, SHOP_FRONT_Z, SHOP_TIERS } from '../data/shopTiers';
@@ -77,6 +77,7 @@ export interface World {
 
 /** Thế giới ban đầu: mặt đất, con đường, nhà riêng và tiệm tạp hóa nhỏ. */
 export function createWorld(scene: THREE.Scene, grid: NavGrid): World {
+  setMergeWindowFrames(true); // GĐ906: gộp khung cửa sổ (chỉ cảnh 3D thật, sim headless giữ đường cũ)
   const ground = new THREE.Mesh(
     new THREE.PlaneGeometry(160, 160),
     new THREE.MeshStandardMaterial({ color: 0x7cb05a }),
