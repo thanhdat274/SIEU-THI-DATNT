@@ -432,7 +432,7 @@ export const createBranchSlice = (set: SetState, get: GetState): Pick<GameState,
       stats: { ...s.stats, spent: s.stats.spent + VENDING_COST },
       totals: { ...s.totals, spent: s.totals.spent + VENDING_COST },
     });
-    s.notify('🥤 Đã lắp máy bán tự động — bán cả khi đóng cửa, cần người nạp hàng.');
+    s.notify('🥤 Đã lắp máy bán tự động — bán cả khi đóng cửa, cần nạp hàng.');
   },
   toggleNightDelivery: () => {
     const s = get();
