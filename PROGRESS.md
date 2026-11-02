@@ -28,6 +28,7 @@
 - **GĐ715–788** (tóm tắt từng khối: docs/progress-archive/PROGRESS-GD715-788-summaries.md): bán online, đường đời nhân viên, trả góp/sổ nợ, sinh nhật khách quen, audit GĐ720/730/740 đều ĐẠT (bundle ≤ 597 KB, chunk ≤ 255 KB).
 
 - **GĐ892 (điều tra, không đổi code):** pane đếm 1.597 mesh hiện; 5 nhóm lớn nhất 154–489 mesh (tại (60,-64), (24,-70), (7,-8), (4,-2), (-12,-4)) đều có số geometry = số mesh và hầu hết vật liệu riêng (vd 489 mesh/489 geo/411 mat) ⇒ KHÔNG instancing được, muốn giảm phải gộp geometry theo vật liệu (bake tĩnh) — việc lớn, rủi ro với cửa/quạt/đèn, và đổi luồng Math.random của sim. Quyết định: chỉ làm khi có số FPS thật báo khựng; hiện giữ nguyên. FPS 4× throttle vẫn cần cửa sổ hiện.
+- **GĐ935 (tách MorningPanel #13)** Tách thẻ "Hợp đồng tới kỳ giao" thành `src/ui/panels/DueContractsCard.tsx` + test SSR (3 ca); MorningPanel 515 → 466 dòng (từ 846). tsc sạch, full npm test xanh. Chưa soi bằng mắt trong game.
 - **GĐ934 (tách MorningPanel #12)** Tách thẻ nợ khách quen + lời hẹn giữ món thành `src/ui/panels/MorningRegularCards.tsx` + test SSR (2 ca); MorningPanel 547 → 515 dòng. tsc sạch, full npm test xanh. Chưa soi bằng mắt trong game.
 - **GĐ933 (tách MorningPanel #11)** Tách thẻ "Con hẻm hôm nay" + thẻ sự kiện mùa thành `src/ui/panels/MorningEventCards.tsx` + test SSR (2 ca); MorningPanel 578 → 547 dòng. tsc sạch, full npm test 2987 xanh. Chưa soi bằng mắt trong game.
 - **GĐ932 (kiểm ngân sách sau GĐ929–931):** bundle tải đầu 533/597 KB, chunk lớn nhất 253/255 KB; full test 2985 xanh. Không đổi code.
