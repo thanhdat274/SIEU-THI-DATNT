@@ -9,6 +9,7 @@ import * as THREE from 'three';
 import { shopLayout, worldActions } from './core/actions';
 import { saveGame, startAutosave } from './core/save';
 import { formatClock, SLEEP_FROM, useGame, type GameState } from './core/store';
+import { lampLevel } from './render/lampLevel';
 import { createTutorialMarker } from './render/tutorialMarker';
 import { effectiveSpeed, newRoutineMarks, planRoutine, stocktakeMessage } from './core/routine';
 import { vehicleDef } from './data/biz';
@@ -740,7 +741,7 @@ function renderFrame() {
     // cũng dừng — khách đứng chờ chủ quyết định, không đếm ngược vội (GĐ102: ở 8× cửa sổ 15 phút
     // game chỉ còn ~1 giây thực, người chơi không kịp đọc là cơ hội rơi hết vào chọn hộ).
     // Ở hẻm bảng tổng kết và hội thoại cốt truyện không dừng giờ: một người đọc tổng kết không bắt cả hẻm đứng chờ
-    const speed = effectiveSpeed({ panelType: state.panel?.type, chapterPending: state.biz.chapterPending, speed: state.speed }, inAlley(), askPending());
+    const speed = effectiveSpeed({ panelType: state.panel?.type, chapterPending: Boolean(state.biz.chapterPending), speed: state.speed }, inAlley(), askPending());
     const guest = isGuest();
     // Người vào phòng không tự chạy mô phỏng: giờ, khách, nhân viên đều do chủ phòng gửi sang
     if (speed && !guest) state.tick(dt);
@@ -804,7 +805,7 @@ function renderFrame() {
   // vừa chói vừa thấy đèn bật–tắt khi đi lại.
   const hour = (useGame.getState().minutes / 60) % 24;
   setAmbience(hour);
-  const lamp = THREE.MathUtils.clamp(Math.max(hour - 17, 5.5 - hour), 0, 1);
+  const lamp = lampLevel(hour);
   // Danh sách người dùng lại mỗi khung (không cấp phát mảng mới): cửa tự mở khi ai đó lại gần
   peopleScratch.length = 0;
   peopleScratch.push(player.position);

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { lampLevelAt } from '../render/lampLevel';
 import { registerLight } from '../render/lightBudget';
 
 /**
@@ -17,8 +18,7 @@ export const COMPOUND_WARM_PLACES: { label: string; x: number; z: number; y: num
 
 /** Độ sáng theo giờ game: 0 = trưa, 1 = chập tối→đêm. Cùng công thức đèn đường/lồng (17h–5h30). */
 export function warmGlow(minutes: number): number {
-  const hour = (((minutes / 60) % 24) + 24) % 24;
-  return Math.min(1, Math.max(0, Math.max(hour - 17, 5.5 - hour)));
+  return lampLevelAt(minutes);
 }
 
 /** Rà vị trí đèn: ngoài thế giới / giữa lòng đường là bug đặt chỗ — soi bằng test thuần. */

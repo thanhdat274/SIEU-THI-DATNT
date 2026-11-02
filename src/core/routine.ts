@@ -134,7 +134,7 @@ export function stocktakeMessage(s: Pick<GameState, 'furniture' | 'storage'>): s
 export function effectiveSpeed(
   s: { panelType: string | undefined; chapterPending: boolean; speed: number },
   inAlley: boolean,
-  askPending: boolean,
+  askPending: unknown,
 ): number {
   const paused = (s.panelType === 'summary' && !inAlley) || (s.chapterPending && !inAlley) || askPending;
   return paused ? 0 : s.speed;
