@@ -3,9 +3,6 @@ import { useState } from 'react';
 import { useGame, useClock, formatClock, type DayStats } from '../../core/store';
 import { rentOf } from '../../data/shopTiers';
 import { xpToNext } from '../../data/levels';
-import { RECIPES } from '../../data/recipes';
-import { kitchenValue } from '../../data/kitchenValue';
-import { pickEveningPrep } from '../../data/cookSchedule';
 import { cookSpeed, bartenderBoost } from '../../core/slices/orders';
 import { caseSize, formatMoney, productById } from '../../data/products';
 import { reputationOf } from '../../data/reputation';
@@ -30,7 +27,6 @@ import { pickMorningShiftAction, staffDayRecap, staffShiftFix } from '../../data
 import { autoOpenNote, cashierOpensMorning } from '../../core/routine';
 import { weekendRecap } from '../../data/weekendRestock';
 import { weekendQuestTarget } from '../../data/quests';
-import { comboById } from '../../data/combos';
 import { branchMorningPlan } from '../../data/branchMorning';
 import { feedCost, landmark2Progress, landmarkProgress } from '../../data/landmark';
 import { storageUsed } from '../../core/gameTypes';
@@ -47,6 +43,7 @@ import { LoanNoteCard, EveningPrepCallout, MorningNewsCard } from './MorningNote
 import { ExpectedRegularsList } from './ExpectedRegularsList';
 import { TodayActionsCard } from './TodayActionsCard';
 import { MorningSubtitle } from './MorningSubtitle';
+import { eveningPrepFor, weakYesterdayCombos } from './morningCalc';
 import { FestivalNowCard, FestivalSoonCard } from './FestivalCards';
 import { CounterDemandCard } from './CounterDemandCard';
 import { MarketSurplusCard } from './MarketSurplusCard';
@@ -95,27 +92,7 @@ export function MorningPanel() {
   const sickest = shelfAttention(itemHealthList(analytics, level, storage, shelved, stateDemand), 3);
   // GĐ124: mồi "combo hôm qua kém" từ dữ liệu transient per-day (comboDay vẫn còn data HÔM QUA khi vừa
   // sang ngày mới, reset khi đóng Sổ đầu ngày). Giúp quyết định xoay slot combo — chỉ hiện khi có bằng chứng.
-  const yesterCombos = (() => {
-    const snap = comboDaySnapshot();
-    const running = activeCombos ?? [];
-    const rows = running
-      .map((id) => {
-        const def = comboById(id);
-        const t = snap[id];
-        if (!def || !t || !t.count) return null;
-        const [a, b] = def.items.map(productById);
-        const full = priceOf(a.id) + priceOf(b.id);
-        const cut = Math.round((full * def.discount) / 100) * 100;
-        const margin = full - cut - a.buy - b.buy;
-        return { def, t, margin };
-      })
-      .filter((r): r is NonNullable<typeof r> => r !== null)
-      // chỉ nhắc combo đang chạy NHƯNG hôm qua ít bán (count < mức đáng kể) hoặc lỗ cả cặp
-      .filter((r) => r.margin < 0 || r.t.count <= 3)
-      .sort((x, y) => (x.margin === y.margin ? x.t.count - y.t.count : x.margin - y.margin))
-      .slice(0, 2);
-    return rows;
-  })();
+  const yesterCombos = weakYesterdayCombos(comboDaySnapshot(), activeCombos ?? [], priceOf);
   // GĐ127: Sổ kinh doanh quán nước — mồi quyết định (thuê/sa thải, nhập kho, cân kho
   // với kệ tiệm chính). THUẦN đọc state có sẵn; UI chỉ hiện dòng khi có tín hiệu.
   const quanHealth = biz.quanNuoc.open ? quanNuocHealth(biz.quanNuoc, level, storage, biz.quanNuocLast ?? null, weather, day) : null;
@@ -247,22 +224,11 @@ export function MorningPanel() {
   // chọn món mẻ DÀI NHẤT vẫn kịp 17h (mốc bắt đầu muộn nhất còn đúng sự thật);
   // hòa duration thì lấy món lời nhất/phút trạm (GĐ145). Thuần đọc, không đổi state.
   const nowMinutes = useClock((c) => Math.floor(c.minutes));
-  const eveningPrep = (() => {
-    if (nowMinutes < 13 * 60 || nowMinutes >= 17 * 60) return null;
-    const cSpeed = cookSpeed(useGame.getState);
-    const bBoost = bartenderBoost(useGame.getState);
-    const cands = RECIPES
-      .filter((r) => !r.festival && level >= r.unlock
-        && furniture.some((f) => f.type === r.station)
-        && r.inputs.every((i) => (storage[i.productId] ?? 0) >= i.quantity))
-      .map((r) => ({
-        id: r.id,
-        name: r.name,
-        durationMin: Math.ceil(r.durationMin / (cSpeed * (r.station === 'drink_counter' ? bBoost : 1))),
-        perMinute: kitchenValue(r).perMinute,
-      }));
-    return pickEveningPrep(cands, nowMinutes);
-  })();
+  const eveningPrep = eveningPrepFor({
+    nowMinutes, level, furniture, storage,
+    cSpeed: nowMinutes >= 13 * 60 && nowMinutes < 17 * 60 ? cookSpeed(useGame.getState) : 1,
+    bBoost: nowMinutes >= 13 * 60 && nowMinutes < 17 * 60 ? bartenderBoost(useGame.getState) : 1,
+  });
   return (
     <>
       <h2 style={styles.title}>☀️ {shopName} · Sổ đầu ngày {day} ({today.day}/{today.month}) · {weekdayOf(day)}</h2>
