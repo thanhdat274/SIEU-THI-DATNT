@@ -12,6 +12,7 @@
  */
 import { DEBT_LATE_DAYS, DEBT_WRITE_OFF_DAYS } from './credit';
 import type { Debt } from './credit';
+import { formatMoney } from './products';
 
 /** Một dòng nợ đã "định giá rủi ro". */
 export interface DebtRow {
@@ -66,4 +67,31 @@ export function debtLedger(debts: Record<string, Debt> | undefined, day: number)
     if (writeOffTonight) writeOffTonightAmount += d.amount;
   }
   return { count: rows.length, lockedTotal, lateCount, lateAmount, writeOffTonightAmount, rows };
+}
+
+/** GĐ747 — nợ sắp bị xoá (còn 1..`within` ngày): null nếu không có món nào. Thuần đọc. */
+export function debtWriteOffSoon(debts: Record<string, Debt> | undefined, day: number, within = 3):
+  { count: number; amount: number; minDaysLeft: number } | null {
+  const soon = debtLedger(debts, day).rows.filter((r) => r.daysLeft > 0 && r.daysLeft <= within);
+  if (!soon.length) return null;
+  return {
+    count: soon.length,
+    amount: soon.reduce((n, r) => n + r.amount, 0),
+    minDaysLeft: Math.min(...soon.map((r) => r.daysLeft)),
+  };
+}
+
+/** GĐ747 — việc sáng "đòi nợ trước khi mất": nợ sắp bị xoá đang nằm sâu trong Sổ nợ (panel Khách quen),
+ *  không ai nhớ mở. Chỉ hiện trong cửa sổ 3 ngày cuối; nhắc hôm nay vẫn kịp khách trả. */
+export function debtDayAction(debts: Record<string, Debt> | undefined, day: number):
+  { icon: string; text: string; panel: string; danger: boolean; priority: number } | null {
+  const soon = debtWriteOffSoon(debts, day);
+  if (!soon) return null;
+  return {
+    icon: '📕',
+    text: `Nợ sắp mất: ${formatMoney(soon.amount)}${soon.count > 1 ? ` (${soon.count} người)` : ''} — nhắc nợ hôm nay (còn ${soon.minDaysLeft} ngày)`,
+    panel: 'regulars',
+    danger: true,
+    priority: 1,
+  };
 }
