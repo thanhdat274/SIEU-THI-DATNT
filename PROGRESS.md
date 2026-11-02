@@ -163,3 +163,4 @@
 - GĐ834–839: duyệt+áp dụng viết lại 4 thông báo (docs/notify-audit.md); FPS mobile late save ~28–30, CPU render ~1 ms (chưa kết luận, đo rAF cần pane hiện); chip kế hoạch mobile 36 px; hud-alerts mobile max-height 32vh; tsc/build ok, chunk lớn nhất 252 KB.
 - GĐ840 (rà soát Leader+Designer): 2943 test xanh; thông báo dài nhất 90, 0 vượt; HUD ≤20 nút; chunk 252/255 KB. Còn mở: FPS ≥30 gfx Low cần đo khi pane hiện; QA chơi chung cần server (cấm).
 - GĐ841: thử đo lại FPS: rAF không chạy dù visibilityState=visible (cửa sổ app không ở tiền cảnh), game.perf tụt 13,7 do throttle → số đo ở môi trường này không đáng tin; cần đo trên máy thật khi cửa sổ ở tiền cảnh.
+- GĐ842: autoplay 1 ngày trên save QA ngày 100 mất 4,7 s CPU (tab nền, gồm bot) — chỉ là mốc so sánh cho lần sau, chưa quy ra ms/khung.
