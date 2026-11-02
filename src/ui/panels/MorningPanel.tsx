@@ -13,12 +13,11 @@ import { repPayoff } from '../../data/repPayoff';
 import { repMoney, avgPerVisit } from '../../data/repMoney';
 import { butcherValueToday, MAX_BUTCHER_STAR, meatFromByItem, missedMeatRevenue, recentMeatRevenue } from '../../data/butcherValue';
 import { debtLedger, debtDayAction } from '../../data/debtLedger';
-import { regularById, regularsExpectedToday, birthdaysToday, birthdayHint, birthdayEve, REGULARS } from '../../data/regulars';
+import { regularsExpectedToday, birthdaysToday, birthdayHint, birthdayEve, REGULARS } from '../../data/regulars';
 import { LOAN_DAILY_RATE, loyaltyPayoff } from '../../data/biz';
 import { happyPayoff } from '../../data/rhythm';
 import { QUAN_NUOC_UNLOCK, QUAN_NUOC_WAGE, QUAN_PRICE_OPTIONS, isQuanMatchDay } from '../../data/quanNuoc';
 import { quanNuocDayAction, quanNuocHealth } from '../../data/quanNuocInsights';
-import { DEBT_LATE_DAYS, DEBT_WRITE_OFF_DAYS } from '../../data/credit';
 import { expiringSoon, expiryAdvice, peakAdvice, peakHours, spoilNightReport, storeMissRevenue, waitLossStats, walkoutAdvice, type Advice } from '../../data/advice';
 import { dateOfDoy, dayEffects, dayOfYear, festivalStock, isWeekend, upcomingFestival, weekdayOf } from '../../data/calendar';
 import { festivalValue } from '../../data/festivalValue';
@@ -42,6 +41,7 @@ import { marketClearValue, marketDayAction } from '../../data/chophien';
 import { fairMerchantAction } from '../../data/fairmerchant';
 import { SupplyChainCard } from './SupplyChainCard';
 import { AlleyTodayCard, SeasonEventCard } from './MorningEventCards';
+import { DueDebtsCard, ReservationsCard } from './MorningRegularCards';
 import { CounterDemandCard } from './CounterDemandCard';
 import { MarketSurplusCard } from './MarketSurplusCard';
 import { EarlyUnlocksCard } from './EarlyUnlocksCard';
@@ -438,23 +438,7 @@ export function MorningPanel() {
         })}
       </div>
 
-      {dueDebts.length > 0 && (
-        <>
-          <h3 style={{ margin: '10px 0 4px', fontSize: 14 }}>📒 Nợ của khách quen ghé hôm nay</h3>
-          <div style={{ display: 'grid', gap: 6, maxWidth: 560 }}>
-            {dueDebts.map(({ r, debt }) => debt && (
-              <div key={r.id} style={{ ...styles.card }}>
-                <span style={{ flex: 1, fontSize: 13 }}>
-                  <b>{r.name}</b> nợ <b>{formatMoney(debt.amount)}</b> từ ngày {debt.since}
-                  {day - debt.since >= DEBT_LATE_DAYS && <span style={{ color: '#ff7675' }}> · quá {DEBT_LATE_DAYS} ngày, mất hẳn sau ngày {debt.since + DEBT_WRITE_OFF_DAYS}</span>}
-                  {debt.reminded && ' · đã nhắc, lần này chắc trả'}
-                </span>
-                {!debt.reminded && <button style={styles.btn} onClick={() => useGame.getState().remindDebt(r.id)}>Nhắc nợ</button>}
-              </div>
-            ))}
-          </div>
-        </>
-      )}
+      {dueDebts.length > 0 && <DueDebtsCard dueDebts={dueDebts} day={day} />}
 
       {expiring.length > 0 && (
         <div style={{ marginTop: 10 }}>
@@ -462,22 +446,7 @@ export function MorningPanel() {
         </div>
       )}
 
-      {resList.length > 0 && (
-        <>
-          <h3 style={{ margin: '10px 0 4px', fontSize: 14 }}>🤝 Lời hẹn giữ món hôm nay</h3>
-          <div style={{ display: 'grid', gap: 6, maxWidth: 560 }}>
-            {resList.map(([rid, r]) => (
-              <div key={rid} style={{ ...styles.card }}>
-                <span style={{ flex: 1, fontSize: 13 }}>
-                  Giữ <b>{r.qty} {productById(r.productId).name}</b> cho {regularById(rid)?.name}
-                  {haveStock(r.productId) ? ' — kho/kệ đủ ✓' : ' — ⚠️ chưa có hàng, nhập hoặc bày ngay'}
-                </span>
-                <button style={styles.btn} onClick={() => useGame.getState().cancelReservation(rid)}>Huỷ hẹn</button>
-              </div>
-            ))}
-          </div>
-        </>
-      )}
+      {resList.length > 0 && <ReservationsCard resList={resList} haveStock={haveStock} />}
 
       {dueContracts.length > 0 && (
         <>
