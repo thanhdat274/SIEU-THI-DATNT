@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { REGULARS, BIRTHDAY_BONUS, birthdayDoy, birthdaysToday, isBirthday, regularCheckout, visitsToday, emptyProgress } from '../data/regulars';
-import { YEAR_DAYS } from '../data/calendar';
+import { REGULARS, BIRTHDAY_BONUS, birthdayLabel, birthdayDoy, birthdaysToday, isBirthday, regularCheckout, visitsToday, emptyProgress } from '../data/regulars';
+import { YEAR_DAYS, dateOfDoy, dayOfYear } from '../data/calendar';
 import { newGameData, useGame } from '../core/store';
 
 /** GĐ759 — sinh nhật khách quen: ngày cố định theo id, khách đã quen ghé chắc, mua xong +3 thân thiết. */
@@ -88,5 +88,15 @@ describe('regularVisit — lời báo sinh nhật qua store', () => {
     useGame.getState().regularVisit(def.id, [fav], true);
     expect(msgs[0]).toContain('😊');
     expect(msgs[0]).not.toContain('🎂');
+  });
+});
+
+describe('birthdayLabel — cùng lịch với Sổ đầu ngày', () => {
+  it('nhãn ngày/tháng khớp đúng ngày mà isBirthday báo (mọi khách)', () => {
+    for (const d of REGULARS) {
+      const day = bdayDay(d);
+      const cal = dateOfDoy(dayOfYear(day));
+      expect(birthdayLabel(d), d.id).toBe(`${cal.day}/${cal.month}`);
+    }
   });
 });

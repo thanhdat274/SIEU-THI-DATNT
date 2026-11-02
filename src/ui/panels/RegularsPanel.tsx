@@ -1,6 +1,6 @@
 import { useGame, formatClock } from '../../core/store';
 import { productById, formatMoney } from '../../data/products';
-import { nextPerk, REGULARS, type PerkEffect } from '../../data/regulars';
+import { nextPerk, birthdayLabel, REGULARS, type PerkEffect } from '../../data/regulars';
 import { arcById, currentArcStep } from '../../data/regularArc';
 import { lifetimeRegularVisits, vipTierOf, nextTierOf, monthlyTriAn, regularQuote, EMOTIONAL_FRIENDSHIP } from '../../data/regularTrust';
 import { Footer, Swatch, styles } from './shared';
@@ -79,7 +79,7 @@ export function RegularsPanel() {
               </summary>
               <div style={{ marginTop: 6 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, fontSize: 12, opacity: 0.75 }}>
-                  <span>{r.role}</span>
+                  <span>{r.role}{(prog?.visits ?? 0) > 0 ? ` · 🎂 ${birthdayLabel(r)}` : ''}</span>
                   <span>{formatClock(r.visitFrom)}–{formatClock(r.visitUntil)}</span>
                 </div>
                 <div style={{ fontSize: 12, opacity: 0.8 }}>{r.bio}</div>

@@ -3,7 +3,7 @@ import { productById } from './products';
 import { COOKED_TIP_RANGE, STATION_BY_OUTPUT } from './recipes';
 import type { CharacterArchetype, HairStyle, PropKind } from '../render/characterModel';
 import { simRng } from '../core/rand';
-import { dayOfYear, YEAR_DAYS } from './calendar';
+import { dateOfDoy, dayOfYear, YEAR_DAYS } from './calendar';
 
 export type PerkEffect = 'bonus_tip' | 'extra_item' | 'frequent_visit' | 'refer_friend' | 'bulk_buy' | 'festival';
 
@@ -442,6 +442,11 @@ export function birthdayDoy(def: RegularDef): number {
   return h % YEAR_DAYS;
 }
 export const isBirthday = (def: RegularDef, day: number) => dayOfYear(day) === birthdayDoy(def);
+/** Ngày sinh nhật dạng "ngày/tháng" (cùng lịch với Sổ đầu ngày) để thẻ khách quen hiện cho người chơi lên kế hoạch. */
+export function birthdayLabel(def: RegularDef): string {
+  const d = dateOfDoy(birthdayDoy(def));
+  return `${d.day}/${d.month}`;
+}
 
 /**
  * Hôm nay khách quen có ghé không: tính từ hạt giống ván + ngày nên hai máy chơi chung luôn khớp.
