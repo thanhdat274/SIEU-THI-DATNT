@@ -160,9 +160,5 @@
 - GĐ760: lời báo sinh nhật khi thanh toán (thay câu thường).
 - GĐ761: QA trình duyệt luồng sinh nhật — ghé đúng ngày, thanh toán +3, 0 lỗi.
 - GĐ762: thẻ khách quen hiện ngày sinh nhật (sau khi đã gặp).
-- GĐ834: người dùng duyệt viết lại thông báo → áp dụng 4 câu (dịch vụ, trồng, thu hoạch, sinh nhật); 2943 test xanh. FPS mobile 375x812 late save đo lại 30 (ẩn HUD 27,6) → HUD không phải nút cổ chai, số đo dao động theo pane; chưa kết luận regression.
-- GĐ835: đo CPU render save cuối game (3826 draw call, 21,8k tri): ~1 ms/khung → render không phải cổ chai; game.perf 28 FPS ở gfx low khi pane ẩn/throttle, không đo rAF được. Chưa có bằng chứng regression; cần đo lại khi pane hiện.
-- GĐ836: chip kế hoạch hôm nay trên mobile ≤480px cao 28→36 px (đạt cỡ chạm tối thiểu).
-- GĐ837: chưa xử lý chồng thẻ HUD mobile: tab QA quay về màn đăng nhập, không dựng lại được HUD để đo; cần mở save QA rồi đo vị trí thẻ ở 375x812.
-- GĐ838: mobile ≤600px dải cảnh báo hud-alerts cao 342 px (42% màn 375x812) → max-height 32vh, cuộn trong (đo: 342→260 px).
-- GĐ839: tsc sạch, build ok; chunk lớn nhất vendor-three 252 KB gzip (<255 trần). Sẵn sàng rà soát GĐ840.
+- GĐ834–839: duyệt+áp dụng viết lại 4 thông báo (docs/notify-audit.md); FPS mobile late save ~28–30, CPU render ~1 ms (chưa kết luận, đo rAF cần pane hiện); chip kế hoạch mobile 36 px; hud-alerts mobile max-height 32vh; tsc/build ok, chunk lớn nhất 252 KB.
+- GĐ840 (rà soát Leader+Designer): 2943 test xanh; thông báo dài nhất 90, 0 vượt; HUD ≤20 nút; chunk 252/255 KB. Còn mở: FPS ≥30 gfx Low cần đo khi pane hiện; QA chơi chung cần server (cấm).

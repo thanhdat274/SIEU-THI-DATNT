@@ -14,3 +14,10 @@
 
 ## GĐ675 số đo render (lưu GĐ832)
 - ⏱️ GĐ675 (GĐ805: cấp 41 ngày 221, 141 draw call, 577k tam giác, gfx mặc định: render CPU trung vị 5,1 ms/p90 7,7 ms ⇒ 4× ≈ 20–31 ms < 33 ms, đạt, nợ cấp ≥ 40 đóng; đo thêm GĐ794: cấp 10, gfx=low, 5.895 draw call → 3,6 ms trung vị/4,3 ms p90 ⇒ 4× ≈ 14–17 ms < 33 ms, đạt; cấp 18 sau autoplay 18 ngày, 684 draw call: 3,6 ms trung vị/5,9 ms p90 ⇒ 4× ≈ 14–24 ms < 33 ms, đạt; cấp 24 ngày 39, 804 draw call, 9.281 object: 5,7 ms trung vị/6,8 ms p90 ⇒ 4× ≈ 23–27 ms < 33 ms, còn biên mỏng, tăng theo cấp (3,6→5,7 ms từ cấp 18→24) nên cấp 34 ngày 128: 2,1 ms trung vị/3,6 ms p90, 924 draw call, 1,13 triệu tam giác — số đo phụ thuộc góc camera nên KHÔNG tăng đơn điệu; 4× ≈ 8–15 ms, đạt; chỉ còn thiếu cấp ≥40 và FPS thật): số CPU render gfx=low (5,7 ms trung vị) đo trên save ngày 2 ít prop — đo lại trên save cuối-game (cấp cao, nhiều kệ/prop) trước khi khẳng định biên 4× throttle; làm khi đụng vòng render lần kế.
+
+- GĐ834: người dùng duyệt viết lại thông báo → áp dụng 4 câu (dịch vụ, trồng, thu hoạch, sinh nhật); 2943 test xanh. FPS mobile 375x812 late save đo lại 30 (ẩn HUD 27,6) → HUD không phải nút cổ chai, số đo dao động theo pane; chưa kết luận regression.
+- GĐ835: đo CPU render save cuối game (3826 draw call, 21,8k tri): ~1 ms/khung → render không phải cổ chai; game.perf 28 FPS ở gfx low khi pane ẩn/throttle, không đo rAF được. Chưa có bằng chứng regression; cần đo lại khi pane hiện.
+- GĐ836: chip kế hoạch hôm nay trên mobile ≤480px cao 28→36 px (đạt cỡ chạm tối thiểu).
+- GĐ837: chưa xử lý chồng thẻ HUD mobile: tab QA quay về màn đăng nhập, không dựng lại được HUD để đo; cần mở save QA rồi đo vị trí thẻ ở 375x812.
+- GĐ838: mobile ≤600px dải cảnh báo hud-alerts cao 342 px (42% màn 375x812) → max-height 32vh, cuộn trong (đo: 342→260 px).
+- GĐ839: tsc sạch, build ok; chunk lớn nhất vendor-three 252 KB gzip (<255 trần). Sẵn sàng rà soát GĐ840.
