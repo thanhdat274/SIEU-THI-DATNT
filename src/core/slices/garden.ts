@@ -121,7 +121,7 @@ export const createGardenSlice = (set: SetState, get: GetState): Pick<GameState,
       money: s.money - def.price,
       stats: { ...s.stats, spent: s.stats.spent + def.price },
     });
-    s.notify(`${def.icon} Mua một con ${def.name.toLowerCase()} (${formatMoney(def.price)}): cho ăn cám mỗi ngày là có sản phẩm${late ? ' — mua giữa kỳ vỗ béo: con này xuất chuồng chỉ nhận lại giá giống' : ''}`);
+    s.notify(`${def.icon} Mua một con ${def.name.toLowerCase()} (${formatMoney(def.price)}): ${late ? 'mua giữa kỳ vỗ béo, xuất chuồng chỉ nhận lại giá giống' : 'cho ăn cám mỗi ngày là có sản phẩm'}`);
   },
   feedPen: (kind) => {
     const s = get();
@@ -202,7 +202,7 @@ export const createGardenSlice = (set: SetState, get: GetState): Pick<GameState,
       garden: { ...s.garden, pens: { ...s.garden.pens, [kind]: { count: 0, fedDay: 0, feedKg: pen.feedKg, pending: 0, fattened: 0, lateJoins: 0 } }, homegrown },
       money: s.money + refund,
     });
-    s.notify(`${def.icon} Xuất chuồng ${readyCount} ${def.name.toLowerCase()} (${meat} ${productById(def.productId).name} vào kho)${late ? `; ${late} con mua giữa kỳ chỉ nhận lại giá giống ${formatMoney(refund)}` : ''}`);
+    s.notify(`${def.icon} Xuất chuồng ${readyCount} ${def.name.toLowerCase()} (${meat} ${productById(def.productId).name} vào kho)${late ? `; ${late} con mua muộn chỉ hoàn ${formatMoney(refund)}` : ''}`);
     s.addXp(10);
   },
   expandFarm: () => {
