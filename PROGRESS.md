@@ -21,27 +21,12 @@
 
 ## Trạng thái hiện tại (02/11/2026)
 - Các mục GĐ790–929 đã chuyển sang `docs/progress-archive/PROGRESS-GD790-929.md` (giữ file này gọn).
-- **GĐ980 (rà 971–979)** Chỉ tách code thuần: data/bizWeeks, bizAchievements, regularsList, net/alleyApi, world/buildingTextures, core/bizAchieve, bizLoan, bizPurchases (core/biz.ts 797→592, buildings.ts 803→708, coop.ts 698→672). Không đổi hành vi, bundle chỉ chia lại module (build ok, vendor-three 261 KB gzip không do các tách này). Full test 369 file/3088. Chưa soi bằng mắt; QA save trắng kế ở ~GĐ981.
-- GĐ981: QA save trắng bằng mắt (xoá localStorage, tải lại, "Chơi tiếp trong máy"): vào được ngày 1 06:00, HUD/chương 1/hướng dẫn hiện đủ, tiền 280.000đ. Console chỉ còn log HMR cũ (`createOrdersSlice`) từ lúc sửa giữa chừng, không lỗi mới sau khi tải lại. Khung nhìn nhỏ nên chưa đo FPS thật.
-- GĐ982: tách data/bizFinance.ts (phản công, thẻ tích điểm, quảng cáo, vay, hụi, 211 dòng) khỏi data/biz.ts (520→312) + test `bizFinanceSplit.test.ts`. tsc exit 0, full test đạt.
-- GĐ983: tách core/dayStats.ts (DayStats, DayRecord, addHour, emptyStats…, ~100 dòng) khỏi core/gameTypes.ts (696→598) + test `dayStatsSplit.test.ts`. tsc exit 0, full test đạt.
-- GĐ984: tách render/characterTypes.ts (kiểu nhân vật + SKIN_TONES, 87 dòng) khỏi render/characterModel.ts (1062→977) + test `characterTypesSplit.test.ts`. tsc exit 0, full test đạt.
-- GĐ985: tách render/characterGear.ts (đồng phục, mũ, dụng cụ theo nghề, vật liệu dùng chung, 347 dòng) khỏi render/characterModel.ts (977→636) + test `characterGearSplit.test.ts`. tsc exit 0, full test đạt.
-- GĐ986: tách world/farmBeasts.ts (mô hình 3D 7 loài vật nuôi, 173 dòng) khỏi world/farm.ts (996→834) + test `farmBeastsSplit.test.ts`. tsc exit 0, full test đạt.
-- GĐ987: tách world/farmCrops.ts (hình cây trồng theo giống + giai đoạn, 130 dòng) khỏi world/farm.ts (834→714) + test `farmCropsSplit.test.ts`. tsc exit 0, full test đạt.
-- GĐ988: tách agents/customerEntity (lớp Customer + hằng chờ) khỏi agents/customers + test; 3101 test, tsc 0.
-- GĐ989: tách ui/orderPanelStyles khỏi ui/OrderPanel + test; 3102 test, tsc 0.
-- GĐ990 (review 10 giai đoạn): bundle vendor-three 261KB gzip (lớn nhất), tổng initial ~570KB < 600; 3102 test qua; chỉ tách file thuần, hành vi giữ nguyên. Lưu trữ GĐ960–979.
-- GĐ991 (QA save trống bằng mắt): xóa storage, tải sạch → màn đăng nhập, chơi tiếp → ngày 1 06:00, HUD/hướng dẫn/hội thoại bà Năm bình thường; lỗi console còn lại là HMR cũ (PRICE_WAR_CUT vẫn export qua bizFinance).
-- GĐ992: tách ui/HudChips (SoundToggle, MusicToggle, MoneyChip) khỏi ui/Hud + test; 3103 test, tsc 0.
-- GĐ993: tách ui/panels/AchievementsTab (Achievements, PrestigeSection) khỏi ui/BusinessPanel + test; 3104 test, tsc 0.
-- GĐ994: tách ui/panels/ShopLifeTabs (Pets, Services, Life, Upgrades) khỏi ui/BusinessPanel (còn 155 dòng) + test; 3105 test, tsc 0.
-- GĐ995: tách world/buildingFurnish (quạt, điều hòa, quầy, máy tính tiền) khỏi world/buildings (còn 520 dòng) + test; 3107 test, tsc 0.
+- GĐ980–995 (chỉ tách file thuần + 2 lần QA save trắng, GĐ990 rà bundle): `docs/progress-archive/PROGRESS-GD980-995.md`.
 - GĐ996: tách render/productShapes (luật chọn kiểu dáng món theo tên, 98 dòng) khỏi render/productModels (598→500) + test; tsc 0.
 - GĐ997: tách world/farmSign (texture biển cổng trại, 23 dòng) khỏi world/farm (714→692) + test; tsc 0.
 - GĐ998: tách ui/orderPanelParts (nhãn mua-khi-rẻ, ASSESS_STYLE, Meter) khỏi ui/OrderPanel (604→~565) + test; tsc 0; full 383 file/3109 qua (đo trước GĐ998).
 - GĐ999: tách render/characterProps (kiểu tóc, đạo cụ cầm tay, 125 dòng) khỏi render/characterModel (636→516) + test; tsc 0; full sau GĐ998: 384 file/3110, build + bundle 533/253 KB đạt.
-- GĐ1000: tách net/coopGuard (bảng khoá thao tác GUARDED, 42 dòng) khỏi net/coop (671→632) + test; coop re-export. tsc 0.
+- GĐ1000 (rà 991–999): chỉ tách file thuần, full 386 file/3112 test, tsc 0, build ok, bundle 533/253 KB (trần 597/255), thông báo ≤90. Tách net/coopGuard (bảng khoá thao tác GUARDED, 42 dòng) khỏi net/coop (671→632) + test; coop re-export. tsc 0.
 - **GĐ971 (QA save trắng bằng mắt)** Xoá localStorage/IndexedDB → màn đăng nhập → "Chơi không cần đăng nhập" → vào ngày 1 (6:00, Tết dương lịch, hướng dẫn 5 bước, hội thoại Bà Năm chương 1, HUD 12 nút, dock có "Thêm"). Không có lỗi mới sau khi vào game; các lỗi `REGULAR_NAMES`/`main.tsx` trong console là dấu vết HMR cũ của GĐ962 (máy chủ nay trả 200, export có đủ).
 - **GĐ970 (rà 961–969)** Chỉ tách code thuần (main.tsx 1012→971 dòng: stocktakeMessage, effectiveSpeed, lampLevel, interactHints, tutorialMarker); sửa 1 lỗi tsc sót ở GĐ965 (từ nay đọc exit code tsc riêng). Bundle không đổi: đầu 533/597 KB gzip, chunk lớn nhất 253/255. Full test 361 file/3075. GĐ950–959 chuyển sang `docs/progress-archive/PROGRESS-GD950-959.md`. Chưa soi bằng mắt trong game.
 - **GĐ961 (QA save trắng bằng mắt, panel trình duyệt)** Vào chơi khách từ màn đầu: không lỗi console, ngày 1 06:00 280.000đ, hướng dẫn 5 bước hiện, HUD 12 nút (≤20), chương 1 bà Năm mở đầu. Chưa đi hết một ngày (không kiểm FPS/bán hàng). Chưa soi nút Nhập hàng trong game.
