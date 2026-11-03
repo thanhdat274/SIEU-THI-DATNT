@@ -4,8 +4,9 @@ import { BRANCH_LAYOUT, branchTrafficAt, CONVENIENCE, onShift, restingOn } from 
 import { landmarkNightTrafficFactor } from '../data/landmark';
 import { ROLES } from '../data/staff';
 import { Walker } from './walker';
-import { furnitureDef } from '../data/furniture';
+import { furnitureDef, type FurnitureType } from '../data/furniture';
 import { productById } from '../data/products';
+import type { Tier } from '../core/gameTypes';
 import type { FurnitureView } from '../shop/furnitureView';
 
 /** Người chơi trong bán kính này mới dựng nhân vật ở chi nhánh; đi xa thì dọn hết (vẫn tính ngầm như cũ). */
@@ -23,6 +24,38 @@ const COLORS = [0xe74c3c, 0x3498db, 0x9b59b6, 0x1abc9c, 0xe67e22, 0x34495e, 0xf1
 const pick = <T,>(list: T[]) => list[Math.floor(Math.random() * list.length)];
 
 /**
+ * (GĐ1008) Bốc hàng trên kệ chi nhánh ra từng ngăn/tầng theo loại chỗ, cho mỗi kệ/tủ trong layout.
+ * THUẦN — tách khỏi `stockViews` để test được (chi nhánh 24/7 là tính năng quan trọng cuối game,
+ * trước đây 0% coverage). Trả một mảng theo thứ tự `layout`: mỗi phần tử là danh sách ngăn
+ * `{productId, count}`; kệ/tủ không có chỗ (tiers×slots = 0) trả `[]` (stockViews không áp dụng).
+ */
+export function branchStockTiers(
+  shelf: Record<string, number>,
+  layout: { type: FurnitureType }[],
+): Tier[][] {
+  const items = Object.entries(shelf).filter(([, q]) => q > 0).sort((a, b) => b[1] - a[1]);
+  const zone = (type: FurnitureType) => (id: string) => {
+    const c = productById(id).category;
+    return type === 'fridge' ? c === 'drink' || c === 'cold' : type === 'freezer' ? c === 'frozen' : c !== 'drink' && c !== 'cold' && c !== 'frozen';
+  };
+  const cursor: Record<string, number> = {};
+  return layout.map((f) => {
+    const def = furnitureDef(f.type);
+    const slots = def.tiers * def.slots;
+    if (!slots) return [];
+    const own = items.filter(([id]) => zone(f.type)(id));
+    // Không có món đúng loại thì bày tạm món khác cho kệ khỏi trống
+    const list = own.length || f.type === 'freezer' ? own : items;
+    return Array.from({ length: slots }, () => {
+      if (!list.length) return { productId: null, count: 0 };
+      const k = cursor[f.type] = (cursor[f.type] ?? 0) + 1;
+      const [id, q] = list[(k - 1) % list.length];
+      return { productId: id, count: Math.min(def.capacity, Math.ceil(q / 2)) };
+    });
+  });
+}
+
+/**
  * Diễn lại cửa hàng tiện lợi khi chủ ghé: thu ngân đứng quầy, bảo vệ đứng cửa (đúng người đang trong ca),
  * khách vào lựa đồ rồi trả tiền. Chỉ để nhìn — doanh thu vẫn do mô phỏng ngầm trong store tính.
  */
@@ -36,26 +69,10 @@ export class BranchVisit {
 
   /** Bày hàng 3D lên kệ/tủ theo hàng đang có ở chi nhánh: đồ uống, hàng mát vào tủ mát; đông lạnh vào tủ đông; còn lại lên kệ. */
   private stockViews(shelf: Record<string, number>) {
-    const items = Object.entries(shelf).filter(([, q]) => q > 0).sort((a, b) => b[1] - a[1]);
-    const zone = (type: string) => (id: string) => {
-      const c = productById(id).category;
-      return type === 'fridge' ? c === 'drink' || c === 'cold' : type === 'freezer' ? c === 'frozen' : c !== 'drink' && c !== 'cold' && c !== 'frozen';
-    };
-    const cursor: Record<string, number> = {};
+    const tiers = branchStockTiers(shelf, BRANCH_LAYOUT);
+    // Kệ/tủ không có chỗ (tiers×slots = 0) thì không đụng view — giữ nguyên như cũ
     BRANCH_LAYOUT.forEach((f, i) => {
-      const def = furnitureDef(f.type);
-      const slots = def.tiers * def.slots;
-      if (!slots) return;
-      const own = items.filter(([id]) => zone(f.type)(id));
-      // Không có món đúng loại thì bày tạm món khác cho kệ khỏi trống
-      const list = own.length || f.type === 'freezer' ? own : items;
-      const tiers = Array.from({ length: slots }, () => {
-        if (!list.length) return { productId: null, count: 0 };
-        const k = cursor[f.type] = (cursor[f.type] ?? 0) + 1;
-        const [id, q] = list[(k - 1) % list.length];
-        return { productId: id, count: Math.min(def.capacity, Math.ceil(q / 2)) };
-      });
-      this.views[i].update(tiers);
+      if (furnitureDef(f.type).tiers * furnitureDef(f.type).slots) this.views[i].update(tiers[i]);
     });
   }
 
