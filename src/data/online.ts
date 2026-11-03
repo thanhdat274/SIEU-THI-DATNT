@@ -7,7 +7,7 @@
  */
 import type { Lot } from './freshness';
 import { productById, unlockedProducts } from './products';
-import { HOMEMADE_IDS } from './homemade';
+import { NEIGHBOR_ONLY_IDS } from './homemade';
 import { skillSpeed } from './staff';
 import { simRng } from '../core/rand';
 
@@ -180,7 +180,7 @@ export const orderKindTag = (kind?: 'rush' | 'bulk') => (kind === 'rush' ? ' (g�
  *  GĐ718: `regular` truyền vào thì đơn là của khách quen — tên khách là người thật, giỏ nghiêng về món
  *  khách ưa (chỉ chọn món đang mở khoá; không trùng món ưa nào thì về giỏ thường). */
 export function makeOnlineOrder(id: number, level: number, minutes: number, rng: () => number = simRng(), regular?: OnlineRegularRef): OnlineOrder {
-  const pool = unlockedProducts(level).filter((p) => !HOMEMADE_IDS.has(p.id));
+  const pool = unlockedProducts(level).filter((p) => !NEIGHBOR_ONLY_IDS.has(p.id));
   const kr = rng();
   const kind: OnlineOrder['kind'] = kr < 0.16 ? 'rush' : kr < 0.28 ? 'bulk' : undefined;
   const favPool = regular ? pool.filter((p) => regular.favorites.includes(p.id)) : [];

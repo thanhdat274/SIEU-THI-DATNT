@@ -19,4 +19,21 @@ export const HOMEMADE_PRODUCTS: { id: string; name: string; category: Category; 
   { id: 'hx_vai_say', name: 'Vải thiều sấy (gói)', category: 'dry', buy: 42000, sell: 65000, color: 0xd23b3b, unlock: 38 },
 ];
 
+/**
+ * GĐ1085: NHÀ BÀ TÁM — người hàng xóm thứ hai, "MỘT NGƯỜI CON VIỆT" cung đặc sản miền khác (hướng GĐ1076/1081:
+ * "nhiều nguồn cung nguyên liệu tự làm tại gia của hàng xóm"). Bà Tám ủ/tẩm đặc sản riêng (chả lụa, nem chua,
+ * bánh đa), chỉ nhập ở `hangxom2`, KHÔNG có ở mối chuẩn nào. Cùng thuộc "chỉ hàng xóm bán": lọc khỏi đơn
+ * online/điện thoại/chợ phiên/khách-trừ-bày kệ (xem NEIGHBOR_ONLY_IDS). Mở cấp ≥34 (trên mốc golden sim 30).
+ */
+export const NEIGHBOR2_PRODUCTS: { id: string; name: string; category: Category; buy: number; sell: number; color: number; unlock: number }[] = [
+  { id: 'hx_cha_lua', name: 'Chả lụa nhà bà Tám', category: 'fresh', buy: 27000, sell: 42000, color: 0xeecf9f, unlock: 34 },
+  { id: 'hx_nem_chua', name: 'Nem chua (thanh)', category: 'fresh', buy: 9000, sell: 14000, color: 0xe8b87a, unlock: 36 },
+  { id: 'hx_banh_da', name: 'Bánh đa (bì)', category: 'dry', buy: 14000, sell: 22000, color: 0xd9b36a, unlock: 38 },
+];
+
 export const HOMEMADE_IDS: ReadonlySet<string> = new Set(HOMEMADE_PRODUCTS.map((h) => h.id));
+
+export const NEIGHBOR2_IDS: ReadonlySet<string> = new Set(NEIGHBOR2_PRODUCTS.map((h) => h.id));
+
+/** Toàn bộ "chỉ hàng xóm bán" (nhà hàng xóm + nhà bà Tám): các kênh cầu lọc bằng set này. */
+export const NEIGHBOR_ONLY_IDS: ReadonlySet<string> = new Set([...HOMEMADE_IDS, ...NEIGHBOR2_IDS]);

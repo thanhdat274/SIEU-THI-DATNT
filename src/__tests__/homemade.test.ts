@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { HOMEMADE_IDS, HOMEMADE_PRODUCTS } from '../data/homemade';
+import { HOMEMADE_IDS, HOMEMADE_PRODUCTS, NEIGHBOR2_IDS, NEIGHBOR2_PRODUCTS, NEIGHBOR_ONLY_IDS } from '../data/homemade';
 import { PRODUCTS, productById } from '../data/products';
 import { deliversInstantly } from '../data/supplierRel';
 import { makeOnlineOrder } from '../data/online';
@@ -63,5 +63,47 @@ describe('GĐ1077 — món hàng xóm tự làm + nhà hàng xóm', () => {
     // cấp 30 (mốc golden) không mở đặc sản mới → RNG sim mốc giữ nguyên
     const unlockedAt30 = HOMEMADE_PRODUCTS.filter((h) => productById(h.id).unlock <= 30);
     expect(unlockedAt30.map((h) => h.id).sort()).toEqual(['hx_banh_trang', 'hx_ca_phao', 'hx_dua_muoi', 'hx_mam_tep', 'hx_nuoc_mam', 'hx_tuong_ban']);
+  });
+});
+
+describe('GĐ1085 — nhà bà Tám (hàng xóm thứ hai)', () => {
+  const bta = SUPPLIERS.find((s) => s.id === 'hangxom2')!;
+  const hx = SUPPLIERS.find((s) => s.id === 'hangxom')!;
+
+  it('đặc sản bà Tám có trong PRODUCTS, id duy nhất, giá bán > giá nhập, mở ≥34', () => {
+    expect(NEIGHBOR2_PRODUCTS.length).toBeGreaterThanOrEqual(3);
+    for (const h of NEIGHBOR2_PRODUCTS) {
+      expect(h.unlock).toBeGreaterThanOrEqual(34);
+      expect(PRODUCTS.filter((p) => p.id === h.id)).toHaveLength(1);
+      expect(productById(h.id).sell).toBeGreaterThan(productById(h.id).buy);
+      expect(h.unlock).toBe(productById(h.id).unlock);
+    }
+    expect(new Set(PRODUCTS.map((p) => p.id)).size).toBe(PRODUCTS.length);
+  });
+
+  it('chỉ nhà bà Tám bán đặc sản của bà; nhà hàng xóm lẫn mối chuẩn không bán', () => {
+    for (const id of NEIGHBOR2_IDS) {
+      expect(supplierSells(bta, id)).toBe(true);
+      expect(supplierSells(hx, id)).toBe(false);
+      for (const s of SUPPLIERS.filter((x) => x !== bta)) expect(supplierSells(s, id)).toBe(false);
+    }
+    for (const p of PRODUCTS.filter((x) => !NEIGHBOR2_IDS.has(x.id))) expect(supplierSells(bta, p.id)).toBe(false);
+  });
+
+  it('biên lời đặc sản bà Tám ≥35% và giá nhập ngày hữu hạn', () => {
+    for (const h of NEIGHBOR2_PRODUCTS) {
+      expect((h.sell - h.buy) / h.sell).toBeGreaterThanOrEqual(0.35);
+      expect(Number.isFinite(unitCost(bta, h.id, 5))).toBe(true);
+    }
+    expect(bta.unlock).toBeLessThanOrEqual(Math.min(...NEIGHBOR2_PRODUCTS.map((h) => productById(h.id).unlock)));
+  });
+
+  it('GĐ1085: hàng xóm thứ hai không lọt đơn online; Mối thân giao ngay như nhà hàng xóm', () => {
+    for (let id = 1; id <= 60; id++) {
+      const o = makeOnlineOrder(id, 45, 480, Math.random);
+      for (const pid of Object.keys(o.items)) expect(NEIGHBOR_ONLY_IDS.has(pid)).toBe(false);
+    }
+    expect(deliversInstantly(bta, 0)).toBe(false);
+    expect(deliversInstantly(bta, 12_000_000)).toBe(true);
   });
 });
