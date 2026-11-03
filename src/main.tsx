@@ -4,7 +4,6 @@ import { isMarketDay } from './data/chophien';
 import { isRoadworks } from './data/roadwork';
 import { isFestivalDeco } from './data/festivalDeco';
 import { queueUrgency, accumulateBackup } from './world/storefrontWaitLamp';
-import { ANIMAL_ORDER, type AnimalKind } from './data/garden';
 import * as THREE from 'three';
 import { shopLayout, worldActions } from './core/actions';
 import { saveGame, startAutosave } from './core/save';
@@ -22,6 +21,7 @@ import { hasUpgrade } from './data/upgrades';
 // Trình duyệt chỉ mở tiếng sau tương tác đầu tiên — mỗi cú click là một cơ hội khởi động AudioContext
 window.addEventListener('pointerdown', initAudio);
 import { BuildMode } from './shop/buildMode';
+import { installFarmSync } from './world/farmSync';
 import { installPointerTap } from './shop/pointerTap';
 import type { Counter } from './shop/groceryShop';
 import { askPending } from './core/counterAsk';
@@ -209,43 +209,7 @@ worldActions.travel = (to) => {
   s.notify(to === 'shop' ? '🛵 Đã tới tiệm' : to === 'ranch' ? '🚜 Đã tới trang trại' : '🛵 Đã về nhà');
 };
 
-// Trang trại: dựng hình theo bậc đất đang mở và đàn vật nuôi trong chuồng (đổi khi mua / mở rộng)
-world.farm.rebuild(useGame.getState().garden.land);
-world.farm.setBuildings(useGame.getState().garden.buildings);
-world.farm.setPlots(useGame.getState().garden.plots, useGame.getState().day);
-let lastFarmLand = useGame.getState().garden.land;
-let lastPenCounts: Partial<Record<AnimalKind, number>> = {};
-let lastFarmBuildings = useGame.getState().garden.buildings;
-let lastPlots = useGame.getState().garden.plots;
-let lastFarmDay = useGame.getState().day;
-const syncFarmAnimals = (s: ReturnType<typeof useGame.getState>) => {
-  for (const kind of ANIMAL_ORDER) {
-    const n = s.garden.pens[kind]?.count ?? 0;
-    if (n !== lastPenCounts[kind]) {
-      lastPenCounts[kind] = n;
-      world.farm.setAnimals(kind, n);
-    }
-  }
-};
-syncFarmAnimals(useGame.getState());
-useGame.subscribe((s) => {
-  if (s.garden.land !== lastFarmLand) {
-    lastFarmLand = s.garden.land;
-    world.farm.rebuild(s.garden.land);
-    world.farm.setPlots(s.garden.plots, s.day);
-  }
-  if (s.garden.buildings !== lastFarmBuildings) {
-    lastFarmBuildings = s.garden.buildings;
-    world.farm.setBuildings(s.garden.buildings);
-  }
-  // Cây trên luống đổi khi trồng/tưới/thu hoạch hoặc sang ngày (đổi màu đất tưới)
-  if (s.garden.plots !== lastPlots || s.day !== lastFarmDay) {
-    lastPlots = s.garden.plots;
-    lastFarmDay = s.day;
-    world.farm.setPlots(s.garden.plots, s.day);
-  }
-  syncFarmAnimals(s);
-});
+installFarmSync(world.farm);
 
 // Quán nước đầu hẻm: khoảnh đất hiện khi đủ cấp (29) chưa mua, dựng quầy khi đã mở; bật số bàn ghế
 // theo nhân viên (setStaff chỉ chạy khi staff đổi — tránh gán lại mỗi khung). Đồng bộ như pattern farm:
