@@ -82,7 +82,7 @@
 
 
 ## Backlog tiếp theo
-- 🟡 **Cần duyệt (GĐ1072, backlog chiều sâu đã cạn nên đề xuất mở rộng theo quy trình):** mở "Ngõ 3" (khu thứ ba theo khung `zones` GĐ497–505, cùng hướng đã duyệt GĐ483: mở rộng bản đồ dần kiểu CS2). Điều kiện trước khi làm: Ngõ 2/sạp rong đã đủ sâu (GĐ1068). Cần người dùng chốt: (1) loại cơ sở của Ngõ 3, (2) cấp/tiền mở khu. Chưa làm gì cho tới khi duyệt.
+- 🟡 **Cần duyệt (GĐ1072, backlog chiều sâu đã cạn nên đề xuất mở rộng theo quy trình):** mở "Ngõ 3" (khu thứ ba theo khung `zones` GĐ497–505, cùng hướng đã duyệt GĐ483: mở rộng bản đồ dần kiểu CS2). Điều kiện trước khi làm: Ngõ 2/sạp rong đã đủ sâu (GĐ1068). Cần người dùng chốt: (1) loại cơ sở của Ngõ 3, (2) cấp/tiền mở khu. Chưa làm gì cho tới khi duyệt. Gợi ý số liệu (theo `zones.ts`: Ngõ 2 = cấp 45 + 50.000.000đ, bounds x 80..120, z -40..40): Ngõ 3 ở cấp ~60 + ~150.000.000đ, bounds liền kề (vd x 120..160). Phương án cơ sở: (a) sạp/chợ đêm bán nhóm khách đêm; (b) kho trung chuyển giúp chuỗi cung ứng; (c) khu nhà ở sinh khách quen mới — mỗi phương án phải có lý do giữ chân người chơi và không phình ngân sách HUD/bundle.
 - ✅ **Chiều sâu bán online (GĐ715–719) ĐÃ XONG + QA đạt; audit GĐ720 đã chạy** (chi tiết trong archive).
 - ✅ **Đường đời nhân viên (GĐ727–731) ĐÃ XONG** — gồm nhân viên chi nhánh xin nghỉ mai (băm riêng, không migration, coopGuard GUARDED); chi tiết trong archive.
 - ✅ **Trục tín dụng/nợ — lát cắt trả góp ĐÃ XONG (GĐ734) + QA (735).** Đánh giá bằng số (audit GĐ740): mọi trục lớn ĐỦ SÂU theo coverage 58,22/90,09 và autoplay/simGolden xanh — chuỗi GĐ741+ ưu tiên: rà backlog nợ mở (GĐ675 CPU render cuối-game, refactor UI khi đụng panel) và QA tự nhiên các trục mới trước khi tính mở rộng.
