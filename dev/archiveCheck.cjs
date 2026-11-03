@@ -44,3 +44,5 @@ for (const r of ghostRefs) console.log(`  ✗ ${r} (không tồn tại)`);
 console.log(`Archive thiếu mục lục: ${noToc.length}`);
 for (const f of noToc) console.log(`  ✗ ${f}`);
 if (!ghostRefs.length && !noToc.length) console.log('✓ Sạch — đối chiếu 2 chiều khớp.');
+// GĐ1165: exit 1 khi có vấn đề — automation/nhịp bảo trì gate được (report-only trước GĐ1165)
+if (ghostRefs.length || noToc.length) process.exitCode = 1;
