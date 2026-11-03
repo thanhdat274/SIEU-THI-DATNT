@@ -39,11 +39,11 @@ import { applyCrowdLod } from './agents/walker';
 import { createTiltShift } from './render/fx/tiltShift';
 import { applyLightBudget, initLightPool } from './render/lightBudget';
 import { NavGrid } from './world/navGrid';
+import { installQuanNuocSync } from './world/quanNuocSync';
 import { createWorld } from './world/world';
 import { tiemXoiStandState, tiemXoiHandQty, tiemXoiDinerFigures } from './data/tiemXoi';
-import { quanHandLeft, quanNuocStandState, quanPatrons, quanTierOf } from './data/quanNuoc';
-import { menuBoardLines } from './data/quanRecipes';
-import { QUAN_HOUSE, quanHouseBoxes, insideQuanHouse } from './world/quanNuocStand';
+import { quanHandLeft } from './data/quanNuoc';
+import { QUAN_HOUSE, insideQuanHouse } from './world/quanNuocStand';
 import { branchStandState, LANE_X } from './data/branches';
 import './ui/controls.css';
 import { pushCloudSave } from './net/cloud';
@@ -211,51 +211,7 @@ worldActions.travel = (to) => {
 
 installFarmSync(world.farm);
 
-// Quán nước đầu hẻm: khoảnh đất hiện khi đủ cấp (29) chưa mua, dựng quầy khi đã mở; bật số bàn ghế
-// theo nhân viên (setStaff chỉ chạy khi staff đổi — tránh gán lại mỗi khung). Đồng bộ như pattern farm:
-// chạy một lần ngay sau khi tạo world, rồi qua subscribe khi cấp / trạng thái quán đổi.
-let lastStandStaff = -1;
-let lastStandLevel = 0;
-let lastStandOpen = false;
-let lastStandLast: unknown = null;
-let lastStandTier: number | undefined;
-let lastStandMenu: string | null = null;
-let lastStandWalls = false;
-const syncQuanNuocStand = () => {
-  const s = useGame.getState();
-  const st = quanNuocStandState(s.level, s.biz.quanNuoc.open);
-  world.quanNuoc.lot.visible = st === 'lot';
-  world.quanNuoc.stand.visible = st === 'open';
-  world.kit.setQuanDecor(st === 'open');
-  // GĐ425: nhà quán nước chặn lưới đi lại khi đã mở (chỉ vào qua cửa); đổi trạng thái thì dựng lại lưới
-  if ((st === 'open') !== lastStandWalls) {
-    lastStandWalls = st === 'open';
-    const p = world.quanNuoc.group.position;
-    grid.setStatic('quanNuoc', lastStandWalls ? quanHouseBoxes(p.x, p.z) : []);
-    shop.attachGrid(grid);
-  }
-  if (s.biz.quanNuoc.staff !== lastStandStaff) {
-    lastStandStaff = s.biz.quanNuoc.staff;
-    world.quanNuoc.setStaff(s.biz.quanNuoc.staff);
-  }
-  world.quanNuoc.setTier(quanTierOf(s.biz.quanNuoc));
-  world.quanNuoc.setPatrons(quanPatrons(s.biz.quanNuoc.staff, s.biz.quanNuocLast?.served));
-  const menuKey = (s.biz.quanNuoc.menu ?? []).join();
-  if (menuKey !== lastStandMenu) {
-    lastStandMenu = menuKey;
-    world.quanNuoc.setMenu(menuBoardLines(s.biz.quanNuoc.menu));
-  }
-};
-syncQuanNuocStand();
-useGame.subscribe((s) => {
-  if (s.level !== lastStandLevel || s.biz.quanNuoc.open !== lastStandOpen || s.biz.quanNuoc.staff !== lastStandStaff || (s.biz.quanNuoc.menu ?? []).join() !== lastStandMenu || s.biz.quanNuocLast !== lastStandLast || s.biz.quanNuoc.tier !== lastStandTier) {
-    lastStandTier = s.biz.quanNuoc.tier;
-    lastStandLast = s.biz.quanNuocLast;
-    lastStandLevel = s.level;
-    lastStandOpen = s.biz.quanNuoc.open;
-    syncQuanNuocStand();
-  }
-});
+installQuanNuocSync(world, grid, shop);
 
 // Tiệm xôi 3D (GĐ430): biển đất khi đủ cấp, sạp xôi khi đã mở. Tải lười (cấp 40 mới cần), đặt phía tây
 // hẻm đối diện quán nước, chỉ hình ảnh, không chặn lưới.
