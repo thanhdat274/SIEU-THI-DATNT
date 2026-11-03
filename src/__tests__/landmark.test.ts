@@ -9,6 +9,7 @@ import {
   landmarkNightLine,
   landmarkNightTrafficFactor,
   landmarkProgress,
+  LANDMARK2_STAGES,
   LANDMARK2_TARGETS,
   LANDMARK_CUSTOMER_BONUS_FACTOR,
   LANDMARK_FEED_CAP,
@@ -318,5 +319,30 @@ describe('GĐ732 — dự án 2: Đèn Đường Ngõ 1', () => {
   });
   it('payoff khách đêm chỉ áp khi đèn sáng (biên đúng — không đọc store nhiễm test trước)', () => {
     expect(LANDMARK2_TARGETS[LANDMARK2_TARGETS.length - 1]).toBe(48);
+  });
+  it('cấu trúc LANDMARK2_STAGES khớp mốc đèn (3 tầng cot→den→dien, targets 35/42/48)', () => {
+    expect(LANDMARK2_STAGES.length).toBe(3);
+    expect(LANDMARK2_TARGETS).toEqual([35, 42, 48]);
+    expect(LANDMARK2_STAGES.map((s) => s.id)).toEqual(['cot', 'den', 'dien']);
+    expect(new Set(LANDMARK2_STAGES.map((s) => s.title)).size).toBe(3);
+    expect(LANDMARK2_STAGES[2].bonusMoney).toBe(600_000);
+    expect(LANDMARK2_STAGES[2].bonusXp).toBe(800);
+  });
+  it('contributeLandmark: 47 → 48 chạm mốc CUỐI đèn → thưởng giai đoạn cuối + lời thắp sáng hẻm (dòng 104–105)', () => {
+    const toasts: string[] = [];
+    useGame.setState({ ...newGameData(), day: 60, money: 5_000_000, level: 20, notify: (m) => void toasts.push(m) });
+    useGame.setState({ biz: { ...useGame.getState().biz, landmark: { contributions: 47, lastContributeDay: 0 } } });
+    const s = useGame.getState();
+    const beforeMoney = s.money;
+    const beforeXp = s.stats.xp;
+    const currentIndex = landmark2Progress(47)!.index; // giai đoạn ĐANG góp (Treo đèn) — dùng bù chi phí
+    const cost = feedCost(currentIndex, s.level);
+    expect(s.contributeLandmark()).toBe(true);
+    const after = useGame.getState();
+    expect(after.biz.landmark.contributions).toBe(48);
+    expect(after.money).toBe(beforeMoney - cost + LANDMARK2_STAGES[2].bonusMoney);
+    expect(after.stats.xp - beforeXp).toBe(LANDMARK2_STAGES[2].bonusXp);
+    // lời báo mốc cuối "thắp sáng hẻm" (dòng 104–105) được gửi
+    expect(toasts.some((t) => t.includes('Đèn đường Ngõ 1 thắp sáng'))).toBe(true);
   });
 });

@@ -1,17 +1,16 @@
 import { ProductIcon } from './ProductIcon';
+import { st } from './orderPanelStyles';
 import { useMemo, useState } from 'react';
 import { Dropdown } from './Dropdown';
 import { lastActionResult } from '../net/coop';
 import { storageCapacity, storageUsed, useGame, wagesDue } from '../core/store';
 import { caseSize, casesFor, CATEGORIES, describeUnits, formatMoney, productById, unlockedProducts, type Category } from '../data/products';
 import { shelfLife } from '../data/freshness';
-import { furnitureDef } from '../data/furniture';
-import { dayTraffic, describeDay } from '../data/weather';
-import { bulkDiscount, orderTotal, SUPPLIERS, supplierSells, trending, unitCost, type Supplier } from '../data/suppliers';
+import { bulkDiscount, orderTotal, SUPPLIERS, supplierSells, trending, unitCost } from '../data/suppliers';
 import { guideActiveOn, guideInCart, guideIdsOf, guideProducts } from '../data/onboarding';
-import { buyCostTone, cheapestSupplier, orderAssessment, tomorrowCostDir, type AssessLevel, type AssessLine, type AssessLineOut, type BuyTone, type Dir } from '../data/procure';
-import { monthlyRelRebate, PARTNER_TIERS, tierProgress } from '../data/supplierRel';
-import { cheapestSupplierFor, commitRebateAdvice, type CheapestProductResult } from '../data/supplierValue';
+import { cheapestSupplier, orderAssessment, type AssessLevel, type AssessLine, type BuyTone, type Dir } from '../data/procure';
+import { PARTNER_TIERS } from '../data/supplierRel';
+import { cheapestSupplierFor, type CheapestProductResult } from '../data/supplierValue';
 import { isFairOpen, makeFairOffer } from '../data/fairmerchant';
 import { showRestockExtras } from '../data/onboarding';
 import { fairLotValue } from '../data/fairLotValue';
@@ -22,8 +21,9 @@ import { supplyRestockManifest, supplyNetworkOrderVisible } from '../data/supply
 import { teahouseFillPlan } from '../data/teahouseHaul';
 import { quanNuocDrinkIds } from '../data/quanNuoc';
 import { festivalRestockPlan } from '../data/festivalRestock';
-import { PREP_MIN_QTY } from '../data/festivalPrep';
-import { Callout } from './panels/shared';
+import { SupplierRelLine, ForecastLine, GuideBanner, QuanDrinkTipCallout, FestivalPrepCallout, NetworkFillCallout } from './OrderBanners';
+import { ProdSuggCard, HotWeekBanner, UrgentCard } from './OrderCards';
+import { commitNote, urgentReasonOf, displayable, onHand, incoming, suggestQty, assessText, supplierTone, supplierTomorrow } from './orderHelpers';
 import { acceptFairOffer } from '../core/biz';
 import { CUNG_GOODS, isXoiCungDay } from '../data/tiemXoi';
 import { festivalOn, festivalStock, monthOf, upcomingFestival } from '../data/calendar';
@@ -31,128 +31,9 @@ import { weekendPullOf, weekendSellingDays } from '../data/weekendRestock';
 
 /** Món mở khóa trong vòng chừng này cấp gần đây được gắn nhãn "Mới". */
 const NEW_WITHIN = 4;
-/** Món mới mở ở cấp này hoặc cấp trước, chưa ai hỏi mua: gợi ý nhập thử chừng này (thùng). */
-const TRIAL_CASES = 1;
-
-/** Tiệm có kệ/tủ bày được món này không (không có chỗ bày thì nhập về chỉ nằm kho). */
-function displayable(productId: string) {
-  const cat = productById(productId).category;
-  return useGame.getState().furniture.some((f) => furnitureDef(f.type).categories.includes(cat));
-}
-
-/** Số món đang có: trong kho + trên kệ. */
-function onHand(productId: string) {
-  const s = useGame.getState();
-  let n = s.storage[productId] ?? 0;
-  for (const f of s.furniture) for (const t of f.tiers) if (t.productId === productId) n += t.count;
-  return n;
-}
-
-const incoming = (productId: string) =>
-  useGame.getState().deliveries.reduce((sum, d) => sum + (d.items[productId] ?? 0), 0);
-
-/** Sức bày của món: tổng số món kệ/tủ tiệm đang chứa được cho ngành hàng của món này. */
-function displayCapacityFor(productId: string) {
-  const cat = productById(productId).category;
-  const s = useGame.getState();
-  let slots = 0;
-  for (const f of s.furniture) {
-    const def = furnitureDef(f.type);
-    if (!def.categories.includes(cat)) continue;
-    slots += f.tiers.length * def.capacity;
-  }
-  return slots;
-}
-
-/**
- * Gợi ý nhập (số thùng): đủ bán ~2 ngày theo nhu cầu (hàng giao sáng mai thì cần dự phòng nhiều hơn),
- * hàng hot tính dư 50%, món mới chưa ai hỏi thì nhập thử một thùng.
- * Thông minh hơn: tính cả lượt khách hỏi hôm nay (kể cả lượt bị từ chối vì hết hàng — món đang "hụt hơi"),
- * và không nhập quá sức bày của món (nhập về thừa chỉ nằm kho chết hạn).
- */
-function suggestQty(productId: string, supplier: Supplier, hot: boolean, isNew: boolean) {
-  const s = useGame.getState();
-  // Không có chỗ bày thì khỏi nhập (nhập về chỉ nằm kho)
-  if (!displayable(productId)) return 0;
-  // Nhu cầu = trung bình nhiều ngày, hoặc hôm nay nếu hôm nay khách hỏi nhiều hơn (món đang hụt hơi)
-  const demand = Math.max(s.demand[productId] ?? 0, s.demandToday[productId] ?? 0);
-  // Hàng dễ hỏng thì chỉ nhập đủ bán trước khi hết hạn
-  const days = Math.min(supplier.delayDays ? 2.5 : 1.5, shelfLife(productId) * 0.8);
-  const fresh = isNew && s.level - productById(productId).unlock <= 1;
-  const size = caseSize(productId);
-  let target = demand ? Math.ceil(demand * days * (hot ? 1.5 : 1) * forecastTraffic(supplier)) : fresh || hot ? TRIAL_CASES * size : 0;
-  // GĐ266: lô bán vào cuối tuần mà món thuộc nhóm ăn vặt (khách thèm thật — GĐ255) → nhân thêm
-  // hệ số kéo cầu, để chiều thứ Sáu gợi ý đã biết trữ nhiều hơn (chỉ khi có cầu thật, không nhân món nhập thử)
-  target = Math.ceil(target * weekendPullOf(productId, demand, weekendSellingDays(s.day, supplier.delayDays)));
-  // Chặn trên: sức bày của món + một thùng dự phòng kho, để không nhập về nằm ứ
-  target = Math.min(target, displayCapacityFor(productId) + size);
-  const need = target - onHand(productId) - incoming(productId);
-  return need > 0 ? Math.ceil(need / size) : 0;
-}
-
-/** Khách dự kiến so với ngày thường trong những ngày lô hàng này sẽ bán (hàng giao sáng mai thì tính từ mai). */
-function forecastTraffic(supplier: Supplier) {
-  const s = useGame.getState();
-  if (!supplier.delayDays) return dayTraffic(s.weatherSeed, s.day, s.weather);
-  return (dayTraffic(s.weatherSeed, s.day + 1, s.forecast[0]) + dayTraffic(s.weatherSeed, s.day + 2, s.forecast[1])) / 2;
-}
-
 type Filter = 'suggest' | 'all' | Category;
 
-// ─── GĐ57 "Mua khi rẻ": tóm tắt giá của một mối hôm nay / mai (thuần đọc, không đổi kinh tế) ───
-
-const BUY_TONE_LABEL: Record<BuyTone, string> = { cheap: 'nửa rẻ', normal: 'giữa khung', pricey: 'nửa đắt' };
-const BUY_TONE_ICON: Record<BuyTone, string> = { cheap: '📉 rẻ', normal: '• thường', pricey: '📈 đắt' };
-const BUY_TONE_COLOR: Record<BuyTone, string> = { cheap: '#55efc4', normal: '#dfe6e9', pricey: '#ff7675' };
-const DIR_WORD: Record<Dir, string> = { cheaper: 'mai rẻ hơn', pricier: 'mai đắt hơn', flat: 'mai tương đương' };
-
-// ─── GĐ103-2 "Dự phóng trước khi chốt đơn": ước ngày bán hết / thùng kho / nguy cơ hỏng hàng ───
-// Chỉ ĐỌC dữ liệu có sẵn (orderAssessment thuần) — nhãn luôn kèm "chừng/ước", không đổi kinh tế.
-// GD103-2b hotfix theo spec UI/UX: đỏ "nhập dư" chỉ khi bán không kịp hạn VÀ ước hỏng ≥ 2 món;
-// bán chậm hỏng ít → vàng; cầu thấp/chưa bán lần nào → xám "theo dõi thêm" (không ước ngày vô nghĩa).
-
-/** Dòng dự phóng trong ô tên món: ổn/chưa dữ liệu → chữ mờ; bán chậm → vàng #f1c40f; nhập dư → đỏ nổi nền. */
-const ASSESS_STYLE: Record<AssessLevel, React.CSSProperties> = {
-  ok: { color: '#bbb', opacity: 0.8 },
-  near: { color: '#f1c40f' },
-  over: { color: '#ff7675', background: 'rgba(231, 76, 60, 0.12)', borderRadius: 4, padding: '1px 6px' },
-};
-
-/** Text dự phóng của một dòng: gọn ≤ ~70 ký tự để ô tên món giữ tối đa 2 dòng. */
-function assessText(a: AssessLineOut, capacity: number): string {
-  const share = `chiếm ${a.caseUse}/${capacity} thùng kho`;
-  if (a.level === 'over') {
-    if (a.overWhy === 'kho') return `⚠️ kho không đủ chỗ: ${share}`;
-    const d = Math.max(1, Math.round(a.sellDays ?? 0));
-    return `⚠️ nhập dư: chừng ${d} ngày hết hàng > hạn ${Math.round(a.shelfDays)} ngày, ước hỏng ${a.spoil} món`;
-  }
-  if (a.level === 'near') {
-    const d = Math.max(1, Math.round(a.sellDays ?? 0));
-    return `⏳ bán chậm — chừng ${d} ngày hết hàng, cân nhắc bớt`;
-  }
-  // Chưa có dữ liệu bán (cầu < 0.5/ngày hoặc chưa bán lần nào) → xám, không ước ngày vô nghĩa.
-  return a.sellDays !== null ? `📦 chừng ${Math.max(1, Math.round(a.sellDays))} ngày hết hàng · ${share}` : `📦 chưa có dữ liệu bán — theo dõi thêm`;
-}
-
-/** Tóm tắt tone giá một mối hôm nay: độ lệch pct trung bình + nhãn rẻ/đắt theo đa số các món bán được đã mở khóa. */
-function supplierTone(s: Supplier, level: number, day: number): { pct: number; tone: BuyTone } | null {
-  const rows = unlockedProducts(level).filter((p) => supplierSells(s, p.id));
-  if (!rows.length) return null;
-  const pct = Math.round(rows.reduce((a, p) => a + buyCostTone(s, p.id, day).pct, 0) / rows.length);
-  const cheap = rows.filter((p) => buyCostTone(s, p.id, day).tone === 'cheap').length;
-  const pricey = rows.filter((p) => buyCostTone(s, p.id, day).tone === 'pricey').length;
-  const tone: BuyTone = pricey > cheap ? 'pricey' : cheap > pricey ? 'cheap' : 'normal';
-  return { pct, tone };
-}
-
-/** Hướng giá mai của một mối theo đa số món (chỉ hướng, giữ phán đoán). */
-function supplierTomorrow(s: Supplier, level: number, day: number): Dir {
-  const rows = unlockedProducts(level).filter((p) => supplierSells(s, p.id));
-  if (!rows.length) return 'flat';
-  const cheaper = rows.filter((p) => tomorrowCostDir(s, p.id, day) === 'cheaper').length;
-  const pricier = rows.filter((p) => tomorrowCostDir(s, p.id, day) === 'pricier').length;
-  return pricier > cheaper ? 'pricier' : cheaper > pricier ? 'cheaper' : 'flat';
-}
+import { ASSESS_STYLE, BUY_TONE_COLOR, BUY_TONE_ICON, BUY_TONE_LABEL, DIR_WORD, Meter } from './orderPanelParts';
 
 export function OrderPanel() {
   const { level, day, money, demand, demandToday, deliveries, placeOrder, closePanel, notify, weatherSeed, forecast, storage, weather, warehouseTier, priceOf, furniture, openPanel, analytics } = useGame();
@@ -231,14 +112,7 @@ export function OrderPanel() {
     .filter((r) => r.suggest > 0 && displayable(r.p.id))
     .sort((a, b) => b.asked - a.asked || b.demand - a.demand || a.have - b.have)
     .slice(0, 5);
-  const urgentReason = (r: (typeof rows)[number]) => {
-    if (r.asked > 0 && r.have === 0) return `hôm nay ${r.asked} khách hỏi mà hết hàng`;
-    if (r.have === 0) return 'đã hết hàng';
-    if (r.demand > 0 && r.have < r.demand) return `còn ${r.have} món, ít hơn một ngày bán (${r.demand.toFixed(1)}/ngày)`;
-    if (r.asked > 0) return `hôm nay ${r.asked} khách hỏi mua`;
-    if (r.isHot) return 'hàng hot tuần này';
-    return `bán ${r.demand.toFixed(1)}/ngày, đang có ${r.have}`;
-  };
+  const urgentReason = urgentReasonOf;
 
   // Giỏ đặt tính theo thùng; đơn gửi đi tính theo món
   const toLines = (c: Record<string, number>) => Object.fromEntries(
@@ -410,71 +284,10 @@ export function OrderPanel() {
   return (
     <div style={{ width: '100%', maxWidth: 860 }}>
       <h2 style={{ margin: '0 0 4px' }}>📦 Nhập hàng</h2>
-      {guideOn && (
-        <div style={{ ...st.guideBanner, ...(guideIn.length ? st.guideBannerReady : {}) }}>
-          <div style={{ fontWeight: 700 }}>🧭 Ngày đầu tiên: nhập 3 món trước</div>
-          <div style={{ marginTop: 3, fontSize: 12 }}>
-            {guideItems.map((g, gi) => (
-              <span key={g.id}>
-                {guideIn.includes(g.id) ? '✅' : '⬜'} {g.name}
-                {gi < guideItems.length - 1 && <span style={{ opacity: 0.6 }}> · </span>}
-              </span>
-            ))}
-          </div>
-          <div style={{ marginTop: 4, fontSize: 12, fontWeight: 600, color: guideIn.length ? '#2ecc71' : '#f1c40f' }}>
-            {guideIn.length ? 'Sẵn sàng đặt hàng!' : 'Mỗi món một thùng là đủ cho ngày đầu.'}
-          </div>
-        </div>
-      )}
-      {restockTip && (
-        <Callout
-          tone={restockTip.verdict}
-          title={restockTip.verdict === 'danger' ? '🚨 Nạp thêm đồ uống cho quán nước' : '🥤 Quán nước sắp ăn khô kho chung'}
-          style={{ margin: '8px 0 6px' }}
-        >
-          <div style={{ fontSize: 12 }}>
-            {restockTip.verdict === 'danger'
-              ? `Hôm qua quán nước bỏ lỡ ~${restockTip.missedRevenue.toLocaleString('vi-VN')}đ vì kho thiếu đồ uống. `
-              : 'Quán nước chung kho với kệ tiệm chính — '}
-            tối nay quán cần ~{restockTip.wanted} ly mà kho chỉ còn {restockTip.have}{restockTip.shortfall > 0
-              ? <> — nhập thêm ít nhất <b>{restockTip.shortfall} ly</b> nước/ngọt/cà phê</>
-              : ' (đã đủ, chỉ nhắc lại tín hiệu hôm qua)'}.
-          </div>
-          {restockTip.shortfall > 0 && (
-            <button style={{ ...st.btn, fontSize: 11, marginTop: 6, padding: '2px 8px' }} onClick={fillQuanNuocDrinks}>
-              ➕ Nạp đồ uống quán nước vào giỏ
-            </button>
-          )}
-        </Callout>
-      )}
-      {festivalPlan && (
-        <Callout tone="accent" title={`⏳ ${festivalPlan.festival.icon} ${festivalPlan.festival.name} ${festivalPlan.inDays === 1 ? 'ngày mai' : `sau ${festivalPlan.inDays} ngày`} — trữ lễ còn thiếu ${festivalPlan.lines.length} món`} style={{ margin: '8px 0 6px' }}>
-          <div style={{ fontSize: 12 }}>
-            Trữ đủ mỗi món ≥ {PREP_MIN_QTY} trong kho trước khi lễ bắt đầu → thưởng đón lễ <b style={{ color: '#2ecc71' }}>+{formatMoney(festivalPlan.bonus)}</b>.
-            {festivalPlan.skipped.length > 0 && <> Món mối này không bán: {festivalPlan.skipped.map((id) => productById(id).name).join(', ')} — đổi mối để trữ nốt.</>}
-          </div>
-          <button style={{ ...st.btn, fontSize: 11, marginTop: 6, padding: '2px 8px' }} onClick={fillFestivalPrep}>
-            ➕ Trữ lễ vào giỏ
-          </button>
-        </Callout>
-      )}
-      {netNeeds && (
-        <Callout tone={netManifest.buyNeed > 0 ? 'warn' : 'info'} title="🔗 Nạp liền mạng lưới (rốn kho chung)" style={{ margin: '8px 0 6px' }}>
-          <div style={{ fontSize: 12 }}>
-            <div>{netManifest.line}.</div>
-            {netManifest.lines.filter((l) => l.outlet === 'branch').length > 0 && (
-              <div style={{ marginTop: 3, fontSize: 11, opacity: 0.9 }}>
-                Chi nhánh kệ cần: {netManifest.lines.filter((l) => l.outlet === 'branch').map((l) => `${l.label} ${l.need}${l.source === 'buy' ? ' (mua)' : ''}`).join(' · ')}
-              </div>
-            )}
-            {netManifest.lines.some((l) => l.outlet === 'branch') && (
-              <button style={{ ...st.btn, fontSize: 11, marginTop: 6, padding: '2px 8px' }} onClick={fillBranchSheet}>
-                ➕ Điền kệ chi nhánh vào giỏ
-              </button>
-            )}
-          </div>
-        </Callout>
-      )}
+      {guideOn && <GuideBanner guideItems={guideItems} guideIn={guideIn} />}
+      {restockTip && <QuanDrinkTipCallout tip={restockTip} onFill={fillQuanNuocDrinks} />}
+      {festivalPlan && <FestivalPrepCallout plan={festivalPlan} onFill={fillFestivalPrep} />}
+      {netNeeds && <NetworkFillCallout manifest={netManifest} onFillBranch={fillBranchSheet} />}
       <div style={st.meters}>
         <Meter
           label="💰 Tiền"
@@ -580,52 +393,15 @@ export function OrderPanel() {
         {' '}Hàng nhập theo thùng, về kho rồi khui ra bày lẻ.
       </p>
       <div style={{ ...st.banner, ...(showRestockExtras(day) ? null : { display: 'none' }) }}>{/* GĐ319: ngày đầu chỉ dạy nhập-bày-bán */}
-        {(() => {
-          const life = biz.supplierRel?.[supplier.id]?.spent ?? 0;
-          const { cur, next, pct } = tierProgress(life);
-          const monthSpent = biz.supplierRelMonth?.[supplier.id] ?? 0;
-          const rebate = monthlyRelRebate(life, monthSpent);
-          const monthLeft = Math.max(0, cur.commit - monthSpent);
-          return (
-            <span>
-              🤝 Mối quen: <b style={{ color: cur.level >= 3 ? '#e74c3c' : '#fff' }}>{cur.icon} {cur.name}</b>
-              {next ? ` · ${pct}% tới ${next.icon} ${next.name}` : ' · đã tối đa'}
-              {" "}· tháng này mua <b>{formatMoney(monthSpent)}</b>
-              {cur.level > 0 && (rebate > 0
-                ? <span style={{ color: '#2ecc71' }}> → sẽ hoàn {formatMoney(rebate)} cuối tháng ✓</span>
-                : <span style={{ opacity: 0.8 }}> · còn {formatMoney(monthLeft)} nữa đạt cam kết ({Math.round(cur.rate * 100)}% hoàn)</span>)}
-            </span>
-          );
-        })()}
+        <SupplierRelLine life={biz.supplierRel?.[supplier.id]?.spent ?? 0} monthSpent={biz.supplierRelMonth?.[supplier.id] ?? 0} />
       </div>
 
       {showCost && count > 0 && (() => {
-        // GĐ143 "Mối nào rẻ THẬT" — mồi gom cam kết tháng: nối zoom của banner Mối quen (bộ đếm tháng)
-        // thành QUYẾT ĐỊNH với giỏ hiện tại: gom doanh tháng về mối này lấy hoàn hay xẻ giỏ sang mối rẻ.
-        const life = biz.supplierRel?.[supplier.id]?.spent ?? 0;
-        const monthSpent = biz.supplierRelMonth?.[supplier.id] ?? 0;
-        const advice = commitRebateAdvice(life, monthSpent, total);
-        if (!advice.eligible) return null; // mối chưa đủ bậc mối quen → không lừa có hoàn
-        const rivalBest = cheapest && cheapest.best;
-        const curIsCheapest = rivalBest && rivalBest.id === supplier.id;
-        const committed = monthSpent >= advice.tier.commit;
-        const bridges = !committed && advice.projectedSpent >= advice.tier.commit;
-        const tailRival = rivalBest && !curIsCheapest && total > cheapest.total
-          ? ` · nhưng giỏ này mua ở ${rivalBest.name} chỉ ${formatMoney(cheapest.total)}, rẻ hơn ${formatMoney(total - cheapest.total)} so với mối ${supplier.name} — cân với hoàn tháng nếu chưa đạt cam kết`
-          : '';
-        let icon = '🤝'; let body: string;
-        if (committed) {
-          body = `mối ${supplier.name} đã đạt cam kết tháng ${formatMoney(advice.tier.commit)} → giỏ ${formatMoney(total)} này góp thêm, cuối tháng hoàn ~${formatMoney(advice.rebateIf)} (${Math.round(advice.tier.rate * 100)}%)`;
-        } else if (bridges) {
-          icon = '🎯';
-          body = `giỏ ${formatMoney(total)} này đẩy doanh tháng lên ${formatMoney(advice.projectedSpent)} → ĐẠT cam kết ${formatMoney(advice.tier.commit)}: hoàn ~${formatMoney(advice.rebateIf)} (${Math.round(advice.tier.rate * 100)}%) cuối tháng`;
-        } else {
-          icon = '🧲';
-          body = `còn ${formatMoney(advice.gapAfter)} nữa đạt cam kết tháng ${formatMoney(advice.tier.commit)} (${Math.round(advice.tier.rate * 100)}% hoàn) — giỏ này góp ${formatMoney(total)}, gom doanh tháng về mối ${supplier.name} để lấy hoàn`;
-        }
+        const note = commitNote({ life: biz.supplierRel?.[supplier.id]?.spent ?? 0, monthSpent: biz.supplierRelMonth?.[supplier.id] ?? 0, total, supplier, cheapest });
+        if (!note) return null; // mối chưa đủ bậc mối quen → không lừa có hoàn
         return (
           <div style={{ ...st.banner, background: 'rgba(46, 204, 113, 0.07)', border: '1px solid rgba(85,239,196,0.25)' }}>
-            <span>{icon} Gom cam kết: {body}{tailRival}</span>
+            <span>{note.text}</span>
           </div>
         );
       })()}
@@ -646,59 +422,15 @@ export function OrderPanel() {
       )}
 
       <div style={{ ...st.banner, ...(day <= 1 ? { display: 'none' } : null) }}>
-        🌦️ Dự báo: {forecast.map((w, i) => (
-          <span key={i}>
-            {i > 0 && ' · '}
-            <b>{i ? 'Ngày kia' : 'Mai'}</b> {describeDay(weatherSeed, day + 1 + i, w)} · khách {Math.round(dayTraffic(weatherSeed, day + 1 + i, w) * 100)}% ngày thường
-          </span>
-        ))}
-        <span style={{ opacity: 0.75 }}> · Số gợi ý đã tính theo thời tiết. Hàng mát, đông lạnh, tươi để trong kho hỏng nhanh: nên bày vào tủ.</span>
+        <ForecastLine forecast={forecast} weatherSeed={weatherSeed} day={day} />
       </div>
 
       {/* 🌾 Nên hôm nay — chuỗi sản xuất hội tụ (GĐ73) */}
-      {prodSugg.length > 0 && (
-        <div style={{ ...st.banner, background: 'rgba(46, 204, 113, 0.12)', outline: '1px solid rgba(46,204,113,0.35)' }}>
-          <b>🌾 Nên hôm nay — tự làm khi nên</b>
-          <div style={{ marginTop: 4, display: 'grid', gap: 2 }}>
-            {prodSugg.map((s, i) => (
-              <button key={i} onClick={() => openPanel({ type: s.panel })}
-                style={{ display: 'flex', gap: 8, alignItems: 'baseline', background: 'transparent', border: 'none', color: 'inherit', fontSize: 12, cursor: 'pointer', padding: 0, textAlign: 'left' }}>
-                <span style={{ minWidth: 130 }}>{s.icon} {s.label} →</span>
-                <span style={{ opacity: 0.85 }}>{s.detail}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
+      {prodSugg.length > 0 && <ProdSuggCard items={prodSugg} onOpen={(panel) => openPanel({ type: panel })} />}
 
-      {hot.length > 0 && day > 1 && (
-        <div style={st.banner}>
-          🔥 Tuần này khách săn: <b>{hot.map((id) => productById(id).name).join(', ')}</b>
-          {hotNextWeek.length > 0 && (
-            <span style={{ opacity: 0.85 }} title="Tuần mới bắt đầu Thứ 2 — nhập sẵn hôm nay để không lỡ nhịp">
-              {' '}· 🔮 Tuần mai: <b>{hotNextWeek.map((id) => productById(id).name).join(', ')}</b>
-            </span>
-          )}
-          {unlockedSuppliers.length < SUPPLIERS.length && (
-            <span style={{ opacity: 0.75 }}> · Mối mới mở ở cấp {SUPPLIERS.find((s) => s.unlock > level)!.unlock}</span>
-          )}
-        </div>
-      )}
+      {hot.length > 0 && day > 1 && <HotWeekBanner hot={hot} hotNextWeek={hotNextWeek} nextSupplierUnlock={unlockedSuppliers.length < SUPPLIERS.length ? SUPPLIERS.find((s) => s.unlock > level)!.unlock : undefined} />}
 
-      {filter === 'suggest' && urgent.length > 0 && showRestockExtras(day) && (
-        <div style={{ ...st.banner, background: 'rgba(214, 48, 49, 0.16)' }}>
-          <b>🚨 Cần nhập gấp</b>
-          <div style={{ marginTop: 4, display: 'grid', gap: 2 }}>
-            {urgent.map((r) => (
-              <div key={r.p.id} style={{ display: 'flex', gap: 8, alignItems: 'baseline' }}>
-                <span style={{ minWidth: 130 }}>{productById(r.p.id).name}</span>
-                <span style={{ opacity: 0.85 }}>{urgentReason(r)}</span>
-                <span style={{ marginLeft: 'auto', opacity: 0.75 }}>✨ nên nhập {r.suggest} thùng</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {filter === 'suggest' && urgent.length > 0 && showRestockExtras(day) && <UrgentCard rows={urgent.map((r) => ({ id: r.p.id, reason: urgentReason(r), suggest: r.suggest }))} />}
 
       <div style={st.toolbar}>
         <Dropdown<Filter>
@@ -835,65 +567,3 @@ export function OrderPanel() {
     </div>
   );
 }
-
-
-/** Thanh đo: phần đã có (base, đậm) + phần của đơn này (sáng), đỏ khi vượt. */
-function Meter({ label, used, max, base = 0, text }: { label: string; used: number; max: number; base?: number; text: string }) {
-  const pct = (v: number) => `${Math.min(100, max > 0 ? (v / max) * 100 : 100)}%`;
-  const over = used > max;
-  return (
-    <div style={{ flex: 1, minWidth: 220 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 3 }}>
-        <b>{label}</b><span style={{ opacity: 0.8, color: over ? '#ff7675' : undefined }}>{text}</span>
-      </div>
-      <div style={{ position: 'relative', height: 8, borderRadius: 4, background: '#ffffff22', overflow: 'hidden' }}>
-        <div style={{ position: 'absolute', inset: 0, width: pct(used), background: over ? '#e67e22' : '#f1c40f' }} />
-        <div style={{ position: 'absolute', inset: 0, width: pct(base), background: '#2ecc71' }} />
-      </div>
-    </div>
-  );
-}
-
-const st: Record<string, React.CSSProperties> = {
-  meters: { display: 'flex', gap: 16, flexWrap: 'wrap', margin: '4px 0 10px' },
-  sub: { margin: '0 0 10px', opacity: 0.75, fontSize: 13 },
-  tabs: { display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 },
-  tab: {
-    display: 'flex', gap: 8, alignItems: 'center', textAlign: 'left', padding: '6px 10px', borderRadius: 8,
-    border: '2px solid transparent', background: '#3a3a4d', color: '#fff', cursor: 'pointer', fontSize: 13,
-  },
-  tabOn: { border: '2px solid #f1c40f', background: '#4a4a60' },
-  tabMeta: { display: 'block', fontSize: 11, opacity: 0.75 },
-  banner: { background: 'rgba(225, 112, 85, 0.18)', borderRadius: 8, padding: '6px 10px', fontSize: 13, marginBottom: 8 },
-  toolbar: { display: 'flex', gap: 6, marginBottom: 8, flexWrap: 'wrap' },
-  btn: { border: 'none', borderRadius: 6, padding: '6px 12px', cursor: 'pointer', fontSize: 13 },
-  list: { maxHeight: '45vh', overflow: 'auto', borderRadius: 8, background: '#232330' },
-  // Lớp hướng dẫn ngày đầu (GĐ38): banner + khối 3 món thiết yếu nổi bật, chỉ hiện khi guideOn
-  guideBanner: { background: 'rgba(52, 152, 219, 0.14)', border: '1px solid #3498db', borderRadius: 8, padding: '10px 12px', margin: '6px 0 10px', fontSize: 13 },
-  guideBannerReady: { border: '1px solid #2ecc71', background: 'rgba(46, 204, 113, 0.12)' },
-  guideBox: { display: 'grid', gap: 6, margin: '0 0 10px', padding: 6, borderRadius: 8, background: 'rgba(52, 152, 219, 0.06)', border: '1px solid #3498db55' },
-  guideRow: {
-    display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', padding: '8px 10px',
-    border: '1px solid #3498db', borderRadius: 6, background: 'rgba(52, 152, 219, 0.10)', fontSize: 13,
-  },
-  guideRowOn: { border: '1px solid #2ecc71', background: 'rgba(46, 204, 113, 0.10)' },
-  row: {
-    display: 'grid', gap: 8, alignItems: 'center',
-    padding: '6px 10px', borderBottom: '1px solid #ffffff10', fontSize: 13,
-  },
-  head: { position: 'sticky', top: 0, background: '#2b2b3a', fontSize: 11, opacity: 0.8, zIndex: 1 },
-  badge: { marginLeft: 6, padding: '1px 6px', borderRadius: 4, fontSize: 11, color: '#fff', whiteSpace: 'nowrap' },
-  step: { width: 24, height: 24, border: 'none', borderRadius: 5, cursor: 'pointer', fontSize: 14, padding: 0 },
-  qty: { width: 48, height: 26, padding: 0, textAlign: 'center' },
-  // Dính đáy panel: cuộn danh sách tới đâu vẫn luôn thấy tổng tiền + nút nhập.
-  // GD104: bỏ tràn viền NGANG (margin âm từng đẩy footer qua mép content-box khi panel có
-  // thanh cuộn dọc mỏng ~10px — margin âm chỉ recovering được padding, không recovering được
-  // chỗ thanh cuộn chiếm: đo @320 footer right 298 > contentR 294). Giữ dính đáy (GĐ95),
-  // footer nằm gọn trong content-box ở mọi width 320–1280; nền footer trùng nền panel nên
-  // chỉ khác biệt thị giác là đường kẻ trên thụt vào theo lề nội dung.
-  footer: {
-    display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginTop: 12, flexWrap: 'wrap',
-    position: 'sticky', bottom: -18, margin: '12px 0 -18px', padding: '10px 0 18px',
-    background: '#2b2b3a', borderTop: '1px solid #ffffff14', zIndex: 2,
-  },
-};

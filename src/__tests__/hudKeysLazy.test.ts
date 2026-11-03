@@ -20,7 +20,7 @@ describe('GĐ636: cảnh báo khách hỏi ở quầy nạp lười', () => {
 describe('GĐ651: ruột menu Thêm nạp lười', () => {
   it('Hud nạp MoreMenuBody lười, không còn GfxButton; HudMoreBody giữ nút Đồ họa/Phím/Hướng dẫn', () => {
     const hud = readFileSync('src/ui/Hud.tsx', 'utf8');
-    expect(hud).toContain("lazy(() => import('./HudMoreBody')");
+    expect(readFileSync('src/ui/HudMenus.tsx', 'utf8')).toContain("lazy(() => import('./HudMoreBody')");
     expect(hud).not.toContain('function GfxButton');
     const body = readFileSync('src/ui/HudMoreBody.tsx', 'utf8');
     for (const s of ['function GfxButton', "label: 'Phím'", "label: 'Hướng dẫn'"]) expect(body).toContain(s);

@@ -60,6 +60,28 @@ describe('pendingUnlockAct (mồi tuần tự thấp→cao, một lần mỗi ac
   });
 });
 
+describe('dismissUnlockAct (gạt "Thử ngay" — mồi không hiện lại)', () => {
+  it('bỏ một act mới → thêm vào unlockActs', () => {
+    useGame.setState({ biz: { ...useGame.getState().biz, unlockActs: ['prices'] } });
+    useGame.getState().dismissUnlockAct('staff');
+    expect(useGame.getState().biz.unlockActs).toEqual(['prices', 'staff']);
+  });
+
+  it('bỏ lại act đã có → không đổi (không thêm trùng)', () => {
+    useGame.setState({ biz: { ...useGame.getState().biz, unlockActs: ['prices', 'staff'] } });
+    useGame.getState().dismissUnlockAct('staff');
+    expect(useGame.getState().biz.unlockActs).toEqual(['prices', 'staff']);
+  });
+
+  it('biz thiếu field hoàn toàn (save cũ) → vẫn thêm được, tự bù []', () => {
+    const b = useGame.getState().biz as unknown as Record<string, unknown>;
+    delete b.unlockActs;
+    useGame.setState({ biz: b as never });
+    useGame.getState().dismissUnlockAct('prices');
+    expect(useGame.getState().biz.unlockActs).toEqual(['prices']);
+  });
+});
+
 describe('save-safe (field optional như rivalTrend)', () => {
   it('newBiz mặc định unlockActs = []', () => {
     expect(newGameData().biz.unlockActs).toEqual([]);

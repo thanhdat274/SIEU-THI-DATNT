@@ -98,6 +98,19 @@ describe('weightedPick — chọn theo trọng số', () => {
   it('rng trả 0 chọn phần tử đầu', () => {
     expect(weightedPick(['a', 'b'], () => 1, () => 0)).toBe('a');
   });
+  it('rng chạm mức kịch → rơi về phần tử CUỐI (nhánh fallback 130)', () => {
+    expect(weightedPick(['a', 'b'], () => 1, () => 1)).toBe('b');
+  });
+  it('trọng số âm được kẹp về 0, không đẩy khỏi phạm vi', () => {
+    // ws = [max(5,0), max(-3,0)] = [5,0]; total 5; rng=1 → roll=5, không nhỏ hơn acc → trả 'b'
+    expect(weightedPick(['a', 'b'], (x) => (x === 'a' ? 5 : -3), () => 1)).toBe('b');
+    // rng=0.5 → roll=2.5 < acc 5 → trả 'a' (món trọng số âm không bao giờ trúng)
+    expect(weightedPick(['a', 'b'], (x) => (x === 'a' ? 5 : -3), () => 0.5)).toBe('a');
+  });
+  it('mọi trọng số 0 → luôn trả phần tử cuối', () => {
+    expect(weightedPick(['a', 'b', 'c'], () => 0, () => 1)).toBe('c');
+    expect(weightedPick(['a', 'b', 'c'], () => 0, () => 0)).toBe('c');
+  });
 });
 
 describe('store — heatmap doanh số theo kệ', () => {

@@ -1,0 +1,12 @@
+# PROGRESS GĐ950–959 (lưu trữ)
+
+- GĐ959: tách data/rivals.ts (tiệm đối thủ) khỏi data/biz.ts (1345→999), biz re-export nên import cũ giữ nguyên + test. Full 355 file/3053 test, tsc sạch.
+- GĐ958: tách arrangeGeometry (snap/box/aisle/overlap/findSpot) khỏi ArrangePanel (454→406) + test. Full 354 file/3051 test, tsc sạch. Chưa soi bằng mắt trong game.
+- GĐ957: tách SupplierRelLine + ForecastLine khỏi OrderPanel (668→646) + test. Full 353 file/3046 test, tsc sạch. Chưa soi bằng mắt trong game.
+- GĐ956: tách StaffLines (dòng/thanh giá trị nhân viên, tiệm chính + chi nhánh) khỏi StaffPanel (536→427) + test. Full 353 file/3044 test, tsc sạch. Chưa soi bằng mắt trong game.
+- GĐ955: tách SummaryMoneyCards (tích điểm/giờ vàng/hết hàng/hỏng đêm) khỏi ReportPanels (550→504) + test. Full 352 file/3042 test, tsc sạch. Chưa soi bằng mắt trong game.
+- **GĐ954 (tách BusinessPanel)** `NearMilestonesView`, `NgGoalsCard` (props: claimedIds/onClaim thay vì đọc store) và `NextUnlockTeaser` sang `src/ui/panels/PrestigeParts.tsx` + 3 ca test SSR; BusinessPanel 573 → 484 dòng. tsc sạch, full npm test xanh (3040; `longSessionLeak` từng rớt 1 lần khi cả bộ chạy cùng lúc rồi xanh khi chạy lại — nhiễu thời gian như GĐ883). Chưa soi bằng mắt trong game.
+- **GĐ953 (tách Hud #3)** logic chip thời tiết (cơn mưa đang diễn ra / nhiều mây, chữ dự báo) thành hàm thuần `skyState` + `forecastTextOf` trong `src/ui/hudSky.ts` + 3 ca test; Hud 570 → ~567 dòng. Không đổi số nút HUD. tsc sạch, full npm test xanh (3037). Chưa soi bằng mắt trong game.
+- **GĐ952 (tách Hud #2)** 10 badge dock (đối thủ, social, đơn online, giấy phép, nợ, thử thách tuần, phiên chợ, sổ thương mến, hồ sơ tiệm, trang trại) thành hàm thuần `*BadgeOf(state)` trong `src/ui/hudBadges.ts` + 4 ca test; Hud 643 → 570 dòng; test restockDay1Quiet trỏ file mới. Không đổi số nút HUD. tsc sạch, full npm test xanh (3034). Chưa soi bằng mắt trong game.
+- **GĐ951 (tách Hud #1)** `MoreMenu`, `usePopover`, `AccountMenu` sang `src/ui/HudMenus.tsx` (nạp lười MoreMenuBody đi theo; test hudKeysLazy trỏ lại file mới) + 2 ca test SSR; Hud 713 → 643 dòng. Không đổi số nút HUD. tsc sạch, full npm test xanh (3030). Chưa soi bằng mắt trong game.
+- **GĐ950 (rà 941–949 + dọn PROGRESS)** Chỉ tách UI thuần (MorningPanel 846→232, OrderPanel 899→668), không đổi hành vi, không thêm nút HUD/thư viện; tsc sạch, 3028 test xanh. PROGRESS.md 60KB→36KB bằng cách chuyển 55 mục GĐ790–929 sang archive. Nợ mở vẫn cần điều kiện ngoài: FPS thật ở cửa sổ thấy được, save thật, tín hiệu người chơi thật.

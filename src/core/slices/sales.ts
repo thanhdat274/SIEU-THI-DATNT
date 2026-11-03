@@ -1,6 +1,6 @@
 import { formatMoney, productById } from '../../data/products';
 import { happyHourActive } from '../../data/rhythm';
-import { makeVendorOffer, vendorById, wholesaleTotal } from '../../data/wholesale';
+import { makeVendorOffer, vendorById, wholesaleRush, wholesaleTotal } from '../../data/wholesale';
 import { missKey } from '../../data/advice';
 import { counterActive, PRICE_WAR_CUT } from '../../data/biz';
 import { defaultCounterPolicy } from '../../data/counterDeals';
@@ -130,17 +130,24 @@ export const createSalesSlice = (set: SetState, get: GetState): Pick<GameState, 
     s.notify(`${v.icon} ${v.name} ghé lấy sỉ ${v.goods}`);
     return offer;
   },
-  acceptWholesale: () => {
+  acceptWholesale: (rush = false) => {
     const s = get();
     const offer = s.vendorOffer;
     if (!offer) return false;
     const missing = Object.entries(offer.items).filter(([id, q]) => (s.storage[id] ?? 0) < q);
-    if (missing.length) {
+    let rushCost = 0;
+    if (missing.length && rush === true) {
+      // GĐ929: kho thiếu thì nhập gấp phần thiếu (giá nhập × 1,15) rồi giao luôn; chỉ nhận khi còn lời và đủ tiền.
+      const r = wholesaleRush(offer.items, s.storage, s.priceOf);
+      if (r.net <= 0) { s.notify('Nhập gấp không còn lời — từ chối đơn sỉ này'); return false; }
+      if (s.money < r.cost) { s.notify(`Không đủ tiền nhập gấp (cần ${formatMoney(r.cost)})`); return false; }
+      rushCost = r.cost;
+    } else if (missing.length) {
       s.notify(`Kho còn thiếu: ${missing.map(([id, q]) => `${q - (s.storage[id] ?? 0)} ${productById(id).name}`).join(', ')}`);
       return false;
     }
     const k = copyStock(s);
-    for (const [id, q] of Object.entries(offer.items)) takeStock(k, id, q);
+    for (const [id, q] of Object.entries(offer.items)) takeStock(k, id, Math.min(q, s.storage[id] ?? 0));
     const pay = wholesaleTotal(offer.items, s.priceOf);
     const units = Object.values(offer.items).reduce((n, q) => n + q, 0);
     const byItem = { ...s.stats.byItem };
@@ -150,12 +157,12 @@ export const createSalesSlice = (set: SetState, get: GetState): Pick<GameState, 
       byItem[id] = { qty: line.qty + q, revenue: line.revenue + revenue, cost: line.cost + productById(id).buy * q };
     }
     set({
-      ...k, vendorOffer: null, money: s.money + pay,
-      stats: { ...s.stats, revenue: s.stats.revenue + pay, itemsSold: s.stats.itemsSold + units, byItem },
+      ...k, vendorOffer: null, money: s.money + pay - rushCost,
+      stats: { ...s.stats, revenue: s.stats.revenue + pay, spent: s.stats.spent + rushCost, itemsSold: s.stats.itemsSold + units, byItem },
       totals: { ...s.totals, revenue: s.totals.revenue + pay, itemsSold: s.totals.itemsSold + units },
     });
     get().addXp(10 + Math.floor(units / 3));
-    s.notify(`🤝 Bán sỉ cho ${vendorById(offer.vendorId)?.name}: ${units} món, +${formatMoney(pay)}`);
+    s.notify(`🤝 Bán sỉ cho ${vendorById(offer.vendorId)?.name}: ${units} món, +${formatMoney(pay - rushCost)}${rushCost ? ' (đã trừ nhập gấp)' : ''}`);
     return true;
   },
   declineWholesale: () => set({ vendorOffer: null }),

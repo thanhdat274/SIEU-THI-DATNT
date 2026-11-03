@@ -20,7 +20,7 @@ import { COMBO_PULL, comboDiscount, comboPartners } from '../data/combos';
 import { noteComboDay } from '../core/slices/comboDay';
 import { bulkExtra, festivalVisit, perkValue, pickRegular, referFriends, regularById, reserveAsk, INFLUENCER_ID, unlockedFavorites, type RegularDef } from '../data/regulars';
 import { influencerActive } from '../data/social';
-import { pickProfession, PROFESSIONS, PROFESSION_LOOK, type ProfessionDef } from '../data/professions';
+import { pickProfession, PROFESSIONS, type ProfessionDef } from '../data/professions';
 import { DEBT_PARTIAL_CHANCE, DEBT_PARTIAL_MIN, installmentNow, CREDIT_UNLOCK, repaysToday, wantsCredit, creditLeft, creditAskText } from '../data/credit';
 import { askQueuedPatience, ASK_MINUTES, CANDY_ANNOY, CHANGE_CHANCE, CHANGE_UNLOCK, CREDIT_REFUSE_FRIEND_LOSS, changeChoice, defaultCounterPolicy, HAGGLE_CHANCE, HAGGLE_CHANCE_REG, HAGGLE_MIN_TOTAL, HAGGLE_UNLOCK, haggleChoice, haggleCounterOff, haggleOff, haggleSettle, oddChange, pricematchSettle } from '../data/counterDeals';
 import { rollService, SERVICE_BUY_ALONG, type ServiceDef } from '../data/services';
@@ -45,27 +45,18 @@ const SALE_HUNT = 0.2;
 import { REVIEW_CHANCE, type ReviewReason } from '../data/reviews';
 import { reputationOf, repVisitBonus, sampleVisit } from '../data/reputation';
 import { OPENING_TRAFFIC } from '../data/community';
-import { createCart } from '../shop/furnitureView';
 import type { Counter, GroceryShop } from '../shop/groceryShop';
 import type { NavGrid } from '../world/navGrid';
 import { CoinPopFX } from '../render/fx/coinPop';
-import { Walker } from './walker';
+import {
+  Customer, FRANTIC_AT, IMPATIENT_AT, PATIENCE_MINUTES, SIDEWALK_Z, impatienceEmoji, type Deal,
+} from './customerEntity';
 
-const SIDEWALK_Z = 2.2;
+export { FRANTIC_AT, IMPATIENT_AT, impatienceEmoji };
+
+const pick = <T,>(list: T[]) => list[Math.floor(simRng()() * list.length)];
+
 const EDGE_X = 38;
-/** Khách chờ ở quầy tối đa bao nhiêu phút game. */
-const PATIENCE_MINUTES = 45;
-/** GĐ119 — khách bắt đầu sốt ruột từ tỉ lệ waited/patience ≥ này (hiện 😕). */
-export const IMPATIENT_AT = 0.6;
-/** GĐ119 — khách sắp bỏ đi từ tỉ lệ ≥ này (hiện 😤, rồi 😠 khi bỏ). */
-export const FRANTIC_AT = 0.85;
-
-/** GĐ119 — emoji "khách sốt ruột" theo tỉ lệ đã chờ trên kiên nhẫn (thuần đọc, trả null khi còn bình tĩnh). */
-export function impatienceEmoji(ratio: number): '😕' | '😤' | null {
-  if (ratio >= FRANTIC_AT) return '😤';
-  if (ratio >= IMPATIENT_AT) return '😕';
-  return null;
-}
 const OPEN_FROM = 6 * 60;
 /** Trần khoảng chờ khách kế tiếp (phút game) khi vừa sang giờ mở — khách đầu ngày không đợi phần dư của đêm. */
 const DAYTIME_FIRST_GAP_CAP = 20;
@@ -73,69 +64,6 @@ const OPEN_UNTIL = 22 * 60;
 /** Tỉ lệ khách muốn mua món đang có trên kệ (còn lại là món ngẫu nhiên, có thể tiệm không bán). */
 const WANTS_STOCKED = 0.8;
 
-type State = 'walkBy' | 'toShop' | 'shopping' | 'toQueue' | 'queued' | 'leaving';
-
-const pick = <T,>(list: T[]) => list[Math.floor(simRng()() * list.length)];
-
-/** Chuyện ở quầy đã chốt: choice là phương án được chọn (0 = phương án đầu). */
-interface Deal { kind: 'none' | 'credit' | 'installment' | 'haggle' | 'change' | 'pricematch'; amount: number; choice: number }
-
-class Customer extends Walker {
-  state: State = 'walkBy';
-  wants: string[] = [];
-  basket: CartItem[] = [];
-  missing = 0;
-  /** Món không mua được và lý do, để khách nhận xét. */
-  missed: { id: string; why: ReviewReason }[] = [];
-  waitedMinutes = 0;
-  exitX: number;
-  /** Quầy đang xếp hàng. */
-  counterKey: string | null = null;
-  /** Khách quen (null = khách vãng lai). */
-  regular: RegularDef | null;
-  patience: number;
-  /** Nhân với độ nhạy giá của món. */
-  sensitivity: number;
-  /** Kẻ trộm: lấy hàng rồi đi thẳng ra cửa, không xếp hàng trả tiền. */
-  thief = false;
-
-  /** Nghề của khách vãng lai (null = dân thường hoặc khách quen). */
-  profession: ProfessionDef | null;
-  /** Người bán rong ghé lấy sỉ: tới quầy đưa đề nghị rồi chờ chủ tiệm trả lời. */
-  wholesale = false;
-  /** Đã đưa đề nghị lấy sỉ, đang đứng chờ. */
-  offered = false;
-  /** Chuyện ở quầy lúc tính tiền (xin ghi sổ, mặc cả, thiếu lẻ): 'waiting' = đang chờ chủ tiệm chọn. */
-  deal?: Deal | 'waiting';
-  /** Khách tới dùng dịch vụ ở quầy (nạp tiền, thu hộ): tiền lời của lượt này. */
-  service?: { def: ServiceDef; amount: number; fee: number };
-
-  constructor(startX: number, regular: RegularDef | null = null, profession: ProfessionDef | null = null) {
-    const look = regular?.look;
-    super(
-      regular ? regular.color : new THREE.Color().setHSL(simRng()(), 0.5, 0.5),
-      look?.hat ? regular!.hatColor : undefined,
-      'customer',
-      look?.archetype ?? profession?.archetype,
-      // Khách quen có diện mạo riêng; khách nghề dùng biến thể màu/đạo cụ nếu nghề đó dùng chung archetype
-      regular?.look
-        ? { topColor: regular.color, hairStyle: look!.hairStyle, hairColor: look!.hair, props: look!.props, hasGlasses: look!.glasses }
-        : profession ? PROFESSION_LOOK[profession.id] : undefined,
-    );
-    this.regular = regular;
-    this.profession = profession;
-    this.patience = regular?.patienceMinutes ?? PATIENCE_MINUTES * (profession?.patience ?? 1);
-    this.sensitivity = regular?.priceSensitivity ?? profession?.sensitivity ?? 1;
-    this.exitX = -startX;
-    this.mesh.position.set(startX, 0, SIDEWALK_Z + (simRng()() - 0.5) * 1.2);
-  }
-
-  pushCart() {
-    const cart = createCart();
-    cart.position.z = 0.55;
-    this.mesh.add(cart);
-  }
-}
 
 /** Sinh khách đi ngang, quyết định vào tiệm, mua hàng, xếp hàng ở quầy ngắn nhất và trả tiền. */
 export class CustomerManager {

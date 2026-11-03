@@ -4,6 +4,8 @@ interface Entry { light: THREE.PointLight; pos: THREE.Vector3; d: number }
 
 const entries: Entry[] = [];
 const pool: THREE.PointLight[] = [];
+/** Mảng dùng lại cho top-K mỗi khung — không cấp phát (xem applyLightBudget). */
+const topScratch: Entry[] = [];
 /** Đèn ở mép quỹ mờ dần trong khoảng này (mét) trước khi nhường chỗ — không bật/tắt phụt. */
 const FADE = 6;
 
@@ -34,19 +36,48 @@ export function initLightPool(scene: THREE.Scene, size: number) {
   }
 }
 
-/** Đưa bể đèn tới các nguồn sáng đang sáng gần `focus` nhất. */
+/**
+ * Chọn `k` đèn gần `focus` nhất (k = pool.length, nhỏ: 3 ở Thấp, 8 ở Cao). Mỗi frame không cần
+ * sort TOÀN BỘ danh sách `entries` (phình theo số toà nhà cuối game) — chỉ cần k phần tử gần nhất,
+ * nên dùng lượt chọn top-K một lần (O(n·k)) giữ vào `topScratch` tái dùng. Kết quả (tập k đèn gần
+ * nhất + `cut` ở mốc đèn bị loại) GIỐNG HỆT sort đầy đủ nên không đổi hành vi, không đụng số đèn
+ * trong bể (pool) hay shader.
+ */
 export function applyLightBudget(focus: THREE.Vector3) {
+  const k = pool.length;
   for (const e of entries) e.d = e.light.intensity > 0 ? e.pos.distanceTo(focus) : Infinity;
-  entries.sort((a, b) => a.d - b.d);
-  // Khoảng cách của đèn đầu tiên bị loại: đèn càng gần mốc này càng mờ, lúc đổi chỗ đã tắt hẳn
-  const cut = entries[pool.length]?.d ?? Infinity;
-  for (let i = 0; i < pool.length; i++) {
+  // Top-K: giữ k đèn gần nhất (tăng dần) vào topScratch; `cut` = khoảng cách của đèn bị loại gần nhất
+  // (= đèn thứ k+1 tổng thể), Infinity khi không có đèn nào bị loại. Đúng như `entries[k].d` cũ.
+  topScratch.length = 0;
+  let cut = Infinity;
+  for (const e of entries) {
+    if (topScratch.length < k) {
+      topScratch.push(e);
+      for (let i = topScratch.length - 1; i > 0 && topScratch[i - 1].d > topScratch[i].d; i--) {
+        [topScratch[i - 1], topScratch[i]] = [topScratch[i], topScratch[i - 1]];
+      }
+      continue;
+    }
+    if (e.d < topScratch[k - 1].d) {
+      // Đẩy phần tử xa nhất trong top-K ra làm "đèn bị loại", nhét e vào đúng thứ tự.
+      const evicted = topScratch[k - 1].d;
+      if (evicted < cut) cut = evicted;
+      topScratch[k - 1] = e;
+      for (let i = k - 1; i > 0 && topScratch[i - 1].d > topScratch[i].d; i--) {
+        [topScratch[i - 1], topScratch[i]] = [topScratch[i], topScratch[i - 1]];
+      }
+    } else if (e.d < cut) {
+      cut = e.d;
+    }
+  }
+  for (let i = 0; i < k; i++) {
     const p = pool[i];
-    const e = entries[i];
+    const e = topScratch[i];
     if (!e || e.d === Infinity) {
       p.intensity = 0;
       continue;
     }
+    // Khoảng cách của đèn đầu tiên bị loại: đèn càng gần mốc này càng mờ, lúc đổi chỗ đã tắt hẳn
     const fade = Math.min(1, (cut - e.d) / FADE);
     p.position.copy(e.pos);
     p.color.copy(e.light.color);

@@ -1,4 +1,5 @@
 import { lazyGltfLoader } from './gltfLoader';
+import { lampLevelAt } from '../render/lampLevel';
 import * as THREE from 'three';
 import { registerLight } from '../render/lightBudget';
 
@@ -17,8 +18,7 @@ export const GLOW_NODE = 'den_long_glow';
 
 /** Độ sáng đèn theo giờ game: 0 = trưa, 1 = chập tối→đêm. Cùng công thức đèn đường/inhouse (17h–5h30). */
 export function lanternGlow(minutes: number): number {
-  const hour = (((minutes / 60) % 24) + 24) % 24;
-  return Math.min(1, Math.max(0, Math.max(hour - 17, 5.5 - hour)));
+  return lampLevelAt(minutes);
 }
 
 /** Rà vị trí đặt: ngoài thế giới / giữa lòng đường / đè mặt tiền / chắn trước cửa là bug — soi bằng test. */

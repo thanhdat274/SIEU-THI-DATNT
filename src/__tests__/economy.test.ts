@@ -91,6 +91,37 @@ describe('pickPayment — khách chọn hình thức thanh toán', () => {
   });
 });
 
+describe('GĐ1039 — pickPayment: rơi mặc định + biên bigBill', () => {
+  // level 15 → pool cash(1) bank(0.35) wallet(0.3) card(0.2), tổng 1.85
+  it('roll KHÔNG hết tổng trọng số → rơi về tiền mặt (fallback 45)', () => {
+    // rng 1.2 → roll = 1.2×1.85 = 2.22, trừ 1 / 0.35 / 0.3 / 0.2 vẫn dư 0.37 → trả 'cash'
+    expect(pickPayment(10000, 15, () => 1.2)).toBe('cash');
+  });
+  it('rng cận 1 → rơi vào hình thức CUỐI pool (card)', () => {
+    // roll 0.99×1.85 = 1.8315: trừ 1→0.8315, 0.35→0.4815, 0.3→0.1815, 0.2→−0.0185 → 'card'
+    expect(pickPayment(10000, 15, () => 0.99)).toBe('card');
+  });
+  it('rng thấp → rơi vào cash (trọng đầu)', () => {
+    expect(pickPayment(10000, 15, () => 0.05)).toBe('cash'); // 0.0925 − 1 < 0
+  });
+  it('đơn lớn: cash giảm thế nên rng trung bình rơi bank (giàu trọng nhất)', () => {
+    // total 150000 → bigBill 2.2: cash 1/2.2=0.4545, bank 0.77, wallet 0.66, card 0.44 → tổng 2.3245
+    // rng 0.5 → roll 1.1623: trừ 0.4545→0.7078, 0.77→−0.062 → 'bank'
+    expect(pickPayment(150000, 15, () => 0.5)).toBe('bank');
+  });
+  it('bigBill theo bậc: cùng rng, đơn lớn rơi hình thức không-tiền-mặt sớm hơn', () => {
+    // total 30000 → bigBill 1.2: cash 0.8333, bank 0.42, wallet 0.36, card 0.24 (tổng 1.8533)
+    // rng 0.2 → roll 0.3707: trừ 0.8333→âm → rơi cash (tiệm ít tiền mặt chưa bị cày thế)
+    expect(pickPayment(30000, 15, () => 0.2)).toBe('cash');
+    // total 150000 → bigBill 2.2: cash 0.4545, bank 0.77, wallet 0.66, card 0.44 (tổng 2.3245)
+    // rng 0.2 → roll 0.4649: trừ 0.4545→0.0104, 0.77→âm → rơi bank (đơn lớn đã nghiêng no-cash)
+    expect(pickPayment(150000, 15, () => 0.2)).toBe('bank');
+  });
+  it('cấp thấp chưa mở ví/thẻ → pool chỉ cash+bank (fallback không lệch pool)', () => {
+    expect(['cash', 'bank']).toContain(pickPayment(10000, 2, () => 1.2)); // fallback 45 vẫn hợp lệ
+  });
+});
+
 describe('P2 — tiền nhà, giá thị trường, hàng cận hạn, khách quen', () => {
   it('rentOf: tiệm nhỏ nhẹ, lên siêu thị thì đáng kể', () => {
     expect(rentOf(0)).toBe(20000);

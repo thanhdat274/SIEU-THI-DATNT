@@ -29,10 +29,11 @@ vi.mock('dexie', () => {
 
 const ls = new Map<string, string>();
 let lsThrows = false;
+let removeThrows = false; // GĐ1060: localStorage.removeItem ném lỗi (trình duyệt chặn) — nhánh catch clearLocalStorage
 (globalThis as { localStorage?: unknown }).localStorage = {
   getItem: (k: string) => ls.get(k) ?? null,
   setItem: (k: string, v: string) => { if (lsThrows) throw new Error('QuotaExceeded'); ls.set(k, v); },
-  removeItem: (k: string) => { ls.delete(k); },
+  removeItem: (k: string) => { if (removeThrows) throw new Error('localStorage bị chặn'); ls.delete(k); },
 };
 
 type SaveMod = typeof import('../core/save');
@@ -52,6 +53,7 @@ beforeEach(async () => {
   ls.clear();
   idbFails = false;
   lsThrows = false;
+  removeThrows = false;
   vi.resetModules();
   vi.spyOn(console, 'warn').mockImplementation((...a: unknown[]) => { if (process.env.SHOWWARN) process.stderr.write(`WARN ${String(a[1] ?? a[0])}\n`); });
   store = await import('../core/store');
@@ -64,6 +66,16 @@ describe('initSaves — chọn bản lưu khi mở game', () => {
     await save.initSaves();
     expect(save.readLocalSave()).toBeNull();
     expect(save.loadGame()).toBe(false);
+  });
+
+  it('localStorage.removeItem bị chặn (trình duyệt chặn lưu trữ) vẫn nạp sạch, không làm hỏng nạp bản lưu — nhánh catch clearLocalStorage (GĐ1060)', async () => {
+    idb.set('main', row('main', 100, { day: 12, money: 3_456_000, level: 7 }));
+    // Bản localStorage cũ mới hơn → initSaves sẽ đổi main + gọi clearLocalStorage → removeItem ném lỗi
+    ls.set('taphoa3d-emergency', JSON.stringify(row('taphoa3d-emergency', 200, { day: 13, money: 4_000_000 })));
+    removeThrows = true;
+    await expect(save.initSaves()).resolves.toBeUndefined(); // catch nuốt lỗi, không vỡ
+    // Vẫn nạp được đúng bản mới nhất từ localStorage dù không xoá được bản cũ
+    expect(save.readLocalSave()?.data.day).toBe(13);
   });
 
   it('bản chính hợp lệ: nạp được đúng tiền/ngày', async () => {

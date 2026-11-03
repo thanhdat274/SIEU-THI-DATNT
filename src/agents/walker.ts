@@ -88,6 +88,27 @@ const lodScratch: Walker[] = [];
 let lodFrame = 0;
 
 /**
+ * Quickselect (Hoare partition) — đưa `k` phần tử nhỏ nhất theo `.lodDist` lên đầu `lodScratch`
+ * (O(n) trung bình). Chỉ cần k phần tử gần nhất đứng ở đầu để vòng `setCulled(i >= cap)` khớp hệt
+ * sort toàn bộ cũ; thứ tự BÊN TRONG top-k không quan trọng. Không cấp phát.
+ */
+function selectNearestByDist(k: number) {
+  let lo = 0, hi = lodScratch.length - 1;
+  const target = k - 1;
+  while (lo < hi) {
+    const pivotD = lodScratch[(lo + hi) >> 1].lodDist;
+    let i = lo - 1, j = hi + 1;
+    while (true) {
+      do { i++; } while (lodScratch[i].lodDist < pivotD);
+      do { j--; } while (lodScratch[j].lodDist > pivotD);
+      if (i >= j) break;
+      const t = lodScratch[i]; lodScratch[i] = lodScratch[j]; lodScratch[j] = t;
+    }
+    if (j >= target) hi = j; else lo = j + 1;
+  }
+}
+
+/**
  * Giới hạn đám đông theo mức đồ họa: chỉ vẽ `cap` nhân vật gần `focus` nhất (còn lại vẫn đi,
  * vẫn mua bán — chỉ ẩn hình), và nhân vật xa hơn `animFarDist` m thì cử động thưa để đỡ CPU.
  * Không đụng `mesh.visible` (khách/hàng xóm dùng nó làm trạng thái ra vào) — chỉ ẩn phần thân.
@@ -107,7 +128,7 @@ export function applyCrowdLod(focus: THREE.Vector3, cap: number, animFarDist: nu
     w.animFar = w.lodDist > far2;
     lodScratch.push(w);
   }
-  if (lodScratch.length > cap) lodScratch.sort((a, b) => a.lodDist - b.lodDist);
+  if (lodScratch.length > cap) selectNearestByDist(cap);
   for (let i = 0; i < lodScratch.length; i++) lodScratch[i].setCulled(i >= cap);
 }
 

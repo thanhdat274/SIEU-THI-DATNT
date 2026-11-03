@@ -9,3 +9,4 @@ scan_tmp.cjs
 .claude/
 coverage/
 *.tsbuildinfo
+bash.exe.stackdump

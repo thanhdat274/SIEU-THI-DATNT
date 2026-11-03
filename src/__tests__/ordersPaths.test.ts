@@ -53,6 +53,22 @@ describe('orders: nhận đơn và nấu (GĐ695)', () => {
     expect(st.garden.homegrown.tra).toBe(1);
     expect(out.join(' ')).toContain('Đang nấu Trà gừng nóng');
   });
+
+  // GĐ1050 — orders.ts nhánh CHẶN đơn giản: acceptOrder chưa có đơn (dòng 95 `if (!s.order) return;`)
+  // và startCook món KHÔNG TỒN TẠI (dòng 102 `if (!r) return false`) — đỡ truy cập `s.order` rỗng / nấu món lạ.
+  it('GĐ1050: acceptOrder khi chưa có đơn → không làm gì, không báo', () => {
+    useGame.setState({ order: null });
+    const out = msgs();
+    useGame.getState().acceptOrder();
+    expect(useGame.getState().order).toBeNull();
+    expect(out).toEqual([]);
+  });
+
+  it('GĐ1050: startCook món không tồn tại → trả false, không báo', () => {
+    const st = useGame.getState();
+    expect(st.startCook('khong-co')).toBe(false);
+    expect(st.cookJobs).toHaveLength(0);
+  });
 });
 
 describe('orders: đơn điện thoại — huỷ vì trễ khi đang mang đi (GĐ695)', () => {

@@ -1,57 +1,39 @@
 import { simRng } from './rand';
 export { theftFactor, spoilFactor } from '../data/biz';
 import {
-  ACHIEVEMENTS, adById, activeAds, BREAKFAST, closeMonth, closeWeek, COUNTER_RETAILIATE, COUNTER_RETAILIATE_BUFF, COUNTER_STREAK_MAX,
-  counterById, emptyMonth, emptyWeek, HOME_ITEMS, HUI_COLLAPSE, HUI_OPTIONS, HUI_UNLOCK, newRival, RIVAL_BUY_DAYS,
-  RIVAL_PERSONALITIES, RIVAL_SHOP_OFFER_DAYS, RIVAL_SHOP_PRICE, rivalNightAI,
-  LOAN_DAILY_RATE, LOAN_DAYS, LOAN_UNLOCK, loanInterest, LOAN_OPTIONS_MIN, loanOptions, loanTopUps, petActive, petDef, PETS, PRICE_WAR_MIN_SALES, RIVAL_BEAT_REWARD,
-  RIVAL_BEAT_XP, RIVAL_BOSS_GEN, RIVAL_COOLDOWN, RIVAL_SHOPS, RIVAL_START, RIVAL_TREND_DAYS, RIVAL_UNLOCK, rivalNightly, rivalTier, STORIES, SURPRISE_CHANCE, SURPRISES,
-  VEHICLES, WEEK_DAYS, type AchievementCtx, type BizState, type CounterTactic, type PetKind, type Vehicle,
+  adById, activeAds, BREAKFAST, closeMonth, closeWeek, COUNTER_RETAILIATE, COUNTER_RETAILIATE_BUFF, COUNTER_STREAK_MAX, counterById, emptyMonth, emptyWeek, HUI_COLLAPSE, newRival, RIVAL_BUY_DAYS, RIVAL_PERSONALITIES, RIVAL_SHOP_OFFER_DAYS, RIVAL_SHOP_PRICE, rivalNightAI, loanInterest, petActive, PETS, PRICE_WAR_MIN_SALES, RIVAL_BEAT_REWARD, RIVAL_BEAT_XP, RIVAL_BOSS_GEN, RIVAL_COOLDOWN, RIVAL_SHOPS, RIVAL_START, RIVAL_TREND_DAYS, RIVAL_UNLOCK, rivalNightly, rivalTier, VEHICLES, WEEK_DAYS, type BizState, type CounterTactic, type Vehicle,
 } from '../data/biz';
 import { CONVENIENCE, newBranch, shelfTotal } from '../data/branches';
-import { chapterById, nextChapter, STORY_RIVAL_NAME } from '../data/chapters';
 import { monthOf, upcomingFestival, describeDate } from '../data/calendar';
 import { closeYear, emptyYear, yearOf } from '../data/yearReport';
 import { almanacMilestoneReward, newlyReachedAlmanac } from '../data/seasonAlmanac';
 import { prepBonus, prepReadiness } from '../data/festivalPrep';
-import { nearestLife } from '../data/freshness';
-import { isCookStation } from '../data/furniture';
 import { COOKED_PRODUCT_IDS } from '../data/recipes';
 import { formatMoney, productById } from '../data/products';
-import { REGULARS } from '../data/regulars';
 import { summarizeReviews } from '../data/reviews';
-import { reputationOf } from '../data/reputation';
-import { serviceById } from '../data/services';
 import { monthlyRelRebate, relTier } from '../data/supplierRel';
 import { supplierById } from '../data/suppliers';
-import { upgradeById, type UpgradeId } from '../data/upgrades';
 import { isFairOpen, makeFairOffer } from '../data/fairmerchant';
 import { lifetimeRegularVisits, monthlyTriAn, EMOTIONAL_FRIENDSHIP } from '../data/regularTrust';
 import { hiepLucPayoff, hiepLucBonus, hiepLucEligible, HIEPLUC_MIN, HIEPLUC_COC } from '../data/hiepLuc';
 import { seasonEvent, seasonObjective, seasonEventName, SEASON_REWARD_PER_STAR, seasonOf, type SeasonKey } from '../data/seasonEvent';
 import { CLEAN_TIERS, cleanBonus, cleanDayMet } from '../data/cleanOps';
 import { arcById, arcReward } from '../data/regularArc';
-import {
-  arcGoodCount, arcSceneAt, arcReward as surpriseArcReward, findSurprise,
-  sceneFor, surpriseArcById, SURPRISE_ARCS, type SurpriseArcState,
-} from '../data/surpriseArcs';
+
 import { storageCapacity, storageUsed } from './gameTypes';
 import { useGame, type DayStats, type GameState } from './store';
 import { copyStock, putStock, takeStock } from './stock';
-import { playSfx } from './audio';
 
+export { maybeSurprise, chooseSurprise, storyOnVisit, closeStory, checkChapters, closeChapter, REGULAR_NAMES } from './bizStory';
+import { REGULAR_NAMES } from './bizStory';
+import { pay, buyPet, feedPet, buyUpgrade, buyHomeItem, buyService, earnService } from './bizPurchases';
+export { buyPet, feedPet, buyUpgrade, buyHomeItem, buyService, earnService } from './bizPurchases';
+import { takeLoan, repayLoan, joinHui } from './bizLoan';
+export { takeLoan, repayLoan, joinHui } from './bizLoan';
+import { achievementCtx, checkAchievements, stockReminders } from './bizAchieve';
+export { achievementCtx, checkAchievements, stockReminders } from './bizAchieve';
 const S = () => useGame.getState();
 const patch = (b: Partial<BizState>) => useGame.setState({ biz: { ...S().biz, ...b } });
-/** Trả tiền nếu đủ; không đủ thì báo và trả false. */
-function pay(amount: number, what: string) {
-  const s = S();
-  if (s.money < amount) {
-    s.notify(`Không đủ tiền ${what} (cần ${formatMoney(amount)})`);
-    return false;
-  }
-  useGame.setState({ money: s.money - amount, stats: { ...s.stats, spent: s.stats.spent + amount } });
-  return true;
-}
 
 // ───── Quảng cáo, tích điểm ─────
 
@@ -129,373 +111,11 @@ export function buyRivalShop() {
   }
 }
 
-// ───── Vay vốn, hụi ─────
-
-/** `emergency`: vay gấp để nhập hàng giao đơn, được vay gói nhỏ nhất kể cả khi chưa tới cấp mở vay. */
-export function takeLoan(amount: number, emergency = false) {
-  const s = S();
-  // GĐ852: quỹ còn âm thì được vay gấp thêm (gộp vào gốc, trần 3 gói) — tránh bế tắc không nhập nổi hàng
-  const old = s.biz.loan;
-  const canEmergency = emergency && amount === LOAN_OPTIONS_MIN && (!old || (s.money < 0 && old.principal < 3 * LOAN_OPTIONS_MIN));
-  if (s.level < LOAN_UNLOCK && !canEmergency) return;
-  if (s.level < LOAN_UNLOCK) {
-    patch({ loan: old ? { ...old, principal: old.principal + amount, dueDay: s.day + LOAN_DAYS } : { principal: amount, takenDay: s.day, dueDay: s.day + LOAN_DAYS, interestPaid: 0 } });
-    useGame.setState({ money: S().money + amount });
-    s.notify(`🏦 Vay gấp ${formatMoney(amount)} để nhập hàng, lãi ${(LOAN_DAILY_RATE * 100).toFixed(1)}%/ngày, hạn trả ngày ${s.day + LOAN_DAYS}`);
-    return;
-  }
-  const loan = s.biz.loan;
-  if (loan) {
-    // Vay thêm: cộng vào gốc, hạn trả tính lại từ hôm nay
-    if (!loanTopUps(s.level, loan.principal).includes(amount)) return;
-    patch({ loan: { ...loan, principal: loan.principal + amount, dueDay: s.day + LOAN_DAYS } });
-    useGame.setState({ money: S().money + amount });
-    s.notify(`🏦 Vay thêm ${formatMoney(amount)}, nợ gốc ${formatMoney(loan.principal + amount)}, hạn trả dời tới ngày ${s.day + LOAN_DAYS}`);
-    return;
-  }
-  if (!loanOptions(s.level).includes(amount)) return;
-  patch({ loan: { principal: amount, takenDay: s.day, dueDay: s.day + LOAN_DAYS, interestPaid: 0 } });
-  useGame.setState({ money: S().money + amount });
-  s.notify(`🏦 Vay ${formatMoney(amount)}, lãi ${(LOAN_DAILY_RATE * 100).toFixed(1)}%/ngày, hạn trả ngày ${s.day + LOAN_DAYS}`);
-}
-
-export function repayLoan(amount?: number) {
-  const s = S();
-  const loan = s.biz.loan;
-  if (!loan) return;
-  const n = Math.min(amount ?? loan.principal, loan.principal, s.money);
-  if (n <= 0) return s.notify('Không có tiền để trả');
-  useGame.setState({ money: s.money - n });
-  patch({ loan: loan.principal - n > 0 ? { ...loan, principal: loan.principal - n } : null });
-  s.notify(loan.principal - n > 0 ? `🏦 Trả bớt ${formatMoney(n)}, còn nợ ${formatMoney(loan.principal - n)}` : '🏦 Đã trả hết nợ ngân hàng!');
-}
-
-export function joinHui(option: number) {
-  const s = S();
-  const o = HUI_OPTIONS[option];
-  if (!o || s.level < HUI_UNLOCK || s.biz.hui) return;
-  // Hốt hụi vào một ngày ngẫu nhiên trong vòng (ngày 3 tới cuối vòng)
-  const turn = s.day + 2 + Math.floor(simRng()() * (o.members - 2));
-  patch({ hui: { ...o, startDay: s.day, turnDay: turn, received: false, paidDays: 0 } });
-  s.notify(`🤝 Vào hụi ${formatMoney(o.daily)}/ngày, ${o.members} chân. Ngày ${turn} tới lượt bạn hốt ${formatMoney(o.daily * o.members)}`);
-}
-
-// ───── Thú cưng ─────
-
-export function buyPet(kind: PetKind) {
-  const s = S();
-  const def = petDef(kind);
-  if (s.biz.pets[kind] || s.level < def.unlock || !pay(def.price, `nuôi ${def.name}`)) return;
-  patch({ pets: { ...s.biz.pets, [kind]: { fedDay: s.day } } });
-  s.notify(`${def.icon} ${def.name} về tiệm rồi! Nhớ cho ăn mỗi ngày (${productById(def.food).name} trong kho)`);
-  checkAchievements();
-}
-
-/** Cho ăn bằng 1 gói thức ăn trong kho (không có thì mua lẻ 2 lần giá). */
-export function feedPet(kind: PetKind) {
-  const s = S();
-  const pet = s.biz.pets[kind];
-  if (!pet) return;
-  if (pet.fedDay === s.day) return s.notify('Hôm nay cho ăn rồi');
-  const def = petDef(kind);
-  if ((s.storage[def.food] ?? 0) > 0) {
-    s.consumeStock(def.food, 1);
-  } else if (!pay(productById(def.food).buy * 2, 'mua thức ăn lẻ')) return;
-  patch({ pets: { ...S().biz.pets, [kind]: { fedDay: s.day } } });
-  s.notify(`${def.icon} ${def.name} ăn no, vẫy đuôi rối rít`);
-}
-
-/** Mua thiết bị một lần (camera an ninh, máy POS) — dùng vĩnh viễn sau khi lắp. */
-export function buyUpgrade(id: UpgradeId) {
-  const s = S();
-  const def = upgradeById(id);
-  if (!def || s.biz.upgrades?.includes(id)) return;
-  if (s.level < def.unlock) return s.notify(`Cần cấp ${def.unlock} để mua ${def.name}`);
-  if (!pay(def.price, `lắp ${def.name}`)) return;
-  patch({ upgrades: [...(S().biz.upgrades ?? []), id] });
-  s.notify(`${def.icon} Đã lắp ${def.name}! ${def.desc}`);
-}
-
-
-// ───── Thành tựu ─────
-
-export function achievementCtx(s: GameState): AchievementCtx {
-  return {
-    totals: s.totals, level: s.level, ordersDone: s.ordersDone, phoneOrdersDone: s.phoneOrdersDone,
-    closeFriends: Object.values(s.regulars).filter((r) => r.friendship >= 40).length,
-    rivalsBeaten: s.biz.rivalsBeaten, petCount: Object.keys(s.biz.pets).length, homeDecor: s.biz.home.length,
-    vehicle: s.biz.vehicle, perfectDays: s.biz.perfectDays,
-    cookedSold: s.totals.cookedSold,
-    cookedStations: new Set(s.furniture.map((f) => f.type).filter(isCookStation)).size,
-    qualityStars: reputationOf(s.repLog).factors.quality,
-    impulseSold: s.totals.impulseSold,
-    cookOrdersDone: s.totals.cookOrdersDone,
-    counterKills: s.biz.counterKills,
-    quanTier: s.biz.quanNuoc?.tier ?? 0,
-    xoiBig: !!s.biz.tiemXoi?.big,
-    xoiDine: s.biz.tiemXoi?.dineTotal ?? 0,
-  };
-}
-
-export function checkAchievements() {
-  const s = S();
-  const ctx = achievementCtx(s);
-  const fresh = ACHIEVEMENTS.filter((a) => !s.biz.achievements.includes(a.id) && a.done(ctx));
-  if (!fresh.length) return;
-  const reward = fresh.reduce((n, a) => n + a.reward, 0);
-  patch({ achievements: [...s.biz.achievements, ...fresh.map((a) => a.id)] });
-  useGame.setState({ money: S().money + reward });
-  for (const a of fresh) s.notify(`🏆 Thành tựu: ${a.icon} ${a.name} · +${formatMoney(a.reward)}`);
-  if (fresh.length) playSfx('achieve');
-}
-
-// ───── Sự kiện bất ngờ ─────
-
-/**
- * Gọi mỗi khi giờ chạy: mỗi ngày tối đa một sự kiện, vào giờ ngẫu nhiên khi tiệm mở.
- * GĐ164: arc sự kiện đang dở thì KHÔNG quay pool — phát cảnh hôm nay ở giờ tất định
- * (10h–11h30, arcSceneAt), cảnh giữ tới 20h (không tự mất 45 phút); trúng id-có-arc
- * trong pool thì mở arc thay vì phát một-phát; arc quá hạn thì khép nhẹ không phạt.
- */
-export function maybeSurprise(elapsedMinutes: number) {
-  const s = S();
-  const b = s.biz;
-  if (b.surprise && s.minutes > b.surprise.expiresAt) return patch({ surprise: null });
-  // Arc quá hạn (hôm qua là ngày cuối mà vẫn để dở) → khép nhẹ, kể cả khi tiệm chưa mở cửa.
-  if (b.surpriseArc && !b.surpriseArc.done && s.day > b.surpriseArc.expiresDay) {
-    const arc = surpriseArcById(b.surpriseArc.arcId);
-    patch({ surpriseArc: { ...b.surpriseArc, done: true } });
-    s.notify(`📖 Chuyện ${arc?.title ?? 'hẻm'} để dở — không sao, hẻm nào chẳng có chuyện, dịp khác kể tiếp.`);
-    return;
-  }
-  if (b.surpriseDay === s.day || !s.shopOpen || s.minutes < 9 * 60 || s.minutes > 20 * 60) return;
-  // Arc đang dở: hôm nay thuộc arc → phát cảnh hôm nay (một cảnh/ngày, tái dùng surpriseDay).
-  const arcSt = b.surpriseArc && !b.surpriseArc.done ? b.surpriseArc : null;
-  if (arcSt) {
-    const arc = surpriseArcById(arcSt.arcId);
-    const scene = arc ? sceneFor(arc, arcSt) : null;
-    if (arc && scene && s.minutes >= arcSceneAt(s.weatherSeed, s.day)) {
-      // Cảnh arc giữ tới 20h — lỡ hôm nay vẫn quay lại ngày mai, tới khi hết hạn đợt.
-      patch({ surprise: { id: arc.id, expiresAt: 20 * 60 }, surpriseDay: s.day });
-      s.notify(`📖 ${arc.icon} ${scene.teaser ?? arc.title}`);
-    }
-    return; // đang có arc → không quay pool hôm nay
-  }
-  // Cơ hội tỉ lệ với số phút game vừa trôi: cộng dồn cả khung 9h–20h ra khoảng SURPRISE_CHANCE mỗi ngày
-  if (simRng()() > (SURPRISE_CHANCE * elapsedMinutes) / (11 * 60)) return;
-  // GĐ164: pool = def một-phát + arc CHƯA kể (arc thay def cũ cùng band mật độ; kể xong/khép sớm
-  // đều vào surpriseArcsTold → không lặp). Arc đang chiếm slot cũng đã nằm trong told.
-  const told = b.surpriseArcsTold ?? [];
-  const pool = [
-    ...SURPRISES.filter((e) => e.unlock <= s.level).map((e) => ({ id: e.id, unlock: e.unlock })),
-    ...SURPRISE_ARCS.filter((a) => a.unlock <= s.level && !told.includes(a.id)).map((a) => ({ id: a.id, unlock: a.unlock })),
-  ];
-  const pick = pool[Math.floor(simRng()() * pool.length)];
-  if (!pick) return;
-  // Trúng arc → mở arc (2–3 ngày) thay cho một-phát.
-  const arcDef = surpriseArcById(pick.id);
-  if (arcDef) {
-    const opened: SurpriseArcState = {
-      arcId: arcDef.id, step: 0, choices: [], startedDay: s.day, expiresDay: s.day + arcDef.days - 1,
-    };
-    patch({
-      surprise: { id: arcDef.id, expiresAt: s.minutes + 45 },
-      surpriseDay: s.day,
-      surpriseArc: opened,
-      surpriseArcsTold: [...told, arcDef.id],
-    });
-    s.notify(`📖 ${arcDef.icon} ${arcDef.title}`);
-    return;
-  }
-  const ev = SURPRISES.find((e) => e.id === pick.id)!;
-  patch({ surprise: { id: ev.id, expiresAt: s.minutes + 45 }, surpriseDay: s.day });
-  s.notify(`${ev.icon} ${ev.title}`);
-}
-
-export function chooseSurprise(index: number) {
-  const s = S();
-  const active = s.biz.surprise;
-  if (!active) return;
-  // GĐ164: tra arc TRƯỚC rồi mới tới SURPRISES; cảnh arc resolve theo lựa chọn đã ghi.
-  const view = findSurprise(active.id, s.biz.surpriseArc?.choices);
-  const c = view?.choices[index];
-  if (!view || !c) return;
-  // Lựa chọn cần hàng kho mà kho không đủ: chặn (UI đã xám lựa chọn), surprise giữ nguyên.
-  if (c.needStock && (s.storage[c.needStock.productId] ?? 0) < c.needStock.qty) {
-    return s.notify(`Kho hết ${productById(c.needStock.productId).name} rồi`);
-  }
-  patch({ surprise: null });
-  if (c.money) useGame.setState({ money: S().money + c.money, ...(c.money < 0 ? { stats: { ...S().stats, spent: S().stats.spent - c.money } } : {}) });
-  if (c.minutes) useGame.setState({ minutes: S().minutes + c.minutes });
-  if (c.xp) S().addXp(c.xp);
-  if (c.rating) S().addReview(c.rating);
-  if (c.friendship) S().adjustFriendship(c.friendship.id, c.friendship.delta);
-  const friendNote = (() => {
-    if (!c.friendship) return '';
-    const name = REGULAR_NAMES[c.friendship.id];
-    const sign = c.friendship.delta >= 0 ? '+' : '−';
-    return `・💛 ${sign}${c.friendship.delta}${name ? ` ${name}` : ''}`;
-  })();
-  // GĐ164: nhánh arc — ghi lựa chọn, mở cảnh kế; cảnh cuối (hoặc nhánh khép sớm) thì done.
-  if (view.kind === 'arc') {
-    const { arc, scene } = view;
-    const prev = S().biz.surpriseArc;
-    if (!prev || prev.arcId !== arc.id) return;
-    const choices = [...prev.choices, index];
-    const nextIdx = scene.nextByChoice ? scene.nextByChoice[index] : undefined;
-    const finished = nextIdx === undefined || nextIdx < 0; // hết cảnh hoặc "−1" = khép sớm
-    let reward: ReturnType<typeof surpriseArcReward> | null = null;
-    if (scene.reward) {
-      const good = arcGoodCount(arc, { ...prev, choices });
-      reward = surpriseArcReward(scene, good, s.level);
-      if (reward.rating) S().addReview(reward.rating);
-      if (reward.xp) S().addXp(reward.xp);
-    }
-    const nextArc: SurpriseArcState = { ...prev, choices, step: prev.step + 1, ...(finished || scene.reward ? { done: true } : {}) };
-    patch({ surpriseArc: nextArc });
-    if (reward) {
-      if (reward.money) useGame.setState({ money: S().money + reward.money });
-      s.notify(`📖 ${arc.title} khép lại · ${c.result} · +${formatMoney(reward.money)}${friendNote}`);
-    } else {
-      s.notify(`${view.icon} ${c.result}${c.money ? ` (${c.money > 0 ? '+' : ''}${formatMoney(c.money)})` : ''}${friendNote}`);
-    }
-    return;
-  }
-  s.notify(`${view.icon} ${c.result}${c.money ? ` (${c.money > 0 ? '+' : ''}${formatMoney(c.money)})` : ''}${friendNote}`);
-}
-
-// ───── Chuyện khách quen ─────
-
-/** Khách quen vừa trả tiền: có chương truyện mới mở theo độ thân thì hiện lên. */
-export function storyOnVisit(regularId: string) {
-  const s = S();
-  const chapters = STORIES[regularId];
-  if (!chapters || s.biz.storyPending) return;
-  const seen = s.biz.story[regularId] ?? 0;
-  const next = chapters[seen];
-  if (next && (s.regulars[regularId]?.friendship ?? 0) >= next.at) patch({ storyPending: { regular: regularId, chapter: seen } });
-}
-
-export function closeStory() {
-  const s = S();
-  const p = s.biz.storyPending;
-  if (!p) return;
-  const ch = STORIES[p.regular]?.[p.chapter];
-  patch({ storyPending: null, story: { ...s.biz.story, [p.regular]: p.chapter + 1 } });
-  if (ch?.reward?.money) useGame.setState({ money: S().money + ch.reward.money });
-  if (ch?.reward?.xp) S().addXp(ch.reward.xp);
-}
-
-// ───── Cốt truyện theo chương ─────
-
-/** Có chương mới đủ điều kiện thì xếp chờ hiện hội thoại (gọi thường xuyên, rẻ). */
-export function checkChapters() {
-  const s = S();
-  if (s.biz.chapterPending || s.biz.storyPending || s.panel) return;
-  // Mỗi ngày tối đa một chương: lên cấp nhanh không dồn mấy hội thoại liên tiếp
-  if (s.biz.chapterDay === s.day) return;
-  const ch = nextChapter(s.biz.chapters, {
-    day: s.day, level: s.level, customers: s.totals.customers, staffCount: s.staff.length, shopTier: s.shopTier,
-    hasRival: !!s.biz.rival, rivalsBeaten: s.biz.rivalsBeaten,
-  });
-  if (ch) patch({ chapterPending: ch.id });
-}
-
-/** Đọc xong hội thoại: ghi đã xem, trao thưởng, chạy hiệu ứng của chương. */
-export function closeChapter() {
-  const s = S();
-  const ch = s.biz.chapterPending ? chapterById(s.biz.chapterPending) : undefined;
-  if (!ch) return patch({ chapterPending: null });
-  const b: Partial<BizState> = { chapterPending: null, chapters: [...s.biz.chapters, ch.id], chapterDay: s.day };
-  if (ch.effect === 'openRival' && !s.biz.rival) {
-    b.rival = { ...newRival(STORY_RIVAL_NAME, RIVAL_START, s.day), saleUntil: s.day + 2 };
-  }
-  patch(b);
-  if (ch.reward?.money) useGame.setState({ money: S().money + ch.reward.money });
-  if (ch.reward?.xp) S().addXp(ch.reward.xp);
-  if (ch.effect === 'openRival') s.notify(`⚔️ ${STORY_RIVAL_NAME} khai trương, giảm giá 2 ngày đầu. Xem sức mạnh của họ ở Kinh doanh`);
-}
-
-// ───── Nhắc hàng sắp hết, sắp hỏng ─────
-
-/** Món trên kệ còn ít hơn chừng này (cả kệ lẫn kho) thì nhắc nhập. */
-const LOW_STOCK = 4;
-let remindedDay = -1;
-const reminded = new Set<string>();
-
-/** Nhắc mỗi món một lần mỗi ngày: hàng đang bán sắp hết (kho cũng hết), hàng còn dưới 1 ngày hạn. */
-export function stockReminders() {
-  const s = S();
-  if (remindedDay !== s.day) {
-    remindedDay = s.day;
-    reminded.clear();
-  }
-  const shelf: Record<string, number> = {};
-  const expiring = new Set<string>();
-  for (const f of s.furniture) {
-    for (const t of f.tiers) {
-      if (!t.productId) continue;
-      shelf[t.productId] = (shelf[t.productId] ?? 0) + t.count;
-      const life = t.count ? nearestLife(t.lots) : null;
-      if (life !== null && life <= 1) expiring.add(t.productId);
-    }
-  }
-  for (const [id, lots] of Object.entries(s.storageLots)) {
-    const life = (s.storage[id] ?? 0) > 0 ? nearestLife(lots) : null;
-    if (life !== null && life <= 1) expiring.add(id);
-  }
-  const low = Object.entries(shelf)
-    .filter(([id, n]) => n + (s.storage[id] ?? 0) < LOW_STOCK && (s.demand[id] ?? 0) > 0 && !reminded.has(`low:${id}`))
-    .map(([id]) => id);
-  const spoil = [...expiring].filter((id) => !reminded.has(`exp:${id}`));
-  for (const id of low) reminded.add(`low:${id}`);
-  for (const id of spoil) reminded.add(`exp:${id}`);
-  const names = (ids: string[]) => ids.slice(0, 4).map((id) => productById(id).name).join(', ') + (ids.length > 4 ? '…' : '');
-  const parts: string[] = [];
-  if (low.length) parts.push(`📉 Sắp hết hàng: ${names(low)} — nhập thêm`);
-  if (spoil.length) parts.push(`⏳ Sắp hỏng (còn dưới 1 ngày): ${names(spoil)} — giảm giá bán bớt`);
-  if (parts.length) s.notify(parts.join(' · '));
-}
 
 export function dismissTutorial() {
   patch({ tutorialOff: true });
 }
 
-// ───── Nhà riêng, bữa sáng, xe ─────
-
-export function buyHomeItem(id: string) {
-  const s = S();
-  const item = HOME_ITEMS.find((h) => h.id === id);
-  if (!item || s.biz.home.includes(id) || s.level < item.unlock || !pay(item.price, `mua ${item.name.toLowerCase()}`)) return;
-  patch({ home: [...s.biz.home, id] });
-  s.notify(`${item.icon} Đã sắm ${item.name} cho nhà: ngủ ngon hơn, sáng đi nhanh hơn ${Math.round(item.rest * 100)}%`);
-  checkAchievements();
-}
-
-// ───── Dịch vụ ở quầy ─────
-
-export function buyService(id: string) {
-  const s = S();
-  const def = serviceById(id);
-  const owned = s.biz.services ?? [];
-  if (!def || owned.includes(id) || s.level < def.unlock || !pay(def.price, def.name.toLowerCase())) return;
-  patch({ services: [...owned, id] });
-  s.notify(`${def.icon} Đã mở dịch vụ ${def.name}: khách dùng dịch vụ hay mua kèm hàng`);
-}
-
-/** Một lượt dịch vụ xong ở quầy: cộng tiền lời vào két, doanh thu hôm nay, và ghi sổ theo dịch vụ
- *  để xem dịch vụ nào đáng (GĐ66). `id` thiếu (đường cũ) thì chỉ cộng tổng, bỏ qua sổ theo dịch vụ. */
-export function earnService(id: string | undefined, fee: number) {
-  const s = S();
-  const nextStats = {
-    ...s.stats, revenue: s.stats.revenue + fee, services: (s.stats.services ?? 0) + fee,
-    ...(id ? { byService: { ...(s.stats.byService ?? {}), [id]: (s.stats.byService?.[id] ?? 0) + fee } } : {}),
-  };
-  const nextBiz = id
-    ? { ...s.biz, serviceLife: { ...(s.biz.serviceLife ?? {}), [id]: (s.biz.serviceLife?.[id] ?? 0) + fee } }
-    : s.biz;
-  useGame.setState({ money: s.money + fee, stats: nextStats, biz: nextBiz });
-}
 
 /** Đầu tháng (ngày 1–2) thương lái bán lô hàng rẻ hơn mua lẻ: nhận lô nguyên tiền,
  *  thêm thẳng vào kho, mỗi tháng một lần (fairTaken). Là hàm độc lập như buyService
@@ -970,4 +590,3 @@ export function bizEndOfDay(s: GameState, stats: DayStats, hiepLucRevenue = 0): 
 
   return { biz: b, money, news, ...(streakXp ? { streakXp } : {}), poachedStaffId };
 }
-export const REGULAR_NAMES = Object.fromEntries(REGULARS.map((r) => [r.id, r.name]));

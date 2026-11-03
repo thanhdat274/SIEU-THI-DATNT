@@ -56,6 +56,14 @@ describe('collectDebtPartial qua store', () => {
     expect(got).toBe(50_000);
     expect(g().debts.ba_nam!.amount).toBe(10_000);
   });
+  it('nợ < 50k (installmentNow sàn 50k > nợ): trả trước vượt nợ → XOÁ sổ nợ luôn (rest ≤ 0)', () => {
+    useGame.setState({ debts: { ba_nam: { amount: 30_000, since: 12 } } });
+    const got = g().collectDebtPartial('ba_nam');
+    expect(got).toBe(50_000);                        // trả 50k (≥ nợ 30k)
+    expect(g().debts.ba_nam).toBeUndefined();        // không còn món nợ nào
+    expect(g().money).toBe(1_000_000 + 50_000);
+    expect(g().stats.repaid).toBe(50_000);
+  });
 });
 
 describe('kèo trả góp qua đường thật (harness counterDeal)', () => {
