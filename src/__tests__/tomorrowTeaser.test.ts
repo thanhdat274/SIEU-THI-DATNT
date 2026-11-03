@@ -1,6 +1,7 @@
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { tomorrowTeaser, type TeaserInput } from '../data/tomorrowTeaser';
 import { REGULARS } from '../data/regulars';
+import { setSurpriseArcs, type SurpriseArcState } from '../data/surpriseArcs';
 
 /**
  * 🔮 "Mai tiệm có gì" (GĐ126): mồi quay lại ngày mai ở tổng kết cuối ngày.
@@ -209,3 +210,53 @@ describe('R7 · GĐ617 tối mai có trận', () => {
     expect(has({ day: d, weather: 'rain', level: QUAN_NUOC_UNLOCK })).toBe(false);
   });
 });
+
+describe('R5 · chuyện sự kiện đang kể dở (GĐ164) — mồi "mai có tiếp"', () => {
+  // Đăng ký một arc thật để surpriseArcById tìm thấy (SURPRISE_ARCS nạp lười, rỗng mặc định).
+  beforeAll(() => {
+    setSurpriseArcs([{
+      id: 'test_arc', baseEventId: 'old_event', title: 'Chuyện con mèo biến mất', icon: '🐈',
+      unlock: 1, days: 3,
+      scenes: [{ id: 's0', text: 'Mở đầu', options: [] }],
+    }]);
+  });
+
+  /** Arc đang chờ cảnh mai: mới ở ngày 2, mai (day 3) còn trong hạn, chưa chốt cảnh 2. */
+  const pendingArc = (): SurpriseArcState =>
+    ({ arcId: 'test_arc', step: 1, choices: [0], startedDay: 2, expiresDay: 4, done: false });
+
+  it('arc còn dở và còn trong hạn → có dòng "Chuyện … còn dở, mai có tiếp"', () => {
+    const rows = tomorrowTeaser(base({ day: 3, surpriseArc: pendingArc() }));
+    const a = row(rows, 'arc');
+    expect(a).toBeTruthy();
+    expect(a!.icon).toBe('📖');
+    expect(a!.text).toBe('Chuyện Chuyện con mèo biến mất còn dở, mai có tiếp');
+    expect(a!.panel).toBe('morning');
+  });
+
+  it('arc đã khép (done) → không mồi', () => {
+    const rows = tomorrowTeaser(base({ day: 3, surpriseArc: { ...pendingArc(), done: true } }));
+    expect(row(rows, 'arc')).toBeUndefined();
+  });
+
+  it('đã chốt đủ cảnh cho tới ngày (hết bước) → không mồi mai', () => {
+    // choices by kịp ngày: day 3 mà đã chốt 2 cảnh → arcScenePending false (2 <= 1 sai)
+    const rows = tomorrowTeaser(base({ day: 3, surpriseArc: { ...pendingArc(), choices: [0, 1], step: 2 } }));
+    expect(row(rows, 'arc')).toBeUndefined();
+  });
+
+  it('quá hạn (expiresDay < ngày mai) → không mồi', () => {
+    const rows = tomorrowTeaser(base({ day: 9, surpriseArc: { ...pendingArc(), expiresDay: 4 } }));
+    expect(row(rows, 'arc')).toBeUndefined();
+  });
+
+  it('id không có def (SURPRISE_ARCS chưa nạp / lạ) → bỏ qua, không mồi', () => {
+    const rows = tomorrowTeaser(base({ day: 3, surpriseArc: { ...pendingArc(), arcId: 'khong_co' } }));
+    expect(row(rows, 'arc')).toBeUndefined();
+  });
+
+  it('không có arcs (save cũ) → không mồi', () => {
+    expect(row(tomorrowTeaser(base({ day: 3 })), 'arc')).toBeUndefined();
+  });
+});
+
