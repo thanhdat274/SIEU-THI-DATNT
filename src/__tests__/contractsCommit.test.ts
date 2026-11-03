@@ -111,4 +111,56 @@ describe('commitContract / releaseContract / deliverContract (orders slice)', ()
     expect(useGame.getState().money - beforeMoney).toBe(pay); // không có bonus/cọc
     expect(useGame.getState().contracts['quan_nhau'].committed).toBeFalsy();
   });
+
+  // GĐ1048 — orders.ts nhánh BIÊN của cam kết/giao hợp đồng (dòng 312 `!def || !cs` ở commitContract,
+  // 313 `cs.committed` cam kết lần 2, 317 thiếu cọc, 332 release chưa cam kết, 347 deliver id lạ):
+  // đỡ gọi nhầm ghi sai tiền/hàng, báo lỗi rõ ràng.
+  it('GĐ1048: cam kết id lạ → báo "Hợp đồng không hợp lệ", không đổi gì', () => {
+    const toasts: string[] = [];
+    useGame.setState({ notify: (m) => void toasts.push(m) });
+    const before = useGame.getState().contracts;
+    useGame.getState().commitContract('khong-co');
+    expect(useGame.getState().contracts).toEqual(before);
+    expect(toasts.some((t) => t.includes('Hợp đồng không hợp lệ'))).toBe(true);
+  });
+
+  it('GĐ1048: cam kết 2 lần → báo "đã cam kết rồi", cọc/hàng chỉ 1 lần', () => {
+    const toasts: string[] = [];
+    const d = setup();
+    const m0 = useGame.getState().money;
+    useGame.getState().commitContract('quan_nhau'); // lần 1
+    useGame.setState({ notify: (m) => void toasts.push(m) });
+    const m1 = useGame.getState().money;
+    useGame.getState().commitContract('quan_nhau'); // lần 2 bị chặn
+    expect(useGame.getState().money).toBe(m1); // không trừ cọc thêm
+    expect(toasts.some((t) => t.includes('đã cam kết rồi'))).toBe(true);
+    expect(useGame.getState().money).toBeLessThan(m0);
+  });
+
+  it('GĐ1048: thiếu tiền cọc → không cam kết, báo "Cần ... tiền cọc"', () => {
+    const toasts: string[] = [];
+    const d = setup();
+    useGame.setState({ money: 0, notify: (m) => void toasts.push(m) });
+    useGame.getState().commitContract('quan_nhau');
+    expect(useGame.getState().contracts['quan_nhau'].committed).toBeFalsy();
+    expect(useGame.getState().money).toBe(0);
+    expect(toasts.some((t) => t.includes('tiền cọc'))).toBe(true);
+  });
+
+  it('GĐ1048: hủy cam kết khi CHƯA cam kết → báo "Chưa cam kết kỳ này", không hoàn gì', () => {
+    const toasts: string[] = [];
+    const d = setup();
+    const m0 = useGame.getState().money;
+    useGame.setState({ notify: (m) => void toasts.push(m) });
+    useGame.getState().releaseContract('quan_nhau');
+    expect(useGame.getState().money).toBe(m0); // không hoàn cọc
+    expect(toasts.some((t) => t.includes('Chưa cam kết kỳ này'))).toBe(true);
+  });
+
+  it('GĐ1048: giao hợp đồng id lạ → trả false + báo "Hợp đồng không hợp lệ"', () => {
+    const toasts: string[] = [];
+    useGame.setState({ notify: (m) => void toasts.push(m) });
+    expect(useGame.getState().deliverContract('khong-co')).toBe(false);
+    expect(toasts.some((t) => t.includes('Hợp đồng không hợp lệ'))).toBe(true);
+  });
 });
