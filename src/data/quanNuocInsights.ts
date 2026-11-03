@@ -2,7 +2,7 @@
 import { fmtMul, productById } from './products';
 import type { DayAction } from './dayPlan';
 import type { Weather } from './weather';
-import { brewMenu, cleanMenu, quanRecipeById, varietyMul, quanHotMul, QUAN_MENU_SLOTS } from './quanRecipes';
+import { brewMenu, cleanMenu, quanRecipeById, recipeBottleneck, recipeCapacity, varietyMul, quanHotMul, QUAN_MENU_SLOTS } from './quanRecipes';
 import { QUAN_MATCH_MUL, QUAN_NUOC_MAX_STAFF, QUAN_NUOC_PRICE, QUAN_NUOC_WAGE, QUAN_PRICE_OPTIONS, type QuanNuocPrice, type QuanNuocState, isQuanMatchDay, quanMatchMul, quanMenuSlots, quanNuocDrinkIds, quanTierMul, quanWeekendMul, weatherMul } from './quanNuoc';
 
 /* —————————————————————————————————————————————————————————————————————
@@ -157,18 +157,30 @@ export function quanBlockedDrinkAction(
  * Cùng chân lý `quanNuocHealth` (tức `quanNuocDay`), KHÔNG đổi SAVE_VERSION/kinh tế/sim. UI dùng
  * con số này để ra thẻ nạp kho + nút nhảy sang Nhập hàng (order).
  */
-export interface QuanNuocRestockTip { shortfall: number; wanted: number; have: number; missedRevenue: number; verdict: 'danger' | 'warn' }
+export interface QuanNuocRestockTip { shortfall: number; wanted: number; have: number; missedRevenue: number; verdict: 'danger' | 'warn'; /** GĐ1112: nguyên liệu nút thắt của món nghẽn nhất trên menu (mua đúng thứ đó mới pha thêm ly). */ bottleneck?: string }
 
 export function quanNuocRestockTip(
   q: QuanNuocState, level: number, storage: Record<string, number>, last?: { served?: number; wanted?: number } | null, weather?: Weather, day?: number,
 ): QuanNuocRestockTip | null {
   const h = quanNuocHealth(q, level, storage, last, weather, day);
   const shortfall = Math.max(0, h.tonight.wanted - h.drinkUnitsNow);
+  // GĐ1112 — nút thắt: món menu có sức pha thấp nhất, nêu đúng nguyên liệu khan nhất
+  let bottleneck: string | undefined;
+  let worst: { cap: number; text: string } | undefined;
+  for (const id of cleanMenu(q.menu, level, quanMenuSlots(q))) {
+    const r = quanRecipeById(id);
+    if (!r) continue;
+    const cap = recipeCapacity(r, storage);
+    const bn = recipeBottleneck(r, storage);
+    const text = `${bn.name} — ${r.name} chỉ pha được ~${cap} ly`;
+    if (!worst || cap < worst.cap) worst = { cap, text };
+  }
+  bottleneck = worst?.text;
   if (h.missedRevenue > 0) {
-    return { shortfall, wanted: h.tonight.wanted, have: h.drinkUnitsNow, missedRevenue: h.missedRevenue, verdict: 'danger' };
+    return { shortfall, wanted: h.tonight.wanted, have: h.drinkUnitsNow, missedRevenue: h.missedRevenue, verdict: 'danger', bottleneck };
   }
   if (h.driesMain && shortfall > 0) {
-    return { shortfall, wanted: h.tonight.wanted, have: h.drinkUnitsNow, missedRevenue: 0, verdict: 'warn' };
+    return { shortfall, wanted: h.tonight.wanted, have: h.drinkUnitsNow, missedRevenue: 0, verdict: 'warn', bottleneck };
   }
   return null;
 }

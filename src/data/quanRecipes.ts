@@ -98,6 +98,18 @@ export function recipeCapacity(r: QuanRecipe, storage: Record<string, number>): 
   return Math.min(...r.uses.map((u) => Math.floor((storage[u.id] ?? 0) * u.cups)));
 }
 
+/**
+ * GĐ1112 — nguyên liệu NÚT THẮT của một công thức (kho × cups nhỏ nhất — mua đúng thứ đó mới pha
+ * thêm ly). Thuần đọc.
+ */
+export function recipeBottleneck(r: QuanRecipe, storage: Record<string, number>): { id: string; name: string; glasses: number } {
+  let worst = r.uses[0];
+  for (const u of r.uses) {
+    if (Math.floor((storage[u.id] ?? 0) * u.cups) < Math.floor((storage[worst.id] ?? 0) * worst.cups)) worst = u;
+  }
+  return { id: worst.id, name: productById(worst.id).name, glasses: Math.floor((storage[worst.id] ?? 0) * worst.cups) };
+}
+
 /** Giá vốn nguyên liệu một ly (để người chơi so lời với nước chai). */
 export const recipeCupCost = (r: QuanRecipe) => r.uses.reduce((n, u) => n + productById(u.id).buy / u.cups, 0);
 
