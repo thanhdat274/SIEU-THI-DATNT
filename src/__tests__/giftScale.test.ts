@@ -1,7 +1,7 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { newGameData, useGame } from '../core/store';
 import {
-  DAILY_GIFTS, WHEEL_PRIZES, giftMoneyScale, giftOfStreak, giftText, giftXpScale, scaledGift, scaledPrize,
+  DAILY_GIFTS, WHEEL_PRIZES, giftMoneyScale, giftOfStreak, giftText, giftXpScale, scaledGift, scaledPrize, spinWheelPrize,
 } from '../data/gifts';
 
 /** Quà điểm danh & vòng quay scale theo cấp & vé tha thứ chuỗi điểm danh. */
@@ -57,6 +57,18 @@ describe('scaledGift / scaledPrize', () => {
 
   it('giftText in đúng số tiền đã scale', () => {
     expect(giftText(scaledGift(DAILY_GIFTS[6], 50))).toBe('370.000đ');
+  });
+});
+
+describe('spinWheelPrize — chọn giải theo trọng số (fallback 141 dùng Math.random)', () => {
+  afterEach(() => vi.restoreAllMocks());
+  it('rng cao quá tổng → rơi về giải CUỐI 🏆 (fallback 141)', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(1.2); // roll = 1.2×100=120, trừ hết tổng 100 vẫn dư
+    expect(spinWheelPrize()).toBe(WHEEL_PRIZES[WHEEL_PRIZES.length - 1]);
+  });
+  it('rng thấp → giải đầu theo trọng số', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.05); // roll=5, trừ weight 22 → âm → giải đầu
+    expect(spinWheelPrize()).toBe(WHEEL_PRIZES[0]);
   });
 });
 
