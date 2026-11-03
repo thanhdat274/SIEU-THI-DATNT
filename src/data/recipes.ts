@@ -60,6 +60,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'tra_gung_nong', name: 'Trà gừng nóng', category: 'drink', buy: 7200, sell: 13700, color: 0xd4ac0d, unlock: 23 },
   { id: 'mi_trung_nong', name: 'Mì trứng nấu sẵn', category: 'fresh', buy: 5500, sell: 10500, color: 0xe67e22, unlock: 21 },
   { id: 'che_dau_xanh', name: 'Chè đậu xanh', category: 'fresh', buy: 7800, sell: 14900, color: 0xfadbd8, unlock: 22 },
+  // GĐ1089: Chè bưởi — mẻ (bưởi 16k + đường 17k) = 33k → 6 phần × 11k = 66k, lãi 33k/mẻ, nấu hời hơn bán nguyên liệu (45k < 66k)
+  { id: 'che_buoi', name: 'Chè bưởi', category: 'fresh', buy: 5500, sell: 11000, color: 0xa9dfbf, unlock: 38 },
 
   // --- Máy xay (blender) ---
   { id: 'sinh_to_trai_cay', name: 'Sinh tố trái cây', category: 'cold', buy: 7500, sell: 14300, color: 0xfd79a8, unlock: 28 },
@@ -148,6 +150,11 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_che_dau_xanh', name: 'Chè đậu xanh', station: 'hot_kettle',
     inputs: [{ productId: 'dau_xanh', quantity: 2 }, { productId: 'x_duong', quantity: 1 }],
     outputId: 'che_dau_xanh', outputQty: 6, durationMin: 15, unlock: 22, reputationGain: 2 },
+  // GĐ1089: Chè bưởi — món chè của bưởi nông trại (x_buoi mở cấp 38 nhưng chưa có lối ra bếp),
+  // khép chuỗi trồng → nấu → bán như GĐ1088 (chanh dây). Mở 38 = đúng cấp mở bưởi.
+  { id: 'recipe_che_buoi', name: 'Chè bưởi', station: 'hot_kettle',
+    inputs: [{ productId: 'x_buoi', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
+    outputId: 'che_buoi', outputQty: 6, durationMin: 18, unlock: 38, reputationGain: 2 },
 
   // --- Máy xay (blender) ---
   { id: 'recipe_sinh_to', name: 'Sinh tố trái cây', station: 'blender',
