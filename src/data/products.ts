@@ -1,6 +1,7 @@
 import { CATALOG_PRODUCTS } from './catalog';
 import { COOKED_PRODUCTS } from './recipes';
 import { HOMEMADE_PRODUCTS, NEIGHBOR2_PRODUCTS } from './homemade';
+import { REGION_PRODUCTS } from './regionSpecialty';
 
 /** Ngành hàng: quyết định bày ở đâu (kệ thường, tủ mát, tủ đông). */
 export type Category = 'dry' | 'drink' | 'cold' | 'frozen' | 'household' | 'fresh' | 'meat';
@@ -184,6 +185,8 @@ PRODUCTS.push(...COOKED_PRODUCTS.map((it) => ({ ...it, unlock: Math.max(it.unloc
 PRODUCTS.push(...HOMEMADE_PRODUCTS.map((it) => ({ ...it, unlock: Math.max(it.unlock, SHELF_READY[it.category] ?? 1) })));
 // Đặc sản nhà bà Tám (homemade.ts NEIGHBOR2_PRODUCTS): nhà cung cấp hàng xóm thứ hai (GĐ1085)
 PRODUCTS.push(...NEIGHBOR2_PRODUCTS.map((it) => ({ ...it, unlock: Math.max(it.unlock, SHELF_READY[it.category] ?? 1) })));
+// Đặc sản vùng (regionSpecialty.ts): mối lái vùng xa (GĐ1086) — hàng hoá thường, chỉ nhập ở mối lái
+PRODUCTS.push(...REGION_PRODUCTS.map((it) => ({ ...it, unlock: Math.max(it.unlock, SHELF_READY[it.category] ?? 1) })));
 
 export const productById = (id: string) => PRODUCTS.find((it) => it.id === id)!;
 

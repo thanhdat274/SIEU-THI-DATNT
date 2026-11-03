@@ -13,6 +13,7 @@ import { CUNG_GOODS, CUNG_PULL, isXoiCungDay } from '../data/tiemXoi';
 import { dayEffects, isWeekend, OFF_SEASON_CLEARANCE, OFF_SEASON_HUNT, offSeason } from '../data/calendar';
 import { COOKED_PRODUCT_IDS, RECIPES } from '../data/recipes';
 import { NEIGHBOR_ONLY_IDS } from '../data/homemade';
+import { REGION_IDS } from '../data/regionSpecialty';
 import { happyHourActive, happyTraffic, timeBandAt } from '../data/rhythm';
 import { hasSkill } from '../data/titles';
 import { RISK_RULES } from '../data/risks';
@@ -288,8 +289,9 @@ export class CustomerManager {
     const s = useGame.getState();
     // Hàng của dịp (bánh chưng, lồng đèn...) hết dịp thì không ai hỏi mua
     const inSeason = (id: string) => !offSeason(id, s.day);
-    // Đồ hàng xóm tự làm (GĐ1077/1085) chỉ có khách hỏi khi đã bày kệ — không nở rộng bể ngẫu nhiên (giữ cân bằng sim)
-    const all = unlockedProducts(s.level).map((p) => p.id).filter((id) => !NEIGHBOR_ONLY_IDS.has(id)).filter(inSeason);
+    // Đồ độc quyền mối đặc biệt (hàng xóm GĐ1077/1085, đặc sản vùng GĐ1086) chỉ có khách hỏi khi đã bày kệ
+    // — không nở rộng bể ngẫu nhiên (giữ cân bằng sim)
+    const all = unlockedProducts(s.level).map((p) => p.id).filter((id) => !NEIGHBOR_ONLY_IDS.has(id) && !REGION_IDS.has(id)).filter(inSeason);
     const shelved = [
       ...new Set(s.furniture.flatMap((f) => f.tiers.filter((t) => t.productId && t.count > 0).map((t) => t.productId!))),
     ];
