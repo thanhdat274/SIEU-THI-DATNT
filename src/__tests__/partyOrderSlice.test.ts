@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { newGameData, useGame } from '../core/store';
-import { PARTY_ORDERS, orderValue } from '../data/orders';
+import { PARTY_ORDERS, STORY_ORDER_FRIEND_GAIN, orderValue } from '../data/orders';
 
 /**
  * orders.ts (slice) — đơn tiệc: giao đủ hàng nhận tiền + thưởng, thiếu hàng bị chặn, nhập gấp trừ tiền đại lý rồi giao.
@@ -40,6 +40,25 @@ describe('deliverOrder', () => {
     expect(g().deliverOrder()).toBe(false);
     expect(g().money).toBe(m0);
     expect(g().order).not.toBeNull();
+  });
+
+  // GĐ1047 — orders.deliverOrder nhánh KHÁCH QUEN (dòng 249 `if (def.regular)` + dòng 251
+  // báo `💛 +N thân thiết với …`). Đơn tiệc mang `regular:` (data/orders 23) nhưng `def` ở
+  // module-level của file này cố tình chọn đơn KHÔNG regular (line 10) nên nhánh này chưa chạy.
+  it('GĐ1047: giao đơn tiệc của khách quen → tăng thân thiết +STORY_ORDER_FRIEND_GAIN và báo 💛', () => {
+    const toasts: string[] = [];
+    const rDef = PARTY_ORDERS.find((o) => o.regular)!;
+    const fullR = () => Object.fromEntries(Object.entries(rDef.items).map(([id, q]) => [id, q + 1]));
+    useGame.setState({
+      ...newGameData(), money: 1_000_000, level: 50, storage: fullR(),
+      order: { id: rDef.id, dueDay: 99, accepted: true },
+      regulars: { [rDef.regular!]: { friendship: 4, visits: 0, perks: [], discovered: [] } },
+      notify: (m) => void toasts.push(m),
+    });
+    expect(g().deliverOrder()).toBe(true);
+    // từ 4 + 8 = 12 (< ngưỡng perk 15 → không notify của adjustFriendship, chỉ toast 251)
+    expect(g().regulars[rDef.regular!].friendship).toBe(4 + STORY_ORDER_FRIEND_GAIN);
+    expect(toasts.some((t) => t.includes(`💛 +${STORY_ORDER_FRIEND_GAIN} thân thiết`))).toBe(true);
   });
 });
 
