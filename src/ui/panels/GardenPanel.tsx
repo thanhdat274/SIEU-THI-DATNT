@@ -88,7 +88,7 @@ export function GardenPanel() {
               .slice(0, 5);
             if (!lines.length) return null;
             return (
-              <Callout tone="event" title="🧑‍🍳 Nấu hay bán lẻ: ">
+              <Callout tone="event" title="🧑‍🍳 Nấu/pha hay bán lẻ: ">
                 <div style={{ fontSize: 12, marginTop: 4 }}>
                   {lines.map((l) => (
                     <div key={l.key} style={{ marginBottom: 2, color: l.thin ? '#e67e22' : undefined }}>
