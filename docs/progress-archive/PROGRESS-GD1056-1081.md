@@ -17,3 +17,14 @@
 - **GĐ1058 (phủ test GỢI Ý THUÊ COURIER TRỜI MƯA):** `core/slices/orders.updatePhones` nhánh else-if dòng 59–62 (lúc đầu 0%): mưa/bão + chưa courier + chưa nhắc → notify "thuê nhân viên giao hàng"; test `phoneRainHint.test.ts` 4 test, mutation giết cổng mưa đỏ. (Dòng 55 — notify đơn VIP — đã đóng ở GĐ1062.)
 - **GĐ1057 (phủ test NHẮC CHUYỆN ARC CÒN DỞ TRONG TIN SÁNG):** `core/slices/endDay` dòng 289–292 (lúc đầu 0%): còn arc chưa kể xong + còn hạn → tin sáng "📖 Chuyện hôm qua còn dở"; test `endDayArcReminder.test.ts` 2 test, mutation giết cổng `!arcSt.done` đỏ.
 - **GĐ1056 (phủ test ĐÓNG SỔ THỬ THÁCH THÁNG — MET lẫn CHƯA ĐẠT):** `core/biz.bizEndOfDay` khối đóng tháng — nhánh MET dòng 392–393 (`money += reward` + "…xong!") lẫn nhánh else dòng 396 ("…chưa xong", chuỗi về 0); test `bizMonthClose.test.ts` 2 test, 2 mutation đỏ. core/biz khối đóng tháng khép.
+
+---
+
+## GĐ1074–1081 (rút từ PROGRESS.md ngày 03/11/2026)
+
+- **GĐ1081 (chiều sâu: quan hệ hàng xóm theo bậc)**: nhà hàng xóm giao NGAY trong ngày khi đạt bậc Mối thân (doanh mua ≥12 triệu cả ván); trước đó giao sáng mai. `deliversInstantly` (supplierRel.ts) dùng ở nhập hàng + nút OrderPanel. Save không đổi (dùng supplierRel có sẵn); full test 3366 xanh. Còn: cơ chế nhập hàng ngoài tạp hóa.
+- **GĐ1080 (chiều sâu: nông trại)**: thêm 2 cây trồng dùng lại sản phẩm có sẵn — Lúa nếp (cấp 14, ra nếp cho quây xôi) và Đậu xanh (cấp 16); trồng nguyên liệu xôi nhà mình thay vì nhập. Không thêm sản phẩm nên sim/golden giữ nguyên; full test 3365 xanh. Còn: nhập hàng ngoài, quan hệ hàng xóm theo bậc (mối quen hiện áp chung cho hangxom).
+- **GĐ1079 (thử, không giữ)**: thêm Cà phê muối (quán nước cấp 30) làm lệch simGolden cấp 30 + supplyChain.test (bể món nước đổi) → hoàn tác. Muốn thêm món nước cần duyệt rebaseline golden có chủ ý, hoặc đưa món mới vào cơ chế chỉ-khi-bày như hàng xóm.
+- **GĐ1078 (chiều sâu: món xôi mới)**: thêm Xôi vò (nếp + đậu xanh + hành phi + đường, quây xôi cấp 36, 12 phút/mẻ 40). Chỉ dữ liệu; sim/golden không đổi, full test 3364 xanh. Còn: món mới nông trại/quán nước, quan hệ hàng xóm theo bậc, nhập hàng ngoài.
+- **GĐ1077 (chiều sâu: nguồn cung hàng xóm tự làm)**: thêm nhà cung cấp `hangxom` 🏡 (mở cấp 14, giao 1 ngày, không tối thiểu) bán 6 món độc quyền tại gia (dưa muối, cà pháo, mắm tép, tương bần, bánh tráng phơi sương, nước mắm nhà ủ) — giá nhập cao hơn đồ công nghiệp, biên ≥35%; `supplierSells` có cờ `only`, đại lý khác không bán. Món hàng xóm chỉ vào bể khách hỏi khi đã bày kệ (không đổi RNG sim → goldens giữ nguyên). Save không đổi. Test: homemade.test (5) + full 3364 xanh, bundle 536/597 KB. Chưa làm: quan hệ hàng xóm theo bậc, món mới nông trại/quán nước/xôi, nhập hàng ngoài.
+- **GĐ1074 (rà UI sống):** Esc đóng panel đúng; 0 nút #ui thiếu nhãn (chữ/aria-label/title); màn 375×812 layoutAudit 0 cắt/0 tràn; nhãn dock 9px ở 701–1000px là CHỦ ĐÍCH (`hud.css` 583–591, giữ dock một hàng) — đừng nâng cỡ chữ mà không đo lại nút bị cắt. Không sửa mã.

@@ -20,25 +20,13 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (03/11/2026)
+- **GĐ1096 (bảo trì: dồn PROGRESS.md về đúng quy ước <30KB — khuôn GĐ1084)**: chuyển chi tiết GĐ1074–1090 sang archive (GĐ1074 + GĐ1077–1081 → PROGRESS-GD1056-1081.md; GĐ1082–1090 → PROGRESS-GD1082-1090.md mới) và nén mục lục theo khoảng (gom ~60 dòng chi tiết đơn-GĐ đã có archive thành 4 dòng GĐ640–690/741–762/860–875/1006–1053). PROGRESS.md 54,5 → 31,2 KB; giữ nguyên toàn bộ nội dung (chỉ dời chỗ, không xóa lịch sử). Không đổi mã/test — full suite & build bất đổi theo GĐ1095 (438 file/3417 test xanh).
 - **GĐ1095 (QA: kiểm toán loạt GĐ1088–1094 trước khi tính mở rộng — đúng khuôn "QA tự nhiên" GĐ735/740)**: (1) Coverage dữ liệu mới: `farmQuanValue` **100%** stmts (1 nhánh else), loạt test mới +4 tới +9 GĐ mỗi file; `quanRecipes` do 7 file test chuyên dụng sẵn phủ trong full-suite. (2) Golden: simGolden chạy xanh trong **mọi** full-suite hôm nay (≥6 lần) — mốc 26.304.891 nguyên vẹn; economySimL50 các lần đo 24–26/24–26/25-25-25 (trần ≥22) — món mới (mở ≥34) không lọt sim cấp 50 lệch trần. (3) Luật 9: 0 nút HUD mới (chỉ thêm dòng soi sáng trong GardenPanel), 0 thông báo mới, tên món ≤ 20 ký tự, không thêm trạm/ô menu (dùng 6 trạm có sẵn). (4) Bundle: index 106,11 kB / gzip 37,84 kB — dữ liệu mới nằm trong chunk dữ liệu lazy, dist ~5,2 MB không đổi đáng kể. (5) 3D: chỉ thêm `CROP_LOOK` chanhday (dựng lại từ geometry dùng chung — Luật 8 không đổi, test dựng 4 giai đoạn). Full 438 file/3417 test xanh, tsc 0, build ok. Kết luận: loạt GĐ1088–1094 đạt cổng chất lượng, an toàn trước khi cân nhắc hướng mới (mở rộng lớn vẫn "Cần duyệt").
 - **GĐ1094 (chiều sâu: khép loạt "nông sản nhà ngủ đông" — trứng vịt/ngỗng, sữa dê, thịt heo & gà Đông Tảo có lối ra bếp)**: rà thấy 5 sản phẩm chăn nuôi chỉ bán nguyên liệu (vịt mở 16, ngỗng 18, dê 27, heo 20, Đông Tảo 30). Thêm 5 món bếp: **Hột vịt lộn** (ấm nước 34: trứng vịt+rau+muối → 10 phần × 7k, lãi 23k), **Bánh flan** (nồi hấp 39: trứng ngỗng+sữa đặc+đường → 24 cái × 18k, lãi 113k), **Sữa chua dê** (máy xay 40: sữa dê+trái cây+đường → 6 hũ × 22k, lãi 45k), **Chả lụa hấp** (nồi hấp 40: thịt heo×2+trứng gà → 10 cây × 12k, lãi 35k), **Gà Đông Tảo nướng** (bếp nướng 42: thịt DT+rau+muối → 3 phần × 180k, lãi 145k) — tất cả verdict 'cook', mở > mốc golden 30 → simGolden y nguyên 26.304.891, save không đổi. Test khép loạt: mọi productId của CROPS + ANIMALS đều xuất hiện ở ≥1 công thức bếp/món pha (assert dữ liệu, chặn tái phạm). Test: +9 mới, cập nhật 2 test farmKitchenValue (rau 5 công thức, trái cây 5 — best không đổi). Full 438 file/3417 test xanh, tsc 0, build ok. **Loạt GĐ1088–1094 ĐÓNG: chuỗi "trồng/nuôi → bếp/pha → bán" trọn vẹn cho toàn bộ nông sản nhà.**
 - **GĐ1093 (chiều sâu: soi sáng "pha hay bán lẻ" ở vườn — nối nông trại với món quán nước)**: phát hiện lỗ hổng soi sáng — `farmVsCook` (GĐ147) chỉ xét công thức BẾP, nên vải/ổi/chuối (đã có ly pha sau GĐ1088–1092) hiện "không vào bếp nào" → panel Vườn tư vấn sai "chỉ bán lẻ được". Thêm `farmQuanValue.ts` (thuần đọc): `homegrownDrinkDecision` (1 đơn vị nông sản → `cups` ly, nguyên liệu khác lấy theo tỷ lệ ly, cơ hội phí = bán lẻ nhà trồng ×1,2), `farmVsDrinks`, `drinkableProducts`; GardenPanel gộp xét cả bếp lẫn quán, chọn nơi nông sản bõ nhất ("nấu X" / "pha Y ~N ly/1"). Không đổi state/kinh tế/save → simGolden y nguyên 26.304.891, economySimL50 trong vùng chuẩn. Test: +6 (trà vải brew +36k/1 đúng công thức cơ hội phí, ổi/chuối nhận diện đúng món, mía có nước mía & không lẫn bếp, gạo verdict sell, drinkableProducts đủ 8 nông sản trái cây, minUnlock đúng quy ước farmVsCook & mốc 30 chưa mở món mới). Full 436 file/3407 test xanh, tsc 0, build ok.
 - **GĐ1092 (chiều sâu: Sinh tố ổi & chuối — khép xong loạt kích hoạt nông sản "ngủ đông", nông trại → quán nước)**: hai trái cây cuối chưa có lối ra pha — ổi (`x_oi`) & chuối (`x_chuoi`, giống mở cấp 22). Thêm 2 món quán nước: **Sinh tố ổi** (mở 34) & **Sinh tố chuối** (mở 35), mỗi ly 24.000đ, nguyên liệu 4 trái cây nhà + sữa đặc + đá → trồng được lâu trước khi mở món. **Đóng loạt GĐ1088–1092: mọi nông sản trái cây nhà (chanh dây, bưởi, vải, nhãn, ổi, chuối, mít, xoài, cam) đều đã có lối ra bếp/pha.** Cả 2 món > mốc golden 30 → simGolden y nguyên 26.304.891, save không đổi. Test: +6 (mỗi món: duy nhất + nguyên liệu + cấp; cleanMenu chặn 33, nhận 34/35). Full 435 file/3401 test xanh, tsc 0, build ok.
 - **GĐ1091 (chiều sâu: món Chè nhãn — tiếp tục kích hoạt nông sản "ngủ đông", liên hệ nông trại → ấm nước)**: nhãn (`x_nhan`, giống mở cấp 32, mùa 7–9) chưa có lối ra bếp. Thêm món **Chè nhãn** (ấm nước hot_kettle, mở cấp 36 ≥ cấp nhãn 32 → trồng được trước khi mở món, mẻ: 1 nhãn + 1 đường → 6 phần, 15 phút): lãi 25.000/mẻ, nấu hời hơn bán nguyên liệu rời (66k > 55k, verdict 'cook'). Khép chuỗi trồng → nấu → bán theo khuôn GĐ1089–1090; cấp 36 > mốc golden 30 → simGolden y nguyên 26.304.891, save không đổi. Test: +4 (thành phẩm trong PRODUCTS mở 36, công thức hot_kettle dùng x_nhan+đường, mở 36 ≥ giống 32 & cấp 30 chưa mở — không lệch RNG mốc, lãi dương + verdict 'cook'). Full 434 file/3395 test xanh, tsc 0, build ok. Còn nông sản chưa có lối ra bếp/pha: x_chuoi, x_oi (đều mở cấp 22 — có thể gộp 1 GĐ).
-- **GĐ1090 (chiều sâu: món Trà vải — tiếp tục kích hoạt nông sản "ngủ đông", liên hệ nông trại → quán nước)**: vải thiều (`x_vai`, giống mở cấp 32, mùa 5–7) chưa có lối ra pha. Thêm món **Trà vải** (quán nước, mở cấp 34 ≥ cấp vải 32 → trồng được trước khi mở món: 1 vải/4 ly + trà + đường + đá, 20.000đ/ly, món đá). Khép chuỗi trồng → pha → bán theo khuôn GĐ1088; cấp 34 > mốc golden 30 → simGolden y nguyên 26.304.891, economySimL50 25/25/25 (trần ≥22), save không đổi. Test: +4 (món duy nhất mở 34, nguyên liệu x_vai+tra+đường+đá, cấp vải ≤ cấp món & cấp 30 chưa có, cleanMenu chặn 33 / nhận 34). Full 433 file/3391 test xanh (~204s), tsc 0, build ok. Còn nông sản chưa có lối ra bếp/pha: x_nhan, x_chuoi, x_oi.
-- **GĐ1089 (chiều sâu: món Chè bưởi — kích hoạt nông sản "ngủ đông", liên hệ nông trại → ấm nước)**: bưởi (`x_buoi`, giống mở cấp 38, mùa 12–2) trước nay chưa có lối ra bếp — trồng xong chỉ bán nguyên liệu. Thêm món **Chè bưởi** (ấm nước hot_kettle, mở cấp 38 = đúng cấp mở bưởi, mẻ: 1 bưởi + 1 đường → 6 phần, 18 phút): lãi 33.000/mẻ, nấu hời hơn bán nguyên liệu rời (66k > 45k, `cookOrSellRaw` → 'cook'). Khép chuỗi trồng → nấu → bán theo đúng khuôn GĐ1087–1088; cấp 38 > mốc golden 30 → simGolden y nguyên 26.304.891, save không đổi (món mới chỉ có khi trạm đã mở). Test: +4 (thành phẩm trong PRODUCTS mở 38, công thức hot_kettle dùng x_buoi+đường, mở 38 khớp giống bưởi & cấp 30 chưa mở — không lệch RNG mốc, lãi dương + verdict 'cook'). Full 432 file/3387 test xanh (~206s), tsc 0, build ok. Còn nông sản nhà chưa có lối ra bếp: x_vai, x_nhan, x_chuoi, x_oi (tiềm năng GĐ sau).
-- **GĐ1088 (chiều sâu: trồng Chanh dây — tự cung quán nước, liên hệ nông trại → quán nước)**: thêm giống cây `chanhday` (nông trại, mở cấp 32) ra `x_chanh_day` — nguyên liệu trực tiếp của món "Chanh dây đá" (quán nước cấp 32) — để người chơi tự trồng thay vì nhập (khép chuỗi trồng → pha → bán, "nguồn cung trong nhà" bổ trợ các "nguồn cung ngoài" GĐ1077–1086). Gồm 3D `CROP_LOOK` chanhday (dáng cây ăn trái). Mở cấp 32 > mốc golden 30 → simGolden y nguyên 26.304.891, economySimL50 vùng 24–26 (trần ≥22), save không đổi (giống mới chỉ có khi người chơi tự trồng). Test: +4 (giống ra đúng x_chanh_day mở ≥32, x_chanh_day là nguyên liệu "Chanh dây đá", dựng được 4 giai đoạn, cấp 30 chưa mở). Full 431 file/3383 test xanh (~186s), tsc 0, build ok. Nhận định Leader+Designer: chiều sâu an toàn trong phạm vi sau GĐ1076 đã khép (rà: 17 file `*Value` soi-sáng, RegularsPanel + OrderPanel đã sâu, 3 hướng người dùng + 6 nguồn cung + xôi/nông trại mới) — mở rộng lớn còn ở "Cần duyệt".
-- **GĐ1087 (chiều sâu: món xôi mới — Xôi mít, liên hệ nông trại → tiệm xôi)**: thêm món ngọt đặc trưng miền Tây dùng **mít của nông trại** (`x_mit`) làm nguyên liệu — món đầu tiên của quây xôi tiêu thụ nông sản nhà (khép chuỗi trồng → nấu → bán). Chỉ dữ liệu (COOKED_PRODUCTS `xoi_mit` cấp 36 + `recipe_xoi_mit` rice_station, nếp + x_mit + nước cốt dừa + đường), `tiemXoiIds` tự nhận qua prefix `xoi_`. Mở cấp 36 > mốc golden 30 → simGolden y nguyên 26.304.891, economySimL50 vẫn trong vùng 24–26 (trần ≥22), save không đổi. Test: +3 (món duy nhất PRODUCTS, công thức dùng x_mit, vào menu từ cấp 36). Full 430 file/3379 test xanh (~184s), tsc 0, build ok, bundle không đổi.
-- **GĐ1086 (chiều sâu: cơ chế nhập hàng ngoài tạp hóa — Mối lái đặc sản vùng, hướng GĐ1076/2)**: thêm nguồn cung xa `dacsan` 🚚 (mở cấp 42, giao sáng mai, `only: REGION_IDS`) mang 3 đặc sản vùng (Khô tôm 42, Lạp xưởng 44, Bánh pía 46) KHÔNG nhập được ở mối chuẩn nào — đa dạng hàng bán cuối game. Là hàng độc quyền "bày kệ": lọc `REGION_IDS` khỏi đơn online/điện thoại/chợ phiên/khách-trừ-bày kệ (nâng từ GĐ1082) + `supplierSells` mối chuẩn loại. Mở ≥42 > mọi mốc sim chặt → `simGolden` y nguyên 26.304.891 và economySimL50 về đúng chuẩn 26/26/25 (thử 1 thiết kế để đặc sản vùng vào bể cầu làm L50 tụt 23/24/22 sát trần → hoàn tác về bày-kệ cho vững, Luật 3). Save không đổi. Test: +4 (món duy nhất PRODUCTS, chỉ mối lái bán, giá ≤40 không mở, không lọt đơn). Full 429 file/3376 test xanh (~195s), tsc 0, build ok. **Đóng backlog hướng 1–3 người dùng chốt GĐ1076** (sản phẩm/công thức, nhập ngoài, quan hệ/nhiều nguồn hàng xóm) — còn: mở rộng bản đồ (lớn), NG+.
-- **GĐ1085 (chiều sâu: người hàng xóm thứ hai — Nhà bà Tám)**: hiện thực hướng GĐ1076(3) "nhiều nguồn cung nguyên liệu tự làm tại gia của hàng xóm" — thêm nhà cung cấp `hangxom2` 🧑🍳 (mở cấp 34, giao sáng mai, `only: NEIGHBOR2_IDS`) bán 3 đặc sản độc quyền (Chả lụa cấp 34, Nem chua cấp 36, Bánh đa cấp 38, biên ≥35%). Set gộp `NEIGHBOR_ONLY_IDS` = HOMEMADE + NEIGHBOR2 dùng chung để lọc khỏi đơn online/điện thoại/chợ phiên/khách-trừ-bày kệ (nâng 4 kênh từ GĐ1082); `supplierSells` mối chuẩn cũng loại. Mở ≥34 > mốc golden 30 → `simGolden` y nguyên 26.304.891, economySimL50 (26/26/25) xanh; save không đổi. Test: +4 (mở 3 món ≥34, chỉ bà Tám bán, biên ≥35%, không lọt online + Mối thân giao ngay qua `NEIGHBOR_SUPPLIER_IDS`). Full 428 file/3372 test xanh (~195s), tsc 0, build ok, bundle không đổi. Còn: cơ chế nhập hàng ngoài tạp hóa (hướng 2).
-- **GĐ1083 (chiều sâu: đặc sản cuối-game của nhà hàng xóm)**: thêm 2 món `HOMEMADE` mở cấp cao — Mắm ruốc Huế (cấp 34, 36k→56k) và Vải thiều sấy (cấp 38, 42k→65k), biên ≥35%, ngang họ "chỉ hàng xóm bán" (GĐ1082 đã lọc khỏi đơn/chợ phiên/khách-trừ-bày kệ). Mở ≥34 > mốc golden sim 30 → RNG mốc KHÔNG đổi (chạy lại `simGolden` ra đúng 26.304.891). economySimL50 (cấp 50) xanh. Target test: đặc sản ≥2, giá ≥50k, biên ≥35%, nằm đúng pool cấp ≤30 (không lọt). Full suite sắp chạy; bundle không đổi (chỉ dữ liệu). Còn: cơ chế nhập hàng ngoài tạp hóa.
-- **GĐ1082 (chiều sâu: giữ độc quyền hàng xóm qua mọi kênh cầu)**: món `HOMEMADE` (nhà cung cấp `hangxom`, "đại lý khác không bán") rò rỉ vào cầu tự động vì các pool dùng `unlockedProducts` chưa lọc: đơn online (`online.ts makeOnlineOrder`), đơn điện thoại (`phoneOrders.ts phoneCallFor`) và chợ phiên (`fairmerchant.ts makeFairOffer`). Lọc `!HOMEMADE_IDS` ở cả 3 (đúng mẫu `!COOKED_PRODUCT_IDS` đã làm cho chợ phiên) → hàng độc chỉ vào cầu khi người chơi bày kệ (walk-in đã lọc từ GĐ1077, `customers.ts:292`). Thêm test homemade.test.ts (đơn online 60 món KHÔNG chứa món hàng xóm); các kênh còn lại không rò (procure = kênh nhập đúng, quanNuoc/tiemXoi lọc theo category/prefix, wholesale dùng likes cố định). simGolden vẫn trong ±5% mốc (không rebaseline); full 428 file/3367 test xanh (~211s), build ok, bundle không đổi. Còn: cơ chế nhập hàng ngoài tạp hóa.
-- **GĐ1081 (chiều sâu: quan hệ hàng xóm theo bậc)**: nhà hàng xóm giao NGAY trong ngày khi đạt bậc Mối thân (doanh mua ≥12 triệu cả ván); trước đó giao sáng mai. `deliversInstantly` (supplierRel.ts) dùng ở nhập hàng + nút OrderPanel. Save không đổi (dùng supplierRel có sẵn); full test 3366 xanh. Còn: cơ chế nhập hàng ngoài tạp hóa.
-- **GĐ1080 (chiều sâu: nông trại)**: thêm 2 cây trồng dùng lại sản phẩm có sẵn — Lúa nếp (cấp 14, ra nếp cho quây xôi) và Đậu xanh (cấp 16); trồng nguyên liệu xôi nhà mình thay vì nhập. Không thêm sản phẩm nên sim/golden giữ nguyên; full test 3365 xanh. Còn: nhập hàng ngoài, quan hệ hàng xóm theo bậc (mối quen hiện áp chung cho hangxom).
-- **GĐ1079 (thử, không giữ)**: thêm Cà phê muối (quán nước cấp 30) làm lệch simGolden cấp 30 + supplyChain.test (bể món nước đổi) → hoàn tác. Muốn thêm món nước cần duyệt rebaseline golden có chủ ý, hoặc đưa món mới vào cơ chế chỉ-khi-bày như hàng xóm.
-- **GĐ1078 (chiều sâu: món xôi mới)**: thêm Xôi vò (nếp + đậu xanh + hành phi + đường, quây xôi cấp 36, 12 phút/mẻ 40). Chỉ dữ liệu; sim/golden không đổi, full test 3364 xanh. Còn: món mới nông trại/quán nước, quan hệ hàng xóm theo bậc, nhập hàng ngoài.
-- **GĐ1077 (chiều sâu: nguồn cung hàng xóm tự làm)**: thêm nhà cung cấp `hangxom` 🏡 (mở cấp 14, giao 1 ngày, không tối thiểu) bán 6 món độc quyền tại gia (dưa muối, cà pháo, mắm tép, tương bần, bánh tráng phơi sương, nước mắm nhà ủ) — giá nhập cao hơn đồ công nghiệp, biên ≥35%; `supplierSells` có cờ `only`, đại lý khác không bán. Món hàng xóm chỉ vào bể khách hỏi khi đã bày kệ (không đổi RNG sim → goldens giữ nguyên). Save không đổi. Test: homemade.test (5) + full 3364 xanh, bundle 536/597 KB. Chưa làm: quan hệ hàng xóm theo bậc, món mới nông trại/quán nước/xôi, nhập hàng ngoài.
-- **GĐ1074 (rà UI sống):** Esc đóng panel đúng; 0 nút #ui thiếu nhãn (chữ/aria-label/title); màn 375×812 layoutAudit 0 cắt/0 tràn; nhãn dock 9px ở 701–1000px là CHỦ ĐÍCH (`hud.css` 583–591, giữ dock một hàng) — đừng nâng cỡ chữ mà không đo lại nút bị cắt. Không sửa mã.
+- (Đã chuyển GĐ1074–1090 sang archive: GĐ1074 + GĐ1077–1081 vào `docs/progress-archive/PROGRESS-GD1056-1081.md`; GĐ1082–1090 vào `docs/progress-archive/PROGRESS-GD1082-1090.md`; mục lục nén theo khoảng.)
 - (Đã chuyển GĐ1056–1071 sang `docs/progress-archive/PROGRESS-GD1056-1081.md`; các mốc cũ khác: GĐ1042–1054 `PROGRESS-GD1042-1054.md` · GĐ790–929 `PROGRESS-GD790-929.md` · GĐ980–1005 `PROGRESS-GD980-1005.md`)
 - GĐ960–1005 (tách file thuần + QA trình duyệt, chi tiết): `docs/progress-archive/PROGRESS-GD960-1005.md`
 - Các mục GĐ930–949 / GĐ950–959 (tách panel/Hud): `docs/progress-archive/PROGRESS-GD930-949.md` · `docs/progress-archive/PROGRESS-GD950-959.md`
@@ -105,6 +93,11 @@
 4. 👥 **Đủ 2 chế độ (ĐÃ CHỐT GĐ288):** khoá chính sách parity chơi đơn/hẻm online: Sân chơi chung tiến độ; Tái sinh NG+ chỉ chơi đơn; Chào mừng quay lại chạy cục bộ. Test: coopClient.test.ts. Chi tiết: docs/progress-archive/BACKLOG-parity-GD288.md.
 
 ## Mục lục giai đoạn đã xong (chi tiết trong archive)
+- GĐ1082–1090 (đóng 3 hướng chiều sâu GĐ1076 + món kích hoạt nông sản nhà): docs/progress-archive/PROGRESS-GD1082-1090.md
+- GĐ640–690 (rà ngân sách định kỳ, QA người mới/co-op, sửa SW stale assets + heartbeat server; dồn chi tiết): docs/progress-archive/PROGRESS-GD662-665.md · 666-671 · 672-680 · 681-688 (+ INDEX-GD637-659.md)
+- GĐ741–762 (trục tín dụng/Sổ đầu ngày/sinh nhật khách quen; dồn chi tiết): docs/progress-archive/PROGRESS-GD741-747.md · 748-758 · 759-762
+- GĐ860–875 (rà định kỳ Leader+Designer + ngân sách thông báo/bundle; chi tiết): docs/progress-archive/PROGRESS-GD840-854.md
+- GĐ1006–1053 (phủ test theo lệnh coverage — từng nhánh core/ui): docs/progress-archive/PROGRESS-GD1005-1041.md · PROGRESS-GD1042-1054.md
 - GĐ1056–1081 (phủ test core + rà ngân sách chống phình/coverage + xôi mới + cây trồng + nguồn cung/quan hệ hàng xóm): docs/progress-archive/PROGRESS-GD1056-1081.md
 - GĐ721–729 (trục chốt deal ở quầy 4 đòn + nhân viên xin nghỉ hôm nay + save trắng đồng hồ thật): docs/progress-archive/PROGRESS-GD721-729.md
 - GĐ731–739 (trả góp nợ, đèn đường dự án 2 + payoff 3D, luồng cố định đồng hồ thật): docs/progress-archive/PROGRESS-GD731-739.md
@@ -129,113 +122,12 @@
 
 - GĐ620–636 (ngày trận cho sạp/quán/tiện lợi, nhắc ngày cúng ở Sổ đầu ngày, tách việc theo dịp sang file nạp lười, HudKeys/CounterAskAlert nạp lười giữ bundle ≤597) → docs/progress-archive/INDEX-GD620-636.md
 
-- GĐ640 (rà ngân sách + QA người mới): bundle 596,8/597, chunk 253/255, cả bộ 2709/2710 → sửa 🙏 lịch fontSize 8 (vi phạm ≥11, GĐ639) → xanh; FPS gfx=low ~72. Save sandbox mới: 3 thoại → Mở cửa 14s; khách xếp quầy khi chủ còn ở nhà, Ra tiệm → bán đầu ~35s. ≤5 phút. Lưu trữ GĐ620–636.
-- GĐ641: test đếm ngược qua năm mới (Tết dương lịch + mùng 1 năm sau cùng còn 3 ngày) — nextEventLine đúng khi vắt năm.
-- GĐ650 (rà ngân sách + QA người mới): bundle 596,8/597, chunk 253/255, cả bộ 2715/2715 xanh, PROGRESS 27KB, FPS gfx=low ~67. Save sandbox mới đúng thứ tự (3 thoại → Ra tiệm → Mở cửa 8,5s) → bán đầu ~55s. ≤5 phút.
 - GĐ637–659: lịch/đếm ngược sự kiện, gợi ý nhập đồ lễ & đồ cúng, HUD gọn (chi tiết: docs/progress-archive/INDEX-GD637-659.md).
-- GĐ660: rà ngân sách — tải đầu 596.7/597 KB, chunk 253/255 KB; lưu trữ GĐ637–659; PROGRESS gọn 25.6 KB; ván mới vào được ngày 1, FPS ~46.
-- GĐ661: QA ván mới bổ sung cho GĐ660 — Tiếp/Xong → Ra tiệm → Mở cửa, bán được 9 món (nước, bánh, mì) trong ~65 s thật (≤5 phút ✅).
-- GĐ662: QA toàn diện giao diện — khung modal cố định, hết nhảy khung khi chuyển tab (chi tiết: mục Trạng thái hiện tại; test `panelFrame.test.ts`). FPS gfx=low đo lại 70–74 có khách → mức ~46 GĐ660 là nhiễu tải máy.
-- GĐ663: QA co-op luồng ngắn khung panel GĐ662 — máy khách cùng khung 760×688 như chơi đơn, clipped 0. Không đổi mã.
-- GĐ664: QA danh sách dài/số tiền lớn (cấp 45 + 30 ngày dữ liệu) — quét lại sạch; kết luận bundle: hết thắng rẻ, code mới nằm chunk lười.
-- GĐ665: co-op 2 tab qua IAB bị chặn môi trường (tab nền mất WS hẻm); khoá checkpoint round-trip bằng test mới — không phải bug join. Vòng ngày hẻm thật dời GĐ670.
-- GĐ666: coverage sweep — vá timeout phoneReasons, test mới đường nối chốt ngày (trại/nợ/đơn mang đi); tool xếp hạng dev/covrank.cjs + dev/covlines.cjs.
-- GĐ667: dọn PROGRESS 31,6 → 24,3 KB — ghi chú GĐ329–342 dồn archive, không đổi mã.
-- GĐ668: chốt nguyên nhân reset co-op IAB — tab nền đóng băng timer → server ngắt WS → tự reload (thiết kế coop.ts:339). Không phải bug.
-- GĐ669: tách economySimL5.test.ts — test 300 → 243 s, hết sát trần 5 phút. Cập nhật bảng ngân sách theo số đo mới.
-- GĐ670: audit 10-GĐ ĐẠT (bundle/test/HUD/thông báo/tỉ số/FPS/save trắng/16 panel); prune: không bỏ gì, nợ BranchPanel ghi lại.
-- GĐ671: luồng cố định trọn vẹn trên HEAD (ngủ → tổng kết 3 tab) — sạch, 0 lỗi console.
-- GĐ672: dồn chi tiết GĐ662–665 sang docs/progress-archive/PROGRESS-GD662-665.md; PROGRESS về 27,4 KB.
-- GĐ673: khung panel trên tablet dọc + điện thoại ngang (nhánh mobile thật) — đạt, không đổi mã.
-- GĐ674: 320px nhánh mobile thật — 8 panel dày clipped 0; lớp lỗi GĐ297 vẫn được chặn.
-- GĐ675: đo CPU render gfx=low 5,7 ms/khung → 4× throttle ~28–33 FPS đạt; đo lại trên save cuối-game khi đụng render.
-- GĐ676: dồn chi tiết GĐ666–671 sang docs/progress-archive/PROGRESS-GD666-671.md.
-- GĐ677: dọn import chết economySim.test.ts sau GĐ669 — tsc + test xanh.
-- GĐ678: sửa SW stale assets (glb cache-first → network-first) — tài sản 3D mới tới tay người chơi cũ; test swStrategy.test.ts.
-- GĐ679: hồi quy cả bộ 2735 xanh / 225 s.
-- GĐ680: audit 10-GĐ ĐẠT; điểm nhấn chu kỳ = sửa SW stale assets (GĐ678); prune không bỏ gì.
-- GĐ681: dồn chi tiết GĐ672–680 sang docs/progress-archive/PROGRESS-GD672-680.md; PROGRESS về ~20 KB.
-- GĐ682: test hành vi SW (swFetch.test, mutation-checked); SW v2 áp dụng khi deploy PROD kế.
-- GĐ683: hồi quy cả bộ 2740 xanh / 241 s.
-- GĐ688: QA co-op bán hàng — đồng bộ tuyệt đối 2 máy, hand-off đổi vai hoạt động thật, sàn bẩn kìm khách đúng thiết kế.
-- GĐ684: QA live chợ phiên — preview = thật (±0đ), chống bán 2 lần/ngày đạt. Không đổi mã.
-- GĐ685: đo nợ refactor UI bằng số — ReportPanels 1.632 dòng (6 panel) & BusinessPanel 1.206 dòng là nợ thật; BranchPanel 297 dòng ổn, gỡ khỏi backlog.
-- GĐ689: dồn chi tiết GĐ681–688 sang docs/progress-archive/PROGRESS-GD681-688.md.
-- GĐ690: audit 10-GĐ ĐẠT — điểm nhấn chu kỳ = fix heartbeat + co-op trọn vẹn lần đầu; prune không bỏ gì.
-- GĐ686: 🐛 fix heartbeat server (pong ghi sai object → hẻm chết ~60 s) + heartbeatStep + wsHeartbeat.test. Server dev cần khởi động lại để có hiệu lực — sau đó QA co-op vòng ngày (GĐ690) khả thi.
-- GĐ748: Sổ nợ xếp món gần mất lên trước (debtRowsByUrgency, test debtSoon).
-- GĐ749: nợ quá hạn chưa nhắc lên Sổ đầu ngày (debtUnremindedAction).
-- GĐ750: audit 10-GĐ (741–750) — số đo suite/bundle đạt; coverage/FPS/QA trình duyệt chưa đo (không có server).
-- GĐ751: soát co-op chuỗi Sổ đầu ngày (741/747/749) — đạt, không đổi mã.
-- GĐ752: coverage 58,27/90,16 (bù audit 750).
-- GĐ753: khép chuỗi đưa việc lên Sổ đầu ngày; việc tiếp theo cần dev server.
-- GĐ754: QA trình duyệt dòng Sổ 747/749 đạt (cloud, ngoại lệ Luật 11 được duyệt); FPS thật vẫn chờ.
-- GĐ755: sửa dính chữ câu mở Sổ đầu ngày.
-- GĐ756: QA co-op 2 tab bị chặn (thiếu credential Firebase cho server hẻm trong cloud).
-- GĐ757: QA save trắng chơi đơn — món đầu bán ~20 s thật (8×), 0 lỗi; ghi nhận rủi ro người mới bỏ qua 'Đứng quầy'.
-- GĐ758: đóng rủi ro 'bỏ qua Đứng quầy' — đã có nút Ra tiệm nhấp nháy.
-- GĐ759: sinh nhật khách quen (ghé chắc + 3 thân thiết, nhắc trên Sổ đầu ngày).
-- GĐ760: lời báo sinh nhật khi thanh toán (thay câu thường).
-- GĐ761: QA trình duyệt luồng sinh nhật — ghé đúng ngày, thanh toán +3, 0 lỗi.
-- GĐ762: thẻ khách quen hiện ngày sinh nhật (sau khi đã gặp).
 - GĐ834–839: duyệt+áp dụng viết lại 4 thông báo (docs/notify-audit.md); FPS mobile late save ~28–30, CPU render ~1 ms (chưa kết luận, đo rAF cần pane hiện); chip kế hoạch mobile 36 px; hud-alerts mobile max-height 32vh; tsc/build ok, chunk lớn nhất 252 KB.
 - GĐ840–854: audit GĐ840 xanh (2943 test, thông báo ≤90, HUD ≤20 nút); thêm hudMobileCss.test.ts (chip ≥36px, dải cảnh báo có trần vh); sửa bế tắc quỹ âm: bot autoplay/playtest vay gấp, cấp <5 được vay thêm tới trần 3 gói (loanWhenBroke.test.ts); nâng timeout coop. Còn mở: FPS ≥30 gfx Low cần máy thật. Chi tiết: docs/progress-archive/PROGRESS-GD840-854.md.
 - GĐ855–859: nâng timeout coop 60 s; kiểm tsc/build/gzip bầu đầu ≈538 KB/bộ test 110 s/remote đồng bộ. Chi tiết trong docs/progress-archive/PROGRESS-GD840-854.md.
 
-- GĐ860 (rà Leader+Designer): 2949 test xanh 110 s, tsc sạch, 358 thông báo, 0 vượt 90, bundle đầu ≈538/600 KB. Không thêm tính năng: các trục đã đủ sâu; việc mở duy nhất là FPS ≥30 gfx Low (cần máy thật, cửa sổ tiền cảnh) và QA co-op 2 tab (cần server, bị cấm). Kế: rà GĐ870.
 - GĐ861–865: rà độ dài thông báo kỹ hơn — rút 4 thông báo (lương khi nhập hàng, mua/xuất chuồng giữa kỳ, thu hoạch bù nhìn); audit-notify.mjs và featureBudget.test.ts tính nhánh điều kiện dài nhất (cả template lồng nhau) → 0 thông báo >90. Chi tiết: docs/progress-archive/PROGRESS-GD840-854.md.
 - GĐ866–869: gọn PROGRESS.md; cả bộ xanh 107 s; thêm notifyRuntimeLen.test.ts (bot chơi 6 ngày ở cấp 3/8/15, gom toast thật, 0 vượt 90). Chi tiết trong archive.
 
-- GĐ870 (rà Leader+Designer): 2952 test xanh 99 s, tsc sạch, 358 thông báo tĩnh + toast thật đều ≤90, bundle đầu ≈538/600 KB (đo GĐ857). Không thêm tính năng: trục đã đủ sâu. Mở: FPS ≥30 gfx Low (máy thật), QA co-op 2 tab (cần server, cấm). Kế: rà GĐ880.
-- GĐ871: thử đo 'toast ngày 1' bằng bot (16 toast) → KHÔNG dùng: bot lên 4 cấp và nhận hết nhiệm vụ trong 1 ngày nên không đại diện người chơi thật; giữ ngân sách ngày 1 ở dạng tĩnh (featureBudget). Không đổi code.
-- GĐ872: notifyRuntimeLen mở rộng cấp 3/8/15/30/50: 139–353 toast khác nhau mỗi cấp, dài nhất 90, 0 vượt.
-- GĐ873: thêm npm run audit:notify; check:bundle chính thức: tải đầu 533/597 KB gzip, chunk lớn nhất 253/255 (số GĐ857 ≈538 là ước tay, dùng số này).
-- GĐ874: xem dòng 'Bản sao Draco thừa' của check:bundle — chỉ để biết: game tải decoder từ /decoders/draco/, bản trong assets/ không tới người chơi (không phải lỗi, không cần xử lý).
-- GĐ875: xem lại dư địa chunk (253/255): vendor-three là lõi three, loader GLTF/Draco đã nạp lười, vendor-react/data/firebase đã tách riêng → không còn chỗ cắt rẻ; thêm tính năng phải vào chunk store/lazy, không đụng vendor-three.
 - GĐ960–979 (tách file lớn: alleyApi, buildingTextures, bizAchieve/Loan/Purchases, regularsList…): xem docs/progress-archive/PROGRESS-GD960-979.md
-- GĐ1006 (hiệu năng: lightBudget top-K thay sort mỗi khung, mục GĐ675): docs/progress-archive/PROGRESS-GD1005-1041.md
-- GĐ1007 (hiệu năng: walker.applyCrowdLod quickselect top-cap thay sort mỗi khung, mục GĐ675): docs/progress-archive/PROGRESS-GD1005-1041.md
-- GĐ1008 (phủ test logic bày hàng 3D chi nhánh 24/7 — tách hàm thuần branchStockTiers): xem mục Trạng thái hiện tại
-- GĐ1011 (phủ test ca chi nhánh 24/7 — onShift + uncoveredHours, sửa hồi quy ca đêm nối nửa đêm): xem mục Trạng thái hiện tại
-- GĐ1012 (phủ test migration bản lưu cũ — migrateTiers nhánh legacy chia ô, Luật 5): xem mục Trạng thái hiện tại
-- GĐ1013 (phủ test logic vay vốn — loanToCover + helpers, hệ tín dụng): xem mục Trạng thái hiện tại
-- GĐ1014 (phủ test nhãn luống trại — plotLabel): xem mục Trạng thái hiện tại
-- GĐ1015 (phủ test gợi ý giá — suggestPrice 5 nhánh quyết định): xem mục Trạng thái hiện tại
-- GĐ1016 (phủ test câu báo sự kiện sáng — eventMorning): xem mục Trạng thái hiện tại
-- GĐ1017 (phủ test khớp lô hàng khi đổi số — fitLots nhánh bớt/takeNewest): xem mục Trạng thái hiện tại
-- GĐ1018 (phủ test ô pixel sản phẩm — productPixels shade/shapeOf/cache/fallback): xem mục Trạng thái hiện tại
-- GĐ1019 (phủ test mô tả thùng + lẻ — describeUnits/caseSize/casesFor): xem mục Trạng thái hiện tại
-- GĐ1020 (phủ test mồi chuyện sự kiện còn dở — tomorrowTeaser R5/arc): xem mục Trạng thái hiện tại
-- GĐ1021 (phủ test chấm đỏ nhiệm vụ — quests claimableCount): xem mục Trạng thái hiện tại
-- GĐ1022 (phủ test xoá sổ nợ khi trả trước vượt nợ — collectDebtPartial rest≤0): xem mục Trạng thái hiện tại
-- GĐ1023 (phủ test gạt mồi "Thử ngay" — dismissUnlockAct): xem mục Trạng thái hiện tại
-- GĐ1053 (phủ test không đủ tiền ăn sáng — core/biz.eatBreakfast 169): xem mục Trạng thái hiện tại
-- GĐ1052 (phủ test lập đối tác hiệp lực thiếu cọc & hết tháng — core/biz.signHiepLuc 153,155): xem mục Trạng thái hiện tại
-- GĐ1051 (phủ test phản công thiếu tiền — core/biz.startCounter 64): xem mục Trạng thái hiện tại
-- GĐ1050 (phủ test nhánh biên nghe máy/nhận-nấu đơn — orders 95–196): xem mục Trạng thái hiện tại
-- GĐ1049 (phủ test mục tiêu hẻm có host lễ hội — orders.communitySale 287–295): xem mục Trạng thái hiện tại
-- GĐ1048 (phủ test nhánh biên của cam kết/giao hợp đồng — orders 312–347): xem mục Trạng thái hiện tại
-- GĐ1047 (phủ test giao đơn tiệc cho khách quen — orders.deliverOrder 249–251): xem mục Trạng thái hiện tại
-- GĐ1046 (phủ test giao đúng hẹn cho khách quen — orders.deliverPhone 223–225): xem mục Trạng thái hiện tại
-- GĐ1045 (phủ test chặn món lễ ngoài dịp — orders.startCook 108–114): xem mục Trạng thái hiện tại
-- GĐ1044 (phủ test verdict sell/even của nấu-vs-bán-lẻ nông sản — farmKitchenValue.homegrownRecipeDecision 62): xem mục Trạng thái hiện tại
-- GĐ1043 (phủ test verdict 'even' của nấu-vs-bán-nguyên-liệu — kitchenValue.cookOrSellRaw 50): xem mục Trạng thái hiện tại
-- GĐ1042 (phủ test rơi mặc định "mục" của toast danh sách — onboarding.fitList 56): xem mục Trạng thái hiện tại
-- GĐ1041 (phủ test mở khóa hợp đồng theo cấp tiệm — contracts.activeContractsFor 71–72): xem mục Trạng thái hiện tại
-- GĐ1040 (phủ test rơi nghề cuối khi khách chọn — professions.pickProfession 294–295): xem mục Trạng thái hiện tại
-- GĐ1039 (phủ test rơi tiền mặt khi khách chọn thanh toán — payments.pickPayment 45): xem mục Trạng thái hiện tại
-- GĐ1038 (phủ test bốc tính theo tỉ trọng — staffTraits.rollTrait 76–77): xem mục Trạng thái hiện tại
-- GĐ1037 (phủ test nấu tiêu hàng nhà trồng — orders.startCook 137–140 chống exploit): xem mục Trạng thái hiện tại
-- GĐ1036 (phủ test rơi món cuối khi khách nhóm chọn — branches.pickWeighted 468–469): xem mục Trạng thái hiện tại
-- GĐ1035 (phủ test rơi giải cuối vòng quay — gifts.spinWheelPrize 141–142): xem mục Trạng thái hiện tại
-- GĐ1034 (phủ test chọn nhóm khách đêm — branches.pickNightGroup 387–388): xem mục Trạng thái hiện tại
-- GĐ1033 (phủ test ca đêm cần nâng cấp + đào tạo lên sao — setShift 47–49/trainStaff 68): xem mục Trạng thái hiện tại
-- GĐ1032 (phủ test đầu bếp trực ca làm nhanh mẻ nấu — orders.cookSpeed 28–29): xem mục Trạng thái hiện tại
-- GĐ1031 (phủ test nhánh rơi cuối weightedPick — layout 130–131/kẹp trọng số âm): xem mục Trạng thái hiện tại
-- GĐ1030 (phủ test báo kệ hết hàng — sales.noteMiss 111–116): xem mục Trạng thái hiện tại
-- GĐ1029 (phủ test premium món nhà trồng — sales.checkout homegrown 58–68): xem mục Trạng thái hiện tại
-- GĐ1028 (phủ test xin lỗi mạng xã hội — social apologize 3 nhánh): xem mục Trạng thái hiện tại
-- GĐ1027 (phủ test mốc cuối dự án đèn + cấu trúc ĐÈN — contributeLandmark 104–105/LANDMARK2_STAGES): xem mục Trạng thái hiện tại
-- GĐ1026 (phủ test đọc xong hội thoại chương — closeChapter reward/xp/openRival): xem mục Trạng thái hiện tại
-- GĐ1025 (phủ test mô tả giỏ hàng đơn app — describeOnline/onlineValue/deliveryStars): xem mục Trạng thái hiện tại
-- GĐ1024 (phủ test nhận thưởng nhiệm vụ — claimQuest daily/story/reset): xem mục Trạng thái hiện tại
