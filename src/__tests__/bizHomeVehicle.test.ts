@@ -86,6 +86,17 @@ describe('bữa sáng', () => {
     expect(g().money).toBe(m0);
     expect(g().biz.breakfastDay).toBe(-1);
   });
+
+  it('GĐ1053: không đủ tiền ăn sáng → pay từ chối, không ghi breakfastDay, báo thiếu tiền', () => {
+    useGame.setState({ money: BREAKFAST.price - 1 });
+    const toasts: string[] = [];
+    useGame.setState({ notify: (m: string) => void toasts.push(m) });
+    const m0 = g().money;
+    eatBreakfast();
+    expect(g().money).toBe(m0); // pay không trừ tiền khi nghèo
+    expect(g().biz.breakfastDay).toBe(-1); // không ghi "đã ăn"
+    expect(toasts.some((t) => t.includes('Không đủ tiền ăn sáng'))).toBe(true);
+  });
 });
 
 describe('dịch vụ quầy', () => {
