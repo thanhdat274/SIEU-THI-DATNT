@@ -10,7 +10,7 @@ import {
   bestPerMinute,
   hasSellRawAdvice,
 } from '../data/kitchenValue';
-import { RECIPES } from '../data/recipes';
+import { RECIPES, type Recipe } from '../data/recipes';
 
 const byId = (id: string) => RECIPES.find((r) => r.id === id)!;
 
@@ -77,6 +77,24 @@ describe('kitchenValue — GIÁ TRỊ THẬT của nguyên liệu (nấu vs bán
     // Lãi mẻ VẪN dương — nhưng so với bán 2 ly nguyên liệu ra quầy thì kém 100đ
     expect(recipeNetMargin(r)).toBe(17600);
     expect(cookOrSellRaw(r)).toEqual({ verdict: 'sell_raw', delta: 100 });
+  });
+
+  it('GĐ1043: nấu = bán nguyên liệu rời → verdict even (Δ0) — món tự túc cân bằng', () => {
+    // input và output CÙNG 1 món (xuc_xich_nuong sell 5700), đều lượng 2 → cooked == raw
+    const r = {
+      id: 'test_even',
+      name: 'Món cân bằng',
+      station: 'food_grill',
+      inputs: [{ productId: 'xuc_xich_nuong', quantity: 2 }],
+      outputId: 'xuc_xich_nuong',
+      outputQty: 2,
+      durationMin: 1,
+      unlock: 1,
+      reputationGain: 0,
+    } satisfies Recipe;
+    expect(cookedRevenue(r)).toBe(11400);
+    expect(rawSaleValue(r)).toBe(11400);
+    expect(cookOrSellRaw(r)).toEqual({ verdict: 'even', delta: 0 });
   });
 });
 
