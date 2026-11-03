@@ -62,3 +62,22 @@ describe('GĐ1101 — gợi ý "trồng để pha": nối thực đơn quán nư
     expect(s.find((x) => x.panel === 'garden' && x.label === cropById('vai').name)).toBeUndefined();
   });
 });
+
+describe('GĐ1110 — gợi ý "nuôi lấy sữa" khi thực đơn quán cần sữa tươi', () => {
+  it('menu có Bạc xỉu (dùng sữa tươi) + kho sữa cạn → gợi ý nuôi Bò sữa', () => {
+    const s = prodSuggestToday(baseArgs({ quanMenu: ['bac_xiu'] }));
+    const line = s.find((x) => x.panel === 'garden' && x.label === 'Bò sữa');
+    expect(line).toBeDefined();
+    expect(line!.detail).toContain('thực đơn quán cần để pha');
+  });
+
+  it('đủ sữa (≥8) hoặc menu không có món sữa → không gợi ý', () => {
+    expect(prodSuggestToday(baseArgs({ quanMenu: ['bac_xiu'], storage: { sua_tuoi: 9 } })).find((x) => x.label === 'Bò sữa')).toBeUndefined();
+    expect(prodSuggestToday(baseArgs({ quanMenu: ['tra_vai'] })).find((x) => x.label === 'Bò sữa')).toBeUndefined();
+    expect(prodSuggestToday(baseArgs({ quanMenu: undefined })).find((x) => x.label === 'Bò sữa')).toBeUndefined();
+  });
+
+  it('món sữa chưa mở cấp (Bạc xỉu mở 33, cấp 32) → không gợi ý', () => {
+    expect(prodSuggestToday(baseArgs({ level: 32, quanMenu: ['bac_xiu'] })).find((x) => x.label === 'Bò sữa')).toBeUndefined();
+  });
+});

@@ -1,4 +1,4 @@
-import { CROPS, inSeason } from './garden';
+import { ANIMALS, CROPS, inSeason } from './garden';
 import { COOK_UNLOCK, COOKED_PRODUCT_IDS, RECIPES, type CookingStation } from './recipes';
 import { QUAN_NUOC_UNLOCK } from './quanNuoc';
 import { QUAN_RECIPES, quanRecipeById } from './quanRecipes';
@@ -57,6 +57,17 @@ export function quanMenuCropNeeds(menu: readonly string[] | undefined, level: nu
   return out;
 }
 
+/**
+ * GĐ1105/1110 — thực đơn quán có món dùng sản phẩm VẬT NUÔI (sữa tươi của bò) đã mở cấp không?
+ * Thuần đọc — ghép QUAN_RECIPES với ANIMALS.
+ */
+export function quanMenuMilkNeed(menu: readonly string[] | undefined, level: number): boolean {
+  return (menu ?? []).some((id) => {
+    const r = quanRecipeById(id);
+    return !!r && r.unlock <= level && r.uses.some((u) => Object.values(ANIMALS).some((a) => a.productId === u.id));
+  });
+}
+
 export function prodSuggestToday(a: ProdSuggestArgs): ProdSugg[] {
   const out: ProdSugg[] = [];
 
@@ -76,6 +87,10 @@ export function prodSuggestToday(a: ProdSuggestArgs): ProdSugg[] {
       const why = [hot ? 'khách săn' : '', season, missing ? 'kệ thiếu' : '', quanNeed ? 'thực đơn quán cần để pha' : ''].filter(Boolean).join(', ');
       out.push({ icon: '🌾', label: c.name, detail: `trồng ngay — ${why}`, panel: 'garden' });
       if (out.length >= MAX_EACH) break;
+    }
+    // GĐ1110 — 🐄 Nên nuôi: thực đơn quán có món dùng sữa (Bạc xỉu/Ca cao…) mà kho sữa tươi cạn
+    if (quanMenuMilkNeed(a.quanMenu, a.level) && low('sua_tuoi')) {
+      out.push({ icon: '🐄', label: 'Bò sữa', detail: 'nuôi lấy sữa — thực đơn quán cần để pha', panel: 'garden' });
     }
   }
 
