@@ -743,6 +743,8 @@
 #ui .hud-room-icon { display: inline-flex; align-items: center; gap: 3px; }
 #ui .hud-room-icon em { font-style: normal; font-weight: 700; font-size: 12px; }
 @media (min-width: 1001px) { #ui .hud-room-icon em { display: none; } }
+/* GĐ1067: 1001–1140px dock 12 nút rộng ~1064px làm nút "Thêm" bị cắt (layoutAudit overBy 52 @1024) → thu nút cho vừa. */
+@media (min-width: 1001px) and (max-width: 1140px) { #ui .hud-tool { min-width: 58px; padding: 6px 4px; } }
 
 /* Khung hướng dẫn không bao giờ tràn ngang; đang có hội thoại thì cột thông báo nhường chỗ, khỏi bị che */
 #ui .hud-tutorial { box-sizing: border-box; max-width: 100%; min-width: 0; }
