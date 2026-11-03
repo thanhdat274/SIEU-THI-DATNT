@@ -10,7 +10,7 @@ import { bulkDiscount, orderTotal, SUPPLIERS, supplierSells, trending, unitCost 
 import { guideActiveOn, guideInCart, guideIdsOf, guideProducts } from '../data/onboarding';
 import { cheapestSupplier, orderAssessment, type AssessLevel, type AssessLine, type BuyTone, type Dir } from '../data/procure';
 import { PARTNER_TIERS, deliversInstantly } from '../data/supplierRel';
-import { newUnlockMark } from '../data/advice';
+import { NEW_UNLOCK_WINDOW, newUnlockMark } from '../data/advice';
 import { cheapestSupplierFor, type CheapestProductResult } from '../data/supplierValue';
 import { isFairOpen, makeFairOffer } from '../data/fairmerchant';
 import { showRestockExtras } from '../data/onboarding';
@@ -31,7 +31,8 @@ import { festivalOn, festivalStock, monthOf, upcomingFestival } from '../data/ca
 import { weekendPullOf, weekendSellingDays } from '../data/weekendRestock';
 
 /** Món mở khóa trong vòng chừng này cấp gần đây được gắn nhãn "Mới". */
-const NEW_WITHIN = 4;
+// GĐ1151: một nguồn sự thật với dấu 🆕 — cửa sổ 'mới' 4 cấp định nghĩa ở advice.ts
+const NEW_WITHIN = NEW_UNLOCK_WINDOW;
 type Filter = 'suggest' | 'all' | Category;
 
 import { ASSESS_STYLE, BUY_TONE_COLOR, BUY_TONE_ICON, BUY_TONE_LABEL, DIR_WORD, Meter } from './orderPanelParts';
