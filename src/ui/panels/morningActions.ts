@@ -4,7 +4,7 @@ import { caseSize, formatMoney } from '../../data/products';
 import { debtDayAction } from '../../data/debtLedger';
 import { birthdaysToday, birthdayHint, birthdayEve, type RegularDef } from '../../data/regulars';
 import { isQuanMatchDay } from '../../data/quanNuoc';
-import { quanNuocDayAction } from '../../data/quanNuocInsights';
+import { quanBlockedDrinkAction, quanNuocDayAction } from '../../data/quanNuocInsights';
 import { isWeekend, weekdayOf } from '../../data/calendar';
 import { festivalPrepAction, festivalRestockPlan } from '../../data/festivalRestock';
 import { pickMorningShiftAction } from '../../data/staffIdle';
@@ -39,6 +39,9 @@ export function buildMorningActions(c: MorningActionsCtx): DayAction[] {
   // GĐ189: quán nước thiếu kho — trước giờ chỉ là thẻ thụ động, giờ thành việc sáng ưu tiên (nạp đồ uống).
   const quanAction = quanNuocDayAction(quanHealth, day, weather);
   if (quanAction) candidates.push(quanAction);
+  // GĐ1102: món trên menu quán ngừng bán vì hết nguyên liệu — cụ thể hơn "nạp đồ uống", chỉ khi quán mở.
+  const blockedAct = biz.quanNuoc?.open ? quanBlockedDrinkAction(biz.quanNuoc.menu, level, storage) : null;
+  if (blockedAct && !candidates.some((x) => x.text === blockedAct.text)) candidates.push(blockedAct);
   // GĐ612: ngày cúng khách hỏi nhang/trái cây (GĐ609) — nhắc nhập món đã mở mà chưa có hàng
   const cungAct = cungGoodsAction(day, level, haveStock); // GĐ612/613 → GĐ633 tách hàm thuần
   if (cungAct) candidates.push(cungAct);

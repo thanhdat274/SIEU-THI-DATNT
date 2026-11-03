@@ -121,6 +121,32 @@ export function quanNuocDayAction(h: QuanNuocHealth | null | undefined, day?: nu
 }
 
 /**
+ * GĐ1102 — "Món trên menu ngừng bán vì hết nguyên liệu" thành việc sáng: QuanMenuSection có cảnh báo
+ * ⚠️ từng món (GĐ415), nhưng nó nằm sâu trong panel — món pha lời cao nhất ngừng bán cả ngày là rỉ
+ * tiền thật mà Sổ đầu ngày không nói. Trả việc sáng đầu tiên (món thứ tự thực đơn) khi quán MỞ và
+ * món đã mở thiếu ≥1 nguyên liệu (kho ≤0): danger + priority 1 như "Nạp đồ uống" (GĐ189).
+ * Thuần đọc menu/level/storage — KHÔNG đổi SAVE_VERSION/kinh tế/sim.
+ */
+export function quanBlockedDrinkAction(
+  menu: readonly string[] | undefined,
+  level: number,
+  storage: Record<string, number>,
+): DayAction | null {
+  for (const id of menu ?? []) {
+    const r = quanRecipeById(id);
+    if (!r || r.unlock > level) continue;
+    const missing = r.uses.filter((u) => (storage[u.id] ?? 0) <= 0).map((u) => productById(u.id).name);
+    if (!missing.length) continue;
+    return {
+      icon: '🧋', panel: 'quannuoc',
+      text: `${r.name} ngừng bán — thiếu ${missing.join(', ')} (nạp để pha)`,
+      danger: true, priority: 1,
+    };
+  }
+  return null;
+}
+
+/**
  * GĐ190 — "Nạp bao nhiêu để bán đủ tối nay?" — companion nạp kho của GĐ189: Sổ đầu ngày nhắc quán
  * thiếu đồ uống, nhưng vế quan trọng là NGƯỜI CHƠI cần biết NHẬP THÊM BAO NHIÊU ly và ấn ở đâu để
  * xử lý. Helper thuần này trả con số thiếu hụt tối nay (chênh giữa `tonight.wanted` — nhu cầu dự phóng
