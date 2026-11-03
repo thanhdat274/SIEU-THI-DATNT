@@ -17,6 +17,7 @@ export function GardenPanel() {
   const { garden, level, money, day, weather, storage, storageLots, furniture, biz, plantCrop, waterGarden, waterPlot, fertilizePlot, harvestPlot, buyAnimal, feedPen, collectPen, sellFattened, expandFarm, deliverFarmOrder, buyFarmBuilding, upgradeFarmBuilding, cleanupFarm, closePanel } = useGame();
   const homegrown = Object.entries(garden.homegrown).filter(([, q]) => q > 0);
   const quanMenu = biz.quanNuoc?.open ? biz.quanNuoc.menu : undefined; // GĐ1139: chia sẻ cho cả 2 khối tư vấn
+  const stationOpen = (st: import('../../data/recipes').CookingStation) => furniture.some((f2) => f2.type === st); // GĐ1140
   const tier = LAND_TIERS[garden.land] ?? LAND_TIERS[LAND_TIERS.length - 1];
   const nextTier = LAND_TIERS[garden.land + 1];
   const order = garden.farmOrder;
@@ -57,7 +58,7 @@ export function GardenPanel() {
             const lines = homegrown
               .map(([id, qty]) => {
                 // GĐ1093 — xét cả BẾP (nấu) lẫn QUÁN NƯỚC (pha): chọn nơi nông sản bõ nhất.
-                const f = farmVsCook(id);
+                const f = farmVsCook(id, 0, { level, stationOpen }); // GĐ1140: chỉ nấu món đã mở cấp + trạm đã xây
                 const q = farmVsDrinks(id, 0, quanMenu); // GĐ1139: chỉ tư vấn pha món ĐANG trên thực đơn
                 const cookNet = f.best?.homegrownNet ?? -Infinity;
                 const brewNet = q.best?.homegrownNet ?? -Infinity;
@@ -80,7 +81,7 @@ export function GardenPanel() {
                   id, qty, key: id,
                   text: `nấu <b>${d.recipe.name}</b> lời ~${formatMoney(d.homegrownNet)} (+${formatMoney(d.deltaVsSell)} so bán lẻ ${formatMoney(d.sellLot)})${note}${expiryNote}`,
                   thin: d.homegrownNet < d.sellLot, // nấu lời còn kém cả bán lẻ cả lot — bán lẻ thật sự đáng cân nhắc
-                  impact: homegrownImpact(id, quanMenu), // GĐ1109/1139: xếp theo tác động, pha đúng món trên menu
+                  impact: homegrownImpact(id, quanMenu, { level, stationOpen }), // GĐ1109/1139/1140
                 };
               })
               .sort((a, b) => (b.impact ?? -Infinity) - (a.impact ?? -Infinity))

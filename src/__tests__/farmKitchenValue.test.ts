@@ -159,3 +159,21 @@ describe('cookableProducts', () => {
     expect(ids).toContain('banhmi');
   });
 });
+
+describe('GĐ1140 — farmVsCook lọc theo cấp + trạm đã xây (không tư vấn món chưa nấu được)', () => {
+  it('cơm sườn (mở 40): cấp 30 + không trạm → recipes rỗng verdict sell; cấp 45 + trạm mở → cook', () => {
+    const noStation = () => false;
+    const withGrill = (st: string) => st === 'food_grill';
+    expect(farmVsCook('rau', 0, { level: 30, stationOpen: noStation }).verdict).toBe('sell');
+    // cấp 30 + grill: cơm sườn (40) bị loại, còn Cơm hộp gà (mở 30) → best là cơm hộp, không phải cơm sườn
+    const at30 = farmVsCook('rau', 0, { level: 30, stationOpen: withGrill });
+    expect(at30.best!.recipe.id).toBe('recipe_com_hop_ga');
+    const full = farmVsCook('rau', 0, { level: 45, stationOpen: withGrill });
+    expect(full.best!.recipe.id).toBe('recipe_com_suon');
+    expect(full.verdict).toBe('cook');
+  });
+
+  it('không truyền opts → hành vi cũ (tất cả công thức, kể cả chưa mở — tương thích test cũ)', () => {
+    expect(farmVsCook('rau').best!.recipe.id).toBe('recipe_com_suon');
+  });
+});

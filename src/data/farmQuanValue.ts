@@ -161,8 +161,12 @@ export function bestAnimalForMenu(g: Parameters<typeof bestAnimal>[0], level: nu
  * chú ý nhất lên trước khi cắt 5 dòng): max(lãi nấu, lãi pha) theo cơ hội phí bán lẻ; -Infinity khi
  * nông sản không vào bếp/pha nào (chỉ bán lẻ — dòng chìm xuống). Thuần đọc.
  */
-export function homegrownImpact(productId: string, menu?: readonly string[]): number {
-  const cookBest = farmVsCook(productId).best;
+export function homegrownImpact(
+  productId: string,
+  menu?: readonly string[],
+  cookOpts?: { level?: number; stationOpen?: (st: import('./recipes').CookingStation) => boolean },
+): number {
+  const cookBest = farmVsCook(productId, 0, cookOpts).best;
   const cook = cookBest ? cookBest.homegrownNet : -Infinity;
   const drink = farmVsDrinks(productId, 0, menu).best?.homegrownNet ?? -Infinity;
   return Math.max(cook, drink);
