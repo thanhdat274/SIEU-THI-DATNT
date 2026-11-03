@@ -5,6 +5,7 @@ import {
   cleanMenu, QUAN_RECIPES, QUAN_VARIETY_BONUS, recipeCapacity, recipeCupCost,
 } from '../../data/quanRecipes';
 import { styles } from './shared';
+import { newUnlockMark } from '../../data/advice';
 
 /** Thực đơn pha chế quán nước (GĐ415): chọn tối đa 4 món, mỗi món hiện lời/ly và số ly kho đủ pha. */
 export function QuanMenuSection() {
@@ -51,7 +52,7 @@ export function QuanMenuSection() {
               {locked ? `Cấp ${r.unlock}` : on ? '✓ Bán' : 'Thêm'}
             </button>
             <div style={{ fontSize: 13, lineHeight: 1.4 }}>
-              {r.icon} <b>{r.name}</b> · {formatMoney(Math.round(r.price * mul))} · lời ~{formatMoney(profit)}/ly{r.hot ? " · ♨ đồ nóng (mưa/rét đông khách)" : ""}
+              {r.icon} <b>{r.name}</b>{newUnlockMark(r.unlock, level)} · {formatMoney(Math.round(r.price * mul))} · lời ~{formatMoney(profit)}/ly{r.hot ? " · ♨ đồ nóng (mưa/rét đông khách)" : ""}
               <div style={{ fontSize: 11, opacity: 0.75 }}>
                 {r.uses.map((u) => productById(u.id).name).join(' + ')}
                 {!locked && (missing.length ? ` · ⚠️ thiếu ${missing.join(', ')}` : ` · kho đủ ~${cap} ly`)}

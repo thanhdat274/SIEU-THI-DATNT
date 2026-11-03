@@ -4,7 +4,7 @@ import { RECIPES, STATIONS, type CookingStation } from '../../data/recipes';
 import { formatMoney, productById } from '../../data/products';
 import { kitchenValue } from '../../data/kitchenValue';
 import { cookAdvice } from '../../data/cookSchedule';
-import { expiringSoon, expiryInputsNote } from '../../data/advice';
+import { expiringSoon, expiryInputsNote, newUnlockMark } from '../../data/advice';
 import { cookSpeed, bartenderBoost } from '../../core/slices/orders';
 import { FESTIVALS, festivalOn } from '../../data/calendar';
 import { Footer, styles, Tabs } from './shared';
@@ -99,7 +99,7 @@ export function CookPanel() {
                 return (
                   <div key={r.id} style={{ ...styles.card, opacity: locked || outOfSeason ? 0.5 : 1 }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <b>{r.name}</b>
+                      <b>{r.name}</b>{newUnlockMark(r.unlock, level)}
                       {fest && <span style={{ fontSize: 11, color: outOfSeason ? '#e67e22' : '#2ecc71', marginLeft: 6 }}>{fest.icon} {outOfSeason ? `chỉ trong dịp ${fest.name}` : 'đúng dịp — gói đi!'}</span>}
                       <div style={{ fontSize: 12, opacity: 0.8 }}>
                         {r.inputs.map((i) => {

@@ -323,3 +323,11 @@ export function waitLossStats(
   const peak = peakHours(byHour).peak;
   return { count, pct: customers > 0 ? count / customers : 1, peakHour: peak ? peak.hour : null };
 }
+
+/**
+ * GĐ1125 — dấu "🆕" cho món/công thức vừa mở ĐÚNG cấp hiện tại (người chơi mới lên cấp thường
+ * bỏ qua món mới trong danh sách dài). Cấp khác (kể cả chưa mở) → rỗng. Thuần đọc.
+ */
+export function newUnlockMark(unlock: number, level: number): string {
+  return unlock === level ? ' 🆕' : '';
+}

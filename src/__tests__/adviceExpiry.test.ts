@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { expiryNoteFor, expiryInputsNote } from '../data/advice';
+import { expiryNoteFor, expiryInputsNote, newUnlockMark } from '../data/advice';
 
 describe('GĐ1117 — expiryNoteFor: đuôi dòng tư vấn cho nông sản sắp hết hạn', () => {
   it('có hạn → nhắc dùng ngay với số ngày đúng; 0 ngày (hỏng hôm nay) vẫn nhắc', () => {
@@ -23,5 +23,14 @@ describe('GĐ1118 — expiryInputsNote: nhắc nấu ngay khi nguyên liệu cô
     expect(expiryInputsNote([{ productId: 'tra' }], new Map([['x_vai', 1]]))).toBe('');
     expect(expiryInputsNote([{ productId: 'tra' }, { productId: 'x_vai' }], new Map([['x_vai', 2]])))
       .toBe(' · ⏳ Vải hết hạn ~2 ngày — nấu ngay');
+  });
+});
+
+describe('GĐ1125 — newUnlockMark: dấu 🆕 cho món vừa mở đúng cấp này', () => {
+  it('mở đúng cấp hiện tại → 🆕; cấp khác (kể cả chưa mở/đã mở lâu) → rỗng', () => {
+    expect(newUnlockMark(45, 45)).toBe(' 🆕');
+    expect(newUnlockMark(46, 45)).toBe('');
+    expect(newUnlockMark(44, 45)).toBe('');
+    expect(newUnlockMark(1, 45)).toBe('');
   });
 });
