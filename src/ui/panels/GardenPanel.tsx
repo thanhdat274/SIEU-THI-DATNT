@@ -8,7 +8,7 @@ import { animalPerDay, bestAnimal, bestCrop, cropPerDay } from '../../data/farmV
 import { farmVsCook } from '../../data/farmKitchenValue';
 import { bestCropForMenu, bestAnimalForMenu, farmVsDrinks, homegrownImpact, orderSellNote } from '../../data/farmQuanValue';
 import { isWeekend } from '../../data/calendar';
-import { expiringSoon, expiryNoteFor } from '../../data/advice';
+import { expiringSoon, expiryNoteFor, newUnlockMark } from '../../data/advice';
 import { isXoiCungDay } from '../../data/tiemXoi';
 import { Callout, Footer, styles } from './shared';
 
@@ -200,7 +200,7 @@ export function GardenPanel() {
                         <button key={c.id} style={{ ...styles.btn, background: money >= c.seedCost ? (onSeason && c.season ? '#1e8449' : '#2ecc71') : '#555', color: '#fff' }}
                           onClick={() => plantCrop(i, c.id)}
                           title={`~${c.days} ngày, thu ${c.yieldQty} món${c.regrowDays ? `, sau đó mỗi ${c.regrowDays} ngày ra trái tiếp` : ''}${c.season ? `, mùa vụ tháng ${c.season[0]}–${c.season[1]} (đúng vụ ×1,5)` : ''}`}>
-                          {c.icon} {c.name} ({formatMoney(c.seedCost)}){onSeason && c.season ? ' 🌤️' : ''}
+                          {c.icon} {c.name}{newUnlockMark(c.unlock, level)} ({formatMoney(c.seedCost)}){onSeason && c.season ? ' 🌤️' : ''}
                         </button>
                       );
                     })}

@@ -34,3 +34,10 @@ describe('GĐ1125 — newUnlockMark: dấu 🆕 cho món vừa mở đúng cấp
     expect(newUnlockMark(1, 45)).toBe('');
   });
 });
+
+describe('GĐ1126 — 🆕 ở nút trồng giống: đồng bộ cùng dấu món/công thức', () => {
+  it('giống vừa mở đúng cấp → 🆕; đã mở lâu → rỗng (newUnlockMark tái dùng, 1 nguồn sự thật)', () => {
+    expect(newUnlockMark(32, 32)).toBe(' 🆕');
+    expect(newUnlockMark(32, 45)).toBe('');
+  });
+});
