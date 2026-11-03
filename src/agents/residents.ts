@@ -19,6 +19,16 @@ const RESIDENTS: { archetype: CharacterArchetype; color: number; leave: number; 
 interface Resident { walker: Walker; house: number; home: boolean; leave: number; back: number }
 
 /**
+ * (GĐ1010) Người dân trong hẻm có đang ở NGOÀI (đi làm/ca) vào phút này không.
+ * THUẦN — tách khỏi `ResidentManager.reset` để test (phố sống động, ai cũng ra/về đúng giờ làm;
+ * TRƯỚC ĐÂY file này 0% coverage). `leave`/`back` là phút trong ngày: ca thường `leave < back` thì ra
+ * rồi về cùng ngày; người ca đêm (y tá) `leave >= back` thì ra tối nay về sáng mai (qua nửa đêm).
+ */
+export function isResidentAway(leave: number, back: number, minutes: number): boolean {
+  return leave < back ? minutes >= leave && minutes < back : minutes >= leave || minutes < back;
+}
+
+/**
  * Hàng xóm trong 5 nhà dọc hẻm: sáng ra khỏi cửa đi làm, tối về nhà (y tá thì ngược ca).
  * Chỉ để phố có người sống; không mua hàng (khách gọi điện đặt hàng chính là họ).
  */
@@ -42,7 +52,7 @@ export class ResidentManager {
   reset() {
     const m = useGame.getState().minutes;
     for (const r of this.residents) {
-      const out = r.leave < r.back ? m >= r.leave && m < r.back : m >= r.leave || m < r.back;
+      const out = isResidentAway(r.leave, r.back, m);
       r.home = !out;
       r.walker.path = [];
       r.walker.plan = [];
