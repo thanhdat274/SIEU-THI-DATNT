@@ -16,6 +16,7 @@ import { Callout, Footer, styles } from './shared';
 export function GardenPanel() {
   const { garden, level, money, day, weather, storage, storageLots, furniture, biz, plantCrop, waterGarden, waterPlot, fertilizePlot, harvestPlot, buyAnimal, feedPen, collectPen, sellFattened, expandFarm, deliverFarmOrder, buyFarmBuilding, upgradeFarmBuilding, cleanupFarm, closePanel } = useGame();
   const homegrown = Object.entries(garden.homegrown).filter(([, q]) => q > 0);
+  const quanMenu = biz.quanNuoc?.open ? biz.quanNuoc.menu : undefined; // GĐ1139: chia sẻ cho cả 2 khối tư vấn
   const tier = LAND_TIERS[garden.land] ?? LAND_TIERS[LAND_TIERS.length - 1];
   const nextTier = LAND_TIERS[garden.land + 1];
   const order = garden.farmOrder;
@@ -36,7 +37,6 @@ export function GardenPanel() {
           {(() => {
             // GĐ1104 — "Hôm nay đáng" nay nhìn thấy giá trị pha: cây nằm trong thực đơn quán được
             // định giá theo món pha hời hơn bán lẻ (menu chưa mở/món chưa mở → y hệt bestCrop cũ).
-            const quanMenu = biz.quanNuoc?.open ? biz.quanNuoc.menu : undefined;
             const bc = quanMenu?.length ? bestCropForMenu(level, day, quanMenu) : bestCrop(level, day);
             const ba = quanMenu?.length ? bestAnimalForMenu(garden, level, quanMenu) : bestAnimal(garden);
             if (!bc && !ba) return null;
@@ -58,7 +58,7 @@ export function GardenPanel() {
               .map(([id, qty]) => {
                 // GĐ1093 — xét cả BẾP (nấu) lẫn QUÁN NƯỚC (pha): chọn nơi nông sản bõ nhất.
                 const f = farmVsCook(id);
-                const q = farmVsDrinks(id);
+                const q = farmVsDrinks(id, 0, quanMenu); // GĐ1139: chỉ tư vấn pha món ĐANG trên thực đơn
                 const cookNet = f.best?.homegrownNet ?? -Infinity;
                 const brewNet = q.best?.homegrownNet ?? -Infinity;
                 // GĐ1111 — đơn quán xóm đang mua nông sản này (trả ×bonus) → nhắc trước khi nấu/pha cả lot
@@ -80,7 +80,7 @@ export function GardenPanel() {
                   id, qty, key: id,
                   text: `nấu <b>${d.recipe.name}</b> lời ~${formatMoney(d.homegrownNet)} (+${formatMoney(d.deltaVsSell)} so bán lẻ ${formatMoney(d.sellLot)})${note}${expiryNote}`,
                   thin: d.homegrownNet < d.sellLot, // nấu lời còn kém cả bán lẻ cả lot — bán lẻ thật sự đáng cân nhắc
-                  impact: homegrownImpact(id), // GĐ1109: xếp dòng đáng chú ý nhất lên trước
+                  impact: homegrownImpact(id, quanMenu), // GĐ1109/1139: xếp theo tác động, pha đúng món trên menu
                 };
               })
               .sort((a, b) => (b.impact ?? -Infinity) - (a.impact ?? -Infinity))

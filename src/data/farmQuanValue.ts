@@ -61,8 +61,13 @@ export interface FarmVsDrinks {
 }
 
 /** Toàn bộ quyết định "pha hay bán lẻ" cho 1 nông sản nhà trồng, xét mọi món quán nước có dùng nó. */
-export function farmVsDrinks(productId: string, minUnlock = 0): FarmVsDrinks {
-  const drinks = QUAN_RECIPES.filter((r) => minUnlock === 0 || r.unlock >= minUnlock)
+/**
+ * GĐ1139 — `menu` lọc theo thực đơn quán đang chạy (undefined = xét tất cả — giữ tương thích
+ * test cũ; `[]` = quán đóng/không món nào → không gợi pha). Chỉ tư vấn pha món người chơi THỰC
+ * pha được, khớp `brewGrossPerUnit` (GĐ1104).
+ */
+export function farmVsDrinks(productId: string, minUnlock = 0, menu?: readonly string[]): FarmVsDrinks {
+  const drinks = QUAN_RECIPES.filter((r) => (minUnlock === 0 || r.unlock >= minUnlock) && (!menu || menu.includes(r.id)))
     .map((r) => homegrownDrinkDecision(r, productId))
     .filter((d): d is HomegrownDrinkDecision => d !== null)
     .sort((a, b) => b.homegrownNet - a.homegrownNet);
@@ -156,10 +161,10 @@ export function bestAnimalForMenu(g: Parameters<typeof bestAnimal>[0], level: nu
  * chú ý nhất lên trước khi cắt 5 dòng): max(lãi nấu, lãi pha) theo cơ hội phí bán lẻ; -Infinity khi
  * nông sản không vào bếp/pha nào (chỉ bán lẻ — dòng chìm xuống). Thuần đọc.
  */
-export function homegrownImpact(productId: string): number {
+export function homegrownImpact(productId: string, menu?: readonly string[]): number {
   const cookBest = farmVsCook(productId).best;
   const cook = cookBest ? cookBest.homegrownNet : -Infinity;
-  const drink = farmVsDrinks(productId).best?.homegrownNet ?? -Infinity;
+  const drink = farmVsDrinks(productId, 0, menu).best?.homegrownNet ?? -Infinity;
   return Math.max(cook, drink);
 }
 

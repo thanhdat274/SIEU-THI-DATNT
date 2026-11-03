@@ -87,3 +87,20 @@ describe('GĐ1111 — orderSellNote: nhắc đơn quán xóm trên dòng tư v�
     expect(orderSellNote('x_vai', { ...order, bonus: 1 }, 6)).toBe('');
   });
 });
+
+describe('GĐ1139 — farmVsDrinks lọc theo thực đơn quán (không tư vấn pha món không có trên menu)', () => {
+  it('menu có tra_vai → tư vấn như cũ; menu khác (sinh_to_oi) → vải verdict sell', () => {
+    expect(farmVsDrinks('x_vai', 0, ['tra_vai']).verdict).toBe('brew');
+    expect(farmVsDrinks('x_vai', 0, ['sinh_to_oi']).verdict).toBe('sell');
+  });
+
+  it('menu rỗng (quán đóng) → không gợi pha; không truyền → hành vi cũ (tất cả món)', () => {
+    expect(farmVsDrinks('x_vai', 0, []).verdict).toBe('sell');
+    expect(farmVsDrinks('x_vai').verdict).toBe('brew');
+  });
+
+  it('homegrownImpact nhận menu: vải với menu tra_vai > 0, với menu khác → chỉ còn lãi bếp (nếu có) hoặc -Inf', () => {
+    expect(homegrownImpact('x_vai', ['tra_vai'])).toBeGreaterThan(0);
+    expect(homegrownImpact('x_vai', ['sinh_to_oi'])).toBe(-Infinity); // vải không vào bếp nào
+  });
+});
