@@ -29,6 +29,9 @@ export const QUAN_RECIPES: QuanRecipe[] = [
   { id: 'ca_phe_sua', name: 'Cà phê sữa đá', icon: '🥛', unlock: 30, price: 20_000, uses: [{ id: 'x_ca_phe_hoa_tan', cups: 15 }, { id: 'x_sua_dac', cups: 10 }, { id: 'x_nuoc_da', cups: 10 }] },
   { id: 'cam_vat', name: 'Cam vắt', icon: '🍊', unlock: 31, price: 22_000, uses: [{ id: 'x_cam', cups: 3 }, { id: 'x_nuoc_da', cups: 10 }] },
   { id: 'chanh_day', name: 'Chanh dây đá', icon: '💛', unlock: 32, price: 18_000, uses: [{ id: 'x_chanh_day', cups: 6 }, { id: 'x_duong', cups: 30 }, { id: 'x_nuoc_da', cups: 10 }] },
+  // GĐ1090: Trà vải — món quán nước của vải thiều nông trại (x_vai mở cấp 32 nhưng chưa có lối ra pha),
+  // khép chuỗi trồng → pha → bán như GĐ1088. Mở 34 ≥ cấp vải 32 → tự cung được trước khi mở món.
+  { id: 'tra_vai', name: 'Trà vải', icon: '🍒', unlock: 34, price: 20_000, uses: [{ id: 'x_vai', cups: 4 }, { id: 'tra', cups: 40 }, { id: 'x_duong', cups: 30 }, { id: 'x_nuoc_da', cups: 10 }] },
   { id: 'bac_xiu', name: 'Bạc xỉu', icon: '🤎', unlock: 33, price: 25_000, uses: [{ id: 'x_ca_phe_hoa_tan', cups: 25 }, { id: 'sua_tuoi', cups: 6 }, { id: 'x_sua_dac', cups: 10 }, { id: 'x_nuoc_da', cups: 10 }] },
   { id: 'ca_cao_sua', name: 'Ca cao sữa', icon: '🍫', unlock: 34, price: 22_000, uses: [{ id: 'x_bot_cacao', cups: 10 }, { id: 'sua_tuoi', cups: 6 }, { id: 'x_nuoc_da', cups: 10 }] },
   { id: 'sinh_to', name: 'Sinh tố trái cây', icon: '🍓', unlock: 35, price: 28_000, uses: [{ id: 'traicay', cups: 3 }, { id: 'x_sua_dac', cups: 10 }, { id: 'x_nuoc_da', cups: 10 }] },
