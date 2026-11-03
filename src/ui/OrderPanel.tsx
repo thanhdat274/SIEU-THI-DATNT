@@ -33,24 +33,7 @@ import { weekendPullOf, weekendSellingDays } from '../data/weekendRestock';
 const NEW_WITHIN = 4;
 type Filter = 'suggest' | 'all' | Category;
 
-// ─── GĐ57 "Mua khi rẻ": tóm tắt giá của một mối hôm nay / mai (thuần đọc, không đổi kinh tế) ───
-
-const BUY_TONE_LABEL: Record<BuyTone, string> = { cheap: 'nửa rẻ', normal: 'giữa khung', pricey: 'nửa đắt' };
-const BUY_TONE_ICON: Record<BuyTone, string> = { cheap: '📉 rẻ', normal: '• thường', pricey: '📈 đắt' };
-const BUY_TONE_COLOR: Record<BuyTone, string> = { cheap: '#55efc4', normal: '#dfe6e9', pricey: '#ff7675' };
-const DIR_WORD: Record<Dir, string> = { cheaper: 'mai rẻ hơn', pricier: 'mai đắt hơn', flat: 'mai tương đương' };
-
-// ─── GĐ103-2 "Dự phóng trước khi chốt đơn": ước ngày bán hết / thùng kho / nguy cơ hỏng hàng ───
-// Chỉ ĐỌC dữ liệu có sẵn (orderAssessment thuần) — nhãn luôn kèm "chừng/ước", không đổi kinh tế.
-// GD103-2b hotfix theo spec UI/UX: đỏ "nhập dư" chỉ khi bán không kịp hạn VÀ ước hỏng ≥ 2 món;
-// bán chậm hỏng ít → vàng; cầu thấp/chưa bán lần nào → xám "theo dõi thêm" (không ước ngày vô nghĩa).
-
-/** Dòng dự phóng trong ô tên món: ổn/chưa dữ liệu → chữ mờ; bán chậm → vàng #f1c40f; nhập dư → đỏ nổi nền. */
-const ASSESS_STYLE: Record<AssessLevel, React.CSSProperties> = {
-  ok: { color: '#bbb', opacity: 0.8 },
-  near: { color: '#f1c40f' },
-  over: { color: '#ff7675', background: 'rgba(231, 76, 60, 0.12)', borderRadius: 4, padding: '1px 6px' },
-};
+import { ASSESS_STYLE, BUY_TONE_COLOR, BUY_TONE_ICON, BUY_TONE_LABEL, DIR_WORD, Meter } from './orderPanelParts';
 
 export function OrderPanel() {
   const { level, day, money, demand, demandToday, deliveries, placeOrder, closePanel, notify, weatherSeed, forecast, storage, weather, warehouseTier, priceOf, furniture, openPanel, analytics } = useGame();
@@ -580,24 +563,6 @@ export function OrderPanel() {
             {wageShort && !needConfirm ? '⚠️ Vẫn nhập' : supplier.delayDays ? '🚚 Đặt giao sáng mai' : '📦 Nhập ngay'}
           </button>
         </span>
-      </div>
-    </div>
-  );
-}
-
-
-/** Thanh đo: phần đã có (base, đậm) + phần của đơn này (sáng), đỏ khi vượt. */
-function Meter({ label, used, max, base = 0, text }: { label: string; used: number; max: number; base?: number; text: string }) {
-  const pct = (v: number) => `${Math.min(100, max > 0 ? (v / max) * 100 : 100)}%`;
-  const over = used > max;
-  return (
-    <div style={{ flex: 1, minWidth: 220 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 3 }}>
-        <b>{label}</b><span style={{ opacity: 0.8, color: over ? '#ff7675' : undefined }}>{text}</span>
-      </div>
-      <div style={{ position: 'relative', height: 8, borderRadius: 4, background: '#ffffff22', overflow: 'hidden' }}>
-        <div style={{ position: 'absolute', inset: 0, width: pct(used), background: over ? '#e67e22' : '#f1c40f' }} />
-        <div style={{ position: 'absolute', inset: 0, width: pct(base), background: '#2ecc71' }} />
       </div>
     </div>
   );
