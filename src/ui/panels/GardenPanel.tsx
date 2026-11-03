@@ -6,7 +6,7 @@ import {
 } from '../../data/garden';
 import { animalPerDay, bestAnimal, bestCrop, cropPerDay } from '../../data/farmValue';
 import { farmVsCook } from '../../data/farmKitchenValue';
-import { bestCropForMenu, bestAnimalForMenu, farmVsDrinks, homegrownImpact } from '../../data/farmQuanValue';
+import { bestCropForMenu, bestAnimalForMenu, farmVsDrinks, homegrownImpact, orderSellNote } from '../../data/farmQuanValue';
 import { isWeekend } from '../../data/calendar';
 import { isXoiCungDay } from '../../data/tiemXoi';
 import { Callout, Footer, styles } from './shared';
@@ -59,19 +59,21 @@ export function GardenPanel() {
                 const q = farmVsDrinks(id);
                 const cookNet = f.best?.homegrownNet ?? -Infinity;
                 const brewNet = q.best?.homegrownNet ?? -Infinity;
-                if (!f.best && !q.best) return { id, qty, key: id, impact: -Infinity, text: `${productById(id).name}: bán lẻ ~${formatMoney(f.sellPerUnit)}/món` };
+                // GĐ1111 — đơn quán xóm đang mua nông sản này (trả ×bonus) → nhắc trước khi nấu/pha cả lot
+                const note = orderSellNote(id, order, qty);
+                if (!f.best && !q.best) return { id, qty, key: id, impact: -Infinity, text: `${productById(id).name}: bán lẻ ~${formatMoney(f.sellPerUnit)}/món${note}` };
                 if (brewNet > cookNet) {
                   const d = q.best!;
                   return {
                     id, qty, key: id,
-                    text: `pha <b>${d.recipe.name}</b> (~${d.glasses} ly/1) lời ~${formatMoney(d.homegrownNet)}/1 (+${formatMoney(d.homegrownNet)} so bán lẻ ${formatMoney(q.sellPerUnit)})`,
+                    text: `pha <b>${d.recipe.name}</b> (~${d.glasses} ly/1) lời ~${formatMoney(d.homegrownNet)}/1 (+${formatMoney(d.homegrownNet)} so bán lẻ ${formatMoney(q.sellPerUnit)})${note}`,
                     thin: d.homegrownNet < q.sellPerUnit,
                   };
                 }
                 const d = f.best!;
                 return {
                   id, qty, key: id,
-                  text: `nấu <b>${d.recipe.name}</b> lời ~${formatMoney(d.homegrownNet)} (+${formatMoney(d.deltaVsSell)} so bán lẻ ${formatMoney(d.sellLot)})`,
+                  text: `nấu <b>${d.recipe.name}</b> lời ~${formatMoney(d.homegrownNet)} (+${formatMoney(d.deltaVsSell)} so bán lẻ ${formatMoney(d.sellLot)})${note}`,
                   thin: d.homegrownNet < d.sellLot, // nấu lời còn kém cả bán lẻ cả lot — bán lẻ thật sự đáng cân nhắc
                   impact: homegrownImpact(id), // GĐ1109: xếp dòng đáng chú ý nhất lên trước
                 };

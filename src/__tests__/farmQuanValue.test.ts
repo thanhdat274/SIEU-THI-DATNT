@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { homegrownDrinkDecision, farmVsDrinks, drinkableProducts, homegrownImpact } from '../data/farmQuanValue';
+import { homegrownDrinkDecision, farmVsDrinks, drinkableProducts, homegrownImpact, orderSellNote } from '../data/farmQuanValue';
 import { quanRecipeById, QUAN_RECIPES } from '../data/quanRecipes';
 import { productById } from '../data/products';
 
@@ -70,5 +70,20 @@ describe('GĐ1109 — homegrownImpact: xếp dòng tư vấn theo mức tác đ�
 
   it('món nấu cũng được tính: nếp có xôi (nấu) → impact dương dù không có món pha', () => {
     expect(homegrownImpact('nep')).toBeGreaterThan(0);
+  });
+});
+
+describe('GĐ1111 — orderSellNote: nhắc đơn quán xóm trên dòng tư vấn', () => {
+  const order = { from: 'Quán Chè Bà Tư', items: [{ productId: 'x_vai', qty: 5 }, { productId: 'x_cam', qty: 4 }], bonus: 1.3, dueDay: 10, id: 1 };
+
+  it('đơn chứa nông sản & đủ hàng → ghi chú kèm số lượng và hệ số', () => {
+    expect(orderSellNote('x_vai', order, 6)).toBe(' · 📦 Quán Chè Bà Tư mua 5 ×1.3');
+  });
+
+  it('không đủ hàng giao / đơn không chứa / không đơn / bonus 1 → chuỗi rỗng', () => {
+    expect(orderSellNote('x_vai', order, 4)).toBe('');
+    expect(orderSellNote('x_oi', order, 9)).toBe('');
+    expect(orderSellNote('x_vai', undefined, 9)).toBe('');
+    expect(orderSellNote('x_vai', { ...order, bonus: 1 }, 6)).toBe('');
   });
 });

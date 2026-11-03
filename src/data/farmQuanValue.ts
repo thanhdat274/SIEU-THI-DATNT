@@ -162,3 +162,20 @@ export function homegrownImpact(productId: string): number {
   const drink = farmVsDrinks(productId).best?.homegrownNet ?? -Infinity;
   return Math.max(cook, drink);
 }
+
+/**
+ * GĐ1111 — ghi chú "đơn quán xóm đang mua" cho dòng tư vấn nông sản: đơn trả ×bonus giá nhà trồng
+ * (GĐ1100) nên khi đơn chứa nông sản này VÀ trại đủ hàng giao thì bán qua đơn hời hơn bán lẻ —
+ * người chơi cần thấy trước khi quyết nấu/pha cả lot. Trả chuỗi đuôi dòng ('' khi không có đơn/
+ * không chứa/đủ hàng), không đổi verdict. Thuần đọc.
+ */
+export function orderSellNote(
+  productId: string,
+  order: { from: string; items: { productId: string; qty: number }[]; bonus: number } | null | undefined,
+  homegrownQty: number,
+): string {
+  if (!order || order.bonus <= 1) return '';
+  const it = order.items.find((i) => i.productId === productId);
+  if (!it || homegrownQty < it.qty) return '';
+  return ` · 📦 ${order.from} mua ${it.qty} ×${order.bonus.toFixed(2).replace(/\.?0+$/, '')}`;
+}
