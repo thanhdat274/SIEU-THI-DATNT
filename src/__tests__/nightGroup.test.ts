@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { pickNightGroup, NIGHT_GROUPS } from '../data/branches';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { pickNightGroup, pickWeighted, NIGHT_GROUPS } from '../data/branches';
 
 /**
  * Bộ test GĐ1034 — `data/branches.pickNightGroup` (nhánh RƠI CUỐI dòng 387–388 TRƯỚC ĐÂY 0%:
@@ -43,5 +43,17 @@ describe('pickNightGroup — khách nhóm đêm', () => {
   it('kết quả thuộc danh sách nhóm đêm hợp lệ', () => {
     const g = pickNightGroup(H22, seqRng([0, 0.3]));
     expect(g && NIGHT_GROUPS.some((x) => x.id === g.id)).toBe(true);
+  });
+});
+
+describe('pickWeighted — khách nhóm chọn món (fallback 468 dùng Math.random)', () => {
+  afterEach(() => vi.restoreAllMocks());
+  it('rng cao quá tổng trọng số → rơi về món CUỐI (fallback 468)', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(1.2); // roll = 1.2×tổng, trừ hết vẫn dư
+    expect(pickWeighted(['mi', 'nuoc'], 12 * 60)).toBe('nuoc');
+  });
+  it('rng thấp → món đầu theo trọng số', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.001);
+    expect(pickWeighted(['mi', 'nuoc'], 12 * 60)).toBe('mi');
   });
 });
