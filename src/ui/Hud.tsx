@@ -21,7 +21,8 @@ import { describeDay, describeRain, WEATHER } from '../data/weather';
 import { forecastTextOf, skyState } from './hudSky';
 import { pushCloudSave, takeCloudSave } from '../net/cloud';
 import { leaveRoom } from '../net/coop';
-import { logoutGoogle } from '../net/firebase';
+import { logoutGoogle, deleteAccount } from '../net/firebase';
+import { deleteAccountData } from '../net/account';
 import { useSession } from '../net/session';
 import { MoneyChip, MusicToggle, SoundToggle } from './HudChips';
 import { Panels } from './Panels';
@@ -156,6 +157,20 @@ Bản đang chơi được giữ lại, khôi phục lần nữa là trở lại
     leaveGame();
   };
   const logout = () => confirm('Lưu game rồi đăng xuất?') && leaveGame(logoutGoogle);
+  /** Xoá tài khoản & dữ liệu (quyền chủ thể dữ liệu — Luật 91/2025): 2 bước xác nhận, giữ bản lưu máy. */
+  const deleteAccountFlow = async () => {
+    if (!account) return;
+    if (!confirm('Xoá tài khoản và toàn bộ dữ liệu cloud? Việc này không thể hoàn tác.')) return;
+    if (!confirm('Chắc chắn chưa? Sẽ xoá: bản lưu cloud, các hẻm bạn tham gia, và tài khoản Google liên kết. Bản lưu trong máy này được giữ lại.')) return;
+    try {
+      await deleteAccountData();   // xoá cloud + hẻm + bằng chứng đồng ý trên server
+      await deleteAccount();       // xoá tài khoản Firebase (xác thực lại qua popup Google)
+    } catch (err) {
+      notify(`⚠️ Không xoá được tài khoản: ${err instanceof Error ? err.message : String(err)}`);
+      return;
+    }
+    window.location.reload();
+  };
 
   // Ô kệ đang trống (chưa gán món hoặc hết hàng) để nhắc trên nút Kho
   const emptySlots = useGame((s) => s.furniture.reduce((n, f) => n + f.tiers.filter((t) => !t.productId || t.count === 0).length, 0));
@@ -385,6 +400,7 @@ Online: ${coop.peers.map((p) => (p.id === coop.selfId ? 'bạn' : p.name)).join(
             { label: '🏠 Màn hình chính', on: backToMenu },
             ...(!online ? [{ label: '🔄 Chơi lại từ đầu', danger: true, on: () => confirm('Xoá bản lưu và chơi lại từ đầu?') && resetGame() }] : []),
             ...(account ? [{ label: '↪ Đăng xuất', on: logout }] : []),
+            ...(!online && account ? [{ label: '🗑 Xoá tài khoản & dữ liệu', danger: true, on: () => void deleteAccountFlow() }] : []),
           ]}
         />
       </div>
