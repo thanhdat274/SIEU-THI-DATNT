@@ -3,11 +3,13 @@ import { newGameData, useGame, type DayStats } from '../core/store';
 import { bizEndOfDay } from '../core/biz';
 import { RIVAL_UNLOCK } from '../data/rivals';
 
-/** GĐ1059 — core/biz.bizEndOfDay khối "Rival đời mới" (dòng 264–275): sau khi đánh bại một
- *  đối thủ (rivalsBeaten > 0), hết thời gian nghỉ (day+1 ≥ rivalNextDay) và roll < 0.25 thì một
- *  cửa hàng mới khai trương đầu hẻm — bậc quy mô to dần theo số lần đánh bại (rivalTier), tên
- *  catalog lặp vòng thêm hậu tố "(cơ sở N)", tính cách rút tránh lặp thế hệ trước (GĐ60/170).
- *  Đây là vòng cạnh tranh giữ chân cuối game — đối thủ mới nối tiếp, không bao giờ hẻm vắng. */
+/** GĐ1059 — core/biz.bizEndOfDay vòng đời ĐỐI THỦ:
+ *  . nhánh else-if(b.counter) dòng 264: đang có đợt phản công mà đối thủ đã đóng cửa (rival null, counter còn)
+ *    → kết thúc đợt phản công (`b.counter = null`) — không để lại đợt "ma" ăn tiền giữa kỳ.
+ *  . else-if "Rival đời mới" dòng 265–285: sau khi đánh bại đối thủ, hết thời gian nghỉ và roll < 0.25
+ *    thì cửa hàng mới khai trương đầu hẻm — bậc quy mô to dần theo rivalsBeaten (rivalTier), tên catalog
+ *    lặp vòng thêm "(cơ sở N)" từ gen 13, tính cách tránh lặp thế hệ trước (GĐ60/170); hẻm không bao giờ vắng.
+ *  simRng chưa seed trả về Math.random nên mock được như test beat cũ. */
 
 const stats = (over: Partial<DayStats> = {}): DayStats => ({
   revenue: 0, spent: 0, wages: 0, itemsSold: 0, customers: 0, unhappy: 0, xp: 0,
@@ -23,8 +25,15 @@ const seedState = (over: Partial<ReturnType<typeof newGameData>> = {}) => {
   return s;
 };
 
-describe('GĐ1059 — rival đời mới khai trương sau khi đánh bại đối thủ', () => {
+describe('GĐ1059 — vòng đời đối thủ: hết phản công + đời mới khai trương', () => {
   beforeEach(() => useGame.setState(newGameData()));
+
+  it('đang phản công nhưng đối thủ đã đóng cửa (rival null, counter còn) → kết thúc đợt phản công (b.counter = null, dòng 264)', () => {
+    const s = seedState({ day: 60 });
+    s.biz = { ...s.biz, counter: { tactic: 'price', day: 58 } }; // còn đợt phản công, rival null
+    const out = bizEndOfDay({ ...s, biz: { ...s.biz } }, stats());
+    expect(out.biz.counter).toBeNull(); // đợt phản công kết thúc
+  });
 
   it('đủ điều kiện + roll < 0.25 → cửa hàng mới khai trương, tin báo bậc quy mô', () => {
     const s = seedState();

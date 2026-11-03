@@ -3,7 +3,7 @@ import { newGameData, useGame } from '../core/store';
 import { updatePhones } from '../core/slices/orders';
 import { PHONE_SLOTS } from '../data/phoneOrders';
 
-/** GĐ1058 — core/slices/orders.updatePhones nhánh GỢI Ý THUÊ COURIER TRỜI MƯA (dòng 55–58):
+/** GĐ1058 — core/slices/orders.updatePhones nhánh GỢI Ý THUÊ COURIER TRỜI MƯA (dòng 59–62):
  *  trong vòng khung giờ điện thoại, tiệm mở + CHƯA có nhân viên giao hàng + trời mưa/bão mà hôm nay
  *  chưa nhắc thì báo một lần "Trời mưa, nhiều người muốn gọi đặt hàng — thuê nhân viên giao hàng…"
  *  (nếu không ai giao thì lỡ hết đơn app/điện thoại). Mưa không có courier là hiểm họa doanh thu online. */
