@@ -13,6 +13,10 @@ export const HOMEMADE_PRODUCTS: { id: string; name: string; category: Category; 
   { id: 'hx_tuong_ban', name: 'Tương bần (chai)', category: 'dry', buy: 12000, sell: 19000, color: 0x8a4b22, unlock: 20 },
   { id: 'hx_banh_trang', name: 'Bánh tráng phơi sương', category: 'dry', buy: 10000, sell: 16000, color: 0xf3e5c0, unlock: 22 },
   { id: 'hx_nuoc_mam', name: 'Nước mắm cá cơm nhà ủ', category: 'dry', buy: 30000, sell: 47000, color: 0xb5651d, unlock: 28 },
+  // GĐ1083: đặc sản cuối-game — hàng xóm có "mối ruột" sản phẩm tinh tế hơn, giá cao hơn hẳn,
+  // mở ở cấp cao (≥34, trên mức golden sim 30 nên không đổi RNG mốc), vẫn biên ≥35%.
+  { id: 'hx_mam_ruoc', name: 'Mắm ruốc Huế (hũ)', category: 'dry', buy: 36000, sell: 56000, color: 0x9b4a2b, unlock: 34 },
+  { id: 'hx_vai_say', name: 'Vải thiều sấy (gói)', category: 'dry', buy: 42000, sell: 65000, color: 0xd23b3b, unlock: 38 },
 ];
 
 export const HOMEMADE_IDS: ReadonlySet<string> = new Set(HOMEMADE_PRODUCTS.map((h) => h.id));

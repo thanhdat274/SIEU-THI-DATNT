@@ -51,4 +51,17 @@ describe('GĐ1077 — món hàng xóm tự làm + nhà hàng xóm', () => {
       for (const pid of Object.keys(o.items)) expect(HOMEMADE_IDS.has(pid)).toBe(false);
     }
   });
+
+  it('GĐ1083: đặc sản cuối-game mở khoá cao, giá đắt, biên đủ, không lọt pool sim thấp', () => {
+    const late = HOMEMADE_PRODUCTS.filter((h) => h.unlock >= 30);
+    expect(late.length).toBeGreaterThanOrEqual(2);
+    for (const h of late) {
+      expect(h.sell).toBeGreaterThanOrEqual(50_000);
+      expect(h.unlock).toBe(productById(h.id).unlock);
+      expect((h.sell - h.buy) / h.sell).toBeGreaterThanOrEqual(0.35);
+    }
+    // cấp 30 (mốc golden) không mở đặc sản mới → RNG sim mốc giữ nguyên
+    const unlockedAt30 = HOMEMADE_PRODUCTS.filter((h) => productById(h.id).unlock <= 30);
+    expect(unlockedAt30.map((h) => h.id).sort()).toEqual(['hx_banh_trang', 'hx_ca_phao', 'hx_dua_muoi', 'hx_mam_tep', 'hx_nuoc_mam', 'hx_tuong_ban']);
+  });
 });
