@@ -20,6 +20,31 @@ const EDGE_X = 38;
 /** Kệ vơi đi từng này món thì nhân viên đi bổ sung. */
 const RESTOCK_MISSING = 2;
 
+/**
+ * (GĐ1009) Quản lý cần đặt thêm những món nào đang bày mà kho sắp cạn, mỗi món thêm bao nhiêu.
+ * THUẦN — tách khỏi `StaffManager.restock` để test được (quản lý tự nhập hàng giữ kệ khỏi rỗng, khách
+ * không gặp hết hàng; trước đây 0% coverage). Chỉ đặt lại món tiệm từng bán qua ít nhất một lần (món mới
+ * do chủ tự nhập thử); hàng đang về (pending) không coi là thiếu. Trả map `id → số cần đặt`
+ * = MANAGER_TARGET − số đang có (storage + pending).
+ */
+export function managerNeedToRestock(inp: {
+  shelved: string[];
+  storage: Record<string, number>;
+  /** Hàng đang về (gộp từ các chuyến nhập) — không coi là thiếu. */
+  pending: Record<string, number>;
+  sales: Record<string, number>;
+  salesToday: Record<string, number>;
+}): Record<string, number> {
+  const everSold = (id: string) => (inp.sales[id] ?? 0) > 0 || (inp.salesToday[id] ?? 0) > 0;
+  const need: Record<string, number> = {};
+  for (const id of inp.shelved) {
+    if (!everSold(id)) continue;
+    const have = (inp.storage[id] ?? 0) + (inp.pending[id] ?? 0);
+    if (have < MANAGER_LOW_STOCK) need[id] = MANAGER_TARGET - have;
+  }
+  return need;
+}
+
 type State = 'arriving' | 'working' | 'leaving';
 
 class Worker extends Walker {
@@ -538,14 +563,8 @@ export class StaffManager {
     const pending: Record<string, number> = {};
     for (const d of s.deliveries) for (const [id, q] of Object.entries(d.items)) pending[id] = (pending[id] ?? 0) + q;
     const shelved = [...new Set(s.furniture.flatMap((f) => f.tiers.map((t) => t.productId).filter((id): id is string => !!id)))];
-    // Chỉ tự đặt lại món tiệm đã bán qua ít nhất một lần: món mới do chủ tự quyết định nhập thử
-    const everSold = (id: string) => (s.sales[id] ?? 0) > 0 || (s.salesToday[id] ?? 0) > 0;
-    let need: Record<string, number> = {};
-    for (const id of shelved) {
-      if (!everSold(id)) continue;
-      const have = (s.storage[id] ?? 0) + (pending[id] ?? 0);
-      if (have < MANAGER_LOW_STOCK) need[id] = MANAGER_TARGET - have;
-    }
+    // Chỉ tự đặt lại món tiệm từng bán qua (xem managerNeedToRestock): món mới do chủ tự quyết định nhập thử
+    let need = managerNeedToRestock({ shelved, storage: s.storage, pending, sales: s.sales, salesToday: s.salesToday });
     if (!Object.keys(need).length) return false;
     const suppliers = SUPPLIERS.filter((sup) => sup.unlock <= s.level).sort((a, b) => b.discount - a.discount);
     // Món đã hết sạch kho thì phải lấy mối có hàng ngay; món chỉ vơi mới chờ mối rẻ giao sáng mai
