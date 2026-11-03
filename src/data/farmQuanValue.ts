@@ -15,6 +15,7 @@ import { type QuanRecipe, QUAN_RECIPES } from './quanRecipes';
 import { productById } from './products';
 import { homegrownSell } from './farmValue';
 import { cropPerDay, animalPerDay, bestAnimal, type CropDayValue } from './farmValue';
+import { farmVsCook } from './farmKitchenValue';
 import { ANIMALS, CROPS, type AnimalKind } from './garden';
 
 export type FarmDrinkVerdict = 'brew' | 'sell' | 'even';
@@ -148,4 +149,16 @@ export function bestAnimalForMenu(g: Parameters<typeof bestAnimal>[0], level: nu
     if (!best || v.perDay > best.perDay) best = { kind, def: ANIMALS[kind], perDay: v.perDay, drinkName: useBrew ? brew!.drink.name : undefined };
   }
   return best;
+}
+
+/**
+ * GĐ1109 — mức tác động của tư vấn cho 1 nông sản nhà (khối "Nấu hay bán lẻ" ở Vườn xếp dòng đáng
+ * chú ý nhất lên trước khi cắt 5 dòng): max(lãi nấu, lãi pha) theo cơ hội phí bán lẻ; -Infinity khi
+ * nông sản không vào bếp/pha nào (chỉ bán lẻ — dòng chìm xuống). Thuần đọc.
+ */
+export function homegrownImpact(productId: string): number {
+  const cookBest = farmVsCook(productId).best;
+  const cook = cookBest ? cookBest.homegrownNet : -Infinity;
+  const drink = farmVsDrinks(productId).best?.homegrownNet ?? -Infinity;
+  return Math.max(cook, drink);
 }

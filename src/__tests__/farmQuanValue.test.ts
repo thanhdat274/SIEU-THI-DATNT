@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { homegrownDrinkDecision, farmVsDrinks, drinkableProducts } from '../data/farmQuanValue';
+import { homegrownDrinkDecision, farmVsDrinks, drinkableProducts, homegrownImpact } from '../data/farmQuanValue';
 import { quanRecipeById, QUAN_RECIPES } from '../data/quanRecipes';
 import { productById } from '../data/products';
 
@@ -58,5 +58,17 @@ describe('GĐ1093 — Farm ↔ Quán nước: soi sáng "pha hay bán lẻ" (k�
     expect(QUAN_RECIPES.filter((r) => r.unlock <= 30).map((r) => r.id)).not.toContain('tra_vai');
     expect(QUAN_RECIPES.filter((r) => r.unlock <= 30).map((r) => r.id)).not.toContain('sinh_to_oi');
     expect(QUAN_RECIPES.filter((r) => r.unlock <= 30).map((r) => r.id)).not.toContain('sinh_to_chuoi');
+  });
+});
+
+describe('GĐ1109 — homegrownImpact: xếp dòng tư vấn theo mức tác động', () => {
+  it('vải (pha Trà vải +36k) có impact dương; sản phẩm ngoài bếp/pha (bia) → -Infinity', () => {
+    const vai = homegrownImpact('x_vai');
+    expect(vai).toBeGreaterThan(0);
+    expect(homegrownImpact('bia')).toBe(-Infinity);
+  });
+
+  it('món nấu cũng được tính: nếp có xôi (nấu) → impact dương dù không có món pha', () => {
+    expect(homegrownImpact('nep')).toBeGreaterThan(0);
   });
 });

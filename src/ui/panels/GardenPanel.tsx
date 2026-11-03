@@ -6,7 +6,7 @@ import {
 } from '../../data/garden';
 import { animalPerDay, bestAnimal, bestCrop, cropPerDay } from '../../data/farmValue';
 import { farmVsCook } from '../../data/farmKitchenValue';
-import { bestCropForMenu, bestAnimalForMenu, farmVsDrinks } from '../../data/farmQuanValue';
+import { bestCropForMenu, bestAnimalForMenu, farmVsDrinks, homegrownImpact } from '../../data/farmQuanValue';
 import { isWeekend } from '../../data/calendar';
 import { isXoiCungDay } from '../../data/tiemXoi';
 import { Callout, Footer, styles } from './shared';
@@ -59,7 +59,7 @@ export function GardenPanel() {
                 const q = farmVsDrinks(id);
                 const cookNet = f.best?.homegrownNet ?? -Infinity;
                 const brewNet = q.best?.homegrownNet ?? -Infinity;
-                if (!f.best && !q.best) return { id, qty, key: id, text: `${productById(id).name}: bán lẻ ~${formatMoney(f.sellPerUnit)}/món` };
+                if (!f.best && !q.best) return { id, qty, key: id, impact: -Infinity, text: `${productById(id).name}: bán lẻ ~${formatMoney(f.sellPerUnit)}/món` };
                 if (brewNet > cookNet) {
                   const d = q.best!;
                   return {
@@ -73,8 +73,10 @@ export function GardenPanel() {
                   id, qty, key: id,
                   text: `nấu <b>${d.recipe.name}</b> lời ~${formatMoney(d.homegrownNet)} (+${formatMoney(d.deltaVsSell)} so bán lẻ ${formatMoney(d.sellLot)})`,
                   thin: d.homegrownNet < d.sellLot, // nấu lời còn kém cả bán lẻ cả lot — bán lẻ thật sự đáng cân nhắc
+                  impact: homegrownImpact(id), // GĐ1109: xếp dòng đáng chú ý nhất lên trước
                 };
               })
+              .sort((a, b) => (b.impact ?? -Infinity) - (a.impact ?? -Infinity))
               .slice(0, 5);
             if (!lines.length) return null;
             return (
