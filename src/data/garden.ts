@@ -179,6 +179,8 @@ export const CROPS: CropDef[] = [
   { id: 'oi', productId: 'x_oi', name: 'Ổi', icon: '🍏', days: 7, regrowDays: 3, seedCost: 45000, yieldQty: 7, unlock: 22 },
   { id: 'xoai', productId: 'x_xoai', name: 'Xoài', icon: '🥭', days: 12, regrowDays: 4, seedCost: 60000, yieldQty: 5, unlock: 26, season: [3, 6] },
   { id: 'cam', productId: 'x_cam', name: 'Cam', icon: '🍊', days: 10, regrowDays: 4, seedCost: 55000, yieldQty: 6, unlock: 28, season: [11, 2] },
+  // GĐ1088: Chanh dây — trồng chanh dây để tự cung quán nước "Chanh dây đá" (cấp 32) thay vì nhập (liên hệ nông trại → quán nước)
+  { id: 'chanhday', productId: 'x_chanh_day', name: 'Chanh dây', icon: '💛', days: 6, regrowDays: 3, seedCost: 30000, yieldQty: 5, unlock: 32 },
   { id: 'vai', productId: 'x_vai', name: 'Vải thiều', icon: '🍒', days: 10, regrowDays: 3, seedCost: 70000, yieldQty: 6, unlock: 32, season: [5, 7] },
   { id: 'nhan', productId: 'x_nhan', name: 'Nhãn', icon: '🍇', days: 11, regrowDays: 4, seedCost: 72000, yieldQty: 6, unlock: 32, season: [7, 9] },
   { id: 'mit', productId: 'x_mit', name: 'Mít', icon: '🍍', days: 14, regrowDays: 5, seedCost: 90000, yieldQty: 3, unlock: 36 },
