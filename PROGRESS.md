@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (03/11/2026)
+- **GĐ1074 (rà UI sống):** Esc đóng panel đúng; 0 nút #ui thiếu nhãn (chữ/aria-label/title); màn 375×812 layoutAudit 0 cắt/0 tràn; nhãn dock 9px ở 701–1000px là CHỦ ĐÍCH (`hud.css` 583–591, giữ dock một hàng) — đừng nâng cỡ chữ mà không đo lại nút bị cắt. Không sửa mã.
 - **GĐ1071 (độ phủ định kỳ):** `npm run test:coverage` = statements/lines 63,1% (23.332/36.975), branches 89,73%; `tsc --noEmit` sạch; console game 0 lỗi. Không sửa mã.
 - **GĐ1070 (rà toàn bộ ngân sách chống phình, 03/11/2026):** bundle tải đầu 533/597 KB, chunk lớn nhất 253/255 KB; `npm run test` 168 s (trần 300 s; 426 file/3356 test xanh); nút HUD 17 (trần 20), layoutAudit 0 nút cắt; (nhiệm vụ+kèo)/lãi bán cấp 5×30 ngày = 0,77 (trần 1). Không còn TODO/FIXME trong src. Không sửa mã.
 - **GĐ1069 (rà ngân sách thông báo):** `npm run audit:notify` đo 357 mẫu, 0 mẫu >90 ký tự (dài nhất 90); 21 mẫu chỉ vượt khi mỗi `${}` giả định 12 ký tự (ước lượng thận trọng). Thông báo sinh lúc chạy ≤90 đã được khoá bởi economySim (cấp 1/10/25/40/60), toàn bộ 3356 test xanh. Không sửa mã.
