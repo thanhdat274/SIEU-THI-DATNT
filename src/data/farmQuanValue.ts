@@ -14,8 +14,8 @@
 import { type QuanRecipe, QUAN_RECIPES } from './quanRecipes';
 import { productById } from './products';
 import { homegrownSell } from './farmValue';
-import { cropPerDay, type CropDayValue } from './farmValue';
-import { CROPS } from './garden';
+import { cropPerDay, animalPerDay, bestAnimal, type CropDayValue } from './farmValue';
+import { ANIMALS, CROPS, type AnimalKind } from './garden';
 
 export type FarmDrinkVerdict = 'brew' | 'sell' | 'even';
 
@@ -122,4 +122,30 @@ export function cropRankForMenu(level: number, day: number, menu: readonly strin
 
 export function bestCropForMenu(level: number, day: number, menu: readonly string[] | undefined): CropMenuValue | null {
   return cropRankForMenu(level, day, menu)[0] ?? null;
+}
+
+export interface AnimalMenuValue {
+  kind: AnimalKind;
+  def: (typeof ANIMALS)[AnimalKind];
+  perDay: number;
+  /** Món pha cho giá trị cao hơn bán lẻ (nếu có). */
+  drinkName?: string;
+}
+
+/**
+ * GĐ1105 — "đáng nuôi" khi có thực đơn quán: vật nuôi cho sữa mà món pha trên menu dùng sữa tươi
+ * (Bạc xỉu/Ca cao sữa/Ca cao nóng) lời hơn bán lẻ thì định giá theo pha. Không menu → y hệt
+ * bestAnimal. Thuần đọc — không đổi kinh tế/save.
+ */
+export function bestAnimalForMenu(g: Parameters<typeof bestAnimal>[0], level: number, menu: readonly string[] | undefined): AnimalMenuValue | null {
+  let best: AnimalMenuValue | null = null;
+  for (const kind of ['chicken', 'duck', 'goose', 'pig', 'cow', 'goat', 'dong_tao'] as AnimalKind[]) {
+    if ((g.pens?.[kind]?.count ?? 0) <= 0) continue;
+    const productId = ANIMALS[kind].productId;
+    const brew = brewGrossPerUnit(productId, level, menu);
+    const useBrew = brew !== null && brew.perUnit > homegrownSell(productId);
+    const v = animalPerDay(kind, g, useBrew ? { valuePerUnit: brew!.perUnit } : {});
+    if (!best || v.perDay > best.perDay) best = { kind, def: ANIMALS[kind], perDay: v.perDay, drinkName: useBrew ? brew!.drink.name : undefined };
+  }
+  return best;
 }

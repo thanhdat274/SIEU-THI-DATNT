@@ -72,7 +72,7 @@ const feedPerKg = (kind: AnimalKind) => {
  * với vỗ béo, cả giá giống + cám cả kỳ phân bổ theo ngày vỗ).
  * `g.buildings.bai_tha` cho tự gặm cỏ bớt cám (farmGrazeDiscount).
  */
-export function animalPerDay(kind: AnimalKind, g: GardenState): AnimalDayValue {
+export function animalPerDay(kind: AnimalKind, g: GardenState, opts: { /** GĐ1105: giá trị/1 đơn vị cao hơn bán lẻ (pha nước ở quán) — override doanh thu. */ valuePerUnit?: number } = {}): AnimalDayValue {
   const def = ANIMALS[kind];
   const mode = animalMode(def) as AnimalMode;
   const graze = 1 - 0.1 * (g.buildings?.bai_tha ?? 0);
@@ -81,12 +81,12 @@ export function animalPerDay(kind: AnimalKind, g: GardenState): AnimalDayValue {
   if (mode === 'egg') {
     const eggsPerDay = def.layChance! * (1 + 0.08 * (g.buildings?.bai_tha ?? 0));
     const traysPerDay = eggsPerDay / 10; // EGG_PER_TRAY
-    const revenuePerDay = traysPerDay * homegrownSell(def.productId);
+    const revenuePerDay = traysPerDay * Math.max(homegrownSell(def.productId), opts.valuePerUnit ?? 0);
     return { kind, def, mode, revenuePerDay, feedPerDay, perDay: revenuePerDay - feedPerDay, fattenRemaining: 0 };
   }
   if (mode === 'milk') {
     const outPerDay = def.outputPerDay! * (1 + 0.05 * (g.buildings?.bai_tha ?? 0));
-    const revenuePerDay = outPerDay * homegrownSell(def.productId);
+    const revenuePerDay = outPerDay * Math.max(homegrownSell(def.productId), opts.valuePerUnit ?? 0);
     return { kind, def, mode, revenuePerDay, feedPerDay, perDay: revenuePerDay - feedPerDay, fattenRemaining: 0 };
   }
   // fatten: thu thịt 1 lần cuối kỳ

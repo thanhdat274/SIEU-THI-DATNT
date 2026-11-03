@@ -6,7 +6,7 @@ import {
 } from '../../data/garden';
 import { animalPerDay, bestAnimal, bestCrop, cropPerDay } from '../../data/farmValue';
 import { farmVsCook } from '../../data/farmKitchenValue';
-import { bestCropForMenu, farmVsDrinks } from '../../data/farmQuanValue';
+import { bestCropForMenu, bestAnimalForMenu, farmVsDrinks } from '../../data/farmQuanValue';
 import { isWeekend } from '../../data/calendar';
 import { isXoiCungDay } from '../../data/tiemXoi';
 import { Callout, Footer, styles } from './shared';
@@ -37,13 +37,13 @@ export function GardenPanel() {
             // định giá theo món pha hời hơn bán lẻ (menu chưa mở/món chưa mở → y hệt bestCrop cũ).
             const quanMenu = biz.quanNuoc?.open ? biz.quanNuoc.menu : undefined;
             const bc = quanMenu?.length ? bestCropForMenu(level, day, quanMenu) : bestCrop(level, day);
-            const ba = bestAnimal(garden);
+            const ba = quanMenu?.length ? bestAnimalForMenu(garden, level, quanMenu) : bestAnimal(garden);
             if (!bc && !ba) return null;
             return (
               <Callout tone="warn" title="💡 Hôm nay đáng: ">
                 <div style={{ fontSize: 12, marginTop: 4 }}>
                   {bc && <span>Trồng <b>{bc.crop.icon} {bc.crop.name}</b> ~{formatMoney(Math.round(bc.perDay))}/luống/ngày{bc.inSeasonNow && bc.crop.season ? ' (đúng mùa ×1,5)' : ''}{'drinkName' in bc && bc.drinkName ? ` · pha ${bc.drinkName} lời hơn bán lẻ` : ''}{ba ? ' · ' : ''}</span>}
-                  {ba && <span>Nuôi <b>{ba.def.icon} {ba.def.name}</b> ~{formatMoney(Math.round(ba.perDay))}/con/ngày{ba.perDay < 0 ? ' (lỗ cám!)' : ''}</span>}
+                  {ba && <span>Nuôi <b>{ba.def.icon} {ba.def.name}</b> ~{formatMoney(Math.round(ba.perDay))}/con/ngày{ba.perDay < 0 ? ' (lỗ cám!)' : ''}{'drinkName' in ba && ba.drinkName ? ` · pha ${ba.drinkName} lời hơn bán lẻ` : ''}</span>}
                 </div>
               </Callout>
             );
