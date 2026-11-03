@@ -16,7 +16,7 @@ import { Callout, Footer, styles } from './shared';
 export function GardenPanel() {
   const { garden, level, money, day, weather, storage, storageLots, furniture, biz, plantCrop, waterGarden, waterPlot, fertilizePlot, harvestPlot, buyAnimal, feedPen, collectPen, sellFattened, expandFarm, deliverFarmOrder, buyFarmBuilding, upgradeFarmBuilding, cleanupFarm, closePanel } = useGame();
   const homegrown = Object.entries(garden.homegrown).filter(([, q]) => q > 0);
-  const quanMenu = biz.quanNuoc?.open ? biz.quanNuoc.menu : undefined; // GĐ1139: chia sẻ cho cả 2 khối tư vấn
+  const quanMenu = biz.quanNuoc?.open ? (biz.quanNuoc.menu ?? []) : []; // GĐ1141: quán đóng → mảng rỗng (không gợi pha), không phải undefined (xét tất cả)
   const stationOpen = (st: import('../../data/recipes').CookingStation) => furniture.some((f2) => f2.type === st); // GĐ1140
   const tier = LAND_TIERS[garden.land] ?? LAND_TIERS[LAND_TIERS.length - 1];
   const nextTier = LAND_TIERS[garden.land + 1];
@@ -38,8 +38,8 @@ export function GardenPanel() {
           {(() => {
             // GĐ1104 — "Hôm nay đáng" nay nhìn thấy giá trị pha: cây nằm trong thực đơn quán được
             // định giá theo món pha hời hơn bán lẻ (menu chưa mở/món chưa mở → y hệt bestCrop cũ).
-            const bc = quanMenu?.length ? bestCropForMenu(level, day, quanMenu) : bestCrop(level, day);
-            const ba = quanMenu?.length ? bestAnimalForMenu(garden, level, quanMenu) : bestAnimal(garden);
+            const bc = bestCropForMenu(level, day, quanMenu); // GĐ1141: luôn qua ForMenu (menu rỗng → y hệt bestCrop)
+            const ba = bestAnimalForMenu(garden, level, quanMenu);
             if (!bc && !ba) return null;
             return (
               <Callout tone="warn" title="💡 Hôm nay đáng: ">
