@@ -70,6 +70,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   // --- Máy xay (blender) ---
   { id: 'sinh_to_trai_cay', name: 'Sinh tố trái cây', category: 'cold', buy: 7500, sell: 14300, color: 0xfd79a8, unlock: 28 },
   { id: 'kem_trai_cay', name: 'Kem trái cây tự làm', category: 'frozen', buy: 9400, sell: 17900, color: 0xff9ff3, unlock: 28 },
+  // GĐ1094: Sữa chua dê — mẻ (dê 45k + trái cây 25k + đường 17k) = 87k → 6 hũ × 22k = 132k, lãi 45k/mẻ, nấu hời hơn bán nguyên liệu (119k < 132k)
+  { id: 'sua_chua_de', name: 'Sữa chua dê', category: 'cold', buy: 11000, sell: 22000, color: 0xfdf6ec, unlock: 40 },
 
   // --- Quầy pha (drink_counter) ---
   { id: 'ca_phe_sua_da', name: 'Cà phê sữa đá', category: 'drink', buy: 9800, sell: 18700, color: 0x6e2c00, unlock: 25 },
@@ -87,6 +89,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'banh_bao_hap', name: 'Bánh bao hấp nóng', category: 'fresh', buy: 4500, sell: 8600, color: 0xf5f6fa, unlock: 39 },
   // GĐ1094: Bánh flan — mẻ (ngỗng 280k + sữa đặc 22k + đường 17k) = 319k → 24 cái × 18k = 432k, lãi 113k/mẻ, nấu hời hơn bán nguyên liệu (398k < 432k)
   { id: 'banh_flan', name: 'Bánh flan', category: 'fresh', buy: 9000, sell: 18000, color: 0xe8b04a, unlock: 39 },
+  // GĐ1094: Chả lụa hấp — mẻ (heo 30k×2 + trứng gà 25k) = 85k → 10 cây × 12k = 120k, lãi 35k/mẻ, nấu hời hơn bán nguyên liệu (109k < 120k)
+  { id: 'cha_lua', name: 'Chả lụa hấp', category: 'fresh', buy: 6000, sell: 12000, color: 0xf0e6d2, unlock: 40 },
 
   // --- Quây xôi (rice_station) ---
   { id: 'xoi_dau_xanh', name: 'Xôi đậu xanh', category: 'fresh', buy: 1400, sell: 2600, color: 0xf9ca24, unlock: 36 },
@@ -106,6 +110,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'com_suon_nuong', name: 'Cơm sườn nướng', category: 'fresh', buy: 11600, sell: 22000, color: 0xd35400, unlock: 40 },
   { id: 'com_chien_trung', name: 'Cơm chiên trứng', category: 'fresh', buy: 4100, sell: 7800, color: 0xf5cba7, unlock: 40 },
   { id: 'canh_rau_thit', name: 'Canh rau thịt', category: 'fresh', buy: 6700, sell: 12700, color: 0x27ae60, unlock: 40 },
+  // GĐ1094: Gà Đông Tảo nướng — mẻ (Đông Tảo 380k + rau 10k + muối 5k) = 395k → 3 phần × 180k = 540k, lãi 145k/mẻ, nấu hời hơn bán nguyên liệu (473k < 540k)
+  { id: 'ga_dt_nuong', name: 'Gà Đông Tảo nướng', category: 'fresh', buy: 90000, sell: 180000, color: 0xb03a2e, unlock: 42 },
 
   // --- Combo ---
   { id: 'combo_xoi_doi', name: 'Suất Xôi Đôi', category: 'fresh', buy: 4300, sell: 8200, color: 0xe17055, unlock: 36 },
@@ -142,6 +148,11 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_com_chien', name: 'Cơm chiên trứng', station: 'food_grill',
     inputs: [{ productId: 'gao', quantity: 1 }, { productId: 'trung', quantity: 5 }],
     outputId: 'com_chien_trung', outputQty: 50, durationMin: 20, unlock: 40, reputationGain: 3 },
+  // GĐ1094: Gà Đông Tảo nướng — món nướng của giống gà quý nhà trại (Đông Tảo mở cấp 30, thịt đắt gấp
+  // chục gà thường). Mở 42 > mốc golden 30 → sim không đổi.
+  { id: 'recipe_ga_dt_nuong', name: 'Gà Đông Tảo nướng', station: 'food_grill',
+    inputs: [{ productId: 'thit_ga_dt', quantity: 1 }, { productId: 'rau', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }],
+    outputId: 'ga_dt_nuong', outputQty: 3, durationMin: 30, unlock: 42, reputationGain: 4 },
   { id: 'recipe_canh', name: 'Canh rau thịt', station: 'hot_kettle',
     inputs: [{ productId: 'rau', quantity: 2 }, { productId: 'thit', quantity: 1 }],
     outputId: 'canh_rau_thit', outputQty: 12, durationMin: 18, unlock: 40, reputationGain: 3 },
@@ -179,6 +190,11 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_kem', name: 'Kem trái cây', station: 'blender',
     inputs: [{ productId: 'traicay', quantity: 1 }, { productId: 'suachua', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
     outputId: 'kem_trai_cay', outputQty: 5, durationMin: 12, unlock: 28, reputationGain: 3 },
+  // GĐ1094: Sữa chua dê — món xay của sữa dê trại (dê mở cấp 27 nhưng chưa có lối ra bếp; sữa dẻ đắt gấp
+  // rưỡi sữa bò, hợp khách sành). Mở 40 > mốc golden 30 → sim không đổi.
+  { id: 'recipe_sua_chua_de', name: 'Sữa chua dê', station: 'blender',
+    inputs: [{ productId: 'sua_de', quantity: 1 }, { productId: 'traicay', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
+    outputId: 'sua_chua_de', outputQty: 6, durationMin: 20, unlock: 40, reputationGain: 3 },
 
   // --- Quầy pha (drink_counter) ---
   { id: 'recipe_ca_phe_sua', name: 'Cà phê sữa đá', station: 'drink_counter',
@@ -217,6 +233,10 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_banh_flan', name: 'Bánh flan', station: 'steamer',
     inputs: [{ productId: 'trung_goos', quantity: 1 }, { productId: 'x_sua_dac', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
     outputId: 'banh_flan', outputQty: 24, durationMin: 25, unlock: 39, reputationGain: 3 },
+  // GĐ1094: Chả lụa hấp — món hấp của thịt heo nhà (heo xuất chuồng mở cấp 20 nhưng chưa có lối ra bếp).
+  { id: 'recipe_cha_lua', name: 'Chả lụa hấp', station: 'steamer',
+    inputs: [{ productId: 'x_thit_heo', quantity: 2 }, { productId: 'trung', quantity: 1 }],
+    outputId: 'cha_lua', outputQty: 10, durationMin: 25, unlock: 40, reputationGain: 3 },
 
   // --- Quây xôi (rice_station) ---
   // 6 món xôi theo công thức chuẩn món ăn VN (khách quen bắt lỗi nguyên liệu sai ngành): đậu xanh/bắp/dừa

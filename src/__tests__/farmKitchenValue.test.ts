@@ -106,8 +106,8 @@ describe('farmVsCook', () => {
     expect(f.best!.recipe.id).toBe('recipe_com_suon');
     expect(f.best!.homegrownNet).toBe(501600);
     expect(f.verdict).toBe('cook');
-    // 4 công thức rau (GĐ1094 thêm hột vịt lộn): cơm sườn, cơm hộp, canh, hột vịt lộn — sắp lãi giảm dần
-    expect(f.recipes.map((d) => d.recipe.id)).toEqual(['recipe_com_suon', 'recipe_com_hop_ga', 'recipe_canh', 'recipe_hot_vit_lon']);
+    // 5 công thức rau (GĐ1094 thêm hột vịt lộn, gà Đông Tảo nướng): cơm sườn, cơm hộp, gà DT nướng, canh, hột vịt lộn — sắp lãi giảm dần
+    expect(f.recipes.map((d) => d.recipe.id)).toEqual(['recipe_com_suon', 'recipe_com_hop_ga', 'recipe_ga_dt_nuong', 'recipe_canh', 'recipe_hot_vit_lon']);
   });
 
   it('trứng: best là bánh bao (+148400), verdict cook', () => {
@@ -133,11 +133,11 @@ describe('farmVsCook', () => {
     expect(f.verdict).toBe('sell');
   });
 
-  it('trái cây có 4 công thức thường (bỏ giỏ quà 8/3 mùa lễ), best là trà đào cam sả (+35000)', () => {
+  it('trái cây có 5 công thức thường (bỏ giỏ quà 8/3 mùa lễ; GĐ1094 thêm sữa chua dê), best là trà đào cam sả (+35000)', () => {
     const f = farmVsCook('traicay');
-    expect(f.recipes).toHaveLength(4);
+    expect(f.recipes).toHaveLength(5);
     expect(f.recipes.map((d) => d.recipe.id).sort())
-      .toEqual(['recipe_banh_trang', 'recipe_kem', 'recipe_sinh_to', 'recipe_tra_dao']);
+      .toEqual(['recipe_banh_trang', 'recipe_kem', 'recipe_sinh_to', 'recipe_sua_chua_de', 'recipe_tra_dao']);
     expect(f.best!.recipe.id).toBe('recipe_tra_dao');
     expect(f.best!.homegrownNet).toBe(35000);
     expect(f.verdict).toBe('cook');
