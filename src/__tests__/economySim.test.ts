@@ -90,10 +90,15 @@ describe('khảo sát kinh tế vòng ngày — simulator thật trên store', (
     // dồn dập thì người mới đọc không kịp và mất luôn thông báo trước). Trần = mức đo 2026-10-31.
     let toasts = 0;
     const seen: string[] = [];
-    const unsub = useGame.subscribe((st, prev) => { if (st.day <= 1 && st.message && st.message !== prev.message && !/^(📜|🎯)/.test(String(st.message))) { toasts++; seen.push(String(st.message)); } });
+    let firstSaleAt: number | null = null; let startMin: number | null = null; // GĐ1065: người mới bán món đầu tiên lúc mấy giờ game
+    const unsub = useGame.subscribe((st, prev) => { if (startMin === null) startMin = prev.minutes; if (firstSaleAt === null && st.day <= 1 && st.stats.itemsSold > 0) firstSaleAt = st.minutes; if (st.day <= 1 && st.message && st.message !== prev.message && !/^(📜|🎯)/.test(String(st.message))) { toasts++; seen.push(String(st.message)); } });
     const { rows } = await runEconomySim(1, 1, { betTier: 1.0 });
     unsub();
     expect(rows.length).toBe(1);
+    // eslint-disable-next-line no-console
+    console.log(`[GĐ1065] món đầu tiên bán lúc phút ${firstSaleAt} (bắt đầu ${startMin}) → ${firstSaleAt !== null && startMin !== null ? firstSaleAt - startMin : '?'} phút game`);
+    expect(firstSaleAt, 'người mới chưa bán được món nào trong ngày 1').not.toBeNull();
+    expect((firstSaleAt ?? 0) - (startMin ?? 0), 'món đầu tiên bán chậm hơn mức đo — dẫn đường người mới nhanh hơn').toBeLessThanOrEqual(FIRST_SALE_CEILING_MIN);
     // eslint-disable-next-line no-console
     console.log(`[người mới] ngày 1: ${toasts} thông báo bật lên: ` + seen.join(' | '));
     expect(toasts, 'ngày đầu quá nhiều thông báo — gộp hoặc dời bớt sang ngày sau').toBeLessThanOrEqual(DAY1_TOAST_CEILING);
@@ -129,6 +134,9 @@ describe('khảo sát kinh tế vòng ngày — simulator thật trên store', (
     expect([...long]).toEqual([]);
   }, 600_000);
 });
+
+/** GĐ1065: phút game từ lúc mở cửa tới món bán đầu tiên của bot cấp 1 (đo 70,4; chỉ được hạ). */
+const FIRST_SALE_CEILING_MIN = 80;
 
 /** GĐ561: mức đo ngày 2 (bot cấp 1); chỉ được hạ. */
 const DAY2_TOAST_CEILING = 8; // GĐ568–569: tin đêm + sau ngủ gom một toast (đo 11 → 10 → 8)
