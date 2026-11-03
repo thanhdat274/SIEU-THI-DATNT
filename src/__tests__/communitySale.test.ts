@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { newGameData, useGame } from '../core/store';
-import { openingGoal } from '../data/community';
+import { activeGoals, openingGoal } from '../data/community';
 import { PRODUCTS } from '../data/products';
 
 /**
@@ -47,5 +47,51 @@ describe('communitySale — khai trương', () => {
     g().communitySale(Array(50).fill(PID));
     expect(g().community).toEqual({});
     expect(g().money).toBe(0);
+  });
+});
+
+describe('GĐ1049 — hoàn thành mục tiêu hẻm có HOST lễ hội (communitySale 287–295)', () => {
+  // Ngày hội xóm (hoi_xom): host 'bac_tam', không cổng rep (traffic 1.15 < 1.3, không goods).
+  // level 3 (< COOK_LEVEL 21): cookedTarget 0; decorTarget 2 (đủ 2 chậu cây). itemTarget ~12.
+  // Todo trước đây các test khai trương không hề kiểm tra món quà thân thiết với host, và arm
+  // `regularById(goal.festival.host)` (287) + notify "thân hơn" (295) chưa từng chạy.
+  it('đủ số món + đủ chậu cây → thưởng tiền, host (khách quen) thân hơn +3, báo "thân hơn"', () => {
+    const toasts: string[] = [];
+    const day = 80; // hoi_xom khai mạc: f.from=79 (dayOfYear 79 → game day 80)
+    useGame.setState({
+      ...newGameData(), money: 0, level: 3, day,
+      community: {}, furniture: plant(2) as never, notify: (m) => void toasts.push(m),
+    });
+    const goal = activeGoals(day, 3)[0];
+    const need = goal.itemTarget;
+    const id = goal.items.length ? goal.items[0] : PID; // món tính vào mục tiêu cả hẻm
+    g().communitySale(Array(need).fill(id));
+
+    expect(g().community[goal.key].done).toBe(true);
+    expect(g().money).toBe(goal.reward.money); // thưởng tiền
+    expect(g().regulars['bac_tam'].friendship).toBe(goal.reward.friendship); // 3 — quà thân thiết
+    expect(g().regulars['bac_tam'].discovered.length).toBeGreaterThanOrEqual(0);
+    expect(toasts.some((t) => t.includes('Cả hẻm hoàn thành'))).toBe(true);
+    expect(toasts.some((t) => t.includes('thân hơn'))).toBe(true); // nhánh 295 host truthy
+  });
+
+  it('hoàn thành mục tiêu DỊP KHÔNG HOST (valentine) → thưởng tiền, KHÔNG tặng thân thiết, báo không "thân hơn"', () => {
+    const toasts: string[] = [];
+    const day = 44; // valentine: f.from=43 (dayOfYear 43 → game day 44), không host
+    useGame.setState({
+      ...newGameData(), money: 0, level: 3, day,
+      community: {}, furniture: plant(2) as never, notify: (m) => void toasts.push(m),
+    });
+    const goal = activeGoals(day, 3)[0];
+    expect(goal.festival.id).toBe('valentine');
+    expect(goal.festival.host).toBeUndefined(); // dịp này không có host
+    const id = goal.items.length ? goal.items[0] : PID;
+    g().communitySale(Array(goal.itemTarget).fill(id));
+
+    expect(g().community[goal.key].done).toBe(true);
+    expect(g().money).toBe(goal.reward.money);
+    expect(g().regulars).toEqual({}); // không tặng thân thiết (dòng 287/292 nhánh host false)
+    expect(toasts.some((t) => t.includes('Cả hẻm hoàn thành'))).toBe(true);
+    expect(toasts.some((t) => t.includes('thân hơn'))).toBe(false); // nhánh 295 host false
   });
 });
