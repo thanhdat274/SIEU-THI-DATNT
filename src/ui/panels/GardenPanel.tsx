@@ -322,7 +322,7 @@ export function GardenPanel() {
             return (
               <div key={id} style={{ ...styles.card, display: 'block' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center' }}>
-                  <b>{def.icon} {def.name} {star > 0 ? `${'★'.repeat(star)}${'☆'.repeat(FARM_BUILDING_MAX_STAR - star)}` : ''}</b>
+                  <b>{def.icon} {def.name}{def.unlock === level && star === 0 ? newUnlockMark(def.unlock, level) : ''} {star > 0 ? `${'★'.repeat(star)}${'☆'.repeat(FARM_BUILDING_MAX_STAR - star)}` : ''}</b>
                   <span style={{ display: 'flex', gap: 4 }}>
                     {star === 0 && (
                       <button style={{ ...styles.btn, background: level >= def.unlock && money >= def.cost ? '#f1c40f' : '#555', color: level >= def.unlock && money >= def.cost ? '#222' : '#fff' }} onClick={() => buyFarmBuilding(id)}

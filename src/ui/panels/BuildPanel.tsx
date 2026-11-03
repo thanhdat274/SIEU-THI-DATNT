@@ -3,6 +3,7 @@ import { useGame } from '../../core/store';
 import { FLOOR_COLORS, PAINT_PRICE, ROOF_COLORS, SHOP_TIERS, WALL_COLORS, rentDelta, rentOf, spaceUsePct, type ShopStyle } from '../../data/shopTiers';
 import { FURNITURE } from '../../data/furniture';
 import { formatMoney } from '../../data/products';
+import { newUnlockMark } from '../../data/advice';
 import { Footer, Swatch, styles, Tabs } from './shared';
 
 export function BuildPanel() {
@@ -40,7 +41,7 @@ export function FurnitureTab() {
           return (
             <div key={f.type} style={{ ...styles.card, opacity: locked ? 0.5 : 1 }}>
               <div style={{ flex: 1 }}>
-                <b>{f.name}</b> · {formatMoney(f.price)}
+                <b>{f.name}</b>{newUnlockMark(f.unlock, level)} · {formatMoney(f.price)}
                 <div style={{ fontSize: 12, opacity: 0.75 }}>{f.desc}</div>
               </div>
               {locked ? (
