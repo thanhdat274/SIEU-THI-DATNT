@@ -1,6 +1,7 @@
 import { CROPS, inSeason } from './garden';
 import { COOK_UNLOCK, COOKED_PRODUCT_IDS, RECIPES, type CookingStation } from './recipes';
 import { QUAN_NUOC_UNLOCK } from './quanNuoc';
+import { QUAN_RECIPES, quanRecipeById } from './quanRecipes';
 import { HOT_FOOD_MUL, NIGHT_ITEMS, type BranchState } from './branches';
 import { productById } from './products';
 
@@ -31,26 +32,48 @@ export interface ProdSuggestArgs {
   stationOpen: (st: CookingStation) => boolean;
   /** Chi nhánh tiện lợi (nếu đã mở) — để gợi ý nấu/chở hàng sang bán đêm. */
   branch?: BranchState | null;
+  /** Thực đơn quán nước hiện tại (GĐ1101) — để biết trái cây nào đang bị pha mỗi ngày. */
+  quanMenu?: readonly string[];
 }
 
 const MAX_EACH = 2;
 const MAX_TOTAL = 5;
 const BRANCH_MAX_EACH = 2;
 
+/**
+ * GĐ1101 — tập id GIỐNG mà thực đơn quán nước đang tiêu thụ nguyên liệu nhà trồng (món đã mở).
+ * Thuần đọc: chỉ xem QUAN_RECIPES + CROPS, không đụng state.
+ */
+export function quanMenuCropNeeds(menu: readonly string[] | undefined, level: number): Set<string> {
+  const out = new Set<string>();
+  for (const id of menu ?? []) {
+    const r = quanRecipeById(id);
+    if (!r || r.unlock > level) continue;
+    for (const u of r.uses) {
+      const crop = CROPS.find((c) => c.productId === u.id);
+      if (crop) out.add(crop.id);
+    }
+  }
+  return out;
+}
+
 export function prodSuggestToday(a: ProdSuggestArgs): ProdSugg[] {
   const out: ProdSugg[] = [];
 
-  // ── 🌾 Nên trồng: cây đúng mùa (+50% năng suất) mà sản phẩm đang hot / kho thiếu ──
+  // ── 🌾 Nên trồng: cây đúng mùa (+50% năng suất) mà sản phẩm đang hot / kho thiếu /
+  //     thực đơn quán nước đang pha (GĐ1101) ──
   if (a.level >= 8) {
     const low = (id: string) => (a.storage[id] ?? 0) < 8;
+    const quanNeeds = quanMenuCropNeeds(a.quanMenu, a.level);
     for (const c of CROPS) {
       if (c.unlock > a.level) continue;
       if (!inSeason(c, a.day)) continue;
       const hot = a.hot.includes(c.productId);
       const missing = low(c.productId);
       if (!hot && !missing) continue;
+      const quanNeed = quanNeeds.has(c.id);
       const season = c.season ? 'đang mùa +50%' : '';
-      const why = [hot ? 'khách săn' : '', season, missing ? 'kệ thiếu' : ''].filter(Boolean).join(', ');
+      const why = [hot ? 'khách săn' : '', season, missing ? 'kệ thiếu' : '', quanNeed ? 'thực đơn quán cần để pha' : ''].filter(Boolean).join(', ');
       out.push({ icon: '🌾', label: c.name, detail: `trồng ngay — ${why}`, panel: 'garden' });
       if (out.length >= MAX_EACH) break;
     }

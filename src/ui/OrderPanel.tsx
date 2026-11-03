@@ -60,6 +60,7 @@ export function OrderPanel() {
     quanNuocShort: !!biz.quanNuocLast && biz.quanNuocLast.served < biz.quanNuocLast.wanted,
     stationOpen: (st) => furniture.some((f) => f.type === st),
     branch,
+    quanMenu: biz.quanNuoc?.open ? biz.quanNuoc.menu : undefined, // GĐ1101: gợi ý trồng cây mà thực đơn quán đang pha
   });
   const itemsSold = useGame((s) => s.totals.itemsSold);
   // GĐ190b: thấy được ngay chỗ nhập — quán nước tối nay cần thêm bao nhiêu ly đồ uống (chỉ khi quán mở + thiếu).
