@@ -10,6 +10,7 @@ import { bulkDiscount, orderTotal, SUPPLIERS, supplierSells, trending, unitCost 
 import { guideActiveOn, guideInCart, guideIdsOf, guideProducts } from '../data/onboarding';
 import { cheapestSupplier, orderAssessment, type AssessLevel, type AssessLine, type BuyTone, type Dir } from '../data/procure';
 import { PARTNER_TIERS, deliversInstantly } from '../data/supplierRel';
+import { newUnlockMark } from '../data/advice';
 import { cheapestSupplierFor, type CheapestProductResult } from '../data/supplierValue';
 import { isFairOpen, makeFairOffer } from '../data/fairmerchant';
 import { showRestockExtras } from '../data/onboarding';
@@ -372,7 +373,7 @@ export function OrderPanel() {
             >
               <span style={{ fontSize: 18 }}>{s.icon}</span>
               <span>
-                <b>{s.name}</b>
+                <b>{s.name}</b>{newUnlockMark(s.unlock, level)}
                 {!locked && showCost && (() => {
                   const sm = supSummary.get(s.id);
                   if (!sm) return null;
