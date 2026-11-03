@@ -14,6 +14,8 @@
 import { type QuanRecipe, QUAN_RECIPES } from './quanRecipes';
 import { productById } from './products';
 import { homegrownSell } from './farmValue';
+import { cropPerDay, type CropDayValue } from './farmValue';
+import { CROPS } from './garden';
 
 export type FarmDrinkVerdict = 'brew' | 'sell' | 'even';
 
@@ -73,4 +75,51 @@ export function drinkableProducts(): string[] {
   const ids = new Set<string>();
   for (const r of QUAN_RECIPES) for (const u of r.uses) ids.add(u.id);
   return [...ids];
+}
+
+/**
+ * GĐ1104 — giá trị pha/1 đơn vị nông sản cao nhất từ THỰC ĐƠN quán (món đã lên menu + đã mở cấp):
+ * doanh thu ly trừ nguyên liệu khác (CHƯA trừ cơ hội phí bán lẻ — so trực tiếp với homegrownSell bên
+ * ngoài). Trả null nếu không món pha nào dùng nông sản này (menu rỗng/không truyền → null).
+ */
+export function brewGrossPerUnit(
+  productId: string,
+  level: number,
+  menu?: readonly string[],
+): { perUnit: number; drink: QuanRecipe } | null {
+  let best: { perUnit: number; drink: QuanRecipe } | null = null;
+  for (const r of QUAN_RECIPES) {
+    if (r.unlock > level) continue;
+    if (!menu || !menu.includes(r.id)) continue; // chỉ món ĐANG trên thực đơn mới tạo nhu cầu
+    const own = r.uses.find((u) => u.id === productId);
+    if (!own) continue;
+    const otherCost = r.uses.reduce((n, u) => (u.id === productId ? n : n + (own.cups / u.cups) * productById(u.id).buy), 0);
+    const perUnit = r.price * own.cups - otherCost;
+    if (!best || perUnit > best.perUnit) best = { perUnit, drink: r };
+  }
+  return best;
+}
+
+export interface CropMenuValue extends CropDayValue {
+  /** Món pha cho giá trị cao hơn bán lẻ (nếu có). */
+  drinkName?: string;
+}
+
+/**
+ * GĐ1104 — xếp hạng "đáng trồng" khi có thực đơn quán: cây nào có món pha đã mở mà giá trị pha/1
+ * đơn vị cao hơn bán lẻ nhà trồng thì định giá theo pha (detail pha món nào). Không có menu → hành
+ * vi y hệt cropRank/bestCrop (GĐ147). Thuần đọc — không đổi kinh tế/save.
+ */
+export function cropRankForMenu(level: number, day: number, menu: readonly string[] | undefined): CropMenuValue[] {
+  const vals = CROPS.filter((c) => c.unlock <= level).map((c) => {
+    const brew = brewGrossPerUnit(c.productId, level, menu);
+    const useBrew = brew !== null && brew.perUnit > homegrownSell(c.productId);
+    const v = cropPerDay(c, { day, valuePerUnit: useBrew ? brew!.perUnit : undefined });
+    return { ...v, drinkName: useBrew ? brew!.drink.name : undefined } as CropMenuValue;
+  });
+  return vals.sort((a, b) => b.perDay - a.perDay);
+}
+
+export function bestCropForMenu(level: number, day: number, menu: readonly string[] | undefined): CropMenuValue | null {
+  return cropRankForMenu(level, day, menu)[0] ?? null;
 }

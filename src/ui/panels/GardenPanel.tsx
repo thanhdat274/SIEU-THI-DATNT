@@ -6,14 +6,14 @@ import {
 } from '../../data/garden';
 import { animalPerDay, bestAnimal, bestCrop, cropPerDay } from '../../data/farmValue';
 import { farmVsCook } from '../../data/farmKitchenValue';
-import { farmVsDrinks } from '../../data/farmQuanValue';
+import { bestCropForMenu, farmVsDrinks } from '../../data/farmQuanValue';
 import { isWeekend } from '../../data/calendar';
 import { isXoiCungDay } from '../../data/tiemXoi';
 import { Callout, Footer, styles } from './shared';
 
 /** Trang trại đầu ngõ: trồng theo mùa vụ, nuôi 7 loài, công trình + dọn trại lấy gỗ đá nâng sao, đơn quán xóm. */
 export function GardenPanel() {
-  const { garden, level, money, day, weather, storage, plantCrop, waterGarden, waterPlot, fertilizePlot, harvestPlot, buyAnimal, feedPen, collectPen, sellFattened, expandFarm, deliverFarmOrder, buyFarmBuilding, upgradeFarmBuilding, cleanupFarm, closePanel } = useGame();
+  const { garden, level, money, day, weather, storage, biz, plantCrop, waterGarden, waterPlot, fertilizePlot, harvestPlot, buyAnimal, feedPen, collectPen, sellFattened, expandFarm, deliverFarmOrder, buyFarmBuilding, upgradeFarmBuilding, cleanupFarm, closePanel } = useGame();
   const homegrown = Object.entries(garden.homegrown).filter(([, q]) => q > 0);
   const tier = LAND_TIERS[garden.land] ?? LAND_TIERS[LAND_TIERS.length - 1];
   const nextTier = LAND_TIERS[garden.land + 1];
@@ -33,13 +33,16 @@ export function GardenPanel() {
       ) : (
         <div style={{ display: 'grid', gap: 6, maxWidth: 560 }}>
           {(() => {
-            const bc = bestCrop(level, day);
+            // GĐ1104 — "Hôm nay đáng" nay nhìn thấy giá trị pha: cây nằm trong thực đơn quán được
+            // định giá theo món pha hời hơn bán lẻ (menu chưa mở/món chưa mở → y hệt bestCrop cũ).
+            const quanMenu = biz.quanNuoc?.open ? biz.quanNuoc.menu : undefined;
+            const bc = quanMenu?.length ? bestCropForMenu(level, day, quanMenu) : bestCrop(level, day);
             const ba = bestAnimal(garden);
             if (!bc && !ba) return null;
             return (
               <Callout tone="warn" title="💡 Hôm nay đáng: ">
                 <div style={{ fontSize: 12, marginTop: 4 }}>
-                  {bc && <span>Trồng <b>{bc.crop.icon} {bc.crop.name}</b> ~{formatMoney(Math.round(bc.perDay))}/luống/ngày{bc.inSeasonNow && bc.crop.season ? ' (đúng mùa ×1,5)' : ''}{ba ? ' · ' : ''}</span>}
+                  {bc && <span>Trồng <b>{bc.crop.icon} {bc.crop.name}</b> ~{formatMoney(Math.round(bc.perDay))}/luống/ngày{bc.inSeasonNow && bc.crop.season ? ' (đúng mùa ×1,5)' : ''}{'drinkName' in bc && bc.drinkName ? ` · pha ${bc.drinkName} lời hơn bán lẻ` : ''}{ba ? ' · ' : ''}</span>}
                   {ba && <span>Nuôi <b>{ba.def.icon} {ba.def.name}</b> ~{formatMoney(Math.round(ba.perDay))}/con/ngày{ba.perDay < 0 ? ' (lỗ cám!)' : ''}</span>}
                 </div>
               </Callout>

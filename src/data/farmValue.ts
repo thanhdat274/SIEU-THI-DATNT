@@ -35,10 +35,10 @@ export interface CropDayValue {
  * Ngày chín mượn `ripeDay` (thiếu lấy `day`) để quyết mùa vụ ×1,5 — giống hệt
  * harvestYield: để chín chờ đúng vụ không ăn được.
  */
-export function cropPerDay(crop: CropDef, opts: { day: number; ripeDay?: number }): CropDayValue {
+export function cropPerDay(crop: CropDef, opts: { day: number; ripeDay?: number; /** GĐ1104: giá trị/1 đơn vị cao hơn bán lẻ (pha nước ở quán) — override doanh thu. */ valuePerUnit?: number }): CropDayValue {
   const harvestDay = opts.ripeDay ?? opts.day;
   const qty = harvestYield(crop, opts.day, harvestDay);
-  const revenue = qty * homegrownSell(crop.productId);
+  const revenue = qty * Math.max(homegrownSell(crop.productId), opts.valuePerUnit ?? 0);
   const isPerennial = !!crop.regrowDays;
   const seedCost = crop.seedCost;
   const perDay = isPerennial
