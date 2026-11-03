@@ -6,6 +6,7 @@ import {
 } from '../../data/garden';
 import { animalPerDay, bestAnimal, bestCrop, cropPerDay } from '../../data/farmValue';
 import { farmVsCook } from '../../data/farmKitchenValue';
+import { farmVsDrinks } from '../../data/farmQuanValue';
 import { isWeekend } from '../../data/calendar';
 import { isXoiCungDay } from '../../data/tiemXoi';
 import { Callout, Footer, styles } from './shared';
@@ -50,12 +51,24 @@ export function GardenPanel() {
             // so bán lẻ (nhãn nhà trồng ×1,2) với nấu thành món (lãi món tính cơ hội phí thật).
             const lines = homegrown
               .map(([id, qty]) => {
+                // GĐ1093 — xét cả BẾP (nấu) lẫn QUÁN NƯỚC (pha): chọn nơi nông sản bõ nhất.
                 const f = farmVsCook(id);
-                if (!f.best) return { id, qty, key: id, text: `${productById(id).name}: bán lẻ ~${formatMoney(f.sellPerUnit)}/món` };
-                const d = f.best;
+                const q = farmVsDrinks(id);
+                const cookNet = f.best?.homegrownNet ?? -Infinity;
+                const brewNet = q.best?.homegrownNet ?? -Infinity;
+                if (!f.best && !q.best) return { id, qty, key: id, text: `${productById(id).name}: bán lẻ ~${formatMoney(f.sellPerUnit)}/món` };
+                if (brewNet > cookNet) {
+                  const d = q.best!;
+                  return {
+                    id, qty, key: id,
+                    text: `pha <b>${d.recipe.name}</b> (~${d.glasses} ly/1) lời ~${formatMoney(d.homegrownNet)}/1 (+${formatMoney(d.homegrownNet)} so bán lẻ ${formatMoney(q.sellPerUnit)})`,
+                    thin: d.homegrownNet < q.sellPerUnit,
+                  };
+                }
+                const d = f.best!;
                 return {
                   id, qty, key: id,
-                  text: `${productById(id).name}: nấu <b>${d.recipe.name}</b> lời ~${formatMoney(d.homegrownNet)} (+${formatMoney(d.deltaVsSell)} so bán lẻ ${formatMoney(d.sellLot)})`,
+                  text: `nấu <b>${d.recipe.name}</b> lời ~${formatMoney(d.homegrownNet)} (+${formatMoney(d.deltaVsSell)} so bán lẻ ${formatMoney(d.sellLot)})`,
                   thin: d.homegrownNet < d.sellLot, // nấu lời còn kém cả bán lẻ cả lot — bán lẻ thật sự đáng cân nhắc
                 };
               })
@@ -69,7 +82,7 @@ export function GardenPanel() {
                       <span dangerouslySetInnerHTML={{ __html: l.text }} />
                     </div>
                   ))}
-                  <div style={{ opacity: 0.75, marginTop: 3 }}>Lãi món tính theo giá bán lẻ nhà trồng (×1,2) của nông sản — bếp luôn cộng thêm giá trị cho nông sản, chỉ món nào lời <i>mỏng</i> (màu cam) thì bán lẻ cũng đáng cân nhắc khi trạm bận.</div>
+                  <div style={{ opacity: 0.75, marginTop: 3 }}>Lãi món tính theo giá bán lẻ nhà trồng (×1,2) của nông sản — bếp/quán luôn cộng thêm giá trị cho nông sản, chỉ món nào lời <i>mỏng</i> (màu cam) thì bán lẻ cũng đáng cân nhắc khi trạm bận.</div>
                 </div>
               </Callout>
             );
