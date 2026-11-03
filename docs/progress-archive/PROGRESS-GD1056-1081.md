@@ -22,6 +22,7 @@
 
 ## GĐ1074–1081 (rút từ PROGRESS.md ngày 03/11/2026)
 
+- **GĐ1084 (bảo trì: dồn GĐ1056–1071 sang archive — vá dòng ghi bị thiếu, khôi phục từ commit 2d33f4af)**: tạo `docs/progress-archive/PROGRESS-GD1056-1081.md` (khung + 19 dòng chi tiết GĐ1056–1071), PROGRESS.md 52 → ~35 KB. Bỏ sót dòng ghi riêng cho chính GĐ1084 — phát hiện & vá ở GĐ1097 bằng cách tra lại commit. Không đổi mã/test.
 - **GĐ1081 (chiều sâu: quan hệ hàng xóm theo bậc)**: nhà hàng xóm giao NGAY trong ngày khi đạt bậc Mối thân (doanh mua ≥12 triệu cả ván); trước đó giao sáng mai. `deliversInstantly` (supplierRel.ts) dùng ở nhập hàng + nút OrderPanel. Save không đổi (dùng supplierRel có sẵn); full test 3366 xanh. Còn: cơ chế nhập hàng ngoài tạp hóa.
 - **GĐ1080 (chiều sâu: nông trại)**: thêm 2 cây trồng dùng lại sản phẩm có sẵn — Lúa nếp (cấp 14, ra nếp cho quây xôi) và Đậu xanh (cấp 16); trồng nguyên liệu xôi nhà mình thay vì nhập. Không thêm sản phẩm nên sim/golden giữ nguyên; full test 3365 xanh. Còn: nhập hàng ngoài, quan hệ hàng xóm theo bậc (mối quen hiện áp chung cho hangxom).
 - **GĐ1079 (thử, không giữ)**: thêm Cà phê muối (quán nước cấp 30) làm lệch simGolden cấp 30 + supplyChain.test (bể món nước đổi) → hoàn tác. Muốn thêm món nước cần duyệt rebaseline golden có chủ ý, hoặc đưa món mới vào cơ chế chỉ-khi-bày như hàng xóm.
