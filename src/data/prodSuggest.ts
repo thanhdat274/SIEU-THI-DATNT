@@ -92,6 +92,21 @@ export function prodSuggestToday(a: ProdSuggestArgs): ProdSugg[] {
     if (quanMenuMilkNeed(a.quanMenu, a.level) && low('sua_tuoi')) {
       out.push({ icon: '🐄', label: 'Bò sữa', detail: 'nuôi lấy sữa — thực đơn quán cần để pha', panel: 'garden' });
     }
+    // GĐ1114 — 🧋 Nguyên liệu MUA NGOÀI của thực đơn quán (trà/sữa đặc/đá/cà phê…) cạn → nhập ngay
+    // (cây/vật nuôi đã có gợi ý riêng GĐ1101/1110; khớp với "Nút thắt" GĐ1112 ở banner nạp kho)
+    const homegrownIds = new Set([...CROPS.map((c) => c.productId), ...Object.values(ANIMALS).map((a2) => a2.productId)]);
+    const pushed = new Set<string>();
+    for (const id of a.quanMenu ?? []) {
+      const r = quanRecipeById(id);
+      if (!r || r.unlock > a.level) continue;
+      for (const u of r.uses) {
+        if (homegrownIds.has(u.id) || pushed.has(u.id) || !low(u.id)) continue;
+        pushed.add(u.id);
+        out.push({ icon: '🧋', label: productById(u.id).name, detail: 'nhập ngay — thực đơn quán cần để pha', panel: 'order' });
+        if (out.length >= MAX_EACH) break;
+      }
+      if (out.length >= MAX_EACH) break;
+    }
   }
 
   // ── 🍲 Nên nấu: công thức trạm đã mở, đủ nguyên liệu, món ra đang hot ──

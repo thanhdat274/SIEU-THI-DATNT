@@ -81,3 +81,29 @@ describe('GĐ1110 — gợi ý "nuôi lấy sữa" khi thực đơn quán cần 
     expect(prodSuggestToday(baseArgs({ level: 32, quanMenu: ['bac_xiu'] })).find((x) => x.label === 'Bò sữa')).toBeUndefined();
   });
 });
+
+describe('GĐ1114 — gợi ý "nhập ngay" cho nguyên liệu mua ngoài của thực đơn quán', () => {
+  it('menu có Trà vải, kho trà/đá cạn → gợi ý nhập (không gợi nguyên liệu nhà trồng ở khối này)', () => {
+    const storage: Record<string, number> = { x_vai: 50, x_duong: 99 }; // đường đủ → suất MAX_EACH cho trà + đá
+    for (const c of CROPS) if (c.productId !== 'x_vai') storage[c.productId] = 99; // chừa chỗ MAX_EACH cho gợi ý nhập
+    const s = prodSuggestToday(baseArgs({ quanMenu: ['tra_vai'], storage }));
+    const nhap = s.filter((x) => x.panel === 'order' && x.detail.includes('thực đơn quán cần để pha'));
+    const labels = nhap.map((x) => x.label);
+    expect(labels).toContain('Trà túi lọc');
+    expect(labels).toContain('Nước đá');
+    expect(labels).not.toContain('Vải'); // nhà trồng — gợi ý riêng GĐ1101
+  });
+
+  it('đủ kho nguyên liệu mua ngoài → không gợi ý; lặp nguyên liệu giữa các món chỉ gợi 1 lần', () => {
+    const full = { tra: 99, x_duong: 99, x_nuoc_da: 99, x_vai: 50, x_sua_dac: 99, x_ca_phe_hoa_tan: 99 };
+    expect(prodSuggestToday(baseArgs({ quanMenu: ['tra_vai'], storage: full })).filter((x) => x.panel === 'order' && x.detail.includes('thực đơn quán')).length).toBe(0);
+    // trà dùng chung tra_vai + món trà khác → vẫn chỉ 1 dòng
+    const s = prodSuggestToday(baseArgs({ quanMenu: ['tra_vai', 'tra_da'], storage: { x_nuoc_da: 99, x_vai: 50 } }));
+    expect(s.filter((x) => x.label === 'Trà túi lọc').length).toBe(1);
+  });
+
+  it('món chưa mở cấp không tạo gợi ý nhập', () => {
+    const s = prodSuggestToday(baseArgs({ level: 33, quanMenu: ['tra_vai'], storage: {} }));
+    expect(s.filter((x) => x.panel === 'order' && x.detail.includes('thực đơn quán cần để pha')).length).toBe(0);
+  });
+});
