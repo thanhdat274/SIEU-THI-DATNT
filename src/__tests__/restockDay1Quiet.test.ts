@@ -42,6 +42,22 @@ describe('fitList (GĐ563)', () => {
     expect([...m].length).toBeLessThanOrEqual(90);
     expect(m).toMatch(/\+\d+$/);
   });
+
+  it('GĐ1042: cả 1 món cũng quá max → rơi fallback "head +N mục" (dòng 56)', async () => {
+    const { fitList } = await import('../data/onboarding');
+    // head ngắn + món dài, max=3 → kể cả n=1 vẫn vượt → `HEAD1 mục`
+    expect(fitList('HEAD', ['món rất dài'], 3)).toBe('HEAD1 mục');
+  });
+
+  it('GĐ1042: nhiều món đều quá max → đếm đủ số món trong fallback', async () => {
+    const { fitList } = await import('../data/onboarding');
+    expect(fitList('H', ['aaa', 'bbb'], 2)).toBe('H2 mục');
+  });
+
+  it('GĐ1042: danh sách rỗng → vòng lặp không chạy, fallback "head 0 mục"', async () => {
+    const { fitList } = await import('../data/onboarding');
+    expect(fitList('Kho trống: ', [])).toBe('Kho trống: 0 mục');
+  });
 });
 
 describe('fitJoin tin sáng (GĐ565)', () => {
