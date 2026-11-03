@@ -22,6 +22,7 @@
 ## Trạng thái hiện tại (02/11/2026)
 - Các mục GĐ790–929 đã chuyển sang `docs/progress-archive/PROGRESS-GD790-929.md` (giữ file này gọn).
 - GĐ980–995 (chỉ tách file thuần + 2 lần QA save trắng, GĐ990 rà bundle): `docs/progress-archive/PROGRESS-GD980-995.md`.
+- **GĐ1006 (hiệu năng cuối-game — mục GĐ675, chống sort mỗi khung khi chỉ cần top-K):** `render/lightBudget.applyLightBudget` mỗi frame sort TOÀN BỘ ~50–60 đèn đăng ký (phình theo số toà nhà cuối game) dù mức Thấp chỉ dùng 3 đèn bể; thay bằng chọn top-K một lượt (O(n·k), k = pool.length) giữ `topScratch` tái dùng, KHÔNG cấp phát, không đổi số đèn bể/shader — kết quả (tập k đèn gần nhất + cut mờ) GIỐNG HỆT sort đầy đủ. Test `lightBudget.test.ts` (4 test, trong đó 300 kịch bản ngẫu nhiên so từng bit với reference sort cũ) xanh; full 390 file/3119 test, tsc 0, build ok, bundle 533/253 KB KHÔNG đổi. Đây là bước an toàn đầu tiên của đợt tối ưu GĐ675 (giảm việc mỗi khung ở cuối game, giữ mượt máy yếu); FPS thật ?gfx=low + CPU-throttle 4× vẫn cần cửa sổ chơi thật (ghi nợ mở).
 - GĐ996: tách render/productShapes (luật chọn kiểu dáng món theo tên, 98 dòng) khỏi render/productModels (598→500) + test; tsc 0.
 - GĐ997: tách world/farmSign (texture biển cổng trại, 23 dòng) khỏi world/farm (714→692) + test; tsc 0.
 - GĐ998: tách ui/orderPanelParts (nhãn mua-khi-rẻ, ASSESS_STYLE, Meter) khỏi ui/OrderPanel (604→~565) + test; tsc 0; full 383 file/3109 qua (đo trước GĐ998).
@@ -189,3 +190,4 @@
 - GĐ874: xem dòng 'Bản sao Draco thừa' của check:bundle — chỉ để biết: game tải decoder từ /decoders/draco/, bản trong assets/ không tới người chơi (không phải lỗi, không cần xử lý).
 - GĐ875: xem lại dư địa chunk (253/255): vendor-three là lõi three, loader GLTF/Draco đã nạp lười, vendor-react/data/firebase đã tách riêng → không còn chỗ cắt rẻ; thêm tính năng phải vào chunk store/lazy, không đụng vendor-three.
 - GĐ960–979 (tách file lớn: alleyApi, buildingTextures, bizAchieve/Loan/Purchases, regularsList…): xem docs/progress-archive/PROGRESS-GD960-979.md
+- GĐ1006 (hiệu năng: lightBudget top-K thay sort mỗi khung, mục GĐ675): xem mục Trạng thái hiện tại
