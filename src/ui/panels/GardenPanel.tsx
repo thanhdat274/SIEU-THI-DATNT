@@ -8,12 +8,13 @@ import { animalPerDay, bestAnimal, bestCrop, cropPerDay } from '../../data/farmV
 import { farmVsCook } from '../../data/farmKitchenValue';
 import { bestCropForMenu, bestAnimalForMenu, farmVsDrinks, homegrownImpact, orderSellNote } from '../../data/farmQuanValue';
 import { isWeekend } from '../../data/calendar';
+import { expiringSoon, expiryNoteFor } from '../../data/advice';
 import { isXoiCungDay } from '../../data/tiemXoi';
 import { Callout, Footer, styles } from './shared';
 
 /** Trang trại đầu ngõ: trồng theo mùa vụ, nuôi 7 loài, công trình + dọn trại lấy gỗ đá nâng sao, đơn quán xóm. */
 export function GardenPanel() {
-  const { garden, level, money, day, weather, storage, biz, plantCrop, waterGarden, waterPlot, fertilizePlot, harvestPlot, buyAnimal, feedPen, collectPen, sellFattened, expandFarm, deliverFarmOrder, buyFarmBuilding, upgradeFarmBuilding, cleanupFarm, closePanel } = useGame();
+  const { garden, level, money, day, weather, storage, storageLots, furniture, biz, plantCrop, waterGarden, waterPlot, fertilizePlot, harvestPlot, buyAnimal, feedPen, collectPen, sellFattened, expandFarm, deliverFarmOrder, buyFarmBuilding, upgradeFarmBuilding, cleanupFarm, closePanel } = useGame();
   const homegrown = Object.entries(garden.homegrown).filter(([, q]) => q > 0);
   const tier = LAND_TIERS[garden.land] ?? LAND_TIERS[LAND_TIERS.length - 1];
   const nextTier = LAND_TIERS[garden.land + 1];
@@ -52,6 +53,7 @@ export function GardenPanel() {
           {(() => {
             // GĐ147 — Nấu hay bán lẻ: với từng nông sản nhà trồng/nuôi đang có trong kho,
             // so bán lẻ (nhãn nhà trồng ×1,2) với nấu thành món (lãi món tính cơ hội phí thật).
+            const expiringMap = new Map(expiringSoon(storage, storageLots, furniture.flatMap((f2) => f2.tiers)).map((l) => [l.id, l.life]));
             const lines = homegrown
               .map(([id, qty]) => {
                 // GĐ1093 — xét cả BẾP (nấu) lẫn QUÁN NƯỚC (pha): chọn nơi nông sản bõ nhất.
@@ -61,19 +63,22 @@ export function GardenPanel() {
                 const brewNet = q.best?.homegrownNet ?? -Infinity;
                 // GĐ1111 — đơn quán xóm đang mua nông sản này (trả ×bonus) → nhắc trước khi nấu/pha cả lot
                 const note = orderSellNote(id, order, qty);
-                if (!f.best && !q.best) return { id, qty, key: id, impact: -Infinity, text: `${productById(id).name}: bán lẻ ~${formatMoney(f.sellPerUnit)}/món${note}` };
+                // GĐ1117 — hàng sắp hết hạn: nấu/pha/giao ngay trước khi hỏng
+                const exp = expiringMap.get(id);
+                const expiryNote = expiryNoteFor(exp);
+                if (!f.best && !q.best) return { id, qty, key: id, impact: -Infinity, text: `${productById(id).name}: bán lẻ ~${formatMoney(f.sellPerUnit)}/món${note}${expiryNote}` };
                 if (brewNet > cookNet) {
                   const d = q.best!;
                   return {
                     id, qty, key: id,
-                    text: `pha <b>${d.recipe.name}</b> (~${d.glasses} ly/1) lời ~${formatMoney(d.homegrownNet)}/1 (+${formatMoney(d.homegrownNet)} so bán lẻ ${formatMoney(q.sellPerUnit)})${note}`,
+                    text: `pha <b>${d.recipe.name}</b> (~${d.glasses} ly/1) lời ~${formatMoney(d.homegrownNet)}/1 (+${formatMoney(d.homegrownNet)} so bán lẻ ${formatMoney(q.sellPerUnit)})${note}${expiryNote}`,
                     thin: d.homegrownNet < q.sellPerUnit,
                   };
                 }
                 const d = f.best!;
                 return {
                   id, qty, key: id,
-                  text: `nấu <b>${d.recipe.name}</b> lời ~${formatMoney(d.homegrownNet)} (+${formatMoney(d.deltaVsSell)} so bán lẻ ${formatMoney(d.sellLot)})${note}`,
+                  text: `nấu <b>${d.recipe.name}</b> lời ~${formatMoney(d.homegrownNet)} (+${formatMoney(d.deltaVsSell)} so bán lẻ ${formatMoney(d.sellLot)})${note}${expiryNote}`,
                   thin: d.homegrownNet < d.sellLot, // nấu lời còn kém cả bán lẻ cả lot — bán lẻ thật sự đáng cân nhắc
                   impact: homegrownImpact(id), // GĐ1109: xếp dòng đáng chú ý nhất lên trước
                 };

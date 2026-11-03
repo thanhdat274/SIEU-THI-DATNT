@@ -209,6 +209,15 @@ export function walkoutAdvice(log: MissLog, inStorage: Record<string, number>, p
 /** Hàng còn chừng này ngày trở xuống thì báo sắp hỏng. */
 export const EXPIRY_WARN_DAYS = 2;
 
+/**
+ * GĐ1117 — đuôi dòng tư vấn cho nông sản sắp hết hạn (khối "Nấu hay bán lẻ" ở Vườn): biết hạn còn
+ * lại thì nhắc dùng ngay trước khi nấu/pha/giao cả lot. life không có (không trong danh sách sắp
+ * hỏng) → chuỗi rỗng. Thuần đọc.
+ */
+export function expiryNoteFor(life: number | undefined): string {
+  return life !== undefined ? ` · ⏳ hết hạn ~${life} ngày — dùng ngay` : '';
+}
+
 export interface ExpiringLine {
   id: string;
   qty: number;
