@@ -4,13 +4,16 @@ import { RECIPES, STATIONS, type CookingStation } from '../../data/recipes';
 import { formatMoney, productById } from '../../data/products';
 import { kitchenValue } from '../../data/kitchenValue';
 import { cookAdvice } from '../../data/cookSchedule';
+import { expiringSoon, expiryInputsNote } from '../../data/advice';
 import { cookSpeed, bartenderBoost } from '../../core/slices/orders';
 import { FESTIVALS, festivalOn } from '../../data/calendar';
 import { Footer, styles, Tabs } from './shared';
 
 /** Sổ nấu: công thức theo trạm, nguyên liệu lấy từ kho (lô cận hạn trước), mẻ xong về kho chờ bày kệ. */
 export function CookPanel() {
-  const { level, storage, furniture, cookJobs, startCook, closePanel, openPanel, setBuildMode } = useGame();
+  const { level, storage, storageLots, furniture, cookJobs, startCook, closePanel, openPanel, setBuildMode } = useGame();
+  // GĐ1118 — bản đồ hạn còn lại của hàng sắp hỏng (kho + kệ) để nhắc nấu ngay trên dòng công thức
+  const expiringMap = new Map(expiringSoon(storage, storageLots, furniture.flatMap((f) => f.tiers)).map((l) => [l.id, l.life]));
   const day = useGame((s) => s.day);
   // GĐ161: giờ hiện tại (vẽ lại 1 lần mỗi phút game như Hud) + tốc độ trạm thật
   // (đầu bếp/pha chế trực ca — cùng nguồn cookSpeed/bartenderBoost với tick đồng hồ)
@@ -112,6 +115,9 @@ export function CookPanel() {
                         )}
                         {missing.length > 0 && !locked && (
                           <span style={{ color: '#ff7675' }}> · thiếu: {missing.map((i) => productById(i.productId).name).join(', ')}</span>
+                        )}
+                        {missing.length === 0 && !locked && expiryInputsNote(r.inputs, expiringMap) && (
+                          <span style={{ color: '#e67e22' }}>{expiryInputsNote(r.inputs, expiringMap)}</span>
                         )}
                       </div>
                       {own && kv.verdict === 'sell_raw' && (

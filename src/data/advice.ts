@@ -218,6 +218,20 @@ export function expiryNoteFor(life: number | undefined): string {
   return life !== undefined ? ` · ⏳ hết hạn ~${life} ngày — dùng ngay` : '';
 }
 
+/**
+ * GĐ1118 — đuôi dòng công thức ở Bếp khi nguyên liệu sắp hỏng: nấu ngay trước khi mất (đối xứng
+ * GĐ1117 ở Vườn). Chọn nguyên liệu hạn ngắn nhất trong các đầu vào; không cái nào sắp hỏng → rỗng.
+ * Thuần đọc.
+ */
+export function expiryInputsNote(inputs: readonly { productId: string }[], expiryMap: Map<string, number>): string {
+  let worst: { name: string; life: number } | null = null;
+  for (const i of inputs) {
+    const life = expiryMap.get(i.productId);
+    if (life !== undefined && (!worst || life < worst.life)) worst = { name: productById(i.productId).name, life };
+  }
+  return worst ? ` · ⏳ ${worst.name} hết hạn ~${worst.life} ngày — nấu ngay` : '';
+}
+
 export interface ExpiringLine {
   id: string;
   qty: number;
