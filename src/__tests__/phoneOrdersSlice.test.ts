@@ -120,3 +120,32 @@ describe('giao đơn điện thoại', () => {
     expect(g().regulars['ba_nam']).toBeUndefined(); // adjustFriendship không được gọi
   });
 });
+
+describe('GĐ1050 — nhánh biên nghe máy/từ chối (orders 153–196)', () => {
+  it('nghe máy đơn có món KHÔNG CÓ trong kho (undefined ?? 0) → báo thiếu món đó, không mang', () => {
+    // storage chỉ có PID, đơn đòi thêm 'sua' → nhánh `(s.storage[pid] ?? 0) < q` với storage[pid] undefined (dòng 153)
+    useGame.setState({ storage: { [PID]: 5 }, phoneOrders: [order({ items: { [PID]: 2, sua: 1 } })] });
+    const toasts: string[] = [];
+    useGame.setState({ notify: (m) => void toasts.push(m) });
+    expect(g().answerPhone(1)).toBe(false);
+    expect(g().phoneOrders[0].status).toBe('ringing');
+    expect(toasts.some((t) => t.includes('Kho còn thiếu'))).toBe(true);
+  });
+
+  it('nhiều đơn điện thoại: nghe một đơn → đơn đó carrying, đơn KIA vẫn ringing (map giữ nguyên)', () => {
+    // storage đủ cho cả hai; dòng 161 `p === o ? … : p` nhánh false giữ đơn còn lại
+    useGame.setState({ phoneOrders: [order({ id: 1 }), order({ id: 2 })] });
+    expect(g().answerPhone(1)).toBe(true);
+    const [a, b] = g().phoneOrders;
+    expect(a.status).toBe('carrying');
+    expect(b.status).toBe('ringing');
+  });
+
+  it('từ chối đơn KHÔNG ĐỔ CHUÔNG (đang carrying/còn lại) → không làm gì, đơn nguyên vẹn', () => {
+    // dòng 196 `if (!o) return;` — không tìm thấy đơn ringing
+    g().answerPhone(1); // chuyển sang carrying
+    g().declinePhone(1);
+    expect(g().phoneOrders).toHaveLength(1);
+    expect(g().phoneOrders[0].status).toBe('carrying');
+  });
+});
