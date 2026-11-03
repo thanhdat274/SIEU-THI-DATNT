@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { HOMEMADE_IDS, HOMEMADE_PRODUCTS } from '../data/homemade';
 import { PRODUCTS, productById } from '../data/products';
 import { deliversInstantly } from '../data/supplierRel';
+import { makeOnlineOrder } from '../data/online';
 import { SUPPLIERS, supplierSells, unitCost } from '../data/suppliers';
 
 describe('GĐ1077 — món hàng xóm tự làm + nhà hàng xóm', () => {
@@ -42,5 +43,12 @@ describe('GĐ1077 — món hàng xóm tự làm + nhà hàng xóm', () => {
     expect(deliversInstantly(hx, 12_000_000)).toBe(true);
     const cho = SUPPLIERS.find((s) => s.id === 'cho')!;
     expect(deliversInstantly(cho, 150_000_000)).toBe(false);
+  });
+
+  it('đơn online/chợ phiên không đòi món chỉ hàng xóm bán', () => {
+    for (let id = 1; id <= 60; id++) {
+      const o = makeOnlineOrder(id, 40, 480, Math.random);
+      for (const pid of Object.keys(o.items)) expect(HOMEMADE_IDS.has(pid)).toBe(false);
+    }
   });
 });

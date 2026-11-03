@@ -2,6 +2,7 @@ import type { DayAction } from './dayPlan';
 import { dateOfDoy, dayOfYear, monthOf } from './calendar';
 import { productById, unlockedProducts } from './products';
 import { COOKED_PRODUCT_IDS } from './recipes';
+import { HOMEMADE_IDS } from './homemade';
 
 // ───── Chợ phiên nhà cung cấp đặc biệt (GĐ68) ─────
 // đầu mỗi tháng (ngày 1–FAIR_DAYS) xuất hiện một thương lái bán cả "lô" hàng
@@ -52,7 +53,7 @@ export function makeFairOffer(level: number, day: number): FairOffer | undefined
   const month = monthOf(day);
   const rng = mulberry32(hashSeed(`fair-${month}-${level}`));
   // lấy hàng nhập được (bỏ món nhà làm) đã mở khóa ở cấp này
-  const pool = unlockedProducts(level).filter((p) => !COOKED_PRODUCT_IDS.has(p.id));
+  const pool = unlockedProducts(level).filter((p) => !COOKED_PRODUCT_IDS.has(p.id) && !HOMEMADE_IDS.has(p.id));
   if (pool.length === 0) return undefined;
   // xáo xác định
   const arr = [...pool];
