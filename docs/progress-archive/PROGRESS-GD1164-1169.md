@@ -1,4 +1,4 @@
-# PROGRESS — archive GĐ1164–1168 (QA render 🆕 ×2 + sổ tay bảo trì + vệ sinh mã + độ phủ lần 4 + audit 10-GĐ lần 6)
+# PROGRESS — archive GĐ1164–1169 (QA render 🆕 ×2 + sổ tay bảo trì + vệ sinh mã + độ phủ lần 4 + audit 10-GĐ lần 6 + QA hồi quy tổng)
 
 > Đây là chi tiết các giai đoạn đã rút khỏi PROGRESS.md (giữ file chính gọn <30KB). Tra nhanh bằng grep -n "GĐ11xx" docs/progress-archive/*.md khi cần.
 
