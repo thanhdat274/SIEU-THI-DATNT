@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { HOMEMADE_IDS, HOMEMADE_PRODUCTS } from '../data/homemade';
 import { PRODUCTS, productById } from '../data/products';
+import { deliversInstantly } from '../data/supplierRel';
 import { SUPPLIERS, supplierSells, unitCost } from '../data/suppliers';
 
 describe('GĐ1077 — món hàng xóm tự làm + nhà hàng xóm', () => {
@@ -34,5 +35,12 @@ describe('GĐ1077 — món hàng xóm tự làm + nhà hàng xóm', () => {
 
   it('mở khoá nhà hàng xóm không sớm hơn món đầu tiên của nó', () => {
     expect(hx.unlock).toBeLessThanOrEqual(Math.min(...HOMEMADE_PRODUCTS.map((h) => productById(h.id).unlock)));
+  });
+
+  it('GĐ1081: hàng xóm giao ngay từ bậc Mối thân, đại lý khác giữ nguyên', () => {
+    expect(deliversInstantly(hx, 0)).toBe(false);
+    expect(deliversInstantly(hx, 12_000_000)).toBe(true);
+    const cho = SUPPLIERS.find((s) => s.id === 'cho')!;
+    expect(deliversInstantly(cho, 150_000_000)).toBe(false);
   });
 });

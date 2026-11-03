@@ -9,7 +9,7 @@ import { shelfLife } from '../data/freshness';
 import { bulkDiscount, orderTotal, SUPPLIERS, supplierSells, trending, unitCost } from '../data/suppliers';
 import { guideActiveOn, guideInCart, guideIdsOf, guideProducts } from '../data/onboarding';
 import { cheapestSupplier, orderAssessment, type AssessLevel, type AssessLine, type BuyTone, type Dir } from '../data/procure';
-import { PARTNER_TIERS } from '../data/supplierRel';
+import { PARTNER_TIERS, deliversInstantly } from '../data/supplierRel';
 import { cheapestSupplierFor, type CheapestProductResult } from '../data/supplierValue';
 import { isFairOpen, makeFairOffer } from '../data/fairmerchant';
 import { showRestockExtras } from '../data/onboarding';
@@ -560,7 +560,7 @@ export function OrderPanel() {
         <span style={{ display: 'flex', gap: 8 }}>
           <button style={st.btn} onClick={closePanel}>Đóng</button>
           <button style={{ ...st.btn, background: '#f1c40f', fontWeight: 700 }} disabled={!count || tooSmall || tooBig || total > money} onClick={order}>
-            {wageShort && !needConfirm ? '⚠️ Vẫn nhập' : supplier.delayDays ? '🚚 Đặt giao sáng mai' : '📦 Nhập ngay'}
+            {wageShort && !needConfirm ? '⚠️ Vẫn nhập' : !deliversInstantly(supplier, biz.supplierRel?.[supplier.id]?.spent ?? 0) ? '🚚 Đặt giao sáng mai' : '📦 Nhập ngay'}
           </button>
         </span>
       </div>

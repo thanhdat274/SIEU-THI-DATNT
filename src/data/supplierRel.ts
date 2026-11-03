@@ -66,3 +66,8 @@ export function monthlyRelRebate(life: number, monthSpent: number): number {
 }
 
 export type { Supplier };
+
+/** Hàng xóm quý mối thân (GĐ1081): từ bậc "Mối thân" trở lên, nhà hàng xóm giao ngay trong ngày thay vì sáng mai. */
+export const NEIGHBOR_INSTANT_TIER = 2;
+export const deliversInstantly = (sup: Pick<Supplier, 'id' | 'delayDays'>, life: number): boolean =>
+  sup.delayDays === 0 || (sup.id === 'hangxom' && relTier(life).level >= NEIGHBOR_INSTANT_TIER);
