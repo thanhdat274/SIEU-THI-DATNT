@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (04/11/2026)
+- **GĐ1167 (tài liệu: 🧰 sổ tay bảo trì trong "Quy ước kỹ thuật")**: gom mọi công cụ bảo trì tích lũy vào 1 mục — cổng duyệt (test/build/tsc), ngân sách (check:bundle, audit:notify), định kỳ (test:coverage, archiveCheck.cjs, covrank/covlines, mutate_sw) + chu kỳ khuyến nghị (audit 10-GĐ · độ phủ ~30 GĐ · dồn archive ~5 GĐ · vệ sinh mã/nợ bảo mật khi tới hạn). Phiên sau tìm thấy ngay toàn bộ bộ đồ mà không phải rà lịch sử. Không đổi mã/test — full 445 file/3468 test xanh, tsc 0, build ok, simGolden y nguyên 26.304.891.
 - **GĐ1166 (độ phủ định kỳ lần 4 khuôn GĐ1149)**: `npm run test:coverage` = **statements/lines 63,08%** (23.630/37.457 — giữ nguyên tuyệt đối so lần đo GĐ1149: không có mã production mới nào trong kỳ, chỉ test/tài liệu/tool), branches 89,85%, functions 84,18%; 442 file/3445 test (bỏ 3 file heavy theo cấu hình); tsc 0, build ok. Vùng uncovered ổn định (audio/firebase/coop runtime gắn browser). Không sửa mã.
 - **GĐ1165 (bảo trì: archiveCheck có exit code)**: `dev/archiveCheck.cjs` nay exit 1 khi có tham chiếu ma/archive thiếu mục lục (trước đây report-only exit 0) — nhịp bảo trì/automation gate được trực tiếp; sạch thì exit 0. Xác nhận: chạy sạch → exit 0 (81 file archive, 0 ma / 0 thiếu). Không đổi mã game — full 445 file/3468 test xanh, tsc 0, build ok, simGolden y nguyên 26.304.891.
 - **GĐ1164 (bảo trì: dồn GĐ1163 — atomic một khối script)**: PROGRESS.md 30,8 → ~30 KB; GĐ1163 gộp vào archive đổi tên `PROGRESS-GD1161-1163.md` (áp dụng bài học atomic — mọi cập nhật trước khi write, không còn file rác); `archiveCheck.cjs` xác nhận 0 ma / 0 thiếu. Không đổi mã/test — full suite & build bất đổi (445 file/3468 test xanh).
@@ -29,6 +30,8 @@
 - GĐ960–1005 (tách file thuần + QA trình duyệt, chi tiết): `docs/progress-archive/PROGRESS-GD960-1005.md`
 - Các mục GĐ930–949 / GĐ950–959 (tách panel/Hud): `docs/progress-archive/PROGRESS-GD930-949.md` · `docs/progress-archive/PROGRESS-GD950-959.md`
 ## Quy ước kỹ thuật cần nhớ
+
+- **🧰 Sổ tay bảo trì (GĐ1167):** `npm run test` / `npm run build` / `npx tsc --noEmit` (cổng duyệt) · `npm run check:bundle` (ngân sách 538/597 KB) · `npm run audit:notify` (thông báo ≤90) · `npm run test:coverage` (độ phủ định kỳ) · `node dev/archiveCheck.cjs` (đối chiếu 2 chiều archive sau khi dồn — exit 1 khi lệch) · `dev/covrank.cjs` / `dev/covlines.cjs` (xếp hạng coverage) · `node dev/mutate_sw.cjs` (mutation SW). Chu kỳ: audit 10-GĐ · độ phủ ~30 GĐ · dồn archive ~5 GĐ · vệ sinh mã + làm mới nợ bảo mật khi tới hạn.
 
 - **Khung modal cố định (GĐ662):** mọi panel dùng chung khung `styles.panel` cứng (desktop 760×min(688,100dvh−108), mobile 100vw−24 × 100dvh−96); KHÔNG đặt kích thước riêng cho panel nào, nội dung dài cuộn bên trong. Chuyển tab trong hub không được làm khung co giãn — test khoá `panelFrame.test.ts`.
 
