@@ -38,6 +38,7 @@
 - GĐ994: tách ui/panels/ShopLifeTabs (Pets, Services, Life, Upgrades) khỏi ui/BusinessPanel (còn 155 dòng) + test; 3105 test, tsc 0.
 - GĐ995: tách world/buildingFurnish (quạt, điều hòa, quầy, máy tính tiền) khỏi world/buildings (còn 520 dòng) + test; 3107 test, tsc 0.
 - GĐ996: tách render/productShapes (luật chọn kiểu dáng món theo tên, 98 dòng) khỏi render/productModels (598→500) + test; tsc 0.
+- GĐ997: tách world/farmSign (texture biển cổng trại, 23 dòng) khỏi world/farm (714→692) + test; tsc 0.
 - **GĐ971 (QA save trắng bằng mắt)** Xoá localStorage/IndexedDB → màn đăng nhập → "Chơi không cần đăng nhập" → vào ngày 1 (6:00, Tết dương lịch, hướng dẫn 5 bước, hội thoại Bà Năm chương 1, HUD 12 nút, dock có "Thêm"). Không có lỗi mới sau khi vào game; các lỗi `REGULAR_NAMES`/`main.tsx` trong console là dấu vết HMR cũ của GĐ962 (máy chủ nay trả 200, export có đủ).
 - **GĐ970 (rà 961–969)** Chỉ tách code thuần (main.tsx 1012→971 dòng: stocktakeMessage, effectiveSpeed, lampLevel, interactHints, tutorialMarker); sửa 1 lỗi tsc sót ở GĐ965 (từ nay đọc exit code tsc riêng). Bundle không đổi: đầu 533/597 KB gzip, chunk lớn nhất 253/255. Full test 361 file/3075. GĐ950–959 chuyển sang `docs/progress-archive/PROGRESS-GD950-959.md`. Chưa soi bằng mắt trong game.
 - **GĐ961 (QA save trắng bằng mắt, panel trình duyệt)** Vào chơi khách từ màn đầu: không lỗi console, ngày 1 06:00 280.000đ, hướng dẫn 5 bước hiện, HUD 12 nút (≤20), chương 1 bà Năm mở đầu. Chưa đi hết một ngày (không kiểm FPS/bán hàng). Chưa soi nút Nhập hàng trong game.
