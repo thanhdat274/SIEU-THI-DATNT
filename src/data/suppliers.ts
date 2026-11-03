@@ -1,6 +1,7 @@
 import { casesFor, PRODUCTS, productById, type Category } from './products';
 import { SEASONAL_GOODS } from './calendar';
 import { COOKED_PRODUCT_IDS } from './recipes';
+import { HOMEMADE_IDS } from './homemade';
 
 /** Nơi nhập hàng: mỗi mối có giá, thời gian giao, đơn tối thiểu và ngành hàng riêng. */
 export interface Supplier {
@@ -16,6 +17,8 @@ export interface Supplier {
   minOrder: number;
   /** Bỏ trống = bán mọi ngành. */
   categories?: Category[];
+  /** Chỉ bán đúng các món nhà làm này (nhà hàng xóm); mối khác không bán món nhà làm (homemade.ts). */
+  only?: ReadonlySet<string>;
   /** Mua nhiều thùng một món được bớt thêm. */
   bulk?: { minCases: number; discount: number }[];
   /** Giá dao động mỗi ngày tối đa bao nhiêu. */
@@ -42,13 +45,19 @@ export const SUPPLIERS: Supplier[] = [
     bulk: [{ minCases: 5, discount: 0.04 }, { minCases: 10, discount: 0.08 }],
     desc: 'Rẻ nhất (−18%), đủ mọi ngành, giao sáng mai. Đơn từ 1 triệu, mua thùng lớn bớt thêm tới 8%.',
   },
+  {
+    id: 'hangxom', name: 'Nhà hàng xóm', icon: '🏡', unlock: 14, discount: 0, delayDays: 1, minOrder: 0, volatility: 0.06,
+    only: HOMEMADE_IDS,
+    desc: 'Dưa muối, mắm tép, tương bần, bánh tráng... hàng xóm tự làm, chỉ nhập được ở đây. Giao sáng mai.',
+  },
 ];
 
 export const supplierById = (id: string) => SUPPLIERS.find((s) => s.id === id)!;
 
 /** Món nhà làm không nhập được ở mối nào: chỉ có bằng cách nấu từ nguyên liệu. */
 export const supplierSells = (s: Supplier, productId: string) =>
-  !COOKED_PRODUCT_IDS.has(productId) && (!s.categories || s.categories.includes(productById(productId).category));
+  s.only ? s.only.has(productId)
+    : !COOKED_PRODUCT_IDS.has(productId) && !HOMEMADE_IDS.has(productId) && (!s.categories || s.categories.includes(productById(productId).category));
 
 /** Số ngẫu nhiên cố định theo (ngày, chuỗi): cùng ngày thì giá không nhảy khi mở lại bảng. */
 function seeded(day: number, key: string) {
