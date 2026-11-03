@@ -60,6 +60,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'tra_gung_nong', name: 'Trà gừng nóng', category: 'drink', buy: 7200, sell: 13700, color: 0xd4ac0d, unlock: 23 },
   { id: 'mi_trung_nong', name: 'Mì trứng nấu sẵn', category: 'fresh', buy: 5500, sell: 10500, color: 0xe67e22, unlock: 21 },
   { id: 'che_dau_xanh', name: 'Chè đậu xanh', category: 'fresh', buy: 7800, sell: 14900, color: 0xfadbd8, unlock: 22 },
+  // GĐ1094: Hột vịt lộn — mẻ (vịt 32k + rau 10k + muối 5k) = 47k → 10 phần × 7k = 70k, lãi 23k/mẻ, nấu hời hơn bán nguyên liệu (68k < 70k)
+  { id: 'hot_vit_lon', name: 'Hột vịt lộn', category: 'fresh', buy: 3500, sell: 7000, color: 0xd9b382, unlock: 34 },
   // GĐ1089: Chè bưởi — mẻ (bưởi 16k + đường 17k) = 33k → 6 phần × 11k = 66k, lãi 33k/mẻ, nấu hời hơn bán nguyên liệu (45k < 66k)
   { id: 'che_buoi', name: 'Chè bưởi', category: 'fresh', buy: 5500, sell: 11000, color: 0xa9dfbf, unlock: 38 },
   // GĐ1091: Chè nhãn — mẻ (nhãn 24k + đường 17k) = 41k → 6 phần × 11k = 66k, lãi 25k/mẻ, nấu hời hơn bán nguyên liệu (55k < 66k)
@@ -83,6 +85,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
 
   // --- Nồi hấp (steamer) ---
   { id: 'banh_bao_hap', name: 'Bánh bao hấp nóng', category: 'fresh', buy: 4500, sell: 8600, color: 0xf5f6fa, unlock: 39 },
+  // GĐ1094: Bánh flan — mẻ (ngỗng 280k + sữa đặc 22k + đường 17k) = 319k → 24 cái × 18k = 432k, lãi 113k/mẻ, nấu hời hơn bán nguyên liệu (398k < 432k)
+  { id: 'banh_flan', name: 'Bánh flan', category: 'fresh', buy: 9000, sell: 18000, color: 0xe8b04a, unlock: 39 },
 
   // --- Quây xôi (rice_station) ---
   { id: 'xoi_dau_xanh', name: 'Xôi đậu xanh', category: 'fresh', buy: 1400, sell: 2600, color: 0xf9ca24, unlock: 36 },
@@ -162,6 +166,11 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_che_nhan', name: 'Chè nhãn', station: 'hot_kettle',
     inputs: [{ productId: 'x_nhan', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
     outputId: 'che_nhan', outputQty: 6, durationMin: 15, unlock: 36, reputationGain: 2 },
+  // GĐ1094: Hột vịt lộn — món ăn vặt đường phố của trứng vịt trại (vịt mở cấp 16 nhưng chưa có lối ra bếp);
+  // 1 vỉ 10 quả + rau răm + muối. Mở 34 > mốc golden 30 → sim không đổi.
+  { id: 'recipe_hot_vit_lon', name: 'Hột vịt lộn', station: 'hot_kettle',
+    inputs: [{ productId: 'trung_vit', quantity: 1 }, { productId: 'rau', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }],
+    outputId: 'hot_vit_lon', outputQty: 10, durationMin: 12, unlock: 34, reputationGain: 2 },
 
   // --- Máy xay (blender) ---
   { id: 'recipe_sinh_to', name: 'Sinh tố trái cây', station: 'blender',
@@ -203,6 +212,11 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_banh_bao', name: 'Bánh bao hấp nóng', station: 'steamer',
     inputs: [{ productId: 'botmi', quantity: 2 }, { productId: 'thit', quantity: 2 }, { productId: 'trung', quantity: 1 }],
     outputId: 'banh_bao_hap', outputQty: 40, durationMin: 20, unlock: 39, reputationGain: 3 },
+  // GĐ1094: Bánh flan — món hấp của trứng ngỗng trại (ngỗng mở cấp 18 nhưng chưa có lối ra bếp; trứng ngỗng
+  // to gấp ba gà nên 1 quả làm một mẻ flan nhỏ). Mở 39 = đúng cấp mở nồi hấp.
+  { id: 'recipe_banh_flan', name: 'Bánh flan', station: 'steamer',
+    inputs: [{ productId: 'trung_goos', quantity: 1 }, { productId: 'x_sua_dac', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
+    outputId: 'banh_flan', outputQty: 24, durationMin: 25, unlock: 39, reputationGain: 3 },
 
   // --- Quây xôi (rice_station) ---
   // 6 món xôi theo công thức chuẩn món ăn VN (khách quen bắt lỗi nguyên liệu sai ngành): đậu xanh/bắp/dừa
