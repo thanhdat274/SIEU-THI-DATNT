@@ -124,10 +124,18 @@ describe('GĐ74 — Đối tác chi nhánh × quán nước: hiệp lực tháng
       expect(s.biz.hiepLuc!.coc).toBe(HIEPLUC_COC);
       expect((s.stats.spent || 0)).toBe((s0.stats.spent || 0) + HIEPLUC_COC);
     });
-    it('thiếu tiền cọc → không lập', () => {
+    it('thiếu tiền cọc → không lập, báo thiếu tiền, tiền nguyên', () => {
       useGame.setState({ level: 40, branch: openBranch(), money: 1000 });
+      const s0 = useGame.getState();
+      s0.biz.quanNuoc = { ...s0.biz.quanNuoc, open: true };
+      const toasts: string[] = [];
+      useGame.setState({ notify: (m: string) => void toasts.push(m) });
+      const before = useGame.getState().money;
       signHiepLuc();
-      expect(useGame.getState().biz.hiepLuc!.active).toBe(false);
+      const s = useGame.getState();
+      expect(s.biz.hiepLuc!.active).toBe(false);
+      expect(s.money).toBe(before);
+      expect(toasts.some((t) => t.includes('Không đủ tiền đặt cọc'))).toBe(true);
     });
     it('đã đối tác tháng này → no-op', () => {
       useGame.setState({ level: 40, branch: openBranch(), money: 1_000_000 });
@@ -137,6 +145,21 @@ describe('GĐ74 — Đối tác chi nhánh × quán nước: hiệp lực tháng
       const moneyAfter1 = useGame.getState().money;
       signHiepLuc();
       expect(useGame.getState().money).toBe(moneyAfter1);
+    });
+    it('sang tháng mới vẫn còn active (chưa chốt) → nhắc lập lại đối tác tháng trước, không lập đợt mới', () => {
+      useGame.setState({ level: 40, branch: openBranch(), money: 1_000_000 });
+      const s0 = useGame.getState();
+      s0.biz.quanNuoc = { ...s0.biz.quanNuoc, open: true };
+      signHiepLuc(); // m = monthOf(day 5) = tháng 1
+      const m1 = useGame.getState().money;
+      const toasts: string[] = [];
+      useGame.setState({ day: 32, notify: (m: string) => void toasts.push(m) }); // tháng 2
+      signHiepLuc();
+      const s = useGame.getState();
+      expect(s.money).toBe(m1); // không trừ cọc lần hai
+      expect(s.biz.hiepLuc!.active).toBe(true); // không lập đợt mới
+      expect(toasts.some((t) => t.includes('Đối tác tháng trước vừa khép'))).toBe(true);
+      expect(toasts.some((t) => t.includes('Tháng này đã lập'))).toBe(false);
     });
   });
 });
