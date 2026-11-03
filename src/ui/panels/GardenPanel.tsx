@@ -223,7 +223,7 @@ export function GardenPanel() {
             return (
               <div key={kind} style={{ ...styles.card, display: 'block' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center' }}>
-                  <b>{def.icon} {def.name}</b>
+                  <b>{def.icon} {def.name}</b>{!locked && newUnlockMark(def.unlock, level)}
                   <span style={{ display: 'flex', gap: 4 }}>
                     {pen && pen.count > 0 && mode === 'fatten' && (
                       <>
