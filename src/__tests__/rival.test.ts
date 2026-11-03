@@ -65,6 +65,14 @@ describe('startCounter — chọn chiến thuật trong ngày', () => {
     expect(useGame.getState().biz.counter).toBeNull();
     expect(useGame.getState().money).toBe(2000000);
   });
+  // GĐ1051 — orders/core.biz startCounter nhánh THIẾU TIỀN cho chiến thuật trả phí
+  // (dòng 64 `if (def.cost && !pay(def.cost, …)) return;`): quảng cáo tốn tiền, nghèo không chạy được.
+  it('GĐ1051: chiến thuật trả phí (ad) khi không đủ tiền → không chạy, tiền còn nguyên', () => {
+    useGame.setState({ money: 0 });
+    startCounter('ad');
+    expect(useGame.getState().biz.counter).toBeNull();
+    expect(useGame.getState().money).toBe(0);
+  });
 });
 
 describe('hiệu ứng trong ngày của đợt phản công', () => {
