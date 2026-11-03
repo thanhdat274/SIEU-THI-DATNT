@@ -76,9 +76,9 @@ export function prodSuggestToday(a: ProdSuggestArgs): ProdSugg[] {
   if (a.level >= 8) {
     const low = (id: string) => (a.storage[id] ?? 0) < 8;
     const quanNeeds = quanMenuCropNeeds(a.quanMenu, a.level);
-    for (const c of CROPS) {
-      if (c.unlock > a.level) continue;
-      if (!inSeason(c, a.day)) continue;
+    // GĐ1137 — cây thuộc thực đơn quán đứng trước: không bị cây thường kèn hết 2 suất MAX_EACH
+    const inList = CROPS.filter((c) => c.unlock <= a.level && inSeason(c, a.day));
+    for (const c of [...inList.filter((c) => quanNeeds.has(c.id)), ...inList.filter((c) => !quanNeeds.has(c.id))]) {
       const hot = a.hot.includes(c.productId);
       const missing = low(c.productId);
       if (!hot && !missing) continue;

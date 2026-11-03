@@ -107,3 +107,18 @@ describe('GĐ1114 — gợi ý "nhập ngay" cho nguyên liệu mua ngoài của
     expect(s.filter((x) => x.panel === 'order' && x.detail.includes('thực đơn quán cần để pha')).length).toBe(0);
   });
 });
+
+describe('GĐ1137 — cây thuộc thực đơn quán được ưu tiên trong "Nên trồng"', () => {
+  it('kho toàn bộ cây đều cạn + menu Trà vải → vải (quan-cần) lọt 2 suất đầu, không bị chèn', () => {
+    const s = prodSuggestToday(baseArgs({ day: 150, quanMenu: ['tra_vai'] }));
+    const gardenLines = s.filter((x) => x.panel === 'garden').map((x) => x.label);
+    expect(gardenLines).toContain('Vải thiều');
+    // vải phải nằm trong 2 gợi ý đầu (MAX_EACH = 2)
+    expect(gardenLines.indexOf('Vải thiều')).toBeLessThan(2);
+  });
+
+  it('không có menu quán → thứ tự giữ nguyên hành vi cũ (không ưu tiên ai)', () => {
+    const s = prodSuggestToday(baseArgs({ day: 150 }));
+    expect(s.filter((x) => x.panel === 'garden' && x.detail.includes('thực đơn quán')).length).toBe(0);
+  });
+});
