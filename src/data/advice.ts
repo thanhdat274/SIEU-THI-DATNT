@@ -324,10 +324,14 @@ export function waitLossStats(
   return { count, pct: customers > 0 ? count / customers : 1, peakHour: peak ? peak.hour : null };
 }
 
+/** GĐ1133 — cửa sổ "mới": mở trong 4 cấp trở lại (đồng bộ NEW_WITHIN = 4 của OrderPanel GĐ562-era). */
+export const NEW_UNLOCK_WINDOW = 4;
+
 /**
- * GĐ1125 — dấu "🆕" cho món/công thức vừa mở ĐÚNG cấp hiện tại (người chơi mới lên cấp thường
- * bỏ qua món mới trong danh sách dài). Cấp khác (kể cả chưa mở) → rỗng. Thuần đọc.
+ * GĐ1125/GĐ1133 — dấu "🆕" cho món/công thức/giống vừa mở trong cửa sổ 4 cấp trở lại (đồng bộ quy
+ * ước "Mới" của OrderPanel — người chơi mới lên cấp thường bỏ qua món mới trong danh sách dài).
+ * Chưa mở / mở lâu / unlock ≤ 1 (mọi thứ mở từ đầu) → rỗng. Thuần đọc.
  */
 export function newUnlockMark(unlock: number, level: number): string {
-  return unlock === level ? ' 🆕' : '';
+  return unlock > 1 && unlock <= level && level - unlock < NEW_UNLOCK_WINDOW ? ' 🆕' : '';
 }

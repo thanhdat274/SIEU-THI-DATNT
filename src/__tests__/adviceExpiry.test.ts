@@ -27,10 +27,13 @@ describe('GĐ1118 — expiryInputsNote: nhắc nấu ngay khi nguyên liệu cô
 });
 
 describe('GĐ1125 — newUnlockMark: dấu 🆕 cho món vừa mở đúng cấp này', () => {
-  it('mở đúng cấp hiện tại → 🆕; cấp khác (kể cả chưa mở/đã mở lâu) → rỗng', () => {
+  it('mở trong cửa sổ 4 cấp (đồng bộ NEW_WITHIN) → 🆕; chưa mở/mở lâu/mở từ đầu → rỗng', () => {
     expect(newUnlockMark(45, 45)).toBe(' 🆕');
-    expect(newUnlockMark(46, 45)).toBe('');
-    expect(newUnlockMark(44, 45)).toBe('');
+    expect(newUnlockMark(44, 45)).toBe(' 🆕');
+    expect(newUnlockMark(42, 45)).toBe(' 🆕');
+    expect(newUnlockMark(41, 45)).toBe('');
+    expect(newUnlockMark(46, 45)).toBe(''); // chưa mở (tương lai) — không dính dấu
+    expect(newUnlockMark(60, 45)).toBe('');
     expect(newUnlockMark(1, 45)).toBe('');
   });
 });
