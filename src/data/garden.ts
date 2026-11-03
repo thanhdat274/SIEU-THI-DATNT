@@ -329,8 +329,10 @@ export const FARM_ORDER_UNLOCK = 16;
 
 /** Quán trong xóm hay đặt nông sản của trại. */
 export const FARM_BUYERS = ['Quán Cơm Bà Ba', 'Lò Bánh Chị Hoa', 'Quán Nhậu Anh Tư', 'Tiệm Bánh Mì Chú Sáu', 'Cơm Tấm Cô Sáu', 'Quán Chè Bà Tư', 'Lẩu Dê Anh Sáu'];
-/** Món quán đặt (nông sản nhà trồng/nhà nuôi). */
-export const FARM_ORDER_POOL = ['trung', 'trung_vit', 'trung_goos', 'sua_tuoi', 'sua_de', 'rau', 'bap', 'mia', 'traicay', 'x_chuoi', 'x_vai', 'x_buoi', 'x_thit_heo', 'thit_ga_dt'];
+/** Món quán đặt (nông sản nhà trồng/nhà nuôi). GĐ1100: nối cuối pool 3 trái cây mới GĐ1088–1092
+ *  (chanh dây/nhãn/mít, mở >30) — quán chè/quán nước trong xóm cũng lấy trái cây nhà; nối cuối để
+ *  giữ nguyên thứ tự RNG của pool cũ, đơn vẫn chỉ rơi vào món trại kịp làm (farmOrderProduce). */
+export const FARM_ORDER_POOL = ['trung', 'trung_vit', 'trung_goos', 'sua_tuoi', 'sua_de', 'rau', 'bap', 'mia', 'traicay', 'x_chuoi', 'x_vai', 'x_buoi', 'x_thit_heo', 'thit_ga_dt', 'x_chanh_day', 'x_nhan', 'x_mit'];
 
 /** Tin sáng khi quán xóm đặt đơn; đơn cuối tuần báo luôn giá hời (GĐ549). */
 export const farmOrderNews = (o: FarmOrder) =>
