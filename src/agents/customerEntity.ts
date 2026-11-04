@@ -5,6 +5,7 @@ import { PROFESSION_LOOK, type ProfessionDef } from '../data/professions';
 import type { RegularDef } from '../data/regulars';
 import type { ServiceDef } from '../data/services';
 import type { ReviewReason } from '../data/reviews';
+import { CARE_PATIENCE_PER_STAR } from '../data/staff';
 import { createCart } from '../shop/furnitureView';
 import { Walker } from './walker';
 
@@ -21,6 +22,35 @@ export function impatienceEmoji(ratio: number): '😕' | '😤' | null {
   if (ratio >= FRANTIC_AT) return '😤';
   if (ratio >= IMPATIENT_AT) return '😕';
   return null;
+}
+
+// ───── GĐ1208 — bội số kiên nhẫn chờ quầy (tách nguyên văn từ agent, THUẦN) ─────
+// Trước đây agent khách (agents/customers.ts) tự nhân patience 2 lần ở trong vòng đời sống:
+//   · mèo ở quầy → khách nhỏ (học sinh, mẹ bỉm) đỡ sốt ruột ×1.3;
+//   · nhân viên "chăm sóc khách" trực ca → ai cũng chịu chờ lâu hơn theo tay nghề ×(1 + 0.06×care).
+// Hai quy tắc này là logic-đuôi của "vì sao khách bỏ về khi chờ lâu" — nhưng nằm CHÌM trong agent
+// gắn store/THREE nên không test/hiểu được. GĐ1208 tách thành helper thuần (cùng công thức, cùng hằng
+// số) để test trực tiếp và để số phản hồi ở báo cáo/vòng phản hồi khớp đúng hành vi thật. HÀNH VI GIỮ
+// NGUYÊN — chỉ thay phép nhân nội tuyến bằng một lần gọi helper cùng giá trị trả về.
+export const CAT_PATIENCE_MUL = 1.3;
+/** Khách nhỏ thấy mèo ở quầy đỡ sốt ruột — đúng danh sách nghề trong agent cũ. */
+export const CAT_SOOTHE_PROFESSIONS = ['student_highschool', 'student_college', 'mom'];
+
+export interface PatienceContext {
+  /** Mèo đang hoạt động ở quầy (petActive cat). */
+  petCat: boolean;
+  /** Nghề của khách vãng lai (null = dân thường / khách quen). */
+  professionId?: string | null;
+  /** Tay nghề chăm sóc khách của người trực ca (bestSkillOnDuty 'customer_care'); 0 nếu không ai. */
+  care: number;
+}
+
+/** Bội số nhân vào patience chờ quầy: mèo an ủi khách nhỏ, nhân viên chăm sóc xoa dịu mọi người. */
+export function patienceMultiplier(ctx: PatienceContext): number {
+  let m = 1;
+  if (ctx.petCat && ctx.professionId && CAT_SOOTHE_PROFESSIONS.includes(ctx.professionId)) m *= CAT_PATIENCE_MUL;
+  if (ctx.care > 0) m *= 1 + CARE_PATIENCE_PER_STAR * ctx.care;
+  return m;
 }
 
 export type State = 'walkBy' | 'toShop' | 'shopping' | 'toQueue' | 'queued' | 'leaving';
