@@ -89,6 +89,15 @@ export function atRiskOfPoach(rival: Rival | null | undefined, friendships: Reco
 /** Rival mạnh quá mốc này mới dám giựt nhân viên (chỉ rival máu liều). */
 export const STAFF_POACH_STRENGTH = 60;
 export const STAFF_POACH_CHANCE = 0.04;
+/** GĐ1185 — nhân viên đang bị rival máu liều "để mắt": rival đủ mạnh (≥ STAFF_POACH_STRENGTH) sẽ móc
+ *  NHÂN VIÊN GIỎI NHẤT của mình (đúng đích rivalNightAI chọn: sort theo skill giảm, lấy đầu). Trả về id
+ *  người bị nhắm (undefined khi chưa có nguy cơ). Song song `atRiskOfPoach` (khách quen, GĐ794) — THUẦN đọc,
+ *  cùng điều kiện nên cảnh báo không hứa hão, dùng chung chơi đơn/hẻm online. Không đổi kinh tế/save/seed. */
+export function staffAtRiskOfPoach(rival: Rival | null | undefined, staff: { id: number; skill: number }[]): number | undefined {
+  if (!rival || rival.personality !== 'aggressive' || rival.strength < STAFF_POACH_STRENGTH) return undefined;
+  if (!staff.length) return undefined;
+  return [...staff].sort((a, b) => b.skill - a.skill)[0].id;
+}
 /** Đòi lại khách quen bị lôi kéo: tặng 1 món họ thích trong kho + tiền quà, mỗi ngày đòi được 1 người.
  *  Thân thiết cộng lại khi đòi được (đường chờ tự quay về thì +5 nhưng ngẫu nhiên). */
 export const RESCUE_FEE = 20000;

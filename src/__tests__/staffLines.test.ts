@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { StaffValueLine, NightStrip, StaffIdleLine, ShiftValueStrip, CourierValueLine } from '../ui/panels/StaffLines';
+import { StaffValueLine, NightStrip, StaffIdleLine, ShiftValueStrip, CourierValueLine, StaffPoachWarn } from '../ui/panels/StaffLines';
 
 const r = (c: unknown, p: Record<string, unknown>) => renderToStaticMarkup(createElement(c as never, p as never));
 
@@ -31,5 +31,20 @@ describe('StaffLines (GĐ956)', () => {
     expect(html).toContain('Điện thoại 100.000đ');
     expect(html).toContain('tiết kiệm phí Grab 80.000đ');
     expect(html).toContain('~180.000đ');
+  });
+});
+
+describe('StaffPoachWarn (GĐ1185) — cảnh báo nhân viên bị rival máu liều để mắt', () => {
+  it('ẩn khi chưa có nguy cơ (không truyền poachRiskId / không rival)', () => {
+    expect(r(StaffPoachWarn, { rival: { name: 'M', personality: 'aggressive' }, poachRiskId: undefined })).toBe('');
+    expect(r(StaffPoachWarn, { rival: null, poachRiskId: 1 })).toBe('');
+    expect(r(StaffPoachWarn, {})).toBe('');
+  });
+  it('hiện cảnh báo + tên rival + nhãn máu liều khi bị nhắm', () => {
+    const html = r(StaffPoachWarn, { rival: { name: 'Tạp hóa Liều', personality: 'aggressive' }, poachRiskId: 1 });
+    expect(html).toContain('⚠️');
+    expect(html).toContain('Tạp hóa Liều');
+    expect(html).toContain('máu liều');
+    expect(html).toContain('để mắt');
   });
 });

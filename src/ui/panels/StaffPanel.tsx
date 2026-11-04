@@ -6,7 +6,7 @@ import { dailyWage, maxStaff, ROLES, SHIFTS, type Shift, type Staff } from '../.
 import { formatMoney, fmtMul } from '../../data/products';
 import { hasUpgrade } from '../../data/upgrades';
 import { branchStaffWish } from '../../data/branches';
-import { BranchShiftStrip, BranchValueLine, NightStaffLine, NightStrip, ShiftValueStrip, StaffIdleLine, StaffValueLine, CourierValueLine } from './StaffLines';
+import { BranchShiftStrip, BranchValueLine, NightStaffLine, NightStrip, ShiftValueStrip, StaffIdleLine, StaffValueLine, CourierValueLine, StaffPoachWarn } from './StaffLines';
 import { Footer, Callout, styles, Tabs } from './shared';
 import { wageCoverage } from '../../data/wageCoverage';
 import { expToNext, shownTrait, trainCost, TRAITS } from '../../data/staffTraits';
@@ -15,6 +15,7 @@ import { trainValue } from '../../data/trainValue';
 import { staffEff } from '../../data/staffEff';
 import { serveCoverage, SERVE_TOP_HOURS } from '../../data/serveCoverage';
 import { staffValueToday, staffShiftSummary, courierPhoneValue } from '../../data/staffValue';
+import { staffAtRiskOfPoach } from '../../data/biz';
 import { staffIdleStats, type StaffIdleRow } from '../../data/staffIdle';
 import { staffDaySnapshot } from '../../core/slices/staffDay';
 import { branchShiftSummary, branchStaffValueToday } from '../../data/branchStaffValue';
@@ -39,6 +40,8 @@ export function StaffPanel() {
   // GĐ144: giá trị hôm nay của từng nhân viên CA ĐÊM tiệm chính so với lương (thuần đọc stats.byHour giờ ≥22)
   const nightValues = nightStaffValueToday(stats?.byHour, staff, skills);
   const nightStrip = nightPnl(stats?.byHour, staff, skills);
+  // GĐ1185: rival máu liều đủ mạnh có thể móc nhân viên giỏi nhất về đêm — cảnh báo trước (mẫu atRiskOfPoach GĐ794)
+  const poachRiskId = staffAtRiskOfPoach(biz.rival, staff);
   // Ca mặc định khi thuê vào chi nhánh: ca đầu tiên còn thiếu thu ngân, đủ hết thì ca đêm
   const needShift = BRANCH_SHIFTS.find((sh) => !bStaff.some((x) => x.shift === sh && x.role === 'cashier')) ?? 'night';
   // GĐ246: % rảnh từng người hôm nay (dữ liệu transient do agent đếm, reset đầu ngày)
@@ -124,6 +127,7 @@ export function StaffPanel() {
           {staff.map((st) => (
             <div key={st.id} style={staffSt.card}>
               <StaffInfo st={st} right={<span style={staffSt.wage}>{formatMoney(dailyWage(st))}<small>/ngày</small></span>} />
+              <StaffPoachWarn rival={biz.rival} poachRiskId={poachRiskId === st.id ? st.id : undefined} />
               {st.shift === 'night' ? (
                 <NightStaffLine sv={nightValues.find((v) => v.id === st.id)} />
               ) : st.role === 'courier' ? (

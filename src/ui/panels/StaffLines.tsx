@@ -1,4 +1,5 @@
 import { formatMoney } from '../../data/products';
+import { STAFF_POACH_STRENGTH } from '../../data/rivals';
 import type { staffShiftSummary } from '../../data/staffValue';
 import type { StaffIdleRow } from '../../data/staffIdle';
 import type { branchShiftSummary } from '../../data/branchStaffValue';
@@ -44,6 +45,18 @@ export function CourierValueLine({ sv }: { sv?: import('../../data/staffValue').
   return (
     <div style={{ fontSize: 12, marginTop: 2, color: m.color }} title="Giá trị người giao hôm nay = doanh thu đơn điện thoại (stats.phone) + phí Grab tiết kiệm nhờ tự chở đơn app (stats.onlineOwnGrabSaved), chia đều số người giao, so với lương ngày (thuần đọc)">
       📞 Điện thoại {formatMoney(ph)}{saved ? ` · 🛵 tiết kiệm phí Grab ${formatMoney(saved)}` : ''} → ~{formatMoney(sv.value)} · lương {formatMoney(sv.wage)} → <b>{sv.net >= 0 ? '+' : ''}{formatMoney(sv.net)}</b> · {m.label}
+    </div>
+  );
+}
+
+/** GĐ1185: cảnh báo nhân viên giỏi nhất đang bị rival máu liều "để mắt" (sẽ bị móc sang). Thuần đọc,
+ *  first-class view — hiện khi helper staffAtRiskOfPoach trả về đúng id này. */
+export function StaffPoachWarn({ rival, poachRiskId }: { rival?: { name?: string; personality?: string } | null; poachRiskId?: number | undefined }) {
+  if (!rival || poachRiskId === undefined) return null;
+  const isAggressive = rival.personality === 'aggressive';
+  return (
+    <div style={{ fontSize: 12, marginTop: 2, color: '#e74c3c' }} title={`${rival.name ?? ''} ${isAggressive ? 'máu liều' : 'đối thủ'} mạnh — móc người giỏi nhất về đêm. Hạ sức mạnh rival dưới ${STAFF_POACH_STRENGTH} để giữ.`}>
+      ⚠️ {rival.name ?? 'Đối thủ'}{isAggressive ? ' (máu liều)' : ''} đang để mắt — có thể móc bạn sang lương gấp rưỡi — hạ sức mạnh rival dưới {STAFF_POACH_STRENGTH} để giữ
     </div>
   );
 }
