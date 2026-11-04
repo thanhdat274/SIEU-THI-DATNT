@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { counterfeitRisk, COINFAKE_UNLOCK } from '../data/counterfeitRisk';
+import { counterfeitRisk, COINFAKE_UNLOCK, COINFAKE_LEAK_HIGH, COINFAKE_LEAK_MODERATE } from '../data/counterfeitRisk';
 import { RISK_RULES } from '../data/risks';
 
 const CF = RISK_RULES.counterfeit; // chance 0.01, notes [10k,20k,50k,100k], detect 0.55, bonus 0.35
@@ -41,5 +41,22 @@ describe('counterfeitRisk (GĐ1189) — soi thất thoát vì tiền giả + gi�
     const r = counterfeitRisk({ level: 20, customers: 1000, revenue: 20_000_000, hasSharpEye: false, fakeCash: 0 });
     expect(r.avgBasketRetail).toBe(20000);
     expect(r.avgNote).toBe(15000);
+  });
+
+  it('mức rò "moderate": cận giữa ≥10k và <30k/ngày (Mắt tinh đã học, đông khách vừa)', () => {
+    // 400 khách, giỏ trung bình 100k → avgNote 45k; Mắt tinh detect 0.9 → rò = 400×0.01×45k×0.1 = 18.000
+    const r = counterfeitRisk({ level: 22, customers: 400, revenue: 40_000_000, hasSharpEye: true, fakeCash: 0 });
+    expect(r.leakPerDay).toBeCloseTo(400 * 0.01 * 45000 * (1 - (CF.detect + CF.sharpEyeBonus)), 2);
+    expect(r.leakPerDay).toBeGreaterThanOrEqual(COINFAKE_LEAK_MODERATE);
+    expect(r.leakPerDay).toBeLessThan(COINFAKE_LEAK_HIGH);
+    expect(r.verdict).toBe('moderate');
+  });
+
+  it('mức rò "low": dưới 10k/ngày (ít khách + Mắt tinh)', () => {
+    // 150 khách, giỏ trung bình 100k → avgNote 45k; detect 0.9 → rò = 150×0.01×45k×0.1 = 6.750
+    const r = counterfeitRisk({ level: 22, customers: 150, revenue: 15_000_000, hasSharpEye: true, fakeCash: 0 });
+    expect(r.leakPerDay).toBeCloseTo(150 * 0.01 * 45000 * (1 - (CF.detect + CF.sharpEyeBonus)), 2);
+    expect(r.leakPerDay).toBeLessThan(COINFAKE_LEAK_MODERATE);
+    expect(r.verdict).toBe('low');
   });
 });

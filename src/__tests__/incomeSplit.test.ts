@@ -339,4 +339,21 @@ describe('GĐ1207 salesTrend — đóng vòng phản hồi Luật 10 (sau khi s�
     const xs = [...Array(8)].map((_, i) => rec(i + 1, 100000 + i * 10000));
     expect(salesTrend(xs)).toEqual(salesTrend(xs));
   });
+
+  it('nửa đầu toàn 0 (prev=0) nhưng nửa gần khả quan → dir up (không kẹt flat)', () => {
+    // 8 ngày có số: ngày đầu 0 (nửa đầu chỉ 1 ngày), 7 ngày sau 100k → prev 0, recentAvg > 0 → up
+    const xs = [rec(1, 0)].concat([...Array(7)].map((_, i) => rec(i + 2, 100000)));
+    const s = salesTrend(xs);
+    expect(s.days).toBe(8);
+    expect(s.prev).toBe(0);
+    expect(s.dir).toBe('up');
+  });
+
+  it('nửa đầu toàn 0 nhưng nửa gần âm → dir down (không kẹt flat)', () => {
+    const xs = [rec(1, 0)].concat([...Array(7)].map((_, i) => rec(i + 2, -100000)));
+    const s = salesTrend(xs);
+    expect(s.prev).toBe(0);
+    expect(s.last).toBe(-100000);
+    expect(s.dir).toBe('down');
+  });
 });
