@@ -83,7 +83,9 @@ export function prodSuggestToday(a: ProdSuggestArgs): ProdSugg[] {
       const missing = low(c.productId);
       if (!hot && !missing) continue;
       const quanNeed = quanNeeds.has(c.id);
-      const season = c.season ? 'đang mùa +50%' : '';
+      // GĐ1175 — mùa vụ tính theo ngày CHÍN (`day + days`, khớp harvestYield ripenDay), không phải ngày trồng:
+      // cây trồng cuối mùa nhưng chín sang mùa sau không được ghi "+50%".
+      const season = c.season && inSeason(c, a.day + c.days) ? 'đang mùa +50%' : '';
       const why = [hot ? 'khách săn' : '', season, missing ? 'kệ thiếu' : '', quanNeed ? 'thực đơn quán cần để pha' : ''].filter(Boolean).join(', ');
       out.push({ icon: '🌾', label: c.name, detail: `trồng ngay — ${why}`, panel: 'garden' });
       if (out.length >= MAX_EACH) break;
