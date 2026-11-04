@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { missKey, walkoutAdvice, peakHours, peakAdvice, expiryAdvice, type MissLog } from '../data/advice';
+import { missKey, walkoutAdvice, peakHours, peakAdvice, expiryAdvice, expiringSoon, type MissLog } from '../data/advice';
 
 /**
  * GĐ210 — QA toàn diện: bổ sung test cho các hàm gợi ý trong advice.ts còn thiếu
@@ -64,5 +64,43 @@ describe('advice — các gợi ý việc nên làm', () => {
     const a = expiryAdvice([{ id: 'mi', qty: 2, life: 2, inStorage: 0, onShelf: 2 }]);
     expect(a[0].action).toBe('prices');
     expect(a[0].text).toContain('còn 2 ngày');
+  });
+
+  it('walkoutAdvice: quá max món lỡ thì chặt đúng max (bỏ phần sau)', () => {
+    // 4 món mỗi món lỡ 3 lần ≥ ngưỡng → max=2 chỉ giữ 2 (lỡ nhiều nhất trước)
+    const log: MissLog = { 'stock:mi': 3, 'stock:nuoc': 3, 'stock:banhmi': 3, 'stock:tangluc': 3 };
+    const a = walkoutAdvice(log, {}, () => 5000, 2);
+    expect(a).toHaveLength(2);
+  });
+
+  it('walkoutAdvice: mã món không tồn tại trong kho dữ liệu → bỏ qua, không vỡ', () => {
+    // món lạ (sai/đã gỡ) đủ ngưỡng lặp: productById undefined → dòng bị continue, không nhắc
+    const log: MissLog = { 'stock:mat_hang_da_go': 3, 'stock:mi': 3 };
+    const a = walkoutAdvice(log, {}, () => 5000);
+    expect(a).toHaveLength(1);
+    expect(a[0].action).toBe('order'); // món là mi còn lại, không phải món đã gỡ
+    expect(a[0].text).not.toContain('mat_hang_da_go');
+  });
+
+  it('peakHours: đủ ≥3 giờ có khách → báo cả giờ vắng nhất (quiet)', () => {
+    const h = peakHours({
+      8: { customers: 1, revenue: 10 }, 12: { customers: 6, revenue: 100 }, 18: { customers: 4, revenue: 60 },
+    });
+    expect(h.peak?.hour).toBe(12);
+    expect(h.quiet?.hour).toBe(8); // 8 là giờ có khách ít nhất trong các giờ có khách
+  });
+
+  it('expiryAdvice: hàng cần lạnh trong kho → nhắc cất tủ mát (nhánh cold)', () => {
+    // x_cha_lua (Chả lụa, category cold → needsCold true): kho còn → bày bán + nhắc cất tủ
+    const a = expiryAdvice([{ id: 'x_cha_lua', qty: 2, life: 1, inStorage: 2, onShelf: 0 }]);
+    expect(a[0].text).toContain('cần lạnh');
+    expect(a[0].action).toBe('arrange');
+  });
+
+  it('expiringSoon: cùng hạn thì xếp theo số lượng giảm dần (sort tie-break)', () => {
+    const lines = expiringSoon({ mi: 4, nuoc: 9 }, { mi: [{ qty: 4, life: 1 }], nuoc: [{ qty: 9, life: 1 }] }, []);
+    // cả hai hạn 1; nuoc (9) phải đứng trước mi (4) dù cùng life
+    expect(lines[0].id).toBe('nuoc');
+    expect(lines).toHaveLength(2);
   });
 });
