@@ -124,10 +124,15 @@ export const createOnlineSlice = (set: SetState, get: GetState): Pick<GameState,
     }
     let travel: number;
     let fee = 0;
+    // GĐ1183: mỗi đơn người giao tự chở là tiệm không phải gọi Grab — ghi nhận phí Grab tiết kiệm được
+    // (đúng `grabFee` theo km + sự kiện hôm nay) để StaffPanel tính "người giao đáng đồng lương?" gồm cả
+    // nguồn online. Optional, reset theo ngày; save cũ bù undefined. KHÔNG đổi tiền/két/kinh tế.
+    let ownSaved = 0;
     if (via === 'own') {
       const courier = freeCouriers(s)[0];
       if (!courier) { s.notify('Không còn nhân viên giao hàng rảnh — gọi Grab hoặc thuê thêm người giao'); return false; }
       travel = ownTravel(o.km, courier.skill);
+      ownSaved = grabFee(o.km, eventGrabMul(s.online.event));
     } else {
       fee = grabFee(o.km, eventGrabMul(s.online.event)); // hôm nay Grab đắt đỏ thì phí ×1,5 (GĐ717)
       if (s.money < fee) { s.notify('Không đủ tiền gọi Grab!'); return false; }
@@ -152,7 +157,7 @@ export const createOnlineSlice = (set: SetState, get: GetState): Pick<GameState,
         ...s.online, grabFeesToday: s.online.grabFeesToday + fee,
         orders: s.online.orders.map((it) => (it === o ? { ...o, status: 'shipping' as const, via, arriveAt, lots } : it)),
       },
-      stats: { ...s.stats, spent: s.stats.spent + fee, grabFees: (s.stats.grabFees ?? 0) + fee },
+      stats: { ...s.stats, spent: s.stats.spent + fee, grabFees: (s.stats.grabFees ?? 0) + fee, ...(ownSaved ? { onlineOwnGrabSaved: (s.stats.onlineOwnGrabSaved ?? 0) + ownSaved } : {}) },
     });
     s.notify(`${via === 'own' ? '🛵 Nhân viên tiệm' : `🟢 Grab (${formatMoney(fee)})`} đang chở đơn cho ${o.customer}, tới nơi sau ~${travel} phút${arriveAt > o.dueAt ? ' — sẽ trễ hẹn!' : ''}`);
     return true;

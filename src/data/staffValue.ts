@@ -63,6 +63,9 @@ export interface StaffValue {
   /** value / wage (tỷ lệ thu hồi lương); NaN/Inf khi wage 0 → 0. */
   ratio: number;
   verdict: StaffVerdict;
+  /** GĐ1183 — chỉ người giao 🛵: phần giá trị đến từ kênh điện thoại và phí Grab tiết kiệm được (chia đều số người giao). Dòng UI hiện breakdown. */
+  phoneValue?: number;
+  onlineSaved?: number;
 }
 
 /** Số nhân viên (ca ngày) đang trực trong một giờ — dùng để chia doanh thu giờ đó. */
@@ -121,23 +124,34 @@ export function staffShiftSummary(
 }
 
 /**
- * GĐ1181 — giá trị THẬT của người giao (🛵 courier): họ KHÔNG ghi doanh thu quầy (stats.byHour chia đều cho
- * toàn ca sẽ ra phần lệch âm vô nghĩa) — thu nhập thật của họ là KÊNH ĐIỆN THOẠI mà họ mở + tự chở:
- * `stats.phone` = tổng tiền + boa các đơn điện thoại đã giao hôm nay. So với lương ngày để biết người giao
- * có đáng giữ. THUẦN đọc: chỉ đọc stats.phone + dailyWage; không đổi kinh tế/save/seed.
+ * GĐ1181 + GĐ1183 — giá trị THẬT của người giao (🛵 courier): họ KHÔNG ghi doanh thu quầy (stats.byHour
+ * chia đều cho toàn ca sẽ ra phần lệch âm vô nghĩa) — thu nhập thật của họ gồm HAI nguồn:
+ *   1. KÊNH ĐIỆN THOẠI mà họ mở + tự chở: `stats.phone` = tổng tiền + boa các đơn điện thoại đã giao hôm nay.
+ *   2. ĐƠN APP họ tự chở: mỗi đơn `via 'own'` thay vì gọi Grab là tiệm tận dụng sẵn người giao — tiết kiệm
+ *      được đúng `stats.onlineOwnGrabSaved` (tổng phí Grab lẽ ra phải trả hôm nay, GĐ1183). Trước đó GĐ1181
+ *      chỉ tính nguồn điện thoại → người giao chủ lực "chở online" có thể bị báo "đang lỗ" oan dù họ cứu
+ *      tiệm cả trăm ngàn phí Grab/ngày.
+ * So tổng với lương ngày để biết người giao có đáng giữ. THUẦN đọc: chỉ đọc stats.phone +
+ * stats.onlineOwnGrabSaved + dailyWage; không đổi kinh tế/save/seed.
  */
 export function courierPhoneValue(
-  stats: { phone?: number },
+  stats: { phone?: number; onlineOwnGrabSaved?: number },
   staff: Staff[],
 ): StaffValue[] {
   const couriers = staff.filter((st) => st.role === 'courier');
   const phone = stats.phone ?? 0;
+  const onlineSaved = stats.onlineOwnGrabSaved ?? 0;
+  const total = phone + onlineSaved;
   return couriers.map((st) => {
     const wage = dailyWage(st);
-    const value = couriers.length ? Math.round(phone / couriers.length) : 0;
+    const value = couriers.length ? Math.round(total / couriers.length) : 0;
     const net = value - wage;
     const ratio = wage > 0 ? value / wage : 0;
     const verdict: StaffVerdict = !couriers.length ? 'nodata' : ratio >= 1 ? 'ok' : ratio >= 0.5 ? 'warn' : 'low';
-    return { id: st.id, role: st.role, shift: st.shift, wage, value, net, ratio, verdict };
+    return {
+      id: st.id, role: st.role, shift: st.shift, wage, value, net, ratio, verdict,
+      phoneValue: couriers.length ? Math.round(phone / couriers.length) : 0,
+      onlineSaved: couriers.length ? Math.round(onlineSaved / couriers.length) : 0,
+    };
   });
 }

@@ -17,13 +17,19 @@ describe('StaffLines (GĐ956)', () => {
     expect(r(StaffValueLine, { sv: { verdict: 'ok', value: 100, wage: 50, net: 50 } })).toContain('đáng lương');
     expect(r(StaffValueLine, { sv: { verdict: 'low', value: 10, wage: 50, net: -40 } })).toContain('đang lỗ');
   });
-  it('GĐ1181 — CourierValueLine: ẩn khi nodata, hiện doanh thu điện thoại + lương + nhãn', () => {
+  it('GĐ1181 — CourierValueLine: ẩn khi nodata, chỉ có điện thoại thì hiện doanh thu + lương + nhãn', () => {
     expect(r(CourierValueLine, {})).toBe('');
     expect(r(CourierValueLine, { sv: { verdict: 'nodata', value: 0, wage: 40000, net: -40000 } })).toBe('');
-    const html = r(CourierValueLine, { sv: { verdict: 'ok', value: 120000, wage: 40000, net: 80000 } });
-    expect(html).toContain('Điện thoại hôm nay');
+    const html = r(CourierValueLine, { sv: { verdict: 'ok', value: 120000, phoneValue: 120000, onlineSaved: 0, wage: 40000, net: 80000 } });
+    expect(html).toContain('Điện thoại');
     expect(html).toContain('120.000đ');
     expect(html).toContain('+80.000đ');
     expect(html).toContain('đáng lương');
+  });
+  it('GĐ1183 — CourierValueLine: có tiết kiệm phí Grab thì hiện breakdown hai nguồn + tổng', () => {
+    const html = r(CourierValueLine, { sv: { verdict: 'ok', value: 180000, phoneValue: 100000, onlineSaved: 80000, wage: 60000, net: 120000 } });
+    expect(html).toContain('Điện thoại 100.000đ');
+    expect(html).toContain('tiết kiệm phí Grab 80.000đ');
+    expect(html).toContain('~180.000đ');
   });
 });

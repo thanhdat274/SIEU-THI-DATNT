@@ -139,3 +139,30 @@ test('courierPhoneValue: tỉ lệ vừa đủ (≥0.5 → warn), thấp → low
   expect(courierPhoneValue({ phone: 20000 }, [cou(1, 40000)])[0].verdict).toBe('warn'); // 0.5
   expect(courierPhoneValue({ phone: 15000 }, [cou(1, 40000)])[0].verdict).toBe('low'); // < 0.5
 });
+
+// GĐ1183 — người giao còn cứu phí GRAB khi tự chở đơn app (stats.onlineOwnGrabSaved); chỉ tính phone (GĐ1181)
+// sẽ báo "đang lỗ" oan cho người giao chủ lực chở online. value = (phone + onlineOwnGrabSaved)/số người giao.
+test('courierPhoneValue: cộng phí Grab tiết kiệm vào giá trị, vẫn giữ breakdown từng nguồn (GĐ1183)', () => {
+  const v = courierPhoneValue({ phone: 100000, onlineOwnGrabSaved: 80000 }, [cou(1, 60000)]);
+  expect(v).toHaveLength(1);
+  expect(v[0].value).toBe(180000); // 100k điện thoại + 80k tiết kiệm phí Grab
+  expect(v[0].phoneValue).toBe(100000);
+  expect(v[0].onlineSaved).toBe(80000);
+  expect(v[0].net).toBe(120000);
+  expect(v[0].verdict).toBe('ok');
+});
+
+test('courierPhoneValue: nhiều người giao chia đều cả hai nguồn (GĐ1183)', () => {
+  const v = courierPhoneValue({ phone: 60000, onlineOwnGrabSaved: 40000 }, [cou(1, 40000), cou(2, 40000)]);
+  expect(v[0].value).toBe(50000);
+  expect(v[0].phoneValue).toBe(30000);
+  expect(v[0].onlineSaved).toBe(20000);
+  expect(v[1].value).toBe(50000);
+});
+
+test('courierPhoneValue: không có stats.onlineOwnGrabSaved (save cũ) → chỉ tính phone, onlineSaved 0 (GĐ1183)', () => {
+  const v = courierPhoneValue({ phone: 120000 }, [cou(1, 60000)]);
+  expect(v[0].value).toBe(120000);
+  expect(v[0].phoneValue).toBe(120000);
+  expect(v[0].onlineSaved).toBe(0);
+});

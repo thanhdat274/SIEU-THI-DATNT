@@ -54,6 +54,10 @@ export interface DayStats {
   phone?: number;
   /** Số đơn app giao tới tay khách hôm nay (đo nhiệm vụ ngày). */
   onlineDone?: number;
+  /** Phí Grab tiết kiệm được hôm nay nhờ người giao 🛵 chở đơn app (mỗi đơn tự chở = đúng phí Grab lẽ ra
+   *  phải trả). GĐ1183 — để StaffPanel tính "người giao có đáng đồng lương" gồm cả nguồn online, không chỉ
+   *  kênh điện thoại. Field tuỳ chọn — save cũ bù undefined qua `?? 0`, không lên SAVE_VERSION. */
+  onlineOwnGrabSaved?: number;
   /** Số nông sản thu hoạch được hôm nay (đo nhiệm vụ ngày). */
   farmHarvest?: number;
   /** Số bài chủ tiệm đăng lên mạng xã hội hôm nay (đo nhiệm vụ ngày). */

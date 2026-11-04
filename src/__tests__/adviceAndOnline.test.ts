@@ -5,7 +5,7 @@ import { analyticsAdvice, shelfCount, type ItemHealth } from '../data/analytics'
 import { migrateTiers } from '../core/stock';
 import { updateOnline } from '../core/slices/online';
 import { furnitureDef } from '../data/furniture';
-import { ACCEPT_WINDOW } from '../data/online';
+import { ACCEPT_WINDOW, grabFee } from '../data/online';
 import type { Furniture } from '../core/gameTypes';
 
 /**
@@ -156,5 +156,30 @@ describe('GĐ1182 — đơn app bỏ lỡ (tally onlineMissed / onlineMissedCoun
     expect(st.online.orders).toHaveLength(0);
     expect(st.stats.onlineMissedCount).toBe(1);
     expect(st.stats.onlineMissed).toBeGreaterThan(0);
+  });
+});
+
+describe('GĐ1183 — người giao tự chở đơn app ghi nhận phí Grab tiết kiệm (stats.onlineOwnGrabSaved)', () => {
+  beforeEach(() => useGame.setState({ ...newGameData(), level: 10, money: 5_000_000, notify: () => {} }));
+
+  it('acceptOnline via own có người giao: onlineOwnGrabSaved tăng đúng grabFee(km), không trả phí Grab', () => {
+    const order = { id: 9, customer: 'Anh Phát', km: 2, items: { bia: 3 }, placedAt: 600, dueAt: 800, status: 'new' as const };
+    useGame.setState({
+      minutes: 610,
+      storage: { bia: 10 },
+      staff: [{ id: 1, name: 'Cuội', role: 'courier', skill: 3, wage: 40000, shift: 'full' }],
+      online: { ...g().online, open: true, orders: [order] },
+    });
+    expect(g().acceptOnline(9, 'own')).toBe(true);
+    expect(g().stats.onlineOwnGrabSaved).toBe(grabFee(2));
+    expect(g().stats.grabFees ?? 0).toBe(0); // tự chở — không trả phí Grab
+  });
+
+  it('acceptOnline via grab: KHÔNG ghi onlineOwnGrabSaved, trả phí Grab bình thường', () => {
+    const order = { id: 10, customer: 'Chị Ngân', km: 1, items: { nuoc: 2 }, placedAt: 600, dueAt: 800, status: 'new' as const };
+    useGame.setState({ minutes: 610, storage: { nuoc: 10 }, online: { ...g().online, open: true, orders: [order] } });
+    expect(g().acceptOnline(10, 'grab')).toBe(true);
+    expect(g().stats.onlineOwnGrabSaved ?? 0).toBe(0);
+    expect(g().stats.grabFees ?? 0).toBe(grabFee(1));
   });
 });
