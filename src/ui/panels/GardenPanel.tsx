@@ -4,7 +4,7 @@ import {
   ANIMALS, ANIMAL_ORDER, animalMode, CROPS, EGG_PER_TRAY, FARM_BUILDING_MAX_STAR, FARM_BUILDINGS, FARM_BUILDING_ORDER, FARM_ORDER_UNLOCK,
   FERTILIZER_PRODUCT, GARDEN_UNLOCK, cropById, inSeason, LAND_TIERS, monthOf, penCap, fattenReady, plotLabel, plotReady,
 } from '../../data/garden';
-import { animalPerDay, bestAnimal, bestCrop, cropPerDay, farmExpandPayback } from '../../data/farmValue';
+import { animalPerDay, bestAnimal, bestCrop, cropPerDay, farmBuildingValue, farmExpandPayback } from '../../data/farmValue';
 import { farmVsCook } from '../../data/farmKitchenValue';
 import { bestCropForMenu, bestAnimalForMenu, farmVsDrinks, homegrownImpact, orderSellNote } from '../../data/farmQuanValue';
 import { isWeekend } from '../../data/calendar';
@@ -329,6 +329,7 @@ export function GardenPanel() {
             const star = garden.buildings[id] ?? 0;
             const upCost = star > 0 && star < FARM_BUILDING_MAX_STAR ? def.upgrades[star - 1] : null;
             const canUp = !!upCost && money >= upCost.money && garden.wood >= upCost.wood && garden.stone >= upCost.stone;
+            const fbVal = farmBuildingValue(garden).find(v => v.id === id);
             return (
               <div key={id} style={{ ...styles.card, display: 'block' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center' }}>
@@ -352,6 +353,11 @@ export function GardenPanel() {
                 <div style={{ fontSize: 12, opacity: 0.75, marginTop: 4 }}>
                   {star > 0 ? `${def.note} — đang có ${star} sao.` : `${def.note}.`}
                 </div>
+                {fbVal && (
+                  <div style={{ fontSize: 12, marginTop: 4, color: fbVal.hasMoney ? '#2ecc71' : '#e67e22' }}>
+                    💡 {fbVal.line}
+                  </div>
+                )}
               </div>
             );
           })}

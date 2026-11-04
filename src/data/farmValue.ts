@@ -7,9 +7,10 @@
  * (Giá trị nấu thành món là mảnh ghép "homegrown vs bếp" — làm sau, xem BACKUP3
  * giai đoạn GĐ145; helper này chỉ đóng trục giá-trị-vs-chi-phí của NGOÀI trồng/nuôi.)
  */
-import type { AnimalDef, AnimalKind, AnimalMode, CropDef, GardenState } from './garden';
+import type { AnimalDef, AnimalKind, AnimalMode, CropDef, FarmBuildingId, GardenState } from './garden';
 import {
-  ANIMALS, CROPS, FARM_ORDER_BONUS, HOMEGROWN_PREMIUM, animalMode, harvestYield, inSeason, LAND_TIERS,
+  ANIMALS, CROPS, FARM_BUILDINGS, FARM_ORDER_BONUS, HOMEGROWN_PREMIUM, animalMode,
+  farmCritChance, farmGrazeDiscount, farmGrowthFlat, farmGrowthPct, harvestYield, inSeason, LAND_TIERS,
 } from './garden';
 import { productById } from './products';
 
@@ -184,3 +185,77 @@ export function farmExpandPayback(g: Pick<GardenState, 'land' | 'plots'>, level:
     paybackDays, verdict: paybackDays <= 60 ? 'worth' : 'slow',
   };
 }
+
+/** Giá cám phải mua MỖI NGÀY cho toàn bộ vật nuôi hiện có, TÍNH TRƯỚC khi trừ bãi thả giảm giá. */
+export const dailyFeedCost = (g: GardenState): number => {
+  let total = 0;
+  for (const kind in ANIMALS) {
+    const pen = g.pens?.[kind as AnimalKind];
+    if (!pen || pen.count <= 0) continue;
+    const def = ANIMALS[kind as AnimalKind];
+    total += pen.count * def.feedKgPerDay * feedPerKg(kind as AnimalKind);
+  }
+  return Math.round(total);
+};
+
+export interface FarmBuildingValue {
+  id: FarmBuildingId;
+  /** Đã xây chưa (star = cấp xây, 0 = chưa). */
+  owned: boolean;
+  /** Giá cấp hiện tại (0 = giá cấp 1 để xây mới). */
+  cost: number;
+  /** Một dòng tiếng Việt trung thực: công trình này GIÁ TRỊ gì với nông trại HIỆN TẠI của mình. */
+  line: string;
+  /** True = dòng có con số tiền (đ/ngày) ước đáng tin; false = dòng định tính (%, QoL). */
+  hasMoney: boolean;
+}
+
+/**
+ * "Công trình trại {tưới/nhà lưới/bãi thả/bù nhìn} mua 6–30tr để làm gì cho MÌNH?" — soi quyết
+ * định ĐẦU TƯ CÔNG TRÌNH (hộp đen còn lại của trại sau GĐ1248 đất). Mỗi công trình có phần
+ * lợi ích DỰA VÀO nông trại hiện có: có vật nuôi mới đáng giá bãi thả, có trồng mới đáng bù nhìn...
+ * THUẦN ĐỌC — không đổi state/save/kinh tế (Luật 5/10 an toàn). Bãi thả cho con số đ/ngày chắc
+ * (giảm cám × số cám đang phải mua); tưới/nhà lưới/bù nhìn chỉ bậc định tính (%) vì lợi thật của
+ * chúng phụ thuộc hoạt động trồng/nuôi dao động (tránh cày số mơ hồ, Luật 3).
+ */
+export const farmBuildingValue = (g: GardenState): FarmBuildingValue[] => {
+  const out: FarmBuildingValue[] = [];
+  for (const id of Object.keys(FARM_BUILDINGS) as FarmBuildingId[]) {
+    const def = FARM_BUILDINGS[id];
+    const star = g.buildings?.[id] ?? 0;
+    // Chi phí để HÀNH ĐỘNG ngay: chưa có thì giá mua cấp 1, có rồi thì tiền lên sao tiếp theo.
+    const cost = star === 0 ? def.cost : (def.upgrades[star - 1]?.money ?? 0);
+    let line: string;
+    let hasMoney = false;
+    if (id === 'bai_tha') {
+      const saved = Math.round(dailyFeedCost(g) * farmGrazeDiscount(g));
+      const care = saved > 0
+        ? `giảm ~${saved.toLocaleString('vi-VN')}đ cám/ngày (cho ${g.pens ? Object.values(g.pens).filter(p => p && p.count > 0).length : 0} chuồng đang nuôi)`
+        : 'chưa có vật nuôi nào nên hôm nay chưa giảm được đồng cám nào';
+      line = star > 0 ? `Bãi thả cấp ${star}: ${care}` : `Chưa xây (${cost.toLocaleString('vi-VN')}đ): ${care}`;
+      hasMoney = saved > 0;
+    } else if (id === 'bu_nhin') {
+      const pct = Math.round(farmCritChance(g) * 100);
+      line = star > 0
+        ? `Bù nhìn cấp ${star}: thu hoạch có ${pct}% cơ hội gấp đôi trái (càng nhiều rau đang trồng càng lời)`
+        : `Chưa xây (${cost.toLocaleString('vi-VN')}đ): thu hoạch có cơ hội gấp đôi trái — chỉ đáng khi bạn trồng nhiều`;
+      hasMoney = false;
+    } else if (id === 'tuoi_tu_dong') {
+      const gPct = Math.round(farmGrowthPct(g) * 100);
+      line = star > 0
+        ? (gPct > 0
+            ? `Tưới tự động cấp ${star}: tự tưới cả vườn + cây lớn nhanh thêm ${gPct}%/sao`
+            : `Tưới tự động cấp 1: tự tưới cả vườn mỗi sáng (khỏi thao tác); lên cấp 2–3 để cây lớn nhanh hơn`)
+        : `Chưa xây (${cost.toLocaleString('vi-VN')}đ): tự tưới cả vườn mỗi sáng, khỏi thao tác`;
+      hasMoney = false;
+    } else { // nha_luoi
+      const flat = farmGrowthFlat(g);
+      line = star > 0
+        ? `Nhà lưới cấp ${star}: mưa giông không sập luống + cây lớn thêm ${flat} ngày mỗi đêm`
+        : `Chưa xây (${cost.toLocaleString('vi-VN')}đ): mưa giông không sập luống + cây lớn nhanh hơn`;
+      hasMoney = false;
+    }
+    out.push({ id, owned: star > 0, cost, line, hasMoney });
+  }
+  return out;
+};
