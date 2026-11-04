@@ -11,6 +11,7 @@
 import { WEATHER } from './weather';
 import type { Weather } from './weather';
 import { customersPerDay } from './levels';
+import { dayEffects } from './calendar';
 
 /** Ngưỡng coi là "đông khách" (trữ thêm) / "vắng" (né nhập thêm). */
 export const TRAFFIC_HOT = 1.05;
@@ -31,11 +32,17 @@ export function trafficForecast(opts: {
   weather: Weather;
   tomorrow: Weather;
   level: number;
+  /** GĐ1174: ngày + seed để ghép hệ số lễ/đường sửa thật (`dayEffects.traffic`); bỏ trống = chỉ tính thời tiết. */
+  day?: number;
+  seed?: number;
 }): TrafficForecast {
-  const { weather, tomorrow, level } = opts;
+  const { weather, tomorrow, level, day, seed } = opts;
   const base = customersPerDay(level);
-  const todayTraffic = WEATHER[weather].traffic;
-  const tomorrowTraffic = WEATHER[tomorrow].traffic;
+  // Nhu cầu thật = thời tiết × hệ số lễ hội/đường sửa (khớp counterDemand.demandForecast); thẻ sáng
+  // trước đây chỉ tính thời tiết → cuối Tết (1.7) gặp mưa (0.8) báo nhầm "trời vắng đừng trữ hàng".
+  const de = (d: number) => (seed !== undefined && day !== undefined ? dayEffects(seed, d, level).traffic : 1);
+  const todayTraffic = WEATHER[weather].traffic * de(day ?? 0);
+  const tomorrowTraffic = WEATHER[tomorrow].traffic * (seed !== undefined && day !== undefined ? de(day + 1) : 1);
   const todayKhach = base * todayTraffic;
   const tomorrowKhach = base * tomorrowTraffic;
   const deltaPct = todayTraffic > 0 ? ((tomorrowTraffic / todayTraffic) - 1) * 100 : 0;

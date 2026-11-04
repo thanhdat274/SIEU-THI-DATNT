@@ -10,7 +10,7 @@ type W = keyof typeof WEATHER;
 export function MorningSubtitle({ weatherSeed, day, weather, tomorrow, level, rent, autoNote }: {
   weatherSeed: number; day: number; weather: W; tomorrow: W; level: number; rent: number; autoNote?: ReactNode;
 }) {
-  const tf = trafficForecast({ weather, tomorrow, level });
+  const tf = trafficForecast({ weather, tomorrow, level, day, seed: weatherSeed });
   return (
     <p style={styles.sub}>
       {WEATHER[weather].icon} Hôm nay {describeDay(weatherSeed, day, weather)} · mai {WEATHER[tomorrow].icon} {describeDay(weatherSeed, day + 1, tomorrow)}.
