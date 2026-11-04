@@ -1,7 +1,9 @@
 /**
  * Mức đồ họa Thấp / Vừa / Cao (+ Tự động): cấu hình tập trung một chỗ, nhận diện máy yếu ngay
- * lúc mở game, và bộ tự hạ nhiều tầng theo FPS (độ nét → bóng → đám đông → đồ trang trí).
- * Thuần logic, không đụng three/DOM ngoài các hàm đọc máy có try/catch — test chạy được trong node.
+ * lúc mở game, và bộ tự hạ nhiều tầng theo FPS. GĐ1235: "mức" CHỈ là chất lượng hình (độ nét →
+ * bóng → mưa/mây → ánh sáng) — đám đông NPC và đồ trang trí LUÔN hiển thị đầy đủ ở mọi mức;
+ * tấm chắn nội dung (`CONTENT_STEPS`) chỉ bớt đám đông/decor khi máy yếu dưới sàn 30 FPS ở chế độ
+ * Tự động. Thuần logic, không đụng three/DOM ngoài các hàm đọc máy có try/catch — test chạy được trong node.
  * Lựa chọn lưu riêng từng máy (localStorage), không nằm trong save hay state chung của hẻm online.
  */
 
@@ -15,12 +17,8 @@ export interface GfxPreset {
   /** Bóng nắng (tắt thì không vẽ shadow pass — tiết kiệm nhất trên card yếu). */
   shadows: boolean;
   shadowMapSize: number;
-  /** Số nhân vật NPC hiện cùng lúc (gần camera trước); còn lại vẫn chạy logic, chỉ không vẽ. */
-  npcCap: number;
-  /** NPC xa hơn bao nhiêu mét thì cử động thưa (mỗi 3 khung một lần) để đỡ CPU. */
+  /** NPC xa hơn bao nhiêu mét thì cử động thưa (mỗi 3 khung một lần) để đỡ CPU. KHÔNG ẩn thân. */
   animFarDist: number;
-  /** Đồ trang trí thường ngày (chậu cây, ghế...). Đồ sự kiện (chợ phiên, sửa đường, lễ hội) luôn hiện. */
-  decor: boolean;
   /** Hạt mưa / mây / sao — đọc một lần lúc dựng cảnh. */
   rainDrops: number;
   clouds: number;
@@ -30,10 +28,26 @@ export interface GfxPreset {
 }
 
 export const GFX_PRESETS: Record<GfxLevel, GfxPreset> = {
-  low: { maxPixelRatio: 1, minPixelRatio: 0.75, shadows: false, shadowMapSize: 512, npcCap: 12, animFarDist: 12, decor: false, rainDrops: 1200, clouds: 6, stars: 120, lightPool: 3 },
-  medium: { maxPixelRatio: 1.5, minPixelRatio: 1, shadows: true, shadowMapSize: 1024, npcCap: 24, animFarDist: 20, decor: true, rainDrops: 2500, clouds: 10, stars: 200, lightPool: 5 },
-  high: { maxPixelRatio: 2, minPixelRatio: 1, shadows: true, shadowMapSize: 2048, npcCap: 999, animFarDist: 40, decor: true, rainDrops: 5000, clouds: 14, stars: 280, lightPool: 8 },
+  low: { maxPixelRatio: 1, minPixelRatio: 0.75, shadows: false, shadowMapSize: 512, animFarDist: 12, rainDrops: 1200, clouds: 6, stars: 120, lightPool: 3 },
+  medium: { maxPixelRatio: 1.5, minPixelRatio: 1, shadows: true, shadowMapSize: 1024, animFarDist: 20, rainDrops: 2500, clouds: 10, stars: 200, lightPool: 5 },
+  high: { maxPixelRatio: 2, minPixelRatio: 1, shadows: true, shadowMapSize: 2048, animFarDist: 40, rainDrops: 5000, clouds: 14, stars: 280, lightPool: 8 },
 };
+
+/**
+ * Nội dung hiển thị (đám đông NPC + đồ trang trí) — TÁCH KHỎI "mức đồ họa". Người chơi chọn
+ * mức Thấp/Vừa/Cao chỉ đổi CHẤT LƯỢNG HÌNH (độ nét, bóng, mưa/mây, ánh sáng), KHÔNG được lấy đi
+ * cảnh: đám đông và đồ trang trí luôn hiển thị đầy đủ ở MỌI mức (GĐ1235 — theo yêu cầu người chơi).
+ * `CONTENT_STEPS` chỉ là TẤM CHẮN KHẨN CẤP dùng RIÊNG cho chế độ Tự động: khi máy yếu giảm độ nét
+ * tới đáy mà vẫn dưới sàn 30 FPS (`GFX_TARGET.floorFps`) thì bộ tự hạ bớt đám đông/decor dần để
+ * giữ sàn — có thông báo. Chọn mức thủ công thì không bao giờ chạm tới đây (cảnh luôn đủ).
+ */
+export interface GfxContent { npcCap: number; decor: boolean }
+export const CONTENT_STEPS: GfxContent[] = [
+  { npcCap: 999, decor: true },   // 0 — hiển thị hết (mặc định, mọi mức)
+  { npcCap: 80, decor: true },    // 1 — máy yếu hẳn: bớt NPC xa
+  { npcCap: 32, decor: true },    // 2 — nặng: bớt nhiều NPC
+  { npcCap: 18, decor: false },   // 3 — yếu nhất: bớt cả đồ trang trí thường ngày
+];
 
 /**
  * Ngưỡng FPS của bộ tự hạ. Mục tiêu sàn cho mọi máy là ≥30 FPS ở mức Thấp (luật hiệu năng trong
@@ -113,9 +127,10 @@ export function saveChoice(c: GfxChoice) {
 export interface GfxStep { level: GfxLevel; pixelRatio: number }
 
 /**
- * Thang các bậc từ đẹp nhất xuống nhẹ nhất. Tự động: đi qua mọi mức từ `start` xuống Thấp
- * (hết độ nét của mức này mới sang mức dưới — tức là mới tắt bóng, bớt NPC, ẩn đồ trang trí).
- * Người chơi chọn cố định một mức: chỉ co giãn độ nét trong mức đó, không tự đổi mức.
+ * Thang các bậc từ đẹp nhất xuống nhẹ nhất (toàn chất lượng hình). Tự động: đi qua mọi mức từ
+ * `start` xuống Thấp (hết độ nét của mức này mới sang mức dưới). Nội dung (đám đông/decor) không
+ * nằm ở đây — tấm chắn khẩn cấp xử lý riêng khi dưới sàn 30 FPS (xem QualityGovernor.update).
+ * Người chơi chọn cố định một mức: chỉ co giãn độ nét trong mức đó, không tự đổi mức, cảnh luôn đủ.
  */
 export function buildLadder(start: GfxLevel, nativeDpr: number, auto: boolean): GfxStep[] {
   const levels = auto ? ORDER.slice(ORDER.indexOf(start)) : [start];
@@ -137,6 +152,8 @@ export function buildLadder(start: GfxLevel, nativeDpr: number, auto: boolean): 
  */
 export class QualityGovernor {
   private idx = 0;
+  /** Bậc tấm chắn nội dung (CONTENT_STEPS) — chỉ thấp hơn 0 khi máy yếu dưới sàn 30 FPS ở mức Tự động. */
+  private contentIdx = 0;
   private elapsed = 0;
   private frames = 0;
   private goodStreak = 0;
@@ -150,6 +167,8 @@ export class QualityGovernor {
 
   get step(): GfxStep { return this.ladder[this.idx]; }
   get preset(): GfxPreset { return GFX_PRESETS[this.step.level]; }
+  /** Nội dung đang hiển thị (đám đông + decor). Chế độ thủ công luôn trả về bậc 0 = hiển thị hết. */
+  get content(): GfxContent { return CONTENT_STEPS[this.auto ? this.contentIdx : 0]; }
 
   /** Trả về true khi bậc vừa đổi (người gọi áp lại cấu hình). */
   update(dt: number): boolean {
@@ -160,18 +179,26 @@ export class QualityGovernor {
     this.avgFps = this.avgFps * 0.8 + fps * 0.2;
     this.elapsed = 0;
     this.frames = 0;
-    if (fps < GFX_TARGET.downFps && this.idx < this.ladder.length - 1) {
-      this.idx++;
+    const atBottom = this.idx >= this.ladder.length - 1;
+    let changed = false;
+    if (fps < GFX_TARGET.downFps) {
       this.goodStreak = 0;
-      return true;
-    }
-    if (fps > GFX_TARGET.upFps && this.idx > 0 && ++this.goodStreak >= GFX_TARGET.upStreak) {
-      this.idx--;
+      // Xuống chất lượng hình trước; hết độ nét mới xuống mức dưới.
+      if (!atBottom) { this.idx++; changed = true; }
+      // Ở mức thấp nhất mà VẪN dưới sàn 30 FPS → bớt đám đông/decor (tấm chắn khẩn cấp).
+      else if (fps < GFX_TARGET.floorFps && this.contentIdx < CONTENT_STEPS.length - 1) { this.contentIdx++; changed = true; }
+      // Dưới mức thấp nhất nhưng trên sàn 30 FPS → giữ nguyên: cảnh đủ, sàn vẫn an toàn.
+    } else if (fps > GFX_TARGET.upFps) {
+      // Leo lên: hồi nội dung (tấm chắn) TRƯỚC, rồi mới hồi chất lượng hình.
+      if (this.contentIdx > 0) {
+        if (++this.goodStreak >= GFX_TARGET.upStreak) { this.contentIdx--; this.goodStreak = 0; changed = true; }
+      } else if (this.idx > 0) {
+        if (++this.goodStreak >= GFX_TARGET.upStreak) { this.idx--; this.goodStreak = 0; changed = true; }
+      } else this.goodStreak = 0;
+    } else {
       this.goodStreak = 0;
-      return true;
     }
-    if (fps <= GFX_TARGET.upFps) this.goodStreak = 0;
-    return false;
+    return changed;
   }
 }
 

@@ -12,8 +12,9 @@ import {
 } from '../render/graphicsQuality';
 
 /**
- * Mức đồ họa Thấp/Vừa/Cao + bộ tự hạ nhiều tầng: máy yếu phải được nhận ra ngay, bộ tự hạ phải
- * đi hết độ nét rồi mới tắt bóng / bớt NPC / ẩn đồ trang trí, và mức Thấp thật sự nhẹ hơn mọi mặt.
+ * Mức đồ họa Thấp/Vừa/Cao + bộ tự hạ nhiều tầng: máy yếu phải được nhận ra ngay; "mức" chỉ là
+ * chất lượng hình (độ nét → bóng → mưa/mây → ánh sáng) — đám đông/decor LUÔN hiển thị đủ ở mọi
+ * mức (GĐ1235), tấm chắn khẩn cấp chỉ bớt nội dung khi máy yếu dưới sàn 30 FPS ở chế độ Tự động.
  */
 describe('mức đồ họa — cấu hình', () => {
   it('mức thấp hơn không bao giờ nặng hơn mức cao hơn ở bất kỳ thông số nào', () => {
@@ -22,7 +23,6 @@ describe('mức đồ họa — cấu hình', () => {
       const lo = GFX_PRESETS[order[i - 1]], hi = GFX_PRESETS[order[i]];
       expect(lo.maxPixelRatio).toBeLessThanOrEqual(hi.maxPixelRatio);
       expect(lo.shadowMapSize).toBeLessThanOrEqual(hi.shadowMapSize);
-      expect(lo.npcCap).toBeLessThanOrEqual(hi.npcCap);
       expect(lo.animFarDist).toBeLessThanOrEqual(hi.animFarDist);
       expect(lo.rainDrops).toBeLessThanOrEqual(hi.rainDrops);
       expect(lo.clouds).toBeLessThanOrEqual(hi.clouds);
@@ -32,11 +32,15 @@ describe('mức đồ họa — cấu hình', () => {
     }
   });
 
-  it('mức Thấp tắt bóng, ẩn đồ trang trí và giới hạn đám đông', () => {
-    expect(GFX_PRESETS.low.shadows).toBe(false);
-    expect(GFX_PRESETS.low.decor).toBe(false);
-    expect(GFX_PRESETS.low.npcCap).toBeLessThanOrEqual(12);
+  it('mức Thấp CHỈ giảm chất lượng hình (độ nét, bóng) — không đụng nội dung (GĐ1235)', () => {
     expect(GFX_PRESETS.low.maxPixelRatio).toBeLessThanOrEqual(1);
+    expect(GFX_PRESETS.low.shadows).toBe(false);
+    // nội dung không nằm trong preset theo mức — là baseline dùng chung, đầy ở mọi mức
+    expect('npcCap' in GFX_PRESETS.low).toBe(false);
+    expect('decor' in GFX_PRESETS.low).toBe(false);
+    for (const lv of ['low', 'medium', 'high'] as GfxLevel[]) {
+      expect(new QualityGovernor(lv, 1, false).content).toEqual({ npcCap: 999, decor: true });
+    }
   });
 
   it('ngưỡng tự hạ giữ trên sàn 30 FPS và có vùng đệm chống nhấp nháy lên/xuống', () => {
@@ -109,12 +113,40 @@ describe('bộ tự hạ nhiều tầng', () => {
     return changed;
   };
 
-  it('máy giật 20 FPS kéo dài → tụt hết thang xuống Thấp (tắt bóng, bớt NPC)', () => {
+  it('máy giật 20 FPS kéo dài → tụt hết thang xuống Thấp + bớt đám đông (tấm chắn dưới sàn)', () => {
     const g = new QualityGovernor('high', 2, true);
     feed(g, 20, 60);
     expect(g.step.level).toBe('low');
     expect(g.preset.shadows).toBe(false);
     expect(g.step).toEqual(g.ladder[g.ladder.length - 1]);
+    expect(g.content.npcCap).toBeLessThan(999); // 20 < sàn 30 → tấm chắn bớt cả nội dung
+  });
+
+  it('Tấm chắn khẩn cấp: đang ở đáy chất lượng mà dưới sàn 30 FPS → mới bớt đám đông/decor', () => {
+    const g = new QualityGovernor('low', 1, true); // chất lượng đã ở mức thấp nhất
+    expect(g.content).toEqual({ npcCap: 999, decor: true });
+    feed(g, 25, 60); // 25 FPS < 30
+    expect(g.content.npcCap).toBeLessThan(999);
+  });
+
+  it('tấm chắn chỉ bớt nội dung khi DƯỚI sàn 30 FPS; 30–45 FPS ở đáy chất lượng vẫn giữ cảnh đủ', () => {
+    const g = new QualityGovernor('low', 1, true);
+    feed(g, 35, 60); // 35 FPS: trên sàn 30 (nhưng dưới 45) → không bớt nội dung
+    expect(g.content).toEqual({ npcCap: 999, decor: true });
+  });
+
+  it('máy khỏe lại → hồi nội dung TRƯỚC rồi mới hồi chất lượng hình', () => {
+    const g = new QualityGovernor('low', 1, true);
+    feed(g, 20, 60);
+    expect(g.content.npcCap).toBeLessThan(999);
+    feed(g, 60, 400);
+    expect(g.content).toEqual({ npcCap: 999, decor: true });
+  });
+
+  it('chọn mức thủ công: không bao giờ bớt nội dung (tấm chắn chỉ ở Tự động)', () => {
+    const g = new QualityGovernor('low', 1, false);
+    feed(g, 15, 120); // rất yếu, nhưng thủ công → cảnh vẫn đủ
+    expect(g.content).toEqual({ npcCap: 999, decor: true });
   });
 
   it('máy khỏe lại 60 FPS → leo dần lên, không vượt bậc khởi đầu', () => {

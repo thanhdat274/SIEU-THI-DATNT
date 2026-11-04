@@ -573,7 +573,8 @@ function updateStatus() {
 }
 
 let reminderSlot = -1;
-// Mức đồ họa + bộ tự hạ nhiều tầng (độ nét → bóng → đám đông → đồ trang trí); bóng cập nhật 30 hình/giây
+// Mức đồ họa + bộ tự hạ nhiều tầng (độ nét → bóng → mưa/mây → ánh sáng); nội dung (đám đông/decor)
+// luôn hiển thị đủ ở mọi mức — tấm chắn khẩn cấp chỉ bớt khi máy yếu dưới sàn 30 FPS (GĐ1235).
 initLightPool(scene, GFX_PRESETS[INITIAL_GFX].lightPool);
 const nativeDpr = window.devicePixelRatio || 1;
 let gfxChoice: GfxChoice = GFX_CHOICE;
@@ -588,8 +589,9 @@ function applyGfx() {
   // Đã dựng có bóng thì chỉ làm mờ hẳn bóng + ngừng vẽ shadow pass (vòng render đọc preset.shadows);
   // dựng không bóng (mức Thấp) thì bật bóng phải chờ tải lại trang.
   if (lighting.sun.castShadow) lighting.sun.shadow.intensity = p.shadows ? 1 : 0;
-  world.kit.setDecor(p.decor);
-  world.alleyLamps.setDecor(p.decor);
+  // Đồ trang trí theo NỘI DUNG (đầy ở mọi mức; tấm chắn khẩn cấp mới tắt khi máy yếu dưới 30 FPS)
+  world.kit.setDecor(gfx.content.decor);
+  world.alleyLamps.setDecor(gfx.content.decor);
   reportGfx(gfxChoice, gfx.step.level, gfx.avgFps);
 }
 applyGfx();
@@ -794,13 +796,17 @@ function renderFrame() {
   applyLightBudget(controller.target);
   // Bóng đổ cập nhật 30 hình/giây là đủ (nắng di chuyển chậm): tiết kiệm một nửa vệt vẽ bóng; mức Thấp tắt hẳn
   if ((frameNo++ & 1) === 0 && gfx.preset.shadows) renderer.shadowMap.needsUpdate = true;
-  applyCrowdLod(controller.target, gfx.preset.npcCap, gfx.preset.animFarDist);
+  applyCrowdLod(controller.target, gfx.content.npcCap, gfx.preset.animFarDist);
   const prevLevel = gfx.step.level;
+  const prevContent = gfx.content.npcCap + (gfx.content.decor ? 'd' : '');
   if (gfx.update(dt)) {
     applyGfx();
     if (gfx.step.level !== prevLevel && !gfxNotified && playing()) {
       gfxNotified = true;
       g.notify(`🎨 Máy hơi nặng nên game tự giảm đồ họa xuống "${GFX_LABEL[gfx.step.level]}" cho mượt hơn. Đổi ở ⋯ Thêm → Đồ họa.`);
+    } else if (gfx.content.npcCap + (gfx.content.decor ? 'd' : '') !== prevContent && !gfxNotified && playing()) {
+      gfxNotified = true;
+      g.notify('🎨 Máy hơi nặng, game tạm bớt đám đông để giữ 30 FPS mượt. Đổi ở ⋯ Thêm → Đồ họa.');
     }
   } else reportGfx(gfxChoice, gfx.step.level, gfx.avgFps);
   // Nhật ký hiệu năng riêng máy: mỗi ngày game ghi FPS trung bình + mức đang dùng (xem game.perf())
