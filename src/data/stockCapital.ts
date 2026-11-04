@@ -56,3 +56,38 @@ export function stockCapital(
     lines: sorted.slice(0, topN),
   };
 }
+
+export interface PendingCapital {
+  /** Số đơn cung ứng đang chờ giao (sáng mai). */
+  orders: number;
+  /** Tổng vốn giá nhập đã chốt nhưng hàng chưa về (đ). */
+  cost: number;
+  /** Trị giá nếu bán hết theo giá lẻ hiện tại (đ). */
+  retail: number;
+  /** Số loại món đang trên đường. */
+  kinds: number;
+}
+
+/**
+ * GĐ1179 — vốn đã CHỐT nhưng hàng đang trên đường (đơn cung ứng chưa giao). Tiền đã trừ khỏi két lúc
+ * đặt (placeOrder) mà hàng chưa về kho — cùng là "vốn chôn" như `stockCapital` nhưng nằm ngoài `storage`
+ * nên bị bỏ sót. THUẦN đọc: đếm theo `items` từng đơn, giá nhập = productById(id).buy (khớp tiền đã trừ).
+ */
+export const pendingCapital = (
+  deliveries: { items: Record<string, number> }[],
+  priceOf: (id: string) => number,
+): PendingCapital => {
+  let orders = 0, cost = 0, retail = 0;
+  const seen = new Set<string>();
+  for (const d of deliveries) {
+    orders += 1;
+    for (const [id, qty] of Object.entries(d.items)) {
+      if (qty <= 0) continue;
+      const p = productById(id);
+      cost += qty * p.buy;
+      retail += qty * priceOf(id);
+      seen.add(id);
+    }
+  }
+  return { orders, cost, retail, kinds: seen.size };
+};
