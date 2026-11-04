@@ -2,15 +2,17 @@ import { useGame } from '../../core/store';
 import { formatMoney } from '../../data/products';
 import {
   TIEM_XOI_COST_MUL, TIEM_XOI_HIRE_FEE, TIEM_XOI_MAX_STAFF, TIEM_XOI_PRICE, TIEM_XOI_TARGET, TIEM_XOI_UNLOCK,
-  TIEM_XOI_WAGE, tiemXoiCapacity, tiemXoiHandQty, tiemXoiTarget, TIEM_XOI_BIG_COST, TIEM_XOI_BIG_LEVEL, tiemXoiDineCap, tiemXoiRainMul, tiemXoiWeekendMul, tiemXoiLastLine, isXoiCungDay, tiemXoiCungMul,
+  TIEM_XOI_WAGE, tiemXoiCapacity, tiemXoiHandQty, tiemXoiTarget, TIEM_XOI_BIG_COST, TIEM_XOI_BIG_LEVEL, tiemXoiDineCap, tiemXoiRainMul, tiemXoiWeekendMul, tiemXoiLastLine, isXoiCungDay, tiemXoiCungMul, tiemXoiStaffValues,
 } from '../../data/tiemXoi';
-import { styles } from './shared';
+import { Callout, styles } from './shared';
 
 /** Tiệm xôi (GĐ412): mục riêng trong bảng Quán nước — không thêm nút HUD. Hiện từ cấp mở khoá. */
 export function TiemXoiSection() {
-  const { biz, level, money, day, weather, buyTiemXoi, hireTiemXoi, fireTiemXoi, steamXoiHand, expandTiemXoi } = useGame();
+  const { biz, level, money, day, weather, storage, buyTiemXoi, hireTiemXoi, fireTiemXoi, steamXoiHand, expandTiemXoi } = useGame();
   const t = biz.tiemXoi;
   const last = biz.tiemXoiLast;
+  // GĐ1246 — "từng thợ xôi đáng đồng lương?" (thuần đọc, song song quán nước GĐ188). Chỉ khi tiệm đang chạy có thợ.
+  const staffValues = t.open && t.staff > 0 ? tiemXoiStaffValues(t, level, storage, day) : [];
   if (!t.open && level < TIEM_XOI_UNLOCK) return null;
   const off = Math.round((1 - TIEM_XOI_COST_MUL) * 100);
   return (
@@ -38,6 +40,31 @@ export function TiemXoiSection() {
             <div style={{ fontSize: 13, marginTop: 4 }}>
               {tiemXoiLastLine(last)}
             </div>
+          )}
+          {staffValues.length > 0 && (
+            <Callout
+              tone={staffValues.some((v) => v.verdict !== 'ok') ? 'warn' : 'ok'}
+              title="🧑‍🍳 Từng thợ đáng đồng lương?"
+              style={{ marginTop: 6 }}
+            >
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                {staffValues.map((v) => (
+                  <div key={v.index} style={{ fontSize: 12 }}>
+                    <b style={{ color: v.verdict === 'ok' ? '#2ecc71' : '#e67e22' }}>
+                      {v.verdict === 'ok' ? '✔' : v.verdict === 'warn' ? '◑' : '✖'} Thợ thứ {v.index}
+                    </b>
+                    {' · '}{formatMoney(v.marginalValue)}/ngày lợi nhuận bán xôi nấu thêm —{v.marginNet >= 0
+                      ? ` đáng lương ${formatMoney(v.wage)} (lãi +${formatMoney(v.marginNet)})`
+                      : v.ratio >= 0.5
+                        ? ` chưa đáng ${formatMoney(v.wage)} (lỗ ${formatMoney(-v.marginNet)}/ngày)`
+                        : ` nên cho nghỉ — kho xôi gần đủ, chủ tự nấu 60 phần`}
+                  </div>
+                ))}
+              </div>
+              <div style={{ fontSize: 11, opacity: 0.7, marginTop: 4 }}>
+                Giá trị biên = lợi nhuận bán của xôi thợ này nấu thêm so với ít hơn 1 thợ, trừ lương. Kho xôi đã đủ thì thợ thêm không nấu thêm.
+              </div>
+            </Callout>
           )}
           <div style={{ marginTop: 6 }}>
             <button style={{ ...styles.btn, marginLeft: 0 }} disabled={t.staff >= TIEM_XOI_MAX_STAFF || money < TIEM_XOI_HIRE_FEE} onClick={hireTiemXoi}>
