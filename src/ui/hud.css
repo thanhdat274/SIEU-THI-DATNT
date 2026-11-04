@@ -73,6 +73,13 @@
 #ui .hud-forecast { opacity: 0.85; letter-spacing: 2px; }
 #ui .hud-forecast::before { content: "Dự báo "; letter-spacing: 0; }
 #ui .hud-time b { font-size: 18px; }
+/* GĐ1254 — chip đồng hồ có small nowrap (ngày/dự báo/hội thoại). Màn 701–1100px: dòng dài làm chip
+   tràn mép phải (layoutAudit clipped 135px ở 768px) — chặn bề rộng + lược bớt bằng ellipsis;
+   desktop rộng đủ chỗ nên không đổi hình dáng. */
+@media (min-width: 701px) {
+  #ui .hud-chip.hud-time { max-width: min(46vw, 460px); }
+  #ui .hud-chip.hud-time small { overflow: hidden; text-overflow: ellipsis; }
+}
 #ui .hud-late { color: #ff7675; }
 #ui .hud-money b { color: var(--hud-accent); font-size: 17px; }
 #ui .hud-money { position: relative; }
@@ -589,6 +596,10 @@
   #ui .hud-dock > .hud-tool > span:not(.hud-tool-icon):not(.hud-badge),
   #ui .hud-dock > .hud-pop > .hud-tool > span:not(.hud-tool-icon):not(.hud-badge) { font-size: 9px; white-space: normal; text-align: center; }
   #ui .hud-speed button { min-width: 28px; }
+  /* GĐ1254 — cụm phải (loa/nhạc/tài khoản) chưa co như màn hẹp → chip tiền trong .hud-left
+     đâm vào nút loa (QA 768px: "5.000.000đ" bị loa đè). Co cụm phải y khối ≤700px. */
+  #ui .hud-account > span:not(.hud-avatar), #ui .hud-caret, #ui .hud-room small { display: none; }
+  #ui .hud-account { padding: 4px; }
 }
 
 /* (Màn rất hẹp ≤720px: đã gộp vào khối "Màn hẹp" ở trên — nút chia đều, menu Thêm bật lên
