@@ -30,6 +30,9 @@ export const COMBOS: ComboDef[] = [
   { id: 'mi_nuoc', icon: '🍜', name: 'Mì gói + nước suối', items: ['mi', 'nuoc'], discount: 0.1 },
   { id: 'banh_ngot', icon: '🍪', name: 'Bánh kẹo + nước ngọt', items: ['banh', 'ngot'], discount: 0.1 },
   { id: 'sua_banhmi', icon: '🥐', name: 'Bữa sáng: sữa + bánh mì', items: ['sua', 'banhmi'], discount: 0.12 },
+  // GĐ1243: combo "Bữa sáng: cà phê + bánh mì" — cặp quen thuộc nhất của khung giờ vàng sáng (cả hai đều trong
+  // wants của band sang ở rhythm.ts) mà trước giờ chỉ có "sữa + bánh mì", thiếu bản "đi cà phê sáng".
+  { id: 'caphe_banhmi', icon: '☕', name: 'Bữa sáng: cà phê + bánh mì', items: ['caphe', 'banhmi'], discount: 0.1 },
   { id: 'mi_trung', icon: '🥚', name: 'Mì + trứng', items: ['mi', 'trung'], discount: 0.08 },
   { id: 'gao_dauan', icon: '🍚', name: 'Gạo + dầu ăn', items: ['gao', 'dauan'], discount: 0.06 },
   { id: 'giavi_dauan', icon: '🧂', name: 'Gia vị + dầu ăn', items: ['giavi', 'dauan'], discount: 0.08 },
