@@ -80,6 +80,15 @@ export function demandPriceFactor(productId: string, price: number): number {
   return Math.min(PRICE_RULES.lowPriceDemandCap, 1 + PRICE_RULES.lowPriceDemandSlope * (1 - ratio));
 }
 
+/** GĐ1224 — bề mặt "giá rẻ kéo khách": bảng giá nói "rẻ hơn gợi ý thì thêm người ghé" mà không cho con
+ *  số; helper THUẦN project đúng `demandPriceFactor` (mô hình cầu đang dùng) ra phần trăm thêm khách ghé
+ *  khi bán dưới giá thị trường. `active=false` khi đang bằng/trên thị trường (không kéo thêm). Không đổi
+ *  kinh tế/save/seed — chỉ đọc lại hệ số có sẵn để soi. */
+export function lowPricePull(productId: string, price: number): { active: boolean; pct: number } {
+  const f = demandPriceFactor(productId, price);
+  return { active: f > 1, pct: Math.round((f - 1) * 100) };
+}
+
 export type PriceAction = 'raise' | 'hold' | 'cut';
 
 export interface PriceSuggestion {

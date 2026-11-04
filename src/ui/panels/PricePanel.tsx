@@ -4,7 +4,7 @@ import { Dropdown } from '../Dropdown';
 import { HAPPY_FROM_MAX, HAPPY_FROM_MIN, HAPPY_HOURS, HAPPY_OFF_OPTIONS, happyHourActive, happyWindowFit, happyHourReport } from '../../data/rhythm';
 import { useClock, useGame } from '../../core/store';
 import { CATEGORIES, formatMoney, unlockedProducts, type Product, fmtMul } from '../../data/products';
-import { suggestPrice, referenceSell, productSensitivity, sensitivityLevel, priceForecast, formatDeltaK, FORECAST_FLAT_BAND } from '../../data/pricing';
+import { suggestPrice, referenceSell, productSensitivity, sensitivityLevel, priceForecast, formatDeltaK, FORECAST_FLAT_BAND, lowPricePull } from '../../data/pricing';
 import { dayEffects } from '../../data/calendar';
 import { marketTrend } from '../../data/market';
 import { priceGap } from '../../data/priceGap';
@@ -200,6 +200,17 @@ export function PricePanel() {
                     {formatMoney(price)}
                   </b>
                   <button style={styles.btn} aria-label="Tăng giá" onClick={() => change(step)}>+</button>
+                  {(() => {
+                    // GĐ1224 — bề mặt "giá rẻ kéo khách": con số % thêm người ghé khi hạ dưới giá thị trường
+                    const pull = lowPricePull(p.id, price);
+                    if (!pull.active) return null;
+                    return (
+                      <div style={{ whiteSpace: 'nowrap', fontSize: 11, marginTop: 2, color: '#3498db', opacity: 0.9 }}
+                        title="Khách ghé tiệm thêm chừng này phần trăm vì giá này rẻ hơn giá thị trường (mô hình cầu đang dùng); đừng hạ sâu quá — tới trần +15% thì lời mỏng mà khách không tăng nữa.">
+                        🧲 rẻ hơn gợi ý → ~+{pull.pct}% khách ghé
+                      </div>
+                    );
+                  })()}
                   {price !== p.sell && (() => {
                     const fc = priceForecast(p.id, price, { soldPerDay: sales[p.id], wantedPerDay: demand[p.id] }, tolOf(p.id));
                     if (!fc) return null;

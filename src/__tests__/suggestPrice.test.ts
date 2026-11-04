@@ -1,5 +1,23 @@
 import { describe, expect, it } from 'vitest';
-import { priceBuyOdds, referenceSell, suggestPrice } from '../data/pricing';
+import { lowPricePull, priceBuyOdds, referenceSell, suggestPrice } from '../data/pricing';
+
+describe('lowPricePull — bề mặt "giá rẻ kéo khách" (GĐ1224)', () => {
+  // gao sell 100000; demandPriceFactor = 1 + 0.5×(1−ratio), cap 1.15
+  it('bằng giá thị trường → không kéo thêm (active false, pct 0)', () => {
+    expect(lowPricePull('gao', 100000)).toEqual({ active: false, pct: 0 });
+  });
+  it('thấp hơn 20% thị trường (80000) → +10% khách ghé', () => {
+    expect(lowPricePull('gao', 80000)).toEqual({ active: true, pct: 10 });
+  });
+  it('hạ sâu quá → kẹp trần lowPriceDemandCap +15% (không tăng mãi)', () => {
+    // ratio ~0.1 → 1 + 0.5×0.9 = 1.45 → cap 1.15 → +15%
+    expect(lowPricePull('gao', 10000)).toEqual({ active: true, pct: 15 });
+    expect(lowPricePull('gao', 10000).pct).toBeLessThanOrEqual(15);
+  });
+  it('helper thuần: cùng input ra cùng kết quả (không đổi theo state)', () => {
+    expect(lowPricePull('gao', 85000)).toEqual(lowPricePull('gao', 85000));
+  });
+});
 
 describe('priceBuyOdds — bề mặt "giá cao ăn vào đơn" (GĐ1222)', () => {
   // gao: sell 100000, độ nhạy 1.1
