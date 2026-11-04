@@ -4,6 +4,7 @@ import { useGame, type Furniture } from '../core/store';
 import { furnitureDef, type FurnitureType } from '../data/furniture';
 import { fitLots, nearestLife, tierMarkdown } from '../data/freshness';
 import { describeUnits, productById, unlockedProducts } from '../data/products';
+import { allowedForType, pickForShelf } from '../data/planogram';
 import { Footer } from './panels/shared';
 
 /** Ô còn ít hơn chừng này phần sức chứa thì coi là sắp hết. */
@@ -17,25 +18,20 @@ const allowed = (f: Furniture, cache: ReadonlyMap<string, import('../data/produc
   return cache.get(def.name) ?? [];
 };
 
-/** Tự chọn món cho ô trống: món kho còn nhiều nhất, ưu tiên món chưa bày ở kệ này. */
-function autoPick(f: Furniture, storage: Record<string, number>, cache: ReadonlyMap<string, import('../data/products').Product[]>): string | null {
-  const shown = new Set(f.tiers.map((t) => t.productId));
-  const products = cache.get(furnitureDef(f.type).name) ?? [];
-  const options = products.filter((p) => (storage[p.id] ?? 0) > 0);
-  options.sort((a, b) => Number(shown.has(a.id)) - Number(shown.has(b.id)) || (storage[b.id] ?? 0) - (storage[a.id] ?? 0));
-  return options[0]?.id ?? null;
-}
-
-/** Bày đầy một kệ: ô đã gán món thì châm thêm, ô chưa gán thì tự chọn món từ kho. */
-function fillFixture(uid: number, furniture: Furniture[], storage: Record<string, number>, stockTier: (uid: number, i: number, id: string | null) => void, autoPickFn: (f: Furniture, storage: Record<string, number>, cache: ReadonlyMap<string, import('../data/products').Product[]>) => string | null, cache: ReadonlyMap<string, import('../data/products').Product[]>) {
+/** Bày đầy một kệ: ô đã gán món thì châm thêm, ô chưa gán thì tự chọn món từ kho (pickForShelf, GĐ1236).
+ *  Chỉ tìm kệ 1 lần (không `find` từng ô → tránh O(tiers×kệ) khi nhiều kệ), tính danh sách món 1 lần/tầng. */
+function fillFixture(uid: number, furniture: Furniture[], storage: Record<string, number>, stockTier: (uid: number, i: number, id: string | null) => void, cache: ReadonlyMap<string, import('../data/products').Product[]>) {
   const fixture = furniture.find((f) => f.uid === uid);
   if (!fixture) return;
-  const tiers = fixture.tiers;
-  tiers.forEach((_, i) => {
-    const f = furniture.find((it) => it.uid === uid)!;
-    const t = f.tiers[i];
-    const id = t.productId ?? autoPickFn(f, storage, cache);
-    if (id && (storage[id] ?? 0) > 0 && t.count < furnitureDef(f.type).capacity) stockTier(uid, i, id);
+  const allowedList = allowed(fixture, cache);
+  // Các ô trống của MỘT kệ có chung quyết định "chọn món nào" (caption/ưu tiên kho không đổi trong lượt bày này)
+  // → tính 1 lần thay vì `pickForShelf` (lọc+sắp mảng) cho từng ô, tránh O(tiers×món) khi nhiều kệ. GĐ1236.
+  const pick = pickForShelf(fixture, storage, allowedList);
+  const cap = furnitureDef(fixture.type).capacity;
+  fixture.tiers.forEach((_, i) => {
+    const t = fixture.tiers[i];
+    const id = t.productId ?? pick;
+    if (id && (storage[id] ?? 0) > 0 && t.count < cap) stockTier(uid, i, id);
   });
 }
 
@@ -62,11 +58,11 @@ export function PlanogramPanel() {
   const unlocked = useMemo(() => unlockedProducts(level), [level]);
   const typeProducts = useMemo(() => {
     const map = new Map<string, import('../data/products').Product[]>();
-    // Cache allowed per type name
+    // Cache allowed per type name (GĐ1236: dùng chung allowedForType thuần đã test)
     fixtures.forEach((f) => {
       const def = furnitureDef(f.type);
       if (!map.has(def.name)) {
-        map.set(def.name, unlocked.filter((p) => def.categories.includes(p.category)));
+        map.set(def.name, allowedForType(f.type, unlocked));
       }
     });
     return map;
@@ -79,16 +75,19 @@ export function PlanogramPanel() {
   const canFill = (f: Furniture, i: number) => {
     const t = f.tiers[i];
     if (t.count >= furnitureDef(f.type).capacity) return false;
-    return t.productId ? (storage[t.productId] ?? 0) > 0 : !!autoPick(f, storage, typeProducts);
+    return t.productId ? (storage[t.productId] ?? 0) > 0 : !!pickForShelf(f, storage, allowed(f, typeProducts));
   };
 
-  const all = fixtures.flatMap((f) => f.tiers.map((t, i) => ({ f, t, i })));
-  const stats = {
-    slots: all.length,
-    empty: all.filter(({ t }) => !t.productId || t.count === 0).length,
-    low: all.filter(({ f, t }) => t.productId && t.count > 0 && t.count <= furnitureDef(f.type).capacity * LOW).length,
-    fillable: all.filter(({ f, i }) => canFill(f, i)).length,
-  };
+  // Số liệu cả kệ — tính lại CHỈ khi kệ/kho/món đổi, không mỗi lần gõ ô tìm/lọc (GĐ1236)
+  const stats = useMemo(() => {
+    const all = fixtures.flatMap((f) => f.tiers.map((t, i) => ({ f, t, i })));
+    return {
+      slots: all.length,
+      empty: all.filter(({ t }) => !t.productId || t.count === 0).length,
+      low: all.filter(({ f, t }) => t.productId && t.count > 0 && t.count <= furnitureDef(f.type).capacity * LOW).length,
+      fillable: all.filter(({ f, i }) => canFill(f, i)).length,
+    };
+  }, [fixtures, storage, typeProducts]);
 
   const q = query.trim().toLowerCase();
   const shown = fixtures.filter((f) => {
@@ -99,16 +98,21 @@ export function PlanogramPanel() {
       || f.tiers.some((t) => t.productId && productById(t.productId).name.toLowerCase().includes(q));
   });
   const types = [...new Set(fixtures.map((f) => f.type))];
-  // Số thứ tự trong cùng loại, để phân biệt "Kệ gỗ 1", "Kệ gỗ 2"
-  const label = (f: Furniture) => {
-    const same = fixtures.filter((it) => it.type === f.type);
-    return same.length > 1 ? `${furnitureDef(f.type).name} ${same.indexOf(f) + 1}` : furnitureDef(f.type).name;
-  };
+  // Số thứ tự trong cùng loại, để phân biệt "Kệ gỗ 1", "Kệ gỗ 2" — dựng map 1 lần thay vì lọc O(n²) mỗi lần vẽ (GĐ1236)
+  const labelMap = useMemo(() => {
+    const m = new Map<number, string>();
+    for (const f of fixtures) {
+      const same = fixtures.filter((it) => it.type === f.type);
+      m.set(f.uid, same.length > 1 ? `${furnitureDef(f.type).name} ${same.indexOf(f) + 1}` : furnitureDef(f.type).name);
+    }
+    return m;
+  }, [fixtures]);
+  const label = (f: Furniture) => labelMap.get(f.uid) ?? furnitureDef(f.type).name;
 
   // GD104: đưa dữ liệu "kệ đang chạy thế nào" về tại chỗ ra quyết định bày hàng — chỉ ĐỌC
   // shelfHeat/shelfProfit đã có trong store (như AnalyticsPanel/ArrangePanel dùng), không thêm
   // action mới. Tối đa ~5 kệ bán được nhất + kệ kém nhất (dưới nửa mức trung bình → gợi ý đổi chỗ).
-  const heatRows = (() => {
+  const heatRows = useMemo(() => {
     const heatOf = (f: Furniture) => shelfHeat[f.uid] ?? 0;
     const sold = fixtures.filter((f) => heatOf(f) > 0).sort((a, b) => heatOf(b) - heatOf(a));
     if (!sold.length) return [];
@@ -128,7 +132,7 @@ export function PlanogramPanel() {
       rows.push({ uid: cold.uid, text: `⚠️ ${label(cold)}: chỉ ${heatOf(cold)} món — vắng khách, đổi chỗ?`, cold: true });
     }
     return rows;
-  })();
+  }, [fixtures, shelfHeat, shelfProfit, labelMap]);
 
   return (
     <div style={{ width: '100%', maxWidth: 900 }}>
@@ -142,8 +146,8 @@ export function PlanogramPanel() {
         <Stat label="Bày được từ kho" value={stats.fillable} />
         <span style={{ display: 'flex', gap: 6, marginLeft: 'auto', flexWrap: 'wrap' }}>
           <button style={{ ...st.btn, background: '#f1c40f', fontWeight: 700 }} disabled={!stats.fillable}
-            onClick={() => fillFixture(fixtures[0]?.uid, furniture, storage, stockTier, autoPick, typeProducts)}
-            title="Châm mọi ô, ô trống tự chọn món kho đang có">
+            onClick={() => { for (const fx of fixtures) fillFixture(fx.uid, furniture, storage, stockTier, typeProducts); }}
+            title="Châm mọi ô của MỌI kệ/tủ, ô trống tự chọn món kho đang có">
             📥 Bày đầy cả tiệm
           </button>
           <button style={st.btn} onClick={() => openPanel({ type: 'storage' })}>🗃️ Kho</button>
@@ -194,7 +198,7 @@ export function PlanogramPanel() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                 <b>{label(f)}</b>
                 <span style={{ opacity: 0.6, fontSize: 12 }}>{def.tiers} tầng × {def.slots} ô · mỗi ô {def.capacity} món</span>
-                <button style={{ ...st.btn, marginLeft: 'auto' }} disabled={!f.tiers.some((_, i) => canFill(f, i))} onClick={() => fillFixture(f.uid, furniture, storage, stockTier, autoPick, typeProducts)}>
+                <button style={{ ...st.btn, marginLeft: 'auto' }} disabled={!f.tiers.some((_, i) => canFill(f, i))} onClick={() => fillFixture(f.uid, furniture, storage, stockTier, typeProducts)}>
                   📥 Bày đầy kệ này
                 </button>
               </div>
@@ -234,7 +238,7 @@ export function PlanogramPanel() {
                         </div>
                         <div style={{ display: 'flex', gap: 4 }}>
                           <button style={st.mini} disabled={!canFill(f, i)}
-                            onClick={() => stockTier(f.uid, i, t.productId ?? autoPick(f, storage, typeProducts))}
+                            onClick={() => stockTier(f.uid, i, t.productId ?? pickForShelf(f, storage, allowed(f, typeProducts)))}
                             title={t.productId ? 'Bày đầy ô này từ kho' : 'Tự chọn món kho đang có và bày'}>
                             {t.productId ? '＋ Bày' : '✨ Tự chọn'}
                           </button>
