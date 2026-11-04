@@ -74,3 +74,47 @@ export function promoted(st: Staff, to: Rank): Staff {
   const wage = Math.round((st.wage * RANKS[to].raise) / 1000) * 1000;
   return to === 'chief' ? { ...st, wage, rank: 'chief', role: 'manager' } : { ...st, wage, rank: to };
 }
+
+// ── GĐ1258 — "Thăng chức N tr để được gì, có đáng không?" ───────────────────────────────────────
+// Nút thăng chức trước giờ chỉ chìa "lương ×1,35" — hộp đen cùng cả nhà trong chuỗi "soi quyết định"
+// (nhân sự xôi GĐ1246, đào tạo đã có "hoà vốn ~N ngày"). Helper này đọc HẰNG SỐ quyền lợi đã có sẵn
+// trong game (LEAD_SPEED_MUL / LEAD_FATIGUE_MUL / LEAD_CATCH_BONUS / CHIEF_COVER_MUL / CHIEF_QUIT_MUL)
+// và trả một dòng trung thực đặt cạnh nút: tăng lương bao nhiêu, đổi lại được gì CỤ THỂ.
+// THUẦN ĐỌC — không đổi state/kinh tế; không chế số mới, chỉ đọc hằng số đã cân bằng.
+
+export interface PromotionWorth {
+  /** Lương ca hiện tại (đ). */
+  wageNow: number;
+  /** Lương ca sau khi thăng (đ, cùng cách làm tròn với promoted()). */
+  wageAfter: number;
+  /** Tăng thêm mỗi ca (đ). */
+  wageDelta: number;
+  /** Các quyền lợi cụ thể (mỗi mục một chuỗi ngắn, đọc từ hằng số game). */
+  perks: string[];
+  /** Một dòng tiếng Việt đặt cạnh nút Thăng chức. */
+  line: string;
+}
+
+export function promotionWorth(st: Staff, to: Rank): PromotionWorth {
+  const def = RANKS[to];
+  const wageAfter = Math.round((st.wage * def.raise) / 1000) * 1000;
+  const wageDelta = wageAfter - st.wage;
+  const perks: string[] = to === 'lead'
+    ? [
+        `tự làm nhanh hơn ${Math.round((LEAD_SPEED_MUL - 1) * 100)}%`,
+        `cả ca mệt chậm hơn (mệt ×${LEAD_FATIGUE_MUL})`,
+        `giám sát nên khó bị ăn bớt hơn (+${Math.round(LEAD_CATCH_BONUS * 100)}% bắt quả tang)`,
+      ]
+    : [
+        'làm mọi việc của quản lý chi nhánh',
+        `gọi người làm thay chỉ tốn ×${CHIEF_COVER_MUL} thay vì ×2 lương ca`,
+        `nhân viên kiệt sức xin nghỉ giảm một nửa (×${CHIEF_QUIT_MUL})`,
+      ];
+  return {
+    wageNow: st.wage,
+    wageAfter,
+    wageDelta,
+    perks,
+    line: `Lương +${wageDelta.toLocaleString('vi-VN')}đ/ca — được: ${perks.join(', ')}.`,
+  };
+}

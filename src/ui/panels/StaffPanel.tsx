@@ -21,7 +21,7 @@ import { staffDaySnapshot } from '../../core/slices/staffDay';
 import { branchShiftSummary, branchStaffValueToday } from '../../data/branchStaffValue';
 import { nightStaffValueToday } from '../../data/nightStaffValue';
 import { nightPnl } from '../../data/nightReport';
-import { nextPromotion, RANKS } from '../../data/careers';
+import { nextPromotion, promotionWorth, RANKS } from '../../data/careers';
 import { BONUS_RELIEF, BRANCH_ROLES, BRANCH_SHIFT_NAME, BRANCH_SHIFTS, CONVENIENCE, FATIGUE_QUIT, FATIGUE_SLOW, fatigueOf, restingOn } from '../../data/branches';
 import { gapsOf, SITE_NAME, type Site } from '../../data/transfer';
 
@@ -362,7 +362,9 @@ export function DeployBoard() {
   );
 }
 
-/** Dòng thăng chức: điều kiện còn thiếu hoặc nút thăng chức (thu ngân → trưởng quầy → quản lý chi nhánh). */
+/** Dòng thăng chức: điều kiện còn thiếu hoặc nút thăng chức (thu ngân → trưởng quầy → quản lý chi nhánh).
+ *  GĐ1258 — đủ điều kiện thì kèm dòng 💡 "được gì, tăng lương bao nhiêu" (promotionWorth — hằng số
+ *  quyền lợi có sẵn trong game), hết hộp đen "chỉ thấy giá + lương ×N không thấy lợi". */
 export function PromoteRow({ st, level, money, onPromote }: { st: Staff; level: number; money: number; onPromote: (id: number) => void }) {
   const chk = nextPromotion(st, level);
   if (!chk) return null;
@@ -375,6 +377,12 @@ export function PromoteRow({ st, level, money, onPromote }: { st: Staff; level: 
       <button style={styles.btn} disabled={!chk.ok || money < chk.def.cost} onClick={() => onPromote(st.id)}>
         Thăng chức · {formatMoney(chk.def.cost)}
       </button>
+      {chk.ok && (() => {
+        const w = promotionWorth(st, chk.to);
+        return (
+          <div style={{ width: '100%', fontSize: 12, color: '#2ecc71', lineHeight: 1.35 }}>💡 {w.line}</div>
+        );
+      })()}
     </div>
   );
 }
