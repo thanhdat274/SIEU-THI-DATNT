@@ -15,7 +15,7 @@
 // Trả '' khi cả ba số đều 0 — đầu ngày chưa mở cửa thì đừng ồn.
 // ============================================================================
 
-import { formatMoney } from './products';
+import { formatMoney, productById } from './products';
 import { peakHours } from './advice';
 import { trafficForecast } from './trafficForecast';
 import type { Weather } from './weather';
@@ -56,6 +56,25 @@ export function todayExpectCustomers(a: {
 }): number {
   const n = Math.round(trafficForecast(a).todayKhach);
   return n > 0 ? n : 0;
+}
+
+/** GĐ1232 — bề mặt "món chạy nhất HÔM NAY" giữa ngày: `stats.byItem` slice cập nhật MỖI lượt bán
+ *  (sales.ts) nhưng chỉ lên bề mặt ở Tổng kết CUỐI ngày — giữa ngày người chơi biết bán được mấy món
+ *  (GĐ1226) nhưng KHÔNG biết đang chạy MÓN nào để CHÂM KỆ NGAY (hộp đen giữa chừng ngày, Nguyên tắc a).
+ *  Chỉ báo khi có người dẫn RÕ: món chạy nhất bán ≥ 3 và gấp ≥ 2 món nhì — chưa rõ ai dẫn thì đừng ồn
+ *  (tránh nhiễu, cùng tinh thần ngưỡng của `todayPeakLine`). THUẦN — chỉ ghép chuỗi từ byItem live,
+ *  không đổi kinh tế/save/seed/state (Luật 5 an toàn). */
+export function todayTopSeller(
+  byItem: Record<string, { qty: number; revenue: number; cost: number }> | undefined,
+): string {
+  if (!byItem) return '';
+  const entries = Object.entries(byItem).filter(([, l]) => l.qty > 0);
+  if (entries.length === 0) return '';
+  entries.sort((a, b) => b[1].qty - a[1].qty);
+  const top = entries[0];
+  const second = entries[1]?.[1]?.qty ?? 0;
+  if (top[1].qty < 3 || top[1].qty < 2 * second) return '';
+  return `món chạy nhất: ${productById(top[0])?.name ?? top[0]} (${top[1].qty})`;
 }
 
 /** GĐ1227 — bề mặt "giờ cao điểm ĐẾN GIỜ trong hôm nay": `peakHours` đã tính giờ đông khách nhất

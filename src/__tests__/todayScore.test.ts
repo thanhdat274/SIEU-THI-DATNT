@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { formatMoney } from '../data/products';
-import { todayLine, todayMissedLine, todayPeakLine, todayExpectCustomers } from '../data/todayScore';
+import { todayLine, todayMissedLine, todayPeakLine, todayExpectCustomers, todayTopSeller } from '../data/todayScore';
 import { WEATHER } from '../data/weather';
 import { trafficForecast } from '../data/trafficForecast';
 
@@ -140,5 +140,31 @@ describe('todayExpectCustomers — neo "dự kiến hôm nay" (GĐ1231)', () => 
   it('helper thuần: cùng input ra cùng số (không đổi theo state)', () => {
     const a = { weather: 'rain' as const, tomorrow: 'cloudy' as const, level: 15, day: 10, seed: 3 };
     expect(todayExpectCustomers(a)).toBe(todayExpectCustomers(a));
+  });
+});
+
+describe('todayTopSeller — bề mặt "món chạy nhất hôm nay" giữa ngày (GĐ1232)', () => {
+  it('undefined/không bán gì → chuỗi rỗng (đầu ngày đừng ồn)', () => {
+    expect(todayTopSeller(undefined)).toBe('');
+    expect(todayTopSeller({})).toBe('');
+  });
+  it('người dẫn RÕ (chạy nhất ≥3 và gấp ≥2 món nhì) → báo tên món + số món đã bán', () => {
+    const out = todayTopSeller({ nuoc: { qty: 8, revenue: 24000, cost: 12000 }, mi: { qty: 3, revenue: 9000, cost: 6000 } });
+    expect(out).toContain('món chạy nhất');
+    expect(out).toContain('Nước suối');
+    expect(out).toContain('(8)');
+  });
+  it('người dẫn chưa RÕ (kém 2× món nhì) → rỗng, không nhiễu', () => {
+    // 4 vs 3: chưa tới 2× → đừng gọi ai "chạy nhất" khi còn xoay xở
+    const out = todayTopSeller({ nuoc: { qty: 4, revenue: 12000, cost: 6000 }, mi: { qty: 3, revenue: 9000, cost: 6000 } });
+    expect(out).toBe('');
+  });
+  it('bán ít (<3 món) → rỗng (chưa đủ lượng để tin tưởng chỉ bảo)', () => {
+    const out = todayTopSeller({ nuoc: { qty: 2, revenue: 6000, cost: 3000 } });
+    expect(out).toBe('');
+  });
+  it('helper thuần: cùng input ra cùng chuỗi', () => {
+    const b = { nuoc: { qty: 7, revenue: 21000, cost: 10000 }, mi: { qty: 3, revenue: 9000, cost: 6000 } };
+    expect(todayTopSeller(b)).toBe(todayTopSeller(b));
   });
 });
