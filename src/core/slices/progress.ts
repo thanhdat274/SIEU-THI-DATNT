@@ -184,8 +184,11 @@ export const createProgressSlice = (set: SetState, get: GetState): Pick<GameStat
     if (!q || !q.done || q.claimed) return false;
     // Sang ngày mới: bộ nhiệm vụ ngày làm lại từ đầu; kèo hôm qua (nếu còn treo) hết giá trị, dọn luôn
     const log = s.questLog.day === s.day ? s.questLog : { ...s.questLog, day: s.day, claimedDaily: [], bet: null };
+    // GĐ1178: ghi nhận tiền thưởng nhiệm vụ vào stats.questIncome (optional, reset theo ngày) để tổng kết
+    // cuối ngày so được với "lãi bán hàng thật" (Luật 10). Chỉ là ghi nhận — không đổi tiền/kinh tế/seed.
     set({
       money: s.money + q.money,
+      stats: { ...s.stats, questIncome: (s.stats.questIncome ?? 0) + q.money },
       questLog: id.startsWith('story_')
         ? { ...log, claimedStory: [...log.claimedStory, id] }
         : { ...log, claimedDaily: [...log.claimedDaily, id] },

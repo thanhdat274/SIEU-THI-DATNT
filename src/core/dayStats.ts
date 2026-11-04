@@ -56,6 +56,10 @@ export interface DayStats {
   cookOrders?: number;
   /** Số lời khen 5★ nhận hôm nay (đo thử thách tuần). */
   fiveStars?: number;
+  /** Thưởng nhiệm vụ (nhiệm vụ ngày + chuyện) đã nhận hôm nay — tích lũy lúc claim, reset theo ngày.
+   *  GĐ1178 "soi sáng": giúp tổng kết so "lãi bán hàng thật" với thưởng nhiệm vụ + kèo (Luật 10).
+   *  Field tuỳ chọn — bản save cũ tự bù undefined qua `?? 0`, không lên SAVE_VERSION. */
+  questIncome?: number;
 }
 
 /** Lãi gộp trong ngày: (tiền thu − vốn) theo sổ bán từng món + lời dịch vụ quầy. */

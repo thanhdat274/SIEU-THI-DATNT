@@ -61,6 +61,7 @@ import { PHONE_SLOTS } from '../../data/phoneOrders';
 import { paymentById, type PaymentMethod } from '../../data/payments';
 import { solvency } from '../../data/solvency';
 import { loanBurden } from '../../data/loanBurden';
+import { incomeSplit } from '../../data/incomeSplit';
 import { dailyBurn } from '../../data/dailyBurn';
 import { recentAvgRevenue } from '../../data/minorPayoff';
 import { AdviceCard, HourChart, ItemTable, HistoryChart } from './HistoryPanel';
@@ -73,7 +74,7 @@ export const EMPTY_DAY_STATS: DayStats = { revenue: 0, spent: 0, wages: 0, items
 
 export function SummaryPanel({ day }: { day: number }) {
   const panel = useGame((s) => s.panel);
-  const { level, xp, history, openPanel, setShift, notify, storage, storageLots, furniture, priceOf, riskTrend, staff, skills, soldEver, comboHitCount, biz, weatherSeed, weather, regulars, totals, repLog, giftStreak, giftLastDay, giftGraceDay, happyHour, analytics, demand: stateDemand, marketLast, debts } = useGame();
+  const { level, xp, history, openPanel, setShift, notify, storage, storageLots, furniture, priceOf, riskTrend, staff, skills, soldEver, comboHitCount, biz, weatherSeed, weather, regulars, totals, repLog, giftStreak, giftLastDay, giftGraceDay, happyHour, analytics, demand: stateDemand, marketLast, debts, questLog } = useGame();
   const [tab, setTab] = useState<'overview' | 'items'>('overview');
   if (panel?.type !== 'summary') return null;
   // GĐ126: `day` prop = ngày VỪA KẾT THÚC (N), nhưng endDay đã sang ngày mới trong cùng set().
@@ -288,6 +289,31 @@ export function SummaryPanel({ day }: { day: number }) {
               <tr><td style={styles.left}>Kinh nghiệm</td><td>+{st.xp} XP · Cấp {level} ({xp}/{xpToNext(level)})</td></tr>
             </tbody>
           </table>
+          {/* GĐ1178: "lãi bán hàng thật" so "thưởng nhiệm vụ + kèo" (Luật 10) — nguồn thu tách hai nửa.
+              `profit` ("Tiền vào − tiền ra") trừ cả tiền nhập kho nên ngày nào cũng âm, không phản ánh sức bán;
+              `salesProfit` (lãi gộp − lương − thuê) là con số game lưu/thuật toán dùng để cân bằng nhưng chưa
+              bao giờ thấy. THUẦN đọc: incomeSplit from state có sẵn + stats.questIncome (ghi lúc claim). */}
+          {(() => {
+            const split = incomeSplit(st, questLog, day);
+            const sharePct = split.rewardShare !== null ? Math.round(split.rewardShare * 100) : null;
+            const tone = split.health === 'loss' ? 'danger' : split.health === 'heavy' ? 'accent' : 'ok';
+            const note = split.health === 'loss'
+              ? <span>Lãi bán thật <b>âm</b> — thưởng {formatMoney(split.reward)} đang gánh lỗ vận hành. Coi lại giá bán, đừng trông chờ thưởng bù.</span>
+              : split.health === 'heavy'
+                ? <span>Hôm nay thưởng chiếm <b>{sharePct}%</b> lãi bán thật — bán hàng phải là nghề chính (Luật 10): nới lãi bán lên thay vì trông chờ thưởng.</span>
+                : sharePct !== null
+                  ? <span>Thưởng chiếm {sharePct}% lãi bán thật — bán hàng vẫn là nghề chính.</span>
+                  : <span>Bán hàng vẫn là nghề chính — hôm nay lãi bán thật bằng 0, thưởng là nguồn phụ.</span>;
+            return (
+              <Callout tone={tone} style={{ marginTop: 8 }}
+                title={<>🎯 Lãi bán hàng thật {split.salesProfit < 0 ? formatMoney(split.salesProfit) : <b style={{ color: '#2ecc71' }}>+{formatMoney(split.salesProfit)}</b>} · thưởng nhiệm vụ <b style={{ color: '#2ecc71' }}>+{formatMoney(split.quest)}</b>{split.bet > 0 ? <span> + kèo <b style={{ color: '#2ecc71' }}>+{formatMoney(split.bet)}</b></span> : null}</>}>
+                <div style={{ fontSize: 12, opacity: 0.8, marginTop: 2 }}>
+                  Lãi bán thật = lãi gộp bán hàng/ngày + dịch vụ − lương − tiền nhà (không trừ tiền nhập kho).<br />
+                  {note}
+                </div>
+              </Callout>
+            );
+          })()}
           {(() => {
             const last = riskTrend.length ? riskLiveToday(riskTrend[riskTrend.length - 1]) : { leak: 0, blocked: 0, events: 0 };
             if (last.events <= 0) return null; // ngày yên ả (không rủi ro) thì không bày thẻ, tránh nhiễu
