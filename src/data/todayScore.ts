@@ -19,10 +19,23 @@ import { formatMoney } from './products';
 import { peakHours } from './advice';
 
 /** GĐ1226 — bề mặt "hôm nay bán được chưa": ba số cộng dồn trong ngày thành một dòng.
- *  Thuần đọc để HUD gắn vào chip; UI giữ nguyên không phán đoán. */
-export function todayLine(s: { customers: number; itemsSold: number; revenue: number }): string {
+ *  GĐ1230 — nếu có `byItem`/`services` (structural, KHÔNG import core để giữ data sạch) thì nối thêm
+ *  "lãi W" — đúng `daySalesProfit` (Σ thu−vốn theo món + lời dịch vụ): lãi bán THẬT hôm nay (Luật 10),
+ *  cộng dồn khi byItem slice cập nhật mỗi lượt bán. Thuần đọc để HUD gắn vào chip; UI giữ nguyên. */
+export function todayLine(s: {
+  customers: number;
+  itemsSold: number;
+  revenue: number;
+  byItem?: Record<string, { qty: number; revenue: number; cost: number }>;
+  services?: number;
+}): string {
   if (s.customers <= 0 && s.itemsSold <= 0 && s.revenue <= 0) return '';
-  return `hôm nay ${s.customers} khách · bán ${s.itemsSold} món · thu ${formatMoney(s.revenue)}`;
+  let out = `hôm nay ${s.customers} khách · bán ${s.itemsSold} món · thu ${formatMoney(s.revenue)}`;
+  if (s.byItem && s.itemsSold > 0) {
+    const profit = Object.values(s.byItem).reduce((n, l) => n + l.revenue - l.cost, 0) + (s.services ?? 0);
+    if (profit !== 0) out += ` · lãi ${formatMoney(profit)}`;
+  }
+  return out;
 }
 
 /** GĐ1227 — bề mặt "giờ cao điểm ĐẾN GIỜ trong hôm nay": `peakHours` đã tính giờ đông khách nhất

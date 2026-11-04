@@ -23,6 +23,31 @@ describe('todayLine — bề mặt "hôm nay bán được chưa?" (GĐ1226)', (
     const b = todayLine({ customers: 7, itemsSold: 4, revenue: 42000 });
     expect(a).toBe(b);
   });
+  it('GĐ1230: có byItem+services → nối thêm "lãi W" = Σ(thu−vốn) + dịch vụ (lãi bán thật, Luật 10)', () => {
+    const out = todayLine({
+      customers: 5, itemsSold: 3, revenue: 50000,
+      byItem: {
+        nuoc: { qty: 2, revenue: 12000, cost: 8000 },   // lãi 4000
+        mi: { qty: 1, revenue: 38000, cost: 20000 },    // lãi 18000
+      },
+      services: 3000,                                    // lãi dịch vụ 3000
+    });
+    expect(out).toContain('thu');
+    expect(out).toContain(`lãi ${formatMoney(25000)}`);  // 4000 + 18000 + 3000 = 25000
+  });
+  it('GĐ1230: có byItem nhưng chưa bán món nào (itemsSold 0) → không thêm phần lãi', () => {
+    const out = todayLine({ customers: 0, itemsSold: 0, revenue: 0, byItem: {} });
+    expect(out).toBe('');
+    const out2 = todayLine({ customers: 2, itemsSold: 0, revenue: 5000, byItem: {} });
+    expect(out2).not.toContain('lãi');
+  });
+  it('GĐ1230: lãi lỗ đúng dấu (bán lỗ vẫn báo âm, trung thực)', () => {
+    const out = todayLine({
+      customers: 3, itemsSold: 2, revenue: 9000,
+      byItem: { kem: { qty: 2, revenue: 9000, cost: 12000 } }, // lãi −3000
+    });
+    expect(out).toContain(`lãi ${formatMoney(-3000)}`);
+  });
 });
 
 describe('todayPeakLine — bề mặt "giờ cao điểm đến giờ" (GĐ1227)', () => {
