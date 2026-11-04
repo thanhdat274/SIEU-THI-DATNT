@@ -8,7 +8,7 @@ import { worldActions } from '../core/actions';
 import { saveGame, resetGame, readBackupSave, restoreBackup } from '../core/save';
 import { FEATURES, xpToNext } from '../data/levels';
 import { formatMoney, productById } from '../data/products';
-import { todayLine, todayMissedLine, todayPeakLine } from '../data/todayScore';
+import { todayLine, todayMissedLine, todayPeakLine, todayExpectCustomers } from '../data/todayScore';
 import { summarizeReviews } from '../data/reviews';
 import { AUTO_OPEN_PRESETS } from '../core/gameTypes';
 import { dayEffects, describeDate, festivalStock, upcomingFestival, weekdayOf } from '../data/calendar';
@@ -266,11 +266,11 @@ ${forecastText}`}>
             <small>Ngày {day} ({describeDate(day)}) · {weekdayOf(day)} · {spell ? describeRain(spell, weather) : WEATHER[weather].name}</small>
             {(() => {
               const s = useGame.getState().stats;
-              const live = todayLine(s);
+              const live = todayLine({ ...s, expectCustomers: todayExpectCustomers({ weather, tomorrow: forecast[0] ?? weather, level, day, seed: weatherSeed }) });
               const peak = todayPeakLine(s.byHour);
               const missed = todayMissedLine(s.missed);
               const parts = [live, missed, peak].filter(Boolean);
-              return parts.length ? <small title="Doanh thu / số món / số khách cộng dồn hôm nay — tổng kết đầy đủ ở Sổ tổng kết cuối ngày">{parts.join(' · ')}</small> : null;
+              return parts.length ? <small title="Doanh thu / số món / số khách cộng dồn hôm nay so với dự kiến — tổng kết đầy đủ ở Sổ tổng kết cuối ngày">{parts.join(' · ')}</small> : null;
             })()}
             <small className="hud-forecast">
               <span title={(() => {

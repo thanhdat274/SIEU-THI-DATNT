@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { formatMoney } from '../data/products';
-import { todayLine, todayMissedLine, todayPeakLine } from '../data/todayScore';
+import { todayLine, todayMissedLine, todayPeakLine, todayExpectCustomers } from '../data/todayScore';
+import { WEATHER } from '../data/weather';
+import { trafficForecast } from '../data/trafficForecast';
 
 describe('todayLine — bề mặt "hôm nay bán được chưa?" (GĐ1226)', () => {
   it('chưa có gì (mới mở cửa) → chuỗi rỗng (đừng ồn đầu ngày)', () => {
@@ -47,6 +49,22 @@ describe('todayLine — bề mặt "hôm nay bán được chưa?" (GĐ1226)', (
       byItem: { kem: { qty: 2, revenue: 9000, cost: 12000 } }, // lãi −3000
     });
     expect(out).toContain(`lãi ${formatMoney(-3000)}`);
+  });
+  it('GĐ1231: có expectCustomers → nối " (dự kiến ~N)" ngay sau số khách (đối chiếu on-track)', () => {
+    const out = todayLine({ customers: 12, itemsSold: 15, revenue: 45000, expectCustomers: 44 });
+    expect(out).toContain('12 khách (dự kiến ~44)');
+    expect(out).toContain('15 món');
+    expect(out).toContain('thu');
+  });
+  it('GĐ1231: không truyền expectCustomers → giữ nguyên dòng cũ (không thêm mốc, not ép)', () => {
+    const out = todayLine({ customers: 3, itemsSold: 2, revenue: 15000 });
+    expect(out).toContain('3 khách');
+    expect(out).not.toContain('dự kiến');
+  });
+  it('GĐ1231: expectCustomers 0 → không thêm mốc (đừng ồn "~0")', () => {
+    const out = todayLine({ customers: 2, itemsSold: 1, revenue: 8000, expectCustomers: 0 });
+    expect(out).toContain('2 khách');
+    expect(out).not.toContain('dự kiến');
   });
 });
 
@@ -106,5 +124,21 @@ describe('todayMissedLine — bề mặt "khách bỏ về hôm nay" giữa ngà
   it('helper thuần: cùng input ra cùng chuỗi', () => {
     const m = { wait: 2, stock: 1 };
     expect(todayMissedLine(m)).toBe(todayMissedLine(m));
+  });
+});
+
+describe('todayExpectCustomers — neo "dự kiến hôm nay" (GĐ1231)', () => {
+  it('đồng bộ trafficForecast.todayKhach (nắng, level 20 → ~110 khách)', () => {
+    const a = { weather: 'sunny' as const, tomorrow: 'sunny' as const, level: 20, day: 5, seed: 7 };
+    expect(todayExpectCustomers(a)).toBe(Math.round(trafficForecast(a).todayKhach));
+  });
+  it('giông bão → ít hơn nắng (cùng mốc level/ngày)', () => {
+    const sunny = todayExpectCustomers({ weather: 'sunny', tomorrow: 'sunny', level: 20, day: 5, seed: 7 });
+    const storm = todayExpectCustomers({ weather: 'storm', tomorrow: 'storm', level: 20, day: 5, seed: 7 });
+    expect(storm).toBeLessThan(sunny);
+  });
+  it('helper thuần: cùng input ra cùng số (không đổi theo state)', () => {
+    const a = { weather: 'rain' as const, tomorrow: 'cloudy' as const, level: 15, day: 10, seed: 3 };
+    expect(todayExpectCustomers(a)).toBe(todayExpectCustomers(a));
   });
 });

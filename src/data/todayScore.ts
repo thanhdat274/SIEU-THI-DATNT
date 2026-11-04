@@ -17,6 +17,8 @@
 
 import { formatMoney } from './products';
 import { peakHours } from './advice';
+import { trafficForecast } from './trafficForecast';
+import type { Weather } from './weather';
 
 /** GĐ1226 — bề mặt "hôm nay bán được chưa": ba số cộng dồn trong ngày thành một dòng.
  *  GĐ1230 — nếu có `byItem`/`services` (structural, KHÔNG import core để giữ data sạch) thì nối thêm
@@ -28,14 +30,32 @@ export function todayLine(s: {
   revenue: number;
   byItem?: Record<string, { qty: number; revenue: number; cost: number }>;
   services?: number;
+  expectCustomers?: number;
 }): string {
   if (s.customers <= 0 && s.itemsSold <= 0 && s.revenue <= 0) return '';
-  let out = `hôm nay ${s.customers} khách · bán ${s.itemsSold} món · thu ${formatMoney(s.revenue)}`;
+  const exp = s.expectCustomers && s.expectCustomers > 0 ? ` (dự kiến ~${s.expectCustomers})` : '';
+  let out = `hôm nay ${s.customers} khách${exp} · bán ${s.itemsSold} món · thu ${formatMoney(s.revenue)}`;
   if (s.byItem && s.itemsSold > 0) {
     const profit = Object.values(s.byItem).reduce((n, l) => n + l.revenue - l.cost, 0) + (s.services ?? 0);
     if (profit !== 0) out += ` · lãi ${formatMoney(profit)}`;
   }
   return out;
+}
+
+/** GĐ1231 — neo "dự kiến hôm nay" cho dòng live: số khách CHO ĐẾN GIỜ (cộng dồn) không tự nói lên
+ *  "đang ổn hay chậm" — người chơi cần mốc. Trả về số khách DỰ KIẾN cả ngày hôm nay theo đúng
+ *  nguồn forecast (Nguyên tắc a: quyết định hằng ngày phải có dữ liệu phản hồi; so HÀNH ĐỘNG với
+ *  DỰ BÁO, không hộp đen). Đồng bộ `trafficForecast(...).todayKhach` (deterministic theo weather/
+ *  ngày/cấp/seed — không RNG, không state mới → Luật 5 an toàn). Trả 0 khi dự kiến 0. */
+export function todayExpectCustomers(a: {
+  weather: Weather;
+  tomorrow: Weather;
+  level: number;
+  day: number;
+  seed: number;
+}): number {
+  const n = Math.round(trafficForecast(a).todayKhach);
+  return n > 0 ? n : 0;
 }
 
 /** GĐ1227 — bề mặt "giờ cao điểm ĐẾN GIỜ trong hôm nay": `peakHours` đã tính giờ đông khách nhất
