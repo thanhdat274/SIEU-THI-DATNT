@@ -71,6 +71,18 @@ export function leastScore<T>(items: readonly T[], scoreOf: (t: T) => number): T
   return items.reduce((a, b) => (scoreOf(b) < scoreOf(a) ? b : a));
 }
 
+/**
+ * GĐ1214 — Năng suất thanh toán của một quầy từ tối đa 2 nhân viên: trích từ `agents/staff.ts`
+ * (cashierSpeed) thành helper THUẦN, GIỮ NGUYÊN công thức (Luật 3 — hành vi y hệt). Công thức gốc:
+ * quầy chứa được 2 người — người giỏi nhất tính tiền (×1), người thứ hai phụ gói hàng (+50% tốc độ họ).
+ * `speedsDesc` phải được sắp giảm dần (bản gốc sort desc trước khi gọi); chỉ 2 người đầu được tính.
+ */
+export function counterThroughput(speedsDesc: readonly number[]): number {
+  const first = speedsDesc[0] ?? 0;
+  const second = speedsDesc[1] ?? 0;
+  return first + 0.5 * second;
+}
+
 export type State = 'walkBy' | 'toShop' | 'shopping' | 'toQueue' | 'queued' | 'leaving';
 
 const pick = <T,>(list: T[]) => list[Math.floor(simRng()() * list.length)];

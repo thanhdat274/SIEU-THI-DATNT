@@ -12,6 +12,7 @@ import { orderTotal, SUPPLIERS, supplierSells } from '../data/suppliers';
 import type { Counter, GroceryShop } from '../shop/groceryShop';
 import type { NavGrid } from '../world/navGrid';
 import { Walker, RIDE_SPEED } from './walker';
+import { counterThroughput } from './customerEntity';
 import { simRng } from '../core/rand';
 import { noteStaffTime } from '../core/slices/staffDay';
 
@@ -208,7 +209,8 @@ export class StaffManager {
         if (w.position.distanceTo(this.cashierSpot(ct, w.slot)) < 0.6) speeds.push(workSpeed(w.staff));
       }
       speeds.sort((a, b) => b - a);
-      best = Math.max(best, (speeds[0] ?? 0) + 0.5 * (speeds[1] ?? 0));
+      // GĐ1214 — gộp tối đa 2 người thành năng suất quầy qua helper THUẦN counterThroughput: hành vi GIỮ NGUYÊN.
+      best = Math.max(best, counterThroughput(speeds));
     }
     return best;
   }

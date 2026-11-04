@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   patienceMultiplier, CAT_PATIENCE_MUL, CAT_SOOTHE_PROFESSIONS,
-  counterQueueScore, leastScore, UNSTAFFED_COUNTER_PENALTY, MAIN_COUNTER_BIAS,
+  counterQueueScore, leastScore, UNSTAFFED_COUNTER_PENALTY, MAIN_COUNTER_BIAS, counterThroughput,
 } from '../agents/customerEntity';
 import { CARE_PATIENCE_PER_STAR } from '../data/staff';
 
@@ -93,5 +93,27 @@ describe('GĐ1213 — counterQueueScore + leastScore: khách chọn quầy thanh
   it('giữ hằng số: hình phạt không người = 3, ưu tiên quầy chính = −0.1', () => {
     expect(UNSTAFFED_COUNTER_PENALTY).toBe(3);
     expect(MAIN_COUNTER_BIAS).toBe(-0.1);
+  });
+});
+
+describe('GĐ1214 — counterThroughput: năng suất quầy từ tối đa 2 nhân viên (tách từ agents/staff.ts cashierSpeed) — THUẦN QUAN SÁT, giữ nguyên công thức (Luật 3)', () => {
+  it('không ai đứng → 0', () => {
+    expect(counterThroughput([])).toBe(0);
+  });
+
+  it('1 người → đúng tốc độ của họ', () => {
+    expect(counterThroughput([8])).toBe(8);
+  });
+
+  it('2 người: người giỏi tính tiền ×1, người thứ hai phụ gói +50% → 8 + 0.5×6 = 11', () => {
+    expect(counterThroughput([8, 6])).toBe(11);
+  });
+
+  it('người thứ ba trở đi không cộng (quầy chỉ chứa 2 người) → vẫn 8 + 0.5×6 = 11', () => {
+    expect(counterThroughput([8, 6, 5])).toBe(11);
+  });
+
+  it('2 người ngang tốc độ → ×1.5 (người thứ hai chỉ phụ gói)', () => {
+    expect(counterThroughput([7, 7])).toBe(10.5);
   });
 });
