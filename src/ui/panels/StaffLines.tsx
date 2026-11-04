@@ -32,6 +32,19 @@ export function NightStaffLine({ sv }: { sv?: import('../../data/nightStaffValue
   );
 }
 
+/** GĐ1181: dòng giá trị người giao (🛵) — doanh thu kênh ĐIỆN THOẠI họ mở + chở hôm nay so lương ngày.
+ *  Người giao không ghi doanh thu quầy (byHour chia đều sẽ ra âm lệch), nên thay StaffValueLine bằng dòng này:
+ *  thu nhập thật của họ = stats.phone (tiền + boa các đơn điện thoại đã giao). THUẦN đọc. */
+export function CourierValueLine({ sv }: { sv?: import('../../data/staffValue').StaffValue }) {
+  if (!sv || sv.verdict === 'nodata') return null;
+  const m = VERDICT_META[sv.verdict];
+  return (
+    <div style={{ fontSize: 12, marginTop: 2, color: m.color }} title="Giá trị người giao hôm nay = doanh thu đơn điện thoại (stats.phone) họ mở + chở, chia đều số người giao, so với lương ngày (thuần đọc)">
+      📞 Điện thoại hôm nay ~{formatMoney(sv.value)} · lương {formatMoney(sv.wage)} → <b>{sv.net >= 0 ? '+' : ''}{formatMoney(sv.net)}</b> · {m.label}
+    </div>
+  );
+}
+
 /** GĐ246: dòng % rảnh hôm nay của một nhân viên (dữ liệu transient agent đếm) — ẩn khi chưa vào ca hôm nay.
  *  Màu theo bậc: xanh dương = bận liền tay (cân nhắc thêm người), vàng = vừa sức, cam = rảnh nhiều nên xử lý. */
 export function StaffIdleLine({ row }: { row?: StaffIdleRow }) {

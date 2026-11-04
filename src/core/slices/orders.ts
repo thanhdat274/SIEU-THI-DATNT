@@ -210,7 +210,7 @@ export const createOrdersSlice = (set: SetState, get: GetState): Pick<GameState,
     const cooked = Object.entries(o.items).reduce((n, [id, q]) => n + (COOKED_PRODUCT_IDS.has(id) ? q : 0), 0);
     set({
       phoneOrders: s.phoneOrders.filter((p) => p !== o), phoneOrdersDone: s.phoneOrdersDone + 1, money: s.money + pay,
-      stats: { ...s.stats, revenue: s.stats.revenue + pay, itemsSold: s.stats.itemsSold + items, cookOrders: (s.stats.cookOrders ?? 0) + (o.premium ? 1 : 0) },
+      stats: { ...s.stats, revenue: s.stats.revenue + pay, phone: (s.stats.phone ?? 0) + pay, itemsSold: s.stats.itemsSold + items, cookOrders: (s.stats.cookOrders ?? 0) + (o.premium ? 1 : 0) },
       totals: {
         ...s.totals, revenue: s.totals.revenue + pay, itemsSold: s.totals.itemsSold + items,
         cookedSold: s.totals.cookedSold + cooked,

@@ -119,3 +119,25 @@ export function staffShiftSummary(
   });
   return out;
 }
+
+/**
+ * GĐ1181 — giá trị THẬT của người giao (🛵 courier): họ KHÔNG ghi doanh thu quầy (stats.byHour chia đều cho
+ * toàn ca sẽ ra phần lệch âm vô nghĩa) — thu nhập thật của họ là KÊNH ĐIỆN THOẠI mà họ mở + tự chở:
+ * `stats.phone` = tổng tiền + boa các đơn điện thoại đã giao hôm nay. So với lương ngày để biết người giao
+ * có đáng giữ. THUẦN đọc: chỉ đọc stats.phone + dailyWage; không đổi kinh tế/save/seed.
+ */
+export function courierPhoneValue(
+  stats: { phone?: number },
+  staff: Staff[],
+): StaffValue[] {
+  const couriers = staff.filter((st) => st.role === 'courier');
+  const phone = stats.phone ?? 0;
+  return couriers.map((st) => {
+    const wage = dailyWage(st);
+    const value = couriers.length ? Math.round(phone / couriers.length) : 0;
+    const net = value - wage;
+    const ratio = wage > 0 ? value / wage : 0;
+    const verdict: StaffVerdict = !couriers.length ? 'nodata' : ratio >= 1 ? 'ok' : ratio >= 0.5 ? 'warn' : 'low';
+    return { id: st.id, role: st.role, shift: st.shift, wage, value, net, ratio, verdict };
+  });
+}

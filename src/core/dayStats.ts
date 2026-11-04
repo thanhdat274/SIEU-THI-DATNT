@@ -46,6 +46,8 @@ export interface DayStats {
   /** Bán online hôm nay: tiền về (sau hoa hồng) và phí Grab. */
   online?: number;
   grabFees?: number;
+  /** Doanh thu đơn ĐIỆN THOẠI hôm nay (tiền + boa đã thu) — nhờ có 🛵 người giao mới mở kênh này (GĐ1181). */
+  phone?: number;
   /** Số đơn app giao tới tay khách hôm nay (đo nhiệm vụ ngày). */
   onlineDone?: number;
   /** Số nông sản thu hoạch được hôm nay (đo nhiệm vụ ngày). */

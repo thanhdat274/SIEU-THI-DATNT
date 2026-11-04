@@ -6,7 +6,7 @@ import { dailyWage, maxStaff, ROLES, SHIFTS, type Shift, type Staff } from '../.
 import { formatMoney, fmtMul } from '../../data/products';
 import { hasUpgrade } from '../../data/upgrades';
 import { branchStaffWish } from '../../data/branches';
-import { BranchShiftStrip, BranchValueLine, NightStaffLine, NightStrip, ShiftValueStrip, StaffIdleLine, StaffValueLine } from './StaffLines';
+import { BranchShiftStrip, BranchValueLine, NightStaffLine, NightStrip, ShiftValueStrip, StaffIdleLine, StaffValueLine, CourierValueLine } from './StaffLines';
 import { Footer, Callout, styles, Tabs } from './shared';
 import { wageCoverage } from '../../data/wageCoverage';
 import { expToNext, shownTrait, trainCost, TRAITS } from '../../data/staffTraits';
@@ -14,7 +14,7 @@ import { payrollRunway } from '../../data/payrollRunway';
 import { trainValue } from '../../data/trainValue';
 import { staffEff } from '../../data/staffEff';
 import { serveCoverage, SERVE_TOP_HOURS } from '../../data/serveCoverage';
-import { staffValueToday, staffShiftSummary } from '../../data/staffValue';
+import { staffValueToday, staffShiftSummary, courierPhoneValue } from '../../data/staffValue';
 import { staffIdleStats, type StaffIdleRow } from '../../data/staffIdle';
 import { staffDaySnapshot } from '../../core/slices/staffDay';
 import { branchShiftSummary, branchStaffValueToday } from '../../data/branchStaffValue';
@@ -33,6 +33,8 @@ export function StaffPanel() {
   const total = [...staff, ...bStaff].reduce((sum, st) => sum + dailyWage(st), 0);
   // GĐ141: giá trị hôm nay của từng nhân viên ca ngày tiệm chính so với lương (thuần đọc stats.byHour)
   const staffValues = staffValueToday(stats?.byHour, staff);
+  // GĐ1181: người giao (🛵) không ghi doanh thu quầy — giá trị thật của họ là kênh điện thoại họ mở + chở (stats.phone)
+  const courierValues = courierPhoneValue(stats ?? {}, staff);
   const shiftSum = staffShiftSummary(stats?.byHour, staff);
   // GĐ144: giá trị hôm nay của từng nhân viên CA ĐÊM tiệm chính so với lương (thuần đọc stats.byHour giờ ≥22)
   const nightValues = nightStaffValueToday(stats?.byHour, staff, skills);
@@ -124,6 +126,8 @@ export function StaffPanel() {
               <StaffInfo st={st} right={<span style={staffSt.wage}>{formatMoney(dailyWage(st))}<small>/ngày</small></span>} />
               {st.shift === 'night' ? (
                 <NightStaffLine sv={nightValues.find((v) => v.id === st.id)} />
+              ) : st.role === 'courier' ? (
+                <CourierValueLine sv={courierValues.find((v) => v.id === st.id)} />
               ) : (
                 <StaffValueLine sv={staffValues.find((v) => v.id === st.id)} />
               )}
