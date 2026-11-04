@@ -1,12 +1,18 @@
 import { useGame } from '../../core/store';
 import { ALL_TITLES, PRESTIGE_TITLES, SKILLS, skillPoints, TITLES } from '../../data/titles';
+import { counterfeitRisk, COINFAKE_UNLOCK, COINFAKE_LEAK_HIGH, COINFAKE_LEAK_MODERATE } from '../../data/counterfeitRisk';
+import { formatMoney } from '../../data/products';
 import { Footer, styles } from './shared';
 
 /** Danh hiệu đã đạt và cây kỹ năng chủ tiệm. */
 export function SkillsPanel() {
-  const { level, skills, titles, learnSkill, closePanel, biz } = useGame();
+  const { level, skills, titles, learnSkill, closePanel, biz, stats, fakeCash } = useGame();
   const left = skillPoints(level) - skills.length;
   const prestige = biz.prestige.level;
+  const hasSharpEye = skills.includes('sharp_eye');
+  const counterRisk = level >= COINFAKE_UNLOCK
+    ? counterfeitRisk({ level, customers: stats.customers, revenue: stats.revenue, hasSharpEye, fakeCash })
+    : null;
   return (
     <>
       <h2 style={styles.title}>🏅 Danh hiệu & kỹ năng</h2>
@@ -21,6 +27,13 @@ export function SkillsPanel() {
               <div style={{ flex: 1 }}>
                 <b>{k.name}</b>
                 <div style={{ fontSize: 12, opacity: 0.8 }}>{k.description}</div>
+                {counterRisk && k.id === 'sharp_eye' && (
+                  <div style={{ fontSize: 11, marginTop: 2, color: counterRisk.hasSharpEye ? '#2ecc71' : counterRisk.leakPerDay >= COINFAKE_LEAK_MODERATE ? '#e67e22' : '#999' }}>
+                    {counterRisk.hasSharpEye
+                      ? `Đã học: tiền giả lọt còn ~${formatMoney(counterRisk.leakPerDay)}/ngày${counterRisk.fakeCashToday > 0 ? ` · két hôm nay đang giữ ${formatMoney(counterRisk.fakeCashToday)} chưa thu hồi` : ''}`
+                      : `Tiền giả rò ~${formatMoney(counterRisk.leakPerDay)}/ngày — học chặn thêm ~${formatMoney(counterRisk.sharpEyeSavesPerDay)}/ngày`}
+                  </div>
+                )}
               </div>
               {learned ? <span style={{ color: '#2ecc71' }}>✔ Đã học</span> : level < k.unlock ? <span style={{ opacity: 0.7 }}>🔒 Cấp {k.unlock}</span> : (
                 <button style={styles.btn} disabled={!can} onClick={() => learnSkill(k.id)}>Học</button>
