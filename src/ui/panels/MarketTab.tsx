@@ -1,7 +1,7 @@
 import { useGame } from '../../core/store';
 import { buyAd, buyRivalShop, setLoyalty, startCounter } from '../../core/biz';
 import { Callout } from './shared';
-import { activeAds, ADS, adRoi, COUNTERS, LOYALTY_OPTIONS, LOYALTY_UNLOCK, loyaltyPayoff, RIVAL_PERSONALITIES, RIVAL_UNLOCK, rivalLeverFlags, rivalMomentum, rivalTier } from '../../data/biz';
+import { activeAds, ADS, adRoi, COUNTERS, LOYALTY_OPTIONS, LOYALTY_UNLOCK, loyaltyPayoff, RIVAL_PERSONALITIES, RIVAL_UNLOCK, rivalLeverFlags, rivalMomentum, rivalTier, staffAtRiskOfPoach, STAFF_POACH_STRENGTH } from '../../data/biz';
 import { promoEffect } from '../../data/analytics';
 import { summarizeReviews } from '../../data/reviews';
 import { REGULAR_NAMES } from '../../core/biz';
@@ -13,8 +13,11 @@ import { card, title, pill, iconTile, btn, sub, row } from './businessStyles';
 
 /** Tab Cạnh tranh: đối thủ, quảng cáo, tích điểm (tách từ BusinessPanel, GĐ876). */
 export function Market() {
-  const { biz, day, level, money, branch, stats, prices, reviews, analytics, history } = useGame();
+  const { biz, day, level, money, branch, stats, prices, reviews, analytics, history, staff } = useGame();
   const r = biz.rival;
+  // GĐ1186: nhân viên giỏi nhất đang bị rival máu liều để mắt (giống cảnh báo trong StaffPanel — hiện cả ở màn chống rival).
+  const staffRiskId = staffAtRiskOfPoach(r, staff);
+  const staffRisk = staffRiskId === undefined ? undefined : staff.find((s) => s.id === staffRiskId);
   // GĐ159: mốc quy đòn phản công ra tiền — bình quân doanh thu TIỆM CHÍNH 7 ngày (DayRecord.revenue),
   // đúng luồng khách mà rivalTrafficFactor tác động; chưa có ngày nào thì đòn chỉ hiện %, không hiện tiền.
   const avgRev7 = recentAvgRevenue(history);
@@ -100,6 +103,11 @@ export function Market() {
                 <div style={{ ...sub, marginTop: 4 }}>
                   Tính cách: {RIVAL_PERSONALITIES[r.personality].icon} <b>{RIVAL_PERSONALITIES[r.personality].name}</b> — {RIVAL_PERSONALITIES[r.personality].desc}.
                   {' '}Khách quen bị lôi kéo: {Object.keys(r.poached ?? {}).length ? Object.keys(r.poached!).map((id) => `${REGULAR_NAMES[id] ?? id} (từ ngày ${r.poached![id]})`).join(', ') + ' — đòi lại ở bảng Khách quen' : 'chưa có'}.
+                </div>
+              )}
+              {staffRisk && (
+                <div style={{ ...sub, marginTop: 4, color: '#e74c3c' }} title={`${r.name} máu liều, sức ${r.strength} — móc người giỏi nhất về đêm. Hạ sức mạnh rival dưới ${STAFF_POACH_STRENGTH} để giữ.`}>
+                  ⚠️ Nhân viên giỏi nhất <b>{staffRisk.name}</b> đang bị {r.name} để mắt — mở bảng <b>Nhân viên</b> để giữ, hạ sức mạnh rival dưới {STAFF_POACH_STRENGTH}.
                 </div>
               )}
               {!!Object.keys(r.prices ?? {}).length && (
