@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useGame, formatClock } from '../../core/store';
 import { productById } from '../../data/products';
-import { productSummary, REASON_LABEL, summarizeReviews, type Review } from '../../data/reviews';
+import { productSummary, REASON_LABEL, summarizeReviews, starRuleText, type Review } from '../../data/reviews';
 import { stars, starColor, Footer, styles, Tabs } from './shared';
 import { ReputationCard } from './HistoryPanel';
 
@@ -44,6 +44,7 @@ export function ReviewsPanel() {
               {sum.topReason && (
                 <span style={{ opacity: 0.75 }}>Bị chê nhiều nhất: {REASON_LABEL[sum.topReason.reason]} ({sum.topReason.count} lần)</span>
               )}
+              <span style={{ opacity: 0.6, marginTop: 2, fontSize: 11 }}>{starRuleText()}</span>
             </div>
           </div>
           {/* Theo từng món: món nào đang bị chê thì nhập/bày/điều giá liền, món được khen thì giữ chất lượng */}
