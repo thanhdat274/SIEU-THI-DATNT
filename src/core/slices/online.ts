@@ -31,6 +31,9 @@ export const updateOnline = (set: SetState, get: GetState) => {
   let doneCount = 0; // số đơn app tới tay khách tick này (đo nhiệm vụ ngày)
   const deliveredKeys: string[] = []; // món đã giao (cho Sổ tay Tiệm GĐ36)
   const regularsNext: Record<string, ReturnType<typeof regularFriendship>['progress']> = {}; // thân thiết khách quen đổi vì đơn app (GĐ718)
+  // GĐ1182: đơn app bị mất tick này (app tự huỷ / mới có thể cho bỏ lỡ) — đếm đơn + tiền (sau hoa hồng) lẽ ra thu
+  let missedCount = 0;
+  let missedMoney = 0;
   // Đơn mới: chỉ khi gian hàng mở, tiệm mở cửa và trong giờ app; hôm nay app khuyến mãi thì đơn dày hơn
   if (on.open && s.shopOpen && m >= ONLINE_HOURS[0] && m < ONLINE_HOURS[1] && m >= on.nextAt) {
     // chỉ rút rng cho khách quen khi CÓ ứng viên — không có thì dòng mô phỏng giữ nguyên từng nhịp
@@ -46,6 +49,8 @@ export const updateOnline = (set: SetState, get: GetState) => {
     if (o.status === 'new' && m > o.placedAt + ACCEPT_WINDOW) {
       // Tiệm không nhận kịp: app tự huỷ và trừ nhẹ điểm
       online = { ...online, ratingSum: online.ratingSum + 4, ratingCount: online.ratingCount + 1 };
+      missedCount++;
+      missedMoney += appPay(onlineValue(o, s.priceOf), online.done); // tiền (sau hoa hồng) đáng lẽ thu
       news.push(`⌛ App huỷ đơn của ${o.customer} vì tiệm không nhận kịp`);
       continue;
     }
@@ -79,7 +84,7 @@ export const updateOnline = (set: SetState, get: GetState) => {
   set({
     online, money: s.money + money,
     regulars: Object.keys(regularsNext).length ? { ...s.regulars, ...regularsNext } : s.regulars,
-    stats: { ...s.stats, revenue: s.stats.revenue + money, itemsSold: s.stats.itemsSold + items, online: (s.stats.online ?? 0) + money, onlineDone: (s.stats.onlineDone ?? 0) + doneCount },
+    stats: { ...s.stats, revenue: s.stats.revenue + money, itemsSold: s.stats.itemsSold + items, online: (s.stats.online ?? 0) + money, onlineDone: (s.stats.onlineDone ?? 0) + doneCount, onlineMissed: (s.stats.onlineMissed ?? 0) + missedMoney, onlineMissedCount: (s.stats.onlineMissedCount ?? 0) + missedCount },
     totals: { ...s.totals, revenue: s.totals.revenue + money, itemsSold: s.totals.itemsSold + items },
   });
   if (money) get().addXp(Math.round(money / 20000));
@@ -157,7 +162,9 @@ export const createOnlineSlice = (set: SetState, get: GetState): Pick<GameState,
     const o = s.online.orders.find((it) => it.id === id && it.status === 'new');
     if (!o) return;
     // Từ chối chủ động đỡ hơn để app tự huỷ, nhưng vẫn trừ chút điểm
-    set({ online: { ...s.online, orders: s.online.orders.filter((it) => it !== o), ratingSum: s.online.ratingSum + 4.5, ratingCount: s.online.ratingCount + 1 } });
+    const lost = appPay(onlineValue(o, s.priceOf), s.online.done); // GĐ1182: ghi nhận tiền bỏ lỡ khi từ chối
+    set({ online: { ...s.online, orders: s.online.orders.filter((it) => it !== o), ratingSum: s.online.ratingSum + 4.5, ratingCount: s.online.ratingCount + 1 },
+      stats: { ...s.stats, onlineMissed: (s.stats.onlineMissed ?? 0) + lost, onlineMissedCount: (s.stats.onlineMissedCount ?? 0) + 1 } });
   },
 });
 

@@ -46,6 +46,10 @@ export interface DayStats {
   /** Bán online hôm nay: tiền về (sau hoa hồng) và phí Grab. */
   online?: number;
   grabFees?: number;
+  /** Đơn app bị mất hôm nay: số đơn bị app tự huỷ (không nhận kịp) hoặc chủ từ chối, và tiền (sau hoa
+   *  hồng) đáng lẽ thu được. GĐ1182 — soi lỗ bỏ lỡ kênh online. */
+  onlineMissedCount?: number;
+  onlineMissed?: number;
   /** Doanh thu đơn ĐIỆN THOẠI hôm nay (tiền + boa đã thu) — nhờ có 🛵 người giao mới mở kênh này (GĐ1181). */
   phone?: number;
   /** Số đơn app giao tới tay khách hôm nay (đo nhiệm vụ ngày). */

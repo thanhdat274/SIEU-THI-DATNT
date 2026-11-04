@@ -9,7 +9,7 @@ import { onlineRatingValue, RATING_FLOOR, RATING_TARGET } from '../../data/onlin
 import { Footer, styles, Callout } from './shared';
 
 export function OnlinePanel() {
-  const { online, level, money, staff, storage, priceOf, openOnline, toggleOnline, acceptOnline, declineOnline, closePanel } = useGame();
+  const { online, level, money, staff, storage, priceOf, openOnline, toggleOnline, acceptOnline, declineOnline, closePanel, stats } = useGame();
   const minutes = useClock((c) => Math.floor(c.minutes));
   const registered = online.open || online.done > 0 || online.ratingCount > 0;
   const couriers = staff.filter((st) => st.role === 'courier').sort((a, b) => b.skill - a.skill);
@@ -39,6 +39,11 @@ export function OnlinePanel() {
             <div style={{ ...styles.card, display: 'block' }}><small style={{ opacity: 0.7 }}>📦 Đã giao</small><div><b>{online.done}</b> <small>trễ {online.late}</small></div></div>
             <div style={{ ...styles.card, display: 'block' }}><small style={{ opacity: 0.7 }}>💵 Hôm nay</small><div><b>{formatMoney(online.revenueToday)}</b></div>{!!online.grabFeesToday && <small>Grab -{formatMoney(online.grabFeesToday)}</small>}</div>
           </div>
+          {(stats.onlineMissedCount ?? 0) > 0 && (
+            <div style={{ ...styles.card, display: 'block', marginBottom: 10, fontSize: 12, color: '#e67e22' }}>
+              🕳️ Hôm nay đã bỏ lỡ <b>{stats.onlineMissedCount}</b> đơn app (≈ {formatMoney(stats.onlineMissed ?? 0)}) vì không nhận kịp / từ chối — mở nhận hoặc xếp người giao để không mất đơn.
+            </div>
+          )}
           {(() => {
             const on = onlineNet(online);
             if (on.revenue <= 0) return null;

@@ -130,3 +130,31 @@ describe('online: huỷ/toggle/nhận đơn (GĐ699)', () => {
     expect(g().online.orders).toHaveLength(1);
   });
 });
+
+describe('GĐ1182 — đơn app bỏ lỡ (tally onlineMissed / onlineMissedCount)', () => {
+  beforeEach(() => useGame.setState({ ...newGameData(), level: 10, money: 5_000_000, notify: () => {} }));
+
+  it('từ chối đơn: bỏ đơn khỏi danh sách, onlineMissedCount +1, onlineMissed = tiền sau hoa hồng', () => {
+    const order = { id: 7, customer: 'Cô Lan', km: 1, items: { nuoc: 2 }, placedAt: 600, dueAt: 700, status: 'new' as const };
+    useGame.setState({ minutes: 610, online: { ...g().online, open: true, orders: [order] } });
+    const pre = g().stats;
+    g().declineOnline(7);
+    const st = g();
+    expect(st.online.orders).toHaveLength(0);
+    expect(st.stats.onlineMissedCount).toBe((pre.onlineMissedCount ?? 0) + 1);
+    expect(st.stats.onlineMissed).toBeGreaterThan(0);
+  });
+
+  it('app tự huỷ đơn quá ACCEPT_WINDOW: tally qua updateOnline', () => {
+    const order = { id: 8, customer: 'Bà Tư', km: 1, items: { mi: 4 }, placedAt: 600, dueAt: 700, status: 'new' as const };
+    useGame.setState({
+      minutes: 600 + ACCEPT_WINDOW + 5,
+      online: { ...g().online, open: true, orders: [order], nextAt: 9999 },
+    });
+    updateOnline(useGame.setState, useGame.getState);
+    const st = g();
+    expect(st.online.orders).toHaveLength(0);
+    expect(st.stats.onlineMissedCount).toBe(1);
+    expect(st.stats.onlineMissed).toBeGreaterThan(0);
+  });
+});
