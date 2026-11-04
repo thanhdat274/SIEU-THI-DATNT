@@ -58,7 +58,6 @@ export function PlanogramPanel() {
 
   // Cache unlocked products và allowed per type — chỉ tính 1 lần mỗi level thay đổi
   const level = useGame((s) => s.level);
-  const minutes = useClock((s) => s.minutes);
   const unlocked = useMemo(() => unlockedProducts(level), [level]);
   const typeProducts = useMemo(() => {
     const map = new Map<string, import('../data/products').Product[]>();
@@ -125,8 +124,11 @@ export function PlanogramPanel() {
   // cho biết giờ vàng KẾ TIẾP khách thèm MÓN nào để bày sẵn đúng đồ cần trước giờ đông — không phải chờ bán
   // mới biết như 🔥. Đọc nhịp giờ cố định (nextGoldenPrep, rhythm.ts) + trạng thái kho/kệ: mỗi món thèm
   // cho biết kho còn / bày được chưa, kèm nút "📥 Bày/châm món này" khi kho còn. THUẦN QUAN SÁT (Luật 5 an toàn).
+  // GĐ1241: đọc `useClock.getState().minutes` KHÔNG subscribe — thẻ chỉ cần bám NHỊP GIỜ (đổi vài lần/ngày
+  // ở biên khung), không cần re-render cả lưới kệ mỗi phút đồng hồ chạy khi modal mở (Luật 8; tự làm mới
+  // khi panel re-render do đổi kệ/kho). Đồng nhất cách OrderPanel GĐ1240 / HUD GĐ1234.
   const golden = useMemo(() => {
-    const prep = nextGoldenPrep(level, minutes);
+    const prep = nextGoldenPrep(level, useClock.getState().minutes);
     if (!prep || prep.items.length === 0) return null;
     const rows = prep.items.map((id) => {
       let onShelves = 0, capacity = 0;
@@ -147,7 +149,9 @@ export function PlanogramPanel() {
       return { id, status, canStock: (storage[id] ?? 0) > 0 && onShelves < capacity };
     });
     return { ...prep, rows };
-  }, [level, minutes, fixtures, storage]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [level, fixtures, storage]);
+
 
   // Số liệu cả kệ — tính lại CHỈ khi kệ/kho/món đổi, không mỗi lần gõ ô tìm/lọc (GĐ1236)
   const stats = useMemo(() => {
