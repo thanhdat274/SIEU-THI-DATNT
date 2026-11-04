@@ -82,14 +82,25 @@ export function todayExpectSoFar(a: {
 export function todayTopSeller(
   byItem: Record<string, { qty: number; revenue: number; cost: number }> | undefined,
 ): string {
-  if (!byItem) return '';
+  const top = topSellerCandidate(byItem);
+  if (!top) return '';
+  return `món chạy nhất: ${productById(top.id)?.name ?? top.id} (${top.qty})`;
+}
+
+/** GĐ1238 — lõi thuần đã guarded của "món chạy nhất": trả {id, qty} khi có người dẫn RÕ (≥3 và gấp ≥2
+ *  món nhì), còn lại null. `todayTopSeller` dùng nó để ghép chuỗi; Sơ đồ kệ dùng để dựng thẻ 🔥 hành động
+ *  (biết MÓN nào để châm kệ), không lặp lại ngưỡng. */
+export function topSellerCandidate(
+  byItem: Record<string, { qty: number; revenue: number; cost: number }> | undefined,
+): { id: string; qty: number } | null {
+  if (!byItem) return null;
   const entries = Object.entries(byItem).filter(([, l]) => l.qty > 0);
-  if (entries.length === 0) return '';
+  if (entries.length === 0) return null;
   entries.sort((a, b) => b[1].qty - a[1].qty);
   const top = entries[0];
   const second = entries[1]?.[1]?.qty ?? 0;
-  if (top[1].qty < 3 || top[1].qty < 2 * second) return '';
-  return `món chạy nhất: ${productById(top[0])?.name ?? top[0]} (${top[1].qty})`;
+  if (top[1].qty < 3 || top[1].qty < 2 * second) return null;
+  return { id: top[0], qty: top[1].qty };
 }
 
 /** GĐ1227 — bề mặt "giờ cao điểm ĐẾN GIỜ trong hôm nay": `peakHours` đã tính giờ đông khách nhất

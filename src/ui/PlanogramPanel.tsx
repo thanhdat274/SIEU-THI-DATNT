@@ -4,6 +4,7 @@ import { useGame, type Furniture } from '../core/store';
 import { furnitureDef, type FurnitureType } from '../data/furniture';
 import { fitLots, nearestLife, tierMarkdown } from '../data/freshness';
 import { describeUnits, productById, unlockedProducts } from '../data/products';
+import { topSellerCandidate } from '../data/todayScore';
 import { allowedForType, pickForShelf } from '../data/planogram';
 import { Footer } from './panels/shared';
 
@@ -91,6 +92,33 @@ export function PlanogramPanel() {
     return t.productId ? (storage[t.productId] ?? 0) > 0 : !!pickForShelf(f, storage, allowed(f, typeProducts), hotIds);
   };
 
+  // GĐ1238 — thẻ 🔥 "Món chạy nhất hôm nay" ngay đầu Sơ đồ kệ: cho biết món nào đang chạy, còn kho,
+  // bày được chưa, kèm nút châm đúng món đó (biến auto-fill GĐ1237 thành quyết định SÁNG của người chơi — Nguyên tắc a).
+  const top = useMemo(() => (byItem ? topSellerCandidate(byItem) : null), [byItem]);
+  const topStatus = useMemo(() => {
+    if (!top) return null;
+    const id = top.id;
+    let onShelves = 0, capacity = 0, canStock = false;
+    for (const f of fixtures) {
+      const cap = furnitureDef(f.type).capacity;
+      for (const t of f.tiers) {
+        if (t.productId === id) { capacity += cap; onShelves += t.count; }
+        if ((!t.productId || t.productId === id) && t.count < cap && (storage[id] ?? 0) > 0) canStock = true;
+      }
+    }
+    return { onShelves, capacity, canStock };
+  }, [top, fixtures, storage]);
+  const topKho = top ? storage[top.id] ?? 0 : 0;
+  const stockThis = (id: string) => {
+    for (const f of fixtures) {
+      const cap = furnitureDef(f.type).capacity;
+      for (let i = 0; i < f.tiers.length; i++) {
+        const t = f.tiers[i];
+        if ((!t.productId || t.productId === id) && t.count < cap && (storage[id] ?? 0) > 0) stockTier(f.uid, i, id);
+      }
+    }
+  };
+
   // Số liệu cả kệ — tính lại CHỈ khi kệ/kho/món đổi, không mỗi lần gõ ô tìm/lọc (GĐ1236)
   const stats = useMemo(() => {
     const all = fixtures.flatMap((f) => f.tiers.map((t, i) => ({ f, t, i })));
@@ -167,6 +195,31 @@ export function PlanogramPanel() {
           <button style={st.btn} onClick={() => openPanel({ type: 'order' })}>📦 Nhập hàng</button>
         </span>
       </div>
+
+      {top && (() => {
+        const name = productById(top.id)?.name ?? top.id;
+        const status = topKho === 0
+          ? 'kho hết món này — vào Nhập hàng để bổ sung'
+          : topStatus && topStatus.onShelves === 0
+            ? `bán chạy mà chưa bày trên kệ nào (kho còn ${describeUnits(top.id, topKho)})`
+            : topStatus && topStatus.onShelves >= topStatus.capacity
+              ? 'đã bày đủ trên kệ'
+              : `đã bày ${topStatus?.onShelves ?? 0}/${topStatus?.capacity ?? 0} trên kệ — châm thêm khi sắp hết`;
+        return (
+          <div style={st.hotBox}>
+            <b style={{ fontSize: 12 }}>🔥 Chạy nhất hôm nay: {name} — bán {top.qty} món</b>
+            <div style={{ fontSize: 12, opacity: 0.85, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              <span>{status}.</span>
+              {topKho > 0 && topStatus?.canStock && (
+                <button style={{ ...st.btn, background: '#3498db', color: '#fff' }} onClick={() => stockThis(top.id)}
+                  title={`Đặt/châm ${name} vào mọi ô trống hoặc ô đang chứa nó (chỉ khi kho còn)`}>
+                  📥 Bày/châm món này
+                </button>
+              )}
+            </div>
+          </div>
+        );
+      })()}
 
       {heatRows.length > 0 && (
         <div style={st.heatBox}>
@@ -282,6 +335,7 @@ const Stat = ({ label, value, warn }: { label: string; value: number; warn?: boo
 const st: Record<string, React.CSSProperties> = {
   sub: { margin: '0 0 10px', opacity: 0.75, fontSize: 13 },
   heatBox: { margin: '10px 0 0', padding: '6px 10px', background: '#33334a', borderRadius: 8, display: 'grid', gap: 2 },
+  hotBox: { margin: '10px 0 0', padding: '6px 10px', background: '#46321e', borderRadius: 8, display: 'grid', gap: 2 },
   stats: { display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
   stat: { display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '4px 12px', background: '#3a3a4d', borderRadius: 8, minWidth: 64 },
   btn: { border: 'none', borderRadius: 6, padding: '6px 10px', cursor: 'pointer', fontSize: 13 },

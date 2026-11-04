@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { formatMoney } from '../data/products';
-import { todayLine, todayMissedLine, todayPeakLine, todayExpectSoFar, todayTopSeller } from '../data/todayScore';
+import { todayLine, todayMissedLine, todayPeakLine, todayExpectSoFar, todayTopSeller, topSellerCandidate } from '../data/todayScore';
 import { WEATHER } from '../data/weather';
 import { trafficForecast } from '../data/trafficForecast';
 
@@ -153,6 +153,27 @@ describe('todayExpectSoFar — mốc "dự kiến ĐẾN GIỜ" (GĐ1233, sửa 
   it('helper thuần: cùng input ra cùng số (không đổi theo state)', () => {
     const a = { weather: 'rain' as const, tomorrow: 'cloudy' as const, level: 15, day: 10, seed: 3, minutes: 500 };
     expect(todayExpectSoFar(a)).toBe(todayExpectSoFar(a));
+  });
+});
+
+describe('topSellerCandidate — lõi guarded của "món chạy nhất" (GĐ1238, dùng chung Sơ đồ kệ)', () => {
+  it('rỗng/không bán gì → null', () => {
+    expect(topSellerCandidate(undefined)).toBeNull();
+    expect(topSellerCandidate({})).toBeNull();
+  });
+  it('người dẫn RÕ → trả id + qty', () => {
+    expect(topSellerCandidate({ nuoc: { qty: 8, revenue: 24000, cost: 12000 }, mi: { qty: 3, revenue: 9000, cost: 6000 } }))
+      .toEqual({ id: 'nuoc', qty: 8 });
+  });
+  it('chưa rõ ai dẫn (<2× món nhì) → null (không nhiễu)', () => {
+    expect(topSellerCandidate({ nuoc: { qty: 4, revenue: 12000, cost: 6000 }, mi: { qty: 3, revenue: 9000, cost: 6000 } })).toBeNull();
+  });
+  it('bán ít <3 → null', () => {
+    expect(topSellerCandidate({ nuoc: { qty: 2, revenue: 6000, cost: 3000 } })).toBeNull();
+  });
+  it('thuần: cùng input cùng kết quả', () => {
+    const b = { nuoc: { qty: 7, revenue: 21000, cost: 10000 }, mi: { qty: 3, revenue: 9000, cost: 6000 } };
+    expect(topSellerCandidate(b)).toEqual(topSellerCandidate(b));
   });
 });
 
