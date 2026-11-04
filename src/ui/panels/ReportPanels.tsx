@@ -48,6 +48,9 @@ import { seasonEvent, seasonObjective, seasonEventName, SEASON_EVENT_DAYS, SEASO
 import { planDay, type DayAction } from '../../data/dayPlan';
 import { demandForecast } from '../../data/counterDemand';
 import { hasSkill } from '../../data/titles';
+import { hasUpgrade } from '../../data/upgrades';
+import { petActive } from '../../data/bizAchievements';
+import { theftToday } from '../../data/theftRisk';
 import { cleanBonus, CLEAN_TIERS, nextCleanTier } from '../../data/cleanOps';
 import { monthOf } from '../../data/calendar';
 import { trending } from '../../data/suppliers';
@@ -358,6 +361,25 @@ export function SummaryPanel({ day }: { day: number }) {
                 <div style={{ fontSize: 12, opacity: 0.75, marginTop: 2 }}>
                   Lọt: trộm khuất · tiền giả lọt · nhân viên gian lận · Chặn: bắt quả tang (phạt) · phát hiện tiền giả · thu lại khi bắt
                 </div>
+                {(() => {
+                  // GĐ1215: mở "hộp đen" trộm vặt — thấy P(1 khách là kẻ trộm) × P(bắt) theo phòng thủ
+                  // hiện tại (chỉ số THUẦN từ theftToday — nối GĐ1211/1212). Đọc cờ có sẵn; ban ngày,
+                  // đêm chạy ca thì trộm ×2 (quy ước chú thích "trộm đêm ×2" cùng nightReport).
+                  const tt = theftToday({
+                    hasDog: petActive(biz.pets.dog, nowDay - 1),
+                    hasCamera: hasUpgrade(biz, 'camera'),
+                    guardOnDuty: staff.some((e) => e.role === 'guard'),
+                    cashierStaffed: staff.some((e) => e.role === 'cashier'),
+                    hasSharpEye: hasSkill(skills, 'sharp_eye'),
+                  });
+                  return (
+                    <div style={{ fontSize: 11, opacity: 0.8, marginTop: 5 }}>
+                      🕵️ P(1 khách là kẻ trộm) ~{(tt.spawnChance * 100).toFixed(2)}% · P(bắt) ~{(tt.catchChance * 100).toFixed(0)}% → kỳ vọng{' '}
+                      <b>{Math.round(st.customers * tt.leakPerThief)}</b> kẻ trộm lọt/ngày{' '}
+                      <span style={{ opacity: 0.6 }}>(chạy ca đêm thì trộm ×2)</span>
+                    </div>
+                  );
+                })()}
                 {riskLevs.length > 0 && (
                   <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', gap: 4 }}>
                     {riskLevs.map((lv, i) => (

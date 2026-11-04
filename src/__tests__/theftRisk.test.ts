@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { theftRisk, theftCatchChance, theftSpawnChance, THEFT_CAMERA_RETAIN, THEFT_DOG_RETAIN, THEFT_DOG_CATCH, THEFT_CAMERA_CATCH } from '../data/theftRisk';
+import { theftRisk, theftCatchChance, theftSpawnChance, theftToday, THEFT_CAMERA_RETAIN, THEFT_DOG_RETAIN, THEFT_DOG_CATCH, THEFT_CAMERA_CATCH } from '../data/theftRisk';
 import { RISK_RULES } from '../data/risks';
 import { GUARD_DETECT } from '../data/staff';
 import { NIGHT_THEFT_MUL } from '../data/night';
@@ -137,5 +137,37 @@ describe('GĐ1212 — theftSpawnChance: P(một khách vãng lai LÀ kẻ trộm
   it('chó + camera ban ngày → ×0.45 ×0.7', () => {
     expect(theftSpawnChance({ isNight: false, hasNightUpgrade: false, hasDog: true, hasCamera: true }))
       .toBeCloseTo(CH * THEFT_DOG_RETAIN * THEFT_CAMERA_RETAIN, 10);
+  });
+});
+
+describe('GĐ1215 — theftToday: bộ chỉ số trộm hôm nay cho thẻ "Rủi ro hôm nay" (ghép P sinh GĐ1212 × P bắt GĐ1211) — THUẦN QUAN SÁT, hành vi giữ nguyên', () => {
+  const CH = RISK_RULES.theft.chance; // 0.015
+  it('không phòng thủ: 1 khách vãng lai P trộm = chance gốc, P bắt = không người 0.1, lọt = spawn × 0.9', () => {
+    const t = theftToday({ hasDog: false, hasCamera: false, guardOnDuty: false, cashierStaffed: false, hasSharpEye: false });
+    expect(t.spawnChance).toBeCloseTo(CH, 10);
+    expect(t.catchChance).toBeCloseTo(RISK_RULES.theft.detectNobody, 10); // 0.1
+    expect(t.leakPerThief).toBeCloseTo(CH * (1 - 0.1), 10);
+  });
+  it('chó + camera: kìm P trộm (×0.45 ×0.7) nhưng vẫn giữ không người 0.1 → lọt nhỏ lại', () => {
+    const t = theftToday({ hasDog: true, hasCamera: true, guardOnDuty: false, cashierStaffed: false, hasSharpEye: false });
+    expect(t.spawnChance).toBeCloseTo(CH * THEFT_DOG_RETAIN * THEFT_CAMERA_RETAIN, 10);
+    expect(t.catchChance).toBeCloseTo(THEFT_DOG_CATCH + THEFT_CAMERA_CATCH + RISK_RULES.theft.detectNobody, 10); // 0.25+0.3+0.1 = 0.65
+    expect(t.leakPerThief).toBeCloseTo(t.spawnChance * (1 - 0.65), 10);
+  });
+  it('bảo vệ trực thay cả quầy/Mắt tinh: P bắt = GUARD_DETECT, lọt = spawn × (1 − clamp(>,1) → 0)', () => {
+    const t = theftToday({ hasDog: true, hasCamera: true, guardOnDuty: true, cashierStaffed: true, hasSharpEye: true });
+    expect(t.catchChance).toBeCloseTo(GUARD_DETECT + THEFT_DOG_CATCH + THEFT_CAMERA_CATCH, 6); // 1.47
+    expect(t.leakPerThief).toBeCloseTo(t.spawnChance * 0, 10); // vượt 1 → clamp 1 → lọt 0
+  });
+  it('quầy có người (không bảo vệ): P bắt = detectCashier + Mắt tinh nếu có', () => {
+    const noEye = theftToday({ hasDog: false, hasCamera: false, guardOnDuty: false, cashierStaffed: true, hasSharpEye: false });
+    expect(noEye.catchChance).toBeCloseTo(RISK_RULES.theft.detectCashier, 10); // 0.55
+    const eye = theftToday({ hasDog: false, hasCamera: false, guardOnDuty: false, cashierStaffed: true, hasSharpEye: true });
+    expect(eye.catchChance).toBeCloseTo(RISK_RULES.theft.detectCashier + RISK_RULES.theft.sharpEyeBonus, 10); // 0.85
+    expect(eye.leakPerThief).toBeCloseTo(eye.spawnChance * (1 - 0.85), 10);
+  });
+  it('spawn luôn theo ban ngày (theftToday cố định isNight=false — thẻ tổng kết không biết giờ, chú thích ×2 để hiểu đêm)', () => {
+    const t = theftToday({ hasDog: false, hasCamera: false, guardOnDuty: false, cashierStaffed: false, hasSharpEye: false });
+    expect(t.spawnChance).toBeCloseTo(CH, 10); // không nhân NIGHT_THEFT_MUL dù truyền gì
   });
 });

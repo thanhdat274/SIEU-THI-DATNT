@@ -80,6 +80,35 @@ export function theftSpawnChance(opts: {
     * (opts.hasCamera ? THEFT_CAMERA_RETAIN : 1);
 }
 
+/**
+ * GĐ1215 — Chỉ số trộm hôm nay cho thẻ "Rủi ro hôm nay": ghép hai helper THUẦN đã có (GĐ1211 P bắt,
+ * GĐ1212 P sinh) thành bộ số soi sáng cho người chơi — hết "hộp đen": thấy được P(khách là kẻ trộm),
+ * P(bắt) theo phòng thủ hiện tại, và kỳ vọng kẻ trộm LỌT/ngày = spawn × (1 − clamp(bắt,0,1)).
+ * `isNight` cố ý false (thẻ tổng kết cuối ngày không biết giờ — theo quy ước dòng chú thích "trộm đêm ×2"
+ * như nightReport); người chơi tự hiểu chạy đêm thì P gấp đôi.
+ */
+export interface TheftToday {
+  /** P(1 khách vãng lai) là kẻ trộm (ban ngày, đã trừ chó/camera). */
+  spawnChance: number;
+  /** P(bắt được kẻ trộm khi nó lẻn ra) theo phòng thủ (chó/camera/bảo vệ/quầy/Mắt tinh). */
+  catchChance: number;
+  /** P(1 khách) LỌT vì trộm: spawn × (1 − bắt). */
+  leakPerThief: number;
+}
+
+export function theftToday(opts: {
+  hasDog: boolean;
+  hasCamera: boolean;
+  guardOnDuty: boolean;
+  cashierStaffed: boolean;
+  hasSharpEye: boolean;
+}): TheftToday {
+  const spawnChance = theftSpawnChance({ isNight: false, hasNightUpgrade: false, hasDog: opts.hasDog, hasCamera: opts.hasCamera });
+  const catchChance = theftCatchChance({ hasDog: opts.hasDog, hasCamera: opts.hasCamera, guardOnDuty: opts.guardOnDuty, cashierStaffed: opts.cashierStaffed, hasSharpEye: opts.hasSharpEye });
+  const leakPerThief = spawnChance * (1 - Math.min(1, catchChance));
+  return { spawnChance, catchChance, leakPerThief };
+}
+
 export interface TheftRisk {
   /** P một khách vãng lai là kẻ trộm (đã trừ chó/camera). */
   chance: number;
