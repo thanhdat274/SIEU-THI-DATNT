@@ -51,6 +51,7 @@ import { hasSkill } from '../../data/titles';
 import { hasUpgrade } from '../../data/upgrades';
 import { petActive } from '../../data/bizAchievements';
 import { theftToday } from '../../data/theftRisk';
+import { impulseRecap } from '../../data/layout';
 import { cleanBonus, CLEAN_TIERS, nextCleanTier } from '../../data/cleanOps';
 import { monthOf } from '../../data/calendar';
 import { trending } from '../../data/suppliers';
@@ -577,6 +578,16 @@ export function SummaryPanel({ day }: { day: number }) {
               <Stat icon="😞" label={`Lỡ ${missTotal} lượt bán`}
                 value={[missed.stock && `${missed.stock} hết hàng`, missed.price && `${missed.price} chê đắt`, missed.wait && `${missed.wait} chờ lâu bỏ về`, missed.expired && `${missed.expired} ngại hàng cận hạn`].filter(Boolean).join(' · ')} />
             )}
+            {/* GĐ1219 — bề mặt "hàng chớp nhoáng" (kệ cạnh quầy): báo đếm + trung bình/ngày để khép
+                vòng phản hồi của quyết định bày kẹo/bánh/nước ≤15k sát quầy (nguyên tắc a — trước giờ
+                chỉ có đếm thành tựu ẩn, không báo cho người chơi). Thuần đọc totals.impulseSold / day. */}
+            {totals.impulseSold > 0 && (() => {
+              const r = impulseRecap(totals.impulseSold, day);
+              return (
+                <Stat icon="🍬" label={`Hàng chớp nhoáng · ${r.sold} món`}
+                  value={`TB ~${Math.round(r.perDay)} món/ngày bán kẹp lúc ra quầy — bày thêm kẹo, bánh, nước ≤15k sát quầy để tăng`} />
+              );
+            })()}
           </div>
           {hours.length > 0 && <HourChart hours={hours} peak={peak?.hour} quiet={quiet?.hour} />}
           {expiryTips.length > 0 && (
