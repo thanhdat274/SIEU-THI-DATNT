@@ -89,6 +89,32 @@ export function lowPricePull(productId: string, price: number): { active: boolea
   return { active: f > 1, pct: Math.round((f - 1) * 100) };
 }
 
+/** GĐ1225 — bề mặt HAI PHÍA giá ngay trên ô giá (bảng giá): rẻ hơn thị trường → % thêm khách ghé
+ *  (`lowPricePull`); đắt hơn → % đơn còn chịu mua (`priceBuyOdds`); bằng/nằm giữa → null (đừng ồn).
+ *  THUẦN — chỉ ghép chuỗi từ hai helper đã test, UI giữ nguyên không phán đoán. Không đổi kinh tế/save/seed. */
+export function priceSideMark(
+  productId: string,
+  price: number,
+): { side: 'low' | 'high'; line: string; tooltip: string } | null {
+  const pull = lowPricePull(productId, price);
+  if (pull.active) {
+    return {
+      side: 'low',
+      line: `🧲 rẻ hơn gợi ý → ~+${pull.pct}% khách ghé`,
+      tooltip: 'Khách ghé tiệm thêm chừng này phần trăm vì giá này rẻ hơn giá thị trường (mô hình cầu đang dùng); đừng hạ sâu quá — tới trần +15% thì lời mỏng mà khách không tăng nữa.',
+    };
+  }
+  const odds = priceBuyOdds(productId, price);
+  if (odds.keep < 1) {
+    return {
+      side: 'high',
+      line: `💸 đắt hơn gợi ý → chỉ ~${Math.round(odds.keep * 100)}% đơn được mua`,
+      tooltip: 'Tỉ lệ khách còn chịu mua ở giá này (khách vãng lai nhạy giá); hạ về ~giá thị trường (gợi ý) thì đa số mua.',
+    };
+  }
+  return null;
+}
+
 export type PriceAction = 'raise' | 'hold' | 'cut';
 
 export interface PriceSuggestion {
