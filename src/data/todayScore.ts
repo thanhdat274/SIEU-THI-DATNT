@@ -37,3 +37,19 @@ export function todayPeakLine(
   if (!peak || peak.customers < 4) return '';
   return `cao điểm đến giờ: ${peak.hour}h–${peak.hour + 1}h · ${peak.customers} khách`;
 }
+
+/** GĐ1228 — bề mặt "khách bỏ về HÔM NAY" giữa ngày: `stats.missed` slice cập nhật MỖI lượt khách
+ *  không mua (sales.ts) nhưng chỉ lên bề mặt CUỐI ngày (Tổng kết / tư vấn) — đang ngày khách chờ lâu
+ *  hay hết hàng liên tục mà không ai báo để xử lý NGAY (trực quầy / châm kệ). Dòng ngắn khi đã có
+ *  lượt bỏ vì chờ (wait — xếp ca/ra trực) hoặc không mua vì hết hàng (stock — châm kệ); hai lý do
+ *  HÀNH ĐỘNG NGAY, còn "chê đắt" là đòn giá chiến thuật đã có dòng cuối ngày (GĐ1222) nên không nhắc
+ *  giữa ngày cho đỡ nhiễu. THUẦN — chỉ đếm số có sẵn, không đổi kinh tế/save/seed. */
+export function todayMissedLine(missed: { wait?: number; stock?: number } | undefined): string {
+  const wait = missed?.wait ?? 0;
+  const stock = missed?.stock ?? 0;
+  if (wait <= 0 && stock <= 0) return '';
+  const parts: string[] = [];
+  if (wait > 0) parts.push(`${wait} khách bỏ về vì chờ quầy`);
+  if (stock > 0) parts.push(`${stock} khách không mua vì hết hàng`);
+  return `⚠ ${parts.join(' · ')}`;
+}
