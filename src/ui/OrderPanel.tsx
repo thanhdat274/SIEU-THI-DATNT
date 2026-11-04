@@ -3,10 +3,11 @@ import { st } from './orderPanelStyles';
 import { useMemo, useState } from 'react';
 import { Dropdown } from './Dropdown';
 import { lastActionResult } from '../net/coop';
-import { storageCapacity, storageUsed, useGame, wagesDue } from '../core/store';
+import { storageCapacity, storageUsed, useClock, useGame, wagesDue } from '../core/store';
 import { caseSize, casesFor, CATEGORIES, describeUnits, formatMoney, productById, unlockedProducts, type Category } from '../data/products';
 import { shelfLife } from '../data/freshness';
 import { bulkDiscount, orderTotal, SUPPLIERS, supplierSells, trending, unitCost } from '../data/suppliers';
+import { goldenShortfall, nextGoldenPrep } from '../data/rhythm';
 import { guideActiveOn, guideInCart, guideIdsOf, guideProducts } from '../data/onboarding';
 import { cheapestSupplier, orderAssessment, type AssessLevel, type AssessLine, type BuyTone, type Dir } from '../data/procure';
 import { PARTNER_TIERS, deliversInstantly } from '../data/supplierRel';
@@ -116,6 +117,15 @@ export function OrderPanel() {
     .sort((a, b) => b.asked - a.asked || b.demand - a.demand || a.have - b.have)
     .slice(0, 5);
   const urgentReason = urgentReasonOf;
+
+  // GĐ1240 — giờ vàng KẾ TIẾP đang THIẾU món thèm nào (hết hàng, chưa có đơn chờ giao): nối từ trạng thái
+  // "kho hết — vào Nhập hàng" của thẻ ⏰ Sơ đồ kệ (GĐ1239) thành gợi ý nhập cụ thể ngay tại đây — cùng nguồn
+  // nextGoldenPrep, prospective theo nhịp giờ. Chỉ hiện khi có món thèm hết hàng thật (không ồn khi đủ). THUẦN đọc.
+  const goldenNeeds = useMemo(() => {
+    const prep = nextGoldenPrep(level, useClock.getState().minutes);
+    return goldenShortfall(prep, (id) => onHand(id) + incoming(id));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [level, storage, deliveries, warehouseTier]);
 
   // Giỏ đặt tính theo thùng; đơn gửi đi tính theo món
   const toLines = (c: Record<string, number>) => Object.fromEntries(
@@ -434,6 +444,24 @@ export function OrderPanel() {
       {hot.length > 0 && day > 1 && <HotWeekBanner hot={hot} hotNextWeek={hotNextWeek} nextSupplierUnlock={unlockedSuppliers.length < SUPPLIERS.length ? SUPPLIERS.find((s) => s.unlock > level)!.unlock : undefined} />}
 
       {filter === 'suggest' && urgent.length > 0 && showRestockExtras(day) && <UrgentCard rows={urgent.map((r) => ({ id: r.p.id, reason: urgentReason(r), suggest: r.suggest }))} />}
+
+      {goldenNeeds && showRestockExtras(day) && (() => {
+        const hh = (m: number) => `${Math.floor(m / 60)}h${m % 60 ? '30' : ''}`;
+        return (
+          <div style={{ background: 'rgba(52,152,219,0.14)', borderRadius: 8, padding: '6px 10px', fontSize: 13, marginBottom: 8, outline: '1px solid rgba(52,152,219,0.35)' }}>
+            <b>⏰ Giờ vàng sắp tới ({goldenNeeds.name} {hh(goldenNeeds.from)}–{hh(goldenNeeds.to)}): đang hết món khách thèm</b>
+            <div style={{ marginTop: 4, display: 'grid', gap: 2 }}>
+              {goldenNeeds.short.map((s) => (
+                <div key={s.id} style={{ display: 'flex', gap: 8, alignItems: 'baseline' }}>
+                  <span style={{ minWidth: 120 }}>{productById(s.id)?.name ?? s.id}</span>
+                  <span style={{ opacity: 0.85, flex: 1 }}>hết hàng mà giờ này khách hay mua — nên nhập trước khi đông</span>
+                  <span style={{ marginLeft: 'auto', opacity: 0.75 }}>✨ nên nhập {s.qty} món (1 thùng)</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
 
       <div style={st.toolbar}>
         <Dropdown<Filter>

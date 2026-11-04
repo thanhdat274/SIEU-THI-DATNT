@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
-  goldenPrepWants, inGoldenHour, minutesToGolden, nextGoldenBand, nextGoldenPrep, TIME_BANDS,
+  goldenPrepWants, goldenShortfall, inGoldenHour, minutesToGolden, nextGoldenBand, nextGoldenPrep, TIME_BANDS,
 } from '../data/rhythm';
-import { productById } from '../data/products';
+import { productById, caseSize } from '../data/products';
 
 /** Chuẩn bị giờ vàng: báo khung vàng kế tiếp + gợi ý châm kệ món nào trước giờ đông khách. */
 
@@ -95,5 +95,33 @@ describe('nextGoldenPrep — món khách thèm giờ vàng KẾ TIẾP (Sơ đ�
 
   it('thuần: cùng đầu vào ra cùng kết quả (không đổi theo state)', () => {
     expect(nextGoldenPrep(12, 11 * 60, 4)).toEqual(nextGoldenPrep(12, 11 * 60, 4));
+  });
+});
+
+describe('goldenShortfall — món thèm giờ vàng ĐANG HẾT để nhập (Nhập hàng, GĐ1240)', () => {
+  const prep = nextGoldenPrep(30, 5 * 60, 4); // cao điểm sáng, ≤4 món
+
+  it('món thèm nào onHand==0 thì báo kèm 1 thùng (caseSize); món có hàng thì bỏ qua', () => {
+    const short = goldenShortfall(prep, (id) => (id === prep!.items[0] ? 0 : 5))!;
+    expect(short.short.map((s) => s.id)).toEqual([prep!.items[0]]);
+    expect(short.short[0].qty).toBe(caseSize(prep!.items[0]));
+  });
+
+  it('mọi món thèm đều có hàng → null (không ồn khi đủ)', () => {
+    expect(goldenShortfall(prep, () => 3)).toBeNull();
+  });
+
+  it('không có giờ vàng tới (prep null) → null', () => {
+    expect(goldenShortfall(null, () => 0)).toBeNull();
+  });
+
+  it('khớp nhịp: giờ vàng name/from/to giữ nguyên từ prep; thuần', () => {
+    if (!prep) return;
+    const r1 = goldenShortfall(prep, (id) => (id === prep.items[0] ? 0 : 1))!;
+    const r2 = goldenShortfall(prep, (id) => (id === prep.items[0] ? 0 : 1))!;
+    expect(r1.name).toBe(prep.name);
+    expect(r1.from).toBe(prep.from);
+    expect(r1.to).toBe(prep.to);
+    expect(r1).toEqual(r2);
   });
 });
