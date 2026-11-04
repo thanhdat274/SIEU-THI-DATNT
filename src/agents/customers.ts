@@ -32,8 +32,9 @@ import { askAtCounter, askPending, clearAsk, expireAsk, answerAsk, askWallElapse
 import { VENDOR_CHANCE, VENDOR_FROM, VENDOR_UNTIL, WHOLESALE_UNLOCK } from '../data/wholesale';
 import { meatDemandFactor } from '../data/meat';
 import {
-  bestSkillOnDuty, DIRT_MAX, DIRT_PER_VISIT, dirtVisitFactor, GUARD_DETECT,
+  bestSkillOnDuty, DIRT_MAX, DIRT_PER_VISIT, dirtVisitFactor,
 } from '../data/staff';
+import { theftCatchChance } from '../data/theftRisk';
 import { socialTraffic } from '../data/social';
 import { adTargets, bizTraffic, LOYALTY_UNLOCK, loyaltyRedeemChance, petActive, rivalPriceGap, rivalUndercuts } from '../data/biz';
 import { landmarkCustomerFactor } from '../data/landmark';
@@ -749,14 +750,16 @@ export class CustomerManager {
   /** Kẻ trộm đi thẳng ra cửa; có người đứng quầy thì dễ bị bắt hơn. */
   private sneakOut(c: Customer) {
     const st = useGame.getState();
-    const r = RISK_RULES.theft;
     const staffed = this.shop.counters().some((ct) => this.cashierSpeed(ct) > 0);
-    const dog = petActive(st.biz.pets.dog, st.day) ? 0.25 : 0;
-    // Camera ghi hình dọc quầy: kể cả không ai đứng quầy vẫn bắt được kẻ gian qua hình
-    const camera = hasUpgrade(st.biz, 'camera') ? 0.3 : 0;
-    const chance = dog + camera + (this.guardOnDuty()
-      ? GUARD_DETECT
-      : (staffed ? r.detectCashier : r.detectNobody) + (hasSkill(st.skills, 'sharp_eye') ? r.sharpEyeBonus : 0));
+    // GĐ1211 — tách P(bắt trộm) thành helper THUẦN (theftCatchChance, cùng hằng/công thức):
+    // dog + camera + (guard ? 0.92 : (cashier?0.55:0.1) + sharpEye?0.3) — hành vi GIỮ NGUYÊN.
+    const chance = theftCatchChance({
+      hasDog: petActive(st.biz.pets.dog, st.day),
+      hasCamera: hasUpgrade(st.biz, 'camera'),
+      guardOnDuty: this.guardOnDuty(),
+      cashierStaffed: staffed,
+      hasSharpEye: hasSkill(st.skills, 'sharp_eye'),
+    });
     const value = c.basket.reduce((n, it) => n + it.price, 0);
     const caught = simRng()() < chance;
     st.recordTheft(value, caught);

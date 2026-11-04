@@ -15,11 +15,46 @@
  */
 import { RISK_RULES } from './risks';
 import { UPGRADES } from './upgrades';
+import { GUARD_DETECT } from './staff';
 
 /** Camera giảm P(trộm) xuống còn 70% (khớp hằng số trong agents/customers.ts). */
 export const THEFT_CAMERA_RETAIN = 0.7;
 /** Chó trông tiệm giảm P(trộm) xuống còn 45% (khớp theftFactor trong core/biz.ts). */
 export const THEFT_DOG_RETAIN = 0.45;
+
+/** Chó trông tiệm tăng P(bắt được kẻ trộm) (+0.25, khớp literal trong agents/customers.ts sneakOut). */
+export const THEFT_DOG_CATCH = 0.25;
+/** Camera ghi hình dọc quầy tăng P(bắt trộm) kể cả không ai đứng quầy (+0.3, khớp literal). */
+export const THEFT_CAMERA_CATCH = 0.3;
+
+/**
+ * GĐ1211 — P(bắt được kẻ trộm khi nó lẻn ra): trích từ `agents/customers.ts` (sneakOut) thành
+ * helper THUẦN, GIỮ NGUYÊN công thức/hằng (Luật 3 — hành vi y hệt) để logic này test được
+ * và lộ con số thật cho nút rủi ro (bảo vệ/Mắt tinh/camera — GĐ1206): trước đây nó chìm trong
+ * store/THREE/NavGrid nên là "hộp đen", người chơi không thấy P(bắt) là bao nhiêu.
+ *   dog + camera + (guard ? GUARD_DETECT : (cashier ? detectCashier : detectNobody) + sharpEye?)
+ * Không clamp (giữ y hệt bản gốc): dog+camera+guard = 1.47 → luôn bắt (rng < 1.47 luôn đúng).
+ */
+export function theftCatchChance(opts: {
+  /** Có chó trông tiệm không (+0.25). */
+  hasDog: boolean;
+  /** Đã lắp camera quầy chưa (+0.3, bắt được kể cả không ai đứng). */
+  hasCamera: boolean;
+  /** Có bảo vệ trực không (→ GUARD_DETECT 0.92, thay cả cashier/sharpEye). */
+  guardOnDuty: boolean;
+  /** Có ai đang đứng quầy thanh toán không (0.55 so với không người 0.1). */
+  cashierStaffed: boolean;
+  /** Nhân viên có kỹ năng Mắt tinh không (+0.3, chỉ khi KHÔNG có bảo vệ). */
+  hasSharpEye: boolean;
+}): number {
+  const dog = opts.hasDog ? THEFT_DOG_CATCH : 0;
+  const camera = opts.hasCamera ? THEFT_CAMERA_CATCH : 0;
+  const base = opts.guardOnDuty
+    ? GUARD_DETECT
+    : (opts.cashierStaffed ? RISK_RULES.theft.detectCashier : RISK_RULES.theft.detectNobody)
+      + (opts.hasSharpEye ? RISK_RULES.theft.sharpEyeBonus : 0);
+  return dog + camera + base;
+}
 
 export interface TheftRisk {
   /** P một khách vãng lai là kẻ trộm (đã trừ chó/camera). */
