@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react';
 import { Dropdown } from './Dropdown';
-import { useGame, type Furniture } from '../core/store';
+import { useClock, useGame, type Furniture } from '../core/store';
 import { furnitureDef, type FurnitureType } from '../data/furniture';
 import { fitLots, nearestLife, tierMarkdown } from '../data/freshness';
 import { describeUnits, productById, unlockedProducts } from '../data/products';
 import { topSellerCandidate } from '../data/todayScore';
 import { allowedForType, pickForShelf } from '../data/planogram';
+import { nextGoldenPrep } from '../data/rhythm';
 import { Footer } from './panels/shared';
 
 /** Ô còn ít hơn chừng này phần sức chứa thì coi là sắp hết. */
@@ -57,6 +58,7 @@ export function PlanogramPanel() {
 
   // Cache unlocked products và allowed per type — chỉ tính 1 lần mỗi level thay đổi
   const level = useGame((s) => s.level);
+  const minutes = useClock((s) => s.minutes);
   const unlocked = useMemo(() => unlockedProducts(level), [level]);
   const typeProducts = useMemo(() => {
     const map = new Map<string, import('../data/products').Product[]>();
@@ -118,6 +120,34 @@ export function PlanogramPanel() {
       }
     }
   };
+
+  // GĐ1239 — thẻ ⏰ "Sắp tới giờ vàng: khách thèm món gì" (prospective, đối trọng thẻ 🔥 reactive GĐ1238):
+  // cho biết giờ vàng KẾ TIẾP khách thèm MÓN nào để bày sẵn đúng đồ cần trước giờ đông — không phải chờ bán
+  // mới biết như 🔥. Đọc nhịp giờ cố định (nextGoldenPrep, rhythm.ts) + trạng thái kho/kệ: mỗi món thèm
+  // cho biết kho còn / bày được chưa, kèm nút "📥 Bày/châm món này" khi kho còn. THUẦN QUAN SÁT (Luật 5 an toàn).
+  const golden = useMemo(() => {
+    const prep = nextGoldenPrep(level, minutes);
+    if (!prep || prep.items.length === 0) return null;
+    const rows = prep.items.map((id) => {
+      let onShelves = 0, capacity = 0;
+      for (const f of fixtures) {
+        const cap = furnitureDef(f.type).capacity;
+        for (const t of f.tiers) {
+          if (t.productId === id) { onShelves += t.count; capacity += cap; }
+        }
+      }
+      const stocked = `${onShelves}/${capacity}`;
+      const status = (storage[id] ?? 0) === 0
+        ? 'kho hết món này — vào Nhập hàng'
+        : onShelves === 0
+          ? `chưa bày trên kệ nào (kho còn ${describeUnits(id, storage[id] ?? 0)})`
+          : onShelves >= capacity
+            ? 'đã bày đủ trên kệ'
+            : `đã bày ${stocked} trên kệ — châm thêm khi sắp hết`;
+      return { id, status, canStock: (storage[id] ?? 0) > 0 && onShelves < capacity };
+    });
+    return { ...prep, rows };
+  }, [level, minutes, fixtures, storage]);
 
   // Số liệu cả kệ — tính lại CHỈ khi kệ/kho/món đổi, không mỗi lần gõ ô tìm/lọc (GĐ1236)
   const stats = useMemo(() => {
@@ -217,6 +247,27 @@ export function PlanogramPanel() {
                 </button>
               )}
             </div>
+          </div>
+        );
+      })()}
+
+      {golden && (() => {
+        const hh = (m: number) => `${Math.floor(m / 60)}h${m % 60 ? '30' : ''}`;
+        return (
+          <div style={st.hotBox}>
+            <b style={{ fontSize: 12 }}>⏰ Sắp tới giờ vàng ({golden.name} {hh(golden.from)}–{hh(golden.to)}): khách thèm…</b>
+            {golden.rows.map(({ id, status, canStock }) => (
+              <div key={id} style={{ fontSize: 12, opacity: 0.85, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                <span style={{ minWidth: 120 }}>· {productById(id)?.name ?? id}</span>
+                <span style={{ opacity: 0.8, flex: 1 }}>{status}.</span>
+                {canStock && (
+                  <button style={{ ...st.btn, background: '#2ecc71', color: '#fff' }} onClick={() => stockThis(id)}
+                    title={`Đặt/châm ${productById(id)?.name ?? id} vào mọi ô trống hoặc ô đang chứa nó (chỉ khi kho còn)`}>
+                    📥 Bày/châm món này
+                  </button>
+                )}
+              </div>
+            ))}
           </div>
         );
       })()}

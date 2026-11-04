@@ -80,6 +80,31 @@ export function goldenPrepWants(minutes: number, level: number, n = 4): string[]
   return out;
 }
 
+// ───── GĐ1239: món khách THÈM trong giờ vàng KẾ TIẾP (prospective, cho Sơ đồ kệ) ─────
+
+/** GĐ1239 — bàn giao cho Sơ đồ kệ: giờ vàng KẾ TIẾP và món khách thèm (trả id, lọc hàng đã mở khóa,
+ *  bỏ trùng, trần `n`), để người chơi BÀY SẴN đúng đồ khách cần trước giờ đông — prospective, đối trọng
+ *  với thẻ 🔥 "chạy nhất hôm nay" (GĐ1238, reactive sau khi bán). Null khi hôm nay hết giờ vàng.
+ *  THUẦN — chỉ đọc nhịp cố định (TIME_BANDS/GOLDEN_TRAFFIC) + unlock theo cấp, không RNG/state (Luật 5 an toàn). */
+export function nextGoldenPrep(
+  level: number,
+  minutes: number,
+  n = 4,
+): { name: string; from: number; to: number; items: string[] } | null {
+  const next = nextGoldenBand(minutes);
+  if (!next) return null;
+  const seen = new Set<string>();
+  const items: string[] = [];
+  for (const id of next.wants) {
+    if (seen.has(id)) continue;
+    seen.add(id);
+    const p = productById(id);
+    if (p && p.unlock <= level) items.push(id);
+    if (items.length >= n) break;
+  }
+  return { name: next.name, from: next.from, to: next.to, items };
+}
+
 // ───── Giờ vàng tự đặt (happy hour): tự chọn khung giảm giá kéo khách ─────
 
 /** Lựa chọn của người chơi: giờ bắt đầu (9–20) và mức giảm giá (%); cửa sổ kéo dài 2 tiếng. */
