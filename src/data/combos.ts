@@ -135,3 +135,33 @@ export function comboDiscount(active: readonly string[], basket: readonly { id: 
   }
   return { discount, count, byCombo, byDiscount };
 }
+
+// ───── GĐ1242: combo HÔM NAY "chết slot" (chiếm slot mà chưa kích hoạt lượt nào) ─────
+
+/**
+ * GĐ1242 — combo đang chạy nhưng hôm nay chưa kích hoạt lượt nào trong khi combo khác đã bán:
+ * chỗ combo → slot, mua hàng cộng dồn trong `comboToday` (comboDaySnapshot — transient per-day).
+ * Nhận `comboToday` STRUCTURAL (không import core để giữ data sạch) — thuần đọc, không đổi state.
+ * Chỉ báo khi CÓ SỰ PHÂN HOÁ thật: ≥2 combo đang chạy, combo yếu nhất = 0 lượt, và có ≥1 combo khác
+ * đã kích hoạt (>0). Còn lại null — đầu ngày mọi combo chưa bán thì đừng ồn; mọi combo cùng chạy thì
+ * không có kẻ yếu. Đây là tín hiệu trung thực để người chơi xoay slot combo ít khách mua (đối trọng
+ * gợi ý `comboSuggest` khi còn slot) — ComboPanel vốn chỉ hiện con số thô từng combo, thiếu lời kết.
+ */
+export function liveWeakCombo(
+  activeIds: readonly string[],
+  comboToday: Record<string, { count: number; discount: number }>,
+): { id: string; count: number } | null {
+  const active = activeIds.filter((id) => !!comboById(id));
+  if (active.length < 2) return null;
+  let weakestId: string | null = null;
+  let strongestCount = 0;
+  for (const id of active) {
+    const c = comboToday[id]?.count ?? 0;
+    if (weakestId === null || c < (comboToday[weakestId]?.count ?? 0)) weakestId = id;
+    if (c > strongestCount) strongestCount = c;
+  }
+  if (weakestId === null) return null;
+  const weakestCount = comboToday[weakestId]?.count ?? 0;
+  if (weakestCount !== 0 || strongestCount <= 0) return null;
+  return { id: weakestId, count: weakestCount };
+}

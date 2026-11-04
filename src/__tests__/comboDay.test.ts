@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { comboDiscount } from '../data/combos';
+import { comboDiscount, liveWeakCombo } from '../data/combos';
 import { comboDaySnapshot, noteComboDay, resetComboDay } from '../core/slices/comboDay';
 
 const mi = { id: 'mi', price: 5000 };
@@ -55,5 +55,36 @@ describe('comboDay — theo dõi combo theo ngày', () => {
     s.mi_nuoc.count = 999;
     const again = comboDaySnapshot();
     expect(again.mi_nuoc.count).toBe(1);
+  });
+});
+
+describe('liveWeakCombo — combo hôm nay "chết slot" (GĐ1242)', () => {
+  it('có sự phân hoá: combo yếu nhất 0 lượt, combo khác đã bán → báo kẻ yếu', () => {
+    const r = liveWeakCombo(['mi_nuoc', 'banh_ngot'], { mi_nuoc: { count: 3, discount: 3000 }, banh_ngot: { count: 0, discount: 0 } });
+    expect(r).toEqual({ id: 'banh_ngot', count: 0 });
+  });
+
+  it('chỉ 1 combo đang chạy → null (không có kẻ yếu để so)', () => {
+    expect(liveWeakCombo(['mi_nuoc'], { mi_nuoc: { count: 0, discount: 0 } })).toBeNull();
+  });
+
+  it('chưa combo nào bán (đầu ngày) → null (không ồn)', () => {
+    const r = liveWeakCombo(['mi_nuoc', 'banh_ngot'], { mi_nuoc: { count: 0, discount: 0 }, banh_ngot: { count: 0, discount: 0 } });
+    expect(r).toBeNull();
+  });
+
+  it('mọi combo cùng bán → null (không có kẻ thật yếu)', () => {
+    const r = liveWeakCombo(['mi_nuoc', 'banh_ngot'], { mi_nuoc: { count: 2, discount: 1 }, banh_ngot: { count: 1, discount: 1 } });
+    expect(r).toBeNull();
+  });
+
+  it('bỏ qua id lạ (combo không tồn tại nhưng nằm trong active)', () => {
+    const r = liveWeakCombo(['mi_nuoc', 'khong_co_combo'], { mi_nuoc: { count: 2, discount: 1 } });
+    expect(r).toBeNull(); // sau lọc còn 1 combo hợp lệ → không đủ 2 để so
+  });
+
+  it('thuần: cùng đầu vào ra cùng kết quả (không đổi theo state)', () => {
+    const today = { mi_nuoc: { count: 3, discount: 3 }, banh_ngot: { count: 0, discount: 0 } };
+    expect(liveWeakCombo(['banh_ngot', 'mi_nuoc'], today)).toEqual(liveWeakCombo(['banh_ngot', 'mi_nuoc'], today));
   });
 });

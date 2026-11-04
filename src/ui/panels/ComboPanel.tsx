@@ -1,6 +1,6 @@
 import { useGame } from '../../core/store';
 import { formatMoney, productById } from '../../data/products';
-import { COMBO_PULL, COMBO_UNLOCK, comboSuggest, maxActiveCombos, nextComboSlotLevel, unlockedCombos } from '../../data/combos';
+import { COMBO_PULL, COMBO_UNLOCK, comboById, comboSuggest, liveWeakCombo, maxActiveCombos, nextComboSlotLevel, unlockedCombos } from '../../data/combos';
 import { comboDaySnapshot } from '../../core/slices/comboDay';
 import { Footer, styles } from './shared';
 
@@ -13,6 +13,9 @@ export function ComboPanel() {
   const suggestions = activeCombos.length < max ? comboSuggest(level, sales, activeCombos) : [];
   // GĐ124: hiệu quả combo hôm nay (transient) — re-render theo store (mua bán làm store đổi), đọc bản snap.
   const comboToday = comboDaySnapshot();
+  // GĐ1242 — lời kết sống: combo nào hôm nay chiếm slot mà chưa kích hoạt lượt nào trong khi combo khác đã bán.
+  const weak = liveWeakCombo(activeCombos, comboToday);
+  const weakCombo = weak ? comboById(weak.id) : null;
   return (
     <>
       <h2 style={styles.title}>🎁 Combo khuyến mãi</h2>
@@ -24,6 +27,11 @@ export function ComboPanel() {
       {suggestions.length > 0 && (
         <p style={{ ...styles.sub, color: '#9ecbff', margin: '4px 0' }}>
           💡 Còn slot, nên bật: {suggestions.map((s) => `"${s.name}" (${s.reason})`).join(' · ')}
+        </p>
+      )}
+      {weakCombo && (
+        <p style={{ ...styles.sub, color: '#e67e22', margin: '4px 0' }} title="Đếm từ lượt combo kích hoạt ở quầy hôm nay (transient): combo này 0 lượt trong khi combo khác đã bán — chiếm slot không tác dụng">
+          📊 Hôm nay combo <b>"{weakCombo.name}"</b> chưa kích hoạt lượt nào mà các combo khác đã bán — nó đang chiếm slot. Nếu muốn đổi cho combo khác, bấm "Đang chạy" để tắt rồi bật combo khác{activeCombos.length >= max ? ' (slots đã đủ)' : ''}.
         </p>
       )}
       {activeCombos.length >= max && (
