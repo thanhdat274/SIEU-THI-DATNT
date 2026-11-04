@@ -55,7 +55,7 @@ import { describeDay, WEATHER } from '../../data/weather';
 import { trafficForecast } from '../../data/trafficForecast';
 import { tomorrowTeaser } from '../../data/tomorrowTeaser';
 import { missingForContract, reservedMissing, commitBonusValue, supplyContractById, contractStreakProgress, CONTRACT_STREAK_BONUS } from '../../data/contracts';
-import { leakTone, riskLiveToday } from '../../data/risk';
+import { leakTone, riskLiveToday, riskLevers } from '../../data/risk';
 import { nightPnl, nightPayback, nightPaybackLabel } from '../../data/nightReport';
 import { PHONE_SLOTS } from '../../data/phoneOrders';
 import { paymentById, type PaymentMethod } from '../../data/payments';
@@ -334,12 +334,28 @@ export function SummaryPanel({ day }: { day: number }) {
             const last = riskTrend.length ? riskLiveToday(riskTrend[riskTrend.length - 1]) : { leak: 0, blocked: 0, events: 0 };
             if (last.events <= 0) return null; // ngày yên ả (không rủi ro) thì không bày thẻ, tránh nhiễu
             const tone = leakTone(last.leak, st.revenue);
+            // GĐ1206: nối chẩn đoán → hành động — lọt trội (warn/bad) thì kê phòng thủ ĐANG THIẾU
+            // (bảo vệ → staff, Mắt tinh → skills); bấm mở thẳng panel sửa. Hết hộp đen "mất tiền mà không
+            // biết chặn cách nào"; `ok` không kê. THUẦN đọc — chỉ đọc cờ phòng thủ có sẵn (staff/skills).
+            const riskLevs = riskLevers(tone, {
+              hasGuard: staff.some((e) => e.role === 'guard'),
+              hasSharpEye: hasSkill(skills, 'sharp_eye'),
+            });
             return (
               <Callout tone={tone === 'bad' ? 'danger' : tone === 'warn' ? 'accent' : 'ok'} style={{ marginTop: 8 }}
                 title={<>🛡️ Rủi ro hôm nay — chặn {formatMoney(last.blocked)} · lọt {formatMoney(last.leak)} · {last.events} lần</>}>
                 <div style={{ fontSize: 12, opacity: 0.75, marginTop: 2 }}>
                   Lọt: trộm khuất · tiền giả lọt · nhân viên gian lận · Chặn: bắt quả tang (phạt) · phát hiện tiền giả · thu lại khi bắt
                 </div>
+                {riskLevs.length > 0 && (
+                  <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    {riskLevs.map((lv, i) => (
+                      <button key={i} onClick={() => lv.action && openPanel({ type: lv.action as any })} style={{ ...styles.btn, fontSize: 11, padding: '2px 8px', textAlign: 'left' }}>
+                        {lv.icon} {lv.text} →
+                      </button>
+                    ))}
+                  </div>
+                )}
               </Callout>
             );
           })()}

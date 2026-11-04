@@ -44,6 +44,31 @@ export function riskLiveToday(rt: RiskToday): { leak: number; blocked: number; e
   return { leak: rt.leak || 0, blocked: rt.blocked || 0, events: rt.events || 0 };
 }
 
+/** Cánh tay "nối chẩn đoán → hành động" cho thẻ rủi ro (GĐ1206): một nút bấm mở thẳng panel sửa. */
+export interface RiskLever {
+  icon: string;
+  text: string;
+  /** Panel mở ra khi bấm (staff / skills — camera nằm trong tab Đời sống tiệm, không có type riêng nên bỏ). */
+  action?: string;
+}
+
+/**
+ * GĐ1206 — nối CHẨN ĐOÁN rủi ro → HÀNH ĐỘNG: thẻ "🛡️ Rủi ro hôm nay" chỉ báo "chặn X · lọt Y · Z lần"
+ * mà không trỏ cách dừng lọt — người chơi mất tiền vì trộm/tiền giả/gian lận nhưng không biết nên sửa gì
+ * (cùng "hộp đen" GĐ1203 diệt ở tấm Luật 10). Khi lọt trội (tone warn/bad), kê phòng thủ đang THIẾU
+ * (bảo vệ chống trộm → panel nhân viên; Mắt tinh chống tiền giả + tăng bắt trộm → panel kỹ năng);
+ * đủ cả hai mà vẫn lọt thì nhắc đứng quầy giờ đông / rà ca nhân viên (gian lận). `ok` không kê (tránh nhiễu).
+ * THUẦN đọc — chỉ nhận tone + hai cờ phòng thủ có sẵn, không đổi state/kinh tế/seed.
+ */
+export function riskLevers(tone: LeakTone, opts: { hasGuard: boolean; hasSharpEye: boolean }): RiskLever[] {
+  if (tone === 'ok') return [];
+  const out: RiskLever[] = [];
+  if (!opts.hasGuard) out.push({ icon: '👮', text: 'Mới lọt trộm — thuê bảo vệ trực cửa: bắt gần như chắc (92%).', action: 'staff' });
+  if (!opts.hasSharpEye) out.push({ icon: '🔍', text: 'Chưa học Mắt tinh — tăng phát hiện tiền giả lẫn bắt trộm.', action: 'skills' });
+  if (!out.length) out.push({ icon: '👮', text: 'Vẫn lọt dù đủ tay phòng — để người đứng quầy giờ đông, rà kỹ ca nhân viên đêm.', action: 'staff' });
+  return out.slice(0, 2);
+}
+
 export interface RiskTrendSummary {
   /** Tổng lọt nửa gần (7 ngày cuối cửa sổ). */
   leakLast: number;
