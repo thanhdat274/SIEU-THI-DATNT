@@ -150,6 +150,38 @@ describe('farmVsCook', () => {
   });
 });
 
+describe('farmVsCook verdict sell — best có homegrownNet < 0 (nấu lỗ, nhánh dòng 102)', () => {
+  // GĐ1210: trước đây `homegrownRecipeDecision` có <0/==0 nhưng `farmVsCook` mới chạy
+  // được 'cook' (best dương) và 'sell' khi RỖNG recipes; nhánh "có best mà best NEGATIVE"
+  // chưa ai chạy với dữ liệu THẬT (ngưỡng homegrownSell ×1,2 đẩy vài nông sản phẩm cao
+  // sang "bán lẻ hời hơn nấu"). Khóa bằng sản phẩm thật — UI phải nói "bán lẻ" đừng tư vấn nấu.
+
+  it('thit_ga_dt (gà Đông Tảo): bán lẻ hời hơn nấu gà nướng (best -15000) → verdict sell', () => {
+    const f = farmVsCook('thit_ga_dt');
+    expect(f.recipes).toHaveLength(1);
+    expect(f.best!.recipe.id).toBe('recipe_ga_dt_nuong');
+    expect(f.best!.homegrownNet).toBeLessThan(0); // -15000 (cơ hội phí bán lẻ nhà trồng vượt doanh thu món)
+    expect(f.best!.verdict).toBe('sell');
+    expect(f.verdict).toBe('sell');
+    // Bán lẻ luôn HớN hơn — không bao giờ tư vấn chế món này.
+    expect(f.sellPerUnit).toBe(homegrownSell('thit_ga_dt'));
+  });
+
+  it('trung_goos: best âm nhất (-27000 qua bánh flan) → verdict sell', () => {
+    const f = farmVsCook('trung_goos');
+    expect(f.best!.recipe.id).toBe('recipe_banh_flan');
+    expect(f.best!.homegrownNet).toBe(-27000);
+    expect(f.verdict).toBe('sell');
+  });
+
+  it('x_dua_nao: best âm (-5800 qua xôi đậu) → verdict sell', () => {
+    const f = farmVsCook('x_dua_nao');
+    expect(f.best!.recipe.id).toBe('recipe_xoi_dua');
+    expect(f.best!.homegrownNet).toBe(-5800);
+    expect(f.verdict).toBe('sell');
+  });
+});
+
 describe('cookableProducts', () => {
   it('liệt kê được hết nông sản nhà trồng/nuôi có công thức nấu', () => {
     const ids = cookableProducts();
