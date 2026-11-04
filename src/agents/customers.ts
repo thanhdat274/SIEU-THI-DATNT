@@ -54,7 +54,7 @@ import type { Counter, GroceryShop } from '../shop/groceryShop';
 import type { NavGrid } from '../world/navGrid';
 import { CoinPopFX } from '../render/fx/coinPop';
 import {
-  Customer, FRANTIC_AT, IMPATIENT_AT, PATIENCE_MINUTES, SIDEWALK_Z, impatienceEmoji, patienceMultiplier, type Deal,
+  Customer, FRANTIC_AT, IMPATIENT_AT, PATIENCE_MINUTES, SIDEWALK_Z, impatienceEmoji, patienceMultiplier, counterQueueScore, leastScore, type Deal,
 } from './customerEntity';
 
 export { FRANTIC_AT, IMPATIENT_AT, impatienceEmoji };
@@ -468,9 +468,9 @@ export class CustomerManager {
 
   /** Xếp vào quầy có hàng ngắn nhất; quầy không có người tính tiền bị tính như dài thêm 3 người. */
   private joinQueue(c: Customer, counters: Counter[]) {
-    const score = (ct: Counter) =>
-      (this.queues.get(ct.key)?.length ?? 0) + (this.cashierSpeed(ct) > 0 ? 0 : 3) + (ct.key === 'main' ? -0.1 : 0);
-    const best = counters.reduce((a, b) => (score(b) < score(a) ? b : a));
+    // GĐ1213 — tách chọn quầy thành helper THUẦN (counterQueueScore/leastScore, cùng công thức/hằng): hành vi GIỮ NGUYÊN.
+    const score = (ct: Counter) => counterQueueScore(this.queues.get(ct.key)?.length ?? 0, this.cashierSpeed(ct) > 0, ct.key === 'main');
+    const best = leastScore(counters, score);
     const queue = this.queues.get(best.key) ?? [];
     this.queues.set(best.key, queue);
     queue.push(c);

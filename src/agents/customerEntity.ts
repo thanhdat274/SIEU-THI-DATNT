@@ -53,6 +53,24 @@ export function patienceMultiplier(ctx: PatienceContext): number {
   return m;
 }
 
+/**
+ * GĐ1213 — Chọn quầy thanh toán: trích phần quyết định thuần từ `agents/customers.ts` (joinQueue)
+ * thành helper, GIỮ NGUYÊN công thức/hằng (Luật 3 — hành vi y hệt) để logic này test được và soi sáng.
+ * Công thức gốc: score = độ dài hàng + (quầy KHÔNG có người tính tiền ? 3 : 0) + (quầy chính ? −0.1 : 0);
+ * chọn quầy có score nhỏ nhất (hàng ngắn nhất), quầy chính hơi được ưu tiên, quầy vắng người coi như dài thêm 3.
+ */
+export const UNSTAFFED_COUNTER_PENALTY = 3;
+export const MAIN_COUNTER_BIAS = -0.1;
+
+export function counterQueueScore(queueLength: number, hasCashier: boolean, isMain: boolean): number {
+  return queueLength + (hasCashier ? 0 : UNSTAFFED_COUNTER_PENALTY) + (isMain ? MAIN_COUNTER_BIAS : 0);
+}
+
+/** Argmin theo scoreOf; hoà điểm giữ nguời đầu (giữ y tie-break của bản gốc giảm so sánh `<`). */
+export function leastScore<T>(items: readonly T[], scoreOf: (t: T) => number): T {
+  return items.reduce((a, b) => (scoreOf(b) < scoreOf(a) ? b : a));
+}
+
 export type State = 'walkBy' | 'toShop' | 'shopping' | 'toQueue' | 'queued' | 'leaving';
 
 const pick = <T,>(list: T[]) => list[Math.floor(simRng()() * list.length)];
