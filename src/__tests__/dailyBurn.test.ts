@@ -48,4 +48,17 @@ describe('GĐ224 dailyBurn — gánh nặng chi phí cố định/ngày', () => 
     expect(b.burnShare).toBeNull();
     expect(b.covered).toBe(false);
   });
+
+  it('GĐ1177 — lương quán nước + tiệm xôi (extraStaffWages) cộng vào lương/tổng chi phí cố định', () => {
+    // 1 thợ tiệm xôi (180.000) + 1 NV quán (150.000) + lương chính 162.000 + thuê 20.000 = 512.000
+    const b = dailyBurn(staff, [], 0, null, null, 1_000_000, 180_000 + 150_000);
+    expect(b.wages).toBe(162000 + 180000 + 150000);
+    expect(b.total).toBe(162000 + 180000 + 150000 + 20000);
+    expect(b.covered).toBe(true);
+  });
+
+  it('GĐ1177 — không truyền extraStaffWages: giữ hành vi cũ (mặc định 0)', () => {
+    const b = dailyBurn(staff, [], 0, null, null, 1_000_000);
+    expect(b.wages).toBe(162000);
+  });
 });

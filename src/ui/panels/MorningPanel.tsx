@@ -6,7 +6,8 @@ import { formatMoney, productById } from '../../data/products';
 import { reputationOf } from '../../data/reputation';
 import { butcherValueToday, MAX_BUTCHER_STAR, missedMeatRevenue, recentMeatRevenue } from '../../data/butcherValue';
 import { regularsExpectedToday, REGULARS } from '../../data/regulars';
-import { QUAN_NUOC_UNLOCK } from '../../data/quanNuoc';
+import { QUAN_NUOC_UNLOCK, QUAN_NUOC_WAGE } from '../../data/quanNuoc';
+import { TIEM_XOI_WAGE } from '../../data/tiemXoi';
 import { quanNuocHealth } from '../../data/quanNuocInsights';
 import { expiringSoon, expiryAdvice } from '../../data/advice';
 import { dateOfDoy, dayEffects, dayOfYear, upcomingFestival, weekdayOf } from '../../data/calendar';
@@ -187,7 +188,7 @@ export function MorningPanel() {
 
       {biz.loan && <LoanBurdenCard lb={loanBurden(biz.loan.principal, stats?.revenue ?? 0)} />}
 
-      <DailyBurnCard db={dailyBurn(staff, branch?.staff ?? [], shopTier, biz.loan, biz.hui, recentAvgRevenue(history, 7))} />
+      <DailyBurnCard db={dailyBurn(staff, branch?.staff ?? [], shopTier, biz.loan, biz.hui, recentAvgRevenue(history, 7), (biz.quanNuoc.open ? biz.quanNuoc.staff * QUAN_NUOC_WAGE : 0) + (biz.tiemXoi?.open ? biz.tiemXoi.staff * TIEM_XOI_WAGE : 0))} />
 
       {biz.quanNuoc.open && <QuanNuocCard quanNuoc={biz.quanNuoc} quanNuocLast={biz.quanNuocLast ?? null} quanHealth={quanHealth} />}
 

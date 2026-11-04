@@ -39,8 +39,11 @@ export function dailyBurn(
   loan: Loan | null | undefined,
   hui: Hui | null | undefined,
   avgRevenue: number,
+  /** GĐ1177: lương ngày của quán nước + tiệm xôi (chí phí cố định thật — quán/tiệm trả dù bán hay không).
+   *  Trước đây bỏ sót hai khoản này nên con số "gầm/ngày" thiếu với ai mở quán/tiệm. Thuần đọc, mặc định 0. */
+  extraStaffWages = 0,
 ): DailyBurn {
-  const wages = [...staff, ...branchStaff].reduce((n, st) => n + dailyWage(st), 0);
+  const wages = [...staff, ...branchStaff].reduce((n, st) => n + dailyWage(st), 0) + extraStaffWages;
   const rent = rentOf(shopTier);
   const loanInt = loan ? loanInterest(loan.principal) : 0;
   const huiDue = hui ? hui.daily : 0;
