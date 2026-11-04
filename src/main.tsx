@@ -217,6 +217,9 @@ worldActions.travel = (to) => {
 // pool riêng vì đời sống độc lập; update ở cùng chỗ customers.coinFx.update(dt) phía dưới.
 const farmPopFx = new CoinPopFX(scene);
 installFarmSync(world.farm, (pop) => {
+  // Cùng ngưỡng 60 m với farm.group.visible (main.update): đứng xa trại thì bong bóng không sinh —
+  // kẻo nổi giữa không trung trên nền trại đang ẩn (QA GĐ1255 biên: máy khách hẻm thu từ xa qua panel).
+  if (player.position.distanceTo(world.farmSpot) >= 60) return;
   farmPopFx.spawn(
     new THREE.Vector3(FARM_CENTER.x + (pop.x ?? 0), 0.9, FARM_CENTER.z + (pop.z ?? 0)),
     0,
