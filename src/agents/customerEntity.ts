@@ -83,6 +83,18 @@ export function counterThroughput(speedsDesc: readonly number[]): number {
   return first + 0.5 * second;
 }
 
+/**
+ * GĐ1216 — Số sao khách chấm khi rời tiệm: trích từ `agents/customers.ts` (review) thành helper THUẦN,
+ * GIỮ NGUYÊN công thức/hằng (Luật 3 — hành vi y hệt). Là quyết định người chơi NHÌN THẤY (đánh giá →
+ * danh tiếng) nhưng từng chìm trong agent gắn store/simRng nên là "hộp đen": mỗi món không mua được
+ * −1 sao, chờ quá nửa patience −1 sao, clamp về [1,5]. `waited > patience/2` là phép so sánh KHẮT
+ * (không ≥) — đúng mốc chính xác nửa patience là KHÔNG bị trừ.
+ *   clamp(5 − missed.length − (waitedMinutes > patience/2 ? 1 : 0), 1, 5)
+ */
+export function reviewStars(missCount: number, waitedMinutes: number, patience: number): number {
+  return Math.max(1, Math.min(5, 5 - missCount - (waitedMinutes > patience / 2 ? 1 : 0)));
+}
+
 export type State = 'walkBy' | 'toShop' | 'shopping' | 'toQueue' | 'queued' | 'leaving';
 
 const pick = <T,>(list: T[]) => list[Math.floor(simRng()() * list.length)];

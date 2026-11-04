@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   patienceMultiplier, CAT_PATIENCE_MUL, CAT_SOOTHE_PROFESSIONS,
-  counterQueueScore, leastScore, UNSTAFFED_COUNTER_PENALTY, MAIN_COUNTER_BIAS, counterThroughput,
+  counterQueueScore, leastScore, UNSTAFFED_COUNTER_PENALTY, MAIN_COUNTER_BIAS, counterThroughput, reviewStars,
 } from '../agents/customerEntity';
 import { CARE_PATIENCE_PER_STAR } from '../data/staff';
 
@@ -115,5 +115,33 @@ describe('GĐ1214 — counterThroughput: năng suất quầy từ tối đa 2 nh
 
   it('2 người ngang tốc độ → ×1.5 (người thứ hai chỉ phụ gói)', () => {
     expect(counterThroughput([7, 7])).toBe(10.5);
+  });
+});
+
+describe('GĐ1216 — reviewStars: số sao khách chấm khi rời tiệm (tách từ agents/customers.ts review) — THUẦN QUAN SÁT, giữ nguyên công thức (Luật 3)', () => {
+  it('không món hỏng, chờ ngắn → 5 sao (tối đa)', () => {
+    expect(reviewStars(0, 1, 45)).toBe(5);
+  });
+  it('mỗi món không mua được −1 sao (1 → 4, 3 → 2)', () => {
+    expect(reviewStars(1, 1, 45)).toBe(4);
+    expect(reviewStars(3, 1, 45)).toBe(2);
+  });
+  it('chờ quá nửa patience thêm −1 sao (phép so sánh KHẮT >)', () => {
+    // 45/2 = 22.5: chờ 23 > 22.5 → −1; chờ 22 < 22.5 → không trừ
+    expect(reviewStars(1, 23, 45)).toBe(3);
+    expect(reviewStars(1, 22, 45)).toBe(4);
+  });
+  it('đúng mốc NỬA patience (waited === patience/2) KHÔNG bị trừ (bản gốc > chứ không ≥)', () => {
+    expect(reviewStars(0, 22.5, 45)).toBe(5);
+  });
+  it('kết hợp: 2 món hỏng + chờ lâu → 5 − 2 − 1 = 2 sao', () => {
+    expect(reviewStars(2, 30, 50)).toBe(2);
+  });
+  it('clamp đáy: quá nhiều lỗi / chờ lâu không về dưới 1 sao', () => {
+    expect(reviewStars(9, 100, 10)).toBe(1);
+    expect(reviewStars(5, 30, 10)).toBe(1); // 5 −5 −1 = −1 → 1
+  });
+  it('clamp đỉnh: không món hỏng + chờ ngắn không vượt 5 sao', () => {
+    expect(reviewStars(0, 0, 1)).toBe(5);
   });
 });

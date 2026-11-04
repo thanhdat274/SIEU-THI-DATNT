@@ -54,7 +54,7 @@ import type { Counter, GroceryShop } from '../shop/groceryShop';
 import type { NavGrid } from '../world/navGrid';
 import { CoinPopFX } from '../render/fx/coinPop';
 import {
-  Customer, FRANTIC_AT, IMPATIENT_AT, PATIENCE_MINUTES, SIDEWALK_Z, impatienceEmoji, patienceMultiplier, counterQueueScore, leastScore, type Deal,
+  Customer, FRANTIC_AT, IMPATIENT_AT, PATIENCE_MINUTES, SIDEWALK_Z, impatienceEmoji, patienceMultiplier, counterQueueScore, leastScore, reviewStars, type Deal,
 } from './customerEntity';
 
 export { FRANTIC_AT, IMPATIENT_AT, impatienceEmoji };
@@ -834,7 +834,8 @@ export class CustomerManager {
       const reason: ReviewReason = c.basket.length ? 'wait' : firstMiss?.why ?? 'stock';
       return st.addReview(c.basket.length ? 1 : 1 + Math.floor(simRng()() * 2), reason, reason === 'wait' ? undefined : firstMiss?.id);
     }
-    const stars = Math.max(1, Math.min(5, 5 - c.missed.length - (c.waitedMinutes > c.patience / 2 ? 1 : 0)));
+    // GĐ1216: số sao khách chấm (mỗi món hỏng −1, chờ nửa patience −1) tách ra helper THUẦN — cùng công thức.
+    const stars = reviewStars(c.missed.length, c.waitedMinutes, c.patience);
     if (stars <= 2 && firstMiss) return st.addReview(stars, firstMiss.why, firstMiss.id);
     const priciest = [...c.basket].sort((a, b) => b.price - a.price)[0];
     st.addReview(stars, undefined, priciest?.id);
