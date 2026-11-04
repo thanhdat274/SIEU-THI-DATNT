@@ -24,7 +24,7 @@ import { quanNuocDrinkIds } from '../data/quanNuoc';
 import { festivalRestockPlan } from '../data/festivalRestock';
 import { SupplierRelLine, ForecastLine, GuideBanner, QuanDrinkTipCallout, FestivalPrepCallout, NetworkFillCallout } from './OrderBanners';
 import { ProdSuggCard, HotWeekBanner, UrgentCard } from './OrderCards';
-import { commitNote, urgentReasonOf, displayable, onHand, incoming, suggestQty, assessText, supplierTone, supplierTomorrow } from './orderHelpers';
+import { commitNote, urgentReasonOf, displayable, onHand, incoming, suggestQty, assessText, supplierTone, supplierTomorrow, commitmentNote } from './orderHelpers';
 import { acceptFairOffer } from '../core/biz';
 import { CUNG_GOODS, isXoiCungDay } from '../data/tiemXoi';
 import { festivalOn, festivalStock, monthOf, upcomingFestival } from '../data/calendar';
@@ -549,6 +549,11 @@ export function OrderPanel() {
             </div>
           );
         })}
+      </div>
+
+      {/* GĐ1180: trước khi đặt, thấy tổng vốn ĐANG CHỐT (đơn chờ giao + đơn này) — đừng nhập chồng khi đã ứ */}
+      <div style={{ fontSize: 12, opacity: 0.85, margin: '4px 0 2px', textAlign: 'right' }}>
+        {commitmentNote(deliveries, total, priceOf)}
       </div>
 
       <div style={st.footer}>

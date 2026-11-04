@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { newGameData, useGame } from '../core/store';
 import { SUPPLIERS } from '../data/suppliers';
-import { assessText, displayable, onHand, incoming, suggestQty, supplierTone, supplierTomorrow } from '../ui/orderHelpers';
+import { assessText, displayable, onHand, incoming, suggestQty, supplierTone, supplierTomorrow, commitmentNote } from '../ui/orderHelpers';
 
 /** GĐ946 — helper gợi ý nhập tách khỏi OrderPanel: hành vi giữ nguyên, nay test được. */
 const line = (o: object) => ({ level: 'ok', caseUse: 2, shelfDays: 10, spoil: 0, sellDays: 3, overWhy: null, ...o }) as never;
@@ -47,5 +47,25 @@ describe('GĐ949 — commitNote', () => {
     const r = commitNote({ life: 1e9, monthSpent: 0, total: 500000, supplier: sup, cheapest: { best: { id: 'x', name: 'Mối X' }, total: 400000 } });
     expect(r!.text).toContain('Mối X'); expect(r!.text).toContain('rẻ hơn');
     expect(commitNote({ life: 1e9, monthSpent: 0, total: 500000, supplier: sup, cheapest: { best: sup, total: 500000 } })!.text).not.toContain('rẻ hơn');
+  });
+});
+
+// nuoc: buy 4000, lẻ 6000. vo: buy 15000, lẻ 25000.
+const priceOf = (id: string) => (id === 'nuoc' ? 6000 : 25000);
+describe('GĐ1180 — commitmentNote: tổng vốn đang chốt trước khi đặt', () => {
+  const d = (items: Record<string, number>) => ({ items });
+  it('không đơn chờ, chưa chọn gì → "Chưa có đơn chờ giao"', () => {
+    expect(commitmentNote([], 0, priceOf)).toBe('Chưa có đơn chờ giao');
+  });
+  it('không đơn chờ nhưng có giỏ → "Đơn này trừ X tiền mặt"', () => {
+    expect(commitmentNote([], 120000, priceOf)).toBe('Đơn này trừ 120.000đ tiền mặt');
+  });
+  it('có đơn chờ: gộp vốn đơn chờ + đơn này → tổng chốt hôm nay', () => {
+    // 2 đơn chờ: nuoc 10 (10×4000=40000) + vo 2 (2×15000=30000) = 70000; + đơn này 50000 = 120000
+    const s = commitmentNote([d({ nuoc: 10 }), d({ vo: 2 })], 50000, priceOf);
+    expect(s).toContain('2 đơn');
+    expect(s).toContain('70.000đ vốn');
+    expect(s).toContain('+50.000đ');
+    expect(s).toContain('tổng chốt 120.000đ');
   });
 });
