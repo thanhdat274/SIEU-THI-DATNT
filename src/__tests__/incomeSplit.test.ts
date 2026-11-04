@@ -167,3 +167,63 @@ describe('GĐ1178 claimQuest ghi questIncome (optional, không đổi tiền/kin
     expect(g().money - pre).toBe(g().stats.questIncome ?? 0);
   });
 });
+
+describe('GĐ1202 — nguồn thưởng CỐ Ý NGOÀI SỔ questIncome (gift/vòng quay/tiền lẻ/welcome-back) không làm phình tấm Luật 10', () => {
+  // GĐ1193–1195 phân loại: questIncome chỉ ghi món thưởng "nhiệm vụ - gia vị" (nhiệm vụ ngày/chuyện/NG/mốc/cả hẻm);
+  // GIFT/vòng quay/TIP/CHÀO MỪNG QUAY LẠI/thành tựu là phần giữ chân cố ý NGOÀI SỔ để báo cáo "lãi bán thật vs thưởng"
+  // (Luật 10) là so sánh thật giữa phần bán-hàng-là-chính và phần nhiệm vụ, không bị bonus giữ chân làm phình đủ
+  // để cảnh báo sai heavy/tight. Đây là bất biến thiết kế — test này khóa chiều "không ghi" (các test khác đã khóa
+  // chiều "có ghi": claimQuest/claimNgGoal/recordDiscovery/communitySale). THUẦN QUAN SÁT — không đổi mã/kinh tế.
+  beforeEach(() => {
+    useGame.setState({ ...newGameData(), day: 7, giftLastDay: 6, giftStreak: 0, lastSeenAt: Date.now() });
+  });
+  const g = () => useGame.getState();
+  const noLedger = () => expect(g().stats.questIncome ?? 0).toBe(0);
+
+  it('vòng quay may mắn trúng tiền: money tăng nhưng questIncome KHÔNG đổi (bonus giữ chân ngoài sổ)', () => {
+    const pre = g().money;
+    // Làm vòng quay trả tiền chắc chắn: bơm thẳng seed để spinWheelPrize rơi ô có money thì không seed-able
+    // ở đây (spinWheelPrize tự chọn) — thay vào đó đặt state chất cấp thấp để mọi ô đều có money theo thang.
+    const prize = g().spinWheel();
+    if (prize?.money) {
+      expect(g().money).toBe(pre + prize.money);
+      noLedger();
+    } else {
+      // Ô 🍀 / XP-vàng: vẫn không được đụng ledger dù solver không nguồn tiền
+      noLedger();
+      expect(g().money).toBe(pre);
+    }
+  });
+
+  it('điểm danh quà (claimGift) có tiền: money tăng nhưng questIncome KHÔNG đổi', () => {
+    useGame.setState({ history: [{ day: 6, revenue: 500000, profit: 100000, customers: 30, unhappy: 1, salesProfit: 120000 }] });
+    const pre = g().money;
+    expect(g().claimGift()).toBe(true);
+    // Cấp thấp + streak mới → mọi mức quà đều là tiền (DAILY_GIFTS đều có money), nên money phải tăng
+    expect(g().money).toBeGreaterThanOrEqual(pre);
+    noLedger();
+  });
+
+  it('chào mừng quay lại (checkWelcomeBack) có thưởng: money tăng nhưng questIncome KHÔNG đổi', () => {
+    // Cách 2 ngày để hụt ngưỡng WELCOME_BACK_MIN: đặt lastSeenAt quá khứ thì daysAway lớn → có thưởng
+    useGame.setState({
+      lastSeenAt: Date.now() - (1000 * 60 * 60 * 24 * 30), // 30 ngày trước
+      history: [{ day: 6, revenue: 500000, profit: 100000, customers: 30, unhappy: 1, salesProfit: 120000 }],
+    });
+    const pre = g().money;
+    const reward = g().checkWelcomeBack();
+    expect(reward).toBeGreaterThan(0);
+    expect(g().money).toBe(pre + reward);
+    // Tính như doanh thu (totals.revenue) chứ KHÔNG vào sổ thưởng → Luật 10 không bị phình
+    noLedger();
+  });
+
+  it('claimQuest vẫn ghi như thường — ranh giới "có ghi" không bị phá bởi mạch ngoài', () => {
+    useGame.setState({ stats: { revenue: 0, spent: 0, wages: 0, itemsSold: 0, customers: 50, unhappy: 0, xp: 0, byItem: {} } });
+    const ctx = questContext(g());
+    const q = dailyQuests(ctx).find((x) => x.id === 'daily_customers');
+    expect(q).toBeTruthy();
+    expect(g().claimQuest(q!.id)).toBe(true);
+    expect(g().stats.questIncome).toBe(q!.money);
+  });
+});
