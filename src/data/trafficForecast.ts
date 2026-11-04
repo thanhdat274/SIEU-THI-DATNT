@@ -68,3 +68,14 @@ export function trafficForecast(opts: {
 
   return { todayTraffic, tomorrowTraffic, todayKhach, tomorrowKhach, deltaPct, verdict, cause };
 }
+
+/** GĐ1229 — bề mặt "dự kiến hôm nay": `todayKhach` đã tính trong `trafficForecast` nhưng chỉ MAI được
+ *  hiển thị (MorningSubtitle) — sáng ra người chơi nhập/bày cho HÔM NAY mà không biết hôm nay dự kiến
+ *  bao nhiêu khách (chỉ soi được biểu tượng thời tiết định tính, không có số). Trả một câu gọn đọc từ
+ *  `todayTraffic`/`todayKhach` đúng mô hình thật; rỗng khi dự kiến 0 (đừng ồn). THUẦN — chỉ ghép số
+ *  từ hệ số đang dùng, không đổi kinh tế/save/seed. */
+export function todayTrafficNote(tf: Pick<TrafficForecast, 'todayTraffic' | 'todayKhach'>): string {
+  const n = Math.round(tf.todayKhach);
+  if (n <= 0) return '';
+  return `Dự kiến hôm nay ~${n} khách ghé (~${Math.round(tf.todayTraffic * 100)}% mức thường).`;
+}

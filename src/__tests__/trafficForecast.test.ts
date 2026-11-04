@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { trafficForecast, TRAFFIC_HOT, TRAFFIC_SLOW } from '../data/trafficForecast';
+import { trafficForecast, todayTrafficNote, TRAFFIC_HOT, TRAFFIC_SLOW } from '../data/trafficForecast';
 import { WEATHER } from '../data/weather';
 import { customersPerDay } from '../data/levels';
 
@@ -88,5 +88,23 @@ describe('GĐ1176 — dự báo nêu rõ lý do đông/vắng (không hộp đen
   it('không truyền day/seed (chỉ thời tiết): không có cause', () => {
     const r = trafficForecast({ weather: 'sunny', tomorrow: 'rain', level: 20 });
     expect(r.cause).toBeUndefined();
+  });
+});
+
+describe('todayTrafficNote — bề mặt "dự kiến hôm nay" (GĐ1229)', () => {
+  it('nắng (traffic 1.1) → câu "Dự kiến hôm nay ~N khách ghé (~110% mức thường)"', () => {
+    const tf = trafficForecast({ weather: 'sunny', tomorrow: 'sunny', level: 20 });
+    expect(todayTrafficNote(tf)).toBe(`Dự kiến hôm nay ~${Math.round(tf.todayKhach)} khách ghé (~110% mức thường).`);
+  });
+  it('giông (~0.55) → báo ít khách (~55% mức thường)', () => {
+    const tf = trafficForecast({ weather: 'storm', tomorrow: 'storm', level: 20 });
+    expect(todayTrafficNote(tf)).toContain('~55% mức thường');
+  });
+  it('dự kiến 0 → chuỗi rỗng (đừng ồn)', () => {
+    expect(todayTrafficNote({ todayTraffic: 0, todayKhach: 0 })).toBe('');
+  });
+  it('helper thuần: cùng input ra cùng chuỗi', () => {
+    const tf = trafficForecast({ weather: 'rain', tomorrow: 'cloudy', level: 15 });
+    expect(todayTrafficNote(tf)).toBe(todayTrafficNote(tf));
   });
 });

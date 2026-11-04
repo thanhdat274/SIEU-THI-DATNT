@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { formatMoney } from '../../data/products';
 import { describeDay, WEATHER } from '../../data/weather';
-import { trafficForecast } from '../../data/trafficForecast';
+import { trafficForecast, todayTrafficNote } from '../../data/trafficForecast';
 import { styles } from './shared';
 
 type W = keyof typeof WEATHER;
@@ -14,6 +14,7 @@ export function MorningSubtitle({ weatherSeed, day, weather, tomorrow, level, re
   return (
     <p style={styles.sub}>
       {WEATHER[weather].icon} Hôm nay {describeDay(weatherSeed, day, weather)} · mai {WEATHER[tomorrow].icon} {describeDay(weatherSeed, day + 1, tomorrow)}.
+      {todayTrafficNote(tf)}{' '}
       {autoNote ? <div style={{ marginTop: 2 }}>{autoNote}</div> : null}{' '}
       Đọc xong nên nhập hàng bày kệ trước khi mở cửa — khách quen ghé đúng giờ quen.
       🏠 Tiền nhà trả cuối ngày: <b>{formatMoney(rent)}</b>.
