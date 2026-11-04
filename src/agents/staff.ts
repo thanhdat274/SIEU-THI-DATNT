@@ -46,6 +46,29 @@ export function managerNeedToRestock(inp: {
   return need;
 }
 
+/**
+ * GĐ1217 — MÓN NÀO bày lên kệ đang trống (autoSwap): trích từ `StaffManager.restock` (chỗ chọn
+ * `pick` thay món đã bán sạch) thành helper THUẦN, GIỮ NGUYÊN công thức/hằng (Luật 3 — hành vi y
+ * hệt). Khi một ô kệ bán sạch mà kho hết nốt món đó (và không có hàng đang về), quản lý tự thay món
+ * khác: đúng loại kệ (categories) và kho còn hàng (storage>0), ưu tiên món CHƯA bày ở đâu trong tiệm
+ * (shown), rồi món kho còn NHIỀU nhất. Trả id món chọn (null nếu không có món hợp lệ).
+ */
+export function pickShelfFill(opts: {
+  /** Mọi sản phẩm đã mở khóa (unlockedProducts(level) — sắp theo thứ tự PRODUCTS). */
+  unlocked: readonly { id: string; category: string }[];
+  /** Loại kệ cần lấp (furnitureDef.categories). */
+  categories: readonly string[];
+  /** Tồn kho hiện tại (id → số lượng). */
+  storage: Record<string, number>;
+  /** Món đang được bày ở bất kỳ đâu trong tiệm (count>0) — tránh bày trùng. */
+  shown: ReadonlySet<string>;
+}): string | null {
+  const pick = opts.unlocked
+    .filter((p) => opts.categories.includes(p.category) && (opts.storage[p.id] ?? 0) > 0)
+    .sort((a, b) => Number(opts.shown.has(a.id)) - Number(opts.shown.has(b.id)) || (opts.storage[b.id] ?? 0) - (opts.storage[a.id] ?? 0))[0];
+  return pick?.id ?? null;
+}
+
 type State = 'arriving' | 'working' | 'leaving';
 
 class Worker extends Walker {
@@ -370,12 +393,10 @@ export class StaffManager {
         );
         if (t < 0) continue;
         const old = f.tiers[t].productId!;
-        // Món thay: đúng loại kệ và kho còn; ưu tiên món chưa bày ở đâu trong tiệm, rồi món kho còn nhiều nhất
-        const shown = new Set(s.furniture.flatMap((it) => it.tiers.filter((x) => x.count > 0).map((x) => x.productId)));
-        const pick = unlockedProducts(s.level)
-          .filter((p) => def.categories.includes(p.category) && (s.storage[p.id] ?? 0) > 0)
-          .sort((a, b) => Number(shown.has(a.id)) - Number(shown.has(b.id)) || (s.storage[b.id] ?? 0) - (s.storage[a.id] ?? 0))[0];
-        if (!pick) continue;
+        // Món thay: đúng loại kệ và kho còn; ưu tiên món chưa bày ở đâu trong tiệm, rồi món kho còn nhiều nhất — GĐ1217 helper THUẦN
+        const shown = new Set(s.furniture.flatMap((it) => it.tiers.filter((x) => x.count > 0).map((x) => x.productId)).filter((id): id is string => !!id));
+        const pickId = pickShelfFill({ unlocked: unlockedProducts(s.level), categories: def.categories, storage: s.storage, shown });
+        if (!pickId) continue;
         w.job = `${f.uid}:${t}`;
         this.walk(w, this.shop.spotFor(f));
         w.plan.push(() => (w.pause = 3 / workSpeed(w.staff)));
@@ -384,10 +405,10 @@ export class StaffManager {
           const cur = now.furniture.find((it) => it.uid === f.uid);
           const tier = cur?.tiers[t];
           // Đến nơi mà kệ đã được bày lại (nhập hàng về giữa chừng) hay kho hết nốt món định thay thì thôi
-          if (cur && tier && tier.productId === old && tier.count <= 0 && (now.storage[pick.id] ?? 0) > 0) {
-            useGame.getState().stockTier(cur.uid, t, pick.id);
+          if (cur && tier && tier.productId === old && tier.count <= 0 && (now.storage[pickId] ?? 0) > 0) {
+            useGame.getState().stockTier(cur.uid, t, pickId);
             w.say('🔄');
-            useGame.getState().notify(`🔄 ${w.staff.name} thay ô hết hàng: ${productById(old).name} → ${pick.name}`);
+            useGame.getState().notify(`🔄 ${w.staff.name} thay ô hết hàng: ${productById(old).name} → ${productById(pickId).name}`);
           }
           w.job = null;
         });
