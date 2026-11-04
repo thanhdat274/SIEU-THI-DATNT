@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   patienceMultiplier, CAT_PATIENCE_MUL, CAT_SOOTHE_PROFESSIONS,
-  counterQueueScore, leastScore, UNSTAFFED_COUNTER_PENALTY, MAIN_COUNTER_BIAS, counterThroughput, reviewStars,
+  counterQueueScore, leastScore, UNSTAFFED_COUNTER_PENALTY, MAIN_COUNTER_BIAS, counterThroughput, counterThroughputNote, reviewStars,
 } from '../agents/customerEntity';
 import { CARE_PATIENCE_PER_STAR } from '../data/staff';
 
@@ -143,5 +143,28 @@ describe('GĐ1216 — reviewStars: số sao khách chấm khi rời tiệm (tác
   });
   it('clamp đỉnh: không món hỏng + chờ ngắn không vượt 5 sao', () => {
     expect(reviewStars(0, 0, 1)).toBe(5);
+  });
+});
+
+describe('GĐ1220 — counterThroughputNote: bề mặt "năng suất quầy" lên thẻ Nhu cầu quầy (khép GĐ1214 — THUẦN, chỉ đọc hằng, không đụng state/save)', () => {
+  it('dạy đúng luật counterThroughput: người giỏi nhất ×1 + người thứ hai phụ gói → ×1.5', () => {
+    const t = counterThroughputNote();
+    expect(t).toContain('×1');
+    expect(t).toContain('×1.5');
+    expect(t).toContain('giỏi nhất tính tiền');
+    expect(t).toContain('phụ gói hàng');
+  });
+  it('nối đúng vòng chờ quầy: nhắc đủ 2 người lúc đông để đỡ khách chờ lâu bỏ về', () => {
+    const t = counterThroughputNote();
+    expect(t).toContain('2 người');
+    expect(t).toContain('chờ lâu bỏ về');
+  });
+  it('helper thuần: cùng bản chạy nào cũng ra cùng chuỗi (không đổi theo trạng thái)', () => {
+    expect(counterThroughputNote()).toBe(counterThroughputNote());
+  });
+  it('khớp con số thật: với tốc độ bằng nhau, 2 người cho ×1.5 đúng như câu dạy (gói ×0.5)', () => {
+    // nếu 2 người cùng tốc độ v: throughput = v + 0.5v = 1.5v — đúng nhịp "×1.5"
+    expect(counterThroughput([10, 10])).toBe(15);
+    expect(counterThroughput([10, 10]) / 10).toBe(1.5);
   });
 });

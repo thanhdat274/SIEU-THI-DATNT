@@ -84,6 +84,17 @@ export function counterThroughput(speedsDesc: readonly number[]): number {
 }
 
 /**
+ * GĐ1220 — bề mặt "năng suất quầy" (khép lời hứa của GĐ1214 "báo cáo trỏ quầy không đủ người"): mảnh
+ * cuối của vòng chờ quầy (GĐ1208 kiên nhẫn → GĐ1213 chọn quầy → GĐ1214 năng suất) đã tách + test được,
+ * nhưng con số ×1/×1.5 chưa từng lên màn hình — người chơi đứng quầy 1 người không biết thêm 1 người phụ
+ * gói hàng đẩy năng suất lên ×1.5 để đỡ khách chờ lâu bỏ về. Helper THUẦN ghép câu dạy từ đúng luật
+ * `counterThroughput` (×1 người giỏi nhất + ×0.5 người thứ hai) — UI chỉ hiển thị, không đổi kinh tế/save.
+ */
+export function counterThroughputNote(): string {
+  return `⚡ Quầy: người giỏi nhất tính tiền (×1 năng suất), thêm 1 người phụ gói hàng → ×1.5 — giữ quầy đủ 2 người lúc đông để đỡ khách chờ lâu bỏ về.`;
+}
+
+/**
  * GĐ1216 — Số sao khách chấm khi rời tiệm: trích từ `agents/customers.ts` (review) thành helper THUẦN,
  * GIỮ NGUYÊN công thức/hằng (Luật 3 — hành vi y hệt). Là quyết định người chơi NHÌN THẤY (đánh giá →
  * danh tiếng) nhưng từng chìm trong agent gắn store/simRng nên là "hộp đen": mỗi món không mua được

@@ -1,5 +1,6 @@
 import { useGame } from '../../core/store';
 import { demandForecast } from '../../data/counterDemand';
+import { counterThroughputNote } from '../../agents/customerEntity';
 import { styles } from './shared';
 
 interface Props {
@@ -31,6 +32,7 @@ export function CounterDemandCard({ demand, cleanStreak, cleanBest, cleanExtra }
       <button onClick={() => openPanel({ type: 'order' })} style={{ ...styles.btn, fontSize: 11, padding: '1px 6px' }}>châm kệ món tủ →</button>
       · <button onClick={() => openPanel({ type: 'staff' })} style={{ ...styles.btn, fontSize: 11, padding: '1px 6px' }}>đủ người đứng quầy →</button>
     </div>
+    <div style={{ fontSize: 11.5, marginTop: 3, opacity: 0.75 }}>{counterThroughputNote()}</div>
     <div style={{ fontSize: 12, marginTop: 4, paddingTop: 4, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
       🧭 Nếp vận hành: chuỗi <b>{cleanStreak}</b> ngày sạch · kỷ lục <b>{cleanBest}</b> · {cleanExtra}
     </div>
