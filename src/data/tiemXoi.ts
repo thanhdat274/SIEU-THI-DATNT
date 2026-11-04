@@ -98,7 +98,7 @@ export const tiemXoiSaved = (made: Record<string, number>, costMul = TIEM_XOI_CO
  * còn lời hay lỗ, và gợi ý khi thợ dư sức (kho đã đủ) — cho nghỉ bớt đỡ lương.
  */
 export function tiemXoiMorning(
-  t: TiemXoiState, last: { total: number; saved: number; wages: number; event?: TiemXoiEventKind } | null | undefined,
+  t: TiemXoiState, last: { total: number; saved: number; wages: number; event?: TiemXoiEventKind; dine?: number; dineRevenue?: number } | null | undefined,
 ): { net: number | null; idle: boolean } {
   if (!last) return { net: null, idle: false };
   const net = last.saved - last.wages;

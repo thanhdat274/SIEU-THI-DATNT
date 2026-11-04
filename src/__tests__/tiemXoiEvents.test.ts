@@ -78,6 +78,8 @@ describe('endDay gắn sự kiện tiệm xôi vào tin sáng mai (GĐ711)', () 
       g().sleep();
       const st = g();
       const ev = st.biz.tiemXoiLast?.event;
+      // GĐ1173 — khi có suất khách ăn tại chỗ thì phải lưu kèm dineRevenue (thẻ Sổ đầu ngày hiển thị).
+      if (st.biz.tiemXoiLast?.dine) expect(st.biz.tiemXoiLast.dineRevenue).toBeGreaterThan(0);
       for (const line of st.lastSummary?.news ?? []) {
         if (line.startsWith('🍚 Tiệm xôi')) expect([...line].length).toBeLessThanOrEqual(90);
       }
