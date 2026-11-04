@@ -1,4 +1,4 @@
-import { daySalesProfit, type DayStats } from '../core/dayStats';
+import { daySalesProfit, type DayStats, type DayRecord } from '../core/dayStats';
 import type { QuestLog } from './quests';
 
 /**
@@ -61,4 +61,48 @@ export function incomeLevers(health: SplitHealth, advice: IncomeLever[], max = 2
   if (health === 'ok') return [];
   if (health === 'loss' && advice.length === 0) return [LOSS_FALLBACK_LEVER];
   return advice.slice(0, max);
+}
+
+/**
+ * GĐ1207 — Xu hướng lãi bán thật gần đây: đóng VÒNG PHẢN HỒI của Luật 10. Báo cáo biết kê nút sửa
+ * (GĐ1203: nới giá/lương/kệ; GĐ1204: Soi giá) nhưng sau khi người chơi BẤM và chơi vài ngày, làm sao biết
+ * sức bán thật đã cải thiện chưa? — thẻ chỉ cho 1 con số hôm nay, không chỉ HƯỚNG 7 ngày. Helper THUẦN đọc
+ * này rút từ history (DayRecord[].salesProfit — chính là con số game lưu từ endDay, field optional cho van
+ * cũ) ra hướng thay đổi: so trung bình nửa gần (≤7 ngày) vs nửa đầu; giữ ngưỡng 3% như riskTrendSummary để
+ * không báo nhiễu ngày nhỏ. KHÔNG đổi state/kinh tế/save/seed.
+ */
+export interface SalesTrend {
+  /** Số ngày có dữ liệu lãi bán thật trong cửa sổ history. */
+  days: number;
+  /** Lãi bán thật ngày gần nhất có số (0 nếu chưa ngày nào ghi). */
+  last: number;
+  /** Trung bình nửa đầu (các ngày trước nửa gần); 0 nếu chưa đủ để so. */
+  prev: number;
+  /** 'up' khi nửa gần ≥ nửa trước ×1.03; 'down' khi ≤ ×0.97; chưa đủ/dao động nhỏ → 'flat'. */
+  dir: 'up' | 'down' | 'flat';
+}
+
+const avg = (a: number[]) => (a.length ? a.reduce((s, v) => s + v, 0) / a.length : 0);
+
+export function salesTrend(history: DayRecord[]): SalesTrend {
+  const xs = history.map((h) => h.salesProfit).filter((v): v is number => typeof v === 'number');
+  const n = xs.length;
+  if (n === 0) return { days: 0, last: 0, prev: 0, dir: 'flat' };
+  const last = xs[n - 1];
+  const cut = Math.max(0, n - 7); // nửa đầu: các ngày trước 7 ngày gần nhất
+  const recent = xs.slice(cut);
+  const earlier = xs.slice(0, cut);
+  const prevVal = Math.round(avg(earlier));
+  const recentAvg = avg(recent);
+  let dir: SalesTrend['dir'] = 'flat';
+  if (earlier.length > 0 && prevVal !== 0) {
+    dir = recentAvg > prevVal * 1.03 ? 'up' : recentAvg < prevVal * 0.97 ? 'down' : 'flat';
+  } else if (earlier.length === 0) {
+    dir = 'flat'; // chưa đủ 2 nửa để nói xu hướng
+  } else if (recentAvg > 0) {
+    dir = 'up';
+  } else if (recentAvg < 0) {
+    dir = 'down';
+  }
+  return { days: n, last, prev: prevVal, dir };
 }

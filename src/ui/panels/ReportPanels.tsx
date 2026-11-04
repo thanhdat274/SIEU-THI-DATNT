@@ -61,7 +61,7 @@ import { PHONE_SLOTS } from '../../data/phoneOrders';
 import { paymentById, type PaymentMethod } from '../../data/payments';
 import { solvency } from '../../data/solvency';
 import { loanBurden } from '../../data/loanBurden';
-import { incomeSplit, incomeLevers } from '../../data/incomeSplit';
+import { incomeSplit, incomeLevers, salesTrend } from '../../data/incomeSplit';
 import { dailyBurn } from '../../data/dailyBurn';
 import { recentAvgRevenue } from '../../data/minorPayoff';
 import { AdviceCard, HourChart, ItemTable, HistoryChart } from './HistoryPanel';
@@ -311,9 +311,20 @@ export function SummaryPanel({ day }: { day: number }) {
             // kho còn / hết cả kho / chê đắt / chờ lâu) cạnh lời khuyên "nới lãi bán lên", bấm mở thẳng panel
             // sửa. Hết hộp đen giữa chẩn đoán và phương thuốc; `ok` không kê (tránh nhiễu).
             const levers = incomeLevers(split.health, advice);
+            // GĐ1207: đóng vòng phản hồi — sau khi bấm nút "Soi giá / nới lãi / hạ lương", người chơi cần
+            // thấy sức bán thật có cải thiện qua 7 ngày không, chứ chỉ 1 con số hôm nay không đủ biết hướng.
+            const trend = salesTrend(history);
+            const trendLine = trend.days > 0 ? (
+              <span style={{ fontSize: 11, opacity: 0.85, marginLeft: 6 }}>
+                {trend.dir === 'up' ? '🔼 lãi bán thật đang cải thiện (7 ngày)'
+                  : trend.dir === 'down' ? '▼ lãi bán thật đang xấu đi (7 ngày)'
+                    : trend.days < 2 ? '▬ mới có 1 ngày, chưa thể đo xu hướng'
+                      : '▬ lãi bán thật 7 ngày ổn định'}
+              </span>
+            ) : null;
             return (
               <Callout tone={tone} style={{ marginTop: 8 }}
-                title={<>🎯 Lãi bán hàng thật {split.salesProfit < 0 ? formatMoney(split.salesProfit) : <b style={{ color: '#2ecc71' }}>+{formatMoney(split.salesProfit)}</b>} · thưởng <b style={{ color: '#2ecc71' }}>+{formatMoney(split.quest)}</b>{split.bet > 0 ? <span> + kèo <b style={{ color: '#2ecc71' }}>+{formatMoney(split.bet)}</b></span> : null}</>}>
+                title={<>🎯 Lãi bán hàng thật {split.salesProfit < 0 ? formatMoney(split.salesProfit) : <b style={{ color: '#2ecc71' }}>+{formatMoney(split.salesProfit)}</b>} · thưởng <b style={{ color: '#2ecc71' }}>+{formatMoney(split.quest)}</b>{split.bet > 0 ? <span> + kèo <b style={{ color: '#2ecc71' }}>+{formatMoney(split.bet)}</b></span> : null}{trendLine}</>}>
                 <div style={{ fontSize: 12, opacity: 0.8, marginTop: 2 }}>
                   Lãi bán thật = lãi gộp bán hàng/ngày + dịch vụ − lương − tiền nhà (không trừ tiền nhập kho).<br />
                   {note}

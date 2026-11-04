@@ -3,7 +3,7 @@
  * THUẦN đọc — không đổi kinh tế/save/seed; kiểm thuật toán incomeSplit + cách ghi questIncome lúc claim.
  */
 import { describe, expect, it, beforeEach } from 'vitest';
-import { incomeSplit, incomeLevers, LOSS_FALLBACK_LEVER } from '../data/incomeSplit';
+import { incomeSplit, incomeLevers, LOSS_FALLBACK_LEVER, salesTrend } from '../data/incomeSplit';
 import type { DayStats } from '../core/dayStats';
 import type { QuestLog } from '../data/quests';
 import { newGameData, useGame, questContext } from '../core/store';
@@ -283,5 +283,60 @@ describe('GĐ1204 incomeLevers — fallback nút khi ÂM lãi bán mà KHÔNG c�
 
   it('fallback tôn trọng max=1 (chỉ 1 mục nên không đổi)', () => {
     expect(incomeLevers('loss', [], 1)).toEqual([LOSS_FALLBACK_LEVER]);
+  });
+});
+
+describe('GĐ1207 salesTrend — đóng vòng phản hồi Luật 10 (sau khi sửa, lãi bán thật cải thiện chưa qua 7 ngày)', () => {
+  const rec = (day: number, salesProfit?: number) => ({ day, revenue: 1000000, profit: 0, customers: 10, unhappy: 0, ...(salesProfit !== undefined ? { salesProfit } : {}) });
+
+  it('rỗng / không ngày nào có salesProfit → toàn 0, flat (van cũ chưa lưu không vỡ)', () => {
+    expect(salesTrend([])).toEqual({ days: 0, last: 0, prev: 0, dir: 'flat' });
+    expect(salesTrend([rec(1), rec(2)])).toEqual({ days: 0, last: 0, prev: 0, dir: 'flat' });
+  });
+
+  it('chỉ 1-2 ngày có số → last đúng, chưa đủ 2 nửa nên dir flat', () => {
+    const s = salesTrend([rec(1, 100000), rec(2, 200000), rec(3)]);
+    expect(s.days).toBe(2);
+    expect(s.last).toBe(200000); // ngày có số gần nhất
+    expect(s.prev).toBe(0); // nửa đầu rỗng
+    expect(s.dir).toBe('flat');
+  });
+
+  it('tăng rõ: nửa gần (≤7 ngày cuối) ≥ nửa trước ×1.03 → dir up, last = ngày cuối', () => {
+    // 14 ngày: 7 đầu âm nhẹ (−50k), 7 sau dương (200k) → nửa gần trội hẳn; lo ngày không có số xen kẽ vẫn đếm đúng
+    const xs = [...Array(7)].map((_, i) => rec(i + 1, -50000)).concat([...Array(7)].map((_, i) => rec(i + 8, 200000)));
+    const s = salesTrend(xs);
+    expect(s.days).toBe(14);
+    expect(s.last).toBe(200000);
+    expect(s.prev).toBe(-50000);
+    expect(s.dir).toBe('up');
+  });
+
+  it('giảm rõ (nửa gần ≤ nửa trước ×0.97) → dir down', () => {
+    const xs = [...Array(7)].map((_, i) => rec(i + 1, 300000)).concat([...Array(7)].map((_, i) => rec(i + 8, 50000)));
+    expect(salesTrend(xs).dir).toBe('down');
+  });
+
+  it('dao động nhỏ (≤3%) → flat, không báo nhiễu', () => {
+    // 7 đầu = 100k, 7 sau = 101k → chênh ~1% < 3%
+    const xs = [...Array(7)].map((_, i) => rec(i + 1, 100000)).concat([...Array(7)].map((_, i) => rec(i + 8, 101000)));
+    const s = salesTrend(xs);
+    expect(s.dir).toBe('flat');
+    expect(s.prev).toBe(100000);
+    expect(s.last).toBe(101000);
+  });
+
+  it('nhiều ngày: nửa gần đúng 7 ngày cuối, bỏ qua ngày không có số trong nửa so sánh', () => {
+    // 3 ngày có số + 3 ngày không số xen kẽ: vẫn chỉ đếm ngày có số, last = ngày có số gần nhất
+    const xs = [rec(1, 100000), rec(2, 120000), rec(3, 140000)];
+    const s = salesTrend(xs);
+    expect(s.days).toBe(3);
+    expect(s.last).toBe(140000);
+    expect(s.prev).toBe(0); // cả 3 đều trong nửa gần (≤7) → nửa đầu rỗng
+  });
+
+  it('helper thuần: cùng đầu vào cho kết quả giống hệt (không đổi seed/state)', () => {
+    const xs = [...Array(8)].map((_, i) => rec(i + 1, 100000 + i * 10000));
+    expect(salesTrend(xs)).toEqual(salesTrend(xs));
   });
 });
