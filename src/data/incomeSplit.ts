@@ -9,7 +9,7 @@ import type { QuestLog } from './quests';
  * không phản ánh sức bán thật. Helper THUẦN đọc: không đổi kinh tế/save/seed.
  */
 
-export type SplitHealth = 'ok' | 'heavy' | 'loss';
+export type SplitHealth = 'ok' | 'tight' | 'heavy' | 'loss';
 
 export interface DayIncomeSplit {
   /** Lãi bán hàng THẬT hôm nay = lãi gộp sổ bán + lời dịch vụ − lương − tiền nhà (đúng công thức history.salesProfit). */
@@ -22,7 +22,7 @@ export interface DayIncomeSplit {
   reward: number;
   /** Tỉ lệ reward / lãi bán thật — nhắc Luật 10; null khi không có lãi dương để so. */
   rewardShare: number | null;
-  /** Sức khỏe nguồn thu: loss = lãi bán âm; heavy = thưởng ≥ lãi bán (lấn nghề chính); ok = bình thường. */
+  /** Sức khỏe nguồn thu: loss = lãi bán âm; heavy = thưởng ≥ lãi bán (lấn nghề chính); tight = thưởng ≥ 80% lãi bán (sát kề); ok = bình thường. */
   health: SplitHealth;
 }
 
@@ -35,5 +35,9 @@ export const incomeSplit = (stats: DayStats, questLog: QuestLog, day: number): D
   let health: SplitHealth = 'ok';
   if (salesProfit < 0) health = 'loss';
   else if (reward > 0 && reward >= salesProfit) health = 'heavy';
+  // GĐ1198: đai "tight" — thưởng ≥ 80% lãi bán thật (nhưng chưa ≥ 100%) cảnh báo sớm hơn 'heavy',
+  // vì dải này (Luật 10 — bán hàng là nghề chính) game cân bằng thực tế hay nằm ở đây (tỉ số ~0.96),
+  // mà báo cáo cũ chỉ khuyên "bán hàng vẫn là nghề chính" khi thưởng đã gần bằng lãi bán — gần như gạt.
+  else if (reward > 0 && reward >= 0.8 * salesProfit) health = 'tight';
   return { salesProfit, quest, bet, reward, rewardShare, health };
 };

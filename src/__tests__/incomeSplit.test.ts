@@ -66,6 +66,49 @@ describe('GĐ1178 incomeSplit — nguồn thu tách hai nửa', () => {
   });
 });
 
+describe('GĐ1198 incomeSplit — đai "tight" (thưởng ≥ 80% lãi bán, chưa ≥ 100%)', () => {
+  const log = (over: Partial<QuestLog> = {}): QuestLog => ({ day: 7, claimedDaily: [], claimedStory: [], bet: null, ...over });
+
+  it('thưởng = 90% lãi bán (dưới heavy, trên ok) → tight', () => {
+    // lãi gộp 250000 − lương 120000 − thuê 20000 = 110000; quest 99000 → 90%
+    const s = incomeSplit(stats({ questIncome: 99000 }), log(), 7);
+    expect(s.salesProfit).toBe(110000);
+    expect(s.rewardShare).toBeCloseTo(0.9, 9);
+    expect(s.health).toBe('tight');
+  });
+
+  it('đúng 80% lãi bán → tight (cận dưới đai)', () => {
+    // quest 88000 / lãi 110000 = 0.8
+    const s = incomeSplit(stats({ questIncome: 88000 }), log(), 7);
+    expect(s.rewardShare).toBeCloseTo(0.8, 9);
+    expect(s.health).toBe('tight');
+  });
+
+  it('79% → ok (chưa vào đai)', () => {
+    const s = incomeSplit(stats({ questIncome: 86900 }), log(), 7); // 86900/110000 ≈ 0.79
+    expect(s.rewardShare).toBeCloseTo(0.79, 9);
+    expect(s.health).toBe('ok');
+  });
+
+  it('đúng 100% → heavy (không phải tight) — thưởng đã bằng/lấn lãi bán', () => {
+    const s = incomeSplit(stats({ questIncome: 110000 }), log(), 7);
+    expect(s.rewardShare).toBeCloseTo(1, 9);
+    expect(s.health).toBe('heavy');
+  });
+
+  it('thưởng 0 → ok, không vào đai dù lãi nhỏ', () => {
+    const s = incomeSplit(stats({ questIncome: 0 }), log(), 7);
+    expect(s.health).toBe('ok');
+  });
+
+  it('kèo trong ngày cộng vào thưởng và có thể đẩy ok → tight qua đai', () => {
+    // quest 77000 (70%) + kèo 22000 (20%) = 99000 (90%) → tight
+    const s = incomeSplit(stats({ questIncome: 77000 }), log({ day: 7, bet: { day: 7, questId: 'daily_set', tier: 2, bonus: 22000 } }), 7);
+    expect(s.reward).toBe(99000);
+    expect(s.health).toBe('tight');
+  });
+});
+
 describe('GĐ1178 claimQuest ghi questIncome (optional, không đổi tiền/kinh tế)', () => {
   beforeEach(() => {
     useGame.setState({ ...newGameData(), day: 7 });

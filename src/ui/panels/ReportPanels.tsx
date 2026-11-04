@@ -296,14 +296,16 @@ export function SummaryPanel({ day }: { day: number }) {
           {(() => {
             const split = incomeSplit(st, questLog, day);
             const sharePct = split.rewardShare !== null ? Math.round(split.rewardShare * 100) : null;
-            const tone = split.health === 'loss' ? 'danger' : split.health === 'heavy' ? 'accent' : 'ok';
+            const tone = split.health === 'loss' ? 'danger' : split.health === 'heavy' || split.health === 'tight' ? 'accent' : 'ok';
             const note = split.health === 'loss'
               ? <span>Lãi bán thật <b>âm</b> — thưởng {formatMoney(split.reward)} đang gánh lỗ vận hành. Coi lại giá bán, đừng trông chờ thưởng bù.</span>
               : split.health === 'heavy'
                 ? <span>Hôm nay thưởng chiếm <b>{sharePct}%</b> lãi bán thật — bán hàng phải là nghề chính (Luật 10): nới lãi bán lên thay vì trông chờ thưởng.</span>
-                : sharePct !== null
-                  ? <span>Thưởng chiếm {sharePct}% lãi bán thật — bán hàng vẫn là nghề chính.</span>
-                  : <span>Bán hàng vẫn là nghề chính — hôm nay lãi bán thật bằng 0, thưởng là nguồn phụ.</span>;
+                : split.health === 'tight'
+                  ? <span>Thưởng chiếm <b>{sharePct}%</b> lãi bán thật — đã <b>gần bằng lãi bán</b>, coi chừng lấn nghề chính (Luật 10): nới lãi bán lên đừng trông chờ thưởng.</span>
+                  : sharePct !== null
+                    ? <span>Thưởng chiếm {sharePct}% lãi bán thật — bán hàng vẫn là nghề chính.</span>
+                    : <span>Bán hàng vẫn là nghề chính — hôm nay lãi bán thật bằng 0, thưởng là nguồn phụ.</span>;
             return (
               <Callout tone={tone} style={{ marginTop: 8 }}
                 title={<>🎯 Lãi bán hàng thật {split.salesProfit < 0 ? formatMoney(split.salesProfit) : <b style={{ color: '#2ecc71' }}>+{formatMoney(split.salesProfit)}</b>} · thưởng <b style={{ color: '#2ecc71' }}>+{formatMoney(split.quest)}</b>{split.bet > 0 ? <span> + kèo <b style={{ color: '#2ecc71' }}>+{formatMoney(split.bet)}</b></span> : null}</>}>
