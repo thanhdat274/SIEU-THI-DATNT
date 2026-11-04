@@ -109,6 +109,29 @@ describe('GĐ1198 incomeSplit — đai "tight" (thưởng ≥ 80% lãi bán, ch�
   });
 });
 
+describe('GĐ1199 — đai tight khớp ngân sách Luật 10 theo cấp (promt_game.md, bảng chống phình: (nhiệm vụ+kèo)/lãi bán cấp 5/10/20 đo 0.99/0.89/0.64, trần ≤ 1)', () => {
+  const log = (over: Partial<QuestLog> = {}): QuestLog => ({ day: 7, claimedDaily: [], claimedStory: [], bet: null, ...over });
+  // salesProfit cố định 110000; questIncome = tỉ lệ đo theo cấp × 110000 — tái tạo đúng dải mà economySim đo.
+  const at = (ratio: number) => incomeSplit(stats({ questIncome: Math.round(ratio * 110000) }), log(), 7).rewardShare!;
+
+  it('cấp thấp (tỉ lệ ≤ 1 nhưng ≥ 80%) → CẢNH BÁO tight: game thực tế bám sát trần Luật 10 nên báo cáo phải nói thật, không để "bán hàng vẫn là nghề chính"', () => {
+    // cấp 5 (0.99) và cấp 10 (0.89) trong đai ≥ 0.8 — đai đúng chỗ nhồi thưởng
+    expect(at(0.99)).toBeCloseTo(0.99, 5);
+    expect(incomeSplit(stats({ questIncome: Math.round(0.99 * 110000) }), log(), 7).health).toBe('tight');
+    expect(incomeSplit(stats({ questIncome: Math.round(0.89 * 110000) }), log(), 7).health).toBe('tight');
+  });
+
+  it('cấp cao (tỉ lệ 0.64 < 80%) → ok: lãi bán thật ĐANG dẫn, không làm nhiễu báo cáo', () => {
+    const s = incomeSplit(stats({ questIncome: Math.round(0.64 * 110000) }), log(), 7);
+    expect(s.rewardShare).toBeCloseTo(0.64, 5);
+    expect(s.health).toBe('ok');
+  });
+
+  it('đúng trần ngân sách ≤ 1 → heavy (báo cáo không bao giờ nói "nghề chính" khi thưởng đã bằng lãi bán)', () => {
+    expect(incomeSplit(stats({ questIncome: 110000 }), log(), 7).health).toBe('heavy');
+  });
+});
+
 describe('GĐ1178 claimQuest ghi questIncome (optional, không đổi tiền/kinh tế)', () => {
   beforeEach(() => {
     useGame.setState({ ...newGameData(), day: 7 });
