@@ -3,7 +3,7 @@
  * THUẦN đọc — không đổi kinh tế/save/seed; kiểm thuật toán incomeSplit + cách ghi questIncome lúc claim.
  */
 import { describe, expect, it, beforeEach } from 'vitest';
-import { incomeSplit, incomeLevers } from '../data/incomeSplit';
+import { incomeSplit, incomeLevers, LOSS_FALLBACK_LEVER } from '../data/incomeSplit';
 import type { DayStats } from '../core/dayStats';
 import type { QuestLog } from '../data/quests';
 import { newGameData, useGame, questContext } from '../core/store';
@@ -258,5 +258,30 @@ describe('GĐ1203 incomeLevers — nối CHẨN ĐOÁN Luật 10 → HÀNH ĐỘ
   it('giữ nguyên action để mở thẳng panel sửa (arrange/order/prices/staff)', () => {
     const out = incomeLevers('tight', advice, 3);
     expect(out.map((l) => l.action)).toEqual(['order', 'order', 'prices']);
+  });
+});
+
+describe('GĐ1204 incomeLevers — fallback nút khi ÂM lãi bán mà KHÔNG có nguyên nhân khách không mua', () => {
+  // Ngày `loss` nhưng dịch vụ sạch / không ai chờ hay bỏ vì giá-kệ → advice rỗng, lỗ do biên giá mỏng hoặc chi phí
+  // cố định (lương/thuê). GĐ1203 mới kê advice khi có, nhưng chưa có bảo hiểm cho chính lời khuyên "Coi lại giá bán"
+  // (báo cáo loss hiện sẵn dòng đó) — thiếu nút là lại "hộp đen". Kê đúng lời khuyên đã hiện thành nút giá.
+  it('loss + advice rỗng → trả đúng fallback kê lời khuyên giá bán (mở panel prices)', () => {
+    const out = incomeLevers('loss', []);
+    expect(out).toEqual([LOSS_FALLBACK_LEVER]);
+    expect(out[0].action).toBe('prices');
+  });
+
+  it('loss + có advice → vẫn ưu tiên nguyên nhân thật (không lấn bởi fallback)', () => {
+    const advice = [{ icon: '💸', text: 'Giá cao hơn khách sẵn lòng trả', action: 'prices' }];
+    expect(incomeLevers('loss', advice)).toEqual(advice);
+  });
+
+  it('heavy/tight + advice rỗng → vẫn [] (fallback chỉ dành riêng ngày âm lãi bán — nơi lời khuyên trỏ giá bán)', () => {
+    expect(incomeLevers('heavy', [])).toEqual([]);
+    expect(incomeLevers('tight', [])).toEqual([]);
+  });
+
+  it('fallback tôn trọng max=1 (chỉ 1 mục nên không đổi)', () => {
+    expect(incomeLevers('loss', [], 1)).toEqual([LOSS_FALLBACK_LEVER]);
   });
 });

@@ -52,7 +52,13 @@ export const incomeSplit = (stats: DayStats, questLog: QuestLog, day: number): D
  * sửa (arrange/order/prices/staff). `ok` (lãi bán ĐANG dẫn) thì không cần kê — tránh nhiễu. Không đổi kinh tế/save/seed.
  */
 export type IncomeLever = { icon: string; text: string; action?: string };
+/** GĐ1204: ngày ÂM lãi bán (`loss`) mà KHÔNG có nguyên nhân khách không mua (dịch vụ sạch, không ai chờ/bỏ
+ *  vì giá/kệ) — lỗ thường từ biên giá mỏng hoặc chi phí cố định. Báo cáo đang chỉ nói "Coi lại giá bán" mà
+ *  không cho nút (incomeLevers trả [] vì advice rỗng) — lại dính "hộp đen" GĐ1203 định diệt. Kê đúng lời khuyên
+ *  đã hiện (giá bán) thành nút mở thẳng panel giá — lời thật, không bịa nguyên nhân. THUẦN đọc — không đổi kinh tế/save/seed. */
+export const LOSS_FALLBACK_LEVER: IncomeLever = { icon: '💸', text: 'Soi giá bán — nới biên để lãi bán thật dương', action: 'prices' };
 export function incomeLevers(health: SplitHealth, advice: IncomeLever[], max = 2): IncomeLever[] {
   if (health === 'ok') return [];
+  if (health === 'loss' && advice.length === 0) return [LOSS_FALLBACK_LEVER];
   return advice.slice(0, max);
 }
