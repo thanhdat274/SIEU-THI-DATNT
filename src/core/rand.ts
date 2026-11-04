@@ -22,6 +22,8 @@ export function mulberry32(seed: number): () => number {
 
 /** Chuỗi seed đang bật (null = đang ở chế độ Math.random mặc định). */
 let seeded: (() => number) | null = null;
+/** Giá trị seed gốc đang bật (null = chưa seed) — để tạo DÒNG PHỤ lệch băm. */
+let seedVal: number | null = null;
 
 /** Đọc nguồn số ngẫu nhiên hiện tại của sim — Math.random khi chưa seed, chuỗi cố định khi đã seed. */
 export const simRng = (): (() => number) => seeded ?? Math.random;
@@ -32,9 +34,29 @@ export const isSimSeeded = (): boolean => seeded !== null;
 /** Bật seed: từ giờ `simRng()` trả chuỗi xác định theo `seed` (chỉ ảnh hưởng code đọc qua simRng). */
 export function setSimSeed(seed: number): void {
   seeded = mulberry32(seed);
+  seedVal = seed >>> 0;
+  cashierStream = null;
 }
 
 /** Tắt seed, quay về Math.random mặc định. */
 export function clearSimSeed(): void {
   seeded = null;
+  seedVal = null;
+  cashierStream = null;
+}
+
+// ── GĐ1253 — dòng rút RIÊNG cho quyết định của thu ngân (mặc cả/tiền lẻ) ────────────────────────
+// Cùng seed gốc nhưng băm lệch (SALT): quyết định của thu ngân KHÔNG dịch chuỗi kinh tế chính —
+// nếu rút chung simRng thì một kèo được chốt khác đi sẽ re-roll TOÀN BỘ sự kiện phía sau (đã đo:
+// khảo sát cấp 5 trôi lãi bán 189.800→118.067đ/ngày chỉ vì trôi chuỗi, không phải EV kèo xấu).
+// Nguyên tắc c "meta chỉ soi sáng, không đổi kinh tế": dòng riêng giữ simGolden/khảo sát nguyên vẹn.
+// Chưa seed → Math.random như simRng (game thật, không phải test/bot).
+const CASHIER_SALT = 0x2f4b9e17;
+let cashierStream: (() => number) | null = null;
+
+/** Rút một số cho quyết định thu ngân — dòng phụ xác định theo seed ván, độc lập chuỗi chính. */
+export function cashierRng(): number {
+  if (seedVal === null) return Math.random();
+  if (!cashierStream) cashierStream = mulberry32((seedVal ^ CASHIER_SALT) >>> 0);
+  return cashierStream();
 }

@@ -29,6 +29,8 @@ import { rollService, SERVICE_BUY_ALONG, type ServiceDef } from '../data/service
 import { earnService } from '../core/biz';
 import { paymentById, pickPayment } from '../data/payments';
 import { askAtCounter, askPending, clearAsk, expireAsk, answerAsk, askWallElapsed, useCounterAsk } from '../core/counterAsk';
+import { cashierRng } from '../core/rand';
+import { cashierHaggleChoice, cashierChangeChoice } from '../data/counterDeals';
 import { VENDOR_CHANCE, VENDOR_FROM, VENDOR_UNTIL, WHOLESALE_UNLOCK } from '../data/wholesale';
 import { meatDemandFactor } from '../data/meat';
 import {
@@ -85,6 +87,8 @@ export class CustomerManager {
   private vendorAt: number | null | undefined;
   private checkoutProgress = new Map<string, number>();
   private cashierSpeed: (counter: Counter) => number = () => 0;
+  /** GĐ1253 — sao tay nghề thu ngân đang trực ở quầy (0 = không có); khách gặp thu ngân thì thu ngân tự quyết. */
+  private dutyCashierSkill: (counter: Counter) => number = () => 0;
   /** Có bảo vệ đang trực cửa không (StaffManager gán). */
   guardOnDuty: () => boolean = () => false;
   /** Người chơi đang đứng quầy này (mới hỏi ý; nhân viên đứng quầy thì tự chọn mặc định). */
@@ -99,11 +103,13 @@ export class CustomerManager {
   /**
    * @param gameDt giây đã nhân tốc độ game
    * @param cashierSpeed tốc độ tính tiền ở một quầy (1 = người chơi); 0 = không ai đứng quầy đó
+   * @param dutyCashierSkill sao tay nghề thu ngân đang trực ở quầy (GĐ1253); 0 = không có (mặc định — giữ hành vi cũ)
    */
-  update(gameDt: number, cashierSpeed: (counter: Counter) => number) {
+  update(gameDt: number, cashierSpeed: (counter: Counter) => number, dutyCashierSkill: (counter: Counter) => number = () => 0) {
     const s = useGame.getState();
     const gameMinutes = gameDt * MINUTES_PER_SECOND;
     this.cashierSpeed = cashierSpeed;
+    this.dutyCashierSkill = dutyCashierSkill;
     expireAsk(s.minutes);
     this.updateAskRealTime(s);
     const counters = this.shop.counters();
@@ -575,14 +581,15 @@ export class CustomerManager {
     }
     // GĐ721 — chốt deal mặc cả qua helper thuần: 0 bớt luôn · 1 trả giá lại (khách gật giá giữa/mua đầy/bỏ về) · 2 giữ giá
     if (deal.kind === 'haggle') {
-      const settle = haggleSettle(deal.choice, deal.amount, total, deal.choice === 0 ? 0 : simRng()());
+      // GĐ1253 — deal do thu ngân chốt thì settle rút dòng riêng cashierRng (giữ chuỗi kinh tế chính nguyên vẹn)
+      const settle = haggleSettle(deal.choice, deal.amount, total, deal.choice === 0 ? 0 : deal.cashier ? cashierRng() : simRng()());
       if (settle.discount) combo.discount += settle.discount;
       if (!settle.happy) happy = false;
       if (settle.icon) first.say(settle.icon, 2);
     }
     if (deal.kind === 'change' && deal.choice === 1) {
       first.say('🍬', 2);
-      if (simRng()() < CANDY_ANNOY) happy = false;
+      if ((deal.cashier ? cashierRng() : simRng()()) < CANDY_ANNOY) happy = false;
     }
     const onCredit = deal.kind === 'credit' && deal.choice === 0;
     // Khách tự chọn cách trả tiền: đơn càng lớn càng nghiêng chuyển khoản / ví / thẻ
@@ -715,6 +722,16 @@ export class CustomerManager {
       const policy = st.counterPolicy ?? defaultCounterPolicy();
       const pc = ask.kind === 'haggle' ? haggleChoice(policy, total) : changeChoice(policy, total);
       if (pc !== null) return (c.deal = { kind: ask.kind, amount: ask.amount, choice: pc });
+      // GĐ1253 — có thu ngân đang trực ở quầy thì THU NGÂN tự quyết theo tay nghề (random có trọng số
+      // theo sao — cashierHaggleChoice/cashierChangeChoice), KHÔNG dừng game hỏi chủ. Người dùng phản
+      // ánh: đã thuê nhân viên rồi mà khách mặc cả vẫn bị hỏi giữa chừng. Chốt NGAY (không prompt),
+      // rút từ DÒNG RIÊNG cashierRng — không dịch chuỗi kinh tế chính (Nguyên tắc c, GĐ722 an toàn vì
+      // kết quả áp dụng tức thì). Người chơi tự đứng quầy mà KHÔNG có thu ngân → giữ nguyên được hỏi.
+      const skill = this.dutyCashierSkill(counter);
+      if (skill > 0) {
+        const choice = ask.kind === 'haggle' ? cashierHaggleChoice(skill, cashierRng()) : cashierChangeChoice(skill, cashierRng());
+        return (c.deal = { kind: ask.kind, amount: ask.amount, choice, cashier: true });
+      }
     }
     if (!ask) return (c.deal = { kind: 'none', amount: 0, choice: 0 });
     const { kind, amount } = ask;

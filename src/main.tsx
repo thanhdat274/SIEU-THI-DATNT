@@ -655,7 +655,8 @@ function renderFrame() {
       staff.update(dt * speed, nearCounter());
       customers.update(dt * speed, (counter) =>
         Math.max(playerAt(counter) || partnerAt(counter) ? (hasSkill(useGame.getState().skills, 'quick_hands') ? 1.2 : 1) : 0, staff.cashierSpeed(counter))
-        * (hasUpgrade(useGame.getState().biz, 'pos') ? 1.5 : 1));
+        * (hasUpgrade(useGame.getState().biz, 'pos') ? 1.5 : 1),
+      (counter) => staff.dutyCashierSkill(counter));
     }
     // Bong bóng tiền ở quầy bay theo giờ THỰC: tua 8× vẫn kịp đọc "+12.000đ" trước khi tan
     customers.coinFx.update(dt);

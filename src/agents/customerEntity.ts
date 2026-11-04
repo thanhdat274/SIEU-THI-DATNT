@@ -111,7 +111,7 @@ export type State = 'walkBy' | 'toShop' | 'shopping' | 'toQueue' | 'queued' | 'l
 const pick = <T,>(list: T[]) => list[Math.floor(simRng()() * list.length)];
 
 /** Chuyện ở quầy đã chốt: choice là phương án được chọn (0 = phương án đầu). */
-export interface Deal { kind: 'none' | 'credit' | 'installment' | 'haggle' | 'change' | 'pricematch'; amount: number; choice: number }
+export interface Deal { kind: 'none' | 'credit' | 'installment' | 'haggle' | 'change' | 'pricematch'; amount: number; choice: number; /** GĐ1253 — deal do thu ngân trực chốt: settle rút dòng riêng cashierRng (không dịch chuỗi kinh tế chính). */ cashier?: boolean }
 
 export class Customer extends Walker {
   state: State = 'walkBy';

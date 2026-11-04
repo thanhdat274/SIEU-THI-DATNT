@@ -238,6 +238,21 @@ export class StaffManager {
     return best;
   }
 
+  /** GĐ1253 — sao tay nghề của thu ngân (cashier/manager) đang trực ở một quầy; 0 = không có ai.
+   *  Khách mặc cả/thiếu lẻ gặp thu ngân trực thì THU NGÂN tự quyết theo sao này (cashierHaggleChoice/...),
+   *  đừng dừng game hỏi chủ. Lọc giống cashierSpeed (đang làm, đứng đúng vị trí quầy). */
+  dutyCashierSkill(counter?: Counter) {
+    let best = 0;
+    const counters = counter ? [counter] : this.shop.counters();
+    for (const ct of counters) {
+      for (const w of this.workers.values()) {
+        if ((w.staff.role !== 'cashier' && w.staff.role !== 'manager') || w.state !== 'working' || w.path.length || w.post !== ct.key) continue;
+        if (w.position.distanceTo(this.cashierSpot(ct, w.slot)) < 0.6) best = Math.max(best, w.staff.skill);
+      }
+    }
+    return best;
+  }
+
   /** Đứng ở quầy thì quay mặt về phía quầy và khách (hướng hàng chờ), không quay lưng hay quay vào nhau. */
   private faceCustomers(w: Worker, dt: number) {
     const ct = this.shop.counters().find((it) => it.key === w.post);

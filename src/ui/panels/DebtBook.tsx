@@ -69,6 +69,9 @@ export function DebtBook() {
     <div style={{ ...styles.card, display: 'block', maxWidth: 560, marginBottom: 8 }}>
       <div style={{ fontSize: 13 }}><b>🧾 Chính sách quầy</b> <span style={{ opacity: 0.7, fontSize: 11 }}>thái độ mặc cả & tiền lẻ</span></div>
       <div style={{ fontSize: 12, opacity: 0.75, marginTop: 2 }}>{summ.haggleText} {summ.changeText}</div>
+      <div style={{ fontSize: 12, opacity: 0.75, marginTop: 2 }}>
+        👥 Có thu ngân trực ở quầy thì thu ngân tự quyết mặc cả/tiền lẻ theo tay nghề — người giỏi hay trả nửa và thối kẹo, người kém hay bớt luôn. Chính sách bên dưới chỉ áp dụng khi chính bạn đứng quầy.
+      </div>
       <div style={{ marginTop: 6 }}>
         <div style={{ fontSize: 12, opacity: 0.85 }}>🙏 Mặc cả</div>
         {HAGGLE_OPTS.map((o) => (

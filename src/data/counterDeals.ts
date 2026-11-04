@@ -128,6 +128,39 @@ export const CHANGE_OPTS: { value: ChangePolicy; label: string; note: string }[]
   { value: 'candy', label: 'Thối kẹo', note: 'Đỡ mất lẻ, nhưng 40% khách thấy phiền.' },
 ];
 
+// ── GĐ1253 "Thu ngân tự quyết theo tay nghề" ────────────────────────────────────────────────────
+// Người dùng phản ánh: đã thuê thu ngân mà khách mặc cả vẫn dừng game hỏi chủ. Giờ có thu ngân
+// đang trực ở quầy thì THU NGÂN tự quyết mặc cả/tiền lẻ bằng random CÓ TRỌNG SỐ theo sao tay nghề:
+// giỏi hay "trả nửa" (giao dịch khôn nhất) và thối kẹo để giữ tiền lẻ; kém hay "bớt luôn" (mất tiền)
+// hoặc giữ giá cứng (mất khách) — giống người thật, không phải fallback cứng.
+// MỘT lần rút simRng cho mỗi quyết định và chốt NGAY (không prompt) → tất định, an toàn Luật GĐ722
+// (chỉ rút rng khi kết quả áp dụng tức thì, không phụ thuộc ai trả lời).
+
+/** Mặc cả — xác suất "bớt luôn" theo sao (giảm dần theo tay nghề): 1★ 0.35 → 5★ 0.05. */
+export const CASHIER_HAGGLE_ACCEPT_BASE = 0.45;
+export const CASHIER_HAGGLE_ACCEPT_PER_STAR = 0.1;
+/** Mặc cả — xác suất "trả nửa" theo sao (tăng dần): 1★ 0.32 → 5★ 0.8; phần còn lại = giữ giá. */
+export const CASHIER_HAGGLE_COUNTER_BASE = 0.2;
+export const CASHIER_HAGGLE_COUNTER_PER_STAR = 0.12;
+
+/** Thu ngân quyết một kèo mặc cả theo tay nghề: 0 bớt luôn · 1 trả nửa · 2 giữ giá. */
+export function cashierHaggleChoice(skill: number, roll: number): 0 | 1 | 2 {
+  const acceptP = Math.max(0.05, CASHIER_HAGGLE_ACCEPT_BASE - CASHIER_HAGGLE_ACCEPT_PER_STAR * skill);
+  const counterP = CASHIER_HAGGLE_COUNTER_BASE + CASHIER_HAGGLE_COUNTER_PER_STAR * skill;
+  if (roll < acceptP) return 0;
+  if (roll < acceptP + counterP) return 1;
+  return 2;
+}
+
+/** Tiền lẻ — xác suất thối kẹo theo sao (giữ tiền lẻ): 1★ 0.4 → 5★ 1.0; còn lại bớt luôn cho tròn. */
+export const CASHIER_CHANGE_CANDY_BASE = 0.25;
+export const CASHIER_CHANGE_CANDY_PER_STAR = 0.15;
+
+/** Thu ngân quyết chuyện tiền lẻ: 1 thối kẹo · 0 bớt luôn. */
+export function cashierChangeChoice(skill: number, roll: number): 0 | 1 {
+  return roll < CASHIER_CHANGE_CANDY_BASE + CASHIER_CHANGE_CANDY_PER_STAR * skill ? 1 : 0;
+}
+
 /** Tradeoff text của stance đang chọn (dùng làm dòng tóm tắt dưới tiêu đề card). */
 export const counterPolicySummary = (policy: CounterPolicy): { haggleText: string; changeText: string } => {
   const haggleText: Record<HagglePolicy, string> = {
