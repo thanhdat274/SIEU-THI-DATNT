@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { theftRisk, theftCatchChance, THEFT_CAMERA_RETAIN, THEFT_DOG_RETAIN, THEFT_DOG_CATCH, THEFT_CAMERA_CATCH } from '../data/theftRisk';
+import { theftRisk, theftCatchChance, theftSpawnChance, THEFT_CAMERA_RETAIN, THEFT_DOG_RETAIN, THEFT_DOG_CATCH, THEFT_CAMERA_CATCH } from '../data/theftRisk';
 import { RISK_RULES } from '../data/risks';
 import { GUARD_DETECT } from '../data/staff';
+import { NIGHT_THEFT_MUL } from '../data/night';
 
 const CAM = RISK_RULES.theft.chance;
 const PRICE = 800000;
@@ -104,5 +105,37 @@ describe('GĐ1211 — theftCatchChance: P(bắt được kẻ trộm) tách từ
   it('đủ dog+camera+bảo vệ → 1.47 (vượt 1 → bắt chắc chắn, GIỮ NGUYÊN không clamp như bản gốc)', () => {
     expect(theftCatchChance({ hasDog: true, hasCamera: true, guardOnDuty: true, cashierStaffed: true, hasSharpEye: true }))
       .toBeCloseTo(GUARD_DETECT + THEFT_DOG_CATCH + THEFT_CAMERA_CATCH, 6); // 1.47
+  });
+});
+
+describe('GĐ1212 — theftSpawnChance: P(một khách vãng lai LÀ kẻ trộm) tách từ agents/customers.ts (c.thief) — THUẦN QUAN SÁT, giữ nguyên công thức/hằng (Luật 3)', () => {
+  const CH = RISK_RULES.theft.chance; // 0.015
+  it('ban ngày, không chó không camera → đúng chance gốc', () => {
+    expect(theftSpawnChance({ isNight: false, hasNightUpgrade: false, hasDog: false, hasCamera: false }))
+      .toBeCloseTo(CH, 10);
+  });
+  it('đêm + đã mở tiệm đêm → ×2 (NIGHT_THEFT_MUL)', () => {
+    expect(theftSpawnChance({ isNight: true, hasNightUpgrade: true, hasDog: false, hasCamera: false }))
+      .toBeCloseTo(CH * NIGHT_THEFT_MUL, 10);
+  });
+  it('đêm nhưng CHƯA mở tiệm đêm → không nhân ×2 (chỉ khi có ca đêm)', () => {
+    expect(theftSpawnChance({ isNight: true, hasNightUpgrade: false, hasDog: false, hasCamera: false }))
+      .toBeCloseTo(CH, 10);
+  });
+  it('chó trông tiệm → ×0.45 (THEFT_DOG_RETAIN, khớp theftFactor core/biz)', () => {
+    expect(theftSpawnChance({ isNight: false, hasNightUpgrade: false, hasDog: true, hasCamera: false }))
+      .toBeCloseTo(CH * THEFT_DOG_RETAIN, 10);
+  });
+  it('camera → ×0.7 (THEFT_CAMERA_RETAIN — thay literal 0.7 cũ cho khớp hằng)', () => {
+    expect(theftSpawnChance({ isNight: false, hasNightUpgrade: false, hasDog: false, hasCamera: true }))
+      .toBeCloseTo(CH * THEFT_CAMERA_RETAIN, 10);
+  });
+  it('đêm + cạch đêm + chó + camera → ×2 ×0.45 ×0.7 (P trộm nhỏ dần khi bảo vệ nhiều)', () => {
+    expect(theftSpawnChance({ isNight: true, hasNightUpgrade: true, hasDog: true, hasCamera: true }))
+      .toBeCloseTo(CH * NIGHT_THEFT_MUL * THEFT_DOG_RETAIN * THEFT_CAMERA_RETAIN, 10);
+  });
+  it('chó + camera ban ngày → ×0.45 ×0.7', () => {
+    expect(theftSpawnChance({ isNight: false, hasNightUpgrade: false, hasDog: true, hasCamera: true }))
+      .toBeCloseTo(CH * THEFT_DOG_RETAIN * THEFT_CAMERA_RETAIN, 10);
   });
 });

@@ -17,7 +17,7 @@ import { REGION_IDS } from '../data/regionSpecialty';
 import { happyHourActive, happyTraffic, timeBandAt } from '../data/rhythm';
 import { hasSkill } from '../data/titles';
 import { RISK_RULES } from '../data/risks';
-import { isNight, NIGHT_SPAN, NIGHT_THEFT_MUL, nightTrafficAt } from '../data/night';
+import { isNight, NIGHT_SPAN, nightTrafficAt } from '../data/night';
 import { COMBO_PULL, comboDiscount, comboPartners } from '../data/combos';
 import { noteComboDay } from '../core/slices/comboDay';
 import { bulkExtra, festivalVisit, perkValue, pickRegular, referFriends, regularById, reserveAsk, INFLUENCER_ID, unlockedFavorites, type RegularDef } from '../data/regulars';
@@ -34,11 +34,11 @@ import { meatDemandFactor } from '../data/meat';
 import {
   bestSkillOnDuty, DIRT_MAX, DIRT_PER_VISIT, dirtVisitFactor,
 } from '../data/staff';
-import { theftCatchChance } from '../data/theftRisk';
+import { theftCatchChance, theftSpawnChance } from '../data/theftRisk';
 import { socialTraffic } from '../data/social';
 import { adTargets, bizTraffic, LOYALTY_UNLOCK, loyaltyRedeemChance, petActive, rivalPriceGap, rivalUndercuts } from '../data/biz';
 import { landmarkCustomerFactor } from '../data/landmark';
-import { redeemLoyalty, storyOnVisit, theftFactor } from '../core/biz';
+import { redeemLoyalty, storyOnVisit } from '../core/biz';
 import { hasUpgrade } from '../data/upgrades';
 import {
   impulseChance, impulseOptions, impulseWeight, shelfAttention, stockedAttention, weightedPick, type ShopGeom,
@@ -363,7 +363,13 @@ export class CustomerManager {
     const count = (withCart ? 3 + Math.floor(simRng()() * 5) : 1 + Math.floor(simRng()() * maxItems))
       + (hasSkill(s.skills, 'big_basket') && simRng()() < 0.5 ? 1 : 0);
     if (hasSkill(s.skills, 'charm')) c.sensitivity *= 0.85;
-    c.thief = !regular && !service && s.level >= RISK_RULES.theft.unlock && simRng()() < RISK_RULES.theft.chance * (hasUpgrade(s.biz, 'night') && isNight(s.minutes) ? NIGHT_THEFT_MUL : 1) * theftFactor(s.biz, s.day) * (hasUpgrade(s.biz, 'camera') ? 0.7 : 1);
+    // GĐ1212 — P sinh trộm thành helper THUẦN theftSpawnChance (chance × đêm×2 × chó×0.45 × camera×0.7): hành vi GIỮ NGUYÊN.
+    c.thief = !regular && !service && s.level >= RISK_RULES.theft.unlock && simRng()() < theftSpawnChance({
+      isNight: isNight(s.minutes),
+      hasNightUpgrade: hasUpgrade(s.biz, 'night'),
+      hasDog: petActive(s.biz.pets.dog, s.day),
+      hasCamera: hasUpgrade(s.biz, 'camera'),
+    });
     // Có mèo ở quầy: khách nhỏ (học sinh, mẹ bỉm) vui hơn, đỡ sốt ruột; nhân viên chăm sóc khách trực ca
     // thì ai cũng chịu chờ lâu hơn theo tay nghề — GĐ1208 tách thành patienceMultiplier (THUẦN, same công
     // thức/hằng) để logic này test được; hành vi giữ nguyên (chỉ đổi chỗ nhân nội tuyến → một lần gọi).

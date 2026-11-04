@@ -16,6 +16,7 @@
 import { RISK_RULES } from './risks';
 import { UPGRADES } from './upgrades';
 import { GUARD_DETECT } from './staff';
+import { NIGHT_THEFT_MUL } from './night';
 
 /** Camera giảm P(trộm) xuống còn 70% (khớp hằng số trong agents/customers.ts). */
 export const THEFT_CAMERA_RETAIN = 0.7;
@@ -54,6 +55,29 @@ export function theftCatchChance(opts: {
     : (opts.cashierStaffed ? RISK_RULES.theft.detectCashier : RISK_RULES.theft.detectNobody)
       + (opts.hasSharpEye ? RISK_RULES.theft.sharpEyeBonus : 0);
   return dog + camera + base;
+}
+
+/**
+ * GĐ1212 — P(một khách vãng lai LÀ kẻ trộm) khi vào tiệm: trích từ `agents/customers.ts` (dòng
+ * gán `c.thief`) thành helper THUẦN, GIỮ NGUYÊN công thức/hằng (Luật 3 — hành vi y hệt). Là đầu
+ * kia của mạch trộm (GĐ1211 khóa P bắt; đây khóa P sinh trộm): khép đủ hai phía để báo cáo rủi ro
+ * có thể soi sau. Cũng thay literal 0.7 (camera) bằng hằng THEFT_CAMERA_RETAIN cho khớp hằng nơi khác.
+ *   chance × (mở tiệm đêm && đang đêm ? NIGHT_THEFT_MUL(2) : 1) × (chó ? THEFT_DOG_RETAIN(0.45) : 1) × (camera ? THEFT_CAMERA_RETAIN(0.7) : 1)
+ */
+export function theftSpawnChance(opts: {
+  /** Đang là giờ đêm (isNight — khuya tối kẻ trộm hoạt động mạnh). */
+  isNight: boolean;
+  /** Đã mở nâng cấp tiệm đêm chưa (chỉ nhân ×2 khi có ca đêm). */
+  hasNightUpgrade: boolean;
+  /** Có chó trông tiệm (giảm P trộm xuống 45%). */
+  hasDog: boolean;
+  /** Đã lắp camera (giảm P trộm xuống 70%). */
+  hasCamera: boolean;
+}): number {
+  return RISK_RULES.theft.chance
+    * (opts.hasNightUpgrade && opts.isNight ? NIGHT_THEFT_MUL : 1)
+    * (opts.hasDog ? THEFT_DOG_RETAIN : 1)
+    * (opts.hasCamera ? THEFT_CAMERA_RETAIN : 1);
 }
 
 export interface TheftRisk {
