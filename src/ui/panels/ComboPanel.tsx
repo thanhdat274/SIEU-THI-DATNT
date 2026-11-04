@@ -16,6 +16,9 @@ export function ComboPanel() {
   // GĐ1242 — lời kết sống: combo nào hôm nay chiếm slot mà chưa kích hoạt lượt nào trong khi combo khác đã bán.
   const weak = liveWeakCombo(activeCombos, comboToday);
   const weakCombo = weak ? comboById(weak.id) : null;
+  // GĐ1244 — đã chạy đủ slot mà có combo yếu: gợi ý combo NÊN ĐỔI vào slot vừa bỏ (comboSuggest xử replaceId
+  // như slot đã giải phóng), đóng vòng "tắt combo yếu → bật combo nào". Chỉ khi đủ slot để tránh trùng dòng "Còn slot".
+  const replaceSug = weak && activeCombos.length >= max ? comboSuggest(level, sales, activeCombos, 1, { replaceId: weak.id }) : [];
   return (
     <>
       <h2 style={styles.title}>🎁 Combo khuyến mãi</h2>
@@ -32,6 +35,11 @@ export function ComboPanel() {
       {weakCombo && (
         <p style={{ ...styles.sub, color: '#e67e22', margin: '4px 0' }} title="Đếm từ lượt combo kích hoạt ở quầy hôm nay (transient): combo này 0 lượt trong khi combo khác đã bán — chiếm slot không tác dụng">
           📊 Hôm nay combo <b>"{weakCombo.name}"</b> chưa kích hoạt lượt nào mà các combo khác đã bán — nó đang chiếm slot. Nếu muốn đổi cho combo khác, bấm "Đang chạy" để tắt rồi bật combo khác{activeCombos.length >= max ? ' (slots đã đủ)' : ''}.
+        </p>
+      )}
+      {replaceSug.length > 0 && weakCombo && (
+        <p style={{ ...styles.sub, color: '#9ecbff', margin: '4px 0' }} title="Gợi ý đổi combo yếu lấy combo khác (rank theo món bán chạy + món chưa combo khác phủ)">
+          🔁 Nếu tắt <b>"{weakCombo.name}"</b> thì nên bật: {replaceSug.map((s) => `"${s.name}" (${s.reason})`).join(' · ')}
         </p>
       )}
       {activeCombos.length >= max && (

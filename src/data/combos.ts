@@ -74,14 +74,20 @@ export interface ComboSuggestion {
  * Gợi ý combo nên bật khi còn slot — ưu tiên combo gồm món đang bán chạy (top 6 của `sales`)
  * và món chưa bị combo nào đang chạy phủ; bỏ qua combo đang chạy. Chỉ gợi ý khi có dữ liệu bán
  * đủ ý nghĩa (≥2 món đã bán) và có ≥2 combo mở chưa chạy để tránh nhiễu. Lý do ghi theo dữ kiện, không đoán.
+ *
+ * `opts.replaceId` (GĐ1244): id combo SẮP bị tắt (vd. combo yếu đang chiếm slot ở GĐ1242) — coi combo đó
+ * như đã giải phóng slot: KHÔNG phủ món nữa (để ứng viên dùng lại được cặp món đó), và KHÔNG được chọn
+ * làm ứng viên. Cho phép ComboPanel gợi ý "nên ĐỔI sang combo nào" ngay cả khi đã chạy đủ số combo.
  */
 export function comboSuggest(
   level: number,
   sales: Record<string, number>,
   activeCombos: readonly string[],
   n = 2,
+  opts?: { replaceId?: string },
 ): ComboSuggestion[] {
-  const running = new Set(activeCombos);
+  const drop = opts?.replaceId && activeCombos.includes(opts.replaceId) ? opts.replaceId : undefined;
+  const running = new Set(drop ? activeCombos.filter((id) => id !== drop) : activeCombos);
   const topIds = Object.entries(sales).filter(([, q]) => q > 0)
     .sort((a, b) => b[1] - a[1]).slice(0, 6).map(([id]) => id);
   if (topIds.length < 2) return [];
@@ -92,7 +98,7 @@ export function comboSuggest(
     if (c) c.items.forEach((id) => partsOfRunning.add(id));
   }
   const cands = unlockedCombos(level)
-    .filter((c) => !running.has(c.id))
+    .filter((c) => !running.has(c.id) && c.id !== drop)
     .map((c) => {
       const top = c.items.filter((id) => topSet.has(id));
       const uncovered = c.items.filter((id) => !partsOfRunning.has(id));
