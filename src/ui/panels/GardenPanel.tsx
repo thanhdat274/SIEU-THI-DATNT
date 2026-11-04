@@ -4,7 +4,7 @@ import {
   ANIMALS, ANIMAL_ORDER, animalMode, CROPS, EGG_PER_TRAY, FARM_BUILDING_MAX_STAR, FARM_BUILDINGS, FARM_BUILDING_ORDER, FARM_ORDER_UNLOCK,
   FERTILIZER_PRODUCT, GARDEN_UNLOCK, cropById, inSeason, LAND_TIERS, monthOf, penCap, fattenReady, plotLabel, plotReady,
 } from '../../data/garden';
-import { animalPerDay, bestAnimal, bestCrop, cropPerDay } from '../../data/farmValue';
+import { animalPerDay, bestAnimal, bestCrop, cropPerDay, farmExpandPayback } from '../../data/farmValue';
 import { farmVsCook } from '../../data/farmKitchenValue';
 import { bestCropForMenu, bestAnimalForMenu, farmVsDrinks, homegrownImpact, orderSellNote } from '../../data/farmQuanValue';
 import { isWeekend } from '../../data/calendar';
@@ -146,6 +146,15 @@ export function GardenPanel() {
                 <span style={{ opacity: 0.7, marginLeft: 8 }}>✔️ Đã rộng nhất</span>
               )}
             </div>
+            {(() => {
+              const fb = farmExpandPayback(garden, level, day);
+              if (!fb || fb.verdict === 'nodata') return null;
+              return (
+                <div style={{ fontSize: 12, marginTop: 4, opacity: 0.85 }}>
+                  💸 Ước hồi vốn {formatMoney(fb.cost)}: mỗi luống mới thêm ~{formatMoney(fb.perPlotPerDay)}/ngày (trồng giống đáng nhất) → ≈{fb.paybackDays} ngày {fb.verdict === 'worth' ? '(đáng)' : '(chậm)'}
+                </div>
+              );
+            })()}
           </div>
 
           {garden.plots.map((p, i) => {

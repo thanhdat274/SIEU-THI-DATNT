@@ -9,7 +9,7 @@
  */
 import type { AnimalDef, AnimalKind, AnimalMode, CropDef, GardenState } from './garden';
 import {
-  ANIMALS, CROPS, FARM_ORDER_BONUS, HOMEGROWN_PREMIUM, animalMode, harvestYield, inSeason,
+  ANIMALS, CROPS, FARM_ORDER_BONUS, HOMEGROWN_PREMIUM, animalMode, harvestYield, inSeason, LAND_TIERS,
 } from './garden';
 import { productById } from './products';
 
@@ -132,4 +132,55 @@ export function orderVsShelf(productId: string): { shelf: number; order: number;
   const shelf = Math.round(base * (1 + HOMEGROWN_PREMIUM));
   const order = Math.round(base * FARM_ORDER_BONUS);
   return { shelf, order, percent: Math.round((order / shelf - 1) * 1000) / 10 };
+}
+
+// ───────────────────────── Mở rộng đất trại (GĐ1248) ─────────────────────────
+
+export type FarmExpandVerdict = 'worth' | 'slow' | 'nodata';
+export interface FarmExpandPayback {
+  /** Tên lô đất sắp mua. */
+  tierName: string;
+  /** Giá mua (đ). */
+  cost: number;
+  /** Số luống mới được thêm. */
+  extraPlots: number;
+  /** Lợi nhuận bình quân/ngày của mỗi luống mới (trồng giống đáng nhất trong tầm cấp — bestCrop). */
+  perPlotPerDay: number;
+  /** Thu nhập thêm mỗi ngày = extraPlots × perPlotPerDay. */
+  netPerDay: number;
+  /** Số ngày hồi vốn (null khi không dự toán được). */
+  paybackDays: number | null;
+  verdict: FarmExpandVerdict;
+}
+
+/**
+ * Ước hồi vốn khi mua lô đất trại tiếp theo (LAND_TIERS[land+1]) — soi quyết định
+ * "Mở rộng đất" giống như `tiemXoiExpandPayback` (GĐ1247) cho tiệm xôi và
+ * `branchBuildPayback` (GĐ193-family) cho chi nhánh.
+ *
+ * Giá trị thêm = số luống mới × giá trị/ngày của GIỐNG ĐÁNG NHẤT trong tầm cấp
+ * (bestCrop — đã trừ chi phí giống, đúng mùa ×1,5): đây là giá trị cơ hội trung
+ * thực của đất nếu chủ trồng giống khôn ngoan; ĐƠN GIẢN và có chủ ý KHÔNG cộng
+ * chuồng mới (chỉ có giá trị khi chủ thực sự nuôi con mới — sẽ khuyến khích cày
+ * giả rồi bị phình). Thuần đọc — không đổi save/seed/kinh tế.
+ *
+ * - 'worth':  hồi ≤60 ngày.
+ * - 'slow':   hồi >60 ngày (hoặc không có giống nào để dự toán → vẫn tính bằng món hời nhất).
+ * - 'nodata': không mở thêm được (đã rộng nhất) hoặc chưa có giống nào trong tầm cấp.
+ */
+export function farmExpandPayback(g: Pick<GardenState, 'land' | 'plots'>, level: number, day: number): FarmExpandPayback | null {
+  const tier = LAND_TIERS[g.land + 1];
+  if (!tier) return null; // đã rộng nhất
+  const extraPlots = Math.max(0, tier.plots - g.plots.length);
+  const best = bestCrop(level, day);
+  const perPlotPerDay = best ? Math.round(best.perDay) : 0;
+  const netPerDay = extraPlots * perPlotPerDay;
+  if (netPerDay <= 0 || perPlotPerDay <= 0) {
+    return { tierName: tier.name, cost: tier.cost, extraPlots, perPlotPerDay, netPerDay: 0, paybackDays: null, verdict: 'nodata' };
+  }
+  const paybackDays = Math.ceil(tier.cost / netPerDay);
+  return {
+    tierName: tier.name, cost: tier.cost, extraPlots, perPlotPerDay, netPerDay,
+    paybackDays, verdict: paybackDays <= 60 ? 'worth' : 'slow',
+  };
 }
