@@ -79,6 +79,7 @@
 - Họ màu hướng dẫn/chuỗi/biểu đồ: gộp về một sắc info `#3498db` (GĐ178); ngoại lệ duy nhất: buy-tone `#55efc4`/`#ff7675`; GardenPanel giữ họ riêng. GĐ258 quét nốt 6 màu cũ — src/ui chỉ còn bảng duyệt + màu nhận diện.
 
 ## Cần theo dõi / nợ mở
+- 📤 GĐ1244 (04/11): commit `a9c85f82` ĐÃ COMMIT cục bộ nhưng **CHƯA push** — `git push` treo/chờ nhập username vì `credential.helper` mở dialog Windows cần tương tác, không hoàn tất trong shell không-tương-tác này. Nhánh `phat-trien-game-tu-do` ahead 1 commit. Khi có terminal thật / credential có sẵn: `git push -u origin phat-trien-game-tu-do` (thử lại tối đa 4 lần, 2s/4s/8s/16s).
 - 🔐 GĐ1073 (làm mới GĐ1142): `npm audit --omit=dev` = 10 cảnh báo (4 cao/6 vừa) đều qua `firebase-admin`@14.5.0 → `google-gax` → `@grpc/grpc-js`/`glob`, phía máy chủ, KHÔNG nằm trong bundle trình duyệt; `@grpc/grpc-js` cài 1.14.6 (advisory nhắm ≤1.13.5 — bản cài đã vá). Không chạy `audit fix --force` (đổi phiên bản lớn). Xem lại khi nâng firebase-admin.
 - ⏱️ GĐ675: render CPU đo ở cấp 10/18/24/34/41 đều đạt biên 4× throttle (cấp 41: 5,1 ms trung vị ⇒ ~20–31 ms < 33 ms). Còn thiếu FPS thật máy yếu. Chi tiết: archive `PROGRESS-GD715-788-summaries.md`.
 - 🕳️ GĐ665/668: QA co-op vòng ngày (ngủ cả hẻm → tổng kết 2 tab) cần tab trình duyệt THẬT — tab IAB về nền bị đóng băng timer → server ngắt WS → game tự reload (`coop.ts:339`, thiết kế). Cơ chế đã chốt GĐ668; checkpoint round-trip đã khoá bằng test. Làm trong đợt QA toàn diện GĐ670; trước đó ghi "chưa chạy được vì môi trường", không tính là lỗi game.
