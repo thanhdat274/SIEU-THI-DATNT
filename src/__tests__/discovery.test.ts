@@ -245,6 +245,8 @@ describe('tích hợp qua store — recordDiscovery trao mốc đúng một lầ
     expect(soldCount(s.soldEver)).toBe(10);
     expect(s.biz.discoveryClaimed).toEqual([10]);
     expect(s.money).toBe(100000 + DISCOVERY_REWARDS[10].money);
+    // GĐ1194: thưởng mốc phải vào sổ questIncome (tổng kết ngày so được với lãi bán thật — Luật 10)
+    expect(s.stats.questIncome).toBe(DISCOVERY_REWARDS[10].money);
     // XP đã cộng (không NaN)
     expect(Number.isFinite(useGame.getState().xp)).toBe(true);
   });
