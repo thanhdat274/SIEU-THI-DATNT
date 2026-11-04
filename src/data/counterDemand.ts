@@ -15,6 +15,10 @@ export interface DemandBand {
   id: string;
   /** Nhãn giờ, vd "6h–8h30". */
   label: string;
+  /** Đầu khung giờ (phút trong ngày, 0–1440). */
+  from: number;
+  /** Cuối khung giờ (phút trong ngày, 0–1440). */
+  to: number;
   /** Số khách ước tính trong khung. */
   expected: number;
   /** Khách/giờ trong khung. */
@@ -91,6 +95,8 @@ export function demandForecast(a: DemandArg): DemandForecast {
     return {
       id: b.id,
       label: bandLabel(b),
+      from: b.from,
+      to: b.to,
       expected,
       perHour: Math.round(perHour),
       pressure: Math.round(perHour / maxPerHour * 100),

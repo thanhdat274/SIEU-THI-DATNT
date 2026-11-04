@@ -8,7 +8,8 @@ import { worldActions } from '../core/actions';
 import { saveGame, resetGame, readBackupSave, restoreBackup } from '../core/save';
 import { FEATURES, xpToNext } from '../data/levels';
 import { formatMoney, productById } from '../data/products';
-import { todayLine, todayMissedLine, todayPeakLine, todayExpectCustomers, todayTopSeller } from '../data/todayScore';
+import { todayLine, todayMissedLine, todayPeakLine, todayExpectSoFar, todayTopSeller } from '../data/todayScore';
+import { hasSkill } from '../data/titles';
 import { summarizeReviews } from '../data/reviews';
 import { AUTO_OPEN_PRESETS } from '../core/gameTypes';
 import { dayEffects, describeDate, festivalStock, upcomingFestival, weekdayOf } from '../data/calendar';
@@ -104,6 +105,8 @@ export function Hud() {
   const autoRoutine = useGame((s) => s.autoRoutine);
   const forecast = useGame((s) => s.forecast);
   const weatherSeed = useGame((s) => s.weatherSeed);
+  const skills = useGame((s) => s.skills);
+  const happyHour = useGame((s) => s.happyHour);
   const skillsLeft = useGame((s) => skillPoints(s.level) - s.skills.length);
   const effects = dayEffects(weatherSeed, day, level);
   const soon = upcomingFestival(day);
@@ -266,12 +269,12 @@ ${forecastText}`}>
             <small>Ngày {day} ({describeDate(day)}) · {weekdayOf(day)} · {spell ? describeRain(spell, weather) : WEATHER[weather].name}</small>
             {(() => {
               const s = useGame.getState().stats;
-              const live = todayLine({ ...s, expectCustomers: todayExpectCustomers({ weather, tomorrow: forecast[0] ?? weather, level, day, seed: weatherSeed }) });
+              const live = todayLine({ ...s, expectCustomers: todayExpectSoFar({ weather, tomorrow: forecast[0] ?? weather, level, day, seed: weatherSeed, minutes, localLegend: hasSkill(skills, 'local_legend'), happy: happyHour }) });
               const top = todayTopSeller(s.byItem);
               const peak = todayPeakLine(s.byHour);
               const missed = todayMissedLine(s.missed);
               const parts = [live, top, missed, peak].filter(Boolean);
-              return parts.length ? <small title="Doanh thu / số món / số khách hôm nay so với dự kiến + món chạy nhất — tổng kết đầy đủ ở Sổ tổng kết cuối ngày">{parts.join(' · ')}</small> : null;
+              return parts.length ? <small title="Doanh thu / số món / số khách hôm nay so với dự kiến đến giờ + món chạy nhất — tổng kết đầy đủ ở Sổ tổng kết cuối ngày">{parts.join(' · ')}</small> : null;
             })()}
             <small className="hud-forecast">
               <span title={(() => {

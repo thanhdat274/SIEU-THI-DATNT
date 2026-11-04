@@ -18,6 +18,7 @@
 import { formatMoney, productById } from './products';
 import { peakHours } from './advice';
 import { trafficForecast } from './trafficForecast';
+import { demandForecast } from './counterDemand';
 import type { Weather } from './weather';
 
 /** GĐ1226 — bề mặt "hôm nay bán được chưa": ba số cộng dồn trong ngày thành một dòng.
@@ -33,7 +34,7 @@ export function todayLine(s: {
   expectCustomers?: number;
 }): string {
   if (s.customers <= 0 && s.itemsSold <= 0 && s.revenue <= 0) return '';
-  const exp = s.expectCustomers && s.expectCustomers > 0 ? ` (dự kiến ~${s.expectCustomers})` : '';
+  const exp = s.expectCustomers && s.expectCustomers > 0 ? ` (dự kiến ~${s.expectCustomers} đến giờ)` : '';
   let out = `hôm nay ${s.customers} khách${exp} · bán ${s.itemsSold} món · thu ${formatMoney(s.revenue)}`;
   if (s.byItem && s.itemsSold > 0) {
     const profit = Object.values(s.byItem).reduce((n, l) => n + l.revenue - l.cost, 0) + (s.services ?? 0);
@@ -42,20 +43,34 @@ export function todayLine(s: {
   return out;
 }
 
-/** GĐ1231 — neo "dự kiến hôm nay" cho dòng live: số khách CHO ĐẾN GIỜ (cộng dồn) không tự nói lên
- *  "đang ổn hay chậm" — người chơi cần mốc. Trả về số khách DỰ KIẾN cả ngày hôm nay theo đúng
- *  nguồn forecast (Nguyên tắc a: quyết định hằng ngày phải có dữ liệu phản hồi; so HÀNH ĐỘNG với
- *  DỰ BÁO, không hộp đen). Đồng bộ `trafficForecast(...).todayKhach` (deterministic theo weather/
- *  ngày/cấp/seed — không RNG, không state mới → Luật 5 an toàn). Trả 0 khi dự kiến 0. */
-export function todayExpectCustomers(a: {
+/** GĐ1233 — mốc "dự kiến ĐẾN GIỜ" cho dòng live (sửa GĐ1231/1229 cho trung thực): so khách ĐÃ VÀO
+ *  (cộng dồn) với khách DỰ KIẾN TỚI giờ này — KHÔNG phải dự kiến cả ngày (khách đến dồn theo khung
+ *  giờ, so với tổng cả ngày buổi sáng nào cũng "chậm" gây hiểu nhầm, phản lại chính nguyên tắc
+ *  trung thực). Dùng CHÍNH đường cong theo giờ của mô phỏng: `demandForecast` (counterDemand.ts) cho
+ *  phần khách dồn tích tới phút `minutes` (khung qua hết + khung đang chạy chia theo phút), nhân với
+ *  `trafficForecast(...).todayKhach` (cùng mốc cả ngày dòng Sổ đầu ngày GĐ1229) để giữ đồng bộ. THUẦN —
+ *  không RNG/state mới → Luật 5 an toàn. Trả 0 khi chưa mở cửa (minutes≤0) hoặc dự kiến 0. */
+export function todayExpectSoFar(a: {
   weather: Weather;
   tomorrow: Weather;
   level: number;
   day: number;
   seed: number;
+  minutes: number;
+  localLegend?: boolean;
+  happy?: { from: number; off: number } | null;
 }): number {
-  const n = Math.round(trafficForecast(a).todayKhach);
-  return n > 0 ? n : 0;
+  if (a.minutes <= 0) return 0;
+  const total = trafficForecast({ weather: a.weather, tomorrow: a.tomorrow, level: a.level, day: a.day, seed: a.seed }).todayKhach;
+  if (total <= 0) return 0;
+  const df = demandForecast({ level: a.level, day: a.day, weatherSeed: a.seed, localLegend: a.localLegend, happy: a.happy });
+  let exp = 0;
+  for (const b of df.bands) {
+    if (b.to <= a.minutes) exp += b.expected;
+    else if (b.from < a.minutes) exp += b.expected * ((a.minutes - b.from) / (b.to - b.from));
+  }
+  const frac = df.expectedTotal > 0 ? exp / df.expectedTotal : 0;
+  return Math.round(total * frac);
 }
 
 /** GĐ1232 — bề mặt "món chạy nhất HÔM NAY" giữa ngày: `stats.byItem` slice cập nhật MỖI lượt bán

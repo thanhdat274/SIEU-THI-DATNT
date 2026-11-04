@@ -86,4 +86,13 @@ describe('demandForecast — Nhu cầu quầy (GĐ78)', () => {
   it('thuần: cùng đầu vào cho kết quả giống nhau', () => {
     expect(demandForecast(base())).toEqual(demandForecast(base()));
   });
+
+  it('GĐ1233: mỗi khung mang from/to (phút) để dự báo tích lũy "đến giờ"', () => {
+    const f = demandForecast(base());
+    for (const b of f.bands) {
+      expect(b.from).toBeGreaterThanOrEqual(0);
+      expect(b.to).toBeGreaterThan(b.from);
+      expect(b.to).toBeLessThanOrEqual(1440);
+    }
+  });
 });
