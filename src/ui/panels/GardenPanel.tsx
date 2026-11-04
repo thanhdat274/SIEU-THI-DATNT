@@ -4,7 +4,7 @@ import {
   ANIMALS, ANIMAL_ORDER, animalMode, CROPS, EGG_PER_TRAY, FARM_BUILDING_MAX_STAR, FARM_BUILDINGS, FARM_BUILDING_ORDER, FARM_ORDER_UNLOCK,
   FERTILIZER_PRODUCT, GARDEN_UNLOCK, cropById, inSeason, LAND_TIERS, monthOf, penCap, fattenReady, plotLabel, plotReady,
 } from '../../data/garden';
-import { animalPerDay, bestAnimal, bestCrop, cropPerDay, farmBuildingValue, farmExpandPayback } from '../../data/farmValue';
+import { animalBuyPayback, animalPerDay, bestAnimal, bestCrop, cropPerDay, farmBuildingValue, farmExpandPayback } from '../../data/farmValue';
 import { farmVsCook } from '../../data/farmKitchenValue';
 import { bestCropForMenu, bestAnimalForMenu, farmVsDrinks, homegrownImpact, orderSellNote } from '../../data/farmQuanValue';
 import { isWeekend } from '../../data/calendar';
@@ -278,6 +278,11 @@ export function GardenPanel() {
                       Mua con đầu tiên ({formatMoney(def.price)})
                     </button>
                     <span style={{ opacity: 0.75, marginLeft: 8 }}>{def.note}.</span>
+                    {(() => {
+                      const bp = animalBuyPayback(kind, garden);
+                      const tone = bp.verdict === 'worth' ? '#2ecc71' : bp.verdict === 'loss' ? '#e74c3c' : '#e67e22';
+                      return <div style={{ marginTop: 4, color: tone }}>💡 {bp.line}.</div>;
+                    })()}
                   </div>
                 ) : (
                   <div style={{ fontSize: 12, marginTop: 4 }}>

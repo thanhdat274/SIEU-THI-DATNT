@@ -186,6 +186,51 @@ export function farmExpandPayback(g: Pick<GardenState, 'land' | 'plots'>, level:
   };
 }
 
+// ───────────────────────── Mua vật nuôi (GĐ1250) ─────────────────────────
+
+export type AnimalBuyVerdict = 'worth' | 'slow' | 'loss';
+export interface AnimalBuyPayback {
+  /** Lợi nhuận ròng/con/ngày (animalPerDay — đã trừ cám, đã tính bãi thả, đã cộng nhãn nhà nuôi +20%). */
+  perDay: number;
+  /** Số ngày hồi vốn: trứng/sữa chia đều mỗi ngày; vỗ béo thu về một lần khi xuất chuồng (= fattenDays). null khi nuôi lỗ. */
+  paybackDays: number | null;
+  verdict: AnimalBuyVerdict;
+  /** Một dòng tiếng Việt trung thực đặt cạnh nút mua. */
+  line: string;
+}
+
+/**
+ * "Mua con vật đầu tiên N tr để làm gì?" — soi quyết định MUA VẬT NUÔI (hộp đen còn lại
+ * của trại sau GĐ1248 đất / GĐ1249 công trình). `animalPerDay` chỉ hiện khi chuồng ĐÃ có
+ * con, còn nút "Mua con đầu tiên" lại chỉ cho giá. Helper tính đúng giá trị biên của CON
+ * TIẾP THEO (một con mới ăn thêm cám, đẻ thêm trứng — cùng công thức animalPerDay) rồi
+ * quy đổi ra số ngày hồi vốn. THUẦN ĐỌC — không đổi state/save/kinh tế (Luật 5/10).
+ *
+ * - 'worth': hồi ≤60 ngày (cùng ngưỡng GĐ1247/1248).
+ * - 'slow':  hồi >60 ngày (hoặc không lỗ nhưng lãi mỏng).
+ * - 'loss':  perDay ≤ 0 — cám ăn nhiều hơn tiền sản phẩm cho ra.
+ */
+export function animalBuyPayback(kind: AnimalKind, g: GardenState): AnimalBuyPayback {
+  const av = animalPerDay(kind, g);
+  const perDay = Math.round(av.perDay);
+  const def = av.def;
+  if (perDay <= 0) {
+    return {
+      perDay, paybackDays: null, verdict: 'loss',
+      line: `Chưa đáng: mỗi con lỗ ~${Math.abs(perDay).toLocaleString('vi-VN')}đ/ngày sau trừ cám — cần bãi thả hoặc cám rẻ hơn`,
+    };
+  }
+  const paybackDays = av.mode === 'fatten' ? def.fattenDays! : Math.ceil(def.price / av.perDay);
+  const verdict: AnimalBuyVerdict = paybackDays <= 60 ? 'worth' : 'slow';
+  const tail = av.mode === 'fatten'
+    ? `lãi dồn về khi xuất chuồng sau ${paybackDays} ngày cho ăn`
+    : `hồi vốn ~${paybackDays} ngày`;
+  return {
+    perDay, paybackDays, verdict,
+    line: `Lãi ~${perDay.toLocaleString('vi-VN')}đ/con/ngày (đã trừ cám) — ${tail} (${verdict === 'worth' ? 'đáng' : 'chậm'})`,
+  };
+}
+
 /** Giá cám phải mua MỖI NGÀY cho toàn bộ vật nuôi hiện có, TÍNH TRƯỚC khi trừ bãi thả giảm giá. */
 export const dailyFeedCost = (g: GardenState): number => {
   let total = 0;
