@@ -61,7 +61,7 @@ import { PHONE_SLOTS } from '../../data/phoneOrders';
 import { paymentById, type PaymentMethod } from '../../data/payments';
 import { solvency } from '../../data/solvency';
 import { loanBurden } from '../../data/loanBurden';
-import { incomeSplit } from '../../data/incomeSplit';
+import { incomeSplit, incomeLevers } from '../../data/incomeSplit';
 import { dailyBurn } from '../../data/dailyBurn';
 import { recentAvgRevenue } from '../../data/minorPayoff';
 import { AdviceCard, HourChart, ItemTable, HistoryChart } from './HistoryPanel';
@@ -306,6 +306,11 @@ export function SummaryPanel({ day }: { day: number }) {
                   : sharePct !== null
                     ? <span>Thưởng chiếm {sharePct}% lãi bán thật — bán hàng vẫn là nghề chính.</span>
                     : <span>Bán hàng vẫn là nghề chính — hôm nay lãi bán thật bằng 0, thưởng là nguồn phụ.</span>;
+            // GĐ1203: nối chẩn đoán → hành động — khi health là loss/heavy/tight (lãi bán thật âm hoặc thưởng
+            // lấn nghề), kê 1-2 nguyên nhân khách không mua được (đã tính ở `advice` ngay dưới: kệ trống khi
+            // kho còn / hết cả kho / chê đắt / chờ lâu) cạnh lời khuyên "nới lãi bán lên", bấm mở thẳng panel
+            // sửa. Hết hộp đen giữa chẩn đoán và phương thuốc; `ok` không kê (tránh nhiễu).
+            const levers = incomeLevers(split.health, advice);
             return (
               <Callout tone={tone} style={{ marginTop: 8 }}
                 title={<>🎯 Lãi bán hàng thật {split.salesProfit < 0 ? formatMoney(split.salesProfit) : <b style={{ color: '#2ecc71' }}>+{formatMoney(split.salesProfit)}</b>} · thưởng <b style={{ color: '#2ecc71' }}>+{formatMoney(split.quest)}</b>{split.bet > 0 ? <span> + kèo <b style={{ color: '#2ecc71' }}>+{formatMoney(split.bet)}</b></span> : null}</>}>
@@ -313,6 +318,15 @@ export function SummaryPanel({ day }: { day: number }) {
                   Lãi bán thật = lãi gộp bán hàng/ngày + dịch vụ − lương − tiền nhà (không trừ tiền nhập kho).<br />
                   {note}
                 </div>
+                {levers.length > 0 && (
+                  <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    {levers.map((lv, i) => (
+                      <button key={i} onClick={() => lv.action && openPanel({ type: lv.action as any })} style={{ ...styles.btn, fontSize: 11, padding: '2px 8px', textAlign: 'left' }}>
+                        {lv.icon} {lv.text} →
+                      </button>
+                    ))}
+                  </div>
+                )}
               </Callout>
             );
           })()}

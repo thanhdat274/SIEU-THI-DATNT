@@ -3,7 +3,7 @@
  * THUẦN đọc — không đổi kinh tế/save/seed; kiểm thuật toán incomeSplit + cách ghi questIncome lúc claim.
  */
 import { describe, expect, it, beforeEach } from 'vitest';
-import { incomeSplit } from '../data/incomeSplit';
+import { incomeSplit, incomeLevers } from '../data/incomeSplit';
 import type { DayStats } from '../core/dayStats';
 import type { QuestLog } from '../data/quests';
 import { newGameData, useGame, questContext } from '../core/store';
@@ -225,5 +225,38 @@ describe('GĐ1202 — nguồn thưởng CỐ Ý NGOÀI SỔ questIncome (gift/v�
     expect(q).toBeTruthy();
     expect(g().claimQuest(q!.id)).toBe(true);
     expect(g().stats.questIncome).toBe(q!.money);
+  });
+});
+
+describe('GĐ1203 incomeLevers — nối CHẨN ĐOÁN Luật 10 → HÀNH ĐỘNG CỤ THỂ', () => {
+  // Dựng bộ nguyên nhân khách không mua như walkoutAdvice trả (kệ trống có kho / hết cả kho / chê đắt / chờ quầy).
+  const advice: { icon: string; text: string; action?: string }[] = [
+    { icon: '📦', text: 'Hết bia — chưa lên kệ dù kho còn', action: 'order' },
+    { icon: '🚫', text: 'Hết sạch kho xà phòng', action: 'order' },
+    { icon: '💸', text: 'Giá cao hơn khách sẵn lòng trả', action: 'prices' },
+  ];
+
+  it('ok (lãi bán ĐANG dẫn) → trả [], không kê nguyên nhân gây nhiễu', () => {
+    expect(incomeLevers('ok', advice)).toEqual([]);
+  });
+
+  it('heavy/tight/loss → trả các nguyên nhân đứng đầu theo thứ tự, mặc định 2', () => {
+    expect(incomeLevers('heavy', advice)).toEqual([advice[0], advice[1]]);
+    expect(incomeLevers('tight', advice)).toEqual([advice[0], advice[1]]);
+    expect(incomeLevers('loss', advice)).toEqual([advice[0], advice[1]]);
+  });
+
+  it('tôn trọng max: max=1 chỉ lấy 1, max=4 lấy hết nếu đủ', () => {
+    expect(incomeLevers('heavy', advice, 1)).toEqual([advice[0]]);
+    expect(incomeLevers('loss', advice, 4)).toEqual(advice);
+  });
+
+  it('không có nguyên nhân → [] dù đai xấu (không kê rỗng)', () => {
+    expect(incomeLevers('heavy', [])).toEqual([]);
+  });
+
+  it('giữ nguyên action để mở thẳng panel sửa (arrange/order/prices/staff)', () => {
+    const out = incomeLevers('tight', advice, 3);
+    expect(out.map((l) => l.action)).toEqual(['order', 'order', 'prices']);
   });
 });
