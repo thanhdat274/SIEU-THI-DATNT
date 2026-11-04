@@ -141,6 +141,50 @@ export function spinWheelPrize(): WheelPrize {
   return WHEEL_PRIZES[WHEEL_PRIZES.length - 1];
 }
 
+/** Một ô giải đã scale + xác suất trúng (%). */
+export interface WheelOddsEntry {
+  prize: WheelPrize;
+  /** Xác suất trúng ô này (0–100, = weight/tổng trọng số). */
+  pct: number;
+}
+
+export interface WheelOdds {
+  /** Tổng trọng số vòng quay. */
+  total: number;
+  /** Từng ô (giải đã scale theo cấp) + xác suất. */
+  entries: WheelOddsEntry[];
+  /** Giá trị KỲ VỌNG tiền một lượt quay (Σ tiền scalar × pct, đã theo cấp). */
+  moneyEv: number;
+  /** Giá trị kỳ vọng XP một lượt (Σ XP × pct). */
+  xpEv: number;
+  /** Xác suất trúng ô 🍀 Đông khách (%). */
+  boostPct: number;
+}
+
+/**
+ * GĐ1191 "Vòng quay may mắn — lộ thật tỉ lệ / giá trị kỳ vọng": GĐ603 nâng cấp vòng quay nhưng vẫn
+ * giấu kín trọng số — người chơi thấy 8 ô mà không biết ô nào dễ trúng, không biết một lượt quay
+ * "đáng" bao nhiêu. Helper này THUẦN đọc: pct = weight/tổng trên `WHEEL_PRIZES` (khớp `spinWheelPrize`),
+ * giải nhân hệ số cấp qua `scaledPrize`; moneyEv/xpEv là kỳ vọng tuyến tính (không RNG, không seed).
+ * Không đổi state/save/kinh tế — dùng chung chơi đơn/hẻm online (chỉ từ hằng số + cấp).
+ */
+export function wheelOdds(level: number): WheelOdds {
+  const prizes = WHEEL_PRIZES.map((p) => scaledPrize(p, level));
+  const total = WHEEL_PRIZES.reduce((n, p) => n + p.weight, 0);
+  const entries: WheelOddsEntry[] = prizes.map((p) => ({ prize: p, pct: (p.weight / total) * 100 }));
+  let moneyEv = 0;
+  let xpEv = 0;
+  let boostPct = 0;
+  WHEEL_PRIZES.forEach((raw, i) => {
+    const pct = raw.weight / total;
+    const p = prizes[i];
+    if (p.money !== undefined) moneyEv += p.money * pct;
+    if (p.xp !== undefined) xpEv += p.xp * pct;
+    if (p.boost !== undefined) boostPct += pct * 100;
+  });
+  return { total, entries, moneyEv, xpEv, boostPct };
+}
+
 // ── "Chào mừng quay lại" (GĐ39): thưởng khi quay lại sau ≥2 ngày thật vắng mặt ──
 /** Số mili-giây trong một ngày thật dùng để đếm số ngày vắng mặt. */
 const DAY_MS = 24 * 60 * 60 * 1000;

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useGame } from '../../core/store';
-import { DAILY_GIFTS, WHEEL_PRIZES, giftText, recentAvgProfit, scaledGiftEco, scaledPrize, type WheelPrize } from '../../data/gifts';
+import { DAILY_GIFTS, WHEEL_PRIZES, giftText, recentAvgProfit, scaledGiftEco, scaledPrize, wheelOdds, type WheelPrize } from '../../data/gifts';
 import { Footer, styles } from './shared';
 
 const formatMoneyShort = (v: number) => v >= 1_000_000 ? `${Math.round(v / 1_000_000)}tr` : `${Math.round(v / 1000)}k`;
@@ -15,6 +15,7 @@ export function GiftPanel() {
   const avg = recentAvgProfit(history);
   const gifts = DAILY_GIFTS.map((g) => scaledGiftEco(g, level, avg));
   const wheelPrizes = WHEEL_PRIZES.map((p) => scaledPrize(p, level));
+  const odds = wheelOdds(level);
   // Chuỗi còn giữ được hôm nay không: nối tiếp bình thường, hoặc được tha vì bỏ quên đúng 1 ngày (chuỗi ≥3, hồi 7 ngày)
   const graceToday = day - giftLastDay === 2 && giftStreak >= 3 && day - giftGraceDay >= 7;
   const live = claimedToday || giftLastDay === day - 1 || graceToday ? giftStreak : 0;
@@ -166,6 +167,16 @@ export function GiftPanel() {
           )}
         </div>
       </div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 10 }}>
+        {odds.entries.map((e, i) => (
+          <span key={i} style={{ fontSize: 11, padding: '2px 7px', borderRadius: 6, background: '#3a3a4d', opacity: 0.9 }}>
+            {e.prize.icon} {e.prize.short} · {Math.round(e.pct)}%
+          </span>
+        ))}
+      </div>
+      <small style={{ display: 'block', opacity: 0.65, marginTop: 6, color: '#e6c95c' }}>
+        🎯 Lộ trọng số: mỗi lượt quay về trung bình ~{formatMoneyShort(odds.moneyEv)} tiền + {Math.round(odds.xpEv)} XP (🍀 Đông khách {Math.round(odds.boostPct)}%) — quà lớn khó hơn, phần nhỏ dễ hơn.
+      </small>
       <Footer onClose={closePanel} />
     </>
   );
