@@ -23,9 +23,33 @@ function gameServer(): Plugin {
   };
 }
 
+/**
+ * GĐ1197 — bỏ bản decoder Draco CHẾT khỏi bản build (không thổi phồng / no bloat).
+ * Ba file `three/examples/jsm/libs/draco/*` mà DRACOLoader giữ làm mặc định FALLBACK ở dòng 17–19 + 67–70
+ * (chỉ dùng khi KHÔNG gọi setDecoderPath). Nhưng app LUÔN gọi `.setDecoderPath('/decoders/draco/')`
+ * (gltfLoader.ts:12) — setDecoderPath ghi đè cả ba decoderPaths sang public (dòng 113–115), và
+ * `_getDecoderModule` (387–401) chỉ nạp theo decoderPaths. Nên mấy bản assets/draco_* không bao giờ
+ * được nạp: ~1.3 MB chất chết chở theo mỗi build. Xoá ở generateBundle; DRACOLoader giữ chuỗi URL cũ
+ * nhưng vô hại (không bao giờ đọc tới vì path đã bị ghi đè). check-bundle có guard xác nhận không còn
+ * `draco_decoder-*.wasm` VÀ chuỗi `/decoders/draco/` vẫn còn trong bản build → tự bảo vệ nếu three lên
+ * đời mà đổi cách dùng libs/draco.
+ */
+function dropDeadDraco(): Plugin {
+  return {
+    name: 'drop-dead-draco',
+    apply: 'build',
+    generateBundle(_o, bundle) {
+      for (const key of Object.keys(bundle)) {
+        // Key có tiền tố `assets/` trong rolldown — khớp chứa `draco_decoder-` / `draco_wasm_wrapper-`
+        if (/draco_(decoder|wasm_wrapper)-/.test(key)) delete bundle[key];
+      }
+    },
+  };
+}
+
 // /api và /ws chuyển sang server lưu cloud + chơi 2 người (cổng 3002)
 export default defineConfig({
-  plugins: [react(), gameServer()],
+  plugins: [react(), gameServer(), dropDeadDraco()],
   build: {
     rollupOptions: {
       output: {
