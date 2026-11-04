@@ -8,6 +8,7 @@ import { BILL_RUSH_DAYS, dayOfMonth, SERVICE_BUY_ALONG, SERVICES } from '../../d
 import { roiOf } from '../../data/serviceRoi';
 import { catPayoff, dogPayoff, CAT_PITCH_MIN } from '../../data/petPayoff';
 import { theftRisk, THEFT_LEAK_HIGH, THEFT_LEAK_MODERATE, THEFT_UNLOCK } from '../../data/theftRisk';
+import { maintenancePayoff, MAINT_RISK_HIGH, MAINT_RISK_MODERATE, MAINT_UNLOCK } from '../../data/maintenancePayoff';
 import { card, title, pill, iconTile, btn, sub, row } from './businessStyles';
 
 export function Pets() {
@@ -166,7 +167,7 @@ export function Life() {
 
 /** Tab nâng cấp: thiết bị mua một lần dùng vĩnh viễn. */
 export function Upgrades() {
-  const { level, money, biz, stats, day } = useGame();
+  const { level, money, biz, stats, day, furniture } = useGame();
   return (
     <>
       <div style={{ ...card, marginBottom: 8 }}>
@@ -180,6 +181,9 @@ export function Upgrades() {
               level, customers: stats.customers, revenue: stats.revenue,
               hasCamera: owned, hasDog: !!petActive(biz.pets?.dog, day),
             })
+          : null;
+        const maintPayoff = u.id === 'maintenance' && level >= MAINT_UNLOCK
+          ? maintenancePayoff({ level, furniture, hasContract: owned })
           : null;
         return (
           <div key={u.id} style={card}>
@@ -212,6 +216,21 @@ export function Upgrades() {
                   {cameraRisk.hasCamera
                     ? 'Đã lắp: kẻ trộm né tiệm (mất bớt ~30% vụ trộm).'
                     : `~${Math.round(cameraRisk.expectedThievesToday * 10) / 10} khách/ngày là kẻ trộm (giỏ trung bình ${formatMoney(cameraRisk.avgBasketRetail)}). Lắp camera kìm còn 70% → tiết kiệm ước ~${formatMoney(cameraRisk.cameraSavesPerDay)}/ngày, hoàn vốn sau ~${cameraRisk.cameraPaybackDays ?? '?'} ngày.`}
+                </div>
+              </Callout>
+            )}
+            {maintPayoff && (
+              <Callout
+                tone={maintPayoff.hasContract ? 'ok' : maintPayoff.nightlyRepairSpend >= MAINT_RISK_HIGH ? 'danger' : maintPayoff.nightlyRepairSpend >= MAINT_RISK_MODERATE ? 'warn' : 'info'}
+                style={{ marginTop: 8 }}
+                title={maintPayoff.hasContract
+                  ? '🔧 Đã ký hợp đồng — thợ chăm kệ mỗi sáng'
+                  : `🔧 Mỗi đêm kệ hỏng rủi ro ~${formatMoney(maintPayoff.nightlyRepairSpend)} tiền sửa`}
+              >
+                <div style={{ marginTop: 2, fontSize: 12 }}>
+                  {maintPayoff.hasContract
+                    ? 'Kệ mòn ≥40 được thợ chăm về 10 mỗi sáng → gần như không bao giờ hỏng. Tiền sửa/đêm ~0 (mất lợi chỉ còn khi kệ đang hỏng sẵn).'
+                    : `~${Math.round(maintPayoff.expectedBreaksPerNight * 10) / 10} kệ/đêm có nguy cơ hỏng trên ${maintPayoff.nbWearing} đồ hao mòn. Ký hợp đồng tiết kiệm ước ~${formatMoney(maintPayoff.savingPerDay)}/ngày (nửa giá + chăm kệ tránh hỏng), hoàn vốn sau ~${maintPayoff.paybackDays ?? '?'} ngày — chưa tính hàng lỡ bán khi kệ hỏng.`}
                 </div>
               </Callout>
             )}
