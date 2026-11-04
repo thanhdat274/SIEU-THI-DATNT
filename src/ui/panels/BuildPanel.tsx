@@ -3,8 +3,8 @@ import { useGame } from '../../core/store';
 import { FLOOR_COLORS, PAINT_PRICE, ROOF_COLORS, SHOP_TIERS, WALL_COLORS, rentDelta, rentOf, spaceUsePct, type ShopStyle } from '../../data/shopTiers';
 import { FURNITURE } from '../../data/furniture';
 import { formatMoney } from '../../data/products';
-import { newUnlockMark } from '../../data/advice';
-import { Footer, Swatch, styles, Tabs } from './shared';
+import { newUnlockMark, shelfBuyHint, storeMissRevenue } from '../../data/advice';
+import { Callout, Footer, Swatch, styles, Tabs } from './shared';
 
 export function BuildPanel() {
   const [tab, setTab] = useState<'furniture' | 'paint' | 'expand'>('furniture');
@@ -29,12 +29,21 @@ export function BuildPanel() {
 }
 
 export function FurnitureTab() {
-  const { level, money, furniture, setPlacing, demolishAll } = useGame();
+  const { level, money, furniture, storage, stats, setPlacing, demolishAll } = useGame();
+  // GĐ1251: soi quyết định MUA KỆ bằng số liệu bỏ lỡ hôm nay (storeMissRevenue GĐ131) —
+  // trước giờ dữ liệu này chỉ hiện ở Kho/Báo cáo, còn nơi mua kệ lại chỉ chìa giá.
+  const hint = shelfBuyHint(storeMissRevenue(stats?.missLog, storage));
   return (
     <>
       <p style={styles.sub}>
         Chọn món để đặt vào tiệm. Bấm "Di chuyển đồ có sẵn" rồi bấm vào đồ để dời chỗ hoặc bán (nhận lại 50%).
       </p>
+      {hint && (
+        <Callout tone={hint.kind === 'shelf' ? 'ok' : 'info'} style={{ marginBottom: 8 }}
+          title={hint.kind === 'shelf' ? '💡 Mua thêm kệ hôm nay đáng' : '💡 Mua thêm kệ hôm nay chưa giúp'}>
+          <div style={{ marginTop: 2, fontSize: 12 }}>{hint.line}</div>
+        </Callout>
+      )}
       <div style={{ display: 'grid', gap: 8 }}>
         {FURNITURE.map((f) => {
           const locked = f.unlock > level;

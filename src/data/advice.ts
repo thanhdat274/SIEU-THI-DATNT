@@ -62,6 +62,44 @@ export function storeMissRevenue(log: MissLog | undefined, inStorage: Record<str
   };
 }
 
+// ───── GĐ1251: gợi ý MUA KỆ ngay tại nơi mua (BuildPanel — Nội thất) ─────
+// storeMissRevenue (GĐ131) hiện ở Kho/Báo cáo nhưng KHÔNG ở BuildPanel — nơi người chơi quyết
+// định mua kệ thì chỉ thấy giá. Helper này quy số liệu GĐ131 thành MỘT dòng hướng đúng:
+// lỡ mà KHO còn hàng → thiếu chỗ bày (mua kệ giúp thật); lỡ mà KHO cũng hết → mua kệ chưa giúp
+// (phải nhập trước). THUẦN ĐỌC — không đổi state/save/kinh tế.
+
+export interface ShelfBuyHint {
+  /** 'shelf' = mua kệ giúp thật (kho còn hàng mà kệ trống); 'order' = đừng mua kệ, nhập trước. */
+  kind: 'shelf' | 'order';
+  /** Số lượt khách bỏ lỡ hôm nay. */
+  count: number;
+  /** Lãi bỏ lỡ ước tính hôm nay (đ). */
+  loss: number;
+  /** Tên món bỏ lỡ nhiều nhất (kho còn) — chỉ có khi kind 'shelf'. */
+  top: string | null;
+  /** Một dòng tiếng Việt trung thực đặt đầu bảng Nội thất. */
+  line: string;
+}
+
+export function shelfBuyHint(missRev: StoreMissRevenue | null): ShelfBuyHint | null {
+  if (!missRev || missRev.totalLoss <= 0) return null;
+  const shelfRows = missRev.rows.filter((r) => r.inStorage > 0);
+  if (!shelfRows.length) {
+    return {
+      kind: 'order', count: missRev.rows.reduce((n, r) => n + r.count, 0),
+      loss: missRev.totalLoss, top: null,
+      line: 'Khách bỏ lỡ vì KHO hết hàng — mua thêm kệ chưa giúp, vào Nhập hàng trước.',
+    };
+  }
+  const count = shelfRows.reduce((n, r) => n + r.count, 0);
+  const loss = shelfRows.reduce((n, r) => n + r.estLoss, 0);
+  const top = shelfRows[0]?.name ?? null;
+  return {
+    kind: 'shelf', count, loss, top,
+    line: `Hôm nay ${count} lượt khách tìm món mà kệ trống dù kho còn (lãi bỏ lỡ ~${loss.toLocaleString('vi-VN')}đ) — thêm kệ để bày${top ? `: ${top}` : ''}.`,
+  };
+}
+
 // ───── GĐ133: bản kê NGƯỢC "đêm qua món nào hỏng, tốn bao nhiêu, vì sao" ─────
 // Đóng nửa "sau" của vòng lặp quan trọng nhất (nhập → hỏng đêm → thấy số → chỉnh đơn).
 // Khác expiringSoon/nearExpiry (cảnh báo TRƯỚC) và khác storeMissRevenue (lãi bỏ lỡ vì THIẾU hàng);
