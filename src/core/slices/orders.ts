@@ -290,6 +290,11 @@ export const createOrdersSlice = (set: SetState, get: GetState): Pick<GameState,
         community: { ...now.community, [goal.key]: { ...progress, done: true } },
         money: now.money + goal.reward.money,
         ...(host && friend ? { regulars: { ...now.regulars, [host.id]: friend.progress } } : {}),
+        // GĐ1195: thưởng mục tiêu CẢ HẺM (dịp lễ, hoàn thành chung) là "thưởng" mà tổng kết ngày (Luật 10 —
+        // đừng để thưởng lấn lãi bán thật) trước nay mù tịt: cộng thẳng tiền mà bỏ lọt questIncome. Chỉ ghi
+        // nhận — không đổi tiền/kinh tế/seed. communitySale chạy trên máy chạy (LOCAL_ONLY, gọi từ checkout/
+        // giao đơn) nên chơi đơn/hẻm online giống nhau; trường tuỳ chọn `?? 0` an toàn save cũ.
+        stats: { ...now.stats, questIncome: (now.stats.questIncome ?? 0) + goal.reward.money },
       });
       now.addXp(goal.reward.xp);
       now.notify(`🎉 Cả hẻm hoàn thành mục tiêu ${goal.festival.name}! +${formatMoney(goal.reward.money)}, +${goal.reward.xp} XP${host ? `, ${host.name} thân hơn` : ''}`);

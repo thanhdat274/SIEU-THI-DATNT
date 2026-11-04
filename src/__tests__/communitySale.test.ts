@@ -31,8 +31,11 @@ describe('communitySale — khai trương', () => {
     g().communitySale([PID]);
     expect(g().community[goal.key].done).toBe(true);
     expect(g().money).toBe(goal.reward.money);
+    // GĐ1195: thưởng mục tiêu cả hẻm phải vào sổ questIncome (tổng kết ngày so được với lãi bán thật — Luật 10)
+    expect(g().stats.questIncome).toBe(goal.reward.money);
     g().communitySale(Array(10).fill(PID)); // bán thêm không thưởng lại
     expect(g().money).toBe(goal.reward.money);
+    expect(g().stats.questIncome).toBe(goal.reward.money); // và không ghi lại lần hai
   });
 
   it('đủ món nhưng thiếu chậu cây: chưa hoàn thành, chưa thưởng', () => {
