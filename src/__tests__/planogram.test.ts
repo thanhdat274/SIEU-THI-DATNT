@@ -55,4 +55,31 @@ describe('pickForShelf — tự chọn món cho ô trống (GĐ1236)', () => {
     // furnitureDef thật của 'shelf' có categories hợp lệ
     expect(furnitureDef('shelf').tiers).toBeGreaterThan(0);
   });
+
+  it('GĐ1237: ưu tiên món HOT chưa bày ở kệ này dù kho ít hơn (châm đúng đồ khách đang cần)', () => {
+    const storage = { mi: 9, banh: 3 };
+    const allowed = allowedForType('shelf', [P.mi, P.banh]);
+    const f = shelf([null]); // ô trống, chưa bày gì
+    const hot = new Set(['banh']);
+    // không hot → mi (kho 9); có hot banh → banh (hot + chưa bày, điểm 3 > 2)
+    expect(pickForShelf(f, storage, allowed)).toBe('mi');
+    expect(pickForShelf(f, storage, allowed, hot)).toBe('banh');
+  });
+
+  it('GĐ1237: đa dạng thắng "châm thêm món hot đang bày" (hot đã bày chỉ điểm 1)', () => {
+    const storage = { mi: 9, banh: 3 };
+    const allowed = allowedForType('shelf', [P.mi, P.banh]);
+    const f = shelf(['mi', null]); // kệ đang bày mì; hot chính là mì
+    const hot = new Set(['mi']);
+    // hot mi ĐÃ bày → chỉ 1; banh chưa bày → 2 → chọn banh (đa dạng), dù mi kho nhiều hơn
+    expect(pickForShelf(f, storage, allowed, hot)).toBe('banh');
+  });
+
+  it('GĐ1237: hot đang bày được ưu tiên hơn món nguội đang bày (châm thêm món chạy)', () => {
+    const storage = { mi: 9, banh: 3 };
+    const allowed = allowedForType('shelf', [P.mi, P.banh]);
+    const f = shelf(['banh', null]); // kệ đang bày bánh (nguội); hot = mi, chưa bày
+    const hot = new Set(['mi']);
+    expect(pickForShelf(f, storage, allowed, hot)).toBe('mi'); // mi hot + chưa bày (3) > bánh (2)
+  });
 });
