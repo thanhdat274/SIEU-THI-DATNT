@@ -66,6 +66,13 @@ export function keepChance(productId: string, price: number, customerSensitivity
   return Math.max(PRICE_RULES.minKeepChance, 1 - productSensitivity(productId) * customerSensitivity * (ratio - 1));
 }
 
+/** GĐ1222 — bề mặt "giá cao ăn vào đơn": tỉ lệ khách còn chịu mua ở giá đang bày (baseline khách vãng
+ *  lai, sensitivity=1) + giá tham chiếu thị trường, để báo cáo trỏ "chê đắt → hạ về ~reference thì đa số
+ *  mua". THUẦN — ghép từ `keepChance`/`referenceSell` có sẵn, không đổi kinh tế/save/seed. */
+export function priceBuyOdds(productId: string, price: number): { keep: number; reference: number } {
+  return { keep: keepChance(productId, price), reference: referenceSell(productId) };
+}
+
 /** Giá rẻ hơn gợi ý kéo thêm khách, không vượt trần; giá cao không đổi lượng khách (khách từ chối ở `keepChance`). */
 export function demandPriceFactor(productId: string, price: number): number {
   const ratio = priceRatio(price, productId);

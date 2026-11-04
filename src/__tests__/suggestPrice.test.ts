@@ -1,5 +1,32 @@
 import { describe, expect, it } from 'vitest';
-import { suggestPrice } from '../data/pricing';
+import { priceBuyOdds, referenceSell, suggestPrice } from '../data/pricing';
+
+describe('priceBuyOdds — bề mặt "giá cao ăn vào đơn" (GĐ1222)', () => {
+  // gao: sell 100000, độ nhạy 1.1
+  it('bằng/thấp hơn giá thị trường → keep 1 (ai cũng mua), reference = giá thị trường', () => {
+    expect(priceBuyOdds('gao', 100000)).toEqual({ keep: 1, reference: 100000 });
+  });
+  it('đắt hơn thị trường → keep giảm theo độ nhạy (không xuống dưới trần 0.1)', () => {
+    // 120000: ratio 1.2, gao nhạy 1.1 → keep = 1 − 1.1×0.2 = 0.78
+    const o = priceBuyOdds('gao', 120000);
+    expect(o.reference).toBe(100000);
+    expect(o.keep).toBeCloseTo(0.78, 5);
+  });
+  it('càng đắt càng khó giữ khách, nhưng không âm (kẹp trần minKeepChance)', () => {
+    // 200000: ratio 2, 1 − 1.1×1 = −0.1 → kẹp về 0.1
+    const o = priceBuyOdds('gao', 200000);
+    expect(o.keep).toBeCloseTo(0.1, 5);
+    expect(o.keep).toBeGreaterThanOrEqual(0);
+  });
+  it('món nhạy giá cao (nước suối) mất khách nhanh hơn gạo khi cùng tăng %', () => {
+    // cùng ratio 1.2: gạo nhạy 1.1 → keep 0.78; nước nhạy 2.6 → keep 0.48
+    const ratio = 1.2;
+    const g = priceBuyOdds('gao', referenceSell('gao') * ratio);
+    const n = priceBuyOdds('nuoc', referenceSell('nuoc') * ratio);
+    expect(n.keep).toBeLessThan(g.keep);
+    expect(g.keep).toBeCloseTo(0.78, 5);
+  });
+});
 
 describe('suggestPrice — gợi ý giá mỗi ngày (lõi bán hàng)', () => {
   // gao: sell 100000, buy 80000 → ref mặc định (marketIndex=1) = 100000, margin tại 100000 = 0.2 > 0.15

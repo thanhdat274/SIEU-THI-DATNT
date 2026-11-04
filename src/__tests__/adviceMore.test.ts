@@ -31,6 +31,21 @@ describe('advice — các gợi ý việc nên làm', () => {
     expect(price[0].action).toBe('prices');
   });
 
+  it('walkoutAdvice: giá cao → kèm tỉ lệ khách còn chịu mua + giá thị trường (GĐ1222)', () => {
+    // nuoc sell 6000; bày 9000 (ratio 1.5, nhạy 2.6) → keep kẹp 0.1 → ~10% đơn được mua, hạ về ~6.000đ
+    const price = walkoutAdvice({ 'price:nuoc': 2 }, {}, () => 9000);
+    const t = price[0].text;
+    expect(price[0].action).toBe('prices');
+    expect(t).toContain('chỉ ~10% đơn được mua');
+    expect(t).toContain('hạ về ~6.000đ là đa số mua');
+  });
+
+  it('walkoutAdvice: giá bằng/thấp hơn thị trường → KHÔNG kèm tỉ lệ (không nhiễu, keep=1)', () => {
+    // 5000 < 6000 → đa số vẫn mua, giữ dòng gọn như cũ
+    const price = walkoutAdvice({ 'price:nuoc': 2 }, {}, () => 5000);
+    expect(price[0].text).not.toContain('đơn được mua');
+  });
+
   it('walkoutAdvice: món lỡ ít (< ngưỡng lặp) thì không nhắc', () => {
     expect(walkoutAdvice({ 'stock:mi': 1 }, {}, () => 5000)).toEqual([]);
   });
