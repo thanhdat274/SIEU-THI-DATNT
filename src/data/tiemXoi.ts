@@ -230,3 +230,40 @@ export function tiemXoiStaffValues(
   }
   return out;
 }
+
+// ───── GĐ1247 — "Mở rộng bếp xôi (20tr) hồi vốn bao lâu?" (song song quán nước quanNuocBuildPayback GĐ193) ─────
+
+export interface TiemXoiExpandPayback {
+  /** Chi phí mở rộng (TIEM_XOI_BIG_COST). */
+  cost: number;
+  /** Lợi nhuận bán TĂNG mỗi đêm nhờ bếp lớn (sell − giá vốn nấu của xôi nấu thêm; giả định nhu cầu đủ). */
+  netPerDay: number;
+  /** Số ngày cần để hồi vốn (làm tròn lên); null khi vô ích/lỗ. */
+  paybackDays: number | null;
+  verdict: 'worth' | 'slow' | 'full';
+}
+
+/**
+ * GĐ1247 — Tiệm xôi: "Mở rộng bếp (20tr, nấu ×1,5, giữ 120 phần/món) hồi vốn bao lâu?" Màn XÂY/XÂY RỘNG
+ * tiệm xôi chỉ cho giá + cấp, không nói mở rộng sẽ kiếm về bao nhiêu (hộp đen; quán nước đã có
+ * `quanNuocBuildPayback` GĐ193, tiệm xôi chưa). Thuần đọc, tái dựng CHÍNH XÁC `tiemXoiDay` (rng undefined,
+ * cùng need/capacity loop, `big` on/off) trên bản sao kho: lợi nhuận bán THÊM/đêm nhờ big
+ * (profit(big) − profit(normal)), chia vốn 20tr → số ngày hồi. Bị chặn bởi nhu cầu kho: kho thường ĐẦY thì
+ * big không nấu thêm → 'full' (đừng xây). Không đổi SAVE_VERSION/kinh tế/sim.
+ */
+export function tiemXoiExpandPayback(
+  t: TiemXoiState, level: number, storage: Record<string, number>, day?: number,
+): TiemXoiExpandPayback {
+  const madeAt = (big: boolean): Record<string, number> => {
+    const c: Record<string, number> = { ...storage };
+    const r = tiemXoiDay({ ...t, big }, level, c, () => {}, day);
+    return r ? r.made : {};
+  };
+  const profit = (made: Record<string, number>): number =>
+    Math.round(Object.entries(made).reduce((n, [id, q]) => n + q * (productById(id).sell - productById(id).buy * TIEM_XOI_COST_MUL), 0));
+
+  const netPerDay = Math.max(0, profit(madeAt(true)) - profit(madeAt(false)));
+  if (netPerDay <= 0) return { cost: TIEM_XOI_BIG_COST, netPerDay: 0, paybackDays: null, verdict: 'full' };
+  const paybackDays = Math.ceil(TIEM_XOI_BIG_COST / netPerDay);
+  return { cost: TIEM_XOI_BIG_COST, netPerDay, paybackDays, verdict: paybackDays <= 60 ? 'worth' : 'slow' };
+}

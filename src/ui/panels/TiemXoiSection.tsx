@@ -2,7 +2,7 @@ import { useGame } from '../../core/store';
 import { formatMoney } from '../../data/products';
 import {
   TIEM_XOI_COST_MUL, TIEM_XOI_HIRE_FEE, TIEM_XOI_MAX_STAFF, TIEM_XOI_PRICE, TIEM_XOI_TARGET, TIEM_XOI_UNLOCK,
-  TIEM_XOI_WAGE, tiemXoiCapacity, tiemXoiHandQty, tiemXoiTarget, TIEM_XOI_BIG_COST, TIEM_XOI_BIG_LEVEL, tiemXoiDineCap, tiemXoiRainMul, tiemXoiWeekendMul, tiemXoiLastLine, isXoiCungDay, tiemXoiCungMul, tiemXoiStaffValues,
+  TIEM_XOI_WAGE, tiemXoiCapacity, tiemXoiHandQty, tiemXoiTarget, TIEM_XOI_BIG_COST, TIEM_XOI_BIG_LEVEL, tiemXoiDineCap, tiemXoiRainMul, tiemXoiWeekendMul, tiemXoiLastLine, isXoiCungDay, tiemXoiCungMul, tiemXoiStaffValues, tiemXoiExpandPayback,
 } from '../../data/tiemXoi';
 import { Callout, styles } from './shared';
 
@@ -13,6 +13,8 @@ export function TiemXoiSection() {
   const last = biz.tiemXoiLast;
   // GĐ1246 — "từng thợ xôi đáng đồng lương?" (thuần đọc, song song quán nước GĐ188). Chỉ khi tiệm đang chạy có thợ.
   const staffValues = t.open && t.staff > 0 ? tiemXoiStaffValues(t, level, storage, day) : [];
+  // GĐ1247 — "Mở rộng bếp 20tr hồi vốn bao lâu?" (thuần đọc, song song quán nước GĐ193). Chỉ khi chưa mở rộng.
+  const expandPay = t.open && !t.big ? tiemXoiExpandPayback(t, level, storage, day) : null;
   if (!t.open && level < TIEM_XOI_UNLOCK) return null;
   const off = Math.round((1 - TIEM_XOI_COST_MUL) * 100);
   return (
@@ -74,11 +76,25 @@ export function TiemXoiSection() {
             <button style={styles.btn} disabled={t.handDay === day} onClick={() => steamXoiHand()} title="Phím J ở sạp xôi cũng được">
               🍚 Tự đồ {tiemXoiHandQty(t.staff)} phần{t.handDay === day ? ' (mai đồ tiếp)' : ''}
             </button>
-            {!t.big && (
-              <button style={styles.btn} disabled={level < TIEM_XOI_BIG_LEVEL || money < TIEM_XOI_BIG_COST} onClick={() => expandTiemXoi()}>
-                {level < TIEM_XOI_BIG_LEVEL ? `Mở rộng bếp: cấp ${TIEM_XOI_BIG_LEVEL}` : `Mở rộng bếp ${formatMoney(TIEM_XOI_BIG_COST)} (120 phần, nấu ×1,5)`}
-              </button>
-            )}
+            {!t.big && (() => {
+              const seg = [];
+              if (level >= TIEM_XOI_BIG_LEVEL && expandPay) {
+                const c = expandPay.verdict === 'worth' ? '#2ecc71' : expandPay.verdict === 'slow' ? '#e67e22' : '#e74c3c';
+                seg.push(
+                  <div key="p" style={{ fontSize: 12, color: c, marginTop: 6 }}>
+                    {expandPay.verdict === 'full'
+                      ? <span>🔻 Mở rộng bếp chưa giúp gì: kho xôi hầu như đã đủ, bếp lớn không nấu thêm — nhập/giữ món xôi khan trước.</span>
+                      : <span>💸 Ước hồi vốn {formatMoney(expandPay.cost)}: mở rộng giúp bán thêm ~{formatMoney(expandPay.netPerDay)}/đêm → ~{expandPay.paybackDays} ngày{expandPay.verdict === 'worth' ? ' (đáng)' : ' (chậm — cân nhắc)'}{' '}· nếu kho thiếu đủ để nấu thêm</span>}
+                  </div>
+                );
+              }
+              seg.push(
+                <button key="b" style={styles.btn} disabled={level < TIEM_XOI_BIG_LEVEL || money < TIEM_XOI_BIG_COST} onClick={() => expandTiemXoi()}>
+                  {level < TIEM_XOI_BIG_LEVEL ? `Mở rộng bếp: cấp ${TIEM_XOI_BIG_LEVEL}` : `Mở rộng bếp ${formatMoney(TIEM_XOI_BIG_COST)} (120 phần, nấu ×1,5)`}
+                </button>
+              );
+              return seg;
+            })()}
           </div>
         </>
       )}
