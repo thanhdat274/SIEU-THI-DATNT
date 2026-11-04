@@ -14,7 +14,7 @@ export type SplitHealth = 'ok' | 'heavy' | 'loss';
 export interface DayIncomeSplit {
   /** Lãi bán hàng THẬT hôm nay = lãi gộp sổ bán + lời dịch vụ − lương − tiền nhà (đúng công thức history.salesProfit). */
   salesProfit: number;
-  /** Thưởng nhiệm vụ (nhiệm vụ ngày + chuyện) đã nhận hôm nay — tích lũy lúc claim vào stats.questIncome. */
+  /** Thưởng trong game đã ghi sổ questIncome hôm nay (nhiệm vụ ngày + chuyện + mục tiêu vòng NG+). */
   quest: number;
   /** Kèo hôm nay đã trúng — đọc live questLog.bet (chỉ tính khi đặt và đúng ngày). */
   bet: number;

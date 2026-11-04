@@ -155,6 +155,8 @@ describe('claimNgGoal — action store', () => {
     expect(goal.reward).toBe(1_950_000); // 1.5M × 1.3 (vòng 2)
     expect(after.money).toBe(moneyBefore + goal.reward);
     expect(after.biz.prestige.goalsClaimed).toContain('ng_level_40');
+    // GĐ1193: thưởng mục tiêu vòng phải vào sổ questIncome (tổng kết ngày so được với lãi bán thật — Luật 10)
+    expect(after.stats.questIncome).toBe(goal.reward);
   });
 
   it('từ chối khi mục tiêu chưa đạt', () => {

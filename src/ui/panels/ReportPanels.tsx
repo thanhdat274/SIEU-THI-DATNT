@@ -306,7 +306,7 @@ export function SummaryPanel({ day }: { day: number }) {
                   : <span>Bán hàng vẫn là nghề chính — hôm nay lãi bán thật bằng 0, thưởng là nguồn phụ.</span>;
             return (
               <Callout tone={tone} style={{ marginTop: 8 }}
-                title={<>🎯 Lãi bán hàng thật {split.salesProfit < 0 ? formatMoney(split.salesProfit) : <b style={{ color: '#2ecc71' }}>+{formatMoney(split.salesProfit)}</b>} · thưởng nhiệm vụ <b style={{ color: '#2ecc71' }}>+{formatMoney(split.quest)}</b>{split.bet > 0 ? <span> + kèo <b style={{ color: '#2ecc71' }}>+{formatMoney(split.bet)}</b></span> : null}</>}>
+                title={<>🎯 Lãi bán hàng thật {split.salesProfit < 0 ? formatMoney(split.salesProfit) : <b style={{ color: '#2ecc71' }}>+{formatMoney(split.salesProfit)}</b>} · thưởng <b style={{ color: '#2ecc71' }}>+{formatMoney(split.quest)}</b>{split.bet > 0 ? <span> + kèo <b style={{ color: '#2ecc71' }}>+{formatMoney(split.bet)}</b></span> : null}</>}>
                 <div style={{ fontSize: 12, opacity: 0.8, marginTop: 2 }}>
                   Lãi bán thật = lãi gộp bán hàng/ngày + dịch vụ − lương − tiền nhà (không trừ tiền nhập kho).<br />
                   {note}
