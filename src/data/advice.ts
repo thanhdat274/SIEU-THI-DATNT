@@ -324,6 +324,16 @@ export function waitLossStats(
   return { count, pct: customers > 0 ? count / customers : 1, peakHour: peak ? peak.hour : null };
 }
 
+/** GĐ1221 — ước lượng DOANH THU bỏ lỡ vì khách chờ quầy bỏ về: count × avgPerVisit (doanh thu trung bình /
+ *  khách mua, `repMoney.avgPerVisit`). Hoàn chỉnh bộ "mất tiền vì sao" — hết hàng (GĐ131 storeMissRevenue),
+ *  bẩn (GĐ156), chờ quầy; trước giờ thẻ ⏳ chỉ báo LƯỢT + % chứ không báo ĐỒNG, nên người chơi không thấy
+ *  việc xếp ca giỏi quầy đáng bao nhiêu tiền thật (Luật 1/10). THUẦN — chỉ nhân số có sẵn, không đổi
+ *  state/save/kinh tế. Dùng doanh thu (không quy lãi) vì lãi/khách không phải số lưu sẵn — gọi đúng tên
+ *  "doanh thu bỏ lỡ". */
+export function waitMoneyCost(walkedForWait: number, avgRevenuePerBuyer: number): { estRevenueLost: number } {
+  return { estRevenueLost: Math.round(walkedForWait * avgRevenuePerBuyer) };
+}
+
 /** GĐ1133 — cửa sổ "mới": mở trong 4 cấp trở lại (đồng bộ NEW_WITHIN = 4 của OrderPanel GĐ562-era). */
 export const NEW_UNLOCK_WINDOW = 4;
 

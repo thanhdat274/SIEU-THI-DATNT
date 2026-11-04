@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { newGameData, useGame } from '../core/store';
-import { expiringSoon, EXPIRY_WARN_DAYS } from '../data/advice';
+import { expiringSoon, EXPIRY_WARN_DAYS, waitMoneyCost } from '../data/advice';
 import { analyticsAdvice, shelfCount, type ItemHealth } from '../data/analytics';
 import { migrateTiers } from '../core/stock';
 import { updateOnline } from '../core/slices/online';
@@ -181,5 +181,23 @@ describe('GĐ1183 — người giao tự chở đơn app ghi nhận phí Grab ti
     expect(g().acceptOnline(10, 'grab')).toBe(true);
     expect(g().stats.onlineOwnGrabSaved ?? 0).toBe(0);
     expect(g().stats.grabFees ?? 0).toBe(grabFee(1));
+  });
+});
+
+describe('GĐ1221 — waitMoneyCost: ước lượng DOANH THU bỏ lỡ vì chờ quầy (khép bộ "mất tiền vì sao" với hết hàng GĐ131 / bẩn GĐ156 — THUẦN, chỉ nhân số có sẵn)', () => {
+  it('count × avgPerVisit ra doanh thu bỏ lỡ (làm tròn)', () => {
+    expect(waitMoneyCost(5, 12000)).toEqual({ estRevenueLost: 60000 });
+  });
+  it('avg phân lẻ làm tròn đúng (3 khách × 5000.5 = 15001.5 → 15002)', () => {
+    expect(waitMoneyCost(3, 5000.5)).toEqual({ estRevenueLost: 15002 });
+  });
+  it('không ai bỏ về vì chờ → 0 (không âm)', () => {
+    expect(waitMoneyCost(0, 20000)).toEqual({ estRevenueLost: 0 });
+  });
+  it('avg doanh thu 0 (chưa ai mua) → 0 dù có người chờ bỏ về', () => {
+    expect(waitMoneyCost(4, 0)).toEqual({ estRevenueLost: 0 });
+  });
+  it('helper thuần: cùng input ra cùng kết quả (không đổi theo state)', () => {
+    expect(waitMoneyCost(7, 15000)).toEqual(waitMoneyCost(7, 15000));
   });
 });

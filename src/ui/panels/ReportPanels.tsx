@@ -20,7 +20,7 @@ import { happyPayoff } from '../../data/rhythm';
 import { QUAN_NUOC_UNLOCK, QUAN_NUOC_WAGE, QUAN_PRICE_OPTIONS, isQuanMatchDay } from '../../data/quanNuoc';
 import { quanNuocDayAction, quanNuocHealth } from '../../data/quanNuocInsights';
 import { DEBT_LATE_DAYS, DEBT_WRITE_OFF_DAYS } from '../../data/credit';
-import { expiringSoon, expiryAdvice, peakAdvice, peakHours, spoilNightReport, storeMissRevenue, waitLossStats, walkoutAdvice, type Advice } from '../../data/advice';
+import { expiringSoon, expiryAdvice, peakAdvice, peakHours, spoilNightReport, storeMissRevenue, waitLossStats, walkoutAdvice, waitMoneyCost, type Advice } from '../../data/advice';
 import { dateOfDoy, dayEffects, dayOfYear, festivalStock, isWeekend, upcomingFestival, weekdayOf } from '../../data/calendar';
 import { festivalValue } from '../../data/festivalValue';
 import { festivalPrepAction, festivalRestockPlan } from '../../data/festivalRestock';
@@ -481,11 +481,14 @@ export function SummaryPanel({ day }: { day: number }) {
             const pct = Math.round(waitLoss.pct * 100);
             const bad = waitLoss.pct >= 0.1; // mất ≥10% khách vì chờ là đáng sốt
             const color = bad ? '#e74c3c' : '#f1c40f';
+            // GĐ1221 — bề mặt "mất tiền vì chờ quầy": count × avgPerVisit → đồng tới gần, cùng mô-típ
+            // storeMissRevenue (GĐ131 hết hàng) / dirtLoss (bẩn) — là mảnh cuối của bộ "mất tiền vì sao".
+            const wmc = waitMoneyCost(waitLoss.count, avgPerVisit(st.revenue, st.customers));
             return (
               <Callout tone={bad ? 'danger' : 'accent'} style={{ marginTop: 8 }}
                 title={<>⏳ Mất {waitLoss.count} khách vì chờ quầy quá lâu <span style={{ color }}>(bằng ~{pct}% khách ghé hôm nay)</span></>}>
                 <div style={{ fontSize: 12, opacity: 0.75, marginTop: 2 }}>
-                  Khách đứng chờ 😕😤 quá lâu rồi bỏ về. Đứng quầy giờ đông (giờ cao điểm nhất {waitLoss.peakHour !== null ? `${waitLoss.peakHour}h–${waitLoss.peakHour + 1}h` : 'trong hôm nay'}) hoặc thuê thêm thu ngân để không bỏ lỡ.
+                  Khách đứng chờ 😕😤 quá lâu rồi bỏ về — không mua {wmc.estRevenueLost > 0 ? `~${formatMoney(wmc.estRevenueLost)}` : 'thêm đồng'} doanh thu hôm nay. Đứng quầy giờ đông (giờ cao điểm nhất {waitLoss.peakHour !== null ? `${waitLoss.peakHour}h–${waitLoss.peakHour + 1}h` : 'trong hôm nay'}) hoặc thuê thêm thu ngân để không bỏ lỡ.
                 </div>
               </Callout>
             );
