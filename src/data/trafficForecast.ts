@@ -26,6 +26,9 @@ export interface TrafficForecast {
   /** Chênh ngày mai so với hôm nay (%). */
   deltaPct: number;
   verdict: 'hot' | 'normal' | 'slow';
+  /** GĐ1176 — "không hộp đen": lý do NGOÀI thời tiết khiến mai đông/vắng (lễ hội / đường sửa), để người
+   *  chơi biết con số kia vì sao. undefined khi không có yếu tố đó (chỉ thời tiết). */
+  cause?: string;
 }
 
 export function trafficForecast(opts: {
@@ -40,9 +43,11 @@ export function trafficForecast(opts: {
   const base = customersPerDay(level);
   // Nhu cầu thật = thời tiết × hệ số lễ hội/đường sửa (khớp counterDemand.demandForecast); thẻ sáng
   // trước đây chỉ tính thời tiết → cuối Tết (1.7) gặp mưa (0.8) báo nhầm "trời vắng đừng trữ hàng".
-  const de = (d: number) => (seed !== undefined && day !== undefined ? dayEffects(seed, d, level).traffic : 1);
-  const todayTraffic = WEATHER[weather].traffic * de(day ?? 0);
-  const tomorrowTraffic = WEATHER[tomorrow].traffic * (seed !== undefined && day !== undefined ? de(day + 1) : 1);
+  const hasDay = seed !== undefined && day !== undefined;
+  const deToday = hasDay ? dayEffects(seed!, day!, level) : null;
+  const deTomorrow = hasDay ? dayEffects(seed!, day! + 1, level) : null;
+  const todayTraffic = WEATHER[weather].traffic * (deToday?.traffic ?? 1);
+  const tomorrowTraffic = WEATHER[tomorrow].traffic * (deTomorrow?.traffic ?? 1);
   const todayKhach = base * todayTraffic;
   const tomorrowKhach = base * tomorrowTraffic;
   const deltaPct = todayTraffic > 0 ? ((tomorrowTraffic / todayTraffic) - 1) * 100 : 0;
@@ -52,5 +57,14 @@ export function trafficForecast(opts: {
   else if (tomorrowTraffic <= TRAFFIC_SLOW) verdict = 'slow';
   else verdict = 'normal';
 
-  return { todayTraffic, tomorrowTraffic, todayKhach, tomorrowKhach, deltaPct, verdict };
+  let cause: string | undefined;
+  if (deTomorrow) {
+    const parts: string[] = [];
+    const f = deTomorrow.festival;
+    if (f && f.traffic > 1) parts.push(`${f.icon} ${f.name}`);
+    if (deTomorrow.market?.kind === 'roadworks') parts.push('🚧 đường sửa');
+    if (parts.length) cause = parts.join(' · ');
+  }
+
+  return { todayTraffic, tomorrowTraffic, todayKhach, tomorrowKhach, deltaPct, verdict, cause };
 }

@@ -77,3 +77,16 @@ describe('GĐ1174 — dự báo ghép hệ số lễ hội (nhu cầu THẬT, kh
     expect(r.tomorrowTraffic).toBe(WEATHER.sunny.traffic);
   });
 });
+
+describe('GĐ1176 — dự báo nêu rõ lý do đông/vắng (không hộp đen)', () => {
+  it('mai trong lễ Tết (hệ số 1.7): cause ghi tên lễ, không biến mất kể cả khi đường sửa', () => {
+    const r = trafficForecast({ weather: 'rain', tomorrow: 'rain', level: 20, day: 30, seed: 123 });
+    expect(r.cause).toBeDefined();
+    expect(r.cause).toContain('Tết Nguyên Đán');
+  });
+
+  it('không truyền day/seed (chỉ thời tiết): không có cause', () => {
+    const r = trafficForecast({ weather: 'sunny', tomorrow: 'rain', level: 20 });
+    expect(r.cause).toBeUndefined();
+  });
+});

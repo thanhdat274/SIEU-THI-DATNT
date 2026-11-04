@@ -17,7 +17,7 @@ export function MorningSubtitle({ weatherSeed, day, weather, tomorrow, level, re
       {autoNote ? <div style={{ marginTop: 2 }}>{autoNote}</div> : null}{' '}
       Đọc xong nên nhập hàng bày kệ trước khi mở cửa — khách quen ghé đúng giờ quen.
       🏠 Tiền nhà trả cuối ngày: <b>{formatMoney(rent)}</b>.
-      <> Mai {WEATHER[tomorrow].icon}: khách ghé ~{Math.round(tf.tomorrowTraffic * 100)}% mức thường (~{Math.round(tf.tomorrowKhach)} khách).
+      <> Mai {WEATHER[tomorrow].icon}: khách ghé ~{Math.round(tf.tomorrowTraffic * 100)}% mức thường (~{Math.round(tf.tomorrowKhach)} khách{tf.cause ? ` · ${tf.cause}` : ''}).
         {tf.verdict === 'hot' ? ' Trời đông, nên trữ thêm món bán chạy.' : tf.verdict === 'slow' ? ' Trời vắng — đừng chất thêm hàng kẻo tồn.' : ''}</>
     </p>
   );
