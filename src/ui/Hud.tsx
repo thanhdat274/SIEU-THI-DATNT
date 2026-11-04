@@ -8,6 +8,7 @@ import { worldActions } from '../core/actions';
 import { saveGame, resetGame, readBackupSave, restoreBackup } from '../core/save';
 import { FEATURES, xpToNext } from '../data/levels';
 import { formatMoney, productById } from '../data/products';
+import { todayLine } from '../data/todayScore';
 import { summarizeReviews } from '../data/reviews';
 import { AUTO_OPEN_PRESETS } from '../core/gameTypes';
 import { dayEffects, describeDate, festivalStock, upcomingFestival, weekdayOf } from '../data/calendar';
@@ -263,6 +264,10 @@ ${forecastText}`}>
           <span>
             <b className={late ? 'hud-late' : undefined}>{formatClock(minutes)}</b>
             <small>Ngày {day} ({describeDate(day)}) · {weekdayOf(day)} · {spell ? describeRain(spell, weather) : WEATHER[weather].name}</small>
+            {(() => {
+              const live = todayLine(useGame.getState().stats);
+              return live ? <small title="Doanh thu / số món / số khách cộng dồn hôm nay — tổng kết đầy đủ ở Sổ tổng kết cuối ngày">{live}</small> : null;
+            })()}
             <small className="hud-forecast">
               <span title={(() => {
                 const next = nextGoldenBand(minutes);
