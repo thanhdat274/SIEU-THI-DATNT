@@ -35,6 +35,10 @@ export default defineConfig({
           if (!id.includes('node_modules')) return undefined;
           if (/[\\/]node_modules[\\/](react|react-dom|scheduler)[\\/]/.test(id)) return 'vendor-react';
           if (/[\\/]three[\\/]examples[\\/]jsm[\\/]loaders[\\/]/.test(id)) return undefined; // GLTF/Draco nạp lười (gltfLoader.ts)
+          // Tách WebGPU/TSL (three.webgpu.js + three.tsl.js) khỏi three lõi (GĐ1196): trình shader
+          // tĩnh nạp lúc khởi động nhưng giờ rơi vào 2 tệp tải song song thay vì một chunk 253 KB
+          // sát biên ngân sách 255 — cứng hóa biên dựa cho lớn nhất, không đổi hành vi runtime.
+          if (/[\\/]three[\\/]build[\\/]three\.(webgpu|tsl)\.js$/.test(id)) return 'vendor-wgpu';
           if (/[\\/]node_modules[\\/]three[\\/]/.test(id)) return 'vendor-three';
           if (/[\\/]node_modules[\\/](zustand|dexie)[\\/]/.test(id)) return 'vendor-data';
           if (/[\\/]node_modules[\\/](firebase|@firebase)[\\/]/.test(id)) return 'vendor-firebase';
