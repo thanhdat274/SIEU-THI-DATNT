@@ -47,6 +47,7 @@ import { tiemXoiStandState, tiemXoiHandQty, tiemXoiDinerFigures } from './data/t
 import { quanHandLeft } from './data/quanNuoc';
 import { QUAN_HOUSE, insideQuanHouse } from './world/quanNuocStand';
 import { branchStandState, LANE_X } from './data/branches';
+import './ui/fonts.css';
 import './ui/controls.css';
 import { pushCloudSave } from './net/cloud';
 import { cancelSleep, checkpoint, inAlley, initCoop, isGuest, partnerPositions, updateCoop } from './net/coop';

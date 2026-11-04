@@ -73,6 +73,12 @@
 #ui .hud-forecast { opacity: 0.85; letter-spacing: 2px; }
 #ui .hud-forecast::before { content: "Dự báo "; letter-spacing: 0; }
 #ui .hud-time b { font-size: 18px; }
+/* GĐ1259 — tít tròn mềm Baloo 2 cho các bề mặt "thương hiệu": giờ trên HUD, tiêu đề panel,
+ * biển hiệu đăng nhập — thân bài giữ Be Vietnam Pro cho dễ đọc dài. */
+#ui .hud-time b, .panel h2, .login-sign h1 {
+  font-family: 'Baloo 2', 'Paytone One', 'Be Vietnam Pro', system-ui, sans-serif;
+  letter-spacing: 0.2px;
+}
 /* GĐ1254 — chip đồng hồ có small nowrap (ngày/dự báo/hội thoại). Màn 701–1100px: dòng dài làm chip
    tràn mép phải (layoutAudit clipped 135px ở 768px) — chặn bề rộng + lược bớt bằng ellipsis;
    desktop rộng đủ chỗ nên không đổi hình dáng. */
