@@ -98,11 +98,14 @@ export const tiemXoiSaved = (made: Record<string, number>, costMul = TIEM_XOI_CO
  * còn lời hay lỗ, và gợi ý khi thợ dư sức (kho đã đủ) — cho nghỉ bớt đỡ lương.
  */
 export function tiemXoiMorning(
-  t: TiemXoiState, last: { total: number; saved: number; wages: number } | null | undefined,
+  t: TiemXoiState, last: { total: number; saved: number; wages: number; event?: TiemXoiEventKind } | null | undefined,
 ): { net: number | null; idle: boolean } {
   if (!last) return { net: null, idle: false };
   const net = last.saved - last.wages;
-  const idle = t.staff > 0 && last.total <= tiemXoiCapacity(t.staff - 1);
+  // Ngày nồi hỏng (event 'cooker') sản lượng bị chặn NỬA vì máy hỏng, chứ không phải thợ dư sức —
+  // không gợi ý cho nghỉ bớt (sáng hôm sau nồi đã lành, sẽ cần đủ thợ). (Đã đóng bug phụ: trước đây
+  // total thấp do nồi hỏng bị đọc nhầm thành "thợ dư sức".)
+  const idle = t.staff > 0 && last.event !== 'cooker' && last.total <= tiemXoiCapacity(t.staff - 1);
   return { net, idle };
 }
 
