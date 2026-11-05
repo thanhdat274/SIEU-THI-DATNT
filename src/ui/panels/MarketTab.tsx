@@ -10,6 +10,7 @@ import { counterPayoff, recentAvgRevenue } from '../../data/minorPayoff';
 import { priceCounterViability } from '../../data/priceCounter';
 import { rivalDrag } from '../../data/rivalDrag';
 import { rivalBuyPayoff } from '../../data/rivalBuyPayoff';
+import { counterStreakInfo } from '../../data/counterStreak';
 import { summarizeDemographics, adReach, adTargetSuggest } from '../../data/demographics';
 import { card, title, pill, iconTile, btn, sub, row } from './businessStyles';
 
@@ -26,6 +27,8 @@ export function Market() {
   const rivalOnSale = r?.saleUntil !== undefined && r.saleUntil >= day;
   // GĐ1308: phần khách cũ của rival ghé đông sau khi mua lại mặt bằng 12tr (đã có chi nhánh) — bao nhiêu tiền.
   const buyPay = rivalBuyPayoff(biz.rivalForSale, branch);
+  // GĐ1320: đòn phản công đang chạy hôm nay mạnh thêm nhờ chạy nhiều ngày liền (hit thật = def.hit + bonus).
+  const strek = counterStreakInfo(biz.counter, day, biz.counterLastDay, biz.counterStreak);
   // GĐ1270: nhu cầu món/ngày thường (Σ trung bình trượt từng món, cùng nguồn gợi ý giá) — để soi
   // điều kiện "30 món" của đòn Đối đầu giá có chạm nổi không (helper THUẦN priceCounterViability).
   const avgItemsPerDay = Object.values(sales).reduce((n, x) => n + x, 0);
@@ -172,6 +175,10 @@ export function Market() {
                         <div style={{ ...sub, marginTop: 2, color: '#2ecc71' }}>
                           {priceCounterViability(stats?.itemsSold ?? 0, avgItemsPerDay).line}
                         </div>
+                      )}
+                      {/* GĐ1320: đang chạy hôm nay + có chuỗi liền ngày → hiện hit THẬT (thường bị ẩn, chỉ notify cuối ngày). */}
+                      {runningNow && strek.line && (
+                        <div style={{ ...sub, marginTop: 2, color: '#2ecc71' }}>{strek.line}</div>
                       )}
                     </button>
                   );
