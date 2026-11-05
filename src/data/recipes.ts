@@ -173,6 +173,11 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   // GĐ1353: Bò Nhật nướng muối — thăn bò Nhật (thit_bo_nhat 69) nướng muối kiểu teppanyaki, món xa xỉ bậc nhất:
   // mẻ (bò 450k + muối 5k + hành phi 3k) = 458k → 6 phần × 130k = 780k, lãi 322k/mẻ.
   { id: 'bo_nhat_nuong_muoi', name: 'Bò Nhật nướng muối', category: 'fresh', buy: 76000, sell: 130000, color: 0x68228b, unlock: 69 },
+  // GĐ1355: 2 món biểu tượng khép lối ra của gà nguyên con (thứ 2) và pate (đầu tiên):
+  // Cháo gà (gao + thit_ga 52): mẻ (gạo 80k + gà 130k + hành phi 3k) = 213k → 30 chén × 15k = 450k, lãi 237k/mẻ.
+  { id: 'chao_ga', name: 'Cháo gà', category: 'fresh', buy: 7000, sell: 15000, color: 0xf7f3e3, unlock: 52 },
+  // Bánh mì pate (pate 62): mẻ (bánh mì 8k×5 + pate 55k + hành phi 3k) = 98k → 5 bánh × 32k = 160k, lãi 62k/mẻ.
+  { id: 'banh_mi_pate', name: 'Bánh mì pate', category: 'fresh', buy: 17000, sell: 32000, color: 0x8d6e63, unlock: 62 },
   // GĐ1345: Giỏ quà Giáng sinh — lễ tặng quà lớn duy nhất còn thiếu giỏ (Tết/8-3/20-11/Trung thu đã có):
   // mẻ (rượu vang 120k + bánh kẹo 5k×4 + trà 20k×2) = 180k → 2 giỏ × 140k = 280k, lãi 100k/mẻ.
   { id: 'gio_qua_giang_sinh', name: 'Giỏ quà Giáng sinh', category: 'dry', buy: 70000, sell: 140000, color: 0x228b22, unlock: 36 },
@@ -456,6 +461,18 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_bo_nhat_nuong_muoi', name: 'Bò Nhật nướng muối', station: 'food_grill',
     inputs: [{ productId: 'thit_bo_nhat', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 2 }],
     outputId: 'bo_nhat_nuong_muoi', outputQty: 6, durationMin: 18, unlock: 69, reputationGain: 4 },
+  // GĐ1355: Cháo gà — món ăn sáng dịu trứ danh: gạo nấu cháo cùng gà nguyên con xé, rắc hành phi ở ấm nước:
+  // mẻ (gạo 80k + gà 130k + hành phi 3k) = 213k → 30 chén × 15k = 450k, lãi 237k/mẻ, nấu hời hơn
+  // bán thẳng nguyên liệu (280k < 450k). Mở 52 = đúng cấp gà (> golden 30 → sim không đổi).
+  { id: 'recipe_chao_ga', name: 'Cháo gà', station: 'hot_kettle',
+    inputs: [{ productId: 'gao', quantity: 1 }, { productId: 'thit_ga', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 2 }],
+    outputId: 'chao_ga', outputQty: 30, durationMin: 25, unlock: 52, reputationGain: 3 },
+  // GĐ1355: Bánh mì pate — bánh mì Sài Gòn bản pate béo bùi (pate gan hộp 62 — lối ra đầu tiên):
+  // mẻ (bánh mì 8k×5 + pate 55k + hành phi 3k) = 98k → 5 bánh × 32k = 160k, lãi 62k/mẻ, nấu hời hơn
+  // bán thẳng nguyên liệu (158k < 160k). Mở 62 = đúng cấp pate (> golden 30 → sim không đổi).
+  { id: 'recipe_banh_mi_pate', name: 'Bánh mì pate', station: 'food_grill',
+    inputs: [{ productId: 'banhmi', quantity: 5 }, { productId: 'pate', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 2 }],
+    outputId: 'banh_mi_pate', outputQty: 5, durationMin: 12, unlock: 62, reputationGain: 3 },
 
   // --- Quầy pha (drink_counter) ---
   { id: 'recipe_ca_phe_sua', name: 'Cà phê sữa đá', station: 'drink_counter',
