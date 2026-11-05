@@ -53,6 +53,10 @@ export const QUAN_RECIPES: QuanRecipe[] = [
   // khép chuỗi trồng → pha → bán như trà vải GĐ1090/sinh tố ổi-chuối GĐ1092. Giá vốn/ly = 16k/4 + 22k/10 + 3k/10
   // = 6.5k → bán 26k (lời >2× vốn). Mở 34 > mốc golden 30 → sim không đổi; KHÔNG hot (giữ đếm đồ nóng = 3).
   { id: 'sinh_to_mit', name: 'Sinh tố mít', icon: '🍍', unlock: 34, price: 26_000, uses: [{ id: 'x_mit', cups: 4 }, { id: 'x_sua_dac', cups: 10 }, { id: 'x_nuoc_da', cups: 10 }] },
+  // GĐ1334: Bưởi đá — món quán nước của bưởi nông trại (x_buoi mở cấp 24, hiện chỉ có chè bưởi ở BẾP — chưa có lối ra
+  // pha), đá ngọt mát, khép chuỗi trồng → pha → bán. Giá vốn/ly = 16k/4 + 17k/30 + 3k/10 = 4.9k → bán 20k (lời >2× vốn).
+  // Mở 32 > mốc golden 30 → sim không đổi; KHÔNG hot (giữ đếm đồ nóng = 3).
+  { id: 'buoi_da', name: 'Bưởi đá', icon: '🍈', unlock: 32, price: 20_000, uses: [{ id: 'x_buoi', cups: 4 }, { id: 'x_duong', cups: 30 }, { id: 'x_nuoc_da', cups: 10 }] },
   { id: 'ca_phe_muoi', name: 'Cà phê muối', icon: '🧂', unlock: 40, price: 28_000, uses: [{ id: 'x_ca_phe_hoa_tan', cups: 15 }, { id: 'x_sua_dac', cups: 10 }, { id: 'x_muoi', cups: 60 }, { id: 'x_nuoc_da', cups: 10 }] },
   { id: 'tra_gung', name: 'Trà gừng nóng', icon: '🫚', unlock: 36, price: 15_000, uses: [{ id: 'tra', cups: 40 }, { id: 'x_gung', cups: 12 }, { id: 'x_duong', cups: 30 }], hot: true },
   { id: 'ca_phe_sua_nong', name: 'Cà phê sữa nóng', icon: '♨️', unlock: 37, price: 20_000, uses: [{ id: 'x_ca_phe_hoa_tan', cups: 15 }, { id: 'x_sua_dac', cups: 10 }], hot: true },
