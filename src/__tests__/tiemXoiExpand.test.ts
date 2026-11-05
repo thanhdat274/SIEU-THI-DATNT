@@ -2,11 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { TIEM_XOI_BIG_COST, TIEM_XOI_BIG_LEVEL, tiemXoiExpandPayback } from '../data/tiemXoi';
 
 /** GĐ1247 — Tiệm xôi: "mở rộng bếp 20tr hồi vốn bao lâu?" (song song quán nước GĐ193). Thuần đọc — không đổi save/kinh tế. */
-// GĐ1323 — cập nhật mốc theo lãi THẬT sau khi thêm 2 xôi đặc sản vùng cao cấp (khô tôm 42, lạp xưởng miền 44):
-// tại TIEM_XOI_BIG_LEVEL = 42, xôi khô tôm (mở 42) đã vào bể nấu → tiệm xôi cấp cao lời hơn (net/ngày tăng,
-// hồi vốn bếp lớn nhanh hơn). Đây là đổi kinh tế tiệm xôi CÓ CHỦ Ý theo nội dung mới, cập nhật mốc + ghi lý do.
+// GĐ1323 + GĐ1326 — cập nhật mốc theo lãi THẬT sau khi thêm xôi đặc sản vùng (khô tôm 42, lạp xưởng 44) + xôi mắm tép
+// (hàng xóm 34): tại TIEM_XOI_BIG_LEVEL = 42 các xôi mới vào bể nấu → tiệm xôi cấp cao lời hơn (net/ngày tăng).
+// Đây là đổi kinh tế tiệm xôi CÓ CHỦ Ý theo nội dung mới, cập nhật mốc + ghi lý do.
 
-const XOI_IDS = ['xoi_dau_xanh', 'xoi_man', 'xoi_trung', 'xoi_dua', 'xoi_thap_cam', 'xoi_vo', 'xoi_bap', 'xoi_mit', 'xoi_kho_tom', 'xoi_lap_xuong'];
+const XOI_IDS = ['xoi_dau_xanh', 'xoi_man', 'xoi_trung', 'xoi_dua', 'xoi_thap_cam', 'xoi_vo', 'xoi_bap', 'xoi_mit', 'xoi_kho_tom', 'xoi_lap_xuong', 'xoi_mam_tep'];
 
 describe('tiemXoiExpandPayback — hồi vốn mở rộng bếp', () => {
   it('kho đầy (mục tiêu big = 120/món): bếp lớn không nấu thêm → full (đừng xây)', () => {
@@ -21,7 +21,7 @@ describe('tiemXoiExpandPayback — hồi vốn mở rộng bếp', () => {
   it('kho trống + 3 thợ: bếp lớn nấu thêm ~120 phần/đêm → hồi vốn 72 ngày (slow)', () => {
     const r = tiemXoiExpandPayback({ open: true, staff: 3, big: false }, TIEM_XOI_BIG_LEVEL, {});
     expect(r.cost).toBe(TIEM_XOI_BIG_COST);
-    expect(r.netPerDay).toBe(277900);
+    expect(r.netPerDay).toBe(280320);
     expect(r.paybackDays).toBe(72);
     expect(r.verdict).toBe('slow');
   });
@@ -29,9 +29,9 @@ describe('tiemXoiExpandPayback — hồi vốn mở rộng bếp', () => {
   it('càng ít thợ càng nấu thêm ít → hồi vốn càng chậm (cùng kho trống)', () => {
     const r1 = tiemXoiExpandPayback({ open: true, staff: 1, big: false }, TIEM_XOI_BIG_LEVEL, {});
     const r0 = tiemXoiExpandPayback({ open: true, staff: 0, big: false }, TIEM_XOI_BIG_LEVEL, {});
-    expect(r1.netPerDay).toBe(138600);
-    expect(r0.netPerDay).toBe(69500);
-    expect(r1.paybackDays).toBeLessThan(r0.paybackDays as number); // 145 vs 288 ngày — thợ nhiều nấu thêm nhanh hồi vốn
+    expect(r1.netPerDay).toBe(140160);
+    expect(r0.netPerDay).toBe(70080);
+    expect(r1.paybackDays).toBeLessThan(r0.paybackDays as number); // 143 vs 286 ngày — thợ nhiều nấu thêm nhanh hồi vốn
     expect(r1.verdict).toBe('slow');
     expect(r0.verdict).toBe('slow');
   });

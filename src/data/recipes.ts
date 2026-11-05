@@ -110,6 +110,10 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   // mẻ (bánh cuốn 20k + chả lụa 27k + rau 10k) = 57k → 10 suất × 11k = 110k, lãi 53k/mẻ, nấu hời hơn
   // bán thẳng nguyên liệu (91k < 110k). Khép chuỗi hàng xóm → bếp, mở 40 = đúng cấp bánh cuốn (> golden 30 → sim không đổi).
   { id: 'banh_cuon_cha_lua', name: 'Bánh cuốn chả lụa (suất)', category: 'fresh', buy: 6000, sell: 11000, color: 0xf0e6d2, unlock: 40 },
+  // GĐ1326: Mắm ruốc chưng thịt — món chưng trứ danh Huế của mắm ruốc hàng xóm + thịt heo chưng mặn béo ăn kèm cơm:
+  // mẻ (thịt heo 30k×2 + mắm ruốc 36k + đường 17k) = 113k → 10 phần × 22k = 220k, lãi 107k/mẻ, nấu hời hơn
+  // bán thẳng nguyên liệu (153k < 220k). Khép chuỗi hàng xóm → nồi hấp, mở 40 (sau mốc golden 30 → sim không đổi).
+  { id: 'mam_ruoc_chung_thit', name: 'Mắm ruốc chưng thịt', category: 'fresh', buy: 11000, sell: 22000, color: 0x9b4a2b, unlock: 40 },
 
   // --- Quây xôi (rice_station) ---
   { id: 'xoi_dau_xanh', name: 'Xôi đậu xanh', category: 'fresh', buy: 1400, sell: 2600, color: 0xf9ca24, unlock: 36 },
@@ -132,6 +136,10 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   // mẻ (lạp xưởng 46k + nếp 30k + hành phi 3k + nước tương 12k) = 91k → 40 phần × 4.2k = 168k, lãi 77k/mẻ,
   // nấu hời hơn bán thẳng nguyên liệu (140k < 168k). Khép chuỗi mối lái → quây xôi, mở 44 = đúng cấp lạp xưởng.
   { id: 'xoi_lap_xuong', name: 'Xôi lạp xưởng miền', category: 'fresh', buy: 2100, sell: 4200, color: 0xa5462a, unlock: 44 },
+  // GĐ1326: Xôi mắm tép — xôi rưới mắm tép nhà hàng xóm (đặc trưng miền Bắc), mặn béo quen thuộc:
+  // mẻ (nếp 30k + mắm tép 14k + hành phi 3k + nước tương 12k) = 59k → 40 phần × 3.6k = 144k, lãi 85k/mẻ,
+  // nấu hời hơn bán thẳng nguyên liệu (84k < 144k). Khép chuỗi hàng xóm → quây xôi, mở 36 = đúng cấp hành phi (của xôi).
+  { id: 'xoi_mam_tep', name: 'Xôi mắm tép', category: 'fresh', buy: 1800, sell: 3600, color: 0xc0705a, unlock: 36 },
 
   // --- Máy ép mía (sugarcane_press) ---
   { id: 'nuoc_mia', name: 'Nước mía', category: 'drink', buy: 4800, sell: 9100, color: 0x00b894, unlock: 25 },
@@ -288,6 +296,10 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_banh_cuon_cha_lua', name: 'Bánh cuốn chả lụa (suất)', station: 'steamer',
     inputs: [{ productId: 'hx_banh_cuon', quantity: 1 }, { productId: 'hx_cha_lua', quantity: 1 }, { productId: 'rau', quantity: 1 }],
     outputId: 'banh_cuon_cha_lua', outputQty: 10, durationMin: 20, unlock: 40, reputationGain: 2 },
+  // GĐ1326: Mắm ruốc chưng thịt — món chưng Huế của mắm ruốc hàng xóm (hx_mam_ruoc GĐ1083) + thịt heo. Mở 40 (sau mốc golden 30).
+  { id: 'recipe_mam_ruoc_chung_thit', name: 'Mắm ruốc chưng thịt', station: 'steamer',
+    inputs: [{ productId: 'hx_mam_ruoc', quantity: 1 }, { productId: 'x_thit_heo', quantity: 2 }, { productId: 'x_duong', quantity: 1 }],
+    outputId: 'mam_ruoc_chung_thit', outputQty: 10, durationMin: 25, unlock: 40, reputationGain: 3 },
 
   // --- Quây xôi (rice_station) ---
   // 6 món xôi theo công thức chuẩn món ăn VN (khách quen bắt lỗi nguyên liệu sai ngành): đậu xanh/bắp/dừa
@@ -329,6 +341,10 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_xoi_lap_xuong', name: 'Xôi lạp xưởng miền', station: 'rice_station',
     inputs: [{ productId: 'rg_lap_xuong', quantity: 1 }, { productId: 'nep', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 2 }, { productId: 'x_nuoc_tuong', quantity: 1 }],
     outputId: 'xoi_lap_xuong', outputQty: 40, durationMin: 15, unlock: 44, reputationGain: 2 },
+  // GĐ1326: Xôi mắm tép — đặc sản mắm tép nhà hàng xóm (hx_mam_tep GĐ1077) thành nguyên liệu quây xôi. Mở 34 (sau mốc golden 30).
+  { id: 'recipe_xoi_mam_tep', name: 'Xôi mắm tép', station: 'rice_station',
+    inputs: [{ productId: 'hx_mam_tep', quantity: 1 }, { productId: 'nep', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 2 }, { productId: 'x_nuoc_tuong', quantity: 1 }],
+    outputId: 'xoi_mam_tep', outputQty: 40, durationMin: 15, unlock: 36, reputationGain: 2 },
 
   // --- Máy ép mía (sugarcane_press) ---
   { id: 'recipe_nuoc_mia', name: 'Nước mía', station: 'sugarcane_press',

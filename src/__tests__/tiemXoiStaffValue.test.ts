@@ -3,8 +3,10 @@ import { newTiemXoi, TIEM_XOI_UNLOCK, TIEM_XOI_WAGE, tiemXoiStaffValues } from '
 import { productById } from '../data/products';
 
 /** GĐ1246 — Tiệm xôi: "từng thợ đáng đồng lương?" (song song quán nước GĐ188). Thuần đọc — không đổi save/kinh tế. */
+// GĐ1326 — thêm xôi mắm tép (mở 36 = TIEM_XOI_UNLOCK) vào bộ xôi nấu được ở cấp này → cập nhật bộ "kho đầy"
+// và giá trị biên thợ theo lãi THẬT (đổi kinh tế tiệm xôi CÓ CHỦ Ý theo nội dung mới, ghi lý do).
 
-const XOI_IDS = ['xoi_dau_xanh', 'xoi_man', 'xoi_trung', 'xoi_dua', 'xoi_thap_cam', 'xoi_vo', 'xoi_bap', 'xoi_mit'];
+const XOI_IDS = ['xoi_dau_xanh', 'xoi_man', 'xoi_trung', 'xoi_dua', 'xoi_thap_cam', 'xoi_vo', 'xoi_bap', 'xoi_mit', 'xoi_mam_tep'];
 const EMPTY: Record<string, number> = {};
 
 describe('tiemXoiStaffValues — giá trị biên từng thợ', () => {
@@ -37,9 +39,9 @@ describe('tiemXoiStaffValues — giá trị biên từng thợ', () => {
       }
       // giá trị biên khớp đúng lợi nhuận bán (sell − cost nấu) của xôi nấu thêm so với ít hơn 1 thợ:
       // nấu thêm 60 phần (chủ nấu 60, thợ tăng sức 60/thợ) → sum lợi nhuận ≈ 131–133k như đã đo.
-      expect(v[0].marginalValue).toMatchInlineSnapshot('133080');
-      expect(v[1].marginalValue).toMatchInlineSnapshot('131820');
-      expect(v[2].marginalValue).toMatchInlineSnapshot('133080');
+      expect(v[0].marginalValue).toMatchInlineSnapshot(`134680`);
+      expect(v[1].marginalValue).toMatchInlineSnapshot(`133980`);
+      expect(v[2].marginalValue).toMatchInlineSnapshot(`134940`);
     });
 
   it("kho quá nửa: thợ thêm vẫn nấu được (need còn) — không phải 'low'", () => {
