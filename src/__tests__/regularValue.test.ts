@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { REGULARS, emptyProgress, type RegularProgress } from '../data/regulars';
-import { regularSpendEstimate, regularValueLine, expectedFavoriteItems, nextPerkValue } from '../data/regularValue';
+import { regularSpendEstimate, regularValueLine, expectedFavoriteItems, nextPerkValue, weeklyContribution, weeklyTop, type WeeklyContribution } from '../data/regularValue';
 import { productById } from '../data/products';
 
 /** Giá 1000đ mọi món — để cô lập công thức giỏ (không phụ thuộc dữ liệu giá thật). */
@@ -139,5 +139,55 @@ describe('GĐ1293 — nextPerkValue (nâng thân thiết tới mốc perk kế t
     };
     const sim = regularSpendEstimate({ def, level: 30, priceOf: price1000, progress: withPerk })!;
     expect(nv.delta).toBe(sim.total - regularSpendEstimate({ def, level: 30, priceOf: price1000, progress: emptyProgress() })!.total);
+  });
+});
+
+/**
+ * GĐ1295 — "ai là khách vàng THẬT theo tuần?": gộp giỏ+boa mỗi lần ghé (GĐ1289) × tần suất ghé (visitsToday,
+ * regulars.ts:137: chance = 0.35 + 0.2 nếu có ghé thường xuyên) → đóng góp/tuần. THUẦN — chỉ ~~ ƯỚC TÍNH,
+ * không bịa khách/giỏ; không import store, không đổi kinh tế/save/seed.
+ */
+describe('GĐ1295 — weeklyContribution / weeklyTop (khách vàng theo tuần: giỏ × tần ghé)', () => {
+  const ba_nam = REGULARS.find((r) => r.id === 'ba_nam')!;
+
+  it('chưa mở món ưa nào (level 0) → null (không ồn)', () => {
+    expect(weeklyContribution({ def: ba_nam, level: 0, priceOf: price1000 })).toBeNull();
+  });
+
+  it('week = perVisit × 7 × chance; chưa ghé thường xuyên → chance 0.35 → 7 × 0.35 = 2.4 lần/tuần (làm tròn 1 số lẻ)', () => {
+    const per = regularSpendEstimate({ def: ba_nam, level: 30, priceOf: price1000, progress: emptyProgress() })!;
+    const w = weeklyContribution({ def: ba_nam, level: 30, priceOf: price1000, progress: emptyProgress() })!;
+    expect(w.visitChance).toBe(0.35);
+    expect(w.weeklyVisits).toBe(2.4);
+    expect(w.perVisit).toBe(per.total);
+    expect(w.weekly).toBe(Math.round(per.total * 2.4));
+  });
+
+  it('mở perk GHÉ THƯỜNG XUYÊN (frequent_visit) → chance 0.55, ghé ~3,9 lần/tuần, week cao hơn rõ', () => {
+    const def = REGULARS.find((r) => r.perks.some((p) => p.effect === 'frequent_visit'))!;
+    const fPerk = def.perks.find((p) => p.effect === 'frequent_visit')!;
+    const prog: RegularProgress = { friendship: 999, visits: 1, perks: [fPerk.title], discovered: [] };
+    const w = weeklyContribution({ def, level: 30, priceOf: price1000, progress: prog })!;
+    const base = weeklyContribution({ def, level: 30, priceOf: price1000, progress: emptyProgress() })!;
+    expect(w.visitChance).toBe(0.55);
+    expect(w.weeklyVisits).toBe(3.9);
+    expect(w.weekly).toBeGreaterThan(base.weekly);
+  });
+
+  it('weeklyTop xếp giảm dần theo đóng góp/tuần + giữ đúng topN', () => {
+    const all = REGULARS.map((def) => weeklyContribution({ def, level: 30, priceOf: price1000 }))
+      .filter((c): c is WeeklyContribution => c !== null)
+      .sort((a, b) => b.weekly - a.weekly)
+      .slice(0, 3);
+    const top = weeklyTop({ regulars: REGULARS, level: 30, priceOf: price1000, progressOf: () => undefined, topN: 3 })!;
+    expect(top.length).toBeLessThanOrEqual(3);
+    for (let i = 1; i < top.length; i++) expect(top[i - 1].weekly).toBeGreaterThanOrEqual(top[i].weekly);
+    expect(top[0]!.weekly).toBe(all[0]!.weekly); // đúng người dẫn đầu
+  });
+
+  it('THUẦN: cùng đầu vào ⇒ cùng kết quả (deterministic)', () => {
+    const a = weeklyContribution({ def: ba_nam, level: 30, priceOf: price1000 });
+    const b = weeklyContribution({ def: ba_nam, level: 30, priceOf: price1000 });
+    expect(a).toEqual(b);
   });
 });

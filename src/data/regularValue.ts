@@ -103,3 +103,61 @@ export function nextPerkValue(opts: {
   if (!base || !sim) return { perk: next, toGo, nextTotal: null, delta: null };
   return { perk: next, toGo, nextTotal: sim.total, delta: sim.total - base.total };
 }
+
+// ───── GĐ1295 — "Ai là khách vàng THẬT theo tuần?" (giỏ+boa mỗi lần ghé × tần suất ghé) ─────
+// GĐ1289 chỉ nói được một khách quen đáng bao nhiêu MỖI LẦN GHÉ — còn cái quyết định giữ chân phụ thuộc CẢ
+// tần suất: khách ghé 3 lần/tuần × ít tiền có thể đáng hơn khách 1 lần × nhiều tiền (hộp đen, Nguyên tắc a).
+// Helper THUẦN: tái dựng ĐÚNG xác suất ghé/ngày từ `visitsToday` (regulars.ts:137: chance = 0.35 + 0.2 nếu
+// có perk ghé thường xuyên) → kỳ vọng số lần ghé/tuần ≈ 7 × chance (ƯỚC TÍNH ~, bỏ ràng buộc "không ghé 2
+// ngày liền" nên là cận TRÊN trung thực), nhân với `regularSpendEstimate` (GĐ1289) → đóng góp/tuần. Chỉ nói
+// con số ~, không bịa khách/giỏ (Nguyên tắc c). Không import store (co-op an toàn).
+
+export interface WeeklyContribution {
+  regular: RegularDef;
+  /** Giỏ + boa mỗi lần ghé (GĐ1289). */
+  perVisit: number;
+  /** Xác suất ghé HÔM NAY từ visitsToday (0.35, +0.2 khi có ghé thường xuyên). */
+  visitChance: number;
+  /** Kỳ vọng số lần ghé/tuần ≈ 7 × chance (ước ~). */
+  weeklyVisits: number;
+  /** Đóng góp mỗi tuần (đ) ≈ perVisit × weeklyVisits. */
+  weekly: number;
+}
+
+const REGULAR_VISIT_CHANCE = 0.35; // regulars.ts visitsToday — xác suất ghé mỗi ngày
+const FREQUENT_VISIT_BONUS = 0.2; // +0.2 khi có perk ghé thường xuyên (tựa frequent_visit)
+const DAYS_PER_WEEK = 7;
+
+/** Đóng góp/tuần (giỏ+boa × tần ghé) của MỘT khách quen; null khi chưa mở món ưa (không ồn). */
+export function weeklyContribution(opts: {
+  def: RegularDef;
+  level: number;
+  priceOf: (id: string) => number;
+  progress?: RegularProgress;
+}): WeeklyContribution | null {
+  const per = regularSpendEstimate(opts);
+  if (!per) return null;
+  const frequentNow = perkValue(opts.def, opts.progress, 'frequent_visit') > 0;
+  const visitChance = REGULAR_VISIT_CHANCE + (frequentNow ? FREQUENT_VISIT_BONUS : 0);
+  const weeklyVisits = Math.round(DAYS_PER_WEEK * visitChance * 10) / 10;
+  const weekly = Math.round(per.total * weeklyVisits);
+  return { regular: opts.def, perVisit: per.total, visitChance, weeklyVisits, weekly };
+}
+
+/** Xếp hạng khách quen theo đóng góp/tuần, giảm dần; null khi chưa ai đủ món ưa (không ồn). */
+export function weeklyTop(opts: {
+  regulars: RegularDef[];
+  level: number;
+  priceOf: (id: string) => number;
+  progressOf: (rid: string) => RegularProgress | undefined;
+  topN?: number;
+}): WeeklyContribution[] | null {
+  const topN = opts.topN ?? 3;
+  const list = opts.regulars
+    .map((def) => weeklyContribution({ def, level: opts.level, priceOf: opts.priceOf, progress: opts.progressOf(def.id) }))
+    .filter((c): c is WeeklyContribution => c !== null)
+    .sort((a, b) => b.weekly - a.weekly)
+    .slice(0, topN);
+  return list.length ? list : null;
+}
+
