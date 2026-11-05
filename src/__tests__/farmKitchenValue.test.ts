@@ -130,11 +130,14 @@ describe('farmVsCook', () => {
     expect(f.verdict).toBe('cook');
   });
 
-  it('nông sản không vào được bếp (sữa bò): recipes rỗng, verdict sell', () => {
+  it('sữa bò (sua_tuoi): GĐ1369 có Cháo yến mạch vào bếp → 1 món, best +17400, verdict cook', () => {
+    // GĐ1369: thêm Cháo yến mạch (108k − yến mạch 45k = 63k − sellLot 45.6k = +17.4k > 0) → sữa bò tươi
+    // GIỜ CÓ lối ra bếp (đổi CÓ CHỦ Ý theo nội dung mới — premise cũ "không vào được bếp" đã lỗi thời).
     const f = farmVsCook('sua_tuoi');
-    expect(f.recipes).toHaveLength(0);
-    expect(f.best).toBeNull();
-    expect(f.verdict).toBe('sell');
+    expect(f.recipes).toHaveLength(1);
+    expect(f.best!.recipe.id).toBe('recipe_chao_yen_mach');
+    expect(f.best!.homegrownNet).toBe(17400);
+    expect(f.verdict).toBe('cook');
   });
 
   it('trái cây có 6 công thức thường (bỏ giỏ quà 8/3 mùa lễ; GĐ1094 sữa chua dê + GĐ1340 sữa chua trái cây), best là trà đào cam sả (+35000)', () => {

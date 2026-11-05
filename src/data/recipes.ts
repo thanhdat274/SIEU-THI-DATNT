@@ -213,6 +213,11 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   // GĐ1368: Gà xào hạt điều — món xào Hoa-Việt trứ danh, khép lối ra của hạt điều (`hat` 37):
   // mẻ (gà nguyên con 130k + hạt điều 60k + hành phi 3k) = 193k → 6 phần × 45k = 270k, lãi 77k/mẻ.
   { id: 'ga_xao_hat_dieu', name: 'Gà xào hạt điều', category: 'fresh', buy: 32000, sell: 45000, color: 0xcc8e35, unlock: 52 },
+  // GĐ1369: 2 món lành tính khép lối ra của tôm khô (47) và yến mạch (40):
+  // Bún xào tôm khô (bun + tom_kho 47): mẻ (bún 12k + tôm khô 65k + hành phi 3k) = 80k → 8 tô × 17k = 136k, lãi 56k/mẻ.
+  { id: 'bun_xao_tom_kho', name: 'Bún xào tôm khô', category: 'fresh', buy: 9500, sell: 17000, color: 0xe67e22, unlock: 47 },
+  // Cháo yến mạch (yen_mach 40 + sữa tươi): mẻ (yến mạch 45k + sữa tươi 28k) = 73k → 6 chén × 18k = 108k, lãi 35k/mẻ.
+  { id: 'chao_yen_mach', name: 'Cháo yến mạch', category: 'fresh', buy: 11500, sell: 18000, color: 0xd8b998, unlock: 40 },
   // GĐ1345: Giỏ quà Giáng sinh — lễ tặng quà lớn duy nhất còn thiếu giỏ (Tết/8-3/20-11/Trung thu đã có):
   // mẻ (rượu vang 120k + bánh kẹo 5k×4 + trà 20k×2) = 180k → 2 giỏ × 140k = 280k, lãi 100k/mẻ.
   { id: 'gio_qua_giang_sinh', name: 'Giỏ quà Giáng sinh', category: 'dry', buy: 70000, sell: 140000, color: 0x228b22, unlock: 36 },
@@ -563,6 +568,18 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_ga_xao_hat_dieu', name: 'Gà xào hạt điều', station: 'hot_kettle',
     inputs: [{ productId: 'thit_ga', quantity: 1 }, { productId: 'hat', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 2 }],
     outputId: 'ga_xao_hat_dieu', outputQty: 6, durationMin: 18, unlock: 52, reputationGain: 3 },
+  // GĐ1369: Bún xào tôm khô — món xào đồng bằng đậm đà: bún tươi xào cùng tôm khô gói ở ấm nước:
+  // mẻ (bún 12k + tôm khô 65k + hành phi 3k) = 80k → 8 tô × 17k = 136k, lãi 56k/mẻ, nấu hời hơn
+  // bán thẳng nguyên liệu (115k < 136k). Mở 47 = đúng cấp tôm khô (> golden 30 → sim không đổi).
+  { id: 'recipe_bun_xao_tom_kho', name: 'Bún xào tôm khô', station: 'hot_kettle',
+    inputs: [{ productId: 'bun', quantity: 1 }, { productId: 'tom_kho', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 2 }],
+    outputId: 'bun_xao_tom_kho', outputQty: 8, durationMin: 18, unlock: 47, reputationGain: 2 },
+  // GĐ1369: Cháo yến mạch — món sáng lành mạnh kiểu phương Tây: yến mạch hộp nấu cùng sữa tươi ở ấm nước:
+  // mẻ (yến mạch 45k + sữa tươi 28k) = 73k → 6 chén × 18k = 108k, lãi 35k/mẻ, nấu hời hơn
+  // bán thẳng nguyên liệu (103k < 108k). Mở 40 = đúng cấp yến mạch (> golden 30 → sim không đổi).
+  { id: 'recipe_chao_yen_mach', name: 'Cháo yến mạch', station: 'hot_kettle',
+    inputs: [{ productId: 'yen_mach', quantity: 1 }, { productId: 'sua_tuoi', quantity: 1 }],
+    outputId: 'chao_yen_mach', outputQty: 6, durationMin: 15, unlock: 40, reputationGain: 2 },
 
   // --- Quầy pha (drink_counter) ---
   { id: 'recipe_ca_phe_sua', name: 'Cà phê sữa đá', station: 'drink_counter',
