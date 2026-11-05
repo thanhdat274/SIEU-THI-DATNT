@@ -2,8 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-const fontsCss = readFileSync(join(__dirname, '../../src/ui/fonts.css'), 'utf-8');
-const indexHtml = readFileSync(join(__dirname, '../../index.html'), 'utf-8');
+// Chuẩn hoá xuống dòng LF: git lưu các file này LF, nhưng trên checkout Windows chúng
+// materialized thành CRLF — assertion vốn ghép chuỗi bằng `\n` nên lệch môi trường, không
+// phải lệch nội dung. Đọc `\r\n`→`\n` để test bất biến dù checkout ở hệ điều hành nào.
+const text = (p: string) => readFileSync(join(__dirname, p), 'utf-8').replace(/\r\n/g, '\n');
+const fontsCss = text('../../src/ui/fonts.css');
+const indexHtml = text('../../index.html');
 
 describe('font tự host (GĐ1259 — hết phụ thuộc CDN Google Fonts)', () => {
   it('fonts.css khai báo @font-face cục bộ (/fonts/...) cho đủ bộ', () => {
@@ -26,7 +30,7 @@ describe('font tự host (GĐ1259 — hết phụ thuộc CDN Google Fonts)', ()
   });
 
   it('tít thương hiệu dùng Baloo 2 (giờ HUD, tiêu đề panel, biển hiệu đăng nhập)', () => {
-    const hud = readFileSync(join(__dirname, '../../src/ui/hud.css'), 'utf-8');
+    const hud = text('../../src/ui/hud.css');
     expect(hud).toContain("#ui .hud-time b, .panel h2, .login-sign h1 {\n  font-family: 'Baloo 2'");
   });
 });
