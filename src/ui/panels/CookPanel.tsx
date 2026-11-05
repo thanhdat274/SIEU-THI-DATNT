@@ -5,6 +5,7 @@ import { formatMoney, productById } from '../../data/products';
 import { kitchenValue } from '../../data/kitchenValue';
 import { cookAdvice } from '../../data/cookSchedule';
 import { expiringSoon, expiryInputsNote, newUnlockMark } from '../../data/advice';
+import { supplyOutletOf } from '../../data/supplyOutlet';
 import { cookSpeed, bartenderBoost } from '../../core/slices/orders';
 import { FESTIVALS, festivalOn } from '../../data/calendar';
 import { Footer, styles, Tabs } from './shared';
@@ -81,6 +82,7 @@ export function CookPanel() {
             <div style={{ display: 'grid', gap: 6, maxWidth: 560 }}>
               {recipes.map((r) => {
                 const out = productById(r.outputId);
+                const so = supplyOutletOf(r);
                 // GĐ145: lãi mẻ (khớp dòng cũ) + băng thông ⏱/phút + chi phí cơ hội của nguyên liệu
                 const kv = kitchenValue(r);
                 const gross = kv.netMargin;
@@ -108,6 +110,12 @@ export function CookPanel() {
                         }).join(' + ')}
                         {' '}→ <b>{r.outputQty} × {out.name}</b> · {r.durationMin} phút
                       </div>
+                      {/* GĐ1327: món chuỗi sản xuất — nguyên liệu chính là hàng ngoài tạp hóa, nhập riêng ở đâu */}
+                      {so && (
+                        <div style={{ fontSize: 12, opacity: 0.85, marginTop: 2 }}>
+                          🧺 {so.name} là hàng {so.source} — nhập riêng, không có mối thường
+                        </div>
+                      )}
                       <div style={{ fontSize: 12 }}>
                         Lãi gộp ~<b style={{ color: gross > 0 ? '#2ecc71' : '#e74c3c' }}>{formatMoney(gross)}</b>/mẻ
                         {own && (
