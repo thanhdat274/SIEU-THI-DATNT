@@ -221,6 +221,9 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   // GĐ1370: Bò hầm rượu vang — món hầm Pháp trứ danh, khép lối ra của rượu vang nhập (`ruou_vang_nhap` 58):
   // mẻ (bò tươi 210k + vang 450k + hành phi 3k) = 663k → 6 phần × 180k = 1080k, lãi 417k/mẻ.
   { id: 'bo_ham_vang', name: 'Bò hầm rượu vang', category: 'fresh', buy: 108000, sell: 180000, color: 0x6d214f, unlock: 58 },
+  // GĐ1375: Chuối chiên — món ăn vặt quốc dân, khép lối ra bếp của chuối nông trại (`x_chuoi` 22):
+  // mẻ (chuối 12k + bột mì 18k + hành phi 3k) = 33k → 10 que × 6k = 60k, lãi 27k/mẻ.
+  { id: 'chuoi_chien', name: 'Chuối chiên', category: 'fresh', buy: 3300, sell: 6000, color: 0xf1c40f, unlock: 36 },
   // GĐ1345: Giỏ quà Giáng sinh — lễ tặng quà lớn duy nhất còn thiếu giỏ (Tết/8-3/20-11/Trung thu đã có):
   // mẻ (rượu vang 120k + bánh kẹo 5k×4 + trà 20k×2) = 180k → 2 giỏ × 140k = 280k, lãi 100k/mẻ.
   { id: 'gio_qua_giang_sinh', name: 'Giỏ quà Giáng sinh', category: 'dry', buy: 70000, sell: 140000, color: 0x228b22, unlock: 36 },
@@ -589,6 +592,12 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_bo_ham_vang', name: 'Bò hầm rượu vang', station: 'steamer',
     inputs: [{ productId: 'thit_bo_tuoi', quantity: 1 }, { productId: 'ruou_vang_nhap', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 2 }],
     outputId: 'bo_ham_vang', outputQty: 6, durationMin: 30, unlock: 58, reputationGain: 5 },
+  // GĐ1375: Chuối chiên — món ăn vặt quốc dân: chuối nông trại chấm bột mì chiên vàng giòn ở chảo chiên:
+  // mẻ (chuối 12k + bột mì 18k + hành phi 3k) = 33k → 10 que × 6k = 60k, lãi 27k/mẻ, nấu hời hơn
+  // bán thẳng nguyên liệu (49k < 60k). Mở 36 ≥ mọi nguyên liệu (22/1/36) (> golden 30 → sim không đổi).
+  { id: 'recipe_chuoi_chien', name: 'Chuối chiên', station: 'fryer',
+    inputs: [{ productId: 'x_chuoi', quantity: 1 }, { productId: 'botmi', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 2 }],
+    outputId: 'chuoi_chien', outputQty: 10, durationMin: 12, unlock: 36, reputationGain: 2 },
 
   // --- Quầy pha (drink_counter) ---
   { id: 'recipe_ca_phe_sua', name: 'Cà phê sữa đá', station: 'drink_counter',
