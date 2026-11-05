@@ -192,6 +192,10 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'banh_mi_cha_bong', name: 'Bánh mì chà bông', category: 'fresh', buy: 14000, sell: 26000, color: 0xc0392b, unlock: 42 },
   // Sữa chua nếp cẩm (nep_cam 70 + sữa chua): mẻ (nếp cẩm 55k + sữa chua 5k×2 + đường 17k) = 82k → 6 hũ × 22k = 132k, lãi 50k/mẻ.
   { id: 'sua_chua_nep_cam', name: 'Sữa chua nếp cẩm', category: 'cold', buy: 14000, sell: 22000, color: 0x9b59b6, unlock: 70 },
+  // GĐ1363: Hộp quà trà bánh quy — giỏ biếu premium LUÔN CÓ SẴN (không cần dịp lễ, mở rộng gift_wrap ngoài
+  // lễ), khép lối ra của bánh quy nhập (`banh_quy_nhap` 65): mẻ (bánh quy 120k + trà 20k×2) = 160k
+  // → 2 hộp × 120k = 240k, lãi 80k/mẻ.
+  { id: 'hop_qua_tra_banh_quy', name: 'Hộp quà trà bánh quy', category: 'dry', buy: 78000, sell: 120000, color: 0xd4ac0d, unlock: 65 },
   // GĐ1345: Giỏ quà Giáng sinh — lễ tặng quà lớn duy nhất còn thiếu giỏ (Tết/8-3/20-11/Trung thu đã có):
   // mẻ (rượu vang 120k + bánh kẹo 5k×4 + trà 20k×2) = 180k → 2 giỏ × 140k = 280k, lãi 100k/mẻ.
   { id: 'gio_qua_giang_sinh', name: 'Giỏ quà Giáng sinh', category: 'dry', buy: 70000, sell: 140000, color: 0x228b22, unlock: 36 },
@@ -499,6 +503,13 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_banh_mi_jambon', name: 'Bánh mì jambon phô mai', station: 'food_grill',
     inputs: [{ productId: 'jambon', quantity: 1 }, { productId: 'banhmi', quantity: 5 }, { productId: 'phomai', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 2 }],
     outputId: 'banh_mi_jambon', outputQty: 5, durationMin: 12, unlock: 62, reputationGain: 3 },
+  // GĐ1363: Hộp quà trà bánh quy — giỏ biếu premium LUÔN CÓ SẴN (không festival — gói mọi lúc, khác 6 giỏ
+  // dịp lễ), khép lối ra của bánh quy nhập (banh_quy_nhap 65) gói cùng trà ở gift_wrap:
+  // mẻ (bánh quy 120k + trà 20k×2) = 160k → 2 hộp × 120k = 240k, lãi 80k/mẻ, gói hời hơn bán thẳng
+  // nguyên liệu (228k < 240k). Mở 65 = đúng cấp bánh quy (> golden 30 → sim không đổi).
+  { id: 'recipe_hop_qua_tra_banh_quy', name: 'Hộp quà trà bánh quy', station: 'gift_wrap',
+    inputs: [{ productId: 'banh_quy_nhap', quantity: 1 }, { productId: 'tra', quantity: 2 }],
+    outputId: 'hop_qua_tra_banh_quy', outputQty: 2, durationMin: 10, unlock: 65, reputationGain: 3 },
 
   // --- Quầy pha (drink_counter) ---
   { id: 'recipe_ca_phe_sua', name: 'Cà phê sữa đá', station: 'drink_counter',

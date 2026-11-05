@@ -912,6 +912,46 @@ describe('GĐ1360 — bánh mì chà bông + sữa chua nếp cẩm (khép lối
 });
 
 /**
+ * GĐ1363 — "Thêm sản phẩm/công thức mới": Hộp quà trà bánh quy — giỏ biếu premium LUÔN CÓ SẴN (không festival —
+ * gói mọi lúc, mở rộng gift_wrap ngoài các dịp lễ), khép LỐI RA của bánh quy nhập (`banh_quy_nhap` 65).
+ * Cùng bất biến GĐ1321/1332-1362 (lãi dương TÍNH TỪ GIÁ THẬT · unlock > 30 · outputId duy nhất).
+ */
+const NEW_IDS_1363 = ['recipe_hop_qua_tra_banh_quy'] as const;
+
+describe('GĐ1363 — hộp quà trà bánh quy (giỏ biếu luôn có sẵn, gift_wrap)', () => {
+  for (const rid of NEW_IDS_1363) {
+    const recipe = RECIPE_MAP[rid];
+    it(`${recipe.name}: có trong RECIPES và COOKED_PRODUCTS`, () => {
+      expect(recipe).toBeDefined();
+      expect(recipe.id).toBe(rid);
+    });
+
+    it(`${recipe.name}: mở sau mốc golden sim 30 → economySim mốc không đổi`, () => {
+      expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+    });
+
+    it(`${recipe.name}: mẻ lãi dương TÍNH TỪ GIÁ THẬT (không bịa con số)`, () => {
+      const cost = recipe.inputs.reduce((s, inp) => s + inp.quantity * productById(inp.productId).buy, 0);
+      const value = recipe.outputQty * productById(recipe.outputId).sell;
+      expect(value).toBeGreaterThan(cost);
+      const raw = recipe.inputs.reduce((s, inp) => s + inp.quantity * productById(inp.productId).sell, 0);
+      expect(value).toBeGreaterThan(raw);
+    });
+
+    it(`${recipe.name}: outputId khớp COOKED_PRODUCTS và không trùng`, () => {
+      expect(COOKED_PRODUCTS.some((c) => c.id === recipe.outputId)).toBe(true);
+      expect(RECIPES.filter((r) => r.outputId === recipe.outputId).length).toBe(1);
+    });
+  }
+
+  it('hộp quà gói tại gift_wrap, KHÔNG festival (luôn gói được), dùng bánh quy nhập + trà', () => {
+    expect(RECIPES.some((r) => r.station === 'gift_wrap' && r.id === 'recipe_hop_qua_tra_banh_quy')).toBe(true);
+    expect(RECIPE_MAP.recipe_hop_qua_tra_banh_quy.festival).toBeUndefined();
+    expect(RECIPES.some((r) => r.id === 'recipe_hop_qua_tra_banh_quy' && r.inputs.some((i) => i.productId === 'banh_quy_nhap'))).toBe(true);
+  });
+});
+
+/**
  * GĐ1345 — "mở rộng thực đơn giỏ quà lễ": Giỏ quà Giáng sinh — lễ tặng quà lớn duy nhất còn thiếu giỏ
  * (Tết/8-3/20-11/Trung thu đã có), giỏ premium đầu tiên có rượu vang, gói trong đúng dịp giang_sinh.
  * Cùng bất biến GĐ1321/1332-1344 (lãi dương TÍNH TỪ GIÁ THẬT · unlock > 30 · outputId duy nhất).
