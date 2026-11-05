@@ -57,6 +57,10 @@ export const QUAN_RECIPES: QuanRecipe[] = [
   // pha), đá ngọt mát, khép chuỗi trồng → pha → bán. Giá vốn/ly = 16k/4 + 17k/30 + 3k/10 = 4.9k → bán 20k (lời >2× vốn).
   // Mở 32 > mốc golden 30 → sim không đổi; KHÔNG hot (giữ đếm đồ nóng = 3).
   { id: 'buoi_da', name: 'Bưởi đá', icon: '🍈', unlock: 32, price: 20_000, uses: [{ id: 'x_buoi', cups: 4 }, { id: 'x_duong', cups: 30 }, { id: 'x_nuoc_da', cups: 10 }] },
+  // GĐ1347: Cà phê cốt dừa — thức uống trend Việt Nam (đậm cà phê, béo cốt dừa hộp), khép chuỗi cà phê × cốt dừa:
+  // vốn/ly = 45k/15 + 10k/8 + 17k/30 + 3k/10 = 5.1k → bán 26k (lời >2× vốn). Mở 38 > mốc golden 30 → sim không đổi;
+  // KHÔNG hot (giữ đếm đồ nóng = 3).
+  { id: 'ca_phe_cot_dua', name: 'Cà phê cốt dừa', icon: '🥥', unlock: 38, price: 26_000, uses: [{ id: 'x_ca_phe_hoa_tan', cups: 15 }, { id: 'x_dua_cot_hop', cups: 8 }, { id: 'x_duong', cups: 30 }, { id: 'x_nuoc_da', cups: 10 }] },
   { id: 'ca_phe_muoi', name: 'Cà phê muối', icon: '🧂', unlock: 40, price: 28_000, uses: [{ id: 'x_ca_phe_hoa_tan', cups: 15 }, { id: 'x_sua_dac', cups: 10 }, { id: 'x_muoi', cups: 60 }, { id: 'x_nuoc_da', cups: 10 }] },
   { id: 'tra_gung', name: 'Trà gừng nóng', icon: '🫚', unlock: 36, price: 15_000, uses: [{ id: 'tra', cups: 40 }, { id: 'x_gung', cups: 12 }, { id: 'x_duong', cups: 30 }], hot: true },
   { id: 'ca_phe_sua_nong', name: 'Cà phê sữa nóng', icon: '♨️', unlock: 37, price: 20_000, uses: [{ id: 'x_ca_phe_hoa_tan', cups: 15 }, { id: 'x_sua_dac', cups: 10 }], hot: true },

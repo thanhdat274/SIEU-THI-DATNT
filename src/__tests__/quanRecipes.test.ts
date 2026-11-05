@@ -388,6 +388,24 @@ describe('GĐ1334: bưởi đá (bưởi nông trại → quán nước)', () =>
   });
 });
 
+describe('GĐ1347: cà phê cốt dừa (thức uống trend Việt Nam → quán nước)', () => {
+  it('mở cấp 38, dùng cà phê hòa tan + cốt dừa, không hot, lời hơn vốn gấp đôi', async () => {
+    const { quanRecipeById, quanRecipesAt, recipeCupCost, QUAN_RECIPES } = await import('../data/quanRecipes');
+    const { productById } = await import('../data/products');
+    const r = quanRecipeById('ca_phe_cot_dua')!;
+    expect(r.unlock).toBeGreaterThan(30); // sau mốc golden 30 → sim không đổi
+    expect(r.unlock).toBe(38);
+    expect(r.uses.map((u) => u.id)).toContain('x_ca_phe_hoa_tan');
+    expect(r.uses.map((u) => u.id)).toContain('x_dua_cot_hop');
+    for (const u of r.uses) expect(productById(u.id).unlock).toBeLessThanOrEqual(r.unlock);
+    expect(quanRecipesAt(37).some((x) => x.id === 'ca_phe_cot_dua')).toBe(false);
+    expect(quanRecipesAt(38).some((x) => x.id === 'ca_phe_cot_dua')).toBe(true);
+    expect(r.price).toBeGreaterThan(recipeCupCost(r) * 2);
+    expect(r.hot).toBeFalsy();
+    expect(QUAN_RECIPES.filter((x) => x.hot).length).toBe(3); // không phình đếm đồ nóng (Luật 9)
+  });
+});
+
 describe('GĐ482: nhắc đồ nóng tháng rét', () => {
   it('tháng rét trời khô gợi ý ×1.1; tháng hè không nhắc', async () => {
     const { quanHotNote } = await import('../data/quanRecipes');
