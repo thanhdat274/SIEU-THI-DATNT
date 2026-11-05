@@ -752,6 +752,45 @@ describe('GĐ1355 — cháo gà + bánh mì pate (khép lối ra gà/pate)', () 
 });
 
 /**
+ * GĐ1357 — "Thêm sản phẩm/công thức mới": Yến chưng đường phèn — món bồi bổ xa xỉ trứ danh, khép LỐI RA BẾP
+ * của tổ yến (`to_yen` 66 — mặt hàng đắt nhất tiệm), chưng cách thủy ở nồi hấp. Cùng bất biến
+ * GĐ1321/1332-1356 (lãi dương TÍNH TỪ GIÁ THẬT · unlock > 30 · outputId duy nhất).
+ */
+const NEW_IDS_1357 = ['recipe_yen_chung'] as const;
+
+describe('GĐ1357 — lối ra bếp của tổ yến (yến chưng đường phèn, nồi hấp)', () => {
+  for (const rid of NEW_IDS_1357) {
+    const recipe = RECIPE_MAP[rid];
+    it(`${recipe.name}: có trong RECIPES và COOKED_PRODUCTS`, () => {
+      expect(recipe).toBeDefined();
+      expect(recipe.id).toBe(rid);
+    });
+
+    it(`${recipe.name}: mở sau mốc golden sim 30 → economySim mốc không đổi`, () => {
+      expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+    });
+
+    it(`${recipe.name}: mẻ lãi dương TÍNH TỪ GIÁ THẬT (không bịa con số)`, () => {
+      const cost = recipe.inputs.reduce((s, inp) => s + inp.quantity * productById(inp.productId).buy, 0);
+      const value = recipe.outputQty * productById(recipe.outputId).sell;
+      expect(value).toBeGreaterThan(cost);
+      const raw = recipe.inputs.reduce((s, inp) => s + inp.quantity * productById(inp.productId).sell, 0);
+      expect(value).toBeGreaterThan(raw);
+    });
+
+    it(`${recipe.name}: outputId khớp COOKED_PRODUCTS và không trùng`, () => {
+      expect(COOKED_PRODUCTS.some((c) => c.id === recipe.outputId)).toBe(true);
+      expect(RECIPES.filter((r) => r.outputId === recipe.outputId).length).toBe(1);
+    });
+  }
+
+  it('yến chưng hiện diện ở nồi hấp và dùng tổ yến + đường', () => {
+    expect(RECIPES.some((r) => r.station === 'steamer' && r.id === 'recipe_yen_chung')).toBe(true);
+    expect(RECIPES.some((r) => r.id === 'recipe_yen_chung' && r.inputs.some((i) => i.productId === 'to_yen'))).toBe(true);
+  });
+});
+
+/**
  * GĐ1345 — "mở rộng thực đơn giỏ quà lễ": Giỏ quà Giáng sinh — lễ tặng quà lớn duy nhất còn thiếu giỏ
  * (Tết/8-3/20-11/Trung thu đã có), giỏ premium đầu tiên có rượu vang, gói trong đúng dịp giang_sinh.
  * Cùng bất biến GĐ1321/1332-1344 (lãi dương TÍNH TỪ GIÁ THẬT · unlock > 30 · outputId duy nhất).
