@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useGame } from '../../core/store';
 import { FLOOR_COLORS, PAINT_PRICE, ROOF_COLORS, SHOP_TIERS, WALL_COLORS, rentDelta, rentOf, spaceUsePct, type ShopStyle } from '../../data/shopTiers';
 import { FURNITURE } from '../../data/furniture';
+import { departmentsUnlockedAtTier } from '../../data/departments';
 import { formatMoney } from '../../data/products';
 import { newUnlockMark, shelfBuyHint, storeMissRevenue } from '../../data/advice';
 import { Callout, Footer, Swatch, styles, Tabs } from './shared';
@@ -239,6 +240,11 @@ export function ExpandTab() {
                     {next && avgRev7 !== null && (
                       <div style={{ opacity: 0.75 }}>
                         Tiền nhà mới ≈ {Math.round((rentThen / avgRev7) * 100)}% doanh thu bình quân 7 ngày.
+                      </div>
+                    )}
+                    {departmentsUnlockedAtTier(i).length > 0 && (
+                      <div style={{ color: '#55efc4', opacity: 0.9 }}>
+                        🆕 Mở ngành: {departmentsUnlockedAtTier(i).map((d) => `${d.icon} ${d.name}`).join(' · ')}
                       </div>
                     )}
                   </div>
