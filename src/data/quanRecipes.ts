@@ -49,6 +49,10 @@ export const QUAN_RECIPES: QuanRecipe[] = [
   // (x_oi, x_chuoi mở cấp 22 nhưng chưa có lối ra pha). Mở 34/35 > mốc golden 30 → sim không đổi.
   { id: 'sinh_to_oi', name: 'Sinh tố ổi', icon: '🍏', unlock: 34, price: 24_000, uses: [{ id: 'x_oi', cups: 4 }, { id: 'x_sua_dac', cups: 10 }, { id: 'x_nuoc_da', cups: 10 }] },
   { id: 'sinh_to_chuoi', name: 'Sinh tố chuối', icon: '🍌', unlock: 35, price: 24_000, uses: [{ id: 'x_chuoi', cups: 4 }, { id: 'x_sua_dac', cups: 10 }, { id: 'x_nuoc_da', cups: 10 }] },
+  // GĐ1330: Sinh tố mít — món quán nước của mít nông trại (x_mit mở cấp 26 nhưng chưa có lối ra pha), xay sữa đặc,
+  // khép chuỗi trồng → pha → bán như trà vải GĐ1090/sinh tố ổi-chuối GĐ1092. Giá vốn/ly = 16k/4 + 22k/10 + 3k/10
+  // = 6.5k → bán 26k (lời >2× vốn). Mở 34 > mốc golden 30 → sim không đổi; KHÔNG hot (giữ đếm đồ nóng = 3).
+  { id: 'sinh_to_mit', name: 'Sinh tố mít', icon: '🍍', unlock: 34, price: 26_000, uses: [{ id: 'x_mit', cups: 4 }, { id: 'x_sua_dac', cups: 10 }, { id: 'x_nuoc_da', cups: 10 }] },
   { id: 'ca_phe_muoi', name: 'Cà phê muối', icon: '🧂', unlock: 40, price: 28_000, uses: [{ id: 'x_ca_phe_hoa_tan', cups: 15 }, { id: 'x_sua_dac', cups: 10 }, { id: 'x_muoi', cups: 60 }, { id: 'x_nuoc_da', cups: 10 }] },
   { id: 'tra_gung', name: 'Trà gừng nóng', icon: '🫚', unlock: 36, price: 15_000, uses: [{ id: 'tra', cups: 40 }, { id: 'x_gung', cups: 12 }, { id: 'x_duong', cups: 30 }], hot: true },
   { id: 'ca_phe_sua_nong', name: 'Cà phê sữa nóng', icon: '♨️', unlock: 37, price: 20_000, uses: [{ id: 'x_ca_phe_hoa_tan', cups: 15 }, { id: 'x_sua_dac', cups: 10 }], hot: true },
