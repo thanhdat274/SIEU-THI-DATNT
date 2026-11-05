@@ -12,4 +12,11 @@ describe('GĐ920 — CounterDemandCard', () => {
     expect(html).toContain('Nhu cầu quầy hôm nay');
     expect(html).toContain('kỷ lục');
   });
+
+  it('GĐ1271 — hiện dòng phân khúc khách theo nghề của khung đông nhất (không đổi kinh tế)', () => {
+    const demand = demandForecast({ level: 5, day: 3, weatherSeed: 1 });
+    const html = renderToStaticMarkup(createElement(CounterDemandCard, { demand, cleanStreak: 4, cleanBest: 9, cleanExtra: 'đã đạt' }));
+    expect(html).toContain('Khung đông nhất');
+    expect(html).toContain('👥');
+  });
 });
