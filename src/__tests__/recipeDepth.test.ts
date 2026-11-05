@@ -591,6 +591,46 @@ describe('GĐ1350 — lối ra bếp của trứng muối (bánh bao kim sa, n�
 });
 
 /**
+ * GĐ1351 — "Thêm sản phẩm/công thức mới": Chả cá Lã Vọng — món Hà Nội trứ danh, khép LỐI RA BẾP của chả cá
+ * thác lác (`cha_ca` 76 — nguồn cung cao cấp cuối-game còn 0 lối ra trước nay), nướng than ở bếp nướng.
+ * Cùng bất biến GĐ1321/1332-1350 (lãi dương TÍNH TỪ GIÁ THẬT · unlock > 30 · outputId duy nhất).
+ */
+const NEW_IDS_1351 = ['recipe_cha_ca_la_vong'] as const;
+
+describe('GĐ1351 — lối ra bếp của chả cá thác lác (chả cá Lã Vọng, bếp nướng)', () => {
+  for (const rid of NEW_IDS_1351) {
+    const recipe = RECIPE_MAP[rid];
+    it(`${recipe.name}: có trong RECIPES và COOKED_PRODUCTS`, () => {
+      expect(recipe).toBeDefined();
+      expect(recipe.id).toBe(rid);
+    });
+
+    it(`${recipe.name}: mở sau mốc golden sim 30 → economySim mốc không đổi`, () => {
+      expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+    });
+
+    it(`${recipe.name}: mẻ lãi dương TÍNH TỪ GIÁ THẬT (không bịa con số)`, () => {
+      const cost = recipe.inputs.reduce((s, inp) => s + inp.quantity * productById(inp.productId).buy, 0);
+      const value = recipe.outputQty * productById(recipe.outputId).sell;
+      expect(value).toBeGreaterThan(cost);
+      const raw = recipe.inputs.reduce((s, inp) => s + inp.quantity * productById(inp.productId).sell, 0);
+      expect(value).toBeGreaterThan(raw);
+    });
+
+    it(`${recipe.name}: outputId khớp COOKED_PRODUCTS và không trùng`, () => {
+      expect(COOKED_PRODUCTS.some((c) => c.id === recipe.outputId)).toBe(true);
+      expect(RECIPES.filter((r) => r.outputId === recipe.outputId).length).toBe(1);
+    });
+  }
+
+  it('chả cá Lã Vọng hiện diện ở bếp nướng và dùng chả cá + nước mắm nhà ủ + hành phi', () => {
+    expect(RECIPES.some((r) => r.station === 'food_grill' && r.id === 'recipe_cha_ca_la_vong')).toBe(true);
+    expect(RECIPES.some((r) => r.id === 'recipe_cha_ca_la_vong' && r.inputs.some((i) => i.productId === 'cha_ca'))).toBe(true);
+    expect(RECIPES.some((r) => r.id === 'recipe_cha_ca_la_vong' && r.inputs.some((i) => i.productId === 'hx_nuoc_mam'))).toBe(true);
+  });
+});
+
+/**
  * GĐ1345 — "mở rộng thực đơn giỏ quà lễ": Giỏ quà Giáng sinh — lễ tặng quà lớn duy nhất còn thiếu giỏ
  * (Tết/8-3/20-11/Trung thu đã có), giỏ premium đầu tiên có rượu vang, gói trong đúng dịp giang_sinh.
  * Cùng bất biến GĐ1321/1332-1344 (lãi dương TÍNH TỪ GIÁ THẬT · unlock > 30 · outputId duy nhất).

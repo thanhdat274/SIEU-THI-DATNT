@@ -161,6 +161,10 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   // của trứng muối (`trung_muoi` 51 — nguồn cung còn 0 lối ra): mẻ (bột mì 18k×2 + trứng muối 30k + sữa đặc 22k)
   // = 88k → 10 bánh × 18k = 180k, lãi 92k/mẻ.
   { id: 'banh_bao_kim_sa', name: 'Bánh bao kim sa', category: 'fresh', buy: 9500, sell: 18000, color: 0xe8c04a, unlock: 52 },
+  // GĐ1351: Chả cá Lã Vọng — món Hà Nội trứ danh (chả cá thác lác nướng than, rưới mỡ hành), khép lối ra của
+  // chả cá thác lác (`cha_ca` 76 — nguồn cung cao cấp cuối-game còn 0 lối ra): mẻ (chả cá 120k + nước mắm
+  // nhà ủ 30k + hành phi 3k) = 153k → 6 phần × 55k = 330k, lãi 177k/mẻ.
+  { id: 'cha_ca_la_vong', name: 'Chả cá Lã Vọng', category: 'fresh', buy: 28000, sell: 55000, color: 0xd4a017, unlock: 76 },
   // GĐ1345: Giỏ quà Giáng sinh — lễ tặng quà lớn duy nhất còn thiếu giỏ (Tết/8-3/20-11/Trung thu đã có):
   // mẻ (rượu vang 120k + bánh kẹo 5k×4 + trà 20k×2) = 180k → 2 giỏ × 140k = 280k, lãi 100k/mẻ.
   { id: 'gio_qua_giang_sinh', name: 'Giỏ quà Giáng sinh', category: 'dry', buy: 70000, sell: 140000, color: 0x228b22, unlock: 36 },
@@ -420,6 +424,12 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_banh_bao_kim_sa', name: 'Bánh bao kim sa', station: 'steamer',
     inputs: [{ productId: 'botmi', quantity: 2 }, { productId: 'trung_muoi', quantity: 1 }, { productId: 'x_sua_dac', quantity: 1 }],
     outputId: 'banh_bao_kim_sa', outputQty: 10, durationMin: 20, unlock: 52, reputationGain: 3 },
+  // GĐ1351: Chả cá Lã Vọng — món Hà Nội trứ danh: chả cá thác lác nướng than hoa (bếp nướng) tẩm nước mắm nhà ủ
+  // rưới mỡ hành: mẻ (chả cá 120k + nước mắm 30k + hành phi 3k) = 153k → 6 phần × 55k = 330k, lãi 177k/mẻ,
+  // nấu hời hơn bán thẳng nguyên liệu (220k < 330k). Mở 76 = đúng cấp chả cá (> golden 30 → sim không đổi).
+  { id: 'recipe_cha_ca_la_vong', name: 'Chả cá Lã Vọng', station: 'food_grill',
+    inputs: [{ productId: 'cha_ca', quantity: 1 }, { productId: 'hx_nuoc_mam', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 2 }],
+    outputId: 'cha_ca_la_vong', outputQty: 6, durationMin: 22, unlock: 76, reputationGain: 4 },
 
   // --- Quầy pha (drink_counter) ---
   { id: 'recipe_ca_phe_sua', name: 'Cà phê sữa đá', station: 'drink_counter',
