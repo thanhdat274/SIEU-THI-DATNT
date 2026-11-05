@@ -6,7 +6,7 @@ import { TIEM_XOI_BIG_COST, TIEM_XOI_BIG_LEVEL, tiemXoiExpandPayback } from '../
 // (hàng xóm 34): tại TIEM_XOI_BIG_LEVEL = 42 các xôi mới vào bể nấu → tiệm xôi cấp cao lời hơn (net/ngày tăng).
 // Đây là đổi kinh tế tiệm xôi CÓ CHỦ Ý theo nội dung mới, cập nhật mốc + ghi lý do.
 
-const XOI_IDS = ['xoi_dau_xanh', 'xoi_man', 'xoi_trung', 'xoi_dua', 'xoi_thap_cam', 'xoi_vo', 'xoi_bap', 'xoi_mit', 'xoi_kho_tom', 'xoi_lap_xuong', 'xoi_mam_tep'];
+const XOI_IDS = ['xoi_dau_xanh', 'xoi_man', 'xoi_trung', 'xoi_dua', 'xoi_thap_cam', 'xoi_vo', 'xoi_bap', 'xoi_mit', 'xoi_kho_tom', 'xoi_lap_xuong', 'xoi_mam_tep', 'xoi_chien_phong'];
 
 describe('tiemXoiExpandPayback — hồi vốn mở rộng bếp', () => {
   it('kho đầy (mục tiêu big = 120/món): bếp lớn không nấu thêm → full (đừng xây)', () => {
@@ -18,20 +18,20 @@ describe('tiemXoiExpandPayback — hồi vốn mở rộng bếp', () => {
     expect(r.verdict).toBe('full');
   });
 
-  it('kho trống + 3 thợ: bếp lớn nấu thêm ~120 phần/đêm → hồi vốn 72 ngày (slow)', () => {
+  it('kho trống + 3 thợ: bếp lớn nấu thêm ~120 phần/đêm → hồi vốn 64 ngày (slow)', () => {
     const r = tiemXoiExpandPayback({ open: true, staff: 3, big: false }, TIEM_XOI_BIG_LEVEL, {});
     expect(r.cost).toBe(TIEM_XOI_BIG_COST);
-    expect(r.netPerDay).toBe(280320);
-    expect(r.paybackDays).toBe(72);
+    expect(r.netPerDay).toBe(316520);
+    expect(r.paybackDays).toBe(64);
     expect(r.verdict).toBe('slow');
   });
 
   it('càng ít thợ càng nấu thêm ít → hồi vốn càng chậm (cùng kho trống)', () => {
     const r1 = tiemXoiExpandPayback({ open: true, staff: 1, big: false }, TIEM_XOI_BIG_LEVEL, {});
     const r0 = tiemXoiExpandPayback({ open: true, staff: 0, big: false }, TIEM_XOI_BIG_LEVEL, {});
-    expect(r1.netPerDay).toBe(140160);
-    expect(r0.netPerDay).toBe(70080);
-    expect(r1.paybackDays).toBeLessThan(r0.paybackDays as number); // 143 vs 286 ngày — thợ nhiều nấu thêm nhanh hồi vốn
+    expect(r1.netPerDay).toBe(160200);
+    expect(r0.netPerDay).toBe(80440);
+    expect(r1.paybackDays).toBeLessThan(r0.paybackDays as number); // 125 vs 249 ngày — thợ nhiều nấu thêm nhanh hồi vốn
     expect(r1.verdict).toBe('slow');
     expect(r0.verdict).toBe('slow');
   });

@@ -248,6 +248,9 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   // GĐ1385: Cơm hến — món Huế dân dã trứ danh, khép lối ra của nghêu tươi (`ngheu` 57):
   // mẻ (gạo 80k + nghêu 45k + hành phi 3k) = 128k → 30 phần × 12k = 360k, lãi 232k/mẻ.
   { id: 'com_hen', name: 'Cơm hến', category: 'fresh', buy: 4200, sell: 12000, color: 0xcdaa7d, unlock: 57 },
+  // GĐ1386: Xôi chiên phồng — đặc sản mộc mạc trứ danh (viên xôi nếp chiên phồng giòn rụm):
+  // mẻ (nếp 30k + bột mì 18k + hành phi 3k) = 51k → 12 viên × 8k = 96k, lãi 45k/mẻ.
+  { id: 'xoi_chien_phong', name: 'Xôi chiên phồng', category: 'fresh', buy: 4000, sell: 8000, color: 0xe8b04a, unlock: 38 },
   // GĐ1345: Giỏ quà Giáng sinh — lễ tặng quà lớn duy nhất còn thiếu giỏ (Tết/8-3/20-11/Trung thu đã có):
   // mẻ (rượu vang 120k + bánh kẹo 5k×4 + trà 20k×2) = 180k → 2 giỏ × 140k = 280k, lãi 100k/mẻ.
   { id: 'gio_qua_giang_sinh', name: 'Giỏ quà Giáng sinh', category: 'dry', buy: 70000, sell: 140000, color: 0x228b22, unlock: 36 },
@@ -670,6 +673,13 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_com_hen', name: 'Cơm hến', station: 'hot_kettle',
     inputs: [{ productId: 'gao', quantity: 1 }, { productId: 'ngheu', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 2 }],
     outputId: 'com_hen', outputQty: 30, durationMin: 22, unlock: 57, reputationGain: 3 },
+  // GĐ1386: Xôi chiên phồng — đặc sản mộc mạc trứ danh: viên xôi nếp áo bột mì chiên phồng giòn ở bếp nướng
+  // (trạm bếp nướng — không rice_station nên không đụng kinh tế tiệm xôi): mẻ (nếp 30k + bột mì 18k +
+  // hành phi 3k) = 51k → 12 viên × 8k = 96k, lãi 45k/mẻ, nấu hời hơn bán thẳng nguyên liệu (73k < 96k).
+  // Mở 38 ≥ mọi nguyên liệu (1/1/36) (> golden 30 → sim không đổi).
+  { id: 'recipe_xoi_chien_phong', name: 'Xôi chiên phồng', station: 'food_grill',
+    inputs: [{ productId: 'nep', quantity: 1 }, { productId: 'botmi', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 2 }],
+    outputId: 'xoi_chien_phong', outputQty: 12, durationMin: 15, unlock: 38, reputationGain: 2 },
 
   // --- Quầy pha (drink_counter) ---
   { id: 'recipe_ca_phe_sua', name: 'Cà phê sữa đá', station: 'drink_counter',
