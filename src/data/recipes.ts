@@ -129,6 +129,9 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   // GĐ1337: Bún bò Huế — món bún cay đậm đà trứ danh: nguyên liệu bún tươi mới thêm (`bun` 33). Mẻ (bún 12k +
   // thịt 60k + hành phi 3k) = 75k → 10 tô × 18k = 180k, lãi 105k/mẻ.
   { id: 'bun_bo_hue', name: 'Bún bò Huế', category: 'fresh', buy: 8500, sell: 18000, color: 0xb03a2e, unlock: 36 },
+  // GĐ1338: Mì Quảng — món mì vàng đậm đà Quảng Nam, phủ da lợn/rộng hành (nguyên liệu mì `mi` + thịt + hành phi):
+  // mẻ (mì 3k + thịt 60k + hành phi 3k) = 66k → 10 tô × 17k = 170k, lãi 104k/mẻ.
+  { id: 'mi_quang', name: 'Mì Quảng', category: 'fresh', buy: 8000, sell: 17000, color: 0xe6b422, unlock: 36 },
 
   // --- Nồi hấp (steamer) ---
   { id: 'banh_bao_hap', name: 'Bánh bao hấp nóng', category: 'fresh', buy: 4500, sell: 8600, color: 0xf5f6fa, unlock: 39 },
@@ -297,6 +300,12 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_bun_bo_hue', name: 'Bún bò Huế', station: 'hot_kettle',
     inputs: [{ productId: 'bun', quantity: 1 }, { productId: 'thit', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 2 }],
     outputId: 'bun_bo_hue', outputQty: 10, durationMin: 20, unlock: 36, reputationGain: 3 },
+  // GĐ1338: Mì Quảng — món mì vàng đậm đà Quảng Nam: mì sợi + thịt nấu nước dùng đậm ở ấm nước:
+  // mẻ (mì 3k + thịt 60k + hành phi 3k) = 66k → 10 tô × 17k = 170k, lãi 104k/mẻ, nấu hời hơn bán thẳng
+  // nguyên liệu (95k < 170k). Mở 36 ≥ mọi nguyên liệu (1/30/36) (> golden 30 → sim không đổi).
+  { id: 'recipe_mi_quang', name: 'Mì Quảng', station: 'hot_kettle',
+    inputs: [{ productId: 'mi', quantity: 1 }, { productId: 'thit', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 2 }],
+    outputId: 'mi_quang', outputQty: 10, durationMin: 18, unlock: 36, reputationGain: 3 },
   // GĐ1094: Hột vịt lộn — món ăn vặt đường phố của trứng vịt trại (vịt mở cấp 16 nhưng chưa có lối ra bếp);
   // 1 vỉ 10 quả + rau răm + muối. Mở 34 > mốc golden 30 → sim không đổi.
   { id: 'recipe_hot_vit_lon', name: 'Hột vịt lộn', station: 'hot_kettle',
