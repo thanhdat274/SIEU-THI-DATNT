@@ -2,6 +2,7 @@ import { formatClock, useClock, useGame } from '../core/store';
 import { formatMoney, productById, fmtMul } from '../data/products';
 import { describeItems, houseById, phoneOrderValue } from '../data/phoneOrders';
 import { phoneNetProfit } from '../data/phoneNet';
+import { fastTipLine } from '../data/fastDeliveryTip';
 
 /** Điện thoại tiệm: cuộc gọi đang đổ chuông (nghe máy để soạn hàng) và đơn đang mang đi giao. */
 export function PhoneAlerts() {
@@ -49,9 +50,12 @@ export function PhoneAlerts() {
           );
         }
         const left = Math.ceil(o.dueAt - minutes);
+        const value = phoneOrderValue(o, priceOf);
+        const fastTip = fastTipLine(o, value, minutes);
         return (
           <div key={o.id} className={`hud-alert phone ${left < 0 ? 'warn' : ''}`}>
             🛵 Mang {describeItems(o.items)} tới <b>{house}</b> cho {o.caller} · {left >= 0 ? `hẹn ${formatClock(o.dueAt)} (còn ${left} phút)` : `trễ ${-left} phút, không còn boa`}
+            {fastTip && <div style={{ fontSize: 12, color: '#2ecc71', marginTop: 2 }}>{fastTip}</div>}
           </div>
         );
       })}
