@@ -20,7 +20,9 @@ describe('GĐ1093 — Farm ↔ Quán nước: soi sáng "pha hay bán lẻ" (k�
   });
 
   it('ổi & chuối nhà trồng: sinh tố tương ứng được nhận diện, pha hời hơn bán lẻ', () => {
-    for (const [p, mon] of [['x_oi', 'sinh_to_oi'], ['x_chuoi', 'sinh_to_chuoi']] as const) {
+    // GĐ1353: thêm Sinh tố yến mạch chuối (30k/ly > sinh_to_chuoi 24k) → chuối nông trại bõ nhất ở món mới
+    // (đúng ngữ nghĩa "nơi bõ nhất" của soi sáng farm↔quán — đổi CÓ CHỦ Ý theo nội dung mới).
+    for (const [p, mon] of [['x_oi', 'sinh_to_oi'], ['x_chuoi', 'sinh_to_yen_mach_chuoi']] as const) {
       const q = farmVsDrinks(p);
       expect(q.best!.recipe.id).toBe(mon);
       expect(q.verdict).toBe('brew');

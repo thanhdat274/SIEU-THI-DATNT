@@ -170,6 +170,9 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'ca_basa_chien_sa', name: 'Cá basa chiên sả', category: 'fresh', buy: 15000, sell: 32000, color: 0xd9a33c, unlock: 72 },
   // Sò điệp nướng mỡ hành (so_diep 67): mẻ (sò điệp 180k + hành phi 3k) = 183k → 6 vỏ × 50k = 300k, lãi 117k/mẻ.
   { id: 'so_diep_nuong_mo_hanh', name: 'Sò điệp nướng mỡ hành', category: 'fresh', buy: 32000, sell: 50000, color: 0xe8a87c, unlock: 67 },
+  // GĐ1353: Bò Nhật nướng muối — thăn bò Nhật (thit_bo_nhat 69) nướng muối kiểu teppanyaki, món xa xỉ bậc nhất:
+  // mẻ (bò 450k + muối 5k + hành phi 3k) = 458k → 6 phần × 130k = 780k, lãi 322k/mẻ.
+  { id: 'bo_nhat_nuong_muoi', name: 'Bò Nhật nướng muối', category: 'fresh', buy: 76000, sell: 130000, color: 0x68228b, unlock: 69 },
   // GĐ1345: Giỏ quà Giáng sinh — lễ tặng quà lớn duy nhất còn thiếu giỏ (Tết/8-3/20-11/Trung thu đã có):
   // mẻ (rượu vang 120k + bánh kẹo 5k×4 + trà 20k×2) = 180k → 2 giỏ × 140k = 280k, lãi 100k/mẻ.
   { id: 'gio_qua_giang_sinh', name: 'Giỏ quà Giáng sinh', category: 'dry', buy: 70000, sell: 140000, color: 0x228b22, unlock: 36 },
@@ -447,6 +450,12 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_so_diep_nuong_mo_hanh', name: 'Sò điệp nướng mỡ hành', station: 'food_grill',
     inputs: [{ productId: 'so_diep', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 2 }],
     outputId: 'so_diep_nuong_mo_hanh', outputQty: 6, durationMin: 15, unlock: 67, reputationGain: 3 },
+  // GĐ1353: Bò Nhật nướng muối — thăn bò Nhật (thit_bo_nhat 69) nướng muối kiểu teppanyaki ở bếp nướng:
+  // mẻ (bò 450k + muối 5k + hành phi 3k) = 458k → 6 phần × 130k = 780k, lãi 322k/mẻ, nấu hời hơn
+  // bán thẳng nguyên liệu (632k < 780k). Mở 69 = đúng cấp bò Nhật (> golden 30 → sim không đổi).
+  { id: 'recipe_bo_nhat_nuong_muoi', name: 'Bò Nhật nướng muối', station: 'food_grill',
+    inputs: [{ productId: 'thit_bo_nhat', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 2 }],
+    outputId: 'bo_nhat_nuong_muoi', outputQty: 6, durationMin: 18, unlock: 69, reputationGain: 4 },
 
   // --- Quầy pha (drink_counter) ---
   { id: 'recipe_ca_phe_sua', name: 'Cà phê sữa đá', station: 'drink_counter',
