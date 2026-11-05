@@ -130,13 +130,15 @@ describe('farmVsCook', () => {
     expect(f.verdict).toBe('cook');
   });
 
-  it('sữa bò (sua_tuoi): GĐ1369 có Cháo yến mạch vào bếp → 1 món, best +17400, verdict cook', () => {
-    // GĐ1369: thêm Cháo yến mạch (108k − yến mạch 45k = 63k − sellLot 45.6k = +17.4k > 0) → sữa bò tươi
-    // GIỜ CÓ lối ra bếp (đổi CÓ CHỦ Ý theo nội dung mới — premise cũ "không vào được bếp" đã lỗi thời).
+  it('sữa bò (sua_tuoi): GĐ1369 cháo yến mạch + GĐ1376 kem dừa → 2 món, best kem dừa +87400, verdict cook', () => {
+    // GĐ1369: Cháo yến mạch (108k − yến mạch 45k = 63k − sellLot 45.6k = +17.4k).
+    // GĐ1376: Kem dừa (160k − cốt dừa+đường 27k = 133k − sellLot 45.6k = +87.4k > cháo) → sữa bò tươi
+    // có 2 lối ra bếp, bõ nhất ở kem dừa (đổi CÓ CHỦ Ý theo nội dung mới).
     const f = farmVsCook('sua_tuoi');
-    expect(f.recipes).toHaveLength(1);
-    expect(f.best!.recipe.id).toBe('recipe_chao_yen_mach');
-    expect(f.best!.homegrownNet).toBe(17400);
+    expect(f.recipes).toHaveLength(2);
+    expect(f.recipes.map((d) => d.recipe.id).sort()).toEqual(['recipe_chao_yen_mach', 'recipe_kem_dua']);
+    expect(f.best!.recipe.id).toBe('recipe_kem_dua');
+    expect(f.best!.homegrownNet).toBe(87400);
     expect(f.verdict).toBe('cook');
   });
 
