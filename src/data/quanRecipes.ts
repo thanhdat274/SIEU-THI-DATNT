@@ -97,6 +97,10 @@ export const QUAN_RECIPES: QuanRecipe[] = [
   // vốn/ly = 5k/3 + 45k/12 + 3k/10 = 5.7k → bán 22k (lời >2× vốn). Mở 41 > mốc golden 30 → sim không đổi;
   // KHÔNG hot (giữ đếm đồ nóng = 3).
   { id: 'sua_chua_yen_mach', name: 'Sữa chua yến mạch', icon: '🥣', unlock: 41, price: 22_000, uses: [{ id: 'suachua', cups: 3 }, { id: 'yen_mach', cups: 12 }, { id: 'x_nuoc_da', cups: 10 }] },
+  // GĐ1372: Sữa hạt đá — đồ uống healthy kinh điển (sữa hạt lốc pha đá mát, chưa có lối ra pha):
+  // vốn/ly = 42k/8 + 3k/10 = 5.6k → bán 20k (lời >2× vốn). Mở 41 > mốc golden 30 → sim không đổi;
+  // KHÔNG hot (giữ đếm đồ nóng = 3).
+  { id: 'sua_hat_da', name: 'Sữa hạt đá', icon: '🥜', unlock: 41, price: 20_000, uses: [{ id: 'sua_hat', cups: 8 }, { id: 'x_nuoc_da', cups: 10 }] },
   { id: 'ca_phe_muoi', name: 'Cà phê muối', icon: '🧂', unlock: 40, price: 28_000, uses: [{ id: 'x_ca_phe_hoa_tan', cups: 15 }, { id: 'x_sua_dac', cups: 10 }, { id: 'x_muoi', cups: 60 }, { id: 'x_nuoc_da', cups: 10 }] },
   { id: 'tra_gung', name: 'Trà gừng nóng', icon: '🫚', unlock: 36, price: 15_000, uses: [{ id: 'tra', cups: 40 }, { id: 'x_gung', cups: 12 }, { id: 'x_duong', cups: 30 }], hot: true },
   { id: 'ca_phe_sua_nong', name: 'Cà phê sữa nóng', icon: '♨️', unlock: 37, price: 20_000, uses: [{ id: 'x_ca_phe_hoa_tan', cups: 15 }, { id: 'x_sua_dac', cups: 10 }], hot: true },
