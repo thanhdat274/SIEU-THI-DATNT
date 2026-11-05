@@ -17,6 +17,9 @@ export const HOMEMADE_PRODUCTS: { id: string; name: string; category: Category; 
   // mở ở cấp cao (≥34, trên mức golden sim 30 nên không đổi RNG mốc), vẫn biên ≥35%.
   { id: 'hx_mam_ruoc', name: 'Mắm ruốc Huế (hũ)', category: 'dry', buy: 36000, sell: 56000, color: 0x9b4a2b, unlock: 34 },
   { id: 'hx_vai_say', name: 'Vải thiều sấy (gói)', category: 'dry', buy: 42000, sell: 65000, color: 0xd23b3b, unlock: 38 },
+  // GĐ1321: mở rộng nguồn cung hàng xóm (hướng 3) — tương ớt quê tự làm, biên 40%, mở 36 sau mốc golden 30 → sim không đổi.
+  // Khớp bất biến GĐ1083: đặc sản mở ≥30 phải sell ≥50k & biên ≥35%.
+  { id: 'hx_tuong_ot', name: 'Tương ớt quê (chai)', category: 'dry', buy: 30000, sell: 50000, color: 0xd63031, unlock: 36 },
 ];
 
 /**
@@ -29,6 +32,8 @@ export const NEIGHBOR2_PRODUCTS: { id: string; name: string; category: Category;
   { id: 'hx_cha_lua', name: 'Chả lụa nhà bà Tám', category: 'fresh', buy: 27000, sell: 42000, color: 0xeecf9f, unlock: 34 },
   { id: 'hx_nem_chua', name: 'Nem chua (thanh)', category: 'fresh', buy: 9000, sell: 14000, color: 0xe8b87a, unlock: 36 },
   { id: 'hx_banh_da', name: 'Bánh đa (bì)', category: 'dry', buy: 14000, sell: 22000, color: 0xd9b36a, unlock: 38 },
+  // GĐ1321: mở rộng đặc sản bà Tám (hướng 3) — bánh cuốn tay, biên ~1.65× như chuẩn, mở 40 sau mốc golden 30 → sim không đổi.
+  { id: 'hx_banh_cuon', name: 'Bánh cuốn nhà làm (đĩa)', category: 'fresh', buy: 20000, sell: 33000, color: 0xf0e6d2, unlock: 40 },
 ];
 
 export const HOMEMADE_IDS: ReadonlySet<string> = new Set(HOMEMADE_PRODUCTS.map((h) => h.id));

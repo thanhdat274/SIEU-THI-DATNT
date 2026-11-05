@@ -66,6 +66,9 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'che_buoi', name: 'Chè bưởi', category: 'fresh', buy: 5500, sell: 11000, color: 0xa9dfbf, unlock: 38 },
   // GĐ1091: Chè nhãn — mẻ (nhãn 24k + đường 17k) = 41k → 6 phần × 11k = 66k, lãi 25k/mẻ, nấu hời hơn bán nguyên liệu (55k < 66k)
   { id: 'che_nhan', name: 'Chè nhãn', category: 'fresh', buy: 5500, sell: 11000, color: 0xd5e8d4, unlock: 36 },
+  // GĐ1321: Chè hạt sen — món chè thanh mát của hạt sen (mở cấp 74, sau mốc golden 30 → sim không đổi).
+  // Mẻ (hạt sen 65k + đường 17k) = 82k → 8 phần × 26.5k = 212k, lãi 130k/mẻ, nấu hời hơn bán nguyên liệu (92k < 212k)
+  { id: 'che_hat_sen', name: 'Chè hạt sen', category: 'fresh', buy: 14000, sell: 26500, color: 0xaed6f1, unlock: 74 },
 
   // --- Máy xay (blender) ---
   { id: 'sinh_to_trai_cay', name: 'Sinh tố trái cây', category: 'cold', buy: 7500, sell: 14300, color: 0xfd79a8, unlock: 28 },
@@ -102,6 +105,9 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'xoi_bap', name: 'Xôi bắp', category: 'fresh', buy: 1400, sell: 2600, color: 0xf9ca24, unlock: 36 },
   // GĐ1087: Xôi mít — xôi dừa thêm mít trộn, món ngọt đặc trưng miền Tây, dùng mít của nông trại (liên hệ nông trại → tiệm xôi)
   { id: 'xoi_mit', name: 'Xôi mít', category: 'fresh', buy: 1600, sell: 3000, color: 0xf8c471, unlock: 36 },
+  // GĐ1321: Xôi nếp cẩm — món cẩm cao cấp của gạo nếp cẩm (mở cấp 70, sau mốc golden 30 → sim không đổi).
+  // Mẻ (nếp cẩm 55k + đường 17k) = 72k → 40 phần × 5.7k = 228k, lãi 156k/mẻ, nấu hời hơn bán nguyên liệu (78k < 228k)
+  { id: 'xoi_nep_cam', name: 'Xôi nếp cẩm', category: 'fresh', buy: 3000, sell: 5700, color: 0x8e44ad, unlock: 70 },
 
   // --- Máy ép mía (sugarcane_press) ---
   { id: 'nuoc_mia', name: 'Nước mía', category: 'drink', buy: 4800, sell: 9100, color: 0x00b894, unlock: 25 },
@@ -177,6 +183,10 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_che_nhan', name: 'Chè nhãn', station: 'hot_kettle',
     inputs: [{ productId: 'x_nhan', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
     outputId: 'che_nhan', outputQty: 6, durationMin: 15, unlock: 36, reputationGain: 2 },
+  // GĐ1321: Chè hạt sen — món chè thanh mát (hạt sen mở cấp 74). Mở 74 sau mốc golden sim 30 → không đổi RNG mốc.
+  { id: 'recipe_che_hat_sen', name: 'Chè hạt sen', station: 'hot_kettle',
+    inputs: [{ productId: 'hat_sen', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
+    outputId: 'che_hat_sen', outputQty: 8, durationMin: 18, unlock: 74, reputationGain: 2 },
   // GĐ1094: Hột vịt lộn — món ăn vặt đường phố của trứng vịt trại (vịt mở cấp 16 nhưng chưa có lối ra bếp);
   // 1 vỉ 10 quả + rau răm + muối. Mở 34 > mốc golden 30 → sim không đổi.
   { id: 'recipe_hot_vit_lon', name: 'Hột vịt lộn', station: 'hot_kettle',
@@ -266,6 +276,10 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_xoi_mit', name: 'Xôi mít', station: 'rice_station',
     inputs: [{ productId: 'nep', quantity: 1 }, { productId: 'x_mit', quantity: 1 }, { productId: 'x_dua_cot_hop', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
     outputId: 'xoi_mit', outputQty: 40, durationMin: 12, unlock: 36, reputationGain: 2 },
+  // GĐ1321: Xôi nếp cẩm — món cẩm cao cấp (gạo nếp cẩm mở cấp 70). Mở 70 sau mốc golden sim 30 → không đổi RNG mốc.
+  { id: 'recipe_xoi_nep_cam', name: 'Xôi nếp cẩm', station: 'rice_station',
+    inputs: [{ productId: 'nep_cam', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
+    outputId: 'xoi_nep_cam', outputQty: 40, durationMin: 12, unlock: 70, reputationGain: 2 },
 
   // --- Máy ép mía (sugarcane_press) ---
   { id: 'recipe_nuoc_mia', name: 'Nước mía', station: 'sugarcane_press',

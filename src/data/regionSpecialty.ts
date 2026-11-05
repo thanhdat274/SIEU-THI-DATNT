@@ -12,6 +12,9 @@ export const REGION_PRODUCTS: { id: string; name: string; category: Category; bu
   { id: 'rg_kho_tom', name: 'Khô tôm đặc sản (gói)', category: 'dry', buy: 42000, sell: 72000, color: 0xc9a227, unlock: 42 },
   { id: 'rg_lap_xuong', name: 'Lạp xưởng miền (cây)', category: 'dry', buy: 46000, sell: 78000, color: 0xa5462a, unlock: 44 },
   { id: 'rg_banh_pia', name: 'Bánh pía (hộp)', category: 'dry', buy: 52000, sell: 88000, color: 0xe67e22, unlock: 46 },
+  // GĐ1321: thêm đặc sản vùng (mở rộng hướng 2 "nhập hàng NGOÀI tạp hóa") — biên ×1.70 như chuẩn, mở 48/50 sau mốc golden 30 → sim không đổi.
+  { id: 'rg_banh_phong', name: 'Bánh phồng (bịch)', category: 'dry', buy: 54000, sell: 92000, color: 0xd48c5a, unlock: 48 },
+  { id: 'rg_kho_bo', name: 'Khô bò (gói)', category: 'dry', buy: 62000, sell: 106000, color: 0xb03a2e, unlock: 50 },
 ];
 
 export const REGION_IDS: ReadonlySet<string> = new Set(REGION_PRODUCTS.map((h) => h.id));
