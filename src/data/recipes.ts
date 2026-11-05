@@ -181,6 +181,9 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   // GĐ1357: Yến chưng đường phèn — món bồi bổ xa xỉ trứ danh, khép lối ra của tổ yến (`to_yen` 66 — mặt hàng
   // đắt nhất tiệm): mẻ (yến 700k + đường 17k) = 717k → 6 chén × 180k = 1080k, lãi 363k/mẻ.
   { id: 'yen_chung', name: 'Yến chưng đường phèn', category: 'fresh', buy: 115000, sell: 180000, color: 0xfdf5e6, unlock: 66 },
+  // GĐ1358: Bánh mì jambon phô mai — bản bánh mì premium cuối-game, khép lối ra của jambon (`jambon` 61):
+  // mẻ (jambon 90k + bánh mì 8k×5 + phô mai 25k + hành phi 3k) = 158k → 5 bánh × 55k = 275k, lãi 117k/mẻ.
+  { id: 'banh_mi_jambon', name: 'Bánh mì jambon phô mai', category: 'fresh', buy: 30000, sell: 55000, color: 0xe88d8d, unlock: 62 },
   // GĐ1345: Giỏ quà Giáng sinh — lễ tặng quà lớn duy nhất còn thiếu giỏ (Tết/8-3/20-11/Trung thu đã có):
   // mẻ (rượu vang 120k + bánh kẹo 5k×4 + trà 20k×2) = 180k → 2 giỏ × 140k = 280k, lãi 100k/mẻ.
   { id: 'gio_qua_giang_sinh', name: 'Giỏ quà Giáng sinh', category: 'dry', buy: 70000, sell: 140000, color: 0x228b22, unlock: 36 },
@@ -482,6 +485,12 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_yen_chung', name: 'Yến chưng đường phèn', station: 'steamer',
     inputs: [{ productId: 'to_yen', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
     outputId: 'yen_chung', outputQty: 6, durationMin: 30, unlock: 66, reputationGain: 5 },
+  // GĐ1358: Bánh mì jambon phô mai — bản bánh mì premium cuối-game: jambon nhập + phô mai kẹp bánh mì tươi
+  // nướng ở bếp nướng: mẻ (jambon 90k + bánh mì 40k + phô mai 25k + hành phi 3k) = 158k → 5 bánh × 55k = 275k,
+  // lãi 117k/mẻ, nấu hời hơn bán thẳng nguyên liệu (244k < 275k). Mở 62 ≥ jambon 61 (> golden 30 → sim không đổi).
+  { id: 'recipe_banh_mi_jambon', name: 'Bánh mì jambon phô mai', station: 'food_grill',
+    inputs: [{ productId: 'jambon', quantity: 1 }, { productId: 'banhmi', quantity: 5 }, { productId: 'phomai', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 2 }],
+    outputId: 'banh_mi_jambon', outputQty: 5, durationMin: 12, unlock: 62, reputationGain: 3 },
 
   // --- Quầy pha (drink_counter) ---
   { id: 'recipe_ca_phe_sua', name: 'Cà phê sữa đá', station: 'drink_counter',
