@@ -77,6 +77,10 @@ export const QUAN_RECIPES: QuanRecipe[] = [
   // vốn/ly = 30k/4 + 3k/10 = 7.8k → bán 24k (lời >2× vốn). Mở 31 > mốc golden 30 → sim không đổi;
   // KHÔNG hot (giữ đếm đồ nóng = 3).
   { id: 'ep_dua_hau', name: 'Nước ép dưa hấu', icon: '🍉', unlock: 31, price: 24_000, uses: [{ id: 'dua', cups: 4 }, { id: 'x_nuoc_da', cups: 10 }] },
+  // GĐ1356: Cà phê phin — pha truyền thống đậm chất Sài Gòn (cà phê xay nguyên chất nhỏ giọt phin, chưa có
+  // lối ra pha): vốn/ly = 150k/30 + 17k/30 + 3k/10 = 5.9k → bán 30k (lời >2× vốn). Mở 64 > mốc golden 30
+  // → sim không đổi; KHÔNG hot (giữ đếm đồ nóng = 3).
+  { id: 'ca_phe_phin', name: 'Cà phê phin', icon: '☕', unlock: 64, price: 30_000, uses: [{ id: 'ca_phe_xay', cups: 30 }, { id: 'x_duong', cups: 30 }, { id: 'x_nuoc_da', cups: 10 }] },
   { id: 'ca_phe_muoi', name: 'Cà phê muối', icon: '🧂', unlock: 40, price: 28_000, uses: [{ id: 'x_ca_phe_hoa_tan', cups: 15 }, { id: 'x_sua_dac', cups: 10 }, { id: 'x_muoi', cups: 60 }, { id: 'x_nuoc_da', cups: 10 }] },
   { id: 'tra_gung', name: 'Trà gừng nóng', icon: '🫚', unlock: 36, price: 15_000, uses: [{ id: 'tra', cups: 40 }, { id: 'x_gung', cups: 12 }, { id: 'x_duong', cups: 30 }], hot: true },
   { id: 'ca_phe_sua_nong', name: 'Cà phê sữa nóng', icon: '♨️', unlock: 37, price: 20_000, uses: [{ id: 'x_ca_phe_hoa_tan', cups: 15 }, { id: 'x_sua_dac', cups: 10 }], hot: true },

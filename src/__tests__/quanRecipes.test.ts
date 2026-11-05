@@ -477,6 +477,23 @@ describe('GĐ1354: nước ép dưa hấu (dưa hấu nông trại → quán nư
   });
 });
 
+describe('GĐ1356: cà phê phin (pha truyền thống → quán nước)', () => {
+  it('mở cấp 64, dùng cà phê xay nguyên chất, không hot, lời hơn vốn gấp đôi', async () => {
+    const { quanRecipeById, quanRecipesAt, recipeCupCost, QUAN_RECIPES } = await import('../data/quanRecipes');
+    const { productById } = await import('../data/products');
+    const r = quanRecipeById('ca_phe_phin')!;
+    expect(r.unlock).toBeGreaterThan(30); // sau mốc golden 30 → sim không đổi
+    expect(r.unlock).toBe(64);
+    expect(r.uses.map((u) => u.id)).toContain('ca_phe_xay');
+    for (const u of r.uses) expect(productById(u.id).unlock).toBeLessThanOrEqual(r.unlock);
+    expect(quanRecipesAt(63).some((x) => x.id === 'ca_phe_phin')).toBe(false);
+    expect(quanRecipesAt(64).some((x) => x.id === 'ca_phe_phin')).toBe(true);
+    expect(r.price).toBeGreaterThan(recipeCupCost(r) * 2);
+    expect(r.hot).toBeFalsy();
+    expect(QUAN_RECIPES.filter((x) => x.hot).length).toBe(3); // không phình đếm đồ nóng (Luật 9)
+  });
+});
+
 describe('GĐ482: nhắc đồ nóng tháng rét', () => {
   it('tháng rét trời khô gợi ý ×1.1; tháng hè không nhắc', async () => {
     const { quanHotNote } = await import('../data/quanRecipes');
