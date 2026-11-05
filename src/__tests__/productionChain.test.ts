@@ -207,3 +207,53 @@ describe('GĐ1326 — chuỗi sản xuất từ gia vị mắm nhà hàng xóm (
     expect(RECIPES.some((r) => r.id === 'recipe_mam_ruoc_chung_thit' && r.inputs.some((i) => i.productId === 'hx_mam_ruoc'))).toBe(true);
   });
 });
+
+/**
+ * GĐ1328 — tiếp tục chuỗi sản xuất chế biến từ cung ngoài, khép nốt 2 món bánh/tráng làm từ bột chưa có lối ra
+ * (bánh tráng phơi sương `hx_banh_trang`, bánh đa bì `hx_banh_da`) thành 2 món ăn vặt đường phố (Bánh tráng nướng,
+ * Bánh đa trộn), đồng thời nhồi thêm tương ớt quê `hx_tuong_ot` và cà pháo muối `hx_ca_phao` (vốn chỉ bán thẳng)
+ * — mỗi món có LỐI RA BẾP, không dead stock. Cùng bất biến GĐ1322/1323/1324/1326 (mẻ lãi dương từ giá thật).
+ */
+const NEW_IDS_1328 = ['recipe_banh_trang_nuong', 'recipe_banh_da_tron'] as const;
+
+describe('GĐ1328 — chuỗi sản xuất từ bánh/tráng nhà hàng xóm (hàng xóm → bếp nướng)', () => {
+  for (const rid of NEW_IDS_1328) {
+    const recipe = RECIPE_MAP[rid];
+    it(`${recipe.name}: có trong RECIPES và COOKED_PRODUCTS`, () => {
+      expect(recipe).toBeDefined();
+      expect(recipe.id).toBe(rid);
+    });
+
+    it(`${recipe.name}: mở sau mốc golden sim 30 → economySim mốc không đổi`, () => {
+      expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+    });
+
+    it(`${recipe.name}: mẻ lãi dương TÍNH TỪ GIÁ THẬT (không bịa con số)`, () => {
+      const cost = recipe.inputs.reduce((s, inp) => s + inp.quantity * productById(inp.productId).buy, 0);
+      const value = recipe.outputQty * productById(recipe.outputId).sell;
+      expect(value).toBeGreaterThan(cost);
+      const raw = recipe.inputs.reduce((s, inp) => s + inp.quantity * productById(inp.productId).sell, 0);
+      expect(value).toBeGreaterThan(raw);
+    });
+
+    it(`${recipe.name}: nguyên liệu là nguồn cung ngoài có mối bán (KHÔNG phải món nấu sẵn)`, () => {
+      const mains = recipe.inputs.filter((i) => SUPPLIED_1324.has(i.productId));
+      expect(mains.length).toBeGreaterThanOrEqual(1);
+      for (const m of mains) expect(COOKED_IDS.has(m.productId)).toBe(false);
+    });
+
+    it(`${recipe.name}: outputId khớp COOKED_PRODUCTS và không trùng`, () => {
+      expect(COOKED_PRODUCTS.some((c) => c.id === recipe.outputId)).toBe(true);
+      expect(RECIPES.filter((r) => r.outputId === recipe.outputId).length).toBe(1);
+    });
+  }
+
+  it('2 món mới hiện diện ở bếp nướng và dùng đúng hàng bánh/tráng + tương ớt/cà pháo hàng xóm', () => {
+    expect(RECIPES.some((r) => r.station === 'food_grill' && r.id === 'recipe_banh_trang_nuong')).toBe(true);
+    expect(RECIPES.some((r) => r.id === 'recipe_banh_trang_nuong' && r.inputs.some((i) => i.productId === 'hx_banh_trang'))).toBe(true);
+    expect(RECIPES.some((r) => r.id === 'recipe_banh_trang_nuong' && r.inputs.some((i) => i.productId === 'hx_tuong_ot'))).toBe(true);
+    expect(RECIPES.some((r) => r.station === 'food_grill' && r.id === 'recipe_banh_da_tron')).toBe(true);
+    expect(RECIPES.some((r) => r.id === 'recipe_banh_da_tron' && r.inputs.some((i) => i.productId === 'hx_banh_da'))).toBe(true);
+    expect(RECIPES.some((r) => r.id === 'recipe_banh_da_tron' && r.inputs.some((i) => i.productId === 'hx_ca_phao'))).toBe(true);
+  });
+});

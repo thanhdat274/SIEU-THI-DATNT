@@ -20,6 +20,8 @@ describe('GĐ1327 — supplyOutletOf: nơi mua nguyên liệu của món chuỗi
     recipe_che_vai: ['hx_vai_say', 'nhà hàng xóm'],
     recipe_xoi_mam_tep: ['hx_mam_tep', 'nhà hàng xóm'],
     recipe_mam_ruoc_chung_thit: ['hx_mam_ruoc', 'nhà hàng xóm'],
+    recipe_banh_trang_nuong: ['hx_banh_trang', 'nhà hàng xóm'],
+    recipe_banh_da_tron: ['hx_banh_da', 'nhà bà Tám'],
   };
   const SUPPLY_ING = new Set(Object.values(CHAIN).map(([ing]) => ing));
 
