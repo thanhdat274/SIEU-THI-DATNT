@@ -131,11 +131,13 @@ describe('kitchenValue — xếp hạng trạm (stationRank)', () => {
     expect(bestPerMinute('drink_counter', { owned: 1, level: 1 })).toBeNull();
   });
 
-  it('sugarcane_press chỉ có 1 món (nước mía) → lãi/phút chính xác ~7.166,67', () => {
+  it('sugarcane_press có 2 món (GĐ1359 thêm nước mía chanh) → nước mía vẫn #1 lãi/phút ~7.166,67', () => {
     const ranked = stationRank('sugarcane_press', { owned: 1, level: 99 });
-    expect(ranked).toHaveLength(1);
+    expect(ranked).toHaveLength(2);
     expect(ranked[0].recipe.id).toBe('recipe_nuoc_mia');
     expect(ranked[0].perMinute).toBeCloseTo(7166.67, 2);
+    expect(ranked[1].recipe.id).toBe('recipe_nuoc_mia_chanh');
+    expect(ranked[1].perMinute).toBeCloseTo(6875, 2); // (130k − 75k) / 8 phút
   });
 });
 

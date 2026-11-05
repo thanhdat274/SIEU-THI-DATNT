@@ -184,6 +184,9 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   // GĐ1358: Bánh mì jambon phô mai — bản bánh mì premium cuối-game, khép lối ra của jambon (`jambon` 61):
   // mẻ (jambon 90k + bánh mì 8k×5 + phô mai 25k + hành phi 3k) = 158k → 5 bánh × 55k = 275k, lãi 117k/mẻ.
   { id: 'banh_mi_jambon', name: 'Bánh mì jambon phô mai', category: 'fresh', buy: 30000, sell: 55000, color: 0xe88d8d, unlock: 62 },
+  // GĐ1359: Nước mía chanh — món hè giải nhiệt kinh điển, công thức thứ 2 của máy ép mía (trước chỉ có
+  // nước mía): mẻ (mía 12k×4 + chanh không hạt 10k + đường 17k) = 75k → 10 ly × 13k = 130k, lãi 55k/mẻ.
+  { id: 'nuoc_mia_chanh', name: 'Nước mía chanh', category: 'drink', buy: 6500, sell: 13000, color: 0xd4e157, unlock: 36 },
   // GĐ1345: Giỏ quà Giáng sinh — lễ tặng quà lớn duy nhất còn thiếu giỏ (Tết/8-3/20-11/Trung thu đã có):
   // mẻ (rượu vang 120k + bánh kẹo 5k×4 + trà 20k×2) = 180k → 2 giỏ × 140k = 280k, lãi 100k/mẻ.
   { id: 'gio_qua_giang_sinh', name: 'Giỏ quà Giáng sinh', category: 'dry', buy: 70000, sell: 140000, color: 0x228b22, unlock: 36 },
@@ -607,6 +610,12 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_nuoc_mia', name: 'Nước mía', station: 'sugarcane_press',
     inputs: [{ productId: 'mia', quantity: 4 }],
     outputId: 'nuoc_mia', outputQty: 10, durationMin: 6, unlock: 25, reputationGain: 1 },
+  // GĐ1359: Nước mía chanh — món hè giải nhiệt kinh điển: mía ép cùng chanh không hạt + đường ở máy ép mía:
+  // mẻ (mía 12k×4 + chanh 10k + đường 17k) = 75k → 10 ly × 13k = 130k, lãi 55k/mẻ, nấu hời hơn
+  // bán thẳng nguyên liệu (107k < 130k). Mở 36 ≥ mọi nguyên liệu (1/22/1) (> golden 30 → sim không đổi).
+  { id: 'recipe_nuoc_mia_chanh', name: 'Nước mía chanh', station: 'sugarcane_press',
+    inputs: [{ productId: 'mia', quantity: 4 }, { productId: 'x_chanh_khong_hat', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
+    outputId: 'nuoc_mia_chanh', outputQty: 10, durationMin: 8, unlock: 36, reputationGain: 2 },
 
   // --- Combo ---
   { id: 'combo_xoi_doi', name: 'Suất Xôi Đôi', station: 'rice_station',

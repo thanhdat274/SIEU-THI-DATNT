@@ -119,11 +119,14 @@ describe('farmVsCook', () => {
     expect(f.verdict).toBe('cook');
   });
 
-  it('mía: chỉ 1 món nước mía, verdict cook (lãi mỏng 4600)', () => {
+  it('mía: 2 món nước mía + nước mía chanh (GĐ1359), best là nước mía chanh (+16600), verdict cook', () => {
+    // GĐ1359: thêm Nước mía chanh (10 ly × 13k = 130k − chanh+đường 27k = 103k − sellLot 86.4k = +16.6k
+    // > nước mía +4.6k) → mía bõ nhất ở món mới (đúng ngữ nghĩa "nơi bõ nhất" — đổi CÓ CHỦ Ý theo nội dung mới).
     const f = farmVsCook('mia');
-    expect(f.recipes).toHaveLength(1);
-    expect(f.recipes[0].recipe.id).toBe('recipe_nuoc_mia');
-    expect(f.best!.homegrownNet).toBe(4600);
+    expect(f.recipes).toHaveLength(2);
+    expect(f.recipes.map((d) => d.recipe.id).sort()).toEqual(['recipe_nuoc_mia', 'recipe_nuoc_mia_chanh']);
+    expect(f.best!.recipe.id).toBe('recipe_nuoc_mia_chanh');
+    expect(f.best!.homegrownNet).toBe(16600);
     expect(f.verdict).toBe('cook');
   });
 
