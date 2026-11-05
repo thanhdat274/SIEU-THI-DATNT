@@ -2,7 +2,7 @@ import type * as React from 'react';
 import { useGame } from '../../core/store';
 import { formatMoney, fmtMul } from '../../data/products';
 import { QUAN_NUOC_HIRE_FEE, QUAN_NUOC_MAX_STAFF, QUAN_NUOC_PRICE, QUAN_NUOC_UNLOCK, QUAN_NUOC_WAGE, QUAN_PRICE_OPTIONS, QUAN_WEATHER_MUL, quanWeekendMul, quanMatchMul, isQuanMatchDay, type QuanNuocPrice } from '../../data/quanNuoc';
-import { quanNuocProjection, quanNuocCupSupply, quanNuocRestockTip, quanNuocBuildPayback } from '../../data/quanNuocInsights';
+import { quanNuocProjection, quanNuocCupSupply, quanNuocRestockTip, quanNuocBuildPayback, quanPricePayoff } from '../../data/quanNuocInsights';
 import { quanNuocStaffValues } from '../../data/quanNuocStaffValue';
 import { teahouseHaulRead } from '../../data/teahouseHaul';
 import { Callout, Footer, styles } from './shared';
@@ -40,6 +40,8 @@ export function QuanNuocPanel() {
   const drinkUnits = quanNuocCupSupply(quan, level, storage);
   const hireProj = quan.open && quan.staff < QUAN_NUOC_MAX_STAFF ? quanNuocProjection({ ...quan, staff: quan.staff + 1 }, level, drinkUnits, weather, day) : null;
   const tonightProj = quan.open ? quanNuocProjection(quan, level, drinkUnits, weather, day) : null;
+  // GĐ1268: lời ròng mỗi mức Giờ bán (cùng nhân viên/kho/thời tiết/ngày) — soi TRƯỚC khi chọn (THUẦN)
+  const pricePayoff = quan.open ? quanPricePayoff(quan, level, drinkUnits, weather, day) : null;
   // GĐ188: "người thứ N đáng đồng lương?" — chiều xuống (nên giữ bớt ai / sa thải ai). Thuần đọc.
   const staffValues = quan.open ? quanNuocStaffValues(quan.price, level, quan.staff, drinkUnits) : [];
   // GĐ190: thanh nạp kho — thiếu bao nhiêu ly để bán đủ tối nay + nút nhảy sang Nhập hàng.
@@ -161,6 +163,22 @@ export function QuanNuocPanel() {
                 );
               })}
             </div>
+            {quan.open && pricePayoff && (
+              <div style={{ fontSize: 11, marginTop: 6, opacity: 0.9, lineHeight: 1.5 }}>
+                <b style={{ marginRight: 4 }}>💡 Lời ròng tối nay từng mức:</b>
+                {PRICE_ORDER.map((id) => {
+                  const p = pricePayoff[id];
+                  const now = quan.price === id;
+                  const col = p.profit >= 0 ? '#2ecc71' : '#e74c3c';
+                  return (
+                    <span key={id} style={{ marginRight: 10, color: now ? '#f1c40f' : undefined }}>
+                      {QUAN_PRICE_OPTIONS[id].label} <b style={{ color: now ? '#f1c40f' : col }}>{formatMoney(p.profit)}</b>{now ? ' ✓' : ''}
+                    </span>
+                  );
+                })}
+                {pricePayoff.vua.served === 0 && <span style={{ opacity: 0.6 }}>· kho cạn đồ uống — nhập trước khi so</span>}
+              </div>
+            )}
           </div>
           {last && (
             <div style={{ ...styles.card, display: 'block', borderLeft: `3px solid ${(last.profit ?? last.revenue) < 0 ? '#e74c3c' : '#2ecc71'}` }}>

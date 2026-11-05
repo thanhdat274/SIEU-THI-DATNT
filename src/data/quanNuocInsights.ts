@@ -46,6 +46,23 @@ export function quanNuocProjection(q: QuanNuocState, level: number, drinkUnits: 
   return { customers, wanted, served, revenue, wages, profit: revenue - wages };
 }
 
+export type QuanPricePayoff = Record<QuanNuocPrice, { profit: number; served: number }>;
+
+/**
+ * GĐ1268 — so sánh TRƯỚC khi chọn mức Giờ bán (bình dân / vừa phải / đắt hơn): quay lại
+ * `quanNuocProjection` cho CẢ BA mức với cùng nhân viên + kho + thời tiết + ngày, để chủ thấy
+ * đúng mức nào lời hơn TỐI NAY (không phải đổi rồi đợi hết ngày mới biết — hộp đen, Nguyên tắc a).
+ * THUẦN — dùng đúng công thức kinh tế đã cân bằng, không chế số mới, không đổi state/save (Luật 5).
+ */
+export function quanPricePayoff(q: QuanNuocState, level: number, drinkUnits: number, weather?: Weather, day?: number): QuanPricePayoff {
+  const out = {} as QuanPricePayoff;
+  (['re', 'vua', 'cao'] as QuanNuocPrice[]).forEach((price) => {
+    const p = quanNuocProjection({ ...q, price }, level, drinkUnits, weather, day);
+    out[price] = { profit: p.profit, served: p.served };
+  });
+  return out;
+}
+
 export interface QuanNuocHealth {
   /** Tổng đơn vị đồ uống hiện trong kho (chung với kệ tiệm chính) — mồi cân kho. */
   drinkUnitsNow: number;
