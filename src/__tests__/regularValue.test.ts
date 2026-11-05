@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { REGULARS, emptyProgress, type RegularProgress } from '../data/regulars';
-import { regularSpendEstimate, regularValueLine, expectedFavoriteItems, nextPerkValue, weeklyContribution, weeklyTop, referValue, nextPerkTimeline, type WeeklyContribution } from '../data/regularValue';
+import { regularSpendEstimate, regularValueLine, expectedFavoriteItems, nextPerkValue, weeklyContribution, weeklyTop, referValue, nextPerkTimeline, regularCohortSummary, regularCohortLine, type WeeklyContribution, type RegularCohortSummary } from '../data/regularValue';
 import { productById } from '../data/products';
 
 /** Giá 1000đ mọi món — để cô lập công thức giỏ (không phụ thuộc dữ liệu giá thật). */
@@ -308,5 +308,89 @@ describe('GĐ1301 — nextPerkTimeline (mốc perk kế tiếp còn bao lâu)', 
     const prog: RegularProgress = { friendship: ba_nam.perks[0].threshold - 4, visits: 1, perks: [], discovered: [] };
     expect(nextPerkTimeline({ def: ba_nam, level: 30, priceOf: price1000, progress: prog }))
       .toEqual(nextPerkTimeline({ def: ba_nam, level: 30, priceOf: price1000, progress: prog }));
+  });
+});
+
+/**
+ * GĐ1302 — "CẢ LÔ khách quen đáng bao nhiêu / nên ưu tiên chăm ai?": gộp chuỗi 5 GĐ soi khách quen
+ * (giỏ+boa/lần 1289 · delta mốc perk 1293 · đóng góp/tuần 1295 · rủ thêm khách 1298 · tới mốc bao lâu 1301)
+ * thành MỘT bảng tổng (đ/tuần + ai gần mốc đáng chăm + ai rủ thêm khách). Helper THUẦN chỉ GỘP các helper
+ * THUẦN đã có — không bịa công thức/khách, không đổi kinh tế/save (Nguyên tắc c). KHÔNG import store.
+ */
+describe('GĐ1302 — regularCohortSummary (cả LÔ khách quen đáng bao nhiêu / nên chăm ai)', () => {
+  /** Khách có PERK KẾ TIẾP (đầu danh sách chưa mở) đổi giỏ/boa + món ưa mở ≤ 30 (như GĐ1293). */
+  function moneyPerkDef() {
+    return REGULARS.find((r) => {
+      const p = r.perks[0];
+      return p && ['extra_item', 'bulk_buy', 'bonus_tip'].includes(p.effect)
+        && r.favorites.some((id) => productById(id).unlock <= 30);
+    })!;
+  }
+  /** Khách có perk GIỚI THIỆU BẠN BÈ (refer_friend). */
+  function referDef() {
+    return REGULARS.find((r) => r.perks.some((p) => p.effect === 'refer_friend'))!;
+  }
+
+  it('không khách nào đủ món ưa (level 0) → summary toàn 0 (không ồn)', () => {
+    const def = moneyPerkDef();
+    const s = regularCohortSummary({ regulars: [def], level: 0, priceOf: price1000, progressOf: () => undefined, avgPerVisit: 1000 });
+    expect(s.ready).toBe(0);
+    expect(s.weeklyTotal).toBe(0);
+    expect(s.nearPerk).toBe(0);
+    expect(s.referring).toBe(0);
+  });
+
+  it('có khách đủ món ưa → ready 1 + weeklyTotal = ĐÚNG weeklyContribution.weekly (GĐ1295)', () => {
+    const def = moneyPerkDef();
+    const wc = weeklyContribution({ def, level: 30, priceOf: price1000, progress: emptyProgress() })!;
+    const s = regularCohortSummary({ regulars: [def], level: 30, priceOf: price1000, progressOf: () => emptyProgress(), avgPerVisit: 1000 });
+    expect(s.ready).toBe(1);
+    expect(s.weeklyTotal).toBe(wc.weekly);
+    expect(s.weeklyTotal).toBeGreaterThan(0);
+  });
+
+  it('khách GẦN mốc perk đổi giỏ/boa (toGo ≤ 4) → nearPerk 1 + nearPerkDelta = ĐÚNG deltaPerVisit (GĐ1301/1293)', () => {
+    const def = moneyPerkDef();
+    const prog: RegularProgress = { friendship: def.perks[0].threshold - 2, visits: 1, perks: [], discovered: [] };
+    const tl = nextPerkTimeline({ def, level: 30, priceOf: price1000, progress: prog })!;
+    expect(tl.toGo).toBe(2);
+    expect(tl.deltaPerVisit).not.toBeNull();
+    const s = regularCohortSummary({ regulars: [def], level: 30, priceOf: price1000, progressOf: () => prog, avgPerVisit: 1000 });
+    expect(s.nearPerk).toBe(1);
+    expect(s.nearPerkDelta).toBe(tl.deltaPerVisit!);
+  });
+
+  it('khách CÒN XA mốc (toGo > 4) → KHÔNG đếm nearPerk (không gợi ý ồn)', () => {
+    const def = moneyPerkDef();
+    const prog: RegularProgress = { friendship: 0, visits: 1, perks: [], discovered: [] };
+    const s = regularCohortSummary({ regulars: [def], level: 30, priceOf: price1000, progressOf: () => prog, avgPerVisit: 1000 });
+    expect(s.nearPerk).toBe(0);
+  });
+
+  it('khách có perk giới thiệu bạn bè + avgPerVisit > 0 → referring 1 + referCustomers = ĐÚNG referValue (GĐ1298)', () => {
+    const def = referDef();
+    const referPerk = def.perks.find((p) => p.effect === 'refer_friend')!;
+    const prog: RegularProgress = { friendship: 999, visits: 1, perks: [referPerk.title], discovered: [] };
+    const rf = referValue({ def, progress: prog, avgPerVisit: 1000 })!;
+    expect(rf).not.toBeNull();
+    const s = regularCohortSummary({ regulars: [def], level: 30, priceOf: price1000, progressOf: () => prog, avgPerVisit: 1000 });
+    expect(s.referring).toBe(1);
+    expect(s.referCustomers).toBe(rf.extraCustomersWeek);
+    expect(s.referCustomers).toBeGreaterThan(0);
+  });
+
+  it('regularCohortLine: rỗng khi chưa khách nào đủ món ưa; có số khi có tín hiệu', () => {
+    const def = moneyPerkDef();
+    expect(regularCohortLine(regularCohortSummary({ regulars: [def], level: 0, priceOf: price1000, progressOf: () => undefined, avgPerVisit: 1000 }))).toBe('');
+    const line = regularCohortLine(regularCohortSummary({ regulars: [def], level: 30, priceOf: price1000, progressOf: () => emptyProgress(), avgPerVisit: 1000 }));
+    expect(line).toContain('Khách quen');
+    expect(line).toContain('/tuần');
+  });
+
+  it('THUẦN: cùng đầu vào ⇒ cùng kết quả (deterministic)', () => {
+    const def = moneyPerkDef();
+    const a = regularCohortSummary({ regulars: [def], level: 30, priceOf: price1000, progressOf: () => emptyProgress(), avgPerVisit: 1000 });
+    const b = regularCohortSummary({ regulars: [def], level: 30, priceOf: price1000, progressOf: () => emptyProgress(), avgPerVisit: 1000 });
+    expect(a).toEqual(b);
   });
 });

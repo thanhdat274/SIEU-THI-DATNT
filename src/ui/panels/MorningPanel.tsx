@@ -29,7 +29,7 @@ import { HotGoodsCards } from './HotGoodsCards';
 import { LoanNoteCard, EveningPrepCallout, MorningNewsCard } from './MorningNotes';
 import { ExpectedRegularsList } from './ExpectedRegularsList';
 import { regularChurn } from '../../data/regularChurn';
-import { regularSpendEstimate, nextPerkValue, weeklyTop, referValue, nextPerkTimeline } from '../../data/regularValue';
+import { regularSpendEstimate, nextPerkValue, weeklyTop, referValue, nextPerkTimeline, regularCohortSummary, regularCohortLine } from '../../data/regularValue';
 import { TodayActionsCard } from './TodayActionsCard';
 import { MorningSubtitle } from './MorningSubtitle';
 import { eveningPrepFor, weakYesterdayCombos } from './morningCalc';
@@ -125,6 +125,11 @@ export function MorningPanel() {
     const def = REGULARS.find((x) => x.id === rid);
     return def ? referValue({ def, progress: regulars[rid] ?? undefined, avgPerVisit: avgPerVisit7 }) : null;
   };
+  // GĐ1302 — bảng tổng "giá trị khách quen": cả LÔ góp ~bao nhiêu/tuần, ai gần mốc perk (đáng chăm), ai rủ thêm khách
+  const cohortText = regularCohortLine(regularCohortSummary({
+    regulars: REGULARS, level, priceOf,
+    progressOf: (rid) => regulars[rid] ?? undefined, avgPerVisit: avgPerVisit7,
+  }));
   const fv = festivalValue({ day, level, customers: avgCust7, revenue: recentAvgRevenue(history, 7) });
   const fvDelta = fv && (
     <>
@@ -241,6 +246,9 @@ export function MorningPanel() {
         <div style={{ fontSize: 12, marginTop: 8, color: '#b8860b' }}>
           🏆 Khách vàng theo tuần (giỏ × tần ghé): {weeklyTopData.map((w) => `${w.regular.name} ~${formatMoney(w.weekly)}/tuần`).join(' · ')}
         </div>
+      )}
+      {cohortText && (
+        <div style={{ fontSize: 12, marginTop: 6, color: '#d2691e' }}>{cohortText}</div>
       )}
 
       {dueDebts.length > 0 && <DueDebtsCard dueDebts={dueDebts} day={day} />}

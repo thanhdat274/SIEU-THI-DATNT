@@ -250,5 +250,66 @@ export function nextPerkTimeline(opts: {
   };
 }
 
+// ───── GĐ1302 — "CẢ LÔ khách quen đáng bao nhiêu / nên ưu tiên chăm ai?" (tổng hợp thành 1 con số) ─────
+// 5 GĐ chuỗi trước (1289 giỏ+boa/lần · 1293 delta mốc perk · 1295 đóng góp/tuần · 1298 rủ thêm khách · 1301
+// bao lâu tới mốc) soi TỪNG khách quen — còn thiếu cái QUYẾT ĐỊNH Ở TẦM LÔ: cả đám khách quen góp ~bao nhiêu/
+// tuần, bao nhiêu người đang GẦN MỐC PERK (đáng chăm), bao nhiêu người đang RỦ THÊM khách. Helper THUẦN chỉ
+// GỘP các helper THUẦN đã có (weeklyContribution 1295 · nextPerkTimeline 1301 · referValue 1298) — không bịa
+// thêm công thức/khách, không đổi kinh tế/save (Nguyên tắc c). Không import store (co-op an toàn).
+
+export interface RegularCohortSummary {
+  /** Số khách quen đủ món ưa (có ước tính đóng góp/tuần). */
+  ready: number;
+  /** Tổng đóng góp ~của cả lô mỗi tuần (đ) = Σ weeklyContribution.weekly (GĐ1295). */
+  weeklyTotal: number;
+  /** Số khách GẦN mốc perk kế tiếp (toGo ≤ 4) + mốc đó tăng tiền/lần (đáng chăm). */
+  nearPerk: number;
+  /** Tổng delta/lần nếu mở các mốc gần đó (đ) = Σ nextPerkTimeline.deltaPerVisit (GĐ1301/1293). */
+  nearPerkDelta: number;
+  /** Số khách đang có perk giới thiệu bạn bè + doanh thu > 0. */
+  referring: number;
+  /** Khách lẻ cả lô rủ thêm mỗi tuần (~) = Σ referValue.extraCustomersWeek (GĐ1298). */
+  referCustomers: number;
+}
+
+/** Gộp cả lô khách quen thành 1 tranh tổng quan (đ/tuần + cơ hội gần mốc + rủ thêm). THUẦN — tái dùng helper đã có. */
+export function regularCohortSummary(opts: {
+  regulars: RegularDef[];
+  level: number;
+  priceOf: (id: string) => number;
+  progressOf: (rid: string) => RegularProgress | undefined;
+  avgPerVisit: number;
+}): RegularCohortSummary {
+  const s: RegularCohortSummary = { ready: 0, weeklyTotal: 0, nearPerk: 0, nearPerkDelta: 0, referring: 0, referCustomers: 0 };
+  for (const def of opts.regulars) {
+    const progress = opts.progressOf(def.id);
+    const wc = weeklyContribution({ def, level: opts.level, priceOf: opts.priceOf, progress });
+    if (wc) {
+      s.ready += 1;
+      s.weeklyTotal += wc.weekly;
+    }
+    const tl = nextPerkTimeline({ def, level: opts.level, priceOf: opts.priceOf, progress });
+    if (tl && tl.deltaPerVisit != null && tl.deltaPerVisit > 0 && tl.toGo <= 4) {
+      s.nearPerk += 1;
+      s.nearPerkDelta += tl.deltaPerVisit;
+    }
+    const rf = referValue({ def, progress, avgPerVisit: opts.avgPerVisit });
+    if (rf) {
+      s.referring += 1;
+      s.referCustomers += rf.extraCustomersWeek;
+    }
+  }
+  return s;
+}
+
+/** Dòng tổng quan (bảng "giá trị khách quen") — rỗng nếu không có tín hiệu (không ồn). */
+export function regularCohortLine(s: RegularCohortSummary): string {
+  if (!s.ready || s.weeklyTotal <= 0) return '';
+  const parts = [`~${formatMoney(s.weeklyTotal)}/tuần`];
+  if (s.referCustomers > 0) parts.push(`${s.referring} rủ ~${Math.round(s.referCustomers * 10) / 10} khách/tuần`);
+  if (s.nearPerk > 0) parts.push(`${s.nearPerk} gần mốc perk (+~${formatMoney(s.nearPerkDelta)}/lần)`);
+  return `🧮 Khách quen: ${parts.join(' · ')}`;
+}
+
 
 
