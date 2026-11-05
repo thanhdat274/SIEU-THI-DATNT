@@ -166,3 +166,42 @@ describe('GĐ1335 — thêm công thức biểu tượng còn thiếu (phở bò
     expect(RECIPES.some((r) => r.id === 'recipe_pho_bo' && r.inputs.some((i) => i.productId === 'thit'))).toBe(true);
   });
 });
+
+/**
+ * GĐ1336 — "Thêm sản phẩm/công thức mới": Bánh mì thịt nướng — biểu tượng bánh mì Sài Gòn: `banhmi` (unlock 38)
+ * vốn chỉ có bản trứng, chưa có bản THỊT; nướng ở bếp nướng với thịt heo + hành phi. Cùng bất biến GĐ1321/1332-1335.
+ */
+const NEW_IDS_1336 = ['recipe_banh_mi_thit'] as const;
+
+describe('GĐ1336 — thêm công thức biểu tượng còn thiếu (bánh mì thịt nướng, bếp nướng)', () => {
+  for (const rid of NEW_IDS_1336) {
+    const recipe = RECIPE_MAP[rid];
+    it(`${recipe.name}: có trong RECIPES và COOKED_PRODUCTS`, () => {
+      expect(recipe).toBeDefined();
+      expect(recipe.id).toBe(rid);
+    });
+
+    it(`${recipe.name}: mở sau mốc golden sim 30 → economySim mốc không đổi`, () => {
+      expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+    });
+
+    it(`${recipe.name}: mẻ lãi dương TÍNH TỪ GIÁ THẬT (không bịa con số)`, () => {
+      const cost = recipe.inputs.reduce((s, inp) => s + inp.quantity * productById(inp.productId).buy, 0);
+      const value = recipe.outputQty * productById(recipe.outputId).sell;
+      expect(value).toBeGreaterThan(cost);
+      const raw = recipe.inputs.reduce((s, inp) => s + inp.quantity * productById(inp.productId).sell, 0);
+      expect(value).toBeGreaterThan(raw);
+    });
+
+    it(`${recipe.name}: outputId khớp COOKED_PRODUCTS và không trùng`, () => {
+      expect(COOKED_PRODUCTS.some((c) => c.id === recipe.outputId)).toBe(true);
+      expect(RECIPES.filter((r) => r.outputId === recipe.outputId).length).toBe(1);
+    });
+  }
+
+  it('bánh mì thịt nướng hiện diện ở bếp nướng và dùng bánh mì + thịt heo + hành phi', () => {
+    expect(RECIPES.some((r) => r.station === 'food_grill' && r.id === 'recipe_banh_mi_thit')).toBe(true);
+    expect(RECIPES.some((r) => r.id === 'recipe_banh_mi_thit' && r.inputs.some((i) => i.productId === 'banhmi'))).toBe(true);
+    expect(RECIPES.some((r) => r.id === 'recipe_banh_mi_thit' && r.inputs.some((i) => i.productId === 'x_thit_heo'))).toBe(true);
+  });
+});

@@ -123,6 +123,9 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   // GĐ1335: Phở bò — món QUỐC HỘI ẩm thực VN trước nay chỉ có phở gói bán sẵn, chưa có lối ra nấu (bỏ trống
   // trạm ấm nước). Mẻ (phở gói 8k + thịt 60k + hành phi 3k) = 71k → 10 tô × 15k = 150k, lãi 79k/mẻ.
   { id: 'pho_bo', name: 'Phở bò', category: 'fresh', buy: 7500, sell: 15000, color: 0xd9b382, unlock: 36 },
+  // GĐ1336: Bánh mì thịt nướng — biểu tượng bánh mì Sài Gòn: `banhmi` (unlock 38) vốn chỉ có bản trứng, chưa có
+  // bản thịt nướng ở bếp nướng. Mẻ (bánh mì 8k×5 + thịt heo 30k + hành phi 3k) = 73k → 5 bánh × 25k = 125k, lãi 52k/mẻ.
+  { id: 'banh_mi_thit', name: 'Bánh mì thịt nướng', category: 'fresh', buy: 13000, sell: 25000, color: 0xb05c2a, unlock: 38 },
 
   // --- Nồi hấp (steamer) ---
   { id: 'banh_bao_hap', name: 'Bánh bao hấp nóng', category: 'fresh', buy: 4500, sell: 8600, color: 0xf5f6fa, unlock: 39 },
@@ -195,6 +198,12 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_banh_mi_trung', name: 'Bánh mì trứng nướng', station: 'food_grill',
     inputs: [{ productId: 'banhmi', quantity: 5 }, { productId: 'trung', quantity: 1 }],
     outputId: 'banh_mi_trung_nuong', outputQty: 5, durationMin: 15, unlock: 38, reputationGain: 2 },
+  // GĐ1336: Bánh mì thịt nướng — biểu tượng bánh mì Sài Gòn: `banhmi` vốn chỉ có bản trứng, bản THỊT nướng
+  // ở bếp nướng: mẻ (bánh mì 8k×5 + thịt heo 30k + hành phi 1.5k×2=3k) = 73k → 5 bánh × 25k = 125k, lãi 52k/mẻ,
+  // nấu hời hơn bán thẳng nguyên liệu (118k < 125k). Mở 38 = đúng cấp bánh mì (> golden 30 → sim không đổi).
+  { id: 'recipe_banh_mi_thit', name: 'Bánh mì thịt nướng', station: 'food_grill',
+    inputs: [{ productId: 'banhmi', quantity: 5 }, { productId: 'x_thit_heo', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 2 }],
+    outputId: 'banh_mi_thit', outputQty: 5, durationMin: 15, unlock: 38, reputationGain: 2 },
   { id: 'recipe_xuc_xich', name: 'Xúc xích nướng', station: 'food_grill',
     inputs: [{ productId: 'xucxich', quantity: 2 }],
     outputId: 'xuc_xich_nuong', outputQty: 10, durationMin: 12, unlock: 22, reputationGain: 1 },
