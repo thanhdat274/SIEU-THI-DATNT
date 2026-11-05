@@ -73,7 +73,9 @@ export const FESTIVALS: Festival[] = [
   { id: 'nha_giao', icon: '🌸', name: 'Nhà giáo Việt Nam 20/11', blurb: 'Học sinh mua bánh, trái cây, mỹ phẩm tặng cô; chợ hoa rực rỡ.', from: md(11, 19), to: md(11, 21), traffic: 1.15, goods: ['gio_qua_2011'], hot: ['mypham', 'banh', 'traicay', 'sua', 'tra', 'vo', 'gio_qua_2011'], cost: 1.02 },
   { id: 'hoi_banh', icon: '🧁', name: 'Hội thi làm bánh', blurb: 'Cả xóm thi làm bánh: sữa, trứng, đường hút hàng.', from: md(12, 3), to: md(12, 4), traffic: 1.1, hot: ['sua', 'trung', 'x_duong', 'sua_tuoi'], cost: 1, host: 'co_thao_quen' },
   { id: 'sale_cuoi_nam', icon: '🛒', name: 'Sale cuối năm', blurb: 'Các mối xả hàng trước Tết nên nhập rẻ, cả xóm tranh thủ sắm sớm.', from: md(12, 10), to: md(12, 15), traffic: 1.3, hot: ['mi', 'nuoc', 'banh', 'ngot', 'sua', 'giay', 'xaphong', 'botgiat'], cost: 0.93, pull: 0.3, tolerance: 0.85 },
-  { id: 'giang_sinh', icon: '🎄', name: 'Giáng sinh', blurb: 'Phố đông người đi chơi, bánh kẹo và bia lên ngôi.', from: md(12, 23), to: md(12, 26), traffic: 1.2, hot: ['banh', 'bia', 'ngot'], cost: 1 },
+  // GĐ1345: thêm Giỏ quà Giáng sinh vào goods + hot của dịp (đổi lịch lễ CÓ CHỦ Ý theo giỏ mới —
+  // khớp bất biến communityIntegrity: món lễ phải bán được đúng mùa như 4 giỏ Tết/8-3/20-11/Trung thu).
+  { id: 'giang_sinh', icon: '🎄', name: 'Giáng sinh', blurb: 'Phố đông người đi chơi, bánh kẹo và bia lên ngôi.', from: md(12, 23), to: md(12, 26), traffic: 1.2, goods: ['gio_qua_giang_sinh'], hot: ['banh', 'bia', 'ngot', 'gio_qua_giang_sinh'], cost: 1 },
 ];
 
 /** Mọi món chỉ bán theo dịp (bánh chưng, lồng đèn...). */

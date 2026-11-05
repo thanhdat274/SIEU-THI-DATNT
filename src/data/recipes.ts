@@ -157,6 +157,9 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   // (hx_dua_muoi 14 — nguồn cung còn 0 lối ra): mẻ (thịt heo 30k + dưa muối 7k + hành phi 3k) = 40k
   // → 8 phần × 15k = 120k, lãi 80k/mẻ.
   { id: 'thit_kho_dua', name: 'Thịt kho dưa', category: 'fresh', buy: 7500, sell: 15000, color: 0x7a5230, unlock: 36 },
+  // GĐ1345: Giỏ quà Giáng sinh — lễ tặng quà lớn duy nhất còn thiếu giỏ (Tết/8-3/20-11/Trung thu đã có):
+  // mẻ (rượu vang 120k + bánh kẹo 5k×4 + trà 20k×2) = 180k → 2 giỏ × 140k = 280k, lãi 100k/mẻ.
+  { id: 'gio_qua_giang_sinh', name: 'Giỏ quà Giáng sinh', category: 'dry', buy: 70000, sell: 140000, color: 0x228b22, unlock: 36 },
 
   // --- Nồi hấp (steamer) ---
   { id: 'banh_bao_hap', name: 'Bánh bao hấp nóng', category: 'fresh', buy: 4500, sell: 8600, color: 0xf5f6fa, unlock: 39 },
@@ -542,6 +545,13 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_gio_trung_thu', name: 'Giỏ quà Trung thu', station: 'gift_wrap',
     inputs: [{ productId: 'x_banh_trung_thu', quantity: 4 }, { productId: 'tra', quantity: 2 }],
     outputId: 'gio_qua_trung_thu', outputQty: 2, durationMin: 10, unlock: 30, reputationGain: 3, festival: 'trung_thu' },
+  // GĐ1345: Giỏ quà Giáng sinh — lễ tặng quà lớn duy nhất còn thiếu giỏ: giỏ premium đầu tiên có rượu vang
+  // (ruou 35) + bánh kẹo + trà, gói trong đúng dịp giang_sinh: mẻ (rượu 120k + bánh 5k×4 + trà 20k×2) = 180k
+  // → 2 giỏ × 140k = 280k, lãi 100k/mẻ, gói hời hơn bán thẳng nguyên liệu (262k < 280k).
+  // Mở 36 ≥ mọi nguyên liệu (1/1/35) (> golden 30 → sim không đổi; ngoài dịp lễ không gói được như các giỏ khác).
+  { id: 'recipe_gio_giang_sinh', name: 'Giỏ quà Giáng sinh', station: 'gift_wrap',
+    inputs: [{ productId: 'ruou', quantity: 1 }, { productId: 'banh', quantity: 4 }, { productId: 'tra', quantity: 2 }],
+    outputId: 'gio_qua_giang_sinh', outputQty: 2, durationMin: 12, unlock: 36, reputationGain: 3, festival: 'giang_sinh' },
 ];
 
 // ──────────────────────────────────────────────
