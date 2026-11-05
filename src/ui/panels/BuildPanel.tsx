@@ -4,6 +4,9 @@ import { FLOOR_COLORS, PAINT_PRICE, ROOF_COLORS, SHOP_TIERS, WALL_COLORS, rentDe
 import { FURNITURE } from '../../data/furniture';
 import { departmentsUnlockedAtTier } from '../../data/departments';
 import { bigBasketInsight, BIG_BASKET_TIER } from '../../data/bigBasket';
+import { meatCounterPayoff, meatChainCooled } from '../../data/meatCounterPayoff';
+import { isMeat } from '../../data/meat';
+import { nearestLife, shelfLife } from '../../data/freshness';
 import { formatMoney } from '../../data/products';
 import { newUnlockMark, shelfBuyHint, storeMissRevenue } from '../../data/advice';
 import { Callout, Footer, Swatch, styles, Tabs } from './shared';
@@ -31,10 +34,22 @@ export function BuildPanel() {
 }
 
 export function FurnitureTab() {
-  const { level, money, furniture, storage, stats, setPlacing, demolishAll } = useGame();
+  const { level, money, furniture, storage, stats, weather, setPlacing, demolishAll } = useGame();
   // GĐ1251: soi quyết định MUA KỆ bằng số liệu bỏ lỡ hôm nay (storeMissRevenue GĐ131) —
   // trước giờ dữ liệu này chỉ hiện ở Kho/Báo cáo, còn nơi mua kệ lại chỉ chìa giá.
   const hint = shelfBuyHint(storeMissRevenue(stats?.missLog, storage));
+  // GĐ-C: chuỗi lạnh ngành "Khu thịt cá" — thịt/cá ĐANG để ẤM sẽ hỏng đêm nay, soi để chủ dọn sang chỗ mát.
+  const coldLine = (() => {
+    const lots = furniture.flatMap((f) =>
+      (f.tiers ?? []).flatMap((t) =>
+        t.productId && t.count > 0 && isMeat(t.productId)
+          ? [{ productId: t.productId, qty: t.count, life: nearestLife(t.lots) ?? shelfLife(t.productId), place: meatChainCooled(f.type) ? ('chilled' as const) : ('warm' as const) }]
+          : [],
+      ),
+    );
+    if (!lots.length) return null;
+    return meatCounterPayoff(lots, weather, furniture.some((f) => f.type === 'meat_counter')).line;
+  })();
   return (
     <>
       <p style={styles.sub}>
@@ -44,6 +59,11 @@ export function FurnitureTab() {
         <Callout tone={hint.kind === 'shelf' ? 'ok' : 'info'} style={{ marginBottom: 8 }}
           title={hint.kind === 'shelf' ? '💡 Mua thêm kệ hôm nay đáng' : '💡 Mua thêm kệ hôm nay chưa giúp'}>
           <div style={{ marginTop: 2, fontSize: 12 }}>{hint.line}</div>
+        </Callout>
+      )}
+      {coldLine && (
+        <Callout tone="warn" style={{ marginBottom: 8 }} title="🥩 Chuỗi lạnh Khu thịt cá">
+          <div style={{ marginTop: 2, fontSize: 12 }}>{coldLine}</div>
         </Callout>
       )}
       <div style={{ display: 'grid', gap: 8 }}>
