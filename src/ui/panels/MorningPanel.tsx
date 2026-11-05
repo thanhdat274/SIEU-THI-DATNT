@@ -29,7 +29,7 @@ import { HotGoodsCards } from './HotGoodsCards';
 import { LoanNoteCard, EveningPrepCallout, MorningNewsCard } from './MorningNotes';
 import { ExpectedRegularsList } from './ExpectedRegularsList';
 import { regularChurn } from '../../data/regularChurn';
-import { regularSpendEstimate, nextPerkValue, weeklyTop, referValue } from '../../data/regularValue';
+import { regularSpendEstimate, nextPerkValue, weeklyTop, referValue, nextPerkTimeline } from '../../data/regularValue';
 import { TodayActionsCard } from './TodayActionsCard';
 import { MorningSubtitle } from './MorningSubtitle';
 import { eveningPrepFor, weakYesterdayCombos } from './morningCalc';
@@ -101,6 +101,11 @@ export function MorningPanel() {
   const nextPerkValueOf = (rid: string) => {
     const def = REGULARS.find((x) => x.id === rid);
     return def ? nextPerkValue({ def, level, priceOf, progress: regulars[rid] ?? undefined }) : null;
+  };
+  // GĐ1301 — mốc perk kế tiếp còn bao lâu (tuần): +2 thân thiết/lần ghé mua món ưa × tần suất
+  const nextPerkTimelineOf = (rid: string) => {
+    const def = REGULARS.find((x) => x.id === rid);
+    return def ? nextPerkTimeline({ def, level, priceOf, progress: regulars[rid] ?? undefined }) : null;
   };
   // GĐ1295 — ai là khách vàng THẬT theo tuần: giỏ+boa/lần (GĐ1289) × tần suất ghé (visitsToday) → đóng góp/tuần
   const weeklyTopData = weeklyTop({
@@ -230,7 +235,7 @@ export function MorningPanel() {
       <HotGoodsCards eventHot={effects.hot} weekHot={hot} haveStock={haveStock} />
       {soon && <FestivalSoonCard soon={soon} level={level} storage={storage} fv={fv} fvDelta={fvDelta} />}
 
-      <ExpectedRegularsList expected={expected} regulars={regulars} reservations={reservations} favsOf={favsOf} haveStock={haveStock} churn={regularChurnData} value={regularValueOf} nextPerk={nextPerkValueOf} refer={referValueOf} />
+      <ExpectedRegularsList expected={expected} regulars={regulars} reservations={reservations} favsOf={favsOf} haveStock={haveStock} churn={regularChurnData} value={regularValueOf} nextPerk={nextPerkValueOf} refer={referValueOf} timeline={nextPerkTimelineOf} />
 
       {weeklyTopData && (
         <div style={{ fontSize: 12, marginTop: 8, color: '#b8860b' }}>

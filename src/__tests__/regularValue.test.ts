@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { REGULARS, emptyProgress, type RegularProgress } from '../data/regulars';
-import { regularSpendEstimate, regularValueLine, expectedFavoriteItems, nextPerkValue, weeklyContribution, weeklyTop, referValue, type WeeklyContribution } from '../data/regularValue';
+import { regularSpendEstimate, regularValueLine, expectedFavoriteItems, nextPerkValue, weeklyContribution, weeklyTop, referValue, nextPerkTimeline, type WeeklyContribution } from '../data/regularValue';
 import { productById } from '../data/products';
 
 /** Giá 1000đ mọi món — để cô lập công thức giỏ (không phụ thuộc dữ liệu giá thật). */
@@ -256,5 +256,57 @@ describe('GĐ1298 — referValue (perk giới thiệu bạn bè: khách + tiền
     const fPerk = def.perks.find((p) => p.effect === 'refer_friend')!;
     const prog: RegularProgress = { friendship: 999, visits: 1, perks: [fPerk.title], discovered: [] };
     expect(referValue({ def, progress: prog, avgPerVisit: 20000 })).toEqual(referValue({ def, progress: prog, avgPerVisit: 20000 }));
+  });
+});
+
+/**
+ * GĐ1301 — "mốc perk kế tiếp còn bao lâu?": toGo thân thiết → visitsToPerk (regularCheckout +2/lần ghé mua món ưa,
+ * regulars.ts:161) → tuần (visits/weeklyVisits GĐ1295); delta/lần = GĐ1293. THUẦN — chỉ nhân số có sẵn, không bịa;
+ * không import store, không đổi kinh tế/save/seed.
+ */
+describe('GĐ1301 — nextPerkTimeline (mốc perk kế tiếp còn bao lâu)', () => {
+  const ba_nam = REGULARS.find((r) => r.id === 'ba_nam')!;
+
+  it('đã mở hết perk → null (hết mốc, không ồn)', () => {
+    const prog: RegularProgress = { friendship: 999, visits: 1, perks: ba_nam.perks.map((p) => p.title), discovered: [] };
+    expect(nextPerkTimeline({ def: ba_nam, level: 30, priceOf: price1000, progress: prog })).toBeNull();
+  });
+
+  it('toGo thân thiết → visitsToPerk = ceil(toGo/2) (mua đủ món ưa +2/lần ghé)', () => {
+    const prog: RegularProgress = { friendship: ba_nam.perks[0].threshold - 3, visits: 1, perks: [], discovered: [] };
+    const t = nextPerkTimeline({ def: ba_nam, level: 30, priceOf: price1000, progress: prog })!;
+    expect(t.toGo).toBe(3);
+    expect(t.pointsPerVisit).toBe(2);
+    expect(t.visitsToPerk).toBe(2); // ceil(3/2) = 2
+  });
+
+  it('weeksToPerk = visitsToPerk / weeklyVisits (~2,4 lần/tuần khi chưa frequent)', () => {
+    const prog: RegularProgress = { friendship: ba_nam.perks[0].threshold - 5, visits: 1, perks: [], discovered: [] };
+    const t = nextPerkTimeline({ def: ba_nam, level: 30, priceOf: price1000, progress: prog })!;
+    expect(t.weeklyVisits).toBe(2.4);
+    expect(t.visitsToPerk).toBe(3); // ceil(5/2)=3
+    expect(t.weeksToPerk).toBe(Math.round((3 / 2.4) * 10) / 10); // 1.25 → 1.3
+  });
+
+  it('đã đủ mốc (toGo = 0) → 0 lượt ghé nữa (perk tự mở khi chạm mốc)', () => {
+    const prog: RegularProgress = { friendship: ba_nam.perks[0].threshold, visits: 1, perks: [], discovered: [] };
+    const t = nextPerkTimeline({ def: ba_nam, level: 30, priceOf: price1000, progress: prog })!;
+    expect(t.toGo).toBe(0);
+    expect(t.visitsToPerk).toBe(0);
+  });
+
+  it('deltaPerVisit khớp ĐÚNG nextPerkValue (GĐ1293) khi perk đổi giỏ/boa; null khi không đổi', () => {
+    const moneyDef = REGULARS.find((r) => ['extra_item', 'bulk_buy', 'bonus_tip'].includes(r.perks[0].effect))!;
+    const prog: RegularProgress = { friendship: moneyDef.perks[0].threshold - 1, visits: 1, perks: [], discovered: [] };
+    const t = nextPerkTimeline({ def: moneyDef, level: 30, priceOf: price1000, progress: prog })!;
+    const nv = nextPerkValue({ def: moneyDef, level: 30, priceOf: price1000, progress: prog })!;
+    expect(t.deltaPerVisit).not.toBeNull();
+    expect(t.deltaPerVisit).toBe(nv.delta);
+  });
+
+  it('THUẦN: cùng đầu vào ⇒ cùng kết quả (deterministic)', () => {
+    const prog: RegularProgress = { friendship: ba_nam.perks[0].threshold - 4, visits: 1, perks: [], discovered: [] };
+    expect(nextPerkTimeline({ def: ba_nam, level: 30, priceOf: price1000, progress: prog }))
+      .toEqual(nextPerkTimeline({ def: ba_nam, level: 30, priceOf: price1000, progress: prog }));
   });
 });

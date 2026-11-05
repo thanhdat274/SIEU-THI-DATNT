@@ -128,6 +128,12 @@ const REGULAR_VISIT_CHANCE = 0.35; // regulars.ts visitsToday — xác suất gh
 const FREQUENT_VISIT_BONUS = 0.2; // +0.2 khi có perk ghé thường xuyên (tựa frequent_visit)
 const DAYS_PER_WEEK = 7;
 
+/** Xác suất ghé HÔM NAY của khách quen (ĐÚNG visitsToday regulars.ts:137) — +0.2 khi có ghé thường xuyên. */
+function regularVisitChance(def: RegularDef, progress: RegularProgress | undefined): number {
+  const frequentNow = perkValue(def, progress, 'frequent_visit') > 0;
+  return REGULAR_VISIT_CHANCE + (frequentNow ? FREQUENT_VISIT_BONUS : 0);
+}
+
 /** Đóng góp/tuần (giỏ+boa × tần ghé) của MỘT khách quen; null khi chưa mở món ưa (không ồn). */
 export function weeklyContribution(opts: {
   def: RegularDef;
@@ -137,8 +143,7 @@ export function weeklyContribution(opts: {
 }): WeeklyContribution | null {
   const per = regularSpendEstimate(opts);
   if (!per) return null;
-  const frequentNow = perkValue(opts.def, opts.progress, 'frequent_visit') > 0;
-  const visitChance = REGULAR_VISIT_CHANCE + (frequentNow ? FREQUENT_VISIT_BONUS : 0);
+  const visitChance = regularVisitChance(opts.def, opts.progress);
   const weeklyVisits = Math.round(DAYS_PER_WEEK * visitChance * 10) / 10;
   const weekly = Math.round(per.total * weeklyVisits);
   return { regular: opts.def, perVisit: per.total, visitChance, weeklyVisits, weekly };
@@ -190,12 +195,60 @@ export function referValue(opts: {
 }): ReferValue | null {
   const friends = perkValue(opts.def, opts.progress, 'refer_friend');
   if (friends <= 0 || opts.avgPerVisit <= 0) return null;
-  const frequentNow = perkValue(opts.def, opts.progress, 'frequent_visit') > 0;
-  const visitChance = REGULAR_VISIT_CHANCE + (frequentNow ? FREQUENT_VISIT_BONUS : 0);
+  const visitChance = regularVisitChance(opts.def, opts.progress);
   const days = opts.daysPerWeek ?? DAYS_PER_WEEK;
   const extraCustomersWeek = Math.round(friends * visitChance * days * 10) / 10;
   const extraRevenueWeek = Math.round(extraCustomersWeek * opts.avgPerVisit);
   return { regular: opts.def, friends, visitChance, extraCustomersWeek, extraRevenueWeek };
 }
+
+// ───── GĐ1301 — "Mốc perk kế tiếp còn BAO LÂU?" (toGo thân thiết → ~lượt ghé → ~tuần, kèm delta/lần) ─────
+// GĐ1293 biết mở mốc perk kế tiếp tăng bao nhiêu/lần (+delta) và còn toGo thân thiết — nhưng chủ chưa biết việc
+// đó TỐN bao nhiêu LƯỢT GHÉ / bao lâu để quyết có đáng chăm tiếp (hộp đen, Nguyên tắc a). Helper THUẦN: điểm
+// thân thiết/lần ghé dùng ĐÚNG `regularCheckout` (regulars.ts:161: mua món ưa +2/ngày, chưa món ưa +1) → lấy
+// trường hợp chủ chăm (= +2, mua đủ món ưa) làm cận dưới số lần ghé → visitsToPerk = ceil(toGo/2); tuần ≈
+// visitsToPerk / weeklyVisits (weeklyVisits từ visitChance × 7, GĐ1295); delta/lần lấy ĐÚNG GĐ1293 (null nếu
+// perk không đổi giỏ/boa). ƯỚC TÍNH ~, không bịa (Nguyên tắc c). Không import store (co-op an toàn).
+
+export interface NextPerkTimeline {
+  perk: RegularPerk;
+  /** Thân thiết còn thiếu tới mốc. */
+  toGo: number;
+  /** Điểm/lần ghé khi chủ chăm (mua đủ món ưa) — ĐÚNG regularCheckout +2. */
+  pointsPerVisit: number;
+  /** Số lượt ghé cần (cận dưới) để chạm mốc. */
+  visitsToPerk: number;
+  /** Kỳ vọng lượt ghé/tuần (~). */
+  weeklyVisits: number;
+  /** Ước số TUẦN tới mốc (visitsToPerk / weeklyVisits). */
+  weeksToPerk: number;
+  /** Mức tăng mỗi lần ghé khi mở mốc (GĐ1293); null nếu perk không đổi giỏ/boa. */
+  deltaPerVisit: number | null;
+}
+
+const POINTS_PER_VISIT_FAVORITE = 2; // regulars.ts:161 regularCheckout — mua món ưa +2 thân thiết/ngày
+
+/** Thời gian + lợi ích của việc nâng thân thiết tới mốc perk KẾ TIẾP; null khi hết perk chưa mở. */
+export function nextPerkTimeline(opts: {
+  def: RegularDef;
+  level: number;
+  priceOf: (id: string) => number;
+  progress?: RegularProgress;
+}): NextPerkTimeline | null {
+  const { def, progress } = opts;
+  const next = nextPerk(def, progress);
+  if (!next) return null;
+  const toGo = Math.max(0, next.threshold - (progress?.friendship ?? 0));
+  const visitsToPerk = Math.max(0, Math.ceil(toGo / POINTS_PER_VISIT_FAVORITE));
+  const visitChance = regularVisitChance(def, progress);
+  const weeklyVisits = Math.round(DAYS_PER_WEEK * visitChance * 10) / 10;
+  const weeksToPerk = weeklyVisits > 0 ? Math.round((visitsToPerk / weeklyVisits) * 10) / 10 : 0;
+  const nv = nextPerkValue(opts);
+  return {
+    perk: next, toGo, pointsPerVisit: POINTS_PER_VISIT_FAVORITE, visitsToPerk, weeklyVisits, weeksToPerk,
+    deltaPerVisit: nv?.delta ?? null,
+  };
+}
+
 
 
