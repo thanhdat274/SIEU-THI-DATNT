@@ -10,3 +10,4 @@ scan_tmp.cjs
 coverage/
 *.tsbuildinfo
 bash.exe.stackdump
+yarn-error.log
