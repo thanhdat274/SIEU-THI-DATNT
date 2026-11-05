@@ -1,12 +1,15 @@
 import { formatClock, type GameState } from '../../core/store';
 import { productById } from '../../data/products';
 import type { RegularDef } from '../../data/regulars';
+import type { RegularHurt } from '../../data/regularChurn';
 import { Swatch, styles } from './shared';
 
 /** GĐ941: tách khỏi MorningPanel (nguyên văn danh sách khách quen dự kiến ghé hôm nay). */
-export function ExpectedRegularsList({ expected, regulars, reservations, favsOf, haveStock }: {
+export function ExpectedRegularsList({ expected, regulars, reservations, favsOf, haveStock, churn }: {
   expected: RegularDef[]; regulars: GameState['regulars']; reservations: GameState['reservations'];
   favsOf: (rid: string) => string[]; haveStock: (id: string) => boolean;
+  /** GĐ1285 — khách quen nào đang bị phụ món ưa (missLog/reviews); không có thì bỏ qua. */
+  churn?: RegularHurt[];
 }) {
   return (
     <>
@@ -28,6 +31,15 @@ export function ExpectedRegularsList({ expected, regulars, reservations, favsOf,
                   ? favs.map((id) => `${prog?.discovered.includes(id) || res?.productId === id ? productById(id).name : '???'}${haveStock(id) ? ' ✓' : ' ⚠️'}`).join(', ')
                   : 'chưa biết'}
               </div>
+              {(() => {
+                const cb = churn?.find((h) => h.regular.id === r.id);
+                if (!cb) return null;
+                return (
+                  <div style={{ fontSize: 11, marginTop: 3, color: '#e74c3c' }}>
+                    💔 {cb.hitFavorites.slice(0, 2).map((h) => `${productById(h.productId)?.name ?? h.productId} (${h.count})`).join(', ')} bị hụt — kẻo khách quen này bỏ.
+                  </div>
+                );
+              })()}
             </div>
           );
         })}
