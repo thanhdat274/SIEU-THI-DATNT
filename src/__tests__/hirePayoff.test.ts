@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { hirePayoff, HIRE_SHELF_MIN_LOSS } from '../data/hirePayoff';
+import { hirePayoff, HIRE_SHELF_MIN_LOSS, GUARD_MIN_SAVE } from '../data/hirePayoff';
 
-/** GĐ1267 — soi TUYỂN DỤNG: "thuê vai này vá lỗ nào đang rò khách/tiền hôm nay?"
+/** GĐ1267 + GĐ1269 — soi TUYỂN DỤNG: "thuê vai này vá lỗ nào đang rò khách/tiền hôm nay?"
  *  Helper THUẦN — không đổi state/kinh tế; chỉ đọc tín hiệu THẬT đang đo + hằng số game. */
 
 const base = {
@@ -68,9 +68,48 @@ describe('cleaner — vá lỗ sàn bẩn mất khách', () => {
   });
 });
 
+describe('guard — giá trị bảo vệ so với phơi nhiễm trộm (GĐ1269)', () => {
+  /** Tiệm đông khách, chưa có phòng thủ → trộm kỳ vọng lọt đáng kể, bảo vệ nâng P(bắt) lên 0.92. */
+  const busy = { ...base, customers: 200, revenue: 2_000_000, wage: 100_000 };
+
+  it('chưa có bảo vệ + trộm đang lọt → nhắc đúng số vụ + tiền', () => {
+    const p = hirePayoff('guard', busy);
+    expect(p.ok).toBe(true);
+    expect(p.line).toContain('vụ lọt');
+    expect(p.line).toContain('24.600'); // 200×0.015×0.82×10.000
+  });
+
+  it('đã có bảo vệ trong đội → không nói "thuê thêm" (không ồn)', () => {
+    expect(hirePayoff('guard', { ...busy, guardCount: 1 }).ok).toBe(false);
+  });
+
+  it('phòng thủ hiện tại đã gần bắt chắc (chó+camera+quầy+Mắt tinh) → bảo vệ thêm 0 → không nói quá', () => {
+    const p = hirePayoff('guard', {
+      ...busy, cashierStaffed: true, hasDog: true, hasCamera: true, hasSharpEye: true,
+    });
+    expect(p.ok).toBe(false); // catchBase đã ≥1, marginal 0 — trung thực
+  });
+
+  it('cửa tiệm vắng / không phơi nhiễm trộm → không ồn', () => {
+    expect(hirePayoff('guard', { ...base, customers: 0 }).ok).toBe(false);
+  });
+
+  it('giá trị nhỏ dưới ngưỡng (GUARD_MIN_SAVE) → không ồn tránh nhiễu', () => {
+    const p = hirePayoff('guard', { ...base, customers: 50, revenue: 200_000 });
+    expect(GUARD_MIN_SAVE).toBeGreaterThan(2460); // 50×0.015×0.82×4.000
+    expect(p.ok).toBe(false);
+  });
+
+  it('bảo vệ giữ được hơn lương → nhắc "đáng hơn lương"', () => {
+    const p = hirePayoff('guard', { ...base, customers: 500, revenue: 6_000_000, wage: 50_000 });
+    expect(p.ok).toBe(true);
+    expect(p.line).toContain('đáng hơn lương');
+  });
+});
+
 describe('vai chưa có lỗ TIỀN trung thực đo được', () => {
-  it('courier / guard / manager / cook / bartender / butcher / farmhand / warehouse_mgr → không nói quá', () => {
-    for (const r of ['courier', 'guard', 'manager', 'cook', 'bartender', 'butcher', 'farmhand', 'warehouse_mgr']) {
+  it('courier / manager / cook / bartender / butcher / farmhand / warehouse_mgr → không nói quá', () => {
+    for (const r of ['courier', 'manager', 'cook', 'bartender', 'butcher', 'farmhand', 'warehouse_mgr']) {
       expect(hirePayoff(r, base).ok).toBe(false);
     }
   });

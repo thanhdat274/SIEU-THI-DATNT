@@ -21,6 +21,7 @@
 
 import { dailyWage } from './staff';
 import { dirtLoss, DIRT_LOSS_WARN_KHACH } from './dirtLoss';
+import { theftCatchChance, theftSpawnChance } from './theftRisk';
 
 export interface HirePayoff {
   /** Có lỗ THẬT đang đo để nêu hay không (UI chỉ hiện dòng khi true). */
@@ -31,6 +32,9 @@ export interface HirePayoff {
 
 /** Ngưỡng lỡ kệ-trống-dù-kho-còn đáng nhắc khi thuê xếp hàng (cùng tinh thần SKILL_PAYOFF_MIN_LOSS). */
 export const HIRE_SHELF_MIN_LOSS = 50000;
+
+/** GĐ1269 — ngưỡng rò trộm/ngày đáng nhắc khi thuê bảo vệ (tránh nhiễu ngày sạch). */
+export const GUARD_MIN_SAVE = 10000;
 
 const fmt = (n: number) => n.toLocaleString('vi-VN');
 
@@ -53,6 +57,16 @@ export function hirePayoff(role: string, c: {
   customers: number;
   /** Doanh thu hôm nay (stats.revenue) — để dirtLoss tính doanh thu bình quân. */
   revenue: number;
+  /** GĐ1269 — bảo vệ: số bảo vệ đang có trong đội (0 mới đáng nói "thuê thêm"). Tùy chọn. */
+  guardCount?: number;
+  /** Có ai đứng quầy thanh toán không (ảnh hưởng P bắt trộm cơ sở). Tùy chọn. */
+  cashierStaffed?: boolean;
+  /** Có chó trông tiệm đang hoạt động hôm nay không (petActive). Tùy chọn. */
+  hasDog?: boolean;
+  /** Đã lắp camera an ninh chưa (biz.upgrades). Tùy chọn. */
+  hasCamera?: boolean;
+  /** Có kỹ năng Mắt tinh chưa (skills). Tùy chọn. */
+  hasSharpEye?: boolean;
 }): HirePayoff {
   switch (role) {
     case 'cashier': {
@@ -79,6 +93,31 @@ export function hirePayoff(role: string, c: {
         return { ok: true, line: `💡 Sàn bẩn đang mất ~${dl.lostKhachPerDay} khách (~${fmt(Math.round(dl.moneyLostPerDay))}đ/ngày) — thêm lao công giữ sạch.` };
       }
       return { ok: false, line: '' };
+    }
+    case 'guard': {
+      // GĐ1269 — giá trị TRUNG THỰC của bảo vệ: bảo vệ nâng P(bắt trộm) lên GUARD_DETECT (0.92)
+      // (theftCatchChance), nên giá trị = số vụ trộm kỳ vọng đang LỌT × P lọt chênh × giỏ bán lẻ.
+      // Chỉ ra khi: chưa có bảo vệ + có phơi nhiễm trộm THẬT + phòng thủ hiện tại còn cách bảo vệ
+      // đáng kể (nếu chó/camera/quầy/Mắt tinh đã bắt gần chắc thì bảo vệ thêm 0 → không nói quá).
+      if ((c.guardCount ?? 0) > 0) return { ok: false, line: '' };
+      const hasDog = !!c.hasDog, hasCamera = !!c.hasCamera, cashierStaffed = !!c.cashierStaffed, hasSharpEye = !!c.hasSharpEye;
+      const spawn = theftSpawnChance({ isNight: false, hasNightUpgrade: false, hasDog, hasCamera });
+      const catchBase = theftCatchChance({ hasDog, hasCamera, guardOnDuty: false, cashierStaffed, hasSharpEye });
+      const catchGuard = theftCatchChance({ hasDog, hasCamera, guardOnDuty: true, cashierStaffed, hasSharpEye });
+      const marginal = Math.min(1, catchGuard) - Math.min(1, catchBase);
+      const expectedThieves = c.customers * spawn;
+      const avgBasket = c.customers > 0 ? c.revenue / c.customers : 0;
+      const savedPerDay = expectedThieves * marginal * avgBasket;
+      if (savedPerDay < GUARD_MIN_SAVE || marginal <= 0) return { ok: false, line: '' };
+      const thieves = expectedThieves * marginal;
+      const n = thieves >= 1 ? String(Math.round(thieves)) : '<1';
+      const s = fmt(Math.round(savedPerDay));
+      return {
+        ok: true,
+        line: savedPerDay >= c.wage
+          ? `💡 Không bảo vệ: ~${n} vụ lọt (~${s}đ/ngày) — thuê giữ gần chắc chắn, đáng hơn lương.`
+          : `💡 Không bảo vệ: ~${n} vụ lọt (~${s}đ/ngày) — thuê để giữ gần chắc chắn.`,
+      };
     }
     default:
       return { ok: false, line: '' };

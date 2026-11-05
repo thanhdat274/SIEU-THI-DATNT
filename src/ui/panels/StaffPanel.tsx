@@ -15,6 +15,7 @@ import { trainValue } from '../../data/trainValue';
 import { staffEff } from '../../data/staffEff';
 import { serveCoverage, SERVE_TOP_HOURS } from '../../data/serveCoverage';
 import { hirePayoff } from '../../data/hirePayoff';
+import { petActive } from '../../data/bizAchievements';
 import { storeMissRevenue } from '../../data/advice';
 import { staffValueToday, staffShiftSummary, courierPhoneValue } from '../../data/staffValue';
 import { staffAtRiskOfPoach } from '../../data/biz';
@@ -44,6 +45,12 @@ export function StaffPanel() {
     })(),
     dirt: dirt ?? 0,
     level, customers: stats?.customers ?? 0, revenue: stats?.revenue ?? 0,
+    // GĐ1269 — bảo vệ: đọc đúng bối cảnh phòng thủ hiện tại để nói "thuê giữ ~X vụ trộm/ngày"
+    guardCount: staff.filter((s) => s.role === 'guard').length,
+    cashierStaffed: staff.some((s) => s.role === 'cashier'),
+    hasDog: petActive(biz.pets?.dog, day),
+    hasCamera: (biz.upgrades ?? []).includes('camera'),
+    hasSharpEye: skills.includes('sharp_eye'),
   };
   const total = [...staff, ...bStaff].reduce((sum, st) => sum + dailyWage(st), 0);
   // GĐ141: giá trị hôm nay của từng nhân viên ca ngày tiệm chính so với lương (thuần đọc stats.byHour)
