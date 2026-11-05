@@ -113,6 +113,10 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   // mẻ (nem chua 9k×2 + đường 17k) = 35k → 8 phần × 9k = 72k, lãi 37k/mẻ, nấu hời hơn bán thẳng nguyên liệu (49k < 72k).
   // Khép chuỗi hàng xóm (bà Tám) → chảo chiên, mở 36 (sau mốc golden 30 → sim không đổi).
   { id: 'nem_chua_ran', name: 'Nem chua rán', category: 'fresh', buy: 4500, sell: 9000, color: 0xd35400, unlock: 36 },
+  // GĐ1332: Bánh xèo — món bánh xèo giòn trứ danh (Mỹ Tho/Đà Nẵng) từ bột gạo + nước cốt dừa + thịt + hành phi:
+  // trước nay TỘT KHÔNG có bánh xèo trong bếp dù là món ăn biểu tượng nhất — lấp khoảng trống trạm chảo chiên.
+  // Mẻ (bột gạo 9k + nước cốt dừa 10k + thịt 30k + hành phi 1.5k×2) = 52k → 6 cái × 19k = 114k, lãi 62k/mẻ.
+  { id: 'banh_xeo', name: 'Bánh xèo', category: 'fresh', buy: 9500, sell: 19000, color: 0xf0a830, unlock: 36 },
 
   // --- Nồi hấp (steamer) ---
   { id: 'banh_bao_hap', name: 'Bánh bao hấp nóng', category: 'fresh', buy: 4500, sell: 8600, color: 0xf5f6fa, unlock: 39 },
@@ -313,6 +317,12 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_nem_chua_ran', name: 'Nem chua rán', station: 'fryer',
     inputs: [{ productId: 'hx_nem_chua', quantity: 2 }, { productId: 'x_duong', quantity: 1 }],
     outputId: 'nem_chua_ran', outputQty: 8, durationMin: 12, unlock: 36, reputationGain: 2 },
+  // GĐ1332: Bánh xèo — món bánh xèo giòn trứ danh (nhồi thịt, rắc hành phi — bột gạo + nước cốt dừa) nấu ở chảo
+  // chiên: mẻ (bột gạo 9k + nước cốt dừa 10k + thịt 30k + hành phi 1.5k×2) = 52k → 6 cái × 19k = 114k, lãi 62k/mẻ.
+  // Mở 36 (sau mốc golden 30 → sim không đổi); không dùng rau/nông sản khóa ranking → farmKitchenValue không đổi.
+  { id: 'recipe_banh_xeo', name: 'Bánh xèo', station: 'fryer',
+    inputs: [{ productId: 'x_bot_gao', quantity: 1 }, { productId: 'x_dua_cot_hop', quantity: 1 }, { productId: 'x_thit_heo', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 2 }],
+    outputId: 'banh_xeo', outputQty: 6, durationMin: 15, unlock: 36, reputationGain: 2 },
 
   // --- Nồi hấp (steamer) ---
   { id: 'recipe_banh_bao', name: 'Bánh bao hấp nóng', station: 'steamer',
