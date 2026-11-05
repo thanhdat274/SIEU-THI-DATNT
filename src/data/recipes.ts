@@ -55,6 +55,10 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'xuc_xich_nuong', name: 'Xúc xích nướng', category: 'fresh', buy: 3000, sell: 5700, color: 0xc0392b, unlock: 22 },
   { id: 'com_hop_ga', name: 'Cơm hộp gà', category: 'fresh', buy: 8200, sell: 15600, color: 0xf5cba7, unlock: 30 },
   { id: 'banh_trang_tron', name: 'Bánh tráng trộn', category: 'fresh', buy: 6700, sell: 12700, color: 0xe84393, unlock: 28 },
+  // GĐ1322: Bóp gỏi khô bò — món đặc sản vùng (khô bò mối lái dacsan GĐ1321) trộn rau + đường thành mẻ:
+  // mẻ (khô bò 62k + rau 10k×2 + đường 17k) = 99k → 8 đĩa × 24k = 192k, lãi 93k/mẻ, nấu hời hơn bán thẳng
+  // nguyên liệu (159k < 192k). Khép chuỗi mối lái → bếp, mở 50 = đúng cấp khô bò (sau mốc golden 30 → sim không đổi).
+  { id: 'bo_gio_kho_bo', name: 'Bóp gỏi khô bò', category: 'fresh', buy: 12000, sell: 24000, color: 0xb03a2e, unlock: 50 },
 
   // --- Ấm nước (hot_kettle) ---
   { id: 'tra_gung_nong', name: 'Trà gừng nóng', category: 'drink', buy: 7200, sell: 13700, color: 0xd4ac0d, unlock: 23 },
@@ -94,6 +98,10 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'banh_flan', name: 'Bánh flan', category: 'fresh', buy: 9000, sell: 18000, color: 0xe8b04a, unlock: 39 },
   // GĐ1094: Chả lụa hấp — mẻ (heo 30k×2 + trứng gà 25k) = 85k → 10 cây × 12k = 120k, lãi 35k/mẻ, nấu hời hơn bán nguyên liệu (109k < 120k)
   { id: 'cha_lua', name: 'Chả lụa hấp', category: 'fresh', buy: 6000, sell: 12000, color: 0xf0e6d2, unlock: 40 },
+  // GĐ1322: Bánh cuốn chả lụa (suất) — combo bà Tám (bánh cuốn GĐ1321 + chả lụa quê) hấp chế biến thành phần:
+  // mẻ (bánh cuốn 20k + chả lụa 27k + rau 10k) = 57k → 10 suất × 11k = 110k, lãi 53k/mẻ, nấu hời hơn
+  // bán thẳng nguyên liệu (91k < 110k). Khép chuỗi hàng xóm → bếp, mở 40 = đúng cấp bánh cuốn (> golden 30 → sim không đổi).
+  { id: 'banh_cuon_cha_lua', name: 'Bánh cuốn chả lụa (suất)', category: 'fresh', buy: 6000, sell: 11000, color: 0xf0e6d2, unlock: 40 },
 
   // --- Quây xôi (rice_station) ---
   { id: 'xoi_dau_xanh', name: 'Xôi đậu xanh', category: 'fresh', buy: 1400, sell: 2600, color: 0xf9ca24, unlock: 36 },
@@ -162,6 +170,10 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_canh', name: 'Canh rau thịt', station: 'hot_kettle',
     inputs: [{ productId: 'rau', quantity: 2 }, { productId: 'thit', quantity: 1 }],
     outputId: 'canh_rau_thit', outputQty: 12, durationMin: 18, unlock: 40, reputationGain: 3 },
+  // GĐ1322: Bóp gỏi khô bò — khép chuỗi "đặc sản vùng (khô bò mối lái) → bếp nướng". Mở 50 = đúng cấp khô bò (sau mốc golden 30).
+  { id: 'recipe_bo_gio_kho_bo', name: 'Bóp gỏi khô bò', station: 'food_grill',
+    inputs: [{ productId: 'rg_kho_bo', quantity: 1 }, { productId: 'rau', quantity: 2 }, { productId: 'x_duong', quantity: 1 }],
+    outputId: 'bo_gio_kho_bo', outputQty: 8, durationMin: 20, unlock: 50, reputationGain: 2 },
 
   // --- Ấm nước (hot_kettle) ---
   { id: 'recipe_tra_gung', name: 'Trà gừng nóng', station: 'hot_kettle',
@@ -247,6 +259,11 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_cha_lua', name: 'Chả lụa hấp', station: 'steamer',
     inputs: [{ productId: 'x_thit_heo', quantity: 2 }, { productId: 'trung', quantity: 1 }],
     outputId: 'cha_lua', outputQty: 10, durationMin: 25, unlock: 40, reputationGain: 3 },
+  // GĐ1322: Bánh cuốn chả lụa (suất) — khép chuỗi "hàng xóm (bánh cuốn bà Tám GĐ1321 + chả lụa quê) → nồi hấp".
+  // Mở 40 = đúng cấp bánh cuốn (sau mốc golden 30).
+  { id: 'recipe_banh_cuon_cha_lua', name: 'Bánh cuốn chả lụa (suất)', station: 'steamer',
+    inputs: [{ productId: 'hx_banh_cuon', quantity: 1 }, { productId: 'hx_cha_lua', quantity: 1 }, { productId: 'rau', quantity: 1 }],
+    outputId: 'banh_cuon_cha_lua', outputQty: 10, durationMin: 20, unlock: 40, reputationGain: 2 },
 
   // --- Quây xôi (rice_station) ---
   // 6 món xôi theo công thức chuẩn món ăn VN (khách quen bắt lỗi nguyên liệu sai ngành): đậu xanh/bắp/dừa
