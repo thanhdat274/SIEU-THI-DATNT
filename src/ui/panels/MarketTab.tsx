@@ -9,6 +9,7 @@ import { formatMoney, productById } from '../../data/products';
 import { counterPayoff, recentAvgRevenue } from '../../data/minorPayoff';
 import { priceCounterViability } from '../../data/priceCounter';
 import { rivalDrag } from '../../data/rivalDrag';
+import { rivalBuyPayoff } from '../../data/rivalBuyPayoff';
 import { summarizeDemographics, adReach, adTargetSuggest } from '../../data/demographics';
 import { card, title, pill, iconTile, btn, sub, row } from './businessStyles';
 
@@ -23,6 +24,8 @@ export function Market() {
   // đúng luồng khách mà rivalTrafficFactor tác động; chưa có ngày nào thì đòn chỉ hiện %, không hiện tiền.
   const avgRev7 = recentAvgRevenue(history);
   const rivalOnSale = r?.saleUntil !== undefined && r.saleUntil >= day;
+  // GĐ1308: phần khách cũ của rival ghé đông sau khi mua lại mặt bằng 12tr (đã có chi nhánh) — bao nhiêu tiền.
+  const buyPay = rivalBuyPayoff(biz.rivalForSale, branch);
   // GĐ1270: nhu cầu món/ngày thường (Σ trung bình trượt từng món, cùng nguồn gợi ý giá) — để soi
   // điều kiện "30 món" của đòn Đối đầu giá có chạm nổi không (helper THUẦN priceCounterViability).
   const avgItemsPerDay = Object.values(sales).reduce((n, x) => n + x, 0);
@@ -188,6 +191,7 @@ export function Market() {
               : ' — mua về là có ngay chi nhánh thứ hai, không mất tiền mở cửa hàng tiện lợi (5 triệu).'}
             {' '}Hết ngày {biz.rivalForSale.until} không mua thì người khác thuê mất.
           </div>
+          {buyPay.line && <div style={{ fontSize: 12, color: '#2ecc71', marginTop: 2 }}>{buyPay.line}</div>}
           <button style={{ ...btn, background: money >= biz.rivalForSale.price ? '#f1c40f' : '#555' }} onClick={buyRivalShop}>
             🏢 Mua lại mặt bằng ({formatMoney(biz.rivalForSale.price)})
           </button>
