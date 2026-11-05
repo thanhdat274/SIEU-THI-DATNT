@@ -14,6 +14,8 @@ import { payrollRunway } from '../../data/payrollRunway';
 import { trainValue } from '../../data/trainValue';
 import { staffEff } from '../../data/staffEff';
 import { serveCoverage, SERVE_TOP_HOURS } from '../../data/serveCoverage';
+import { hirePayoff } from '../../data/hirePayoff';
+import { storeMissRevenue } from '../../data/advice';
 import { staffValueToday, staffShiftSummary, courierPhoneValue } from '../../data/staffValue';
 import { staffAtRiskOfPoach } from '../../data/biz';
 import { staffIdleStats, type StaffIdleRow } from '../../data/staffIdle';
@@ -27,10 +29,22 @@ import { gapsOf, SITE_NAME, type Site } from '../../data/transfer';
 
 export function StaffPanel() {
   const [tab, setTab] = useState<'team' | 'hire'>('team');
-  const { staff, candidates, level, day, money, autoOpen, hire, fire, setShift, trainStaff, promoteStaff, closePanel, biz, branch, hireForBranch, stats, skills } = useGame();
+  const { staff, candidates, level, day, money, autoOpen, hire, fire, setShift, trainStaff, promoteStaff, closePanel, biz, branch, hireForBranch, stats, skills, dirt, storage } = useGame();
   const [pick, setPick] = useState<Record<number, Shift>>({});
   const max = maxStaff(level);
   const bStaff = branch?.staff ?? [];
+  // GĐ1267 — lỗ THẬT đang đo hôm nay để nói "thuê vai này vá gì" cạnh từng ứng viên (helper THUẦN,
+  // không đổi state). Chỉ ra dòng khi có tín hiệu trung thực; còn lại để mô tả desc, không bịa.
+  const hireCtx = {
+    waitMissed: stats?.missed?.wait ?? 0,
+    shelfMissInStorageLoss: (() => {
+      const miss = storeMissRevenue(stats?.missLog, storage);
+      if (!miss) return 0;
+      return miss.rows.filter((r) => r.inStorage > 0).reduce((n, r) => n + r.estLoss, 0);
+    })(),
+    dirt: dirt ?? 0,
+    level, customers: stats?.customers ?? 0, revenue: stats?.revenue ?? 0,
+  };
   const total = [...staff, ...bStaff].reduce((sum, st) => sum + dailyWage(st), 0);
   // GĐ141: giá trị hôm nay của từng nhân viên ca ngày tiệm chính so với lương (thuần đọc stats.byHour)
   const staffValues = staffValueToday(stats?.byHour, staff);
@@ -207,6 +221,12 @@ export function StaffPanel() {
                   </>
                 }
               />
+              {(() => {
+                const p = hirePayoff(c.role, { wage: c.wage, ...hireCtx });
+                return p.ok ? (
+                  <div style={{ fontSize: 11, marginTop: 2, color: '#2ecc71' }}>{p.line}</div>
+                ) : null;
+              })()}
               {branch && BRANCH_ROLES.includes(c.role) && (
                 <div style={staffSt.actions}>
                   <span style={staffSt.label}>🏪 Hoặc thuê vào tiện lợi 24/7</span>
