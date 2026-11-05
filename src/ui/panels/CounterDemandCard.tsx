@@ -1,6 +1,8 @@
 import { useGame } from '../../core/store';
 import { demandForecast } from '../../data/counterDemand';
 import { professionBandMix, topSegmentsOf } from '../../data/professionDemand';
+import { segmentHurt, recentLostByProduct, HIT_LABEL } from '../../data/segmentHurt';
+import { productById } from '../../data/products';
 import { counterThroughputNote } from '../../agents/customerEntity';
 import { styles } from './shared';
 
@@ -22,6 +24,12 @@ export function CounterDemandCard({ demand, cleanStreak, cleanBest, cleanExtra }
   const busiest = [...demand.bands].sort((a, b) => b.expected - a.expected)[0];
   const mix = busiest ? professionBandMix({ level, day, band: busiest, expected: busiest.expected }) : null;
   const segs = mix ? topSegmentsOf(mix) : [];
+  // GĐ1276 — "phân khúc nào đang bị hụt?": quy lượt lỡ bán món trong 7 ngày gần (analytics) + lời chê
+  // (reviews) về đúng món ưa của từng nghề → cho chủ biết nhóm khách nào cần nuôi. THUẦN đọc — không đổi
+  // economy/save/seed, co-op an toàn. Chỉ hiện khi có tín hiệu thật (không ồn ngày ai cũng ổn).
+  const analytics = useGame((s) => s.analytics);
+  const reviews = useGame((s) => s.reviews);
+  const topHurt = segmentHurt({ level, day, lostByProduct: recentLostByProduct(analytics, day), reviews })[0];
   return (
   <div style={{ ...styles.card, display: 'block', marginBottom: 8, outline: '1px solid rgba(46,204,113,0.35)' }}>
     <b style={styles.cardTitle}>🛒 Nhu cầu quầy hôm nay</b>
@@ -51,6 +59,16 @@ export function CounterDemandCard({ demand, cleanStreak, cleanBest, cleanExtra }
             </span>
           </span>
         ))}
+      </div>
+    )}
+    {topHurt && (
+      <div style={{ fontSize: 12, marginTop: 3, paddingTop: 4, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+        <b>💢 Phân khúc đang hụt:</b>{' '}
+        <span title={`${topHurt.profession.name} — món ưa bị hụt: ${topHurt.affectedLikes.slice(0, 6).map((id) => productById(id)?.name ?? id).join(', ') || 'chưa xác định'}`}>
+          {topHurt.profession.icon} {topHurt.profession.name}
+          {topHurt.lost > 0 ? ` · ${topHurt.lost} lượt lỡ món` : ''}
+          {topHurt.complaints.slice(0, 2).map((c) => ` · ${c.count} chê ${HIT_LABEL[c.reason]}`).join('')}
+        </span>
       </div>
     )}
     <div style={{ fontSize: 11.5, marginTop: 3, opacity: 0.75 }}>{counterThroughputNote()}</div>
