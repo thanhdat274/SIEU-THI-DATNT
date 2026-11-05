@@ -5,6 +5,7 @@ import { HAPPY_FROM_MAX, HAPPY_FROM_MIN, HAPPY_HOURS, HAPPY_OFF_OPTIONS, happyHo
 import { useClock, useGame } from '../../core/store';
 import { CATEGORIES, formatMoney, unlockedProducts, type Product, fmtMul } from '../../data/products';
 import { suggestPrice, referenceSell, productSensitivity, sensitivityLevel, priceForecast, formatDeltaK, FORECAST_FLAT_BAND, priceSideMark } from '../../data/pricing';
+import { segmentPriceFallout } from '../../data/segmentPricing';
 import { dayEffects } from '../../data/calendar';
 import { marketTrend } from '../../data/market';
 import { priceGap } from '../../data/priceGap';
@@ -178,6 +179,17 @@ export function PricePanel() {
                         title={`Độ nhạy giá ${s.toFixed(1)} — ${lv === 'hot' ? 'khách bỏ hàng nhanh khi tăng giá, nên cẩn' : lv === 'soft' ? 'khách gần như vẫn mua dù giá cao, tăng được' : 'khách bớt mua khi tăng giá vừa phải'}${tolOf(p.id) < 1 ? ` · Hôm nay lễ (${priceEffects.festival?.name}): khách chịu giá cao, nhạy giá thực tế ×${fmtMul(tolOf(p.id))}` : ''}`}
                         style={{ fontSize: 11, marginLeft: 6, padding: '1px 6px', borderRadius: 999, background: c.bg, color: c.col, whiteSpace: 'nowrap' }}
                       >{c.txt}</span>
+                    );
+                  })()}
+                  {(() => {
+                    // GĐ1284 — "giá này đang đuổi đi phân khúc nào?" (chỉ khi giá cao hơn gợi ý & có nghề ưa món bị đuổi)
+                    const fo = level && day ? segmentPriceFallout({ productId: p.id, price, level, day }) : null;
+                    if (!fo) return null;
+                    const t = fo.rows[0];
+                    return (
+                      <div style={{ fontSize: 11, marginTop: 2, color: '#e67e22' }}>
+                        💡 {t.profession.icon} {t.profession.name} (nhạy {t.sensitivity}) bị giá cao đuổi ~{t.losePct}% lượt — hạ về ~{fo.reference.toLocaleString('vi-VN')}đ.
+                      </div>
                     );
                   })()}
                 </td>
