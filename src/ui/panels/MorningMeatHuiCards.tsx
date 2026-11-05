@@ -1,6 +1,7 @@
 import { useGame } from '../../core/store';
 import { formatMoney } from '../../data/products';
 import { butcherValueToday, recentMeatRevenue } from '../../data/butcherValue';
+import { huiPayoff } from '../../data/minorPayoff';
 import type { BizState } from '../../data/biz';
 import { Callout, styles } from './shared';
 
@@ -39,12 +40,20 @@ export function ButcherCard({ butcherV, recentMeat, meatMissed }: { butcherV: Re
 }
 
 export function HuiCard({ hui }: { hui: NonNullable<BizState['hui']> }) {
+  const p = huiPayoff(hui);
   return (
     <div style={{ ...styles.card, display: 'block', marginBottom: 8 }}>
       <b style={styles.cardTitle}>🤝 Đang góp hụi {formatMoney(hui.daily)}/ngày</b>
       <div style={{ fontSize: 12, marginTop: 2 }}>
         Đã góp {hui.paidDays}/{hui.members} ngày{!hui.received && ` · ngày ${hui.turnDay} tới lượt hốt ${formatMoney(hui.daily * hui.members)}`}.
       </div>
+      {/* GĐ1271 — soi GIÁ TRỊ + RỦI RO hụi: hốt sớm tiết kiệm lãi vay; vỡ hụi ~X%/vòng, mất tiền đã góp.
+          Thuần đọc state/hằng số (LOAN_DAILY_RATE, HUI_COLLAPSE) — không đổi kinh tế/save. */}
+      {p.daysSaved > 0 && (
+        <div style={{ fontSize: 12, marginTop: 2, color: '#2ecc71' }}>
+          💡 Hốt sớm {p.daysSaved} ngày tiết kiệm ~{formatMoney(p.saveEarly)}đ (so lãi vay NH) — vỡ hụi ~{p.collapsePct.toFixed(0)}%/vòng, rủi mất {formatMoney(p.loseOnCollapse)}đ.
+        </div>
+      )}
     </div>
   );
 }
