@@ -101,6 +101,10 @@ export const QUAN_RECIPES: QuanRecipe[] = [
   // vốn/ly = 42k/8 + 3k/10 = 5.6k → bán 20k (lời >2× vốn). Mở 41 > mốc golden 30 → sim không đổi;
   // KHÔNG hot (giữ đếm đồ nóng = 3).
   { id: 'sua_hat_da', name: 'Sữa hạt đá', icon: '🥜', unlock: 41, price: 20_000, uses: [{ id: 'sua_hat', cups: 8 }, { id: 'x_nuoc_da', cups: 10 }] },
+  // GĐ1373: Trà sữa trân châu đường đen — món trà sữa QUỐC DÂN (viên trân châu nấu từ bột mì + đường đen):
+  // vốn/ly = 28k/6 + 20k/40 + 18k/6 + 17k/30 + 3k/10 = 9k → bán 28k (lời >2× vốn). Mở 38 > mốc golden 30
+  // → sim không đổi; KHÔNG hot (giữ đếm đồ nóng = 3).
+  { id: 'tra_sua_tran_chau', name: 'Trà sữa trân châu đường đen', icon: '🧋', unlock: 38, price: 28_000, uses: [{ id: 'sua_tuoi', cups: 6 }, { id: 'tra', cups: 40 }, { id: 'botmi', cups: 6 }, { id: 'x_duong', cups: 30 }, { id: 'x_nuoc_da', cups: 10 }] },
   { id: 'ca_phe_muoi', name: 'Cà phê muối', icon: '🧂', unlock: 40, price: 28_000, uses: [{ id: 'x_ca_phe_hoa_tan', cups: 15 }, { id: 'x_sua_dac', cups: 10 }, { id: 'x_muoi', cups: 60 }, { id: 'x_nuoc_da', cups: 10 }] },
   { id: 'tra_gung', name: 'Trà gừng nóng', icon: '🫚', unlock: 36, price: 15_000, uses: [{ id: 'tra', cups: 40 }, { id: 'x_gung', cups: 12 }, { id: 'x_duong', cups: 30 }], hot: true },
   { id: 'ca_phe_sua_nong', name: 'Cà phê sữa nóng', icon: '♨️', unlock: 37, price: 20_000, uses: [{ id: 'x_ca_phe_hoa_tan', cups: 15 }, { id: 'x_sua_dac', cups: 10 }], hot: true },

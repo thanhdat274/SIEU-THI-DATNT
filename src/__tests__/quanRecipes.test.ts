@@ -581,6 +581,24 @@ describe('GĐ1372: sữa hạt đá (sữa hạt lốc → quán nước)', () =
   });
 });
 
+describe('GĐ1373: trà sữa trân châu đường đen (món trà sữa quốc dân → quán nước)', () => {
+  it('mở cấp 38, dùng sữa tươi + trà + bột mì (trân châu), không hot, lời hơn vốn gấp đôi', async () => {
+    const { quanRecipeById, quanRecipesAt, recipeCupCost, QUAN_RECIPES } = await import('../data/quanRecipes');
+    const { productById } = await import('../data/products');
+    const r = quanRecipeById('tra_sua_tran_chau')!;
+    expect(r.unlock).toBeGreaterThan(30); // sau mốc golden 30 → sim không đổi
+    expect(r.unlock).toBe(38);
+    expect(r.uses.map((u) => u.id)).toContain('sua_tuoi');
+    expect(r.uses.map((u) => u.id)).toContain('botmi'); // trân châu nấu từ bột mì
+    for (const u of r.uses) expect(productById(u.id).unlock).toBeLessThanOrEqual(r.unlock);
+    expect(quanRecipesAt(37).some((x) => x.id === 'tra_sua_tran_chau')).toBe(false);
+    expect(quanRecipesAt(38).some((x) => x.id === 'tra_sua_tran_chau')).toBe(true);
+    expect(r.price).toBeGreaterThan(recipeCupCost(r) * 2);
+    expect(r.hot).toBeFalsy();
+    expect(QUAN_RECIPES.filter((x) => x.hot).length).toBe(3); // không phình đếm đồ nóng (Luật 9)
+  });
+});
+
 describe('GĐ482: nhắc đồ nóng tháng rét', () => {
   it('tháng rét trời khô gợi ý ×1.1; tháng hè không nhắc', async () => {
     const { quanHotNote } = await import('../data/quanRecipes');
