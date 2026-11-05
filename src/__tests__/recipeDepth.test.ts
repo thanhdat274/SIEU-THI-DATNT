@@ -462,3 +462,50 @@ describe('GĐ1342 — lối ra bếp cho hàng thịt cá tươi còn trống (n
     expect(RECIPES.some((r) => r.id === 'recipe_ca_loc_nuong_muoi' && r.inputs.some((i) => i.productId === 'ca_loc_tuoi'))).toBe(true);
   });
 });
+
+/**
+ * GĐ1343 — "Thêm sản phẩm/công thức mới": khép nốt 3 mục quầy thịt cá còn 0 lối ra sau GĐ1342 —
+ * Thịt kho trứng (`thit_heo_tuoi` 32, ấm nước) · Cá rô phi chiên (`ca_ro_phi_tuoi` 35, chảo chiên) ·
+ * Bò kho (`thit_bo_tuoi` 38, ấm nước). Cùng bất biến GĐ1321/1332-1342 (lãi dương TÍNH TỪ GIÁ THẬT · unlock > 30).
+ */
+const NEW_IDS_1343 = ['recipe_thit_kho_trung', 'recipe_ca_ro_phi_chien', 'recipe_bo_kho'] as const;
+
+describe('GĐ1343 — khép nốt lối ra bếp cho quầy thịt cá (3 món biểu tượng)', () => {
+  for (const rid of NEW_IDS_1343) {
+    const recipe = RECIPE_MAP[rid];
+    it(`${recipe.name}: có trong RECIPES và COOKED_PRODUCTS`, () => {
+      expect(recipe).toBeDefined();
+      expect(recipe.id).toBe(rid);
+    });
+
+    it(`${recipe.name}: mở sau mốc golden sim 30 → economySim mốc không đổi`, () => {
+      expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+    });
+
+    it(`${recipe.name}: mẻ lãi dương TÍNH TỪ GIÁ THẬT (không bịa con số)`, () => {
+      const cost = recipe.inputs.reduce((s, inp) => s + inp.quantity * productById(inp.productId).buy, 0);
+      const value = recipe.outputQty * productById(recipe.outputId).sell;
+      expect(value).toBeGreaterThan(cost);
+      const raw = recipe.inputs.reduce((s, inp) => s + inp.quantity * productById(inp.productId).sell, 0);
+      expect(value).toBeGreaterThan(raw);
+    });
+
+    it(`${recipe.name}: outputId khớp COOKED_PRODUCTS và không trùng`, () => {
+      expect(COOKED_PRODUCTS.some((c) => c.id === recipe.outputId)).toBe(true);
+      expect(RECIPES.filter((r) => r.outputId === recipe.outputId).length).toBe(1);
+    });
+  }
+
+  it('3 món hiện diện ở đúng trạm và khép nốt đủ 5 mục quầy thịt cá', () => {
+    expect(RECIPES.some((r) => r.station === 'hot_kettle' && r.id === 'recipe_thit_kho_trung')).toBe(true);
+    expect(RECIPES.some((r) => r.id === 'recipe_thit_kho_trung' && r.inputs.some((i) => i.productId === 'thit_heo_tuoi'))).toBe(true);
+    expect(RECIPES.some((r) => r.station === 'fryer' && r.id === 'recipe_ca_ro_phi_chien')).toBe(true);
+    expect(RECIPES.some((r) => r.id === 'recipe_ca_ro_phi_chien' && r.inputs.some((i) => i.productId === 'ca_ro_phi_tuoi'))).toBe(true);
+    expect(RECIPES.some((r) => r.station === 'hot_kettle' && r.id === 'recipe_bo_kho')).toBe(true);
+    expect(RECIPES.some((r) => r.id === 'recipe_bo_kho' && r.inputs.some((i) => i.productId === 'thit_bo_tuoi'))).toBe(true);
+    // Đủ 5 mục quầy thịt cá đều có lối ra bếp sau GĐ1342+1343
+    for (const meat of ['thit_heo_tuoi', 'ca_loc_tuoi', 'ga_ta_tuoi', 'ca_ro_phi_tuoi', 'thit_bo_tuoi']) {
+      expect(RECIPES.some((r) => r.inputs.some((i) => i.productId === meat))).toBe(true);
+    }
+  });
+});

@@ -146,6 +146,13 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'ga_ta_nuong_muoi', name: 'Gà ta nướng muối ớt', category: 'fresh', buy: 23000, sell: 42000, color: 0xd4a017, unlock: 36 },
   // Cá lóc nướng muối (ca_loc_tuoi 33): mẻ (cá lóc 70k + muối 5k + hành phi 3k) = 78k → 6 con × 28k = 168k, lãi 90k/mẻ.
   { id: 'ca_loc_nuong_muoi', name: 'Cá lóc nướng muối', category: 'fresh', buy: 13000, sell: 28000, color: 0x8f9779, unlock: 36 },
+  // GĐ1343: 3 món khép nốt quầy thịt cá (còn 3 mục 0 lối ra sau GĐ1342):
+  // Thịt kho trứng (thịt kho tàu, thit_heo_tuoi 32): mẻ (heo tươi 95k + trứng 25k + nước cốt dừa 10k) = 130k → 8 phần × 30k = 240k, lãi 110k/mẻ.
+  { id: 'thit_kho_trung', name: 'Thịt kho trứng', category: 'fresh', buy: 16000, sell: 30000, color: 0x8b4513, unlock: 36 },
+  // Cá rô phi chiên (ca_ro_phi_tuoi 35): mẻ (cá rô 55k + hành phi 3k) = 58k → 6 con × 18k = 108k, lãi 50k/mẻ.
+  { id: 'ca_ro_phi_chien', name: 'Cá rô phi chiên', category: 'fresh', buy: 9000, sell: 18000, color: 0xb8a33d, unlock: 36 },
+  // Bò kho (thit_bo_tuoi 38 + bún 33 + gừng 20): mẻ (bò 210k + bún 12k + gừng 7k) = 229k → 8 tô × 45k = 360k, lãi 131k/mẻ.
+  { id: 'bo_kho', name: 'Bò kho', category: 'fresh', buy: 28000, sell: 45000, color: 0xa0522d, unlock: 38 },
 
   // --- Nồi hấp (steamer) ---
   { id: 'banh_bao_hap', name: 'Bánh bao hấp nóng', category: 'fresh', buy: 4500, sell: 8600, color: 0xf5f6fa, unlock: 39 },
@@ -368,6 +375,24 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_ca_loc_nuong_muoi', name: 'Cá lóc nướng muối', station: 'food_grill',
     inputs: [{ productId: 'ca_loc_tuoi', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 2 }],
     outputId: 'ca_loc_nuong_muoi', outputQty: 6, durationMin: 18, unlock: 36, reputationGain: 2 },
+  // GĐ1343: Thịt kho trứng (thịt kho tàu) — món kho Tết trứ danh: thịt heo tươi + trứng + nước cốt dừa kho ở
+  // ấm nước: mẻ (heo tươi 95k + trứng 25k + nước cốt dừa 10k) = 130k → 8 phần × 30k = 240k, lãi 110k/mẻ,
+  // nấu hời hơn bán thẳng nguyên liệu (177k < 240k). Mở 36 ≥ mọi nguyên liệu (32/11/30) (> golden 30 → sim không đổi).
+  { id: 'recipe_thit_kho_trung', name: 'Thịt kho trứng', station: 'hot_kettle',
+    inputs: [{ productId: 'thit_heo_tuoi', quantity: 1 }, { productId: 'trung', quantity: 1 }, { productId: 'x_dua_cot_hop', quantity: 1 }],
+    outputId: 'thit_kho_trung', outputQty: 8, durationMin: 25, unlock: 36, reputationGain: 3 },
+  // GĐ1343: Cá rô phi chiên — món cá đồng chiên giòn: cá rô phi tươi (meat 35) vào chảo chiên:
+  // mẻ (cá rô 55k + hành phi 3k) = 58k → 6 con × 18k = 108k, lãi 50k/mẻ, nấu hời hơn bán thẳng
+  // nguyên liệu (83k < 108k). Mở 36 ≥ mọi nguyên liệu (35/36) (> golden 30 → sim không đổi).
+  { id: 'recipe_ca_ro_phi_chien', name: 'Cá rô phi chiên', station: 'fryer',
+    inputs: [{ productId: 'ca_ro_phi_tuoi', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 2 }],
+    outputId: 'ca_ro_phi_chien', outputQty: 6, durationMin: 15, unlock: 36, reputationGain: 2 },
+  // GĐ1343: Bò kho — món bò đậm đà ăn với bún: thịt bò tươi (meat 38) + bún + gừng nấu ở ấm nước:
+  // mẻ (bò 210k + bún 12k + gừng 7k) = 229k → 8 tô × 45k = 360k, lãi 131k/mẻ, nấu hời hơn bán thẳng
+  // nguyên liệu (314k < 360k). Mở 38 = đúng cấp bò tươi (> golden 30 → sim không đổi).
+  { id: 'recipe_bo_kho', name: 'Bò kho', station: 'hot_kettle',
+    inputs: [{ productId: 'thit_bo_tuoi', quantity: 1 }, { productId: 'bun', quantity: 1 }, { productId: 'x_gung', quantity: 1 }],
+    outputId: 'bo_kho', outputQty: 8, durationMin: 25, unlock: 38, reputationGain: 3 },
 
   // --- Quầy pha (drink_counter) ---
   { id: 'recipe_ca_phe_sua', name: 'Cà phê sữa đá', station: 'drink_counter',
