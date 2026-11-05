@@ -117,6 +117,9 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   // trước nay TỘT KHÔNG có bánh xèo trong bếp dù là món ăn biểu tượng nhất — lấp khoảng trống trạm chảo chiên.
   // Mẻ (bột gạo 9k + nước cốt dừa 10k + thịt 30k + hành phi 1.5k×2) = 52k → 6 cái × 19k = 114k, lãi 62k/mẻ.
   { id: 'banh_xeo', name: 'Bánh xèo', category: 'fresh', buy: 9500, sell: 19000, color: 0xf0a830, unlock: 36 },
+  // GĐ1333: Chả giò chiên — `cha` (Chả giò đông lạnh) có bán sẵn nhưng CHƯA có món "rán vàng giòn" (món Tết/ăn vặt
+  // quen thuộc nhất) — lấp khoảng trống trạm chảo chiên. Mẻ (chả giò 35k + hành phi 3k + muối 5k) = 43k → 8×16k = 128k, lãi 85k/mẻ.
+  { id: 'cha_gio_chien', name: 'Chả giò chiên', category: 'fresh', buy: 8000, sell: 16000, color: 0xc98a2d, unlock: 36 },
 
   // --- Nồi hấp (steamer) ---
   { id: 'banh_bao_hap', name: 'Bánh bao hấp nóng', category: 'fresh', buy: 4500, sell: 8600, color: 0xf5f6fa, unlock: 39 },
@@ -323,6 +326,11 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_banh_xeo', name: 'Bánh xèo', station: 'fryer',
     inputs: [{ productId: 'x_bot_gao', quantity: 1 }, { productId: 'x_dua_cot_hop', quantity: 1 }, { productId: 'x_thit_heo', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 2 }],
     outputId: 'banh_xeo', outputQty: 6, durationMin: 15, unlock: 36, reputationGain: 2 },
+  // GĐ1333: Chả giò chiên — `cha` (chả giò đông lạnh) rán vàng giòn ở chảo chiên: mẻ (chả giò 35k + hành phi 3k + muối 5k)
+  // = 43k → 8 × 16k = 128k, lãi 85k/mẻ. Mở 36 (sau mốc golden 30 → sim không đổi); không rau/nông sản khóa → farmKitchenValue không đổi.
+  { id: 'recipe_cha_gio_chien', name: 'Chả giò chiên', station: 'fryer',
+    inputs: [{ productId: 'cha', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 2 }, { productId: 'x_muoi', quantity: 1 }],
+    outputId: 'cha_gio_chien', outputQty: 8, durationMin: 12, unlock: 36, reputationGain: 2 },
 
   // --- Nồi hấp (steamer) ---
   { id: 'recipe_banh_bao', name: 'Bánh bao hấp nóng', station: 'steamer',

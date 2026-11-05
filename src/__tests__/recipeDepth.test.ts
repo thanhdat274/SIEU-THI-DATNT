@@ -89,3 +89,41 @@ describe('GĐ1332 — thêm công thức biểu tượng còn thiếu (bánh xè
     expect(RECIPES.some((r) => r.id === 'recipe_banh_xeo' && r.inputs.some((i) => i.productId === 'x_thit_heo'))).toBe(true);
   });
 });
+
+/**
+ * GĐ1333 — "Thêm sản phẩm/công thức mới": Chả giò chiên — `cha` (chả giò đông lạnh) có bán sẵn nhưng chưa có món
+ * rán vàng giòn (ăn vặt/món Tết quen thuộc nhất), rán ở chảo chiên với hành phi + muối. Cùng bất biến GĐ1321/1332.
+ */
+const NEW_IDS_1333 = ['recipe_cha_gio_chien'] as const;
+
+describe('GĐ1333 — thêm công thức biểu tượng còn thiếu (chả giò chiên, chảo chiên)', () => {
+  for (const rid of NEW_IDS_1333) {
+    const recipe = RECIPE_MAP[rid];
+    it(`${recipe.name}: có trong RECIPES và COOKED_PRODUCTS`, () => {
+      expect(recipe).toBeDefined();
+      expect(recipe.id).toBe(rid);
+    });
+
+    it(`${recipe.name}: mở sau mốc golden sim 30 → economySim mốc không đổi`, () => {
+      expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+    });
+
+    it(`${recipe.name}: mẻ lãi dương TÍNH TỪ GIÁ THẬT (không bịa con số)`, () => {
+      const cost = recipe.inputs.reduce((s, inp) => s + inp.quantity * productById(inp.productId).buy, 0);
+      const value = recipe.outputQty * productById(recipe.outputId).sell;
+      expect(value).toBeGreaterThan(cost);
+      const raw = recipe.inputs.reduce((s, inp) => s + inp.quantity * productById(inp.productId).sell, 0);
+      expect(value).toBeGreaterThan(raw);
+    });
+
+    it(`${recipe.name}: outputId khớp COOKED_PRODUCTS và không trùng`, () => {
+      expect(COOKED_PRODUCTS.some((c) => c.id === recipe.outputId)).toBe(true);
+      expect(RECIPES.filter((r) => r.outputId === recipe.outputId).length).toBe(1);
+    });
+  }
+
+  it('chả giò chiên hiện diện ở trạm chảo chiên và dùng chả giò đông lạnh + hành phi + muối', () => {
+    expect(RECIPES.some((r) => r.station === 'fryer' && r.id === 'recipe_cha_gio_chien')).toBe(true);
+    expect(RECIPES.some((r) => r.id === 'recipe_cha_gio_chien' && r.inputs.some((i) => i.productId === 'cha'))).toBe(true);
+  });
+});
