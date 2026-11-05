@@ -7,13 +7,14 @@ import { summarizeReviews } from '../../data/reviews';
 import { REGULAR_NAMES } from '../../core/biz';
 import { formatMoney, productById } from '../../data/products';
 import { counterPayoff, recentAvgRevenue } from '../../data/minorPayoff';
+import { priceCounterViability } from '../../data/priceCounter';
 import { rivalDrag } from '../../data/rivalDrag';
 import { summarizeDemographics, adReach, adTargetSuggest } from '../../data/demographics';
 import { card, title, pill, iconTile, btn, sub, row } from './businessStyles';
 
 /** Tab Cạnh tranh: đối thủ, quảng cáo, tích điểm (tách từ BusinessPanel, GĐ876). */
 export function Market() {
-  const { biz, day, level, money, branch, stats, prices, reviews, analytics, history, staff } = useGame();
+  const { biz, day, level, money, branch, stats, sales, prices, reviews, analytics, history, staff } = useGame();
   const r = biz.rival;
   // GĐ1186: nhân viên giỏi nhất đang bị rival máu liều để mắt (giống cảnh báo trong StaffPanel — hiện cả ở màn chống rival).
   const staffRiskId = staffAtRiskOfPoach(r, staff);
@@ -22,6 +23,9 @@ export function Market() {
   // đúng luồng khách mà rivalTrafficFactor tác động; chưa có ngày nào thì đòn chỉ hiện %, không hiện tiền.
   const avgRev7 = recentAvgRevenue(history);
   const rivalOnSale = r?.saleUntil !== undefined && r.saleUntil >= day;
+  // GĐ1270: nhu cầu món/ngày thường (Σ trung bình trượt từng món, cùng nguồn gợi ý giá) — để soi
+  // điều kiện "30 món" của đòn Đối đầu giá có chạm nổi không (helper THUẦN priceCounterViability).
+  const avgItemsPerDay = Object.values(sales).reduce((n, x) => n + x, 0);
   // Thế hệ rival hiện tại: số rival đã hạ + 1 (rival cốt truyện là thế hệ đầu)
   const tier = rivalTier(biz.rivalsBeaten + 1);
   const running = activeAds(biz.ads, day);
@@ -159,6 +163,13 @@ export function Market() {
                           </div>
                         );
                       })()}
+                      {/* GĐ1270 — đòn Đối đầu giá có điều kiện "bán đủ 30 món hôm nay" mới kích hoạt;
+                          chủ cần thấy con số tiến độ + nhịp ngày thường trước khi cam kết cả ngày lãi mỏng. */}
+                      {c.id === 'price' && !runningNow && (stats?.itemsSold ?? 0) + avgItemsPerDay > 0 && (
+                        <div style={{ ...sub, marginTop: 2, color: '#2ecc71' }}>
+                          {priceCounterViability(stats?.itemsSold ?? 0, avgItemsPerDay).line}
+                        </div>
+                      )}
                     </button>
                   );
                 })}
