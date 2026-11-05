@@ -187,6 +187,11 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   // GĐ1359: Nước mía chanh — món hè giải nhiệt kinh điển, công thức thứ 2 của máy ép mía (trước chỉ có
   // nước mía): mẻ (mía 12k×4 + chanh không hạt 10k + đường 17k) = 75k → 10 ly × 13k = 130k, lãi 55k/mẻ.
   { id: 'nuoc_mia_chanh', name: 'Nước mía chanh', category: 'drink', buy: 6500, sell: 13000, color: 0xd4e157, unlock: 36 },
+  // GĐ1360: 2 món khép lối ra của chà bông (41 — còn 0 lối ra) và nếp cẩm:
+  // Bánh mì chà bông (banhmi + cha_bong 41): mẻ (bánh mì 8k×5 + chà bông 32k + hành phi 3k) = 75k → 5 bánh × 26k = 130k, lãi 55k/mẻ.
+  { id: 'banh_mi_cha_bong', name: 'Bánh mì chà bông', category: 'fresh', buy: 14000, sell: 26000, color: 0xc0392b, unlock: 42 },
+  // Sữa chua nếp cẩm (nep_cam 70 + sữa chua): mẻ (nếp cẩm 55k + sữa chua 5k×2 + đường 17k) = 82k → 6 hũ × 22k = 132k, lãi 50k/mẻ.
+  { id: 'sua_chua_nep_cam', name: 'Sữa chua nếp cẩm', category: 'cold', buy: 14000, sell: 22000, color: 0x9b59b6, unlock: 70 },
   // GĐ1345: Giỏ quà Giáng sinh — lễ tặng quà lớn duy nhất còn thiếu giỏ (Tết/8-3/20-11/Trung thu đã có):
   // mẻ (rượu vang 120k + bánh kẹo 5k×4 + trà 20k×2) = 180k → 2 giỏ × 140k = 280k, lãi 100k/mẻ.
   { id: 'gio_qua_giang_sinh', name: 'Giỏ quà Giáng sinh', category: 'dry', buy: 70000, sell: 140000, color: 0x228b22, unlock: 36 },
@@ -616,6 +621,18 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_nuoc_mia_chanh', name: 'Nước mía chanh', station: 'sugarcane_press',
     inputs: [{ productId: 'mia', quantity: 4 }, { productId: 'x_chanh_khong_hat', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
     outputId: 'nuoc_mia_chanh', outputQty: 10, durationMin: 8, unlock: 36, reputationGain: 2 },
+  // GĐ1360: Bánh mì chà bông — bản bánh mì dân dã quen thuộc: chà bông hũ rắc dày cùng hành phi nướng ở
+  // bếp nướng: mẻ (bánh mì 8k×5 + chà bông 32k + hành phi 3k) = 75k → 5 bánh × 26k = 130k, lãi 55k/mẻ,
+  // nấu hời hơn bán thẳng nguyên liệu (126k < 130k). Mở 42 = đúng cấp chà bông (> golden 30 → sim không đổi).
+  { id: 'recipe_banh_mi_cha_bong', name: 'Bánh mì chà bông', station: 'food_grill',
+    inputs: [{ productId: 'banhmi', quantity: 5 }, { productId: 'cha_bong', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 2 }],
+    outputId: 'banh_mi_cha_bong', outputQty: 5, durationMin: 12, unlock: 42, reputationGain: 2 },
+  // GĐ1360: Sữa chua nếp cẩm — món tráng miệng Đà Lạt trứ danh: nếp cẩm nấu dẻo trộn sữa chua xay lạnh
+  // ở máy xay: mẻ (nếp cẩm 55k + sữa chua 5k×2 + đường 17k) = 82k → 6 hũ × 22k = 132k, lãi 50k/mẻ,
+  // nấu hời hơn bán thẳng nguyên liệu (115k < 132k). Mở 70 = đúng cấp nếp cẩm (> golden 30 → sim không đổi).
+  { id: 'recipe_sua_chua_nep_cam', name: 'Sữa chua nếp cẩm', station: 'blender',
+    inputs: [{ productId: 'nep_cam', quantity: 1 }, { productId: 'suachua', quantity: 2 }, { productId: 'x_duong', quantity: 1 }],
+    outputId: 'sua_chua_nep_cam', outputQty: 6, durationMin: 15, unlock: 70, reputationGain: 3 },
 
   // --- Combo ---
   { id: 'combo_xoi_doi', name: 'Suất Xôi Đôi', station: 'rice_station',
