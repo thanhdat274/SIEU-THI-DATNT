@@ -332,3 +332,42 @@ describe('GĐ1339 — thêm công thức kho gia đình (gà kho gừng, ấm n�
     expect(RECIPES.some((r) => r.id === 'recipe_ga_kho_gung' && r.inputs.some((i) => i.productId === 'hx_nuoc_mam'))).toBe(true);
   });
 });
+
+/**
+ * GĐ1340 — "Thêm sản phẩm/công thức mới": Sữa chua trái cây — món mát trứ danh Đà Lạt, làm dày trạm máy xay
+ * (trước chỉ 3 món). Cùng bất biến GĐ1321/1332-1339 (lãi dương TÍNH TỪ GIÁ THẬT · unlock > 30 · outputId duy nhất).
+ */
+const NEW_IDS_1340 = ['recipe_sua_chua_trai_cay'] as const;
+
+describe('GĐ1340 — thêm công thức mát máy xay (sữa chua trái cây)', () => {
+  for (const rid of NEW_IDS_1340) {
+    const recipe = RECIPE_MAP[rid];
+    it(`${recipe.name}: có trong RECIPES và COOKED_PRODUCTS`, () => {
+      expect(recipe).toBeDefined();
+      expect(recipe.id).toBe(rid);
+    });
+
+    it(`${recipe.name}: mở sau mốc golden sim 30 → economySim mốc không đổi`, () => {
+      expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+    });
+
+    it(`${recipe.name}: mẻ lãi dương TÍNH TỪ GIÁ THẬT (không bịa con số)`, () => {
+      const cost = recipe.inputs.reduce((s, inp) => s + inp.quantity * productById(inp.productId).buy, 0);
+      const value = recipe.outputQty * productById(recipe.outputId).sell;
+      expect(value).toBeGreaterThan(cost);
+      const raw = recipe.inputs.reduce((s, inp) => s + inp.quantity * productById(inp.productId).sell, 0);
+      expect(value).toBeGreaterThan(raw);
+    });
+
+    it(`${recipe.name}: outputId khớp COOKED_PRODUCTS và không trùng`, () => {
+      expect(COOKED_PRODUCTS.some((c) => c.id === recipe.outputId)).toBe(true);
+      expect(RECIPES.filter((r) => r.outputId === recipe.outputId).length).toBe(1);
+    });
+  }
+
+  it('sữa chua trái cây hiện diện ở trạm máy xay và dùng sữa chua + trái cây + đường', () => {
+    expect(RECIPES.some((r) => r.station === 'blender' && r.id === 'recipe_sua_chua_trai_cay')).toBe(true);
+    expect(RECIPES.some((r) => r.id === 'recipe_sua_chua_trai_cay' && r.inputs.some((i) => i.productId === 'suachua'))).toBe(true);
+    expect(RECIPES.some((r) => r.id === 'recipe_sua_chua_trai_cay' && r.inputs.some((i) => i.productId === 'traicay'))).toBe(true);
+  });
+});

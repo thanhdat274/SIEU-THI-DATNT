@@ -135,6 +135,9 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   // GĐ1339: Gà kho gừng — món kho gia đình trứ danh: gà nguyên con (`thit_ga` 52) kho gừng + nước mắm nhà ủ
   // (`hx_nuoc_mam` — lối ra thứ 2). Mẻ (gà 130k + gừng 7k + nước mắm 30k) = 167k → 8 phần × 45k = 360k, lãi 193k/mẻ.
   { id: 'ga_kho_gung', name: 'Gà kho gừng', category: 'fresh', buy: 22000, sell: 45000, color: 0xb5651d, unlock: 52 },
+  // GĐ1340: Sữa chua trái cây — món mát trứ danh Đà Lạt, dày hơn trạm máy xay (trước chỉ 3 món): mẻ
+  // (sữa chua 5k×2 + trái cây 25k + đường 17k) = 52k → 6 hũ × 14k = 84k, lãi 32k/mẻ.
+  { id: 'sua_chua_trai_cay', name: 'Sữa chua trái cây', category: 'cold', buy: 9000, sell: 14000, color: 0xffb6c1, unlock: 36 },
 
   // --- Nồi hấp (steamer) ---
   { id: 'banh_bao_hap', name: 'Bánh bao hấp nóng', category: 'fresh', buy: 4500, sell: 8600, color: 0xf5f6fa, unlock: 39 },
@@ -333,6 +336,12 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_sua_chua_de', name: 'Sữa chua dê', station: 'blender',
     inputs: [{ productId: 'sua_de', quantity: 1 }, { productId: 'traicay', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
     outputId: 'sua_chua_de', outputQty: 6, durationMin: 20, unlock: 40, reputationGain: 3 },
+  // GĐ1340: Sữa chua trái cây — món mát trứ danh Đà Lạt, làm dày trạm máy xay (trước chỉ 3 món):
+  // mẻ (sữa chua 5k×2 + trái cây 25k + đường 17k) = 52k → 6 hũ × 14k = 84k, lãi 32k/mẻ, nấu hời hơn
+  // bán thẳng nguyên liệu (75k < 84k). Mở 36 ≥ mọi nguyên liệu (19/28/1) (> golden 30 → sim không đổi).
+  { id: 'recipe_sua_chua_trai_cay', name: 'Sữa chua trái cây', station: 'blender',
+    inputs: [{ productId: 'suachua', quantity: 2 }, { productId: 'traicay', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
+    outputId: 'sua_chua_trai_cay', outputQty: 6, durationMin: 15, unlock: 36, reputationGain: 2 },
 
   // --- Quầy pha (drink_counter) ---
   { id: 'recipe_ca_phe_sua', name: 'Cà phê sữa đá', station: 'drink_counter',

@@ -134,11 +134,11 @@ describe('farmVsCook', () => {
     expect(f.verdict).toBe('sell');
   });
 
-  it('trái cây có 5 công thức thường (bỏ giỏ quà 8/3 mùa lễ; GĐ1094 thêm sữa chua dê), best là trà đào cam sả (+35000)', () => {
+  it('trái cây có 6 công thức thường (bỏ giỏ quà 8/3 mùa lễ; GĐ1094 sữa chua dê + GĐ1340 sữa chua trái cây), best là trà đào cam sả (+35000)', () => {
     const f = farmVsCook('traicay');
-    expect(f.recipes).toHaveLength(5);
+    expect(f.recipes).toHaveLength(6);
     expect(f.recipes.map((d) => d.recipe.id).sort())
-      .toEqual(['recipe_banh_trang', 'recipe_kem', 'recipe_sinh_to', 'recipe_sua_chua_de', 'recipe_tra_dao']);
+      .toEqual(['recipe_banh_trang', 'recipe_kem', 'recipe_sinh_to', 'recipe_sua_chua_de', 'recipe_sua_chua_trai_cay', 'recipe_tra_dao']);
     expect(f.best!.recipe.id).toBe('recipe_tra_dao');
     expect(f.best!.homegrownNet).toBe(35000);
     expect(f.verdict).toBe('cook');
