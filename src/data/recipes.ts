@@ -165,6 +165,11 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   // chả cá thác lác (`cha_ca` 76 — nguồn cung cao cấp cuối-game còn 0 lối ra): mẻ (chả cá 120k + nước mắm
   // nhà ủ 30k + hành phi 3k) = 153k → 6 phần × 55k = 330k, lãi 177k/mẻ.
   { id: 'cha_ca_la_vong', name: 'Chả cá Lã Vọng', category: 'fresh', buy: 28000, sell: 55000, color: 0xd4a017, unlock: 76 },
+  // GĐ1352: 2 món khép nốt nguồn cao cấp cuối-game còn 0 lối ra:
+  // Cá basa chiên sả (ca_basa 72): mẻ (basa 85k + gừng 7k + hành phi 3k) = 95k → 6 con × 32k = 192k, lãi 97k/mẻ.
+  { id: 'ca_basa_chien_sa', name: 'Cá basa chiên sả', category: 'fresh', buy: 15000, sell: 32000, color: 0xd9a33c, unlock: 72 },
+  // Sò điệp nướng mỡ hành (so_diep 67): mẻ (sò điệp 180k + hành phi 3k) = 183k → 6 vỏ × 50k = 300k, lãi 117k/mẻ.
+  { id: 'so_diep_nuong_mo_hanh', name: 'Sò điệp nướng mỡ hành', category: 'fresh', buy: 32000, sell: 50000, color: 0xe8a87c, unlock: 67 },
   // GĐ1345: Giỏ quà Giáng sinh — lễ tặng quà lớn duy nhất còn thiếu giỏ (Tết/8-3/20-11/Trung thu đã có):
   // mẻ (rượu vang 120k + bánh kẹo 5k×4 + trà 20k×2) = 180k → 2 giỏ × 140k = 280k, lãi 100k/mẻ.
   { id: 'gio_qua_giang_sinh', name: 'Giỏ quà Giáng sinh', category: 'dry', buy: 70000, sell: 140000, color: 0x228b22, unlock: 36 },
@@ -430,6 +435,18 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_cha_ca_la_vong', name: 'Chả cá Lã Vọng', station: 'food_grill',
     inputs: [{ productId: 'cha_ca', quantity: 1 }, { productId: 'hx_nuoc_mam', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 2 }],
     outputId: 'cha_ca_la_vong', outputQty: 6, durationMin: 22, unlock: 76, reputationGain: 4 },
+  // GĐ1352: Cá basa chiên sả — cá basa phi lên (ca_basa 72) tẩm sả gừng vào chảo chiên:
+  // mẻ (basa 85k + gừng 7k + hành phi 3k) = 95k → 6 con × 32k = 192k, lãi 97k/mẻ, nấu hời hơn
+  // bán thẳng nguyên liệu (136k < 192k). Mở 72 = đúng cấp basa (> golden 30 → sim không đổi).
+  { id: 'recipe_ca_basa_chien_sa', name: 'Cá basa chiên sả', station: 'fryer',
+    inputs: [{ productId: 'ca_basa', quantity: 1 }, { productId: 'x_gung', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 2 }],
+    outputId: 'ca_basa_chien_sa', outputQty: 6, durationMin: 15, unlock: 72, reputationGain: 3 },
+  // GĐ1352: Sò điệp nướng mỡ hành — sò điệp đông lạnh (so_diep 67) nướng vỏ rưới mỡ hành ở bếp nướng:
+  // mẻ (sò điệp 180k + hành phi 3k) = 183k → 6 vỏ × 50k = 300k, lãi 117k/mẻ, nấu hời hơn
+  // bán thẳng nguyên liệu (255k < 300k). Mở 67 = đúng cấp sò điệp (> golden 30 → sim không đổi).
+  { id: 'recipe_so_diep_nuong_mo_hanh', name: 'Sò điệp nướng mỡ hành', station: 'food_grill',
+    inputs: [{ productId: 'so_diep', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 2 }],
+    outputId: 'so_diep_nuong_mo_hanh', outputQty: 6, durationMin: 15, unlock: 67, reputationGain: 3 },
 
   // --- Quầy pha (drink_counter) ---
   { id: 'recipe_ca_phe_sua', name: 'Cà phê sữa đá', station: 'drink_counter',
