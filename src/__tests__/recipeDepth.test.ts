@@ -421,3 +421,44 @@ describe('GĐ1341 — thêm sản phẩm tạp hóa + công thức biểu tượ
     expect(RECIPES.some((r) => r.id === 'recipe_hut_tieu_nam_vang' && r.inputs.some((i) => i.productId === 'thit'))).toBe(true);
   });
 });
+
+/**
+ * GĐ1342 — "Thêm sản phẩm/công thức mới": 2 món nướng của hàng THỊT CÁ TƯƠI (nguồn cung còn trống — 0 lối ra
+ * trước nay): Gà ta nướng muối ớt (`ga_ta_tuoi` 34) + Cá lóc nướng muối (`ca_loc_tuoi` 33) ở bếp nướng.
+ * Cùng bất biến GĐ1321/1332-1341 (lãi dương TÍNH TỪ GIÁ THẬT · unlock > 30 · outputId duy nhất).
+ */
+const NEW_IDS_1342 = ['recipe_ga_ta_nuong_muoi', 'recipe_ca_loc_nuong_muoi'] as const;
+
+describe('GĐ1342 — lối ra bếp cho hàng thịt cá tươi còn trống (nướng muối)', () => {
+  for (const rid of NEW_IDS_1342) {
+    const recipe = RECIPE_MAP[rid];
+    it(`${recipe.name}: có trong RECIPES và COOKED_PRODUCTS`, () => {
+      expect(recipe).toBeDefined();
+      expect(recipe.id).toBe(rid);
+    });
+
+    it(`${recipe.name}: mở sau mốc golden sim 30 → economySim mốc không đổi`, () => {
+      expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+    });
+
+    it(`${recipe.name}: mẻ lãi dương TÍNH TỪ GIÁ THẬT (không bịa con số)`, () => {
+      const cost = recipe.inputs.reduce((s, inp) => s + inp.quantity * productById(inp.productId).buy, 0);
+      const value = recipe.outputQty * productById(recipe.outputId).sell;
+      expect(value).toBeGreaterThan(cost);
+      const raw = recipe.inputs.reduce((s, inp) => s + inp.quantity * productById(inp.productId).sell, 0);
+      expect(value).toBeGreaterThan(raw);
+    });
+
+    it(`${recipe.name}: outputId khớp COOKED_PRODUCTS và không trùng`, () => {
+      expect(COOKED_PRODUCTS.some((c) => c.id === recipe.outputId)).toBe(true);
+      expect(RECIPES.filter((r) => r.outputId === recipe.outputId).length).toBe(1);
+    });
+  }
+
+  it('2 món nướng hiện diện ở bếp nướng và dùng đúng hàng thịt cá tươi (gà ta · cá lóc)', () => {
+    expect(RECIPES.some((r) => r.station === 'food_grill' && r.id === 'recipe_ga_ta_nuong_muoi')).toBe(true);
+    expect(RECIPES.some((r) => r.id === 'recipe_ga_ta_nuong_muoi' && r.inputs.some((i) => i.productId === 'ga_ta_tuoi'))).toBe(true);
+    expect(RECIPES.some((r) => r.station === 'food_grill' && r.id === 'recipe_ca_loc_nuong_muoi')).toBe(true);
+    expect(RECIPES.some((r) => r.id === 'recipe_ca_loc_nuong_muoi' && r.inputs.some((i) => i.productId === 'ca_loc_tuoi'))).toBe(true);
+  });
+});

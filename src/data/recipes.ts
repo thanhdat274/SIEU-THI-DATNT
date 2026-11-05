@@ -141,6 +141,11 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   // GĐ1341: Hủ tiếu nam vang — món hủ tiếu Sa Đéc trứ danh, nguyên liệu hủ tiếu mới thêm (`hut_tieu` 34): mẻ
   // (hủ tiếu 10k + thịt 60k + hành phi 3k) = 73k → 10 tô × 18k = 180k, lãi 107k/mẻ.
   { id: 'hut_tieu_nam_vang', name: 'Hủ tiếu nam vang', category: 'fresh', buy: 8500, sell: 18000, color: 0xe0c068, unlock: 36 },
+  // GĐ1342: 2 món nướng của hàng THỊT CÁ TƯƠI (nguồn cung còn trống — 0 lối ra trước nay):
+  // Gà ta nướng muối ớt (ga_ta_tuoi 34): mẻ (gà 130k + muối 5k + hành phi 3k) = 138k → 6 phần × 42k = 252k, lãi 114k/mẻ.
+  { id: 'ga_ta_nuong_muoi', name: 'Gà ta nướng muối ớt', category: 'fresh', buy: 23000, sell: 42000, color: 0xd4a017, unlock: 36 },
+  // Cá lóc nướng muối (ca_loc_tuoi 33): mẻ (cá lóc 70k + muối 5k + hành phi 3k) = 78k → 6 con × 28k = 168k, lãi 90k/mẻ.
+  { id: 'ca_loc_nuong_muoi', name: 'Cá lóc nướng muối', category: 'fresh', buy: 13000, sell: 28000, color: 0x8f9779, unlock: 36 },
 
   // --- Nồi hấp (steamer) ---
   { id: 'banh_bao_hap', name: 'Bánh bao hấp nóng', category: 'fresh', buy: 4500, sell: 8600, color: 0xf5f6fa, unlock: 39 },
@@ -351,6 +356,18 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_hut_tieu_nam_vang', name: 'Hủ tiếu nam vang', station: 'hot_kettle',
     inputs: [{ productId: 'hut_tieu', quantity: 1 }, { productId: 'thit', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 2 }],
     outputId: 'hut_tieu_nam_vang', outputQty: 10, durationMin: 18, unlock: 36, reputationGain: 3 },
+  // GĐ1342: Gà ta nướng muối ớt — món nướng đồng quê trứ danh: gà ta làm sẵn (meat 34) ướp muối nướng vàng ở
+  // bếp nướng: mẻ (gà 130k + muối 5k + hành phi 3k) = 138k → 6 phần × 42k = 252k, lãi 114k/mẻ, nấu hời hơn
+  // bán thẳng nguyên liệu (190k < 252k). Mở 36 ≥ mọi nguyên liệu (34/1/36) (> golden 30 → sim không đổi).
+  { id: 'recipe_ga_ta_nuong_muoi', name: 'Gà ta nướng muối ớt', station: 'food_grill',
+    inputs: [{ productId: 'ga_ta_tuoi', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 2 }],
+    outputId: 'ga_ta_nuong_muoi', outputQty: 6, durationMin: 20, unlock: 36, reputationGain: 3 },
+  // GĐ1342: Cá lóc nướng muối — món đồng bằng sông nước: cá lóc tươi (meat 33) xiên nướng muối:
+  // mẻ (cá lóc 70k + muối 5k + hành phi 3k) = 78k → 6 con × 28k = 168k, lãi 90k/mẻ, nấu hời hơn
+  // bán thẳng nguyên liệu (110k < 168k). Mở 36 ≥ mọi nguyên liệu (33/1/36) (> golden 30 → sim không đổi).
+  { id: 'recipe_ca_loc_nuong_muoi', name: 'Cá lóc nướng muối', station: 'food_grill',
+    inputs: [{ productId: 'ca_loc_tuoi', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 2 }],
+    outputId: 'ca_loc_nuong_muoi', outputQty: 6, durationMin: 18, unlock: 36, reputationGain: 2 },
 
   // --- Quầy pha (drink_counter) ---
   { id: 'recipe_ca_phe_sua', name: 'Cà phê sữa đá', station: 'drink_counter',
