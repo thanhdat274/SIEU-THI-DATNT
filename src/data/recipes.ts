@@ -242,6 +242,12 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   // GĐ1383: Chè bắp — chè ngọt dân gian trứ danh (hạt bắp nếp nấu dẻo chan cốt dừa):
   // mẻ (bắp 8k + nếp 30k + nước cốt dừa 10k + đường 17k) = 65k → 8 chén × 16k = 128k, lãi 63k/mẻ.
   { id: 'che_bap', name: 'Chè bắp', category: 'fresh', buy: 8000, sell: 16000, color: 0xf9e79f, unlock: 40 },
+  // GĐ1384: Bún mắm — món nước miền Tây trứ danh (nước lèo mắm ruốc đậm đà):
+  // mẻ (bún 12k + mắm ruốc 36k + thịt heo 30k + hành phi 3k) = 81k → 8 tô × 18k = 144k, lãi 63k/mẻ.
+  { id: 'bun_mam', name: 'Bún mắm', category: 'fresh', buy: 10000, sell: 18000, color: 0x8d6e4c, unlock: 40 },
+  // GĐ1385: Cơm hến — món Huế dân dã trứ danh, khép lối ra của nghêu tươi (`ngheu` 57):
+  // mẻ (gạo 80k + nghêu 45k + hành phi 3k) = 128k → 30 phần × 12k = 360k, lãi 232k/mẻ.
+  { id: 'com_hen', name: 'Cơm hến', category: 'fresh', buy: 4200, sell: 12000, color: 0xcdaa7d, unlock: 57 },
   // GĐ1345: Giỏ quà Giáng sinh — lễ tặng quà lớn duy nhất còn thiếu giỏ (Tết/8-3/20-11/Trung thu đã có):
   // mẻ (rượu vang 120k + bánh kẹo 5k×4 + trà 20k×2) = 180k → 2 giỏ × 140k = 280k, lãi 100k/mẻ.
   { id: 'gio_qua_giang_sinh', name: 'Giỏ quà Giáng sinh', category: 'dry', buy: 70000, sell: 140000, color: 0x228b22, unlock: 36 },
@@ -652,6 +658,18 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_che_bap', name: 'Chè bắp', station: 'hot_kettle',
     inputs: [{ productId: 'bap', quantity: 1 }, { productId: 'nep', quantity: 1 }, { productId: 'x_dua_cot_hop', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
     outputId: 'che_bap', outputQty: 8, durationMin: 18, unlock: 40, reputationGain: 2 },
+  // GĐ1384: Bún mắm — món nước miền Tây trứ danh: bún tươi nấu nước lèo mắm ruốc đậm đà cùng thịt heo ở
+  // ấm nước: mẻ (bún 12k + mắm ruốc 36k + thịt heo 30k + hành phi 3k) = 81k → 8 tô × 18k = 144k, lãi 63k/mẻ,
+  // nấu hời hơn bán thẳng nguyên liệu (117k < 144k). Mở 40 ≥ mọi nguyên liệu (33/34/30/36) (> golden 30 → sim không đổi).
+  { id: 'recipe_bun_mam', name: 'Bún mắm', station: 'hot_kettle',
+    inputs: [{ productId: 'bun', quantity: 1 }, { productId: 'hx_mam_ruoc', quantity: 1 }, { productId: 'x_thit_heo', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 2 }],
+    outputId: 'bun_mam', outputQty: 8, durationMin: 20, unlock: 40, reputationGain: 3 },
+  // GĐ1385: Cơm hến — món Huế dân dã trứ danh: cơm trắng trộn nghêu xào cay chan nước lèo ở ấm nước:
+  // mẻ (gạo 80k + nghêu 45k + hành phi 3k) = 128k → 30 phần × 12k = 360k, lãi 232k/mẻ, nấu hời hơn
+  // bán thẳng nguyên liệu (170k < 360k). Mở 57 = đúng cấp nghêu (> golden 30 → sim không đổi).
+  { id: 'recipe_com_hen', name: 'Cơm hến', station: 'hot_kettle',
+    inputs: [{ productId: 'gao', quantity: 1 }, { productId: 'ngheu', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 2 }],
+    outputId: 'com_hen', outputQty: 30, durationMin: 22, unlock: 57, reputationGain: 3 },
 
   // --- Quầy pha (drink_counter) ---
   { id: 'recipe_ca_phe_sua', name: 'Cà phê sữa đá', station: 'drink_counter',

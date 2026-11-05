@@ -1511,6 +1511,86 @@ describe('GĐ1383 — chè bắp (chè ngọt dân gian, ấm nước)', () => {
 });
 
 /**
+ * GĐ1384 — "Thêm sản phẩm/công thức mới": Bún mắm — món nước miền Tây trứ danh (nước lèo mắm ruốc),
+ * nấu ở ấm nước — mắm ruốc hàng xóm có lối ra THỨ 3. Cùng bất biến GĐ1321/1332-1383 (lãi dương
+ * TÍNH TỪ GIÁ THẬT · unlock > 30 · outputId duy nhất).
+ */
+const NEW_IDS_1384 = ['recipe_bun_mam'] as const;
+
+describe('GĐ1384 — bún mắm (món nước miền Tây, ấm nước)', () => {
+  for (const rid of NEW_IDS_1384) {
+    const recipe = RECIPE_MAP[rid];
+    it(`${recipe.name}: có trong RECIPES và COOKED_PRODUCTS`, () => {
+      expect(recipe).toBeDefined();
+      expect(recipe.id).toBe(rid);
+    });
+
+    it(`${recipe.name}: mở sau mốc golden sim 30 → economySim mốc không đổi`, () => {
+      expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+    });
+
+    it(`${recipe.name}: mẻ lãi dương TÍNH TỪ GIÁ THẬT (không bịa con số)`, () => {
+      const cost = recipe.inputs.reduce((s, inp) => s + inp.quantity * productById(inp.productId).buy, 0);
+      const value = recipe.outputQty * productById(recipe.outputId).sell;
+      expect(value).toBeGreaterThan(cost);
+      const raw = recipe.inputs.reduce((s, inp) => s + inp.quantity * productById(inp.productId).sell, 0);
+      expect(value).toBeGreaterThan(raw);
+    });
+
+    it(`${recipe.name}: outputId khớp COOKED_PRODUCTS và không trùng`, () => {
+      expect(COOKED_PRODUCTS.some((c) => c.id === recipe.outputId)).toBe(true);
+      expect(RECIPES.filter((r) => r.outputId === recipe.outputId).length).toBe(1);
+    });
+  }
+
+  it('bún mắm hiện diện ở ấm nước và dùng bún + mắm ruốc + thịt heo + hành phi', () => {
+    expect(RECIPES.some((r) => r.station === 'hot_kettle' && r.id === 'recipe_bun_mam')).toBe(true);
+    expect(RECIPES.some((r) => r.id === 'recipe_bun_mam' && r.inputs.some((i) => i.productId === 'hx_mam_ruoc'))).toBe(true);
+    expect(RECIPES.some((r) => r.id === 'recipe_bun_mam' && r.inputs.some((i) => i.productId === 'bun'))).toBe(true);
+  });
+});
+
+/**
+ * GĐ1385 — "Thêm sản phẩm/công thức mới": Cơm hến — món Huế dân dã trứ danh, khép LỐI RA BẾP của nghêu
+ * tươi (`ngheu` 57 — nguồn cung còn 0 lối ra trước nay), nấu ở ấm nước. Cùng bất biến GĐ1321/1332-1384
+ * (lãi dương TÍNH TỪ GIÁ THẬT · unlock > 30 · outputId duy nhất).
+ */
+const NEW_IDS_1385 = ['recipe_com_hen'] as const;
+
+describe('GĐ1385 — cơm hến (món Huế dân dã, ấm nước)', () => {
+  for (const rid of NEW_IDS_1385) {
+    const recipe = RECIPE_MAP[rid];
+    it(`${recipe.name}: có trong RECIPES và COOKED_PRODUCTS`, () => {
+      expect(recipe).toBeDefined();
+      expect(recipe.id).toBe(rid);
+    });
+
+    it(`${recipe.name}: mở sau mốc golden sim 30 → economySim mốc không đổi`, () => {
+      expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+    });
+
+    it(`${recipe.name}: mẻ lãi dương TÍNH TỪ GIÁ THẬT (không bịa con số)`, () => {
+      const cost = recipe.inputs.reduce((s, inp) => s + inp.quantity * productById(inp.productId).buy, 0);
+      const value = recipe.outputQty * productById(recipe.outputId).sell;
+      expect(value).toBeGreaterThan(cost);
+      const raw = recipe.inputs.reduce((s, inp) => s + inp.quantity * productById(inp.productId).sell, 0);
+      expect(value).toBeGreaterThan(raw);
+    });
+
+    it(`${recipe.name}: outputId khớp COOKED_PRODUCTS và không trùng`, () => {
+      expect(COOKED_PRODUCTS.some((c) => c.id === recipe.outputId)).toBe(true);
+      expect(RECIPES.filter((r) => r.outputId === recipe.outputId).length).toBe(1);
+    });
+  }
+
+  it('cơm hến hiện diện ở ấm nước và dùng gạo + nghêu tươi + hành phi', () => {
+    expect(RECIPES.some((r) => r.station === 'hot_kettle' && r.id === 'recipe_com_hen')).toBe(true);
+    expect(RECIPES.some((r) => r.id === 'recipe_com_hen' && r.inputs.some((i) => i.productId === 'ngheu'))).toBe(true);
+    expect(RECIPES.some((r) => r.id === 'recipe_com_hen' && r.inputs.some((i) => i.productId === 'gao'))).toBe(true);
+  });
+});
+
+/**
  * GĐ1345 — "mở rộng thực đơn giỏ quà lễ": Giỏ quà Giáng sinh — lễ tặng quà lớn duy nhất còn thiếu giỏ
  * (Tết/8-3/20-11/Trung thu đã có), giỏ premium đầu tiên có rượu vang, gói trong đúng dịp giang_sinh.
  * Cùng bất biến GĐ1321/1332-1344 (lãi dương TÍNH TỪ GIÁ THẬT · unlock > 30 · outputId duy nhất).
