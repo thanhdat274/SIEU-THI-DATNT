@@ -126,6 +126,9 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   // GĐ1336: Bánh mì thịt nướng — biểu tượng bánh mì Sài Gòn: `banhmi` (unlock 38) vốn chỉ có bản trứng, chưa có
   // bản thịt nướng ở bếp nướng. Mẻ (bánh mì 8k×5 + thịt heo 30k + hành phi 3k) = 73k → 5 bánh × 25k = 125k, lãi 52k/mẻ.
   { id: 'banh_mi_thit', name: 'Bánh mì thịt nướng', category: 'fresh', buy: 13000, sell: 25000, color: 0xb05c2a, unlock: 38 },
+  // GĐ1337: Bún bò Huế — món bún cay đậm đà trứ danh: nguyên liệu bún tươi mới thêm (`bun` 33). Mẻ (bún 12k +
+  // thịt 60k + hành phi 3k) = 75k → 10 tô × 18k = 180k, lãi 105k/mẻ.
+  { id: 'bun_bo_hue', name: 'Bún bò Huế', category: 'fresh', buy: 8500, sell: 18000, color: 0xb03a2e, unlock: 36 },
 
   // --- Nồi hấp (steamer) ---
   { id: 'banh_bao_hap', name: 'Bánh bao hấp nóng', category: 'fresh', buy: 4500, sell: 8600, color: 0xf5f6fa, unlock: 39 },
@@ -288,6 +291,12 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_pho_bo', name: 'Phở bò', station: 'hot_kettle',
     inputs: [{ productId: 'pho', quantity: 1 }, { productId: 'thit', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 2 }],
     outputId: 'pho_bo', outputQty: 10, durationMin: 18, unlock: 36, reputationGain: 3 },
+  // GĐ1337: Bún bò Huế — món bún cay trứ danh Huế: bún tươi mới thêm (bun 33) + thịt nấu ở ấm nước:
+  // mẻ (bún 12k + thịt 60k + hành phi 3k) = 75k → 10 tô × 18k = 180k, lãi 105k/mẻ, nấu hời hơn bán thẳng
+  // nguyên liệu (108k < 180k). Mở 36 ≥ mọi nguyên liệu (33/30/36) (> golden 30 → sim không đổi).
+  { id: 'recipe_bun_bo_hue', name: 'Bún bò Huế', station: 'hot_kettle',
+    inputs: [{ productId: 'bun', quantity: 1 }, { productId: 'thit', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 2 }],
+    outputId: 'bun_bo_hue', outputQty: 10, durationMin: 20, unlock: 36, reputationGain: 3 },
   // GĐ1094: Hột vịt lộn — món ăn vặt đường phố của trứng vịt trại (vịt mở cấp 16 nhưng chưa có lối ra bếp);
   // 1 vỉ 10 quả + rau răm + muối. Mở 34 > mốc golden 30 → sim không đổi.
   { id: 'recipe_hot_vit_lon', name: 'Hột vịt lộn', station: 'hot_kettle',

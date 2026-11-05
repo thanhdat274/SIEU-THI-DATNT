@@ -153,6 +153,8 @@ export const PRODUCTS: Product[] = [
   p('hat_sen', 'Hạt sen tươi', 'fresh', 65000, 92000, 0xaed6f1, 74),
   p('bia_nhap', 'Bia nhập khẩu (chai)', 'drink', 35000, 49000, 0xc0392b, 75),
   p('cha_ca', 'Chả cá thác lác', 'fresh', 120000, 168000, 0x95a5a6, 76),
+  // GĐ1337: Bún tươi — nguyên liệu mì-quảng/bún của món nấu (Bún bò Huế), biên 1.5 chuẩn, mở 33 sau mốc golden 30
+  p('bun', 'Bún tươi (gói)', 'fresh', 12000, 18000, 0xf3e5ab, 33),
   // Thịt cá tươi: bày ở quầy thịt cá, hạn rất ngắn
   p('thit_heo_tuoi', 'Thịt heo tươi', 'meat', 95000, 130000, 0xe8a0a0, 32),
   p('ca_loc_tuoi', 'Cá lóc tươi', 'meat', 70000, 98000, 0x7f8c8d, 33),
