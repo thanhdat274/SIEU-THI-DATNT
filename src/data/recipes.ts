@@ -254,6 +254,9 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   // GĐ1387: Bánh khúc — đặc sản đồng bằng trứ danh (vỏ nếp xanh lá làm từ bắp, nhân đậu xanh):
   // mẻ (nếp 30k + đậu xanh 15k + bắp 8k) = 53k → 10 cái × 10k = 100k, lãi 47k/mẻ.
   { id: 'banh_khuc', name: 'Bánh khúc', category: 'fresh', buy: 5300, sell: 10000, color: 0x58b368, unlock: 38 },
+  // GĐ1389: Bánh chưng tự gói — món Tết trứ danh gói tay (khác x_banh_chung mua sỉ), gói trong đúng dịp Tết:
+  // mẻ (nếp 30k + đậu xanh 15k + thịt heo 30k) = 75k → 10 bánh × 15k = 150k, lãi 75k/mẻ.
+  { id: 'banh_chung_tu', name: 'Bánh chưng tự gói', category: 'fresh', buy: 7500, sell: 15000, color: 0x27ae60, unlock: 31 },
   // GĐ1345: Giỏ quà Giáng sinh — lễ tặng quà lớn duy nhất còn thiếu giỏ (Tết/8-3/20-11/Trung thu đã có):
   // mẻ (rượu vang 120k + bánh kẹo 5k×4 + trà 20k×2) = 180k → 2 giỏ × 140k = 280k, lãi 100k/mẻ.
   { id: 'gio_qua_giang_sinh', name: 'Giỏ quà Giáng sinh', category: 'dry', buy: 70000, sell: 140000, color: 0x228b22, unlock: 36 },
@@ -568,6 +571,13 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_hop_qua_tra_banh_quy', name: 'Hộp quà trà bánh quy', station: 'gift_wrap',
     inputs: [{ productId: 'banh_quy_nhap', quantity: 1 }, { productId: 'tra', quantity: 2 }],
     outputId: 'hop_qua_tra_banh_quy', outputQty: 2, durationMin: 10, unlock: 65, reputationGain: 3 },
+  // GĐ1389: Bánh chưng tự gói — món Tết trứ danh: nếp xanh nhân đậu xanh thịt heo gói lá dong vuông ở
+  // gift_wrap trong đúng dịp Tết (khác x_banh_chung mua sỉ): mẻ (nếp 30k + đậu xanh 15k + thịt heo 30k)
+  // = 75k → 10 bánh × 15k = 150k, lãi 75k/mẻ, gói hời hơn bán thẳng nguyên liệu (102k < 150k).
+  // Mở 31 > golden 30 → sim không đổi; ngoài dịp Tết không gói được như các giỏ lễ.
+  { id: 'recipe_banh_chung_tu', name: 'Bánh chưng tự gói', station: 'gift_wrap',
+    inputs: [{ productId: 'nep', quantity: 1 }, { productId: 'dau_xanh', quantity: 1 }, { productId: 'x_thit_heo', quantity: 1 }],
+    outputId: 'banh_chung_tu', outputQty: 10, durationMin: 30, unlock: 31, reputationGain: 3, festival: 'tet' },
   // GĐ1364: Bánh canh tôm — món sợi bánh canh dai trứ danh: tôm đông lạnh nấu ngọt nước cùng bột gạo vo sợi
   // ở ấm nước: mẻ (tôm 90k + bột gạo 9k + hành phi 3k) = 102k → 8 tô × 22k = 176k, lãi 74k/mẻ, nấu hời hơn
   // bán thẳng nguyên liệu (148k < 176k). Mở 44 = đúng cấp tôm (> golden 30 → sim không đổi).
