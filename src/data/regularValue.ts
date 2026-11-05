@@ -161,3 +161,41 @@ export function weeklyTop(opts: {
   return list.length ? list : null;
 }
 
+// ───── GĐ1298 — "perk GIỚI THIỆU BẠN BÈ đáng bao nhiêu?" (+khách lẻ/tuần × doanh thu trung bình) ─────
+// GĐ1293 cố tình KHÔNG quy tiền cho refer_friend vì nó không đổi giỏ/lần ghé — nhưng nó RỦ THÊM KHÁCH LẺ vào
+// tiệm (customers.ts:626: `friendsBurst += friends` rồi mỗi suất sinh ưu tiên `spawn(true)` thêm 1 khách, 127-130)
+// → giá trị thật là KHÁCH + DOANH THU thêm, chứ không phải giỏ của chính khách quen. Helper THUẦN: số bạn/tần =
+// `perkValue(refer_friend)`; tần ghé/ngày dùng ĐÚNG `visitsToday` (0.35 + 0.2 nếu frequent, regulars.ts:137) như
+// GĐ1295 → khách lẻ thêm/tuần ≈ friends × visitChance × 7 (ƯỚC TÍNH ~); doanh thu thêm dùng ĐÚNG `avgPerVisit`
+// (doanh thu trung bình/khách, GĐ1221) — chỉ nhân số có sẵn, không bịa (Nguyên tắc c). Không import store.
+
+export interface ReferValue {
+  regular: RegularDef;
+  /** Số bạn rủ mỗi lần ghé (giá trị perk refer_friend: 1 hoặc 2). */
+  friends: number;
+  /** Xác suất ghé/ngày của khách quen này (0.35, +0.2 khi ghé thường xuyên). */
+  visitChance: number;
+  /** Khách lẻ được rủ thêm mỗi TUẦN (ước ~). */
+  extraCustomersWeek: number;
+  /** Doanh thu thêm mỗi tuần (ước ~) = extraCustomersWeek × avgPerVisit. */
+  extraRevenueWeek: number;
+}
+
+/** Giá trị tuần của perk giới thiệu bạn bè (khách + tiền thêm); null khi chưa có perk hoặc avgPerVisit ≤ 0. */
+export function referValue(opts: {
+  def: RegularDef;
+  progress?: RegularProgress;
+  avgPerVisit: number;
+  daysPerWeek?: number;
+}): ReferValue | null {
+  const friends = perkValue(opts.def, opts.progress, 'refer_friend');
+  if (friends <= 0 || opts.avgPerVisit <= 0) return null;
+  const frequentNow = perkValue(opts.def, opts.progress, 'frequent_visit') > 0;
+  const visitChance = REGULAR_VISIT_CHANCE + (frequentNow ? FREQUENT_VISIT_BONUS : 0);
+  const days = opts.daysPerWeek ?? DAYS_PER_WEEK;
+  const extraCustomersWeek = Math.round(friends * visitChance * days * 10) / 10;
+  const extraRevenueWeek = Math.round(extraCustomersWeek * opts.avgPerVisit);
+  return { regular: opts.def, friends, visitChance, extraCustomersWeek, extraRevenueWeek };
+}
+
+

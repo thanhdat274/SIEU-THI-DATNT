@@ -2,11 +2,11 @@ import { formatClock, type GameState } from '../../core/store';
 import { productById, formatMoney } from '../../data/products';
 import type { RegularDef } from '../../data/regulars';
 import type { RegularHurt } from '../../data/regularChurn';
-import type { RegularSpend, NextPerkValue } from '../../data/regularValue';
+import type { RegularSpend, NextPerkValue, ReferValue } from '../../data/regularValue';
 import { Swatch, styles } from './shared';
 
 /** GĐ941: tách khỏi MorningPanel (nguyên văn danh sách khách quen dự kiến ghé hôm nay). */
-export function ExpectedRegularsList({ expected, regulars, reservations, favsOf, haveStock, churn, value, nextPerk }: {
+export function ExpectedRegularsList({ expected, regulars, reservations, favsOf, haveStock, churn, value, nextPerk, refer }: {
   expected: RegularDef[]; regulars: GameState['regulars']; reservations: GameState['reservations'];
   favsOf: (rid: string) => string[]; haveStock: (id: string) => boolean;
   /** GĐ1285 — khách quen nào đang bị phụ món ưa (missLog/reviews); không có thì bỏ qua. */
@@ -15,6 +15,8 @@ export function ExpectedRegularsList({ expected, regulars, reservations, favsOf,
   value?: (rid: string) => RegularSpend | null;
   /** GĐ1293 — mốc perk kế tiếp tăng (đ)/lần ghé nếu nâng thân thiết; chỉ hiện khi có tiền + còn ít mốc. */
   nextPerk?: (rid: string) => NextPerkValue | null;
+  /** GĐ1298 — giá trị perk giới thiệu bạn bè (khách lẻ + doanh thu/tuần); chỉ hiện khi đã có perk. */
+  refer?: (rid: string) => ReferValue | null;
 }) {
   return (
     <>
@@ -53,6 +55,15 @@ export function ExpectedRegularsList({ expected, regulars, reservations, favsOf,
                 return (
                   <div style={{ fontSize: 11, marginTop: 3, color: '#16a085' }}>
                     ⚡ {nv.perk.title} (+~{formatMoney(nv.delta)}/lần) — còn {nv.toGo} thân thiết nữa
+                  </div>
+                );
+              })()}
+              {(() => {
+                const rf = refer ? refer(r.id) : null;
+                if (!rf || rf.extraRevenueWeek <= 0) return null;
+                return (
+                  <div style={{ fontSize: 11, marginTop: 3, color: '#8e44ad' }}>
+                    👥 Rủ thêm ~{rf.extraCustomersWeek} khách/tuần (≈{formatMoney(rf.extraRevenueWeek)})
                   </div>
                 );
               })()}

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { REGULARS, emptyProgress, type RegularProgress } from '../data/regulars';
-import { regularSpendEstimate, regularValueLine, expectedFavoriteItems, nextPerkValue, weeklyContribution, weeklyTop, type WeeklyContribution } from '../data/regularValue';
+import { regularSpendEstimate, regularValueLine, expectedFavoriteItems, nextPerkValue, weeklyContribution, weeklyTop, referValue, type WeeklyContribution } from '../data/regularValue';
 import { productById } from '../data/products';
 
 /** Giá 1000đ mọi món — để cô lập công thức giỏ (không phụ thuộc dữ liệu giá thật). */
@@ -189,5 +189,72 @@ describe('GĐ1295 — weeklyContribution / weeklyTop (khách vàng theo tuần: 
     const a = weeklyContribution({ def: ba_nam, level: 30, priceOf: price1000 });
     const b = weeklyContribution({ def: ba_nam, level: 30, priceOf: price1000 });
     expect(a).toEqual(b);
+  });
+});
+
+/**
+ * GĐ1298 — "perk giới thiệu bạn bè đáng bao nhiêu?": refer_friend rủ thêm khách lẻ (customers.ts friendsBurst →
+ * spawn true) → giá trị = bạn/lần ghé × tần suất/ngày (regulars.ts:137) × avgPerVisit (GĐ1221). THUẦN — chỉ nhân
+ * số có sẵn, không bịa; không import store, không đổi kinh tế/save/seed.
+ */
+describe('GĐ1298 — referValue (perk giới thiệu bạn bè: khách + tiền/tuần)', () => {
+  /** Khách quen có perk refer_friend giá trị 1 (số bạn rủ gọn để dễ kiểm). */
+  function referDef(value = 1) {
+    return REGULARS.find((r) => {
+      const p = r.perks.find((pp) => pp.effect === 'refer_friend');
+      return p && p.value === value;
+    })!;
+  }
+
+  it('chưa mở perk refer_friend → null (không ồn)', () => {
+    const def = REGULARS.find((r) => !r.perks.some((p) => p.effect === 'refer_friend'))!;
+    expect(referValue({ def, avgPerVisit: 20000 })).toBeNull();
+  });
+
+  it('avgPerVisit ≤ 0 → null (chưa có dữ liệu doanh thu, không bịa)', () => {
+    const def = referDef();
+    const prog: RegularProgress = { friendship: 999, visits: 1, perks: [def.perks.find((p) => p.effect === 'refer_friend')!.title], discovered: [] };
+    expect(referValue({ def, progress: prog, avgPerVisit: 0 })).toBeNull();
+  });
+
+  it('bạn/lần × tần ghé 0.35 × 7 → khách lẻ/tuần; x doanh thu bình quân → tiền thêm', () => {
+    const def = referDef(1);
+    const fPerk = def.perks.find((p) => p.effect === 'refer_friend')!;
+    const prog: RegularProgress = { friendship: 999, visits: 1, perks: [fPerk.title], discovered: [] };
+    const r = referValue({ def, progress: prog, avgPerVisit: 20000 })!;
+    expect(r.friends).toBe(1);
+    expect(r.visitChance).toBe(0.35);
+    expect(r.extraCustomersWeek).toBe(2.4); // 1 × 0.35 × 7 = 2.45 → làm tròn 2.4
+    expect(r.extraRevenueWeek).toBe(Math.round(2.4 * 20000));
+  });
+
+  it('mở CẢ ghé thường xuyên → tần 0.55, khách + tiền thêm cao hơn rõ', () => {
+    const def = referDef(1);
+    const fPerk = def.perks.find((p) => p.effect === 'refer_friend')!;
+    const freq = def.perks.find((p) => p.effect === 'frequent_visit');
+    const prog: RegularProgress = {
+      friendship: 999, visits: 1,
+      perks: [fPerk.title, ...(freq ? [freq.title] : [])], discovered: [],
+    };
+    const r = referValue({ def, progress: prog, avgPerVisit: 20000 })!;
+    expect(r.visitChance).toBe(0.55);
+    expect(r.extraCustomersWeek).toBe(3.9); // 1 × 0.55 × 7 = 3.85 → làm tròn 3.9
+    expect(r.extraRevenueWeek).toBeGreaterThan(referValue({ def, progress: { friendship: 999, visits: 1, perks: [fPerk.title], discovered: [] }, avgPerVisit: 20000 })!.extraRevenueWeek);
+  });
+
+  it('2 bạn/lần ghé → khách lẻ/tuần gần gấp đôi 1 bạn', () => {
+    const def = referDef(2);
+    const fPerk = def.perks.find((p) => p.effect === 'refer_friend')!;
+    const prog: RegularProgress = { friendship: 999, visits: 1, perks: [fPerk.title], discovered: [] };
+    const r = referValue({ def, progress: prog, avgPerVisit: 20000 })!;
+    expect(r.friends).toBe(2);
+    expect(r.extraCustomersWeek).toBe(4.9); // 2 × 0.35 × 7 = 4.9 → làm tròn 4.9
+  });
+
+  it('THUẦN: cùng đầu vào ⇒ cùng kết quả (deterministic)', () => {
+    const def = referDef();
+    const fPerk = def.perks.find((p) => p.effect === 'refer_friend')!;
+    const prog: RegularProgress = { friendship: 999, visits: 1, perks: [fPerk.title], discovered: [] };
+    expect(referValue({ def, progress: prog, avgPerVisit: 20000 })).toEqual(referValue({ def, progress: prog, avgPerVisit: 20000 }));
   });
 });

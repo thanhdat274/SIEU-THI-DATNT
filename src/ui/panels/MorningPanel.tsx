@@ -29,7 +29,7 @@ import { HotGoodsCards } from './HotGoodsCards';
 import { LoanNoteCard, EveningPrepCallout, MorningNewsCard } from './MorningNotes';
 import { ExpectedRegularsList } from './ExpectedRegularsList';
 import { regularChurn } from '../../data/regularChurn';
-import { regularSpendEstimate, nextPerkValue, weeklyTop } from '../../data/regularValue';
+import { regularSpendEstimate, nextPerkValue, weeklyTop, referValue } from '../../data/regularValue';
 import { TodayActionsCard } from './TodayActionsCard';
 import { MorningSubtitle } from './MorningSubtitle';
 import { eveningPrepFor, weakYesterdayCombos } from './morningCalc';
@@ -114,6 +114,12 @@ export function MorningPanel() {
   // nhập ra con số: khách thêm/ngày × giỏ bình quân 7 ngày. Hiện ở CẢ thẻ lễ ĐANG diễn ra lẫn SẮP tới.
   const last7 = history.slice(-7);
   const avgCust7 = last7.length ? last7.reduce((a, h) => a + h.customers, 0) / last7.length : 0;
+  // GĐ1298 — giá trị perk giới thiệu bạn bè: avgPerVisit (doanh thu/khách, GĐ1221) × bạn/lần × tần ghé → khách+tiền/tuần
+  const avgPerVisit7 = avgCust7 > 0 ? recentAvgRevenue(history, 7) / avgCust7 : 0;
+  const referValueOf = (rid: string) => {
+    const def = REGULARS.find((x) => x.id === rid);
+    return def ? referValue({ def, progress: regulars[rid] ?? undefined, avgPerVisit: avgPerVisit7 }) : null;
+  };
   const fv = festivalValue({ day, level, customers: avgCust7, revenue: recentAvgRevenue(history, 7) });
   const fvDelta = fv && (
     <>
@@ -224,7 +230,7 @@ export function MorningPanel() {
       <HotGoodsCards eventHot={effects.hot} weekHot={hot} haveStock={haveStock} />
       {soon && <FestivalSoonCard soon={soon} level={level} storage={storage} fv={fv} fvDelta={fvDelta} />}
 
-      <ExpectedRegularsList expected={expected} regulars={regulars} reservations={reservations} favsOf={favsOf} haveStock={haveStock} churn={regularChurnData} value={regularValueOf} nextPerk={nextPerkValueOf} />
+      <ExpectedRegularsList expected={expected} regulars={regulars} reservations={reservations} favsOf={favsOf} haveStock={haveStock} churn={regularChurnData} value={regularValueOf} nextPerk={nextPerkValueOf} refer={referValueOf} />
 
       {weeklyTopData && (
         <div style={{ fontSize: 12, marginTop: 8, color: '#b8860b' }}>
