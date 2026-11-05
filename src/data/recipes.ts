@@ -233,6 +233,9 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   // GĐ1379: Bánh da lợn — bánh dân gian trứ danh (lớn bột gạo + lá dứa xanh, lớp cốt dừa trắng):
   // mẻ (bột gạo 9k + nước cốt dừa 10k + đường 17k) = 36k → 12 miếng × 6k = 72k, lãi 36k/mẻ.
   { id: 'banh_da_lon', name: 'Bánh da lợn', category: 'fresh', buy: 3000, sell: 6000, color: 0x27ae60, unlock: 38 },
+  // GĐ1380: Chè trôi nước — bánh trôi chảy dân gian trứ danh (viên nếp nhân đường trôi nước ngọt):
+  // mẻ (nếp 30k + đường 17k + nước cốt dừa 10k) = 57k → 12 viên × 9k = 108k, lãi 51k/mẻ.
+  { id: 'che_troi_nuoc', name: 'Chè trôi nước', category: 'fresh', buy: 4750, sell: 9000, color: 0xf5e6c8, unlock: 38 },
   // GĐ1345: Giỏ quà Giáng sinh — lễ tặng quà lớn duy nhất còn thiếu giỏ (Tết/8-3/20-11/Trung thu đã có):
   // mẻ (rượu vang 120k + bánh kẹo 5k×4 + trà 20k×2) = 180k → 2 giỏ × 140k = 280k, lãi 100k/mẻ.
   { id: 'gio_qua_giang_sinh', name: 'Giỏ quà Giáng sinh', category: 'dry', buy: 70000, sell: 140000, color: 0x228b22, unlock: 36 },
@@ -625,6 +628,12 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_banh_da_lon', name: 'Bánh da lợn', station: 'steamer',
     inputs: [{ productId: 'x_bot_gao', quantity: 1 }, { productId: 'x_dua_cot_hop', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
     outputId: 'banh_da_lon', outputQty: 12, durationMin: 18, unlock: 38, reputationGain: 2 },
+  // GĐ1380: Chè trôi nước — bánh trôi chảy dân gian trứ danh: viên nếp nhân đường nấu trôi nước ngọt chan
+  // cốt dừa ở ấm nước: mẻ (nếp 30k + đường 17k + nước cốt dừa 10k) = 57k → 12 viên × 9k = 108k, lãi 51k/mẻ,
+  // nấu hời hơn bán thẳng nguyên liệu (77k < 108k). Mở 38 ≥ mọi nguyên liệu (1/1/30) (> golden 30 → sim không đổi).
+  { id: 'recipe_che_troi_nuoc', name: 'Chè trôi nước', station: 'hot_kettle',
+    inputs: [{ productId: 'nep', quantity: 1 }, { productId: 'x_duong', quantity: 1 }, { productId: 'x_dua_cot_hop', quantity: 1 }],
+    outputId: 'che_troi_nuoc', outputQty: 12, durationMin: 18, unlock: 38, reputationGain: 2 },
 
   // --- Quầy pha (drink_counter) ---
   { id: 'recipe_ca_phe_sua', name: 'Cà phê sữa đá', station: 'drink_counter',
