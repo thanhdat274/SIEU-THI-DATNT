@@ -236,6 +236,9 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   // GĐ1380: Chè trôi nước — bánh trôi chảy dân gian trứ danh (viên nếp nhân đường trôi nước ngọt):
   // mẻ (nếp 30k + đường 17k + nước cốt dừa 10k) = 57k → 12 viên × 9k = 108k, lãi 51k/mẻ.
   { id: 'che_troi_nuoc', name: 'Chè trôi nước', category: 'fresh', buy: 4750, sell: 9000, color: 0xf5e6c8, unlock: 38 },
+  // GĐ1381: Chè Thái — chè trái cây thập cẩm trứ danh (trái cây trộn sữa tươi lạnh):
+  // mẻ (trái cây 25k + sữa tươi 28k + đường 17k) = 70k → 6 chén × 22k = 132k, lãi 62k/mẻ.
+  { id: 'che_thai', name: 'Chè Thái', category: 'fresh', buy: 11500, sell: 22000, color: 0xff6b81, unlock: 40 },
   // GĐ1345: Giỏ quà Giáng sinh — lễ tặng quà lớn duy nhất còn thiếu giỏ (Tết/8-3/20-11/Trung thu đã có):
   // mẻ (rượu vang 120k + bánh kẹo 5k×4 + trà 20k×2) = 180k → 2 giỏ × 140k = 280k, lãi 100k/mẻ.
   { id: 'gio_qua_giang_sinh', name: 'Giỏ quà Giáng sinh', category: 'dry', buy: 70000, sell: 140000, color: 0x228b22, unlock: 36 },
@@ -634,6 +637,12 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_che_troi_nuoc', name: 'Chè trôi nước', station: 'hot_kettle',
     inputs: [{ productId: 'nep', quantity: 1 }, { productId: 'x_duong', quantity: 1 }, { productId: 'x_dua_cot_hop', quantity: 1 }],
     outputId: 'che_troi_nuoc', outputQty: 12, durationMin: 18, unlock: 38, reputationGain: 2 },
+  // GĐ1381: Chè Thái — chè trái cây thập cẩm trứ danh: trái cây trộn sữa tươi lạnh chan nước đường ở
+  // ấm nước: mẻ (trái cây 25k + sữa tươi 28k + đường 17k) = 70k → 6 chén × 22k = 132k, lãi 62k/mẻ,
+  // nấu hời hơn bán thẳng nguyên liệu (97k < 132k). Mở 40 ≥ mọi nguyên liệu (28/25/1) (> golden 30 → sim không đổi).
+  { id: 'recipe_che_thai', name: 'Chè Thái', station: 'hot_kettle',
+    inputs: [{ productId: 'traicay', quantity: 1 }, { productId: 'sua_tuoi', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
+    outputId: 'che_thai', outputQty: 6, durationMin: 15, unlock: 40, reputationGain: 2 },
 
   // --- Quầy pha (drink_counter) ---
   { id: 'recipe_ca_phe_sua', name: 'Cà phê sữa đá', station: 'drink_counter',
