@@ -257,6 +257,9 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   // GĐ1389: Bánh chưng tự gói — món Tết trứ danh gói tay (khác x_banh_chung mua sỉ), gói trong đúng dịp Tết:
   // mẻ (nếp 30k + đậu xanh 15k + thịt heo 30k) = 75k → 10 bánh × 15k = 150k, lãi 75k/mẻ.
   { id: 'banh_chung_tu', name: 'Bánh chưng tự gói', category: 'fresh', buy: 7500, sell: 15000, color: 0x27ae60, unlock: 31 },
+  // GĐ1390: Gỏi cuốn — món ăn lành trứ danh (bánh tráng gói tôm luộc):
+  // mẻ (bánh tráng 5k×2 + tôm đông lạnh 90k) = 100k → 12 cuốn × 14k = 168k, lãi 68k/mẻ.
+  { id: 'goi_cuon', name: 'Gỏi cuốn', category: 'fresh', buy: 8500, sell: 14000, color: 0xa8d8b9, unlock: 44 },
   // GĐ1345: Giỏ quà Giáng sinh — lễ tặng quà lớn duy nhất còn thiếu giỏ (Tết/8-3/20-11/Trung thu đã có):
   // mẻ (rượu vang 120k + bánh kẹo 5k×4 + trà 20k×2) = 180k → 2 giỏ × 140k = 280k, lãi 100k/mẻ.
   { id: 'gio_qua_giang_sinh', name: 'Giỏ quà Giáng sinh', category: 'dry', buy: 70000, sell: 140000, color: 0x228b22, unlock: 36 },
@@ -578,6 +581,12 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_banh_chung_tu', name: 'Bánh chưng tự gói', station: 'gift_wrap',
     inputs: [{ productId: 'nep', quantity: 1 }, { productId: 'dau_xanh', quantity: 1 }, { productId: 'x_thit_heo', quantity: 1 }],
     outputId: 'banh_chung_tu', outputQty: 10, durationMin: 30, unlock: 31, reputationGain: 3, festival: 'tet' },
+  // GĐ1390: Gỏi cuốn — món ăn lành trứ danh: tôm luộc gói bánh tráng cuộn mỏng chấm tương (luộc tôm ở
+  // ấm nước): mẻ (bánh tráng 5k×2 + tôm đông lạnh 90k) = 100k → 12 cuốn × 14k = 168k, lãi 68k/mẻ,
+  // nấu hời hơn bán thẳng nguyên liệu (146k < 168k). Mở 44 ≥ mọi nguyên liệu (1/43) (> golden 30 → sim không đổi).
+  { id: 'recipe_goi_cuon', name: 'Gỏi cuốn', station: 'hot_kettle',
+    inputs: [{ productId: 'banhtrang', quantity: 2 }, { productId: 'hai_san', quantity: 1 }],
+    outputId: 'goi_cuon', outputQty: 12, durationMin: 15, unlock: 44, reputationGain: 2 },
   // GĐ1364: Bánh canh tôm — món sợi bánh canh dai trứ danh: tôm đông lạnh nấu ngọt nước cùng bột gạo vo sợi
   // ở ấm nước: mẻ (tôm 90k + bột gạo 9k + hành phi 3k) = 102k → 8 tô × 22k = 176k, lãi 74k/mẻ, nấu hời hơn
   // bán thẳng nguyên liệu (148k < 176k). Mở 44 = đúng cấp tôm (> golden 30 → sim không đổi).
