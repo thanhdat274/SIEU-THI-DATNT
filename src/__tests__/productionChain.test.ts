@@ -257,3 +257,50 @@ describe('GĐ1328 — chuỗi sản xuất từ bánh/tráng nhà hàng xóm (h�
     expect(RECIPES.some((r) => r.id === 'recipe_banh_da_tron' && r.inputs.some((i) => i.productId === 'hx_ca_phao'))).toBe(true);
   });
 });
+
+/**
+ * GĐ1331 — tiếp tục chuỗi sản xuất chế biến từ cung ngoài, khép nốt 2 GIA VỊ nhà hàng xóm còn dead stock
+ * (tương Bần `hx_tuong_ban`, nước mắm cá cơm nhà ủ `hx_nuoc_mam` — vốn chỉ bán thẳng làm gia vị) thành 2 món
+ * kho cổ truyền (Thịt kho tương Bần, Cá kho tộ). Cùng bất biến GĐ1322/1323/1324/1326/1328 (mẻ lãi dương từ giá thật).
+ */
+const NEW_IDS_1331 = ['recipe_thit_tuong_ban', 'recipe_ca_kho_to'] as const;
+
+describe('GĐ1331 — chuỗi sản xuất từ gia vị nhà hàng xóm (hàng xóm → ấm nước)', () => {
+  for (const rid of NEW_IDS_1331) {
+    const recipe = RECIPE_MAP[rid];
+    it(`${recipe.name}: có trong RECIPES và COOKED_PRODUCTS`, () => {
+      expect(recipe).toBeDefined();
+      expect(recipe.id).toBe(rid);
+    });
+
+    it(`${recipe.name}: mở sau mốc golden sim 30 → economySim mốc không đổi`, () => {
+      expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+    });
+
+    it(`${recipe.name}: mẻ lãi dương TÍNH TỪ GIÁ THẬT (không bịa con số)`, () => {
+      const cost = recipe.inputs.reduce((s, inp) => s + inp.quantity * productById(inp.productId).buy, 0);
+      const value = recipe.outputQty * productById(recipe.outputId).sell;
+      expect(value).toBeGreaterThan(cost);
+      const raw = recipe.inputs.reduce((s, inp) => s + inp.quantity * productById(inp.productId).sell, 0);
+      expect(value).toBeGreaterThan(raw);
+    });
+
+    it(`${recipe.name}: nguyên liệu là gia vị nguồn cung ngoài có mối bán (KHÔNG phải món nấu sẵn)`, () => {
+      const mains = recipe.inputs.filter((i) => SUPPLIED_1324.has(i.productId));
+      expect(mains.length).toBeGreaterThanOrEqual(1);
+      for (const m of mains) expect(COOKED_IDS.has(m.productId)).toBe(false);
+    });
+
+    it(`${recipe.name}: outputId khớp COOKED_PRODUCTS và không trùng`, () => {
+      expect(COOKED_PRODUCTS.some((c) => c.id === recipe.outputId)).toBe(true);
+      expect(RECIPES.filter((r) => r.outputId === recipe.outputId).length).toBe(1);
+    });
+  }
+
+  it('2 món mới hiện diện ở ấm nước và dùng đúng gia vị hàng xóm (tương Bần · nước mắm nhà ủ)', () => {
+    expect(RECIPES.some((r) => r.station === 'hot_kettle' && r.id === 'recipe_thit_tuong_ban')).toBe(true);
+    expect(RECIPES.some((r) => r.id === 'recipe_thit_tuong_ban' && r.inputs.some((i) => i.productId === 'hx_tuong_ban'))).toBe(true);
+    expect(RECIPES.some((r) => r.station === 'hot_kettle' && r.id === 'recipe_ca_kho_to')).toBe(true);
+    expect(RECIPES.some((r) => r.id === 'recipe_ca_kho_to' && r.inputs.some((i) => i.productId === 'hx_nuoc_mam'))).toBe(true);
+  });
+});

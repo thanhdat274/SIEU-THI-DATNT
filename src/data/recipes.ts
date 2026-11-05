@@ -86,6 +86,11 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   // mẻ (vải sấy 42k + đường 17k) = 59k → 8 phần × 15k = 120k, lãi 61k/mẻ, nấu hời hơn bán thẳng nguyên liệu (86k < 120k).
   // Khép chuỗi hàng xóm (vải thiều sấy GĐ1083) → ấm nước, mở 38 (sau mốc golden 30 → sim không đổi).
   { id: 'che_vai', name: 'Chè vải', category: 'fresh', buy: 7500, sell: 15000, color: 0x8e5a8a, unlock: 38 },
+  // GĐ1331: Thịt kho tương Bần + Cá kho tộ — khép chuỗi 2 gia vị nhà hàng xóm còn "dead stock" (tương Bần
+  // hx_tuong_ban GĐ1077, nước mắm cá cơm nhà ủ hx_nuoc_mam GĐ1077 — vốn chỉ bán thẳng làm gia vị) thành 2 món
+  // kho cổ truyền. Mở 36/32 sau mốc golden 30 → sim không đổi.
+  { id: 'thit_tuong_ban', name: 'Thịt kho tương Bần', category: 'fresh', buy: 11000, sell: 22000, color: 0x8a4b22, unlock: 36 },
+  { id: 'ca_kho_to', name: 'Cá kho tộ', category: 'fresh', buy: 19000, sell: 38000, color: 0xcdb79e, unlock: 32 },
 
   // --- Máy xay (blender) ---
   { id: 'sinh_to_trai_cay', name: 'Sinh tố trái cây', category: 'cold', buy: 7500, sell: 14300, color: 0xfd79a8, unlock: 28 },
@@ -246,6 +251,18 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_che_vai', name: 'Chè vải', station: 'hot_kettle',
     inputs: [{ productId: 'hx_vai_say', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
     outputId: 'che_vai', outputQty: 8, durationMin: 15, unlock: 38, reputationGain: 2 },
+  // GĐ1331: Thịt kho tương Bần — món kho cổ truyền Hưng Yên của tương Bần nhà hàng xóm (hx_tuong_ban GĐ1077):
+  // mẻ (tương 12k + thịt 30k×2 + đường 17k + hành phi 1.5k×2) = 92k → 10 suất × 22k = 220k, lãi 128k/mẻ,
+  // nấu hời hơn bán thẳng nguyên liệu (121k < 220k). Mở 36 (sau mốc golden 30 → sim không đổi).
+  { id: 'recipe_thit_tuong_ban', name: 'Thịt kho tương Bần', station: 'hot_kettle',
+    inputs: [{ productId: 'hx_tuong_ban', quantity: 1 }, { productId: 'x_thit_heo', quantity: 2 }, { productId: 'x_duong', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 2 }],
+    outputId: 'thit_tuong_ban', outputQty: 10, durationMin: 25, unlock: 36, reputationGain: 3 },
+  // GĐ1331: Cá kho tộ — món kho đồng bằng của nước mắm cá cơm nhà ủ (hx_nuoc_mam GĐ1077) + cá + gừng:
+  // mẻ (cá 50k + nước mắm 30k + đường 17k + gừng 7k) = 104k → 6 nồi × 38k = 228k, lãi 124k/mẻ,
+  // nấu hời hơn bán thẳng nguyên liệu (151k < 228k). Mở 32 (sau mốc golden 30 → sim không đổi).
+  { id: 'recipe_ca_kho_to', name: 'Cá kho tộ', station: 'hot_kettle',
+    inputs: [{ productId: 'ca', quantity: 1 }, { productId: 'hx_nuoc_mam', quantity: 1 }, { productId: 'x_duong', quantity: 1 }, { productId: 'x_gung', quantity: 1 }],
+    outputId: 'ca_kho_to', outputQty: 6, durationMin: 25, unlock: 32, reputationGain: 3 },
   // GĐ1094: Hột vịt lộn — món ăn vặt đường phố của trứng vịt trại (vịt mở cấp 16 nhưng chưa có lối ra bếp);
   // 1 vỉ 10 quả + rau răm + muối. Mở 34 > mốc golden 30 → sim không đổi.
   { id: 'recipe_hot_vit_lon', name: 'Hột vịt lộn', station: 'hot_kettle',
