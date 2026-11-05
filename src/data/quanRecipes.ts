@@ -109,6 +109,10 @@ export const QUAN_RECIPES: QuanRecipe[] = [
   // vốn/ly = 12k/4 + 10k/8 + 3k/10 = 4.6k → bán 18k (lời >2× vốn). Mở 32 > mốc golden 30 → sim không đổi;
   // KHÔNG hot (giữ đếm đồ nóng = 3).
   { id: 'mia_cot_dua', name: 'Nước mía cốt dừa', icon: '🎋', unlock: 32, price: 18_000, uses: [{ id: 'mia', cups: 4 }, { id: 'x_dua_cot_hop', cups: 8 }, { id: 'x_nuoc_da', cups: 10 }] },
+  // GĐ1378: Sữa bắp — món ngọt Đà Lạt trứ danh (bắp ngô xay cùng sữa tươi):
+  // vốn/ly = 8k/4 + 28k/6 + 17k/30 + 3k/10 = 7.5k → bán 22k (lời >2× vốn). Mở 31 > mốc golden 30
+  // → sim không đổi; KHÔNG hot (giữ đếm đồ nóng = 3).
+  { id: 'sua_bap_da', name: 'Sữa bắp', icon: '🌽', unlock: 31, price: 22_000, uses: [{ id: 'bap', cups: 4 }, { id: 'sua_tuoi', cups: 6 }, { id: 'x_duong', cups: 30 }, { id: 'x_nuoc_da', cups: 10 }] },
   { id: 'ca_phe_muoi', name: 'Cà phê muối', icon: '🧂', unlock: 40, price: 28_000, uses: [{ id: 'x_ca_phe_hoa_tan', cups: 15 }, { id: 'x_sua_dac', cups: 10 }, { id: 'x_muoi', cups: 60 }, { id: 'x_nuoc_da', cups: 10 }] },
   { id: 'tra_gung', name: 'Trà gừng nóng', icon: '🫚', unlock: 36, price: 15_000, uses: [{ id: 'tra', cups: 40 }, { id: 'x_gung', cups: 12 }, { id: 'x_duong', cups: 30 }], hot: true },
   { id: 'ca_phe_sua_nong', name: 'Cà phê sữa nóng', icon: '♨️', unlock: 37, price: 20_000, uses: [{ id: 'x_ca_phe_hoa_tan', cups: 15 }, { id: 'x_sua_dac', cups: 10 }], hot: true },
