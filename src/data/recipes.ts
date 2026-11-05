@@ -230,6 +230,9 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   // GĐ1377: Bánh mì que — đặc sản Nha Trang trứ danh (que bánh mì mỏng giòn nhồi pate que cay):
   // mẻ (bánh mì 8k×4 + hành phi 3k) = 35k → 20 que × 4k = 80k, lãi 45k/mẻ.
   { id: 'banh_mi_que', name: 'Bánh mì que', category: 'fresh', buy: 2000, sell: 4000, color: 0xd9a66c, unlock: 38 },
+  // GĐ1379: Bánh da lợn — bánh dân gian trứ danh (lớn bột gạo + lá dứa xanh, lớp cốt dừa trắng):
+  // mẻ (bột gạo 9k + nước cốt dừa 10k + đường 17k) = 36k → 12 miếng × 6k = 72k, lãi 36k/mẻ.
+  { id: 'banh_da_lon', name: 'Bánh da lợn', category: 'fresh', buy: 3000, sell: 6000, color: 0x27ae60, unlock: 38 },
   // GĐ1345: Giỏ quà Giáng sinh — lễ tặng quà lớn duy nhất còn thiếu giỏ (Tết/8-3/20-11/Trung thu đã có):
   // mẻ (rượu vang 120k + bánh kẹo 5k×4 + trà 20k×2) = 180k → 2 giỏ × 140k = 280k, lãi 100k/mẻ.
   { id: 'gio_qua_giang_sinh', name: 'Giỏ quà Giáng sinh', category: 'dry', buy: 70000, sell: 140000, color: 0x228b22, unlock: 36 },
@@ -616,6 +619,12 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_banh_mi_que', name: 'Bánh mì que', station: 'food_grill',
     inputs: [{ productId: 'banhmi', quantity: 4 }, { productId: 'x_hanh_phi', quantity: 2 }],
     outputId: 'banh_mi_que', outputQty: 20, durationMin: 12, unlock: 38, reputationGain: 2 },
+  // GĐ1379: Bánh da lợn — bánh dân gian trứ danh: bột gạo trộn cốt dừa hấp lớp xanh lá dứa - trắng cốt dừa
+  // ở nồi hấp: mẻ (bột gạo 9k + nước cốt dừa 10k + đường 17k) = 36k → 12 miếng × 6k = 72k, lãi 36k/mẻ,
+  // nấu hời hơn bán thẳng nguyên liệu (48k < 72k). Mở 38 ≥ mọi nguyên liệu (24/30/1) (> golden 30 → sim không đổi).
+  { id: 'recipe_banh_da_lon', name: 'Bánh da lợn', station: 'steamer',
+    inputs: [{ productId: 'x_bot_gao', quantity: 1 }, { productId: 'x_dua_cot_hop', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
+    outputId: 'banh_da_lon', outputQty: 12, durationMin: 18, unlock: 38, reputationGain: 2 },
 
   // --- Quầy pha (drink_counter) ---
   { id: 'recipe_ca_phe_sua', name: 'Cà phê sữa đá', station: 'drink_counter',
