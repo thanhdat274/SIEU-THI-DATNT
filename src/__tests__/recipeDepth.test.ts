@@ -509,3 +509,43 @@ describe('GĐ1343 — khép nốt lối ra bếp cho quầy thịt cá (3 món b
     }
   });
 });
+
+/**
+ * GĐ1344 — "Thêm sản phẩm/công thức mới": Thịt kho dưa — món kho Nam Bộ trứ danh, khép LỐI RA BẾP ĐẦU TIÊN
+ * của dưa muối nhà hàng xóm (`hx_dua_muoi` 14 — nguồn cung còn 0 lối ra trước nay), nấu ở ấm nước.
+ * Cùng bất biến GĐ1321/1332-1343 (lãi dương TÍNH TỪ GIÁ THẬT · unlock > 30 · outputId duy nhất).
+ */
+const NEW_IDS_1344 = ['recipe_thit_kho_dua'] as const;
+
+describe('GĐ1344 — lối ra bếp đầu tiên của dưa muối hàng xóm (thịt kho dưa)', () => {
+  for (const rid of NEW_IDS_1344) {
+    const recipe = RECIPE_MAP[rid];
+    it(`${recipe.name}: có trong RECIPES và COOKED_PRODUCTS`, () => {
+      expect(recipe).toBeDefined();
+      expect(recipe.id).toBe(rid);
+    });
+
+    it(`${recipe.name}: mở sau mốc golden sim 30 → economySim mốc không đổi`, () => {
+      expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+    });
+
+    it(`${recipe.name}: mẻ lãi dương TÍNH TỪ GIÁ THẬT (không bịa con số)`, () => {
+      const cost = recipe.inputs.reduce((s, inp) => s + inp.quantity * productById(inp.productId).buy, 0);
+      const value = recipe.outputQty * productById(recipe.outputId).sell;
+      expect(value).toBeGreaterThan(cost);
+      const raw = recipe.inputs.reduce((s, inp) => s + inp.quantity * productById(inp.productId).sell, 0);
+      expect(value).toBeGreaterThan(raw);
+    });
+
+    it(`${recipe.name}: outputId khớp COOKED_PRODUCTS và không trùng`, () => {
+      expect(COOKED_PRODUCTS.some((c) => c.id === recipe.outputId)).toBe(true);
+      expect(RECIPES.filter((r) => r.outputId === recipe.outputId).length).toBe(1);
+    });
+  }
+
+  it('thịt kho dưa hiện diện ở trạm ấm nước và dùng thịt heo + dưa muối hàng xóm + hành phi', () => {
+    expect(RECIPES.some((r) => r.station === 'hot_kettle' && r.id === 'recipe_thit_kho_dua')).toBe(true);
+    expect(RECIPES.some((r) => r.id === 'recipe_thit_kho_dua' && r.inputs.some((i) => i.productId === 'hx_dua_muoi'))).toBe(true);
+    expect(RECIPES.some((r) => r.id === 'recipe_thit_kho_dua' && r.inputs.some((i) => i.productId === 'x_thit_heo'))).toBe(true);
+  });
+});

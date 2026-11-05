@@ -153,6 +153,10 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'ca_ro_phi_chien', name: 'Cá rô phi chiên', category: 'fresh', buy: 9000, sell: 18000, color: 0xb8a33d, unlock: 36 },
   // Bò kho (thit_bo_tuoi 38 + bún 33 + gừng 20): mẻ (bò 210k + bún 12k + gừng 7k) = 229k → 8 tô × 45k = 360k, lãi 131k/mẻ.
   { id: 'bo_kho', name: 'Bò kho', category: 'fresh', buy: 28000, sell: 45000, color: 0xa0522d, unlock: 38 },
+  // GĐ1344: Thịt kho dưa — món kho Nam Bộ trứ danh, khép lối ra cuối cùng của dưa muối nhà hàng xóm
+  // (hx_dua_muoi 14 — nguồn cung còn 0 lối ra): mẻ (thịt heo 30k + dưa muối 7k + hành phi 3k) = 40k
+  // → 8 phần × 15k = 120k, lãi 80k/mẻ.
+  { id: 'thit_kho_dua', name: 'Thịt kho dưa', category: 'fresh', buy: 7500, sell: 15000, color: 0x7a5230, unlock: 36 },
 
   // --- Nồi hấp (steamer) ---
   { id: 'banh_bao_hap', name: 'Bánh bao hấp nóng', category: 'fresh', buy: 4500, sell: 8600, color: 0xf5f6fa, unlock: 39 },
@@ -393,6 +397,13 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_bo_kho', name: 'Bò kho', station: 'hot_kettle',
     inputs: [{ productId: 'thit_bo_tuoi', quantity: 1 }, { productId: 'bun', quantity: 1 }, { productId: 'x_gung', quantity: 1 }],
     outputId: 'bo_kho', outputQty: 8, durationMin: 25, unlock: 38, reputationGain: 3 },
+  // GĐ1344: Thịt kho dưa — món kho Nam Bộ trứ danh: thịt heo kho cùng dưa muối chua giòn nhà hàng xóm
+  // (hx_dua_muoi — lối ra bếp đầu tiên của nguồn cung này) ở ấm nước: mẻ (thịt heo 30k + dưa muối 7k +
+  // hành phi 3k) = 40k → 8 phần × 15k = 120k, lãi 80k/mẻ, nấu hời hơn bán thẳng nguyên liệu (54.5k < 120k).
+  // Mở 36 ≥ mọi nguyên liệu (30/14/36) (> golden 30 → sim không đổi).
+  { id: 'recipe_thit_kho_dua', name: 'Thịt kho dưa', station: 'hot_kettle',
+    inputs: [{ productId: 'x_thit_heo', quantity: 1 }, { productId: 'hx_dua_muoi', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 2 }],
+    outputId: 'thit_kho_dua', outputQty: 8, durationMin: 22, unlock: 36, reputationGain: 2 },
 
   // --- Quầy pha (drink_counter) ---
   { id: 'recipe_ca_phe_sua', name: 'Cà phê sữa đá', station: 'drink_counter',
