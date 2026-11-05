@@ -3,6 +3,7 @@ import { useGame } from '../../core/store';
 import { FLOOR_COLORS, PAINT_PRICE, ROOF_COLORS, SHOP_TIERS, WALL_COLORS, rentDelta, rentOf, spaceUsePct, type ShopStyle } from '../../data/shopTiers';
 import { FURNITURE } from '../../data/furniture';
 import { departmentsUnlockedAtTier } from '../../data/departments';
+import { bigBasketInsight, BIG_BASKET_TIER } from '../../data/bigBasket';
 import { formatMoney } from '../../data/products';
 import { newUnlockMark, shelfBuyHint, storeMissRevenue } from '../../data/advice';
 import { Callout, Footer, Swatch, styles, Tabs } from './shared';
@@ -208,6 +209,15 @@ export function ExpandTab() {
       <div style={{ fontSize: 13, margin: '0 0 10px' }}>
         💰 Tiền nhà bây giờ: <b style={{ color: '#f1c40f' }}>{formatMoney(rentNow)}/ngày</b>
       </div>
+      {(() => {
+        const hasCart = furniture.some((f) => f.type === 'cartStation');
+        const hasBig = furniture.some((f) => f.type === 'bigShelf');
+        const bb = bigBasketInsight(shopTier, hasCart, hasBig);
+        if (bb.line && (shopTier >= BIG_BASKET_TIER || hasCart || hasBig)) {
+          return <div style={{ fontSize: 12, color: '#55efc4', margin: '0 0 8px' }}>{bb.line}</div>;
+        }
+        return null;
+      })()}
       <div style={{ display: 'grid', gap: 8 }}>
         {SHOP_TIERS.map((t, i) => {
           const done = i <= shopTier;

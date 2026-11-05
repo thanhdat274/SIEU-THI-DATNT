@@ -32,6 +32,7 @@ import { askAtCounter, askPending, clearAsk, expireAsk, answerAsk, askWallElapse
 import { cashierRng } from '../core/rand';
 import { cashierHaggleChoice, cashierChangeChoice } from '../data/counterDeals';
 import { VENDOR_CHANCE, VENDOR_FROM, VENDOR_UNTIL, WHOLESALE_UNLOCK } from '../data/wholesale';
+import { isBigBasket, bigBasketCount, bigBasketAbandons } from '../data/bigBasket';
 import { meatDemandFactor } from '../data/meat';
 import {
   bestSkillOnDuty, DIRT_MAX, DIRT_PER_VISIT, dirtVisitFactor,
@@ -364,9 +365,14 @@ export class CustomerManager {
 
     const s = useGame.getState();
     const station = s.furniture.find((f) => f.type === 'cartStation');
-    const withCart = !!station && simRng()() < 0.5;
+    const hasCart = !!station;
+    const hasBigShelf = s.furniture.some((f) => f.type === 'bigShelf');
+    // GĐ-B — khách GIỎ LỚN khi ngành "Khu tự chọn" kích hoạt (đủ bậc + cartStation + bigShelf):
+    // giỏ 5–8 món trải nhiều ngành; thiếu ≥2 món thì bỏ cả giỏ (xem plan kết).
+    c.bigBasket = isBigBasket(simRng(), s.shopTier, hasCart, hasBigShelf);
+    const withCart = hasCart && (c.bigBasket || simRng()() < 0.5);
     const maxItems = s.level >= FEATURES.basket ? 4 : 3;
-    const count = (withCart ? 3 + Math.floor(simRng()() * 5) : 1 + Math.floor(simRng()() * maxItems))
+    const count = (c.bigBasket ? bigBasketCount(simRng()) : withCart ? 3 + Math.floor(simRng()() * 5) : 1 + Math.floor(simRng()() * maxItems))
       + (hasSkill(s.skills, 'big_basket') && simRng()() < 0.5 ? 1 : 0);
     if (hasSkill(s.skills, 'charm')) c.sensitivity *= 0.85;
     // GĐ1212 — P sinh trộm thành helper THUẦN theftSpawnChance (chance × đêm×2 × chó×0.45 × camera×0.7): hành vi GIỮ NGUYÊN.
@@ -462,6 +468,14 @@ export class CustomerManager {
       });
     }
     c.plan.push(() => {
+      // GĐ-B — khách GIỎ LỚN: thiếu ≥2 món mong muốn → bỏ CẢ GIỎ (ràng buộc "trữ kệ đủ theo ngành").
+      if (c.bigBasket && c.basket.length && bigBasketAbandons(c.missing)) {
+        c.say('🛒 Thiếu món phải, bỏ cả giỏ!');
+        if (c.wants.length) useGame.getState().noteMiss('stock', c.wants[0]);
+        c.basket = [];
+        this.leave(c, false);
+        return;
+      }
       if (!c.basket.length && !c.service) {
         c.say('😞 Không có gì ưng');
         this.leave(c, false);

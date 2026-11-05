@@ -132,6 +132,9 @@ export class Customer extends Walker {
   /** Kẻ trộm: lấy hàng rồi đi thẳng ra cửa, không xếp hàng trả tiền. */
   thief = false;
 
+  /** GĐ-B — khách GIỎ LỚN (ngành "Khu tự chọn"): mua nhiều món, thiếu ≥2 món thì bỏ cả giỏ. */
+  bigBasket = false;
+
   /** Nghề của khách vãng lai (null = dân thường hoặc khách quen). */
   profession: ProfessionDef | null;
   /** Người bán rong ghé lấy sỉ: tới quầy đưa đề nghị rồi chờ chủ tiệm trả lời. */
