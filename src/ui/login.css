@@ -19,6 +19,7 @@
 
 .login-col {
   width: min(420px, 100%);
+  max-height: 100%;
   display: flex;
   flex-direction: column;
   gap: 18px;
@@ -26,6 +27,7 @@
 
 /* Bảng hiệu: tấm tôn sơn xanh, chữ vàng viền đỏ, hai con ốc ở góc */
 .login-sign {
+  flex: none;
   position: relative;
   padding: 22px 26px 18px;
   background: var(--sign);
@@ -81,6 +83,10 @@
   flex-direction: column;
   gap: 10px;
   box-shadow: 0 14px 34px rgba(0, 0, 0, 0.3);
+  /* Không bao giờ tràn màn hình: màn thấp thì thẻ tự cuộn, bảng hiệu giữ nguyên */
+  flex-shrink: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
 .login-card h2 {
   margin: 0 0 2px;
@@ -200,7 +206,24 @@
 .login-code:focus-visible { outline: 3px solid var(--letter); }
 /* Ô nhập tên/mã hẻm: chữ thường, giãn hết hàng */
 .login-code.login-name { flex: 1; min-width: 0; width: auto; font-size: 14px; letter-spacing: normal; text-transform: none; }
-.login-alley { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+/* Danh sách hẻm online: cuộn trong khung riêng thay vì kéo dài thẻ đăng nhập —
+   nhiều hẻm cũng không đẩy nút Tạo hẻm / Gia nhập và thông báo lỗi ra khỏi màn hình.
+   Là phần tử flex co giãn của thẻ: màn dư chỗ thì tối đa 300px, màn thiếu chỗ thì
+   nhường bớt cho nội dung khác, chỉ còn sàn 72px thì thẻ mới cuộn. */
+.login-alley-list {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 72px;
+  max-height: min(300px, 38vh);
+  overflow-y: auto;
+  /* chừa mép cho viền focus của nút trong khi cuộn */
+  padding: 2px;
+  overscroll-behavior: contain;
+}
+.login-alley-list .login-alley { margin-bottom: 8px; }
+.login-alley-list .login-alley:last-child { margin-bottom: 0; }
+.login-alley { display: flex; align-items: center; gap: 8px; }
 .login-alley .login-save { flex: 1; }
 .login-copy {
   flex: none;

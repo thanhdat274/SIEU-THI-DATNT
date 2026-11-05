@@ -63,20 +63,24 @@ export function AlleyPanel({ busy, run, onEnter }: {
       ) : (
         <>
           <p className="login-muted">Tiệm chung lưu trên server. Gửi mã hẻm cho bạn bè để cùng vào, tối đa 4 người, ai cũng có quyền như nhau.</p>
-          {alleys?.map((a) => (
-            <div key={a.id} className="login-alley">
-              <button className="login-save" disabled={busy} onClick={() => enter(a.id)}>
-                <strong>{a.name} · {a.id}</strong>
-                <span>Ngày {a.day} · cấp {a.level} · {formatMoney(a.money)}</span>
-                <span>{a.members.map((m) => m.name).join(', ')} ({a.members.length}/4)</span>
-                {a.online > 0 && <span>🟢 {a.online} đang chơi</span>}
-              </button>
-              <button className="login-copy" disabled={busy} onClick={() => copyCode(a.id)} title="Sao chép mã hẻm để gửi cho bạn bè">
-                {copied === a.id ? '✅ Đã chép' : '📋 Sao chép mã'}
-              </button>
-              <button className="login-link" disabled={busy} onClick={() => quit(a)}>Rời hẻm</button>
+          {alleys != null && alleys.length > 0 && (
+            <div className="login-alley-list">
+              {alleys.map((a) => (
+                <div key={a.id} className="login-alley">
+                  <button className="login-save" disabled={busy} onClick={() => enter(a.id)}>
+                    <strong>{a.name} · {a.id}</strong>
+                    <span>Ngày {a.day} · cấp {a.level} · {formatMoney(a.money)}</span>
+                    <span>{a.members.map((m) => m.name).join(', ')} ({a.members.length}/4)</span>
+                    {a.online > 0 && <span>🟢 {a.online} đang chơi</span>}
+                  </button>
+                  <button className="login-copy" disabled={busy} onClick={() => copyCode(a.id)} title="Sao chép mã hẻm để gửi cho bạn bè">
+                    {copied === a.id ? '✅ Đã chép' : '📋 Sao chép mã'}
+                  </button>
+                  <button className="login-link" disabled={busy} onClick={() => quit(a)}>Rời hẻm</button>
+                </div>
+              ))}
             </div>
-          ))}
+          )}
           <div className="login-row">
             <input
               className="login-code login-name"
