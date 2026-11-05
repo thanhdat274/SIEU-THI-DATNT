@@ -1,15 +1,18 @@
 import { formatClock, type GameState } from '../../core/store';
-import { productById } from '../../data/products';
+import { productById, formatMoney } from '../../data/products';
 import type { RegularDef } from '../../data/regulars';
 import type { RegularHurt } from '../../data/regularChurn';
+import type { RegularSpend } from '../../data/regularValue';
 import { Swatch, styles } from './shared';
 
 /** GĐ941: tách khỏi MorningPanel (nguyên văn danh sách khách quen dự kiến ghé hôm nay). */
-export function ExpectedRegularsList({ expected, regulars, reservations, favsOf, haveStock, churn }: {
+export function ExpectedRegularsList({ expected, regulars, reservations, favsOf, haveStock, churn, value }: {
   expected: RegularDef[]; regulars: GameState['regulars']; reservations: GameState['reservations'];
   favsOf: (rid: string) => string[]; haveStock: (id: string) => boolean;
   /** GĐ1285 — khách quen nào đang bị phụ món ưa (missLog/reviews); không có thì bỏ qua. */
   churn?: RegularHurt[];
+  /** GĐ1289 — ước tính tiền mỗi lần ghé của khách quen (giỏ + boa); chỉ dùng để định lượng rủi ro mất tiền khi đang bị phụ. */
+  value?: (rid: string) => RegularSpend | null;
 }) {
   return (
     <>
@@ -34,9 +37,11 @@ export function ExpectedRegularsList({ expected, regulars, reservations, favsOf,
               {(() => {
                 const cb = churn?.find((h) => h.regular.id === r.id);
                 if (!cb) return null;
+                const v = value ? value(r.id) : null;
+                const tail = v ? ` bị hụt — kẻo bỏ, mất ~${formatMoney(v.total)}/lần ghé` : ' bị hụt — kẻo khách quen này bỏ.';
                 return (
                   <div style={{ fontSize: 11, marginTop: 3, color: '#e74c3c' }}>
-                    💔 {cb.hitFavorites.slice(0, 2).map((h) => `${productById(h.productId)?.name ?? h.productId} (${h.count})`).join(', ')} bị hụt — kẻo khách quen này bỏ.
+                    💔 {cb.hitFavorites.slice(0, 2).map((h) => `${productById(h.productId)?.name ?? h.productId} (${h.count})`).join(', ')}{tail}
                   </div>
                 );
               })()}

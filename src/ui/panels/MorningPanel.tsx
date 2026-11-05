@@ -29,6 +29,7 @@ import { HotGoodsCards } from './HotGoodsCards';
 import { LoanNoteCard, EveningPrepCallout, MorningNewsCard } from './MorningNotes';
 import { ExpectedRegularsList } from './ExpectedRegularsList';
 import { regularChurn } from '../../data/regularChurn';
+import { regularSpendEstimate } from '../../data/regularValue';
 import { TodayActionsCard } from './TodayActionsCard';
 import { MorningSubtitle } from './MorningSubtitle';
 import { eveningPrepFor, weakYesterdayCombos } from './morningCalc';
@@ -91,6 +92,11 @@ export function MorningPanel() {
   // GĐ1285 — khách quen nào đang bị phụ món ưa (missLog của ngày + lời chê gần) → cảnh báo giữ chân
   const reviews = useGame((s) => s.reviews);
   const regularChurnData = regularChurn({ missLog: stats?.missLog, reviews });
+  // GĐ1289 — ước tính tiền mỗi lần ghé (giỏ + boa) của từng khách quen, để định lượng "mất bao nhiêu" khi bị phụ
+  const regularValueOf = (rid: string) => {
+    const def = REGULARS.find((x) => x.id === rid);
+    return def ? regularSpendEstimate({ def, level, priceOf, progress: regulars[rid] ?? undefined }) : null;
+  };
   const rep = reputationOf(repLog);
   const effects = dayEffects(weatherSeed, day, level);
   const soon = upcomingFestival(day);
@@ -208,7 +214,7 @@ export function MorningPanel() {
       <HotGoodsCards eventHot={effects.hot} weekHot={hot} haveStock={haveStock} />
       {soon && <FestivalSoonCard soon={soon} level={level} storage={storage} fv={fv} fvDelta={fvDelta} />}
 
-      <ExpectedRegularsList expected={expected} regulars={regulars} reservations={reservations} favsOf={favsOf} haveStock={haveStock} churn={regularChurnData} />
+      <ExpectedRegularsList expected={expected} regulars={regulars} reservations={reservations} favsOf={favsOf} haveStock={haveStock} churn={regularChurnData} value={regularValueOf} />
 
       {dueDebts.length > 0 && <DueDebtsCard dueDebts={dueDebts} day={day} />}
 
