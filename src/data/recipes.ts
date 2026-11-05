@@ -210,6 +210,9 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'lap_xuong_nuong', name: 'Lạp xưởng nướng', category: 'fresh', buy: 7500, sell: 13000, color: 0xc0392b, unlock: 44 },
   // Cừu nướng (thit_cu 56): mẻ (cừu 250k + muối 5k + hành phi 3k) = 258k → 6 phần × 70k = 420k, lãi 162k/mẻ.
   { id: 'cuu_nuong', name: 'Cừu nướng', category: 'fresh', buy: 43000, sell: 70000, color: 0x9a5d3f, unlock: 56 },
+  // GĐ1368: Gà xào hạt điều — món xào Hoa-Việt trứ danh, khép lối ra của hạt điều (`hat` 37):
+  // mẻ (gà nguyên con 130k + hạt điều 60k + hành phi 3k) = 193k → 6 phần × 45k = 270k, lãi 77k/mẻ.
+  { id: 'ga_xao_hat_dieu', name: 'Gà xào hạt điều', category: 'fresh', buy: 32000, sell: 45000, color: 0xcc8e35, unlock: 52 },
   // GĐ1345: Giỏ quà Giáng sinh — lễ tặng quà lớn duy nhất còn thiếu giỏ (Tết/8-3/20-11/Trung thu đã có):
   // mẻ (rượu vang 120k + bánh kẹo 5k×4 + trà 20k×2) = 180k → 2 giỏ × 140k = 280k, lãi 100k/mẻ.
   { id: 'gio_qua_giang_sinh', name: 'Giỏ quà Giáng sinh', category: 'dry', buy: 70000, sell: 140000, color: 0x228b22, unlock: 36 },
@@ -554,6 +557,12 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_cuu_nuong', name: 'Cừu nướng', station: 'food_grill',
     inputs: [{ productId: 'thit_cu', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 2 }],
     outputId: 'cuu_nuong', outputQty: 6, durationMin: 20, unlock: 56, reputationGain: 4 },
+  // GĐ1368: Gà xào hạt điều — món xào Hoa-Việt trứ danh: gà xào hành tây cùng hạt điều rang giòn ở ấm nước:
+  // mẻ (gà nguyên con 130k + hạt điều 60k + hành phi 3k) = 193k → 6 phần × 45k = 270k, lãi 77k/mẻ,
+  // nấu hời hơn bán thẳng nguyên liệu (265k < 270k). Mở 52 = đúng cấp gà (> golden 30 → sim không đổi).
+  { id: 'recipe_ga_xao_hat_dieu', name: 'Gà xào hạt điều', station: 'hot_kettle',
+    inputs: [{ productId: 'thit_ga', quantity: 1 }, { productId: 'hat', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 2 }],
+    outputId: 'ga_xao_hat_dieu', outputQty: 6, durationMin: 18, unlock: 52, reputationGain: 3 },
 
   // --- Quầy pha (drink_counter) ---
   { id: 'recipe_ca_phe_sua', name: 'Cà phê sữa đá', station: 'drink_counter',
