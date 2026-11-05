@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { REGULARS, emptyProgress, type RegularProgress } from '../data/regulars';
-import { regularSpendEstimate, regularValueLine, expectedFavoriteItems } from '../data/regularValue';
+import { regularSpendEstimate, regularValueLine, expectedFavoriteItems, nextPerkValue } from '../data/regularValue';
 import { productById } from '../data/products';
 
 /** Giá 1000đ mọi món — để cô lập công thức giỏ (không phụ thuộc dữ liệu giá thật). */
@@ -67,5 +67,77 @@ describe('GĐ1289 — regularValue (khách quen nào đáng giữ nhất về ti
     const line = regularValueLine(s);
     expect(line).toContain(def.name);
     expect(line).toContain('đ/lần');
+  });
+});
+
+/**
+ * GĐ1293 — "nâng thân thiết tới mốc perk kế tiếp đáng không?": So regularSpendEstimate (GĐ1289) TRƯỚC/SAU khi
+ * mở perk kế tiếp (nextPerk) để báo tăng bao nhiêu mỗi lần ghé. THUẦN — chỉ quy ra tiền cho 3 hiệu ứng đổi
+ * giỏ/boa (extra_item/bulk_buy/bonus_tip); ghé-chung/nhóm (frequent/refer/festival) không đổi giỏ nên delta
+ * null (không bịa con số). Không import store, không đổi kinh tế/save/seed.
+ */
+describe('GĐ1293 — nextPerkValue (nâng thân thiết tới mốc perk kế tiếp đáng không)', () => {
+  /** Một khách quen có PERK KẾ TIẾP (đầu danh sách chưa mở) đổi GIỎ/BOA + món ưa mở ở level ≤ 30. */
+  function moneyPerkDef() {
+    return REGULARS.find((r) => {
+      const p = r.perks[0];
+      return p && ['extra_item', 'bulk_buy', 'bonus_tip'].includes(p.effect)
+        && r.favorites.some((id) => productById(id).unlock <= 30);
+    })!;
+  }
+
+  it('đã mở HẾT mọi perk → null (hết mốc để gợi ý, không ồn)', () => {
+    const def = REGULARS.find((r) => r.id === 'ba_nam')!;
+    const prog: RegularProgress = { friendship: 999, visits: 1, perks: def.perks.map((p) => p.title), discovered: [] };
+    expect(nextPerkValue({ def, level: 30, priceOf: price1000, progress: prog })).toBeNull();
+  });
+
+  it('perk kế tiếp đổi giỏ/boa (extra_item/bulk_buy/bonus_tip) → delta > 0 và nextTotal = hiện tại + delta', () => {
+    const def = moneyPerkDef();
+    const base = regularSpendEstimate({ def, level: 30, priceOf: price1000, progress: emptyProgress() })!;
+    const nv = nextPerkValue({ def, level: 30, priceOf: price1000, progress: emptyProgress() })!;
+    expect(nv.perk.effect).not.toBe('frequent_visit');
+    expect(nv.delta).not.toBeNull();
+    expect(nv.nextTotal).not.toBeNull();
+    expect(nv.delta!).toBeGreaterThan(0);
+    expect(nv.nextTotal).toBe(base.total + nv.delta!);
+    expect(nv.delta).toBe(nv.nextTotal! - base.total);
+  });
+
+  it('toGo = mốc thân thiết − thân thiết hiện tại (≥ 0, không âm khi đã quá mốc)', () => {
+    const def = moneyPerkDef();
+    const prog: RegularProgress = { friendship: def.perks[0].threshold - 2, visits: 1, perks: [], discovered: [] };
+    const nv = nextPerkValue({ def, level: 30, priceOf: price1000, progress: prog })!;
+    expect(nv.toGo).toBe(2);
+  });
+
+  it('perk kế tiếp KHÔNG đổi giỏ/boa (frequent/refer/festival) → delta null (trung thực, không bịa tiền)', () => {
+    const def = REGULARS.find((r) => {
+      const p = r.perks[0];
+      return p && ['frequent_visit', 'refer_friend', 'festival'].includes(p.effect);
+    })!;
+    const prog: RegularProgress = { friendship: 0, visits: 1, perks: [], discovered: [] };
+    expect(nextPerkValue({ def, level: 30, priceOf: price1000, progress: prog })).toEqual(
+      expect.objectContaining({ delta: null, nextTotal: null })
+    );
+  });
+
+  it('THUẦN: cùng đầu vào ⇒ cùng kết quả (deterministic)', () => {
+    const def = moneyPerkDef();
+    const a = nextPerkValue({ def, level: 30, priceOf: price1000, progress: emptyProgress() });
+    const b = nextPerkValue({ def, level: 30, priceOf: price1000, progress: emptyProgress() });
+    expect(a).toEqual(b);
+  });
+
+  it('không import store: chỉ dựa vào đối số (def/level/priceOf/progress)', () => {
+    const def = moneyPerkDef();
+    const nv = nextPerkValue({ def, level: 30, priceOf: price1000, progress: emptyProgress() })!;
+    // Delta bằng đúng chênh giữa 2 lần gọi regularSpendEstimate — cô lập công thức, không cần store/state
+    const withPerk: RegularProgress = {
+      friendship: nv.perk.threshold, visits: 0, lastVisitDay: undefined, lastFriendshipDay: undefined,
+      perks: [nv.perk.title], discovered: [],
+    };
+    const sim = regularSpendEstimate({ def, level: 30, priceOf: price1000, progress: withPerk })!;
+    expect(nv.delta).toBe(sim.total - regularSpendEstimate({ def, level: 30, priceOf: price1000, progress: emptyProgress() })!.total);
   });
 });

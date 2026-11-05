@@ -29,7 +29,7 @@ import { HotGoodsCards } from './HotGoodsCards';
 import { LoanNoteCard, EveningPrepCallout, MorningNewsCard } from './MorningNotes';
 import { ExpectedRegularsList } from './ExpectedRegularsList';
 import { regularChurn } from '../../data/regularChurn';
-import { regularSpendEstimate } from '../../data/regularValue';
+import { regularSpendEstimate, nextPerkValue } from '../../data/regularValue';
 import { TodayActionsCard } from './TodayActionsCard';
 import { MorningSubtitle } from './MorningSubtitle';
 import { eveningPrepFor, weakYesterdayCombos } from './morningCalc';
@@ -96,6 +96,11 @@ export function MorningPanel() {
   const regularValueOf = (rid: string) => {
     const def = REGULARS.find((x) => x.id === rid);
     return def ? regularSpendEstimate({ def, level, priceOf, progress: regulars[rid] ?? undefined }) : null;
+  };
+  // GĐ1293 — mốc perk kế tiếp tăng bao nhiêu (đ)/lần ghé nếu nâng thân thiết; gợi chăm đúng người đáng
+  const nextPerkValueOf = (rid: string) => {
+    const def = REGULARS.find((x) => x.id === rid);
+    return def ? nextPerkValue({ def, level, priceOf, progress: regulars[rid] ?? undefined }) : null;
   };
   const rep = reputationOf(repLog);
   const effects = dayEffects(weatherSeed, day, level);
@@ -214,7 +219,7 @@ export function MorningPanel() {
       <HotGoodsCards eventHot={effects.hot} weekHot={hot} haveStock={haveStock} />
       {soon && <FestivalSoonCard soon={soon} level={level} storage={storage} fv={fv} fvDelta={fvDelta} />}
 
-      <ExpectedRegularsList expected={expected} regulars={regulars} reservations={reservations} favsOf={favsOf} haveStock={haveStock} churn={regularChurnData} value={regularValueOf} />
+      <ExpectedRegularsList expected={expected} regulars={regulars} reservations={reservations} favsOf={favsOf} haveStock={haveStock} churn={regularChurnData} value={regularValueOf} nextPerk={nextPerkValueOf} />
 
       {dueDebts.length > 0 && <DueDebtsCard dueDebts={dueDebts} day={day} />}
 

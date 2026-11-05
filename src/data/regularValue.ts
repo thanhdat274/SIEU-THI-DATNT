@@ -5,7 +5,7 @@
 // món đầu LUÔN ưa, 75% món sau vẫn là món ưa, món ưa nhân bản theo bulk_buy) và `regularCheckout`
 // (regulars.ts:167-176: boa = round(hóa đơn × bonus_tip% /100)×100). Chỉ nói con số ƯỚC TÍNH (~) từ món ưa
 // ĐÃ MỞ KHÓA, không bịa khách/giỏ (Luật 5 an toàn). KHÔNG import store (co-op an toàn).
-import { unlockedFavorites, perkValue, type RegularDef, type RegularProgress } from './regulars';
+import { unlockedFavorites, perkValue, nextPerk, type RegularDef, type RegularProgress, type RegularPerk } from './regulars';
 import { formatMoney } from './products';
 
 export interface RegularSpend {
@@ -53,4 +53,53 @@ export function regularSpendEstimate(opts: {
 /** Dòng ngắn: "giỏ ~X + boa ~Y ≈ ~Z/lần ghé" (dùng trong thẻ khách quen khi có tín hiệu giữ chân). */
 export function regularValueLine(s: RegularSpend): string {
   return `${s.regular.name}: ~${formatMoney(s.spend)}/lần${s.tip > 0 ? ` + boa ~${formatMoney(s.tip)}` : ''} ≈ ~${formatMoney(s.total)} mỗi lượt ghé`;
+}
+
+// ───── GĐ1293 — "Nâng thân thiết tới mốc perk kế tiếp đáng không?" (+bao nhiêu mỗi lần ghé) ─────
+// GĐ1289 đã biết khách quen này đáng bao nhiêu/lần — còn thiếu TAY QUAY của việc chăm thân thiết: mốc perk
+// KẾ TIẾP (extra_item/bulk_buy/bonus_tip) tăng giỏ/boa bao nhiêu so với hiện tại? Để chủ quyết định xem có
+// nên tiếp tục đối xử tốt tới mốc. THUẦN — tái dựng bằng CHÍNH regularSpendEstimate (GĐ1289) trước/sau khi
+// mở perk; CHỈ quy ra tiền cho 3 hiệu ứng đổi giỏ/boa, các perk ghé/nhóm (frequent/refer/festival) không bịa
+// con số (delta null). Không import store (co-op an toàn), không đổi kinh tế/save/seed.
+
+export interface NextPerkValue {
+  /** Perk kế tiếp chưa mở (MỐC thân thiết). */
+  perk: RegularPerk;
+  /** Còn bao nhiêu thân thiết nữa tới mốc (≥0). */
+  toGo: number;
+  /** Tổng giỏ+boa mỗi lần ghé nếu mở perk này; null khi perk không đổi giỏ/boa (không quy được tiền). */
+  nextTotal: number | null;
+  /** Mức tăng mỗi lần ghé (đ) so với hiện tại; null khi không quy được tiền. */
+  delta: number | null;
+}
+
+/** Chỉ các perk làm TĂNG giỏ/boa mỗi lần ghé (quy được tiền); ghé-chung/nhóm không đổi giỏ nên bỏ. */
+const MONEY_PERK_EFFECTS = new Set<string>(['extra_item', 'bulk_buy', 'bonus_tip']);
+
+/** Mốc perk kế tiếp + giá trị tiền nó tăng thêm mỗi lần ghé (so với hiện tại). THUẦN — null khi hết perk chưa mở. */
+export function nextPerkValue(opts: {
+  def: RegularDef;
+  level: number;
+  priceOf: (id: string) => number;
+  progress?: RegularProgress;
+}): NextPerkValue | null {
+  const { def, progress } = opts;
+  const next = nextPerk(def, progress);
+  if (!next) return null;
+  const toGo = Math.max(0, next.threshold - (progress?.friendship ?? 0));
+  if (!MONEY_PERK_EFFECTS.has(next.effect)) {
+    return { perk: next, toGo, nextTotal: null, delta: null };
+  }
+  const base = regularSpendEstimate(opts);
+  const withPerk: RegularProgress = {
+    friendship: Math.max(progress?.friendship ?? 0, next.threshold),
+    visits: progress?.visits ?? 0,
+    lastVisitDay: progress?.lastVisitDay,
+    lastFriendshipDay: progress?.lastFriendshipDay,
+    perks: [...(progress?.perks ?? []), next.title],
+    discovered: [...(progress?.discovered ?? [])],
+  };
+  const sim = regularSpendEstimate({ ...opts, progress: withPerk });
+  if (!base || !sim) return { perk: next, toGo, nextTotal: null, delta: null };
+  return { perk: next, toGo, nextTotal: sim.total, delta: sim.total - base.total };
 }
