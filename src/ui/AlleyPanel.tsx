@@ -3,7 +3,11 @@ import { formatMoney } from '../data/products';
 import { createAlley, enterAlley, joinAlley, listAlleys, quitAlley, type AlleySummary } from '../net/coop';
 import { useSession } from '../net/session';
 
-/** Mục "Hẻm online" ở màn hình chính: danh sách hẻm của mình, tạo hẻm, gia nhập bằng mã. */
+/**
+ * Bảng "Hẻm online" riêng, đứng cạnh thẻ đăng nhập (chỉ hiện khi đã đăng nhập).
+ * Tách khỏi thẻ đăng nhập để bao nhiêu hẻm cũng không đẩy thông tin đăng nhập —
+ * danh sách cuộn trong khung riêng, hàng tạo hẻm/gia nhập luôn đứng đáy bảng.
+ */
 export function AlleyPanel({ busy, run, onEnter }: {
   busy: boolean;
   run: (fn: () => Promise<void>) => Promise<void>;
@@ -55,57 +59,58 @@ export function AlleyPanel({ busy, run, onEnter }: {
   };
 
   return (
-    <>
-      <div className="login-divider" />
-      <h2>Hẻm online (2–4 người)</h2>
-      {!account ? (
-        <p className="login-muted">Đăng nhập Google để mở tiệm chung với bạn bè. Tiến trình hẻm lưu trên server, ai cũng sửa được như nhau, lần sau vào lại chơi tiếp.</p>
+    <section className="login-card login-coop" aria-label="Hẻm online">
+      <header className="coop-head">
+        <h2>Hẻm online <span className="coop-sub">(2–4 người)</span></h2>
+        {alleys && <span className="coop-count">{alleys.length} hẻm</span>}
+      </header>
+      <p className="login-muted">Tiệm chung lưu trên server. Gửi mã hẻm cho bạn bè để cùng vào, tối đa 4 người, ai cũng có quyền như nhau.</p>
+      {alleys == null ? null : alleys.length === 0 ? (
+        <p className="coop-empty">Chưa có hẻm nào. Tạo hẻm mới bên dưới, hoặc nhập mã bạn bè gửi để vào cùng.</p>
       ) : (
-        <>
-          <p className="login-muted">Tiệm chung lưu trên server. Gửi mã hẻm cho bạn bè để cùng vào, tối đa 4 người, ai cũng có quyền như nhau.</p>
-          {alleys != null && alleys.length > 0 && (
-            <div className="login-alley-list">
-              {alleys.map((a) => (
-                <div key={a.id} className="login-alley">
-                  <button className="login-save" disabled={busy} onClick={() => enter(a.id)}>
-                    <strong>{a.name} · {a.id}</strong>
-                    <span>Ngày {a.day} · cấp {a.level} · {formatMoney(a.money)}</span>
-                    <span>{a.members.map((m) => m.name).join(', ')} ({a.members.length}/4)</span>
-                    {a.online > 0 && <span>🟢 {a.online} đang chơi</span>}
-                  </button>
-                  <button className="login-copy" disabled={busy} onClick={() => copyCode(a.id)} title="Sao chép mã hẻm để gửi cho bạn bè">
-                    {copied === a.id ? '✅ Đã chép' : '📋 Sao chép mã'}
-                  </button>
-                  <button className="login-link" disabled={busy} onClick={() => quit(a)}>Rời hẻm</button>
-                </div>
-              ))}
+        <div className="coop-list">
+          {alleys.map((a) => (
+            <div key={a.id} className="coop-item">
+              <button className="login-save" disabled={busy} onClick={() => enter(a.id)}>
+                <strong>{a.name}</strong>
+                <span>Ngày {a.day} · cấp {a.level} · {formatMoney(a.money)}</span>
+                <span>{a.members.map((m) => m.name).join(', ')} ({a.members.length}/4){a.online > 0 ? ` · 🟢 ${a.online} đang chơi` : ''}</span>
+              </button>
+              <div className="coop-side">
+                <button className="login-copy" disabled={busy} onClick={() => copyCode(a.id)} title="Sao chép mã hẻm để gửi cho bạn bè">
+                  {copied === a.id ? '✅ Đã chép' : `📋 ${a.id}`}
+                </button>
+                <button className="login-link" disabled={busy} onClick={() => quit(a)}>Rời hẻm</button>
+              </div>
             </div>
-          )}
-          <div className="login-row">
-            <input
-              className="login-code login-name"
-              aria-label="Tên hẻm mới"
-              placeholder="Tên hẻm mới"
-              maxLength={30}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-            <button className="login-btn small" disabled={busy} onClick={create}>Tạo hẻm</button>
-          </div>
-          <div className="login-row">
-            <input
-              className="login-code login-name"
-              aria-label="Mã hẻm"
-              placeholder="Mã hẻm (6 ký tự)"
-              maxLength={6}
-              value={code}
-              onChange={(e) => setCode(e.target.value.toUpperCase())}
-              onKeyDown={(e) => e.key === 'Enter' && code.trim().length === 6 && join()}
-            />
-            <button className="login-btn small" disabled={busy || code.trim().length !== 6} onClick={join}>Gia nhập</button>
-          </div>
-        </>
+          ))}
+        </div>
       )}
-    </>
+      <div className="coop-form">
+        <div className="login-row">
+          <input
+            className="login-code login-name"
+            aria-label="Tên hẻm mới"
+            placeholder="Tên hẻm mới"
+            maxLength={30}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+          <button className="login-btn small" disabled={busy} onClick={create}>Tạo hẻm</button>
+        </div>
+        <div className="login-row">
+          <input
+            className="login-code login-name"
+            aria-label="Mã hẻm"
+            placeholder="Mã hẻm (6 ký tự)"
+            maxLength={6}
+            value={code}
+            onChange={(e) => setCode(e.target.value.toUpperCase())}
+            onKeyDown={(e) => e.key === 'Enter' && code.trim().length === 6 && join()}
+          />
+          <button className="login-btn small" disabled={busy || code.trim().length !== 6} onClick={join}>Gia nhập</button>
+        </div>
+      </div>
+    </section>
   );
 }

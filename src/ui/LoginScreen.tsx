@@ -171,13 +171,17 @@ export function LoginScreen() {
               <button className="login-btn" disabled={busy} onClick={enterAsGuest}>
                 {localSummary ? `Chơi tiếp trong máy (ngày ${localSummary.day})` : 'Chơi không cần đăng nhập'}
               </button>
+              <p className="login-muted login-coop-hint">🏘️ Muốn chơi chung với bạn bè (2–4 người)? Đăng nhập Google để mở hẻm online lưu trên server.</p>
             </>
           )}
 
-          {!choice && <Suspense fallback={null}><AlleyPanel busy={busy} run={run} onEnter={startGame} /></Suspense>}
           {error && <p className="login-error">{error}</p>}
         </section>
       </div>
+      {/* Bảng hẻm online tách riêng thẻ đăng nhập: nhiều hẻm không đấy thông tin đăng nhập */}
+      {account && !choice && (
+        <Suspense fallback={null}><AlleyPanel busy={busy} run={run} onEnter={startGame} /></Suspense>
+      )}
       {showPrivacy && <PrivacyPolicy onClose={() => setShowPrivacy(false)} />}
     </div>
   );
