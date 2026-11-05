@@ -205,6 +205,11 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   // GĐ1366: Mực khô nướng — món nhậu trứ danh bên mâm bia, khép lối ra của mực khô (`muc_kho` 49):
   // mẻ (mực 120k + hành phi 3k + muối 5k) = 128k → 6 con × 32k = 192k, lãi 64k/mẻ.
   { id: 'muc_kho_nuong', name: 'Mực khô nướng', category: 'fresh', buy: 21000, sell: 32000, color: 0xd5aa6f, unlock: 49 },
+  // GĐ1367: 2 món nướng khép lối ra của lạp xưởng (44) và thịt cừu (56):
+  // Lạp xưởng nướng (lap_xuong 44): mẻ (lạp xưởng 72k + hành phi 3k + muối 5k) = 80k → 10 cây × 13k = 130k, lãi 50k/mẻ.
+  { id: 'lap_xuong_nuong', name: 'Lạp xưởng nướng', category: 'fresh', buy: 7500, sell: 13000, color: 0xc0392b, unlock: 44 },
+  // Cừu nướng (thit_cu 56): mẻ (cừu 250k + muối 5k + hành phi 3k) = 258k → 6 phần × 70k = 420k, lãi 162k/mẻ.
+  { id: 'cuu_nuong', name: 'Cừu nướng', category: 'fresh', buy: 43000, sell: 70000, color: 0x9a5d3f, unlock: 56 },
   // GĐ1345: Giỏ quà Giáng sinh — lễ tặng quà lớn duy nhất còn thiếu giỏ (Tết/8-3/20-11/Trung thu đã có):
   // mẻ (rượu vang 120k + bánh kẹo 5k×4 + trà 20k×2) = 180k → 2 giỏ × 140k = 280k, lãi 100k/mẻ.
   { id: 'gio_qua_giang_sinh', name: 'Giỏ quà Giáng sinh', category: 'dry', buy: 70000, sell: 140000, color: 0x228b22, unlock: 36 },
@@ -537,6 +542,18 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_muc_kho_nuong', name: 'Mực khô nướng', station: 'food_grill',
     inputs: [{ productId: 'muc_kho', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 2 }, { productId: 'x_muoi', quantity: 1 }],
     outputId: 'muc_kho_nuong', outputQty: 6, durationMin: 12, unlock: 49, reputationGain: 2 },
+  // GĐ1367: Lạp xưởng nướng — món nướng đường phố trứ danh: lạp xưởng (lap_xuong 44) nướng vàng phồng rắc
+  // hành phi ở bếp nướng: mẻ (lạp xưởng 72k + hành phi 3k + muối 5k) = 80k → 10 cây × 13k = 130k, lãi 50k/mẻ,
+  // nấu hời hơn bán thẳng nguyên liệu (112k < 130k). Mở 44 = đúng cấp lạp xưởng (> golden 30 → sim không đổi).
+  { id: 'recipe_lap_xuong_nuong', name: 'Lạp xưởng nướng', station: 'food_grill',
+    inputs: [{ productId: 'lap_xuong', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 2 }, { productId: 'x_muoi', quantity: 1 }],
+    outputId: 'lap_xuong_nuong', outputQty: 10, durationMin: 12, unlock: 44, reputationGain: 2 },
+  // GĐ1367: Cừu nướng — món nướng phương Tây cao cấp: thịt cừu (thit_cu 56) ướp muối nướng ở bếp nướng:
+  // mẻ (cừu 250k + muối 5k + hành phi 3k) = 258k → 6 phần × 70k = 420k, lãi 162k/mẻ, nấu hời hơn
+  // bán thẳng nguyên liệu (362k < 420k). Mở 56 = đúng cấp cừu (> golden 30 → sim không đổi).
+  { id: 'recipe_cuu_nuong', name: 'Cừu nướng', station: 'food_grill',
+    inputs: [{ productId: 'thit_cu', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 2 }],
+    outputId: 'cuu_nuong', outputQty: 6, durationMin: 20, unlock: 56, reputationGain: 4 },
 
   // --- Quầy pha (drink_counter) ---
   { id: 'recipe_ca_phe_sua', name: 'Cà phê sữa đá', station: 'drink_counter',
