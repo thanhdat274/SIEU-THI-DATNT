@@ -138,6 +138,9 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   // GĐ1340: Sữa chua trái cây — món mát trứ danh Đà Lạt, dày hơn trạm máy xay (trước chỉ 3 món): mẻ
   // (sữa chua 5k×2 + trái cây 25k + đường 17k) = 52k → 6 hũ × 14k = 84k, lãi 32k/mẻ.
   { id: 'sua_chua_trai_cay', name: 'Sữa chua trái cây', category: 'cold', buy: 9000, sell: 14000, color: 0xffb6c1, unlock: 36 },
+  // GĐ1341: Hủ tiếu nam vang — món hủ tiếu Sa Đéc trứ danh, nguyên liệu hủ tiếu mới thêm (`hut_tieu` 34): mẻ
+  // (hủ tiếu 10k + thịt 60k + hành phi 3k) = 73k → 10 tô × 18k = 180k, lãi 107k/mẻ.
+  { id: 'hut_tieu_nam_vang', name: 'Hủ tiếu nam vang', category: 'fresh', buy: 8500, sell: 18000, color: 0xe0c068, unlock: 36 },
 
   // --- Nồi hấp (steamer) ---
   { id: 'banh_bao_hap', name: 'Bánh bao hấp nóng', category: 'fresh', buy: 4500, sell: 8600, color: 0xf5f6fa, unlock: 39 },
@@ -342,6 +345,12 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_sua_chua_trai_cay', name: 'Sữa chua trái cây', station: 'blender',
     inputs: [{ productId: 'suachua', quantity: 2 }, { productId: 'traicay', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
     outputId: 'sua_chua_trai_cay', outputQty: 6, durationMin: 15, unlock: 36, reputationGain: 2 },
+  // GĐ1341: Hủ tiếu nam vang — món hủ tiếu Sa Đéc trứ danh: hủ tiếu mới thêm (hut_tieu 34) + thịt + hành phi
+  // nấu ở ấm nước: mẻ (hủ tiếu 10k + thịt 60k + hành phi 3k) = 73k → 10 tô × 18k = 180k, lãi 107k/mẻ,
+  // nấu hời hơn bán thẳng nguyên liệu (105k < 180k). Mở 36 ≥ mọi nguyên liệu (34/30/36) (> golden 30 → sim không đổi).
+  { id: 'recipe_hut_tieu_nam_vang', name: 'Hủ tiếu nam vang', station: 'hot_kettle',
+    inputs: [{ productId: 'hut_tieu', quantity: 1 }, { productId: 'thit', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 2 }],
+    outputId: 'hut_tieu_nam_vang', outputQty: 10, durationMin: 18, unlock: 36, reputationGain: 3 },
 
   // --- Quầy pha (drink_counter) ---
   { id: 'recipe_ca_phe_sua', name: 'Cà phê sữa đá', station: 'drink_counter',
