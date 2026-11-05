@@ -132,6 +132,9 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   // GĐ1338: Mì Quảng — món mì vàng đậm đà Quảng Nam, phủ da lợn/rộng hành (nguyên liệu mì `mi` + thịt + hành phi):
   // mẻ (mì 3k + thịt 60k + hành phi 3k) = 66k → 10 tô × 17k = 170k, lãi 104k/mẻ.
   { id: 'mi_quang', name: 'Mì Quảng', category: 'fresh', buy: 8000, sell: 17000, color: 0xe6b422, unlock: 36 },
+  // GĐ1339: Gà kho gừng — món kho gia đình trứ danh: gà nguyên con (`thit_ga` 52) kho gừng + nước mắm nhà ủ
+  // (`hx_nuoc_mam` — lối ra thứ 2). Mẻ (gà 130k + gừng 7k + nước mắm 30k) = 167k → 8 phần × 45k = 360k, lãi 193k/mẻ.
+  { id: 'ga_kho_gung', name: 'Gà kho gừng', category: 'fresh', buy: 22000, sell: 45000, color: 0xb5651d, unlock: 52 },
 
   // --- Nồi hấp (steamer) ---
   { id: 'banh_bao_hap', name: 'Bánh bao hấp nóng', category: 'fresh', buy: 4500, sell: 8600, color: 0xf5f6fa, unlock: 39 },
@@ -306,6 +309,12 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_mi_quang', name: 'Mì Quảng', station: 'hot_kettle',
     inputs: [{ productId: 'mi', quantity: 1 }, { productId: 'thit', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 2 }],
     outputId: 'mi_quang', outputQty: 10, durationMin: 18, unlock: 36, reputationGain: 3 },
+  // GĐ1339: Gà kho gừng — món kho gia đình trứ danh: gà nguyên con + gừng + nước mắm nhà ủ (lối ra thứ 2 của
+  // hx_nuoc_mam) kho lửa nhỏ ở ấm nước: mẻ (gà 130k + gừng 7k + nước mắm 30k) = 167k → 8 phần × 45k = 360k,
+  // lãi 193k/mẻ, nấu hời hơn bán thẳng nguyên liệu (233k < 360k). Mở 52 = đúng cấp gà (> golden 30 → sim không đổi).
+  { id: 'recipe_ga_kho_gung', name: 'Gà kho gừng', station: 'hot_kettle',
+    inputs: [{ productId: 'thit_ga', quantity: 1 }, { productId: 'x_gung', quantity: 1 }, { productId: 'hx_nuoc_mam', quantity: 1 }],
+    outputId: 'ga_kho_gung', outputQty: 8, durationMin: 25, unlock: 52, reputationGain: 3 },
   // GĐ1094: Hột vịt lộn — món ăn vặt đường phố của trứng vịt trại (vịt mở cấp 16 nhưng chưa có lối ra bếp);
   // 1 vỉ 10 quả + rau răm + muối. Mở 34 > mốc golden 30 → sim không đổi.
   { id: 'recipe_hot_vit_lon', name: 'Hột vịt lộn', station: 'hot_kettle',
