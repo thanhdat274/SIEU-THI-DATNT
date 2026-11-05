@@ -199,6 +199,9 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   // GĐ1364: Bánh canh tôm — món sợi bánh canh dai trứ danh, khép lối ra của tôm đông lạnh (`hai_san` 43):
   // mẻ (tôm 90k + bột gạo 9k + hành phi 3k) = 102k → 8 tô × 22k = 176k, lãi 74k/mẻ.
   { id: 'banh_canh_tom', name: 'Bánh canh tôm', category: 'fresh', buy: 12000, sell: 22000, color: 0xff9a76, unlock: 44 },
+  // GĐ1365: Cá hồi áp chảo — món cao cấp kiểu Nhật trứ danh, khép lối ra của cá hồi phi lê (`ca_hoi` 53):
+  // mẻ (cá hồi 320k + hành phi 3k + muối 5k) = 328k → 6 phần × 90k = 540k, lãi 212k/mẻ.
+  { id: 'ca_hoi_ap_chao', name: 'Cá hồi áp chảo', category: 'fresh', buy: 54000, sell: 90000, color: 0xff8a65, unlock: 53 },
   // GĐ1345: Giỏ quà Giáng sinh — lễ tặng quà lớn duy nhất còn thiếu giỏ (Tết/8-3/20-11/Trung thu đã có):
   // mẻ (rượu vang 120k + bánh kẹo 5k×4 + trà 20k×2) = 180k → 2 giỏ × 140k = 280k, lãi 100k/mẻ.
   { id: 'gio_qua_giang_sinh', name: 'Giỏ quà Giáng sinh', category: 'dry', buy: 70000, sell: 140000, color: 0x228b22, unlock: 36 },
@@ -519,6 +522,12 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_banh_canh_tom', name: 'Bánh canh tôm', station: 'hot_kettle',
     inputs: [{ productId: 'hai_san', quantity: 1 }, { productId: 'x_bot_gao', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 2 }],
     outputId: 'banh_canh_tom', outputQty: 8, durationMin: 20, unlock: 44, reputationGain: 3 },
+  // GĐ1365: Cá hồi áp chảo — món cao cấp kiểu Nhật trứ danh: cá hồi phi lê áp chảo da giòn ăn cùng hành phi
+  // ở bếp nướng: mẻ (cá hồi 320k + hành phi 3k + muối 5k) = 328k → 6 phần × 90k = 540k, lãi 212k/mẻ,
+  // nấu hời hơn bán thẳng nguyên liệu (445k < 540k). Mở 53 = đúng cấp cá hồi (> golden 30 → sim không đổi).
+  { id: 'recipe_ca_hoi_ap_chao', name: 'Cá hồi áp chảo', station: 'food_grill',
+    inputs: [{ productId: 'ca_hoi', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 2 }, { productId: 'x_muoi', quantity: 1 }],
+    outputId: 'ca_hoi_ap_chao', outputQty: 6, durationMin: 15, unlock: 53, reputationGain: 4 },
 
   // --- Quầy pha (drink_counter) ---
   { id: 'recipe_ca_phe_sua', name: 'Cà phê sữa đá', station: 'drink_counter',

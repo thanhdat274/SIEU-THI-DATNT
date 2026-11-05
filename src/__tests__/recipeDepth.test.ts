@@ -992,6 +992,45 @@ describe('GĐ1364 — lối ra bếp của tôm đông lạnh (bánh canh tôm, 
 });
 
 /**
+ * GĐ1365 — "Thêm sản phẩm/công thức mới": Cá hồi áp chảo — món cao cấp kiểu Nhật trứ danh, khép LỐI RA BẾP
+ * của cá hồi phi lê (`ca_hoi` 53 — nguồn cung còn 0 lối ra trước nay), nướng ở bếp nướng. Cùng bất biến
+ * GĐ1321/1332-1364 (lãi dương TÍNH TỪ GIÁ THẬT · unlock > 30 · outputId duy nhất).
+ */
+const NEW_IDS_1365 = ['recipe_ca_hoi_ap_chao'] as const;
+
+describe('GĐ1365 — lối ra bếp của cá hồi phi lê (cá hồi áp chảo, bếp nướng)', () => {
+  for (const rid of NEW_IDS_1365) {
+    const recipe = RECIPE_MAP[rid];
+    it(`${recipe.name}: có trong RECIPES và COOKED_PRODUCTS`, () => {
+      expect(recipe).toBeDefined();
+      expect(recipe.id).toBe(rid);
+    });
+
+    it(`${recipe.name}: mở sau mốc golden sim 30 → economySim mốc không đổi`, () => {
+      expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+    });
+
+    it(`${recipe.name}: mẻ lãi dương TÍNH TỪ GIÁ THẬT (không bịa con số)`, () => {
+      const cost = recipe.inputs.reduce((s, inp) => s + inp.quantity * productById(inp.productId).buy, 0);
+      const value = recipe.outputQty * productById(recipe.outputId).sell;
+      expect(value).toBeGreaterThan(cost);
+      const raw = recipe.inputs.reduce((s, inp) => s + inp.quantity * productById(inp.productId).sell, 0);
+      expect(value).toBeGreaterThan(raw);
+    });
+
+    it(`${recipe.name}: outputId khớp COOKED_PRODUCTS và không trùng`, () => {
+      expect(COOKED_PRODUCTS.some((c) => c.id === recipe.outputId)).toBe(true);
+      expect(RECIPES.filter((r) => r.outputId === recipe.outputId).length).toBe(1);
+    });
+  }
+
+  it('cá hồi áp chảo hiện diện ở bếp nướng và dùng cá hồi + hành phi + muối', () => {
+    expect(RECIPES.some((r) => r.station === 'food_grill' && r.id === 'recipe_ca_hoi_ap_chao')).toBe(true);
+    expect(RECIPES.some((r) => r.id === 'recipe_ca_hoi_ap_chao' && r.inputs.some((i) => i.productId === 'ca_hoi'))).toBe(true);
+  });
+});
+
+/**
  * GĐ1345 — "mở rộng thực đơn giỏ quà lễ": Giỏ quà Giáng sinh — lễ tặng quà lớn duy nhất còn thiếu giỏ
  * (Tết/8-3/20-11/Trung thu đã có), giỏ premium đầu tiên có rượu vang, gói trong đúng dịp giang_sinh.
  * Cùng bất biến GĐ1321/1332-1344 (lãi dương TÍNH TỪ GIÁ THẬT · unlock > 30 · outputId duy nhất).
