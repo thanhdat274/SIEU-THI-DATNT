@@ -9,6 +9,8 @@ import { roiOf } from '../../data/serviceRoi';
 import { catPayoff, dogPayoff, CAT_PITCH_MIN } from '../../data/petPayoff';
 import { theftRisk, THEFT_LEAK_HIGH, THEFT_LEAK_MODERATE, THEFT_UNLOCK } from '../../data/theftRisk';
 import { maintenancePayoff, MAINT_RISK_HIGH, MAINT_RISK_MODERATE, MAINT_UNLOCK } from '../../data/maintenancePayoff';
+import { posPayoff, POS_RISK_HIGH, POS_RISK_MODERATE, POS_UNLOCK } from '../../data/posPayoff';
+import { avgPerVisit } from '../../data/repMoney';
 import { brokenShelfLoss } from '../../data/brokenShelfLoss';
 import { itemHealthList, shelfCount } from '../../data/analytics';
 import { card, title, pill, iconTile, btn, sub, row } from './businessStyles';
@@ -190,6 +192,13 @@ export function Upgrades() {
         const shelfLoss = u.id === 'maintenance'
           ? brokenShelfLoss(furniture, itemHealthList(analytics, level, storage, shelfCount(furniture), demand))
           : null;
+        const posValue = u.id === 'pos' && level >= POS_UNLOCK
+          ? posPayoff({
+              level, hasPos: owned,
+              waitMissed: stats.missed?.wait ?? 0,
+              avgRevenuePerBuyer: avgPerVisit(stats.revenue, stats.customers),
+            })
+          : null;
         return (
           <div key={u.id} style={card}>
             <div style={row}>
@@ -243,6 +252,21 @@ export function Upgrades() {
                     🔧 Kệ hỏng đang chặn hẳn {shelfLoss.lines.length} đồ — lỡ TỚI ~{formatMoney(shelfLoss.lostPerDay)}/ngày, sửa để bán lại.
                   </div>
                 )}
+              </Callout>
+            )}
+            {posValue && (owned || posValue.estRevenueLostPerDay > 0) && (
+              <Callout
+                tone={owned ? 'ok' : posValue.verdict === 'high' ? 'danger' : posValue.verdict === 'modest' ? 'warn' : 'info'}
+                style={{ marginTop: 8 }}
+                title={owned
+                  ? '🖥️ Đã lắp POS — quầy quét nhanh gấp rưỡi'
+                  : `🖥️ Mỗi ngày lỡ ~${formatMoney(posValue.estRevenueLostPerDay)} vì khách chờ quầy`}
+              >
+                <div style={{ marginTop: 2, fontSize: 12 }}>
+                  {owned
+                    ? 'Quét mã tự động mọi quầy, khách chờ ít hẳn — giờ đông không còn nghẽn ở máy tính tiền.'
+                    : `~${posValue.waitMissed} khách/ngày bỏ về vì chờ quầy. POS kìm ~80% chờ do tốc độ quầy → tiết kiệm ước ~${formatMoney(posValue.savingPerDay)}/ngày, hoàn vốn sau ~${posValue.paybackDays ?? '?'} ngày (ước lượng, chưa tính giờ đông).`}
+                </div>
               </Callout>
             )}
           </div>
