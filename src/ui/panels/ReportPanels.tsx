@@ -68,6 +68,7 @@ import { loanBurden } from '../../data/loanBurden';
 import { incomeSplit, incomeLevers, salesTrend } from '../../data/incomeSplit';
 import { dailyBurn } from '../../data/dailyBurn';
 import { recentAvgRevenue } from '../../data/minorPayoff';
+import { selfCheckoutPayoff } from '../../data/selfCheckoutPayoff';
 import { AdviceCard, HourChart, ItemTable, HistoryChart } from './HistoryPanel';
 import { SummaryMoneyCards } from './SummaryCards';
 import { Callout, Stat, Footer, Swatch, styles, Tabs } from './shared';
@@ -490,6 +491,12 @@ export function SummaryPanel({ day }: { day: number }) {
                 <div style={{ fontSize: 12, opacity: 0.75, marginTop: 2 }}>
                   Khách đứng chờ 😕😤 quá lâu rồi bỏ về — không mua {wmc.estRevenueLost > 0 ? `~${formatMoney(wmc.estRevenueLost)}` : 'thêm đồng'} doanh thu hôm nay. Đứng quầy giờ đông (giờ cao điểm nhất {waitLoss.peakHour !== null ? `${waitLoss.peakHour}h–${waitLoss.peakHour + 1}h` : 'trong hôm nay'}) hoặc thuê thêm thu ngân để không bỏ lỡ.
                 </div>
+                {(() => {
+                  // GĐ1289 — quầy tự thanh toán: tay quay siêu thị còn thiếu sau GĐ120/1221 (vốn chỉ gợi
+                  // xếp ca/thu thêm người) — ước phần khách bỏ vì chờ là khách mua ÍT món, đáng để tự quét.
+                  const sco = selfCheckoutPayoff(waitLoss.count, avgPerVisit(st.revenue, st.customers));
+                  return sco.line ? <div style={{ fontSize: 12, opacity: 0.75, marginTop: 2 }}>{sco.line}</div> : null;
+                })()}
               </Callout>
             );
           })()}
