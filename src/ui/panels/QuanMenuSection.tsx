@@ -5,6 +5,7 @@ import {
   cleanMenu, QUAN_RECIPES, QUAN_VARIETY_BONUS, recipeCapacity, recipeCupCost,
 } from '../../data/quanRecipes';
 import { quanBestAdd, quanBestAddLine } from '../../data/quanMenuSuggest';
+import { quanHandPayoff, quanHandPayoffLine } from '../../data/quanHandPayoff';
 import { styles } from './shared';
 import { newUnlockMark } from '../../data/advice';
 
@@ -19,6 +20,8 @@ export function QuanMenuSection() {
   const mul = QUAN_PRICE_OPTIONS[q.price].mul;
   // GĐ1306 — tối nay nên thêm món nào (lãi/ly × mở ×khách đồ nóng × kho): xếp hạng công thức chưa bán
   const suggestLine = quanBestAddLine(quanBestAdd({ level, storage, menu, priceMul: mul, weather, day, slots }), weather);
+  // GĐ1307 — mẻ TỰ PHA +20% tay nghề đáng bao nhiêu /mẻ và cả ngày (soi phần thưởng GĐ427), kèm kẹt nguyên liệu
+  const handLine = quanHandPayoffLine(quanHandPayoff({ level, menu, storage, priceMul: mul, day, q }));
   return (
     <div style={{ ...styles.card, display: 'block', marginTop: 10 }}>
       <b>📋 Thực đơn pha chế ({menu.length}/{slots})</b>
@@ -39,6 +42,9 @@ export function QuanMenuSection() {
         title="Tự đứng quầy pha một mẻ, lần lượt từng món trên thực đơn, bán ngay giá tay nghề +20%">
         🍹 Tự pha {QUAN_HAND_CUPS} ly (còn {quanHandLeft(q, day)} mẻ)
       </button>
+      {handLine && (
+        <div style={{ fontSize: 11, marginTop: 2, color: '#2ecc71' }}>{handLine}</div>
+      )}
       {suggestLine && (
         <div style={{ fontSize: 11, marginTop: 4, color: '#c0392b' }}>{suggestLine}</div>
       )}
