@@ -5,6 +5,7 @@ import { furnitureDef } from '../../data/furniture';
 import { formatMoney, productById } from '../../data/products';
 import { describeRep, meetsRep, REP_FACTORS, REP_INFO, REP_MIN_SAMPLES, reputationOf, type RepSample } from '../../data/reputation';
 import { repPayoff, repPayoffFocus } from '../../data/repPayoff';
+import { nearExpiryAstray } from '../../data/nearExpiryAstray';
 import { regularRep, REGULARS } from '../../data/regulars';
 import { ACTION_LABEL, type Advice, type HourStat } from '../../data/advice';
 import { SUPPLY_CONTRACTS } from '../../data/contracts';
@@ -61,6 +62,11 @@ export function ReputationCard({ log }: { log: RepSample[] }) {
   const focus = repPayoffFocus(rep, level);
   // Chưa đủ lượt khách: reputationOf trả placeholder 3.0 — không được hiện như điểm thật (GĐ37)
   const insufficient = rep.samples < REP_MIN_SAMPLES;
+  // GĐ1303: soi phạt kép — bán hàng cận hạn âm thầm kéo sao 'Chất lượng món' xuống
+  const astray = nearExpiryAstray(log);
+  const aStar = astray.qualityStar;
+  const fStar = astray.freshStar;
+  const showAstray = !insufficient && aStar !== null && fStar !== null && astray.dragged > 0 && fStar - aStar >= 0.05;
   const gated = [
     ...SUPPLY_CONTRACTS.filter((c) => c.rep && c.unlock <= level + 5).map((c) => ({ name: `${c.icon} Hợp đồng ${c.title}`, need: c.rep! })),
     ...REGULARS.filter((r) => !regulars[r.id]?.visits && r.unlock <= level + 5 && regularRep(r)).map((r) => ({ name: `💛 Khách quen ${r.name}`, need: regularRep(r)! })),
@@ -81,6 +87,11 @@ export function ReputationCard({ log }: { log: RepSample[] }) {
           <span style={{ width: 30, textAlign: 'right' }}>{insufficient ? '—' : rep.factors[k].toFixed(1)}</span>
         </div>
       ))}
+      {showAstray && (
+        <div style={{ fontSize: 12, marginTop: 6, color: '#e67e22' }}>
+          🍲 {astray.dragged} lượt mua cận hạn: chấm 0.4/0.8★ — 'Chất lượng món' {aStar!.toFixed(1)}★, nếu tươi ~{fStar!.toFixed(1)}★.
+        </div>
+      )}
       {rep.weakest && rep.factors[rep.weakest] < 4 && (
         <div style={{ fontSize: 12, marginTop: 6 }}>💡 Yếu nhất: <b>{REP_INFO[rep.weakest].name}</b>. {REP_INFO[rep.weakest].low}{!payoff.insufficient && focus.gainKhach > 0 && (
           <span style={{ color: '#e67e22' }}> Nâng mặt này lên 4★ được thêm <b>~{focus.gainKhach} khách/ngày</b>.</span>
