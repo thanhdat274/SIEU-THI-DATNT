@@ -57,7 +57,9 @@ export const FESTIVAL_NOTICE_DAYS = 3;
 export const FESTIVALS: Festival[] = [
   { id: 'tet_duong', icon: '🎆', name: 'Tết dương lịch', blurb: 'Năm mới đầu hẻm, nhà nào cũng có tiệc nhỏ: bia nước bánh kẹo hút hàng.', from: md(1, 1), to: md(1, 2), traffic: 1.2, hot: ['bia', 'ngot', 'banh', 'sua'], cost: 1.03, host: 'bac_tam' },
   { id: 'tet', icon: '🧧', name: 'Tết Nguyên Đán', blurb: 'Bà con sắm Tết rầm rộ, mua cả giỏ quà; mối nhập tăng giá mạnh, bán giá cao vẫn hết.', from: md(1, 28), to: md(2, 8), traffic: 1.7, goods: ['x_banh_chung', 'x_bao_li_xi', 'x_mut_dua', 'x_hat_dua', 'gio_qua_tet'], hot: ['banh', 'ngot', 'bia', 'gao', 'dauan', 'giavi', 'traicay', 'thit', 'hat', 'quatet', 'nuocmam', 'gio_qua_tet'], cost: 1.2, pull: 0.55, tolerance: 0.5 },
-  { id: 'valentine', icon: '💝', name: 'Lễ Valentine', blurb: 'Cặp đôi đi chơi sắm quà: bánh ngọt, mỹ phẩm, nước ngọt hút hàng.', from: md(2, 13), to: md(2, 14), traffic: 1.15, hot: ['banh', 'ngot', 'mypham', 'sua', 'ruou'], cost: 1.03 },
+  // GĐ1346: thêm Giỏ quà Valentine vào goods + hot của dịp (đổi lịch lễ CÓ CHỦ Ý theo giỏ mới —
+  // khớp bất biến communityIntegrity: món lễ phải bán được đúng mùa).
+  { id: 'valentine', icon: '💝', name: 'Lễ Valentine', blurb: 'Cặp đôi đi chơi sắm quà: bánh ngọt, mỹ phẩm, nước ngọt hút hàng.', from: md(2, 13), to: md(2, 14), traffic: 1.15, goods: ['gio_qua_valentine'], hot: ['banh', 'ngot', 'mypham', 'sua', 'ruou', 'gio_qua_valentine'], cost: 1.03 },
   { id: 'le_hoi_lang', icon: '🏮', name: 'Lễ hội làng', blurb: 'Hội làng đầu xuân, nhà nhà nấu cỗ: gạo, dầu ăn, gia vị, nước mắm bán chạy.', from: md(2, 15), to: md(2, 17), traffic: 1.2, hot: ['gao', 'dauan', 'giavi', 'nuocmam'], cost: 1.03, host: 'bac_doi_hoi' },
   // Ngày hội xóm: ngắn, đẩy mạnh một nhóm hàng
   { id: 'quoc_te_phu_nu', icon: '💐', name: 'Quốc tế Phụ nữ 8/3', blurb: 'Nhà nhà mua hoa, mỹ phẩm, bánh làm quà tặng chị em; khách chịu giá cao.', from: md(3, 7), to: md(3, 9), traffic: 1.25, goods: ['gio_qua_83'], hot: ['mypham', 'banh', 'traicay', 'sua', 'xaphong', 'gio_qua_83'], cost: 1.05, pull: 0.35, tolerance: 0.7 },

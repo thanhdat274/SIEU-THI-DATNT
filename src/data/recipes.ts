@@ -160,6 +160,9 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   // GĐ1345: Giỏ quà Giáng sinh — lễ tặng quà lớn duy nhất còn thiếu giỏ (Tết/8-3/20-11/Trung thu đã có):
   // mẻ (rượu vang 120k + bánh kẹo 5k×4 + trà 20k×2) = 180k → 2 giỏ × 140k = 280k, lãi 100k/mẻ.
   { id: 'gio_qua_giang_sinh', name: 'Giỏ quà Giáng sinh', category: 'dry', buy: 70000, sell: 140000, color: 0x228b22, unlock: 36 },
+  // GĐ1346: Giỏ quà Valentine — giỏ cặp đôi (mỹ phẩm + bánh + kẹo ngọt): mẻ (mỹ phẩm 80k + bánh 5k×4 +
+  // kẹo mút 1k×8) = 108k → 2 giỏ × 90k = 180k, lãi 72k/mẻ.
+  { id: 'gio_qua_valentine', name: 'Giỏ quà Valentine', category: 'dry', buy: 45000, sell: 90000, color: 0xe84393, unlock: 36 },
 
   // --- Nồi hấp (steamer) ---
   { id: 'banh_bao_hap', name: 'Bánh bao hấp nóng', category: 'fresh', buy: 4500, sell: 8600, color: 0xf5f6fa, unlock: 39 },
@@ -552,6 +555,12 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_gio_giang_sinh', name: 'Giỏ quà Giáng sinh', station: 'gift_wrap',
     inputs: [{ productId: 'ruou', quantity: 1 }, { productId: 'banh', quantity: 4 }, { productId: 'tra', quantity: 2 }],
     outputId: 'gio_qua_giang_sinh', outputQty: 2, durationMin: 12, unlock: 36, reputationGain: 3, festival: 'giang_sinh' },
+  // GĐ1346: Giỏ quà Valentine — giỏ cặp đôi: mỹ phẩm (mypham 34) + bánh kẹo + kẹo mút ngọt ngào, gói trong
+  // đúng dịp valentine: mẻ (mỹ phẩm 80k + bánh 5k×4 + kẹo mút 1k×8) = 108k → 2 giỏ × 90k = 180k, lãi 72k/mẻ,
+  // gói hời hơn bán thẳng nguyên liệu (168k < 180k). Mở 36 ≥ mọi nguyên liệu (1/1/3) (> golden 30 → sim không đổi).
+  { id: 'recipe_gio_valentine', name: 'Giỏ quà Valentine', station: 'gift_wrap',
+    inputs: [{ productId: 'mypham', quantity: 1 }, { productId: 'banh', quantity: 4 }, { productId: 'keomut', quantity: 8 }],
+    outputId: 'gio_qua_valentine', outputQty: 2, durationMin: 10, unlock: 36, reputationGain: 3, festival: 'valentine' },
 ];
 
 // ──────────────────────────────────────────────

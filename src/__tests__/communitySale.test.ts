@@ -78,16 +78,19 @@ describe('GĐ1049 — hoàn thành mục tiêu hẻm có HOST lễ hội (commun
     expect(toasts.some((t) => t.includes('thân hơn'))).toBe(true); // nhánh 295 host truthy
   });
 
-  it('hoàn thành mục tiêu DỊP KHÔNG HOST (valentine) → thưởng tiền, KHÔNG tặng thân thiết, báo không "thân hơn"', () => {
+  it('hoàn thành mục tiêu DỊP KHÔNG HOST (mua_mua) → thưởng tiền, KHÔNG tặng thân thiết, báo không "thân hơn"', () => {
     const toasts: string[] = [];
-    const day = 44; // valentine: f.from=43 (dayOfYear 43 → game day 44), không host
+    const day = 274; // mua_mua: f.from=273 (10/1, dayOfYear 273 → game day 274), không host không goods
+    // (GĐ1346: valentine có Giỏ quà Valentine → thành dịp LỚN có goods như 8/3/20-11/Trung thu —
+    //  không còn là ví dụ dịp nhỏ; đổi ví dụ sang mua_mua giữ nguyên nhánh host-false cần test.)
     useGame.setState({
       ...newGameData(), money: 0, level: 3, day,
       community: {}, furniture: plant(2) as never, notify: (m) => void toasts.push(m),
     });
     const goal = activeGoals(day, 3)[0];
-    expect(goal.festival.id).toBe('valentine');
+    expect(goal.festival.id).toBe('mua_mua');
     expect(goal.festival.host).toBeUndefined(); // dịp này không có host
+    expect(goal.festival.goods).toBeUndefined(); // và không phải dịp lớn
     const id = goal.items.length ? goal.items[0] : PID;
     g().communitySale(Array(goal.itemTarget).fill(id));
 
