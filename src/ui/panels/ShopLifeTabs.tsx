@@ -9,6 +9,8 @@ import { roiOf } from '../../data/serviceRoi';
 import { catPayoff, dogPayoff, CAT_PITCH_MIN } from '../../data/petPayoff';
 import { theftRisk, THEFT_LEAK_HIGH, THEFT_LEAK_MODERATE, THEFT_UNLOCK } from '../../data/theftRisk';
 import { maintenancePayoff, MAINT_RISK_HIGH, MAINT_RISK_MODERATE, MAINT_UNLOCK } from '../../data/maintenancePayoff';
+import { brokenShelfLoss } from '../../data/brokenShelfLoss';
+import { itemHealthList, shelfCount } from '../../data/analytics';
 import { card, title, pill, iconTile, btn, sub, row } from './businessStyles';
 
 export function Pets() {
@@ -167,7 +169,7 @@ export function Life() {
 
 /** Tab nâng cấp: thiết bị mua một lần dùng vĩnh viễn. */
 export function Upgrades() {
-  const { level, money, biz, stats, day, furniture } = useGame();
+  const { level, money, biz, stats, day, furniture, analytics, storage, demand } = useGame();
   return (
     <>
       <div style={{ ...card, marginBottom: 8 }}>
@@ -184,6 +186,9 @@ export function Upgrades() {
           : null;
         const maintPayoff = u.id === 'maintenance' && level >= MAINT_UNLOCK
           ? maintenancePayoff({ level, furniture, hasContract: owned })
+          : null;
+        const shelfLoss = u.id === 'maintenance'
+          ? brokenShelfLoss(furniture, itemHealthList(analytics, level, storage, shelfCount(furniture), demand))
           : null;
         return (
           <div key={u.id} style={card}>
@@ -232,6 +237,12 @@ export function Upgrades() {
                     ? 'Kệ mòn ≥40 được thợ chăm về 10 mỗi sáng → gần như không bao giờ hỏng. Tiền sửa/đêm ~0 (mất lợi chỉ còn khi kệ đang hỏng sẵn).'
                     : `~${Math.round(maintPayoff.expectedBreaksPerNight * 10) / 10} kệ/đêm có nguy cơ hỏng trên ${maintPayoff.nbWearing} đồ hao mòn. Ký hợp đồng tiết kiệm ước ~${formatMoney(maintPayoff.savingPerDay)}/ngày (nửa giá + chăm kệ tránh hỏng), hoàn vốn sau ~${maintPayoff.paybackDays ?? '?'} ngày — chưa tính hàng lỡ bán khi kệ hỏng.`}
                 </div>
+                {shelfLoss && shelfLoss.hasBroken && (
+                  <div style={{ marginTop: 4, fontSize: 12, color: '#e74c3c' }}
+                    title={`Kệ hỏng đang chặn hẳn: ${shelfLoss.lines.map((l) => `${l.typeName} (${l.itemNames.join(', ')})`).join(' · ')}`}>
+                    🔧 Kệ hỏng đang chặn hẳn {shelfLoss.lines.length} đồ — lỡ TỚI ~{formatMoney(shelfLoss.lostPerDay)}/ngày, sửa để bán lại.
+                  </div>
+                )}
               </Callout>
             )}
           </div>
