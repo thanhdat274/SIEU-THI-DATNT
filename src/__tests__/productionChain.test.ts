@@ -62,3 +62,52 @@ describe('GĐ1322 — chuỗi sản xuất chế biến từ cung ngoài (hướ
     expect(RECIPES.some((r) => r.id === 'recipe_banh_cuon_cha_lua' && r.inputs.some((i) => i.productId === 'hx_banh_cuon'))).toBe(true);
   });
 });
+
+/**
+ * GĐ1323 — tiếp tục chuỗi sản xuất chế biến từ cung ngoài: đưa 2 đặc sản vùng còn lại của mối lái
+ * (khô tôm rg_kho_tom, lạp xưởng miền rg_lap_xuong) thành NGUYÊN LIỆU nấu 2 món xôi cao cấp tại quây xôi
+ * (xôi khô tôm, xôi lạp xưởng miền) — khép nốt chuỗi "mối lái → quây xôi" cho đặc sản vùng, không để
+ * nguồn cung GĐ1321 thành món "dead stock" chỉ bán thẳng. Cùng bất biến GĐ1322 (món thêm mới có LỐI RA BẾP).
+ */
+const NEW_IDS_1323 = ['recipe_xoi_kho_tom', 'recipe_xoi_lap_xuong'] as const;
+
+describe('GĐ1323 — chuỗi sản xuất chế biến từ đặc sản vùng (mối lái → quây xôi)', () => {
+  for (const rid of NEW_IDS_1323) {
+    const recipe = RECIPE_MAP[rid];
+    it(`${recipe.name}: có trong RECIPES và COOKED_PRODUCTS`, () => {
+      expect(recipe).toBeDefined();
+      expect(recipe.id).toBe(rid);
+    });
+
+    it(`${recipe.name}: mở sau mốc golden sim 30 → economySim mốc không đổi`, () => {
+      expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+    });
+
+    it(`${recipe.name}: mẻ lãi dương TÍNH TỪ GIÁ THẬT (không bịa con số)`, () => {
+      const cost = recipe.inputs.reduce((s, inp) => s + inp.quantity * productById(inp.productId).buy, 0);
+      const value = recipe.outputQty * productById(recipe.outputId).sell;
+      expect(value).toBeGreaterThan(cost);
+      // nấu HỜI hơn bán thẳng nguyên liệu thô (lý do nấu)
+      const raw = recipe.inputs.reduce((s, inp) => s + inp.quantity * productById(inp.productId).sell, 0);
+      expect(value).toBeGreaterThan(raw);
+    });
+
+    it(`${recipe.name}: nguyên liệu là đặc sản vùng có mối bán (KHÔNG phải món nấu sẵn)`, () => {
+      const mains = recipe.inputs.filter((i) => SUPPLIED_IDS.has(i.productId));
+      expect(mains.length).toBeGreaterThanOrEqual(1);
+      for (const m of mains) expect(COOKED_IDS.has(m.productId)).toBe(false);
+    });
+
+    it(`${recipe.name}: outputId khớp COOKED_PRODUCTS và không trùng`, () => {
+      expect(COOKED_PRODUCTS.some((c) => c.id === recipe.outputId)).toBe(true);
+      expect(RECIPES.filter((r) => r.outputId === recipe.outputId).length).toBe(1);
+    });
+  }
+
+  it('2 xôi mới hiện diện ở quây xôi và dùng đúng đặc sản vùng GĐ1321', () => {
+    expect(RECIPES.some((r) => r.station === 'rice_station' && r.id === 'recipe_xoi_kho_tom')).toBe(true);
+    expect(RECIPES.some((r) => r.id === 'recipe_xoi_kho_tom' && r.inputs.some((i) => i.productId === 'rg_kho_tom'))).toBe(true);
+    expect(RECIPES.some((r) => r.station === 'rice_station' && r.id === 'recipe_xoi_lap_xuong')).toBe(true);
+    expect(RECIPES.some((r) => r.id === 'recipe_xoi_lap_xuong' && r.inputs.some((i) => i.productId === 'rg_lap_xuong'))).toBe(true);
+  });
+});

@@ -116,6 +116,14 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   // GĐ1321: Xôi nếp cẩm — món cẩm cao cấp của gạo nếp cẩm (mở cấp 70, sau mốc golden 30 → sim không đổi).
   // Mẻ (nếp cẩm 55k + đường 17k) = 72k → 40 phần × 5.7k = 228k, lãi 156k/mẻ, nấu hời hơn bán nguyên liệu (78k < 228k)
   { id: 'xoi_nep_cam', name: 'Xôi nếp cẩm', category: 'fresh', buy: 3000, sell: 5700, color: 0x8e44ad, unlock: 70 },
+  // GĐ1323: Xôi khô tôm — đặc sản vùng (khô tôm mối lái dacsan GĐ1321) trộn nếp + hành phi + nước tương:
+  // mẻ (khô tôm 42k + nếp 30k + hành phi 3k + nước tương 12k) = 87k → 40 phần × 4.5k = 180k, lãi 93k/mẻ,
+  // nấu hời hơn bán thẳng nguyên liệu (134k < 180k). Khép chuỗi mối lái → quây xôi, mở 42 = đúng cấp khô tôm.
+  { id: 'xoi_kho_tom', name: 'Xôi khô tôm', category: 'fresh', buy: 2200, sell: 4500, color: 0xc9a227, unlock: 42 },
+  // GĐ1323: Xôi lạp xưởng miền — đặc sản vùng (lạp xưởng miền mối lái GĐ1321) xé nhỏ trộn nếp, hành phi:
+  // mẻ (lạp xưởng 46k + nếp 30k + hành phi 3k + nước tương 12k) = 91k → 40 phần × 4.2k = 168k, lãi 77k/mẻ,
+  // nấu hời hơn bán thẳng nguyên liệu (140k < 168k). Khép chuỗi mối lái → quây xôi, mở 44 = đúng cấp lạp xưởng.
+  { id: 'xoi_lap_xuong', name: 'Xôi lạp xưởng miền', category: 'fresh', buy: 2100, sell: 4200, color: 0xa5462a, unlock: 44 },
 
   // --- Máy ép mía (sugarcane_press) ---
   { id: 'nuoc_mia', name: 'Nước mía', category: 'drink', buy: 4800, sell: 9100, color: 0x00b894, unlock: 25 },
@@ -297,6 +305,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_xoi_nep_cam', name: 'Xôi nếp cẩm', station: 'rice_station',
     inputs: [{ productId: 'nep_cam', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
     outputId: 'xoi_nep_cam', outputQty: 40, durationMin: 12, unlock: 70, reputationGain: 2 },
+  // GĐ1323: Xôi khô tôm — đặc sản vùng (khô tôm mối lái GĐ1321) thành nguyên liệu quây xôi. Mở 42 = đúng cấp khô tôm (sau mốc golden 30).
+  { id: 'recipe_xoi_kho_tom', name: 'Xôi khô tôm', station: 'rice_station',
+    inputs: [{ productId: 'rg_kho_tom', quantity: 1 }, { productId: 'nep', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 2 }, { productId: 'x_nuoc_tuong', quantity: 1 }],
+    outputId: 'xoi_kho_tom', outputQty: 40, durationMin: 15, unlock: 42, reputationGain: 2 },
+  // GĐ1323: Xôi lạp xưởng miền — đặc sản vùng (lạp xưởng miền mối lái GĐ1321) thành nguyên liệu quây xôi. Mở 44 = đúng cấp lạp xưởng (sau mốc golden 30).
+  { id: 'recipe_xoi_lap_xuong', name: 'Xôi lạp xưởng miền', station: 'rice_station',
+    inputs: [{ productId: 'rg_lap_xuong', quantity: 1 }, { productId: 'nep', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 2 }, { productId: 'x_nuoc_tuong', quantity: 1 }],
+    outputId: 'xoi_lap_xuong', outputQty: 40, durationMin: 15, unlock: 44, reputationGain: 2 },
 
   // --- Máy ép mía (sugarcane_press) ---
   { id: 'recipe_nuoc_mia', name: 'Nước mía', station: 'sugarcane_press',
