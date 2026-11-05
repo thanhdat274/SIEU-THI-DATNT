@@ -4,6 +4,7 @@ import { debtLedger, debtRowsByUrgency } from '../../data/debtLedger';
 import { regularById } from '../../data/regulars';
 import { CREDIT_FRIENDSHIP, CREDIT_UNLOCK, creditLeft, creditLimit, DEBT_LATE_DAYS, DEBT_WRITE_OFF_DAYS } from '../../data/credit';
 import { CHANGE_OPTS, counterPolicySummary, defaultCounterPolicy, HAGGLE_OPTS } from '../../data/counterDeals';
+import { hagglePolicyEarn } from '../../data/hagglePayoff';
 import { styles } from './shared';
 
 /** Sổ nợ: khách quen ghi sổ, nhắc nợ hoặc xoá nợ; bật/tắt cho ghi sổ. */
@@ -15,6 +16,7 @@ export function DebtBook() {
   const ledger = debtLedger(debts, day);
   const policy = counterPolicy ?? defaultCounterPolicy();
   const summ = counterPolicySummary(policy);
+  const hag = hagglePolicyEarn(policy.haggle);
   return (
     <>
     <div style={{ ...styles.card, display: 'block', maxWidth: 560, marginBottom: 8 }}>
@@ -74,6 +76,7 @@ export function DebtBook() {
       </div>
       <div style={{ marginTop: 6 }}>
         <div style={{ fontSize: 12, opacity: 0.85 }}>🙏 Mặc cả</div>
+        {hag.line && <div style={{ fontSize: 12, color: '#2ecc71', marginTop: 2 }}>{hag.line}</div>}
         {HAGGLE_OPTS.map((o) => (
           <label key={o.value} style={{ display: 'flex', alignItems: 'flex-start', gap: 6, fontSize: 12, marginTop: 3, cursor: 'pointer' }}>
             <input type="radio" name="counter-haggle" checked={policy.haggle === o.value} onChange={() => setCounterPolicy({ haggle: o.value })} style={{ marginTop: 2 }} />
