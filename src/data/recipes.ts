@@ -218,6 +218,9 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'bun_xao_tom_kho', name: 'Bún xào tôm khô', category: 'fresh', buy: 9500, sell: 17000, color: 0xe67e22, unlock: 47 },
   // Cháo yến mạch (yen_mach 40 + sữa tươi): mẻ (yến mạch 45k + sữa tươi 28k) = 73k → 6 chén × 18k = 108k, lãi 35k/mẻ.
   { id: 'chao_yen_mach', name: 'Cháo yến mạch', category: 'fresh', buy: 11500, sell: 18000, color: 0xd8b998, unlock: 40 },
+  // GĐ1370: Bò hầm rượu vang — món hầm Pháp trứ danh, khép lối ra của rượu vang nhập (`ruou_vang_nhap` 58):
+  // mẻ (bò tươi 210k + vang 450k + hành phi 3k) = 663k → 6 phần × 180k = 1080k, lãi 417k/mẻ.
+  { id: 'bo_ham_vang', name: 'Bò hầm rượu vang', category: 'fresh', buy: 108000, sell: 180000, color: 0x6d214f, unlock: 58 },
   // GĐ1345: Giỏ quà Giáng sinh — lễ tặng quà lớn duy nhất còn thiếu giỏ (Tết/8-3/20-11/Trung thu đã có):
   // mẻ (rượu vang 120k + bánh kẹo 5k×4 + trà 20k×2) = 180k → 2 giỏ × 140k = 280k, lãi 100k/mẻ.
   { id: 'gio_qua_giang_sinh', name: 'Giỏ quà Giáng sinh', category: 'dry', buy: 70000, sell: 140000, color: 0x228b22, unlock: 36 },
@@ -580,6 +583,12 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_chao_yen_mach', name: 'Cháo yến mạch', station: 'hot_kettle',
     inputs: [{ productId: 'yen_mach', quantity: 1 }, { productId: 'sua_tuoi', quantity: 1 }],
     outputId: 'chao_yen_mach', outputQty: 6, durationMin: 15, unlock: 40, reputationGain: 2 },
+  // GĐ1370: Bò hầm rượu vang — món hầm Pháp trứ danh (bœuf bourguignon): thịt bò tươi hầm mềm cùng rượu vang
+  // đỏ nhập ở nồi hấp: mẻ (bò 210k + vang 450k + hành phi 3k) = 663k → 6 phần × 180k = 1080k, lãi 417k/mẻ,
+  // nấu hời hơn bán thẳng nguyên liệu (910k < 1080k). Mở 58 = đúng cấp vang (> golden 30 → sim không đổi).
+  { id: 'recipe_bo_ham_vang', name: 'Bò hầm rượu vang', station: 'steamer',
+    inputs: [{ productId: 'thit_bo_tuoi', quantity: 1 }, { productId: 'ruou_vang_nhap', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 2 }],
+    outputId: 'bo_ham_vang', outputQty: 6, durationMin: 30, unlock: 58, reputationGain: 5 },
 
   // --- Quầy pha (drink_counter) ---
   { id: 'recipe_ca_phe_sua', name: 'Cà phê sữa đá', station: 'drink_counter',
