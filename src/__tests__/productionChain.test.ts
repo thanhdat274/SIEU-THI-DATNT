@@ -10,7 +10,7 @@ import { describe, expect, it } from 'vitest';
 import { RECIPES, RECIPE_MAP, COOKED_PRODUCTS } from '../data/recipes';
 import { productById } from '../data/products';
 import { REGION_PRODUCTS } from '../data/regionSpecialty';
-import { NEIGHBOR2_PRODUCTS } from '../data/homemade';
+import { NEIGHBOR2_PRODUCTS, HOMEMADE_PRODUCTS } from '../data/homemade';
 
 const GOLDEN_SMOOTH = 30;
 
@@ -109,5 +109,54 @@ describe('GĐ1323 — chuỗi sản xuất chế biến từ đặc sản vùng 
     expect(RECIPES.some((r) => r.id === 'recipe_xoi_kho_tom' && r.inputs.some((i) => i.productId === 'rg_kho_tom'))).toBe(true);
     expect(RECIPES.some((r) => r.station === 'rice_station' && r.id === 'recipe_xoi_lap_xuong')).toBe(true);
     expect(RECIPES.some((r) => r.id === 'recipe_xoi_lap_xuong' && r.inputs.some((i) => i.productId === 'rg_lap_xuong'))).toBe(true);
+  });
+});
+
+/**
+ * GĐ1324 — tiếp tục chuỗi sản xuất chế biến từ cung ngoài, mở rộng sang ĐỒ NHÀ LÀM HÀNG XÓM: đưa 2 nguồn hàng xóm
+ * (nem chua nhà bà Tám, vải thiều sấy nhà hàng xóm) thành NGUYÊN LIỆU nấu 2 món (nem chua rán, chè vải) — biến
+ * "đồ nhà làm" thành hàng có LỐI RA BẾP, không dead stock. Mở rộng tập nguồn cung ngoài gồm cả HOMEMADE (nhà
+ * hàng xóm hangxom), không chỉ mối lái/bà Tám. Cùng bất biến GĐ1322/1323 (mẻ lãi dương từ giá thật, unlock > 30).
+ */
+const SUPPLIED_1324 = new Set([...REGION_PRODUCTS, ...NEIGHBOR2_PRODUCTS, ...HOMEMADE_PRODUCTS].map((p) => p.id));
+const NEW_IDS_1324 = ['recipe_nem_chua_ran', 'recipe_che_vai'] as const;
+
+describe('GĐ1324 — chuỗi sản xuất từ đồ nhà làm hàng xóm (hàng xóm → bếp)', () => {
+  for (const rid of NEW_IDS_1324) {
+    const recipe = RECIPE_MAP[rid];
+    it(`${recipe.name}: có trong RECIPES và COOKED_PRODUCTS`, () => {
+      expect(recipe).toBeDefined();
+      expect(recipe.id).toBe(rid);
+    });
+
+    it(`${recipe.name}: mở sau mốc golden sim 30 → economySim mốc không đổi`, () => {
+      expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+    });
+
+    it(`${recipe.name}: mẻ lãi dương TÍNH TỪ GIÁ THẬT (không bịa con số)`, () => {
+      const cost = recipe.inputs.reduce((s, inp) => s + inp.quantity * productById(inp.productId).buy, 0);
+      const value = recipe.outputQty * productById(recipe.outputId).sell;
+      expect(value).toBeGreaterThan(cost);
+      const raw = recipe.inputs.reduce((s, inp) => s + inp.quantity * productById(inp.productId).sell, 0);
+      expect(value).toBeGreaterThan(raw);
+    });
+
+    it(`${recipe.name}: nguyên liệu là đồ hàng xóm có mối bán (KHÔNG phải món nấu sẵn)`, () => {
+      const mains = recipe.inputs.filter((i) => SUPPLIED_1324.has(i.productId));
+      expect(mains.length).toBeGreaterThanOrEqual(1);
+      for (const m of mains) expect(COOKED_IDS.has(m.productId)).toBe(false);
+    });
+
+    it(`${recipe.name}: outputId khớp COOKED_PRODUCTS và không trùng`, () => {
+      expect(COOKED_PRODUCTS.some((c) => c.id === recipe.outputId)).toBe(true);
+      expect(RECIPES.filter((r) => r.outputId === recipe.outputId).length).toBe(1);
+    });
+  }
+
+  it('2 món mới hiện diện ở đúng trạm (chảo chiên + ấm nước) và dùng đúng đồ hàng xóm', () => {
+    expect(RECIPES.some((r) => r.station === 'fryer' && r.id === 'recipe_nem_chua_ran')).toBe(true);
+    expect(RECIPES.some((r) => r.id === 'recipe_nem_chua_ran' && r.inputs.some((i) => i.productId === 'hx_nem_chua'))).toBe(true);
+    expect(RECIPES.some((r) => r.station === 'hot_kettle' && r.id === 'recipe_che_vai')).toBe(true);
+    expect(RECIPES.some((r) => r.id === 'recipe_che_vai' && r.inputs.some((i) => i.productId === 'hx_vai_say'))).toBe(true);
   });
 });

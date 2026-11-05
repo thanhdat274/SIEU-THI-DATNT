@@ -73,6 +73,10 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   // GĐ1321: Chè hạt sen — món chè thanh mát của hạt sen (mở cấp 74, sau mốc golden 30 → sim không đổi).
   // Mẻ (hạt sen 65k + đường 17k) = 82k → 8 phần × 26.5k = 212k, lãi 130k/mẻ, nấu hời hơn bán nguyên liệu (92k < 212k)
   { id: 'che_hat_sen', name: 'Chè hạt sen', category: 'fresh', buy: 14000, sell: 26500, color: 0xaed6f1, unlock: 74 },
+  // GĐ1324: Chè vải — chè thanh mát của vải thiều sấy nhà hàng xóm (hồi mềm nấu đường):
+  // mẻ (vải sấy 42k + đường 17k) = 59k → 8 phần × 15k = 120k, lãi 61k/mẻ, nấu hời hơn bán thẳng nguyên liệu (86k < 120k).
+  // Khép chuỗi hàng xóm (vải thiều sấy GĐ1083) → ấm nước, mở 38 (sau mốc golden 30 → sim không đổi).
+  { id: 'che_vai', name: 'Chè vải', category: 'fresh', buy: 7500, sell: 15000, color: 0x8e5a8a, unlock: 38 },
 
   // --- Máy xay (blender) ---
   { id: 'sinh_to_trai_cay', name: 'Sinh tố trái cây', category: 'cold', buy: 7500, sell: 14300, color: 0xfd79a8, unlock: 28 },
@@ -91,6 +95,10 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   // --- Chảo chiên (fryer) ---
   { id: 'bap_xao', name: 'Bắp xào', category: 'fresh', buy: 2700, sell: 5100, color: 0xf9ca24, unlock: 26 },
   { id: 'ca_vien_chien', name: 'Cá viên chiên', category: 'fresh', buy: 5000, sell: 9500, color: 0xe55039, unlock: 32 },
+  // GĐ1324: Nem chua rán — đặc sản nhà bà Tám (nem chua hẻm xóm GĐ1085) chiên giòn, món ăn vặt quen thuộc:
+  // mẻ (nem chua 9k×2 + đường 17k) = 35k → 8 phần × 9k = 72k, lãi 37k/mẻ, nấu hời hơn bán thẳng nguyên liệu (49k < 72k).
+  // Khép chuỗi hàng xóm (bà Tám) → chảo chiên, mở 36 (sau mốc golden 30 → sim không đổi).
+  { id: 'nem_chua_ran', name: 'Nem chua rán', category: 'fresh', buy: 4500, sell: 9000, color: 0xd35400, unlock: 36 },
 
   // --- Nồi hấp (steamer) ---
   { id: 'banh_bao_hap', name: 'Bánh bao hấp nóng', category: 'fresh', buy: 4500, sell: 8600, color: 0xf5f6fa, unlock: 39 },
@@ -207,6 +215,10 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_che_hat_sen', name: 'Chè hạt sen', station: 'hot_kettle',
     inputs: [{ productId: 'hat_sen', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
     outputId: 'che_hat_sen', outputQty: 8, durationMin: 18, unlock: 74, reputationGain: 2 },
+  // GĐ1324: Chè vải — đặc sản nhà hàng xóm (vải thiều sấy GĐ1083) thành nguyên liệu ấm nước. Mở 38 (sau mốc golden 30).
+  { id: 'recipe_che_vai', name: 'Chè vải', station: 'hot_kettle',
+    inputs: [{ productId: 'hx_vai_say', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
+    outputId: 'che_vai', outputQty: 8, durationMin: 15, unlock: 38, reputationGain: 2 },
   // GĐ1094: Hột vịt lộn — món ăn vặt đường phố của trứng vịt trại (vịt mở cấp 16 nhưng chưa có lối ra bếp);
   // 1 vỉ 10 quả + rau răm + muối. Mở 34 > mốc golden 30 → sim không đổi.
   { id: 'recipe_hot_vit_lon', name: 'Hột vịt lộn', station: 'hot_kettle',
@@ -253,6 +265,10 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_ca_vien', name: 'Cá viên chiên', station: 'fryer',
     inputs: [{ productId: 'ca', quantity: 1 }],
     outputId: 'ca_vien_chien', outputQty: 10, durationMin: 15, unlock: 32, reputationGain: 2 },
+  // GĐ1324: Nem chua rán — đặc sản nhà bà Tám (nem chua GĐ1085) thành nguyên liệu chảo chiên, món ăn vặt.
+  { id: 'recipe_nem_chua_ran', name: 'Nem chua rán', station: 'fryer',
+    inputs: [{ productId: 'hx_nem_chua', quantity: 2 }, { productId: 'x_duong', quantity: 1 }],
+    outputId: 'nem_chua_ran', outputQty: 8, durationMin: 12, unlock: 36, reputationGain: 2 },
 
   // --- Nồi hấp (steamer) ---
   { id: 'recipe_banh_bao', name: 'Bánh bao hấp nóng', station: 'steamer',
