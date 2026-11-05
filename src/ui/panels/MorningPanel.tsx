@@ -28,6 +28,7 @@ import { DueContractsCard } from './DueContractsCard';
 import { HotGoodsCards } from './HotGoodsCards';
 import { LoanNoteCard, EveningPrepCallout, MorningNewsCard } from './MorningNotes';
 import { ExpectedRegularsList } from './ExpectedRegularsList';
+import { phoneWeatherInfo } from '../../data/phoneWeatherPayoff';
 import { regularChurn } from '../../data/regularChurn';
 import { regularSpendEstimate, nextPerkValue, weeklyTop, referValue, nextPerkTimeline, regularCohortSummary, regularCohortLine } from '../../data/regularValue';
 import { TodayActionsCard } from './TodayActionsCard';
@@ -157,6 +158,7 @@ export function MorningPanel() {
   // GĐ132: mồi "🧭 Sắp mở khóa" cho người chơi MỚI (tuần đầu) — 1–2 hệ lớn sắp mở + XP còn thiếu (thuần đọc)
   const earlyUnlocks = earlyUnlockTeaser({ level, xp, day });
   const courier = staff.some((w) => w.role === 'courier');
+  const phoneWx = phoneWeatherInfo(weather, level); // GĐ1309 — mưa/giông khách gọi đặt đơn nhiều hơn
   const today = dateOfDoy(dayOfYear(day));
   const expiring = expiringSoon(storage, storageLots, furniture.flatMap((f) => f.tiers));
   const expiryTips = expiryAdvice(expiring);
@@ -269,6 +271,9 @@ export function MorningPanel() {
           ? `Hôm nay có ${PHONE_SLOTS.length} khe giờ hàng xóm gọi điện đặt hàng: ${PHONE_SLOTS.map((m) => formatClock(m)).join(', ')}. Nghe máy kịp mới có đơn.`
           : `Chưa thuê 🛵 Giao hàng nên không có cuộc gọi nào. Thuê nhân viên giao hàng để mở đơn điện thoại (khe giờ: ${PHONE_SLOTS.map((m) => formatClock(m)).join(', ')}).`}
       </p>
+      {courier && phoneWx && (
+        <div style={{ fontSize: 12, color: '#3498db', marginTop: 2 }}>{phoneWx.line}</div>
+      )}
       <Footer onClose={() => { resetComboDay(); resetStaffDay(); closePanel(); }}>
         <button style={styles.btn} onClick={() => openPanel({ type: 'order' })}>📦 Nhập hàng</button>
         <button style={styles.btn} onClick={() => openPanel({ type: 'storage' })}>🏭 Kho</button>
