@@ -227,6 +227,9 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   // GĐ1376: Kem dừa — món kem Đà Lạt trứ danh (kem tươi dừa đánh lạnh), khép combo cốt dừa × máy xay:
   // mẻ (sữa tươi 28k + nước cốt dừa 10k + đường 17k) = 55k → 8 hũ × 20k = 160k, lãi 105k/mẻ.
   { id: 'kem_dua', name: 'Kem dừa', category: 'frozen', buy: 7000, sell: 20000, color: 0xfff3e0, unlock: 38 },
+  // GĐ1377: Bánh mì que — đặc sản Nha Trang trứ danh (que bánh mì mỏng giòn nhồi pate que cay):
+  // mẻ (bánh mì 8k×4 + hành phi 3k) = 35k → 20 que × 4k = 80k, lãi 45k/mẻ.
+  { id: 'banh_mi_que', name: 'Bánh mì que', category: 'fresh', buy: 2000, sell: 4000, color: 0xd9a66c, unlock: 38 },
   // GĐ1345: Giỏ quà Giáng sinh — lễ tặng quà lớn duy nhất còn thiếu giỏ (Tết/8-3/20-11/Trung thu đã có):
   // mẻ (rượu vang 120k + bánh kẹo 5k×4 + trà 20k×2) = 180k → 2 giỏ × 140k = 280k, lãi 100k/mẻ.
   { id: 'gio_qua_giang_sinh', name: 'Giỏ quà Giáng sinh', category: 'dry', buy: 70000, sell: 140000, color: 0x228b22, unlock: 36 },
@@ -607,6 +610,12 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_kem_dua', name: 'Kem dừa', station: 'blender',
     inputs: [{ productId: 'sua_tuoi', quantity: 1 }, { productId: 'x_dua_cot_hop', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
     outputId: 'kem_dua', outputQty: 8, durationMin: 18, unlock: 38, reputationGain: 3 },
+  // GĐ1377: Bánh mì que — đặc sản Nha Trang trứ danh: que bánh mì mỏng giòn nướng nhồi pate que cay ở
+  // bếp nướng: mẻ (bánh mì 8k×4 + hành phi 3k) = 35k → 20 que × 4k = 80k, lãi 45k/mẻ, nấu hời hơn
+  // bán thẳng nguyên liệu (65k < 80k). Mở 38 ≥ mọi nguyên liệu (38/36) (> golden 30 → sim không đổi).
+  { id: 'recipe_banh_mi_que', name: 'Bánh mì que', station: 'food_grill',
+    inputs: [{ productId: 'banhmi', quantity: 4 }, { productId: 'x_hanh_phi', quantity: 2 }],
+    outputId: 'banh_mi_que', outputQty: 20, durationMin: 12, unlock: 38, reputationGain: 2 },
 
   // --- Quầy pha (drink_counter) ---
   { id: 'recipe_ca_phe_sua', name: 'Cà phê sữa đá', station: 'drink_counter',
