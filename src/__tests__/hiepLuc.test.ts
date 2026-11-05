@@ -43,6 +43,21 @@ describe('GĐ74 — Đối tác chi nhánh × quán nước: hiệp lực tháng
     it('newHiepLuc mặc định không đối tác', () => {
       expect(newHiepLuc()).toEqual({ m: 0, active: false, coc: 0 });
     });
+    it('GĐ1276: hiepLucPayoff đơn điệu tăng theo doanh thu gom → thưởng "tới ít nhất ~" là cận dưới trung thực', () => {
+      // UI soi: "đủ ngưỡng ✓ — thưởng đang TIẾN TỚI ÍT NHẤT ~X" vì hiepLucMonth chỉ tăng trong tháng và
+      // payoff không giảm khi combined tăng (tới trần min(4%, cap) × chuỗi). Khóa tính chất này.
+      const s = 3; // chuỗi cố định
+      let prev = 0;
+      for (let cb = HIEPLUC_MIN; cb <= HIEPLUC_CAP / HIEPLUC_RATE + 1; cb += 100_000) {
+        const p = hiepLucPayoff(cb, s);
+        expect(p).toBeGreaterThanOrEqual(prev); // không bao giờ giảm khi gom nhiều hơn
+        prev = p;
+      }
+      // vượt trần → bằng cap × chuỗi, không giảm
+      const capP = hiepLucPayoff(HIEPLUC_CAP / HIEPLUC_RATE + 5_000_000, s);
+      expect(capP).toBe(Math.round(HIEPLUC_CAP * (1 + Math.min(s * 0.05, HIEPLUC_STREAK_MAX))));
+      expect(capP).toBeGreaterThanOrEqual(hiepLucPayoff(HIEPLUC_MIN, s));
+    });
   });
 
   describe('bizEndOfDay — tích lũy + chốt hiệp lực cuối tháng', () => {

@@ -1,5 +1,7 @@
 import { CATALOG_PRODUCTS } from './catalog';
 import { COOKED_PRODUCTS } from './recipes';
+import { HOMEMADE_PRODUCTS, NEIGHBOR2_PRODUCTS } from './homemade';
+import { REGION_PRODUCTS } from './regionSpecialty';
 
 /** Ngành hàng: quyết định bày ở đâu (kệ thường, tủ mát, tủ đông). */
 export type Category = 'dry' | 'drink' | 'cold' | 'frozen' | 'household' | 'fresh' | 'meat';
@@ -151,6 +153,8 @@ export const PRODUCTS: Product[] = [
   p('hat_sen', 'Hạt sen tươi', 'fresh', 65000, 92000, 0xaed6f1, 74),
   p('bia_nhap', 'Bia nhập khẩu (chai)', 'drink', 35000, 49000, 0xc0392b, 75),
   p('cha_ca', 'Chả cá thác lác', 'fresh', 120000, 168000, 0x95a5a6, 76),
+  // GĐ1337: Bún tươi — nguyên liệu mì-quảng/bún của món nấu (Bún bò Huế), biên 1.5 chuẩn, mở 33 sau mốc golden 30
+  p('bun', 'Bún tươi (gói)', 'fresh', 12000, 18000, 0xf3e5ab, 33),
   // Thịt cá tươi: bày ở quầy thịt cá, hạn rất ngắn
   p('thit_heo_tuoi', 'Thịt heo tươi', 'meat', 95000, 130000, 0xe8a0a0, 32),
   p('ca_loc_tuoi', 'Cá lóc tươi', 'meat', 70000, 98000, 0x7f8c8d, 33),
@@ -178,6 +182,13 @@ PRODUCTS.push(...CATALOG_PRODUCTS.map((it) => ({ ...it, unlock: Math.max(it.unlo
 
 // Món nhà làm (recipes.ts): không nhập được ở nhà cung cấp, chỉ có bằng cách nấu từ nguyên liệu
 PRODUCTS.push(...COOKED_PRODUCTS.map((it) => ({ ...it, unlock: Math.max(it.unlock, SHELF_READY[it.category] ?? 1) })));
+
+// Món hàng xóm tự làm (homemade.ts): chỉ nhập ở nhà hàng xóm, không có ở mối chuẩn (GĐ1077)
+PRODUCTS.push(...HOMEMADE_PRODUCTS.map((it) => ({ ...it, unlock: Math.max(it.unlock, SHELF_READY[it.category] ?? 1) })));
+// Đặc sản nhà bà Tám (homemade.ts NEIGHBOR2_PRODUCTS): nhà cung cấp hàng xóm thứ hai (GĐ1085)
+PRODUCTS.push(...NEIGHBOR2_PRODUCTS.map((it) => ({ ...it, unlock: Math.max(it.unlock, SHELF_READY[it.category] ?? 1) })));
+// Đặc sản vùng (regionSpecialty.ts): mối lái vùng xa (GĐ1086) — hàng hoá thường, chỉ nhập ở mối lái
+PRODUCTS.push(...REGION_PRODUCTS.map((it) => ({ ...it, unlock: Math.max(it.unlock, SHELF_READY[it.category] ?? 1) })));
 
 export const productById = (id: string) => PRODUCTS.find((it) => it.id === id)!;
 

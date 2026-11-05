@@ -7,9 +7,10 @@
  * (Giá trị nấu thành món là mảnh ghép "homegrown vs bếp" — làm sau, xem BACKUP3
  * giai đoạn GĐ145; helper này chỉ đóng trục giá-trị-vs-chi-phí của NGOÀI trồng/nuôi.)
  */
-import type { AnimalDef, AnimalKind, AnimalMode, CropDef, GardenState } from './garden';
+import type { AnimalDef, AnimalKind, AnimalMode, CropDef, FarmBuildingId, GardenState } from './garden';
 import {
-  ANIMALS, CROPS, FARM_ORDER_BONUS, HOMEGROWN_PREMIUM, animalMode, harvestYield, inSeason,
+  ANIMALS, CROPS, FARM_BUILDINGS, FARM_ORDER_BONUS, HOMEGROWN_PREMIUM, animalMode,
+  farmCritChance, farmGrazeDiscount, farmGrowthFlat, farmGrowthPct, harvestYield, inSeason, LAND_TIERS,
 } from './garden';
 import { productById } from './products';
 
@@ -35,10 +36,10 @@ export interface CropDayValue {
  * Ngày chín mượn `ripeDay` (thiếu lấy `day`) để quyết mùa vụ ×1,5 — giống hệt
  * harvestYield: để chín chờ đúng vụ không ăn được.
  */
-export function cropPerDay(crop: CropDef, opts: { day: number; ripeDay?: number }): CropDayValue {
+export function cropPerDay(crop: CropDef, opts: { day: number; ripeDay?: number; /** GĐ1104: giá trị/1 đơn vị cao hơn bán lẻ (pha nước ở quán) — override doanh thu. */ valuePerUnit?: number }): CropDayValue {
   const harvestDay = opts.ripeDay ?? opts.day;
   const qty = harvestYield(crop, opts.day, harvestDay);
-  const revenue = qty * homegrownSell(crop.productId);
+  const revenue = qty * Math.max(homegrownSell(crop.productId), opts.valuePerUnit ?? 0);
   const isPerennial = !!crop.regrowDays;
   const seedCost = crop.seedCost;
   const perDay = isPerennial
@@ -72,7 +73,7 @@ const feedPerKg = (kind: AnimalKind) => {
  * với vỗ béo, cả giá giống + cám cả kỳ phân bổ theo ngày vỗ).
  * `g.buildings.bai_tha` cho tự gặm cỏ bớt cám (farmGrazeDiscount).
  */
-export function animalPerDay(kind: AnimalKind, g: GardenState): AnimalDayValue {
+export function animalPerDay(kind: AnimalKind, g: GardenState, opts: { /** GĐ1105: giá trị/1 đơn vị cao hơn bán lẻ (pha nước ở quán) — override doanh thu. */ valuePerUnit?: number } = {}): AnimalDayValue {
   const def = ANIMALS[kind];
   const mode = animalMode(def) as AnimalMode;
   const graze = 1 - 0.1 * (g.buildings?.bai_tha ?? 0);
@@ -81,12 +82,12 @@ export function animalPerDay(kind: AnimalKind, g: GardenState): AnimalDayValue {
   if (mode === 'egg') {
     const eggsPerDay = def.layChance! * (1 + 0.08 * (g.buildings?.bai_tha ?? 0));
     const traysPerDay = eggsPerDay / 10; // EGG_PER_TRAY
-    const revenuePerDay = traysPerDay * homegrownSell(def.productId);
+    const revenuePerDay = traysPerDay * Math.max(homegrownSell(def.productId), opts.valuePerUnit ?? 0);
     return { kind, def, mode, revenuePerDay, feedPerDay, perDay: revenuePerDay - feedPerDay, fattenRemaining: 0 };
   }
   if (mode === 'milk') {
     const outPerDay = def.outputPerDay! * (1 + 0.05 * (g.buildings?.bai_tha ?? 0));
-    const revenuePerDay = outPerDay * homegrownSell(def.productId);
+    const revenuePerDay = outPerDay * Math.max(homegrownSell(def.productId), opts.valuePerUnit ?? 0);
     return { kind, def, mode, revenuePerDay, feedPerDay, perDay: revenuePerDay - feedPerDay, fattenRemaining: 0 };
   }
   // fatten: thu thịt 1 lần cuối kỳ
@@ -133,3 +134,173 @@ export function orderVsShelf(productId: string): { shelf: number; order: number;
   const order = Math.round(base * FARM_ORDER_BONUS);
   return { shelf, order, percent: Math.round((order / shelf - 1) * 1000) / 10 };
 }
+
+// ───────────────────────── Mở rộng đất trại (GĐ1248) ─────────────────────────
+
+export type FarmExpandVerdict = 'worth' | 'slow' | 'nodata';
+export interface FarmExpandPayback {
+  /** Tên lô đất sắp mua. */
+  tierName: string;
+  /** Giá mua (đ). */
+  cost: number;
+  /** Số luống mới được thêm. */
+  extraPlots: number;
+  /** Lợi nhuận bình quân/ngày của mỗi luống mới (trồng giống đáng nhất trong tầm cấp — bestCrop). */
+  perPlotPerDay: number;
+  /** Thu nhập thêm mỗi ngày = extraPlots × perPlotPerDay. */
+  netPerDay: number;
+  /** Số ngày hồi vốn (null khi không dự toán được). */
+  paybackDays: number | null;
+  verdict: FarmExpandVerdict;
+}
+
+/**
+ * Ước hồi vốn khi mua lô đất trại tiếp theo (LAND_TIERS[land+1]) — soi quyết định
+ * "Mở rộng đất" giống như `tiemXoiExpandPayback` (GĐ1247) cho tiệm xôi và
+ * `branchBuildPayback` (GĐ193-family) cho chi nhánh.
+ *
+ * Giá trị thêm = số luống mới × giá trị/ngày của GIỐNG ĐÁNG NHẤT trong tầm cấp
+ * (bestCrop — đã trừ chi phí giống, đúng mùa ×1,5): đây là giá trị cơ hội trung
+ * thực của đất nếu chủ trồng giống khôn ngoan; ĐƠN GIẢN và có chủ ý KHÔNG cộng
+ * chuồng mới (chỉ có giá trị khi chủ thực sự nuôi con mới — sẽ khuyến khích cày
+ * giả rồi bị phình). Thuần đọc — không đổi save/seed/kinh tế.
+ *
+ * - 'worth':  hồi ≤60 ngày.
+ * - 'slow':   hồi >60 ngày (hoặc không có giống nào để dự toán → vẫn tính bằng món hời nhất).
+ * - 'nodata': không mở thêm được (đã rộng nhất) hoặc chưa có giống nào trong tầm cấp.
+ */
+export function farmExpandPayback(g: Pick<GardenState, 'land' | 'plots'>, level: number, day: number): FarmExpandPayback | null {
+  const tier = LAND_TIERS[g.land + 1];
+  if (!tier) return null; // đã rộng nhất
+  const extraPlots = Math.max(0, tier.plots - g.plots.length);
+  const best = bestCrop(level, day);
+  const perPlotPerDay = best ? Math.round(best.perDay) : 0;
+  const netPerDay = extraPlots * perPlotPerDay;
+  if (netPerDay <= 0 || perPlotPerDay <= 0) {
+    return { tierName: tier.name, cost: tier.cost, extraPlots, perPlotPerDay, netPerDay: 0, paybackDays: null, verdict: 'nodata' };
+  }
+  const paybackDays = Math.ceil(tier.cost / netPerDay);
+  return {
+    tierName: tier.name, cost: tier.cost, extraPlots, perPlotPerDay, netPerDay,
+    paybackDays, verdict: paybackDays <= 60 ? 'worth' : 'slow',
+  };
+}
+
+// ───────────────────────── Mua vật nuôi (GĐ1250) ─────────────────────────
+
+export type AnimalBuyVerdict = 'worth' | 'slow' | 'loss';
+export interface AnimalBuyPayback {
+  /** Lợi nhuận ròng/con/ngày (animalPerDay — đã trừ cám, đã tính bãi thả, đã cộng nhãn nhà nuôi +20%). */
+  perDay: number;
+  /** Số ngày hồi vốn: trứng/sữa chia đều mỗi ngày; vỗ béo thu về một lần khi xuất chuồng (= fattenDays). null khi nuôi lỗ. */
+  paybackDays: number | null;
+  verdict: AnimalBuyVerdict;
+  /** Một dòng tiếng Việt trung thực đặt cạnh nút mua. */
+  line: string;
+}
+
+/**
+ * "Mua con vật đầu tiên N tr để làm gì?" — soi quyết định MUA VẬT NUÔI (hộp đen còn lại
+ * của trại sau GĐ1248 đất / GĐ1249 công trình). `animalPerDay` chỉ hiện khi chuồng ĐÃ có
+ * con, còn nút "Mua con đầu tiên" lại chỉ cho giá. Helper tính đúng giá trị biên của CON
+ * TIẾP THEO (một con mới ăn thêm cám, đẻ thêm trứng — cùng công thức animalPerDay) rồi
+ * quy đổi ra số ngày hồi vốn. THUẦN ĐỌC — không đổi state/save/kinh tế (Luật 5/10).
+ *
+ * - 'worth': hồi ≤60 ngày (cùng ngưỡng GĐ1247/1248).
+ * - 'slow':  hồi >60 ngày (hoặc không lỗ nhưng lãi mỏng).
+ * - 'loss':  perDay ≤ 0 — cám ăn nhiều hơn tiền sản phẩm cho ra.
+ */
+export function animalBuyPayback(kind: AnimalKind, g: GardenState): AnimalBuyPayback {
+  const av = animalPerDay(kind, g);
+  const perDay = Math.round(av.perDay);
+  const def = av.def;
+  if (perDay <= 0) {
+    return {
+      perDay, paybackDays: null, verdict: 'loss',
+      line: `Chưa đáng: mỗi con lỗ ~${Math.abs(perDay).toLocaleString('vi-VN')}đ/ngày sau trừ cám — cần bãi thả hoặc cám rẻ hơn`,
+    };
+  }
+  const paybackDays = av.mode === 'fatten' ? def.fattenDays! : Math.ceil(def.price / av.perDay);
+  const verdict: AnimalBuyVerdict = paybackDays <= 60 ? 'worth' : 'slow';
+  const tail = av.mode === 'fatten'
+    ? `lãi dồn về khi xuất chuồng sau ${paybackDays} ngày cho ăn`
+    : `hồi vốn ~${paybackDays} ngày`;
+  return {
+    perDay, paybackDays, verdict,
+    line: `Lãi ~${perDay.toLocaleString('vi-VN')}đ/con/ngày (đã trừ cám) — ${tail} (${verdict === 'worth' ? 'đáng' : 'chậm'})`,
+  };
+}
+
+/** Giá cám phải mua MỖI NGÀY cho toàn bộ vật nuôi hiện có, TÍNH TRƯỚC khi trừ bãi thả giảm giá. */
+export const dailyFeedCost = (g: GardenState): number => {
+  let total = 0;
+  for (const kind in ANIMALS) {
+    const pen = g.pens?.[kind as AnimalKind];
+    if (!pen || pen.count <= 0) continue;
+    const def = ANIMALS[kind as AnimalKind];
+    total += pen.count * def.feedKgPerDay * feedPerKg(kind as AnimalKind);
+  }
+  return Math.round(total);
+};
+
+export interface FarmBuildingValue {
+  id: FarmBuildingId;
+  /** Đã xây chưa (star = cấp xây, 0 = chưa). */
+  owned: boolean;
+  /** Giá cấp hiện tại (0 = giá cấp 1 để xây mới). */
+  cost: number;
+  /** Một dòng tiếng Việt trung thực: công trình này GIÁ TRỊ gì với nông trại HIỆN TẠI của mình. */
+  line: string;
+  /** True = dòng có con số tiền (đ/ngày) ước đáng tin; false = dòng định tính (%, QoL). */
+  hasMoney: boolean;
+}
+
+/**
+ * "Công trình trại {tưới/nhà lưới/bãi thả/bù nhìn} mua 6–30tr để làm gì cho MÌNH?" — soi quyết
+ * định ĐẦU TƯ CÔNG TRÌNH (hộp đen còn lại của trại sau GĐ1248 đất). Mỗi công trình có phần
+ * lợi ích DỰA VÀO nông trại hiện có: có vật nuôi mới đáng giá bãi thả, có trồng mới đáng bù nhìn...
+ * THUẦN ĐỌC — không đổi state/save/kinh tế (Luật 5/10 an toàn). Bãi thả cho con số đ/ngày chắc
+ * (giảm cám × số cám đang phải mua); tưới/nhà lưới/bù nhìn chỉ bậc định tính (%) vì lợi thật của
+ * chúng phụ thuộc hoạt động trồng/nuôi dao động (tránh cày số mơ hồ, Luật 3).
+ */
+export const farmBuildingValue = (g: GardenState): FarmBuildingValue[] => {
+  const out: FarmBuildingValue[] = [];
+  for (const id of Object.keys(FARM_BUILDINGS) as FarmBuildingId[]) {
+    const def = FARM_BUILDINGS[id];
+    const star = g.buildings?.[id] ?? 0;
+    // Chi phí để HÀNH ĐỘNG ngay: chưa có thì giá mua cấp 1, có rồi thì tiền lên sao tiếp theo.
+    const cost = star === 0 ? def.cost : (def.upgrades[star - 1]?.money ?? 0);
+    let line: string;
+    let hasMoney = false;
+    if (id === 'bai_tha') {
+      const saved = Math.round(dailyFeedCost(g) * farmGrazeDiscount(g));
+      const care = saved > 0
+        ? `giảm ~${saved.toLocaleString('vi-VN')}đ cám/ngày (cho ${g.pens ? Object.values(g.pens).filter(p => p && p.count > 0).length : 0} chuồng đang nuôi)`
+        : 'chưa có vật nuôi nào nên hôm nay chưa giảm được đồng cám nào';
+      line = star > 0 ? `Bãi thả cấp ${star}: ${care}` : `Chưa xây (${cost.toLocaleString('vi-VN')}đ): ${care}`;
+      hasMoney = saved > 0;
+    } else if (id === 'bu_nhin') {
+      const pct = Math.round(farmCritChance(g) * 100);
+      line = star > 0
+        ? `Bù nhìn cấp ${star}: thu hoạch có ${pct}% cơ hội gấp đôi trái (càng nhiều rau đang trồng càng lời)`
+        : `Chưa xây (${cost.toLocaleString('vi-VN')}đ): thu hoạch có cơ hội gấp đôi trái — chỉ đáng khi bạn trồng nhiều`;
+      hasMoney = false;
+    } else if (id === 'tuoi_tu_dong') {
+      const gPct = Math.round(farmGrowthPct(g) * 100);
+      line = star > 0
+        ? (gPct > 0
+            ? `Tưới tự động cấp ${star}: tự tưới cả vườn + cây lớn nhanh thêm ${gPct}%/sao`
+            : `Tưới tự động cấp 1: tự tưới cả vườn mỗi sáng (khỏi thao tác); lên cấp 2–3 để cây lớn nhanh hơn`)
+        : `Chưa xây (${cost.toLocaleString('vi-VN')}đ): tự tưới cả vườn mỗi sáng, khỏi thao tác`;
+      hasMoney = false;
+    } else { // nha_luoi
+      const flat = farmGrowthFlat(g);
+      line = star > 0
+        ? `Nhà lưới cấp ${star}: mưa giông không sập luống + cây lớn thêm ${flat} ngày mỗi đêm`
+        : `Chưa xây (${cost.toLocaleString('vi-VN')}đ): mưa giông không sập luống + cây lớn nhanh hơn`;
+      hasMoney = false;
+    }
+    out.push({ id, owned: star > 0, cost, line, hasMoney });
+  }
+  return out;
+};

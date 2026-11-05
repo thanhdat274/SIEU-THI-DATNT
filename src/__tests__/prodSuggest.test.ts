@@ -192,3 +192,35 @@ describe('branchNightSuggest — nhu cầu chi nhánh (GĐ77)', () => {
     expect(prodSuggestToday(a).some((s) => s.icon === '🕳️')).toBe(false);
   });
 });
+
+describe('GĐ1175 — mùa vụ tính theo ngày CHÍN (khớp harvestYield ripenDay)', () => {
+  // Giữ kho các cây khác đầy (≥8) để chỉ còn x_xoai được gợi ý (tránh cây khác kèn 2 suất MAX_EACH).
+  const fullStorage: Record<string, number> = {
+    rau: 10, bap: 10, gao: 10, nep: 10, dau_xanh: 10, mia: 10, traicay: 10,
+    x_chuoi: 10, x_oi: 10, x_cam: 10, x_chanh_day: 10, x_vai: 10, x_nhan: 10, x_mit: 10, x_buoi: 10,
+  };
+
+  it('xoài trồng cuối tháng 6 (mùa) nhưng CHÍN sang tháng 7 (tắt mùa): còn gợi ý khách săn NHƯNG không ghi "+50%"', () => {
+    // xoai season [3,6], days 12; day 175 = 24/6 trong mùa, day+12=187 = 6/7 ngoài mùa
+    const a = base({ day: 175, level: 30, hot: ['x_xoai'], storage: fullStorage });
+    const farm = prodSuggestToday(a).find((s) => s.panel === 'garden' && s.label.includes('Xoài'));
+    expect(farm).toBeDefined();
+    expect(farm!.detail).toContain('khách săn');
+    expect(farm!.detail).not.toContain('đang mùa');
+  });
+
+  it('xoài trồng đầu tháng 6 (mùa) và CHÍN vẫn trong mùa: ghi đầy đủ "+50%"', () => {
+    // day 152 = 1/6, +12 = 13/6 vẫn tháng 6 (trong [3,6])
+    const a = base({ day: 152, level: 30, hot: ['x_xoai'], storage: fullStorage });
+    const farm = prodSuggestToday(a).find((s) => s.panel === 'garden' && s.label.includes('Xoài'));
+    expect(farm).toBeDefined();
+    expect(farm!.detail).toContain('đang mùa +50%');
+  });
+
+  it('cây không mùa (quanh năm) vẫn không bị đổi hành vi', () => {
+    const a = base({ day: 175, level: 20, hot: ['rau'], storage: { bap: 10, gao: 10, nep: 10, dau_xanh: 10, mia: 10, traicay: 10, x_chuoi: 10, x_oi: 10 } });
+    const farm = prodSuggestToday(a).find((s) => s.panel === 'garden' && s.label.includes('Rau cải'));
+    expect(farm).toBeDefined();
+    expect(farm!.detail).toContain('khách săn');
+  });
+});

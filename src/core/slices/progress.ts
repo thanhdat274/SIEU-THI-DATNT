@@ -184,8 +184,11 @@ export const createProgressSlice = (set: SetState, get: GetState): Pick<GameStat
     if (!q || !q.done || q.claimed) return false;
     // Sang ngày mới: bộ nhiệm vụ ngày làm lại từ đầu; kèo hôm qua (nếu còn treo) hết giá trị, dọn luôn
     const log = s.questLog.day === s.day ? s.questLog : { ...s.questLog, day: s.day, claimedDaily: [], bet: null };
+    // GĐ1178: ghi nhận tiền thưởng nhiệm vụ vào stats.questIncome (optional, reset theo ngày) để tổng kết
+    // cuối ngày so được với "lãi bán hàng thật" (Luật 10). Chỉ là ghi nhận — không đổi tiền/kinh tế/seed.
     set({
       money: s.money + q.money,
+      stats: { ...s.stats, questIncome: (s.stats.questIncome ?? 0) + q.money },
       questLog: id.startsWith('story_')
         ? { ...log, claimedStory: [...log.claimedStory, id] }
         : { ...log, claimedDaily: [...log.claimedDaily, id] },
@@ -231,6 +234,10 @@ export const createProgressSlice = (set: SetState, get: GetState): Pick<GameStat
     set({
       money: s.money + goal.reward,
       biz: { ...s.biz, prestige: { ...s.biz.prestige, goalsClaimed: [...claimedSet, id] } },
+      // GĐ1193: ghi thưởng Mục tiêu vòng vào sổ questIncome như mọi thưởng khác — trước nay mục tiêu vòng
+      // (NG+) cộng thẳng tiền mà bỏ lọt tổng kết ngày, nên nguồn thu "thưởng" ở báo cáo bán-hàng-là-chính
+      // (Luật 10) tính thiếu khoản lớn có thể lấn lãi bán thật. Chỉ ghi nhận — không đổi tiền/kinh tế/seed.
+      stats: { ...s.stats, questIncome: (s.stats.questIncome ?? 0) + goal.reward },
     });
     s.notify(`${goal.icon} Mục tiêu vòng mới "${goal.name}": +${formatMoney(goal.reward)}`);
     playSfx('quest');

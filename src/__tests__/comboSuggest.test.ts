@@ -56,3 +56,30 @@ describe('comboSuggest — gợi ý combo khi còn slot', () => {
     expect(COMBO_UNLOCK).toBeLessThanOrEqual(8);
   });
 });
+
+describe('comboSuggest \\u2014 gợi ý ĐỔI combo khi đã chạy đủ slot (GĐ1244)', () => {
+  it('replaceId là combo đang chạy → combo đó KHÔNG xuất hiện trong gợi ý đổi', () => {
+    const s = comboSuggest(8, { mi: 10, nuoc: 9 }, ['mi_nuoc'], 2, { replaceId: 'mi_nuoc' });
+    expect(s.length).toBeGreaterThan(0);
+    expect(s.map((x) => x.id)).not.toContain('mi_nuoc');
+  });
+
+  it('combo bị thay coi như giải phóng món: cặp dùng lại món bán chạy của nó được gợi ý', () => {
+    // mi_nuoc đang chạy (phủ mi+nuoc) bị thay → món mi (bán chạy) tự do lại → mi_trung (mi+trung) lên đầu.
+    // Cấp 25: trứng (11) & tăng lực (18) đều < 20 nên không bị tính bonus "món mới" — mi_trung & tangluc_mi
+    // cùng điểm (18) → mi_trung đứng trước theo thứ tự COMBOS (= ổn định khi sort cùng điểm).
+    const s = comboSuggest(25, { mi: 10, nuoc: 9 }, ['mi_nuoc'], 3, { replaceId: 'mi_nuoc' });
+    expect(s[0].id).toBe('mi_trung');
+  });
+
+  it('replaceId không nằm trong active → bỏ qua (running không đổi, món vẫn bị phủ)', () => {
+    // 'mi_nuoc' không phải combo đang chạy → không có slot được giải phóng; đang chạy là banh_ngot
+    const s = comboSuggest(8, { mi: 10, nuoc: 9, banh: 8, ngot: 7 }, ['banh_ngot'], 2, { replaceId: 'mi_nuoc' });
+    expect(s.map((x) => x.id)).not.toContain('banh_ngot');
+    // vì có slot thật (active < max) ta không ép: chỉ kiểm không loại nhầm combo đang chạy
+  });
+
+  it('đủ dữ liệu bán rồi mới gợi ý đổi (cùng guard như gợi ý thường)', () => {
+    expect(comboSuggest(8, { mi: 5 }, ['mi_nuoc'], 1, { replaceId: 'mi_nuoc' })).toEqual([]);
+  });
+});

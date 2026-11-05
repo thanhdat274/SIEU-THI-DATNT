@@ -7,6 +7,7 @@ import { dayTraffic } from '../data/weather';
 import { supplierSells, type Supplier } from '../data/suppliers';
 import { buyCostTone, tomorrowCostDir, type AssessLineOut, type BuyTone, type Dir } from '../data/procure';
 import { weekendPullOf, weekendSellingDays } from '../data/weekendRestock';
+import { pendingCapital } from '../data/stockCapital';
 
 /** GĐ946: tách khỏi OrderPanel (nguyên văn): gợi ý số thùng nhập + nhãn dự phóng + tone giá mối. */
 /** Món mới mở ở cấp này hoặc cấp trước, chưa ai hỏi mua: gợi ý nhập thử chừng này (thùng). */
@@ -149,4 +150,19 @@ export function commitNote(a: {
     body = `còn ${formatMoney(advice.gapAfter)} nữa đạt cam kết tháng ${formatMoney(advice.tier.commit)} (${rate}% hoàn) — giỏ này góp ${formatMoney(total)}, gom doanh tháng về mối ${supplier.name} để lấy hoàn`;
   }
   return { icon, text: `${icon} Gom cam kết: ${body}${tailRival}` };
+}
+
+/**
+ * GĐ1180 — dòng tổng vốn ĐANG CHỐT trước khi đặt: đơn chờ giao (pendingCapital) + đơn này.
+ * Thuần đọc, không useGame — để test trực tiếp; OrderPanel gọi với (deliveries, total, priceOf).
+ */
+export function commitmentNote(
+  deliveries: { items: Record<string, number> }[],
+  thisTotal: number,
+  priceOf: (id: string) => number,
+): string {
+  const cap = pendingCapital(deliveries, priceOf);
+  if (deliveries.length > 0) return `🚚 Chờ giao: ${deliveries.length} đơn (${formatMoney(cap.cost)} vốn) · đơn này +${formatMoney(thisTotal)} → tổng chốt ${formatMoney(cap.cost + thisTotal)} hôm nay`;
+  if (thisTotal > 0) return `Đơn này trừ ${formatMoney(thisTotal)} tiền mặt`;
+  return 'Chưa có đơn chờ giao';
 }

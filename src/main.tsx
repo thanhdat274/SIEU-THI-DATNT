@@ -22,6 +22,8 @@ import { hasUpgrade } from './data/upgrades';
 window.addEventListener('pointerdown', initAudio);
 import { BuildMode } from './shop/buildMode';
 import { installFarmSync } from './world/farmSync';
+import { CoinPopFX } from './render/fx/coinPop';
+import { FARM_CENTER } from './world/farm';
 import { installPointerTap } from './shop/pointerTap';
 import type { Counter } from './shop/groceryShop';
 import { askPending } from './core/counterAsk';
@@ -45,6 +47,7 @@ import { tiemXoiStandState, tiemXoiHandQty, tiemXoiDinerFigures } from './data/t
 import { quanHandLeft } from './data/quanNuoc';
 import { QUAN_HOUSE, insideQuanHouse } from './world/quanNuocStand';
 import { branchStandState, LANE_X } from './data/branches';
+import './ui/fonts.css';
 import './ui/controls.css';
 import { pushCloudSave } from './net/cloud';
 import { cancelSleep, checkpoint, inAlley, initCoop, isGuest, partnerPositions, updateCoop } from './net/coop';
@@ -209,7 +212,20 @@ worldActions.travel = (to) => {
   s.notify(to === 'shop' ? '🛵 Đã tới tiệm' : to === 'ranch' ? '🚜 Đã tới trang trại' : '🛵 Đã về nhà');
 };
 
-installFarmSync(world.farm);
+// GĐ1255 — juice thu hoạch trại (tham khảo Xóm Nông Trại, dòng coinPop GĐ173): thu luống / lấy trứng /
+// vắt sữa thì bong bóng "+3 🥬" bay lên đúng luống/chuồng đó. Cùng lớp bong bóng tiền ở quầy,
+// pool riêng vì đời sống độc lập; update ở cùng chỗ customers.coinFx.update(dt) phía dưới.
+const farmPopFx = new CoinPopFX(scene);
+installFarmSync(world.farm, (pop) => {
+  // Cùng ngưỡng 60 m với farm.group.visible (main.update): đứng xa trại thì bong bóng không sinh —
+  // kẻo nổi giữa không trung trên nền trại đang ẩn (QA GĐ1255 biên: máy khách hẻm thu từ xa qua panel).
+  if (player.position.distanceTo(world.farmSpot) >= 60) return;
+  farmPopFx.spawn(
+    new THREE.Vector3(FARM_CENTER.x + (pop.x ?? 0), 0.9, FARM_CENTER.z + (pop.z ?? 0)),
+    0,
+    pop.label,
+  );
+});
 
 installQuanNuocSync(world, grid, shop);
 
@@ -573,7 +589,8 @@ function updateStatus() {
 }
 
 let reminderSlot = -1;
-// Mức đồ họa + bộ tự hạ nhiều tầng (độ nét → bóng → đám đông → đồ trang trí); bóng cập nhật 30 hình/giây
+// Mức đồ họa + bộ tự hạ nhiều tầng (độ nét → bóng → mưa/mây → ánh sáng); nội dung (đám đông/decor)
+// luôn hiển thị đủ ở mọi mức — tấm chắn khẩn cấp chỉ bớt khi máy yếu dưới sàn 30 FPS (GĐ1235).
 initLightPool(scene, GFX_PRESETS[INITIAL_GFX].lightPool);
 const nativeDpr = window.devicePixelRatio || 1;
 let gfxChoice: GfxChoice = GFX_CHOICE;
@@ -588,8 +605,9 @@ function applyGfx() {
   // Đã dựng có bóng thì chỉ làm mờ hẳn bóng + ngừng vẽ shadow pass (vòng render đọc preset.shadows);
   // dựng không bóng (mức Thấp) thì bật bóng phải chờ tải lại trang.
   if (lighting.sun.castShadow) lighting.sun.shadow.intensity = p.shadows ? 1 : 0;
-  world.kit.setDecor(p.decor);
-  world.alleyLamps.setDecor(p.decor);
+  // Đồ trang trí theo NỘI DUNG (đầy ở mọi mức; tấm chắn khẩn cấp mới tắt khi máy yếu dưới 30 FPS)
+  world.kit.setDecor(gfx.content.decor);
+  world.alleyLamps.setDecor(gfx.content.decor);
   reportGfx(gfxChoice, gfx.step.level, gfx.avgFps);
 }
 applyGfx();
@@ -653,10 +671,12 @@ function renderFrame() {
       staff.update(dt * speed, nearCounter());
       customers.update(dt * speed, (counter) =>
         Math.max(playerAt(counter) || partnerAt(counter) ? (hasSkill(useGame.getState().skills, 'quick_hands') ? 1.2 : 1) : 0, staff.cashierSpeed(counter))
-        * (hasUpgrade(useGame.getState().biz, 'pos') ? 1.5 : 1));
+        * (hasUpgrade(useGame.getState().biz, 'pos') ? 1.5 : 1),
+      (counter) => staff.dutyCashierSkill(counter));
     }
     // Bong bóng tiền ở quầy bay theo giờ THỰC: tua 8× vẫn kịp đọc "+12.000đ" trước khi tan
     customers.coinFx.update(dt);
+    farmPopFx.update(dt);
     if (!guest) residents.update(dt * speed);
     if (ngo2Strollers) { const gs = useGame.getState(); ngo2Strollers.update(dt * speed, sapStrollerCount(gs.biz.sapRong, gs.weather, gs.minutes), gs.biz.sapRong ?? 0); }
     // Cửa hàng tiện lợi: chỉ dựng nhân vật khi chủ ghé; chủ đứng trong tiệm thì tự bán được khi thiếu thu ngân
@@ -794,13 +814,17 @@ function renderFrame() {
   applyLightBudget(controller.target);
   // Bóng đổ cập nhật 30 hình/giây là đủ (nắng di chuyển chậm): tiết kiệm một nửa vệt vẽ bóng; mức Thấp tắt hẳn
   if ((frameNo++ & 1) === 0 && gfx.preset.shadows) renderer.shadowMap.needsUpdate = true;
-  applyCrowdLod(controller.target, gfx.preset.npcCap, gfx.preset.animFarDist);
+  applyCrowdLod(controller.target, gfx.content.npcCap, gfx.preset.animFarDist);
   const prevLevel = gfx.step.level;
+  const prevContent = gfx.content.npcCap + (gfx.content.decor ? 'd' : '');
   if (gfx.update(dt)) {
     applyGfx();
     if (gfx.step.level !== prevLevel && !gfxNotified && playing()) {
       gfxNotified = true;
       g.notify(`🎨 Máy hơi nặng nên game tự giảm đồ họa xuống "${GFX_LABEL[gfx.step.level]}" cho mượt hơn. Đổi ở ⋯ Thêm → Đồ họa.`);
+    } else if (gfx.content.npcCap + (gfx.content.decor ? 'd' : '') !== prevContent && !gfxNotified && playing()) {
+      gfxNotified = true;
+      g.notify('🎨 Máy hơi nặng, game tạm bớt đám đông để giữ 30 FPS mượt. Đổi ở ⋯ Thêm → Đồ họa.');
     }
   } else reportGfx(gfxChoice, gfx.step.level, gfx.avgFps);
   // Nhật ký hiệu năng riêng máy: mỗi ngày game ghi FPS trung bình + mức đang dùng (xem game.perf())

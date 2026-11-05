@@ -2,7 +2,7 @@
 // trước đây 0% coverage): quyết định MÓN NÀO đang bày cần đặt thêm khi kho sắp cạn. Hàm thuần,
 // chỉ dùng dữ liệu + hằng (MANAGER_LOW_STOCK / MANAGER_TARGET) nên test không cần THREE/đi bộ.
 import { describe, it, expect } from 'vitest';
-import { managerNeedToRestock } from '../agents/staff';
+import { managerNeedToRestock, pickShelfFill } from '../agents/staff';
 import { MANAGER_LOW_STOCK, MANAGER_TARGET } from '../data/staff';
 
 // Một món đã bán qua, số đang có dưới ngưỡng → đặt đủ cho đủ MANAGER_TARGET.
@@ -71,5 +71,40 @@ describe('managerNeedToRestock — quản lý tự nhập hàng khi kho sắp c�
     });
     // mi thiếu (1<6) → đặt 23; nuoc thiếu → đặt 21; banh vừa đủ ngưỡng → không đặt
     expect(need).toEqual({ mi: MANAGER_TARGET - 1, nuoc: MANAGER_TARGET - 3 });
+  });
+});
+
+describe('GĐ1217 — pickShelfFill: món nào bày lên kệ đang trống (autoSwap, tách khỏi StaffManager.restock) — THUẦN QUAN SÁT, giữ nguyên công thức (Luật 3)', () => {
+  const unlocked = [
+    { id: 'a', category: 'dry' },
+    { id: 'b', category: 'drink' },
+    { id: 'c', category: 'dry' },
+    { id: 'd', category: 'food' },
+  ];
+  it('chọn món đúng loại kệ và kho còn hàng (bỏ loại khác, bỏ món kho rỗng)', () => {
+    const storage = { a: 3, c: 1, b: 5 }; // b thuộc loại khác; storage không có d → c loại đúng & có hàng
+    expect(pickShelfFill({ unlocked, categories: ['dry'], storage, shown: new Set() })).toBe('a');
+  });
+  it('ưu tiên món CHƯA bày ở đâu trong tiệm (shown), rồi mới tới món kho còn nhiều nhất', () => {
+    const storage = { a: 2, c: 4, b: 9 };
+    // b là drink (loại khác); a và c đều dry & có hàng: c kho nhiều hơn a nên c thắng nếu a đang bày
+    expect(pickShelfFill({ unlocked, categories: ['dry'], storage, shown: new Set(['a']) })).toBe('c');
+  });
+  it('cả hai loại đều chưa bày → món kho còn NHIỀU hơn được chọn', () => {
+    const storage = { a: 3, c: 8, b: 9 };
+    expect(pickShelfFill({ unlocked, categories: ['dry'], storage, shown: new Set() })).toBe('c');
+  });
+  it('không có món đúng loại kệ còn hàng → null (kệ để nguyên chờ nhập)', () => {
+    expect(pickShelfFill({ unlocked, categories: ['food'], storage: { a: 3, c: 8 }, shown: new Set() })).toBeNull(); // d food nhưng kho không có
+    expect(pickShelfFill({ unlocked, categories: ['food'], storage: { a: 3, c: 8, b: 9 }, shown: new Set() })).toBeNull(); // b drink khác loại
+  });
+  it('kệ có nhiều loại (categories mảng) → hợp lệ nếu thuộc bất kỳ loại nào', () => {
+    const storage = { a: 1, b: 7, c: 0 };
+    // kệ dry|drink: c dry nhưng kho hết; a dry còn hàng; b drink còn nhiều — ưu tiên chưa bày → a
+    expect(pickShelfFill({ unlocked, categories: ['dry', 'drink'], storage, shown: new Set(['b']) })).toBe('a');
+  });
+  it('thứ tự các món cùng key ổn định theo PRODUCTS (sort giữ y; chọn món đầu gặp)', () => {
+    // a và c cùng not-shown, cùng kho 2 → giữ thứ tự unlocked: a đứng trước c
+    expect(pickShelfFill({ unlocked, categories: ['dry'], storage: { a: 2, c: 2 }, shown: new Set() })).toBe('a');
   });
 });

@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { applySnapshot, loadGame, readLocalSave, type SaveData } from '../core/save';
 import { useGame } from '../core/store';
 import { formatMoney } from '../data/products';
@@ -6,6 +6,9 @@ import { fetchCloudSave } from '../net/cloud';
 import { giftOfStreak, giftText, scaledGift } from '../data/gifts';
 import { firebaseReady, loginGoogle, logoutGoogle } from '../net/firebase';
 import { useSession, type SaveSummary } from '../net/session';
+import { recordConsent } from '../net/consent';
+import { allConsentsGiven, CONSENT_SCOPES, type ConsentScope } from '../net/consentPolicy';
+import { PrivacyPolicy } from './PrivacyPolicy';
 import './login.css';
 // GĐ521: bảng hẻm online tải lười (bù ngân sách tải đầu)
 const AlleyPanel = lazy(() => import('./AlleyPanel').then((m) => ({ default: m.AlleyPanel })));
@@ -42,6 +45,11 @@ export function LoginScreen() {
   const { account, authChecked } = useSession();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** Đồng ý xử lý dữ liệu (Luật 91/2025): khoá nút Google tới khi tick + đọc Chính sách. */
+  const [consents, setConsents] = useState<Partial<Record<ConsentScope, boolean>>>({});
+  const [showPrivacy, setShowPrivacy] = useState(false);
+  /** Đặt cờ này trước khi mở popup Google; khi `account` có (watchUser) thì ghi bằng chứng đồng ý. */
+  const pendingConsent = useRef(false);
   /** Cả máy và cloud đều có bản lưu khác nhau: cho người chơi chọn. */
   const [choice, setChoice] = useState<{ local: SaveSummary; cloud: SaveSummary & { data: SaveData } } | null>(null);
 
@@ -52,6 +60,14 @@ export function LoginScreen() {
 
   // Đổi tài khoản thì bỏ lựa chọn cũ
   useEffect(() => setChoice(null), [account?.uid]);
+
+  // User đã tick đồng ý và đăng nhập xong → ghi bằng chứng đồng ý lên server (một lần/phiên/scope)
+  useEffect(() => {
+    if (account && pendingConsent.current) {
+      pendingConsent.current = false;
+      for (const scope of CONSENT_SCOPES) void recordConsent(scope);
+    }
+  }, [account]);
 
   const run = async (fn: () => Promise<void>) => {
     setBusy(true);
@@ -126,23 +142,47 @@ export function LoginScreen() {
             <>
               <h2>Đăng nhập để lưu tiến trình</h2>
               <p className="login-muted">Đăng nhập Google để chơi tiếp trên máy khác. Chơi không đăng nhập thì tiến trình chỉ nằm trong trình duyệt này.</p>
+              <label className="login-consent">
+                <input type="checkbox" checked={consents.account_cloud === true}
+                  onChange={(e) => setConsents((c) => ({ ...c, account_cloud: e.target.checked }))} />
+                <span>
+                  Tôi đồng ý cho xử lý dữ liệu tài khoản Google và lưu tiến trình lên cloud theo{' '}
+                  <button className="link" type="button" onClick={() => setShowPrivacy(true)}>Chính sách bảo mật</button>.
+                </span>
+              </label>
+              <label className="login-consent">
+                <input type="checkbox" checked={consents.terms === true}
+                  onChange={(e) => setConsents((c) => ({ ...c, terms: e.target.checked }))} />
+                <span>
+                  Tôi chấp nhận{' '}
+                  <button className="link" type="button" onClick={() => setShowPrivacy(true)}>Điều khoản sử dụng</button>.
+                </span>
+              </label>
               <button
                 className="login-btn primary"
-                disabled={!authChecked || busy || !firebaseReady}
-                onClick={() => run(async () => void (await loginGoogle()))}
+                disabled={!authChecked || busy || !firebaseReady || !allConsentsGiven(consents)}
+                onClick={() => {
+                  pendingConsent.current = true;
+                  void run(async () => void (await loginGoogle()));
+                }}
               >
                 <GoogleMark /> Đăng nhập bằng Google
               </button>
               <button className="login-btn" disabled={busy} onClick={enterAsGuest}>
                 {localSummary ? `Chơi tiếp trong máy (ngày ${localSummary.day})` : 'Chơi không cần đăng nhập'}
               </button>
+              <p className="login-muted login-coop-hint">🏘️ Muốn chơi chung với bạn bè (2–4 người)? Đăng nhập Google để mở hẻm online lưu trên server.</p>
             </>
           )}
 
-          {!choice && <Suspense fallback={null}><AlleyPanel busy={busy} run={run} onEnter={startGame} /></Suspense>}
           {error && <p className="login-error">{error}</p>}
         </section>
       </div>
+      {/* Bảng hẻm online tách riêng thẻ đăng nhập: nhiều hẻm không đấy thông tin đăng nhập */}
+      {account && !choice && (
+        <Suspense fallback={null}><AlleyPanel busy={busy} run={run} onEnter={startGame} /></Suspense>
+      )}
+      {showPrivacy && <PrivacyPolicy onClose={() => setShowPrivacy(false)} />}
     </div>
   );
 }

@@ -168,7 +168,7 @@ export interface BizState {
   sapTiers?: number[];
   /** GĐ521: ngày chủ tự đứng sạp gần nhất. */
   sapHandDay?: number;
-  tiemXoiLast?: { day: number; total: number; cost: number; wages: number; saved: number; /** GĐ486: suất khách ăn tại chỗ. */ dine?: number; /** GĐ711: sự kiện hôm qua (nồi hỏng / gạo khan) — bản lưu cũ thiếu thì coi như không có. */ event?: 'cooker' | 'gao' };
+  tiemXoiLast?: { day: number; total: number; cost: number; wages: number; saved: number; /** GĐ486: suất khách ăn tại chỗ. */ dine?: number; /** GĐ1173: doanh thu bán xôi tại chỗ cho khách ngồi (khác saved — đó là tiết kiệm chi phí nấu). */ dineRevenue?: number; /** GĐ711: sự kiện hôm qua (nồi hỏng / gạo khan) — bản lưu cũ thiếu thì coi như không có. */ event?: 'cooker' | 'gao' };
   /** Kết quả ngày vừa rồi của quán nước (để UI hiển thị); chưa từng chạy thì undefined.
    *  wages = tổng lương nhân viên phải trả hôm đó, profit = revenue − wages (lời ròng thật). */
   quanNuocLast?: { day: number; revenue: number; served: number; wanted: number; wages: number; profit: number; /** GĐ703: sự kiện hôm qua (máy pha hỏng / xe nước) — bản lưu cũ thiếu thì coi như không có. */ event?: 'brewer' | 'cart' };

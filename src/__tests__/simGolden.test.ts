@@ -42,6 +42,8 @@ interface Snap { money: number; level: number; xp: number; profit: number[]; que
 const GOLDEN: Record<number, Snap> = {
   // Mốc lấy lại GĐ325 (trần thưởng 0,37× / sàn 66k), trước đó 31/10/2026: trần thưởng nhiệm vụ neo vào lãi bán hàng (salesProfit) — từ ngày 2 quest co lại.
   // GĐ609: ngày 1 là ngày cúng (mùng 1) — khách hỏi nhang/trái cây (kéo 0,08) → tiền 3 ngày +5,8%.
+  // GĐ1253: thu ngân tự quyết mặc cả/tiền lẻ rút DÒNG RIÊNG cashierRng (rand.ts) — chuỗi kinh tế chính
+  // giữ nguyên từng nhịp nên mốc KHÔNG đổi (đã đối chiếu: chạy trước/sau GĐ1253 ra số hệt nhau).
   30: { money: 26_256_961, level: 31, xp: 1221, profit: [-16_605_000, -10_080_000, -2_270_000], quest: [2_145_000, 98_444, 105_687] },
 };
 

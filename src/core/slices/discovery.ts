@@ -31,6 +31,11 @@ export const createDiscoverySlice = (set: SetState, get: GetState): Pick<GameSta
       soldEver: newEver,
       biz: { ...s.biz, discoveryClaimed: nextClaimed },
       money: s.money + reward.money,
+      // GĐ1194: thưởng mốc Sổ tay Tiệm (tới 500k ở mốc 100) là "thưởng" mà tổng kết ngày (Luật 10 —
+      // đừng để thưởng lấn lãi bán thật) trước nay không thấy: cộng thẳng tiền mà bỏ lọt questIncome.
+      // Chỉ ghi nhận — không đổi tiền/kinh tế/seed; recordDiscovery chạy trên máy chạy (LOCAL_ONLY) nên
+      // chơi đơn/hẻm online giống nhau; trường tuỳ chọn `?? 0` an toàn save cũ.
+      stats: { ...s.stats, questIncome: (s.stats.questIncome ?? 0) + reward.money },
     });
     get().addXp(reward.xp);
     const gain = newly.map((m) => { const r = discoveryReward(m); return `mốc ${m}: +${formatMoney(r.money)} +${r.xp} XP`; }).join(' · ');

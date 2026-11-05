@@ -124,7 +124,10 @@ export const styles: Record<string, React.CSSProperties> = {
   btn: { border: 'none', borderRadius: 6, padding: '5px 10px', cursor: 'pointer', marginLeft: 4, fontSize: 13 },
   close: {
     position: 'sticky', top: 0, float: 'right', zIndex: 1, width: 30, height: 30, marginLeft: 8,
-    border: 'none', borderRadius: 15, cursor: 'pointer', fontSize: 15, background: '#fff', color: '#222',
+    border: '1px solid rgba(255,255,255,0.25)', borderRadius: 15, cursor: 'pointer', fontSize: 15,
+    // GĐ1254 — chip nền ĐẶC màu panel: nội dung cuộn dưới ✕ (sticky) không còn "hở số" đè lên nút
+    // (QA: bảng tổng kết số tiền phải-căn phải bị ✕ che lửng lơ khi cuộn). Bóng đổ nhẹ tách khỏi nội dung.
+    background: '#3a3a4d', color: '#fff', boxShadow: '0 2px 6px rgba(0,0,0,0.4)',
     transition: 'background 0.12s, transform 0.1s',
   },
 };

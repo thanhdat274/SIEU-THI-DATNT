@@ -6,7 +6,7 @@ import { dailyWage, maxStaff, ROLES, SHIFTS, type Shift, type Staff } from '../.
 import { formatMoney, fmtMul } from '../../data/products';
 import { hasUpgrade } from '../../data/upgrades';
 import { branchStaffWish } from '../../data/branches';
-import { BranchShiftStrip, BranchValueLine, NightStaffLine, NightStrip, ShiftValueStrip, StaffIdleLine, StaffValueLine } from './StaffLines';
+import { BranchShiftStrip, BranchValueLine, NightStaffLine, NightStrip, ShiftValueStrip, StaffIdleLine, StaffValueLine, CourierValueLine, StaffPoachWarn } from './StaffLines';
 import { Footer, Callout, styles, Tabs } from './shared';
 import { wageCoverage } from '../../data/wageCoverage';
 import { expToNext, shownTrait, trainCost, TRAITS } from '../../data/staffTraits';
@@ -14,29 +14,55 @@ import { payrollRunway } from '../../data/payrollRunway';
 import { trainValue } from '../../data/trainValue';
 import { staffEff } from '../../data/staffEff';
 import { serveCoverage, SERVE_TOP_HOURS } from '../../data/serveCoverage';
-import { staffValueToday, staffShiftSummary } from '../../data/staffValue';
+import { hirePayoff } from '../../data/hirePayoff';
+import { petActive } from '../../data/bizAchievements';
+import { storeMissRevenue } from '../../data/advice';
+import { staffValueToday, staffShiftSummary, courierPhoneValue } from '../../data/staffValue';
+import { staffAtRiskOfPoach } from '../../data/biz';
 import { staffIdleStats, type StaffIdleRow } from '../../data/staffIdle';
 import { staffDaySnapshot } from '../../core/slices/staffDay';
 import { branchShiftSummary, branchStaffValueToday } from '../../data/branchStaffValue';
 import { nightStaffValueToday } from '../../data/nightStaffValue';
 import { nightPnl } from '../../data/nightReport';
-import { nextPromotion, RANKS } from '../../data/careers';
+import { nextPromotion, promotionWorth, RANKS } from '../../data/careers';
 import { BONUS_RELIEF, BRANCH_ROLES, BRANCH_SHIFT_NAME, BRANCH_SHIFTS, CONVENIENCE, FATIGUE_QUIT, FATIGUE_SLOW, fatigueOf, restingOn } from '../../data/branches';
 import { gapsOf, SITE_NAME, type Site } from '../../data/transfer';
 
 export function StaffPanel() {
   const [tab, setTab] = useState<'team' | 'hire'>('team');
-  const { staff, candidates, level, day, money, autoOpen, hire, fire, setShift, trainStaff, promoteStaff, closePanel, biz, branch, hireForBranch, stats, skills } = useGame();
+  const { staff, candidates, level, day, money, autoOpen, hire, fire, setShift, trainStaff, promoteStaff, closePanel, biz, branch, hireForBranch, stats, skills, dirt, storage } = useGame();
   const [pick, setPick] = useState<Record<number, Shift>>({});
   const max = maxStaff(level);
   const bStaff = branch?.staff ?? [];
+  // GĐ1267 — lỗ THẬT đang đo hôm nay để nói "thuê vai này vá gì" cạnh từng ứng viên (helper THUẦN,
+  // không đổi state). Chỉ ra dòng khi có tín hiệu trung thực; còn lại để mô tả desc, không bịa.
+  const hireCtx = {
+    waitMissed: stats?.missed?.wait ?? 0,
+    shelfMissInStorageLoss: (() => {
+      const miss = storeMissRevenue(stats?.missLog, storage);
+      if (!miss) return 0;
+      return miss.rows.filter((r) => r.inStorage > 0).reduce((n, r) => n + r.estLoss, 0);
+    })(),
+    dirt: dirt ?? 0,
+    level, customers: stats?.customers ?? 0, revenue: stats?.revenue ?? 0,
+    // GĐ1269 — bảo vệ: đọc đúng bối cảnh phòng thủ hiện tại để nói "thuê giữ ~X vụ trộm/ngày"
+    guardCount: staff.filter((s) => s.role === 'guard').length,
+    cashierStaffed: staff.some((s) => s.role === 'cashier'),
+    hasDog: petActive(biz.pets?.dog, day),
+    hasCamera: (biz.upgrades ?? []).includes('camera'),
+    hasSharpEye: skills.includes('sharp_eye'),
+  };
   const total = [...staff, ...bStaff].reduce((sum, st) => sum + dailyWage(st), 0);
   // GĐ141: giá trị hôm nay của từng nhân viên ca ngày tiệm chính so với lương (thuần đọc stats.byHour)
   const staffValues = staffValueToday(stats?.byHour, staff);
+  // GĐ1181: người giao (🛵) không ghi doanh thu quầy — giá trị thật của họ là kênh điện thoại họ mở + chở (stats.phone)
+  const courierValues = courierPhoneValue(stats ?? {}, staff);
   const shiftSum = staffShiftSummary(stats?.byHour, staff);
   // GĐ144: giá trị hôm nay của từng nhân viên CA ĐÊM tiệm chính so với lương (thuần đọc stats.byHour giờ ≥22)
   const nightValues = nightStaffValueToday(stats?.byHour, staff, skills);
   const nightStrip = nightPnl(stats?.byHour, staff, skills);
+  // GĐ1185: rival máu liều đủ mạnh có thể móc nhân viên giỏi nhất về đêm — cảnh báo trước (mẫu atRiskOfPoach GĐ794)
+  const poachRiskId = staffAtRiskOfPoach(biz.rival, staff);
   // Ca mặc định khi thuê vào chi nhánh: ca đầu tiên còn thiếu thu ngân, đủ hết thì ca đêm
   const needShift = BRANCH_SHIFTS.find((sh) => !bStaff.some((x) => x.shift === sh && x.role === 'cashier')) ?? 'night';
   // GĐ246: % rảnh từng người hôm nay (dữ liệu transient do agent đếm, reset đầu ngày)
@@ -122,8 +148,11 @@ export function StaffPanel() {
           {staff.map((st) => (
             <div key={st.id} style={staffSt.card}>
               <StaffInfo st={st} right={<span style={staffSt.wage}>{formatMoney(dailyWage(st))}<small>/ngày</small></span>} />
+              <StaffPoachWarn rival={biz.rival} poachRiskId={poachRiskId === st.id ? st.id : undefined} />
               {st.shift === 'night' ? (
                 <NightStaffLine sv={nightValues.find((v) => v.id === st.id)} />
+              ) : st.role === 'courier' ? (
+                <CourierValueLine sv={courierValues.find((v) => v.id === st.id)} />
               ) : (
                 <StaffValueLine sv={staffValues.find((v) => v.id === st.id)} />
               )}
@@ -199,6 +228,12 @@ export function StaffPanel() {
                   </>
                 }
               />
+              {(() => {
+                const p = hirePayoff(c.role, { wage: c.wage, ...hireCtx });
+                return p.ok ? (
+                  <div style={{ fontSize: 11, marginTop: 2, color: '#2ecc71' }}>{p.line}</div>
+                ) : null;
+              })()}
               {branch && BRANCH_ROLES.includes(c.role) && (
                 <div style={staffSt.actions}>
                   <span style={staffSt.label}>🏪 Hoặc thuê vào tiện lợi 24/7</span>
@@ -354,7 +389,9 @@ export function DeployBoard() {
   );
 }
 
-/** Dòng thăng chức: điều kiện còn thiếu hoặc nút thăng chức (thu ngân → trưởng quầy → quản lý chi nhánh). */
+/** Dòng thăng chức: điều kiện còn thiếu hoặc nút thăng chức (thu ngân → trưởng quầy → quản lý chi nhánh).
+ *  GĐ1258 — đủ điều kiện thì kèm dòng 💡 "được gì, tăng lương bao nhiêu" (promotionWorth — hằng số
+ *  quyền lợi có sẵn trong game), hết hộp đen "chỉ thấy giá + lương ×N không thấy lợi". */
 export function PromoteRow({ st, level, money, onPromote }: { st: Staff; level: number; money: number; onPromote: (id: number) => void }) {
   const chk = nextPromotion(st, level);
   if (!chk) return null;
@@ -367,6 +404,12 @@ export function PromoteRow({ st, level, money, onPromote }: { st: Staff; level: 
       <button style={styles.btn} disabled={!chk.ok || money < chk.def.cost} onClick={() => onPromote(st.id)}>
         Thăng chức · {formatMoney(chk.def.cost)}
       </button>
+      {chk.ok && (() => {
+        const w = promotionWorth(st, chk.to);
+        return (
+          <div style={{ width: '100%', fontSize: 12, color: '#2ecc71', lineHeight: 1.35 }}>💡 {w.line}</div>
+        );
+      })()}
     </div>
   );
 }

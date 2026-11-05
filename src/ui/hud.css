@@ -73,11 +73,24 @@
 #ui .hud-forecast { opacity: 0.85; letter-spacing: 2px; }
 #ui .hud-forecast::before { content: "Dự báo "; letter-spacing: 0; }
 #ui .hud-time b { font-size: 18px; }
+/* GĐ1259 — tít tròn mềm Baloo 2 cho các bề mặt "thương hiệu": giờ trên HUD, tiêu đề panel,
+ * biển hiệu đăng nhập — thân bài giữ Be Vietnam Pro cho dễ đọc dài. */
+#ui .hud-time b, .panel h2, .login-sign h1 {
+  font-family: 'Baloo 2', 'Paytone One', 'Be Vietnam Pro', system-ui, sans-serif;
+  letter-spacing: 0.2px;
+}
+/* GĐ1254 — chip đồng hồ có small nowrap (ngày/dự báo/hội thoại). Màn 701–1100px: dòng dài làm chip
+   tràn mép phải (layoutAudit clipped 135px ở 768px) — chặn bề rộng + lược bớt bằng ellipsis;
+   desktop rộng đủ chỗ nên không đổi hình dáng. */
+@media (min-width: 701px) {
+  #ui .hud-chip.hud-time { max-width: min(46vw, 460px); }
+  #ui .hud-chip.hud-time small { overflow: hidden; text-overflow: ellipsis; }
+}
 #ui .hud-late { color: #ff7675; }
 #ui .hud-money b { color: var(--hud-accent); font-size: 17px; }
 #ui .hud-money { position: relative; }
 /* Juice tiền: nhảy to + đổi màu khi kiếm/chi, kèm số +/− nổi lên rồi tan */
-#ui .hud-money b.money-up { animation: money-pop 0.5s ease; color: #5bd28f; }
+#ui .hud-money b.money-up { animation: money-pop 0.5s ease; color: #2ecc71; }
 #ui .hud-money b.money-down { animation: money-pop 0.5s ease; color: #ff7675; }
 #ui .hud-delta {
   position: absolute;
@@ -89,7 +102,7 @@
   animation: money-float 1.2s ease-out forwards;
   white-space: nowrap;
 }
-#ui .hud-delta.up { color: #5bd28f; }
+#ui .hud-delta.up { color: #2ecc71; }
 #ui .hud-delta.down { color: #ff7675; }
 @keyframes money-pop { 0% { transform: scale(1); } 35% { transform: scale(1.22); } 100% { transform: scale(1); } }
 @keyframes money-float { 0% { opacity: 0; transform: translateY(4px); } 18% { opacity: 1; } 100% { opacity: 0; transform: translateY(-16px); } }
@@ -589,6 +602,10 @@
   #ui .hud-dock > .hud-tool > span:not(.hud-tool-icon):not(.hud-badge),
   #ui .hud-dock > .hud-pop > .hud-tool > span:not(.hud-tool-icon):not(.hud-badge) { font-size: 9px; white-space: normal; text-align: center; }
   #ui .hud-speed button { min-width: 28px; }
+  /* GĐ1254 — cụm phải (loa/nhạc/tài khoản) chưa co như màn hẹp → chip tiền trong .hud-left
+     đâm vào nút loa (QA 768px: "5.000.000đ" bị loa đè). Co cụm phải y khối ≤700px. */
+  #ui .hud-account > span:not(.hud-avatar), #ui .hud-caret, #ui .hud-room small { display: none; }
+  #ui .hud-account { padding: 4px; }
 }
 
 /* (Màn rất hẹp ≤720px: đã gộp vào khối "Màn hẹp" ở trên — nút chia đều, menu Thêm bật lên
@@ -743,6 +760,8 @@
 #ui .hud-room-icon { display: inline-flex; align-items: center; gap: 3px; }
 #ui .hud-room-icon em { font-style: normal; font-weight: 700; font-size: 12px; }
 @media (min-width: 1001px) { #ui .hud-room-icon em { display: none; } }
+/* GĐ1067: 1001–1140px dock 12 nút rộng ~1064px làm nút "Thêm" bị cắt (layoutAudit overBy 52 @1024) → thu nút cho vừa. */
+@media (min-width: 1001px) and (max-width: 1140px) { #ui .hud-tool { min-width: 58px; padding: 6px 4px; } }
 
 /* Khung hướng dẫn không bao giờ tràn ngang; đang có hội thoại thì cột thông báo nhường chỗ, khỏi bị che */
 #ui .hud-tutorial { box-sizing: border-box; max-width: 100%; min-width: 0; }

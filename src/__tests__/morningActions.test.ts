@@ -30,3 +30,33 @@ describe('GĐ945 — buildMorningActions', () => {
     expect(a[0]).toMatchObject({ danger: true, panel: 'contracts' }); expect(a[0].text).toContain('HĐ A');
   });
 });
+
+describe('GĐ1102 (QA nối) — việc sáng "món menu quán ngừng bán" qua buildMorningActions', () => {
+  const withQuan = (menu: string[] | undefined, open: boolean, storage: Record<string, number> = {}) => {
+    const g = newGameData();
+    return base({
+      level: 45,
+      storage,
+      biz: { ...g.biz, quanNuoc: { open, staff: 1, price: 'vua' as const, menu } } as never,
+    });
+  };
+
+  it('quán mở + menu Trà vải + hết vải → có việc sáng danger nêu đúng món', () => {
+    const a = buildMorningActions(withQuan(['tra_vai'], true, { tra: 5, x_duong: 9, x_nuoc_da: 4 }));
+    const act = a.find((x) => x.text.includes('Trà vải ngừng bán'));
+    expect(act).toBeDefined();
+    expect(act!.danger).toBe(true);
+    expect(act!.panel).toBe('quannuoc');
+  });
+
+  it('quán đóng → không có việc này; quán mở nhưng đủ nguyên liệu → không có', () => {
+    expect(buildMorningActions(withQuan(['tra_vai'], false, {})).some((x) => x.text.includes('ngừng bán'))).toBe(false);
+    const a = buildMorningActions(withQuan(['tra_vai'], true, { tra: 5, x_vai: 3, x_duong: 9, x_nuoc_da: 4 }));
+    expect(a.some((x) => x.text.includes('ngừng bán'))).toBe(false);
+  });
+
+  it('menu không truyền (save cũ) → không lỗi, không việc', () => {
+    const a = buildMorningActions(withQuan(undefined, true, {}));
+    expect(a.filter((x) => x.text.includes('ngừng bán')).length).toBe(0);
+  });
+});

@@ -69,3 +69,17 @@ export const idToken = async () => {
   const { a } = await loadAuth();
   return (await a.currentUser?.getIdToken()) ?? null;
 };
+
+/**
+ * Xoá tài khoản Google đang đăng nhập (quyền chủ thể dữ liệu). Firebase yêu cầu đăng nhập "gần đây"
+ * nên xác thực lại qua popup Google trước, rồi mới xoá. Bản build dev (?dev=) không có tài khoản thật.
+ */
+export async function deleteAccount(): Promise<void> {
+  if (devId) return;
+  const { a, m } = await loadAuth();
+  const user = a.currentUser;
+  if (!user) return;
+  const provider = new m.GoogleAuthProvider();
+  await m.reauthenticateWithPopup(user, provider);
+  await user.delete();
+}

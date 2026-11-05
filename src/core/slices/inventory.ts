@@ -4,7 +4,7 @@ import { WAREHOUSE_TIERS } from '../../data/warehouse';
 import { customersPerDay } from '../../data/levels';
 import { formatMoney, productById, unlockedProducts } from '../../data/products';
 import { orderTotal, supplierById } from '../../data/suppliers';
-import { addRel } from '../../data/supplierRel';
+import { addRel, deliversInstantly } from '../../data/supplierRel';
 import { fitLots, mergeLots, tierMarkdown, takeOldest } from '../../data/freshness';
 import { COOKED_PRODUCT_IDS } from '../../data/recipes';
 import { type GameState, type Furniture, type SetState, type GetState, storageCapacity, storageUsed } from '../gameTypes';
@@ -79,7 +79,7 @@ export const createInventorySlice = (set: SetState, get: GetState): Pick<GameSta
       supplierRel: { ...(s.biz.supplierRel ?? {}), [supplierId]: addRel(s.biz.supplierRel?.[supplierId], cost) },
       supplierRelMonth: { ...(s.biz.supplierRelMonth ?? {}), [supplierId]: (s.biz.supplierRelMonth?.[supplierId] ?? 0) + cost },
     };
-    if (sup.delayDays === 0) {
+    if (deliversInstantly(sup, s.biz.supplierRel?.[supplierId]?.spent ?? 0)) {
       const k = copyStock(s);
       for (const [id, qty] of Object.entries(lines)) putStock(k, id, qty);
       set({ money: s.money - cost, ...k, stats, totals, biz: nbiz });

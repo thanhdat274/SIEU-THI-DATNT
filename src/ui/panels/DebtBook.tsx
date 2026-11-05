@@ -4,6 +4,7 @@ import { debtLedger, debtRowsByUrgency } from '../../data/debtLedger';
 import { regularById } from '../../data/regulars';
 import { CREDIT_FRIENDSHIP, CREDIT_UNLOCK, creditLeft, creditLimit, DEBT_LATE_DAYS, DEBT_WRITE_OFF_DAYS } from '../../data/credit';
 import { CHANGE_OPTS, counterPolicySummary, defaultCounterPolicy, HAGGLE_OPTS } from '../../data/counterDeals';
+import { hagglePolicyEarn } from '../../data/hagglePayoff';
 import { styles } from './shared';
 
 /** Sổ nợ: khách quen ghi sổ, nhắc nợ hoặc xoá nợ; bật/tắt cho ghi sổ. */
@@ -15,6 +16,7 @@ export function DebtBook() {
   const ledger = debtLedger(debts, day);
   const policy = counterPolicy ?? defaultCounterPolicy();
   const summ = counterPolicySummary(policy);
+  const hag = hagglePolicyEarn(policy.haggle);
   return (
     <>
     <div style={{ ...styles.card, display: 'block', maxWidth: 560, marginBottom: 8 }}>
@@ -69,8 +71,12 @@ export function DebtBook() {
     <div style={{ ...styles.card, display: 'block', maxWidth: 560, marginBottom: 8 }}>
       <div style={{ fontSize: 13 }}><b>🧾 Chính sách quầy</b> <span style={{ opacity: 0.7, fontSize: 11 }}>thái độ mặc cả & tiền lẻ</span></div>
       <div style={{ fontSize: 12, opacity: 0.75, marginTop: 2 }}>{summ.haggleText} {summ.changeText}</div>
+      <div style={{ fontSize: 12, opacity: 0.75, marginTop: 2 }}>
+        👥 Có thu ngân trực ở quầy thì thu ngân tự quyết mặc cả/tiền lẻ theo tay nghề — người giỏi hay trả nửa và thối kẹo, người kém hay bớt luôn. Chính sách bên dưới chỉ áp dụng khi chính bạn đứng quầy.
+      </div>
       <div style={{ marginTop: 6 }}>
         <div style={{ fontSize: 12, opacity: 0.85 }}>🙏 Mặc cả</div>
+        {hag.line && <div style={{ fontSize: 12, color: '#2ecc71', marginTop: 2 }}>{hag.line}</div>}
         {HAGGLE_OPTS.map((o) => (
           <label key={o.value} style={{ display: 'flex', alignItems: 'flex-start', gap: 6, fontSize: 12, marginTop: 3, cursor: 'pointer' }}>
             <input type="radio" name="counter-haggle" checked={policy.haggle === o.value} onChange={() => setCounterPolicy({ haggle: o.value })} style={{ marginTop: 2 }} />

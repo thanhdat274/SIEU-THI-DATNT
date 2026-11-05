@@ -321,6 +321,73 @@ describe('GĐ481: tháng rét đồ nóng kéo khách', () => {
   });
 });
 
+describe('GĐ1325: sinh tố vải sấy (hàng xóm → quán nước)', () => {
+  it('mở cấp 40, dùng vải thiều sấy hàng xóm, không hot, lời hơn vốn gấp đôi', async () => {
+    const { quanRecipeById, quanRecipesAt, recipeCupCost, QUAN_RECIPES } = await import('../data/quanRecipes');
+    const { productById } = await import('../data/products');
+    const r = quanRecipeById('sinh_to_vai')!;
+    expect(r.unlock).toBe(40);
+    expect(r.uses.map((u) => u.id)).toContain('hx_vai_say');
+    for (const u of r.uses) expect(productById(u.id).unlock).toBeLessThanOrEqual(r.unlock);
+    expect(quanRecipesAt(39).some((x) => x.id === 'sinh_to_vai')).toBe(false);
+    expect(quanRecipesAt(40).some((x) => x.id === 'sinh_to_vai')).toBe(true);
+    expect(r.price).toBeGreaterThan(recipeCupCost(r) * 2);
+    expect(r.hot).toBeFalsy();
+    expect(QUAN_RECIPES.filter((x) => x.hot).length).toBe(3); // không phình đếm đồ nóng (Luật 9)
+  });
+});
+
+describe('GĐ1329: trà nhãn (nhãn nông trại → quán nước)', () => {
+  it('mở cấp 31, dùng nhãn nông trại, không hot, lời hơn vốn gấp đôi', async () => {
+    const { quanRecipeById, quanRecipesAt, recipeCupCost, QUAN_RECIPES } = await import('../data/quanRecipes');
+    const { productById } = await import('../data/products');
+    const r = quanRecipeById('tra_nhan')!;
+    expect(r.unlock).toBeGreaterThan(30); // sau mốc golden 30 → sim không đổi
+    expect(r.unlock).toBe(31);
+    expect(r.uses.map((u) => u.id)).toContain('x_nhan');
+    for (const u of r.uses) expect(productById(u.id).unlock).toBeLessThanOrEqual(r.unlock);
+    expect(quanRecipesAt(30).some((x) => x.id === 'tra_nhan')).toBe(false);
+    expect(quanRecipesAt(31).some((x) => x.id === 'tra_nhan')).toBe(true);
+    expect(r.price).toBeGreaterThan(recipeCupCost(r) * 2);
+    expect(r.hot).toBeFalsy();
+    expect(QUAN_RECIPES.filter((x) => x.hot).length).toBe(3); // không phình đếm đồ nóng (Luật 9)
+  });
+});
+
+describe('GĐ1330: sinh tố mít (mít nông trại → quán nước)', () => {
+  it('mở cấp 34, dùng mít nông trại, không hot, lời hơn vốn gấp đôi', async () => {
+    const { quanRecipeById, quanRecipesAt, recipeCupCost, QUAN_RECIPES } = await import('../data/quanRecipes');
+    const { productById } = await import('../data/products');
+    const r = quanRecipeById('sinh_to_mit')!;
+    expect(r.unlock).toBeGreaterThan(30); // sau mốc golden 30 → sim không đổi
+    expect(r.unlock).toBe(34);
+    expect(r.uses.map((u) => u.id)).toContain('x_mit');
+    for (const u of r.uses) expect(productById(u.id).unlock).toBeLessThanOrEqual(r.unlock);
+    expect(quanRecipesAt(33).some((x) => x.id === 'sinh_to_mit')).toBe(false);
+    expect(quanRecipesAt(34).some((x) => x.id === 'sinh_to_mit')).toBe(true);
+    expect(r.price).toBeGreaterThan(recipeCupCost(r) * 2);
+    expect(r.hot).toBeFalsy();
+    expect(QUAN_RECIPES.filter((x) => x.hot).length).toBe(3); // không phình đếm đồ nóng (Luật 9)
+  });
+});
+
+describe('GĐ1334: bưởi đá (bưởi nông trại → quán nước)', () => {
+  it('mở cấp 32, dùng bưởi nông trại, không hot, lời hơn vốn gấp đôi', async () => {
+    const { quanRecipeById, quanRecipesAt, recipeCupCost, QUAN_RECIPES } = await import('../data/quanRecipes');
+    const { productById } = await import('../data/products');
+    const r = quanRecipeById('buoi_da')!;
+    expect(r.unlock).toBeGreaterThan(30); // sau mốc golden 30 → sim không đổi
+    expect(r.unlock).toBe(32);
+    expect(r.uses.map((u) => u.id)).toContain('x_buoi');
+    for (const u of r.uses) expect(productById(u.id).unlock).toBeLessThanOrEqual(r.unlock);
+    expect(quanRecipesAt(31).some((x) => x.id === 'buoi_da')).toBe(false);
+    expect(quanRecipesAt(32).some((x) => x.id === 'buoi_da')).toBe(true);
+    expect(r.price).toBeGreaterThan(recipeCupCost(r) * 2);
+    expect(r.hot).toBeFalsy();
+    expect(QUAN_RECIPES.filter((x) => x.hot).length).toBe(3); // không phình đếm đồ nóng (Luật 9)
+  });
+});
+
 describe('GĐ482: nhắc đồ nóng tháng rét', () => {
   it('tháng rét trời khô gợi ý ×1.1; tháng hè không nhắc', async () => {
     const { quanHotNote } = await import('../data/quanRecipes');

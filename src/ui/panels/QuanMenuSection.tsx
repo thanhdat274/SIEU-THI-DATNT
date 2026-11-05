@@ -4,17 +4,24 @@ import { QUAN_HAND_CUPS, QUAN_PRICE_OPTIONS, QUAN_TIERS, quanHandLeft, quanMenuS
 import {
   cleanMenu, QUAN_RECIPES, QUAN_VARIETY_BONUS, recipeCapacity, recipeCupCost,
 } from '../../data/quanRecipes';
+import { quanBestAdd, quanBestAddLine } from '../../data/quanMenuSuggest';
+import { quanHandPayoff, quanHandPayoffLine } from '../../data/quanHandPayoff';
 import { styles } from './shared';
+import { newUnlockMark } from '../../data/advice';
 
 /** Thực đơn pha chế quán nước (GĐ415): chọn tối đa 4 món, mỗi món hiện lời/ly và số ly kho đủ pha. */
 export function QuanMenuSection() {
-  const { biz, level, storage, day, toggleQuanRecipe, brewQuanHand, upgradeQuanTier } = useGame();
+  const { biz, level, storage, day, weather, toggleQuanRecipe, brewQuanHand, upgradeQuanTier } = useGame();
   const tier = quanTierOf(biz.quanNuoc);
   const nextTier = QUAN_TIERS[tier + 1];
   const q = biz.quanNuoc;
   const slots = quanMenuSlots(q);
   const menu = cleanMenu(q.menu, level, slots);
   const mul = QUAN_PRICE_OPTIONS[q.price].mul;
+  // GĐ1306 — tối nay nên thêm món nào (lãi/ly × mở ×khách đồ nóng × kho): xếp hạng công thức chưa bán
+  const suggestLine = quanBestAddLine(quanBestAdd({ level, storage, menu, priceMul: mul, weather, day, slots }), weather);
+  // GĐ1307 — mẻ TỰ PHA +20% tay nghề đáng bao nhiêu /mẻ và cả ngày (soi phần thưởng GĐ427), kèm kẹt nguyên liệu
+  const handLine = quanHandPayoffLine(quanHandPayoff({ level, menu, storage, priceMul: mul, day, q }));
   return (
     <div style={{ ...styles.card, display: 'block', marginTop: 10 }}>
       <b>📋 Thực đơn pha chế ({menu.length}/{slots})</b>
@@ -35,6 +42,12 @@ export function QuanMenuSection() {
         title="Tự đứng quầy pha một mẻ, lần lượt từng món trên thực đơn, bán ngay giá tay nghề +20%">
         🍹 Tự pha {QUAN_HAND_CUPS} ly (còn {quanHandLeft(q, day)} mẻ)
       </button>
+      {handLine && (
+        <div style={{ fontSize: 11, marginTop: 2, color: '#2ecc71' }}>{handLine}</div>
+      )}
+      {suggestLine && (
+        <div style={{ fontSize: 11, marginTop: 4, color: '#c0392b' }}>{suggestLine}</div>
+      )}
       {QUAN_RECIPES.map((r) => {
         const locked = level < r.unlock;
         const on = menu.includes(r.id);
@@ -51,7 +64,7 @@ export function QuanMenuSection() {
               {locked ? `Cấp ${r.unlock}` : on ? '✓ Bán' : 'Thêm'}
             </button>
             <div style={{ fontSize: 13, lineHeight: 1.4 }}>
-              {r.icon} <b>{r.name}</b> · {formatMoney(Math.round(r.price * mul))} · lời ~{formatMoney(profit)}/ly{r.hot ? " · ♨ đồ nóng (mưa/rét đông khách)" : ""}
+              {r.icon} <b>{r.name}</b>{newUnlockMark(r.unlock, level)} · {formatMoney(Math.round(r.price * mul))} · lời ~{formatMoney(profit)}/ly{r.hot ? " · ♨ đồ nóng (mưa/rét đông khách)" : ""}
               <div style={{ fontSize: 11, opacity: 0.75 }}>
                 {r.uses.map((u) => productById(u.id).name).join(' + ')}
                 {!locked && (missing.length ? ` · ⚠️ thiếu ${missing.join(', ')}` : ` · kho đủ ~${cap} ly`)}

@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { incomeSplit } from '../data/incomeSplit';
 // Cả file dựng store co-op nặng: khi chạy chung 316 file, giới hạn 5 s mặc định thi thoảng vỡ (khác test mỗi lượt).
 vi.setConfig({ testTimeout: 60_000 });
 
@@ -532,6 +533,38 @@ describe('bảng tổng kết ngày ở hẻm', () => {
     expect(store.useGame.getState().lastSummary?.day).toBe(day);
     const st = ofType('state').at(-1)!.game as Record<string, { day: number }>;
     expect(st.lastSummary.day).toBe(day);
+  });
+
+  // GĐ1201 — luật 10 (GĐ1178–1199) "đủ 2 chế độ": máy khách mở bảng tổng kết từ lastSummary.stats của
+  // máy chạy (đã mang questIncome) và đọc questLog.bet đồng bộ → tổng kết "lãi bán thật vs thưởng" ra
+  // ĐÚNG bằng máy chạy/chơi đơn. Cùng họ khóa parity như GĐ1187 (online counters) nhưng cho tấm Luật 10.
+  it('Luật 10: máy khách thấy bảng tổng kết lãi bán thật + thưởng + kèo ĐÚNG như máy chạy (đủ 2 chế độ)', async () => {
+    await join('player');
+    const day = 5;
+    const stats: import('../core/dayStats').DayStats = {
+      revenue: 600000, spent: 200000, wages: 120000, itemsSold: 40, customers: 30, unhappy: 1, xp: 100,
+      byItem: { mi: { qty: 20, revenue: 400000, cost: 200000 } },
+      services: 50000, rent: 20000, questIncome: 150000,
+    };
+    const game = {
+      ...stateOf(store.newGameData()),
+      day: day + 1,
+      questLog: { day, claimedDaily: [], claimedStory: [], bet: { day, questId: 'daily_set', tier: 2, bonus: 80000 } },
+      lastSummary: { day, stats },
+    };
+    recv({ type: 'state', game, actors: [] });
+    expect(store.useGame.getState().panel).toEqual({ type: 'summary', day, stats });
+    // Không gửi PATCH ngược — mở bảng là việc riêng máy này (LOCAL_STATE), parity không phụ thuộc vòng lặp.
+    expect(acts()).toHaveLength(0);
+    const sum = store.useGame.getState().panel as { type: 'summary'; stats: import('../core/dayStats').DayStats };
+    const split = incomeSplit(sum.stats, store.useGame.getState().questLog, day);
+    // Đúng như máy chạy/chơi đơn: lãi gộp (400000−200000) + dịch vụ 50000 − lương 120000 − thuê 20000 = 110000
+    expect(split.salesProfit).toBe(110000);
+    expect(split.quest).toBe(150000);   // questIncome từ lastSummary.stats máy chạy
+    expect(split.bet).toBe(80000);      // questLog.bet đồng bộ sang máy khách
+    expect(split.reward).toBe(230000);
+    expect(split.rewardShare).toBeCloseTo(230000 / 110000, 9);
+    expect(split.health).toBe('heavy');
   });
 });
 

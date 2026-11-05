@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { trafficForecast, TRAFFIC_HOT, TRAFFIC_SLOW } from '../data/trafficForecast';
+import { trafficForecast, todayTrafficNote, TRAFFIC_HOT, TRAFFIC_SLOW } from '../data/trafficForecast';
 import { WEATHER } from '../data/weather';
 import { customersPerDay } from '../data/levels';
 
@@ -53,5 +53,58 @@ describe('GĐ250 audit — vá nhánh chưa phủ của trafficForecast', () => 
     expect(r.deltaPct).toBeCloseTo(((WEATHER.rain.traffic / WEATHER.sunny.traffic) - 1) * 100, 6);
     const same = trafficForecast({ weather: 'cloudy', tomorrow: 'cloudy', level: 20 });
     expect(same.deltaPct).toBe(0);
+  });
+});
+
+describe('GĐ1174 — dự báo ghép hệ số lễ hội (nhu cầu THẬT, khớp counterDemand.demandForecast)', () => {
+  it('mưa cuối Tết: 0.8 × 1.7 ≥ 1.05 → hot, KHÔNG còn báo "trời vắng đừng trữ hàng"', () => {
+    // day 30 nằm trong Tết Nguyên Đán (md(1,28)–md(2,8), traffic 1.7)
+    const r = trafficForecast({ weather: 'rain', tomorrow: 'rain', level: 20, day: 30, seed: 123 });
+    expect(r.tomorrowTraffic).toBeGreaterThan(WEATHER.rain.traffic); // lễ kéo lên khỏi mức thời tiết 0.8
+    expect(r.verdict).toBe('hot'); // ≥1.05 kể cả trường hợp đường sửa ×0.8 (1.088)
+  });
+
+  it('cùng thời tiết, ngày lễ (1.7) dự báo đông hơn hẳn ngày thường (1)', () => {
+    const tet = trafficForecast({ weather: 'sunny', tomorrow: 'sunny', level: 20, day: 30, seed: 123 }).tomorrowTraffic;
+    const thuong = trafficForecast({ weather: 'sunny', tomorrow: 'sunny', level: 20, day: 5, seed: 123 }).tomorrowTraffic;
+    // ngày 5 (đầu tháng 1) không lễ → hệ số lễ = 1 → bằng mức thời tiết (nếu không đường sửa)
+    expect(thuong).toBeGreaterThanOrEqual(WEATHER.sunny.traffic);
+    expect(tet).toBeGreaterThan(thuong);
+  });
+
+  it('không truyền day/seed: giữ hành vi chỉ-thời-tiết (không vỡ caller cũ)', () => {
+    const r = trafficForecast({ weather: 'sunny', tomorrow: 'sunny', level: 20 });
+    expect(r.tomorrowTraffic).toBe(WEATHER.sunny.traffic);
+  });
+});
+
+describe('GĐ1176 — dự báo nêu rõ lý do đông/vắng (không hộp đen)', () => {
+  it('mai trong lễ Tết (hệ số 1.7): cause ghi tên lễ, không biến mất kể cả khi đường sửa', () => {
+    const r = trafficForecast({ weather: 'rain', tomorrow: 'rain', level: 20, day: 30, seed: 123 });
+    expect(r.cause).toBeDefined();
+    expect(r.cause).toContain('Tết Nguyên Đán');
+  });
+
+  it('không truyền day/seed (chỉ thời tiết): không có cause', () => {
+    const r = trafficForecast({ weather: 'sunny', tomorrow: 'rain', level: 20 });
+    expect(r.cause).toBeUndefined();
+  });
+});
+
+describe('todayTrafficNote — bề mặt "dự kiến hôm nay" (GĐ1229)', () => {
+  it('nắng (traffic 1.1) → câu "Dự kiến hôm nay ~N khách ghé (~110% mức thường)"', () => {
+    const tf = trafficForecast({ weather: 'sunny', tomorrow: 'sunny', level: 20 });
+    expect(todayTrafficNote(tf)).toBe(`Dự kiến hôm nay ~${Math.round(tf.todayKhach)} khách ghé (~110% mức thường).`);
+  });
+  it('giông (~0.55) → báo ít khách (~55% mức thường)', () => {
+    const tf = trafficForecast({ weather: 'storm', tomorrow: 'storm', level: 20 });
+    expect(todayTrafficNote(tf)).toContain('~55% mức thường');
+  });
+  it('dự kiến 0 → chuỗi rỗng (đừng ồn)', () => {
+    expect(todayTrafficNote({ todayTraffic: 0, todayKhach: 0 })).toBe('');
+  });
+  it('helper thuần: cùng input ra cùng chuỗi', () => {
+    const tf = trafficForecast({ weather: 'rain', tomorrow: 'cloudy', level: 15 });
+    expect(todayTrafficNote(tf)).toBe(todayTrafficNote(tf));
   });
 });

@@ -106,8 +106,9 @@ describe('farmVsCook', () => {
     expect(f.best!.recipe.id).toBe('recipe_com_suon');
     expect(f.best!.homegrownNet).toBe(501600);
     expect(f.verdict).toBe('cook');
-    // 3 công thức rau: cơm sườn, cơm hộp, canh — sắp lãi giảm dần
-    expect(f.recipes.map((d) => d.recipe.id)).toEqual(['recipe_com_suon', 'recipe_com_hop_ga', 'recipe_canh']);
+    // 7 công thức rau (GĐ1094 thêm hột vịt lộn, gà Đông Tảo nướng; GĐ1322 thêm bóp gỏi khô bò, bánh cuốn chả lụa):
+    // cơm sườn, cơm hộp, gà DT nướng, bóp gỏi khô bò, canh, bánh cuốn chả lụa, hột vịt lộn — sắp lãi giảm dần
+    expect(f.recipes.map((d) => d.recipe.id)).toEqual(['recipe_com_suon', 'recipe_com_hop_ga', 'recipe_ga_dt_nuong', 'recipe_bo_gio_kho_bo', 'recipe_canh', 'recipe_banh_cuon_cha_lua', 'recipe_hot_vit_lon']);
   });
 
   it('trứng: best là bánh bao (+148400), verdict cook', () => {
@@ -133,11 +134,11 @@ describe('farmVsCook', () => {
     expect(f.verdict).toBe('sell');
   });
 
-  it('trái cây có 4 công thức thường (bỏ giỏ quà 8/3 mùa lễ), best là trà đào cam sả (+35000)', () => {
+  it('trái cây có 5 công thức thường (bỏ giỏ quà 8/3 mùa lễ; GĐ1094 thêm sữa chua dê), best là trà đào cam sả (+35000)', () => {
     const f = farmVsCook('traicay');
-    expect(f.recipes).toHaveLength(4);
+    expect(f.recipes).toHaveLength(5);
     expect(f.recipes.map((d) => d.recipe.id).sort())
-      .toEqual(['recipe_banh_trang', 'recipe_kem', 'recipe_sinh_to', 'recipe_tra_dao']);
+      .toEqual(['recipe_banh_trang', 'recipe_kem', 'recipe_sinh_to', 'recipe_sua_chua_de', 'recipe_tra_dao']);
     expect(f.best!.recipe.id).toBe('recipe_tra_dao');
     expect(f.best!.homegrownNet).toBe(35000);
     expect(f.verdict).toBe('cook');
@@ -150,6 +151,38 @@ describe('farmVsCook', () => {
   });
 });
 
+describe('farmVsCook verdict sell — best có homegrownNet < 0 (nấu lỗ, nhánh dòng 102)', () => {
+  // GĐ1210: trước đây `homegrownRecipeDecision` có <0/==0 nhưng `farmVsCook` mới chạy
+  // được 'cook' (best dương) và 'sell' khi RỖNG recipes; nhánh "có best mà best NEGATIVE"
+  // chưa ai chạy với dữ liệu THẬT (ngưỡng homegrownSell ×1,2 đẩy vài nông sản phẩm cao
+  // sang "bán lẻ hời hơn nấu"). Khóa bằng sản phẩm thật — UI phải nói "bán lẻ" đừng tư vấn nấu.
+
+  it('thit_ga_dt (gà Đông Tảo): bán lẻ hời hơn nấu gà nướng (best -15000) → verdict sell', () => {
+    const f = farmVsCook('thit_ga_dt');
+    expect(f.recipes).toHaveLength(1);
+    expect(f.best!.recipe.id).toBe('recipe_ga_dt_nuong');
+    expect(f.best!.homegrownNet).toBeLessThan(0); // -15000 (cơ hội phí bán lẻ nhà trồng vượt doanh thu món)
+    expect(f.best!.verdict).toBe('sell');
+    expect(f.verdict).toBe('sell');
+    // Bán lẻ luôn HớN hơn — không bao giờ tư vấn chế món này.
+    expect(f.sellPerUnit).toBe(homegrownSell('thit_ga_dt'));
+  });
+
+  it('trung_goos: best âm nhất (-27000 qua bánh flan) → verdict sell', () => {
+    const f = farmVsCook('trung_goos');
+    expect(f.best!.recipe.id).toBe('recipe_banh_flan');
+    expect(f.best!.homegrownNet).toBe(-27000);
+    expect(f.verdict).toBe('sell');
+  });
+
+  it('x_dua_nao: best âm (-5800 qua xôi đậu) → verdict sell', () => {
+    const f = farmVsCook('x_dua_nao');
+    expect(f.best!.recipe.id).toBe('recipe_xoi_dua');
+    expect(f.best!.homegrownNet).toBe(-5800);
+    expect(f.verdict).toBe('sell');
+  });
+});
+
 describe('cookableProducts', () => {
   it('liệt kê được hết nông sản nhà trồng/nuôi có công thức nấu', () => {
     const ids = cookableProducts();
@@ -157,5 +190,23 @@ describe('cookableProducts', () => {
       expect(ids).toContain(p);
     }
     expect(ids).toContain('banhmi');
+  });
+});
+
+describe('GĐ1140 — farmVsCook lọc theo cấp + trạm đã xây (không tư vấn món chưa nấu được)', () => {
+  it('cơm sườn (mở 40): cấp 30 + không trạm → recipes rỗng verdict sell; cấp 45 + trạm mở → cook', () => {
+    const noStation = () => false;
+    const withGrill = (st: string) => st === 'food_grill';
+    expect(farmVsCook('rau', 0, { level: 30, stationOpen: noStation }).verdict).toBe('sell');
+    // cấp 30 + grill: cơm sườn (40) bị loại, còn Cơm hộp gà (mở 30) → best là cơm hộp, không phải cơm sườn
+    const at30 = farmVsCook('rau', 0, { level: 30, stationOpen: withGrill });
+    expect(at30.best!.recipe.id).toBe('recipe_com_hop_ga');
+    const full = farmVsCook('rau', 0, { level: 45, stationOpen: withGrill });
+    expect(full.best!.recipe.id).toBe('recipe_com_suon');
+    expect(full.verdict).toBe('cook');
+  });
+
+  it('không truyền opts → hành vi cũ (tất cả công thức, kể cả chưa mở — tương thích test cũ)', () => {
+    expect(farmVsCook('rau').best!.recipe.id).toBe('recipe_com_suon');
   });
 });

@@ -3,7 +3,7 @@ import { storageCapacity, storageUsed, useGame } from '../../core/store';
 import { warehouseTier, WAREHOUSE_TIERS } from '../../data/warehouse';
 import { caseSize, describeUnits, formatMoney, productById } from '../../data/products';
 import { storeMissRevenue, coldOverflow } from '../../data/advice';
-import { stockCapital } from '../../data/stockCapital';
+import { stockCapital, pendingCapital } from '../../data/stockCapital';
 import { stockTurn } from '../../data/stockTurn';
 import { shelfCount } from '../../data/analytics';
 import { itemHealthList } from '../../data/analytics';
@@ -18,6 +18,7 @@ export function StoragePanel() {
   const capacity = storageCapacity(tierIndex);
   const used = storageUsed(storage);
   const coming = storageUsed({}, ...deliveries.map((d) => d.items));
+  const pending = pendingCapital(deliveries, priceOf); // GĐ1179: vốn đã chốt nhưng hàng chưa về
   // GĐ131: lãi bỏ lỡ hôm qua vì kệ/kho hết hàng — ROI cho quyết định nâng kho (thuần đọc)
   const missRev = storeMissRevenue(stats?.missLog, storage);
   // GĐ134: tủ lạnh kho đầy — định lượng hàng cần lạnh vượt khả năng giữ lạnh (thuần đọc)
@@ -30,7 +31,7 @@ export function StoragePanel() {
     <>
       <h2 style={styles.title}>🏭 {tier.name}</h2>
       <p style={styles.sub}>
-        Đang chứa <b>{used}/{capacity} thùng</b>{coming > 0 && ` · ${coming} thùng sẽ về sáng mai`}. Thùng đã khui vẫn chiếm một chỗ.
+        Đang chứa <b>{used}/{capacity} thùng</b>{coming > 0 && ` · ${coming} thùng sẽ về sáng mai (${formatMoney(pending.cost)} vốn ở trên đường)`}. Thùng đã khui vẫn chiếm một chỗ.
         {' '}Bày kệ dùng hàng lẻ trước rồi mới khui thùng mới. Tủ lạnh kho giữ lạnh {tier.cold} món hàng mát, đông lạnh, tươi; phần dư để ngoài hỏng nhanh.
       </p>
       <div style={{ height: 8, borderRadius: 4, background: '#ffffff22', margin: '6px 0 10px' }}>
@@ -47,6 +48,9 @@ export function StoragePanel() {
               {overCash
                 ? `Trị giá kho còn vượt cả tiền mặt (${formatMoney(money)}) — kho ứ vốn, cân nhắc xả sỉ hay bày kệ bán bớt trước khi nhập thêm.`
                 : 'Vốn nằm trong hàng hoá đang chờ bán; xem nếu muốn bơm vốn vào chỗ khác.'}
+              {pending.orders > 0 && (
+                <> <br />🚚 Trên đường về (sáng mai): {pending.orders} đơn — {formatMoney(pending.cost)} vốn giá nhập đã trừ; tính chung tổng vốn chôn {formatMoney(cap.totalCost + pending.cost)}.</>
+              )}
             </div>
           </Callout>
         );

@@ -6,7 +6,8 @@ import { formatMoney, productById } from '../../data/products';
 import { reputationOf } from '../../data/reputation';
 import { butcherValueToday, MAX_BUTCHER_STAR, missedMeatRevenue, recentMeatRevenue } from '../../data/butcherValue';
 import { regularsExpectedToday, REGULARS } from '../../data/regulars';
-import { QUAN_NUOC_UNLOCK } from '../../data/quanNuoc';
+import { QUAN_NUOC_UNLOCK, QUAN_NUOC_WAGE } from '../../data/quanNuoc';
+import { TIEM_XOI_WAGE } from '../../data/tiemXoi';
 import { quanNuocHealth } from '../../data/quanNuocInsights';
 import { expiringSoon, expiryAdvice } from '../../data/advice';
 import { dateOfDoy, dayEffects, dayOfYear, upcomingFestival, weekdayOf } from '../../data/calendar';
@@ -27,6 +28,9 @@ import { DueContractsCard } from './DueContractsCard';
 import { HotGoodsCards } from './HotGoodsCards';
 import { LoanNoteCard, EveningPrepCallout, MorningNewsCard } from './MorningNotes';
 import { ExpectedRegularsList } from './ExpectedRegularsList';
+import { phoneWeatherInfo } from '../../data/phoneWeatherPayoff';
+import { regularChurn } from '../../data/regularChurn';
+import { regularSpendEstimate, nextPerkValue, weeklyTop, referValue, nextPerkTimeline, regularCohortSummary, regularCohortLine } from '../../data/regularValue';
 import { TodayActionsCard } from './TodayActionsCard';
 import { MorningSubtitle } from './MorningSubtitle';
 import { eveningPrepFor, weakYesterdayCombos } from './morningCalc';
@@ -86,6 +90,29 @@ export function MorningPanel() {
   const cleanNext = nextCleanTier(cleanStreak);
   const cleanExtra = cleanNext ? `chạm ${cleanNext.name} → +${formatMoney(cleanBonus(cleanNext.n, level))}` : `đã đạt ${CLEAN_TIERS[CLEAN_TIERS.length - 1].name}`;
   const shopName = useGame((s) => s.shopName);
+  // GĐ1285 — khách quen nào đang bị phụ món ưa (missLog của ngày + lời chê gần) → cảnh báo giữ chân
+  const reviews = useGame((s) => s.reviews);
+  const regularChurnData = regularChurn({ missLog: stats?.missLog, reviews });
+  // GĐ1289 — ước tính tiền mỗi lần ghé (giỏ + boa) của từng khách quen, để định lượng "mất bao nhiêu" khi bị phụ
+  const regularValueOf = (rid: string) => {
+    const def = REGULARS.find((x) => x.id === rid);
+    return def ? regularSpendEstimate({ def, level, priceOf, progress: regulars[rid] ?? undefined }) : null;
+  };
+  // GĐ1293 — mốc perk kế tiếp tăng bao nhiêu (đ)/lần ghé nếu nâng thân thiết; gợi chăm đúng người đáng
+  const nextPerkValueOf = (rid: string) => {
+    const def = REGULARS.find((x) => x.id === rid);
+    return def ? nextPerkValue({ def, level, priceOf, progress: regulars[rid] ?? undefined }) : null;
+  };
+  // GĐ1301 — mốc perk kế tiếp còn bao lâu (tuần): +2 thân thiết/lần ghé mua món ưa × tần suất
+  const nextPerkTimelineOf = (rid: string) => {
+    const def = REGULARS.find((x) => x.id === rid);
+    return def ? nextPerkTimeline({ def, level, priceOf, progress: regulars[rid] ?? undefined }) : null;
+  };
+  // GĐ1295 — ai là khách vàng THẬT theo tuần: giỏ+boa/lần (GĐ1289) × tần suất ghé (visitsToday) → đóng góp/tuần
+  const weeklyTopData = weeklyTop({
+    regulars: REGULARS, level, priceOf,
+    progressOf: (rid) => regulars[rid] ?? undefined, topN: 3,
+  });
   const rep = reputationOf(repLog);
   const effects = dayEffects(weatherSeed, day, level);
   const soon = upcomingFestival(day);
@@ -93,6 +120,17 @@ export function MorningPanel() {
   // nhập ra con số: khách thêm/ngày × giỏ bình quân 7 ngày. Hiện ở CẢ thẻ lễ ĐANG diễn ra lẫn SẮP tới.
   const last7 = history.slice(-7);
   const avgCust7 = last7.length ? last7.reduce((a, h) => a + h.customers, 0) / last7.length : 0;
+  // GĐ1298 — giá trị perk giới thiệu bạn bè: avgPerVisit (doanh thu/khách, GĐ1221) × bạn/lần × tần ghé → khách+tiền/tuần
+  const avgPerVisit7 = avgCust7 > 0 ? recentAvgRevenue(history, 7) / avgCust7 : 0;
+  const referValueOf = (rid: string) => {
+    const def = REGULARS.find((x) => x.id === rid);
+    return def ? referValue({ def, progress: regulars[rid] ?? undefined, avgPerVisit: avgPerVisit7 }) : null;
+  };
+  // GĐ1302 — bảng tổng "giá trị khách quen": cả LÔ góp ~bao nhiêu/tuần, ai gần mốc perk (đáng chăm), ai rủ thêm khách
+  const cohortText = regularCohortLine(regularCohortSummary({
+    regulars: REGULARS, level, priceOf,
+    progressOf: (rid) => regulars[rid] ?? undefined, avgPerVisit: avgPerVisit7,
+  }));
   const fv = festivalValue({ day, level, customers: avgCust7, revenue: recentAvgRevenue(history, 7) });
   const fvDelta = fv && (
     <>
@@ -120,6 +158,7 @@ export function MorningPanel() {
   // GĐ132: mồi "🧭 Sắp mở khóa" cho người chơi MỚI (tuần đầu) — 1–2 hệ lớn sắp mở + XP còn thiếu (thuần đọc)
   const earlyUnlocks = earlyUnlockTeaser({ level, xp, day });
   const courier = staff.some((w) => w.role === 'courier');
+  const phoneWx = phoneWeatherInfo(weather, level); // GĐ1309 — mưa/giông khách gọi đặt đơn nhiều hơn
   const today = dateOfDoy(dayOfYear(day));
   const expiring = expiringSoon(storage, storageLots, furniture.flatMap((f) => f.tiers));
   const expiryTips = expiryAdvice(expiring);
@@ -187,7 +226,7 @@ export function MorningPanel() {
 
       {biz.loan && <LoanBurdenCard lb={loanBurden(biz.loan.principal, stats?.revenue ?? 0)} />}
 
-      <DailyBurnCard db={dailyBurn(staff, branch?.staff ?? [], shopTier, biz.loan, biz.hui, recentAvgRevenue(history, 7))} />
+      <DailyBurnCard db={dailyBurn(staff, branch?.staff ?? [], shopTier, biz.loan, biz.hui, recentAvgRevenue(history, 7), (biz.quanNuoc.open ? biz.quanNuoc.staff * QUAN_NUOC_WAGE : 0) + (biz.tiemXoi?.open ? biz.tiemXoi.staff * TIEM_XOI_WAGE : 0))} />
 
       {biz.quanNuoc.open && <QuanNuocCard quanNuoc={biz.quanNuoc} quanNuocLast={biz.quanNuocLast ?? null} quanHealth={quanHealth} />}
 
@@ -203,7 +242,16 @@ export function MorningPanel() {
       <HotGoodsCards eventHot={effects.hot} weekHot={hot} haveStock={haveStock} />
       {soon && <FestivalSoonCard soon={soon} level={level} storage={storage} fv={fv} fvDelta={fvDelta} />}
 
-      <ExpectedRegularsList expected={expected} regulars={regulars} reservations={reservations} favsOf={favsOf} haveStock={haveStock} />
+      <ExpectedRegularsList expected={expected} regulars={regulars} reservations={reservations} favsOf={favsOf} haveStock={haveStock} churn={regularChurnData} value={regularValueOf} nextPerk={nextPerkValueOf} refer={referValueOf} timeline={nextPerkTimelineOf} />
+
+      {weeklyTopData && (
+        <div style={{ fontSize: 12, marginTop: 8, color: '#b8860b' }}>
+          🏆 Khách vàng theo tuần (giỏ × tần ghé): {weeklyTopData.map((w) => `${w.regular.name} ~${formatMoney(w.weekly)}/tuần`).join(' · ')}
+        </div>
+      )}
+      {cohortText && (
+        <div style={{ fontSize: 12, marginTop: 6, color: '#d2691e' }}>{cohortText}</div>
+      )}
 
       {dueDebts.length > 0 && <DueDebtsCard dueDebts={dueDebts} day={day} />}
 
@@ -223,6 +271,9 @@ export function MorningPanel() {
           ? `Hôm nay có ${PHONE_SLOTS.length} khe giờ hàng xóm gọi điện đặt hàng: ${PHONE_SLOTS.map((m) => formatClock(m)).join(', ')}. Nghe máy kịp mới có đơn.`
           : `Chưa thuê 🛵 Giao hàng nên không có cuộc gọi nào. Thuê nhân viên giao hàng để mở đơn điện thoại (khe giờ: ${PHONE_SLOTS.map((m) => formatClock(m)).join(', ')}).`}
       </p>
+      {courier && phoneWx && (
+        <div style={{ fontSize: 12, color: '#3498db', marginTop: 2 }}>{phoneWx.line}</div>
+      )}
       <Footer onClose={() => { resetComboDay(); resetStaffDay(); closePanel(); }}>
         <button style={styles.btn} onClick={() => openPanel({ type: 'order' })}>📦 Nhập hàng</button>
         <button style={styles.btn} onClick={() => openPanel({ type: 'storage' })}>🏭 Kho</button>

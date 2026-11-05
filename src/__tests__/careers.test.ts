@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { useGame } from '../core/store';
 import { branchNewDay } from '../core/slices/branch';
 import {
-  CHIEF_COVER_MUL, CHIEF_QUIT_MUL, LEAD_CATCH_BONUS, LEAD_FATIGUE_MUL, LEAD_SPEED_MUL, RANKS, nextPromotion, promoted,
+  CHIEF_COVER_MUL, CHIEF_QUIT_MUL, LEAD_CATCH_BONUS, LEAD_FATIGUE_MUL, LEAD_SPEED_MUL, RANKS, nextPromotion, promoted, promotionWorth,
 } from '../data/careers';
 import { COVER_WAGE_MUL, coverMul, newBranch } from '../data/branches';
 import { ROLES, type Staff } from '../data/staff';
@@ -149,5 +149,35 @@ describe('hành động thăng chức', () => {
     expect(useGame.getState().branch!.staff[0]).toMatchObject({ rank: 'chief', role: 'manager' });
     expect(useGame.getState().money).toBe(0);
     useGame.setState({ branch: base.branch, money: base.money, level: base.level });
+  });
+});
+
+describe('promotionWorth (GĐ1258 — soi quyết định thăng chức)', () => {
+  it('trưởng quầy: tăng lương đúng công thức promoted() + quyền lợi đọc từ hằng số game', () => {
+    const w = promotionWorth(staff({ wage: 200_000 }), 'lead');
+    const after = promoted(staff({ wage: 200_000 }), 'lead');
+    expect(w.wageAfter).toBe(after.wage);
+    expect(w.wageDelta).toBe(after.wage - 200_000);
+    expect(w.perks).toEqual([
+      `tự làm nhanh hơn ${Math.round((LEAD_SPEED_MUL - 1) * 100)}%`,
+      `cả ca mệt chậm hơn (mệt ×${LEAD_FATIGUE_MUL})`,
+      `giám sát nên khó bị ăn bớt hơn (+${Math.round(LEAD_CATCH_BONUS * 100)}% bắt quả tang)`,
+    ]);
+    expect(w.line).toContain(`Lương +${w.wageDelta.toLocaleString('vi-VN')}đ/ca`);
+  });
+
+  it('quản lý chi nhánh: liệt kê quyền lợi gọi-thay-rẻ-hơn và giữ-chân', () => {
+    const w = promotionWorth(staff({ wage: 300_000, rank: 'lead', skill: 5, daysWorked: 30 }), 'chief');
+    expect(w.perks.some((p) => p.includes(`×${CHIEF_COVER_MUL}`))).toBe(true);
+    expect(w.perks.some((p) => p.includes(`×${CHIEF_QUIT_MUL}`))).toBe(true);
+    expect(w.line).toContain('Lương +');
+  });
+
+  it('lương làm tròn nghìn như promoted(): delta dương, không chế số mới', () => {
+    const st = staff({ wage: 123_456 });
+    const w = promotionWorth(st, 'lead');
+    expect(w.wageAfter % 1000).toBe(0);
+    expect(w.wageDelta).toBeGreaterThan(0);
+    expect(w.wageAfter).toBe(Math.round((123_456 * RANKS.lead.raise) / 1000) * 1000);
   });
 });

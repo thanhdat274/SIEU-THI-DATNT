@@ -25,6 +25,8 @@ export function createCropBuilder(): (cropId: string, stage: number) => THREE.Gr
     oi: { kind: 'tree', canopy: 0x357f39, fruit: 0xe8a0b8, fruitN: 6 },
     xoai: { kind: 'tree', canopy: 0x2e7d36, fruit: 0xf0b02e, fruitSize: 0.06, fruitN: 6 },
     cam: { kind: 'tree', canopy: 0x2f8a3a, fruit: 0xf08c1e, fruitN: 7 },
+    // GĐ1088 — Chanh dây: dáng cây ăn trái, quả tím (dáng tán như cam/ổi)
+    chanhday: { kind: 'tree', canopy: 0x4da94f, fruit: 0x8e6f9f, fruitN: 6 },
     vai: { kind: 'tree', canopy: 0x3a8f42, fruit: 0xd23b3b, fruitSize: 0.045, fruitN: 9 },
     nhan: { kind: 'tree', canopy: 0x4a9950, fruit: 0xd8b64a, fruitSize: 0.045, fruitN: 9 },
     mit: { kind: 'tree', canopy: 0x3f8f45, fruit: 0x9fb545, fruitSize: 0.1, fruitN: 3 },

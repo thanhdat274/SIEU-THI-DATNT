@@ -54,7 +54,7 @@ async function verify(token: string | undefined): Promise<Account | null> {
   if (hit && hit.until > Date.now()) return hit.account;
   try {
     const d = await auth.verifyIdToken(token);
-    const account = { uid: d.uid, name: (d.name as string | undefined) ?? d.email ?? 'Chủ tiệm' };
+    const account = { uid: d.uid, name: (d.name as string | undefined) ?? 'Chủ tiệm' }; // không lấy email làm tên: tên được lưu ở hẻm và phát cho người khác
     if (verified.size > 500) verified.clear();
     verified.set(token, { account, until: Math.min(Date.now() + 60_000, d.exp * 1000) });
     return account;
@@ -73,6 +73,24 @@ async function savesCollection() {
   return saves;
 }
 
+/** Bằng chứng đồng ý xử lý dữ liệu cá nhân (Luật 91/2025): mỗi lần đồng ý một scope lưu một bản ghi. */
+interface ConsentRecord {
+  _id: string;       // `uid:scope:version` — đồng ý lại cùng phiên bản thì ghi đè (cập nhật thời điểm)
+  uid: string;
+  scope: string;     // vd. 'account_cloud'
+  version: string;   // phiên bản Chính sách được đồng ý
+  consentedAt: string;
+  ua: string;
+}
+let consents: Collection<ConsentRecord> | null = null;
+async function consentsCollection() {
+  if (!consents) {
+    const client = await new MongoClient(env.MONGO_URI ?? env.MONGODB_URI ?? '').connect();
+    consents = client.db(env.MONGODB_DATABASE ?? 'taphoa3d').collection<ConsentRecord>('consents');
+  }
+  return consents;
+}
+
 const app = express();
 app.use(express.json({ limit: '2mb' }));
 
@@ -84,7 +102,7 @@ app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Vary', 'Origin');
     res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, OPTIONS');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   }
   if (req.method === 'OPTIONS') return void res.sendStatus(204);
   next();
@@ -181,6 +199,58 @@ app.put('/api/save', async (req, res) => {
     console.log(`[api] PUT /api/save uid=${uid} -> 200 ghi ${doc.updatedAt} (kỳ vọng ${expectedUpdatedAt}), ngày ${doc.day}/cấp ${doc.level}`);
   }
   res.json(summary(doc));
+});
+
+// ---------- Đồng ý xử lý dữ liệu cá nhân (Luật 91/2025) ----------
+// Server là nơi xử lý dữ liệu (cloud, log kèm uid) nên lưu bằng chứng đồng ý để kiểm chứng được.
+app.get('/api/consent', async (_req, res) => {
+  const { uid } = res.locals.account as Account;
+  const n = await (await consentsCollection()).countDocuments({ uid });
+  res.json({ consented: n > 0 });
+});
+
+/** Ghi (hoặc cập nhật) bằng chứng đồng ý. Client gửi scope + version Chính sách đã đọc. */
+app.post('/api/consent', async (req, res) => {
+  const { uid } = res.locals.account as Account;
+  const scope = String(req.body?.scope ?? '').trim();
+  const version = String(req.body?.version ?? '').trim();
+  if (!scope || !version || scope.length > 80 || version.length > 40) {
+    return void res.status(400).json({ error: 'Thiếu scope hoặc version.' });
+  }
+  const record: ConsentRecord = {
+    _id: `${uid}:${scope}:${version}`,
+    uid, scope, version,
+    consentedAt: new Date().toISOString(),
+    ua: String(req.headers['user-agent'] ?? '').slice(0, 200),
+  };
+  await (await consentsCollection()).replaceOne({ _id: record._id }, record, { upsert: true });
+  console.log(`[api] POST /api/consent uid=${uid} scope=${scope} version=${version}`);
+  res.json({ ok: true });
+});
+
+/**
+ * Xoá tài khoản & dữ liệu người dùng (quyền chủ thể dữ liệu — Luật 91/2025):
+ * xoá bản lưu cloud, rời/xoá các hẻm tham gia, xoá bằng chứng đồng ý. Tài khoản Firebase do client xoá.
+ * Bản lưu cục bộ trong trình duyệt KHÔNG nằm ở đây (không gắn với tài khoản).
+ */
+app.delete('/api/save', async (_req, res) => {
+  const { uid } = res.locals.account as Account;
+  await (await savesCollection()).deleteOne({ _id: uid });
+  // Rời mọi hẻm mà người chơi là thành viên, giữ đúng logic của /api/alleys/:id/leave
+  const alleyColl = await alleyCollection();
+  const alleys = await alleyColl.find({ 'members.uid': uid }).toArray();
+  for (const alley of alleys) {
+    const wasOwner = alley.owner === uid;
+    await alleyColl.updateOne({ _id: alley._id }, { $pull: { members: { uid } } });
+    await alleyColl.deleteOne({ _id: alley._id, members: { $size: 0 } });
+    if (wasOwner) {
+      const next = nextOwner(alley.members, uid);
+      if (next) await alleyColl.updateOne({ _id: alley._id }, { $set: { owner: next } });
+    }
+  }
+  await (await consentsCollection()).deleteMany({ uid });
+  console.log(`[api] DELETE /api/save uid=${uid} -> đã xoá cloud + ${alleys.length} hẻm + đồng ý`);
+  res.json({ deleted: true });
 });
 
 // ---------- Hẻm online (2–4 người) ----------

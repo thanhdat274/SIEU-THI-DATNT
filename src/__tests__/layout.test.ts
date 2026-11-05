@@ -3,7 +3,7 @@ import type { Furniture } from '../core/store';
 import { newGameData, useGame } from '../core/store';
 import { productById } from '../data/products';
 import {
-  heatColor, impulseChance, rowFactor, impulseOptions, impulseWeight, isDisplay, shelfAttention, spotVisibility,
+  heatColor, impulseChance, impulseRecap, rowFactor, impulseOptions, impulseWeight, isDisplay, shelfAttention, spotVisibility,
   stockedAttention, visibilityLabel, weightedPick, type ShopGeom,
 } from '../data/layout';
 
@@ -149,5 +149,27 @@ describe('store — heatmap doanh số theo kệ', () => {
     const p = productById('x_keo');
     expect(p.category).toBe('dry');
     expect(p.sell).toBeLessThanOrEqual(15000);
+  });
+});
+
+describe('GĐ1219 — impulseRecap: bề mặt "hàng chớp nhoáng" cho báo cáo cuối ngày (THUẦN, chỉ đọc totals.impulseSold / day)', () => {
+  it('tích luỹ đúng + trung bình/ngày = sold ÷ số ngày đã chơi', () => {
+    const r = impulseRecap(60, 10);
+    expect(r.sold).toBe(60);
+    expect(r.perDay).toBe(6);
+  });
+  it('perDay có phân lẻ — UI tự làm tròn để hiển thị', () => {
+    expect(impulseRecap(5, 2).perDay).toBe(2.5);
+  });
+  it('ngày 0 (chưa chơi đủ 1 ngày) không chia cho 0 — trả đúng đếm gốc', () => {
+    expect(impulseRecap(7, 0).perDay).toBe(7);
+  });
+  it('không bán món nào → trung bình 0 (không âm / NaN)', () => {
+    const r = impulseRecap(0, 30);
+    expect(r.perDay).toBe(0);
+    expect(Number.isFinite(r.perDay)).toBe(true);
+  });
+  it('helper thuần: cùng input ra cùng kết quả (không đổi theo state)', () => {
+    expect(impulseRecap(12, 4)).toEqual(impulseRecap(12, 4));
   });
 });

@@ -3,13 +3,15 @@ import { st } from './orderPanelStyles';
 import { useMemo, useState } from 'react';
 import { Dropdown } from './Dropdown';
 import { lastActionResult } from '../net/coop';
-import { storageCapacity, storageUsed, useGame, wagesDue } from '../core/store';
+import { storageCapacity, storageUsed, useClock, useGame, wagesDue } from '../core/store';
 import { caseSize, casesFor, CATEGORIES, describeUnits, formatMoney, productById, unlockedProducts, type Category } from '../data/products';
 import { shelfLife } from '../data/freshness';
 import { bulkDiscount, orderTotal, SUPPLIERS, supplierSells, trending, unitCost } from '../data/suppliers';
+import { goldenShortfall, nextGoldenPrep } from '../data/rhythm';
 import { guideActiveOn, guideInCart, guideIdsOf, guideProducts } from '../data/onboarding';
 import { cheapestSupplier, orderAssessment, type AssessLevel, type AssessLine, type BuyTone, type Dir } from '../data/procure';
-import { PARTNER_TIERS } from '../data/supplierRel';
+import { PARTNER_TIERS, deliversInstantly } from '../data/supplierRel';
+import { NEW_UNLOCK_WINDOW, newUnlockMark } from '../data/advice';
 import { cheapestSupplierFor, type CheapestProductResult } from '../data/supplierValue';
 import { isFairOpen, makeFairOffer } from '../data/fairmerchant';
 import { showRestockExtras } from '../data/onboarding';
@@ -23,14 +25,15 @@ import { quanNuocDrinkIds } from '../data/quanNuoc';
 import { festivalRestockPlan } from '../data/festivalRestock';
 import { SupplierRelLine, ForecastLine, GuideBanner, QuanDrinkTipCallout, FestivalPrepCallout, NetworkFillCallout } from './OrderBanners';
 import { ProdSuggCard, HotWeekBanner, UrgentCard } from './OrderCards';
-import { commitNote, urgentReasonOf, displayable, onHand, incoming, suggestQty, assessText, supplierTone, supplierTomorrow } from './orderHelpers';
+import { commitNote, urgentReasonOf, displayable, onHand, incoming, suggestQty, assessText, supplierTone, supplierTomorrow, commitmentNote } from './orderHelpers';
 import { acceptFairOffer } from '../core/biz';
 import { CUNG_GOODS, isXoiCungDay } from '../data/tiemXoi';
 import { festivalOn, festivalStock, monthOf, upcomingFestival } from '../data/calendar';
 import { weekendPullOf, weekendSellingDays } from '../data/weekendRestock';
 
 /** Món mở khóa trong vòng chừng này cấp gần đây được gắn nhãn "Mới". */
-const NEW_WITHIN = 4;
+// GĐ1151: một nguồn sự thật với dấu 🆕 — cửa sổ 'mới' 4 cấp định nghĩa ở advice.ts
+const NEW_WITHIN = NEW_UNLOCK_WINDOW;
 type Filter = 'suggest' | 'all' | Category;
 
 import { ASSESS_STYLE, BUY_TONE_COLOR, BUY_TONE_ICON, BUY_TONE_LABEL, DIR_WORD, Meter } from './orderPanelParts';
@@ -60,6 +63,7 @@ export function OrderPanel() {
     quanNuocShort: !!biz.quanNuocLast && biz.quanNuocLast.served < biz.quanNuocLast.wanted,
     stationOpen: (st) => furniture.some((f) => f.type === st),
     branch,
+    quanMenu: biz.quanNuoc?.open ? biz.quanNuoc.menu : undefined, // GĐ1101: gợi ý trồng cây mà thực đơn quán đang pha
   });
   const itemsSold = useGame((s) => s.totals.itemsSold);
   // GĐ190b: thấy được ngay chỗ nhập — quán nước tối nay cần thêm bao nhiêu ly đồ uống (chỉ khi quán mở + thiếu).
@@ -113,6 +117,15 @@ export function OrderPanel() {
     .sort((a, b) => b.asked - a.asked || b.demand - a.demand || a.have - b.have)
     .slice(0, 5);
   const urgentReason = urgentReasonOf;
+
+  // GĐ1240 — giờ vàng KẾ TIẾP đang THIẾU món thèm nào (hết hàng, chưa có đơn chờ giao): nối từ trạng thái
+  // "kho hết — vào Nhập hàng" của thẻ ⏰ Sơ đồ kệ (GĐ1239) thành gợi ý nhập cụ thể ngay tại đây — cùng nguồn
+  // nextGoldenPrep, prospective theo nhịp giờ. Chỉ hiện khi có món thèm hết hàng thật (không ồn khi đủ). THUẦN đọc.
+  const goldenNeeds = useMemo(() => {
+    const prep = nextGoldenPrep(level, useClock.getState().minutes);
+    return goldenShortfall(prep, (id) => onHand(id) + incoming(id));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [level, storage, deliveries, warehouseTier]);
 
   // Giỏ đặt tính theo thùng; đơn gửi đi tính theo món
   const toLines = (c: Record<string, number>) => Object.fromEntries(
@@ -371,7 +384,7 @@ export function OrderPanel() {
             >
               <span style={{ fontSize: 18 }}>{s.icon}</span>
               <span>
-                <b>{s.name}</b>
+                <b>{s.name}</b>{newUnlockMark(s.unlock, level)}
                 {!locked && showCost && (() => {
                   const sm = supSummary.get(s.id);
                   if (!sm) return null;
@@ -431,6 +444,24 @@ export function OrderPanel() {
       {hot.length > 0 && day > 1 && <HotWeekBanner hot={hot} hotNextWeek={hotNextWeek} nextSupplierUnlock={unlockedSuppliers.length < SUPPLIERS.length ? SUPPLIERS.find((s) => s.unlock > level)!.unlock : undefined} />}
 
       {filter === 'suggest' && urgent.length > 0 && showRestockExtras(day) && <UrgentCard rows={urgent.map((r) => ({ id: r.p.id, reason: urgentReason(r), suggest: r.suggest }))} />}
+
+      {goldenNeeds && showRestockExtras(day) && (() => {
+        const hh = (m: number) => `${Math.floor(m / 60)}h${m % 60 ? '30' : ''}`;
+        return (
+          <div style={{ background: 'rgba(52,152,219,0.14)', borderRadius: 8, padding: '6px 10px', fontSize: 13, marginBottom: 8, outline: '1px solid rgba(52,152,219,0.35)' }}>
+            <b>⏰ Giờ vàng sắp tới ({goldenNeeds.name} {hh(goldenNeeds.from)}–{hh(goldenNeeds.to)}): đang hết món khách thèm</b>
+            <div style={{ marginTop: 4, display: 'grid', gap: 2 }}>
+              {goldenNeeds.short.map((s) => (
+                <div key={s.id} style={{ display: 'flex', gap: 8, alignItems: 'baseline' }}>
+                  <span style={{ minWidth: 120 }}>{productById(s.id)?.name ?? s.id}</span>
+                  <span style={{ opacity: 0.85, flex: 1 }}>hết hàng mà giờ này khách hay mua — nên nhập trước khi đông</span>
+                  <span style={{ marginLeft: 'auto', opacity: 0.75 }}>✨ nên nhập {s.qty} món (1 thùng)</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
 
       <div style={st.toolbar}>
         <Dropdown<Filter>
@@ -548,6 +579,11 @@ export function OrderPanel() {
         })}
       </div>
 
+      {/* GĐ1180: trước khi đặt, thấy tổng vốn ĐANG CHỐT (đơn chờ giao + đơn này) — đừng nhập chồng khi đã ứ */}
+      <div style={{ fontSize: 12, opacity: 0.85, margin: '4px 0 2px', textAlign: 'right' }}>
+        {commitmentNote(deliveries, total, priceOf)}
+      </div>
+
       <div style={st.footer}>
         <span>
           {cases} thùng ({count} món) · <b style={{ fontSize: 17 }}>{formatMoney(total)}</b>
@@ -560,7 +596,7 @@ export function OrderPanel() {
         <span style={{ display: 'flex', gap: 8 }}>
           <button style={st.btn} onClick={closePanel}>Đóng</button>
           <button style={{ ...st.btn, background: '#f1c40f', fontWeight: 700 }} disabled={!count || tooSmall || tooBig || total > money} onClick={order}>
-            {wageShort && !needConfirm ? '⚠️ Vẫn nhập' : supplier.delayDays ? '🚚 Đặt giao sáng mai' : '📦 Nhập ngay'}
+            {wageShort && !needConfirm ? '⚠️ Vẫn nhập' : !deliversInstantly(supplier, biz.supplierRel?.[supplier.id]?.spent ?? 0) ? '🚚 Đặt giao sáng mai' : '📦 Nhập ngay'}
           </button>
         </span>
       </div>

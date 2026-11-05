@@ -1,5 +1,6 @@
 import { useGame } from '../core/store';
 import { ALCOHOL_BRAWL_CHANCE, NIGHT_DELIVERY_SURCHARGE, NIGHT_GROUPS, POWER_UPGRADES, branchPowerBill, hasAlcohol, hasPower } from '../data/branches';
+import { branchPowerPayoff } from '../data/branchPowerPayoff';
 import { landmarkNightLine } from '../data/landmark';
 import { licenseById, licenseStatus } from '../data/licenses';
 import { formatMoney } from '../data/products';
@@ -14,6 +15,7 @@ export function BranchNightTab() {
   const guardNight = branch.staff.some((s) => s.role === 'guard' && s.shift === 'night');
   const groups = branch.groupToday ?? {};
   const bill = branchPowerBill(branch);
+  const ppo = branchPowerPayoff(branch);
   // GĐ736 — soi sáng trạng thái đèn đường (dự án cộng đồng 2): chưa mở / đang góp / đã thắp sáng
   const biz = useGame((x) => x.biz);
   const nightLine = landmarkNightLine(biz.landmark.contributions);
@@ -71,6 +73,7 @@ export function BranchNightTab() {
               : <button style={st.btn} disabled={money < u.price} onClick={() => buyBranchPower(u.id)}>Lắp · {formatMoney(u.price)}</button>}
           </div>
         ))}
+        {ppo.line && <div style={{ ...st.sub, color: '#2ecc71', marginTop: 2 }}>{ppo.line}</div>}
       </div>
     </div>
   );

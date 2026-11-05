@@ -1,0 +1,45 @@
+schema: spec-driven
+
+# Bối cảnh dự án - hiển thị cho AI khi tạo artifact.
+# Nguồn luật đầy đủ: promt_game.md (bản gọn) / promt_game.full.md, PROGRESS.md, docs/qa-guide.md, docs/blender-guide.md.
+context: |
+  Game: Tạp Hóa 3D - game kinh doanh tạp hóa Việt Nam 3D, chơi đơn + co-op "hẻm online" 2-4 người.
+  Tech stack: TypeScript, React (UI ở src/ui/), three.js (src/render/, src/world/), store zustand useGame,
+  Vite (dev server đã chạy sẵn tại http://localhost:5173/ - KHÔNG tự khởi động server), Vitest (src/__tests__/),
+  server co-op Node ở server/ (cổng 3002). Tài sản 3D tạo bằng Blender CLI headless -> GLB nén draco, lazy load.
+  Co-op: "máy chạy" (người vào đầu) là nguồn chân lý, chạy mô phỏng; "máy khách" gửi thao tác store cho máy chạy làm thay
+  (src/net/coop.ts). Chỉ Kỹ sư đồng bộ co-op sửa src/net/ và server/.
+  Thông số cân bằng đặt tập trung ở src/data/. Logic ngẫu nhiên dùng simRng() (không Math.random) để mô phỏng tất định.
+  Ngôn ngữ: tài liệu, proposal, spec viết tiếng Việt. Commit message tiếng Việt, mở đầu bằng "GĐxxxx:".
+  Luật cứng: giữ chân người chơi; chiều sâu trước mở rộng sau; chơi đơn và hẻm ra kết quả giống nhau; không hỏng save
+  (đổi cấu trúc thì có MIGRATIONS + test nạp save cũ); có test cho mọi thay đổi; cảnh 3D không bày bừa (kitPlacementProblems);
+  >=30 FPS mức đồ họa Thấp; không phình (nút HUD <=20, thông báo <=90 ký tự, ngày đầu <=10 thông báo, bundle <=600KB gzip,
+  npm run test <=5 phút); bán hàng là nghề chính (thưởng nhiệm vụ + kèo không lấn lãi bán hàng).
+
+rules:
+  proposal:
+    - Nêu rõ vì sao thay đổi giúp thu hút hoặc giữ chân người chơi; nếu không giúp thì không đề xuất.
+    - Bắt buộc có mục "Cách chạy ở hẻm online" (ai bấm được, kết quả hiện cho ai, dữ liệu nào đồng bộ, có dựa vị trí người chơi không).
+    - Bắt buộc có mục "Ngân sách chống phình" (ảnh hưởng tới nút HUD, thông báo, bundle, thời gian test - chỉ được giảm hoặc giữ nguyên).
+    - Có mục "Non-goals". Mở rộng hệ thống mới thì ghi lý do vì sao chiều sâu phần cũ đã khai thác hết.
+    - Lấy cảm hứng từ game khác thì ghi game nào, vì sao hiệu quả, đã điều chỉnh thế nào; không sao chép tên/hình/nội dung.
+  design:
+    - Đổi cấu trúc save thì mô tả bước MIGRATIONS và cách test nạp save cũ.
+    - Thao tác store mới phải phân loại GUARDED / LOCAL_ONLY cho coopGuard.test.ts; lời báo kết quả nằm trong thao tác (notify), không dựa giá trị trả về ở UI.
+    - Hiệu ứng/đối tượng nặng mới phải gắn vào GFX_PRESETS (mức Thấp tắt hoặc giảm), không đổi thứ làm biên dịch lại shader lúc chạy.
+    - Prop/sự kiện cảnh mới tuân thủ hành lang trước cửa trống và tối đa 4 prop trong bán kính 4 m.
+    - Ghi lại các quyết định Leader tự đưa ra thay vì hỏi người dùng, kèm lý do.
+  tasks:
+    - Luôn có task viết test (hành vi chính + trường hợp biên; sửa lỗi thì test tái hiện trước).
+    - Luôn có task chạy npm run test và task QA chơi đơn + QA co-op theo docs/qa-guide.md.
+    - Tách task theo file để Developer song song không cùng sửa một file.
+    - Thêm thư viện/tài sản/nhiều code thì có task chạy npm run check:bundle.
+
+operations:
+  apply:
+    guidance:
+      - Không hỏi lại người dùng; gặp lựa chọn khó thì tự quyết theo hướng có lợi nhất cho người chơi và ghi vào design.md.
+      - Không tự khởi động dev server; game đã chạy tại http://localhost:5173/.
+  archive:
+    guidance:
+      - Sau archive, ghi tóm tắt ngắn (<= ~15 dòng) vào PROGRESS.md kèm tên change, không chép lại nội dung spec.

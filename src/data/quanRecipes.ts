@@ -29,11 +29,34 @@ export const QUAN_RECIPES: QuanRecipe[] = [
   { id: 'ca_phe_sua', name: 'Cà phê sữa đá', icon: '🥛', unlock: 30, price: 20_000, uses: [{ id: 'x_ca_phe_hoa_tan', cups: 15 }, { id: 'x_sua_dac', cups: 10 }, { id: 'x_nuoc_da', cups: 10 }] },
   { id: 'cam_vat', name: 'Cam vắt', icon: '🍊', unlock: 31, price: 22_000, uses: [{ id: 'x_cam', cups: 3 }, { id: 'x_nuoc_da', cups: 10 }] },
   { id: 'chanh_day', name: 'Chanh dây đá', icon: '💛', unlock: 32, price: 18_000, uses: [{ id: 'x_chanh_day', cups: 6 }, { id: 'x_duong', cups: 30 }, { id: 'x_nuoc_da', cups: 10 }] },
+  // GĐ1090: Trà vải — món quán nước của vải thiều nông trại (x_vai mở cấp 32 nhưng chưa có lối ra pha),
+  // khép chuỗi trồng → pha → bán như GĐ1088. Mở 34 ≥ cấp vải 32 → tự cung được trước khi mở món.
+  { id: 'tra_vai', name: 'Trà vải', icon: '🍒', unlock: 34, price: 20_000, uses: [{ id: 'x_vai', cups: 4 }, { id: 'tra', cups: 40 }, { id: 'x_duong', cups: 30 }, { id: 'x_nuoc_da', cups: 10 }] },
+  // GĐ1329: Trà nhãn — món quán nước của nhãn nông trại (x_nhan mở cấp 30 nhưng chưa có lối ra pha), pha đá
+  // ngọt dịu, khép chuỗi trồng → pha → bán như trà vải GĐ1090. Giá vốn/ly = 24k/4 + 20k/40 + 17k/30 + 3k/10
+  // = 7.4k → bán 22k (lời >2× vốn). Mở 31 > mốc golden 30 → sim không đổi; KHÔNG hot (giữ đếm đồ nóng = 3).
+  { id: 'tra_nhan', name: 'Trà nhãn', icon: '🍈', unlock: 31, price: 22_000, uses: [{ id: 'x_nhan', cups: 4 }, { id: 'tra', cups: 40 }, { id: 'x_duong', cups: 30 }, { id: 'x_nuoc_da', cups: 10 }] },
   { id: 'bac_xiu', name: 'Bạc xỉu', icon: '🤎', unlock: 33, price: 25_000, uses: [{ id: 'x_ca_phe_hoa_tan', cups: 25 }, { id: 'sua_tuoi', cups: 6 }, { id: 'x_sua_dac', cups: 10 }, { id: 'x_nuoc_da', cups: 10 }] },
   { id: 'ca_cao_sua', name: 'Ca cao sữa', icon: '🍫', unlock: 34, price: 22_000, uses: [{ id: 'x_bot_cacao', cups: 10 }, { id: 'sua_tuoi', cups: 6 }, { id: 'x_nuoc_da', cups: 10 }] },
   { id: 'sinh_to', name: 'Sinh tố trái cây', icon: '🍓', unlock: 35, price: 28_000, uses: [{ id: 'traicay', cups: 3 }, { id: 'x_sua_dac', cups: 10 }, { id: 'x_nuoc_da', cups: 10 }] },
   { id: 'tra_sua_dua', name: 'Trà sữa cốt dừa', icon: '🥥', unlock: 38, price: 25_000, uses: [{ id: 'tra', cups: 40 }, { id: 'x_dua_cot_hop', cups: 8 }, { id: 'x_sua_dac', cups: 10 }, { id: 'x_nuoc_da', cups: 10 }] },
   { id: 'sinh_to_xoai', name: 'Sinh tố xoài', icon: '🥭', unlock: 39, price: 30_000, uses: [{ id: 'x_xoai', cups: 3 }, { id: 'x_sua_dac', cups: 10 }, { id: 'x_nuoc_da', cups: 10 }] },
+  // GĐ1325: Sinh tố vải sấy — quán nước hồi mềm vải thiều sấy nhà hàng xóm xay đá (khép chuỗi hàng xóm → quán nước,
+  // nối nguồn cung GĐ1321 đã dùng cho chè vải ở bếp thêm 1 lối ra quầy pha). Giá vốn/ly = 42k/4 + 22k/10 + 3k/10
+  // = 13k → lời hơn nước chai nhiều. Mở 40 > mốc golden 30 → sim không đổi; KHÔNG hot (giữ đếm đồ nóng = 3).
+  { id: 'sinh_to_vai', name: 'Sinh tố vải sấy', icon: '🍒', unlock: 40, price: 27_000, uses: [{ id: 'hx_vai_say', cups: 4 }, { id: 'x_sua_dac', cups: 10 }, { id: 'x_nuoc_da', cups: 10 }] },
+  // GĐ1092: Sinh tố ổi & sinh tố chuối — hai món cuối của trái cây nông trại còn "ngủ đông"
+  // (x_oi, x_chuoi mở cấp 22 nhưng chưa có lối ra pha). Mở 34/35 > mốc golden 30 → sim không đổi.
+  { id: 'sinh_to_oi', name: 'Sinh tố ổi', icon: '🍏', unlock: 34, price: 24_000, uses: [{ id: 'x_oi', cups: 4 }, { id: 'x_sua_dac', cups: 10 }, { id: 'x_nuoc_da', cups: 10 }] },
+  { id: 'sinh_to_chuoi', name: 'Sinh tố chuối', icon: '🍌', unlock: 35, price: 24_000, uses: [{ id: 'x_chuoi', cups: 4 }, { id: 'x_sua_dac', cups: 10 }, { id: 'x_nuoc_da', cups: 10 }] },
+  // GĐ1330: Sinh tố mít — món quán nước của mít nông trại (x_mit mở cấp 26 nhưng chưa có lối ra pha), xay sữa đặc,
+  // khép chuỗi trồng → pha → bán như trà vải GĐ1090/sinh tố ổi-chuối GĐ1092. Giá vốn/ly = 16k/4 + 22k/10 + 3k/10
+  // = 6.5k → bán 26k (lời >2× vốn). Mở 34 > mốc golden 30 → sim không đổi; KHÔNG hot (giữ đếm đồ nóng = 3).
+  { id: 'sinh_to_mit', name: 'Sinh tố mít', icon: '🍍', unlock: 34, price: 26_000, uses: [{ id: 'x_mit', cups: 4 }, { id: 'x_sua_dac', cups: 10 }, { id: 'x_nuoc_da', cups: 10 }] },
+  // GĐ1334: Bưởi đá — món quán nước của bưởi nông trại (x_buoi mở cấp 24, hiện chỉ có chè bưởi ở BẾP — chưa có lối ra
+  // pha), đá ngọt mát, khép chuỗi trồng → pha → bán. Giá vốn/ly = 16k/4 + 17k/30 + 3k/10 = 4.9k → bán 20k (lời >2× vốn).
+  // Mở 32 > mốc golden 30 → sim không đổi; KHÔNG hot (giữ đếm đồ nóng = 3).
+  { id: 'buoi_da', name: 'Bưởi đá', icon: '🍈', unlock: 32, price: 20_000, uses: [{ id: 'x_buoi', cups: 4 }, { id: 'x_duong', cups: 30 }, { id: 'x_nuoc_da', cups: 10 }] },
   { id: 'ca_phe_muoi', name: 'Cà phê muối', icon: '🧂', unlock: 40, price: 28_000, uses: [{ id: 'x_ca_phe_hoa_tan', cups: 15 }, { id: 'x_sua_dac', cups: 10 }, { id: 'x_muoi', cups: 60 }, { id: 'x_nuoc_da', cups: 10 }] },
   { id: 'tra_gung', name: 'Trà gừng nóng', icon: '🫚', unlock: 36, price: 15_000, uses: [{ id: 'tra', cups: 40 }, { id: 'x_gung', cups: 12 }, { id: 'x_duong', cups: 30 }], hot: true },
   { id: 'ca_phe_sua_nong', name: 'Cà phê sữa nóng', icon: '♨️', unlock: 37, price: 20_000, uses: [{ id: 'x_ca_phe_hoa_tan', cups: 15 }, { id: 'x_sua_dac', cups: 10 }], hot: true },
@@ -89,6 +112,18 @@ export const varietyMul = (menuSize: number) => 1 + QUAN_VARIETY_BONUS * Math.ma
 /** Số ly tối đa pha được của một công thức với kho hiện có (thiếu một nguyên liệu = 0). */
 export function recipeCapacity(r: QuanRecipe, storage: Record<string, number>): number {
   return Math.min(...r.uses.map((u) => Math.floor((storage[u.id] ?? 0) * u.cups)));
+}
+
+/**
+ * GĐ1112 — nguyên liệu NÚT THẮT của một công thức (kho × cups nhỏ nhất — mua đúng thứ đó mới pha
+ * thêm ly). Thuần đọc.
+ */
+export function recipeBottleneck(r: QuanRecipe, storage: Record<string, number>): { id: string; name: string; glasses: number } {
+  let worst = r.uses[0];
+  for (const u of r.uses) {
+    if (Math.floor((storage[u.id] ?? 0) * u.cups) < Math.floor((storage[worst.id] ?? 0) * worst.cups)) worst = u;
+  }
+  return { id: worst.id, name: productById(worst.id).name, glasses: Math.floor((storage[worst.id] ?? 0) * worst.cups) };
 }
 
 /** Giá vốn nguyên liệu một ly (để người chơi so lời với nước chai). */

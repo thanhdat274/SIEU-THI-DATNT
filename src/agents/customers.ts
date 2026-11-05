@@ -12,10 +12,12 @@ import { demandPriceFactor, keepChance } from '../data/pricing';
 import { CUNG_GOODS, CUNG_PULL, isXoiCungDay } from '../data/tiemXoi';
 import { dayEffects, isWeekend, OFF_SEASON_CLEARANCE, OFF_SEASON_HUNT, offSeason } from '../data/calendar';
 import { COOKED_PRODUCT_IDS, RECIPES } from '../data/recipes';
+import { NEIGHBOR_ONLY_IDS } from '../data/homemade';
+import { REGION_IDS } from '../data/regionSpecialty';
 import { happyHourActive, happyTraffic, timeBandAt } from '../data/rhythm';
 import { hasSkill } from '../data/titles';
 import { RISK_RULES } from '../data/risks';
-import { isNight, NIGHT_SPAN, NIGHT_THEFT_MUL, nightTrafficAt } from '../data/night';
+import { isNight, NIGHT_SPAN, nightTrafficAt } from '../data/night';
 import { COMBO_PULL, comboDiscount, comboPartners } from '../data/combos';
 import { noteComboDay } from '../core/slices/comboDay';
 import { bulkExtra, festivalVisit, perkValue, pickRegular, referFriends, regularById, reserveAsk, INFLUENCER_ID, unlockedFavorites, type RegularDef } from '../data/regulars';
@@ -27,13 +29,19 @@ import { rollService, SERVICE_BUY_ALONG, type ServiceDef } from '../data/service
 import { earnService } from '../core/biz';
 import { paymentById, pickPayment } from '../data/payments';
 import { askAtCounter, askPending, clearAsk, expireAsk, answerAsk, askWallElapsed, useCounterAsk } from '../core/counterAsk';
+import { cashierRng } from '../core/rand';
+import { cashierHaggleChoice, cashierChangeChoice } from '../data/counterDeals';
 import { VENDOR_CHANCE, VENDOR_FROM, VENDOR_UNTIL, WHOLESALE_UNLOCK } from '../data/wholesale';
+import { isBigBasket, bigBasketCount, bigBasketAbandons } from '../data/bigBasket';
 import { meatDemandFactor } from '../data/meat';
-import { bestSkillOnDuty, CARE_PATIENCE_PER_STAR, DIRT_MAX, DIRT_PER_VISIT, dirtVisitFactor, GUARD_DETECT } from '../data/staff';
+import {
+  bestSkillOnDuty, DIRT_MAX, DIRT_PER_VISIT, dirtVisitFactor,
+} from '../data/staff';
+import { theftCatchChance, theftSpawnChance } from '../data/theftRisk';
 import { socialTraffic } from '../data/social';
 import { adTargets, bizTraffic, LOYALTY_UNLOCK, loyaltyRedeemChance, petActive, rivalPriceGap, rivalUndercuts } from '../data/biz';
 import { landmarkCustomerFactor } from '../data/landmark';
-import { redeemLoyalty, storyOnVisit, theftFactor } from '../core/biz';
+import { redeemLoyalty, storyOnVisit } from '../core/biz';
 import { hasUpgrade } from '../data/upgrades';
 import {
   impulseChance, impulseOptions, impulseWeight, shelfAttention, stockedAttention, weightedPick, type ShopGeom,
@@ -49,7 +57,7 @@ import type { Counter, GroceryShop } from '../shop/groceryShop';
 import type { NavGrid } from '../world/navGrid';
 import { CoinPopFX } from '../render/fx/coinPop';
 import {
-  Customer, FRANTIC_AT, IMPATIENT_AT, PATIENCE_MINUTES, SIDEWALK_Z, impatienceEmoji, type Deal,
+  Customer, FRANTIC_AT, IMPATIENT_AT, PATIENCE_MINUTES, SIDEWALK_Z, impatienceEmoji, patienceMultiplier, counterQueueScore, leastScore, reviewStars, type Deal,
 } from './customerEntity';
 
 export { FRANTIC_AT, IMPATIENT_AT, impatienceEmoji };
@@ -80,6 +88,8 @@ export class CustomerManager {
   private vendorAt: number | null | undefined;
   private checkoutProgress = new Map<string, number>();
   private cashierSpeed: (counter: Counter) => number = () => 0;
+  /** GĐ1253 — sao tay nghề thu ngân đang trực ở quầy (0 = không có); khách gặp thu ngân thì thu ngân tự quyết. */
+  private dutyCashierSkill: (counter: Counter) => number = () => 0;
   /** Có bảo vệ đang trực cửa không (StaffManager gán). */
   guardOnDuty: () => boolean = () => false;
   /** Người chơi đang đứng quầy này (mới hỏi ý; nhân viên đứng quầy thì tự chọn mặc định). */
@@ -94,11 +104,13 @@ export class CustomerManager {
   /**
    * @param gameDt giây đã nhân tốc độ game
    * @param cashierSpeed tốc độ tính tiền ở một quầy (1 = người chơi); 0 = không ai đứng quầy đó
+   * @param dutyCashierSkill sao tay nghề thu ngân đang trực ở quầy (GĐ1253); 0 = không có (mặc định — giữ hành vi cũ)
    */
-  update(gameDt: number, cashierSpeed: (counter: Counter) => number) {
+  update(gameDt: number, cashierSpeed: (counter: Counter) => number, dutyCashierSkill: (counter: Counter) => number = () => 0) {
     const s = useGame.getState();
     const gameMinutes = gameDt * MINUTES_PER_SECOND;
     this.cashierSpeed = cashierSpeed;
+    this.dutyCashierSkill = dutyCashierSkill;
     expireAsk(s.minutes);
     this.updateAskRealTime(s);
     const counters = this.shop.counters();
@@ -287,7 +299,9 @@ export class CustomerManager {
     const s = useGame.getState();
     // Hàng của dịp (bánh chưng, lồng đèn...) hết dịp thì không ai hỏi mua
     const inSeason = (id: string) => !offSeason(id, s.day);
-    const all = unlockedProducts(s.level).map((p) => p.id).filter(inSeason);
+    // Đồ độc quyền mối đặc biệt (hàng xóm GĐ1077/1085, đặc sản vùng GĐ1086) chỉ có khách hỏi khi đã bày kệ
+    // — không nở rộng bể ngẫu nhiên (giữ cân bằng sim)
+    const all = unlockedProducts(s.level).map((p) => p.id).filter((id) => !NEIGHBOR_ONLY_IDS.has(id) && !REGION_IDS.has(id)).filter(inSeason);
     const shelved = [
       ...new Set(s.furniture.flatMap((f) => f.tiers.filter((t) => t.productId && t.count > 0).map((t) => t.productId!))),
     ];
@@ -351,17 +365,28 @@ export class CustomerManager {
 
     const s = useGame.getState();
     const station = s.furniture.find((f) => f.type === 'cartStation');
-    const withCart = !!station && simRng()() < 0.5;
+    const hasCart = !!station;
+    const hasBigShelf = s.furniture.some((f) => f.type === 'bigShelf');
+    // GĐ-B — khách GIỎ LỚN khi ngành "Khu tự chọn" kích hoạt (đủ bậc + cartStation + bigShelf):
+    // giỏ 5–8 món trải nhiều ngành; thiếu ≥2 món thì bỏ cả giỏ (xem plan kết).
+    c.bigBasket = isBigBasket(simRng(), s.shopTier, hasCart, hasBigShelf);
+    const withCart = hasCart && (c.bigBasket || simRng()() < 0.5);
     const maxItems = s.level >= FEATURES.basket ? 4 : 3;
-    const count = (withCart ? 3 + Math.floor(simRng()() * 5) : 1 + Math.floor(simRng()() * maxItems))
+    const count = (c.bigBasket ? bigBasketCount(simRng()) : withCart ? 3 + Math.floor(simRng()() * 5) : 1 + Math.floor(simRng()() * maxItems))
       + (hasSkill(s.skills, 'big_basket') && simRng()() < 0.5 ? 1 : 0);
     if (hasSkill(s.skills, 'charm')) c.sensitivity *= 0.85;
-    c.thief = !regular && !service && s.level >= RISK_RULES.theft.unlock && simRng()() < RISK_RULES.theft.chance * (hasUpgrade(s.biz, 'night') && isNight(s.minutes) ? NIGHT_THEFT_MUL : 1) * theftFactor(s.biz, s.day) * (hasUpgrade(s.biz, 'camera') ? 0.7 : 1);
-    // Có mèo ở quầy: khách nhỏ (học sinh, mẹ bỉm) vui hơn, đỡ sốt ruột
-    if (petActive(s.biz.pets.cat, s.day) && c.profession && ['student_highschool', 'student_college', 'mom'].includes(c.profession.id)) c.patience *= 1.3;
-    // Nhân viên chăm sóc khách trực ca: hỏi thăm khách chờ, ai cũng chịu chờ lâu hơn theo tay nghề
+    // GĐ1212 — P sinh trộm thành helper THUẦN theftSpawnChance (chance × đêm×2 × chó×0.45 × camera×0.7): hành vi GIỮ NGUYÊN.
+    c.thief = !regular && !service && s.level >= RISK_RULES.theft.unlock && simRng()() < theftSpawnChance({
+      isNight: isNight(s.minutes),
+      hasNightUpgrade: hasUpgrade(s.biz, 'night'),
+      hasDog: petActive(s.biz.pets.dog, s.day),
+      hasCamera: hasUpgrade(s.biz, 'camera'),
+    });
+    // Có mèo ở quầy: khách nhỏ (học sinh, mẹ bỉm) vui hơn, đỡ sốt ruột; nhân viên chăm sóc khách trực ca
+    // thì ai cũng chịu chờ lâu hơn theo tay nghề — GĐ1208 tách thành patienceMultiplier (THUẦN, same công
+    // thức/hằng) để logic này test được; hành vi giữ nguyên (chỉ đổi chỗ nhân nội tuyến → một lần gọi).
     const care = bestSkillOnDuty(s.staff, 'customer_care', s.minutes);
-    if (care > 0) c.patience *= 1 + CARE_PATIENCE_PER_STAR * care;
+    c.patience *= patienceMultiplier({ petCat: petActive(s.biz.pets.cat, s.day), professionId: c.profession?.id ?? null, care });
     c.wants = regular
       ? this.regularWants(regular)
       : c.profession
@@ -443,6 +468,14 @@ export class CustomerManager {
       });
     }
     c.plan.push(() => {
+      // GĐ-B — khách GIỎ LỚN: thiếu ≥2 món mong muốn → bỏ CẢ GIỎ (ràng buộc "trữ kệ đủ theo ngành").
+      if (c.bigBasket && c.basket.length && bigBasketAbandons(c.missing)) {
+        c.say('🛒 Thiếu món phải, bỏ cả giỏ!');
+        if (c.wants.length) useGame.getState().noteMiss('stock', c.wants[0]);
+        c.basket = [];
+        this.leave(c, false);
+        return;
+      }
       if (!c.basket.length && !c.service) {
         c.say('😞 Không có gì ưng');
         this.leave(c, false);
@@ -455,9 +488,9 @@ export class CustomerManager {
 
   /** Xếp vào quầy có hàng ngắn nhất; quầy không có người tính tiền bị tính như dài thêm 3 người. */
   private joinQueue(c: Customer, counters: Counter[]) {
-    const score = (ct: Counter) =>
-      (this.queues.get(ct.key)?.length ?? 0) + (this.cashierSpeed(ct) > 0 ? 0 : 3) + (ct.key === 'main' ? -0.1 : 0);
-    const best = counters.reduce((a, b) => (score(b) < score(a) ? b : a));
+    // GĐ1213 — tách chọn quầy thành helper THUẦN (counterQueueScore/leastScore, cùng công thức/hằng): hành vi GIỮ NGUYÊN.
+    const score = (ct: Counter) => counterQueueScore(this.queues.get(ct.key)?.length ?? 0, this.cashierSpeed(ct) > 0, ct.key === 'main');
+    const best = leastScore(counters, score);
     const queue = this.queues.get(best.key) ?? [];
     this.queues.set(best.key, queue);
     queue.push(c);
@@ -562,14 +595,15 @@ export class CustomerManager {
     }
     // GĐ721 — chốt deal mặc cả qua helper thuần: 0 bớt luôn · 1 trả giá lại (khách gật giá giữa/mua đầy/bỏ về) · 2 giữ giá
     if (deal.kind === 'haggle') {
-      const settle = haggleSettle(deal.choice, deal.amount, total, deal.choice === 0 ? 0 : simRng()());
+      // GĐ1253 — deal do thu ngân chốt thì settle rút dòng riêng cashierRng (giữ chuỗi kinh tế chính nguyên vẹn)
+      const settle = haggleSettle(deal.choice, deal.amount, total, deal.choice === 0 ? 0 : deal.cashier ? cashierRng() : simRng()());
       if (settle.discount) combo.discount += settle.discount;
       if (!settle.happy) happy = false;
       if (settle.icon) first.say(settle.icon, 2);
     }
     if (deal.kind === 'change' && deal.choice === 1) {
       first.say('🍬', 2);
-      if (simRng()() < CANDY_ANNOY) happy = false;
+      if ((deal.cashier ? cashierRng() : simRng()()) < CANDY_ANNOY) happy = false;
     }
     const onCredit = deal.kind === 'credit' && deal.choice === 0;
     // Khách tự chọn cách trả tiền: đơn càng lớn càng nghiêng chuyển khoản / ví / thẻ
@@ -702,6 +736,16 @@ export class CustomerManager {
       const policy = st.counterPolicy ?? defaultCounterPolicy();
       const pc = ask.kind === 'haggle' ? haggleChoice(policy, total) : changeChoice(policy, total);
       if (pc !== null) return (c.deal = { kind: ask.kind, amount: ask.amount, choice: pc });
+      // GĐ1253 — có thu ngân đang trực ở quầy thì THU NGÂN tự quyết theo tay nghề (random có trọng số
+      // theo sao — cashierHaggleChoice/cashierChangeChoice), KHÔNG dừng game hỏi chủ. Người dùng phản
+      // ánh: đã thuê nhân viên rồi mà khách mặc cả vẫn bị hỏi giữa chừng. Chốt NGAY (không prompt),
+      // rút từ DÒNG RIÊNG cashierRng — không dịch chuỗi kinh tế chính (Nguyên tắc c, GĐ722 an toàn vì
+      // kết quả áp dụng tức thì). Người chơi tự đứng quầy mà KHÔNG có thu ngân → giữ nguyên được hỏi.
+      const skill = this.dutyCashierSkill(counter);
+      if (skill > 0) {
+        const choice = ask.kind === 'haggle' ? cashierHaggleChoice(skill, cashierRng()) : cashierChangeChoice(skill, cashierRng());
+        return (c.deal = { kind: ask.kind, amount: ask.amount, choice, cashier: true });
+      }
     }
     if (!ask) return (c.deal = { kind: 'none', amount: 0, choice: 0 });
     const { kind, amount } = ask;
@@ -743,14 +787,16 @@ export class CustomerManager {
   /** Kẻ trộm đi thẳng ra cửa; có người đứng quầy thì dễ bị bắt hơn. */
   private sneakOut(c: Customer) {
     const st = useGame.getState();
-    const r = RISK_RULES.theft;
     const staffed = this.shop.counters().some((ct) => this.cashierSpeed(ct) > 0);
-    const dog = petActive(st.biz.pets.dog, st.day) ? 0.25 : 0;
-    // Camera ghi hình dọc quầy: kể cả không ai đứng quầy vẫn bắt được kẻ gian qua hình
-    const camera = hasUpgrade(st.biz, 'camera') ? 0.3 : 0;
-    const chance = dog + camera + (this.guardOnDuty()
-      ? GUARD_DETECT
-      : (staffed ? r.detectCashier : r.detectNobody) + (hasSkill(st.skills, 'sharp_eye') ? r.sharpEyeBonus : 0));
+    // GĐ1211 — tách P(bắt trộm) thành helper THUẦN (theftCatchChance, cùng hằng/công thức):
+    // dog + camera + (guard ? 0.92 : (cashier?0.55:0.1) + sharpEye?0.3) — hành vi GIỮ NGUYÊN.
+    const chance = theftCatchChance({
+      hasDog: petActive(st.biz.pets.dog, st.day),
+      hasCamera: hasUpgrade(st.biz, 'camera'),
+      guardOnDuty: this.guardOnDuty(),
+      cashierStaffed: staffed,
+      hasSharpEye: hasSkill(st.skills, 'sharp_eye'),
+    });
     const value = c.basket.reduce((n, it) => n + it.price, 0);
     const caught = simRng()() < chance;
     st.recordTheft(value, caught);
@@ -819,7 +865,8 @@ export class CustomerManager {
       const reason: ReviewReason = c.basket.length ? 'wait' : firstMiss?.why ?? 'stock';
       return st.addReview(c.basket.length ? 1 : 1 + Math.floor(simRng()() * 2), reason, reason === 'wait' ? undefined : firstMiss?.id);
     }
-    const stars = Math.max(1, Math.min(5, 5 - c.missed.length - (c.waitedMinutes > c.patience / 2 ? 1 : 0)));
+    // GĐ1216: số sao khách chấm (mỗi món hỏng −1, chờ nửa patience −1) tách ra helper THUẦN — cùng công thức.
+    const stars = reviewStars(c.missed.length, c.waitedMinutes, c.patience);
     if (stars <= 2 && firstMiss) return st.addReview(stars, firstMiss.why, firstMiss.id);
     const priciest = [...c.basket].sort((a, b) => b.price - a.price)[0];
     st.addReview(stars, undefined, priciest?.id);

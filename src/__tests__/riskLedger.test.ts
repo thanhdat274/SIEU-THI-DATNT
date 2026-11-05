@@ -1,7 +1,7 @@
 import { describe, expect, it, beforeEach } from 'vitest';
 import { newGameData, useGame } from '../core/store';
 import { snapshot, applySnapshot } from '../core/save';
-import { riskTrendSummary, leakTone, riskLiveToday, emptyRiskToday, RISK_TREND_DAYS, type RiskDay } from '../data/risk';
+import { riskTrendSummary, leakTone, riskLiveToday, riskLevers, emptyRiskToday, RISK_TREND_DAYS, type RiskDay } from '../data/risk';
 import { staffDayEnd, SKIM_RANGE, type StaffDayCtx } from '../data/staffTraits';
 import type { Staff } from '../data/staff';
 
@@ -156,6 +156,35 @@ describe('leakTone (ngưỡng 0/1/3/5% doanh thu)', () => {
   it('riskLiveToday gom đúng 3 con số (kể cả thiếu field)', () => {
     expect(riskLiveToday({ leak: 5, blocked: 3, events: 2 })).toEqual({ leak: 5, blocked: 3, events: 2 });
     expect(riskLiveToday(emptyRiskToday())).toEqual({ leak: 0, blocked: 0, events: 0 });
+  });
+});
+
+describe('GĐ1206 riskLevers — nối chẩn đoán rủi ro → hành động (mất tiền thì biết chặn cách nào)', () => {
+  it('ok (lọt chưa trội) → [], không bày nút nhiễu dù thiếu phòng thủ', () => {
+    expect(riskLevers('ok', { hasGuard: false, hasSharpEye: false })).toEqual([]);
+  });
+
+  it('warn/bad thiếu bảo vệ + Mắt tinh → kê cả hai nút (staff + skills)', () => {
+    for (const tone of ['warn', 'bad'] as const) {
+      const out = riskLevers(tone, { hasGuard: false, hasSharpEye: false });
+      expect(out.map((l) => l.action)).toEqual(['staff', 'skills']);
+    }
+  });
+
+  it('warn/bad đã có bảo vệ nhưng chưa Mắt tinh → chỉ kê Mắt tinh (skills)', () => {
+    const out = riskLevers('bad', { hasGuard: true, hasSharpEye: false });
+    expect(out.map((l) => l.action)).toEqual(['skills']);
+  });
+
+  it('warn/bad đủ cả hai phòng thủ mà vẫn lọt → nhắc đứng quầy giờ đông / rà ca nhân viên (staff)', () => {
+    const out = riskLevers('bad', { hasGuard: true, hasSharpEye: true });
+    expect(out).toHaveLength(1);
+    expect(out[0].action).toBe('staff');
+    expect(out[0].text).toContain('nhân viên');
+  });
+
+  it('chặt tối đa 2 nút (không tràn thẻ)', () => {
+    expect(riskLevers('bad', { hasGuard: false, hasSharpEye: false })).toHaveLength(2);
   });
 });
 

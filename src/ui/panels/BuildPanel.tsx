@@ -2,8 +2,14 @@ import { useEffect, useState } from 'react';
 import { useGame } from '../../core/store';
 import { FLOOR_COLORS, PAINT_PRICE, ROOF_COLORS, SHOP_TIERS, WALL_COLORS, rentDelta, rentOf, spaceUsePct, type ShopStyle } from '../../data/shopTiers';
 import { FURNITURE } from '../../data/furniture';
+import { departmentsUnlockedAtTier } from '../../data/departments';
+import { bigBasketInsight, BIG_BASKET_TIER } from '../../data/bigBasket';
+import { meatCounterPayoff, meatChainCooled } from '../../data/meatCounterPayoff';
+import { isMeat } from '../../data/meat';
+import { nearestLife, shelfLife } from '../../data/freshness';
 import { formatMoney } from '../../data/products';
-import { Footer, Swatch, styles, Tabs } from './shared';
+import { newUnlockMark, shelfBuyHint, storeMissRevenue } from '../../data/advice';
+import { Callout, Footer, Swatch, styles, Tabs } from './shared';
 
 export function BuildPanel() {
   const [tab, setTab] = useState<'furniture' | 'paint' | 'expand'>('furniture');
@@ -28,19 +34,45 @@ export function BuildPanel() {
 }
 
 export function FurnitureTab() {
-  const { level, money, furniture, setPlacing, demolishAll } = useGame();
+  const { level, money, furniture, storage, stats, weather, setPlacing, demolishAll } = useGame();
+  // GĐ1251: soi quyết định MUA KỆ bằng số liệu bỏ lỡ hôm nay (storeMissRevenue GĐ131) —
+  // trước giờ dữ liệu này chỉ hiện ở Kho/Báo cáo, còn nơi mua kệ lại chỉ chìa giá.
+  const hint = shelfBuyHint(storeMissRevenue(stats?.missLog, storage));
+  // GĐ-C: chuỗi lạnh ngành "Khu thịt cá" — thịt/cá ĐANG để ẤM sẽ hỏng đêm nay, soi để chủ dọn sang chỗ mát.
+  const coldLine = (() => {
+    const lots = furniture.flatMap((f) =>
+      (f.tiers ?? []).flatMap((t) =>
+        t.productId && t.count > 0 && isMeat(t.productId)
+          ? [{ productId: t.productId, qty: t.count, life: nearestLife(t.lots) ?? shelfLife(t.productId), place: meatChainCooled(f.type) ? ('chilled' as const) : ('warm' as const) }]
+          : [],
+      ),
+    );
+    if (!lots.length) return null;
+    return meatCounterPayoff(lots, weather, furniture.some((f) => f.type === 'meat_counter')).line;
+  })();
   return (
     <>
       <p style={styles.sub}>
         Chọn món để đặt vào tiệm. Bấm "Di chuyển đồ có sẵn" rồi bấm vào đồ để dời chỗ hoặc bán (nhận lại 50%).
       </p>
+      {hint && (
+        <Callout tone={hint.kind === 'shelf' ? 'ok' : 'info'} style={{ marginBottom: 8 }}
+          title={hint.kind === 'shelf' ? '💡 Mua thêm kệ hôm nay đáng' : '💡 Mua thêm kệ hôm nay chưa giúp'}>
+          <div style={{ marginTop: 2, fontSize: 12 }}>{hint.line}</div>
+        </Callout>
+      )}
+      {coldLine && (
+        <Callout tone="warn" style={{ marginBottom: 8 }} title="🥩 Chuỗi lạnh Khu thịt cá">
+          <div style={{ marginTop: 2, fontSize: 12 }}>{coldLine}</div>
+        </Callout>
+      )}
       <div style={{ display: 'grid', gap: 8 }}>
         {FURNITURE.map((f) => {
           const locked = f.unlock > level;
           return (
             <div key={f.type} style={{ ...styles.card, opacity: locked ? 0.5 : 1 }}>
               <div style={{ flex: 1 }}>
-                <b>{f.name}</b> · {formatMoney(f.price)}
+                <b>{f.name}</b>{newUnlockMark(f.unlock, level)} · {formatMoney(f.price)}
                 <div style={{ fontSize: 12, opacity: 0.75 }}>{f.desc}</div>
               </div>
               {locked ? (
@@ -197,6 +229,15 @@ export function ExpandTab() {
       <div style={{ fontSize: 13, margin: '0 0 10px' }}>
         💰 Tiền nhà bây giờ: <b style={{ color: '#f1c40f' }}>{formatMoney(rentNow)}/ngày</b>
       </div>
+      {(() => {
+        const hasCart = furniture.some((f) => f.type === 'cartStation');
+        const hasBig = furniture.some((f) => f.type === 'bigShelf');
+        const bb = bigBasketInsight(shopTier, hasCart, hasBig);
+        if (bb.line && (shopTier >= BIG_BASKET_TIER || hasCart || hasBig)) {
+          return <div style={{ fontSize: 12, color: '#55efc4', margin: '0 0 8px' }}>{bb.line}</div>;
+        }
+        return null;
+      })()}
       <div style={{ display: 'grid', gap: 8 }}>
         {SHOP_TIERS.map((t, i) => {
           const done = i <= shopTier;
@@ -229,6 +270,11 @@ export function ExpandTab() {
                     {next && avgRev7 !== null && (
                       <div style={{ opacity: 0.75 }}>
                         Tiền nhà mới ≈ {Math.round((rentThen / avgRev7) * 100)}% doanh thu bình quân 7 ngày.
+                      </div>
+                    )}
+                    {departmentsUnlockedAtTier(i).length > 0 && (
+                      <div style={{ color: '#55efc4', opacity: 0.9 }}>
+                        🆕 Mở ngành: {departmentsUnlockedAtTier(i).map((d) => `${d.icon} ${d.name}`).join(' · ')}
                       </div>
                     )}
                   </div>

@@ -66,11 +66,53 @@ export function keepChance(productId: string, price: number, customerSensitivity
   return Math.max(PRICE_RULES.minKeepChance, 1 - productSensitivity(productId) * customerSensitivity * (ratio - 1));
 }
 
+/** GĐ1222 — bề mặt "giá cao ăn vào đơn": tỉ lệ khách còn chịu mua ở giá đang bày (baseline khách vãng
+ *  lai, sensitivity=1) + giá tham chiếu thị trường, để báo cáo trỏ "chê đắt → hạ về ~reference thì đa số
+ *  mua". THUẦN — ghép từ `keepChance`/`referenceSell` có sẵn, không đổi kinh tế/save/seed. */
+export function priceBuyOdds(productId: string, price: number): { keep: number; reference: number } {
+  return { keep: keepChance(productId, price), reference: referenceSell(productId) };
+}
+
 /** Giá rẻ hơn gợi ý kéo thêm khách, không vượt trần; giá cao không đổi lượng khách (khách từ chối ở `keepChance`). */
 export function demandPriceFactor(productId: string, price: number): number {
   const ratio = priceRatio(price, productId);
   if (ratio >= 1) return 1;
   return Math.min(PRICE_RULES.lowPriceDemandCap, 1 + PRICE_RULES.lowPriceDemandSlope * (1 - ratio));
+}
+
+/** GĐ1224 — bề mặt "giá rẻ kéo khách": bảng giá nói "rẻ hơn gợi ý thì thêm người ghé" mà không cho con
+ *  số; helper THUẦN project đúng `demandPriceFactor` (mô hình cầu đang dùng) ra phần trăm thêm khách ghé
+ *  khi bán dưới giá thị trường. `active=false` khi đang bằng/trên thị trường (không kéo thêm). Không đổi
+ *  kinh tế/save/seed — chỉ đọc lại hệ số có sẵn để soi. */
+export function lowPricePull(productId: string, price: number): { active: boolean; pct: number } {
+  const f = demandPriceFactor(productId, price);
+  return { active: f > 1, pct: Math.round((f - 1) * 100) };
+}
+
+/** GĐ1225 — bề mặt HAI PHÍA giá ngay trên ô giá (bảng giá): rẻ hơn thị trường → % thêm khách ghé
+ *  (`lowPricePull`); đắt hơn → % đơn còn chịu mua (`priceBuyOdds`); bằng/nằm giữa → null (đừng ồn).
+ *  THUẦN — chỉ ghép chuỗi từ hai helper đã test, UI giữ nguyên không phán đoán. Không đổi kinh tế/save/seed. */
+export function priceSideMark(
+  productId: string,
+  price: number,
+): { side: 'low' | 'high'; line: string; tooltip: string } | null {
+  const pull = lowPricePull(productId, price);
+  if (pull.active) {
+    return {
+      side: 'low',
+      line: `🧲 rẻ hơn gợi ý → ~+${pull.pct}% khách ghé`,
+      tooltip: 'Khách ghé tiệm thêm chừng này phần trăm vì giá này rẻ hơn giá thị trường (mô hình cầu đang dùng); đừng hạ sâu quá — tới trần +15% thì lời mỏng mà khách không tăng nữa.',
+    };
+  }
+  const odds = priceBuyOdds(productId, price);
+  if (odds.keep < 1) {
+    return {
+      side: 'high',
+      line: `💸 đắt hơn gợi ý → chỉ ~${Math.round(odds.keep * 100)}% đơn được mua`,
+      tooltip: 'Tỉ lệ khách còn chịu mua ở giá này (khách vãng lai nhạy giá); hạ về ~giá thị trường (gợi ý) thì đa số mua.',
+    };
+  }
+  return null;
 }
 
 export type PriceAction = 'raise' | 'hold' | 'cut';

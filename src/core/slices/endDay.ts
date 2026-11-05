@@ -169,7 +169,7 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
       const dine = tiemXoiDinePlan(s.biz.tiemXoi, s.level, k.storage, s.weather, s.day);
       for (const [id, qty] of Object.entries(dine.take)) takeStock(k, id, qty);
       quanRevenue += dine.revenue;
-      tiemXoiLast = { ...tiemXoiLast!, dine: dine.portions };
+      tiemXoiLast = { ...tiemXoiLast!, dine: dine.portions, dineRevenue: dine.revenue };
       if (dine.portions) quanNews.push(`🍚 Khách ăn tại tiệm xôi ${dine.portions} suất · +${formatMoney(dine.revenue)}${isXoiCungDay(s.day) ? ' · 🙏 ngày cúng' : ''}`);
       // GĐ711: đuôi sự kiện giữ ở mọi giá (bài học GĐ707 — không thay bằng dòng khác), quá dài thì bỏ phần tự đồ trước
       const evTail = t.event === 'cooker' ? ' · 🍚 nồi hỏng, nấu chậm' : t.event === 'gao' ? ' · 🌾 gạo khan, giá vốn tăng' : '';

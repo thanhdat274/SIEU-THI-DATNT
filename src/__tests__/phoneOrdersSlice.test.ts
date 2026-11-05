@@ -63,6 +63,7 @@ describe('giao đơn điện thoại', () => {
     expect(g().deliverPhone(1)).toBe(true);
     expect(g().money).toBe(m0 + value + tip);
     expect(g().stats.revenue).toBeGreaterThanOrEqual(value + tip);
+    expect(g().stats.phone).toBe(value + tip); // GĐ1181: doanh thu điện thoại gán riêng để soi người giao
     expect(g().phoneOrdersDone).toBe(1);
     expect(g().phoneOrders).toEqual([]);
   });

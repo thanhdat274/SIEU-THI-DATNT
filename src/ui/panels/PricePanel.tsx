@@ -4,7 +4,8 @@ import { Dropdown } from '../Dropdown';
 import { HAPPY_FROM_MAX, HAPPY_FROM_MIN, HAPPY_HOURS, HAPPY_OFF_OPTIONS, happyHourActive, happyWindowFit, happyHourReport } from '../../data/rhythm';
 import { useClock, useGame } from '../../core/store';
 import { CATEGORIES, formatMoney, unlockedProducts, type Product, fmtMul } from '../../data/products';
-import { suggestPrice, referenceSell, productSensitivity, sensitivityLevel, priceForecast, formatDeltaK, FORECAST_FLAT_BAND } from '../../data/pricing';
+import { suggestPrice, referenceSell, productSensitivity, sensitivityLevel, priceForecast, formatDeltaK, FORECAST_FLAT_BAND, priceSideMark } from '../../data/pricing';
+import { segmentPriceFallout } from '../../data/segmentPricing';
 import { dayEffects } from '../../data/calendar';
 import { marketTrend } from '../../data/market';
 import { priceGap } from '../../data/priceGap';
@@ -180,6 +181,17 @@ export function PricePanel() {
                       >{c.txt}</span>
                     );
                   })()}
+                  {(() => {
+                    // GĐ1284 — "giá này đang đuổi đi phân khúc nào?" (chỉ khi giá cao hơn gợi ý & có nghề ưa món bị đuổi)
+                    const fo = level && day ? segmentPriceFallout({ productId: p.id, price, level, day }) : null;
+                    if (!fo) return null;
+                    const t = fo.rows[0];
+                    return (
+                      <div style={{ fontSize: 11, marginTop: 2, color: '#e67e22' }}>
+                        💡 {t.profession.icon} {t.profession.name} (nhạy {t.sensitivity}) bị giá cao đuổi ~{t.losePct}% lượt — hạ về ~{fo.reference.toLocaleString('vi-VN')}đ.
+                      </div>
+                    );
+                  })()}
                 </td>
                 <td>{formatMoney(p.buy)}</td>
                 <td title={`Giá gợi ý hiện hành (${formatMoney(ref)}): nhích theo khan hiếm hàng. ${trendTip}`}>
@@ -200,6 +212,16 @@ export function PricePanel() {
                     {formatMoney(price)}
                   </b>
                   <button style={styles.btn} aria-label="Tăng giá" onClick={() => change(step)}>+</button>
+                  {(() => {
+                    // GĐ1224/1225 — bề mặt hai phía giá ngay trên ô giá (pure priceSideMark: rẻ → +% khách; đắt → % đơn chịu mua)
+                    const mk = priceSideMark(p.id, price);
+                    if (!mk) return null;
+                    return (
+                      <div style={{ whiteSpace: 'nowrap', fontSize: 11, marginTop: 2, color: mk.side === 'low' ? '#3498db' : '#e74c3c', opacity: 0.9 }} title={mk.tooltip}>
+                        {mk.line}
+                      </div>
+                    );
+                  })()}
                   {price !== p.sell && (() => {
                     const fc = priceForecast(p.id, price, { soldPerDay: sales[p.id], wantedPerDay: demand[p.id] }, tolOf(p.id));
                     if (!fc) return null;

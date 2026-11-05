@@ -46,8 +46,18 @@ export interface DayStats {
   /** Bán online hôm nay: tiền về (sau hoa hồng) và phí Grab. */
   online?: number;
   grabFees?: number;
+  /** Đơn app bị mất hôm nay: số đơn bị app tự huỷ (không nhận kịp) hoặc chủ từ chối, và tiền (sau hoa
+   *  hồng) đáng lẽ thu được. GĐ1182 — soi lỗ bỏ lỡ kênh online. */
+  onlineMissedCount?: number;
+  onlineMissed?: number;
+  /** Doanh thu đơn ĐIỆN THOẠI hôm nay (tiền + boa đã thu) — nhờ có 🛵 người giao mới mở kênh này (GĐ1181). */
+  phone?: number;
   /** Số đơn app giao tới tay khách hôm nay (đo nhiệm vụ ngày). */
   onlineDone?: number;
+  /** Phí Grab tiết kiệm được hôm nay nhờ người giao 🛵 chở đơn app (mỗi đơn tự chở = đúng phí Grab lẽ ra
+   *  phải trả). GĐ1183 — để StaffPanel tính "người giao có đáng đồng lương" gồm cả nguồn online, không chỉ
+   *  kênh điện thoại. Field tuỳ chọn — save cũ bù undefined qua `?? 0`, không lên SAVE_VERSION. */
+  onlineOwnGrabSaved?: number;
   /** Số nông sản thu hoạch được hôm nay (đo nhiệm vụ ngày). */
   farmHarvest?: number;
   /** Số bài chủ tiệm đăng lên mạng xã hội hôm nay (đo nhiệm vụ ngày). */
@@ -56,6 +66,10 @@ export interface DayStats {
   cookOrders?: number;
   /** Số lời khen 5★ nhận hôm nay (đo thử thách tuần). */
   fiveStars?: number;
+  /** Thưởng nhiệm vụ (nhiệm vụ ngày + chuyện) đã nhận hôm nay — tích lũy lúc claim, reset theo ngày.
+   *  GĐ1178 "soi sáng": giúp tổng kết so "lãi bán hàng thật" với thưởng nhiệm vụ + kèo (Luật 10).
+   *  Field tuỳ chọn — bản save cũ tự bù undefined qua `?? 0`, không lên SAVE_VERSION. */
+  questIncome?: number;
 }
 
 /** Lãi gộp trong ngày: (tiền thu − vốn) theo sổ bán từng món + lời dịch vụ quầy. */

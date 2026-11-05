@@ -70,9 +70,11 @@ export class CoinPopFX {
     }
   }
 
-  /** Sinh bong bóng tại một điểm (thường là tâm quầy thu ngân). amount ≤ 0 thì bỏ qua — không có gì để khoe. */
-  spawn(at: THREE.Vector3, amount: number) {
-    if (amount <= 0) return;
+  /** Sinh bong bóng tại một điểm (thường là tâm quầy thu ngân). amount ≤ 0 thì bỏ qua — không có gì để khoe.
+   *  GĐ1255 — `label` tuỳ chọn cho bong bóng KHÔNG phải tiền (juice thu hoạch trại: "+3 🥬",
+   *  xem farmJuice.ts): cùng pool, cùng đường bay, chỉ khác chữ vẽ lên canvas. */
+  spawn(at: THREE.Vector3, amount: number, label?: string) {
+    if (!label && amount <= 0) return;
     this.ensurePool();
     if (!this.pool.length) return; // môi trường không DOM (node test) — im lặng bỏ qua
     // Hết pool thì giật của thằng già nhất đang bay — bán dồn dập vẫn luôn có phản hồi mới nhất
@@ -80,7 +82,7 @@ export class CoinPopFX {
     if (!slot) {
       slot = this.pool.reduce((a, b) => (a.age > b.age ? a : b));
     }
-    drawPill(slot.canvas, coinPopLabel(amount));
+    drawPill(slot.canvas, label ?? coinPopLabel(amount));
     slot.tex.needsUpdate = true;
     slot.sprite.position.copy(at);
     slot.sprite.position.y = 1.15;

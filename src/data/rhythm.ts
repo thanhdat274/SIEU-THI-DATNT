@@ -1,5 +1,5 @@
 /** Nhịp trong ngày: giờ cao điểm đông khách hơn, và mỗi khung giờ khách thèm món khác nhau. */
-import { productById } from './products';
+import { caseSize, productById } from './products';
 
 export interface TimeBand {
   id: string;
@@ -78,6 +78,48 @@ export function goldenPrepWants(minutes: number, level: number, n = 4): string[]
     if (out.length >= n) break;
   }
   return out;
+}
+
+// ───── GĐ1239: món khách THÈM trong giờ vàng KẾ TIẾP (prospective, cho Sơ đồ kệ) ─────
+
+/** GĐ1239 — bàn giao cho Sơ đồ kệ: giờ vàng KẾ TIẾP và món khách thèm (trả id, lọc hàng đã mở khóa,
+ *  bỏ trùng, trần `n`), để người chơi BÀY SẴN đúng đồ khách cần trước giờ đông — prospective, đối trọng
+ *  với thẻ 🔥 "chạy nhất hôm nay" (GĐ1238, reactive sau khi bán). Null khi hôm nay hết giờ vàng.
+ *  THUẦN — chỉ đọc nhịp cố định (TIME_BANDS/GOLDEN_TRAFFIC) + unlock theo cấp, không RNG/state (Luật 5 an toàn). */
+export function nextGoldenPrep(
+  level: number,
+  minutes: number,
+  n = 4,
+): { name: string; from: number; to: number; items: string[] } | null {
+  const next = nextGoldenBand(minutes);
+  if (!next) return null;
+  const seen = new Set<string>();
+  const items: string[] = [];
+  for (const id of next.wants) {
+    if (seen.has(id)) continue;
+    seen.add(id);
+    const p = productById(id);
+    if (p && p.unlock <= level) items.push(id);
+    if (items.length >= n) break;
+  }
+  return { name: next.name, from: next.from, to: next.to, items };
+}
+
+/** GĐ1240 — đối trọng nhập hàng của GĐ1239: trong các món khách thèm giờ vàng KẾ TIẾP, món nào ĐANG
+ *  HẾT (onHand(id) == 0) thì báo để nhập, kèm gợi ý 1 thùng (caseSize). Đóng vòng từ trạng thái
+ *  "kho hết — vào Nhập hàng" của thẻ ⏰ Sơ đồ kệ thành hành động cụ thể tại chỗ người chơi đặt mua.
+ *  Nhận `onHandOf` (kho đang có + đang chờ giao) qua hàm — thuần đọc, không đổi state/kinh tế (Luật 5 an toàn). */
+export function goldenShortfall(
+  prep: { name: string; from: number; to: number; items: string[] } | null,
+  onHandOf: (id: string) => number,
+): { name: string; from: number; to: number; short: { id: string; qty: number }[] } | null {
+  if (!prep) return null;
+  const short: { id: string; qty: number }[] = [];
+  for (const id of prep.items) {
+    if (onHandOf(id) <= 0) short.push({ id, qty: caseSize(id) });
+  }
+  if (short.length === 0) return null;
+  return { name: prep.name, from: prep.from, to: prep.to, short };
 }
 
 // ───── Giờ vàng tự đặt (happy hour): tự chọn khung giảm giá kéo khách ─────

@@ -84,9 +84,14 @@ export interface FarmVsCook {
  * công thức có dùng nó. Nông sản không vào được bếp nào → recipes rỗng, best null,
  * verdict 'sell' (chỉ bán lẻ được).
  */
-export function farmVsCook(productId: string, minUnlock = 0): FarmVsCook {
+export function farmVsCook(
+  productId: string,
+  minUnlock = 0,
+  opts?: { /** GĐ1140: chỉ xét công thức đã mở cấp + trạm đã xây (undefined = tất cả — tương thích cũ). */ level?: number; stationOpen?: (st: import('./recipes').CookingStation) => boolean },
+): FarmVsCook {
   const recipes = RECIPES
     .filter((r) => (minUnlock === 0 || r.unlock >= minUnlock) && !r.festival)
+    .filter((r) => (!opts?.level || r.unlock <= opts.level) && (!opts?.stationOpen || opts.stationOpen(r.station)))
     .map((r) => homegrownRecipeDecision(r, productId))
     .filter((d): d is HomegrownRecipeDecision => d !== null)
     .sort((a, b) => b.homegrownNet - a.homegrownNet);

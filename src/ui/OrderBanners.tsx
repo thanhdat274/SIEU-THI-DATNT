@@ -47,6 +47,7 @@ export function QuanDrinkTipCallout({ tip: restockTip, onFill }: { tip: NonNulla
         tối nay quán cần ~{restockTip.wanted} ly mà kho chỉ còn {restockTip.have}{restockTip.shortfall > 0
           ? <> — nhập thêm ít nhất <b>{restockTip.shortfall} ly</b> nước/ngọt/cà phê</>
           : ' (đã đủ, chỉ nhắc lại tín hiệu hôm qua)'}.
+        {restockTip.bottleneck && <> Nút thắt: <b>{restockTip.bottleneck}</b> — mua đúng thứ đó mới pha thêm ly.</>}
       </div>
       {restockTip.shortfall > 0 && (
         <button style={btn} onClick={onFill}>

@@ -5,6 +5,7 @@ import { furnitureDef } from '../../data/furniture';
 import { formatMoney, productById } from '../../data/products';
 import { describeRep, meetsRep, REP_FACTORS, REP_INFO, REP_MIN_SAMPLES, reputationOf, type RepSample } from '../../data/reputation';
 import { repPayoff, repPayoffFocus } from '../../data/repPayoff';
+import { nearExpiryAstray } from '../../data/nearExpiryAstray';
 import { regularRep, REGULARS } from '../../data/regulars';
 import { ACTION_LABEL, type Advice, type HourStat } from '../../data/advice';
 import { SUPPLY_CONTRACTS } from '../../data/contracts';
@@ -61,6 +62,11 @@ export function ReputationCard({ log }: { log: RepSample[] }) {
   const focus = repPayoffFocus(rep, level);
   // Chưa đủ lượt khách: reputationOf trả placeholder 3.0 — không được hiện như điểm thật (GĐ37)
   const insufficient = rep.samples < REP_MIN_SAMPLES;
+  // GĐ1303: soi phạt kép — bán hàng cận hạn âm thầm kéo sao 'Chất lượng món' xuống
+  const astray = nearExpiryAstray(log);
+  const aStar = astray.qualityStar;
+  const fStar = astray.freshStar;
+  const showAstray = !insufficient && aStar !== null && fStar !== null && astray.dragged > 0 && fStar - aStar >= 0.05;
   const gated = [
     ...SUPPLY_CONTRACTS.filter((c) => c.rep && c.unlock <= level + 5).map((c) => ({ name: `${c.icon} Hợp đồng ${c.title}`, need: c.rep! })),
     ...REGULARS.filter((r) => !regulars[r.id]?.visits && r.unlock <= level + 5 && regularRep(r)).map((r) => ({ name: `💛 Khách quen ${r.name}`, need: regularRep(r)! })),
@@ -81,6 +87,11 @@ export function ReputationCard({ log }: { log: RepSample[] }) {
           <span style={{ width: 30, textAlign: 'right' }}>{insufficient ? '—' : rep.factors[k].toFixed(1)}</span>
         </div>
       ))}
+      {showAstray && (
+        <div style={{ fontSize: 12, marginTop: 6, color: '#e67e22' }}>
+          🍲 {astray.dragged} lượt mua cận hạn: chấm 0.4/0.8★ — 'Chất lượng món' {aStar!.toFixed(1)}★, nếu tươi ~{fStar!.toFixed(1)}★.
+        </div>
+      )}
       {rep.weakest && rep.factors[rep.weakest] < 4 && (
         <div style={{ fontSize: 12, marginTop: 6 }}>💡 Yếu nhất: <b>{REP_INFO[rep.weakest].name}</b>. {REP_INFO[rep.weakest].low}{!payoff.insufficient && focus.gainKhach > 0 && (
           <span style={{ color: '#e67e22' }}> Nâng mặt này lên 4★ được thêm <b>~{focus.gainKhach} khách/ngày</b>.</span>
@@ -136,11 +147,21 @@ export function ItemTable({ lines }: { lines: (ItemLine & { id: string; gross: n
   );
 }
 
-/** Cột doanh thu và đường "tiền vào − tiền ra" của các ngày gần đây. */
+/** Đọc nhanh số tiền cho nhãn trên cột: 850k · 1,2tr (chỉ dùng khi cột thưa, còn chỗ). */
+const compactMoney = (v: number) =>
+  v >= 1_000_000 ? `${(Math.round(v / 100_000) / 10).toLocaleString('vi-VN')}tr` : v >= 1_000 ? `${Math.round(v / 1_000)}k` : `${v}`;
+
+/** Cột doanh thu và cột "tiền vào − tiền ra" của các ngày gần đây.
+ *  GĐ1254 thiết kế lại theo QA người dùng (trước đây 2 vạch 7px lẻ loi giữa cột rộng xơi trống,
+ *  không có baseline nên cột ngắn trông "lơ lửng", ngày doanh thu ~0 biến mất khỏi biểu đồ):
+ *  cột chiếm ~72% bề rộng cột (co giãn theo số ngày, trần 56px), đường baseline liền mạch dưới cột,
+ *  ngày lặng vẫn hiện vạch xám ngắn ở baseline, ngày thưa (≤8) có nhãn số đọc nhanh trên cột. */
 export function HistoryChart({ history }: { history: DayRecord[] }) {
   if (history.length < 2) return null;
   const max = Math.max(1, ...history.map((h) => Math.max(h.revenue, Math.abs(h.profit))));
   const H = 70;
+  // Cột thưa thì có chỗ in nhãn số; đông ngày (14–30 cột) chỉ đọc tooltip.
+  const labeled = history.length <= 8;
   return (
     <div style={{ marginTop: 12, maxWidth: 560 }}>
       <div style={{ fontSize: 12, marginBottom: 6, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '4px 12px' }}>
@@ -152,17 +173,35 @@ export function HistoryChart({ history }: { history: DayRecord[] }) {
           </span>
         ))}
       </div>
-      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, height: H + 18 }}>
-        {history.map((h) => (
-          <div key={h.day} title={`Ngày ${h.day}: doanh thu ${formatMoney(h.revenue)}, tiền vào − ra ${formatMoney(h.profit)}, ${h.customers} khách`}
-            style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 1, height: H }}>
-              <div style={{ width: 7, height: (h.revenue / max) * H, background: '#f1c40f', borderRadius: 2 }} />
-              <div style={{ width: 7, height: (Math.abs(h.profit) / max) * H, background: h.profit >= 0 ? '#2ecc71' : '#e74c3c', borderRadius: 2 }} />
+      <div style={{ display: 'flex', flexDirection: 'column' }}>
+        {/* Hàng cột: baseline liền mạch là đường viền dưới của cả khung cột */}
+        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: 4, height: H + (labeled ? 14 : 0), borderBottom: '2px solid rgba(255,255,255,0.18)' }}>
+          {history.map((h) => (
+            <div key={h.day} title={`Ngày ${h.day}: doanh thu ${formatMoney(h.revenue)}, tiền vào − ra ${formatMoney(h.profit)}, ${h.customers} khách`}
+              style={{ flex: '1 1 40px', minWidth: 0, maxWidth: 72, height: '100%', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+              <div style={{ width: '72%', maxWidth: 56, height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', gap: 2 }}>
+                {h.revenue <= 0 && h.profit === 0 ? (
+                  // Ngày nghỉ/không bán: vạch xám ngắn ở baseline để biểu đồ không bị "lỗ hổng"
+                  <div style={{ width: '60%', height: 3, background: 'rgba(255,255,255,0.3)', borderRadius: 2, marginBottom: labeled ? 14 : 0 }} />
+                ) : (
+                  <>
+                    {labeled && <span style={{ fontSize: 11, opacity: 0.85, whiteSpace: 'nowrap', lineHeight: 1.2 }}>{compactMoney(h.revenue)}</span>}
+                    <div style={{ width: '100%', display: 'flex', alignItems: 'flex-end', gap: 2 }}>
+                      <div style={{ flex: 1, minWidth: 6, height: Math.max(3, (h.revenue / max) * H), background: '#f1c40f', borderRadius: 2 }} />
+                      <div style={{ flex: 1, minWidth: 6, height: Math.max(3, (Math.abs(h.profit) / max) * H), background: h.profit >= 0 ? '#2ecc71' : '#e74c3c', borderRadius: 2 }} />
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
-            <span style={{ fontSize: 11, opacity: 0.6 }}>{h.day}</span>
-          </div>
-        ))}
+          ))}
+        </div>
+        {/* Hàng nhãn ngày — cùng hệ chia cột với hàng cột để nhãn đứng đúng dưới cột của nó */}
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 4 }}>
+          {history.map((h) => (
+            <span key={h.day} style={{ flex: '1 1 40px', minWidth: 0, maxWidth: 72, textAlign: 'center', fontSize: 11, opacity: 0.6, lineHeight: 1.4 }}>{h.day}</span>
+          ))}
+        </div>
       </div>
     </div>
   );

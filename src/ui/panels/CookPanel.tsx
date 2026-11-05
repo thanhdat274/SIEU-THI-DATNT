@@ -4,13 +4,17 @@ import { RECIPES, STATIONS, type CookingStation } from '../../data/recipes';
 import { formatMoney, productById } from '../../data/products';
 import { kitchenValue } from '../../data/kitchenValue';
 import { cookAdvice } from '../../data/cookSchedule';
+import { expiringSoon, expiryInputsNote, newUnlockMark } from '../../data/advice';
+import { supplyOutletOf } from '../../data/supplyOutlet';
 import { cookSpeed, bartenderBoost } from '../../core/slices/orders';
 import { FESTIVALS, festivalOn } from '../../data/calendar';
 import { Footer, styles, Tabs } from './shared';
 
 /** Sổ nấu: công thức theo trạm, nguyên liệu lấy từ kho (lô cận hạn trước), mẻ xong về kho chờ bày kệ. */
 export function CookPanel() {
-  const { level, storage, furniture, cookJobs, startCook, closePanel, openPanel, setBuildMode } = useGame();
+  const { level, storage, storageLots, furniture, cookJobs, startCook, closePanel, openPanel, setBuildMode } = useGame();
+  // GĐ1118 — bản đồ hạn còn lại của hàng sắp hỏng (kho + kệ) để nhắc nấu ngay trên dòng công thức
+  const expiringMap = new Map(expiringSoon(storage, storageLots, furniture.flatMap((f) => f.tiers)).map((l) => [l.id, l.life]));
   const day = useGame((s) => s.day);
   // GĐ161: giờ hiện tại (vẽ lại 1 lần mỗi phút game như Hud) + tốc độ trạm thật
   // (đầu bếp/pha chế trực ca — cùng nguồn cookSpeed/bartenderBoost với tick đồng hồ)
@@ -78,6 +82,7 @@ export function CookPanel() {
             <div style={{ display: 'grid', gap: 6, maxWidth: 560 }}>
               {recipes.map((r) => {
                 const out = productById(r.outputId);
+                const so = supplyOutletOf(r);
                 // GĐ145: lãi mẻ (khớp dòng cũ) + băng thông ⏱/phút + chi phí cơ hội của nguyên liệu
                 const kv = kitchenValue(r);
                 const gross = kv.netMargin;
@@ -96,7 +101,7 @@ export function CookPanel() {
                 return (
                   <div key={r.id} style={{ ...styles.card, opacity: locked || outOfSeason ? 0.5 : 1 }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <b>{r.name}</b>
+                      <b>{r.name}</b>{newUnlockMark(r.unlock, level)}
                       {fest && <span style={{ fontSize: 11, color: outOfSeason ? '#e67e22' : '#2ecc71', marginLeft: 6 }}>{fest.icon} {outOfSeason ? `chỉ trong dịp ${fest.name}` : 'đúng dịp — gói đi!'}</span>}
                       <div style={{ fontSize: 12, opacity: 0.8 }}>
                         {r.inputs.map((i) => {
@@ -105,6 +110,12 @@ export function CookPanel() {
                         }).join(' + ')}
                         {' '}→ <b>{r.outputQty} × {out.name}</b> · {r.durationMin} phút
                       </div>
+                      {/* GĐ1327: món chuỗi sản xuất — nguyên liệu chính là hàng ngoài tạp hóa, nhập riêng ở đâu */}
+                      {so && (
+                        <div style={{ fontSize: 12, opacity: 0.85, marginTop: 2 }}>
+                          🧺 {so.name} là hàng {so.source} — nhập riêng, không có mối thường
+                        </div>
+                      )}
                       <div style={{ fontSize: 12 }}>
                         Lãi gộp ~<b style={{ color: gross > 0 ? '#2ecc71' : '#e74c3c' }}>{formatMoney(gross)}</b>/mẻ
                         {own && (
@@ -112,6 +123,9 @@ export function CookPanel() {
                         )}
                         {missing.length > 0 && !locked && (
                           <span style={{ color: '#ff7675' }}> · thiếu: {missing.map((i) => productById(i.productId).name).join(', ')}</span>
+                        )}
+                        {missing.length === 0 && !locked && expiryInputsNote(r.inputs, expiringMap) && (
+                          <span style={{ color: '#e67e22' }}>{expiryInputsNote(r.inputs, expiringMap)}</span>
                         )}
                       </div>
                       {own && kv.verdict === 'sell_raw' && (

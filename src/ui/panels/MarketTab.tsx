@@ -1,24 +1,37 @@
 import { useGame } from '../../core/store';
 import { buyAd, buyRivalShop, setLoyalty, startCounter } from '../../core/biz';
 import { Callout } from './shared';
-import { activeAds, ADS, adRoi, COUNTERS, LOYALTY_OPTIONS, LOYALTY_UNLOCK, loyaltyPayoff, RIVAL_PERSONALITIES, RIVAL_UNLOCK, rivalLeverFlags, rivalMomentum, rivalTier } from '../../data/biz';
+import { activeAds, ADS, adRoi, COUNTERS, LOYALTY_OPTIONS, LOYALTY_UNLOCK, loyaltyPayoff, RIVAL_PERSONALITIES, RIVAL_UNLOCK, rivalLeverFlags, rivalMomentum, rivalTier, staffAtRiskOfPoach, STAFF_POACH_STRENGTH } from '../../data/biz';
 import { promoEffect } from '../../data/analytics';
 import { summarizeReviews } from '../../data/reviews';
 import { REGULAR_NAMES } from '../../core/biz';
 import { formatMoney, productById } from '../../data/products';
 import { counterPayoff, recentAvgRevenue } from '../../data/minorPayoff';
+import { priceCounterViability } from '../../data/priceCounter';
 import { rivalDrag } from '../../data/rivalDrag';
+import { rivalBuyPayoff } from '../../data/rivalBuyPayoff';
+import { counterStreakInfo } from '../../data/counterStreak';
 import { summarizeDemographics, adReach, adTargetSuggest } from '../../data/demographics';
 import { card, title, pill, iconTile, btn, sub, row } from './businessStyles';
 
 /** Tab Cạnh tranh: đối thủ, quảng cáo, tích điểm (tách từ BusinessPanel, GĐ876). */
 export function Market() {
-  const { biz, day, level, money, branch, stats, prices, reviews, analytics, history } = useGame();
+  const { biz, day, level, money, branch, stats, sales, prices, reviews, analytics, history, staff } = useGame();
   const r = biz.rival;
+  // GĐ1186: nhân viên giỏi nhất đang bị rival máu liều để mắt (giống cảnh báo trong StaffPanel — hiện cả ở màn chống rival).
+  const staffRiskId = staffAtRiskOfPoach(r, staff);
+  const staffRisk = staffRiskId === undefined ? undefined : staff.find((s) => s.id === staffRiskId);
   // GĐ159: mốc quy đòn phản công ra tiền — bình quân doanh thu TIỆM CHÍNH 7 ngày (DayRecord.revenue),
   // đúng luồng khách mà rivalTrafficFactor tác động; chưa có ngày nào thì đòn chỉ hiện %, không hiện tiền.
   const avgRev7 = recentAvgRevenue(history);
   const rivalOnSale = r?.saleUntil !== undefined && r.saleUntil >= day;
+  // GĐ1308: phần khách cũ của rival ghé đông sau khi mua lại mặt bằng 12tr (đã có chi nhánh) — bao nhiêu tiền.
+  const buyPay = rivalBuyPayoff(biz.rivalForSale, branch);
+  // GĐ1320: đòn phản công đang chạy hôm nay mạnh thêm nhờ chạy nhiều ngày liền (hit thật = def.hit + bonus).
+  const strek = counterStreakInfo(biz.counter, day, biz.counterLastDay, biz.counterStreak);
+  // GĐ1270: nhu cầu món/ngày thường (Σ trung bình trượt từng món, cùng nguồn gợi ý giá) — để soi
+  // điều kiện "30 món" của đòn Đối đầu giá có chạm nổi không (helper THUẦN priceCounterViability).
+  const avgItemsPerDay = Object.values(sales).reduce((n, x) => n + x, 0);
   // Thế hệ rival hiện tại: số rival đã hạ + 1 (rival cốt truyện là thế hệ đầu)
   const tier = rivalTier(biz.rivalsBeaten + 1);
   const running = activeAds(biz.ads, day);
@@ -102,6 +115,11 @@ export function Market() {
                   {' '}Khách quen bị lôi kéo: {Object.keys(r.poached ?? {}).length ? Object.keys(r.poached!).map((id) => `${REGULAR_NAMES[id] ?? id} (từ ngày ${r.poached![id]})`).join(', ') + ' — đòi lại ở bảng Khách quen' : 'chưa có'}.
                 </div>
               )}
+              {staffRisk && (
+                <div style={{ ...sub, marginTop: 4, color: '#e74c3c' }} title={`${r.name} máu liều, sức ${r.strength} — móc người giỏi nhất về đêm. Hạ sức mạnh rival dưới ${STAFF_POACH_STRENGTH} để giữ.`}>
+                  ⚠️ Nhân viên giỏi nhất <b>{staffRisk.name}</b> đang bị {r.name} để mắt — mở bảng <b>Nhân viên</b> để giữ, hạ sức mạnh rival dưới {STAFF_POACH_STRENGTH}.
+                </div>
+              )}
               {!!Object.keys(r.prices ?? {}).length && (
                 <div style={{ ...sub, marginTop: 4 }}>
                   <b>Giá rival đang bán:</b>{' '}
@@ -151,6 +169,17 @@ export function Market() {
                           </div>
                         );
                       })()}
+                      {/* GĐ1270 — đòn Đối đầu giá có điều kiện "bán đủ 30 món hôm nay" mới kích hoạt;
+                          chủ cần thấy con số tiến độ + nhịp ngày thường trước khi cam kết cả ngày lãi mỏng. */}
+                      {c.id === 'price' && !runningNow && (stats?.itemsSold ?? 0) + avgItemsPerDay > 0 && (
+                        <div style={{ ...sub, marginTop: 2, color: '#2ecc71' }}>
+                          {priceCounterViability(stats?.itemsSold ?? 0, avgItemsPerDay).line}
+                        </div>
+                      )}
+                      {/* GĐ1320: đang chạy hôm nay + có chuỗi liền ngày → hiện hit THẬT (thường bị ẩn, chỉ notify cuối ngày). */}
+                      {runningNow && strek.line && (
+                        <div style={{ ...sub, marginTop: 2, color: '#2ecc71' }}>{strek.line}</div>
+                      )}
                     </button>
                   );
                 })}
@@ -169,6 +198,7 @@ export function Market() {
               : ' — mua về là có ngay chi nhánh thứ hai, không mất tiền mở cửa hàng tiện lợi (5 triệu).'}
             {' '}Hết ngày {biz.rivalForSale.until} không mua thì người khác thuê mất.
           </div>
+          {buyPay.line && <div style={{ fontSize: 12, color: '#2ecc71', marginTop: 2 }}>{buyPay.line}</div>}
           <button style={{ ...btn, background: money >= biz.rivalForSale.price ? '#f1c40f' : '#555' }} onClick={buyRivalShop}>
             🏢 Mua lại mặt bằng ({formatMoney(biz.rivalForSale.price)})
           </button>

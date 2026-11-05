@@ -3,6 +3,7 @@ import { playerPos } from '../../core/playerPos';
 import { useGame } from '../../core/store';
 import { formatMoney, fmtMul } from '../../data/products';
 import { SAP_HOME_XOI_MUL, SAP_LOTS, SAP_TIERS, bestSapKind, sapKindOf, sapLotIncome, sapTierOf } from '../../data/sapRong';
+import { sapPayoff } from '../../data/sapPayoff';
 import { isXoiCungDay } from '../../data/tiemXoi';
 import { WEATHER } from '../../data/weather';
 import { MAP_LANDMARKS, ZONES, zoneMapView } from '../../data/zones';
@@ -21,6 +22,7 @@ export function ZoneMapSection() {
   const tip = tmr ? bestSapKind(tmr, day + 1) : undefined;
   const cells = zoneMapView(biz.zones, level, money);
   const sap = biz.sapRong ?? 0;
+  const po = sapPayoff({ lots: sap, weather, day, kinds: biz.sapKinds, tiers: biz.sapTiers, homeXoi: biz.tiemXoi.open });
   return (
     <div style={{ ...styles.card, display: 'block', marginTop: 10 }}>
       <b>🗺️ Bản đồ khu phố</b>
@@ -50,7 +52,10 @@ export function ZoneMapSection() {
         </div>
       ))}
       {cells.some((c) => c.zone.id === 'ngo2' && c.state === 'open') && (
-        <div style={{ fontSize: 12, opacity: 0.8 }}>🛒 Sạp hàng rong Ngõ 2: {sap}/{SAP_LOTS} lô (thuê ở lô trống, bấm L)</div>
+        <>
+          <div style={{ fontSize: 12, opacity: 0.8 }}>🛒 Sạp hàng rong Ngõ 2: {sap}/{SAP_LOTS} lô (thuê ở lô trống, bấm L)</div>
+          {po.line && <div style={{ fontSize: 12, opacity: 0.8, color: '#e67e22' }}>{po.line}</div>}
+        </>
       )}
       {sap > 0 && (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>

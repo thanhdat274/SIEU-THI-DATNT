@@ -20,7 +20,7 @@ import { happyPayoff } from '../../data/rhythm';
 import { QUAN_NUOC_UNLOCK, QUAN_NUOC_WAGE, QUAN_PRICE_OPTIONS, isQuanMatchDay } from '../../data/quanNuoc';
 import { quanNuocDayAction, quanNuocHealth } from '../../data/quanNuocInsights';
 import { DEBT_LATE_DAYS, DEBT_WRITE_OFF_DAYS } from '../../data/credit';
-import { expiringSoon, expiryAdvice, peakAdvice, peakHours, spoilNightReport, storeMissRevenue, waitLossStats, walkoutAdvice, type Advice } from '../../data/advice';
+import { expiringSoon, expiryAdvice, peakAdvice, peakHours, spoilNightReport, storeMissRevenue, waitLossStats, walkoutAdvice, waitMoneyCost, type Advice } from '../../data/advice';
 import { dateOfDoy, dayEffects, dayOfYear, festivalStock, isWeekend, upcomingFestival, weekdayOf } from '../../data/calendar';
 import { festivalValue } from '../../data/festivalValue';
 import { festivalPrepAction, festivalRestockPlan } from '../../data/festivalRestock';
@@ -48,6 +48,10 @@ import { seasonEvent, seasonObjective, seasonEventName, SEASON_EVENT_DAYS, SEASO
 import { planDay, type DayAction } from '../../data/dayPlan';
 import { demandForecast } from '../../data/counterDemand';
 import { hasSkill } from '../../data/titles';
+import { hasUpgrade } from '../../data/upgrades';
+import { petActive } from '../../data/bizAchievements';
+import { theftToday } from '../../data/theftRisk';
+import { impulseRecap } from '../../data/layout';
 import { cleanBonus, CLEAN_TIERS, nextCleanTier } from '../../data/cleanOps';
 import { monthOf } from '../../data/calendar';
 import { trending } from '../../data/suppliers';
@@ -55,14 +59,16 @@ import { describeDay, WEATHER } from '../../data/weather';
 import { trafficForecast } from '../../data/trafficForecast';
 import { tomorrowTeaser } from '../../data/tomorrowTeaser';
 import { missingForContract, reservedMissing, commitBonusValue, supplyContractById, contractStreakProgress, CONTRACT_STREAK_BONUS } from '../../data/contracts';
-import { leakTone, riskLiveToday } from '../../data/risk';
+import { leakTone, riskLiveToday, riskLevers } from '../../data/risk';
 import { nightPnl, nightPayback, nightPaybackLabel } from '../../data/nightReport';
 import { PHONE_SLOTS } from '../../data/phoneOrders';
 import { paymentById, type PaymentMethod } from '../../data/payments';
 import { solvency } from '../../data/solvency';
 import { loanBurden } from '../../data/loanBurden';
+import { incomeSplit, incomeLevers, salesTrend } from '../../data/incomeSplit';
 import { dailyBurn } from '../../data/dailyBurn';
 import { recentAvgRevenue } from '../../data/minorPayoff';
+import { selfCheckoutPayoff } from '../../data/selfCheckoutPayoff';
 import { AdviceCard, HourChart, ItemTable, HistoryChart } from './HistoryPanel';
 import { SummaryMoneyCards } from './SummaryCards';
 import { Callout, Stat, Footer, Swatch, styles, Tabs } from './shared';
@@ -73,7 +79,7 @@ export const EMPTY_DAY_STATS: DayStats = { revenue: 0, spent: 0, wages: 0, items
 
 export function SummaryPanel({ day }: { day: number }) {
   const panel = useGame((s) => s.panel);
-  const { level, xp, history, openPanel, setShift, notify, storage, storageLots, furniture, priceOf, riskTrend, staff, skills, soldEver, comboHitCount, biz, weatherSeed, weather, regulars, totals, repLog, giftStreak, giftLastDay, giftGraceDay, happyHour, analytics, demand: stateDemand, marketLast, debts } = useGame();
+  const { level, xp, history, openPanel, setShift, notify, storage, storageLots, furniture, priceOf, riskTrend, staff, skills, soldEver, comboHitCount, biz, weatherSeed, weather, regulars, totals, repLog, giftStreak, giftLastDay, giftGraceDay, happyHour, analytics, demand: stateDemand, marketLast, debts, questLog } = useGame();
   const [tab, setTab] = useState<'overview' | 'items'>('overview');
   if (panel?.type !== 'summary') return null;
   // GĐ126: `day` prop = ngày VỪA KẾT THÚC (N), nhưng endDay đã sang ngày mới trong cùng set().
@@ -262,9 +268,9 @@ export function SummaryPanel({ day }: { day: number }) {
               <tr><td style={styles.left}>Doanh thu</td><td>{formatMoney(st.revenue)}</td></tr>
               {!!st.comboDiscount && <tr><td style={styles.left}>  trong đó đã giảm cho {st.combos} combo</td><td style={{ opacity: 0.75 }}>-{formatMoney(st.comboDiscount)}</td></tr>}
               <tr><td style={styles.left}>Lãi gộp trên hàng bán (giá bán − giá nhập)</td><td style={{ color: '#2ecc71' }}>{formatMoney(goodsRevenue - goodsCost - (st.comboDiscount ?? 0))}</td></tr>
-              <tr><td style={styles.left}>Chi tiêu (nhập hàng, nội thất)</td><td>-{formatMoney(st.spent)}</td></tr>
-              <tr><td style={styles.left}>Lương nhân viên</td><td>-{formatMoney(st.wages)}</td></tr>
-              <tr><td style={styles.left}>Tiền nhà (theo bậc tiệm)</td><td>-{formatMoney(st.rent ?? 0)}</td></tr>
+              <tr><td style={styles.left}>Chi tiêu (nhập hàng, nội thất)</td><td>{st.spent > 0 ? `-${formatMoney(st.spent)}` : '0đ'}</td></tr>
+              <tr><td style={styles.left}>Lương nhân viên</td><td>{st.wages > 0 ? `-${formatMoney(st.wages)}` : '0đ'}</td></tr>
+              <tr><td style={styles.left}>Tiền nhà (theo bậc tiệm)</td><td>{(st.rent ?? 0) > 0 ? `-${formatMoney(st.rent ?? 0)}` : '0đ'}</td></tr>
               <tr>
                 <td style={styles.left}><b>Tiền vào − tiền ra</b></td>
                 <td style={{ color: profit >= 0 ? '#2ecc71' : '#e74c3c' }}><b>{formatMoney(profit)}</b></td>
@@ -288,16 +294,103 @@ export function SummaryPanel({ day }: { day: number }) {
               <tr><td style={styles.left}>Kinh nghiệm</td><td>+{st.xp} XP · Cấp {level} ({xp}/{xpToNext(level)})</td></tr>
             </tbody>
           </table>
+          {/* GĐ1178: "lãi bán hàng thật" so "thưởng nhiệm vụ + kèo" (Luật 10) — nguồn thu tách hai nửa.
+              `profit` ("Tiền vào − tiền ra") trừ cả tiền nhập kho nên ngày nào cũng âm, không phản ánh sức bán;
+              `salesProfit` (lãi gộp − lương − thuê) là con số game lưu/thuật toán dùng để cân bằng nhưng chưa
+              bao giờ thấy. THUẦN đọc: incomeSplit from state có sẵn + stats.questIncome (ghi lúc claim). */}
+          {(() => {
+            const split = incomeSplit(st, questLog, day);
+            const sharePct = split.rewardShare !== null ? Math.round(split.rewardShare * 100) : null;
+            const tone = split.health === 'loss' ? 'danger' : split.health === 'heavy' || split.health === 'tight' ? 'accent' : 'ok';
+            const note = split.health === 'loss'
+              ? <span>Lãi bán thật <b>âm</b> — thưởng {formatMoney(split.reward)} đang gánh lỗ vận hành. Coi lại giá bán, đừng trông chờ thưởng bù.</span>
+              : split.health === 'heavy'
+                ? <span>Hôm nay thưởng chiếm <b>{sharePct}%</b> lãi bán thật — bán hàng phải là nghề chính (Luật 10): nới lãi bán lên thay vì trông chờ thưởng.</span>
+                : split.health === 'tight'
+                  ? <span>Thưởng chiếm <b>{sharePct}%</b> lãi bán thật — đã <b>gần bằng lãi bán</b>, coi chừng lấn nghề chính (Luật 10): nới lãi bán lên đừng trông chờ thưởng.</span>
+                  : sharePct !== null
+                    ? <span>Thưởng chiếm {sharePct}% lãi bán thật — bán hàng vẫn là nghề chính.</span>
+                    : <span>Bán hàng vẫn là nghề chính — hôm nay lãi bán thật bằng 0, thưởng là nguồn phụ.</span>;
+            // GĐ1203: nối chẩn đoán → hành động — khi health là loss/heavy/tight (lãi bán thật âm hoặc thưởng
+            // lấn nghề), kê 1-2 nguyên nhân khách không mua được (đã tính ở `advice` ngay dưới: kệ trống khi
+            // kho còn / hết cả kho / chê đắt / chờ lâu) cạnh lời khuyên "nới lãi bán lên", bấm mở thẳng panel
+            // sửa. Hết hộp đen giữa chẩn đoán và phương thuốc; `ok` không kê (tránh nhiễu).
+            const levers = incomeLevers(split.health, advice);
+            // GĐ1207: đóng vòng phản hồi — sau khi bấm nút "Soi giá / nới lãi / hạ lương", người chơi cần
+            // thấy sức bán thật có cải thiện qua 7 ngày không, chứ chỉ 1 con số hôm nay không đủ biết hướng.
+            const trend = salesTrend(history);
+            const trendLine = trend.days > 0 ? (
+              <span style={{ fontSize: 11, opacity: 0.85, marginLeft: 6 }}>
+                {trend.dir === 'up' ? '🔼 lãi bán thật đang cải thiện (7 ngày)'
+                  : trend.dir === 'down' ? '▼ lãi bán thật đang xấu đi (7 ngày)'
+                    : trend.days < 2 ? '▬ mới có 1 ngày, chưa thể đo xu hướng'
+                      : '▬ lãi bán thật 7 ngày ổn định'}
+              </span>
+            ) : null;
+            return (
+              <Callout tone={tone} style={{ marginTop: 8 }}
+                title={<>🎯 Lãi bán hàng thật {split.salesProfit < 0 ? formatMoney(split.salesProfit) : <b style={{ color: '#2ecc71' }}>+{formatMoney(split.salesProfit)}</b>} · thưởng <b style={{ color: '#2ecc71' }}>+{formatMoney(split.quest)}</b>{split.bet > 0 ? <span> + kèo <b style={{ color: '#2ecc71' }}>+{formatMoney(split.bet)}</b></span> : null}{trendLine}</>}>
+                <div style={{ fontSize: 12, opacity: 0.8, marginTop: 2 }}>
+                  Lãi bán thật = lãi gộp bán hàng/ngày + dịch vụ − lương − tiền nhà (không trừ tiền nhập kho).<br />
+                  {note}
+                </div>
+                {levers.length > 0 && (
+                  <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    {levers.map((lv, i) => (
+                      <button key={i} onClick={() => lv.action && openPanel({ type: lv.action as any })} style={{ ...styles.btn, fontSize: 11, padding: '2px 8px', textAlign: 'left' }}>
+                        {lv.icon} {lv.text} →
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </Callout>
+            );
+          })()}
           {(() => {
             const last = riskTrend.length ? riskLiveToday(riskTrend[riskTrend.length - 1]) : { leak: 0, blocked: 0, events: 0 };
             if (last.events <= 0) return null; // ngày yên ả (không rủi ro) thì không bày thẻ, tránh nhiễu
             const tone = leakTone(last.leak, st.revenue);
+            // GĐ1206: nối chẩn đoán → hành động — lọt trội (warn/bad) thì kê phòng thủ ĐANG THIẾU
+            // (bảo vệ → staff, Mắt tinh → skills); bấm mở thẳng panel sửa. Hết hộp đen "mất tiền mà không
+            // biết chặn cách nào"; `ok` không kê. THUẦN đọc — chỉ đọc cờ phòng thủ có sẵn (staff/skills).
+            const riskLevs = riskLevers(tone, {
+              hasGuard: staff.some((e) => e.role === 'guard'),
+              hasSharpEye: hasSkill(skills, 'sharp_eye'),
+            });
             return (
               <Callout tone={tone === 'bad' ? 'danger' : tone === 'warn' ? 'accent' : 'ok'} style={{ marginTop: 8 }}
                 title={<>🛡️ Rủi ro hôm nay — chặn {formatMoney(last.blocked)} · lọt {formatMoney(last.leak)} · {last.events} lần</>}>
                 <div style={{ fontSize: 12, opacity: 0.75, marginTop: 2 }}>
                   Lọt: trộm khuất · tiền giả lọt · nhân viên gian lận · Chặn: bắt quả tang (phạt) · phát hiện tiền giả · thu lại khi bắt
                 </div>
+                {(() => {
+                  // GĐ1215: mở "hộp đen" trộm vặt — thấy P(1 khách là kẻ trộm) × P(bắt) theo phòng thủ
+                  // hiện tại (chỉ số THUẦN từ theftToday — nối GĐ1211/1212). Đọc cờ có sẵn; ban ngày,
+                  // đêm chạy ca thì trộm ×2 (quy ước chú thích "trộm đêm ×2" cùng nightReport).
+                  const tt = theftToday({
+                    hasDog: petActive(biz.pets.dog, nowDay - 1),
+                    hasCamera: hasUpgrade(biz, 'camera'),
+                    guardOnDuty: staff.some((e) => e.role === 'guard'),
+                    cashierStaffed: staff.some((e) => e.role === 'cashier'),
+                    hasSharpEye: hasSkill(skills, 'sharp_eye'),
+                  });
+                  return (
+                    <div style={{ fontSize: 11, opacity: 0.8, marginTop: 5 }}>
+                      🕵️ P(1 khách là kẻ trộm) ~{(tt.spawnChance * 100).toFixed(2)}% · P(bắt) ~{(tt.catchChance * 100).toFixed(0)}% → kỳ vọng{' '}
+                      <b>{Math.round(st.customers * tt.leakPerThief)}</b> kẻ trộm lọt/ngày{' '}
+                      <span style={{ opacity: 0.6 }}>(chạy ca đêm thì trộm ×2)</span>
+                    </div>
+                  );
+                })()}
+                {riskLevs.length > 0 && (
+                  <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    {riskLevs.map((lv, i) => (
+                      <button key={i} onClick={() => lv.action && openPanel({ type: lv.action as any })} style={{ ...styles.btn, fontSize: 11, padding: '2px 8px', textAlign: 'left' }}>
+                        {lv.icon} {lv.text} →
+                      </button>
+                    ))}
+                  </div>
+                )}
               </Callout>
             );
           })()}
@@ -389,12 +482,21 @@ export function SummaryPanel({ day }: { day: number }) {
             const pct = Math.round(waitLoss.pct * 100);
             const bad = waitLoss.pct >= 0.1; // mất ≥10% khách vì chờ là đáng sốt
             const color = bad ? '#e74c3c' : '#f1c40f';
+            // GĐ1221 — bề mặt "mất tiền vì chờ quầy": count × avgPerVisit → đồng tới gần, cùng mô-típ
+            // storeMissRevenue (GĐ131 hết hàng) / dirtLoss (bẩn) — là mảnh cuối của bộ "mất tiền vì sao".
+            const wmc = waitMoneyCost(waitLoss.count, avgPerVisit(st.revenue, st.customers));
             return (
               <Callout tone={bad ? 'danger' : 'accent'} style={{ marginTop: 8 }}
                 title={<>⏳ Mất {waitLoss.count} khách vì chờ quầy quá lâu <span style={{ color }}>(bằng ~{pct}% khách ghé hôm nay)</span></>}>
                 <div style={{ fontSize: 12, opacity: 0.75, marginTop: 2 }}>
-                  Khách đứng chờ 😕😤 quá lâu rồi bỏ về. Đứng quầy giờ đông (giờ cao điểm nhất {waitLoss.peakHour !== null ? `${waitLoss.peakHour}h–${waitLoss.peakHour + 1}h` : 'trong hôm nay'}) hoặc thuê thêm thu ngân để không bỏ lỡ.
+                  Khách đứng chờ 😕😤 quá lâu rồi bỏ về — không mua {wmc.estRevenueLost > 0 ? `~${formatMoney(wmc.estRevenueLost)}` : 'thêm đồng'} doanh thu hôm nay. Đứng quầy giờ đông (giờ cao điểm nhất {waitLoss.peakHour !== null ? `${waitLoss.peakHour}h–${waitLoss.peakHour + 1}h` : 'trong hôm nay'}) hoặc thuê thêm thu ngân để không bỏ lỡ.
                 </div>
+                {(() => {
+                  // GĐ1289 — quầy tự thanh toán: tay quay siêu thị còn thiếu sau GĐ120/1221 (vốn chỉ gợi
+                  // xếp ca/thu thêm người) — ước phần khách bỏ vì chờ là khách mua ÍT món, đáng để tự quét.
+                  const sco = selfCheckoutPayoff(waitLoss.count, avgPerVisit(st.revenue, st.customers));
+                  return sco.line ? <div style={{ fontSize: 12, opacity: 0.75, marginTop: 2 }}>{sco.line}</div> : null;
+                })()}
               </Callout>
             );
           })()}
@@ -486,6 +588,16 @@ export function SummaryPanel({ day }: { day: number }) {
               <Stat icon="😞" label={`Lỡ ${missTotal} lượt bán`}
                 value={[missed.stock && `${missed.stock} hết hàng`, missed.price && `${missed.price} chê đắt`, missed.wait && `${missed.wait} chờ lâu bỏ về`, missed.expired && `${missed.expired} ngại hàng cận hạn`].filter(Boolean).join(' · ')} />
             )}
+            {/* GĐ1219 — bề mặt "hàng chớp nhoáng" (kệ cạnh quầy): báo đếm + trung bình/ngày để khép
+                vòng phản hồi của quyết định bày kẹo/bánh/nước ≤15k sát quầy (nguyên tắc a — trước giờ
+                chỉ có đếm thành tựu ẩn, không báo cho người chơi). Thuần đọc totals.impulseSold / day. */}
+            {totals.impulseSold > 0 && (() => {
+              const r = impulseRecap(totals.impulseSold, day);
+              return (
+                <Stat icon="🍬" label={`Hàng chớp nhoáng · ${r.sold} món`}
+                  value={`TB ~${Math.round(r.perDay)} món/ngày bán kẹp lúc ra quầy — bày thêm kẹo, bánh, nước ≤15k sát quầy để tăng`} />
+              );
+            })()}
           </div>
           {hours.length > 0 && <HourChart hours={hours} peak={peak?.hour} quiet={quiet?.hour} />}
           {expiryTips.length > 0 && (

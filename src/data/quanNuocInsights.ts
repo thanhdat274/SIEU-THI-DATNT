@@ -2,7 +2,7 @@
 import { fmtMul, productById } from './products';
 import type { DayAction } from './dayPlan';
 import type { Weather } from './weather';
-import { brewMenu, cleanMenu, quanRecipeById, varietyMul, quanHotMul, QUAN_MENU_SLOTS } from './quanRecipes';
+import { brewMenu, cleanMenu, quanRecipeById, recipeBottleneck, recipeCapacity, varietyMul, quanHotMul, QUAN_MENU_SLOTS } from './quanRecipes';
 import { QUAN_MATCH_MUL, QUAN_NUOC_MAX_STAFF, QUAN_NUOC_PRICE, QUAN_NUOC_WAGE, QUAN_PRICE_OPTIONS, type QuanNuocPrice, type QuanNuocState, isQuanMatchDay, quanMatchMul, quanMenuSlots, quanNuocDrinkIds, quanTierMul, quanWeekendMul, weatherMul } from './quanNuoc';
 
 /* —————————————————————————————————————————————————————————————————————
@@ -44,6 +44,23 @@ export function quanNuocProjection(q: QuanNuocState, level: number, drinkUnits: 
   const revenue = Math.round(served * avgPrice * opt.mul);
   const wages = q.staff * QUAN_NUOC_WAGE;
   return { customers, wanted, served, revenue, wages, profit: revenue - wages };
+}
+
+export type QuanPricePayoff = Record<QuanNuocPrice, { profit: number; served: number }>;
+
+/**
+ * GĐ1268 — so sánh TRƯỚC khi chọn mức Giờ bán (bình dân / vừa phải / đắt hơn): quay lại
+ * `quanNuocProjection` cho CẢ BA mức với cùng nhân viên + kho + thời tiết + ngày, để chủ thấy
+ * đúng mức nào lời hơn TỐI NAY (không phải đổi rồi đợi hết ngày mới biết — hộp đen, Nguyên tắc a).
+ * THUẦN — dùng đúng công thức kinh tế đã cân bằng, không chế số mới, không đổi state/save (Luật 5).
+ */
+export function quanPricePayoff(q: QuanNuocState, level: number, drinkUnits: number, weather?: Weather, day?: number): QuanPricePayoff {
+  const out = {} as QuanPricePayoff;
+  (['re', 'vua', 'cao'] as QuanNuocPrice[]).forEach((price) => {
+    const p = quanNuocProjection({ ...q, price }, level, drinkUnits, weather, day);
+    out[price] = { profit: p.profit, served: p.served };
+  });
+  return out;
 }
 
 export interface QuanNuocHealth {
@@ -121,6 +138,32 @@ export function quanNuocDayAction(h: QuanNuocHealth | null | undefined, day?: nu
 }
 
 /**
+ * GĐ1102 — "Món trên menu ngừng bán vì hết nguyên liệu" thành việc sáng: QuanMenuSection có cảnh báo
+ * ⚠️ từng món (GĐ415), nhưng nó nằm sâu trong panel — món pha lời cao nhất ngừng bán cả ngày là rỉ
+ * tiền thật mà Sổ đầu ngày không nói. Trả việc sáng đầu tiên (món thứ tự thực đơn) khi quán MỞ và
+ * món đã mở thiếu ≥1 nguyên liệu (kho ≤0): danger + priority 1 như "Nạp đồ uống" (GĐ189).
+ * Thuần đọc menu/level/storage — KHÔNG đổi SAVE_VERSION/kinh tế/sim.
+ */
+export function quanBlockedDrinkAction(
+  menu: readonly string[] | undefined,
+  level: number,
+  storage: Record<string, number>,
+): DayAction | null {
+  for (const id of menu ?? []) {
+    const r = quanRecipeById(id);
+    if (!r || r.unlock > level) continue;
+    const missing = r.uses.filter((u) => (storage[u.id] ?? 0) <= 0).map((u) => productById(u.id).name);
+    if (!missing.length) continue;
+    return {
+      icon: '🧋', panel: 'quannuoc',
+      text: `${r.name} ngừng bán — thiếu ${missing.join(', ')} (nạp để pha)`,
+      danger: true, priority: 1,
+    };
+  }
+  return null;
+}
+
+/**
  * GĐ190 — "Nạp bao nhiêu để bán đủ tối nay?" — companion nạp kho của GĐ189: Sổ đầu ngày nhắc quán
  * thiếu đồ uống, nhưng vế quan trọng là NGƯỜI CHƠI cần biết NHẬP THÊM BAO NHIÊU ly và ấn ở đâu để
  * xử lý. Helper thuần này trả con số thiếu hụt tối nay (chênh giữa `tonight.wanted` — nhu cầu dự phóng
@@ -131,18 +174,30 @@ export function quanNuocDayAction(h: QuanNuocHealth | null | undefined, day?: nu
  * Cùng chân lý `quanNuocHealth` (tức `quanNuocDay`), KHÔNG đổi SAVE_VERSION/kinh tế/sim. UI dùng
  * con số này để ra thẻ nạp kho + nút nhảy sang Nhập hàng (order).
  */
-export interface QuanNuocRestockTip { shortfall: number; wanted: number; have: number; missedRevenue: number; verdict: 'danger' | 'warn' }
+export interface QuanNuocRestockTip { shortfall: number; wanted: number; have: number; missedRevenue: number; verdict: 'danger' | 'warn'; /** GĐ1112: nguyên liệu nút thắt của món nghẽn nhất trên menu (mua đúng thứ đó mới pha thêm ly). */ bottleneck?: string }
 
 export function quanNuocRestockTip(
   q: QuanNuocState, level: number, storage: Record<string, number>, last?: { served?: number; wanted?: number } | null, weather?: Weather, day?: number,
 ): QuanNuocRestockTip | null {
   const h = quanNuocHealth(q, level, storage, last, weather, day);
   const shortfall = Math.max(0, h.tonight.wanted - h.drinkUnitsNow);
+  // GĐ1112 — nút thắt: món menu có sức pha thấp nhất, nêu đúng nguyên liệu khan nhất
+  let bottleneck: string | undefined;
+  let worst: { cap: number; text: string } | undefined;
+  for (const id of cleanMenu(q.menu, level, quanMenuSlots(q))) {
+    const r = quanRecipeById(id);
+    if (!r) continue;
+    const cap = recipeCapacity(r, storage);
+    const bn = recipeBottleneck(r, storage);
+    const text = `${bn.name} — ${r.name} chỉ pha được ~${cap} ly`;
+    if (!worst || cap < worst.cap) worst = { cap, text };
+  }
+  bottleneck = worst?.text;
   if (h.missedRevenue > 0) {
-    return { shortfall, wanted: h.tonight.wanted, have: h.drinkUnitsNow, missedRevenue: h.missedRevenue, verdict: 'danger' };
+    return { shortfall, wanted: h.tonight.wanted, have: h.drinkUnitsNow, missedRevenue: h.missedRevenue, verdict: 'danger', bottleneck };
   }
   if (h.driesMain && shortfall > 0) {
-    return { shortfall, wanted: h.tonight.wanted, have: h.drinkUnitsNow, missedRevenue: 0, verdict: 'warn' };
+    return { shortfall, wanted: h.tonight.wanted, have: h.drinkUnitsNow, missedRevenue: 0, verdict: 'warn', bottleneck };
   }
   return null;
 }

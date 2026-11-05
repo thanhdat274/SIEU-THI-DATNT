@@ -1,5 +1,74 @@
 import { describe, expect, it } from 'vitest';
-import { suggestPrice } from '../data/pricing';
+import { lowPricePull, priceBuyOdds, priceSideMark, referenceSell, suggestPrice } from '../data/pricing';
+
+describe('lowPricePull — bề mặt "giá rẻ kéo khách" (GĐ1224)', () => {
+  // gao sell 100000; demandPriceFactor = 1 + 0.5×(1−ratio), cap 1.15
+  it('bằng giá thị trường → không kéo thêm (active false, pct 0)', () => {
+    expect(lowPricePull('gao', 100000)).toEqual({ active: false, pct: 0 });
+  });
+  it('thấp hơn 20% thị trường (80000) → +10% khách ghé', () => {
+    expect(lowPricePull('gao', 80000)).toEqual({ active: true, pct: 10 });
+  });
+  it('hạ sâu quá → kẹp trần lowPriceDemandCap +15% (không tăng mãi)', () => {
+    // ratio ~0.1 → 1 + 0.5×0.9 = 1.45 → cap 1.15 → +15%
+    expect(lowPricePull('gao', 10000)).toEqual({ active: true, pct: 15 });
+    expect(lowPricePull('gao', 10000).pct).toBeLessThanOrEqual(15);
+  });
+  it('helper thuần: cùng input ra cùng kết quả (không đổi theo state)', () => {
+    expect(lowPricePull('gao', 85000)).toEqual(lowPricePull('gao', 85000));
+  });
+});
+
+describe('priceSideMark — bề mặt hai phía giá trên ô giá (GĐ1225)', () => {
+  // gao sell 100000, referenceSell=100000; nhạy giá 1.1
+  it('rẻ hơn thị trường → báo phía "low" với % khách ghé (không nhắc đắt)', () => {
+    const mk = priceSideMark('gao', 80000);
+    expect(mk).not.toBeNull();
+    expect(mk!.side).toBe('low');
+    expect(mk!.line).toContain('+10% khách ghé');
+    expect(mk!.line).not.toContain('đơn được mua');
+  });
+  it('đắt hơn thị trường → báo phía "high" với % đơn còn chịu mua (không nhắc rẻ)', () => {
+    // 120000 → keep 0.78 → ~78% đơn được mua
+    const mk = priceSideMark('gao', 120000);
+    expect(mk!.side).toBe('high');
+    expect(mk!.line).toContain('~78% đơn được mua');
+    expect(mk!.line).not.toContain('khách ghé');
+  });
+  it('bằng giá thị trường → null (không ồn; giá hợp lý đừng nhắc)', () => {
+    expect(priceSideMark('gao', 100000)).toBeNull();
+  });
+  it('helper thuần: cùng input ra cùng kết quả', () => {
+    expect(priceSideMark('gao', 110000)).toEqual(priceSideMark('gao', 110000));
+  });
+});
+
+describe('priceBuyOdds — bề mặt "giá cao ăn vào đơn" (GĐ1222)', () => {
+  // gao: sell 100000, độ nhạy 1.1
+  it('bằng/thấp hơn giá thị trường → keep 1 (ai cũng mua), reference = giá thị trường', () => {
+    expect(priceBuyOdds('gao', 100000)).toEqual({ keep: 1, reference: 100000 });
+  });
+  it('đắt hơn thị trường → keep giảm theo độ nhạy (không xuống dưới trần 0.1)', () => {
+    // 120000: ratio 1.2, gao nhạy 1.1 → keep = 1 − 1.1×0.2 = 0.78
+    const o = priceBuyOdds('gao', 120000);
+    expect(o.reference).toBe(100000);
+    expect(o.keep).toBeCloseTo(0.78, 5);
+  });
+  it('càng đắt càng khó giữ khách, nhưng không âm (kẹp trần minKeepChance)', () => {
+    // 200000: ratio 2, 1 − 1.1×1 = −0.1 → kẹp về 0.1
+    const o = priceBuyOdds('gao', 200000);
+    expect(o.keep).toBeCloseTo(0.1, 5);
+    expect(o.keep).toBeGreaterThanOrEqual(0);
+  });
+  it('món nhạy giá cao (nước suối) mất khách nhanh hơn gạo khi cùng tăng %', () => {
+    // cùng ratio 1.2: gạo nhạy 1.1 → keep 0.78; nước nhạy 2.6 → keep 0.48
+    const ratio = 1.2;
+    const g = priceBuyOdds('gao', referenceSell('gao') * ratio);
+    const n = priceBuyOdds('nuoc', referenceSell('nuoc') * ratio);
+    expect(n.keep).toBeLessThan(g.keep);
+    expect(g.keep).toBeCloseTo(0.78, 5);
+  });
+});
 
 describe('suggestPrice — gợi ý giá mỗi ngày (lõi bán hàng)', () => {
   // gao: sell 100000, buy 80000 → ref mặc định (marketIndex=1) = 100000, margin tại 100000 = 0.2 > 0.15

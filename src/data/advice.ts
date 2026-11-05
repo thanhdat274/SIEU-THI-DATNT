@@ -1,4 +1,5 @@
 import { productById } from './products';
+import { priceBuyOdds } from './pricing';
 import type { ReviewReason } from './reviews';
 import { fitLots, needsCold, shelfLife, spoilRate, type Lot } from './freshness';
 import { warehouseTier, WAREHOUSE_TIERS } from './warehouse';
@@ -58,6 +59,44 @@ export function storeMissRevenue(log: MissLog | undefined, inStorage: Record<str
     totalLoss,
     inStorageCount: rows.filter((r) => r.inStorage > 0).length,
     outOfStockCount: rows.filter((r) => r.inStorage === 0).length,
+  };
+}
+
+// ───── GĐ1251: gợi ý MUA KỆ ngay tại nơi mua (BuildPanel — Nội thất) ─────
+// storeMissRevenue (GĐ131) hiện ở Kho/Báo cáo nhưng KHÔNG ở BuildPanel — nơi người chơi quyết
+// định mua kệ thì chỉ thấy giá. Helper này quy số liệu GĐ131 thành MỘT dòng hướng đúng:
+// lỡ mà KHO còn hàng → thiếu chỗ bày (mua kệ giúp thật); lỡ mà KHO cũng hết → mua kệ chưa giúp
+// (phải nhập trước). THUẦN ĐỌC — không đổi state/save/kinh tế.
+
+export interface ShelfBuyHint {
+  /** 'shelf' = mua kệ giúp thật (kho còn hàng mà kệ trống); 'order' = đừng mua kệ, nhập trước. */
+  kind: 'shelf' | 'order';
+  /** Số lượt khách bỏ lỡ hôm nay. */
+  count: number;
+  /** Lãi bỏ lỡ ước tính hôm nay (đ). */
+  loss: number;
+  /** Tên món bỏ lỡ nhiều nhất (kho còn) — chỉ có khi kind 'shelf'. */
+  top: string | null;
+  /** Một dòng tiếng Việt trung thực đặt đầu bảng Nội thất. */
+  line: string;
+}
+
+export function shelfBuyHint(missRev: StoreMissRevenue | null): ShelfBuyHint | null {
+  if (!missRev || missRev.totalLoss <= 0) return null;
+  const shelfRows = missRev.rows.filter((r) => r.inStorage > 0);
+  if (!shelfRows.length) {
+    return {
+      kind: 'order', count: missRev.rows.reduce((n, r) => n + r.count, 0),
+      loss: missRev.totalLoss, top: null,
+      line: 'Khách bỏ lỡ vì KHO hết hàng — mua thêm kệ chưa giúp, vào Nhập hàng trước.',
+    };
+  }
+  const count = shelfRows.reduce((n, r) => n + r.count, 0);
+  const loss = shelfRows.reduce((n, r) => n + r.estLoss, 0);
+  const top = shelfRows[0]?.name ?? null;
+  return {
+    kind: 'shelf', count, loss, top,
+    line: `Hôm nay ${count} lượt khách tìm món mà kệ trống dù kho còn (lãi bỏ lỡ ~${loss.toLocaleString('vi-VN')}đ) — thêm kệ để bày${top ? `: ${top}` : ''}.`,
   };
 }
 
@@ -200,7 +239,12 @@ export function walkoutAdvice(log: MissLog, inStorage: Record<string, number>, p
     } else if (r.reason === 'price') {
       const now = priceOf(r.id);
       const suggest = Math.max(p.buy, Math.round(Math.min(now, p.sell) * 0.95 / 500) * 500);
-      out.push({ icon: '💸', text: `${p.name}: ${r.count} lần khách chê đắt ở giá ${now.toLocaleString('vi-VN')}đ. Thử hạ về khoảng ${suggest.toLocaleString('vi-VN')}đ.`, action: 'prices' });
+      // GĐ1222 — bề mặt "giá cao ăn vào đơn": cho biết tỉ lệ khách còn chịu mua ở giá đang bày + giá thị trường
+      const odds = priceBuyOdds(r.id, now);
+      const note = odds.keep < 1
+        ? ` — giá này chỉ ~${Math.round(odds.keep * 100)}% đơn được mua; hạ về ~${odds.reference.toLocaleString('vi-VN')}đ là đa số mua.`
+        : '';
+      out.push({ icon: '💸', text: `${p.name}: ${r.count} lần khách chê đắt ở giá ${now.toLocaleString('vi-VN')}đ. Thử hạ về khoảng ${suggest.toLocaleString('vi-VN')}đ.${note}`, action: 'prices' });
     }
   }
   return out;
@@ -208,6 +252,29 @@ export function walkoutAdvice(log: MissLog, inStorage: Record<string, number>, p
 
 /** Hàng còn chừng này ngày trở xuống thì báo sắp hỏng. */
 export const EXPIRY_WARN_DAYS = 2;
+
+/**
+ * GĐ1117 — đuôi dòng tư vấn cho nông sản sắp hết hạn (khối "Nấu hay bán lẻ" ở Vườn): biết hạn còn
+ * lại thì nhắc dùng ngay trước khi nấu/pha/giao cả lot. life không có (không trong danh sách sắp
+ * hỏng) → chuỗi rỗng. Thuần đọc.
+ */
+export function expiryNoteFor(life: number | undefined): string {
+  return life !== undefined ? ` · ⏳ hết hạn ~${life} ngày — dùng ngay` : '';
+}
+
+/**
+ * GĐ1118 — đuôi dòng công thức ở Bếp khi nguyên liệu sắp hỏng: nấu ngay trước khi mất (đối xứng
+ * GĐ1117 ở Vườn). Chọn nguyên liệu hạn ngắn nhất trong các đầu vào; không cái nào sắp hỏng → rỗng.
+ * Thuần đọc.
+ */
+export function expiryInputsNote(inputs: readonly { productId: string }[], expiryMap: Map<string, number>): string {
+  let worst: { name: string; life: number } | null = null;
+  for (const i of inputs) {
+    const life = expiryMap.get(i.productId);
+    if (life !== undefined && (!worst || life < worst.life)) worst = { name: productById(i.productId).name, life };
+  }
+  return worst ? ` · ⏳ ${worst.name} hết hạn ~${worst.life} ngày — nấu ngay` : '';
+}
 
 export interface ExpiringLine {
   id: string;
@@ -299,4 +366,26 @@ export function waitLossStats(
   if (count <= 0) return null;
   const peak = peakHours(byHour).peak;
   return { count, pct: customers > 0 ? count / customers : 1, peakHour: peak ? peak.hour : null };
+}
+
+/** GĐ1221 — ước lượng DOANH THU bỏ lỡ vì khách chờ quầy bỏ về: count × avgPerVisit (doanh thu trung bình /
+ *  khách mua, `repMoney.avgPerVisit`). Hoàn chỉnh bộ "mất tiền vì sao" — hết hàng (GĐ131 storeMissRevenue),
+ *  bẩn (GĐ156), chờ quầy; trước giờ thẻ ⏳ chỉ báo LƯỢT + % chứ không báo ĐỒNG, nên người chơi không thấy
+ *  việc xếp ca giỏi quầy đáng bao nhiêu tiền thật (Luật 1/10). THUẦN — chỉ nhân số có sẵn, không đổi
+ *  state/save/kinh tế. Dùng doanh thu (không quy lãi) vì lãi/khách không phải số lưu sẵn — gọi đúng tên
+ *  "doanh thu bỏ lỡ". */
+export function waitMoneyCost(walkedForWait: number, avgRevenuePerBuyer: number): { estRevenueLost: number } {
+  return { estRevenueLost: Math.round(walkedForWait * avgRevenuePerBuyer) };
+}
+
+/** GĐ1133 — cửa sổ "mới": mở trong 4 cấp trở lại (đồng bộ NEW_WITHIN = 4 của OrderPanel GĐ562-era). */
+export const NEW_UNLOCK_WINDOW = 4;
+
+/**
+ * GĐ1125/GĐ1133 — dấu "🆕" cho món/công thức/giống vừa mở trong cửa sổ 4 cấp trở lại (đồng bộ quy
+ * ước "Mới" của OrderPanel — người chơi mới lên cấp thường bỏ qua món mới trong danh sách dài).
+ * Chưa mở / mở lâu / unlock ≤ 1 (mọi thứ mở từ đầu) → rỗng. Thuần đọc.
+ */
+export function newUnlockMark(unlock: number, level: number): string {
+  return unlock > 1 && unlock <= level && level - unlock < NEW_UNLOCK_WINDOW ? ' 🆕' : '';
 }

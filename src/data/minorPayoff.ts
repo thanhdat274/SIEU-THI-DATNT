@@ -15,6 +15,7 @@
 import { rivalTrafficFactor, type Hui } from './biz';
 import { EFFICIENT_MUL, POWER_RATES, VENDING_COST } from './branches';
 import { APOLOGY_MUL, CRISIS_MUL } from './social';
+import { HUI_COLLAPSE, LOAN_DAILY_RATE } from './bizFinance';
 
 // ── 1) Hụi ──
 
@@ -34,6 +35,38 @@ export function huiRoundSummary(hui: Hui): HuiRoundSummary {
     pot: hui.daily * hui.members,
     daysLeft: Math.max(0, hui.members - hui.paidDays),
     received: hui.received,
+  };
+}
+
+export interface HuiPayoff {
+  /** Lãi vay ngân hàng TRÁNH ĐƯỢC nhờ hốt sớm (dùng sớm `pot` trong `daysSaved` ngày, so LOAN_DAILY_RATE). */
+  saveEarly: number;
+  /** Số ngày hốt sớm (members − turnDay; 0 = hốt cuối, gần như cho vay không lãi). */
+  daysSaved: number;
+  /** % vỡ hụi trong vòng (HUI_COLLAPSE × members ngày). */
+  collapsePct: number;
+  /** Tiền đã góp mất nếu vỡ (daily × paidDays — chính xác, khớp news vỡ hụi). */
+  loseOnCollapse: number;
+}
+
+/**
+ * GĐ1271 — GIÁ TRỊ THẬT + RỦI RO của hụi, khép hộp đen quyết định "góp hụi đáng không": thẻ hụi
+ * (GĐ159) chỉ cho hột + ngày tới lượt, không nói được vì sao góp hụi CÓ LỢI (hốt SỚM được dùng tiền
+ * sớm) và nguy cơ VỠ (HUI_COLLAPSE 0.006/ngày) là bao nhiêu. THUẦN — đọc hằng số game đã cân bằng:
+ *   - Lợi ích: hốt sớm `members − turnDay` ngày được dùng `pot` sớm → tiết kiệm lãi vay ngân hàng
+ *     nếu phải vay bấy nhiêu tiền bấy nhiêu ngày (pot × LOAN_DAILY_RATE × daysSaved) — Ước theo kiểu
+ *     "chi phí cơ hội của tiền sớm", rõ là ước.
+ *   - Rủi ro: vỡ hụi ~ HUI_COLLAPSE × members mỗi vòng; nếu vỡ mất `daily × paidDays` đã góp.
+ * Không RNG/đổi state — chỉ soi số từ state/hằng số hiện có (Luật 5 an toàn), co-op an toàn.
+ */
+export function huiPayoff(hui: Hui): HuiPayoff {
+  const pot = hui.daily * hui.members;
+  const daysSaved = Math.max(0, hui.members - hui.turnDay);
+  return {
+    saveEarly: Math.round(pot * LOAN_DAILY_RATE * daysSaved),
+    daysSaved,
+    collapsePct: Math.min(100, HUI_COLLAPSE * hui.members * 100),
+    loseOnCollapse: hui.daily * hui.paidDays,
   };
 }
 

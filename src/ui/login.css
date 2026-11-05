@@ -11,6 +11,7 @@
   inset: 0;
   display: flex;
   align-items: center;
+  gap: 20px;
   padding: 32px clamp(16px, 5vw, 72px);
   font-family: 'Be Vietnam Pro', system-ui, sans-serif;
   color: var(--ink);
@@ -19,6 +20,7 @@
 
 .login-col {
   width: min(420px, 100%);
+  max-height: 100%;
   display: flex;
   flex-direction: column;
   gap: 18px;
@@ -26,6 +28,7 @@
 
 /* Bảng hiệu: tấm tôn sơn xanh, chữ vàng viền đỏ, hai con ốc ở góc */
 .login-sign {
+  flex: none;
   position: relative;
   padding: 22px 26px 18px;
   background: var(--sign);
@@ -81,6 +84,10 @@
   flex-direction: column;
   gap: 10px;
   box-shadow: 0 14px 34px rgba(0, 0, 0, 0.3);
+  /* Không bao giờ tràn màn hình: màn thấp thì thẻ tự cuộn, bảng hiệu giữ nguyên */
+  flex-shrink: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
 .login-card h2 {
   margin: 0 0 2px;
@@ -181,11 +188,6 @@
 .login-save strong { display: block; font-size: 14px; }
 .login-save span { display: block; font-size: 12px; color: #5d6472; margin-top: 2px; }
 
-.login-divider {
-  height: 1px;
-  background: #e6e2d6;
-  margin: 4px 0;
-}
 .login-row { display: flex; gap: 8px; }
 .login-code {
   width: 96px;
@@ -200,8 +202,62 @@
 .login-code:focus-visible { outline: 3px solid var(--letter); }
 /* Ô nhập tên/mã hẻm: chữ thường, giãn hết hàng */
 .login-code.login-name { flex: 1; min-width: 0; width: auto; font-size: 14px; letter-spacing: normal; text-transform: none; }
-.login-alley { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
-.login-alley .login-save { flex: 1; }
+/* Gợi ý co-op cho khách chưa đăng nhập: một dòng dưới các nút, không phải bảng riêng */
+.login-coop-hint { border-top: 1px dashed #d9dce3; padding-top: 10px; }
+
+/* Bảng "Hẻm online" riêng, đứng cạnh thẻ đăng nhập: bao nhiêu hẻm cũng không đấy
+   thông tin đăng nhập. Danh sách cuộn trong khung giữa, tiêu đề và hàng tạo/gia nhập
+   luôn đứng nguyên đáy bảng; bảng không bao giờ tự có thanh cuộn thứ hai. */
+.login-coop {
+  flex: none;
+  width: min(420px, 100%);
+  max-height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+.coop-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.coop-head h2 { margin: 0; }
+.coop-sub { font-size: 13px; font-weight: 400; color: #5d6472; }
+.coop-count {
+  flex: none;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #eef2f7;
+  border: 1px solid #dde4ee;
+  font-size: 12px;
+  font-weight: 600;
+  color: #4a515f;
+}
+.coop-empty {
+  margin: 0;
+  font-size: 13px;
+  color: #5d6472;
+  background: #eef2f7;
+  border: 1px dashed #cdd6e2;
+  border-radius: 10px;
+  padding: 12px;
+}
+.coop-list {
+  flex: 1 1 auto;
+  min-height: 120px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  /* chừa mép cho viền focus của nút trong khi cuộn */
+  padding: 2px;
+  overscroll-behavior: contain;
+}
+.coop-item { display: flex; align-items: center; gap: 8px; }
+.coop-item .login-save { flex: 1; min-width: 0; }
+.coop-side { display: flex; flex-direction: column; gap: 4px; flex: none; align-items: stretch; }
+.coop-side .login-link { font-size: 12px; text-align: center; }
+.coop-form { display: flex; flex-direction: column; gap: 8px; }
 .login-copy {
   flex: none;
   border: 2px solid var(--sign);
@@ -218,9 +274,22 @@
 
 @media (max-width: 640px) {
   .login {
-    align-items: flex-end;
     background: linear-gradient(0deg, rgba(14, 22, 40, 0.8) 0%, rgba(14, 22, 40, 0.2) 70%);
   }
+}
+
+/* Màn hẹp (điện thoại dọc, máy tính cửa sổ nhỏ): hai bảng xếp dọc, cả màn cuộn được —
+   margin-top:auto đẩy cụm bảng xuống đáy mà không kẹp đầu khi nội dung tràn (justify flex-end hay cắt đỉnh). */
+@media (max-width: 960px) {
+  .login {
+    flex-direction: column;
+    align-items: stretch;
+    overflow-y: auto;
+    gap: 12px;
+  }
+  .login-col { margin-top: auto; max-height: none; }
+  .login-coop { max-height: none; overflow: visible; }
+  .coop-list { flex: none; max-height: 220px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -230,18 +299,23 @@
 /* Điện thoại xoay ngang (màn thấp): bảng hiệu bên trái, thẻ đăng nhập bên phải, thẻ tự cuộn nếu dài */
 @media (max-height: 500px) and (orientation: landscape) {
   .login {
+    flex-direction: row;
     align-items: stretch;
+    overflow: hidden;
     padding: max(10px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
     background: linear-gradient(90deg, rgba(14, 22, 40, 0.75) 0%, rgba(14, 22, 40, 0.35) 70%);
   }
   .login-col {
-    width: 100%;
+    width: auto;
+    flex: 1;
     max-width: 760px;
     margin: 0 auto;
     flex-direction: row;
     align-items: center;
     gap: 16px;
   }
+  .login-coop { width: min(300px, 40vw); max-height: 100%; overflow: hidden; }
+  .coop-list { flex: 1 1 auto; min-height: 0; }
   .login-sign { flex: 0 0 40%; padding: 14px 16px 12px; }
   .login-sign h1 { font-size: clamp(28px, 6vh + 8px, 40px); }
   .login-sign p { font-size: 12px; margin: 6px 0 8px; }
@@ -267,3 +341,110 @@
   .login-link { font-size: 14px; }
   .login-copy { font-size: 13px; padding: 8px 10px; }
 }
+
+/* Đồng ý xử lý dữ liệu cá nhân (Luật 91/2025): checkbox + link chính sách trước nút đăng nhập Google */
+.login-consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 9px 11px;
+  margin-top: 2px;
+  background: #eef2f7;
+  border: 1px solid #dde4ee;
+  border-radius: 10px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #454c5a;
+}
+.login-consent input[type='checkbox'] {
+  flex: none;
+  width: 17px;
+  height: 17px;
+  margin: 2px 0 0;
+  accent-color: var(--sign);
+  cursor: pointer;
+}
+.login-consent button.link {
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--sign);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* Panel đọc Chính sách / Điều khoản (modal phủ màn đăng nhập) */
+.privacy-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  background: rgba(10, 14, 24, 0.6);
+  padding: 16px;
+}
+.privacy-panel {
+  width: min(620px, 100%);
+  max-height: 86vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--paper);
+  color: var(--ink);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
+}
+.privacy-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 14px 16px;
+  background: var(--sign);
+  color: #fff;
+}
+.privacy-head h2 { margin: 0; font-size: 17px; color: var(--letter); }
+.privacy-version { font-size: 12px; color: #cfe0f5; }
+.privacy-close {
+  border: none;
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+}
+.privacy-close:hover { background: rgba(255, 255, 255, 0.26); }
+.privacy-tabs { display: flex; gap: 6px; padding: 10px 12px 0; }
+.privacy-tabs button {
+  border: 1px solid #d9dce3;
+  border-bottom: none;
+  border-radius: 8px 8px 0 0;
+  background: #f2efe4;
+  padding: 8px 14px;
+  font: 600 13px 'Be Vietnam Pro', system-ui, sans-serif;
+  color: #5d6472;
+  cursor: pointer;
+}
+.privacy-tabs button.on { background: #fff; color: var(--ink); border-color: var(--sign); }
+.privacy-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px 16px 18px;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: #333b47;
+}
+.privacy-body ul { margin: 6px 0; padding-left: 20px; }
+.privacy-body li { margin: 6px 0; }
+.privacy-body b { color: var(--ink); }
+.privacy-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid #e6e2d6;
+}
+

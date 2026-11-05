@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { newGameData, useGame, type DayStats } from '../core/store';
 import { bizEndOfDay, startCounter } from '../core/biz';
 import {
-  bizTraffic, COUNTER_AD_TRAFFIC, counterActive, counterById, COUNTERS, newBiz, PRICE_WAR_CUT, rivalNightly,
+  bizTraffic, COUNTER_AD_TRAFFIC, counterActive, counterById, COUNTERS, newBiz, PRICE_WAR_CUT, rivalNightly, staffAtRiskOfPoach,
 } from '../data/biz';
 import { REGULARS } from '../data/regulars';
 
@@ -160,5 +160,26 @@ describe('bizEndOfDay — chấm điểm đợt phản công và trả đũa c�
     Math.random = rand;
     expect(out.biz.rival).toBeNull();
     expect(out.biz.rivalsBeaten).toBe(1);
+  });
+});
+
+describe('GĐ1185 — staffAtRiskOfPoach: cảnh báo trước khi nhân viên giỏi bị rival máu liều móc', () => {
+  const staff = [{ id: 1, skill: 2 }, { id: 2, skill: 5 }, { id: 3, skill: 3 }];
+  const ag = (strength: number) => ({ name: 'Tạp hóa Liều', strength, openedDay: 9, personality: 'aggressive' as const });
+
+  it('không có rival / rival yếu / rival không máu liều → không ai bị nhắm', () => {
+    expect(staffAtRiskOfPoach(undefined, staff)).toBeUndefined();
+    expect(staffAtRiskOfPoach({ ...ag(59) } as never, staff)).toBeUndefined(); // sức < 60
+    expect(staffAtRiskOfPoach({ name: 'X', strength: 90, openedDay: 9, personality: 'quality' } as never, staff)).toBeUndefined();
+    expect(staffAtRiskOfPoach(ag(70), [])).toBeUndefined(); // không ai có nhân viên
+  });
+
+  it('rival máu liều đủ mạnh → nhắm đúng nhân viên giỏi nhất (đích rivalNightAI)', () => {
+    expect(staffAtRiskOfPoach(ag(70), staff)).toBe(2); // skill 5 cao nhất
+    expect(staffAtRiskOfPoach(ag(60), staff)).toBe(2); // mốc 60 tính cả
+  });
+
+  it('nhiều người cùng giỏi → chọn người xuất hiện sớm (khớp sort chọn đầu)', () => {
+    expect(staffAtRiskOfPoach(ag(80), [{ id: 7, skill: 4 }, { id: 8, skill: 4 }])).toBe(7);
   });
 });

@@ -30,6 +30,9 @@ export const COMBOS: ComboDef[] = [
   { id: 'mi_nuoc', icon: '🍜', name: 'Mì gói + nước suối', items: ['mi', 'nuoc'], discount: 0.1 },
   { id: 'banh_ngot', icon: '🍪', name: 'Bánh kẹo + nước ngọt', items: ['banh', 'ngot'], discount: 0.1 },
   { id: 'sua_banhmi', icon: '🥐', name: 'Bữa sáng: sữa + bánh mì', items: ['sua', 'banhmi'], discount: 0.12 },
+  // GĐ1243: combo "Bữa sáng: cà phê + bánh mì" — cặp quen thuộc nhất của khung giờ vàng sáng (cả hai đều trong
+  // wants của band sang ở rhythm.ts) mà trước giờ chỉ có "sữa + bánh mì", thiếu bản "đi cà phê sáng".
+  { id: 'caphe_banhmi', icon: '☕', name: 'Bữa sáng: cà phê + bánh mì', items: ['caphe', 'banhmi'], discount: 0.1 },
   { id: 'mi_trung', icon: '🥚', name: 'Mì + trứng', items: ['mi', 'trung'], discount: 0.08 },
   { id: 'gao_dauan', icon: '🍚', name: 'Gạo + dầu ăn', items: ['gao', 'dauan'], discount: 0.06 },
   { id: 'giavi_dauan', icon: '🧂', name: 'Gia vị + dầu ăn', items: ['giavi', 'dauan'], discount: 0.08 },
@@ -71,14 +74,20 @@ export interface ComboSuggestion {
  * Gợi ý combo nên bật khi còn slot — ưu tiên combo gồm món đang bán chạy (top 6 của `sales`)
  * và món chưa bị combo nào đang chạy phủ; bỏ qua combo đang chạy. Chỉ gợi ý khi có dữ liệu bán
  * đủ ý nghĩa (≥2 món đã bán) và có ≥2 combo mở chưa chạy để tránh nhiễu. Lý do ghi theo dữ kiện, không đoán.
+ *
+ * `opts.replaceId` (GĐ1244): id combo SẮP bị tắt (vd. combo yếu đang chiếm slot ở GĐ1242) — coi combo đó
+ * như đã giải phóng slot: KHÔNG phủ món nữa (để ứng viên dùng lại được cặp món đó), và KHÔNG được chọn
+ * làm ứng viên. Cho phép ComboPanel gợi ý "nên ĐỔI sang combo nào" ngay cả khi đã chạy đủ số combo.
  */
 export function comboSuggest(
   level: number,
   sales: Record<string, number>,
   activeCombos: readonly string[],
   n = 2,
+  opts?: { replaceId?: string },
 ): ComboSuggestion[] {
-  const running = new Set(activeCombos);
+  const drop = opts?.replaceId && activeCombos.includes(opts.replaceId) ? opts.replaceId : undefined;
+  const running = new Set(drop ? activeCombos.filter((id) => id !== drop) : activeCombos);
   const topIds = Object.entries(sales).filter(([, q]) => q > 0)
     .sort((a, b) => b[1] - a[1]).slice(0, 6).map(([id]) => id);
   if (topIds.length < 2) return [];
@@ -89,7 +98,7 @@ export function comboSuggest(
     if (c) c.items.forEach((id) => partsOfRunning.add(id));
   }
   const cands = unlockedCombos(level)
-    .filter((c) => !running.has(c.id))
+    .filter((c) => !running.has(c.id) && c.id !== drop)
     .map((c) => {
       const top = c.items.filter((id) => topSet.has(id));
       const uncovered = c.items.filter((id) => !partsOfRunning.has(id));
@@ -134,4 +143,34 @@ export function comboDiscount(active: readonly string[], basket: readonly { id: 
     }
   }
   return { discount, count, byCombo, byDiscount };
+}
+
+// ───── GĐ1242: combo HÔM NAY "chết slot" (chiếm slot mà chưa kích hoạt lượt nào) ─────
+
+/**
+ * GĐ1242 — combo đang chạy nhưng hôm nay chưa kích hoạt lượt nào trong khi combo khác đã bán:
+ * chỗ combo → slot, mua hàng cộng dồn trong `comboToday` (comboDaySnapshot — transient per-day).
+ * Nhận `comboToday` STRUCTURAL (không import core để giữ data sạch) — thuần đọc, không đổi state.
+ * Chỉ báo khi CÓ SỰ PHÂN HOÁ thật: ≥2 combo đang chạy, combo yếu nhất = 0 lượt, và có ≥1 combo khác
+ * đã kích hoạt (>0). Còn lại null — đầu ngày mọi combo chưa bán thì đừng ồn; mọi combo cùng chạy thì
+ * không có kẻ yếu. Đây là tín hiệu trung thực để người chơi xoay slot combo ít khách mua (đối trọng
+ * gợi ý `comboSuggest` khi còn slot) — ComboPanel vốn chỉ hiện con số thô từng combo, thiếu lời kết.
+ */
+export function liveWeakCombo(
+  activeIds: readonly string[],
+  comboToday: Record<string, { count: number; discount: number }>,
+): { id: string; count: number } | null {
+  const active = activeIds.filter((id) => !!comboById(id));
+  if (active.length < 2) return null;
+  let weakestId: string | null = null;
+  let strongestCount = 0;
+  for (const id of active) {
+    const c = comboToday[id]?.count ?? 0;
+    if (weakestId === null || c < (comboToday[weakestId]?.count ?? 0)) weakestId = id;
+    if (c > strongestCount) strongestCount = c;
+  }
+  if (weakestId === null) return null;
+  const weakestCount = comboToday[weakestId]?.count ?? 0;
+  if (weakestCount !== 0 || strongestCount <= 0) return null;
+  return { id: weakestId, count: weakestCount };
 }

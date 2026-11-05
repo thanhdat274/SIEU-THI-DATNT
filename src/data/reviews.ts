@@ -28,6 +28,18 @@ export const REASON_LABEL: Record<ReviewReason, string> = {
   expired: 'hàng cận hạn',
 };
 
+/**
+ * GĐ1218 — lời giải thích CÁCH CHẤM SAO (đổi lại từ `reviewStars` GĐ1216 thành luật dễ hiểu cho thẻ
+ * "Danh tiếng"): bảng sao chỉ bày tổng + lý do, nhưng không nói vì sao bị TRỪ — khách không biết đó là
+ * món thiếu hay chờ lâu để sửa. THUẦN ghép chuỗi từ hằng REASON_LABEL (không đụng state/save); trả
+ * đúng luật `reviewStars`: 5 − mỗi món không mua được − (chờ quá nửa patience ? 1), thấp nhất 1 sao —
+ * kệ thiếu hàng/giá cao/rival phá giá khiến chê "giá cao", quầy chậm khiến chê "chờ lâu" (nhịp vòng
+ * quầy GĐ1208/1213/1214) — để người chơi thấy ngay nắm nào cần vặn.
+ */
+export function starRuleText(): string {
+  return `⭐ Khách chấm tối đa 5 sao, mỗi món không mua được −1, chờ quá nửa thời gian chịu đựng −1 (thấp nhất 1 sao). Nguồn hay gặp: ${REASON_LABEL.stock} · ${REASON_LABEL.price} · ${REASON_LABEL.wait} · ${REASON_LABEL.expired}.`;
+}
+
 const AUTHORS = [
   'Cô Hoa', 'Chú Ba', 'Anh Tư xe ôm', 'Bà Năm', 'Chị Lan', 'Bé Na', 'Anh Khoa', 'Cô giáo Mai',
   'Chú bảo vệ', 'Chị bán xôi', 'Ông Sáu', 'Em Vy', 'Anh shipper', 'Dì Bảy', 'Cậu Tí', 'Chị Thảo',

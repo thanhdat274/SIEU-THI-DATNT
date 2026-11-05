@@ -98,11 +98,14 @@ export const tiemXoiSaved = (made: Record<string, number>, costMul = TIEM_XOI_CO
  * còn lời hay lỗ, và gợi ý khi thợ dư sức (kho đã đủ) — cho nghỉ bớt đỡ lương.
  */
 export function tiemXoiMorning(
-  t: TiemXoiState, last: { total: number; saved: number; wages: number } | null | undefined,
+  t: TiemXoiState, last: { total: number; saved: number; wages: number; event?: TiemXoiEventKind; dine?: number; dineRevenue?: number } | null | undefined,
 ): { net: number | null; idle: boolean } {
   if (!last) return { net: null, idle: false };
   const net = last.saved - last.wages;
-  const idle = t.staff > 0 && last.total <= tiemXoiCapacity(t.staff - 1);
+  // Ngày nồi hỏng (event 'cooker') sản lượng bị chặn NỬA vì máy hỏng, chứ không phải thợ dư sức —
+  // không gợi ý cho nghỉ bớt (sáng hôm sau nồi đã lành, sẽ cần đủ thợ). (Đã đóng bug phụ: trước đây
+  // total thấp do nồi hỏng bị đọc nhầm thành "thợ dư sức".)
+  const idle = t.staff > 0 && last.event !== 'cooker' && last.total <= tiemXoiCapacity(t.staff - 1);
   return { net, idle };
 }
 
@@ -167,3 +170,100 @@ export function tiemXoiDinePlan(t: TiemXoiState, level: number, storage: Record<
 /** GĐ554: dòng "Hôm qua" của tiệm xôi — kèm suất ăn tại chỗ (đã lưu từ GĐ486 nhưng chưa hiện). */
 export const tiemXoiLastLine = (l: { total: number; cost: number; wages: number; saved: number; dine?: number; event?: TiemXoiEventKind }) =>
   `Hôm qua: ${l.total} phần · chi ${formatMoney(l.cost + l.wages)} · rẻ hơn nhập lẻ ${formatMoney(l.saved)}${l.dine ? ` · 🪑 ${l.dine} suất ăn tại chỗ` : ''}${l.event === 'cooker' ? ' · 🍚 nồi hỏng, nấu chậm' : l.event === 'gao' ? ' · 🌾 gạo khan, giá vốn tăng' : ''}`;
+
+// ───── GĐ1246 — "từng thợ xôi đáng đồng lương?" (soi quyết định nhân sự, song song quán nước GĐ188) ─────
+
+export type TiemXoiStaffVerdict = 'ok' | 'warn' | 'low';
+
+export interface TiemXoiStaffValue {
+  /** Số thứ tự thợ đang xét (1..staff hiện tại). */
+  index: number;
+  /** Lương ngày của thợ này (Tiêm XOI wage không đổi). */
+  wage: number;
+  /** Giá trị biên: phần LỢI NHUẬN BÁN (sell − giá vốn nấu) của số xôi thợ này nấu thêm so với khi chỉ có
+   * index−1 thợ — tức xôi thợ thứ N giúp tiệm có trong kho để bán lời. Bị chặn bởi nhu cầu kho. */
+  marginalValue: number;
+  /** marginalValue − wage: thợ này thực lãi/ngày cho chủ (dương = đáng giữ). */
+  marginNet: number;
+  /** Tỷ lệ thu hồi lương (marginalValue / wage). */
+  ratio: number;
+  verdict: TiemXoiStaffVerdict;
+}
+
+/**
+ * GĐ1246 — Tiệm xôi: "người thứ N đáng đồng lương không?" Thuần đọc, tái dựng CHÍNH xác `tiemXoiDay`
+ * (gọi với rng undefined → không sự kiện ngẫu nhiên, cùng `need`/capacity loop) trên bản sao kho, tính
+ * GIÁ TRỊ BIÊN của thợ thứ N = phần LỢI NHUẬN BÁN (sell − giá vốn nấu) của xôi thợ thứ N nấu thêm so với
+ * ít hơn 1 thợ. Chủ luôn tự nấu 60 nên thợ 1 mới là người THÊM đầu tiên. Bị chặn bởi nhu cầu kho
+ * (`need = target − tồn`): kho đã đủ xôi thì thợ thêm không nấu thêm → marginal 0 → nên cho nghỉ đỡ lương.
+ * Không đổi SAVE_VERSION/kinh tế/sim. Trả [] khi khó hiểu (chưa mở / staff 0 / chưa mở món xôi nào).
+ */
+export function tiemXoiStaffValues(
+  t: TiemXoiState, level: number, storage: Record<string, number>, day?: number,
+): TiemXoiStaffValue[] {
+  if (!t.open || t.staff <= 0) return [];
+  if (tiemXoiIds(level).length === 0) return [];
+
+  // Sản phẩm của `staff` thợ trên kho hiện tại (bản sao, put vô hại).
+  const madeAt = (staff: number): Record<string, number> => {
+    const c: Record<string, number> = { ...storage };
+    const r = tiemXoiDay({ ...t, staff }, level, c, () => {}, day);
+    return r ? r.made : {};
+  };
+  // Lợi nhuận bán của một bảng phần xôi: mỗi phần đáng (sell − giá vốn nấu).
+  const profit = (made: Record<string, number>): number =>
+    Math.round(Object.entries(made).reduce((n, [id, q]) => n + q * (productById(id).sell - productById(id).buy * TIEM_XOI_COST_MUL), 0));
+
+  const out: TiemXoiStaffValue[] = [];
+  let prevMade = madeAt(0); // chủ tự nấu 60 — mốc 0 thợ
+  let prevProfit = profit(prevMade);
+  for (let i = 1; i <= t.staff; i++) {
+    const curMade = madeAt(i);
+    const curProfit = profit(curMade);
+    const marginalValue = Math.max(0, curProfit - prevProfit);
+    const marginNet = marginalValue - TIEM_XOI_WAGE;
+    const ratio = TIEM_XOI_WAGE > 0 ? marginalValue / TIEM_XOI_WAGE : 0;
+    const verdict: TiemXoiStaffVerdict = marginNet >= 0 ? 'ok' : ratio >= 0.5 ? 'warn' : 'low';
+    out.push({ index: i, wage: TIEM_XOI_WAGE, marginalValue, marginNet, ratio, verdict });
+    prevMade = curMade;
+    prevProfit = curProfit;
+  }
+  return out;
+}
+
+// ───── GĐ1247 — "Mở rộng bếp xôi (20tr) hồi vốn bao lâu?" (song song quán nước quanNuocBuildPayback GĐ193) ─────
+
+export interface TiemXoiExpandPayback {
+  /** Chi phí mở rộng (TIEM_XOI_BIG_COST). */
+  cost: number;
+  /** Lợi nhuận bán TĂNG mỗi đêm nhờ bếp lớn (sell − giá vốn nấu của xôi nấu thêm; giả định nhu cầu đủ). */
+  netPerDay: number;
+  /** Số ngày cần để hồi vốn (làm tròn lên); null khi vô ích/lỗ. */
+  paybackDays: number | null;
+  verdict: 'worth' | 'slow' | 'full';
+}
+
+/**
+ * GĐ1247 — Tiệm xôi: "Mở rộng bếp (20tr, nấu ×1,5, giữ 120 phần/món) hồi vốn bao lâu?" Màn XÂY/XÂY RỘNG
+ * tiệm xôi chỉ cho giá + cấp, không nói mở rộng sẽ kiếm về bao nhiêu (hộp đen; quán nước đã có
+ * `quanNuocBuildPayback` GĐ193, tiệm xôi chưa). Thuần đọc, tái dựng CHÍNH XÁC `tiemXoiDay` (rng undefined,
+ * cùng need/capacity loop, `big` on/off) trên bản sao kho: lợi nhuận bán THÊM/đêm nhờ big
+ * (profit(big) − profit(normal)), chia vốn 20tr → số ngày hồi. Bị chặn bởi nhu cầu kho: kho thường ĐẦY thì
+ * big không nấu thêm → 'full' (đừng xây). Không đổi SAVE_VERSION/kinh tế/sim.
+ */
+export function tiemXoiExpandPayback(
+  t: TiemXoiState, level: number, storage: Record<string, number>, day?: number,
+): TiemXoiExpandPayback {
+  const madeAt = (big: boolean): Record<string, number> => {
+    const c: Record<string, number> = { ...storage };
+    const r = tiemXoiDay({ ...t, big }, level, c, () => {}, day);
+    return r ? r.made : {};
+  };
+  const profit = (made: Record<string, number>): number =>
+    Math.round(Object.entries(made).reduce((n, [id, q]) => n + q * (productById(id).sell - productById(id).buy * TIEM_XOI_COST_MUL), 0));
+
+  const netPerDay = Math.max(0, profit(madeAt(true)) - profit(madeAt(false)));
+  if (netPerDay <= 0) return { cost: TIEM_XOI_BIG_COST, netPerDay: 0, paybackDays: null, verdict: 'full' };
+  const paybackDays = Math.ceil(TIEM_XOI_BIG_COST / netPerDay);
+  return { cost: TIEM_XOI_BIG_COST, netPerDay, paybackDays, verdict: paybackDays <= 60 ? 'worth' : 'slow' };
+}

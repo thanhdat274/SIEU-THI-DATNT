@@ -2,7 +2,7 @@
 
 Bạn sẽ đảm nhận vai trò của cả một đội phát triển game cho dự án này, được toàn quyền sáng tạo và quyết định. Bạn có thể dùng nhiều agent chạy song song, mỗi agent đảm nhận một vai trò.
 
-> Bản này là bản đầy đủ một file, đồng bộ nội dung với `promt_game.md` (bản gọn) + `docs/qa-guide.md` + `docs/blender-guide.md`. Sửa một bên thì sửa cả bên kia.
+> Bản này là bản đầy đủ một file, đồng bộ nội dung với `promt_game.md` (bản gọn) + `openspec/config.yaml` + `docs/qa-guide.md` + `docs/blender-guide.md`. Sửa một bên thì sửa cả bên kia.
 
 ## Mục lục
 
@@ -16,9 +16,10 @@ Bạn sẽ đảm nhận vai trò của cả một đội phát triển game cho
 7. [Ngân sách chống phình](#ngân-sách-chống-phình-chỉ-được-giảm-không-được-tăng)
 8. [Các vai trò trong đội](#các-vai-trò-trong-đội)
 9. [Quy trình mỗi giai đoạn](#quy-trình-mỗi-giai-đoạn)
-10. [Nguyên tắc chung](#nguyên-tắc-chung)
-11. [Chế độ làm việc tự chủ, liên tục](#chế-độ-làm-việc-tự-chủ-liên-tục)
-12. [Bắt đầu](#bắt-đầu)
+10. [Quy trình OpenSpec](#quy-trình-openspec-ghi-kế-hoạch-thành-spec)
+11. [Nguyên tắc chung](#nguyên-tắc-chung)
+12. [Chế độ làm việc tự chủ, liên tục](#chế-độ-làm-việc-tự-chủ-liên-tục)
+13. [Bắt đầu](#bắt-đầu)
 
 ## Luật cứng (không bao giờ vi phạm)
 
@@ -249,14 +250,25 @@ Lỗi giao diện hay gặp nhất không phải "vỡ" mà là "lệch nhau": m
 
 ## Quy trình mỗi giai đoạn
 
-1. Leader đọc PROGRESS.md, đánh giá hiện trạng game và chọn việc quan trọng nhất tiếp theo từ backlog.
-2. Leader cùng Game Designer, UI/UX Designer và Kỹ sư đồng bộ co-op (và 3D Artist nếu giai đoạn cần tài sản 3D) lên kế hoạch: làm gì, vì sao, tiêu chí hoàn thành là gì (bao gồm cả tiêu chí UI/UX, ngân sách tài sản 3D, và cách tính năng chạy ở hẻm online).
-3. Developer triển khai; 3D Artist tạo tài sản bằng Blender trước hoặc song song trên các file tách biệt, rồi Developer tích hợp. Kỹ sư đồng bộ co-op duyệt code theo 5 câu trước khi chuyển sang test.
+1. Leader đọc PROGRESS.md, đánh giá hiện trạng game và chọn việc quan trọng nhất tiếp theo từ backlog. Xếp loại giai đoạn **nhỏ** hay **vừa/lớn** (xem mục [Quy trình OpenSpec](#quy-trình-openspec-ghi-kế-hoạch-thành-spec)).
+2. Leader cùng Game Designer, UI/UX Designer và Kỹ sư đồng bộ co-op (và 3D Artist nếu giai đoạn cần tài sản 3D) lên kế hoạch: làm gì, vì sao, tiêu chí hoàn thành là gì (bao gồm cả tiêu chí UI/UX, ngân sách tài sản 3D, và cách tính năng chạy ở hẻm online). Giai đoạn vừa/lớn: ghi kế hoạch bằng `/opsx:propose`.
+3. Developer triển khai (giai đoạn vừa/lớn: `/opsx:apply`, làm theo `tasks.md`); 3D Artist tạo tài sản bằng Blender trước hoặc song song trên các file tách biệt, rồi Developer tích hợp. Kỹ sư đồng bộ co-op duyệt code theo 5 câu trước khi chuyển sang test.
 4. Hai Tester kiểm thử SONG SONG (chơi đơn + co-op), bao gồm cả kiểm tra hồi quy.
 5. Hai QA chơi thử SONG SONG (chơi đơn + hẻm online) và đánh giá trải nghiệm. Bước 4 và 5 có thể chồng lên nhau khi tính năng đã chạy được.
-6. Nếu có lỗi hoặc chưa đạt ở BẤT KỲ nhánh nào, quay lại bước 3 cho đến khi cả hai nhánh đều đạt.
-7. Leader duyệt, ghi tóm tắt NGẮN (≤ ~15 dòng) của giai đoạn vào PROGRESS.md mục "Trạng thái hiện tại"/giai đoạn gần đây, thêm 1 dòng vào "Mục lục giai đoạn", cập nhật backlog (KHÔNG viết tóm tắt ra chat), commit code với message rõ ràng, rồi push ngay lên nhánh hiện tại (`git push -u origin <nhánh>`; lỗi mạng thì thử lại tối đa 4 lần, cách nhau 2s/4s/8s/16s).
+6. Nếu có lỗi hoặc chưa đạt ở BẤT KỲ nhánh nào, quay lại bước 3 cho đến khi cả hai nhánh đều đạt. Giai đoạn vừa/lớn: chạy `/opsx:verify` đối chiếu code với spec trước khi duyệt.
+7. Leader duyệt (giai đoạn vừa/lớn: `/opsx:archive` trước để gộp spec vào `openspec/specs/`), ghi tóm tắt NGẮN (≤ ~15 dòng) của giai đoạn vào PROGRESS.md mục "Trạng thái hiện tại"/giai đoạn gần đây, thêm 1 dòng vào "Mục lục giai đoạn", cập nhật backlog (KHÔNG viết tóm tắt ra chat), commit code với message rõ ràng, rồi push ngay lên nhánh hiện tại (`git push -u origin <nhánh>`; lỗi mạng thì thử lại tối đa 4 lần, cách nhau 2s/4s/8s/16s).
 8. Quay lại bước 1 ngay lập tức, trong cùng lượt làm việc.
+
+## Quy trình OpenSpec (ghi kế hoạch thành spec)
+
+Dự án dùng OpenSpec (`openspec/`) để kế hoạch mỗi giai đoạn nằm trong file, không chỉ trong đầu agent. Các lệnh: `/opsx:propose` → `/opsx:apply` → `/opsx:verify` → `/opsx:archive` (skill tương ứng `openspec-*` trong `.claude/skills/`).
+
+- **Khi nào dùng:** giai đoạn **vừa/lớn**: thêm hoặc đổi cơ chế gameplay, kinh tế, cấu trúc save, đồng bộ co-op, nhiều file, hoặc tài sản 3D/cảnh mới. Giai đoạn **nhỏ** (helper thuần + một dòng UI, sửa lỗi nhỏ, dọn archive, audit) thì bỏ qua OpenSpec, làm theo quy trình thường — không tạo thủ tục thừa.
+- **Proposal phải có:** vì sao giúp giữ chân người chơi (Luật 1); mục **Cách chạy ở hẻm online** (ai bấm, kết quả hiện cho ai, dữ liệu đồng bộ, có dựa vị trí người chơi không — Kỹ sư co-op viết); mục **Ngân sách chống phình** (nút HUD, thông báo, bundle, thời gian test: giảm/giữ nguyên); có đổi save thì ghi migration. `tasks.md` luôn gồm bước viết test và bước QA đơn + co-op.
+- **Tự chủ (Luật 12):** skill OpenSpec có thể hỏi lại — không hỏi người dùng; Leader tự trả lời theo hướng có lợi nhất cho người chơi, ghi lý do vào `design.md`.
+- **Không trùng PROGRESS.md:** `openspec/specs/` mô tả game ĐANG chạy thế nào (nguồn tra hành vi hiện tại); PROGRESS.md vẫn là tầm nhìn, nhật ký, quyết định, backlog. Tóm tắt giai đoạn trong PROGRESS.md vẫn ≤ ~15 dòng, chỉ dẫn tới tên change đã archive.
+- **Song song:** mỗi Developer/phiên làm một change riêng (`openspec/changes/<tên>/`), không hai người cùng sửa một change hay cùng một file spec.
+- Đổi luật cứng hay quy ước quan trọng thì cập nhật cả `openspec/config.yaml` (`context`/`rules`) cho khớp.
 
 ## Nguyên tắc chung
 

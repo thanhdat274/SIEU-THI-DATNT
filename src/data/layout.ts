@@ -169,5 +169,16 @@ export function impulseOptions(list: Furniture[], pay: { x: number; z: number })
 /** Món càng rẻ càng dễ bị vớ theo: kẹo 3k hấp dẫn hơn bánh 12k. */
 export const impulseWeight = (productId: string) => IMPULSE_MAX_PRICE / Math.max(productById(productId).sell, 1000);
 
+/** GĐ1219 — bề mặt "hàng chớp nhoáng" cho báo cáo cuối ngày. Mua kẹp lúc ra quầy (`impulseSold`,
+ *  kệ cạnh quầy) là một kênh bán phụ thêm đáng tiền (bày kẹo/bánh/nước ≤ IMPULSE_MAX_PRICE sát quầy),
+ *  nhưng từ khi có mạch này chưa từng báo cho người chơi — quyết định bày hàng TRÔI vô phản hồi, vi
+ *  nguyên tắc (a) "quyết định hằng ngày phải có dữ liệu phản hồi (không hộp đen)". Helper THUẦN đếm
+ *  tích luỹ + trung bình/ngày (đã chơi `daysPlayed` ngày) — UI chỉ đọc số + hiển thị, không đổi kinh
+ *  tế/save/seed (LUẬT 3 — không thêm state mới, chỉ đọc `totals.impulseSold` / `day` có sẵn).
+ */
+export function impulseRecap(sold: number, daysPlayed: number): { sold: number; perDay: number } {
+  return { sold, perDay: daysPlayed >= 1 ? sold / daysPlayed : sold };
+}
+
 /** Màu tô heatmap theo cường độ 0–1: xanh lạnh (ế) → vàng → đỏ (bán chạy). */
 export const heatColor = (t: number) => `hsl(${Math.round((1 - clamp(t, 0, 1)) * 200)}, 85%, ${58 - Math.round(clamp(t, 0, 1) * 8)}%)`;

@@ -8,6 +8,11 @@ import { BILL_RUSH_DAYS, dayOfMonth, SERVICE_BUY_ALONG, SERVICES } from '../../d
 import { roiOf } from '../../data/serviceRoi';
 import { catPayoff, dogPayoff, CAT_PITCH_MIN } from '../../data/petPayoff';
 import { theftRisk, THEFT_LEAK_HIGH, THEFT_LEAK_MODERATE, THEFT_UNLOCK } from '../../data/theftRisk';
+import { maintenancePayoff, MAINT_RISK_HIGH, MAINT_RISK_MODERATE, MAINT_UNLOCK } from '../../data/maintenancePayoff';
+import { posPayoff, POS_RISK_HIGH, POS_RISK_MODERATE, POS_UNLOCK } from '../../data/posPayoff';
+import { avgPerVisit } from '../../data/repMoney';
+import { brokenShelfLoss } from '../../data/brokenShelfLoss';
+import { itemHealthList, shelfCount } from '../../data/analytics';
 import { card, title, pill, iconTile, btn, sub, row } from './businessStyles';
 
 export function Pets() {
@@ -166,7 +171,7 @@ export function Life() {
 
 /** Tab nâng cấp: thiết bị mua một lần dùng vĩnh viễn. */
 export function Upgrades() {
-  const { level, money, biz, stats, day } = useGame();
+  const { level, money, biz, stats, day, furniture, analytics, storage, demand } = useGame();
   return (
     <>
       <div style={{ ...card, marginBottom: 8 }}>
@@ -179,6 +184,19 @@ export function Upgrades() {
           ? theftRisk({
               level, customers: stats.customers, revenue: stats.revenue,
               hasCamera: owned, hasDog: !!petActive(biz.pets?.dog, day),
+            })
+          : null;
+        const maintPayoff = u.id === 'maintenance' && level >= MAINT_UNLOCK
+          ? maintenancePayoff({ level, furniture, hasContract: owned })
+          : null;
+        const shelfLoss = u.id === 'maintenance'
+          ? brokenShelfLoss(furniture, itemHealthList(analytics, level, storage, shelfCount(furniture), demand))
+          : null;
+        const posValue = u.id === 'pos' && level >= POS_UNLOCK
+          ? posPayoff({
+              level, hasPos: owned,
+              waitMissed: stats.missed?.wait ?? 0,
+              avgRevenuePerBuyer: avgPerVisit(stats.revenue, stats.customers),
             })
           : null;
         return (
@@ -212,6 +230,42 @@ export function Upgrades() {
                   {cameraRisk.hasCamera
                     ? 'Đã lắp: kẻ trộm né tiệm (mất bớt ~30% vụ trộm).'
                     : `~${Math.round(cameraRisk.expectedThievesToday * 10) / 10} khách/ngày là kẻ trộm (giỏ trung bình ${formatMoney(cameraRisk.avgBasketRetail)}). Lắp camera kìm còn 70% → tiết kiệm ước ~${formatMoney(cameraRisk.cameraSavesPerDay)}/ngày, hoàn vốn sau ~${cameraRisk.cameraPaybackDays ?? '?'} ngày.`}
+                </div>
+              </Callout>
+            )}
+            {maintPayoff && (
+              <Callout
+                tone={maintPayoff.hasContract ? 'ok' : maintPayoff.nightlyRepairSpend >= MAINT_RISK_HIGH ? 'danger' : maintPayoff.nightlyRepairSpend >= MAINT_RISK_MODERATE ? 'warn' : 'info'}
+                style={{ marginTop: 8 }}
+                title={maintPayoff.hasContract
+                  ? '🔧 Đã ký hợp đồng — thợ chăm kệ mỗi sáng'
+                  : `🔧 Mỗi đêm kệ hỏng rủi ro ~${formatMoney(maintPayoff.nightlyRepairSpend)} tiền sửa`}
+              >
+                <div style={{ marginTop: 2, fontSize: 12 }}>
+                  {maintPayoff.hasContract
+                    ? 'Kệ mòn ≥40 được thợ chăm về 10 mỗi sáng → gần như không bao giờ hỏng. Tiền sửa/đêm ~0 (mất lợi chỉ còn khi kệ đang hỏng sẵn).'
+                    : `~${Math.round(maintPayoff.expectedBreaksPerNight * 10) / 10} kệ/đêm có nguy cơ hỏng trên ${maintPayoff.nbWearing} đồ hao mòn. Ký hợp đồng tiết kiệm ước ~${formatMoney(maintPayoff.savingPerDay)}/ngày (nửa giá + chăm kệ tránh hỏng), hoàn vốn sau ~${maintPayoff.paybackDays ?? '?'} ngày — chưa tính hàng lỡ bán khi kệ hỏng.`}
+                </div>
+                {shelfLoss && shelfLoss.hasBroken && (
+                  <div style={{ marginTop: 4, fontSize: 12, color: '#e74c3c' }}
+                    title={`Kệ hỏng đang chặn hẳn: ${shelfLoss.lines.map((l) => `${l.typeName} (${l.itemNames.join(', ')})`).join(' · ')}`}>
+                    🔧 Kệ hỏng đang chặn hẳn {shelfLoss.lines.length} đồ — lỡ TỚI ~{formatMoney(shelfLoss.lostPerDay)}/ngày, sửa để bán lại.
+                  </div>
+                )}
+              </Callout>
+            )}
+            {posValue && (owned || posValue.estRevenueLostPerDay > 0) && (
+              <Callout
+                tone={owned ? 'ok' : posValue.verdict === 'high' ? 'danger' : posValue.verdict === 'modest' ? 'warn' : 'info'}
+                style={{ marginTop: 8 }}
+                title={owned
+                  ? '🖥️ Đã lắp POS — quầy quét nhanh gấp rưỡi'
+                  : `🖥️ Mỗi ngày lỡ ~${formatMoney(posValue.estRevenueLostPerDay)} vì khách chờ quầy`}
+              >
+                <div style={{ marginTop: 2, fontSize: 12 }}>
+                  {owned
+                    ? 'Quét mã tự động mọi quầy, khách chờ ít hẳn — giờ đông không còn nghẽn ở máy tính tiền.'
+                    : `~${posValue.waitMissed} khách/ngày bỏ về vì chờ quầy. POS kìm ~80% chờ do tốc độ quầy → tiết kiệm ước ~${formatMoney(posValue.savingPerDay)}/ngày, hoàn vốn sau ~${posValue.paybackDays ?? '?'} ngày (ước lượng, chưa tính giờ đông).`}
                 </div>
               </Callout>
             )}

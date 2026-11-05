@@ -170,6 +170,8 @@ export const CROPS: CropDef[] = [
   { id: 'bap', productId: 'bap', name: 'Bắp ngô', icon: '🌽', days: 4, seedCost: 24000, yieldQty: 6, unlock: 1 },
   // Lúa: ra túi gạo (hàng khô giá cao) nên ít món/vụ hơn rau; lợi nhuận/ngày ngang mía–cây ăn trái
   { id: 'lua', productId: 'gao', name: 'Lúa', icon: '🌾', days: 5, seedCost: 90000, yieldQty: 2, unlock: 8 },
+  { id: 'nep', productId: 'nep', name: 'Lúa nếp', icon: '🌾', days: 5, seedCost: 60000, yieldQty: 2, unlock: 14 },
+  { id: 'dau_xanh', productId: 'dau_xanh', name: 'Đậu xanh', icon: '🫛', days: 4, seedCost: 30000, yieldQty: 4, unlock: 16 },
   { id: 'mia', productId: 'mia', name: 'Mía', icon: '🎋', days: 6, seedCost: 48000, yieldQty: 8, unlock: 12 },
   { id: 'traicay', productId: 'traicay', name: 'Cây ăn trái', icon: '🌳', days: 7, seedCost: 75000, yieldQty: 6, unlock: 20 },
   { id: 'traicay_nam', productId: 'traicay', name: 'Cây ăn trái lâu năm', icon: '🌴', days: 7, regrowDays: 3, seedCost: 100000, yieldQty: 8, unlock: 20 },
@@ -177,6 +179,8 @@ export const CROPS: CropDef[] = [
   { id: 'oi', productId: 'x_oi', name: 'Ổi', icon: '🍏', days: 7, regrowDays: 3, seedCost: 45000, yieldQty: 7, unlock: 22 },
   { id: 'xoai', productId: 'x_xoai', name: 'Xoài', icon: '🥭', days: 12, regrowDays: 4, seedCost: 60000, yieldQty: 5, unlock: 26, season: [3, 6] },
   { id: 'cam', productId: 'x_cam', name: 'Cam', icon: '🍊', days: 10, regrowDays: 4, seedCost: 55000, yieldQty: 6, unlock: 28, season: [11, 2] },
+  // GĐ1088: Chanh dây — trồng chanh dây để tự cung quán nước "Chanh dây đá" (cấp 32) thay vì nhập (liên hệ nông trại → quán nước)
+  { id: 'chanhday', productId: 'x_chanh_day', name: 'Chanh dây', icon: '💛', days: 6, regrowDays: 3, seedCost: 30000, yieldQty: 5, unlock: 32 },
   { id: 'vai', productId: 'x_vai', name: 'Vải thiều', icon: '🍒', days: 10, regrowDays: 3, seedCost: 70000, yieldQty: 6, unlock: 32, season: [5, 7] },
   { id: 'nhan', productId: 'x_nhan', name: 'Nhãn', icon: '🍇', days: 11, regrowDays: 4, seedCost: 72000, yieldQty: 6, unlock: 32, season: [7, 9] },
   { id: 'mit', productId: 'x_mit', name: 'Mít', icon: '🍍', days: 14, regrowDays: 5, seedCost: 90000, yieldQty: 3, unlock: 36 },
@@ -325,8 +329,10 @@ export const FARM_ORDER_UNLOCK = 16;
 
 /** Quán trong xóm hay đặt nông sản của trại. */
 export const FARM_BUYERS = ['Quán Cơm Bà Ba', 'Lò Bánh Chị Hoa', 'Quán Nhậu Anh Tư', 'Tiệm Bánh Mì Chú Sáu', 'Cơm Tấm Cô Sáu', 'Quán Chè Bà Tư', 'Lẩu Dê Anh Sáu'];
-/** Món quán đặt (nông sản nhà trồng/nhà nuôi). */
-export const FARM_ORDER_POOL = ['trung', 'trung_vit', 'trung_goos', 'sua_tuoi', 'sua_de', 'rau', 'bap', 'mia', 'traicay', 'x_chuoi', 'x_vai', 'x_buoi', 'x_thit_heo', 'thit_ga_dt'];
+/** Món quán đặt (nông sản nhà trồng/nhà nuôi). GĐ1100: nối cuối pool 3 trái cây mới GĐ1088–1092
+ *  (chanh dây/nhãn/mít, mở >30) — quán chè/quán nước trong xóm cũng lấy trái cây nhà; nối cuối để
+ *  giữ nguyên thứ tự RNG của pool cũ, đơn vẫn chỉ rơi vào món trại kịp làm (farmOrderProduce). */
+export const FARM_ORDER_POOL = ['trung', 'trung_vit', 'trung_goos', 'sua_tuoi', 'sua_de', 'rau', 'bap', 'mia', 'traicay', 'x_chuoi', 'x_vai', 'x_buoi', 'x_thit_heo', 'thit_ga_dt', 'x_chanh_day', 'x_nhan', 'x_mit'];
 
 /** Tin sáng khi quán xóm đặt đơn; đơn cuối tuần báo luôn giá hời (GĐ549). */
 export const farmOrderNews = (o: FarmOrder) =>

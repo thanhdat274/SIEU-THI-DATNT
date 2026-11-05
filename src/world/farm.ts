@@ -16,7 +16,7 @@ export const FARM_CENTER = new THREE.Vector3(24, 0, -70);
 /** Mảnh đất (đủ cho bậc mở rộng cuối): x 11..37, z -80..-60, cổng quay lên đường thứ hai. */
 const W = 26, D = 20;
 /** Sân thả theo loài (toạ độ trong group). */
-const PENS: Record<AnimalKind, { x1: number; z1: number; x2: number; z2: number; home: THREE.Vector3; speed: number }> = {
+export const PENS: Record<AnimalKind, { x1: number; z1: number; x2: number; z2: number; home: THREE.Vector3; speed: number }> = {
   chicken: { x1: 5.2, z1: 1.2, x2: 10.8, z2: 6.8, home: new THREE.Vector3(9.05, 0, 3.0), speed: 0.55 },
   duck: { x1: -11, z1: 3, x2: -7.6, z2: 7.2, home: new THREE.Vector3(-9.6, 0, 6.6), speed: 0.4 },
   cow: { x1: -2, z1: 2.6, x2: 4, z2: 6.6, home: new THREE.Vector3(0.5, 0, 7.0), speed: 0.3 },
@@ -25,6 +25,15 @@ const PENS: Record<AnimalKind, { x1: number; z1: number; x2: number; z2: number;
   goat: { x1: -5.6, z1: -9.2, x2: -1.4, z2: -6.4, home: new THREE.Vector3(-3.6, 0, -8.6), speed: 0.42 },
   dong_tao: { x1: -0.4, z1: -9.2, x2: 3.8, z2: -6.4, home: new THREE.Vector3(1.8, 0, -8.6), speed: 0.32 },
 };
+
+/** GĐ1255 — toạ độ luống thứ i trong group (thuần, dùng cho dựng hình lẫn neo bong bóng thu hoạch). */
+export const plotBedPos = (i: number): { x: number; z: number } => ({ x: -11 + Math.floor(i / 2) * 3.4, z: i % 2 ? -5.9 : -2.5 });
+
+/** GĐ1255 — tâm sân thả của một loài (toạ độ trong group) — neo bong bóng thu trứng/vắt sữa. */
+export const penCenter = (kind: AnimalKind): { x: number; z: number } => ({
+  x: (PENS[kind].x1 + PENS[kind].x2) / 2,
+  z: (PENS[kind].z1 + PENS[kind].z2) / 2,
+});
 /** Chỗ đứng tương tác cạnh cổng và cạnh giếng nước. */
 const SPOT = new THREE.Vector3(FARM_CENTER.x - 6, 0, FARM_CENTER.z + 6.5);
 const WELL_SPOT = new THREE.Vector3(FARM_CENTER.x - 4, 0, FARM_CENTER.z + 4.2);
@@ -125,7 +134,7 @@ export function createFarm() {
     return { bed, soil };
   };
   // Luống xếp hai hàng × sáu cột, bày dần từ tây sang đông theo bậc mở rộng
-  const bedPos = (i: number) => ({ x: -11 + Math.floor(i / 2) * 3.4, z: i % 2 ? -5.9 : -2.5 });
+  const bedPos = (i: number) => plotBedPos(i);
   const bedBases: { soil: THREE.MeshStandardMaterial }[] = [];
   for (let i = 0; i < 4; i++) {
     const { bed, soil } = makeBed();

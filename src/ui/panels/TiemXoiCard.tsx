@@ -14,6 +14,11 @@ export function TiemXoiCard({ tiemXoi, last }: { tiemXoi: Xoi[0]; last: Xoi[1] }
           ? <>Hôm qua nấu {last.total} phần · rẻ hơn nhập lẻ {formatMoney(last.saved)} − lương {formatMoney(last.wages)} = <b style={{ color: m.net! >= 0 ? '#2ecc71' : '#e74c3c' }}>{formatMoney(m.net!)}</b></>
           : 'Mới mở — kết quả có sau đêm đầu.'}
       </div>
+      {!!last?.dineRevenue && (
+        <div style={{ fontSize: 12, marginTop: 2, color: '#2ecc71' }}>
+          🪑 Khách ngồi ăn tại chỗ {last.dine} suất · <b>+{formatMoney(last.dineRevenue)}</b> bán tại chỗ
+        </div>
+      )}
       {m.idle && <div style={{ fontSize: 12, marginTop: 2, color: '#e67e22' }}>👷 Kho xôi đã đủ, thợ còn dư sức — cho nghỉ bớt một người đỡ lương {formatMoney(TIEM_XOI_WAGE)}/ngày.</div>}
     </Callout>
   );

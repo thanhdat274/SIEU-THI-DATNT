@@ -11,6 +11,7 @@
 import { WEATHER } from './weather';
 import type { Weather } from './weather';
 import { customersPerDay } from './levels';
+import { dayEffects } from './calendar';
 
 /** Ngưỡng coi là "đông khách" (trữ thêm) / "vắng" (né nhập thêm). */
 export const TRAFFIC_HOT = 1.05;
@@ -25,17 +26,28 @@ export interface TrafficForecast {
   /** Chênh ngày mai so với hôm nay (%). */
   deltaPct: number;
   verdict: 'hot' | 'normal' | 'slow';
+  /** GĐ1176 — "không hộp đen": lý do NGOÀI thời tiết khiến mai đông/vắng (lễ hội / đường sửa), để người
+   *  chơi biết con số kia vì sao. undefined khi không có yếu tố đó (chỉ thời tiết). */
+  cause?: string;
 }
 
 export function trafficForecast(opts: {
   weather: Weather;
   tomorrow: Weather;
   level: number;
+  /** GĐ1174: ngày + seed để ghép hệ số lễ/đường sửa thật (`dayEffects.traffic`); bỏ trống = chỉ tính thời tiết. */
+  day?: number;
+  seed?: number;
 }): TrafficForecast {
-  const { weather, tomorrow, level } = opts;
+  const { weather, tomorrow, level, day, seed } = opts;
   const base = customersPerDay(level);
-  const todayTraffic = WEATHER[weather].traffic;
-  const tomorrowTraffic = WEATHER[tomorrow].traffic;
+  // Nhu cầu thật = thời tiết × hệ số lễ hội/đường sửa (khớp counterDemand.demandForecast); thẻ sáng
+  // trước đây chỉ tính thời tiết → cuối Tết (1.7) gặp mưa (0.8) báo nhầm "trời vắng đừng trữ hàng".
+  const hasDay = seed !== undefined && day !== undefined;
+  const deToday = hasDay ? dayEffects(seed!, day!, level) : null;
+  const deTomorrow = hasDay ? dayEffects(seed!, day! + 1, level) : null;
+  const todayTraffic = WEATHER[weather].traffic * (deToday?.traffic ?? 1);
+  const tomorrowTraffic = WEATHER[tomorrow].traffic * (deTomorrow?.traffic ?? 1);
   const todayKhach = base * todayTraffic;
   const tomorrowKhach = base * tomorrowTraffic;
   const deltaPct = todayTraffic > 0 ? ((tomorrowTraffic / todayTraffic) - 1) * 100 : 0;
@@ -45,5 +57,25 @@ export function trafficForecast(opts: {
   else if (tomorrowTraffic <= TRAFFIC_SLOW) verdict = 'slow';
   else verdict = 'normal';
 
-  return { todayTraffic, tomorrowTraffic, todayKhach, tomorrowKhach, deltaPct, verdict };
+  let cause: string | undefined;
+  if (deTomorrow) {
+    const parts: string[] = [];
+    const f = deTomorrow.festival;
+    if (f && f.traffic > 1) parts.push(`${f.icon} ${f.name}`);
+    if (deTomorrow.market?.kind === 'roadworks') parts.push('🚧 đường sửa');
+    if (parts.length) cause = parts.join(' · ');
+  }
+
+  return { todayTraffic, tomorrowTraffic, todayKhach, tomorrowKhach, deltaPct, verdict, cause };
+}
+
+/** GĐ1229 — bề mặt "dự kiến hôm nay": `todayKhach` đã tính trong `trafficForecast` nhưng chỉ MAI được
+ *  hiển thị (MorningSubtitle) — sáng ra người chơi nhập/bày cho HÔM NAY mà không biết hôm nay dự kiến
+ *  bao nhiêu khách (chỉ soi được biểu tượng thời tiết định tính, không có số). Trả một câu gọn đọc từ
+ *  `todayTraffic`/`todayKhach` đúng mô hình thật; rỗng khi dự kiến 0 (đừng ồn). THUẦN — chỉ ghép số
+ *  từ hệ số đang dùng, không đổi kinh tế/save/seed. */
+export function todayTrafficNote(tf: Pick<TrafficForecast, 'todayTraffic' | 'todayKhach'>): string {
+  const n = Math.round(tf.todayKhach);
+  if (n <= 0) return '';
+  return `Dự kiến hôm nay ~${n} khách ghé (~${Math.round(tf.todayTraffic * 100)}% mức thường).`;
 }
