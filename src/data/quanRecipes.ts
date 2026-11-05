@@ -32,6 +32,10 @@ export const QUAN_RECIPES: QuanRecipe[] = [
   // GĐ1090: Trà vải — món quán nước của vải thiều nông trại (x_vai mở cấp 32 nhưng chưa có lối ra pha),
   // khép chuỗi trồng → pha → bán như GĐ1088. Mở 34 ≥ cấp vải 32 → tự cung được trước khi mở món.
   { id: 'tra_vai', name: 'Trà vải', icon: '🍒', unlock: 34, price: 20_000, uses: [{ id: 'x_vai', cups: 4 }, { id: 'tra', cups: 40 }, { id: 'x_duong', cups: 30 }, { id: 'x_nuoc_da', cups: 10 }] },
+  // GĐ1329: Trà nhãn — món quán nước của nhãn nông trại (x_nhan mở cấp 30 nhưng chưa có lối ra pha), pha đá
+  // ngọt dịu, khép chuỗi trồng → pha → bán như trà vải GĐ1090. Giá vốn/ly = 24k/4 + 20k/40 + 17k/30 + 3k/10
+  // = 7.4k → bán 22k (lời >2× vốn). Mở 31 > mốc golden 30 → sim không đổi; KHÔNG hot (giữ đếm đồ nóng = 3).
+  { id: 'tra_nhan', name: 'Trà nhãn', icon: '🍈', unlock: 31, price: 22_000, uses: [{ id: 'x_nhan', cups: 4 }, { id: 'tra', cups: 40 }, { id: 'x_duong', cups: 30 }, { id: 'x_nuoc_da', cups: 10 }] },
   { id: 'bac_xiu', name: 'Bạc xỉu', icon: '🤎', unlock: 33, price: 25_000, uses: [{ id: 'x_ca_phe_hoa_tan', cups: 25 }, { id: 'sua_tuoi', cups: 6 }, { id: 'x_sua_dac', cups: 10 }, { id: 'x_nuoc_da', cups: 10 }] },
   { id: 'ca_cao_sua', name: 'Ca cao sữa', icon: '🍫', unlock: 34, price: 22_000, uses: [{ id: 'x_bot_cacao', cups: 10 }, { id: 'sua_tuoi', cups: 6 }, { id: 'x_nuoc_da', cups: 10 }] },
   { id: 'sinh_to', name: 'Sinh tố trái cây', icon: '🍓', unlock: 35, price: 28_000, uses: [{ id: 'traicay', cups: 3 }, { id: 'x_sua_dac', cups: 10 }, { id: 'x_nuoc_da', cups: 10 }] },
