@@ -143,3 +143,4 @@
 - GĐ1478: Bún xào lạp xưởng (u74, chảo chiên: 2 bún + 1 lạp xưởng + 4 trứng → 10 đĩa, bán 15k).
 - GĐ1479: Canh chua dưa muối cá basa (u75, bếp nồi: 2 basa + 2 dưa muối + 1 me dầm → 11 tô, bán 20k).
 - GĐ1480: Bánh bao giò thủ (u76, nồi hấp: 3 bột mì + 1 giò thủ → 12 cái, bán 18k).
+- GĐ1481: Cháo giò thủ (cấp 77, nồi nước: 2 gạo + 1 giò thủ → 14, bán 23k) — lối ra nồi nước cho giò thủ bà Tám.
