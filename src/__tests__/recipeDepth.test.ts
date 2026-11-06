@@ -2450,6 +2450,94 @@ describe('GĐ1422 — cá hồi phi lê nướng (bếp nướng)', () => {
   });
 });
 
+/** GĐ1423 — Sinh tố bơ: lối ra đầu tiên của bơ (máy xay). */
+describe('GĐ1423 — sinh tố bơ (máy xay)', () => {
+  const recipe = RECIPE_MAP['recipe_sinh_to_bo_sap'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm máy xay và dùng bơ', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'sinh_to_bo_sap')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'sinh_to_bo_sap').length).toBe(1);
+    expect(recipe.station).toBe('blender');
+    expect(recipe.inputs.some((i) => i.productId === 'x_bo')).toBe(true);
+  });
+});
+
+/** GĐ1423 — Nước ép thơm: lối ra đầu tiên của thơm (dứa) (máy xay). */
+describe('GĐ1423 — nước ép thơm (máy xay)', () => {
+  const recipe = RECIPE_MAP['recipe_nuoc_ep_thom'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm máy xay và dùng thơm (dứa)', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'nuoc_ep_thom')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'nuoc_ep_thom').length).toBe(1);
+    expect(recipe.station).toBe('blender');
+    expect(recipe.inputs.some((i) => i.productId === 'x_thom')).toBe(true);
+  });
+});
+
+/** GĐ1423 — Sinh tố đu đủ: lối ra đầu tiên của đu đủ (máy xay). */
+describe('GĐ1423 — sinh tố đu đủ (máy xay)', () => {
+  const recipe = RECIPE_MAP['recipe_sinh_to_du_du'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm máy xay và dùng đu đủ', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'sinh_to_du_du')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'sinh_to_du_du').length).toBe(1);
+    expect(recipe.station).toBe('blender');
+    expect(recipe.inputs.some((i) => i.productId === 'x_du_du')).toBe(true);
+  });
+});
+
+/** GĐ1423 — Sinh tố thanh long tím: lối ra đầu tiên của thanh long ruột tím (máy xay). */
+describe('GĐ1423 — sinh tố thanh long tím (máy xay)', () => {
+  const recipe = RECIPE_MAP['recipe_sinh_to_thanh_long'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm máy xay và dùng thanh long ruột tím', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'sinh_to_thanh_long')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'sinh_to_thanh_long').length).toBe(1);
+    expect(recipe.station).toBe('blender');
+    expect(recipe.inputs.some((i) => i.productId === 'x_thanh_long_tim')).toBe(true);
+  });
+});
+
 /** GĐ1405 — Sữa hạt điều: lối ra đầu tiên của hạt điều rang muối (máy xay). */
 describe('GĐ1405 — sữa hạt điều (máy xay)', () => {
   const recipe = RECIPE_MAP['recipe_sua_hat_dieu'];

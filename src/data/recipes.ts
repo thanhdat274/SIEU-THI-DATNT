@@ -314,6 +314,14 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'cha_ca_thac_lac_chien', name: 'Chả cá thác lác chiên', category: 'fresh', buy: 6000, sell: 9000, color: 0xd8b070, unlock: 35 },
   // GĐ1422: Cá hồi phi lê nướng — lối ra ĐẦU TIÊN của cá hồi phi lê.
   { id: 'ca_hoi_phi_le_nuong', name: 'Cá hồi phi lê nướng', category: 'fresh', buy: 13000, sell: 20000, color: 0xf08a5d, unlock: 45 },
+  // GĐ1423: Sinh tố bơ — lối ra ĐẦU TIÊN của bơ.
+  { id: 'sinh_to_bo_sap', name: 'Sinh tố bơ', category: 'drink', buy: 7000, sell: 12000, color: 0xa8c060, unlock: 35 },
+  // GĐ1423: Nước ép thơm — lối ra ĐẦU TIÊN của thơm (dứa).
+  { id: 'nuoc_ep_thom', name: 'Nước ép thơm', category: 'drink', buy: 7000, sell: 12000, color: 0xf2d04a, unlock: 35 },
+  // GĐ1423: Sinh tố đu đủ — lối ra ĐẦU TIÊN của đu đủ.
+  { id: 'sinh_to_du_du', name: 'Sinh tố đu đủ', category: 'drink', buy: 7000, sell: 12000, color: 0xf0904a, unlock: 35 },
+  // GĐ1423: Sinh tố thanh long tím — lối ra ĐẦU TIÊN của thanh long ruột tím.
+  { id: 'sinh_to_thanh_long', name: 'Sinh tố thanh long tím', category: 'drink', buy: 7000, sell: 12000, color: 0xc0306a, unlock: 35 },
   // GĐ1409: Sữa chua granola — lối ra ĐẦU TIÊN của ngũ cốc granola: mẻ (granola 130k + sữa chua) → 14 cốc × 18k = 252k.
   { id: 'sua_chua_granola', name: 'Sữa chua granola', category: 'fresh', buy: 11000, sell: 18000, color: 0xe9d8b4, unlock: 68 },
   // GĐ1408: Cà phê phin sữa — lối ra ĐẦU TIÊN của cà phê xay nguyên chất: mẻ (cà phê xay 150k + sữa đặc 22k) = 172k → 25 ly × 12k = 300k.
@@ -776,6 +784,22 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_ca_hoi_phi_le_nuong', name: 'Cá hồi phi lê nướng', station: 'food_grill',
     inputs: [{ productId: 'x_ca_hoi_tuoi', quantity: 1 }],
     outputId: 'ca_hoi_phi_le_nuong', outputQty: 6, durationMin: 12, unlock: 45, reputationGain: 3 },
+  // GĐ1423: Sinh tố bơ ở máy xay. Mở 35 (> golden 30, ≥ cấp nguyên liệu).
+  { id: 'recipe_sinh_to_bo_sap', name: 'Sinh tố bơ', station: 'blender',
+    inputs: [{ productId: 'x_bo', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
+    outputId: 'sinh_to_bo_sap', outputQty: 5, durationMin: 6, unlock: 35, reputationGain: 1 },
+  // GĐ1423: Nước ép thơm ở máy xay. Mở 35 (> golden 30, ≥ cấp nguyên liệu).
+  { id: 'recipe_nuoc_ep_thom', name: 'Nước ép thơm', station: 'blender',
+    inputs: [{ productId: 'x_thom', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
+    outputId: 'nuoc_ep_thom', outputQty: 4, durationMin: 6, unlock: 35, reputationGain: 1 },
+  // GĐ1423: Sinh tố đu đủ ở máy xay. Mở 35 (> golden 30, ≥ cấp nguyên liệu).
+  { id: 'recipe_sinh_to_du_du', name: 'Sinh tố đu đủ', station: 'blender',
+    inputs: [{ productId: 'x_du_du', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
+    outputId: 'sinh_to_du_du', outputQty: 4, durationMin: 6, unlock: 35, reputationGain: 1 },
+  // GĐ1423: Sinh tố thanh long tím ở máy xay. Mở 35 (> golden 30, ≥ cấp nguyên liệu).
+  { id: 'recipe_sinh_to_thanh_long', name: 'Sinh tố thanh long tím', station: 'blender',
+    inputs: [{ productId: 'x_thanh_long_tim', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
+    outputId: 'sinh_to_thanh_long', outputQty: 5, durationMin: 6, unlock: 35, reputationGain: 1 },
   // GĐ1409: Sữa chua granola ở máy xay: lãi dương, hời hơn bán thẳng nguyên liệu. Mở 68 = cấp granola (> golden 30).
   { id: 'recipe_sua_chua_granola', name: 'Sữa chua granola', station: 'blender',
     inputs: [{ productId: 'ngu_coc', quantity: 1 }, { productId: 'suachua', quantity: 1 }],
