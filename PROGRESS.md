@@ -129,3 +129,4 @@
 - GĐ1449: Cá basa hấp chanh muối (u44, nồi hấp: 2 basa + 1 chanh muối hàng xóm → 6 phần, bán 32k) — lối ra bếp đầu tiên cho chanh muối; test recipeDepth.
 - GĐ1450: Cá viên chiên sốt me (u43, chảo chiên: 3 cá viên + 1 me dầm bà Tám → 14 ly, bán 11k) — lối ra bếp cho me dầm (trước chỉ có quán nước); test recipeDepth.
 - GĐ1451: Bánh mì chả lụa bà Tám (u39, bếp nướng: 6 bánh mì + 1 chả lụa bà Tám → 12 ổ, bán 15k) — lối ra thứ 2 cho chả lụa bà Tám; test recipeDepth.
+- GĐ1452: Cá basa kho dưa muối (u33, bếp nồi: 1 basa + 2 dưa muối hàng xóm → 5 phần, bán 20k) — lối ra thứ 2 cho dưa muối. Thử u31 làm lệch simGolden cấp 30 → dời 33. longSessionLeak chập chờn khi chạy cả bộ (chạy riêng qua).
