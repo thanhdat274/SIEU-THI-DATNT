@@ -506,6 +506,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'xoi_muoi_me', name: 'Xôi muối mè', category: 'fresh', buy: 8500, sell: 12000, color: 0xf3ecd8, unlock: 82 },
   // GĐ1487: Nem nướng cuốn — lối ra ĐẦU TIÊN của nem nướng bà Tám.
   { id: 'nem_nuong_cuon', name: 'Nem nướng cuốn', category: 'fresh', buy: 12000, sell: 20000, color: 0xd0884a, unlock: 83 },
+  // GĐ1488: Cơm cá cơm rim — lối ra ĐẦU TIÊN của cá cơm khô bà Tám.
+  { id: 'com_ca_com_rim', name: 'Cơm cá cơm rim', category: 'fresh', buy: 15000, sell: 25000, color: 0xd8b080, unlock: 84 },
   // GĐ1409: Sữa chua granola — lối ra ĐẦU TIÊN của ngũ cốc granola: mẻ (granola 130k + sữa chua) → 14 cốc × 18k = 252k.
   { id: 'sua_chua_granola', name: 'Sữa chua granola', category: 'fresh', buy: 11000, sell: 18000, color: 0xe9d8b4, unlock: 68 },
   // GĐ1408: Cà phê phin sữa — lối ra ĐẦU TIÊN của cà phê xay nguyên chất: mẻ (cà phê xay 150k + sữa đặc 22k) = 172k → 25 ly × 12k = 300k.
@@ -1352,6 +1354,10 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_nem_nuong_cuon', name: 'Nem nướng cuốn', station: 'food_grill',
     inputs: [{ productId: 'hx_nem_nuong', quantity: 1 }, { productId: 'hx_banh_trang', quantity: 1 }],
     outputId: 'nem_nuong_cuon', outputQty: 8, durationMin: 25, unlock: 83, reputationGain: 3 },
+  // GĐ1488: Cơm cá cơm rim ở bếp xôi cơm. Mở 84 (> golden 30, ≥ cấp nguyên liệu).
+  { id: 'recipe_com_ca_com_rim', name: 'Cơm cá cơm rim', station: 'rice_station',
+    inputs: [{ productId: 'gao', quantity: 2 }, { productId: 'hx_ca_kho', quantity: 1 }],
+    outputId: 'com_ca_com_rim', outputQty: 12, durationMin: 30, unlock: 84, reputationGain: 3 },
   // GĐ1409: Sữa chua granola ở máy xay: lãi dương, hời hơn bán thẳng nguyên liệu. Mở 68 = cấp granola (> golden 30).
   { id: 'recipe_sua_chua_granola', name: 'Sữa chua granola', station: 'blender',
     inputs: [{ productId: 'ngu_coc', quantity: 1 }, { productId: 'suachua', quantity: 1 }],
