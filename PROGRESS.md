@@ -131,3 +131,4 @@
 - GĐ1484: Măng khô nhà phơi (hàng xóm, cấp 53, 45k→70k) + Măng khô xào lạp xưởng (cấp 80, chảo chiên: 1 măng + 1 lạp xưởng → 8, bán 25k).
 - GĐ1485: Nấm mèo khô nhà phơi (hàng xóm, cấp 54, 35k→55k) + Chả giò nấm mèo (cấp 81, chảo chiên: nấm + thịt + bánh tráng → 30, bán 7k).
 - GĐ1486: Mè rang nhà làm (hàng xóm, cấp 55, 32k→50k) + Xôi muối mè (cấp 82, bếp xôi: 2 nếp + 1 mè → 14, bán 12k; nhập 8.5k cho khớp biên cuối run ≤1.42).
+- GĐ1487: Nem nướng bà Tám (cấp 56, 50k→80k) + Nem nướng cuốn (cấp 83, bếp nướng: nem + bánh tráng → 8, bán 20k). Ghi chú: latePremium chỉ soát biên ở mốc 82/86/91/96/100 — tránh đặt món nấu đúng các mốc này.

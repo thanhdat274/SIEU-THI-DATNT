@@ -52,6 +52,8 @@ export const NEIGHBOR2_PRODUCTS: { id: string; name: string; category: Category;
   { id: 'hx_gio_thu', name: 'Giò thủ bà Tám (khoanh)', category: 'cold', buy: 60000, sell: 96000, color: 0xd8c0a0, unlock: 48 },
   // GĐ1446: me chua dầm đường bà Tám (hướng 3) — mở 42; lối ra: Đá me ở quán nước.
   { id: 'hx_me_dam', name: 'Me dầm đường bà Tám (hũ)', category: 'dry', buy: 26000, sell: 42000, color: 0x8a5a2b, unlock: 42 },
+  // GĐ1487: nem nướng bà Tám (hướng 3) — biên ~1.6×, mở 56; lối ra: Nem nướng cuốn (bếp nướng).
+  { id: 'hx_nem_nuong', name: 'Nem nướng bà Tám (xâu)', category: 'cold', buy: 50000, sell: 80000, color: 0xc0603a, unlock: 56 },
 ];
 
 export const HOMEMADE_IDS: ReadonlySet<string> = new Set(HOMEMADE_PRODUCTS.map((h) => h.id));
