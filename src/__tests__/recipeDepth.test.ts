@@ -3924,6 +3924,28 @@ describe('GĐ1458 — bánh tráng cuốn giò thủ (bếp nướng)', () => {
   });
 });
 
+/** GĐ1459 — Cá basa chiên sốt me: lối ra đầu tiên của me dầm bà Tám (chảo chiên). */
+describe('GĐ1459 — cá basa chiên sốt me (chảo chiên)', () => {
+  const recipe = RECIPE_MAP['recipe_ca_basa_sot_me'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm chảo chiên và dùng me dầm bà Tám', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'ca_basa_sot_me')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'ca_basa_sot_me').length).toBe(1);
+    expect(recipe.station).toBe('fryer');
+    expect(recipe.inputs.some((i) => i.productId === 'hx_me_dam')).toBe(true);
+  });
+});
+
 /** GĐ1405 — Sữa hạt điều: lối ra đầu tiên của hạt điều rang muối (máy xay). */
 describe('GĐ1405 — sữa hạt điều (máy xay)', () => {
   const recipe = RECIPE_MAP['recipe_sua_hat_dieu'];
