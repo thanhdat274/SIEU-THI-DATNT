@@ -1,6 +1,7 @@
 import { faintMinutes } from '../data/biz';
 import { Joystick } from './Joystick';
-import { lazy, Suspense, useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import { useAlertCap } from './alertCap';
 import { formatClock, questContext, useClock, useGame } from '../core/store';
 import { claimableCount, dailyQuests, dailySetProgress, storyQuest, STORY_STEPS } from '../data/quests';
 import { dirtLoss } from '../data/dirtLoss';
@@ -121,6 +122,10 @@ export function Hud() {
   const [copiedCode, setCopiedCode] = useState(false);
   // Xem lại hướng dẫn từ menu Thêm: bật thì Tutorial chuyển sang chế độ review
   const [helpTutorial, setHelpTutorial] = useState(false);
+  // Playtest P0 M4: tối đa 2 thẻ thông báo cùng lúc, phần còn lại gom sau nút "+N thông báo"
+  const alertsRef = useRef<HTMLDivElement>(null);
+  const [alertsOpen, setAlertsOpen] = useState(false);
+  const hiddenAlerts = useAlertCap(alertsRef, alertsOpen);
   const copyRoomCode = () => {
     if (!coop) return;
     void navigator.clipboard.writeText(coop.alley).then(() => {
@@ -324,7 +329,7 @@ ${forecastText}`}>
       </div>
 
       {/* Thông báo: cột trái, dưới ô trạng thái */}
-      <div className="hud-alerts">
+      <div className="hud-alerts" ref={alertsRef}>
         {late && !message && <div className="hud-alert danger">🌙 Đã khuya! Về nhà ngủ trước {faintMinutes(fedBreakfast) / 60 - 24}:00 sáng kẻo ngất.</div>}
         {wheelBoost > 1 && <div className="hud-alert info">🍀 Vòng quay may mắn: hôm nay khách ghé đông thêm {Math.round((wheelBoost - 1) * 100)}%</div>}
         {dirt >= 30 && (
@@ -351,6 +356,9 @@ ${forecastText}`}>
         <Suspense fallback={null}><Tutorial review={helpTutorial} onDone={() => setHelpTutorial(false)} /></Suspense>
         <Suspense fallback={null}><SurpriseAlert /></Suspense>
         <Suspense fallback={null}><StoryAlert /></Suspense>
+        {(hiddenAlerts > 0 || alertsOpen) && (
+          <button className="hud-btn hud-alerts-more" onClick={() => setAlertsOpen(!alertsOpen)}>{alertsOpen ? 'Thu gọn thông báo' : `+${hiddenAlerts} thông báo`}</button>
+        )}
         {conflict && (
           <div className="hud-alert info">
             ☁️ Cloud có bản lưu mới hơn từ máy khác (ngày {conflict.day}, cấp {conflict.level}).
