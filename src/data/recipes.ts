@@ -494,6 +494,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'banh_bao_gio_thu', name: 'Bánh bao giò thủ', category: 'fresh', buy: 11000, sell: 18000, color: 0xf0e4d0, unlock: 76 },
   // GĐ1481: Cháo giò thủ — lối ra ĐẦU TIÊN của giò thủ bà Tám.
   { id: 'chao_gio_thu', name: 'Cháo giò thủ', category: 'fresh', buy: 13000, sell: 23000, color: 0xeee6d2, unlock: 77 },
+  // GĐ1482: Cháo lạp xưởng — lối ra ĐẦU TIÊN của lạp xưởng.
+  { id: 'chao_lap_xuong', name: 'Cháo lạp xưởng', category: 'fresh', buy: 13000, sell: 23000, color: 0xf0dccb, unlock: 78 },
   // GĐ1409: Sữa chua granola — lối ra ĐẦU TIÊN của ngũ cốc granola: mẻ (granola 130k + sữa chua) → 14 cốc × 18k = 252k.
   { id: 'sua_chua_granola', name: 'Sữa chua granola', category: 'fresh', buy: 11000, sell: 18000, color: 0xe9d8b4, unlock: 68 },
   // GĐ1408: Cà phê phin sữa — lối ra ĐẦU TIÊN của cà phê xay nguyên chất: mẻ (cà phê xay 150k + sữa đặc 22k) = 172k → 25 ly × 12k = 300k.
@@ -1316,6 +1318,10 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_chao_gio_thu', name: 'Cháo giò thủ', station: 'hot_kettle',
     inputs: [{ productId: 'gao', quantity: 2 }, { productId: 'hx_gio_thu', quantity: 1 }],
     outputId: 'chao_gio_thu', outputQty: 14, durationMin: 30, unlock: 77, reputationGain: 3 },
+  // GĐ1482: Cháo lạp xưởng ở nồi nước. Mở 78 (> golden 30, ≥ cấp nguyên liệu).
+  { id: 'recipe_chao_lap_xuong', name: 'Cháo lạp xưởng', station: 'hot_kettle',
+    inputs: [{ productId: 'gao', quantity: 2 }, { productId: 'hx_lap_xuong', quantity: 1 }],
+    outputId: 'chao_lap_xuong', outputQty: 14, durationMin: 30, unlock: 78, reputationGain: 3 },
   // GĐ1409: Sữa chua granola ở máy xay: lãi dương, hời hơn bán thẳng nguyên liệu. Mở 68 = cấp granola (> golden 30).
   { id: 'recipe_sua_chua_granola', name: 'Sữa chua granola', station: 'blender',
     inputs: [{ productId: 'ngu_coc', quantity: 1 }, { productId: 'suachua', quantity: 1 }],

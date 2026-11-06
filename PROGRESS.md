@@ -126,3 +126,4 @@
 - GĐ1440–1447 (mọi trái cây vườn có lối ra bếp; giò thủ/me dầm bà Tám, chanh muối hàng xóm 1 kèm lối ra bếp & quán): docs/progress-archive/PROGRESS-GD1440-1447.md
 - GĐ1448–1462 (13 món nối hàng xóm/chanh muối/me dầm; GĐ1455 🧭 DỪNG thêm món dưới cấp 50 vì economySimL50 daily_smile sát ngưỡng 22 — món mới đặt ≥51): docs/progress-archive/PROGRESS-GD1448-1462.md
 - GĐ1463–1481 (công thức cấp 59–77): docs/progress-archive/PROGRESS-GD1463-1481.md
+- GĐ1482: Cháo lạp xưởng (cấp 78, nồi nước: 2 gạo + 1 lạp xưởng → 14, bán 23k).
