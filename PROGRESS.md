@@ -111,3 +111,4 @@
 - GĐ1409 (Sữa chua granola — lối ra đầu tiên của ngũ cốc granola ở máy xay): 14 cốc×18k, unlock 68. Dời GĐ1395–1401 sang archive. Full suite 503/4518 xanh.
 - GĐ1410 (Mì xào trứng — lối ra đầu tiên của mì tươi vắt ở chảo chiên): 4 đĩa×25k, unlock 40. Full suite 503/4521 xanh.
 - GĐ1411 (Gà nướng mật ong — lối ra đầu tiên của mật ong rừng ở bếp nướng): 12 phần×55k, unlock 82; buy 39k để giữ biên hàng cao cấp 1.35–1.42 (latePremium). Full suite 503/4524 xanh.
+- GĐ1412 (Trà thảo mộc nấu — lối ra đầu tiên của trà thảo mộc hộp ở bếp nồi nấu): 12 ly×12k, unlock 59. Full suite 503/4527 xanh.
