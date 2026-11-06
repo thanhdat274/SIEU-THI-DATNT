@@ -1790,6 +1790,28 @@ describe('GĐ1391 — cháo lòng (món sáng Sài Gòn, ấm nước)', () => {
   });
 });
 
+/** GĐ1400 — Sinh tố dưa hấu: lối ra đầu tiên của dưa hấu (máy xay). */
+describe('GĐ1400 — sinh tố dưa hấu (máy xay)', () => {
+  const recipe = RECIPE_MAP['recipe_sinh_to_dua_hau'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm máy xay và dùng dưa hấu', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'sinh_to_dua_hau')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'sinh_to_dua_hau').length).toBe(1);
+    expect(recipe.station).toBe('blender');
+    expect(recipe.inputs.some((i) => i.productId === 'dua')).toBe(true);
+  });
+});
+
 /** GĐ1399 — Tương ớt nhà làm: lối ra đầu tiên của ớt tươi (bếp nồi nấu). */
 describe('GĐ1399 — tương ớt nhà làm (bếp nồi nấu)', () => {
   const recipe = RECIPE_MAP['recipe_tuong_ot_nha'];
