@@ -147,6 +147,8 @@ export interface BizState {
   chapterDay?: number;
   /** Đã tắt hướng dẫn ngày đầu. */
   tutorialOff: boolean;
+  /** Playtest P0 T2: người chơi đã tự bày hàng lên kệ ít nhất một lần (hàng khai trương có sẵn không tính). Tùy chọn — save cũ thiếu = chưa. */
+  tutShelved?: boolean;
   /** Tái sinh (NG+): số lần đã tái sinh (0 = lần chơi đầu) và hệ số doanh thu đang hưởng (0 → không đổi).
    *  `goalsClaimed` (GĐ140): mục tiêu vòng tái sinh đã nhận thưởng trong vòng hiện tại — reset mỗi vòng. */
   prestige: { level: number; bonus: number; goalsClaimed?: string[] };

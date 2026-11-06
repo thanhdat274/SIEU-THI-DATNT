@@ -170,6 +170,8 @@ export const createInventorySlice = (set: SetState, get: GetState): Pick<GameSta
       return { ...f, tiers };
     });
     set(k);
+    // Playtest P0 T2: ghi nhận lần bày hàng thật đầu tiên cho bảng hướng dẫn ngày đầu
+    if (productId && !get().biz.tutShelved) set({ biz: { ...get().biz, tutShelved: true } });
   },
   takeFromShelf: (productId, preferUid) => {
     const s = get();

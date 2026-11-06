@@ -1,10 +1,11 @@
 import type { GameState } from '../core/store';
 
-/** 5 bước hướng dẫn ngày đầu — dùng chung cho bảng hướng dẫn, nhấp nháy nút dock và marker sau quầy. */
+/** Playtest P0 T2: 2 bước đầu chỉ tích khi người chơi TỰ làm (hàng khai trương có sẵn trong kho/kệ không tính).
+ *  5 bước hướng dẫn ngày đầu — dùng chung cho bảng hướng dẫn, nhấp nháy nút dock và marker sau quầy. */
 export function tutorialSteps(s: GameState): { label: string; done: boolean }[] {
   return [
-    { label: 'Nhập hàng (📦 Nhập hàng)', done: Object.values(s.storage).some((q) => q > 0) || s.deliveries.length > 0 || s.totals.itemsSold > 0 },
-    { label: 'Bày hàng lên kệ (bấm vào kệ)', done: s.furniture.some((f) => f.tiers.some((t) => t.count > 0)) },
+    { label: 'Nhập hàng (📦 Nhập hàng)', done: s.deliveries.length > 0 || s.totals.spent > 0 },
+    { label: 'Bày hàng lên kệ (bấm vào kệ)', done: !!s.biz.tutShelved },
     { label: 'Mở cửa tiệm', done: s.shopOpen || s.totals.customers > 0 },
     { label: 'Đứng quầy tính tiền cho khách', done: s.totals.itemsSold > 0 },
     { label: 'Tối về nhà đi ngủ', done: s.day > 1 },
