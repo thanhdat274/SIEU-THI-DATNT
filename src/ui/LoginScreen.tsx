@@ -19,7 +19,11 @@ export function startGame() {
   // Vào hẻm đang có người chạy: tốc độ là của cả hẻm, không chỉnh
   if (useSession.getState().coop?.role !== 'player') useGame.setState({ speed: 1 });
   // Thưởng "Chào mừng quay lại" (GĐ39): soi khi nạp bản lưu và vào chơi đơn — không vào hẻm người khác
-  if (!useSession.getState().coop) useGame.getState().checkWelcomeBack();
+  if (!useSession.getState().coop) {
+    useGame.getState().checkWelcomeBack();
+    // GĐ1497 — doanh thu vắng mặt (khu ăn tại chỗ): chỉ tiền, có điều kiện rõ ràng
+    useGame.getState().collectOfflineRevenue();
+  }
 }
 
 const ago = (iso: string | number) => {

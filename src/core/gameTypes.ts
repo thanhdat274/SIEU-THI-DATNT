@@ -388,6 +388,8 @@ export interface GameState {
   lastSeenAt: number;
   /** Soát thưởng "Chào mừng quay lại" khi nạp bản lưu: đủ 2 ngày thật vắng thì thưởng một lần; luôn làm mới lastSeenAt. */
   checkWelcomeBack: () => number;
+  /** GĐ1497 — tính thu nhập khi vắng mặt (khu ăn tại chỗ chạy chậm): trả kết quả, cộng tiền khi gain > 0. */
+  collectOfflineRevenue: () => { gain: number; customers: number; minutesCounted: number; reason: string | null };
   /** GĐ64 — đóng vĩnh viễn banner "Mới mở: …" (ghi id vào biz.unlockActs). Là thao tác để hẻm online chạy trên máy chạy — không ghi đè cả `biz`. */
   dismissUnlockAct: (id: string) => void;
   /** Điểm danh hôm nay; trả false nếu đã nhận rồi. */

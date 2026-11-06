@@ -6,6 +6,11 @@ import { SKILLS, skillPoints, TITLES, PRESTIGE_TITLES, type TitleContext } from 
 import { summarizeReviews } from '../../data/reviews';
 import { costumeById } from '../../data/costumes';
 import { giftOfStreak, giftText, recentAvgProfit, scaledGiftEco, scaledPrize, spinWheelPrize, welcomeBackReward, daysAway } from '../../data/gifts';
+import { offlineRevenue } from '../../data/offlineRevenue';
+import { COOKED_PRODUCT_IDS } from '../../data/recipes';
+import { freeSeat } from '../../data/dineIn';
+import { isCookStation } from '../../data/furniture';
+import { recentAvgSalesProfit } from '../../data/gifts';
 import { feedCost, landmark2Progress, landmarkProgress, LANDMARK_STAGES, LANDMARK2_STAGES, LANDMARK_TARGETS, LANDMARK2_TARGETS } from '../../data/landmark';
 import { ngGoalProgress } from '../../data/ngGoals';
 import { playSfx } from '../audio';
@@ -14,7 +19,7 @@ import { questContext } from '../store';
 
 /** Tiến trình: XP, nhiệm vụ, danh hiệu, kỹ năng, quà điểm danh, vòng quay, trang phục, tên tiệm. */
 
-export const createProgressSlice = (set: SetState, get: GetState): Pick<GameState, 'setCostume' | 'setShopName' | 'claimGift' | 'spinWheel' | 'learnSkill' | 'checkTitles' | 'claimQuest' | 'claimNgGoal' | 'placeBet' | 'addXp' | 'checkWelcomeBack' | 'contributeLandmark' | 'dismissUnlockAct'> => ({
+export const createProgressSlice = (set: SetState, get: GetState): Pick<GameState, 'setCostume' | 'setShopName' | 'claimGift' | 'spinWheel' | 'learnSkill' | 'checkTitles' | 'claimQuest' | 'claimNgGoal' | 'placeBet' | 'addXp' | 'checkWelcomeBack' | 'collectOfflineRevenue' | 'contributeLandmark' | 'dismissUnlockAct'> => ({
   setCostume: (id) => {
     const s = get();
     const def = costumeById(id);
@@ -67,6 +72,27 @@ export const createProgressSlice = (set: SetState, get: GetState): Pick<GameStat
       playSfx('gift');
     }
     return reward;
+  },
+  /** GĐ1497 — doanh thu khi vắng mặt: khu ăn tại chỗ chạy chậm 55%, trần 30 + cấp×5 phút thực,
+   *  đủ điều kiện (bàn ghế + trạm nấu + món nấu bày kệ) mới có thu; chỉ tiền, không XP/không lượt sao. */
+  collectOfflineRevenue: () => {
+    const s = get();
+    const awayMinutes = s.lastSeenAt > 0 ? (Date.now() - s.lastSeenAt) / 60_000 : 0;
+    const furn = s.furniture.filter((f) => !f.trial);
+    const result = offlineRevenue({
+      awayMinutes,
+      level: s.level,
+      recentAvgDailyProfit: recentAvgSalesProfit(s.history),
+      hasDineSeat: freeSeat(furn, new Set()) !== null,
+      hasCookStation: furn.some((f) => isCookStation(f.type) && !f.broken),
+      hasCookedStocked: furn.some((f) => !f.broken && f.tiers.some((t) => t.productId && t.count > 0 && COOKED_PRODUCT_IDS.has(t.productId))),
+    });
+    if (result.gain > 0) {
+      set({ money: s.money + result.gain });
+      s.notify(`🍛 Bạn vắng ${Math.round(awayMinutes)} phút — khu ăn tại chỗ vẫn đón ~${result.customers} khách, thu +${formatMoney(result.gain)}.`);
+      playSfx('sale');
+    }
+    return result;
   },
   contributeLandmark: () => {
     const s = get();
