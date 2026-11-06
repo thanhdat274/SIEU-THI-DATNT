@@ -1,3 +1,4 @@
+import { suggestBudget } from '../data/suggestBudget';
 import { ProductIcon } from './ProductIcon';
 import { st } from './orderPanelStyles';
 import { useMemo, useState } from 'react';
@@ -212,15 +213,15 @@ export function OrderPanel() {
   // Bỏ qua món tiệm chưa có chỗ bày.
   const fillSuggest = () => {
     const c: Record<string, number> = {};
-    const wages = wagesDue(useGame.getState());
-    const budget = Math.max(0, money - wages);
+    const g = useGame.getState();
+    const budget = suggestBudget(money, wagesDue(g), g.day);
     let cut = false;
     for (const r of shown.filter((it) => it.suggest > 0 && displayable(it.p.id))) {
       c[r.p.id] = maxFit(c, r.p.id, r.suggest, budget);
       if (c[r.p.id] < r.suggest) cut = true;
     }
     setCart(c);
-    if (cut) notify('💰/📦 Điền tới hết tiền hoặc hết chỗ kho — nâng cấp để nhập thêm');
+    if (cut) notify(useGame.getState().day <= 1 ? '💰 Ngày đầu chỉ điền ~40% tiền mặt — giữ vốn, bán xong nhập thêm' : '💰/📦 Điền tới hết tiền hoặc hết chỗ kho — nâng cấp để nhập thêm');
   };
   // GĐ205: điền giỏ đúng thứ mà rốn kho chung đang cần cho CHI NHÁNH (phiếu nạp kho GĐ202). Khác
   // fillSuggest (đặt theo nhu cầu tiệm chính): ưu tiên đúng kệ chi nhánh đang trống, quy theo thùng.
