@@ -8,6 +8,7 @@ import * as THREE from 'three';
 import { shopLayout, worldActions } from './core/actions';
 import { saveGame, startAutosave } from './core/save';
 import { formatClock, SLEEP_FROM, useGame, type GameState } from './core/store';
+import { bedHint } from './data/bedHint';
 import { lampLevel } from './render/lampLevel';
 import { createTutorialMarker } from './render/tutorialMarker';
 import { effectiveSpeed, newRoutineMarks, planRoutine, stocktakeMessage } from './core/routine';
@@ -388,7 +389,7 @@ function runRoutine() {
 
 /** Quầy, kệ và tủ thay đổi khi xây dựng / mở rộng tiệm, nên tính lại mỗi lần. */
 const fixedInteractables: Interactable[] = [
-  { position: bedPos, radius: 2, hint: () => (player.asleep ? (inAlley() ? '💤 Chờ cả hẻm ngủ... [N] Dậy' : '💤 Đang ngủ...') : '[N] Đi ngủ'), key: 'KeyN', action: goToBed },
+  { position: bedPos, radius: 2, hint: () => bedHint(player.asleep, inAlley(), useGame.getState().minutes), key: 'KeyN', action: goToBed },
   // Trang trại nam đường thứ hai: đứng cạnh cổng bấm V mở bảng trại (trồng, tưới, thu hoạch, cho gà ăn)
   { position: world.farmSpot, radius: 4, hint: () => '[V] Trang trại', key: 'KeyV', action: () => useGame.getState().openPanel({ type: 'garden' }) },
   // Giếng nước trong trại: tưới nhanh tất cả luống không cần mở bảng
