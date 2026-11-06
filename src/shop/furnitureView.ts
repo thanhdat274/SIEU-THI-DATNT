@@ -47,6 +47,8 @@ export class FurnitureView {
     else if (type === 'wall') this.buildWall();
     else if (type === 'checkout') this.buildCheckout();
     else if (type === 'cartStation') this.buildCartStation();
+    else if (type === 'dining_table') this.buildDiningTable();
+    else if (type === 'chair') this.buildChair();
     else if (isCookStation(type)) this.buildCookStation();
     else if (type === 'freezer') this.buildChest(0xf4f6f7, 0.85, true);
     else if (type === 'produce') this.buildChest(0x8b5a2b, 0.75, false);
@@ -362,6 +364,43 @@ export class FurnitureView {
     leaves.position.y = 0.6;
     leaves.scale.y = 1.3;
     this.group.add(pot, leaves);
+  }
+
+  /** GĐ1490 — bàn ăn khu ăn tại chỗ: mặt bàn gỗ sáng + 4 chân, để tô/ly trên mặt cho ra dáng quán ăn. */
+  private buildDiningTable() {
+    const [w, d] = furnitureDef(this.type).size;
+    const wood = new THREE.MeshStandardMaterial({ color: 0xb98a4e });
+    const leg = new THREE.MeshStandardMaterial({ color: 0x6e4a22 });
+    const top = new THREE.Mesh(new THREE.BoxGeometry(w, 0.06, d), wood);
+    top.position.y = 0.72;
+    this.group.add(top);
+    for (const [x, z] of [[-w / 2 + 0.09, -d / 2 + 0.09], [w / 2 - 0.09, -d / 2 + 0.09], [-w / 2 + 0.09, d / 2 - 0.09], [w / 2 - 0.09, d / 2 - 0.09]]) {
+      const l = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.72, 0.06), leg);
+      l.position.set(x, 0.36, z);
+      this.group.add(l);
+    }
+    // Tô nước/đĩa trống trên bàn — nhìn phát biết là chỗ khách ngồi ăn
+    const bowl = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.07, 0.05, 12), new THREE.MeshStandardMaterial({ color: 0xf5f6fa }));
+    bowl.position.set(0.18, 0.78, 0.1);
+    const cup = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.035, 0.1, 10), new THREE.MeshStandardMaterial({ color: 0xaee4ff, transparent: true, opacity: 0.75 }));
+    cup.position.set(-0.22, 0.8, -0.12);
+    this.group.add(bowl, cup);
+  }
+
+  /** GĐ1490 — ghế ăn: đệm + lưng ghế + 4 chân, quay mặt về phía trước (khách xoay ghế nhìn mặt bàn). */
+  private buildChair() {
+    const wood = new THREE.MeshStandardMaterial({ color: 0xa9713c });
+    const leg = new THREE.MeshStandardMaterial({ color: 0x6e4a22 });
+    const seat = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.05, 0.45), wood);
+    seat.position.y = 0.45;
+    const back = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.42, 0.05), wood);
+    back.position.set(0, 0.68, -0.2);
+    this.group.add(seat, back);
+    for (const [x, z] of [[-0.18, -0.18], [0.18, -0.18], [-0.18, 0.18], [0.18, 0.18]]) {
+      const l = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.45, 0.05), leg);
+      l.position.set(x, 0.225, z);
+      this.group.add(l);
+    }
   }
 
   private buildWall() {

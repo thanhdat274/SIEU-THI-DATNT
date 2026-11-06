@@ -4,6 +4,7 @@ import type { CookingStation } from './recipes';
 export type FurnitureType =
   | 'shelf' | 'bigShelf' | 'fridge' | 'freezer' | 'produce' | 'meat_counter'
   | 'checkout' | 'cartStation' | 'plant' | 'wall'
+  | 'dining_table' | 'chair'
   | CookingStation;
 
 /** Trạm nấu: id trùng tên trạm trong recipes.ts; đặt trong tiệm mới nấu được món của trạm đó. */
@@ -29,6 +30,8 @@ export interface FurnitureDef {
   categories: Category[];
   /** Khách trả thêm bao nhiêu % khi mua từ món đồ này (vd. đồ uống lạnh). */
   priceBonus?: number;
+  /** GĐ1490 — bàn ăn: số chỗ ngồi tối đa (số ghế kề bàn được tính). */
+  seatSlots?: number;
   desc: string;
 }
 
@@ -114,6 +117,18 @@ export const FURNITURE: FurnitureDef[] = [
   {
     type: 'gift_wrap', name: 'Bàn gói quà', price: 300000, unlock: 28, size: [1.0, 0.6], tiers: 0, slots: 0, capacity: 0,
     categories: [], desc: 'Trạm gói giỏ quà lễ: Tết, 8/3, 20/11, Trung thu — chỉ gói được trong dịp, lãi cao (xem Sổ nấu 🍳)',
+  },
+  // ──────────────────────────────────────────────
+  // GĐ1490 — KHU ĂN TẠI CHỢ: khách mua món nấu tươi có thể ngồi lại ăn (đối chiếu khu dine-in)
+  // ──────────────────────────────────────────────
+  {
+    type: 'dining_table', name: 'Bàn ăn', price: 120000, unlock: 30, size: [1.2, 0.7], tiers: 0, slots: 0, capacity: 0,
+    categories: [], seatSlots: 4,
+    desc: 'Khu ăn tại chỗ: khách mua món nấu tươi ngồi lại ăn ở đây (tối đa 4 ghế kề bàn)',
+  },
+  {
+    type: 'chair', name: 'Ghế ăn', price: 40000, unlock: 30, size: [0.5, 0.5], tiers: 0, slots: 0, capacity: 0,
+    categories: [], desc: 'Đặt sát bàn ăn (trong tầm 1 ô kề) mới tính là một chỗ ngồi',
   },
 ];
 
