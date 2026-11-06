@@ -1966,6 +1966,50 @@ describe('GĐ1414 — bò bít tết (chảo chiên)', () => {
   });
 });
 
+/** GĐ1415 — Hột vịt lộn luộc: lối ra đầu tiên của hột vịt lộn (bếp nồi nấu). */
+describe('GĐ1415 — hột vịt lộn luộc (bếp nồi nấu)', () => {
+  const recipe = RECIPE_MAP['recipe_hot_vit_luoc'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm bếp nồi nấu và dùng hột vịt lộn', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'hot_vit_luoc')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'hot_vit_luoc').length).toBe(1);
+    expect(recipe.station).toBe('hot_kettle');
+    expect(recipe.inputs.some((i) => i.productId === 'hotvit')).toBe(true);
+  });
+});
+
+/** GĐ1415 — Bánh mì bơ tỏi: lối ra đầu tiên của bơ muối (bếp nướng). */
+describe('GĐ1415 — bánh mì bơ tỏi (bếp nướng)', () => {
+  const recipe = RECIPE_MAP['recipe_banh_mi_bo_toi'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm bếp nướng và dùng bơ muối', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'banh_mi_bo_toi')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'banh_mi_bo_toi').length).toBe(1);
+    expect(recipe.station).toBe('food_grill');
+    expect(recipe.inputs.some((i) => i.productId === 'bo_sua')).toBe(true);
+  });
+});
+
 /** GĐ1405 — Sữa hạt điều: lối ra đầu tiên của hạt điều rang muối (máy xay). */
 describe('GĐ1405 — sữa hạt điều (máy xay)', () => {
   const recipe = RECIPE_MAP['recipe_sua_hat_dieu'];
