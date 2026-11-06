@@ -100,9 +100,23 @@ const MERGE_DEEP: readonly (keyof ReturnType<typeof newGameData>)[] = [
   'riskToday', 'counterPolicy',
 ];
 
+/**
+ * Playtest M3: JSON không có Infinity — lô hàng "không hết hạn" (life: Infinity, vd. Diêm, bật lửa) lưu thành
+ * life: null, nạp lại thành 0 → báo cận hạn và qua đêm bị tính hỏng. Đi khắp bản lưu, trả null về Infinity.
+ */
+export function reviveLots<T>(v: T): T {
+  if (Array.isArray(v)) return v.map(reviveLots) as T;
+  if (!isPlainObject(v)) return v;
+  const o = v as Record<string, unknown>;
+  if ('qty' in o && 'life' in o && o.life === null) return { ...o, life: Infinity } as T;
+  const out: Record<string, unknown> = {};
+  for (const [k, x] of Object.entries(o)) out[k] = reviveLots(x);
+  return out as T;
+}
+
 /** Nạp một bản lưu (có thể là bản cũ thiếu trường mới, hoặc phiên bản cấu trúc cũ). */
 export function applySnapshot(raw: Partial<SaveData>) {
-  const data = migrate(raw);
+  const data = reviveLots(migrate(raw));
   const fresh = newGameData();
   const merged = { ...fresh, ...data };
   // Với các hệ có mặc định là object thường: merge sâu, field mới của hệ tự bù từ mặc định
