@@ -4276,6 +4276,28 @@ describe('GĐ1474 — bún chả lụa nước chanh muối (bếp nồi)', () =
   });
 });
 
+/** GĐ1475 — Giò thủ chiên giòn: lối ra đầu tiên của giò thủ bà Tám (chảo chiên). */
+describe('GĐ1475 — giò thủ chiên giòn (chảo chiên)', () => {
+  const recipe = RECIPE_MAP['recipe_gio_thu_chien_gion'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm chảo chiên và dùng giò thủ bà Tám', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'gio_thu_chien_gion')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'gio_thu_chien_gion').length).toBe(1);
+    expect(recipe.station).toBe('fryer');
+    expect(recipe.inputs.some((i) => i.productId === 'hx_gio_thu')).toBe(true);
+  });
+});
+
 /** GĐ1405 — Sữa hạt điều: lối ra đầu tiên của hạt điều rang muối (máy xay). */
 describe('GĐ1405 — sữa hạt điều (máy xay)', () => {
   const recipe = RECIPE_MAP['recipe_sua_hat_dieu'];

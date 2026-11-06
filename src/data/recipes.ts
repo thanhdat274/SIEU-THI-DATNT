@@ -480,6 +480,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'ca_phao_chien_gion', name: 'Cà pháo chiên giòn chấm me', category: 'fresh', buy: 5000, sell: 9000, color: 0xa0b050, unlock: 69 },
   // GĐ1474: Bún chả lụa nước chanh muối — lối ra ĐẦU TIÊN của chanh muối hàng xóm.
   { id: 'bun_cha_lua_chanh_muoi', name: 'Bún chả lụa nước chanh muối', category: 'fresh', buy: 11000, sell: 18000, color: 0xf0e0a0, unlock: 70 },
+  // GĐ1475: Giò thủ chiên giòn — lối ra ĐẦU TIÊN của giò thủ bà Tám.
+  { id: 'gio_thu_chien_gion', name: 'Giò thủ chiên giòn', category: 'fresh', buy: 11000, sell: 18000, color: 0xc89060, unlock: 71 },
   // GĐ1409: Sữa chua granola — lối ra ĐẦU TIÊN của ngũ cốc granola: mẻ (granola 130k + sữa chua) → 14 cốc × 18k = 252k.
   { id: 'sua_chua_granola', name: 'Sữa chua granola', category: 'fresh', buy: 11000, sell: 18000, color: 0xe9d8b4, unlock: 68 },
   // GĐ1408: Cà phê phin sữa — lối ra ĐẦU TIÊN của cà phê xay nguyên chất: mẻ (cà phê xay 150k + sữa đặc 22k) = 172k → 25 ly × 12k = 300k.
@@ -1274,6 +1276,10 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_bun_cha_lua_chanh_muoi', name: 'Bún chả lụa nước chanh muối', station: 'hot_kettle',
     inputs: [{ productId: 'bun', quantity: 2 }, { productId: 'hx_cha_lua', quantity: 1 }, { productId: 'hx_chanh_muoi', quantity: 1 }],
     outputId: 'bun_cha_lua_chanh_muoi', outputQty: 10, durationMin: 15, unlock: 70, reputationGain: 3 },
+  // GĐ1475: Giò thủ chiên giòn ở chảo chiên. Mở 71 (> golden 30, ≥ cấp nguyên liệu).
+  { id: 'recipe_gio_thu_chien_gion', name: 'Giò thủ chiên giòn', station: 'fryer',
+    inputs: [{ productId: 'hx_gio_thu', quantity: 1 }, { productId: 'botmi', quantity: 1 }, { productId: 'x_trung_ga', quantity: 2 }],
+    outputId: 'gio_thu_chien_gion', outputQty: 8, durationMin: 12, unlock: 71, reputationGain: 3 },
   // GĐ1409: Sữa chua granola ở máy xay: lãi dương, hời hơn bán thẳng nguyên liệu. Mở 68 = cấp granola (> golden 30).
   { id: 'recipe_sua_chua_granola', name: 'Sữa chua granola', station: 'blender',
     inputs: [{ productId: 'ngu_coc', quantity: 1 }, { productId: 'suachua', quantity: 1 }],
