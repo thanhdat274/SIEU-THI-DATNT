@@ -464,6 +464,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'banh_trang_nuong_cha_bong', name: 'Bánh tráng nướng chà bông', category: 'fresh', buy: 7000, sell: 12000, color: 0xe0b070, unlock: 61 },
   // GĐ1466: Lạp xưởng xào dưa muối — lối ra ĐẦU TIÊN của dưa muối hàng xóm.
   { id: 'lap_xuong_xao_dua_muoi', name: 'Lạp xưởng xào dưa muối', category: 'fresh', buy: 11000, sell: 18000, color: 0xb85a3a, unlock: 62 },
+  // GĐ1467: Ô mai chanh muối me — lối ra ĐẦU TIÊN của me dầm bà Tám.
+  { id: 'o_mai_chanh_me', name: 'Ô mai chanh muối me', category: 'dry', buy: 9000, sell: 15000, color: 0x8a6a2a, unlock: 63 },
   // GĐ1409: Sữa chua granola — lối ra ĐẦU TIÊN của ngũ cốc granola: mẻ (granola 130k + sữa chua) → 14 cốc × 18k = 252k.
   { id: 'sua_chua_granola', name: 'Sữa chua granola', category: 'fresh', buy: 11000, sell: 18000, color: 0xe9d8b4, unlock: 68 },
   // GĐ1408: Cà phê phin sữa — lối ra ĐẦU TIÊN của cà phê xay nguyên chất: mẻ (cà phê xay 150k + sữa đặc 22k) = 172k → 25 ly × 12k = 300k.
@@ -1226,6 +1228,10 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_lap_xuong_xao_dua_muoi', name: 'Lạp xưởng xào dưa muối', station: 'hot_kettle',
     inputs: [{ productId: 'hx_lap_xuong', quantity: 1 }, { productId: 'hx_dua_muoi', quantity: 3 }],
     outputId: 'lap_xuong_xao_dua_muoi', outputQty: 8, durationMin: 12, unlock: 62, reputationGain: 3 },
+  // GĐ1467: Ô mai chanh muối me ở bếp nồi. Mở 63 (> golden 30, ≥ cấp nguyên liệu).
+  { id: 'recipe_o_mai_chanh_me', name: 'Ô mai chanh muối me', station: 'hot_kettle',
+    inputs: [{ productId: 'hx_chanh_muoi', quantity: 1 }, { productId: 'hx_me_dam', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
+    outputId: 'o_mai_chanh_me', outputQty: 10, durationMin: 30, unlock: 63, reputationGain: 3 },
   // GĐ1409: Sữa chua granola ở máy xay: lãi dương, hời hơn bán thẳng nguyên liệu. Mở 68 = cấp granola (> golden 30).
   { id: 'recipe_sua_chua_granola', name: 'Sữa chua granola', station: 'blender',
     inputs: [{ productId: 'ngu_coc', quantity: 1 }, { productId: 'suachua', quantity: 1 }],
