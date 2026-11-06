@@ -3968,6 +3968,28 @@ describe('GĐ1460 — cơm cháy chà bông (chảo chiên)', () => {
   });
 });
 
+/** GĐ1461 — Xôi lạp xưởng trứng: lối ra đầu tiên của lạp xưởng bà Tám (quây xôi). */
+describe('GĐ1461 — xôi lạp xưởng trứng (quây xôi)', () => {
+  const recipe = RECIPE_MAP['recipe_xoi_lap_xuong_trung'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm quây xôi và dùng lạp xưởng bà Tám', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'xoi_lap_xuong_trung')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'xoi_lap_xuong_trung').length).toBe(1);
+    expect(recipe.station).toBe('rice_station');
+    expect(recipe.inputs.some((i) => i.productId === 'hx_lap_xuong')).toBe(true);
+  });
+});
+
 /** GĐ1405 — Sữa hạt điều: lối ra đầu tiên của hạt điều rang muối (máy xay). */
 describe('GĐ1405 — sữa hạt điều (máy xay)', () => {
   const recipe = RECIPE_MAP['recipe_sua_hat_dieu'];

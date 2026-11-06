@@ -138,3 +138,4 @@
 - GĐ1458: Bánh tráng cuốn giò thủ (u54, bếp nướng: 1 bánh tráng phơi sương + 1 giò thủ bà Tám → 12 cuốn, bán 13k) — nối 2 hàng xóm; bỏ rau khỏi công thức để không cướp lối ra tốt nhất của rau trại (farmKitchenValue).
 - GĐ1459: Cá basa chiên sốt me (u55, chảo chiên: 2 basa + 1 me dầm bà Tám → 7 phần, bán 24k) — lối ra bếp thứ 2 cho me dầm; test recipeDepth.
 - GĐ1460: Cơm cháy chà bông (u56, chảo chiên: 1 túi gạo + 1 chà bông → 16 miếng, bán 15k) — món khô để lâu; test recipeDepth.
+- GĐ1461: Xôi lạp xưởng trứng (u57, quây xôi: 1 nếp + 1 lạp xưởng bà Tám + 2 trứng → 16 gói, bán 12k) — lối ra thứ 3 cho lạp xưởng; test recipeDepth.
