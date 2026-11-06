@@ -798,11 +798,18 @@ export class CustomerManager {
    * GĐ1492 — khách đang đứng chờ ghế ('toSeat' chưa có ghế): đếm kiên nhẫn, ghế vừa trống
    * thì dẫn đi ngồi, quá mốc thì bỏ về buồn (ghi mất khách vì chờ, không tip).
    */
-  private updateSeatWaiting(c: Customer, gameDt: number) {    const s = useGame.getState();
+  private updateSeatWaiting(c: Customer, gameDt: number) {
+    const s = useGame.getState();
     c.diningWait += gameDt;
     if (c.diningWait > DINE_WAIT_SECONDS) {
       c.say('😠 Chờ mãi không có chỗ!');
       s.noteMiss('wait');
+      // GĐ1502 — chẩn đoán nút thắt ĐÚNG LÚC (một lần mỗi ván): khách bỏ về vì hết chỗ
+      // thì dạy ngay việc cần làm, thay vì để người chơi tự mò số liệu (tham khảo khu eat-in).
+      if (!s.dineSeatHinted) {
+        useGame.setState({ dineSeatHinted: true });
+        s.notify('🪑 Khách chờ mãi không có chỗ ngồi — mua thêm Bàn ăn và Ghế ở 🛠️ Xây dựng!');
+      }
       this.leave(c, false, true);
       return;
     }

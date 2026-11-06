@@ -195,6 +195,8 @@ export interface GameState {
   shelfProfit: Record<number, { profit: number; since: number }>;
   /** Đã nhắc người chơi về hàng chớp nhoáng cạnh quầy (chỉ nhắc một lần). */
   impulseHinted: boolean;
+  /** GĐ1502 — đã dạy một lần "mua thêm bàn ghế" khi khách bỏ về vì hết chỗ ngồi khu ăn tại chỗ. */
+  dineSeatHinted: boolean;
   /** Giá bán người chơi tự đặt; không có thì dùng giá gợi ý. */
   prices: Record<string, number>;
   /** Giờ vàng tự đặt: khung 2 tiếng giảm giá kéo khách về (null = tắt). */
