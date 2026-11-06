@@ -135,6 +135,19 @@ export function weightedPick<T>(items: readonly T[], weight: (item: T) => number
 // ──────────────────────────────────────────────
 
 /** Món nhỏ đủ "nhét túi": giá gợi ý không quá con số này. */
+// ───── GĐ1495 — điểm trang trí × sao danh tiếng (bỏ trần +25% của chậu cây) ─────
+// Điểm 🩷 mọi đồ trang trí cộng dồn thành decorScore; chỉ số kéo khách được NHÂN với
+// (sao danh tiếng / 5) — quán đẹp chỉ phát huy khi phục vụ tốt, đúng khu eat-in tham khảo.
+export const DECOR_VISIT_DIVISOR = 100;
+
+export function decorScoreOf(list: Furniture[]): number {
+  return list.reduce((n, f) => (f.broken || f.trial ? n : n + (furnitureDef(f.type).decor ?? 0)), 0);
+}
+
+/** Hệ số kéo khách từ trang trí: decorScore/K × (sao/5) — không trần, về 0 khi tiệm xấu sao. */
+export const decorVisitBoost = (decorScore: number, overallStars: number) =>
+  (decorScore / DECOR_VISIT_DIVISOR) * (overallStars / 5);
+
 export const IMPULSE_MAX_PRICE = 15000;
 /** Ngành hàng dễ mua kẹp thêm: kẹo bánh, nước — không ai vớt gạo khi đứng chờ. */
 export const IMPULSE_CATEGORIES: readonly Category[] = ['dry', 'drink'];

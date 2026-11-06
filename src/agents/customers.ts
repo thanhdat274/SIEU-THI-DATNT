@@ -44,7 +44,7 @@ import { landmarkCustomerFactor } from '../data/landmark';
 import { redeemLoyalty, storyOnVisit } from '../core/biz';
 import { hasUpgrade } from '../data/upgrades';
 import {
-  impulseChance, impulseOptions, impulseWeight, shelfAttention, stockedAttention, weightedPick, type ShopGeom,
+  impulseChance, impulseOptions, impulseWeight, shelfAttention, stockedAttention, weightedPick, decorScoreOf, decorVisitBoost, type ShopGeom,
 } from '../data/layout';
 import { playSfx } from '../core/audio';
 
@@ -150,13 +150,14 @@ export class CustomerManager {
         const rush = bandTraffic * dayEffects(s.weatherSeed, s.day, s.level).traffic
           * (hasSkill(s.skills, 'local_legend') ? 1.1 : 1) * festival * eventTraffic * marketTrafficFactor(s.day);
         this.spawnIn = (daytime ? (night ? NIGHT_SPAN : OPEN_UNTIL - OPEN_FROM) / perDay / rush : 60) * (0.5 + simRng()());
-        // Mỗi chậu cây +5% khách ghé, tối đa +25%
-        const plants = s.furniture.filter((f) => f.type === 'plant').length;
+        // GĐ1495 — bỏ trần "+25% chậu cây": điểm trang trí 🩷 cộng dồn mọi đồ decor, kéo khách
+        // theo sao danh tiếng (quán đẹp chỉ phát huy khi phục vụ tốt); không máy trong sim cũ → 0.
+        const decorBoost = decorVisitBoost(decorScoreOf(s.furniture), reputationOf(s.repLog).overall);
         // Đang mưa thì ít người ra đường, tạnh mưa lại đông như thường
         const traffic = skyAt(s.weatherSeed, s.day, s.weather, s.minutes).traffic * festival * eventTraffic;
       // Bày hàng rẻ hơn giá gợi ý thì tiếng lành đồn xa, thêm người ghé; sàn bẩn thì ngại vào; giờ vàng kéo khách về đúng khung
       const happy = happyHourActive(s.happyHour, s.minutes) ? happyTraffic(s.happyHour!.off) : 1;
-      const visit = (0.5 + Math.min(plants * 0.05, 0.25) + repVisitBonus(reputationOf(s.repLog))) * traffic * this.priceAppeal() * dirtVisitFactor(s.dirt)
+      const visit = (0.5 + decorBoost + repVisitBonus(reputationOf(s.repLog))) * traffic * this.priceAppeal() * dirtVisitFactor(s.dirt)
       * bizTraffic(s.biz, s.day) * happy * socialTraffic(s.social, s.day)
       // Sân chơi đầu hẻm khánh thành rồi thì hẻm đông khách hơn (×1.06; ván mới = 1 nên không đổi nền kinh tế)
       * landmarkCustomerFactor(s.biz.landmark.contributions);

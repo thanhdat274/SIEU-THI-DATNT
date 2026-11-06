@@ -34,6 +34,8 @@ export interface FurnitureDef {
   priceBonus?: number;
   /** GĐ1490 — bàn ăn: số chỗ ngồi tối đa (số ghế kề bàn được tính). */
   seatSlots?: number;
+  /** GĐ1495 — điểm trang trí 🩷: cộng vào decorScore kéo khách (chỉ phát huy khi danh tiếng tốt). */
+  decor?: number;
   desc: string;
 }
 
@@ -46,11 +48,11 @@ export const FURNITURE: FurnitureDef[] = [
   },
   {
     type: 'wall', name: 'Vách ngăn', price: 20000, unlock: 1, size: [1.0, 0.15], tiers: 0, slots: 0, capacity: 0,
-    categories: [], desc: 'Vách cao 1.5m, dùng chia khu (kho, khu đồ uống...)',
+    categories: [], decor: 2, desc: 'Vách cao 1.5m, dùng chia khu (kho, khu đồ uống...); +2 điểm trang trí',
   },
   {
     type: 'plant', name: 'Chậu cây', price: 50000, unlock: 3, size: [0.5, 0.5], tiers: 0, slots: 0, capacity: 0,
-    categories: [], desc: 'Trang trí: +5% khách ghé (tối đa +25%)',
+    categories: [], decor: 6, desc: 'Trang trí: +6 điểm 🩷 — càng nhiều điểm trang trí càng kéo khách, nhưng chỉ phát huy khi danh tiếng tốt',
   },
   {
     type: 'fridge', name: 'Tủ mát', price: 400000, unlock: 5, size: [1.2, 0.7], tiers: 4, slots: 3, capacity: 6,
