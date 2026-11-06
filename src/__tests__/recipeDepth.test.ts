@@ -1812,6 +1812,28 @@ describe('GĐ1401 — mì ý sốt thịt bằm (bếp nồi nấu)', () => {
   });
 });
 
+/** GĐ1405 — Sữa hạt điều: lối ra đầu tiên của hạt điều rang muối (máy xay). */
+describe('GĐ1405 — sữa hạt điều (máy xay)', () => {
+  const recipe = RECIPE_MAP['recipe_sua_hat_dieu'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm máy xay và dùng hạt điều rang muối', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'sua_hat_dieu')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'sua_hat_dieu').length).toBe(1);
+    expect(recipe.station).toBe('blender');
+    expect(recipe.inputs.some((i) => i.productId === 'hat_dieu_muoi')).toBe(true);
+  });
+});
+
 /** GĐ1400 — Sinh tố dưa hấu: lối ra đầu tiên của dưa hấu (máy xay). */
 describe('GĐ1400 — sinh tố dưa hấu (máy xay)', () => {
   const recipe = RECIPE_MAP['recipe_sinh_to_dua_hau'];
