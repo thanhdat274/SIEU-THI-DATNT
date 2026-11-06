@@ -3528,6 +3528,28 @@ describe('GĐ1439 — xôi chà bông (quây xôi)', () => {
   });
 });
 
+/** GĐ1440 — Xôi xoài cốt dừa: lối ra đầu tiên của xoài vườn nhà (quây xôi). */
+describe('GĐ1440 — xôi xoài cốt dừa (quây xôi)', () => {
+  const recipe = RECIPE_MAP['recipe_xoi_xoai'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm quây xôi và dùng xoài vườn nhà', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'xoi_xoai')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'xoi_xoai').length).toBe(1);
+    expect(recipe.station).toBe('rice_station');
+    expect(recipe.inputs.some((i) => i.productId === 'x_xoai')).toBe(true);
+  });
+});
+
 /** GĐ1405 — Sữa hạt điều: lối ra đầu tiên của hạt điều rang muối (máy xay). */
 describe('GĐ1405 — sữa hạt điều (máy xay)', () => {
   const recipe = RECIPE_MAP['recipe_sua_hat_dieu'];
