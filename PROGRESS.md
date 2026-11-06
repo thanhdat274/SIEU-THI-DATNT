@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (06/11/2026)
+- **GĐ1404 (Gà hấp rượu gạo — lối ra đầu tiên của rượu gạo, nồi hấp)**: `ga_ta_tuoi` + `ruou_gao` → 10 phần × 30k = 300k, vốn 175k, lãi 125k/mẻ, hời hơn bán thẳng (243k). unlock 46.
 - **GĐ1403 (dời món về đúng trạm, rà tiếp theo góp ý người dùng)**: Cơm chiên trứng, Xôi chiên phồng, Cá hồi áp chảo: bếp nướng → **chảo chiên**; Bò hầm rượu vang: nồi hấp → **bếp nồi nấu**. Cả 4 mở ≥38 > golden 30 → sim/autoplay/tiệm xôi KHÔNG đổi (chỉ 3 test khẳng định trạm cũ sửa có chủ ý). Save cũ an toàn: món đang nấu dở chỉ đếm ngược, hoàn tất không kiểm trạm. Test `potStationName.test.ts` +3 (cấm món chiên ở bếp nướng / món hầm ở nồi hấp). Full suite xanh.
 - **GĐ1401 (Mì ý sốt thịt bằm — lối ra đầu tiên của mì ý, bếp nồi nấu)**: `miy` + `x_thit_heo` → 8 dĩa × 15k = 120k, vốn 52k, lãi 68k/mẻ, hời hơn bán thẳng (70k). unlock 36.
 - **GĐ1400 (Sinh tố dưa hấu — lối ra đầu tiên của dưa hấu, máy xay)**: `dua` → 10 ly × 8k = 80k, vốn 30k, lãi 50k/mẻ, hời hơn bán thẳng (45k). unlock 32 > golden 30.

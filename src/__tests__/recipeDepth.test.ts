@@ -1856,6 +1856,28 @@ describe('GĐ1399 — tương ớt nhà làm (bếp nồi nấu)', () => {
   });
 });
 
+/** GĐ1404 — Gà hấp rượu gạo: lối ra đầu tiên của rượu gạo (nồi hấp). */
+describe('GĐ1404 — gà hấp rượu gạo (nồi hấp)', () => {
+  const recipe = RECIPE_MAP['recipe_ga_hap_ruou'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm nồi hấp và dùng rượu gạo', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'ga_hap_ruou')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'ga_hap_ruou').length).toBe(1);
+    expect(recipe.station).toBe('steamer');
+    expect(recipe.inputs.some((i) => i.productId === 'ruou_gao')).toBe(true);
+  });
+});
+
 /** GĐ1398 — Cua hấp bia: lối ra đầu tiên của cua biển sống (nồi hấp). */
 describe('GĐ1398 — cua hấp bia (nồi hấp)', () => {
   const recipe = RECIPE_MAP['recipe_cua_hap_bia'];
