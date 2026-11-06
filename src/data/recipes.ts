@@ -260,6 +260,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   // GĐ1390: Gỏi cuốn — món ăn lành trứ danh (bánh tráng gói tôm luộc):
   // mẻ (bánh tráng 5k×2 + tôm đông lạnh 90k) = 100k → 12 cuốn × 14k = 168k, lãi 68k/mẻ.
   { id: 'goi_cuon', name: 'Gỏi cuốn', category: 'fresh', buy: 8500, sell: 14000, color: 0xa8d8b9, unlock: 44 },
+  // GĐ1409: Sữa chua granola — lối ra ĐẦU TIÊN của ngũ cốc granola: mẻ (granola 130k + sữa chua) → 14 cốc × 18k = 252k.
+  { id: 'sua_chua_granola', name: 'Sữa chua granola', category: 'fresh', buy: 11000, sell: 18000, color: 0xe9d8b4, unlock: 68 },
   // GĐ1408: Cà phê phin sữa — lối ra ĐẦU TIÊN của cà phê xay nguyên chất: mẻ (cà phê xay 150k + sữa đặc 22k) = 172k → 25 ly × 12k = 300k.
   { id: 'ca_phe_phin_sua', name: 'Cà phê phin sữa', category: 'drink', buy: 8000, sell: 12000, color: 0x6f4e37, unlock: 64 },
   // GĐ1407: Trà atiso nấu — lối ra ĐẦU TIÊN của trà atiso túi: mẻ (atiso 38k + đường 17k) = 55k → 15 ly × 6k = 90k.
@@ -612,6 +614,10 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_goi_cuon', name: 'Gỏi cuốn', station: 'hot_kettle',
     inputs: [{ productId: 'banhtrang', quantity: 2 }, { productId: 'hai_san', quantity: 1 }],
     outputId: 'goi_cuon', outputQty: 12, durationMin: 15, unlock: 44, reputationGain: 2 },
+  // GĐ1409: Sữa chua granola ở máy xay: lãi dương, hời hơn bán thẳng nguyên liệu. Mở 68 = cấp granola (> golden 30).
+  { id: 'recipe_sua_chua_granola', name: 'Sữa chua granola', station: 'blender',
+    inputs: [{ productId: 'ngu_coc', quantity: 1 }, { productId: 'suachua', quantity: 1 }],
+    outputId: 'sua_chua_granola', outputQty: 14, durationMin: 12, unlock: 68, reputationGain: 3 },
   // GĐ1408: Cà phê phin sữa ở quầy pha: mẻ 172k → 300k, lãi 128k/mẻ, hời hơn bán thẳng nguyên liệu. Mở 64 = cấp cà phê xay (> golden 30).
   { id: 'recipe_ca_phe_phin_sua', name: 'Cà phê phin sữa', station: 'drink_counter',
     inputs: [{ productId: 'ca_phe_xay', quantity: 1 }, { productId: 'x_sua_dac', quantity: 1 }],
