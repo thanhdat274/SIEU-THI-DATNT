@@ -139,3 +139,4 @@
 - GĐ1474: Bún chả lụa nước chanh muối (u70, bếp nồi: 2 bún + 1 chả lụa + 1 chanh muối → 10 tô, bán 18k).
 - GĐ1475: Giò thủ chiên giòn (u71, chảo chiên: 1 giò thủ + 1 bột mì + 2 trứng → 8 phần, bán 18k).
 - GĐ1476: Xôi chiên chà bông (u72, chảo chiên: 1 nếp + 1 chà bông → 14 miếng, bán 12k).
+- GĐ1477: Bánh tráng trộn me (u73, bếp nồi: 2 bánh tráng + 1 me dầm + 2 trứng → 12 bịch, bán 10k).
