@@ -83,7 +83,7 @@
   - ✅ **P0 T3 (ĐÃ SỬA):** bedHint() ẩn "[N] Đi ngủ" trước 18h (test bedHint); cảm ứng vốn đã đổi "[N]" → 👆 (Hud.tsx:454).
   - ✅ **P1 T4 (ĐÃ SỬA):** panel tải lười hiện "⏳ Đang mở…" (PanelLoading, test panelLoading).
   - ✅ **P1 T5 ĐÃ SỬA** (ngày 1 điền gợi ý ≤40% tiền mặt; tổng kết ngày 1 đưa lãi gộp bán hàng lên đầu — test suggestBudget, day1SummaryHeadline).
-  - P2 T6 THỬ RỒI HOÀN TÁC (06/11): khóa cám heo→cấp 20, cám bò→24 làm sim cấp 5 (economySimL5, seed cố định) tụt lãi bán +189.800→−10.067đ/ngày — bot xoay vòng hàng theo danh sách mở khóa, cám bao 5kg là món giá cao bán được ở cấp thấp. Muốn làm phải thay món tạp hóa giá tương đương ở cấp 1 trước. T7–T9 vẫn để sau.
+  - P2 T6 THỬ RỒI HOÀN TÁC (06/11): khóa cám heo→cấp 20, cám bò→24 làm sim cấp 5 (economySimL5, seed cố định) tụt lãi bán +189.800→−10.067đ/ngày — bot xoay vòng hàng theo danh sách mở khóa, cám bao 5kg là món giá cao bán được ở cấp thấp. Muốn làm phải thay món tạp hóa giá tương đương ở cấp 1 trước. T9 ĐÃ SỬA: Ra tiệm/Ra trại camera nhảy thẳng (snapTo), không lia qua cảnh — test cameraSnap. T7, T8 vẫn để sau.
 - 🆕 **Người dùng ĐÃ DUYỆT (06/11/2026) — đợt 2 playtest giữa game** (`PHAN-TICH-PLAYTEST-PERSONA-DOT2-2026-11-06.md`, mục 5). Mỗi việc có test:
   - ✅ **P0 M2 (ĐÃ SỬA, test cookPanelZero):** Sổ nấu in "0" lạc ("/mẻ0") — `ui/panels/CookPanel.tsx:123,133` dùng `{own && …}` với `own` là số; đổi `own > 0 &&`.
   - ◐ **P0 M1 (ĐÃ GIẢM, test gfxLowShield):** mức Thấp hạ độ nét tới 0.6 (trước 0.75) khi < 45 FPS — không bớt NPC ở mức chọn tay (giữ quyết định GĐ1235). Còn: đo lại trên Chrome thật cấp 29; nếu vẫn < 30 thì soi CPU (9 NV + đám đông), không phải GPU.

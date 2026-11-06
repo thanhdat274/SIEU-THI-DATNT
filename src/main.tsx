@@ -209,7 +209,7 @@ worldActions.travel = (to) => {
   const spot = to === 'shop' ? shopSpot() : to === 'ranch' ? world.farmSpot.clone() : null;
   if (spot) player.teleport(spot.x, spot.z);
   else wakeUp();
-  controller.follow = player.position;
+  controller.snapTo(player.position);
   // Ở hẻm online đồng hồ là chung: một người đi lại không được tua giờ của cả hẻm
   const travel = to === 'home' ? 0 : inAlley() ? 0 : Math.round(TRAVEL_MINUTES[to] * (vehicleDef(s.biz.vehicle)?.travel ?? 1));
   // Cập nhật location ngay để UI phản hồi đúng vị trí sau khi di chuyển (đặc biệt quan trọng trong online mode)
