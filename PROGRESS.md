@@ -127,3 +127,4 @@
 - GĐ1440–1447 (mọi trái cây vườn có lối ra bếp; giò thủ/me dầm bà Tám, chanh muối hàng xóm 1 kèm lối ra bếp & quán): docs/progress-archive/PROGRESS-GD1440-1447.md
 - GĐ1448: Bún giò thủ (u49, bếp nồi: 2 bún + 1 giò thủ bà Tám + 1 hành phi → 10 tô, bán 15k) — lối ra thứ 3 cho giò thủ; test recipeDepth.
 - GĐ1449: Cá basa hấp chanh muối (u44, nồi hấp: 2 basa + 1 chanh muối hàng xóm → 6 phần, bán 32k) — lối ra bếp đầu tiên cho chanh muối; test recipeDepth.
+- GĐ1450: Cá viên chiên sốt me (u43, chảo chiên: 3 cá viên + 1 me dầm bà Tám → 14 ly, bán 11k) — lối ra bếp cho me dầm (trước chỉ có quán nước); test recipeDepth.

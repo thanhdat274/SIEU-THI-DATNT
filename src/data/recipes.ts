@@ -432,6 +432,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'bun_gio_thu', name: 'Bún giò thủ', category: 'fresh', buy: 9000, sell: 15000, color: 0xd9b48a, unlock: 49 },
   // GĐ1449: Cá basa hấp chanh muối — lối ra ĐẦU TIÊN của chanh muối hàng xóm.
   { id: 'ca_hap_chanh_muoi', name: 'Cá basa hấp chanh muối', category: 'fresh', buy: 19000, sell: 32000, color: 0xe8dcb0, unlock: 44 },
+  // GĐ1450: Cá viên chiên sốt me — lối ra ĐẦU TIÊN của me dầm bà Tám.
+  { id: 'ca_vien_sot_me', name: 'Cá viên chiên sốt me', category: 'fresh', buy: 6500, sell: 11000, color: 0xb0703a, unlock: 43 },
   // GĐ1409: Sữa chua granola — lối ra ĐẦU TIÊN của ngũ cốc granola: mẻ (granola 130k + sữa chua) → 14 cốc × 18k = 252k.
   { id: 'sua_chua_granola', name: 'Sữa chua granola', category: 'fresh', buy: 11000, sell: 18000, color: 0xe9d8b4, unlock: 68 },
   // GĐ1408: Cà phê phin sữa — lối ra ĐẦU TIÊN của cà phê xay nguyên chất: mẻ (cà phê xay 150k + sữa đặc 22k) = 172k → 25 ly × 12k = 300k.
@@ -1130,6 +1132,10 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_ca_hap_chanh_muoi', name: 'Cá basa hấp chanh muối', station: 'steamer',
     inputs: [{ productId: 'x_ca_basa', quantity: 2 }, { productId: 'hx_chanh_muoi', quantity: 1 }],
     outputId: 'ca_hap_chanh_muoi', outputQty: 6, durationMin: 25, unlock: 44, reputationGain: 3 },
+  // GĐ1450: Cá viên chiên sốt me ở chảo chiên. Mở 43 (> golden 30, ≥ cấp nguyên liệu).
+  { id: 'recipe_ca_vien_sot_me', name: 'Cá viên chiên sốt me', station: 'fryer',
+    inputs: [{ productId: 'x_ca_vien', quantity: 3 }, { productId: 'hx_me_dam', quantity: 1 }],
+    outputId: 'ca_vien_sot_me', outputQty: 14, durationMin: 15, unlock: 43, reputationGain: 3 },
   // GĐ1409: Sữa chua granola ở máy xay: lãi dương, hời hơn bán thẳng nguyên liệu. Mở 68 = cấp granola (> golden 30).
   { id: 'recipe_sua_chua_granola', name: 'Sữa chua granola', station: 'blender',
     inputs: [{ productId: 'ngu_coc', quantity: 1 }, { productId: 'suachua', quantity: 1 }],
