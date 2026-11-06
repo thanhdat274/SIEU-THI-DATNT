@@ -127,3 +127,4 @@
 - GĐ1448–1462 (13 món nối hàng xóm/chanh muối/me dầm; GĐ1455 🧭 DỪNG thêm món dưới cấp 50 vì economySimL50 daily_smile sát ngưỡng 22 — món mới đặt ≥51): docs/progress-archive/PROGRESS-GD1448-1462.md
 - GĐ1463: Bánh cuốn lạp xưởng (u59, nồi hấp: 2 bánh cuốn + 1 lạp xưởng → 8 suất, bán 22k) — lối ra thứ 2 cho bánh cuốn nhà làm.
 - GĐ1464: Gỏi giò thủ cà pháo (u60, bếp nồi: 1 giò thủ + 2 cà pháo → 7 đĩa, bán 20k) — lối ra thứ 3 cho cà pháo.
+- GĐ1465: Bánh tráng nướng chà bông (u61, bếp nướng: 2 bánh tráng + 1 chà bông + 4 trứng → 14 cái, bán 12k) — lối ra thứ 3 cho bánh tráng.
