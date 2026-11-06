@@ -4386,6 +4386,28 @@ describe('GĐ1479 — canh chua dưa muối cá basa (bếp nồi)', () => {
   });
 });
 
+/** GĐ1480 — Bánh bao giò thủ: lối ra đầu tiên của giò thủ bà Tám (nồi hấp). */
+describe('GĐ1480 — bánh bao giò thủ (nồi hấp)', () => {
+  const recipe = RECIPE_MAP['recipe_banh_bao_gio_thu'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm nồi hấp và dùng giò thủ bà Tám', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'banh_bao_gio_thu')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'banh_bao_gio_thu').length).toBe(1);
+    expect(recipe.station).toBe('steamer');
+    expect(recipe.inputs.some((i) => i.productId === 'hx_gio_thu')).toBe(true);
+  });
+});
+
 /** GĐ1405 — Sữa hạt điều: lối ra đầu tiên của hạt điều rang muối (máy xay). */
 describe('GĐ1405 — sữa hạt điều (máy xay)', () => {
   const recipe = RECIPE_MAP['recipe_sua_hat_dieu'];
