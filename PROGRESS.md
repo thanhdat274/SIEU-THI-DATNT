@@ -107,8 +107,4 @@
 - Mục lục đầy đủ đến GĐ1391: `docs/progress-archive/INDEX-MUC-LUC-DEN-GD1391.md` (grep "GĐxx"). GĐ1382–1391 tóm tắt ở mục Trạng thái hiện tại; GĐ1392 gọn PROGRESS 190→37KB; GĐ1393 dời mục lục để PROGRESS < 30KB.
 - GĐ1409 (Sữa chua granola — lối ra đầu tiên của ngũ cốc granola ở máy xay): 14 cốc×18k, unlock 68. Dời GĐ1395–1401 sang archive. Full suite 503/4518 xanh.
 - GĐ1430–1434 (catalog đợt 10–11; test ingredientOutlet + RETAIL_ONLY; Sổ nấu gộp món khóa xa; rải 45 món cấp 35→35–57): docs/progress-archive/PROGRESS-GD1430-1434.md
-- GĐ1435 (mô tả 4 trạm bếp nướng/máy xay/chảo chiên/nồi hấp cập nhật theo thực đơn mới, cả STATIONS và FURNITURE; test khóa). 505/4741 xanh.
-- GĐ1436 (quán nước +3 món từ trái cây catalog: Trà dứa u34, Nước ép táo đá u33, Sinh tố bơ sữa đặc u35; rà kinh tế: lãi/phút cao nhất là Chè yến u96 29k/phút — chấp nhận cho cuối game). 506/4744 xanh.
-- GĐ1437 (tiệm xôi +2 món: Xôi gà xé u43, Xôi chả lụa u44 — mở > TIEM_XOI_BIG_LEVEL 42 để số hồi vốn mở rộng bếp không đổi). 506/4750 xanh.
-- GĐ1438 (hướng 3 hàng xóm: bà Tám thêm Lạp xưởng tươi u44 (biên 1.65×) + lối ra Cơm chiên lạp xưởng ở chảo chiên). 506/4753 xanh.
-- GĐ1439 (hướng 3: hàng xóm 1 thêm Chà bông heo nhà làm u46 (biên 35%) + lối ra Xôi chà bông ở quây xôi). 507/4763 xanh.
+- GĐ1435–1439 (mô tả trạm; quán nước +3 món trái cây; tiệm xôi +2; lạp xưởng bà Tám + chà bông nhà làm kèm lối ra): docs/progress-archive/PROGRESS-GD1435-1439.md
