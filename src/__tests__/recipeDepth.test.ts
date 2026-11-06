@@ -2010,6 +2010,72 @@ describe('GĐ1415 — bánh mì bơ tỏi (bếp nướng)', () => {
   });
 });
 
+/** GĐ1416 — Sữa yến mạch đường đen: lối ra đầu tiên của sữa yến mạch (máy xay). */
+describe('GĐ1416 — sữa yến mạch đường đen (máy xay)', () => {
+  const recipe = RECIPE_MAP['recipe_sua_yen_mach_xay'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm máy xay và dùng sữa yến mạch', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'sua_yen_mach_xay')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'sua_yen_mach_xay').length).toBe(1);
+    expect(recipe.station).toBe('blender');
+    expect(recipe.inputs.some((i) => i.productId === 'sua_yeu')).toBe(true);
+  });
+});
+
+/** GĐ1416 — Sữa hạt mắc ca: lối ra đầu tiên của hạt mắc ca (máy xay). */
+describe('GĐ1416 — sữa hạt mắc ca (máy xay)', () => {
+  const recipe = RECIPE_MAP['recipe_sua_hat_macca'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm máy xay và dùng hạt mắc ca', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'sua_hat_macca')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'sua_hat_macca').length).toBe(1);
+    expect(recipe.station).toBe('blender');
+    expect(recipe.inputs.some((i) => i.productId === 'hat_macca')).toBe(true);
+  });
+});
+
+/** GĐ1416 — Chè yến chưng đường phèn: lối ra đầu tiên của tổ yến sào (bếp nồi nấu). */
+describe('GĐ1416 — chè yến chưng đường phèn (bếp nồi nấu)', () => {
+  const recipe = RECIPE_MAP['recipe_che_yen'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm bếp nồi nấu và dùng tổ yến sào', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'che_yen')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'che_yen').length).toBe(1);
+    expect(recipe.station).toBe('hot_kettle');
+    expect(recipe.inputs.some((i) => i.productId === 'yen_sao')).toBe(true);
+  });
+});
+
 /** GĐ1405 — Sữa hạt điều: lối ra đầu tiên của hạt điều rang muối (máy xay). */
 describe('GĐ1405 — sữa hạt điều (máy xay)', () => {
   const recipe = RECIPE_MAP['recipe_sua_hat_dieu'];

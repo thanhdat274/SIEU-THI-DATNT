@@ -112,3 +112,4 @@
 - GĐ1413 (Bánh pía nướng nóng — lối ra đầu tiên của bánh pía ở bếp nướng): 4 cái×14k, unlock 40. Full suite 503/4530 xanh.
 - GĐ1414 (Bò bít tết — lối ra đầu tiên của thịt bò Úc ở chảo chiên): 10 phần×35k, unlock 50. Full suite 503/4533 xanh.
 - GĐ1415 (Hột vịt lộn luộc ở bếp nồi nấu, unlock 35 — 31 làm lệch sim golden cấp 30; Bánh mì bơ tỏi ở bếp nướng, lối ra đầu tiên của bơ muối, unlock 63). Full suite 503/4539 xanh.
+- GĐ1416 (lối ra đầu tiên cho sữa yến mạch, hạt mắc ca, tổ yến: Sữa yến mạch đường đen u73 + Sữa hạt mắc ca u86 ở máy xay, Chè yến u96 ở bếp nồi nấu; giá giữ biên cao cấp 1.35–1.42). Full suite 503/4548 xanh.
