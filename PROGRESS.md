@@ -141,3 +141,4 @@
 - GĐ1476: Xôi chiên chà bông (u72, chảo chiên: 1 nếp + 1 chà bông → 14 miếng, bán 12k).
 - GĐ1477: Bánh tráng trộn me (u73, bếp nồi: 2 bánh tráng + 1 me dầm + 2 trứng → 12 bịch, bán 10k).
 - GĐ1478: Bún xào lạp xưởng (u74, chảo chiên: 2 bún + 1 lạp xưởng + 4 trứng → 10 đĩa, bán 15k).
+- GĐ1479: Canh chua dưa muối cá basa (u75, bếp nồi: 2 basa + 2 dưa muối + 1 me dầm → 11 tô, bán 20k).
