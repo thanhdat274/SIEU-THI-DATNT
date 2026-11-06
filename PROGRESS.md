@@ -125,3 +125,4 @@
 - GĐ1430–1434 (catalog đợt 10–11; test ingredientOutlet + RETAIL_ONLY; Sổ nấu gộp món khóa xa; rải 45 món cấp 35→35–57): docs/progress-archive/PROGRESS-GD1430-1434.md
 - GĐ1435–1439 (mô tả trạm; quán nước +3 món trái cây; tiệm xôi +2; lạp xưởng bà Tám + chà bông nhà làm kèm lối ra): docs/progress-archive/PROGRESS-GD1435-1439.md
 - GĐ1440–1447 (mọi trái cây vườn có lối ra bếp; giò thủ/me dầm bà Tám, chanh muối hàng xóm 1 kèm lối ra bếp & quán): docs/progress-archive/PROGRESS-GD1440-1447.md
+- GĐ1448: Bún giò thủ (u49, bếp nồi: 2 bún + 1 giò thủ bà Tám + 1 hành phi → 10 tô, bán 15k) — lối ra thứ 3 cho giò thủ; test recipeDepth.
