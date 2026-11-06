@@ -99,11 +99,16 @@ export class FurnitureView {
     const heat = (color: number) => new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.35 });
     switch (this.type) {
       case 'hot_kettle': {
-        const kettle = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.2, 0.3, 14), steel);
-        kettle.position.set(0, 1.1, 0);
-        const spout = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.05, 0.2), steel);
-        spout.position.set(0.16, 1.16, 0);
-        this.group.add(kettle, spout);
+        // GĐ1394: nồi nấu to có nắp + 2 quai trên bếp (trước là ấm có vòi — không hợp phở/cháo/món kho).
+        const pot = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.22, 0.26, 16), steel);
+        pot.position.set(0, 1.09, 0);
+        const lid = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 0.03, 16), steel);
+        lid.position.set(0, 1.235, 0);
+        const handleL = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.03, 0.05), steel);
+        handleL.position.set(-0.27, 1.17, 0);
+        const handleR = handleL.clone();
+        handleR.position.x = 0.27;
+        this.group.add(pot, lid, handleL, handleR);
         break;
       }
       case 'food_grill': {

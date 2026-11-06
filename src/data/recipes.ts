@@ -8,7 +8,7 @@
 /** Trạm nấu: nơi có thể thực hiện recipe. */
 export type CookingStation =
   | 'food_grill'     // Bếp nướng (bánh mì trứng, xúc xích, cơm sườn)
-  | 'hot_kettle'     // Ấm nước (trà gừng, mì trứng, chè)
+  | 'hot_kettle'     // Bếp nồi nấu (phở, bún, cháo, món kho, chè) — id giữ 'hot_kettle' cho save cũ (GĐ1394)
   | 'blender'        // Máy xay (sinh tố, kem)
   | 'drink_counter'  // Quầy pha (cà phê, trà sữa, bạc xỉu)
   | 'fryer'          // Chảo chiên (bắp xào, cá viên)
@@ -933,7 +933,7 @@ export interface StationDef {
 }
 
 export const STATIONS: StationDef[] = [
-  { id: 'hot_kettle', name: 'Ấm nước nóng', icon: '🫖', description: 'Nấu trà gừng, mì trứng, chè', unlock: 21, recipeCount: RECIPES.filter(r => r.station === 'hot_kettle').length },
+  { id: 'hot_kettle', name: 'Bếp nồi nấu', icon: '🍲', description: 'Nấu phở, bún, cháo, món kho, chè', unlock: 21, recipeCount: RECIPES.filter(r => r.station === 'hot_kettle').length },
   { id: 'food_grill', name: 'Bếp nướng', icon: '🔥', description: 'Bánh mì trứng, xúc xích, cơm hộp', unlock: 21, recipeCount: RECIPES.filter(r => r.station === 'food_grill').length },
   { id: 'blender', name: 'Máy xay sinh tố', icon: '🍹', description: 'Sinh tố, kem trái cây', unlock: 25, recipeCount: RECIPES.filter(r => r.station === 'blender').length },
   { id: 'drink_counter', name: 'Quầy pha', icon: '☕', description: 'Cà phê, trà sữa, bạc xỉu', unlock: 25, recipeCount: RECIPES.filter(r => r.station === 'drink_counter').length },

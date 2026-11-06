@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (06/11/2026)
+- **GĐ1394 (đổi trạm "Ấm nước nóng 🫖" → "Bếp nồi nấu 🍲", theo góp ý người dùng)**: trạm `hot_kettle` gánh 31 món (phở, bún bò, bò kho, cá kho tộ, cháo, chè…) mà tên/mô hình là ấm có vòi — vô lý. Đổi tên + icon + mô tả (recipes.ts STATIONS, furniture.ts, ArrangePanel) và mô hình 3D thành nồi có nắp + 2 quai (furnitureView.ts). **Giữ id `hot_kettle`** → save cũ không cần migration. Test mới `potStationName.test.ts`. Full suite xanh (longSessionLeak chập chờn khi chạy chung, chạy riêng xanh), tsc + build sạch. Chưa QA hình 3D trong trình duyệt.
 - **GĐ1391 (Cháo lòng — món sáng Sài Gòn ở ấm nước, thịt heo tươi có lối ra thứ 2)** — chi tiết `docs/progress-archive/PROGRESS-GD1382-1391.md`.
 - **GĐ1390 (Gỏi cuốn — món ăn lành trứ danh ở ấm nước, tôm có lối ra thứ 2)** — chi tiết `docs/progress-archive/PROGRESS-GD1382-1391.md`.
 - **GĐ1389 (Bánh chưng tự gói — món Tết trứ danh gói tay tại gift_wrap)** — chi tiết `docs/progress-archive/PROGRESS-GD1382-1391.md`.

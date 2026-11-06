@@ -17,7 +17,7 @@ const COLORS: Record<FurnitureType, string> = {
 };
 const ICONS: Record<FurnitureType, string> = {
   shelf: '🗄️', bigShelf: '🏬', fridge: '🧊', freezer: '❄️', produce: '🥬', meat_counter: '🥩', checkout: '🧾', cartStation: '🛒', plant: '🪴', wall: '🧱',
-  hot_kettle: '🫖', food_grill: '🔥', blender: '🍹', drink_counter: '☕',
+  hot_kettle: '🍲', food_grill: '🔥', blender: '🍹', drink_counter: '☕',
   fryer: '🍳', sugarcane_press: '🥤', rice_station: '🍚', steamer: '♨️', gift_wrap: '🎁',
 };
 

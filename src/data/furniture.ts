@@ -80,8 +80,8 @@ export const FURNITURE: FurnitureDef[] = [
   // TRẠM NẤU: món nấu xong về kho, bày bán như hàng thường
   // ──────────────────────────────────────────────
   {
-    type: 'hot_kettle', name: 'Ấm nước nóng', price: 220000, unlock: 21, size: [0.8, 0.7], tiers: 0, slots: 0, capacity: 0,
-    categories: [], desc: 'Trạm nấu: trà gừng, mì trứng, chè đậu xanh, canh (xem Sổ nấu 🍳)',
+    type: 'hot_kettle', name: 'Bếp nồi nấu', price: 220000, unlock: 21, size: [0.8, 0.7], tiers: 0, slots: 0, capacity: 0,
+    categories: [], desc: 'Trạm nấu nồi: phở, bún, cháo, món kho, chè, trà gừng (xem Sổ nấu 🍳)',
   },
   {
     type: 'food_grill', name: 'Bếp nướng', price: 320000, unlock: 21, size: [1.2, 0.7], tiers: 0, slots: 0, capacity: 0,
