@@ -108,3 +108,4 @@
 - GĐ1409 (Sữa chua granola — lối ra đầu tiên của ngũ cốc granola ở máy xay): 14 cốc×18k, unlock 68. Dời GĐ1395–1401 sang archive. Full suite 503/4518 xanh.
 - GĐ1409–1415 (lối ra đầu tiên: granola, mì tươi, mật ong rừng, trà thảo mộc, bánh pía, bò Úc, hột vịt lộn, bơ muối): chi tiết ở docs/progress-archive/PROGRESS-GD1409-1415.md
 - GĐ1416 (lối ra đầu tiên cho sữa yến mạch, hạt mắc ca, tổ yến: Sữa yến mạch đường đen u73 + Sữa hạt mắc ca u86 ở máy xay, Chè yến u96 ở bếp nồi nấu; giá giữ biên cao cấp 1.35–1.42). Full suite 503/4548 xanh.
+- GĐ1417 (Kem chiên u35 ở chảo chiên, Bánh bao hấp từ đông lạnh u35 ở nồi hấp, Sinh tố sữa chua nếp u43 ở máy xay — lối ra đầu tiên của kem que, bánh bao đông lạnh, sữa chua nếp; id banh_bao_hap đã có nên đặt id mới). Full suite 503/4557 xanh.

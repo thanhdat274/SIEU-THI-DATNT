@@ -280,6 +280,12 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'sua_hat_macca', name: 'Sữa hạt mắc ca', category: 'drink', buy: 20000, sell: 28000, color: 0xeadcc0, unlock: 86 },
   // GĐ1416: Chè yến chưng đường phèn — lối ra ĐẦU TIÊN của tổ yến sào.
   { id: 'che_yen', name: 'Chè yến chưng đường phèn', category: 'fresh', buy: 43000, sell: 60000, color: 0xf3ead2, unlock: 96 },
+  // GĐ1417: Kem chiên — lối ra ĐẦU TIÊN của kem que.
+  { id: 'kem_chien', name: 'Kem chiên', category: 'fresh', buy: 8000, sell: 14000, color: 0xf0d080, unlock: 35 },
+  // GĐ1417: Bánh bao hấp nóng — lối ra ĐẦU TIÊN của bánh bao.
+  { id: 'banh_bao_dong_lanh_hap', name: 'Bánh bao hấp từ đông lạnh', category: 'fresh', buy: 10000, sell: 18000, color: 0xf5efe0, unlock: 35 },
+  // GĐ1417: Sinh tố sữa chua nếp — lối ra ĐẦU TIÊN của sữa chua nếp cốc.
+  { id: 'sinh_to_sua_chua_nep', name: 'Sinh tố sữa chua nếp', category: 'drink', buy: 7000, sell: 12000, color: 0xe6d4e8, unlock: 43 },
   // GĐ1409: Sữa chua granola — lối ra ĐẦU TIÊN của ngũ cốc granola: mẻ (granola 130k + sữa chua) → 14 cốc × 18k = 252k.
   { id: 'sua_chua_granola', name: 'Sữa chua granola', category: 'fresh', buy: 11000, sell: 18000, color: 0xe9d8b4, unlock: 68 },
   // GĐ1408: Cà phê phin sữa — lối ra ĐẦU TIÊN của cà phê xay nguyên chất: mẻ (cà phê xay 150k + sữa đặc 22k) = 172k → 25 ly × 12k = 300k.
@@ -674,6 +680,18 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_che_yen', name: 'Chè yến chưng đường phèn', station: 'hot_kettle',
     inputs: [{ productId: 'yen_sao', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
     outputId: 'che_yen', outputQty: 40, durationMin: 30, unlock: 96, reputationGain: 5 },
+  // GĐ1417: Kem chiên ở chảo chiên. Mở 35 (> golden 30, ≥ cấp nguyên liệu).
+  { id: 'recipe_kem_chien', name: 'Kem chiên', station: 'fryer',
+    inputs: [{ productId: 'kem', quantity: 10 }, { productId: 'x_trung_ga', quantity: 1 }],
+    outputId: 'kem_chien', outputQty: 10, durationMin: 8, unlock: 35, reputationGain: 2 },
+  // GĐ1417: Bánh bao hấp nóng ở nồi hấp. Mở 35 (> golden 30, ≥ cấp nguyên liệu).
+  { id: 'recipe_banh_bao_dong_lanh_hap', name: 'Bánh bao hấp từ đông lạnh', station: 'steamer',
+    inputs: [{ productId: 'banhbao', quantity: 10 }],
+    outputId: 'banh_bao_dong_lanh_hap', outputQty: 10, durationMin: 12, unlock: 35, reputationGain: 1 },
+  // GĐ1417: Sinh tố sữa chua nếp ở máy xay. Mở 43 (> golden 30, ≥ cấp nguyên liệu).
+  { id: 'recipe_sinh_to_sua_chua_nep', name: 'Sinh tố sữa chua nếp', station: 'blender',
+    inputs: [{ productId: 'sua_chua_hop', quantity: 2 }, { productId: 'x_duong', quantity: 1 }],
+    outputId: 'sinh_to_sua_chua_nep', outputQty: 6, durationMin: 6, unlock: 43, reputationGain: 1 },
   // GĐ1409: Sữa chua granola ở máy xay: lãi dương, hời hơn bán thẳng nguyên liệu. Mở 68 = cấp granola (> golden 30).
   { id: 'recipe_sua_chua_granola', name: 'Sữa chua granola', station: 'blender',
     inputs: [{ productId: 'ngu_coc', quantity: 1 }, { productId: 'suachua', quantity: 1 }],

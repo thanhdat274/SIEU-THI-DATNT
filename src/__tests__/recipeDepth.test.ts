@@ -2076,6 +2076,72 @@ describe('GĐ1416 — chè yến chưng đường phèn (bếp nồi nấu)', ()
   });
 });
 
+/** GĐ1417 — Kem chiên: lối ra đầu tiên của kem que (chảo chiên). */
+describe('GĐ1417 — kem chiên (chảo chiên)', () => {
+  const recipe = RECIPE_MAP['recipe_kem_chien'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm chảo chiên và dùng kem que', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'kem_chien')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'kem_chien').length).toBe(1);
+    expect(recipe.station).toBe('fryer');
+    expect(recipe.inputs.some((i) => i.productId === 'kem')).toBe(true);
+  });
+});
+
+/** GĐ1417 — Bánh bao hấp nóng: lối ra đầu tiên của bánh bao (nồi hấp). */
+describe('GĐ1417 — bánh bao hấp nóng (nồi hấp)', () => {
+  const recipe = RECIPE_MAP['recipe_banh_bao_dong_lanh_hap'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm nồi hấp và dùng bánh bao', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'banh_bao_dong_lanh_hap')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'banh_bao_dong_lanh_hap').length).toBe(1);
+    expect(recipe.station).toBe('steamer');
+    expect(recipe.inputs.some((i) => i.productId === 'banhbao')).toBe(true);
+  });
+});
+
+/** GĐ1417 — Sinh tố sữa chua nếp: lối ra đầu tiên của sữa chua nếp cốc (máy xay). */
+describe('GĐ1417 — sinh tố sữa chua nếp (máy xay)', () => {
+  const recipe = RECIPE_MAP['recipe_sinh_to_sua_chua_nep'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm máy xay và dùng sữa chua nếp cốc', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'sinh_to_sua_chua_nep')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'sinh_to_sua_chua_nep').length).toBe(1);
+    expect(recipe.station).toBe('blender');
+    expect(recipe.inputs.some((i) => i.productId === 'sua_chua_hop')).toBe(true);
+  });
+});
+
 /** GĐ1405 — Sữa hạt điều: lối ra đầu tiên của hạt điều rang muối (máy xay). */
 describe('GĐ1405 — sữa hạt điều (máy xay)', () => {
   const recipe = RECIPE_MAP['recipe_sua_hat_dieu'];
