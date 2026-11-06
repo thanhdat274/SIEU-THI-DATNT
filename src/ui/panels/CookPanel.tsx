@@ -1,3 +1,4 @@
+import { trendMark } from '../trendMark';
 import { useGame, useClock } from '../../core/store';
 import { useState } from 'react';
 import { RECIPES, STATIONS, type CookingStation } from '../../data/recipes';
@@ -119,7 +120,7 @@ export function CookPanel() {
                         </div>
                       )}
                       <div style={{ fontSize: 12 }}>
-                        Lãi gộp ~<b style={{ color: gross > 0 ? '#2ecc71' : '#e74c3c' }}>{formatMoney(gross)}</b>/mẻ
+                        Lãi gộp ~<b style={{ color: gross > 0 ? '#2ecc71' : '#e74c3c' }}>{trendMark(gross)}{formatMoney(gross)}</b>/mẻ
                         {own > 0 && (
                           <span style={{ opacity: 0.85 }}> · ⏱ ~{formatMoney(Math.round(kv.perMinute))}/phút</span>
                         )}

@@ -1,3 +1,4 @@
+import { trendMark } from '../trendMark';
 import { ProductIcon } from '../ProductIcon';
 import { useState } from 'react';
 import { useGame, type DayRecord, type ItemLine } from '../../core/store';
@@ -136,7 +137,7 @@ export function ItemTable({ lines }: { lines: (ItemLine & { id: string; gross: n
               <td style={styles.left}><ProductIcon product={p} /> {p.name}</td>
               <td>{l.qty}</td>
               <td>{formatMoney(l.revenue)}</td>
-              <td style={{ color: l.gross >= 0 ? '#2ecc71' : '#e74c3c' }}>{formatMoney(l.gross)}</td>
+              <td style={{ color: l.gross >= 0 ? '#2ecc71' : '#e74c3c' }}>{trendMark(l.gross)}{formatMoney(l.gross)}</td>
               <td style={{ opacity: 0.8 }}>{formatMoney(Math.round(l.gross / l.qty))}</td>
             </tr>
           );

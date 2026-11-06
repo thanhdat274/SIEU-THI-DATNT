@@ -1,3 +1,4 @@
+import { trendMark } from '../trendMark';
 import { useGame } from '../../core/store';
 import { HistoryChart } from './HistoryPanel';
 import { WEEK_DAYS, weeklyChallenge, weekPace, monthlyChallenge, emptyMonth, monthPace, STREAK_XP_FROM, STREAK_XP_RATE_WEEK, STREAK_XP_RATE_MONTH } from '../../data/biz';
@@ -30,7 +31,7 @@ export function Week() {
       <div style={card}>
         <b>📈 Lãi lỗ {history.length} ngày gần đây</b>
         <div style={sub}>
-          Tổng tiền vào − ra: <b style={{ color: total >= 0 ? '#2ecc71' : '#e74c3c' }}>{formatMoney(total)}</b>
+          Tổng tiền vào − ra: <b style={{ color: total >= 0 ? '#2ecc71' : '#e74c3c' }}>{trendMark(total)}{formatMoney(total)}</b>
           {best && ` · ngày tốt nhất: ngày ${best.day} (${formatMoney(best.profit)})`}
         </div>
         {history.length < 2 ? <div style={sub}>Chơi thêm vài ngày để xem biểu đồ.</div> : <HistoryChart history={history} />}

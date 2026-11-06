@@ -1,3 +1,4 @@
+import { trendMark } from '../trendMark';
 import { cungGoodsAction, nextEventLine, sapEventActions, tiemXoiCungAction } from '../../data/dayEventActions';
 import { tiemXoiMorning, TIEM_XOI_WAGE } from '../../data/tiemXoi';
 import { useState } from 'react';
@@ -273,7 +274,7 @@ export function SummaryPanel({ day }: { day: number }) {
               <tr><td style={styles.left}>Tiền nhà (theo bậc tiệm)</td><td>{(st.rent ?? 0) > 0 ? `-${formatMoney(st.rent ?? 0)}` : '0đ'}</td></tr>
               <tr>
                 <td style={styles.left}><b>Tiền vào − tiền ra</b></td>
-                <td style={{ color: profit >= 0 ? '#2ecc71' : '#e74c3c' }}><b>{formatMoney(profit)}</b></td>
+                <td style={{ color: profit >= 0 ? '#2ecc71' : '#e74c3c' }}><b>{trendMark(profit)}{formatMoney(profit)}</b></td>
               </tr>
               {!!st.credited && <tr><td style={styles.left}>  trong đó khách quen ghi sổ (chưa thu)</td><td style={{ color: '#e67e22' }}>{formatMoney(st.credited)}</td></tr>}
               {!!st.repaid && <tr><td style={styles.left}>Thu nợ cũ</td><td style={{ color: '#2ecc71' }}>+{formatMoney(st.repaid)}</td></tr>}

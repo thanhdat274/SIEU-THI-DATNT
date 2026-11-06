@@ -1,3 +1,4 @@
+import { trendMark as profitMark } from '../trendMark';
 import { ProductIcon } from '../ProductIcon';
 import { useState } from 'react';
 import { Dropdown } from '../Dropdown';
@@ -241,7 +242,7 @@ export function PricePanel() {
                     );
                   })()}
                 </td>
-                <td style={{ color: price > p.buy ? '#2ecc71' : '#e74c3c' }}>{formatMoney(price - p.buy)}</td>
+                <td style={{ color: price > p.buy ? '#2ecc71' : '#e74c3c' }}>{profitMark(price - p.buy)}{formatMoney(price - p.buy)}</td>
                 <td title={`Khách hỏi mua ~${(demand[p.id] ?? 0).toFixed(1)} lượt/ngày`}>{(sales[p.id] ?? 0).toFixed(1)}</td>
                 <td>{tip.action === 'hold' ? <span style={{ opacity: 0.5 }} title={tip.reason}>giữ</span> : (
                   <button style={styles.btn} title={tip.reason} onClick={() => setPrice(p.id, tip.price)}>

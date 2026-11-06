@@ -1,3 +1,4 @@
+import { trendMark } from '../trendMark';
 import { formatClock, useClock, useGame } from '../../core/store';
 import {
   ACCEPT_WINDOW, appCommission, APP_TIERS, appTier, appRating, declineRating, describeOnline, eventGapMul, eventGrabMul, grabFee, ONLINE_HOURS, ONLINE_OPEN_COST, ONLINE_UNLOCK, onlineOrderCap, onlineEventLine,
@@ -117,7 +118,7 @@ export function OnlinePanel() {
                   <div style={{ fontSize: 13, margin: '4px 0', opacity: 0.85 }}>{describeOnline(o)}</div>
                   {/* GĐ59: lời ròng + biên lãi — tín hiệu hoàn vốn cho quyết định lấy đơn */}
                   <div style={{ fontSize: 12, marginBottom: 4 }}>
-                    💰 Lời ròng: <b style={{ color: a.net > 0 ? '#2ecc71' : '#e74c3c' }}>{formatMoney(a.net)}</b>
+                    💰 Lời ròng: <b style={{ color: a.net > 0 ? '#2ecc71' : '#e74c3c' }}>{trendMark(a.net)}{formatMoney(a.net)}</b>
                     {' · '}Grab: {formatMoney(a.grabNet)} · biên {Math.round(a.margin * 100)}%
                     {a.net <= 0 && <span style={{ color: '#e74c3c' }}> · đơn này LỖ nếu lấy</span>}
                   </div>
