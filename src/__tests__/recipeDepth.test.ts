@@ -4518,6 +4518,28 @@ describe('GĐ1485 — chả giò nấm mèo (chảo chiên)', () => {
   });
 });
 
+/** GĐ1486 — Xôi muối mè: lối ra đầu tiên của mè rang nhà làm (bếp xôi cơm). */
+describe('GĐ1486 — xôi muối mè (bếp xôi cơm)', () => {
+  const recipe = RECIPE_MAP['recipe_xoi_muoi_me'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm bếp xôi cơm và dùng mè rang nhà làm', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'xoi_muoi_me')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'xoi_muoi_me').length).toBe(1);
+    expect(recipe.station).toBe('rice_station');
+    expect(recipe.inputs.some((i) => i.productId === 'hx_me_rang')).toBe(true);
+  });
+});
+
 /** GĐ1405 — Sữa hạt điều: lối ra đầu tiên của hạt điều rang muối (máy xay). */
 describe('GĐ1405 — sữa hạt điều (máy xay)', () => {
   const recipe = RECIPE_MAP['recipe_sua_hat_dieu'];
