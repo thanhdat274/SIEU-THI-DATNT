@@ -93,7 +93,7 @@
   - ✅ **P1 M7 ĐÃ SỬA:** màn thấp ≤480px ô đồng hồ còn 1 dòng (giờ + ngày), HUD trên ~135→95px (test landscapeTimeChip).
   - ✅ **P1 A1 (ĐÃ SỬA, test trendMark):** ▲/▼ cạnh lãi/lỗ ở 9 bảng (Tổng kết, Lịch sử, Sổ nấu, Combo, Giá, Online, Quán, Tiệm xôi, Kỳ).
   - ✅ **P1 (đã rà):** "vẫn lời −38.400đ" không tái hiện — VendorAlert.tsx:42 chỉ in "vẫn lời" khi rush.net > 0, lỗ thì in "không còn lời".
-  - P2 (M8 dời "Chơi lại từ đầu" vào Cài đặt; chữ to; tiết kiệm pin) để sau.
+  - P2 M8 — Leader quyết (06/11): GIỮ "Chơi lại từ đầu" trong menu tài khoản (đã có confirm + nút đỏ); game chưa có màn Cài đặt, dựng màn mới chỉ để chứa 1 nút trái Luật chống phình. Chữ to / tiết kiệm pin: để khi có playtest nhắc lại.
 - ✅ Trục "vòng đời nông sản nhà" ĐÃ KHÉP (GĐ1088–) — chi tiết: docs/progress-archive/PROGRESS-GD1440-1447.md
 - ✅ **File tham khảo ĐÃ KHAI THÁC HẾT (rà GĐ1256/1259):** mọi mục "đáng bê" từ `PHAN-TICH-THAM-KHAO-XOM-NONG-TRAI.md` đều đã có: pipeline asset kit Blender→GLB+manifest (GĐ172–176) · juice quầy GĐ173 + juice trại GĐ1255 · tách chunk vendor/wgpu GĐ174/1196 (chunk to nhất còn lại là three.webgpu — thư viện khởi động, không tách được thêm) · guard WebGL GĐ175 · font subset woff2 tự host + Baloo 2 GĐ1259. Còn treo chỉ "Top góp ý" (chờ ra public) và sprite atlas (emoji là lựa chọn chủ đích). `PHAN-TICH-THAM-KHAO-HAPPYTOWN.md` là tài liệu lịch sử — P0/P1/P2 đều đã khép từ trước. Hai file này giữ lại làm đối chiếu, không cần rà lại.
 
