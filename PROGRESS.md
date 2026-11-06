@@ -86,7 +86,7 @@
   - P2 (T6–T9: cám bò ở cấp 1, nhà cung cấp khóa, đồng hồ chạy khi nhập hàng, camera quạt trần) để sau, cần Leader cân nhắc.
 - 🆕 **Người dùng ĐÃ DUYỆT (06/11/2026) — đợt 2 playtest giữa game** (`PHAN-TICH-PLAYTEST-PERSONA-DOT2-2026-11-06.md`, mục 5). Mỗi việc có test:
   - ✅ **P0 M2 (ĐÃ SỬA, test cookPanelZero):** Sổ nấu in "0" lạc ("/mẻ0") — `ui/panels/CookPanel.tsx:123,133` dùng `{own && …}` với `own` là số; đổi `own > 0 &&`.
-  - **P0 M1:** FPS 21–22 ở mức Thấp, save cấp 29 (9 nhân viên, 9 kệ) — đo lại trên Chrome thật; nếu vẫn <30 thì sửa bộ tự hạ (Luật 8).
+  - ◐ **P0 M1 (ĐÃ GIẢM, test gfxLowShield):** mức Thấp hạ độ nét tới 0.6 (trước 0.75) khi < 45 FPS — không bớt NPC ở mức chọn tay (giữ quyết định GĐ1235). Còn: đo lại trên Chrome thật cấp 29; nếu vẫn < 30 thì soi CPU (9 NV + đám đông), không phải GPU.
   - ✅ **P0 M4 (ĐÃ SỬA, test alertCap + soi trình duyệt):** tối đa 2 thẻ thông báo (nguy cấp + hướng dẫn ngày đầu luôn hiện), còn lại gom sau nút "+N thông báo".
   - ✅ **P1 M3 (ĐÃ SỬA, test reviveLots):** GỐC là lỗi save — life Infinity qua JSON thành null → hàng gia dụng (diêm…) báo cận hạn và BỊ HỎNG qua đêm sau mỗi lần nạp; applySnapshot giờ trả null → Infinity. Cảnh báo gộp cùng tên, bỏ lặp số tiền.
   - ✅ **P1 M5 ĐÃ SỬA:** menu Thêm gom nhóm (test groupTools); tiêu đề nhóm chừa 6px cho huy hiệu nút dưới (test landscapeTimeChip).
