@@ -51,6 +51,7 @@ export class FurnitureView {
     else if (type === 'dining_table') this.buildDiningTable();
     else if (type === 'chair') this.buildChair();
     else if (type === 'vending_drink' || type === 'scale_machine' || type === 'claw_machine') this.buildMachine();
+    else if (type === 'toilet_squat' || type === 'toilet_porcelain' || type === 'toilet_smart') this.buildToilet();
     else if (isCookStation(type)) this.buildCookStation();
     else if (type === 'freezer') this.buildChest(0xf4f6f7, 0.85, true);
     else if (type === 'produce') this.buildChest(0x8b5a2b, 0.75, false);
@@ -464,6 +465,37 @@ export class FurnitureView {
     }
     const badge = makeBadgeSprite(MACHINE_TYPES[this.type as MachineId].icon, 0.5);
     badge.position.y = 1.95;
+    this.group.add(badge);
+  }
+
+  /** GĐ1494 — nhà vệ sinh: bồn + biển người ra vào; thông minh thêm thân máy cao. */
+  private buildToilet() {
+    const [w, d] = furnitureDef(this.type).size;
+    const white = new THREE.MeshStandardMaterial({ color: 0xf8f9fa });
+    const floorPad = new THREE.Mesh(new THREE.BoxGeometry(w, 0.04, d), new THREE.MeshStandardMaterial({ color: 0xbdc3c7 }));
+    floorPad.position.y = 0.02;
+    this.group.add(floorPad);
+    if (this.type === 'toilet_squat') {
+      // Bồn ngồi xổm: ô sàn men trắng trũng giữa tấm sàn
+      const bowl = new THREE.Mesh(new THREE.BoxGeometry(w * 0.5, 0.06, d * 0.5), white);
+      bowl.position.y = 0.06;
+      this.group.add(bowl);
+    } else {
+      const bowl = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.16, 0.24, 12), white);
+      bowl.position.set(0, 0.16, 0.08);
+      const tank = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.34, 0.14), white);
+      tank.position.set(0, 0.42, -d / 2 + 0.1);
+      this.group.add(bowl, tank);
+      if (this.type === 'toilet_smart') {
+        const body = new THREE.Mesh(new THREE.BoxGeometry(w * 0.8, 1.5, d * 0.4), new THREE.MeshStandardMaterial({ color: 0xecf0f1 }));
+        body.position.set(0, 0.75, -d / 2 + 0.05);
+        const panel = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.24, 0.03), new THREE.MeshStandardMaterial({ color: 0x22313f }));
+        panel.position.set(w * 0.25, 1.0, d / 2 - 0.06);
+        this.group.add(body, panel);
+      }
+    }
+    const badge = makeBadgeSprite('🚽', 0.45);
+    badge.position.y = 1.8;
     this.group.add(badge);
   }
 

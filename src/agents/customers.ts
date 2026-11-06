@@ -56,7 +56,10 @@ import { OPENING_TRAFFIC } from '../data/community';
 import type { Counter, GroceryShop } from '../shop/groceryShop';
 import type { NavGrid } from '../world/navGrid';
 import { CoinPopFX } from '../render/fx/coinPop';
-import { DINE_UNLOCK, DINE_WAIT_SECONDS, EAT_SECONDS, dineTip, freeSeat, wantsDineIn, type SeatInfo } from '../data/dineIn';
+import {
+  DINE_UNLOCK, DINE_WAIT_SECONDS, EAT_SECONDS, TOILET_NEED_CHANCE, TOILET_STRICT_UNLOCK, TOILET_USE_SECONDS,
+  dineTip, freeSeat, freeToilet, isToilet, toiletFee, wantsDineIn, type SeatInfo,
+} from '../data/dineIn';
 import { MACHINE_VISIT_CHANCE, MACHINE_USE_SECONDS, MACHINE_TYPES, freeMachine, isMachine, machineFee, type MachineId } from '../data/machines';
 import {
   Customer, FRANTIC_AT, IMPATIENT_AT, PATIENCE_MINUTES, SIDEWALK_Z, impatienceEmoji, patienceMultiplier, counterQueueScore, leastScore, reviewStars, type Deal,
@@ -93,6 +96,8 @@ export class CustomerManager {
   private seatBusy = new Set<number>();
   /** GĐ1493 — máy tự phục vụ đang có khách dùng (uid máy); mỗi máy 1 khách/lúc. */
   private machineBusy = new Set<number>();
+  /** GĐ1494 — bồn vệ sinh đang có khách dùng (uid bồn); mỗi bồn 1 khách/lúc. */
+  private toiletBusy = new Set<number>();
   private cashierSpeed: (counter: Counter) => number = () => 0;
   /** GĐ1253 — sao tay nghề thu ngân đang trực ở quầy (0 = không có); khách gặp thu ngân thì thu ngân tự quyết. */
   private dutyCashierSkill: (counter: Counter) => number = () => 0;
@@ -723,10 +728,53 @@ export class CustomerManager {
           this.coinFx.spawn(c.mesh.position, tip);
           c.say(`+ ${formatMoney(tip)} tip`, 2.5);
         }
-        this.leave(c, true, true);
+        // GĐ1494 — ăn xong nhường ghế rồi mới nghĩ chuyện vệ sinh (ghế không bị giữ khi đi toilet)
+        const need = this.toiletNeed(c);
+        if (need === 'handled') return;
+        this.leave(c, need === 'happy', true);
       },
     ];
     return true;
+  }
+
+  /**
+   * GĐ1494 — sau bữa ăn ~20% khách có nhu cầu vệ sinh: ghé bồn trống (4 giây, trả phí) rồi ra về.
+   * Không có bồn: dưới mốc nghiêm ngặt thì khách ra về bình thường; siêu thị lớn mà thiếu bồn
+   * thì khách nổi giận (tính mất khách vì chờ). Trả 'handled' nếu đã tự dựng lối ra của riêng mình.
+   */
+  private toiletNeed(c: Customer): 'handled' | 'happy' | 'angry' {
+    const s = useGame.getState();
+    if (simRng()() >= TOILET_NEED_CHANCE) return 'happy';
+    const toilet = freeToilet(s.furniture, this.toiletBusy);
+    if (toilet) {
+      const toiletUid = toilet.uid;
+      const fee = toiletFee(toilet.type);
+      this.toiletBusy.add(toiletUid);
+      c.say('💧', 2.5);
+      this.walk(c, this.shop.spotFor(toilet));
+      c.plan = [
+        () => {
+          c.pause = TOILET_USE_SECONDS;
+          c.state = 'dining';
+        },
+        () => {
+          this.toiletBusy.delete(toiletUid);
+          if (fee > 0) {
+            earnService(undefined, fee);
+            this.coinFx.spawn(c.mesh.position, fee);
+          }
+          this.leave(c, true, true);
+        },
+      ];
+      return 'handled';
+    }
+    if (s.level < TOILET_STRICT_UNLOCK) {
+      c.say('💧', 2);
+      return 'happy';
+    }
+    c.say('😠 Không có nhà vệ sinh!');
+    s.noteMiss('wait');
+    return 'angry';
   }
 
   /**
@@ -1065,6 +1113,7 @@ export class CustomerManager {
     this.checkoutProgress.clear();
     this.seatBusy.clear();
     this.machineBusy.clear();
+    this.toiletBusy.clear();
     this.regularsToday = [];
     this.friendsBurst = 0;
     this.festivalToday = false;

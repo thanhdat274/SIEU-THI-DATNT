@@ -76,6 +76,39 @@ export function dineTip(freshTotal: number, waited: boolean): number {
   return Math.round(freshTotal * TIP_RATE * (waited ? 0.5 : 1));
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// GĐ1494 — nhà vệ sinh cho khu ăn tại chỗ: sau khi ăn ~20% khách có nhu cầu,
+// 4 giây/lượt rồi trả phí. Hoàn vốn CHẬM (~500 lượt) — là tiện ích giữ satisfied,
+// không phải máy kiếm lời. Hai giai đoạn: dưới mốc nghiêm ngặt thì thiếu bồn chỉ
+// làm khách phật ý nhẹ; tới mốc (siêu thị lớn) thì khách nổi giận kéo sao xuống.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type ToiletId = 'toilet_squat' | 'toilet_porcelain' | 'toilet_smart';
+
+export const TOILET_NEED_CHANCE = 0.2;
+export const TOILET_USE_SECONDS = 4;
+/** Từ cấp này (Siêu thị tạp hóa) thiếu bồn thì khách nổi giận — "rủi ro mở sau". */
+export const TOILET_STRICT_UNLOCK = 45;
+
+export const TOILET_TYPES: Record<ToiletId, { name: string; price: number; fee: number; icon: string }> = {
+  toilet_squat: { name: 'Nhà vệ sinh ngồi xổm', price: 250_000, fee: 500, icon: '🚽' },
+  toilet_porcelain: { name: 'Nhà vệ sinh bồn sứ', price: 1_200_000, fee: 2_000, icon: '🚽' },
+  toilet_smart: { name: 'Nhà vệ sinh thông minh', price: 4_000_000, fee: 8_000, icon: '🛁' },
+};
+
+export const isToilet = (type: string): type is ToiletId => type in TOILET_TYPES;
+
+export const toiletFee = (type: Furniture['type']): number => TOILET_TYPES[type as ToiletId]?.fee ?? 0;
+
+/** Tìm một bồn đang trống (bỏ bồn bận và bồn hỏng). */
+export function freeToilet(furniture: Furniture[], busyUids: ReadonlySet<number>): Furniture | null {
+  for (const f of furniture) {
+    if (!isToilet(f.type) || f.broken) continue;
+    if (!busyUids.has(f.uid)) return f;
+  }
+  return null;
+}
+
 /**
  * Tìm một chỗ ngồi trống: ghế chưa bị khách chiếm, kề một bàn còn dư chỗ (chốt trên
  * bởi seatSlots). Ưu tiên bàn còn nhiều chỗ trống nhất (khách dồn về cùng bàn như

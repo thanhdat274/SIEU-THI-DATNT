@@ -6,6 +6,7 @@ export type FurnitureType =
   | 'checkout' | 'cartStation' | 'plant' | 'wall'
   | 'dining_table' | 'chair'
   | 'vending_drink' | 'scale_machine' | 'claw_machine'
+  | 'toilet_squat' | 'toilet_porcelain' | 'toilet_smart'
   | CookingStation;
 
 /** Trạm nấu: id trùng tên trạm trong recipes.ts; đặt trong tiệm mới nấu được món của trạm đó. */
@@ -145,6 +146,21 @@ export const FURNITURE: FurnitureDef[] = [
   {
     type: 'claw_machine', name: 'Máy gắp thú', price: 180000, unlock: 25, size: [0.8, 0.7], tiers: 0, slots: 0, capacity: 0,
     categories: [], desc: 'Khách gắp thú bông trả phí 1.800đ/lượt, nhỏ con nấn ná không chịu đi',
+  },
+  // ──────────────────────────────────────────────
+  // GĐ1494 — NHÀ VỆ SINH: tiện ích khu ăn tại chỗ, hoàn vốn chậm (~500 lượt); khách ăn xong cần
+  // ──────────────────────────────────────────────
+  {
+    type: 'toilet_squat', name: 'Nhà vệ sinh ngồi xổm', price: 250000, unlock: 30, size: [0.8, 0.8], tiers: 0, slots: 0, capacity: 0,
+    categories: [], desc: 'Khách ăn xong ghé trả phí 500đ/lượt; thiếu bồn lúc siêu thị còn nhỏ thì khách chịu thôi',
+  },
+  {
+    type: 'toilet_porcelain', name: 'Nhà vệ sinh bồn sứ', price: 1200000, unlock: 36, size: [0.9, 0.9], tiers: 0, slots: 0, capacity: 0,
+    categories: [], desc: 'Bồn sứ có bể phóng sạch sẽ hơn, khách trả 2.000đ/lượt',
+  },
+  {
+    type: 'toilet_smart', name: 'Nhà vệ sinh thông minh', price: 4000000, unlock: 45, size: [1.0, 0.9], tiers: 0, slots: 0, capacity: 0,
+    categories: [], desc: 'Bồn thông minh tự rửa, khách trả 8.000đ/lượt — tiện nghi của siêu thị lớn',
   },
 ];
 
