@@ -7,6 +7,7 @@ import { lastActionResult } from '../net/coop';
 import { storageCapacity, storageUsed, useClock, useGame, wagesDue } from '../core/store';
 import { caseSize, casesFor, CATEGORIES, describeUnits, formatMoney, productById, unlockedProducts, type Category } from '../data/products';
 import { shelfLife } from '../data/freshness';
+import { visibleSuppliers } from '../data/visibleSuppliers';
 import { bulkDiscount, orderTotal, SUPPLIERS, supplierSells, trending, unitCost } from '../data/suppliers';
 import { goldenShortfall, nextGoldenPrep } from '../data/rhythm';
 import { guideActiveOn, guideInCart, guideIdsOf, guideProducts } from '../data/onboarding';
@@ -373,7 +374,7 @@ export function OrderPanel() {
       })()}
 
       <div style={st.tabs}>
-        {SUPPLIERS.map((s) => {
+        {visibleSuppliers(SUPPLIERS, level).visible.map((s) => {
           const locked = s.unlock > level;
           const relHot = (biz.supplierRel?.[s.id]?.spent ?? 0) >= (PARTNER_TIERS.find((t) => t.level === 3)?.threshold ?? Infinity);
           return (
@@ -399,6 +400,10 @@ export function OrderPanel() {
             </button>
           );
         })}
+        {(() => {
+          const v = visibleSuppliers(SUPPLIERS, level);
+          return v.hiddenCount > 0 ? <span style={{ fontSize: 12, opacity: 0.6, alignSelf: 'center' }}>🔒 +{v.hiddenCount} mối nữa từ cấp {v.nextHiddenUnlock}</span> : null;
+        })()}
       </div>
       <p style={st.sub}>
         {supplier.desc}
