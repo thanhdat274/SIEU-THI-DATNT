@@ -1,0 +1,21 @@
+# PROGRESS archive GĐ1463–1481
+
+- GĐ1463: Bánh cuốn lạp xưởng (u59, nồi hấp: 2 bánh cuốn + 1 lạp xưởng → 8 suất, bán 22k) — lối ra thứ 2 cho bánh cuốn nhà làm.
+- GĐ1464: Gỏi giò thủ cà pháo (u60, bếp nồi: 1 giò thủ + 2 cà pháo → 7 đĩa, bán 20k) — lối ra thứ 3 cho cà pháo.
+- GĐ1465: Bánh tráng nướng chà bông (u61, bếp nướng: 2 bánh tráng + 1 chà bông + 4 trứng → 14 cái, bán 12k) — lối ra thứ 3 cho bánh tráng.
+- GĐ1466: Lạp xưởng xào dưa muối (u62, bếp nồi: 1 lạp xưởng + 3 dưa muối → 8 đĩa, bán 18k) — lối ra thứ 3 cho dưa muối.
+- GĐ1467: Ô mai chanh muối me (u63, bếp nồi: 1 chanh muối + 1 me dầm + 1 đường → 10 hũ, bán 15k, hàng khô) — nối 2 hàng xóm.
+- GĐ1468: Bánh mì lạp xưởng nướng (u64, bếp nướng: 6 bánh mì + 1 lạp xưởng + 1 dưa muối → 12 ổ, bán 20k).
+- GĐ1469: Chả lụa chiên sốt me (u65, chảo chiên: 2 chả lụa bà Tám + 1 me dầm → 10 phần, bán 14k).
+- GĐ1470: Xôi chả lụa dưa muối (u66, quây xôi: 1 nếp + 1 chả lụa + 1 dưa muối → 14 gói, bán 10k).
+- GĐ1471: Bánh đa cuốn chả lụa (u67, bếp nướng: 2 bánh đa + 1 chả lụa → 10 cuốn, bán 13k).
+- GĐ1472: Bánh cuốn chà bông (u68, nồi hấp: 2 bánh cuốn + 1 chà bông → 10 suất, bán 20k).
+- GĐ1473: Cà pháo chiên giòn chấm me (u69, chảo chiên: 3 cà pháo + 1 me dầm + 1 bột mì → 12 phần, bán 9k).
+- GĐ1474: Bún chả lụa nước chanh muối (u70, bếp nồi: 2 bún + 1 chả lụa + 1 chanh muối → 10 tô, bán 18k).
+- GĐ1475: Giò thủ chiên giòn (u71, chảo chiên: 1 giò thủ + 1 bột mì + 2 trứng → 8 phần, bán 18k).
+- GĐ1476: Xôi chiên chà bông (u72, chảo chiên: 1 nếp + 1 chà bông → 14 miếng, bán 12k).
+- GĐ1477: Bánh tráng trộn me (u73, bếp nồi: 2 bánh tráng + 1 me dầm + 2 trứng → 12 bịch, bán 10k).
+- GĐ1478: Bún xào lạp xưởng (u74, chảo chiên: 2 bún + 1 lạp xưởng + 4 trứng → 10 đĩa, bán 15k).
+- GĐ1479: Canh chua dưa muối cá basa (u75, bếp nồi: 2 basa + 2 dưa muối + 1 me dầm → 11 tô, bán 20k).
+- GĐ1480: Bánh bao giò thủ (u76, nồi hấp: 3 bột mì + 1 giò thủ → 12 cái, bán 18k).
+- GĐ1481: Cháo giò thủ (cấp 77, nồi nước: 2 gạo + 1 giò thủ → 14, bán 23k) — lối ra nồi nước cho giò thủ bà Tám.
