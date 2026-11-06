@@ -2736,6 +2736,116 @@ describe('GĐ1425 — nấm bào ngư xào tỏi (chảo chiên)', () => {
   });
 });
 
+/** GĐ1426 — Cà tím xào mỡ hành: lối ra đầu tiên của cà tím (chảo chiên). */
+describe('GĐ1426 — cà tím xào mỡ hành (chảo chiên)', () => {
+  const recipe = RECIPE_MAP['recipe_ca_tim_mo_hanh'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm chảo chiên và dùng cà tím', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'ca_tim_mo_hanh')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'ca_tim_mo_hanh').length).toBe(1);
+    expect(recipe.station).toBe('fryer');
+    expect(recipe.inputs.some((i) => i.productId === 'x_ca_tim')).toBe(true);
+  });
+});
+
+/** GĐ1426 — Khoai lang nướng: lối ra đầu tiên của khoai lang (bếp nướng). */
+describe('GĐ1426 — khoai lang nướng (bếp nướng)', () => {
+  const recipe = RECIPE_MAP['recipe_khoai_lang_nuong_than'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm bếp nướng và dùng khoai lang', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'khoai_lang_nuong_than')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'khoai_lang_nuong_than').length).toBe(1);
+    expect(recipe.station).toBe('food_grill');
+    expect(recipe.inputs.some((i) => i.productId === 'x_khoai_lang_tuoi')).toBe(true);
+  });
+});
+
+/** GĐ1426 — Bắp ngọt nướng mỡ hành: lối ra đầu tiên của bắp ngọt (bếp nướng). */
+describe('GĐ1426 — bắp ngọt nướng mỡ hành (bếp nướng)', () => {
+  const recipe = RECIPE_MAP['recipe_bap_ngot_nuong'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm bếp nướng và dùng bắp ngọt', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'bap_ngot_nuong')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'bap_ngot_nuong').length).toBe(1);
+    expect(recipe.station).toBe('food_grill');
+    expect(recipe.inputs.some((i) => i.productId === 'x_bap')).toBe(true);
+  });
+});
+
+/** GĐ1426 — Chè khoai môn: lối ra đầu tiên của khoai môn (bếp nồi nấu). */
+describe('GĐ1426 — chè khoai môn (bếp nồi nấu)', () => {
+  const recipe = RECIPE_MAP['recipe_che_khoai_mon'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm bếp nồi nấu và dùng khoai môn', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'che_khoai_mon')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'che_khoai_mon').length).toBe(1);
+    expect(recipe.station).toBe('hot_kettle');
+    expect(recipe.inputs.some((i) => i.productId === 'x_khoai_mon')).toBe(true);
+  });
+});
+
+/** GĐ1426 — Bắp cải xào cà rốt: lối ra đầu tiên của bắp cải (chảo chiên). */
+describe('GĐ1426 — bắp cải xào cà rốt (chảo chiên)', () => {
+  const recipe = RECIPE_MAP['recipe_bap_cai_xao_ca_rot'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm chảo chiên và dùng bắp cải', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'bap_cai_xao_ca_rot')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'bap_cai_xao_ca_rot').length).toBe(1);
+    expect(recipe.station).toBe('fryer');
+    expect(recipe.inputs.some((i) => i.productId === 'x_bap_cai')).toBe(true);
+  });
+});
+
 /** GĐ1405 — Sữa hạt điều: lối ra đầu tiên của hạt điều rang muối (máy xay). */
 describe('GĐ1405 — sữa hạt điều (máy xay)', () => {
   const recipe = RECIPE_MAP['recipe_sua_hat_dieu'];

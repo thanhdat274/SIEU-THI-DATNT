@@ -340,6 +340,16 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'uc_ga_nuong', name: 'Ức gà nướng', category: 'fresh', buy: 5000, sell: 9000, color: 0xd89a5a, unlock: 35 },
   // GĐ1425: Nấm bào ngư xào tỏi — lối ra ĐẦU TIÊN của nấm bào ngư.
   { id: 'nam_bao_ngu_xao_toi', name: 'Nấm bào ngư xào tỏi', category: 'fresh', buy: 5000, sell: 9000, color: 0xd8d0b8, unlock: 35 },
+  // GĐ1426: Cà tím xào mỡ hành — lối ra ĐẦU TIÊN của cà tím.
+  { id: 'ca_tim_mo_hanh', name: 'Cà tím xào mỡ hành', category: 'fresh', buy: 4000, sell: 7000, color: 0x7a4a8a, unlock: 35 },
+  // GĐ1426: Khoai lang nướng — lối ra ĐẦU TIÊN của khoai lang.
+  { id: 'khoai_lang_nuong_than', name: 'Khoai lang nướng', category: 'fresh', buy: 3000, sell: 5000, color: 0xb05a3a, unlock: 35 },
+  // GĐ1426: Bắp ngọt nướng mỡ hành — lối ra ĐẦU TIÊN của bắp ngọt.
+  { id: 'bap_ngot_nuong', name: 'Bắp ngọt nướng mỡ hành', category: 'fresh', buy: 3000, sell: 5000, color: 0xf0d040, unlock: 35 },
+  // GĐ1426: Chè khoai môn — lối ra ĐẦU TIÊN của khoai môn.
+  { id: 'che_khoai_mon', name: 'Chè khoai môn', category: 'fresh', buy: 4000, sell: 8000, color: 0xb8a0c8, unlock: 35 },
+  // GĐ1426: Bắp cải xào cà rốt — lối ra ĐẦU TIÊN của bắp cải.
+  { id: 'bap_cai_xao_ca_rot', name: 'Bắp cải xào cà rốt', category: 'fresh', buy: 4000, sell: 8000, color: 0x9ac060, unlock: 35 },
   // GĐ1409: Sữa chua granola — lối ra ĐẦU TIÊN của ngũ cốc granola: mẻ (granola 130k + sữa chua) → 14 cốc × 18k = 252k.
   { id: 'sua_chua_granola', name: 'Sữa chua granola', category: 'fresh', buy: 11000, sell: 18000, color: 0xe9d8b4, unlock: 68 },
   // GĐ1408: Cà phê phin sữa — lối ra ĐẦU TIÊN của cà phê xay nguyên chất: mẻ (cà phê xay 150k + sữa đặc 22k) = 172k → 25 ly × 12k = 300k.
@@ -854,6 +864,26 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_nam_bao_ngu_xao_toi', name: 'Nấm bào ngư xào tỏi', station: 'fryer',
     inputs: [{ productId: 'x_nam_bao_ngu', quantity: 1 }, { productId: 'x_toi', quantity: 1 }],
     outputId: 'nam_bao_ngu_xao_toi', outputQty: 4, durationMin: 10, unlock: 35, reputationGain: 2 },
+  // GĐ1426: Cà tím xào mỡ hành ở chảo chiên. Mở 35 (> golden 30, ≥ cấp nguyên liệu).
+  { id: 'recipe_ca_tim_mo_hanh', name: 'Cà tím xào mỡ hành', station: 'fryer',
+    inputs: [{ productId: 'x_ca_tim', quantity: 1 }, { productId: 'x_hanh_la', quantity: 1 }],
+    outputId: 'ca_tim_mo_hanh', outputQty: 4, durationMin: 10, unlock: 35, reputationGain: 1 },
+  // GĐ1426: Khoai lang nướng ở bếp nướng. Mở 35 (> golden 30, ≥ cấp nguyên liệu).
+  { id: 'recipe_khoai_lang_nuong_than', name: 'Khoai lang nướng', station: 'food_grill',
+    inputs: [{ productId: 'x_khoai_lang_tuoi', quantity: 1 }],
+    outputId: 'khoai_lang_nuong_than', outputQty: 4, durationMin: 10, unlock: 35, reputationGain: 1 },
+  // GĐ1426: Bắp ngọt nướng mỡ hành ở bếp nướng. Mở 35 (> golden 30, ≥ cấp nguyên liệu).
+  { id: 'recipe_bap_ngot_nuong', name: 'Bắp ngọt nướng mỡ hành', station: 'food_grill',
+    inputs: [{ productId: 'x_bap', quantity: 1 }],
+    outputId: 'bap_ngot_nuong', outputQty: 3, durationMin: 10, unlock: 35, reputationGain: 1 },
+  // GĐ1426: Chè khoai môn ở bếp nồi nấu. Mở 35 (> golden 30, ≥ cấp nguyên liệu).
+  { id: 'recipe_che_khoai_mon', name: 'Chè khoai môn', station: 'hot_kettle',
+    inputs: [{ productId: 'x_khoai_mon', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
+    outputId: 'che_khoai_mon', outputQty: 6, durationMin: 10, unlock: 35, reputationGain: 1 },
+  // GĐ1426: Bắp cải xào cà rốt ở chảo chiên. Mở 35 (> golden 30, ≥ cấp nguyên liệu).
+  { id: 'recipe_bap_cai_xao_ca_rot', name: 'Bắp cải xào cà rốt', station: 'fryer',
+    inputs: [{ productId: 'x_bap_cai', quantity: 1 }, { productId: 'x_ca_rot', quantity: 1 }],
+    outputId: 'bap_cai_xao_ca_rot', outputQty: 4, durationMin: 10, unlock: 35, reputationGain: 1 },
   // GĐ1409: Sữa chua granola ở máy xay: lãi dương, hời hơn bán thẳng nguyên liệu. Mở 68 = cấp granola (> golden 30).
   { id: 'recipe_sua_chua_granola', name: 'Sữa chua granola', station: 'blender',
     inputs: [{ productId: 'ngu_coc', quantity: 1 }, { productId: 'suachua', quantity: 1 }],
