@@ -446,6 +446,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'canh_ga_chanh_muoi', name: 'Cánh gà chiên chanh muối', category: 'fresh', buy: 14000, sell: 22000, color: 0xd8a040, unlock: 52 },
   // GĐ1457: Bánh bao chà bông — lối ra ĐẦU TIÊN của chà bông nhà làm.
   { id: 'banh_bao_cha_bong', name: 'Bánh bao chà bông', category: 'fresh', buy: 11000, sell: 18000, color: 0xf3e8d8, unlock: 53 },
+  // GĐ1458: Bánh tráng cuốn giò thủ — lối ra ĐẦU TIÊN của giò thủ bà Tám.
+  { id: 'banh_trang_cuon_gio_thu', name: 'Bánh tráng cuốn giò thủ', category: 'fresh', buy: 8000, sell: 13000, color: 0xeadcc0, unlock: 54 },
   // GĐ1409: Sữa chua granola — lối ra ĐẦU TIÊN của ngũ cốc granola: mẻ (granola 130k + sữa chua) → 14 cốc × 18k = 252k.
   { id: 'sua_chua_granola', name: 'Sữa chua granola', category: 'fresh', buy: 11000, sell: 18000, color: 0xe9d8b4, unlock: 68 },
   // GĐ1408: Cà phê phin sữa — lối ra ĐẦU TIÊN của cà phê xay nguyên chất: mẻ (cà phê xay 150k + sữa đặc 22k) = 172k → 25 ly × 12k = 300k.
@@ -1172,6 +1174,10 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_banh_bao_cha_bong', name: 'Bánh bao chà bông', station: 'steamer',
     inputs: [{ productId: 'botmi', quantity: 3 }, { productId: 'hx_cha_bong', quantity: 1 }],
     outputId: 'banh_bao_cha_bong', outputQty: 12, durationMin: 25, unlock: 53, reputationGain: 3 },
+  // GĐ1458: Bánh tráng cuốn giò thủ ở bếp nướng. Mở 54 (> golden 30, ≥ cấp nguyên liệu).
+  { id: 'recipe_banh_trang_cuon_gio_thu', name: 'Bánh tráng cuốn giò thủ', station: 'food_grill',
+    inputs: [{ productId: 'hx_banh_trang', quantity: 1 }, { productId: 'hx_gio_thu', quantity: 1 }],
+    outputId: 'banh_trang_cuon_gio_thu', outputQty: 12, durationMin: 12, unlock: 54, reputationGain: 3 },
   // GĐ1409: Sữa chua granola ở máy xay: lãi dương, hời hơn bán thẳng nguyên liệu. Mở 68 = cấp granola (> golden 30).
   { id: 'recipe_sua_chua_granola', name: 'Sữa chua granola', station: 'blender',
     inputs: [{ productId: 'ngu_coc', quantity: 1 }, { productId: 'suachua', quantity: 1 }],

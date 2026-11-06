@@ -135,3 +135,4 @@
 - 🧭 GĐ1455 (Leader): DỪNG thêm món dưới cấp 50 — economySimL50 daily_smile ở mốc 22/28 (sát ngưỡng ≥22); thử Bánh đa nướng (u41) và Bánh cuốn trứng (u42) đều tụt 21 → hoàn tác. Danh mục <50 đã bão hòa với bot bày xoay vòng; chiều sâu tiếp theo đi hướng 2/3 ở cấp ≥50 hoặc làm sâu món có sẵn, không thêm SKU.
 - GĐ1456: Cánh gà chiên chanh muối (u52, chảo chiên: 2 cánh gà + 1 chanh muối → 8 phần, bán 22k) — lối ra bếp thứ 2 cho chanh muối, đặt ≥51 theo GĐ1455; test recipeDepth.
 - GĐ1457: Bánh bao chà bông (u53, nồi hấp: 3 bột mì + 1 chà bông nhà làm → 12 cái, bán 18k) — lối ra thứ 3 cho chà bông; test recipeDepth.
+- GĐ1458: Bánh tráng cuốn giò thủ (u54, bếp nướng: 1 bánh tráng phơi sương + 1 giò thủ bà Tám → 12 cuốn, bán 13k) — nối 2 hàng xóm; bỏ rau khỏi công thức để không cướp lối ra tốt nhất của rau trại (farmKitchenValue).
