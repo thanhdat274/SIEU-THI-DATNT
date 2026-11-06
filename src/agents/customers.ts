@@ -56,6 +56,7 @@ import { OPENING_TRAFFIC } from '../data/community';
 import type { Counter, GroceryShop } from '../shop/groceryShop';
 import type { NavGrid } from '../world/navGrid';
 import { CoinPopFX } from '../render/fx/coinPop';
+import { DINE_UNLOCK, EAT_SECONDS, freeSeat, wantsDineIn } from '../data/dineIn';
 import {
   Customer, FRANTIC_AT, IMPATIENT_AT, PATIENCE_MINUTES, SIDEWALK_Z, impatienceEmoji, patienceMultiplier, counterQueueScore, leastScore, reviewStars, type Deal,
 } from './customerEntity';
@@ -87,6 +88,8 @@ export class CustomerManager {
   /** Phút người bán rong định ghé hôm nay (null = hôm nay không ghé); tính một lần mỗi ngày. */
   private vendorAt: number | null | undefined;
   private checkoutProgress = new Map<string, number>();
+  /** GĐ1491 — ghế ăn đang bị khách chiếm (uid ghế); khách trả ghế khi ăn xong hoặc bỏ về. */
+  private seatBusy = new Set<number>();
   private cashierSpeed: (counter: Counter) => number = () => 0;
   /** GĐ1253 — sao tay nghề thu ngân đang trực ở quầy (0 = không có); khách gặp thu ngân thì thu ngân tự quyết. */
   private dutyCashierSkill: (counter: Counter) => number = () => 0;
@@ -226,7 +229,7 @@ export class CustomerManager {
     const waiting = [...this.queues.values()].reduce((sum, q) => sum + q.length, 0);
     // Khách còn trong tiệm: đang chọn hàng / đi tới quầy / đang chờ thanh toán — nhân viên tan ca
     // phải chờ hết đám này mới được về
-    const inside = this.customers.filter((c) => c.state === 'shopping' || c.state === 'toQueue' || c.state === 'queued').length;
+    const inside = this.customers.filter((c) => c.state === 'shopping' || c.state === 'toQueue' || c.state === 'queued' || c.state === 'toSeat' || c.state === 'dining').length;
     if (s.waiting !== waiting || s.customersInside !== inside) useGame.setState({ waiting, customersInside: inside });
   }
 
@@ -634,7 +637,50 @@ export class CustomerManager {
     }
     if (method && method !== 'cash') first.say(paymentById(method).icon, 2);
     first.say(!happy ? '😒' : onCredit ? '📒' : first.regular ? '💛' : first.missing ? '🙂' : '😊');
+    // GĐ1491 — mua món nấu tươi xong có thể ngồi lại ăn tại chỗ (nếu còn ghế) thay vì ra về
+    if (this.maybeDineIn(first)) return;
     this.leave(first, happy, true);
+  }
+
+  /**
+   * GĐ1491 — khách vừa trả tiền mang món nấu tươi: trúng vòng quay "ngồi lại ăn" thì dẫn tới
+   * bàn/ghế trống, ngồi ăn (pause) rồi mới ra về. Hết ghế → bỏ về buồn (tính mất khách vì chờ,
+   * tạo áp lực mua thêm bàn ghế đúng như khu ăn tại chỗ tham khảo). Trả true nếu đã tự lo lối ra.
+   */
+  private maybeDineIn(c: Customer): boolean {
+    const st = useGame.getState();
+    const hasCooked = c.basket.some((it) => COOKED_PRODUCT_IDS.has(it.id));
+    // Chỉ rút vòng quay khi điều kiện sớm thoả — không ăn tại chỗ thì không dịch chuỗi ngẫu nhiên
+    const roll = hasCooked && st.level >= DINE_UNLOCK ? simRng()() : 1;
+    if (!wantsDineIn({ level: st.level, hasCooked, roll })) return false;
+    const seat = freeSeat(st.furniture, this.seatBusy);
+    if (!seat) {
+      c.say('😤 Hết chỗ ngồi!');
+      st.noteMiss('wait');
+      this.releaseFromQueue(c);
+      this.leave(c, false, true);
+      return true;
+    }
+    const chair = st.furniture.find((f) => f.uid === seat.chairUid);
+    if (!chair) return false;
+    this.seatBusy.add(seat.chairUid);
+    c.seat = seat;
+    c.state = 'toSeat';
+    this.releaseFromQueue(c);
+    this.walk(c, this.shop.local(chair.x, chair.z));
+    c.plan = [
+      () => {
+        c.pause = EAT_SECONDS;
+        c.state = 'dining';
+        c.say('😋', 3);
+      },
+      () => {
+        if (c.seat) this.seatBusy.delete(c.seat.chairUid);
+        c.seat = undefined;
+        this.leave(c, true, true);
+      },
+    ];
+    return true;
   }
 
   /** Sau lần mua hài lòng: khách quen đủ thân có thể nhờ giữ một món ưa thích đến ngày mai. */
@@ -834,6 +880,22 @@ export class CustomerManager {
     if (c.profession) st.tallyDemographics(c.profession.id, { visits: 1, walkouts: paid ? 0 : 1 });
     if (c.regular && !happy) useGame.getState().regularVisit(c.regular.id, c.basket, false, c.missed.find((m) => m.why === 'stock' || m.why === 'price'));
     this.review(c, happy);
+    this.releaseFromQueue(c);
+    // GĐ1491 — rời tiệm giữa chừng (bất kể đường nào) thì nhường ghế ăn lại
+    if (c.seat) {
+      this.seatBusy.delete(c.seat.chairUid);
+      c.seat = undefined;
+    }
+    c.state = 'leaving';
+    c.plan = [() => this.walk(c, this.shop.doorOutside), () => this.walk(c, new THREE.Vector3(c.exitX, 0, SIDEWALK_Z))];
+    this.walk(c, this.shop.doorInside);
+  }
+
+  /**
+   * GĐ1491 — rút khách khỏi hàng chờ quầy (nếu đang xếp) và cho những người phía sau dịch lên.
+   * Tách khỏi leave() để khách đi ăn tại chỗ cũng nhường hàng ngay khi vừa trả tiền xong.
+   */
+  private releaseFromQueue(c: Customer) {
     const queue = c.counterKey ? this.queues.get(c.counterKey) : undefined;
     const i = queue ? queue.indexOf(c) : -1;
     if (queue && i >= 0) {
@@ -850,9 +912,6 @@ export class CustomerManager {
       }
     }
     c.counterKey = null;
-    c.state = 'leaving';
-    c.plan = [() => this.walk(c, this.shop.doorOutside), () => this.walk(c, new THREE.Vector3(c.exitX, 0, SIDEWALK_Z))];
-    this.walk(c, this.shop.doorInside);
   }
 
   /** Khách chấm sao: mỗi món không mua được −1, chờ lâu −1; bỏ về thì chê đúng lý do. */
@@ -935,6 +994,7 @@ export class CustomerManager {
     this.customers = [];
     this.queues.clear();
     this.checkoutProgress.clear();
+    this.seatBusy.clear();
     this.regularsToday = [];
     this.friendsBurst = 0;
     this.festivalToday = false;

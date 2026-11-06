@@ -45,6 +45,23 @@ export interface SeatInfo {
   chairUid: number;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// GĐ1491 — khách "ăn tại chỗ" (đối chiếu khu dine-in): khách mua món nấu tươi
+// có thể ngồi lại ăn thay vì ra về. Hằng số + quyết định tách THUẦN để test/soi sáng.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Cấp mở khu ăn tại chỗ (khớp unlock của bàn ăn/ghế — "Mini mart" đủ lớn mới có chỗ ngồi). */
+export const DINE_UNLOCK = 30;
+/** Tỉ lệ khách mua món nấu tươi muốn ngồi lại ăn (khi còn chỗ trống). */
+export const DINE_CHANCE = 0.3;
+/** Thời gian ngồi ăn (giây game) — cùng thước đo với các pause trong agent khách. */
+export const EAT_SECONDS = 8;
+
+/** Khách này có muốn ngồi lại ăn không? `roll` là lần quay đã rút (không rút khi điều kiện sớm sai). */
+export function wantsDineIn(args: { level: number; hasCooked: boolean; roll: number }): boolean {
+  return args.level >= DINE_UNLOCK && args.hasCooked && args.roll < DINE_CHANCE;
+}
+
 /**
  * Tìm một chỗ ngồi trống: ghế chưa bị khách chiếm, kề một bàn còn dư chỗ (chốt trên
  * bởi seatSlots). Ưu tiên bàn còn nhiều chỗ trống nhất (khách dồn về cùng bàn như
