@@ -109,3 +109,4 @@
 - GĐ1409–1415 (lối ra đầu tiên: granola, mì tươi, mật ong rừng, trà thảo mộc, bánh pía, bò Úc, hột vịt lộn, bơ muối): chi tiết ở docs/progress-archive/PROGRESS-GD1409-1415.md
 - GĐ1416–1419 (lối ra đầu tiên: yến mạch, mắc ca, yến sào, kem que, bánh bao đông lạnh, sữa chua nếp, nước mắm, mứt Tết, dầu ăn, sữa hạt; bia & snack đóng gói giữ bán thẳng): chi tiết ở docs/progress-archive/PROGRESS-GD1416-1419.md
 - GĐ1420 (Cà phê hòa tan sữa đá u44 ở quầy pha — nấu 30 phút để lãi/phút dưới cà phê đen; Sinh tố kem u45 ở máy xay — lối ra đầu tiên của cà phê lon thiếc, kem cây hộp). Full suite 503/4575 xanh.
+- GĐ1421 (rà catalog x_*: ~70 nguyên liệu tươi/đông lạnh chưa có lối ra bếp. Đợt 1: Khoai tây chiên giòn, Gà viên chiên, Cá basa chiên giòn ở chảo chiên; Pizza nướng nóng ở bếp nướng; đều u35). Full suite 503/4587 xanh.

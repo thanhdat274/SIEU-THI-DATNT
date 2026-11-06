@@ -2274,6 +2274,94 @@ describe('GĐ1420 — sinh tố kem (máy xay)', () => {
   });
 });
 
+/** GĐ1421 — Khoai tây chiên giòn: lối ra đầu tiên của khoai tây chiên đông lạnh (chảo chiên). */
+describe('GĐ1421 — khoai tây chiên giòn (chảo chiên)', () => {
+  const recipe = RECIPE_MAP['recipe_khoai_tay_chien_gion'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm chảo chiên và dùng khoai tây chiên đông lạnh', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'khoai_tay_chien_gion')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'khoai_tay_chien_gion').length).toBe(1);
+    expect(recipe.station).toBe('fryer');
+    expect(recipe.inputs.some((i) => i.productId === 'x_khoai_tay_chien')).toBe(true);
+  });
+});
+
+/** GĐ1421 — Gà viên chiên: lối ra đầu tiên của gà viên đông lạnh (chảo chiên). */
+describe('GĐ1421 — gà viên chiên (chảo chiên)', () => {
+  const recipe = RECIPE_MAP['recipe_ga_vien_chien'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm chảo chiên và dùng gà viên đông lạnh', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'ga_vien_chien')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'ga_vien_chien').length).toBe(1);
+    expect(recipe.station).toBe('fryer');
+    expect(recipe.inputs.some((i) => i.productId === 'x_ga_vien_dong_lanh')).toBe(true);
+  });
+});
+
+/** GĐ1421 — Cá basa chiên giòn: lối ra đầu tiên của cá basa phi lê (chảo chiên). */
+describe('GĐ1421 — cá basa chiên giòn (chảo chiên)', () => {
+  const recipe = RECIPE_MAP['recipe_ca_basa_chien_gion'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm chảo chiên và dùng cá basa phi lê', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'ca_basa_chien_gion')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'ca_basa_chien_gion').length).toBe(1);
+    expect(recipe.station).toBe('fryer');
+    expect(recipe.inputs.some((i) => i.productId === 'x_ca_basa')).toBe(true);
+  });
+});
+
+/** GĐ1421 — Pizza nướng nóng (miếng): lối ra đầu tiên của pizza đông lạnh (bếp nướng). */
+describe('GĐ1421 — pizza nướng nóng (miếng) (bếp nướng)', () => {
+  const recipe = RECIPE_MAP['recipe_pizza_nuong_nong'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm bếp nướng và dùng pizza đông lạnh', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'pizza_nuong_nong')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'pizza_nuong_nong').length).toBe(1);
+    expect(recipe.station).toBe('food_grill');
+    expect(recipe.inputs.some((i) => i.productId === 'x_pizza_dong_lanh')).toBe(true);
+  });
+});
+
 /** GĐ1405 — Sữa hạt điều: lối ra đầu tiên của hạt điều rang muối (máy xay). */
 describe('GĐ1405 — sữa hạt điều (máy xay)', () => {
   const recipe = RECIPE_MAP['recipe_sua_hat_dieu'];

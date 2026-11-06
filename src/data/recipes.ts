@@ -298,6 +298,14 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'ca_phe_hoa_tan_da', name: 'Cà phê hòa tan sữa đá', category: 'drink', buy: 6000, sell: 9000, color: 0x7a4a2a, unlock: 44 },
   // GĐ1420: Sinh tố kem — lối ra ĐẦU TIÊN của kem cây hộp 10.
   { id: 'sinh_to_kem', name: 'Sinh tố kem', category: 'drink', buy: 7000, sell: 12000, color: 0xf5e1c8, unlock: 45 },
+  // GĐ1421: Khoai tây chiên giòn — lối ra ĐẦU TIÊN của khoai tây chiên đông lạnh.
+  { id: 'khoai_tay_chien_gion', name: 'Khoai tây chiên giòn', category: 'fresh', buy: 5000, sell: 8000, color: 0xf2c14e, unlock: 35 },
+  // GĐ1421: Gà viên chiên — lối ra ĐẦU TIÊN của gà viên đông lạnh.
+  { id: 'ga_vien_chien', name: 'Gà viên chiên', category: 'fresh', buy: 4000, sell: 7000, color: 0xd9963a, unlock: 35 },
+  // GĐ1421: Cá basa chiên giòn — lối ra ĐẦU TIÊN của cá basa phi lê.
+  { id: 'ca_basa_chien_gion', name: 'Cá basa chiên giòn', category: 'fresh', buy: 9000, sell: 15000, color: 0xe0b070, unlock: 35 },
+  // GĐ1421: Pizza nướng nóng (miếng) — lối ra ĐẦU TIÊN của pizza đông lạnh.
+  { id: 'pizza_nuong_nong', name: 'Pizza nướng nóng (miếng)', category: 'fresh', buy: 5000, sell: 9000, color: 0xd8573a, unlock: 35 },
   // GĐ1409: Sữa chua granola — lối ra ĐẦU TIÊN của ngũ cốc granola: mẻ (granola 130k + sữa chua) → 14 cốc × 18k = 252k.
   { id: 'sua_chua_granola', name: 'Sữa chua granola', category: 'fresh', buy: 11000, sell: 18000, color: 0xe9d8b4, unlock: 68 },
   // GĐ1408: Cà phê phin sữa — lối ra ĐẦU TIÊN của cà phê xay nguyên chất: mẻ (cà phê xay 150k + sữa đặc 22k) = 172k → 25 ly × 12k = 300k.
@@ -728,6 +736,22 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_sinh_to_kem', name: 'Sinh tố kem', station: 'blender',
     inputs: [{ productId: 'kem_cay_hop', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
     outputId: 'sinh_to_kem', outputQty: 10, durationMin: 6, unlock: 45, reputationGain: 1 },
+  // GĐ1421: Khoai tây chiên giòn ở chảo chiên. Mở 35 (> golden 30, ≥ cấp nguyên liệu).
+  { id: 'recipe_khoai_tay_chien_gion', name: 'Khoai tây chiên giòn', station: 'fryer',
+    inputs: [{ productId: 'x_khoai_tay_chien', quantity: 1 }],
+    outputId: 'khoai_tay_chien_gion', outputQty: 6, durationMin: 6, unlock: 35, reputationGain: 1 },
+  // GĐ1421: Gà viên chiên ở chảo chiên. Mở 35 (> golden 30, ≥ cấp nguyên liệu).
+  { id: 'recipe_ga_vien_chien', name: 'Gà viên chiên', station: 'fryer',
+    inputs: [{ productId: 'x_ga_vien_dong_lanh', quantity: 1 }],
+    outputId: 'ga_vien_chien', outputQty: 6, durationMin: 6, unlock: 35, reputationGain: 1 },
+  // GĐ1421: Cá basa chiên giòn ở chảo chiên. Mở 35 (> golden 30, ≥ cấp nguyên liệu).
+  { id: 'recipe_ca_basa_chien_gion', name: 'Cá basa chiên giòn', station: 'fryer',
+    inputs: [{ productId: 'x_ca_basa', quantity: 1 }, { productId: 'x_trung_ga', quantity: 1 }],
+    outputId: 'ca_basa_chien_gion', outputQty: 6, durationMin: 10, unlock: 35, reputationGain: 2 },
+  // GĐ1421: Pizza nướng nóng (miếng) ở bếp nướng. Mở 35 (> golden 30, ≥ cấp nguyên liệu).
+  { id: 'recipe_pizza_nuong_nong', name: 'Pizza nướng nóng (miếng)', station: 'food_grill',
+    inputs: [{ productId: 'x_pizza_dong_lanh', quantity: 1 }],
+    outputId: 'pizza_nuong_nong', outputQty: 6, durationMin: 8, unlock: 35, reputationGain: 1 },
   // GĐ1409: Sữa chua granola ở máy xay: lãi dương, hời hơn bán thẳng nguyên liệu. Mở 68 = cấp granola (> golden 30).
   { id: 'recipe_sua_chua_granola', name: 'Sữa chua granola', station: 'blender',
     inputs: [{ productId: 'ngu_coc', quantity: 1 }, { productId: 'suachua', quantity: 1 }],
