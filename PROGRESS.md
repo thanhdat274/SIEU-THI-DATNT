@@ -136,3 +136,4 @@
 - GĐ1471: Bánh đa cuốn chả lụa (u67, bếp nướng: 2 bánh đa + 1 chả lụa → 10 cuốn, bán 13k).
 - GĐ1472: Bánh cuốn chà bông (u68, nồi hấp: 2 bánh cuốn + 1 chà bông → 10 suất, bán 20k).
 - GĐ1473: Cà pháo chiên giòn chấm me (u69, chảo chiên: 3 cà pháo + 1 me dầm + 1 bột mì → 12 phần, bán 9k).
+- GĐ1474: Bún chả lụa nước chanh muối (u70, bếp nồi: 2 bún + 1 chả lụa + 1 chanh muối → 10 tô, bán 18k).
