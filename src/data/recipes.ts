@@ -371,7 +371,7 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_com_suon', name: 'Cơm sườn nướng', station: 'food_grill',
     inputs: [{ productId: 'gao', quantity: 1 }, { productId: 'thit', quantity: 8 }, { productId: 'rau', quantity: 2 }],
     outputId: 'com_suon_nuong', outputQty: 50, durationMin: 30, unlock: 40, reputationGain: 4 },
-  { id: 'recipe_com_chien', name: 'Cơm chiên trứng', station: 'food_grill',
+  { id: 'recipe_com_chien', name: 'Cơm chiên trứng', station: 'fryer',
     inputs: [{ productId: 'gao', quantity: 1 }, { productId: 'trung', quantity: 5 }],
     outputId: 'com_chien_trung', outputQty: 50, durationMin: 20, unlock: 40, reputationGain: 3 },
   // GĐ1094: Gà Đông Tảo nướng — món nướng của giống gà quý nhà trại (Đông Tảo mở cấp 30, thịt đắt gấp
@@ -642,7 +642,7 @@ export const RECIPES: Recipe[] = [
   // GĐ1365: Cá hồi áp chảo — món cao cấp kiểu Nhật trứ danh: cá hồi phi lê áp chảo da giòn ăn cùng hành phi
   // ở bếp nướng: mẻ (cá hồi 320k + hành phi 3k + muối 5k) = 328k → 6 phần × 90k = 540k, lãi 212k/mẻ,
   // nấu hời hơn bán thẳng nguyên liệu (445k < 540k). Mở 53 = đúng cấp cá hồi (> golden 30 → sim không đổi).
-  { id: 'recipe_ca_hoi_ap_chao', name: 'Cá hồi áp chảo', station: 'food_grill',
+  { id: 'recipe_ca_hoi_ap_chao', name: 'Cá hồi áp chảo', station: 'fryer',
     inputs: [{ productId: 'ca_hoi', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 2 }, { productId: 'x_muoi', quantity: 1 }],
     outputId: 'ca_hoi_ap_chao', outputQty: 6, durationMin: 15, unlock: 53, reputationGain: 4 },
   // GĐ1366: Mực khô nướng — món nhậu trứ danh bên mâm bia: mực khô nướng than đập dập ăn cùng muối ớt
@@ -684,7 +684,7 @@ export const RECIPES: Recipe[] = [
   // GĐ1370: Bò hầm rượu vang — món hầm Pháp trứ danh (bœuf bourguignon): thịt bò tươi hầm mềm cùng rượu vang
   // đỏ nhập ở nồi hấp: mẻ (bò 210k + vang 450k + hành phi 3k) = 663k → 6 phần × 180k = 1080k, lãi 417k/mẻ,
   // nấu hời hơn bán thẳng nguyên liệu (910k < 1080k). Mở 58 = đúng cấp vang (> golden 30 → sim không đổi).
-  { id: 'recipe_bo_ham_vang', name: 'Bò hầm rượu vang', station: 'steamer',
+  { id: 'recipe_bo_ham_vang', name: 'Bò hầm rượu vang', station: 'hot_kettle',
     inputs: [{ productId: 'thit_bo_tuoi', quantity: 1 }, { productId: 'ruou_vang_nhap', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 2 }],
     outputId: 'bo_ham_vang', outputQty: 6, durationMin: 30, unlock: 58, reputationGain: 5 },
   // GĐ1375: Chuối chiên — món ăn vặt quốc dân: chuối nông trại chấm bột mì chiên vàng giòn ở chảo chiên:
@@ -745,7 +745,7 @@ export const RECIPES: Recipe[] = [
   // (trạm bếp nướng — không rice_station nên không đụng kinh tế tiệm xôi): mẻ (nếp 30k + bột mì 18k +
   // hành phi 3k) = 51k → 12 viên × 8k = 96k, lãi 45k/mẻ, nấu hời hơn bán thẳng nguyên liệu (73k < 96k).
   // Mở 38 ≥ mọi nguyên liệu (1/1/36) (> golden 30 → sim không đổi).
-  { id: 'recipe_xoi_chien_phong', name: 'Xôi chiên phồng', station: 'food_grill',
+  { id: 'recipe_xoi_chien_phong', name: 'Xôi chiên phồng', station: 'fryer',
     inputs: [{ productId: 'nep', quantity: 1 }, { productId: 'botmi', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 2 }],
     outputId: 'xoi_chien_phong', outputQty: 12, durationMin: 15, unlock: 38, reputationGain: 2 },
   // GĐ1387: Bánh khúc — đặc sản đồng bằng trứ danh: vỏ nếp trộn bắp xanh hấp chín, nhân đậu xanh đánh dẻo ở

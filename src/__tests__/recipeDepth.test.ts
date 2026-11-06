@@ -998,7 +998,7 @@ describe('GĐ1364 — lối ra bếp của tôm đông lạnh (bánh canh tôm, 
  */
 const NEW_IDS_1365 = ['recipe_ca_hoi_ap_chao'] as const;
 
-describe('GĐ1365 — lối ra bếp của cá hồi phi lê (cá hồi áp chảo, bếp nướng)', () => {
+describe('GĐ1365 — lối ra bếp của cá hồi phi lê (cá hồi áp chảo, chảo chiên (GĐ1403 dời từ bếp nướng))', () => {
   for (const rid of NEW_IDS_1365) {
     const recipe = RECIPE_MAP[rid];
     it(`${recipe.name}: có trong RECIPES và COOKED_PRODUCTS`, () => {
@@ -1024,8 +1024,8 @@ describe('GĐ1365 — lối ra bếp của cá hồi phi lê (cá hồi áp ch�
     });
   }
 
-  it('cá hồi áp chảo hiện diện ở bếp nướng và dùng cá hồi + hành phi + muối', () => {
-    expect(RECIPES.some((r) => r.station === 'food_grill' && r.id === 'recipe_ca_hoi_ap_chao')).toBe(true);
+  it('cá hồi áp chảo hiện diện ở chảo chiên (GĐ1403 dời từ bếp nướng) và dùng cá hồi + hành phi + muối', () => {
+    expect(RECIPES.some((r) => r.station === 'fryer' && r.id === 'recipe_ca_hoi_ap_chao')).toBe(true);
     expect(RECIPES.some((r) => r.id === 'recipe_ca_hoi_ap_chao' && r.inputs.some((i) => i.productId === 'ca_hoi'))).toBe(true);
   });
 });
@@ -1198,7 +1198,7 @@ describe('GĐ1369 — bún xào tôm khô + cháo yến mạch (khép lối ra t
  */
 const NEW_IDS_1370 = ['recipe_bo_ham_vang'] as const;
 
-describe('GĐ1370 — lối ra bếp của rượu vang nhập (bò hầm rượu vang, nồi hấp)', () => {
+describe('GĐ1370 — lối ra bếp của rượu vang nhập (bò hầm rượu vang, bếp nồi nấu (GĐ1403 dời từ nồi hấp))', () => {
   for (const rid of NEW_IDS_1370) {
     const recipe = RECIPE_MAP[rid];
     it(`${recipe.name}: có trong RECIPES và COOKED_PRODUCTS`, () => {
@@ -1224,8 +1224,8 @@ describe('GĐ1370 — lối ra bếp của rượu vang nhập (bò hầm rượ
     });
   }
 
-  it('bò hầm vang hiện diện ở nồi hấp và dùng bò tươi + rượu vang nhập + hành phi', () => {
-    expect(RECIPES.some((r) => r.station === 'steamer' && r.id === 'recipe_bo_ham_vang')).toBe(true);
+  it('bò hầm vang hiện diện ở bếp nồi nấu (GĐ1403 dời từ nồi hấp) và dùng bò tươi + rượu vang nhập + hành phi', () => {
+    expect(RECIPES.some((r) => r.station === 'hot_kettle' && r.id === 'recipe_bo_ham_vang')).toBe(true);
     expect(RECIPES.some((r) => r.id === 'recipe_bo_ham_vang' && r.inputs.some((i) => i.productId === 'ruou_vang_nhap'))).toBe(true);
     expect(RECIPES.some((r) => r.id === 'recipe_bo_ham_vang' && r.inputs.some((i) => i.productId === 'thit_bo_tuoi'))).toBe(true);
   });
@@ -1597,7 +1597,7 @@ describe('GĐ1385 — cơm hến (món Huế dân dã, ấm nước)', () => {
  */
 const NEW_IDS_1386 = ['recipe_xoi_chien_phong'] as const;
 
-describe('GĐ1386 — xôi chiên phồng (đặc sản mộc mạc, bếp nướng)', () => {
+describe('GĐ1386 — xôi chiên phồng (đặc sản mộc mạc, chảo chiên (GĐ1403 dời từ bếp nướng))', () => {
   for (const rid of NEW_IDS_1386) {
     const recipe = RECIPE_MAP[rid];
     it(`${recipe.name}: có trong RECIPES và COOKED_PRODUCTS`, () => {
@@ -1623,8 +1623,8 @@ describe('GĐ1386 — xôi chiên phồng (đặc sản mộc mạc, bếp nư�
     });
   }
 
-  it('xôi chiên phồng hiện diện ở bếp nướng và dùng nếp + bột mì + hành phi', () => {
-    expect(RECIPES.some((r) => r.station === 'food_grill' && r.id === 'recipe_xoi_chien_phong')).toBe(true);
+  it('xôi chiên phồng hiện diện ở chảo chiên (GĐ1403 dời từ bếp nướng) và dùng nếp + bột mì + hành phi', () => {
+    expect(RECIPES.some((r) => r.station === 'fryer' && r.id === 'recipe_xoi_chien_phong')).toBe(true);
     expect(RECIPES.some((r) => r.id === 'recipe_xoi_chien_phong' && r.inputs.some((i) => i.productId === 'nep'))).toBe(true);
     expect(RECIPES.some((r) => r.id === 'recipe_xoi_chien_phong' && r.inputs.some((i) => i.productId === 'botmi'))).toBe(true);
   });
