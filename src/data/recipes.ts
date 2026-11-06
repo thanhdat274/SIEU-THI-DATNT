@@ -418,6 +418,10 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'canh_ga_sot_cam', name: 'Cánh gà sốt cam', category: 'fresh', buy: 14000, sell: 22000, color: 0xe8862a, unlock: 46 },
   // GĐ1441: Ổi lắc chua ngọt — lối ra ĐẦU TIÊN của ổi vườn nhà.
   { id: 'oi_lac_muoi', name: 'Ổi lắc chua ngọt', category: 'fresh', buy: 6000, sell: 10000, color: 0x9ccc65, unlock: 41 },
+  // GĐ1442: Tôm sốt chanh dây — lối ra ĐẦU TIÊN của chanh dây vườn nhà.
+  { id: 'tom_sot_chanh_day', name: 'Tôm sốt chanh dây', category: 'fresh', buy: 24000, sell: 38000, color: 0xf0a830, unlock: 47 },
+  // GĐ1442: Sữa chua chanh dây — lối ra ĐẦU TIÊN của chanh dây vườn nhà.
+  { id: 'suachua_chanh_day', name: 'Sữa chua chanh dây', category: 'cold', buy: 7000, sell: 11000, color: 0xf7d774, unlock: 42 },
   // GĐ1409: Sữa chua granola — lối ra ĐẦU TIÊN của ngũ cốc granola: mẻ (granola 130k + sữa chua) → 14 cốc × 18k = 252k.
   { id: 'sua_chua_granola', name: 'Sữa chua granola', category: 'fresh', buy: 11000, sell: 18000, color: 0xe9d8b4, unlock: 68 },
   // GĐ1408: Cà phê phin sữa — lối ra ĐẦU TIÊN của cà phê xay nguyên chất: mẻ (cà phê xay 150k + sữa đặc 22k) = 172k → 25 ly × 12k = 300k.
@@ -1088,6 +1092,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_oi_lac_muoi', name: 'Ổi lắc chua ngọt', station: 'blender',
     inputs: [{ productId: 'x_oi', quantity: 3 }, { productId: 'x_duong', quantity: 1 }],
     outputId: 'oi_lac_muoi', outputQty: 10, durationMin: 8, unlock: 41, reputationGain: 2 },
+  // GĐ1442: Tôm sốt chanh dây ở chảo chiên. Mở 47 (> golden 30, ≥ cấp nguyên liệu).
+  { id: 'recipe_tom_sot_chanh_day', name: 'Tôm sốt chanh dây', station: 'fryer',
+    inputs: [{ productId: 'x_tom_tuoi', quantity: 1 }, { productId: 'x_chanh_day', quantity: 2 }, { productId: 'x_duong', quantity: 1 }],
+    outputId: 'tom_sot_chanh_day', outputQty: 6, durationMin: 15, unlock: 47, reputationGain: 3 },
+  // GĐ1442: Sữa chua chanh dây ở máy xay. Mở 42 (> golden 30, ≥ cấp nguyên liệu).
+  { id: 'recipe_suachua_chanh_day', name: 'Sữa chua chanh dây', station: 'blender',
+    inputs: [{ productId: 'suachua', quantity: 6 }, { productId: 'x_chanh_day', quantity: 2 }],
+    outputId: 'suachua_chanh_day', outputQty: 10, durationMin: 8, unlock: 42, reputationGain: 2 },
   // GĐ1409: Sữa chua granola ở máy xay: lãi dương, hời hơn bán thẳng nguyên liệu. Mở 68 = cấp granola (> golden 30).
   { id: 'recipe_sua_chua_granola', name: 'Sữa chua granola', station: 'blender',
     inputs: [{ productId: 'ngu_coc', quantity: 1 }, { productId: 'suachua', quantity: 1 }],

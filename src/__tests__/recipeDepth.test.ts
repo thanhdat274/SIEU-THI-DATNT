@@ -3594,6 +3594,50 @@ describe('GĐ1441 — ổi lắc muối ớt (máy xay)', () => {
   });
 });
 
+/** GĐ1442 — Tôm sốt chanh dây: lối ra đầu tiên của chanh dây vườn nhà (chảo chiên). */
+describe('GĐ1442 — tôm sốt chanh dây (chảo chiên)', () => {
+  const recipe = RECIPE_MAP['recipe_tom_sot_chanh_day'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm chảo chiên và dùng chanh dây vườn nhà', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'tom_sot_chanh_day')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'tom_sot_chanh_day').length).toBe(1);
+    expect(recipe.station).toBe('fryer');
+    expect(recipe.inputs.some((i) => i.productId === 'x_chanh_day')).toBe(true);
+  });
+});
+
+/** GĐ1442 — Sữa chua chanh dây: lối ra đầu tiên của chanh dây vườn nhà (máy xay). */
+describe('GĐ1442 — sữa chua chanh dây (máy xay)', () => {
+  const recipe = RECIPE_MAP['recipe_suachua_chanh_day'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm máy xay và dùng chanh dây vườn nhà', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'suachua_chanh_day')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'suachua_chanh_day').length).toBe(1);
+    expect(recipe.station).toBe('blender');
+    expect(recipe.inputs.some((i) => i.productId === 'x_chanh_day')).toBe(true);
+  });
+});
+
 /** GĐ1405 — Sữa hạt điều: lối ra đầu tiên của hạt điều rang muối (máy xay). */
 describe('GĐ1405 — sữa hạt điều (máy xay)', () => {
   const recipe = RECIPE_MAP['recipe_sua_hat_dieu'];
