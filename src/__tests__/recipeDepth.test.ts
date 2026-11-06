@@ -3440,6 +3440,50 @@ describe('GĐ1431 — cơm nắm nướng (bếp nướng)', () => {
   });
 });
 
+/** GĐ1437 — Xôi gà xé: lối ra đầu tiên của thịt gà (quây xôi). */
+describe('GĐ1437 — xôi gà xé (quây xôi)', () => {
+  const recipe = RECIPE_MAP['recipe_xoi_ga_xe'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm quây xôi và dùng thịt gà', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'xoi_ga_xe')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'xoi_ga_xe').length).toBe(1);
+    expect(recipe.station).toBe('rice_station');
+    expect(recipe.inputs.some((i) => i.productId === 'x_thit_ga')).toBe(true);
+  });
+});
+
+/** GĐ1437 — Xôi chả lụa: lối ra đầu tiên của chả lụa (quây xôi). */
+describe('GĐ1437 — xôi chả lụa (quây xôi)', () => {
+  const recipe = RECIPE_MAP['recipe_xoi_cha_lua'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm quây xôi và dùng chả lụa', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'xoi_cha_lua')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'xoi_cha_lua').length).toBe(1);
+    expect(recipe.station).toBe('rice_station');
+    expect(recipe.inputs.some((i) => i.productId === 'x_cha_lua')).toBe(true);
+  });
+});
+
 /** GĐ1405 — Sữa hạt điều: lối ra đầu tiên của hạt điều rang muối (máy xay). */
 describe('GĐ1405 — sữa hạt điều (máy xay)', () => {
   const recipe = RECIPE_MAP['recipe_sua_hat_dieu'];
