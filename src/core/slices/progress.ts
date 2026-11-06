@@ -89,7 +89,7 @@ export const createProgressSlice = (set: SetState, get: GetState): Pick<GameStat
     });
     if (result.gain > 0) {
       set({ money: s.money + result.gain });
-      s.notify(`🍛 Bạn vắng ${Math.round(awayMinutes)} phút — khu ăn tại chỗ vẫn đón ~${result.customers} khách, thu +${formatMoney(result.gain)}.`);
+      s.notify(`🍛 Vắng ${Math.round(awayMinutes)} phút — khu ăn uống thu +${formatMoney(result.gain)} (~${result.customers} khách).`);
       playSfx('sale');
     }
     return result;

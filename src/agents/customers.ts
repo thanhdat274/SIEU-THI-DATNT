@@ -37,6 +37,11 @@ import { meatDemandFactor } from '../data/meat';
 import {
   bestSkillOnDuty, DIRT_MAX, DIRT_PER_VISIT, dirtVisitFactor,
 } from '../data/staff';
+import {
+  CRITIC_CHANCE, CRITIC_HARD_UNLOCK, CRITIC_PENALTY_REVIEWS, CRITIC_UNLOCK, CRITIC_WINDOW_MINUTES,
+  criticReward, pickCriticDish,
+} from '../data/critic';
+import { metaRng } from '../core/rand';
 import { theftCatchChance, theftSpawnChance } from '../data/theftRisk';
 import { socialTraffic } from '../data/social';
 import { adTargets, bizTraffic, LOYALTY_UNLOCK, loyaltyRedeemChance, petActive, rivalPriceGap, rivalUndercuts } from '../data/biz';
@@ -91,6 +96,14 @@ export class CustomerManager {
   private festivalToday = false;
   /** Phút người bán rong định ghé hôm nay (null = hôm nay không ghé); tính một lần mỗi ngày. */
   private vendorAt: number | null | undefined;
+  // ── GĐ1498 — nhà phê bình ẩm thực: ≤1 lần/ngày, gọi 1 món, phục vụ trong khung thì thưởng ──
+  /** Phút nhà phê bình định ghé hôm nay (null = hôm nay không ghé). */
+  private criticAt: number | null | undefined;
+  private criticRolledDay = -1;
+  /** Món nhà phê bình đang chờ được phục vụ (null = không có lời hẹn nào). */
+  private criticProduct: string | null = null;
+  private criticUntil = 0;
+  private criticHard = false;
   private checkoutProgress = new Map<string, number>();
   /** GĐ1491 — ghế ăn đang bị khách chiếm (uid ghế); khách trả ghế khi ăn xong hoặc bỏ về. */
   private seatBusy = new Set<number>();
@@ -193,6 +206,9 @@ export class CustomerManager {
       this.vendorAt = null;
       this.spawnVendor();
     }
+
+    // GĐ1498 — nhà phê bình ẩm thực (tiệm đã có khu ăn tại chỗ): gọi 1 món, phục vụ kịp thì thưởng
+    this.updateCritic(s);
 
     for (const c of this.customers) {
       c.step(gameDt);
@@ -1102,6 +1118,51 @@ export class CustomerManager {
     this.walk(c, this.shop.doorInside);
   }
 
+  /**
+   * GĐ1498 — nhà phê bình ẩm thực: tối đa 1 lần/ngày (rng dòng RIÊNG metaRng — không dịch
+   * chuỗi kinh tế chính). Giai đoạn nhẹ (cấp 30+): gọi món đã mở, phục vụ kịp thì thưởng,
+   * hụt thì chỉ nhắc. Giai đoạn nghiêm ngặt (cấp 45+): gọi BẤT KỲ món nào trong toàn game,
+   * phục vụ kịp thưởng lớn, hụt hẹn ăn mấy đánh giá 1★ (tiếng xấu đồn trong hẻm).
+   */
+  private updateCritic(s: ReturnType<typeof useGame.getState>) {
+    if (s.level < CRITIC_UNLOCK) return;
+    if (this.criticRolledDay !== s.day) {
+      this.criticRolledDay = s.day;
+      this.criticAt = metaRng() < CRITIC_CHANCE ? 8 * 60 + Math.floor(metaRng() * 12 * 60) : null;
+    }
+    // Đang có lời hẹn phục vụ: món vừa được bày lên kệ thì chiếu đãi ngay, hết khung thì trượt hẹn
+    if (this.criticProduct) {
+      const served = s.furniture.some((f) => !f.broken && f.tiers.some((t) => t.productId === this.criticProduct && t.count > 0));
+      if (served) {
+        const reward = criticReward(this.criticHard);
+        useGame.setState({ money: s.money + reward, totals: { ...s.totals, revenue: s.totals.revenue + reward } });
+        s.notify(`🌟 Nhà phê bình khen ${productById(this.criticProduct).name}! +${formatMoney(reward)}`);
+        playSfx('gift');
+        this.criticProduct = null;
+        return;
+      }
+      if (s.minutes > this.criticUntil) {
+        if (this.criticHard) {
+          for (let i = 0; i < CRITIC_PENALTY_REVIEWS; i++) s.addReview(1, 'stock', this.criticProduct);
+          s.notify(`😠 Nhà phê bình hụt hẹn về ${productById(this.criticProduct).name}!`);
+        } else {
+          s.notify(`😅 Nhà phê bình không thấy ${productById(this.criticProduct).name}, bỏ về.`);
+        }
+        this.criticProduct = null;
+        return;
+      }
+      return; // còn trong khung chờ phục vụ
+    }
+    // Ghé lần đầu trong ngày: đặt lời gọi món (chỉ khi tiệm đang mở)
+    if (this.criticAt == null || !s.shopOpen || s.minutes < this.criticAt) return;
+    this.criticHard = s.level >= CRITIC_HARD_UNLOCK;
+    this.criticProduct = pickCriticDish(RECIPES, s.level, this.criticHard);
+    this.criticUntil = s.minutes + CRITIC_WINDOW_MINUTES;
+    this.criticAt = null;
+    s.notify(`🎩 Nhà phê bình gọi ${productById(this.criticProduct).name} — phục vụ trong ${CRITIC_WINDOW_MINUTES} phút!`);
+    playSfx('door');
+  }
+
   /** Xoá hết khách (sang ngày mới). */
   reset() {
     clearAsk();
@@ -1115,6 +1176,9 @@ export class CustomerManager {
     this.seatBusy.clear();
     this.machineBusy.clear();
     this.toiletBusy.clear();
+    this.criticProduct = null;
+    this.criticAt = undefined;
+    this.criticRolledDay = -1;
     this.regularsToday = [];
     this.friendsBurst = 0;
     this.festivalToday = false;

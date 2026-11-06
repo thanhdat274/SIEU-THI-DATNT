@@ -36,6 +36,7 @@ export function setSimSeed(seed: number): void {
   seeded = mulberry32(seed);
   seedVal = seed >>> 0;
   cashierStream = null;
+  metaStream = null;
 }
 
 /** Tắt seed, quay về Math.random mặc định. */
@@ -43,6 +44,7 @@ export function clearSimSeed(): void {
   seeded = null;
   seedVal = null;
   cashierStream = null;
+  metaStream = null;
 }
 
 // ── GĐ1253 — dòng rút RIÊNG cho quyết định của thu ngân (mặc cả/tiền lẻ) ────────────────────────
@@ -59,4 +61,18 @@ export function cashierRng(): number {
   if (seedVal === null) return Math.random();
   if (!cashierStream) cashierStream = mulberry32((seedVal ^ CASHIER_SALT) >>> 0);
   return cashierStream();
+}
+
+// ── GĐ1498 — dòng rút RIÊNG cho sự kiện meta (nhà phê bình ẩm thực) ─────────────
+// Cùng cơ chế cashierRng (GĐ1253): sự kiện thưởng/phạt meta KHÔNG được dịch chuỗi
+// kinh tế chính — một ngày có hay không nhà phê bình đều không re-roll các quyết định
+// phía sau. Chưa seed → Math.random như simRng.
+const META_SALT = 0x51d3a7c9;
+let metaStream: (() => number) | null = null;
+
+/** Rút một số cho sự kiện meta — dòng phụ xác định theo seed ván, độc lập chuỗi chính. */
+export function metaRng(): number {
+  if (seedVal === null) return Math.random();
+  if (!metaStream) metaStream = mulberry32((seedVal ^ META_SALT) >>> 0);
+  return metaStream();
 }
