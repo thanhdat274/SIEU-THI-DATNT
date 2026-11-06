@@ -767,3 +767,382 @@ Cách làm: đọc toàn bộ chuỗi giao diện của game tham khảo (cửa 
 5. **Chợ đồ cũ cuối tuần** (chợ phiên): bán lại đồ trang trí cho NPC buôn đồ cũ với giá 30–60%, cao hơn bán cho cửa hàng (10%).
 6. **Tủ trao đổi đặc sản** giữa các shop trong chuỗi cung ứng: tiệm xôi đưa đỗ xanh lấy mè rang của tạp hóa… Mỗi đề nghị đổi một lần rồi "thu hoạch".
 7. **Biển hiệu tự đặt tên + avatar** khi mở game ("Đặt tên cho quán của bạn"), hiện trên mái tiệm và trên các thư.
+
+## E. Bổ sung lần 2 (chơi thực + runtime bundle, 06/11/2026)
+
+### E1. Đồ đựng (vessel) — khóa và phân nhóm
+
+- Mỗi món khai một **vesselKind**: mặc định `plate` (đĩa), một nhóm dùng `cup` (cốc). Số lượng: **161 món đĩa / 22 món cốc**.
+- Đồ đựng theo sao dùng khóa **`vessel.tier_<0..5>`** (đĩa) và **`vessel.cup_<0..5>`** (cốc) — tức bậc đồ đựng = sao món.
+- Chuỗi bậc đĩa: giấy → lá → gỗ → gốm → bạc → vàng. Chuỗi bậc cốc: cốc giấy → … → cốc vàng.
+- UI hiển thị mục tiêu gần: "còn N lượt → đổi sang bậc kế" (chữ `vessel_goal`); khi đủ một sao có sự khác biệt đồ đựng so với sao cũ, toast "lên sao" (`dish_star_up_no_diff` khi chưa đổi).
+
+### E2. Công thức tip (đối chiếu runtime)
+
+```
+tip%   = ngẫu nhiên, mặc định 10% giá món   (tipPercent<0 → 10)
+tip    = giá_món × tip% ;  khách hài lòng < 1 → tip × 0,5
+khách hài lòng ≤ 0 (bỏ đi) → tip = 0
+trait Duyên dáng → tip × 1,15
+```
+
+- Trạng thái khách có: `satisfaction` (khởi đầu = 1), `patience` (75 s), `tipAmount`, `tipMul`, `patienceBonus`.
+- Trait **Ngoại giao** tăng patience của khách (`chefPatienceBoosted`).
+
+### E3. Hằng số / entity runtime tham khảo
+
+| Đối tượng | Giá trị / cơ chế |
+|---|---|
+| patience khách | 75 s (`CUSTOMER_PATIENCE_S`), đếm ngược; chạm 0 → bỏ đi |
+| satisfaction khởi đầu | 1 |
+| Bán lại đồ cho cửa hàng | 10% giá mua (xác nhận: bếp 280 → sell 28) |
+| Ghế–bàn | `tableBinding` + `occupiedChairIds`; hướng xoay ghế = hướng khách ngồi |
+| Doanh thu vắng mặt | object `offlineRevenue`; chỉ hoạt động khi có cờ `offline_revenue`; ghi nhận từng lần trả tiền khi online để mô phỏng lại |
+| Thanh tra | nhóm `inspectors` vào từ cửa, mỗi người cách nhau `staggerMs`, có `appearances`/bong bóng |
+
+> Tất cả con số trên dùng để tham khảo cân bằng; tên/hằng số của game gốc không đưa vào game mình.
+
+## F. Bổ sung lần 3 — Bảng số liệu tham khảo (từ "Sổ tay chức năng" của game)
+
+> Ghi cơ chế + con số để cân chỉnh. Không chép tên/mô tả sáng tạo của họ.
+
+### F1. Đồ đựng theo sao (đã xác nhận đủ 6 bậc / 2 loại)
+
+| Sao | Lượt bán | Đĩa (món ăn) | Cốc (đồ uống) |
+|---|---|---|---|
+| 0★ | 0 | đĩa giấy | cốc giấy |
+| 1★ | 50 | lá xanh | cốc lá |
+| 2★ | 250 | gỗ | cốc gỗ |
+| 3★ | 2.500 | gốm sứ | cốc sứ |
+| 4★ | 10.000 | bạc | cốc bạc |
+| 5★ | 20.000 | vàng | cốc vàng |
+
+- Lên sao cần 2 điều kiện: đủ lượt bán **và** nguyên liệu học × số sao mới; bấm "Nâng cấp", không tốn xu; mỗi sao tăng giá bán (tối đa +220%).
+- Nhãn đồ đựng hiển thị "Đồ đựng: {bậc}" và đếm ngược "Còn N lần nữa → sao sau đổi sang {bậc}".
+
+### F2. Tuyển dụng nhân viên (số liệu đầy đủ)
+
+- Đăng tin tối đa 5 lượt; hồi 1 lượt/20 phút; hết 5 lượt khóa 2 giờ; phí thuê 1.000–10.000/người.
+- Bậc thầy & Huyền thoại có thể kèm 1 tật xấu → giảm 20% lương.
+
+| Lần đăng | 1 | 2 | 3 | 4 | 5 |
+|---|---|---|---|---|---|
+| Phí (xu) | 1.000 | 2.000 | 4.000 | 16.000 | 32.000 |
+| Ứng viên | 2 | 2 | 3 | 4 | 5 |
+| Chờ (giây) | 20 | 15 | 10 | 5 | 1 |
+
+| Hạng | Tỉ lệ | Tốc độ | Lương/ngày (bếp/bồi) | Bồi thường sa thải |
+|---|---|---|---|---|
+| Tập sự | 60% | ×0.90–1.00 | 112 / 168 | 5.000 |
+| Lành nghề | 30% | ×1.00–1.10 | 160 / 240 | 10.000 |
+| Bậc thầy | 7% | ×1.10–1.20 | 256 / 384 | 20.000 |
+| Huyền thoại | 3% | ×1.20–1.30 | 400 / 600 | 40.000 |
+
+- Ngày làm = 8 giờ game = 40 phút thật. Hợp đồng tuyển 30 ngày; hết hạn 1 giờ game để gia hạn (mức tăng ≤50%) hoặc cho nghỉ miễn phí.
+- Nhân viên "bạn bè": ×1.15–1.20, lương 320/480, chọn sở trường miễn phí.
+
+### F3. Sở trường nhân viên (hiệu ứng + số)
+
+| Sở trường | Hiệu ứng | Loại |
+|---|---|---|
+| Nấu nhanh | nấu nhanh +10% | tốt |
+| Nhanh chân | đi nhanh +10% | tốt |
+| Duyên dáng | khách tip +15% | tốt |
+| Ngoại giao | khách kiên nhẫn +5% | tốt |
+| Cầu toàn | nấu chậm −20% | xấu |
+| Cẩu thả | 8% tốn x2 nguyên liệu | xấu |
+| Hay quên | 5% quên ghi món | xấu |
+| Vụng về | 5% làm đổ món (nấu lại) | xấu |
+| Lười | nghỉ 2 s sau mỗi việc | xấu |
+
+### F4. Khách & đánh giá sao
+
+- Khách/phút: 7 (0★) → 17 (5★); trang trí thêm "cứ K điểm → +1 khách/phút" (ở 5★).
+- Hài lòng: món trong 37 s = 100%; 38–75 s = 60%; chờ ghế >10 s hoặc quá 75 s = 0% (bỏ về).
+- XP: khách 5★ = 2 XP, dưới = 1 XP; chơi máy không XP, không tính lượt bán.
+- Sau ăn: 20% khách đi vệ sinh (4 s/lần, thu phí); 15% khách mới chơi máy (massage 12 s, máy khác 6 s).
+
+### F5. Doanh thu vắng mặt & điểm danh & lên cấp
+
+- Vắng mặt: hiệu suất 55%; thời gian tính = 30 + cấp×5 phút; <5 phút không tính; <15 phút tự cộng; chỉ tiền (không XP/lượt bán); cần ≥1 ghế+bếp+đầu bếp+bồi bàn.
+- Điểm danh: ngày 1 = 1.000; mỗi ngày +1.500 làm tròn lên nghìn (ngày 50 = 75.000); kèm 1 nguyên liệu; bỏ 1 ngày → về 1.
+- Lên cấp: 1.000 × cấp mới xu + 1 nguyên liệu. Cấp 10+: cứ 10 cấp +1 cửa phụ (max 10 ở cấp 100).
+- Nguyên liệu học món: 64 loại, tủ 200 chỗ; đầy → quy 1.000 xu/cái. Cách có: lên cấp 1 cái, điểm danh 1 cái, giỏ quà hàng xóm/4 giờ (1 cái + 100–1.500 xu), tủ trao đổi.
+
+### F6. Sự kiện rủi ro (cân chỉnh theo %)
+
+- Thanh tra (cấp 6, mỗi 35–60 phút): phạt 7–20% thu nhập gần đây, trần tổng 60%. Nộp → XP = 0,05–0,5% tiền nộp. Hối lộ → 10–30% phí; thành công 40%, thất bại 60% → phạt 1,5×.
+- Phê bình (cấp 7, mỗi 5 giờ, sau 3 giờ liên tiếp): từ cấp 10 gọi món bất kỳ; có món → +123.000 xu; không có/không kịp → giữ sao 2★ trong 30 phút.
+
+### F7. Mạng lưới & giao dịch
+
+- Chợ nội thất (cấp 4): thuế 16,5%; điền nhanh 30/50/70/85% giá gốc; sạp 15 ô, 900 giờ/món; cần tài khoản để mua/bán.
+- Tủ trao đổi (cấp 3): 5 đề nghị (1–99 mỗi bên); sau khi đổi ở 1 quán chờ 3 giờ.
+- Giỏ quà hàng xóm: 4 giờ/lần. Bình chọn: 1 lần/ngày/quán (GMT+0).
+- Bạn bè: mã 6 ký tự, tối đa 20; gửi thư cách 30 s; chặn tối đa 50 người.
+
+> Giữ nguyên tắc: con số để tham khảo cân bằng; tên/hình/câu thoại của game gốc không đưa vào game mình.
+
+---
+
+## G. Kinh tế nội thất & máy thu phí (đo trực tiếp từ Shop trong game, 300 món)
+
+> Đây là phần **đo thật từ cửa hàng nội thất** (tab Commercial / Decor / Special / Expansion), cho ta **đường cong cân bằng giá** để áp vào game mình. Toàn bộ là cơ chế, không chép tên/hình.
+
+### G1. Cấu trúc Shop nội thất (mượn cho màn mở khu ăn uống)
+
+- 4 tab trên: **Commercial Supplies / Decor / Special / Expansion**; bên dưới là **bộ lọc loại**: All / Chairs / Tables / Stoves / Machines / Restroom; có ô **tìm kiếm theo tên**.
+- Mỗi thẻ đồ có: hình preview (canvas), tên, **giá**, dòng "trang trí" hoặc "thu phí từng lần", mô tả, 2 nút: **Try it** (dùng thử trước khi mua — trùng cơ chế GĐ1489 của ta đã làm) và **Buy & Place** (mua rồi đặt, tách 2 bước).
+- Dữ liệu món (`data-item-type`): mỗi món 1 id duy nhất gộp bởi 4 tab; tổng **300 món** phân nhóm.
+
+### G2. Bảng máy thu phí từng lần — LUẬT CÂN BẰNG ~90 LƯỢT HOÀN VỐN
+
+Loại máy (khách ghé dùng và trả tiền mỗi lượt) — **giá ≈ thu nhập/lượt × ~90**:
+
+| Máy | Giá | Thu/lượt | Hoàn vốn |
+|---|---|---|---|
+| Máy gắp đồ nhỏ | 1.500 | 15 | ~100 lượt |
+| Máy bán nước/đồ ăn vặt | 1.800 | 20 | ~90 lượt |
+| Máy đánh bóng giày | 2.000 | 20 | ~100 lượt |
+| Máy kẹo bông | 2.200 | 25 | ~88 lượt |
+| Máy gắp thú bông | 2.400 | 24 | ~100 lượt |
+| Máy chụp ảnh | 3.000 | 30 | ~100 lượt |
+| Ghế massage | 3.600 | 40 | ~90 lượt |
+
+→ **Áp dụng**: với game mình (services.ts mẫu thu phí/lượt), cứ làm "máy phục vụ" với công thức **giá = thu/lượt × 90** là cân bằng; máy mắc hơn cho thu cao hơn theo cùng tỉ lệ.
+
+### G3. Bảng toilet — tiện ích "bắt buộc có" nhưng hoàn vốn CHẬM
+
+Doanh thu/lượt nhưng hoàn vốn thấp hơn hẳn máy (~500–1200 lượt) → toilet là tiện ích ưu tiên gắn tính hài lòng/dễ chịu hơn là sinh lời:
+
+| Toilet | Giá | Thu/lượt | Hoàn vốn |
+|---|---|---|---|
+| Xí xổm trắng | 500 | 1 | ~500 lượt |
+| Sứ tiêu chuẩn | 1.500 | 2 | ~750 lượt |
+| Gỗ cổ | 4.500 | 8 | ~562 lượt |
+| Điện tử thông minh | 12.000 | 20 | ~600 lượt |
+| Mạ vàng | 60.000 | 50 | ~1200 lượt |
+
+→ **Áp dụng**: nhà vệ sinh trong game mình đừng thiết kế để "lời to"; dùng làm nút thắt hài lòng (sạch/dơ), thu phí thấp, hoàn vốn lâu. (Xem thêm mục E — toilet 2 pha.)
+
+### G4. Thang giá bàn & ghế — rẻ để mở bàn ăn từ đầu
+
+- **Bàn (20 món)**: 20 → 150 → 180 → 200 → 250 → 280 → 310 → 440 → 490 → 520 → 560 → 780 (×2) → 1.100 → 1.500 → 2.200 → 2.400 → 3.600 → 4.000. Cực rẻ để bắt đầu, đắt dần theo thẩm mỹ.
+- **Ghế (16 món)**: 10 → 50 → 70 → 90 → 180 → 260 → 330 → 340 (×2) → 780 → 880 → 960 → 980 → 2.400 → 3.600.
+- **Bếp/nấu (11 món)**: 280 → 330 → 420 → 550 → 590 → 880 → 1.000 → 1.500 → 3.500 → 4.200 → 4.500.
+
+→ **Áp dụng**: trong game mình, bàn + ghế để giá thấp + mở sớm (cấp thấp), bếp/hệ máy đắt hơn; vùng mở khu ăn uống (GĐ1492–1493) nên có combo bàn rẻ để người chơi xây dàn chỗ ngồi trước, máy thu phí sau.
+
+### G5. Ghép bàn–ghế theo KỀ-CẠNH (xác nhận thiết kế F1 của ta)
+
+- Nhiệm vụ hướng dẫn (task 2/11) đúng nguyên văn: *"Buy a table and 4 chairs, put the chairs next to the table"* — **1 bàn ngồi được 4 ghế**, ghế phải **đặt kề** bàn mới tính.
+- → Đúng như spec **GĐ1491 (F1)**: helper `freeSeat()` kiểm tra ghế cách bàn **1 ô (cardinal)** = 1 chỗ; đây chính xác là cơ chế thật của game gốc. Giữ nguyên phần thiết kế của ta.
+
+### G6. Đồ trang trí (Decor) — điểm decor & kinh tế uy tín
+
+- **242/300 món là trang trí** (tường 51, sàn 55, đèn 28, cây 29, vách ngăn 17, trụ 11, thảm 12, cửa 4, tranh/tượng…), mỗi món ghi **+N điểm decor**.
+- Điểm decor ảnh hưởng lượng khách (đã có: cap 25% sức hút — customers.ts:148).
+- Kinh tế decor **KHÔNG theo lợi nhuận**: món "hiếm/xa xỉ" giá khổng lồ cho rất ít điểm/đồng (vd tượng 600k = 50 điểm; trống đồng 1,9tr = 120 điểm; sân khấu rối nước 1,9tr = 200 điểm) — là **món uy tín/trưng bày cuối game, gating thời gian**, không phải để tối ưu ROI.
+- Decor giá rẻ thật (cây 260–3.200, đèn 340–2.200, tường 220–…) cho vài điểm — đủ để đạt đồ đẹp tầm trung.
+
+→ **Áp dụng**: đừng làm đồ trang trí theo "giá/điểm hợp lý" mãi được; để vài món uy tín đắt (landmark) cho người chơi trưng cuối game, còn bình thường thì giá thấp-điểm thấp giúp leo decor sớm.
+
+---
+
+## H. Bổ sung lần 5 — chơi thực sâu: đồ trang trí nội thất, món nấu, đồ dùng (06/11/2026)
+
+> Lần này tôi chơi lại từ đầu (tân thủ, có hướng dẫn) và mở trực tiếp 3 màn **Shop→Decor**, **Shop→Special**, **Kitchen→Menu / Recipe Pantry / Cooking Ingredient Cabinet** để đo thật từ live UI. Bổ sung vào các phần còn thiếu: danh sách đầy đủ **65 nguyên liệu học món** (trước chỉ ghi "66 loại"), nhóm **"đồ dùng bếp = đồ trang trí treo tường"**, cấu trúc **6 nhóm trang trí nội thất**, và **10 món Special** (landmark cuối game). Chỉ ghi cơ chế + con số, không chép tên/mô tả sáng tạo.
+
+### H1. Cấu trúc Shop→Decor (đồ trang trí nội thất) — đo thật 230 món
+
+- Tab **Decor** hiện **230 món** (con số nhỏ hơn mục G6 nói 242 vì một số tính chung; lấy con số live = 230 trong Decor, + phần nội thất chức năng ở Commercial).
+- **7 nút lọc loại**: All / Restaurant / Architecture / Wall Decor / Lighting / Plants / Art / Other.
+- Mỗi thẻ đồ ghi: tên, giá, **`🩷 +N điểm trang trí`**, cờ **vị trí đặt**, mô tả, nút **Try it** + **Buy & Place**.
+- **Các cờ vị trí đặt (placement flag)** — đây là "ngôn ngữ trang trí" cốt lõi để tái lập trong game mình:
+
+| Cờ | Ý nghĩa | Ví dụ |
+|---|---|---|
+| *(không cờ)* | đồ thường đứng trên sàn 1×1 | tượng, cây, máy |
+| `Walkable` | khách đi qua được (thảm, cờ) | thảm Ba Tư, thảm sọc |
+| `Wall Mounted` | **treo tường**, phải gắn mép tường | tranh, đồng hồ, bảng thực đơn, đèn tường |
+| `Flooring / Per tile` | **gạch nền**, mua/lát **theo từng ô** | sàn gạch màu (280/ô) |
+| `Wainscot / Per tile` | **ốp chân tường**, theo từng ô | ốp đá, ốp gỗ |
+| `Wall Paint / Per tile` | **sơn tường**, theo từng ô | sơn ombre, sơn sen |
+| `Door / Per tile` | **cửa**, theo từng ô | cửa vòm, cửa đôi |
+| `Zone Divider` | **vách ngăn khu** (không chặn lối) | hàng rào, vách ngăn, bồn hoa |
+
+→ Đây chính là hệ "trang trí nhiều lớp" (sàn / tường / ốp / cửa / đồ vật) đáng học cho khu ăn uống của bạn: không chỉ kê đồ vật, mà còn **sơn tường, át nền, ốp chân, đổi cửa** theo từng ô giá rẻ (280/ô) — cách rẻ để "đổi skin" cả quán mà không cần tạo nhiều mesh.
+
+### H2. "Đồ dùng bếp" = đồ trang trí treo tường (KIT) — nhóm mới, chưa ghi trước
+
+> Trả lời trực tiếp phần "các loại đồ dùng" bạn hỏi: trong game này, **dụng cụ nấu nướng và thiết bị bếp HẦU HẾT là đồ trang trí treo tường/đặt nền** (cộng điểm decor, KHÔNG có chức năng nấu — chỉ tạo khung cảnh bếp chân thực). Đo thật từ Decor tab:
+
+| Đồ dùng bếp (decor) | Giá | Điểm decor | Cờ |
+|---|---|---|---|
+| Giá dao bếp nam châm + thớt treo | 540 | 6 | Wall Mounted |
+| Giá treo cây cán bột & thìa gỗ | 260 | 4 | Wall Mounted |
+| Giá treo chảo đồng xếp lớn–nhỏ | 680 | 6 | Wall Mounted |
+| Dây treo thảo mộc khô (cúc, xô thơm, quế) | 220 | 3 | Wall Mounted |
+| Kệ gia vị lọ thủy tinh 2 tầng | 340 | 9 | Wall Mounted |
+| Tủ thuốc & trà thảo mộc mini 6 ngăn | 3.200 | 8 | Wall Mounted |
+| Kệ gỗ treo chai vang & ly úp ngược | 1.650 | 9 | Wall Mounted |
+| Lò vi sóng kỹ thuật số gắn bàn | 800 | 5 | (nền) |
+| Tủ lạnh inverter 2 cánh lấy nước ngoài | 780 | 5 | (nền) |
+| Máy rửa bát âm tủ sấy nhiệt | 1.500 | 5 | (nền) |
+| Bồn rửa sứ trên tủ gỗ | 2.000 | 3 | (nền) |
+| Bồn rửa đá cẩm thạch | 20.000 | 8 | (nền) |
+| Bồn rửa hoàng gia mạ vàng | 75.000 | 15 | (nền) |
+
+→ **Áp dụng cho quán ăn của bạn**: bán "đồ dùng nấu" (dao, thớt, chảo, nồi, kệ gia vị, tủ lạnh, lò, bồn rửa) làm **đồ trang trí khu bếp** — mỗi món +điểm decor, giá rẻ–trung, đặt cạnh các trạm nấu chức năng sẵn có để "khu bếp trông thật hơn" mà không phải viết logic chức năng mới. Đây là cách làm khu vực bếp sống động rất rẻ.
+
+### H3. Món nấu — đo thật từ Kitchen→Menu & Recipe Pantry
+
+- **Header thống kê Menu**: `Learned: 3/183` · `Selling 3 dishes (min 12)` · `Mastered 5-star: 0`. → Game **ép tối thiểu 12 món đang bán** (không phải 3), buộc học & mở rộng thực đơn sớm.
+- **Bộ lọc theo quốc gia** trong Menu: All countries / France / Global / Vietnam / … → căn cứ phân cụm món, khớp ý tưởng "đặc sản vùng miền" của bạn.
+- **Thẻ món (đo thật, món Nước lọc làm mẫu)** gồm đúng:
+  - `☆☆☆☆☆` + `0%` (sao + % tiến độ)
+  - `+0%` (thưởng giá hiện tại)
+  - `Served in: A Paper Cup` (đồ đựng hiện tại)
+  - **`50 more to reach 1★ → upgrades to a leaf cup`** (mục tiêu gần, có đồng hồ)
+  - `🍽️ Served 0` · `⏱️ Cook time 2s` · `💰 Sell price 💰1`
+  - `Upgrade ingredients: 🧊 0/1` (nguyên liệu nâng sao, hiện tick/x khi đủ)
+  - Nhãn `Default dish, always on sale`
+- Nước lọc cần **1 Đá viên** để nâng 1★; Súp cần `🍅 2/1 + 🥦 0/1`; Bánh mì cần `🍞2/1 + 🥓1/1`. → **nguyên liệu nâng sao = nguyên liệu học món** (loại khan hiếm trong Recipe Pantry), không phải nguyên liệu nấu.
+
+### H4. Danh sách đầy đủ 65 nguyên liệu HỌC MÓN (Recipe Pantry, đo thật)
+
+> Sức chứa Pantry = **200 ô**; mỗi loại **bán ra 1.000 xu/cái** ("Sell 💰1.000"). Trước mục B chỉ ghi tổng "66"; giờ chốt danh sách quan sát thực = **65 loại**:
+
+Rau/salad: Lettuce, Tomato, Herbs, Vegetables, Green papaya, Chili, Onion, Garlic, Ginger, Mint, Sesame, Salt, Spices (⚫…)
+Tinh bột: Flour, Rice, Noodles, Bread loaf, Tapioca pearls
+Đạm: Beef, Pork, Chicken, Duck, Lamb, Shrimp, Fish, Octopus, Egg, Tofu, Insects
+Sữa/bơ/phô mai: Milk, Butter, Cheese, Fresh cream
+Trái cây & ngọt: Fruit, Mango, Pineapple, Orange, Lemon, Cranberry, Coconut, Sugar, Honey, Cocoa, Matcha, Coffee, Tea
+Đồ uống/quầy bar: Rum, Wine, Whiskey, Tequila, Vodka, Gin, Vermouth, Liqueur, Bitters, Sparkling wine, Soda, Ice
+Đậu/hạt/khác: Peanut, Black beans, Almond, Corn, Mushroom, Potato, Bird's nest
+
+> Ghi chú trung thực: có thể một loại cuối cùng (thứ 66) không hiện vì chưa sở hữu trong lần chơi này; danh sách ≥65, dùng để gợi ý "rương công thức" của bạn.
+
+### H5. Cooking Ingredient Cabinet — hai kho tách bạch (đo thật)
+
+- **Tủ NẤU món** (Cooking Ingredient Cabinet): `Cooking Storage: 900/10000 · Types: 6` lúc đầu; mỗi loại có nút **View dishes** (món nào dùng), **Sell all** (bán lại ~50% giá), và **gói mua bằng xu**: `+10 / +50 / +100 / +500 (−10%) / +1000 (−20%)`.
+  - Ví dụ giá thật: Bread loaf 1 xu/đơn vị → gói +500 = 450 xu (−10%), +1000 = 800 (−20%). Pork & Cheese 2 xu → +500 = 900 (−10%), +1000 = 1.600 (−20%); sell all = 50% (150 bread @1 → 75 xu).
+- Nhãn mỗi loại: `On Menu` (đang dùng để nấu) hoặc không.
+- Ghi chú: **thiếu hàng → đầu bếp chờ tối đa 5 s rồi hủy đơn** (lặp lại 2 lần, xác nhận).
+
+### H6. Shop→Special — 10 món landmark cuối game (đo thật, mỗi món là "khoe")
+
+| Món | Giá | Điểm decor | Kích thước |
+|---|---|---|---|
+| Mô hình ngựa gỗ thành Troy | 1.000.000 | 60 | 2×3 |
+| Mèo Nyan bay (2 món tương tự) | 1.000.000 | 60 | 2×1 |
+| Xác ướp Ai Cập | 1.000.000 | 50 | 1×1 |
+| Bức tranh Tiếng Thét | 1.500.000 | 120 | Wall 1×1 |
+| Kim Tự Tháp Ai Cập | 1.900.000 | 200 | 3×3 |
+| Sân khấu Rối Nước (thủy đình) | 1.900.000 | 200 | 4×6 |
+| Tháp đôi Petronas | 1.900.000 | 120 | 2×1 |
+| Trống Đồng Đông Sơn | 1.900.000 | 120 | 1×1 |
+| Tranh Mona Lisa | 1.900.000 | 120 | Wall 1×1 |
+| Bức Tiệc Ly (Last Supper) | 2.200.000 | 200 | Wall 3×1 |
+
+→ Điểm decor duy nhất trong game từ **50 → 200** chỉ đến từ các món này (trừ vài món Decor: tượng Phật 600k=50, bản đồ khảm 600k=50, thảm khải hoàn 900k=50, đèn Tiffany 200k=60). Tất cả đều gắn cờ khóa thời gian (mua bằng "khoe", không tối ưu ROI) — xác nhận lại mục G6.
+
+### H7. Đối chiếu nhanh số liệu hai file sau 5 đợt nghiên cứu
+
+| Kho dữ liệu | Con số (5 đợt) |
+|---|---|
+| Đồ vật nội thất/trang trí | ~300 món (Decor 230 + Commercial 60 + Special 10) |
+| Món ăn & đồ uống | 183 món (~30 quốc gia, 27 món Việt) |
+| Nguyên liệu học món | ≥65 loại (Pantry 200 ô, bán 1.000 xu/cái) |
+| Nguyên liệu nấu | sức chứa 10.000, khuyến mãi gói −10/−20% |
+| Máy thu phí mỗi lượt | 8 máy, hoàn vốn ~90 lượt |
+| Nhà vệ sinh | 5 bậc, hoàn vốn ~500–1200 lượt |
+| Nhân viên | 2 mặc định + tuyển theo đăng tin 5 lượt |
+| Mở rộng mặt bằng | 7×7 → 39×39, 2 pha (vuông → từng ô) |
+
+(End of new H section)
+
+---
+
+## I. Bổ sung lần 6 — đo khi CHƠI CÓ ẢNH, đi hết tutorial 11/11 (06/11/2026)
+
+> Phiên này chơi tiếp save cũ từ nhiệm vụ 2/11 → 11/11, Level 1→5, 7×7→9×9. Mọi số dưới đây đọc trực tiếp trên UI khi chơi.
+
+### I1. Bảng Daily Login Reward 50 ngày (đầy đủ, đo trên modal)
+
+`Streak: 0/50 days — Goal: 1.900.000` — bỏ 1 ngày về ngày 1.
+
+| Ngày | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Xu | 1.000 | 3.000 | 4.000 | 6.000 | 7.000 | 9.000 | 10.000 | 12.000 | 13.000 | 15.000 |
+
+| Ngày | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Xu | 16.000 | 18.000 | 19.000 | 21.000 | 22.000 | 24.000 | 25.000 | 27.000 | 28.000 | 30.000 |
+
+| Ngày | 21 | 22 | 23 | 24 | 25 | 26 | 27 | 28 | 29 | 30 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Xu | 31.000 | 33.000 | 34.000 | 36.000 | 37.000 | 39.000 | 40.000 | 42.000 | 43.000 | 45.000 |
+
+| Ngày | 31 | 32 | 33 | 34 | 35 | 36 | 37 | 38 | 39 | 40 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Xu | 46.000 | 48.000 | 49.000 | 51.000 | 52.000 | 54.000 | 55.000 | 57.000 | 58.000 | 60.000 |
+
+| Ngày | 41 | 42 | 43 | 44 | 45 | 46 | 47 | 48 | 49 | 50 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Xu | 61.000 | 63.000 | 64.000 | 66.000 | 67.000 | 69.000 | 70.000 | 72.000 | 73.000 | 75.000 |
+
+**Công thức khớp 100%: `floor(1500 × N / 1000) × 1000`** (sửa lại con số "làm tròn lên" ở mục F5).
+
+### I2. Ứng viên tuyển dụng đo được (lần đăng tin 1, phí 1.000, chờ ~20 s, 2 ứng viên)
+
+| # | Hạng | Lương/ngày | Tốc độ | Sở trường | Phí thuê |
+|---|---|---|---|---|---|
+| 1 | Skilled | 160 | 109% | Swift — Walks 10% faster | 1.000 |
+| 2 | Master | 256 | 113% | Diplomat — Customers wait 5% longer | 6.900 |
+
+Sau khi thuê 1: `4/5 posts left — Regains 1 post in 19m`, lần đăng tin 2 giá **2.000**. Nhân viên mặc định (thẻ Staff): đầu bếp 168/ngày, bồi bàn 112/ngày, Speed 100%, "Stays forever. Wages are waived if money runs out.", có nút **Rename**.
+
+### I3. Đồ mua + đặt trong phiên (giá & hiệu ứng đo thật)
+
+| Đồ | Giá | Ghi chú đo được |
+|---|---|---|
+| Plastic Table | 20 | nhiệm vụ 2; preview xanh/đỏ theo ô |
+| Low Plastic Stool ×4 | 10/cái | tự xoay hướng vào bàn khi đặt kề |
+| Toilet White Squat | 500 | +1/lượt; khách 💧 xếp hàng chờ |
+| Mystery Gift Claw Machine | 1.500 | +15/lượt → hoàn vốn đúng 100 lượt |
+| Magnetic Knife Strip & Board | 540 | +6 🩷 (decor 48→54); wall-mounted, tự bám tường trên ô sàn trỏ |
+| Plastic Trash Can | 30 | decor thường |
+| Area 9×9 | 2.000 | tường tự giãn, đồ giữ nguyên |
+
+### I4. Tab Expansion (3 thanh song song, số UI thật)
+
+| Thanh | Hiện tại | Mua | Giá | Khung level |
+|---|---|---|---|---|
+| Diện tích | Current Size: 7×7 tiles | Area 9×9 | 2.000 | Level 0/8 |
+| Kho đồ (Storage) | 0/5 slots | +6 slots (up to 11) | 5.000 | Level 0/9 |
+| Tủ nấu (Cooking pantry) | 762/10.000 | +100 (up to 10.100) | 290.000 | Level 0/200 |
+
+### I5. Thẻ món Kitchen — trường hiển thị đo thật (món đã học)
+
+Ví dụ thẻ **Water**: `Served in A Paper Cup` · `36 more to reach 1★ → upgrades to a leaf cup` · Served 14 · Cook time 2s · Sell price 1 · Upgrade ingredients: Đá viên 0/1 · nút `Not enough servings` · nhãn `Default dish, always on sale`.
+Thẻ **VN Banh Mi**: +2 more to 1★ · Served 8 · 6s · 8 · nâng sao cần Bánh mì 2/1 + … 1/1.
+Thanh tổng: `Learned: 3/183` → `4/183` sau khi học · `Selling 3 dishes (min 12)` · `Mastered 5-star: 0` · lọc `All countries` + tab `Learned (N) / Not learned (N)`.
+Món chưa học: giá học (Insalata 150, Burger 350, Shuǐjiǎo 500) + "Ingredients to learn" có sẵn/không → nút `Learn Recipe 💰N` hoặc `Missing ingredients`.
+
+### I6. Dòng khách đo bằng mắt (quá tải 13 khách / 2 bàn / 2 bồi bàn)
+
+- Rating: 5.0 → **1.0 trong <1 phút** khi khách bỏ về hàng loạt; hồi 3.6–3.7 sau khi thêm nhân viên + toilet.
+- Icon/bong bóng trạng thái: 🪑 tìm ghế (kèm toast dạy người chơi), 💧 cần toilet, 🍔/🖼️ bong bóng món, món thành **đĩa trên bàn**, ăn xong nhường ghế.
+- Nhân viên: bồi bàn đi từ bàn → bếp → ghi phiếu → bếp nấu (đứng tại bếp) → bưng ra; tên nhân viên nổi trên đầu (Waiter 2, Sasa, Tata).
+- Quán hàng xóm (người chơi thật, Level 3, decor 32): vào **View Only**, có `Return Home`; giỏ quà tooltip chính xác *"once every 4 hours per bistro"*; quán họ **chạy live** khi xem (rating 5.0→2.5 trước mắt).
+
+### I7. Tutorial — chuỗi 11 nhiệm vụ đã đi đủ + tour HUD
+
+1. Mua + xoay bếp · 2. Mua bàn + 4 ghế kề bàn · 3. ▶ Play mở cửa · 4. **Partitions (vách ngăn) — có nút Continue bỏ qua** · 5. Mua 1 máy chơi game · 6. Nhận điểm danh · 7. Ghé hàng xóm nhận giỏ quà · 8. Học 1 món · 9. Thuê thêm bồi bàn · 10. **Mua decor đồ dùng bếp: giá dao 540 + thùng rác 30** · 11. Mở rộng → **tour HUD** (`tour-root tour-intro`: dim + guide-ring khoanh từng element top-bar, bấm đúng element mới đi tiếp, dùng chung guide-blocker).
+
+### I8. Tốc độ cả phiên (tham chiếu cân bằng đầu game)
+
+~45 phút chơi từ Level 1: lên Level 5, tiền 8.000 → đỉnh ~19.000 (đã tiêu ~10.000 mua sắm), Learned 4/183, decor 54, rating ~3.7, 13 khách đang ở, mở rộng 9×9. Mở khóa đi qua: L2 hàng xóm, L3 tủ trao đổi, L4 chợ nội thất, L5 doanh thu vắng mặt — đúng thứ tự "thưởng trước, rủi ro sau".
+
+(End of new I section)
