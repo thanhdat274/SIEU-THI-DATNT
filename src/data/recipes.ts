@@ -260,6 +260,9 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   // GĐ1390: Gỏi cuốn — món ăn lành trứ danh (bánh tráng gói tôm luộc):
   // mẻ (bánh tráng 5k×2 + tôm đông lạnh 90k) = 100k → 12 cuốn × 14k = 168k, lãi 68k/mẻ.
   { id: 'goi_cuon', name: 'Gỏi cuốn', category: 'fresh', buy: 8500, sell: 14000, color: 0xa8d8b9, unlock: 44 },
+  // GĐ1391: Cháo lòng — món sáng Sài Gòn trứ danh (cháo trắng nấu lòng heo non):
+  // mẻ (thịt heo tươi 95k + gạo 80k + hành phi 3k) = 178k → 25 chén × 14k = 350k, lãi 172k/mẻ.
+  { id: 'chao_long', name: 'Cháo lòng', category: 'fresh', buy: 7000, sell: 14000, color: 0xe8d5c4, unlock: 36 },
   // GĐ1345: Giỏ quà Giáng sinh — lễ tặng quà lớn duy nhất còn thiếu giỏ (Tết/8-3/20-11/Trung thu đã có):
   // mẻ (rượu vang 120k + bánh kẹo 5k×4 + trà 20k×2) = 180k → 2 giỏ × 140k = 280k, lãi 100k/mẻ.
   { id: 'gio_qua_giang_sinh', name: 'Giỏ quà Giáng sinh', category: 'dry', buy: 70000, sell: 140000, color: 0x228b22, unlock: 36 },
@@ -587,6 +590,12 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_goi_cuon', name: 'Gỏi cuốn', station: 'hot_kettle',
     inputs: [{ productId: 'banhtrang', quantity: 2 }, { productId: 'hai_san', quantity: 1 }],
     outputId: 'goi_cuon', outputQty: 12, durationMin: 15, unlock: 44, reputationGain: 2 },
+  // GĐ1391: Cháo lòng — món sáng Sài Gòn trứ danh: lòng heo non nấu cháo trắng rắc hành ở ấm nước:
+  // mẻ (thịt heo tươi 95k + gạo 80k + hành phi 3k) = 178k → 25 chén × 14k = 350k, lãi 172k/mẻ,
+  // nấu hời hơn bán thẳng nguyên liệu (235k < 350k). Mở 36 ≥ mọi nguyên liệu (32/12/36) (> golden 30 → sim không đổi).
+  { id: 'recipe_chao_long', name: 'Cháo lòng', station: 'hot_kettle',
+    inputs: [{ productId: 'thit_heo_tuoi', quantity: 1 }, { productId: 'gao', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 2 }],
+    outputId: 'chao_long', outputQty: 25, durationMin: 22, unlock: 36, reputationGain: 3 },
   // GĐ1364: Bánh canh tôm — món sợi bánh canh dai trứ danh: tôm đông lạnh nấu ngọt nước cùng bột gạo vo sợi
   // ở ấm nước: mẻ (tôm 90k + bột gạo 9k + hành phi 3k) = 102k → 8 tô × 22k = 176k, lãi 74k/mẻ, nấu hời hơn
   // bán thẳng nguyên liệu (148k < 176k). Mở 44 = đúng cấp tôm (> golden 30 → sim không đổi).
