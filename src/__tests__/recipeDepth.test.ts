@@ -2186,6 +2186,50 @@ describe('GĐ1418 — trà mứt gừng ngày tết (bếp nồi nấu)', () => 
   });
 });
 
+/** GĐ1419 — Trứng chiên dầu (suất): lối ra đầu tiên của dầu ăn (chảo chiên). */
+describe('GĐ1419 — trứng chiên dầu (suất) (chảo chiên)', () => {
+  const recipe = RECIPE_MAP['recipe_trung_chien_dau'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm chảo chiên và dùng dầu ăn', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'trung_chien_dau')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'trung_chien_dau').length).toBe(1);
+    expect(recipe.station).toBe('fryer');
+    expect(recipe.inputs.some((i) => i.productId === 'dauan')).toBe(true);
+  });
+});
+
+/** GĐ1419 — Sinh tố sữa hạt: lối ra đầu tiên của sữa hạt lốc 4 (máy xay). */
+describe('GĐ1419 — sinh tố sữa hạt (máy xay)', () => {
+  const recipe = RECIPE_MAP['recipe_sinh_to_sua_hat'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm máy xay và dùng sữa hạt lốc 4', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'sinh_to_sua_hat')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'sinh_to_sua_hat').length).toBe(1);
+    expect(recipe.station).toBe('blender');
+    expect(recipe.inputs.some((i) => i.productId === 'sua_hat')).toBe(true);
+  });
+});
+
 /** GĐ1405 — Sữa hạt điều: lối ra đầu tiên của hạt điều rang muối (máy xay). */
 describe('GĐ1405 — sữa hạt điều (máy xay)', () => {
   const recipe = RECIPE_MAP['recipe_sua_hat_dieu'];
