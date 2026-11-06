@@ -109,7 +109,4 @@
 - GĐ1409–1415 (lối ra đầu tiên: granola, mì tươi, mật ong rừng, trà thảo mộc, bánh pía, bò Úc, hột vịt lộn, bơ muối): chi tiết ở docs/progress-archive/PROGRESS-GD1409-1415.md
 - GĐ1416–1419 (lối ra đầu tiên: yến mạch, mắc ca, yến sào, kem que, bánh bao đông lạnh, sữa chua nếp, nước mắm, mứt Tết, dầu ăn, sữa hạt; bia & snack đóng gói giữ bán thẳng): chi tiết ở docs/progress-archive/PROGRESS-GD1416-1419.md
 - GĐ1420–1422 (cà phê lon, kem cây hộp; rà catalog x_* ~70 nguyên liệu chưa có lối ra — đợt 1–2: khoai tây chiên, gà viên, cá basa, pizza, mực khoanh, chả cá, cánh gà, cá hồi): chi tiết ở docs/progress-archive/PROGRESS-GD1420-1422.md
-- GĐ1423 (đợt 3 catalog — trái cây ở máy xay u35: Sinh tố bơ, Nước ép thơm, Sinh tố đu đủ, Sinh tố thanh long tím). Full suite 503/4611 xanh.
-- GĐ1424 (đợt 4: Canh sườn bí đỏ, Canh khổ qua nhồi thịt ở bếp nồi nấu; Bò xào bông cải, Cá thu chiên ở chảo chiên). 503/4623 xanh.
-- GĐ1425 (đợt 5: Tôm hấp nước dừa, Mực hấp gừng ở nồi hấp; Cá rô phi chiên xù, Nấm bào ngư xào tỏi ở chảo; Ức gà nướng ở bếp nướng). 503/4638 xanh.
-- GĐ1426 (đợt 6 rau củ u35: Cà tím xào mỡ hành, Bắp cải xào cà rốt ở chảo; Khoai lang nướng, Bắp ngọt nướng ở bếp nướng; Chè khoai môn ở bếp nồi nấu). 503/4653 xanh.
+- GĐ1423–1426 (catalog đợt 3–6: sinh tố trái cây, canh/xào/chiên/hấp/nướng từ rau củ, thịt, hải sản tươi): chi tiết ở docs/progress-archive/PROGRESS-GD1423-1426.md
