@@ -434,6 +434,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'ca_hap_chanh_muoi', name: 'Cá basa hấp chanh muối', category: 'fresh', buy: 19000, sell: 32000, color: 0xe8dcb0, unlock: 44 },
   // GĐ1450: Cá viên chiên sốt me — lối ra ĐẦU TIÊN của me dầm bà Tám.
   { id: 'ca_vien_sot_me', name: 'Cá viên chiên sốt me', category: 'fresh', buy: 6500, sell: 11000, color: 0xb0703a, unlock: 43 },
+  // GĐ1451: Bánh mì chả lụa bà Tám — lối ra ĐẦU TIÊN của chả lụa bà Tám.
+  { id: 'banh_mi_cha_lua_ba_tam', name: 'Bánh mì chả lụa bà Tám', category: 'fresh', buy: 9000, sell: 15000, color: 0xe6c49a, unlock: 39 },
   // GĐ1409: Sữa chua granola — lối ra ĐẦU TIÊN của ngũ cốc granola: mẻ (granola 130k + sữa chua) → 14 cốc × 18k = 252k.
   { id: 'sua_chua_granola', name: 'Sữa chua granola', category: 'fresh', buy: 11000, sell: 18000, color: 0xe9d8b4, unlock: 68 },
   // GĐ1408: Cà phê phin sữa — lối ra ĐẦU TIÊN của cà phê xay nguyên chất: mẻ (cà phê xay 150k + sữa đặc 22k) = 172k → 25 ly × 12k = 300k.
@@ -1136,6 +1138,10 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_ca_vien_sot_me', name: 'Cá viên chiên sốt me', station: 'fryer',
     inputs: [{ productId: 'x_ca_vien', quantity: 3 }, { productId: 'hx_me_dam', quantity: 1 }],
     outputId: 'ca_vien_sot_me', outputQty: 14, durationMin: 15, unlock: 43, reputationGain: 3 },
+  // GĐ1451: Bánh mì chả lụa bà Tám ở bếp nướng. Mở 39 (> golden 30, ≥ cấp nguyên liệu).
+  { id: 'recipe_banh_mi_cha_lua_ba_tam', name: 'Bánh mì chả lụa bà Tám', station: 'food_grill',
+    inputs: [{ productId: 'banhmi', quantity: 6 }, { productId: 'hx_cha_lua', quantity: 1 }],
+    outputId: 'banh_mi_cha_lua_ba_tam', outputQty: 12, durationMin: 12, unlock: 39, reputationGain: 3 },
   // GĐ1409: Sữa chua granola ở máy xay: lãi dương, hời hơn bán thẳng nguyên liệu. Mở 68 = cấp granola (> golden 30).
   { id: 'recipe_sua_chua_granola', name: 'Sữa chua granola', station: 'blender',
     inputs: [{ productId: 'ngu_coc', quantity: 1 }, { productId: 'suachua', quantity: 1 }],

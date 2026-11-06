@@ -3770,6 +3770,28 @@ describe('GĐ1450 — cá viên chiên sốt me (chảo chiên)', () => {
   });
 });
 
+/** GĐ1451 — Bánh mì chả lụa bà Tám: lối ra đầu tiên của chả lụa bà Tám (bếp nướng). */
+describe('GĐ1451 — bánh mì chả lụa bà tám (bếp nướng)', () => {
+  const recipe = RECIPE_MAP['recipe_banh_mi_cha_lua_ba_tam'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm bếp nướng và dùng chả lụa bà Tám', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'banh_mi_cha_lua_ba_tam')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'banh_mi_cha_lua_ba_tam').length).toBe(1);
+    expect(recipe.station).toBe('food_grill');
+    expect(recipe.inputs.some((i) => i.productId === 'hx_cha_lua')).toBe(true);
+  });
+});
+
 /** GĐ1405 — Sữa hạt điều: lối ra đầu tiên của hạt điều rang muối (máy xay). */
 describe('GĐ1405 — sữa hạt điều (máy xay)', () => {
   const recipe = RECIPE_MAP['recipe_sua_hat_dieu'];
