@@ -10,3 +10,11 @@ describe('HUD màn ngang thấp', () => {
     expect(block.slice(0, 600)).toContain('.hud-time > span > small ~ small { display: none; }');
   });
 });
+
+describe('Menu Thêm — tiêu đề nhóm', () => {
+  const css = readFileSync(resolve(__dirname, '../ui/hud.css'), 'utf8');
+  it('tiêu đề nhóm chừa ≥6px cho huy hiệu nút bên dưới (M5)', () => {
+    const rule = css.slice(css.indexOf('#ui .hud-more-group {'));
+    expect(rule.slice(0, rule.indexOf('}'))).toMatch(/margin-bottom: ([6-9]|\d\d)px/);
+  });
+});

@@ -503,6 +503,8 @@
   letter-spacing: 0.4px;
   opacity: 0.55;
   padding: 2px 2px 0;
+  /* Playtest M5: chừa chỗ cho huy hiệu (top:-6px) của nút hàng dưới, khỏi đè tiêu đề nhóm */
+  margin-bottom: 6px;
   white-space: nowrap;
 }
 #ui .hud-help kbd, #ui .hud-help span { white-space: nowrap; }
