@@ -260,6 +260,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   // GĐ1390: Gỏi cuốn — món ăn lành trứ danh (bánh tráng gói tôm luộc):
   // mẻ (bánh tráng 5k×2 + tôm đông lạnh 90k) = 100k → 12 cuốn × 14k = 168k, lãi 68k/mẻ.
   { id: 'goi_cuon', name: 'Gỏi cuốn', category: 'fresh', buy: 8500, sell: 14000, color: 0xa8d8b9, unlock: 44 },
+  // GĐ1414: Bò bít tết — lối ra ĐẦU TIÊN của thịt bò Úc: mẻ (bò 180k + trứng) → 10 phần × 35k = 350k.
+  { id: 'bo_bit_tet', name: 'Bò bít tết', category: 'fresh', buy: 22000, sell: 35000, color: 0x8a3b2a, unlock: 50 },
   // GĐ1413: Bánh pía nướng nóng — lối ra ĐẦU TIÊN của bánh pía: 1 hộp (28k) nướng lại → 4 cái × 14k = 56k.
   { id: 'banh_pia_nuong', name: 'Bánh pía nướng nóng', category: 'dry', buy: 9000, sell: 14000, color: 0xc98a4a, unlock: 40 },
   // GĐ1412: Trà thảo mộc nấu — lối ra ĐẦU TIÊN của trà thảo mộc hộp ở bếp: mẻ (trà 65k + đường 17k) → 12 ly × 12k.
@@ -622,6 +624,10 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_goi_cuon', name: 'Gỏi cuốn', station: 'hot_kettle',
     inputs: [{ productId: 'banhtrang', quantity: 2 }, { productId: 'hai_san', quantity: 1 }],
     outputId: 'goi_cuon', outputQty: 12, durationMin: 15, unlock: 44, reputationGain: 2 },
+  // GĐ1414: Bò bít tết ở chảo chiên (áp chảo). Mở 50 = cấp thịt bò Úc (> golden 30).
+  { id: 'recipe_bo_bit_tet', name: 'Bò bít tết', station: 'fryer',
+    inputs: [{ productId: 'thitbo', quantity: 1 }, { productId: 'x_trung_ga', quantity: 1 }],
+    outputId: 'bo_bit_tet', outputQty: 10, durationMin: 15, unlock: 50, reputationGain: 3 },
   // GĐ1413: Bánh pía nướng nóng ở bếp nướng. Mở 40 = cấp bánh pía (> golden 30).
   { id: 'recipe_banh_pia_nuong', name: 'Bánh pía nướng nóng', station: 'food_grill',
     inputs: [{ productId: 'banh_pia', quantity: 1 }],
