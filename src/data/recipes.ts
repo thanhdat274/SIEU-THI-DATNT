@@ -260,6 +260,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   // GĐ1390: Gỏi cuốn — món ăn lành trứ danh (bánh tráng gói tôm luộc):
   // mẻ (bánh tráng 5k×2 + tôm đông lạnh 90k) = 100k → 12 cuốn × 14k = 168k, lãi 68k/mẻ.
   { id: 'goi_cuon', name: 'Gỏi cuốn', category: 'fresh', buy: 8500, sell: 14000, color: 0xa8d8b9, unlock: 44 },
+  // GĐ1397: Tôm nướng muối ớt — lối ra ĐẦU TIÊN của tôm sú tươi: mẻ (tôm 190k + gia vị 8k) = 198k → 12 xiên × 26k = 312k.
+  { id: 'tom_nuong', name: 'Tôm nướng muối ớt', category: 'fresh', buy: 16500, sell: 26000, color: 0xe8603c, unlock: 42 },
   // GĐ1394: Mực nướng sa tế — lối ra ĐẦU TIÊN của mực ống tươi: mẻ (mực 160k + gia vị 8k) = 168k → 12 xiên × 22k = 264k.
   { id: 'muc_nuong', name: 'Mực nướng sa tế', category: 'fresh', buy: 14000, sell: 22000, color: 0xd98a5a, unlock: 46 },
   // GĐ1391: Cháo lòng — món sáng Sài Gòn trứ danh (cháo trắng nấu lòng heo non):
@@ -592,6 +594,10 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_goi_cuon', name: 'Gỏi cuốn', station: 'hot_kettle',
     inputs: [{ productId: 'banhtrang', quantity: 2 }, { productId: 'hai_san', quantity: 1 }],
     outputId: 'goi_cuon', outputQty: 12, durationMin: 15, unlock: 44, reputationGain: 2 },
+  // GĐ1397: Tôm nướng muối ớt ở bếp nướng: mẻ 198k → 312k, lãi 114k/mẻ, hời hơn bán thẳng (272k < 312k). Mở 42 (> golden 30).
+  { id: 'recipe_tom_nuong', name: 'Tôm nướng muối ớt', station: 'food_grill',
+    inputs: [{ productId: 'tom_su_tuoi', quantity: 1 }, { productId: 'giavi', quantity: 1 }],
+    outputId: 'tom_nuong', outputQty: 12, durationMin: 18, unlock: 42, reputationGain: 3 },
   // GĐ1394: Mực nướng sa tế ở bếp nướng: mẻ 168k → 264k, lãi 96k/mẻ, hời hơn bán thẳng nguyên liệu (232k < 264k).
   // Mở 46 ≥ mọi nguyên liệu (46/7), > golden 30 → sim không đổi.
   { id: 'recipe_muc_nuong', name: 'Mực nướng sa tế', station: 'food_grill',

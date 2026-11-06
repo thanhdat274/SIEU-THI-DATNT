@@ -1790,6 +1790,28 @@ describe('GĐ1391 — cháo lòng (món sáng Sài Gòn, ấm nước)', () => {
   });
 });
 
+/** GĐ1397 — Tôm nướng muối ớt: lối ra đầu tiên của tôm sú tươi (bếp nướng). */
+describe('GĐ1397 — tôm nướng muối ớt (bếp nướng)', () => {
+  const recipe = RECIPE_MAP['recipe_tom_nuong'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm bếp nướng và dùng tôm sú tươi', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'tom_nuong')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'tom_nuong').length).toBe(1);
+    expect(recipe.station).toBe('food_grill');
+    expect(recipe.inputs.some((i) => i.productId === 'tom_su_tuoi')).toBe(true);
+  });
+});
+
 /** GĐ1394 — Mực nướng sa tế: lối ra đầu tiên của mực ống tươi (bếp nướng). */
 describe('GĐ1394 — mực nướng sa tế (bếp nướng)', () => {
   const recipe = RECIPE_MAP['recipe_muc_nuong'];
