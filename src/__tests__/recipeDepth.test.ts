@@ -3946,6 +3946,28 @@ describe('GĐ1459 — cá basa chiên sốt me (chảo chiên)', () => {
   });
 });
 
+/** GĐ1460 — Cơm cháy chà bông: lối ra đầu tiên của chà bông nhà làm (chảo chiên). */
+describe('GĐ1460 — cơm cháy chà bông (chảo chiên)', () => {
+  const recipe = RECIPE_MAP['recipe_com_chay_cha_bong'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm chảo chiên và dùng chà bông nhà làm', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'com_chay_cha_bong')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'com_chay_cha_bong').length).toBe(1);
+    expect(recipe.station).toBe('fryer');
+    expect(recipe.inputs.some((i) => i.productId === 'hx_cha_bong')).toBe(true);
+  });
+});
+
 /** GĐ1405 — Sữa hạt điều: lối ra đầu tiên của hạt điều rang muối (máy xay). */
 describe('GĐ1405 — sữa hạt điều (máy xay)', () => {
   const recipe = RECIPE_MAP['recipe_sua_hat_dieu'];
