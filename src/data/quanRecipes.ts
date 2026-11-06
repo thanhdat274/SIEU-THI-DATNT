@@ -125,6 +125,10 @@ export const QUAN_RECIPES: QuanRecipe[] = [
   { id: 'tra_gung', name: 'Trà gừng nóng', icon: '🫚', unlock: 36, price: 15_000, uses: [{ id: 'tra', cups: 40 }, { id: 'x_gung', cups: 12 }, { id: 'x_duong', cups: 30 }], hot: true },
   { id: 'ca_phe_sua_nong', name: 'Cà phê sữa nóng', icon: '♨️', unlock: 37, price: 20_000, uses: [{ id: 'x_ca_phe_hoa_tan', cups: 15 }, { id: 'x_sua_dac', cups: 10 }], hot: true },
   { id: 'ca_cao_nong', name: 'Ca cao nóng', icon: '☕', unlock: 38, price: 22_000, uses: [{ id: 'x_bot_cacao', cups: 10 }, { id: 'sua_tuoi', cups: 6 }], hot: true },
+  // GĐ1436: món quán từ trái cây catalog (trước chỉ có lối ra bếp) — mở > 30 nên sim golden không đổi.
+  { id: 'tra_dua_da', name: 'Trà dứa', icon: '🍍', unlock: 34, price: 22_000, uses: [{ id: 'tra', cups: 40 }, { id: 'x_thom', cups: 6 }, { id: 'x_duong', cups: 30 }, { id: 'x_nuoc_da', cups: 10 }] },
+  { id: 'ep_tao_da', name: 'Nước ép táo đá', icon: '🍎', unlock: 33, price: 22_000, uses: [{ id: 'x_tao', cups: 4 }, { id: 'x_duong', cups: 30 }, { id: 'x_nuoc_da', cups: 10 }] },
+  { id: 'sinh_to_bo_quan', name: 'Sinh tố bơ sữa đặc', icon: '🥑', unlock: 35, price: 28_000, uses: [{ id: 'x_bo', cups: 3 }, { id: 'x_sua_dac', cups: 20 }, { id: 'x_nuoc_da', cups: 10 }] },
 ];
 
 /** Số món tối đa trên thực đơn. */
