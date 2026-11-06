@@ -85,6 +85,7 @@ export const newGameData = () => ({
   xp: 0,
   storage: { mi: 10, nuoc: 10, banh: 5 } as Record<string, number>,
   storageLots: {} as Record<string, Lot[]>,
+  furnStash: {} as Record<string, number>,
   furniture: [
     {
       uid: 1, type: 'shelf', x: -1.8, z: -2.0, rot: 0,

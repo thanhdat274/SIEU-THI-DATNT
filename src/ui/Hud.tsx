@@ -9,6 +9,7 @@ import { worldActions } from '../core/actions';
 import { saveGame, resetGame, readBackupSave, restoreBackup } from '../core/save';
 import { FEATURES, xpToNext } from '../data/levels';
 import { formatMoney, productById } from '../data/products';
+import { trialCost } from '../core/slices/build';
 import { todayLine, todayMissedLine, todayPeakLine, todayExpectSoFar, todayTopSeller } from '../data/todayScore';
 import { hasSkill } from '../data/titles';
 import { summarizeReviews } from '../data/reviews';
@@ -102,6 +103,11 @@ export function Hud() {
   const reviews = useGame((s) => s.reviews);
   const placing = useGame((s) => s.placing);
   const sellFurniture = useGame((s) => s.sellFurniture);
+  const stashFurniture = useGame((s) => s.stashFurniture);
+  const trialCount = useGame((s) => s.furniture.filter((f) => f.trial).length);
+  const trialTotal = useGame((s) => trialCost(s.furniture));
+  const buyTrials = useGame((s) => s.buyTrials);
+  const dropTrials = useGame((s) => s.dropTrials);
   const weather = useGame((s) => s.weather);
   const autoRoutine = useGame((s) => s.autoRoutine);
   const forecast = useGame((s) => s.forecast);
@@ -441,7 +447,10 @@ Online: ${coop.peers.map((p) => (p.id === coop.selfId ? 'bạn' : p.name)).join(
                   <button className="hud-btn" onClick={worldActions.rotate}>↻ Xoay</button>
                   {TOUCH && <button className="hud-btn primary" onClick={worldActions.place}>✓ Đặt</button>}
                   {placing.movingUid !== undefined && (
-                    <button className="hud-btn" onClick={() => sellFurniture(placing.movingUid!)}>Bán</button>
+                    <>
+                      <button className="hud-btn" onClick={() => stashFurniture(placing.movingUid!)}>📦 Cất kho</button>
+                      <button className="hud-btn" onClick={() => sellFurniture(placing.movingUid!)}>Bán</button>
+                    </>
                   )}
                   <button className="hud-btn" onClick={worldActions.cancel}>Huỷ</button>
                 </span>
@@ -451,6 +460,13 @@ Online: ${coop.peers.map((p) => (p.id === coop.selfId ? 'bạn' : p.name)).join(
                 🛠️ Chế độ xây dựng · {TOUCH ? 'chạm' : 'bấm'} vào đồ để di chuyển
                 <button className="hud-btn" onClick={() => setBuildMode(false)}>Xong</button>
               </>
+            )}
+            {trialCount > 0 && (
+              <div className="hud-alert-actions" style={{ marginTop: 4 }}>
+                🧪 Đang thử {trialCount} món · {formatMoney(trialTotal)}
+                <button className="hud-btn primary" onClick={buyTrials}>🛒 Mua hết</button>
+                <button className="hud-btn" onClick={dropTrials}>Bỏ thử</button>
+              </div>
             )}
           </div>
         )}

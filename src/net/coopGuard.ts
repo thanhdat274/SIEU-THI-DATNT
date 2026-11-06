@@ -10,6 +10,7 @@ export const GUARDED: Record<string, (args: unknown[]) => string> = {
   moveFurniture: (a) => `furn:${a[0]}`,
   moveMainCounter: () => 'counter',
   sellFurniture: (a) => `furn:${a[0]}`,
+  stashFurniture: (a) => `furn:${a[0]}`,
   repairFurniture: (a) => `furn:${a[0]}`,
   paint: (a) => `style:${a[0]}`,
   setPrice: (a) => `price:${a[0]}`,

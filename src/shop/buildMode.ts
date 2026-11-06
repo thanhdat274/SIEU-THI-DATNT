@@ -115,7 +115,11 @@ export class BuildMode {
     (this.tile.material as THREE.MeshBasicMaterial).color.setHex(reason ? 0xe74c3c : 0x2ecc71);
 
     const def = furnitureDef(placing.type);
-    const action = placing.movingUid !== undefined ? 'Bấm: đặt xuống · Delete: bán' : `Bấm: mua và đặt (${formatMoney(def.price)})`;
+    const action =
+      placing.movingUid !== undefined ? 'Bấm: đặt xuống · Delete: bán · S: cất kho'
+      : placing.source === 'stash' ? 'Bấm: lấy từ kho đồ ra đặt (miễn phí)'
+      : placing.source === 'trial' ? 'Bấm: đặt dùng thử (chưa trả tiền)'
+      : `Bấm: mua và đặt (${formatMoney(def.price)})`;
     const hint = `${def.name} · ${reason ?? action} · R: xoay · Esc: huỷ`;
     if (useGame.getState().hint !== hint) useGame.setState({ hint });
   }
@@ -165,6 +169,13 @@ export class BuildMode {
     if (placing.movingUid !== undefined) {
       s.moveFurniture(placing.movingUid, x, z, placing.rot);
       s.setPlacing(null);
+    } else if (placing.source === 'stash') {
+      // Hết đồ cùng loại trong kho đồ thì thôi cầm
+      if (s.placeFromStash(placing.type, x, z, placing.rot) && !(useGame.getState().furnStash[placing.type] > 0)) s.setPlacing(null);
+      else this.updateGhost();
+    } else if (placing.source === 'trial') {
+      s.placeTrial(placing.type, x, z, placing.rot);
+      this.updateGhost();
     } else if (s.placeFurniture(placing.type, x, z, placing.rot)) {
       // Giữ nguyên món đang chọn để đặt tiếp nhiều cái
       this.updateGhost();
@@ -190,5 +201,6 @@ export class BuildMode {
     if (!s.placing) return;
     if (e.key.toLowerCase() === 'r') this.rotate();
     if (e.key === 'Delete' && s.placing.movingUid !== undefined) s.sellFurniture(s.placing.movingUid);
+    if (e.key.toLowerCase() === 's' && s.placing.movingUid !== undefined) s.stashFurniture(s.placing.movingUid);
   }
 }

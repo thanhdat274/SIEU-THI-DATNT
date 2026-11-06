@@ -93,6 +93,8 @@ export interface Furniture {
   wear?: number;
   /** Hỏng: khách không lấy được hàng cho tới khi sửa. */
   broken?: boolean;
+  /** Đang "dùng thử": đặt xem chưa trả tiền; thoát chế độ xây thì tự dỡ (không lưu vào save). */
+  trial?: boolean;
   tiers: Tier[];
 }
 
@@ -153,6 +155,8 @@ export interface Placing {
   type: FurnitureType;
   rot: number;
   movingUid?: number;
+  /** 'stash' = lấy từ kho đồ (đặt miễn phí); 'trial' = đặt dùng thử (chưa trả tiền). */
+  source?: 'stash' | 'trial';
 }
 
 export interface GameState {
@@ -181,6 +185,8 @@ export interface GameState {
   /** Các lô trong kho của từng món (khớp `storage`). */
   storageLots: Record<string, Lot[]>;
   furniture: Furniture[];
+  /** Kho đồ nội thất đã cất (loại đồ → số cái). Cất kho không mất tiền như bán. */
+  furnStash: Record<string, number>;
   /** Quầy chính đã dời tới đâu (toạ độ trong tiệm); null = chỗ mặc định. */
   mainCounter: { x: number; z: number; rot: number } | null;
   /** Số món đã bán ra của từng kệ/tủ (khóa là uid) — heatmap vị trí: kệ dễ thấy bán nhiều hơn. */
@@ -468,6 +474,16 @@ export interface GameState {
   moveFurniture: (uid: number, x: number, z: number, rot: number) => void;
   moveMainCounter: (x: number, z: number, rot: number) => void;
   sellFurniture: (uid: number) => void;
+  /** Cất món đồ vào kho đồ (hàng trên kệ về kho hàng), đặt lại sau miễn phí. */
+  stashFurniture: (uid: number) => void;
+  /** Lấy một món từ kho đồ ra đặt. */
+  placeFromStash: (type: FurnitureType, x: number, z: number, rot: number) => boolean;
+  /** Đặt dùng thử (chưa trả tiền). */
+  placeTrial: (type: FurnitureType, x: number, z: number, rot: number) => boolean;
+  /** Mua hết các món đang dùng thử (đủ tiền mới mua). */
+  buyTrials: () => boolean;
+  /** Dỡ hết các món đang dùng thử. */
+  dropTrials: () => void;
   /** Bán hết nội thất (đập đi làm lại). */
   demolishAll: () => void;
   buyUpgrade: () => void;
