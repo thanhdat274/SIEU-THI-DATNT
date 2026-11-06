@@ -410,6 +410,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'xoi_cha_lua', name: 'Xôi chả lụa', category: 'fresh', buy: 3500, sell: 6000, color: 0xf2e0b8, unlock: 44 },
   // GĐ1438: Cơm chiên lạp xưởng — lối ra ĐẦU TIÊN của lạp xưởng tươi bà Tám.
   { id: 'com_chien_lap_xuong', name: 'Cơm chiên lạp xưởng', category: 'fresh', buy: 11000, sell: 18000, color: 0xe0a070, unlock: 44 },
+  // GĐ1439: Xôi chà bông — lối ra ĐẦU TIÊN của chà bông heo nhà làm.
+  { id: 'xoi_cha_bong', name: 'Xôi chà bông', category: 'fresh', buy: 5000, sell: 8000, color: 0xd8a868, unlock: 46 },
   // GĐ1409: Sữa chua granola — lối ra ĐẦU TIÊN của ngũ cốc granola: mẻ (granola 130k + sữa chua) → 14 cốc × 18k = 252k.
   { id: 'sua_chua_granola', name: 'Sữa chua granola', category: 'fresh', buy: 11000, sell: 18000, color: 0xe9d8b4, unlock: 68 },
   // GĐ1408: Cà phê phin sữa — lối ra ĐẦU TIÊN của cà phê xay nguyên chất: mẻ (cà phê xay 150k + sữa đặc 22k) = 172k → 25 ly × 12k = 300k.
@@ -1064,6 +1066,10 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_com_chien_lap_xuong', name: 'Cơm chiên lạp xưởng', station: 'fryer',
     inputs: [{ productId: 'gao', quantity: 1 }, { productId: 'hx_lap_xuong', quantity: 1 }, { productId: 'x_trung_ga', quantity: 1 }],
     outputId: 'com_chien_lap_xuong', outputQty: 15, durationMin: 15, unlock: 44, reputationGain: 3 },
+  // GĐ1439: Xôi chà bông ở quây xôi. Mở 46 (> golden 30, ≥ cấp nguyên liệu).
+  { id: 'recipe_xoi_cha_bong', name: 'Xôi chà bông', station: 'rice_station',
+    inputs: [{ productId: 'nep', quantity: 1 }, { productId: 'hx_cha_bong', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 1 }],
+    outputId: 'xoi_cha_bong', outputQty: 30, durationMin: 15, unlock: 46, reputationGain: 3 },
   // GĐ1409: Sữa chua granola ở máy xay: lãi dương, hời hơn bán thẳng nguyên liệu. Mở 68 = cấp granola (> golden 30).
   { id: 'recipe_sua_chua_granola', name: 'Sữa chua granola', station: 'blender',
     inputs: [{ productId: 'ngu_coc', quantity: 1 }, { productId: 'suachua', quantity: 1 }],

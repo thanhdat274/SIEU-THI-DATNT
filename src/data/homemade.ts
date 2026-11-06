@@ -20,6 +20,8 @@ export const HOMEMADE_PRODUCTS: { id: string; name: string; category: Category; 
   // GĐ1321: mở rộng nguồn cung hàng xóm (hướng 3) — tương ớt quê tự làm, biên 40%, mở 36 sau mốc golden 30 → sim không đổi.
   // Khớp bất biến GĐ1083: đặc sản mở ≥30 phải sell ≥50k & biên ≥35%.
   { id: 'hx_tuong_ot', name: 'Tương ớt quê (chai)', category: 'dry', buy: 30000, sell: 50000, color: 0xd63031, unlock: 36 },
+  // GĐ1439: chà bông heo nhà làm (hướng 3) — sell ≥50k, biên ~35% (bất biến GĐ1083), mở 46; lối ra: Xôi chà bông.
+  { id: 'hx_cha_bong', name: 'Chà bông heo nhà làm (hũ)', category: 'dry', buy: 55000, sell: 85000, color: 0xc89058, unlock: 46 },
 ];
 
 /**
