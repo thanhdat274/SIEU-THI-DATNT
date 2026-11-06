@@ -106,3 +106,4 @@
 
 - Mục lục đầy đủ đến GĐ1391: `docs/progress-archive/INDEX-MUC-LUC-DEN-GD1391.md` (grep "GĐxx"). GĐ1382–1391 tóm tắt ở mục Trạng thái hiện tại; GĐ1392 gọn PROGRESS 190→37KB; GĐ1393 dời mục lục để PROGRESS < 30KB.
 - GĐ1409 (Sữa chua granola — lối ra đầu tiên của ngũ cốc granola ở máy xay): 14 cốc×18k, unlock 68. Dời GĐ1395–1401 sang archive. Full suite 503/4518 xanh.
+- GĐ1430 (đợt 10 u35: Há cảo hấp, Khoai tây tươi chiên, Bún chả lụa, Trứng vịt luộc, Gà xào hành tây, Nấm kim châm xào ớt chuông). 503/4719 xanh.

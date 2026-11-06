@@ -382,6 +382,18 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'nuoc_ep_dua_leo_ca_rot', name: 'Nước ép dưa leo cà rốt', category: 'drink', buy: 4000, sell: 8000, color: 0xa0c860, unlock: 35 },
   // GĐ1429: Nước ép nho tím — lối ra ĐẦU TIÊN của nho tím.
   { id: 'nuoc_ep_nho_tim', name: 'Nước ép nho tím', category: 'drink', buy: 7000, sell: 12000, color: 0x6a2a7a, unlock: 35 },
+  // GĐ1430: Há cảo hấp nóng — lối ra ĐẦU TIÊN của há cảo.
+  { id: 'ha_cao_hap_nong', name: 'Há cảo hấp nóng', category: 'fresh', buy: 4000, sell: 8000, color: 0xf0e8d0, unlock: 35 },
+  // GĐ1430: Khoai tây tươi chiên — lối ra ĐẦU TIÊN của khoai tây.
+  { id: 'khoai_tay_tuoi_chien', name: 'Khoai tây tươi chiên', category: 'fresh', buy: 3000, sell: 5000, color: 0xf0d060, unlock: 35 },
+  // GĐ1430: Bún chả lụa — lối ra ĐẦU TIÊN của chả lụa.
+  { id: 'bun_cha_lua', name: 'Bún chả lụa', category: 'fresh', buy: 5000, sell: 9000, color: 0xf0e0c0, unlock: 35 },
+  // GĐ1430: Trứng vịt luộc — lối ra ĐẦU TIÊN của trứng vịt.
+  { id: 'trung_vit_luoc', name: 'Trứng vịt luộc', category: 'fresh', buy: 3000, sell: 5000, color: 0xe8e0d0, unlock: 35 },
+  // GĐ1430: Gà xào hành tây — lối ra ĐẦU TIÊN của hành tây.
+  { id: 'ga_xao_hanh_tay', name: 'Gà xào hành tây', category: 'fresh', buy: 5000, sell: 9000, color: 0xd8b080, unlock: 35 },
+  // GĐ1430: Nấm kim châm xào ớt chuông — lối ra ĐẦU TIÊN của nấm kim châm.
+  { id: 'nam_kim_cham_ot_chuong', name: 'Nấm kim châm xào ớt chuông', category: 'fresh', buy: 5000, sell: 9000, color: 0xe86040, unlock: 35 },
   // GĐ1409: Sữa chua granola — lối ra ĐẦU TIÊN của ngũ cốc granola: mẻ (granola 130k + sữa chua) → 14 cốc × 18k = 252k.
   { id: 'sua_chua_granola', name: 'Sữa chua granola', category: 'fresh', buy: 11000, sell: 18000, color: 0xe9d8b4, unlock: 68 },
   // GĐ1408: Cà phê phin sữa — lối ra ĐẦU TIÊN của cà phê xay nguyên chất: mẻ (cà phê xay 150k + sữa đặc 22k) = 172k → 25 ly × 12k = 300k.
@@ -980,6 +992,30 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_nuoc_ep_nho_tim', name: 'Nước ép nho tím', station: 'blender',
     inputs: [{ productId: 'x_nho_tim', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
     outputId: 'nuoc_ep_nho_tim', outputQty: 7, durationMin: 8, unlock: 35, reputationGain: 1 },
+  // GĐ1430: Há cảo hấp nóng ở nồi hấp. Mở 35 (> golden 30, ≥ cấp nguyên liệu).
+  { id: 'recipe_ha_cao_hap_nong', name: 'Há cảo hấp nóng', station: 'steamer',
+    inputs: [{ productId: 'x_ha_cao', quantity: 1 }],
+    outputId: 'ha_cao_hap_nong', outputQty: 6, durationMin: 8, unlock: 35, reputationGain: 1 },
+  // GĐ1430: Khoai tây tươi chiên ở chảo chiên. Mở 35 (> golden 30, ≥ cấp nguyên liệu).
+  { id: 'recipe_khoai_tay_tuoi_chien', name: 'Khoai tây tươi chiên', station: 'fryer',
+    inputs: [{ productId: 'x_khoai_tay', quantity: 1 }],
+    outputId: 'khoai_tay_tuoi_chien', outputQty: 3, durationMin: 8, unlock: 35, reputationGain: 1 },
+  // GĐ1430: Bún chả lụa ở bếp nồi nấu. Mở 35 (> golden 30, ≥ cấp nguyên liệu).
+  { id: 'recipe_bun_cha_lua', name: 'Bún chả lụa', station: 'hot_kettle',
+    inputs: [{ productId: 'x_bun_tuoi', quantity: 1 }, { productId: 'x_cha_lua', quantity: 1 }],
+    outputId: 'bun_cha_lua', outputQty: 6, durationMin: 8, unlock: 35, reputationGain: 1 },
+  // GĐ1430: Trứng vịt luộc ở bếp nồi nấu. Mở 35 (> golden 30, ≥ cấp nguyên liệu).
+  { id: 'recipe_trung_vit_luoc', name: 'Trứng vịt luộc', station: 'hot_kettle',
+    inputs: [{ productId: 'x_trung_vit', quantity: 6 }],
+    outputId: 'trung_vit_luoc', outputQty: 6, durationMin: 8, unlock: 35, reputationGain: 1 },
+  // GĐ1430: Gà xào hành tây ở chảo chiên. Mở 35 (> golden 30, ≥ cấp nguyên liệu).
+  { id: 'recipe_ga_xao_hanh_tay', name: 'Gà xào hành tây', station: 'fryer',
+    inputs: [{ productId: 'x_thit_ga', quantity: 1 }, { productId: 'x_hanh_tay', quantity: 1 }],
+    outputId: 'ga_xao_hanh_tay', outputQty: 6, durationMin: 8, unlock: 35, reputationGain: 1 },
+  // GĐ1430: Nấm kim châm xào ớt chuông ở chảo chiên. Mở 35 (> golden 30, ≥ cấp nguyên liệu).
+  { id: 'recipe_nam_kim_cham_ot_chuong', name: 'Nấm kim châm xào ớt chuông', station: 'fryer',
+    inputs: [{ productId: 'x_nam_kim_cham', quantity: 1 }, { productId: 'x_ot_chuong', quantity: 1 }],
+    outputId: 'nam_kim_cham_ot_chuong', outputQty: 4, durationMin: 8, unlock: 35, reputationGain: 1 },
   // GĐ1409: Sữa chua granola ở máy xay: lãi dương, hời hơn bán thẳng nguyên liệu. Mở 68 = cấp granola (> golden 30).
   { id: 'recipe_sua_chua_granola', name: 'Sữa chua granola', station: 'blender',
     inputs: [{ productId: 'ngu_coc', quantity: 1 }, { productId: 'suachua', quantity: 1 }],
