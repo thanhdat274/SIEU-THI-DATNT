@@ -133,3 +133,4 @@
 - GĐ1468: Bánh mì lạp xưởng nướng (u64, bếp nướng: 6 bánh mì + 1 lạp xưởng + 1 dưa muối → 12 ổ, bán 20k).
 - GĐ1469: Chả lụa chiên sốt me (u65, chảo chiên: 2 chả lụa bà Tám + 1 me dầm → 10 phần, bán 14k).
 - GĐ1470: Xôi chả lụa dưa muối (u66, quây xôi: 1 nếp + 1 chả lụa + 1 dưa muối → 14 gói, bán 10k).
+- GĐ1471: Bánh đa cuốn chả lụa (u67, bếp nướng: 2 bánh đa + 1 chả lụa → 10 cuốn, bán 13k).

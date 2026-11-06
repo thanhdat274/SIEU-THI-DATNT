@@ -4188,6 +4188,28 @@ describe('GĐ1470 — xôi chả lụa dưa muối (quây xôi)', () => {
   });
 });
 
+/** GĐ1471 — Bánh đa cuốn chả lụa: lối ra đầu tiên của bánh đa hàng xóm (bếp nướng). */
+describe('GĐ1471 — bánh đa cuốn chả lụa (bếp nướng)', () => {
+  const recipe = RECIPE_MAP['recipe_banh_da_cuon_cha_lua'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm bếp nướng và dùng bánh đa hàng xóm', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'banh_da_cuon_cha_lua')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'banh_da_cuon_cha_lua').length).toBe(1);
+    expect(recipe.station).toBe('food_grill');
+    expect(recipe.inputs.some((i) => i.productId === 'hx_banh_da')).toBe(true);
+  });
+});
+
 /** GĐ1405 — Sữa hạt điều: lối ra đầu tiên của hạt điều rang muối (máy xay). */
 describe('GĐ1405 — sữa hạt điều (máy xay)', () => {
   const recipe = RECIPE_MAP['recipe_sua_hat_dieu'];
