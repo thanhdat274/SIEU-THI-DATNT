@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (06/11/2026)
+- **GĐ1407 (Trà atiso nấu — lối ra đầu tiên của trà atiso túi, bếp nồi nấu)**: `tra_atiso` + `x_duong` → 15 ly × 6k = 90k, vốn 55k, lãi 35k/mẻ, hời hơn bán thẳng (76k). unlock 44.
 - **GĐ1406 (Bánh mì nho — lối ra đầu tiên của nho khô, bếp nướng)**: `botmi` + `nho_kho` → 12 ổ × 10k = 120k, vốn 73k, lãi 47k/mẻ, hời hơn bán thẳng (104k). unlock 42.
 - **GĐ1405 (Sữa hạt điều — lối ra đầu tiên của hạt điều rang muối, máy xay)**: `hat_dieu_muoi` + `x_duong` → 12 ly × 12k = 144k, vốn 95k, lãi 49k/mẻ, hời hơn bán thẳng (129k). unlock 45.
 - **GĐ1404 (Gà hấp rượu gạo — lối ra đầu tiên của rượu gạo, nồi hấp)**: `ga_ta_tuoi` + `ruou_gao` → 10 phần × 30k = 300k, vốn 175k, lãi 125k/mẻ, hời hơn bán thẳng (243k). unlock 46.

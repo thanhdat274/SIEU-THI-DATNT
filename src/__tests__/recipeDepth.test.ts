@@ -1856,6 +1856,50 @@ describe('GĐ1400 — sinh tố dưa hấu (máy xay)', () => {
   });
 });
 
+/** GĐ1407 — Trà atiso nấu: lối ra đầu tiên của trà atiso túi (bếp nồi nấu). */
+describe('GĐ1407 — trà atiso nấu (bếp nồi nấu)', () => {
+  const recipe = RECIPE_MAP['recipe_tra_atiso_nau'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm bếp nồi nấu và dùng trà atiso túi', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'tra_atiso_nau')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'tra_atiso_nau').length).toBe(1);
+    expect(recipe.station).toBe('hot_kettle');
+    expect(recipe.inputs.some((i) => i.productId === 'tra_atiso')).toBe(true);
+  });
+});
+
+/** GĐ1404 — Gà hấp rượu gạo: lối ra đầu tiên của rượu gạo (nồi hấp). */
+describe('GĐ1404 — gà hấp rượu gạo (nồi hấp)', () => {
+  const recipe = RECIPE_MAP['recipe_ga_hap_ruou'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm nồi hấp và dùng rượu gạo', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'ga_hap_ruou')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'ga_hap_ruou').length).toBe(1);
+    expect(recipe.station).toBe('steamer');
+    expect(recipe.inputs.some((i) => i.productId === 'ruou_gao')).toBe(true);
+  });
+});
+
 /** GĐ1399 — Tương ớt nhà làm: lối ra đầu tiên của ớt tươi (bếp nồi nấu). */
 describe('GĐ1399 — tương ớt nhà làm (bếp nồi nấu)', () => {
   const recipe = RECIPE_MAP['recipe_tuong_ot_nha'];
