@@ -107,7 +107,4 @@
 - Mục lục đầy đủ đến GĐ1391: `docs/progress-archive/INDEX-MUC-LUC-DEN-GD1391.md` (grep "GĐxx"). GĐ1382–1391 tóm tắt ở mục Trạng thái hiện tại; GĐ1392 gọn PROGRESS 190→37KB; GĐ1393 dời mục lục để PROGRESS < 30KB.
 - GĐ1409 (Sữa chua granola — lối ra đầu tiên của ngũ cốc granola ở máy xay): 14 cốc×18k, unlock 68. Dời GĐ1395–1401 sang archive. Full suite 503/4518 xanh.
 - GĐ1409–1415 (lối ra đầu tiên: granola, mì tươi, mật ong rừng, trà thảo mộc, bánh pía, bò Úc, hột vịt lộn, bơ muối): chi tiết ở docs/progress-archive/PROGRESS-GD1409-1415.md
-- GĐ1416 (lối ra đầu tiên cho sữa yến mạch, hạt mắc ca, tổ yến: Sữa yến mạch đường đen u73 + Sữa hạt mắc ca u86 ở máy xay, Chè yến u96 ở bếp nồi nấu; giá giữ biên cao cấp 1.35–1.42). Full suite 503/4548 xanh.
-- GĐ1417 (Kem chiên u35 ở chảo chiên, Bánh bao hấp từ đông lạnh u35 ở nồi hấp, Sinh tố sữa chua nếp u43 ở máy xay — lối ra đầu tiên của kem que, bánh bao đông lạnh, sữa chua nếp; id banh_bao_hap đã có nên đặt id mới). Full suite 503/4557 xanh.
-- GĐ1418 (Cánh gà chiên nước mắm u35 ở chảo chiên, Trà mứt gừng u50 ở bếp nồi nấu — lối ra đầu tiên của nước mắm, mứt Tết). Leader: giữ bia lon KHÔNG có công thức (farmQuanValue dùng bia làm mẫu 'ngoài bếp/pha'). Full suite 503/4563 xanh.
-- GĐ1419 (Trứng chiên dầu u35 ở chảo chiên, Sinh tố sữa hạt u41 ở máy xay — lối ra đầu tiên của dầu ăn, sữa hạt lốc). Leader: snack/bim bim/bánh gạo đóng gói giữ bán thẳng (không ép công thức vô lý). Full suite 503/4569 xanh.
+- GĐ1416–1419 (lối ra đầu tiên: yến mạch, mắc ca, yến sào, kem que, bánh bao đông lạnh, sữa chua nếp, nước mắm, mứt Tết, dầu ăn, sữa hạt; bia & snack đóng gói giữ bán thẳng): chi tiết ở docs/progress-archive/PROGRESS-GD1416-1419.md
