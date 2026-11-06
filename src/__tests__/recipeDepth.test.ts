@@ -2956,6 +2956,116 @@ describe('GĐ1427 — cá viên chiên nước mắm (chảo chiên)', () => {
   });
 });
 
+/** GĐ1428 — Nước ép táo: lối ra đầu tiên của táo (máy xay). */
+describe('GĐ1428 — nước ép táo (máy xay)', () => {
+  const recipe = RECIPE_MAP['recipe_nuoc_ep_tao'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm máy xay và dùng táo', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'nuoc_ep_tao')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'nuoc_ep_tao').length).toBe(1);
+    expect(recipe.station).toBe('blender');
+    expect(recipe.inputs.some((i) => i.productId === 'x_tao')).toBe(true);
+  });
+});
+
+/** GĐ1428 — Sinh tố na: lối ra đầu tiên của na (máy xay). */
+describe('GĐ1428 — sinh tố na (máy xay)', () => {
+  const recipe = RECIPE_MAP['recipe_sinh_to_na'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm máy xay và dùng na', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'sinh_to_na')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'sinh_to_na').length).toBe(1);
+    expect(recipe.station).toBe('blender');
+    expect(recipe.inputs.some((i) => i.productId === 'x_na')).toBe(true);
+  });
+});
+
+/** GĐ1428 — Nước măng cụt dầm: lối ra đầu tiên của măng cụt (máy xay). */
+describe('GĐ1428 — nước măng cụt dầm (máy xay)', () => {
+  const recipe = RECIPE_MAP['recipe_nuoc_mang_cut'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm máy xay và dùng măng cụt', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'nuoc_mang_cut')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'nuoc_mang_cut').length).toBe(1);
+    expect(recipe.station).toBe('blender');
+    expect(recipe.inputs.some((i) => i.productId === 'x_mang_cut')).toBe(true);
+  });
+});
+
+/** GĐ1428 — Nước ép nho xanh: lối ra đầu tiên của nho xanh (máy xay). */
+describe('GĐ1428 — nước ép nho xanh (máy xay)', () => {
+  const recipe = RECIPE_MAP['recipe_nuoc_ep_nho_xanh'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm máy xay và dùng nho xanh', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'nuoc_ep_nho_xanh')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'nuoc_ep_nho_xanh').length).toBe(1);
+    expect(recipe.station).toBe('blender');
+    expect(recipe.inputs.some((i) => i.productId === 'x_nho_xanh')).toBe(true);
+  });
+});
+
+/** GĐ1428 — Chôm chôm dầm đá: lối ra đầu tiên của chôm chôm (máy xay). */
+describe('GĐ1428 — chôm chôm dầm đá (máy xay)', () => {
+  const recipe = RECIPE_MAP['recipe_nuoc_chom_chom'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm máy xay và dùng chôm chôm', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'nuoc_chom_chom')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'nuoc_chom_chom').length).toBe(1);
+    expect(recipe.station).toBe('blender');
+    expect(recipe.inputs.some((i) => i.productId === 'x_chom_chom')).toBe(true);
+  });
+});
+
 /** GĐ1405 — Sữa hạt điều: lối ra đầu tiên của hạt điều rang muối (máy xay). */
 describe('GĐ1405 — sữa hạt điều (máy xay)', () => {
   const recipe = RECIPE_MAP['recipe_sua_hat_dieu'];

@@ -111,3 +111,4 @@
 - GĐ1420–1422 (cà phê lon, kem cây hộp; rà catalog x_* ~70 nguyên liệu chưa có lối ra — đợt 1–2: khoai tây chiên, gà viên, cá basa, pizza, mực khoanh, chả cá, cánh gà, cá hồi): chi tiết ở docs/progress-archive/PROGRESS-GD1420-1422.md
 - GĐ1423–1426 (catalog đợt 3–6: sinh tố trái cây, canh/xào/chiên/hấp/nướng từ rau củ, thịt, hải sản tươi): chi tiết ở docs/progress-archive/PROGRESS-GD1423-1426.md
 - GĐ1427 (đợt 7: Cá hồi hấp xì dầu, Chả mực chiên, Lẩu viên thập cẩm, Bò viên nước lèo, Cá viên chiên nước mắm). 503/4668 xanh.
+- GĐ1428 (đợt 8 trái cây ở máy xay u35: táo, na, măng cụt, nho xanh, chôm chôm). 503/4683 xanh.

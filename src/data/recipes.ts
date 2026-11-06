@@ -360,6 +360,16 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'bo_vien_nuoc_leo', name: 'Bò viên nước lèo', category: 'fresh', buy: 4000, sell: 8000, color: 0x8a5a3a, unlock: 35 },
   // GĐ1427: Cá viên chiên nước mắm — lối ra ĐẦU TIÊN của cá viên.
   { id: 'ca_vien_chien_mam', name: 'Cá viên chiên nước mắm', category: 'fresh', buy: 4000, sell: 7000, color: 0xe0a050, unlock: 35 },
+  // GĐ1428: Nước ép táo — lối ra ĐẦU TIÊN của táo.
+  { id: 'nuoc_ep_tao', name: 'Nước ép táo', category: 'drink', buy: 7000, sell: 12000, color: 0xd84a3a, unlock: 35 },
+  // GĐ1428: Sinh tố na — lối ra ĐẦU TIÊN của na.
+  { id: 'sinh_to_na', name: 'Sinh tố na', category: 'drink', buy: 7000, sell: 12000, color: 0xb8d090, unlock: 35 },
+  // GĐ1428: Nước măng cụt dầm — lối ra ĐẦU TIÊN của măng cụt.
+  { id: 'nuoc_mang_cut', name: 'Nước măng cụt dầm', category: 'drink', buy: 7000, sell: 12000, color: 0x6a2a4a, unlock: 35 },
+  // GĐ1428: Nước ép nho xanh — lối ra ĐẦU TIÊN của nho xanh.
+  { id: 'nuoc_ep_nho_xanh', name: 'Nước ép nho xanh', category: 'drink', buy: 7000, sell: 12000, color: 0xa8d060, unlock: 35 },
+  // GĐ1428: Chôm chôm dầm đá — lối ra ĐẦU TIÊN của chôm chôm.
+  { id: 'nuoc_chom_chom', name: 'Chôm chôm dầm đá', category: 'drink', buy: 7000, sell: 12000, color: 0xe04050, unlock: 35 },
   // GĐ1409: Sữa chua granola — lối ra ĐẦU TIÊN của ngũ cốc granola: mẻ (granola 130k + sữa chua) → 14 cốc × 18k = 252k.
   { id: 'sua_chua_granola', name: 'Sữa chua granola', category: 'fresh', buy: 11000, sell: 18000, color: 0xe9d8b4, unlock: 68 },
   // GĐ1408: Cà phê phin sữa — lối ra ĐẦU TIÊN của cà phê xay nguyên chất: mẻ (cà phê xay 150k + sữa đặc 22k) = 172k → 25 ly × 12k = 300k.
@@ -914,6 +924,26 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_ca_vien_chien_mam', name: 'Cá viên chiên nước mắm', station: 'fryer',
     inputs: [{ productId: 'x_ca_vien', quantity: 1 }],
     outputId: 'ca_vien_chien_mam', outputQty: 6, durationMin: 10, unlock: 35, reputationGain: 2 },
+  // GĐ1428: Nước ép táo ở máy xay. Mở 35 (> golden 30, ≥ cấp nguyên liệu).
+  { id: 'recipe_nuoc_ep_tao', name: 'Nước ép táo', station: 'blender',
+    inputs: [{ productId: 'x_tao', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
+    outputId: 'nuoc_ep_tao', outputQty: 5, durationMin: 6, unlock: 35, reputationGain: 1 },
+  // GĐ1428: Sinh tố na ở máy xay. Mở 35 (> golden 30, ≥ cấp nguyên liệu).
+  { id: 'recipe_sinh_to_na', name: 'Sinh tố na', station: 'blender',
+    inputs: [{ productId: 'x_na', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
+    outputId: 'sinh_to_na', outputQty: 5, durationMin: 6, unlock: 35, reputationGain: 1 },
+  // GĐ1428: Nước măng cụt dầm ở máy xay. Mở 35 (> golden 30, ≥ cấp nguyên liệu).
+  { id: 'recipe_nuoc_mang_cut', name: 'Nước măng cụt dầm', station: 'blender',
+    inputs: [{ productId: 'x_mang_cut', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
+    outputId: 'nuoc_mang_cut', outputQty: 6, durationMin: 6, unlock: 35, reputationGain: 1 },
+  // GĐ1428: Nước ép nho xanh ở máy xay. Mở 35 (> golden 30, ≥ cấp nguyên liệu).
+  { id: 'recipe_nuoc_ep_nho_xanh', name: 'Nước ép nho xanh', station: 'blender',
+    inputs: [{ productId: 'x_nho_xanh', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
+    outputId: 'nuoc_ep_nho_xanh', outputQty: 7, durationMin: 6, unlock: 35, reputationGain: 1 },
+  // GĐ1428: Chôm chôm dầm đá ở máy xay. Mở 35 (> golden 30, ≥ cấp nguyên liệu).
+  { id: 'recipe_nuoc_chom_chom', name: 'Chôm chôm dầm đá', station: 'blender',
+    inputs: [{ productId: 'x_chom_chom', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
+    outputId: 'nuoc_chom_chom', outputQty: 5, durationMin: 6, unlock: 35, reputationGain: 1 },
   // GĐ1409: Sữa chua granola ở máy xay: lãi dương, hời hơn bán thẳng nguyên liệu. Mở 68 = cấp granola (> golden 30).
   { id: 'recipe_sua_chua_granola', name: 'Sữa chua granola', station: 'blender',
     inputs: [{ productId: 'ngu_coc', quantity: 1 }, { productId: 'suachua', quantity: 1 }],
