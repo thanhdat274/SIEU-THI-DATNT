@@ -424,6 +424,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'suachua_chanh_day', name: 'Sữa chua chanh dây', category: 'cold', buy: 7000, sell: 11000, color: 0xf7d774, unlock: 42 },
   // GĐ1443: Chè vải tươi hạt sen — lối ra ĐẦU TIÊN của vải thiều vườn nhà.
   { id: 'che_vai_tuoi', name: 'Chè vải tươi hạt sen', category: 'fresh', buy: 8000, sell: 13000, color: 0xf3e0e8, unlock: 43 },
+  // GĐ1444: Bánh mì giò thủ — lối ra ĐẦU TIÊN của giò thủ bà Tám.
+  { id: 'banh_mi_gio_thu', name: 'Bánh mì giò thủ', category: 'fresh', buy: 13000, sell: 22000, color: 0xd9b07a, unlock: 48 },
   // GĐ1409: Sữa chua granola — lối ra ĐẦU TIÊN của ngũ cốc granola: mẻ (granola 130k + sữa chua) → 14 cốc × 18k = 252k.
   { id: 'sua_chua_granola', name: 'Sữa chua granola', category: 'fresh', buy: 11000, sell: 18000, color: 0xe9d8b4, unlock: 68 },
   // GĐ1408: Cà phê phin sữa — lối ra ĐẦU TIÊN của cà phê xay nguyên chất: mẻ (cà phê xay 150k + sữa đặc 22k) = 172k → 25 ly × 12k = 300k.
@@ -1106,6 +1108,10 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_che_vai_tuoi', name: 'Chè vải tươi hạt sen', station: 'hot_kettle',
     inputs: [{ productId: 'x_vai', quantity: 2 }, { productId: 'x_duong', quantity: 1 }],
     outputId: 'che_vai_tuoi', outputQty: 8, durationMin: 15, unlock: 43, reputationGain: 2 },
+  // GĐ1444: Bánh mì giò thủ ở bếp nướng. Mở 48 (> golden 30, ≥ cấp nguyên liệu).
+  { id: 'recipe_banh_mi_gio_thu', name: 'Bánh mì giò thủ', station: 'food_grill',
+    inputs: [{ productId: 'banhmi', quantity: 6 }, { productId: 'hx_gio_thu', quantity: 1 }],
+    outputId: 'banh_mi_gio_thu', outputQty: 12, durationMin: 10, unlock: 48, reputationGain: 3 },
   // GĐ1409: Sữa chua granola ở máy xay: lãi dương, hời hơn bán thẳng nguyên liệu. Mở 68 = cấp granola (> golden 30).
   { id: 'recipe_sua_chua_granola', name: 'Sữa chua granola', station: 'blender',
     inputs: [{ productId: 'ngu_coc', quantity: 1 }, { productId: 'suachua', quantity: 1 }],
