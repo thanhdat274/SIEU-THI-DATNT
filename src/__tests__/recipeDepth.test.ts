@@ -1790,6 +1790,28 @@ describe('GĐ1391 — cháo lòng (món sáng Sài Gòn, ấm nước)', () => {
   });
 });
 
+/** GĐ1401 — Mì ý sốt thịt bằm: lối ra đầu tiên của mì ý (bếp nồi nấu). */
+describe('GĐ1401 — mì ý sốt thịt bằm (bếp nồi nấu)', () => {
+  const recipe = RECIPE_MAP['recipe_mi_y_sot_bo'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm bếp nồi nấu và dùng mì ý', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'mi_y_sot_bo')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'mi_y_sot_bo').length).toBe(1);
+    expect(recipe.station).toBe('hot_kettle');
+    expect(recipe.inputs.some((i) => i.productId === 'miy')).toBe(true);
+  });
+});
+
 /** GĐ1400 — Sinh tố dưa hấu: lối ra đầu tiên của dưa hấu (máy xay). */
 describe('GĐ1400 — sinh tố dưa hấu (máy xay)', () => {
   const recipe = RECIPE_MAP['recipe_sinh_to_dua_hau'];

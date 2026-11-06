@@ -260,6 +260,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   // GĐ1390: Gỏi cuốn — món ăn lành trứ danh (bánh tráng gói tôm luộc):
   // mẻ (bánh tráng 5k×2 + tôm đông lạnh 90k) = 100k → 12 cuốn × 14k = 168k, lãi 68k/mẻ.
   { id: 'goi_cuon', name: 'Gỏi cuốn', category: 'fresh', buy: 8500, sell: 14000, color: 0xa8d8b9, unlock: 44 },
+  // GĐ1401: Mì ý sốt thịt bằm — lối ra ĐẦU TIÊN của mì ý: mẻ (mì ý 22k + thịt heo 30k) = 52k → 8 dĩa × 15k = 120k.
+  { id: 'mi_y_sot_bo', name: 'Mì ý sốt thịt bằm', category: 'fresh', buy: 9000, sell: 15000, color: 0xc0392b, unlock: 36 },
   // GĐ1400: Sinh tố dưa hấu — lối ra ĐẦU TIÊN của dưa hấu: mẻ (dưa 30k) = 30k → 10 ly × 8k = 80k.
   { id: 'sinh_to_dua_hau', name: 'Sinh tố dưa hấu', category: 'drink', buy: 5000, sell: 8000, color: 0xff6b81, unlock: 32 },
   // GĐ1399: Tương ớt nhà làm — lối ra ĐẦU TIÊN của ớt tươi: mẻ (ớt 20k + gia vị 8k) = 28k → 8 hũ × 6k = 48k.
@@ -600,6 +602,10 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_goi_cuon', name: 'Gỏi cuốn', station: 'hot_kettle',
     inputs: [{ productId: 'banhtrang', quantity: 2 }, { productId: 'hai_san', quantity: 1 }],
     outputId: 'goi_cuon', outputQty: 12, durationMin: 15, unlock: 44, reputationGain: 2 },
+  // GĐ1401: Mì ý sốt thịt bằm ở bếp nồi nấu: mẻ 52k → 120k, lãi 68k/mẻ, hời hơn bán thẳng (70k < 120k). Mở 36 ≥ 12/30 (> golden 30).
+  { id: 'recipe_mi_y_sot_bo', name: 'Mì ý sốt thịt bằm', station: 'hot_kettle',
+    inputs: [{ productId: 'miy', quantity: 1 }, { productId: 'x_thit_heo', quantity: 1 }],
+    outputId: 'mi_y_sot_bo', outputQty: 8, durationMin: 18, unlock: 36, reputationGain: 3 },
   // GĐ1400: Sinh tố dưa hấu ở máy xay: mẻ 30k → 80k, lãi 50k/mẻ, hời hơn bán thẳng (45k < 80k). Mở 32 ≥ dưa 29 (> golden 30).
   { id: 'recipe_sinh_to_dua_hau', name: 'Sinh tố dưa hấu', station: 'blender',
     inputs: [{ productId: 'dua', quantity: 1 }],
