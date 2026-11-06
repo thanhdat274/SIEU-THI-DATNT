@@ -306,6 +306,14 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'ca_basa_chien_gion', name: 'Cá basa chiên giòn', category: 'fresh', buy: 9000, sell: 15000, color: 0xe0b070, unlock: 35 },
   // GĐ1421: Pizza nướng nóng (miếng) — lối ra ĐẦU TIÊN của pizza đông lạnh.
   { id: 'pizza_nuong_nong', name: 'Pizza nướng nóng (miếng)', category: 'fresh', buy: 5000, sell: 9000, color: 0xd8573a, unlock: 35 },
+  // GĐ1422: Mực khoanh chiên giòn — lối ra ĐẦU TIÊN của mực khoanh đông lạnh.
+  { id: 'muc_khoanh_chien', name: 'Mực khoanh chiên giòn', category: 'fresh', buy: 6000, sell: 9000, color: 0xe8c890, unlock: 35 },
+  // GĐ1422: Cánh gà nướng — lối ra ĐẦU TIÊN của cánh gà đông lạnh.
+  { id: 'canh_ga_nuong_mat', name: 'Cánh gà nướng', category: 'fresh', buy: 6000, sell: 9000, color: 0xb8602a, unlock: 35 },
+  // GĐ1422: Chả cá thác lác chiên — lối ra ĐẦU TIÊN của chả cá thác lác.
+  { id: 'cha_ca_thac_lac_chien', name: 'Chả cá thác lác chiên', category: 'fresh', buy: 6000, sell: 9000, color: 0xd8b070, unlock: 35 },
+  // GĐ1422: Cá hồi phi lê nướng — lối ra ĐẦU TIÊN của cá hồi phi lê.
+  { id: 'ca_hoi_phi_le_nuong', name: 'Cá hồi phi lê nướng', category: 'fresh', buy: 13000, sell: 20000, color: 0xf08a5d, unlock: 45 },
   // GĐ1409: Sữa chua granola — lối ra ĐẦU TIÊN của ngũ cốc granola: mẻ (granola 130k + sữa chua) → 14 cốc × 18k = 252k.
   { id: 'sua_chua_granola', name: 'Sữa chua granola', category: 'fresh', buy: 11000, sell: 18000, color: 0xe9d8b4, unlock: 68 },
   // GĐ1408: Cà phê phin sữa — lối ra ĐẦU TIÊN của cà phê xay nguyên chất: mẻ (cà phê xay 150k + sữa đặc 22k) = 172k → 25 ly × 12k = 300k.
@@ -752,6 +760,22 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_pizza_nuong_nong', name: 'Pizza nướng nóng (miếng)', station: 'food_grill',
     inputs: [{ productId: 'x_pizza_dong_lanh', quantity: 1 }],
     outputId: 'pizza_nuong_nong', outputQty: 6, durationMin: 8, unlock: 35, reputationGain: 1 },
+  // GĐ1422: Mực khoanh chiên giòn ở chảo chiên. Mở 35 (> golden 30, ≥ cấp nguyên liệu).
+  { id: 'recipe_muc_khoanh_chien', name: 'Mực khoanh chiên giòn', station: 'fryer',
+    inputs: [{ productId: 'x_muc_khoanh_dong_lanh', quantity: 1 }],
+    outputId: 'muc_khoanh_chien', outputQty: 6, durationMin: 8, unlock: 35, reputationGain: 1 },
+  // GĐ1422: Cánh gà nướng ở bếp nướng. Mở 35 (> golden 30, ≥ cấp nguyên liệu).
+  { id: 'recipe_canh_ga_nuong_mat', name: 'Cánh gà nướng', station: 'food_grill',
+    inputs: [{ productId: 'x_canh_ga', quantity: 1 }],
+    outputId: 'canh_ga_nuong_mat', outputQty: 8, durationMin: 12, unlock: 35, reputationGain: 2 },
+  // GĐ1422: Chả cá thác lác chiên ở chảo chiên. Mở 35 (> golden 30, ≥ cấp nguyên liệu).
+  { id: 'recipe_cha_ca_thac_lac_chien', name: 'Chả cá thác lác chiên', station: 'fryer',
+    inputs: [{ productId: 'x_cha_ca_thac_lat', quantity: 1 }],
+    outputId: 'cha_ca_thac_lac_chien', outputQty: 6, durationMin: 8, unlock: 35, reputationGain: 1 },
+  // GĐ1422: Cá hồi phi lê nướng ở bếp nướng. Mở 45 (> golden 30, ≥ cấp nguyên liệu).
+  { id: 'recipe_ca_hoi_phi_le_nuong', name: 'Cá hồi phi lê nướng', station: 'food_grill',
+    inputs: [{ productId: 'x_ca_hoi_tuoi', quantity: 1 }],
+    outputId: 'ca_hoi_phi_le_nuong', outputQty: 6, durationMin: 12, unlock: 45, reputationGain: 3 },
   // GĐ1409: Sữa chua granola ở máy xay: lãi dương, hời hơn bán thẳng nguyên liệu. Mở 68 = cấp granola (> golden 30).
   { id: 'recipe_sua_chua_granola', name: 'Sữa chua granola', station: 'blender',
     inputs: [{ productId: 'ngu_coc', quantity: 1 }, { productId: 'suachua', quantity: 1 }],
