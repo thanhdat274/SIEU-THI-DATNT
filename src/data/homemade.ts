@@ -24,6 +24,8 @@ export const HOMEMADE_PRODUCTS: { id: string; name: string; category: Category; 
   { id: 'hx_cha_bong', name: 'Chà bông heo nhà làm (hũ)', category: 'dry', buy: 55000, sell: 85000, color: 0xc89058, unlock: 46 },
   // GĐ1445: chanh muối hũ (hướng 3) — sell ≥50k, biên 36%, mở 40; lối ra: Nước chanh muối ở quán nước.
   { id: 'hx_chanh_muoi', name: 'Chanh muối nhà làm (hũ)', category: 'dry', buy: 32000, sell: 50000, color: 0xd9c94a, unlock: 40 },
+  // GĐ1483: tôm khô nhà phơi (hướng 3) — sell ≥50k, biên ~36% (bất biến GĐ1083), mở 52 > golden 30; lối ra: Cháo tôm khô (nồi nước).
+  { id: 'hx_tom_kho', name: 'Tôm khô nhà phơi (gói)', category: 'dry', buy: 58000, sell: 90000, color: 0xe0703a, unlock: 52 },
 ];
 
 /**
