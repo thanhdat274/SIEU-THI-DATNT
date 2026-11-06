@@ -103,6 +103,9 @@ describe('GĐ1139 — farmVsDrinks lọc theo thực đơn quán (không tư v�
 
   it('homegrownImpact nhận menu: vải với menu tra_vai > 0, với menu khác → chỉ còn lãi bếp (nếu có) hoặc -Inf', () => {
     expect(homegrownImpact('x_vai', ['tra_vai'])).toBeGreaterThan(0);
-    expect(homegrownImpact('x_vai', ['sinh_to_oi'])).toBe(-Infinity); // vải không vào bếp nào
+    // GĐ1443: vải đã có lối ra bếp (Chè vải tươi) — menu không có món vải thì chỉ còn lãi bếp, hữu hạn và không vượt lãi quán
+    const kitchenOnly = homegrownImpact('x_vai', ['sinh_to_oi']);
+    expect(Number.isFinite(kitchenOnly)).toBe(true);
+    expect(kitchenOnly).toBeLessThanOrEqual(homegrownImpact('x_vai', ['tra_vai']));
   });
 });

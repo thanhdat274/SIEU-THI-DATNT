@@ -3638,6 +3638,28 @@ describe('GĐ1442 — sữa chua chanh dây (máy xay)', () => {
   });
 });
 
+/** GĐ1443 — Chè vải tươi hạt sen: lối ra đầu tiên của vải thiều vườn nhà (bếp nồi). */
+describe('GĐ1443 — chè vải tươi hạt sen (bếp nồi)', () => {
+  const recipe = RECIPE_MAP['recipe_che_vai_tuoi'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm bếp nồi và dùng vải thiều vườn nhà', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'che_vai_tuoi')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'che_vai_tuoi').length).toBe(1);
+    expect(recipe.station).toBe('hot_kettle');
+    expect(recipe.inputs.some((i) => i.productId === 'x_vai')).toBe(true);
+  });
+});
+
 /** GĐ1405 — Sữa hạt điều: lối ra đầu tiên của hạt điều rang muối (máy xay). */
 describe('GĐ1405 — sữa hạt điều (máy xay)', () => {
   const recipe = RECIPE_MAP['recipe_sua_hat_dieu'];

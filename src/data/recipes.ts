@@ -422,6 +422,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'tom_sot_chanh_day', name: 'Tôm sốt chanh dây', category: 'fresh', buy: 24000, sell: 38000, color: 0xf0a830, unlock: 47 },
   // GĐ1442: Sữa chua chanh dây — lối ra ĐẦU TIÊN của chanh dây vườn nhà.
   { id: 'suachua_chanh_day', name: 'Sữa chua chanh dây', category: 'cold', buy: 7000, sell: 11000, color: 0xf7d774, unlock: 42 },
+  // GĐ1443: Chè vải tươi hạt sen — lối ra ĐẦU TIÊN của vải thiều vườn nhà.
+  { id: 'che_vai_tuoi', name: 'Chè vải tươi hạt sen', category: 'fresh', buy: 8000, sell: 13000, color: 0xf3e0e8, unlock: 43 },
   // GĐ1409: Sữa chua granola — lối ra ĐẦU TIÊN của ngũ cốc granola: mẻ (granola 130k + sữa chua) → 14 cốc × 18k = 252k.
   { id: 'sua_chua_granola', name: 'Sữa chua granola', category: 'fresh', buy: 11000, sell: 18000, color: 0xe9d8b4, unlock: 68 },
   // GĐ1408: Cà phê phin sữa — lối ra ĐẦU TIÊN của cà phê xay nguyên chất: mẻ (cà phê xay 150k + sữa đặc 22k) = 172k → 25 ly × 12k = 300k.
@@ -1100,6 +1102,10 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_suachua_chanh_day', name: 'Sữa chua chanh dây', station: 'blender',
     inputs: [{ productId: 'suachua', quantity: 6 }, { productId: 'x_chanh_day', quantity: 2 }],
     outputId: 'suachua_chanh_day', outputQty: 10, durationMin: 8, unlock: 42, reputationGain: 2 },
+  // GĐ1443: Chè vải tươi hạt sen ở bếp nồi. Mở 43 (> golden 30, ≥ cấp nguyên liệu).
+  { id: 'recipe_che_vai_tuoi', name: 'Chè vải tươi hạt sen', station: 'hot_kettle',
+    inputs: [{ productId: 'x_vai', quantity: 2 }, { productId: 'x_duong', quantity: 1 }],
+    outputId: 'che_vai_tuoi', outputQty: 8, durationMin: 15, unlock: 43, reputationGain: 2 },
   // GĐ1409: Sữa chua granola ở máy xay: lãi dương, hời hơn bán thẳng nguyên liệu. Mở 68 = cấp granola (> golden 30).
   { id: 'recipe_sua_chua_granola', name: 'Sữa chua granola', station: 'blender',
     inputs: [{ productId: 'ngu_coc', quantity: 1 }, { productId: 'suachua', quantity: 1 }],
