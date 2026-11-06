@@ -6,6 +6,7 @@ import { kitchenValue } from '../../data/kitchenValue';
 import { cookAdvice } from '../../data/cookSchedule';
 import { expiringSoon, expiryInputsNote, newUnlockMark } from '../../data/advice';
 import { supplyOutletOf } from '../../data/supplyOutlet';
+import { splitLockedRecipes } from '../../data/cookList';
 import { cookSpeed, bartenderBoost } from '../../core/slices/orders';
 import { FESTIVALS, festivalOn } from '../../data/calendar';
 import { Footer, styles, Tabs } from './shared';
@@ -67,7 +68,8 @@ export function CookPanel() {
       {STATIONS.filter((st) => station === 'all' || st.id === station).map((st) => {
         const own = stationCount(st.id);
         const busy = busyAt(st.id);
-        const recipes = RECIPES.filter((r) => r.station === st.id).sort((a, b) => a.unlock - b.unlock);
+        // GĐ1433: chỉ hiện món đã mở + 1 món khóa gần nhất; khóa xa gộp thành một dòng
+        const { visible: recipes, hiddenCount, nextHiddenUnlock } = splitLockedRecipes(RECIPES.filter((r) => r.station === st.id), level);
         return (
           <div key={st.id} style={{ marginBottom: 12 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '4px 0' }}>
@@ -147,6 +149,9 @@ export function CookPanel() {
                   </div>
                 );
               })}
+              {hiddenCount > 0 && (
+                <div style={{ fontSize: 12, opacity: 0.6 }}>🔒 +{hiddenCount} món nữa mở dần từ cấp {nextHiddenUnlock}</div>
+              )}
             </div>
           </div>
         );
