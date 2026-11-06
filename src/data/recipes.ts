@@ -394,6 +394,16 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'ga_xao_hanh_tay', name: 'Gà xào hành tây', category: 'fresh', buy: 5000, sell: 9000, color: 0xd8b080, unlock: 35 },
   // GĐ1430: Nấm kim châm xào ớt chuông — lối ra ĐẦU TIÊN của nấm kim châm.
   { id: 'nam_kim_cham_ot_chuong', name: 'Nấm kim châm xào ớt chuông', category: 'fresh', buy: 5000, sell: 9000, color: 0xe86040, unlock: 35 },
+  // GĐ1431: Rau củ thập cẩm xào — lối ra ĐẦU TIÊN của rau củ đông lạnh.
+  { id: 'rau_cu_thap_cam_xao', name: 'Rau củ thập cẩm xào', category: 'fresh', buy: 5000, sell: 9000, color: 0x8ac050, unlock: 35 },
+  // GĐ1431: Sinh tố thanh long trắng — lối ra ĐẦU TIÊN của thanh long ruột trắng.
+  { id: 'sinh_to_thanh_long_trang', name: 'Sinh tố thanh long trắng', category: 'drink', buy: 7000, sell: 12000, color: 0xf0f0e8, unlock: 35 },
+  // GĐ1431: Bánh mì kẹp xà lách — lối ra ĐẦU TIÊN của xà lách.
+  { id: 'banh_mi_kep_xa_lach', name: 'Bánh mì kẹp xà lách', category: 'fresh', buy: 6000, sell: 10000, color: 0xb8d080, unlock: 35 },
+  // GĐ1431: Sinh tố kem hộp — lối ra ĐẦU TIÊN của kem hộp.
+  { id: 'sinh_to_kem_hop', name: 'Sinh tố kem hộp', category: 'drink', buy: 7000, sell: 12000, color: 0xf8e8d8, unlock: 35 },
+  // GĐ1431: Cơm nắm nướng — lối ra ĐẦU TIÊN của cơm nắm.
+  { id: 'com_nam_nuong', name: 'Cơm nắm nướng', category: 'fresh', buy: 5000, sell: 9000, color: 0xd8b878, unlock: 35 },
   // GĐ1409: Sữa chua granola — lối ra ĐẦU TIÊN của ngũ cốc granola: mẻ (granola 130k + sữa chua) → 14 cốc × 18k = 252k.
   { id: 'sua_chua_granola', name: 'Sữa chua granola', category: 'fresh', buy: 11000, sell: 18000, color: 0xe9d8b4, unlock: 68 },
   // GĐ1408: Cà phê phin sữa — lối ra ĐẦU TIÊN của cà phê xay nguyên chất: mẻ (cà phê xay 150k + sữa đặc 22k) = 172k → 25 ly × 12k = 300k.
@@ -1016,6 +1026,26 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_nam_kim_cham_ot_chuong', name: 'Nấm kim châm xào ớt chuông', station: 'fryer',
     inputs: [{ productId: 'x_nam_kim_cham', quantity: 1 }, { productId: 'x_ot_chuong', quantity: 1 }],
     outputId: 'nam_kim_cham_ot_chuong', outputQty: 4, durationMin: 8, unlock: 35, reputationGain: 1 },
+  // GĐ1431: Rau củ thập cẩm xào ở chảo chiên. Mở 35 (> golden 30, ≥ cấp nguyên liệu).
+  { id: 'recipe_rau_cu_thap_cam_xao', name: 'Rau củ thập cẩm xào', station: 'fryer',
+    inputs: [{ productId: 'x_rau_cu_dong_lanh', quantity: 1 }, { productId: 'x_bap_non_dong_lanh', quantity: 1 }],
+    outputId: 'rau_cu_thap_cam_xao', outputQty: 5, durationMin: 8, unlock: 35, reputationGain: 1 },
+  // GĐ1431: Sinh tố thanh long trắng ở máy xay. Mở 35 (> golden 30, ≥ cấp nguyên liệu).
+  { id: 'recipe_sinh_to_thanh_long_trang', name: 'Sinh tố thanh long trắng', station: 'blender',
+    inputs: [{ productId: 'x_thanh_long_trang', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
+    outputId: 'sinh_to_thanh_long_trang', outputQty: 4, durationMin: 8, unlock: 35, reputationGain: 1 },
+  // GĐ1431: Bánh mì kẹp xà lách ở bếp nướng. Mở 35 (> golden 30, ≥ cấp nguyên liệu).
+  { id: 'recipe_banh_mi_kep_xa_lach', name: 'Bánh mì kẹp xà lách', station: 'food_grill',
+    inputs: [{ productId: 'x_banh_mi', quantity: 4 }, { productId: 'x_xa_lach', quantity: 1 }],
+    outputId: 'banh_mi_kep_xa_lach', outputQty: 4, durationMin: 8, unlock: 35, reputationGain: 1 },
+  // GĐ1431: Sinh tố kem hộp ở máy xay. Mở 35 (> golden 30, ≥ cấp nguyên liệu).
+  { id: 'recipe_sinh_to_kem_hop', name: 'Sinh tố kem hộp', station: 'blender',
+    inputs: [{ productId: 'x_kem_hop', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
+    outputId: 'sinh_to_kem_hop', outputQty: 7, durationMin: 8, unlock: 35, reputationGain: 1 },
+  // GĐ1431: Cơm nắm nướng ở bếp nướng. Mở 35 (> golden 30, ≥ cấp nguyên liệu).
+  { id: 'recipe_com_nam_nuong', name: 'Cơm nắm nướng', station: 'food_grill',
+    inputs: [{ productId: 'x_com_nam', quantity: 1 }],
+    outputId: 'com_nam_nuong', outputQty: 2, durationMin: 8, unlock: 35, reputationGain: 1 },
   // GĐ1409: Sữa chua granola ở máy xay: lãi dương, hời hơn bán thẳng nguyên liệu. Mở 68 = cấp granola (> golden 30).
   { id: 'recipe_sua_chua_granola', name: 'Sữa chua granola', station: 'blender',
     inputs: [{ productId: 'ngu_coc', quantity: 1 }, { productId: 'suachua', quantity: 1 }],

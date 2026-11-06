@@ -3330,6 +3330,116 @@ describe('GĐ1430 — nấm kim châm xào ớt chuông (chảo chiên)', () => 
   });
 });
 
+/** GĐ1431 — Rau củ thập cẩm xào: lối ra đầu tiên của rau củ đông lạnh (chảo chiên). */
+describe('GĐ1431 — rau củ thập cẩm xào (chảo chiên)', () => {
+  const recipe = RECIPE_MAP['recipe_rau_cu_thap_cam_xao'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm chảo chiên và dùng rau củ đông lạnh', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'rau_cu_thap_cam_xao')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'rau_cu_thap_cam_xao').length).toBe(1);
+    expect(recipe.station).toBe('fryer');
+    expect(recipe.inputs.some((i) => i.productId === 'x_rau_cu_dong_lanh')).toBe(true);
+  });
+});
+
+/** GĐ1431 — Sinh tố thanh long trắng: lối ra đầu tiên của thanh long ruột trắng (máy xay). */
+describe('GĐ1431 — sinh tố thanh long trắng (máy xay)', () => {
+  const recipe = RECIPE_MAP['recipe_sinh_to_thanh_long_trang'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm máy xay và dùng thanh long ruột trắng', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'sinh_to_thanh_long_trang')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'sinh_to_thanh_long_trang').length).toBe(1);
+    expect(recipe.station).toBe('blender');
+    expect(recipe.inputs.some((i) => i.productId === 'x_thanh_long_trang')).toBe(true);
+  });
+});
+
+/** GĐ1431 — Bánh mì kẹp xà lách: lối ra đầu tiên của xà lách (bếp nướng). */
+describe('GĐ1431 — bánh mì kẹp xà lách (bếp nướng)', () => {
+  const recipe = RECIPE_MAP['recipe_banh_mi_kep_xa_lach'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm bếp nướng và dùng xà lách', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'banh_mi_kep_xa_lach')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'banh_mi_kep_xa_lach').length).toBe(1);
+    expect(recipe.station).toBe('food_grill');
+    expect(recipe.inputs.some((i) => i.productId === 'x_xa_lach')).toBe(true);
+  });
+});
+
+/** GĐ1431 — Sinh tố kem hộp: lối ra đầu tiên của kem hộp (máy xay). */
+describe('GĐ1431 — sinh tố kem hộp (máy xay)', () => {
+  const recipe = RECIPE_MAP['recipe_sinh_to_kem_hop'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm máy xay và dùng kem hộp', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'sinh_to_kem_hop')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'sinh_to_kem_hop').length).toBe(1);
+    expect(recipe.station).toBe('blender');
+    expect(recipe.inputs.some((i) => i.productId === 'x_kem_hop')).toBe(true);
+  });
+});
+
+/** GĐ1431 — Cơm nắm nướng: lối ra đầu tiên của cơm nắm (bếp nướng). */
+describe('GĐ1431 — cơm nắm nướng (bếp nướng)', () => {
+  const recipe = RECIPE_MAP['recipe_com_nam_nuong'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm bếp nướng và dùng cơm nắm', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'com_nam_nuong')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'com_nam_nuong').length).toBe(1);
+    expect(recipe.station).toBe('food_grill');
+    expect(recipe.inputs.some((i) => i.productId === 'x_com_nam')).toBe(true);
+  });
+});
+
 /** GĐ1405 — Sữa hạt điều: lối ra đầu tiên của hạt điều rang muối (máy xay). */
 describe('GĐ1405 — sữa hạt điều (máy xay)', () => {
   const recipe = RECIPE_MAP['recipe_sua_hat_dieu'];
