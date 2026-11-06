@@ -89,7 +89,7 @@
   - **P0 M1:** FPS 21–22 ở mức Thấp, save cấp 29 (9 nhân viên, 9 kệ) — đo lại trên Chrome thật; nếu vẫn <30 thì sửa bộ tự hạ (Luật 8).
   - **P0 M4:** 4–5 thẻ sự kiện chồng nhau che >50% màn điện thoại → tối đa 1–2 thẻ, còn lại xếp hàng chờ; thẻ lễ hội rút "hàng hút" còn 3–4 món (Luật 9).
   - **P1 M3:** cảnh báo hết hạn lặp tên ("Diêm, bật lửa" ×4) và lặp số tiền; xem lại hạn dùng diêm/bật lửa.
-  - **P1 M5:** menu Thêm có 2 tiêu đề "NHÂN SỰ & KHÁCH"; huy hiệu đè lên dòng tiêu đề.
+  - ✅ **P1 M5 (nửa đầu ĐÃ SỬA, test groupTools):** menu Thêm gom nhóm → mỗi tiêu đề 1 lần. Còn: huy hiệu đè dòng tiêu đề (cần soi CSS trên máy thật).
   - **P1 M7:** màn ngang 812×375: HUD + băng thông tin chiếm ~80% chiều cao → thu băng thông tin còn 1 dòng.
   - **P1 A1:** thêm ▲▼ hoặc +/− cạnh số lãi/lỗ (người mù màu đỏ-lục).
   - ✅ **P1 (đã rà):** "vẫn lời −38.400đ" không tái hiện — VendorAlert.tsx:42 chỉ in "vẫn lời" khi rush.net > 0, lỗ thì in "không còn lời".
