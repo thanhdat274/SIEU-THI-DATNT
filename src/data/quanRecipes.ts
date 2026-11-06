@@ -34,6 +34,8 @@ export const QUAN_RECIPES: QuanRecipe[] = [
   { id: 'tra_vai', name: 'Trà vải', icon: '🍒', unlock: 34, price: 20_000, uses: [{ id: 'x_vai', cups: 4 }, { id: 'tra', cups: 40 }, { id: 'x_duong', cups: 30 }, { id: 'x_nuoc_da', cups: 10 }] },
   // GĐ1445: lối ra quán nước cho chanh muối hàng xóm
   { id: 'chanh_muoi_da', name: 'Nước chanh muối', icon: '🍋', unlock: 40, price: 18_000, uses: [{ id: 'hx_chanh_muoi', cups: 12 }, { id: 'x_duong', cups: 30 }, { id: 'x_nuoc_da', cups: 10 }] },
+  // GĐ1446: Đá me — lối ra quán nước cho me dầm bà Tám
+  { id: 'da_me', name: 'Đá me', icon: '🟤', unlock: 42, price: 17_000, uses: [{ id: 'hx_me_dam', cups: 10 }, { id: 'x_nuoc_da', cups: 10 }] },
   // GĐ1329: Trà nhãn — món quán nước của nhãn nông trại (x_nhan mở cấp 30 nhưng chưa có lối ra pha), pha đá
   // ngọt dịu, khép chuỗi trồng → pha → bán như trà vải GĐ1090. Giá vốn/ly = 24k/4 + 20k/40 + 17k/30 + 3k/10
   // = 7.4k → bán 22k (lời >2× vốn). Mở 31 > mốc golden 30 → sim không đổi; KHÔNG hot (giữ đếm đồ nóng = 3).
