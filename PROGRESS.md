@@ -108,3 +108,4 @@
 - GĐ1409 (Sữa chua granola — lối ra đầu tiên của ngũ cốc granola ở máy xay): 14 cốc×18k, unlock 68. Dời GĐ1395–1401 sang archive. Full suite 503/4518 xanh.
 - GĐ1430 (đợt 10 u35: Há cảo hấp, Khoai tây tươi chiên, Bún chả lụa, Trứng vịt luộc, Gà xào hành tây, Nấm kim châm xào ớt chuông). 503/4719 xanh.
 - GĐ1431 (đợt 11 u35: Rau củ thập cẩm xào, Sinh tố thanh long trắng, Bánh mì kẹp xà lách, Sinh tố kem hộp, Cơm nắm nướng). Còn lại: rau thơm/gia vị (hành, rau mùi, dưa giá…) — Leader: giữ làm hàng bán lẻ, không ép món. 503/4734 xanh.
+- GĐ1432 (test khóa ingredientOutlet: mọi nguyên liệu tươi/thịt/mát/đông lạnh phải có lối ra bếp/quán hoặc nằm trong RETAIL_ONLY 8 mục). 504 file test.
