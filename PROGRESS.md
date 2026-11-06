@@ -131,3 +131,4 @@
 - GĐ1451: Bánh mì chả lụa bà Tám (u39, bếp nướng: 6 bánh mì + 1 chả lụa bà Tám → 12 ổ, bán 15k) — lối ra thứ 2 cho chả lụa bà Tám; test recipeDepth.
 - GĐ1452: Cá basa kho dưa muối (u33, bếp nồi: 1 basa + 2 dưa muối hàng xóm → 5 phần, bán 20k) — lối ra thứ 2 cho dưa muối. Thử u31 làm lệch simGolden cấp 30 → dời 33. longSessionLeak chập chờn khi chạy cả bộ (chạy riêng qua).
 - GĐ1453: Bánh bao lạp xưởng (u45, nồi hấp: 3 bột mì + 1 lạp xưởng bà Tám → 12 cái, bán 16k) — lối ra thứ 2 cho lạp xưởng; test recipeDepth.
+- GĐ1454: Thịt kho cà pháo (u33, bếp nồi: 1 thịt heo + 2 cà pháo muối → 4 phần, bán 18k) — lối ra thứ 2 cho cà pháo; test recipeDepth.
