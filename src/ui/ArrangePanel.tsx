@@ -13,12 +13,14 @@ const COLORS: Record<FurnitureType, string> = {
   shelf: '#a0703f', bigShelf: '#7f8c99', fridge: '#4aa3df', freezer: '#76c7e8', produce: '#5fa846', meat_counter: '#c0504d',
   checkout: '#c0504d', cartStation: '#8e7cc3', plant: '#3f9d5a', wall: '#c9bfa6',
   dining_table: '#b98a4e', chair: '#a9713c',
+  vending_drink: '#2980b9', scale_machine: '#95a5a6', claw_machine: '#c0392b',
   hot_kettle: '#d4ac0d', food_grill: '#e67e22', blender: '#fd79a8', drink_counter: '#6e2c00',
   fryer: '#f9ca24', sugarcane_press: '#00b894', rice_station: '#f5cba7', steamer: '#95a5a6', gift_wrap: '#c0392b',
 };
 const ICONS: Record<FurnitureType, string> = {
   shelf: '🗄️', bigShelf: '🏬', fridge: '🧊', freezer: '❄️', produce: '🥬', meat_counter: '🥩', checkout: '🧾', cartStation: '🛒', plant: '🪴', wall: '🧱',
   dining_table: '🍽️', chair: '🪑',
+  vending_drink: '🥤', scale_machine: '⚖️', claw_machine: '🧸',
   hot_kettle: '🍲', food_grill: '🔥', blender: '🍹', drink_counter: '☕',
   fryer: '🍳', sugarcane_press: '🥤', rice_station: '🍚', steamer: '♨️', gift_wrap: '🎁',
 };

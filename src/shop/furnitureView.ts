@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import type { Tier } from '../core/store';
 import { furnitureDef, isCookStation, type FurnitureType } from '../data/furniture';
+import { MACHINE_TYPES, type MachineId } from '../data/machines';
 import { STATIONS } from '../data/recipes';
 import { createCounter } from '../world/buildings';
 import { productParts } from '../render/productModels';
@@ -49,6 +50,7 @@ export class FurnitureView {
     else if (type === 'cartStation') this.buildCartStation();
     else if (type === 'dining_table') this.buildDiningTable();
     else if (type === 'chair') this.buildChair();
+    else if (type === 'vending_drink' || type === 'scale_machine' || type === 'claw_machine') this.buildMachine();
     else if (isCookStation(type)) this.buildCookStation();
     else if (type === 'freezer') this.buildChest(0xf4f6f7, 0.85, true);
     else if (type === 'produce') this.buildChest(0x8b5a2b, 0.75, false);
@@ -412,9 +414,61 @@ export class FurnitureView {
     this.group.add(wall);
   }
 
+  /** GĐ1493 — máy tự phục vụ: thân máy + mặt hiển thị/phiếu hướng ra trước, từng loại khác chi tiết. */
+  private buildMachine() {
+    const [w, d] = furnitureDef(this.type).size;
+    const body = new THREE.MeshStandardMaterial({ color: this.type === 'claw_machine' ? 0xc0392b : this.type === 'vending_drink' ? 0x2980b9 : 0xf5f6fa });
+    const shell = new THREE.Mesh(new THREE.BoxGeometry(w, 1.6, d), body);
+    shell.position.y = 0.8;
+    this.group.add(shell);
+    const face = new THREE.Mesh(
+      new THREE.BoxGeometry(w * 0.7, 0.7, 0.03),
+      new THREE.MeshStandardMaterial({ color: 0x22313f, emissive: 0x22313f, emissiveIntensity: 0.25 }),
+    );
+    face.position.set(0, 1.1, d / 2 + 0.015);
+    this.group.add(face);
+    switch (this.type) {
+      case 'vending_drink': {
+        // Hàng nước xếp sau cửa kính
+        for (const [x, y] of [[-0.2, 1.2], [0.02, 1.2], [0.24, 1.2], [-0.2, 0.95], [0.02, 0.95]]) {
+          const can = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.16, 10), new THREE.MeshStandardMaterial({ color: 0xf1c40f }));
+          can.position.set(x, y, d / 2 - 0.08);
+          this.group.add(can);
+        }
+        break;
+      }
+      case 'scale_machine': {
+        // Sàn cân nhô ra trước + cột màn hình
+        const pad = new THREE.Mesh(new THREE.BoxGeometry(w * 0.9, 0.06, d * 0.9), new THREE.MeshStandardMaterial({ color: 0x7f8c8d }));
+        pad.position.y = 0.03;
+        const post = new THREE.Mesh(new THREE.BoxGeometry(0.08, 1.0, 0.08), new THREE.MeshStandardMaterial({ color: 0x7f8c8d }));
+        post.position.set(w / 2 - 0.1, 0.5, -d / 2 + 0.1);
+        this.group.add(pad, post);
+        break;
+      }
+      case 'claw_machine': {
+        // Buồng kính + chồng thú bông bên trong
+        const glass = new THREE.Mesh(
+          new THREE.BoxGeometry(w * 0.75, 0.7, d * 0.6),
+          new THREE.MeshStandardMaterial({ color: 0xaee4ff, transparent: true, opacity: 0.3 }),
+        );
+        glass.position.set(0, 1.05, 0);
+        this.group.add(glass);
+        for (const [x, z] of [[-0.15, -0.05], [0.1, 0.08], [0.18, -0.1]]) {
+          const plush = new THREE.Mesh(new THREE.SphereGeometry(0.09, 10, 8), new THREE.MeshStandardMaterial({ color: 0xfd79a8 }));
+          plush.position.set(x, 0.86, z);
+          this.group.add(plush);
+        }
+        break;
+      }
+    }
+    const badge = makeBadgeSprite(MACHINE_TYPES[this.type as MachineId].icon, 0.5);
+    badge.position.y = 1.95;
+    this.group.add(badge);
+  }
+
   /** Vách ngăn lấy theo màu tường tiệm. */
-  setWallColor(color: number) {
-    this.group.traverse((o) => {
+  setWallColor(color: number) {    this.group.traverse((o) => {
       if (o instanceof THREE.Mesh && o.userData.paintable) (o.material as THREE.MeshStandardMaterial).color.setHex(color);
     });
   }

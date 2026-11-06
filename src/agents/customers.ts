@@ -57,6 +57,7 @@ import type { Counter, GroceryShop } from '../shop/groceryShop';
 import type { NavGrid } from '../world/navGrid';
 import { CoinPopFX } from '../render/fx/coinPop';
 import { DINE_UNLOCK, DINE_WAIT_SECONDS, EAT_SECONDS, dineTip, freeSeat, wantsDineIn, type SeatInfo } from '../data/dineIn';
+import { MACHINE_VISIT_CHANCE, MACHINE_USE_SECONDS, MACHINE_TYPES, freeMachine, isMachine, machineFee, type MachineId } from '../data/machines';
 import {
   Customer, FRANTIC_AT, IMPATIENT_AT, PATIENCE_MINUTES, SIDEWALK_Z, impatienceEmoji, patienceMultiplier, counterQueueScore, leastScore, reviewStars, type Deal,
 } from './customerEntity';
@@ -90,6 +91,8 @@ export class CustomerManager {
   private checkoutProgress = new Map<string, number>();
   /** GĐ1491 — ghế ăn đang bị khách chiếm (uid ghế); khách trả ghế khi ăn xong hoặc bỏ về. */
   private seatBusy = new Set<number>();
+  /** GĐ1493 — máy tự phục vụ đang có khách dùng (uid máy); mỗi máy 1 khách/lúc. */
+  private machineBusy = new Set<number>();
   private cashierSpeed: (counter: Counter) => number = () => 0;
   /** GĐ1253 — sao tay nghề thu ngân đang trực ở quầy (0 = không có); khách gặp thu ngân thì thu ngân tự quyết. */
   private dutyCashierSkill: (counter: Counter) => number = () => 0;
@@ -421,6 +424,30 @@ export class CustomerManager {
       playSfx('door');
       this.walk(c, this.shop.doorInside);
     });
+    // GĐ1493 — tiệm có máy tự phục vụ: 15% khách mới ghé chơi/thử một lượt rồi vẫn vào mua.
+    // Chỉ rút vòng quay khi tiệm CÓ máy — không máy thì chuỗi ngẫu nhiên sim giữ nguyên từng nhịp.
+    // Kẻ trộm lẻn vào việc, người bán rong vào lấy sỉ — không ai ghé máy.
+    if (!c.thief && !c.wholesale && s.furniture.some((f) => isMachine(f.type)) && simRng()() < MACHINE_VISIT_CHANCE) {
+      const machine = freeMachine(s.furniture, this.machineBusy);
+      if (machine) {
+        const machineUid = machine.uid;
+        const fee = machineFee(machine.type);
+        const icon = MACHINE_TYPES[machine.type as MachineId].icon;
+        this.machineBusy.add(machineUid);
+        c.plan.push(() => this.walk(c, this.shop.spotFor(machine)));
+        c.plan.push(() => {
+          c.pause = MACHINE_USE_SECONDS;
+          c.say(icon, 2.5);
+        });
+        c.plan.push(() => {
+          this.machineBusy.delete(machineUid);
+          if (fee > 0) {
+            earnService(undefined, fee);
+            this.coinFx.spawn(c.mesh.position, fee);
+          }
+        });
+      }
+    }
     if (station && withCart) {
       c.plan.push(() => this.walk(c, this.shop.spotFor(station)));
       c.plan.push(() => {
@@ -1037,6 +1064,7 @@ export class CustomerManager {
     this.queues.clear();
     this.checkoutProgress.clear();
     this.seatBusy.clear();
+    this.machineBusy.clear();
     this.regularsToday = [];
     this.friendsBurst = 0;
     this.festivalToday = false;
