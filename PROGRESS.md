@@ -128,3 +128,4 @@
 - GĐ1463–1481 (công thức cấp 59–77): docs/progress-archive/PROGRESS-GD1463-1481.md
 - GĐ1482: Cháo lạp xưởng (cấp 78, nồi nước: 2 gạo + 1 lạp xưởng → 14, bán 23k).
 - GĐ1483: Tôm khô nhà phơi (hàng xóm, cấp 52, 58k→90k) + lối ra Cháo tôm khô (cấp 79, nồi nước: 2 gạo + 1 tôm khô → 14, bán 22k).
+- GĐ1484: Măng khô nhà phơi (hàng xóm, cấp 53, 45k→70k) + Măng khô xào lạp xưởng (cấp 80, chảo chiên: 1 măng + 1 lạp xưởng → 8, bán 25k).
