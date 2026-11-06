@@ -26,7 +26,7 @@ import { pickProfession, PROFESSIONS, type ProfessionDef } from '../data/profess
 import { DEBT_PARTIAL_CHANCE, DEBT_PARTIAL_MIN, installmentNow, CREDIT_UNLOCK, repaysToday, wantsCredit, creditLeft, creditAskText } from '../data/credit';
 import { askQueuedPatience, ASK_MINUTES, CANDY_ANNOY, CHANGE_CHANCE, CHANGE_UNLOCK, CREDIT_REFUSE_FRIEND_LOSS, changeChoice, defaultCounterPolicy, HAGGLE_CHANCE, HAGGLE_CHANCE_REG, HAGGLE_MIN_TOTAL, HAGGLE_UNLOCK, haggleChoice, haggleCounterOff, haggleOff, haggleSettle, oddChange, pricematchSettle } from '../data/counterDeals';
 import { rollService, SERVICE_BUY_ALONG, type ServiceDef } from '../data/services';
-import { earnService } from '../core/biz';
+import { earnService, earnTip } from '../core/biz';
 import { paymentById, pickPayment } from '../data/payments';
 import { askAtCounter, askPending, clearAsk, expireAsk, answerAsk, askWallElapsed, useCounterAsk } from '../core/counterAsk';
 import { cashierRng } from '../core/rand';
@@ -56,7 +56,7 @@ import { OPENING_TRAFFIC } from '../data/community';
 import type { Counter, GroceryShop } from '../shop/groceryShop';
 import type { NavGrid } from '../world/navGrid';
 import { CoinPopFX } from '../render/fx/coinPop';
-import { DINE_UNLOCK, EAT_SECONDS, freeSeat, wantsDineIn } from '../data/dineIn';
+import { DINE_UNLOCK, DINE_WAIT_SECONDS, EAT_SECONDS, dineTip, freeSeat, wantsDineIn, type SeatInfo } from '../data/dineIn';
 import {
   Customer, FRANTIC_AT, IMPATIENT_AT, PATIENCE_MINUTES, SIDEWALK_Z, impatienceEmoji, patienceMultiplier, counterQueueScore, leastScore, reviewStars, type Deal,
 } from './customerEntity';
@@ -192,6 +192,8 @@ export class CustomerManager {
         c.say('👋', 2);
         this.vendorLeave(c);
       }
+      // GĐ1492 — khách chờ ghế ăn tại chỗ: đếm kiên nhẫn, ghế trống thì dẫn đi ngồi, quá mốc bỏ về
+      if (c.state === 'toSeat' && !c.seat) this.updateSeatWaiting(c, gameDt);
       if (c.state === 'queued') {
         c.waitedMinutes += gameMinutes;
         // GĐ119 — dấu hiệu "khách sốt ruột" dẫn dắt (chỉ hiển thị, không đụng state/kinh tế):
@@ -213,13 +215,14 @@ export class CustomerManager {
     // chỉ gộp mảng tại chỗ khi thật sự có người rời khỏi.
     let anyGone = false;
     for (const c of this.customers) {
-      if (c.state !== 'queued' && !(c.wholesale && c.offered) && c.idle) { anyGone = true; break; }
+      // Khách đang chờ ghế ăn tại chỗ ('toSeat' chưa có ghế) phải được giữ lại dù đang đứng yên
+      if (this.isGone(c)) { anyGone = true; break; }
     }
     if (anyGone) {
       let w = 0;
       for (let r = 0; r < this.customers.length; r++) {
         const c = this.customers[r];
-        const gone = c.state !== 'queued' && !(c.wholesale && c.offered) && c.idle;
+        const gone = this.isGone(c);
         if (gone) { this.scene.remove(c.mesh); c.dispose(); }
         else this.customers[w++] = c;
       }
@@ -638,35 +641,43 @@ export class CustomerManager {
     if (method && method !== 'cash') first.say(paymentById(method).icon, 2);
     first.say(!happy ? '😒' : onCredit ? '📒' : first.regular ? '💛' : first.missing ? '🙂' : '😊');
     // GĐ1491 — mua món nấu tươi xong có thể ngồi lại ăn tại chỗ (nếu còn ghế) thay vì ra về
-    if (this.maybeDineIn(first)) return;
+    if (this.maybeDineIn(first, counter)) return;
     this.leave(first, happy, true);
   }
 
   /**
    * GĐ1491 — khách vừa trả tiền mang món nấu tươi: trúng vòng quay "ngồi lại ăn" thì dẫn tới
-   * bàn/ghế trống, ngồi ăn (pause) rồi mới ra về. Hết ghế → bỏ về buồn (tính mất khách vì chờ,
-   * tạo áp lực mua thêm bàn ghế đúng như khu ăn tại chỗ tham khảo). Trả true nếu đã tự lo lối ra.
+   * bàn/ghế trống, ngồi ăn (pause) rồi mới ra về; hết ghế thì đứng chờ gần quầy (GĐ1492 —
+   * chờ được tối đa DINE_WAIT_SECONDS, quá thì bỏ về buồn). Trả true nếu đã tự lo lối ra.
    */
-  private maybeDineIn(c: Customer): boolean {
+  private maybeDineIn(c: Customer, counter: Counter): boolean {
     const st = useGame.getState();
     const hasCooked = c.basket.some((it) => COOKED_PRODUCT_IDS.has(it.id));
     // Chỉ rút vòng quay khi điều kiện sớm thoả — không ăn tại chỗ thì không dịch chuỗi ngẫu nhiên
     const roll = hasCooked && st.level >= DINE_UNLOCK ? simRng()() : 1;
     if (!wantsDineIn({ level: st.level, hasCooked, roll })) return false;
     const seat = freeSeat(st.furniture, this.seatBusy);
-    if (!seat) {
-      c.say('😤 Hết chỗ ngồi!');
-      st.noteMiss('wait');
-      this.releaseFromQueue(c);
-      this.leave(c, false, true);
-      return true;
+    this.releaseFromQueue(c);
+    if (seat) {
+      this.seatCustomer(c, seat);
+    } else {
+      // GĐ1492 — chưa có ghế: đứng né sang một bên chỗ trả tiền, chờ ghế trống trong kiên nhẫn
+      c.state = 'toSeat';
+      c.say('🪑', 2.5);
+      this.walk(c, counter.pay.clone().add(new THREE.Vector3(0, 0, 0.9)));
     }
-    const chair = st.furniture.find((f) => f.uid === seat.chairUid);
+    return true;
+  }
+
+  /** GĐ1491 — giữ ghế cho khách, dẫn đi ngồi; ăn xong trả ghế, trả tip (GĐ1492) rồi ra về. */
+  private seatCustomer(c: Customer, seat: SeatInfo) {
+    const chair = useGame.getState().furniture.find((f) => f.uid === seat.chairUid);
     if (!chair) return false;
+    // Tip tính theo việc có phải chờ ghế hay không — khoá ngay lúc ngồi
+    const waited = c.diningWait > 0;
     this.seatBusy.add(seat.chairUid);
     c.seat = seat;
     c.state = 'toSeat';
-    this.releaseFromQueue(c);
     this.walk(c, this.shop.local(chair.x, chair.z));
     c.plan = [
       () => {
@@ -677,10 +688,34 @@ export class CustomerManager {
       () => {
         if (c.seat) this.seatBusy.delete(c.seat.chairUid);
         c.seat = undefined;
+        // GĐ1492 — tip = 10% tiền món tươi (chờ ghế thì còn nửa): tiền sạch vào két + sổ ngày
+        const freshTotal = c.basket.filter((it) => COOKED_PRODUCT_IDS.has(it.id)).reduce((n, it) => n + it.price, 0);
+        const tip = dineTip(freshTotal, waited);
+        if (tip > 0) {
+          earnTip(tip);
+          this.coinFx.spawn(c.mesh.position, tip);
+          c.say(`+ ${formatMoney(tip)} tip`, 2.5);
+        }
         this.leave(c, true, true);
       },
     ];
     return true;
+  }
+
+  /**
+   * GĐ1492 — khách đang đứng chờ ghế ('toSeat' chưa có ghế): đếm kiên nhẫn, ghế vừa trống
+   * thì dẫn đi ngồi, quá mốc thì bỏ về buồn (ghi mất khách vì chờ, không tip).
+   */
+  private updateSeatWaiting(c: Customer, gameDt: number) {    const s = useGame.getState();
+    c.diningWait += gameDt;
+    if (c.diningWait > DINE_WAIT_SECONDS) {
+      c.say('😠 Chờ mãi không có chỗ!');
+      s.noteMiss('wait');
+      this.leave(c, false, true);
+      return;
+    }
+    const seat = freeSeat(s.furniture, this.seatBusy);
+    if (seat) this.seatCustomer(c, seat);
   }
 
   /** Sau lần mua hài lòng: khách quen đủ thân có thể nhờ giữ một món ưa thích đến ngày mai. */
@@ -895,8 +930,7 @@ export class CustomerManager {
    * GĐ1491 — rút khách khỏi hàng chờ quầy (nếu đang xếp) và cho những người phía sau dịch lên.
    * Tách khỏi leave() để khách đi ăn tại chỗ cũng nhường hàng ngay khi vừa trả tiền xong.
    */
-  private releaseFromQueue(c: Customer) {
-    const queue = c.counterKey ? this.queues.get(c.counterKey) : undefined;
+  private releaseFromQueue(c: Customer) {    const queue = c.counterKey ? this.queues.get(c.counterKey) : undefined;
     const i = queue ? queue.indexOf(c) : -1;
     if (queue && i >= 0) {
       queue.splice(i, 1);
@@ -912,6 +946,14 @@ export class CustomerManager {
       }
     }
     c.counterKey = null;
+  }
+
+  /** GĐ1492 — khách đã xong việc trong tiệm (đi ra ngoài được): chờ ghế ăn tại chỗ thì chưa tính. */
+  private isGone(c: Customer) {
+    if (c.state === 'queued') return false;
+    if (c.wholesale && c.offered) return false;
+    if (c.state === 'toSeat' && !c.seat) return false;
+    return c.idle;
   }
 
   /** Khách chấm sao: mỗi món không mua được −1, chờ lâu −1; bỏ về thì chê đúng lý do. */

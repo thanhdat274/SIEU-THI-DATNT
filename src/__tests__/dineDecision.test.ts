@@ -26,6 +26,7 @@ const fakeCustomer = (basket: { id: string; price: number }[]) => ({
   seat: undefined as { tableUid: number; chairUid: number } | undefined,
   exitX: 5,
   position: new THREE.Vector3(0, 0, 0),
+  mesh: { position: new THREE.Vector3(0, 0, 0) },
   path: [] as unknown[],
   plan: [] as (() => void)[],
   pause: 0,
@@ -58,7 +59,7 @@ describe('maybeDineIn — hành trình ăn tại chỗ qua CustomerManager', () 
     doorOutside: new THREE.Vector3(0, 0, 10),
     doorInside: new THREE.Vector3(0, 0, 9),
   } as never) as unknown as {
-    maybeDineIn: (c: ReturnType<typeof fakeCustomer>) => boolean;
+    maybeDineIn: (c: ReturnType<typeof fakeCustomer>, counter?: never) => boolean;
     seatBusy: Set<number>;
     leave: (c: ReturnType<typeof fakeCustomer>, happy: boolean, paid?: boolean) => void;
   };
@@ -68,6 +69,9 @@ describe('maybeDineIn — hành trình ăn tại chỗ qua CustomerManager', () 
     manager.seatBusy.clear();
     said.length = 0;
   });
+
+  /** Quầy giả cho đường chờ ghế (chỉ dùng counter.pay). */
+  const fakeCounter = { pay: new THREE.Vector3(0, 0, 0) } as never;
 
   it('món tươi + có ghế + trúng chance → giữ ghế, đi tới bàn, ăn xong mới ra về', () => {
     // Quét seed để lần rút đầu của maybeDineIn nhỏ hơn DINE_CHANCE (định tất định theo seed)
@@ -80,7 +84,7 @@ describe('maybeDineIn — hành trình ăn tại chỗ qua CustomerManager', () 
     setSimSeed(seed);
     useGame.setState({ level: DINE_UNLOCK, furniture: [mkFurniture(1, 'dining_table', 0, 0), mkFurniture(2, 'chair', 0.85, 0)] });
     const c = fakeCustomer([{ id: [...COOKED_PRODUCT_IDS][0], price: 30_000 }]);
-    const ok = manager.maybeDineIn(c as never);
+    const ok = manager.maybeDineIn(c as never, fakeCounter as never);
     expect(ok).toBe(true);
     expect(c.state).toBe('toSeat');
     expect(c.seat).toEqual({ tableUid: 1, chairUid: 2 });
@@ -96,7 +100,7 @@ describe('maybeDineIn — hành trình ăn tại chỗ qua CustomerManager', () 
     expect(c.state).toBe('leaving');
   });
 
-  it('hết ghế → bỏ về buồn, ghi mất khách vì chờ', () => {
+  it('hết ghế → đứng chờ (' + 'toSeat' + '), quá kiên nhẫn mới bỏ về buồn (GĐ1492)', () => {
     // Quét seed để khách trúng vòng quay muốn ngồi lại (rồi mới đụng chuyện hết ghế)
     let seed = 0;
     for (let s = 1; s <= 500; s++) {
@@ -106,21 +110,20 @@ describe('maybeDineIn — hành trình ăn tại chỗ qua CustomerManager', () 
     expect(seed).toBeGreaterThan(0);
     setSimSeed(seed);
     useGame.setState({ level: DINE_UNLOCK, furniture: [mkFurniture(1, 'dining_table', 0, 0)] }); // bàn không ghế
-    const before = useGame.getState().stats.missed?.wait ?? 0;
     const c = fakeCustomer([{ id: [...COOKED_PRODUCT_IDS][0], price: 30_000 }]);
-    const ok = manager.maybeDineIn(c as never);
+    const ok = manager.maybeDineIn(c as never, fakeCounter as never);
     expect(ok).toBe(true);
-    expect(c.state).toBe('leaving');
-    expect(said.some((t) => t.includes('😤'))).toBe(true);
+    expect(c.state).toBe('toSeat');
+    expect(c.seat).toBeUndefined();
+    expect(said.some((t) => t.includes('🪑'))).toBe(true);
     expect(manager.seatBusy.size).toBe(0);
-    expect(useGame.getState().stats.missed?.wait ?? 0).toBe(before + 1);
   });
 
   it('không có món nấu tươi → không đụng ghế, cứ ra về như thường', () => {
     setSimSeed(7);
     useGame.setState({ level: DINE_UNLOCK, furniture: [mkFurniture(1, 'dining_table', 0, 0), mkFurniture(2, 'chair', 0.85, 0)] });
     const c = fakeCustomer([{ id: 'nuoc', price: 10_000 }]);
-    expect(manager.maybeDineIn(c as never)).toBe(false);
+    expect(manager.maybeDineIn(c as never, fakeCounter as never)).toBe(false);
     expect(c.state).toBe('queued');
     expect(manager.seatBusy.size).toBe(0);
   });
@@ -129,7 +132,7 @@ describe('maybeDineIn — hành trình ăn tại chỗ qua CustomerManager', () 
     setSimSeed(11);
     useGame.setState({ level: DINE_UNLOCK - 1, furniture: [mkFurniture(1, 'dining_table', 0, 0), mkFurniture(2, 'chair', 0.85, 0)] });
     const c = fakeCustomer([{ id: [...COOKED_PRODUCT_IDS][0], price: 30_000 }]);
-    expect(manager.maybeDineIn(c as never)).toBe(false);
+    expect(manager.maybeDineIn(c as never, fakeCounter as never)).toBe(false);
     expect(c.state).toBe('queued');
   });
 
@@ -144,7 +147,7 @@ describe('maybeDineIn — hành trình ăn tại chỗ qua CustomerManager', () 
     setSimSeed(seed);
     useGame.setState({ level: DINE_UNLOCK, furniture: [mkFurniture(1, 'dining_table', 0, 0), mkFurniture(2, 'chair', 0.85, 0)] });
     const c = fakeCustomer([{ id: [...COOKED_PRODUCT_IDS][0], price: 30_000 }]);
-    expect(manager.maybeDineIn(c as never)).toBe(false);
+    expect(manager.maybeDineIn(c as never, fakeCounter as never)).toBe(false);
     expect(c.state).toBe('queued');
     expect(manager.seatBusy.size).toBe(0);
   });

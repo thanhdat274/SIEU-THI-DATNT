@@ -151,6 +151,8 @@ export class Customer extends Walker {
   service?: { def: ServiceDef; amount: number; fee: number };
   /** GĐ1491 — chỗ ngồi ăn tại chỗ đang giữ (null/undefined = không ăn tại chỗ). */
   seat?: { tableUid: number; chairUid: number };
+  /** GĐ1492 — số giây game đã đứng chờ ghế trống (mất kiên nhẫn → tip nửa, quá mốc thì bỏ về). */
+  diningWait = 0;
 
   constructor(startX: number, regular: RegularDef | null = null, profession: ProfessionDef | null = null) {
     const look = regular?.look;

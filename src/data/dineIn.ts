@@ -56,10 +56,24 @@ export const DINE_UNLOCK = 30;
 export const DINE_CHANCE = 0.3;
 /** Thời gian ngồi ăn (giây game) — cùng thước đo với các pause trong agent khách. */
 export const EAT_SECONDS = 8;
+/** GĐ1492 — chờ ghế tối đa bao nhiêu giây game thì bỏ về buồn. */
+export const DINE_WAIT_SECONDS = 10;
+/** GĐ1492 — tỉ lệ tip trên tổng tiền món nấu tươi (thưởng phục vụ có chỗ ngồi). */
+export const TIP_RATE = 0.1;
 
 /** Khách này có muốn ngồi lại ăn không? `roll` là lần quay đã rút (không rút khi điều kiện sớm sai). */
 export function wantsDineIn(args: { level: number; hasCooked: boolean; roll: number }): boolean {
   return args.level >= DINE_UNLOCK && args.hasCooked && args.roll < DINE_CHANCE;
+}
+
+/**
+ * GĐ1492 — tiền tip của một lượt ăn tại chỗ: 10% tổng tiền món nấu tươi khi được
+ * phục vụ ngay; phải chờ ghế (mất kiên nhẫn một phần) thì còn nửa; bỏ về thì không tip.
+ * `waited` = khách đã phải đứng chờ ghế bao lâu đó trước khi ngồi được.
+ */
+export function dineTip(freshTotal: number, waited: boolean): number {
+  if (freshTotal <= 0) return 0;
+  return Math.round(freshTotal * TIP_RATE * (waited ? 0.5 : 1));
 }
 
 /**

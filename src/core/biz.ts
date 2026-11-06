@@ -26,8 +26,8 @@ import { copyStock, putStock, takeStock } from './stock';
 
 export { maybeSurprise, chooseSurprise, storyOnVisit, closeStory, checkChapters, closeChapter, REGULAR_NAMES } from './bizStory';
 import { REGULAR_NAMES } from './bizStory';
-import { pay, buyPet, feedPet, buyUpgrade, buyHomeItem, buyService, earnService } from './bizPurchases';
-export { buyPet, feedPet, buyUpgrade, buyHomeItem, buyService, earnService } from './bizPurchases';
+import { pay, buyPet, feedPet, buyUpgrade, buyHomeItem, buyService, earnService, earnTip } from './bizPurchases';
+export { buyPet, feedPet, buyUpgrade, buyHomeItem, buyService, earnService, earnTip } from './bizPurchases';
 import { takeLoan, repayLoan, joinHui } from './bizLoan';
 export { takeLoan, repayLoan, joinHui } from './bizLoan';
 import { achievementCtx, checkAchievements, stockReminders } from './bizAchieve';

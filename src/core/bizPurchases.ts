@@ -89,3 +89,11 @@ export function earnService(id: string | undefined, fee: number) {
     : s.biz;
   useGame.setState({ money: s.money + fee, stats: nextStats, biz: nextBiz });
 }
+
+/** GĐ1492 — khách ăn tại chỗ trả tiền tip: cộng vào két, doanh thu và dòng "tip" của sổ ngày. */
+export function earnTip(amount: number) {
+  if (amount <= 0) return;
+  const s = S();
+  const nextStats = { ...s.stats, revenue: s.stats.revenue + amount, tips: (s.stats.tips ?? 0) + amount };
+  useGame.setState({ money: s.money + amount, stats: nextStats });
+}
