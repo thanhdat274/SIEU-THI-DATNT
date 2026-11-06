@@ -2626,6 +2626,116 @@ describe('GĐ1424 — cá thu chiên (chảo chiên)', () => {
   });
 });
 
+/** GĐ1425 — Tôm hấp nước dừa: lối ra đầu tiên của tôm tươi (nồi hấp). */
+describe('GĐ1425 — tôm hấp nước dừa (nồi hấp)', () => {
+  const recipe = RECIPE_MAP['recipe_tom_tuoi_hap'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm nồi hấp và dùng tôm tươi', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'tom_tuoi_hap')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'tom_tuoi_hap').length).toBe(1);
+    expect(recipe.station).toBe('steamer');
+    expect(recipe.inputs.some((i) => i.productId === 'x_tom_tuoi')).toBe(true);
+  });
+});
+
+/** GĐ1425 — Mực hấp gừng: lối ra đầu tiên của mực tươi (nồi hấp). */
+describe('GĐ1425 — mực hấp gừng (nồi hấp)', () => {
+  const recipe = RECIPE_MAP['recipe_muc_hap_gung'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm nồi hấp và dùng mực tươi', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'muc_hap_gung')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'muc_hap_gung').length).toBe(1);
+    expect(recipe.station).toBe('steamer');
+    expect(recipe.inputs.some((i) => i.productId === 'x_muc_tuoi')).toBe(true);
+  });
+});
+
+/** GĐ1425 — Cá rô phi chiên xù: lối ra đầu tiên của cá rô phi (chảo chiên). */
+describe('GĐ1425 — cá rô phi chiên xù (chảo chiên)', () => {
+  const recipe = RECIPE_MAP['recipe_ca_ro_phi_chien_xu'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm chảo chiên và dùng cá rô phi', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'ca_ro_phi_chien_xu')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'ca_ro_phi_chien_xu').length).toBe(1);
+    expect(recipe.station).toBe('fryer');
+    expect(recipe.inputs.some((i) => i.productId === 'x_ca_ro_phi')).toBe(true);
+  });
+});
+
+/** GĐ1425 — Ức gà nướng: lối ra đầu tiên của ức gà (bếp nướng). */
+describe('GĐ1425 — ức gà nướng (bếp nướng)', () => {
+  const recipe = RECIPE_MAP['recipe_uc_ga_nuong'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm bếp nướng và dùng ức gà', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'uc_ga_nuong')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'uc_ga_nuong').length).toBe(1);
+    expect(recipe.station).toBe('food_grill');
+    expect(recipe.inputs.some((i) => i.productId === 'x_uc_ga')).toBe(true);
+  });
+});
+
+/** GĐ1425 — Nấm bào ngư xào tỏi: lối ra đầu tiên của nấm bào ngư (chảo chiên). */
+describe('GĐ1425 — nấm bào ngư xào tỏi (chảo chiên)', () => {
+  const recipe = RECIPE_MAP['recipe_nam_bao_ngu_xao_toi'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm chảo chiên và dùng nấm bào ngư', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'nam_bao_ngu_xao_toi')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'nam_bao_ngu_xao_toi').length).toBe(1);
+    expect(recipe.station).toBe('fryer');
+    expect(recipe.inputs.some((i) => i.productId === 'x_nam_bao_ngu')).toBe(true);
+  });
+});
+
 /** GĐ1405 — Sữa hạt điều: lối ra đầu tiên của hạt điều rang muối (máy xay). */
 describe('GĐ1405 — sữa hạt điều (máy xay)', () => {
   const recipe = RECIPE_MAP['recipe_sua_hat_dieu'];

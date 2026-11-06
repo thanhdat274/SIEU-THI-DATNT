@@ -330,6 +330,16 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'bo_xao_bong_cai', name: 'Bò xào bông cải', category: 'fresh', buy: 10000, sell: 16000, color: 0x5a8a3a, unlock: 35 },
   // GĐ1424: Cá thu chiên — lối ra ĐẦU TIÊN của cá thu tươi.
   { id: 'ca_thu_chien', name: 'Cá thu chiên', category: 'fresh', buy: 6000, sell: 10000, color: 0xb08a5a, unlock: 37 },
+  // GĐ1425: Tôm hấp nước dừa — lối ra ĐẦU TIÊN của tôm tươi.
+  { id: 'tom_tuoi_hap', name: 'Tôm hấp nước dừa', category: 'fresh', buy: 7000, sell: 12000, color: 0xf08060, unlock: 37 },
+  // GĐ1425: Mực hấp gừng — lối ra ĐẦU TIÊN của mực tươi.
+  { id: 'muc_hap_gung', name: 'Mực hấp gừng', category: 'fresh', buy: 8000, sell: 13000, color: 0xf0e0d0, unlock: 41 },
+  // GĐ1425: Cá rô phi chiên xù — lối ra ĐẦU TIÊN của cá rô phi.
+  { id: 'ca_ro_phi_chien_xu', name: 'Cá rô phi chiên xù', category: 'fresh', buy: 5000, sell: 9000, color: 0xd0a060, unlock: 39 },
+  // GĐ1425: Ức gà nướng — lối ra ĐẦU TIÊN của ức gà.
+  { id: 'uc_ga_nuong', name: 'Ức gà nướng', category: 'fresh', buy: 5000, sell: 9000, color: 0xd89a5a, unlock: 35 },
+  // GĐ1425: Nấm bào ngư xào tỏi — lối ra ĐẦU TIÊN của nấm bào ngư.
+  { id: 'nam_bao_ngu_xao_toi', name: 'Nấm bào ngư xào tỏi', category: 'fresh', buy: 5000, sell: 9000, color: 0xd8d0b8, unlock: 35 },
   // GĐ1409: Sữa chua granola — lối ra ĐẦU TIÊN của ngũ cốc granola: mẻ (granola 130k + sữa chua) → 14 cốc × 18k = 252k.
   { id: 'sua_chua_granola', name: 'Sữa chua granola', category: 'fresh', buy: 11000, sell: 18000, color: 0xe9d8b4, unlock: 68 },
   // GĐ1408: Cà phê phin sữa — lối ra ĐẦU TIÊN của cà phê xay nguyên chất: mẻ (cà phê xay 150k + sữa đặc 22k) = 172k → 25 ly × 12k = 300k.
@@ -824,6 +834,26 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_ca_thu_chien', name: 'Cá thu chiên', station: 'fryer',
     inputs: [{ productId: 'x_ca_thu_tuoi', quantity: 1 }],
     outputId: 'ca_thu_chien', outputQty: 5, durationMin: 10, unlock: 37, reputationGain: 2 },
+  // GĐ1425: Tôm hấp nước dừa ở nồi hấp. Mở 37 (> golden 30, ≥ cấp nguyên liệu).
+  { id: 'recipe_tom_tuoi_hap', name: 'Tôm hấp nước dừa', station: 'steamer',
+    inputs: [{ productId: 'x_tom_tuoi', quantity: 1 }],
+    outputId: 'tom_tuoi_hap', outputQty: 6, durationMin: 10, unlock: 37, reputationGain: 2 },
+  // GĐ1425: Mực hấp gừng ở nồi hấp. Mở 41 (> golden 30, ≥ cấp nguyên liệu).
+  { id: 'recipe_muc_hap_gung', name: 'Mực hấp gừng', station: 'steamer',
+    inputs: [{ productId: 'x_muc_tuoi', quantity: 1 }],
+    outputId: 'muc_hap_gung', outputQty: 6, durationMin: 10, unlock: 41, reputationGain: 2 },
+  // GĐ1425: Cá rô phi chiên xù ở chảo chiên. Mở 39 (> golden 30, ≥ cấp nguyên liệu).
+  { id: 'recipe_ca_ro_phi_chien_xu', name: 'Cá rô phi chiên xù', station: 'fryer',
+    inputs: [{ productId: 'x_ca_ro_phi', quantity: 1 }],
+    outputId: 'ca_ro_phi_chien_xu', outputQty: 5, durationMin: 10, unlock: 39, reputationGain: 2 },
+  // GĐ1425: Ức gà nướng ở bếp nướng. Mở 35 (> golden 30, ≥ cấp nguyên liệu).
+  { id: 'recipe_uc_ga_nuong', name: 'Ức gà nướng', station: 'food_grill',
+    inputs: [{ productId: 'x_uc_ga', quantity: 1 }],
+    outputId: 'uc_ga_nuong', outputQty: 5, durationMin: 10, unlock: 35, reputationGain: 2 },
+  // GĐ1425: Nấm bào ngư xào tỏi ở chảo chiên. Mở 35 (> golden 30, ≥ cấp nguyên liệu).
+  { id: 'recipe_nam_bao_ngu_xao_toi', name: 'Nấm bào ngư xào tỏi', station: 'fryer',
+    inputs: [{ productId: 'x_nam_bao_ngu', quantity: 1 }, { productId: 'x_toi', quantity: 1 }],
+    outputId: 'nam_bao_ngu_xao_toi', outputQty: 4, durationMin: 10, unlock: 35, reputationGain: 2 },
   // GĐ1409: Sữa chua granola ở máy xay: lãi dương, hời hơn bán thẳng nguyên liệu. Mở 68 = cấp granola (> golden 30).
   { id: 'recipe_sua_chua_granola', name: 'Sữa chua granola', station: 'blender',
     inputs: [{ productId: 'ngu_coc', quantity: 1 }, { productId: 'suachua', quantity: 1 }],
