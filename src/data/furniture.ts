@@ -85,11 +85,11 @@ export const FURNITURE: FurnitureDef[] = [
   },
   {
     type: 'food_grill', name: 'Bếp nướng', price: 320000, unlock: 21, size: [1.2, 0.7], tiers: 0, slots: 0, capacity: 0,
-    categories: [], desc: 'Trạm nấu: bánh mì trứng, xúc xích, cơm hộp gà, cơm sườn (xem Sổ nấu 🍳)',
+    categories: [], desc: 'Trạm nấu: bánh mì, xiên nướng, cá & gà nướng, cơm hộp (xem Sổ nấu 🍳)',
   },
   {
     type: 'blender', name: 'Máy xay sinh tố', price: 260000, unlock: 25, size: [0.7, 0.7], tiers: 0, slots: 0, capacity: 0,
-    categories: [], desc: 'Trạm nấu: sinh tố trái cây, kem trái cây (xem Sổ nấu 🍳)',
+    categories: [], desc: 'Trạm nấu: sinh tố, nước ép trái cây, sữa hạt (xem Sổ nấu 🍳)',
   },
   {
     type: 'drink_counter', name: 'Quầy pha chế', price: 320000, unlock: 25, size: [1.4, 0.8], tiers: 0, slots: 0, capacity: 0,
@@ -101,7 +101,7 @@ export const FURNITURE: FurnitureDef[] = [
   },
   {
     type: 'fryer', name: 'Chảo chiên', price: 280000, unlock: 26, size: [0.9, 0.7], tiers: 0, slots: 0, capacity: 0,
-    categories: [], desc: 'Trạm nấu: bắp xào, cá viên chiên (xem Sổ nấu 🍳)',
+    categories: [], desc: 'Trạm nấu: món chiên, xào, áp chảo (xem Sổ nấu 🍳)',
   },
   {
     type: 'rice_station', name: 'Quầy xôi', price: 360000, unlock: 36, size: [1.2, 0.8], tiers: 0, slots: 0, capacity: 0,
@@ -109,7 +109,7 @@ export const FURNITURE: FurnitureDef[] = [
   },
   {
     type: 'steamer', name: 'Nồi hấp', price: 340000, unlock: 39, size: [0.9, 0.8], tiers: 0, slots: 0, capacity: 0,
-    categories: [], desc: 'Trạm nấu: bánh bao hấp nóng (xem Sổ nấu 🍳)',
+    categories: [], desc: 'Trạm nấu: bánh bao, há cảo, hải sản hấp (xem Sổ nấu 🍳)',
   },
   {
     type: 'gift_wrap', name: 'Bàn gói quà', price: 300000, unlock: 28, size: [1.0, 0.6], tiers: 0, slots: 0, capacity: 0,

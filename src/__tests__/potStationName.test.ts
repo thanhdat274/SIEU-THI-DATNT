@@ -31,3 +31,13 @@ describe('GĐ1403 — món đúng trạm', () => {
     expect(RECIPES.filter((r) => r.station === 'steamer' && /hầm/i.test(r.name))).toEqual([]);
   });
 });
+
+/** GĐ1435 — mô tả trạm theo kịp thực đơn mới (không còn chỉ "bắp xào, cá viên"). */
+describe('GĐ1435 — mô tả trạm khớp món', () => {
+  it('chảo chiên nói rõ chiên/xào; nồi hấp nhắc há cảo/hải sản', () => {
+    const d = (id: string) => `${STATIONS.find((s) => s.id === id)!.description} ${FURNITURE.find((f) => f.type === id)!.desc}`;
+    expect(d('fryer')).toContain('xào');
+    expect(d('steamer')).toContain('há cảo');
+    expect(d('blender')).toContain('nước ép');
+  });
+});

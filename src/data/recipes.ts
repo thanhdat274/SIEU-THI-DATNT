@@ -1439,12 +1439,12 @@ export interface StationDef {
 
 export const STATIONS: StationDef[] = [
   { id: 'hot_kettle', name: 'Bếp nồi nấu', icon: '🍲', description: 'Nấu phở, bún, cháo, món kho, chè', unlock: 21, recipeCount: RECIPES.filter(r => r.station === 'hot_kettle').length },
-  { id: 'food_grill', name: 'Bếp nướng', icon: '🔥', description: 'Bánh mì trứng, xúc xích, cơm hộp', unlock: 21, recipeCount: RECIPES.filter(r => r.station === 'food_grill').length },
-  { id: 'blender', name: 'Máy xay sinh tố', icon: '🍹', description: 'Sinh tố, kem trái cây', unlock: 25, recipeCount: RECIPES.filter(r => r.station === 'blender').length },
+  { id: 'food_grill', name: 'Bếp nướng', icon: '🔥', description: 'Bánh mì, xiên nướng, cá & gà nướng', unlock: 21, recipeCount: RECIPES.filter(r => r.station === 'food_grill').length },
+  { id: 'blender', name: 'Máy xay sinh tố', icon: '🍹', description: 'Sinh tố, nước ép, sữa hạt', unlock: 25, recipeCount: RECIPES.filter(r => r.station === 'blender').length },
   { id: 'drink_counter', name: 'Quầy pha', icon: '☕', description: 'Cà phê, trà sữa, bạc xỉu', unlock: 25, recipeCount: RECIPES.filter(r => r.station === 'drink_counter').length },
-  { id: 'fryer', name: 'Chảo chiên', icon: '🍳', description: 'Bắp xào, cá viên chiên', unlock: 26, recipeCount: RECIPES.filter(r => r.station === 'fryer').length },
+  { id: 'fryer', name: 'Chảo chiên', icon: '🍳', description: 'Món chiên, xào, áp chảo', unlock: 26, recipeCount: RECIPES.filter(r => r.station === 'fryer').length },
   { id: 'sugarcane_press', name: 'Máy ép mía', icon: '🥤', description: 'Nước mía tươi', unlock: 25, recipeCount: RECIPES.filter(r => r.station === 'sugarcane_press').length },
-  { id: 'steamer', name: 'Nồi hấp', icon: '♨️', description: 'Bánh bao hấp nóng', unlock: 39, recipeCount: RECIPES.filter(r => r.station === 'steamer').length },
+  { id: 'steamer', name: 'Nồi hấp', icon: '♨️', description: 'Bánh bao, há cảo, hải sản hấp', unlock: 39, recipeCount: RECIPES.filter(r => r.station === 'steamer').length },
   { id: 'rice_station', name: 'Quây xôi', icon: '🍚', description: 'Xôi các loại, combo xôi', unlock: 36, recipeCount: RECIPES.filter(r => r.station === 'rice_station').length },
   { id: 'gift_wrap', name: 'Bàn gói quà', icon: '🎁', description: 'Giỏ quà Tết / 8/3 / 20/11 / Trung thu (chỉ gói trong dịp)', unlock: 28, recipeCount: RECIPES.filter(r => r.station === 'gift_wrap').length },
 ];
