@@ -10,6 +10,7 @@ import { isNight, NIGHT_PRICE_MUL } from '../../data/night';
 import { comboById, maxActiveCombos } from '../../data/combos';
 import { paymentById } from '../../data/payments';
 import { COOKED_PRODUCT_IDS } from '../../data/recipes';
+import { dishPriceMul } from '../../data/dishStars';
 import { type GameState, type SetState, type GetState, addHour } from '../gameTypes';
 import { copyStock, takeStock } from '../stock';
 import { HOMEGROWN_PREMIUM } from '../../data/garden';
@@ -68,26 +69,38 @@ export const createSalesSlice = (set: SetState, get: GetState): Pick<GameState, 
     premium = Math.round(premium / 100) * 100;
     const salesToday = { ...s.salesToday };
     const byItem = { ...s.stats.byItem };
+    // GĐ1496 — món nấu bán được cộng lượt ("sao món"): thưởng giá theo sao TRƯỚC lượt này
+    // (sao kiếm từ những lượt bán trước), cộng thẳng vào tiền + doanh thu như premium nhà trồng.
+    const servedCounts = { ...s.servedCounts };
+    let starPremium = 0;
     for (const it of items) {
       salesToday[it.id] = (salesToday[it.id] ?? 0) + 1;
       const line = byItem[it.id] ?? { qty: 0, revenue: 0, cost: 0 };
-      byItem[it.id] = { qty: line.qty + 1, revenue: line.revenue + it.price, cost: line.cost + productById(it.id).buy };
+      let itemPremium = 0;
+      if (COOKED_PRODUCT_IDS.has(it.id)) {
+        itemPremium = Math.round(it.price * (dishPriceMul(servedCounts[it.id] ?? 0) - 1));
+        servedCounts[it.id] = (servedCounts[it.id] ?? 0) + 1;
+      }
+      starPremium += itemPremium;
+      byItem[it.id] = { qty: line.qty + 1, revenue: line.revenue + it.price + itemPremium, cost: line.cost + productById(it.id).buy };
     }
+    starPremium = Math.round(starPremium / 100) * 100;
     const byMethod = { ...s.stats.byMethod };
     const m = byMethod[payment] ?? { revenue: 0, count: 0 };
     byMethod[payment] = { revenue: m.revenue + total, count: m.count + 1 };
     set({
       salesToday,
+      servedCounts,
       garden: { ...s.garden, homegrown },
-      money: s.money + total - fee + premium,
+      money: s.money + total - fee + premium + starPremium,
       stats: {
-        ...s.stats, revenue: s.stats.revenue + total + premium, itemsSold: s.stats.itemsSold + items.length, byItem,
-        byHour: addHour(s.stats.byHour, s.minutes, 0, total + premium), byMethod,
+        ...s.stats, revenue: s.stats.revenue + total + premium + starPremium, itemsSold: s.stats.itemsSold + items.length, byItem,
+        byHour: addHour(s.stats.byHour, s.minutes, 0, total + premium + starPremium), byMethod,
         fees: (s.stats.fees ?? 0) + fee,
         combos: (s.stats.combos ?? 0) + combos, comboDiscount: (s.stats.comboDiscount ?? 0) + discount,
       },
       totals: {
-        ...s.totals, revenue: s.totals.revenue + total + premium, itemsSold: s.totals.itemsSold + items.length,
+        ...s.totals, revenue: s.totals.revenue + total + premium + starPremium, itemsSold: s.totals.itemsSold + items.length,
         cookedSold: s.totals.cookedSold + items.filter((it) => COOKED_PRODUCT_IDS.has(it.id)).length,
       },
     });

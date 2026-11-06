@@ -128,6 +128,7 @@ export const newGameData = () => ({
   sales: {} as Record<string, number>,
   salesToday: {} as Record<string, number>,
   soldEver: {} as Record<string, number>,
+  servedCounts: {} as Record<string, number>,
   comboHitCount: {} as Record<string, number>,
   regulars: {} as Record<string, RegularProgress>,
   reservations: {} as Record<string, Reservation>,

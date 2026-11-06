@@ -58,7 +58,7 @@ export function snapshot(): SaveData {
     shopTier: s.shopTier, pendingUpgrade: s.pendingUpgrade, style: s.style,
     staff: s.staff, candidates: s.candidates, autoOpen: s.autoOpen, autoOpenAt: s.autoOpenAt, autoRoutine: s.autoRoutine, autoSwap: s.autoSwap, totals: s.totals, questLog: s.questLog, warehouseTier: s.warehouseTier,
     reviews: s.reviews, deliveries: s.deliveries, demand: s.demand, demandToday: s.demandToday,
-    sales: s.sales, salesToday: s.salesToday, soldEver: s.soldEver, comboHitCount: s.comboHitCount, regulars: s.regulars, reservations: s.reservations, market: s.market,
+    sales: s.sales, salesToday: s.salesToday, soldEver: s.soldEver, servedCounts: s.servedCounts, comboHitCount: s.comboHitCount, regulars: s.regulars, reservations: s.reservations, market: s.market,
     contracts: s.contracts, repLog: s.repLog, community: s.community, opening: s.opening, costume: s.costume, event: s.event,
     giftStreak: s.giftStreak, giftLastDay: s.giftLastDay, giftGraceDay: s.giftGraceDay, wheelLastDay: s.wheelLastDay, wheelLastPrize: s.wheelLastPrize, wheelBoost: s.wheelBoost, shopName: s.shopName,
     // Mỗi lần ghi bản lưu đều làm mới mốc "còn chơi" — chơi hằng ngày giữ bản tươi nên không bị tính là vắng.
@@ -96,7 +96,7 @@ function deepMerge(base: Record<string, unknown>, incoming: Record<string, unkno
 const MERGE_DEEP: readonly (keyof ReturnType<typeof newGameData>)[] = [
   'stats', 'totals', 'biz', 'garden', 'social', 'online', 'licenses', 'inspection', 'analytics', 'branch',
   'storage', 'storageLots', 'furnStash', 'shelfHeat', 'shelfProfit', 'prices', 'style', 'questLog', 'community',
-  'demand', 'demandToday', 'sales', 'salesToday', 'soldEver', 'comboHitCount', 'regulars', 'reservations', 'debts', 'market', 'contracts',
+  'demand', 'demandToday', 'sales', 'salesToday', 'soldEver', 'servedCounts', 'comboHitCount', 'regulars', 'reservations', 'debts', 'market', 'contracts',
   'riskToday', 'counterPolicy',
 ];
 

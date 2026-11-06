@@ -261,6 +261,8 @@ export interface GameState {
   salesToday: Record<string, number>;
   /** Món đã bán được cả ván (Sổ tay Tiệm GĐ36): id → số món bán ra, để đếm 'đã khám phá X/Y món'. */
   soldEver: Record<string, number>;
+  /** GĐ1496 — số lượt bán mỗi món nấu cả ván: id món nấu → lượt, quyết định sao món + đồ đựng. */
+  servedCounts: Record<string, number>;
   /** Số lần mỗi combo kích hoạt ở quầy cả ván (GĐ44) — để xoay combo hoạt động kém. */
   comboHitCount: Record<string, number>;
   /** Thân thiết với từng khách quen. */

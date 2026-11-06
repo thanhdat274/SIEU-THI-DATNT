@@ -10,11 +10,12 @@ import { supplyOutletOf } from '../../data/supplyOutlet';
 import { splitLockedRecipes } from '../../data/cookList';
 import { cookSpeed, bartenderBoost } from '../../core/slices/orders';
 import { FESTIVALS, festivalOn } from '../../data/calendar';
+import { dishStarGoalOf, dishVessel } from '../../data/dishStars';
 import { Footer, styles, Tabs } from './shared';
 
 /** Sổ nấu: công thức theo trạm, nguyên liệu lấy từ kho (lô cận hạn trước), mẻ xong về kho chờ bày kệ. */
 export function CookPanel() {
-  const { level, storage, storageLots, furniture, cookJobs, startCook, closePanel, openPanel, setBuildMode } = useGame();
+  const { level, storage, storageLots, furniture, cookJobs, servedCounts, startCook, closePanel, openPanel, setBuildMode } = useGame();
   // GĐ1118 — bản đồ hạn còn lại của hàng sắp hỏng (kho + kệ) để nhắc nấu ngay trên dòng công thức
   const expiringMap = new Map(expiringSoon(storage, storageLots, furniture.flatMap((f) => f.tiers)).map((l) => [l.id, l.life]));
   const day = useGame((s) => s.day);
@@ -113,6 +114,24 @@ export function CookPanel() {
                         }).join(' + ')}
                         {' '}→ <b>{r.outputQty} × {out.name}</b> · {r.durationMin} phút
                       </div>
+                      {/* GĐ1496 — sao món theo lượt bán: đồ đựng đổi bậc + giá bán tăng, mục tiêu ngắn đếm ngược được */}
+                      {(() => {
+                        const served = servedCounts[r.outputId] ?? 0;
+                        const goal = dishStarGoalOf(r.outputId, served);
+                        return (
+                          <div style={{ fontSize: 12, opacity: 0.85, marginTop: 2 }}>
+                            <span style={{ color: goal.stars > 0 ? '#f1c40f' : undefined }}>
+                              {goal.stars > 0 ? '⭐'.repeat(goal.stars) : '☆'}
+                            </span>{' '}
+                            {dishVessel(r.outputId, served)}
+                            {goal.bonus > 0 && <span style={{ color: '#2ecc71' }}> · +{goal.bonus}% giá</span>}
+                            {goal.nextAt != null && (
+                              <span style={{ opacity: 0.75 }}> · còn {goal.toGo} lượt → {goal.nextVessel}</span>
+                            )}
+                            <span style={{ opacity: 0.6 }}> · đã bán {served}</span>
+                          </div>
+                        );
+                      })()}
                       {/* GĐ1327: món chuỗi sản xuất — nguyên liệu chính là hàng ngoài tạp hóa, nhập riêng ở đâu */}
                       {so && (
                         <div style={{ fontSize: 12, opacity: 0.85, marginTop: 2 }}>
