@@ -55,13 +55,14 @@ export function Panels() {
   if (!panel) return null;
   const hub = hubOf(panel.type);
   // Màn sắp xếp chiếm cả màn hình, có khung riêng
-  if (panel.type === 'arrange') return <Suspense fallback={null}><ArrangePanel /></Suspense>;
+  if (panel.type === 'arrange') return <Suspense fallback={<div style={styles.backdrop}><PanelLoading /></div>}><ArrangePanel /></Suspense>;
   return (
     <div style={styles.backdrop} onClick={(e) => e.target === e.currentTarget && closePanel()}>
       <div className="panel" style={styles.panel}>
         <button style={styles.close} title="Đóng (Esc)" aria-label="Đóng" onClick={closePanel}>✕</button>
         {hub && <Tabs tabs={hubTabs(hub, level, panel.type)} value={panel.type} onChange={(t) => openPanel({ type: t } as never)} />}
-        <Suspense fallback={null}>
+        {/* Playtest P1 T4: panel tải lười hiện khung chờ thay vì màn trắng ~3 giây (tưởng treo) */}
+        <Suspense fallback={<PanelLoading />}>
         {panel.type === 'order' && <OrderPanel />}
         {panel.type === 'social' && <SocialPanel />}
         {panel.type === 'online' && <OnlinePanel />}
@@ -100,4 +101,9 @@ export function Panels() {
       </div>
     </div>
   );
+}
+
+/** Khung chờ khi panel đang tải (playtest P1 T4). */
+export function PanelLoading() {
+  return <p role="status" aria-live="polite" style={{ padding: 24, opacity: 0.75, textAlign: 'center' }}>⏳ Đang mở…</p>;
 }

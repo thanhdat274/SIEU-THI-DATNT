@@ -81,7 +81,7 @@
   - ✅ **P0 T1 (ĐÃ SỬA, test saveShopOpen):** snapshot lưu shopOpen (tùy chọn, thiếu = đóng), vào game đang mở → đứng sau quầy + báo; hẻm: runner nạp bản hẻm giữ đúng trạng thái. Gốc: vào lại game giữa ngày → tiệm tự đóng + về nhà, không báo (`shopOpen` không được lưu, `core/save.ts`). Lưu/khôi phục trạng thái mở cửa (save cũ thiếu trường → mặc định đóng), kiểm cả hẻm online.
   - ✅ **P0 T2 (ĐÃ SỬA):** "Nhập hàng" tích khi totals.spent > 0 hoặc có xe hàng; "Bày hàng" tích theo cờ tùy chọn biz.tutShelved (stockTier ghi) — save cũ không cần migrate (test tutorialStepsHonest).
   - ✅ **P0 T3 (ĐÃ SỬA):** bedHint() ẩn "[N] Đi ngủ" trước 18h (test bedHint); cảm ứng vốn đã đổi "[N]" → 👆 (Hud.tsx:454).
-  - **P1 T4:** panel lười tải (Sơ đồ kệ, Tổng kết ngày) trắng ~3 giây → hiện khung chờ.
+  - ✅ **P1 T4 (ĐÃ SỬA):** panel tải lười hiện "⏳ Đang mở…" (PanelLoading, test panelLoading).
   - **P1 T5:** ngày 1 "Điền theo gợi ý" tiêu tới 69% tiền mặt; tổng kết ngày 1 đưa lãi gộp lên trên dòng âm vì nhập kho.
   - P2 (T6–T9: cám bò ở cấp 1, nhà cung cấp khóa, đồng hồ chạy khi nhập hàng, camera quạt trần) để sau, cần Leader cân nhắc.
 - 🆕 **Người dùng ĐÃ DUYỆT (06/11/2026) — đợt 2 playtest giữa game** (`PHAN-TICH-PLAYTEST-PERSONA-DOT2-2026-11-06.md`, mục 5). Mỗi việc có test:
