@@ -24,7 +24,7 @@
 - GĐ1404–1429 (lối ra bếp cho ~80 nguyên liệu chưa dùng, trong products.ts và catalog x_*; bia & snack đóng gói giữ bán thẳng): chi tiết ở docs/progress-archive/PROGRESS-GD1404-1407.md … PROGRESS-GD1427-1429.md
 - **GĐ1403 (dời món về đúng trạm, rà tiếp theo góp ý người dùng)**: Cơm chiên trứng, Xôi chiên phồng, Cá hồi áp chảo: bếp nướng → **chảo chiên**; Bò hầm rượu vang: nồi hấp → **bếp nồi nấu**. Cả 4 mở ≥38 > golden 30 → sim/autoplay/tiệm xôi KHÔNG đổi (chỉ 3 test khẳng định trạm cũ sửa có chủ ý). Save cũ an toàn: món đang nấu dở chỉ đếm ngược, hoàn tất không kiểm trạm. Test `potStationName.test.ts` +3 (cấm món chiên ở bếp nướng / món hầm ở nồi hấp). Full suite xanh.
 - GĐ1395–1401 (Mực nướng, QA mô hình nồi, Tôm nướng, Cua hấp bia, Tương ớt, Sinh tố dưa hấu, Mì ý — lối ra đầu tiên cho nguyên liệu chưa dùng): chi tiết `docs/progress-archive/PROGRESS-GD1395-1401.md`.
-- **GĐ1394 (đổi trạm "Ấm nước nóng 🫖" → "Bếp nồi nấu 🍲", theo góp ý người dùng)**: trạm `hot_kettle` gánh 31 món (phở, bún bò, bò kho, cá kho tộ, cháo, chè…) mà tên/mô hình là ấm có vòi — vô lý. Đổi tên + icon + mô tả (recipes.ts STATIONS, furniture.ts, ArrangePanel) và mô hình 3D thành nồi có nắp + 2 quai (furnitureView.ts). **Giữ id `hot_kettle`** → save cũ không cần migration. Test mới `potStationName.test.ts`. Full suite xanh (longSessionLeak chập chờn khi chạy chung, chạy riêng xanh), tsc + build sạch. QA mô hình bằng test dựng mesh thật `potStationModel.test.ts` (GĐ1396: thân nồi ≥0.22 m, nắp trên thân, biểu tượng nổi 🍲); QA trình duyệt ĐẠT: dựng `FurnitureView('hot_kettle')` bằng WebGLRenderer riêng trong trang dev (import module nguồn qua Vite), xuất PNG rồi hiển thị — thấy nồi có nắp + quai trên bếp, biểu tượng 🍲 (mẹo dùng được cả khi pane ẩn vì không cần rAF).
+- GĐ1394: trạm hot_kettle đổi tên "Bếp nồi nấu 🍲" (góp ý người dùng) — id giữ nguyên để không vỡ save; chi tiết: docs/progress-archive/PROGRESS-GD1440-1447.md
 - GĐ1382–1393 (món mới từ nguyên liệu có sẵn, gọn PROGRESS, đổi "Ấm nước nóng" → "Bếp nồi nấu" GĐ1394 xem dòng riêng): chi tiết `docs/progress-archive/PROGRESS-GD1382-1391.md`.
 - GĐ960–1005 (tách file thuần + QA trình duyệt, chi tiết): `docs/progress-archive/PROGRESS-GD960-1005.md`
 - Các mục GĐ930–949 / GĐ950–959 (tách panel/Hud): `docs/progress-archive/PROGRESS-GD930-949.md` · `docs/progress-archive/PROGRESS-GD950-959.md`
@@ -85,7 +85,7 @@
   - **P1 T5:** ngày 1 "Điền theo gợi ý" tiêu tới 69% tiền mặt; tổng kết ngày 1 đưa lãi gộp lên trên dòng âm vì nhập kho.
   - P2 (T6–T9: cám bò ở cấp 1, nhà cung cấp khóa, đồng hồ chạy khi nhập hàng, camera quạt trần) để sau, cần Leader cân nhắc.
 - 🆕 **Người dùng ĐÃ DUYỆT (06/11/2026) — đợt 2 playtest giữa game** (`PHAN-TICH-PLAYTEST-PERSONA-DOT2-2026-11-06.md`, mục 5). Mỗi việc có test:
-  - **P0 M2:** Sổ nấu in "0" lạc ("/mẻ0") — `ui/panels/CookPanel.tsx:123,133` dùng `{own && …}` với `own` là số; đổi `own > 0 &&`.
+  - ✅ **P0 M2 (ĐÃ SỬA, test cookPanelZero):** Sổ nấu in "0" lạc ("/mẻ0") — `ui/panels/CookPanel.tsx:123,133` dùng `{own && …}` với `own` là số; đổi `own > 0 &&`.
   - **P0 M1:** FPS 21–22 ở mức Thấp, save cấp 29 (9 nhân viên, 9 kệ) — đo lại trên Chrome thật; nếu vẫn <30 thì sửa bộ tự hạ (Luật 8).
   - **P0 M4:** 4–5 thẻ sự kiện chồng nhau che >50% màn điện thoại → tối đa 1–2 thẻ, còn lại xếp hàng chờ; thẻ lễ hội rút "hàng hút" còn 3–4 món (Luật 9).
   - **P1 M3:** cảnh báo hết hạn lặp tên ("Diêm, bật lửa" ×4) và lặp số tiền; xem lại hạn dùng diêm/bật lửa.
@@ -109,14 +109,7 @@
 - 🔍 **Rà 3 cơ sở (GĐ413, theo yêu cầu người dùng trước khi mở rộng tiệm xôi):**
   - Cửa hàng tiện lợi: luật chơi SÂU (ca kíp, mệt mỏi, sự cố đêm, máy bán hàng, điện, nhóm khách đêm). Nợ: BranchPanel 297 dòng gánh hết, cần soát độ rối; QA 3D xong GĐ527.
   - Nông trại: SÂU (mùa vụ, 7 vật nuôi, công trình 3 sao, đơn đặt hàng, phụ trại; world/farm.ts 996 dòng). QA 3D xong GĐ528.
-- GĐ1441 (hướng 2 vườn→bếp: cam/ổi vườn trước chỉ ra quán nước — thêm Cánh gà sốt cam u46 ở chảo chiên, Ổi lắc chua ngọt u41 ở máy xay; ớt hiểm u71 nên thay bằng đường, cấp 40 đã đủ 14 món nên dời 41). 507/4772 xanh.
-- GĐ1442 (hướng 2: chanh dây vườn có lối ra bếp — Tôm sốt chanh dây u47 ở chảo chiên, Sữa chua chanh dây u42 ở máy xay). 507/4778 xanh.
-- GĐ1443 (hướng 2: vải thiều vườn có lối ra bếp — Chè vải tươi hạt sen u43 ở bếp nồi; test farmQuanValue cập nhật: menu không có món vải → còn lãi bếp hữu hạn ≤ lãi quán). Mọi trái cây vườn giờ đều có cả lối ra quán lẫn bếp. 507/4781 xanh.
-- GĐ1444 (hướng 3: bà Tám thêm Giò thủ u48 (biên 1.6×) + lối ra Bánh mì giò thủ ở bếp nướng — 6 ổ + 1 khoanh → 12 phần). Một lần chạy đỏ thoáng qua (expected 3 to be 1) không tái hiện được qua 3 lần chạy lại — nghi test chập chờn, theo dõi. 507/4784 xanh.
-- GĐ1445 (hướng 3: hàng xóm 1 thêm Chanh muối hũ u40 (biên 36%) + lối ra Nước chanh muối ở quán nước — món quán thứ 2 dùng hàng hàng xóm). 508/4786 xanh.
-- GĐ1446 (hướng 3: bà Tám thêm Me dầm đường u42 + lối ra Đá me ở quán nước). 508/4787 xanh.
-- GĐ1447 (tiệm xôi: Xôi giò thủ u48 — lối ra thứ 2 cho giò thủ bà Tám). 508/4790 xanh.
-  - Quán nước: ~~MỎNG~~ **ĐÃ KHOÉT SÂU (nhận định cũ lỗi thời — hiệu chỉnh GĐ1064):** nay đủ bốn chiều từng bị chê: (1) không còn "2 nút" — có bậc cửa hàng `QUAN_TIERS` (quầy→quán→cà phê, GĐ428) + mẻ tự pha `hand` (GĐ427, QUAN_HAND_BATCHES/MAX) + menu có slot `quanMenuSlots`; (2) thực đơn không còn "tự lấy mọi đồ uống" — `clearMenu` theo slot + `varietyMul`/`quanHotMul`(nóng theo thời tiết); (3) thời tiết GIỜ CÓ ảnh hưởng — `QUAN_WEATHER_MUL` (nắng 1.25…bão 0.45) × `weatherMul` × `quanMatchMul`(ngày trận, GĐ580+) × `quanWeekendMul`; (4) CÓ sự kiện — `QUAN_EVENT` máy pha hỏng (brewer) / xe nước đối diện (cart, GĐ703) + khách đêm ngày trận. `src/data/quanNuoc.ts` áp dụng tất cả trong `quanNuocDay` (xác định, không Math.random) và **coverage 0 lệnh trống + 7 file test** (`quanNuoc.test`/`quanNuocEvents`/`quanMatchNight`/`quanNuocHealth`/`quanNuocBalance`/`quanRecipes`/`quanNuocDayAction`). Panel 230 dòng là bảng phân tích số liệu mô phỏng — không còn là gánh 2 nút. Chỗ "tiệm xôi" + chiều sâu khác giữ nguyên.
+  - Quán nước: ĐÃ KHOÉT SÂU — chi tiết dời sang docs/progress-archive/PROGRESS-GD1440-1447.md
   - Thứ tự sửa: ~~(1) thời tiết~~ xong GĐ414, ~~(2) chọn món~~ thành thực đơn pha chế GĐ415, ~~(3) 3D quán dùng kit~~ (đã có setQuanDecor: chậu cây + băng ghế), ~~(4) gọn BranchPanel~~ xong GĐ417, ~~(5) QA 3D~~ GĐ419 +GĐ420 đủ cả ba. Tiệm xôi phần còn lại để sau.
   - QA 3D cần save thử riêng: không có chế độ sandbox, không được sửa save thật của người dùng.
 
@@ -132,4 +125,4 @@
 - GĐ1409 (Sữa chua granola — lối ra đầu tiên của ngũ cốc granola ở máy xay): 14 cốc×18k, unlock 68. Dời GĐ1395–1401 sang archive. Full suite 503/4518 xanh.
 - GĐ1430–1434 (catalog đợt 10–11; test ingredientOutlet + RETAIL_ONLY; Sổ nấu gộp món khóa xa; rải 45 món cấp 35→35–57): docs/progress-archive/PROGRESS-GD1430-1434.md
 - GĐ1435–1439 (mô tả trạm; quán nước +3 món trái cây; tiệm xôi +2; lạp xưởng bà Tám + chà bông nhà làm kèm lối ra): docs/progress-archive/PROGRESS-GD1435-1439.md
-- GĐ1440 (hướng 2 vườn→bếp: xoài vườn nhà trước chỉ có lối ra quán nước, nay thêm Xôi xoài cốt dừa u45 ở quây xôi). 507/4766 xanh.
+- GĐ1440–1447 (mọi trái cây vườn có lối ra bếp; giò thủ/me dầm bà Tám, chanh muối hàng xóm 1 kèm lối ra bếp & quán): docs/progress-archive/PROGRESS-GD1440-1447.md

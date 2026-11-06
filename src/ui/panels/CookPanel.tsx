@@ -120,7 +120,7 @@ export function CookPanel() {
                       )}
                       <div style={{ fontSize: 12 }}>
                         Lãi gộp ~<b style={{ color: gross > 0 ? '#2ecc71' : '#e74c3c' }}>{formatMoney(gross)}</b>/mẻ
-                        {own && (
+                        {own > 0 && (
                           <span style={{ opacity: 0.85 }}> · ⏱ ~{formatMoney(Math.round(kv.perMinute))}/phút</span>
                         )}
                         {missing.length > 0 && !locked && (
@@ -130,7 +130,7 @@ export function CookPanel() {
                           <span style={{ color: '#e67e22' }}>{expiryInputsNote(r.inputs, expiringMap)}</span>
                         )}
                       </div>
-                      {own && kv.verdict === 'sell_raw' && (
+                      {own > 0 && kv.verdict === 'sell_raw' && (
                         <div style={{ fontSize: 12, color: '#e74c3c', marginTop: 2 }}>
                           ⚠️ Nguyên liệu bán rời còn hời hơn nấu ~{formatMoney(kv.delta)}
                         </div>
