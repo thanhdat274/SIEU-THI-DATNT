@@ -28,6 +28,8 @@ export const HOMEMADE_PRODUCTS: { id: string; name: string; category: Category; 
   { id: 'hx_tom_kho', name: 'Tôm khô nhà phơi (gói)', category: 'dry', buy: 58000, sell: 90000, color: 0xe0703a, unlock: 52 },
   // GĐ1484: măng khô nhà phơi (hướng 3) — sell ≥50k, biên ~36%, mở 53 > golden 30; lối ra: Măng khô xào lạp xưởng (chảo chiên).
   { id: 'hx_mang_kho', name: 'Măng khô nhà phơi (gói)', category: 'dry', buy: 45000, sell: 70000, color: 0xb08a4a, unlock: 53 },
+  // GĐ1485: nấm mèo khô nhà phơi (hướng 3) — sell ≥50k, biên ~36%, mở 54 > golden 30; lối ra: Chả giò nấm mèo (chảo chiên).
+  { id: 'hx_nam_meo', name: 'Nấm mèo khô nhà phơi (gói)', category: 'dry', buy: 35000, sell: 55000, color: 0x3a2a22, unlock: 54 },
 ];
 
 /**

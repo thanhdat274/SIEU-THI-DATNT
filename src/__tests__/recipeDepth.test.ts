@@ -4496,6 +4496,28 @@ describe('GĐ1484 — măng khô xào lạp xưởng (chảo chiên)', () => {
   });
 });
 
+/** GĐ1485 — Chả giò nấm mèo: lối ra đầu tiên của nấm mèo khô (chảo chiên). */
+describe('GĐ1485 — chả giò nấm mèo (chảo chiên)', () => {
+  const recipe = RECIPE_MAP['recipe_cha_gio_nam_meo'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm chảo chiên và dùng nấm mèo khô', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'cha_gio_nam_meo')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'cha_gio_nam_meo').length).toBe(1);
+    expect(recipe.station).toBe('fryer');
+    expect(recipe.inputs.some((i) => i.productId === 'hx_nam_meo')).toBe(true);
+  });
+});
+
 /** GĐ1405 — Sữa hạt điều: lối ra đầu tiên của hạt điều rang muối (máy xay). */
 describe('GĐ1405 — sữa hạt điều (máy xay)', () => {
   const recipe = RECIPE_MAP['recipe_sua_hat_dieu'];
