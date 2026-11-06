@@ -77,6 +77,23 @@
 - ⏱️ (GĐ296–298) npm run test nhạy tải máy: 1 test đỏ lẻ không liên quan thay đổi vừa làm → chạy lại đúng file trước khi kết luận; máy rảnh mà vẫn >10 phút thì đo file chậm nhất rồi tối ưu.
 
 ## Backlog tiếp theo
+- 🆕 **Người dùng ĐÃ DUYỆT (06/11/2026) — sửa theo playtest chơi thật ngày 1** (`PHAN-TICH-PLAYTEST-PERSONA-2026-11-06.md`, mục 4). Làm theo thứ tự, mỗi việc có test:
+  - **P0 T1:** vào lại game giữa ngày → tiệm tự đóng + về nhà, không báo (`shopOpen` không được lưu, `core/save.ts`). Lưu/khôi phục trạng thái mở cửa (save cũ thiếu trường → mặc định đóng), kiểm cả hẻm online.
+  - **P0 T2:** bảng "Ngày đầu mở tiệm" tự gạch "Nhập hàng / Bày hàng" dù người chơi chưa làm.
+  - **P0 T3:** ẩn "[N] Đi ngủ" trước 18h; bỏ "[N]" trên thiết bị cảm ứng.
+  - **P1 T4:** panel lười tải (Sơ đồ kệ, Tổng kết ngày) trắng ~3 giây → hiện khung chờ.
+  - **P1 T5:** ngày 1 "Điền theo gợi ý" tiêu tới 69% tiền mặt; tổng kết ngày 1 đưa lãi gộp lên trên dòng âm vì nhập kho.
+  - P2 (T6–T9: cám bò ở cấp 1, nhà cung cấp khóa, đồng hồ chạy khi nhập hàng, camera quạt trần) để sau, cần Leader cân nhắc.
+- 🆕 **Người dùng ĐÃ DUYỆT (06/11/2026) — đợt 2 playtest giữa game** (`PHAN-TICH-PLAYTEST-PERSONA-DOT2-2026-11-06.md`, mục 5). Mỗi việc có test:
+  - **P0 M2:** Sổ nấu in "0" lạc ("/mẻ0") — `ui/panels/CookPanel.tsx:123,133` dùng `{own && …}` với `own` là số; đổi `own > 0 &&`.
+  - **P0 M1:** FPS 21–22 ở mức Thấp, save cấp 29 (9 nhân viên, 9 kệ) — đo lại trên Chrome thật; nếu vẫn <30 thì sửa bộ tự hạ (Luật 8).
+  - **P0 M4:** 4–5 thẻ sự kiện chồng nhau che >50% màn điện thoại → tối đa 1–2 thẻ, còn lại xếp hàng chờ; thẻ lễ hội rút "hàng hút" còn 3–4 món (Luật 9).
+  - **P1 M3:** cảnh báo hết hạn lặp tên ("Diêm, bật lửa" ×4) và lặp số tiền; xem lại hạn dùng diêm/bật lửa.
+  - **P1 M5:** menu Thêm có 2 tiêu đề "NHÂN SỰ & KHÁCH"; huy hiệu đè lên dòng tiêu đề.
+  - **P1 M7:** màn ngang 812×375: HUD + băng thông tin chiếm ~80% chiều cao → thu băng thông tin còn 1 dòng.
+  - **P1 A1:** thêm ▲▼ hoặc +/− cạnh số lãi/lỗ (người mù màu đỏ-lục).
+  - **P1:** câu "nhập gấp … vẫn lời −38.400đ" → "lỗ 38.400đ".
+  - P2 (M8 dời "Chơi lại từ đầu" vào Cài đặt; chữ to; tiết kiệm pin) để sau.
 - ✅ **Trục "vòng đời nông sản nhà" ĐÃ KHÉP (GĐ1088–1141, audit 10-GĐ ×4 + độ phủ ×3 + QA render sống ×8):** mọi nông sản trồng/nuôi đều có lối ra (bếp/pha/tiệm xôi — test chặn tái phạm trên dữ liệu); gợi ý theo nông sản: "Hôm nay đáng" biết giá trị pha (1104/1105), "trồng/nuôi để pha" khi thiếu (1101/1110), "nhập ngay" nguyên liệu mua ngoài (1114), nút thắt món pha (1112), báo món bị chặn sáng (1102); dòng tư vấn Vườn gộp 4 tín hiệu (pha/nấu + đơn quán xóm + hết hạn + xếp theo tác động — 1109/1111/1117). QA render sống ×3 (1099/1106/1115/1120). Việc còn mở trong trục: KHÔNG — đừng tái khám phá; hướng mới cần Leader duyệt.
 - ✅ **File tham khảo ĐÃ KHAI THÁC HẾT (rà GĐ1256/1259):** mọi mục "đáng bê" từ `PHAN-TICH-THAM-KHAO-XOM-NONG-TRAI.md` đều đã có: pipeline asset kit Blender→GLB+manifest (GĐ172–176) · juice quầy GĐ173 + juice trại GĐ1255 · tách chunk vendor/wgpu GĐ174/1196 (chunk to nhất còn lại là three.webgpu — thư viện khởi động, không tách được thêm) · guard WebGL GĐ175 · font subset woff2 tự host + Baloo 2 GĐ1259. Còn treo chỉ "Top góp ý" (chờ ra public) và sprite atlas (emoji là lựa chọn chủ đích). `PHAN-TICH-THAM-KHAO-HAPPYTOWN.md` là tài liệu lịch sử — P0/P1/P2 đều đã khép từ trước. Hai file này giữ lại làm đối chiếu, không cần rà lại.
 
@@ -92,6 +109,7 @@
 - 🔍 **Rà 3 cơ sở (GĐ413, theo yêu cầu người dùng trước khi mở rộng tiệm xôi):**
   - Cửa hàng tiện lợi: luật chơi SÂU (ca kíp, mệt mỏi, sự cố đêm, máy bán hàng, điện, nhóm khách đêm). Nợ: BranchPanel 297 dòng gánh hết, cần soát độ rối; QA 3D xong GĐ527.
   - Nông trại: SÂU (mùa vụ, 7 vật nuôi, công trình 3 sao, đơn đặt hàng, phụ trại; world/farm.ts 996 dòng). QA 3D xong GĐ528.
+- GĐ1441 (hướng 2 vườn→bếp: cam/ổi vườn trước chỉ ra quán nước — thêm Cánh gà sốt cam u46 ở chảo chiên, Ổi lắc chua ngọt u41 ở máy xay; ớt hiểm u71 nên thay bằng đường, cấp 40 đã đủ 14 món nên dời 41). 507/4772 xanh.
   - Quán nước: ~~MỎNG~~ **ĐÃ KHOÉT SÂU (nhận định cũ lỗi thời — hiệu chỉnh GĐ1064):** nay đủ bốn chiều từng bị chê: (1) không còn "2 nút" — có bậc cửa hàng `QUAN_TIERS` (quầy→quán→cà phê, GĐ428) + mẻ tự pha `hand` (GĐ427, QUAN_HAND_BATCHES/MAX) + menu có slot `quanMenuSlots`; (2) thực đơn không còn "tự lấy mọi đồ uống" — `clearMenu` theo slot + `varietyMul`/`quanHotMul`(nóng theo thời tiết); (3) thời tiết GIỜ CÓ ảnh hưởng — `QUAN_WEATHER_MUL` (nắng 1.25…bão 0.45) × `weatherMul` × `quanMatchMul`(ngày trận, GĐ580+) × `quanWeekendMul`; (4) CÓ sự kiện — `QUAN_EVENT` máy pha hỏng (brewer) / xe nước đối diện (cart, GĐ703) + khách đêm ngày trận. `src/data/quanNuoc.ts` áp dụng tất cả trong `quanNuocDay` (xác định, không Math.random) và **coverage 0 lệnh trống + 7 file test** (`quanNuoc.test`/`quanNuocEvents`/`quanMatchNight`/`quanNuocHealth`/`quanNuocBalance`/`quanRecipes`/`quanNuocDayAction`). Panel 230 dòng là bảng phân tích số liệu mô phỏng — không còn là gánh 2 nút. Chỗ "tiệm xôi" + chiều sâu khác giữ nguyên.
   - Thứ tự sửa: ~~(1) thời tiết~~ xong GĐ414, ~~(2) chọn món~~ thành thực đơn pha chế GĐ415, ~~(3) 3D quán dùng kit~~ (đã có setQuanDecor: chậu cây + băng ghế), ~~(4) gọn BranchPanel~~ xong GĐ417, ~~(5) QA 3D~~ GĐ419 +GĐ420 đủ cả ba. Tiệm xôi phần còn lại để sau.
   - QA 3D cần save thử riêng: không có chế độ sandbox, không được sửa save thật của người dùng.

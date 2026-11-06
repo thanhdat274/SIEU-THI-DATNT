@@ -3550,6 +3550,50 @@ describe('GĐ1440 — xôi xoài cốt dừa (quây xôi)', () => {
   });
 });
 
+/** GĐ1441 — Cánh gà sốt cam: lối ra đầu tiên của cam vườn nhà (chảo chiên). */
+describe('GĐ1441 — cánh gà sốt cam (chảo chiên)', () => {
+  const recipe = RECIPE_MAP['recipe_canh_ga_sot_cam'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm chảo chiên và dùng cam vườn nhà', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'canh_ga_sot_cam')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'canh_ga_sot_cam').length).toBe(1);
+    expect(recipe.station).toBe('fryer');
+    expect(recipe.inputs.some((i) => i.productId === 'x_cam')).toBe(true);
+  });
+});
+
+/** GĐ1441 — Ổi lắc chua ngọt: lối ra đầu tiên của ổi vườn nhà (máy xay). */
+describe('GĐ1441 — ổi lắc muối ớt (máy xay)', () => {
+  const recipe = RECIPE_MAP['recipe_oi_lac_muoi'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm máy xay và dùng ổi vườn nhà', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'oi_lac_muoi')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'oi_lac_muoi').length).toBe(1);
+    expect(recipe.station).toBe('blender');
+    expect(recipe.inputs.some((i) => i.productId === 'x_oi')).toBe(true);
+  });
+});
+
 /** GĐ1405 — Sữa hạt điều: lối ra đầu tiên của hạt điều rang muối (máy xay). */
 describe('GĐ1405 — sữa hạt điều (máy xay)', () => {
   const recipe = RECIPE_MAP['recipe_sua_hat_dieu'];
