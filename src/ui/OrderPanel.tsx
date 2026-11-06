@@ -1,7 +1,9 @@
 import { suggestBudget } from '../data/suggestBudget';
 import { ProductIcon } from './ProductIcon';
 import { st } from './orderPanelStyles';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { orderSlowdown } from '../data/orderSlowdown';
+import { useSession } from '../net/session';
 import { Dropdown } from './Dropdown';
 import { lastActionResult } from '../net/coop';
 import { storageCapacity, storageUsed, useClock, useGame, wagesDue } from '../core/store';
@@ -43,6 +45,12 @@ import { ASSESS_STYLE, BUY_TONE_COLOR, BUY_TONE_ICON, BUY_TONE_LABEL, DIR_WORD, 
 export function OrderPanel() {
   const { level, day, money, demand, demandToday, deliveries, placeOrder, closePanel, notify, weatherSeed, forecast, storage, weather, warehouseTier, priceOf, furniture, openPanel, analytics } = useGame();
   const unlockedSuppliers = SUPPLIERS.filter((s) => s.unlock <= level);
+  const coop = useSession((x) => x.coop);
+  useEffect(() => {
+    const g = useGame.getState();
+    const next = orderSlowdown(g.speed, !!coop);
+    if (next !== null) { g.setSpeed(next); g.notify('⏱ Đang tua nhanh → hạ về 1× cho bạn chọn hàng thong thả'); }
+  }, [coop]);
   // GĐ57: lớp minh bạch giá mua chỉ bật khi đã mở mối dao động mạnh (Chợ đầu mối, cấp 3) — cấp <3 chưa thấy gì mới.
   const showCost = level >= 3;
   const [supplierId, setSupplierId] = useState(SUPPLIERS[0].id);
