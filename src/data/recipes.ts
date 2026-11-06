@@ -370,6 +370,18 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'nuoc_ep_nho_xanh', name: 'Nước ép nho xanh', category: 'drink', buy: 7000, sell: 12000, color: 0xa8d060, unlock: 35 },
   // GĐ1428: Chôm chôm dầm đá — lối ra ĐẦU TIÊN của chôm chôm.
   { id: 'nuoc_chom_chom', name: 'Chôm chôm dầm đá', category: 'drink', buy: 7000, sell: 12000, color: 0xe04050, unlock: 35 },
+  // GĐ1429: Đậu hũ chiên sả — lối ra ĐẦU TIÊN của đậu hũ.
+  { id: 'dau_hu_chien_sa', name: 'Đậu hũ chiên sả', category: 'fresh', buy: 3000, sell: 6000, color: 0xe8c870, unlock: 35 },
+  // GĐ1429: Trứng xào cà chua — lối ra ĐẦU TIÊN của cà chua.
+  { id: 'trung_xao_ca_chua', name: 'Trứng xào cà chua', category: 'fresh', buy: 4000, sell: 8000, color: 0xe85a3a, unlock: 35 },
+  // GĐ1429: Rau cải xào tỏi — lối ra ĐẦU TIÊN của rau cải.
+  { id: 'rau_cai_xao_toi', name: 'Rau cải xào tỏi', category: 'fresh', buy: 4000, sell: 7000, color: 0x5aa04a, unlock: 35 },
+  // GĐ1429: Bò xào giá — lối ra ĐẦU TIÊN của giá đỗ.
+  { id: 'bo_xao_gia', name: 'Bò xào giá', category: 'fresh', buy: 8000, sell: 14000, color: 0x9a6a4a, unlock: 35 },
+  // GĐ1429: Nước ép dưa leo cà rốt — lối ra ĐẦU TIÊN của dưa leo.
+  { id: 'nuoc_ep_dua_leo_ca_rot', name: 'Nước ép dưa leo cà rốt', category: 'drink', buy: 4000, sell: 8000, color: 0xa0c860, unlock: 35 },
+  // GĐ1429: Nước ép nho tím — lối ra ĐẦU TIÊN của nho tím.
+  { id: 'nuoc_ep_nho_tim', name: 'Nước ép nho tím', category: 'drink', buy: 7000, sell: 12000, color: 0x6a2a7a, unlock: 35 },
   // GĐ1409: Sữa chua granola — lối ra ĐẦU TIÊN của ngũ cốc granola: mẻ (granola 130k + sữa chua) → 14 cốc × 18k = 252k.
   { id: 'sua_chua_granola', name: 'Sữa chua granola', category: 'fresh', buy: 11000, sell: 18000, color: 0xe9d8b4, unlock: 68 },
   // GĐ1408: Cà phê phin sữa — lối ra ĐẦU TIÊN của cà phê xay nguyên chất: mẻ (cà phê xay 150k + sữa đặc 22k) = 172k → 25 ly × 12k = 300k.
@@ -944,6 +956,30 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_nuoc_chom_chom', name: 'Chôm chôm dầm đá', station: 'blender',
     inputs: [{ productId: 'x_chom_chom', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
     outputId: 'nuoc_chom_chom', outputQty: 5, durationMin: 6, unlock: 35, reputationGain: 1 },
+  // GĐ1429: Đậu hũ chiên sả ở chảo chiên. Mở 35 (> golden 30, ≥ cấp nguyên liệu).
+  { id: 'recipe_dau_hu_chien_sa', name: 'Đậu hũ chiên sả', station: 'fryer',
+    inputs: [{ productId: 'x_dau_hu', quantity: 4 }],
+    outputId: 'dau_hu_chien_sa', outputQty: 6, durationMin: 8, unlock: 35, reputationGain: 1 },
+  // GĐ1429: Trứng xào cà chua ở chảo chiên. Mở 35 (> golden 30, ≥ cấp nguyên liệu).
+  { id: 'recipe_trung_xao_ca_chua', name: 'Trứng xào cà chua', station: 'fryer',
+    inputs: [{ productId: 'x_ca_chua', quantity: 1 }, { productId: 'x_trung_ga', quantity: 4 }],
+    outputId: 'trung_xao_ca_chua', outputQty: 4, durationMin: 8, unlock: 35, reputationGain: 1 },
+  // GĐ1429: Rau cải xào tỏi ở chảo chiên. Mở 35 (> golden 30, ≥ cấp nguyên liệu).
+  { id: 'recipe_rau_cai_xao_toi', name: 'Rau cải xào tỏi', station: 'fryer',
+    inputs: [{ productId: 'x_rau_cai', quantity: 1 }, { productId: 'x_toi', quantity: 1 }],
+    outputId: 'rau_cai_xao_toi', outputQty: 4, durationMin: 8, unlock: 35, reputationGain: 1 },
+  // GĐ1429: Bò xào giá ở chảo chiên. Mở 35 (> golden 30, ≥ cấp nguyên liệu).
+  { id: 'recipe_bo_xao_gia', name: 'Bò xào giá', station: 'fryer',
+    inputs: [{ productId: 'x_thit_bo', quantity: 1 }, { productId: 'x_gia_do', quantity: 1 }],
+    outputId: 'bo_xao_gia', outputQty: 6, durationMin: 8, unlock: 35, reputationGain: 1 },
+  // GĐ1429: Nước ép dưa leo cà rốt ở máy xay. Mở 35 (> golden 30, ≥ cấp nguyên liệu).
+  { id: 'recipe_nuoc_ep_dua_leo_ca_rot', name: 'Nước ép dưa leo cà rốt', station: 'blender',
+    inputs: [{ productId: 'x_dua_leo', quantity: 1 }, { productId: 'x_ca_rot', quantity: 1 }],
+    outputId: 'nuoc_ep_dua_leo_ca_rot', outputQty: 4, durationMin: 8, unlock: 35, reputationGain: 1 },
+  // GĐ1429: Nước ép nho tím ở máy xay. Mở 35 (> golden 30, ≥ cấp nguyên liệu).
+  { id: 'recipe_nuoc_ep_nho_tim', name: 'Nước ép nho tím', station: 'blender',
+    inputs: [{ productId: 'x_nho_tim', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
+    outputId: 'nuoc_ep_nho_tim', outputQty: 7, durationMin: 8, unlock: 35, reputationGain: 1 },
   // GĐ1409: Sữa chua granola ở máy xay: lãi dương, hời hơn bán thẳng nguyên liệu. Mở 68 = cấp granola (> golden 30).
   { id: 'recipe_sua_chua_granola', name: 'Sữa chua granola', station: 'blender',
     inputs: [{ productId: 'ngu_coc', quantity: 1 }, { productId: 'suachua', quantity: 1 }],

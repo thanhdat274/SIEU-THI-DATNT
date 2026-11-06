@@ -3066,6 +3066,138 @@ describe('GĐ1428 — chôm chôm dầm đá (máy xay)', () => {
   });
 });
 
+/** GĐ1429 — Đậu hũ chiên sả: lối ra đầu tiên của đậu hũ (chảo chiên). */
+describe('GĐ1429 — đậu hũ chiên sả (chảo chiên)', () => {
+  const recipe = RECIPE_MAP['recipe_dau_hu_chien_sa'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm chảo chiên và dùng đậu hũ', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'dau_hu_chien_sa')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'dau_hu_chien_sa').length).toBe(1);
+    expect(recipe.station).toBe('fryer');
+    expect(recipe.inputs.some((i) => i.productId === 'x_dau_hu')).toBe(true);
+  });
+});
+
+/** GĐ1429 — Trứng xào cà chua: lối ra đầu tiên của cà chua (chảo chiên). */
+describe('GĐ1429 — trứng xào cà chua (chảo chiên)', () => {
+  const recipe = RECIPE_MAP['recipe_trung_xao_ca_chua'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm chảo chiên và dùng cà chua', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'trung_xao_ca_chua')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'trung_xao_ca_chua').length).toBe(1);
+    expect(recipe.station).toBe('fryer');
+    expect(recipe.inputs.some((i) => i.productId === 'x_ca_chua')).toBe(true);
+  });
+});
+
+/** GĐ1429 — Rau cải xào tỏi: lối ra đầu tiên của rau cải (chảo chiên). */
+describe('GĐ1429 — rau cải xào tỏi (chảo chiên)', () => {
+  const recipe = RECIPE_MAP['recipe_rau_cai_xao_toi'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm chảo chiên và dùng rau cải', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'rau_cai_xao_toi')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'rau_cai_xao_toi').length).toBe(1);
+    expect(recipe.station).toBe('fryer');
+    expect(recipe.inputs.some((i) => i.productId === 'x_rau_cai')).toBe(true);
+  });
+});
+
+/** GĐ1429 — Bò xào giá: lối ra đầu tiên của giá đỗ (chảo chiên). */
+describe('GĐ1429 — bò xào giá (chảo chiên)', () => {
+  const recipe = RECIPE_MAP['recipe_bo_xao_gia'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm chảo chiên và dùng giá đỗ', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'bo_xao_gia')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'bo_xao_gia').length).toBe(1);
+    expect(recipe.station).toBe('fryer');
+    expect(recipe.inputs.some((i) => i.productId === 'x_gia_do')).toBe(true);
+  });
+});
+
+/** GĐ1429 — Nước ép dưa leo cà rốt: lối ra đầu tiên của dưa leo (máy xay). */
+describe('GĐ1429 — nước ép dưa leo cà rốt (máy xay)', () => {
+  const recipe = RECIPE_MAP['recipe_nuoc_ep_dua_leo_ca_rot'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm máy xay và dùng dưa leo', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'nuoc_ep_dua_leo_ca_rot')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'nuoc_ep_dua_leo_ca_rot').length).toBe(1);
+    expect(recipe.station).toBe('blender');
+    expect(recipe.inputs.some((i) => i.productId === 'x_dua_leo')).toBe(true);
+  });
+});
+
+/** GĐ1429 — Nước ép nho tím: lối ra đầu tiên của nho tím (máy xay). */
+describe('GĐ1429 — nước ép nho tím (máy xay)', () => {
+  const recipe = RECIPE_MAP['recipe_nuoc_ep_nho_tim'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm máy xay và dùng nho tím', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'nuoc_ep_nho_tim')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'nuoc_ep_nho_tim').length).toBe(1);
+    expect(recipe.station).toBe('blender');
+    expect(recipe.inputs.some((i) => i.productId === 'x_nho_tim')).toBe(true);
+  });
+});
+
 /** GĐ1405 — Sữa hạt điều: lối ra đầu tiên của hạt điều rang muối (máy xay). */
 describe('GĐ1405 — sữa hạt điều (máy xay)', () => {
   const recipe = RECIPE_MAP['recipe_sua_hat_dieu'];
