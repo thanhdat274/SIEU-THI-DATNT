@@ -1878,6 +1878,28 @@ describe('GĐ1410 — mì xào trứng (chảo chiên)', () => {
   });
 });
 
+/** GĐ1411 — Gà nướng mật ong: lối ra đầu tiên của mật ong rừng (bếp nướng). */
+describe('GĐ1411 — gà nướng mật ong (bếp nướng)', () => {
+  const recipe = RECIPE_MAP['recipe_ga_nuong_mat_ong'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm bếp nướng và dùng mật ong rừng', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'ga_nuong_mat_ong')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'ga_nuong_mat_ong').length).toBe(1);
+    expect(recipe.station).toBe('food_grill');
+    expect(recipe.inputs.some((i) => i.productId === 'mat_ong_rung')).toBe(true);
+  });
+});
+
 /** GĐ1405 — Sữa hạt điều: lối ra đầu tiên của hạt điều rang muối (máy xay). */
 describe('GĐ1405 — sữa hạt điều (máy xay)', () => {
   const recipe = RECIPE_MAP['recipe_sua_hat_dieu'];

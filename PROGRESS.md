@@ -110,3 +110,4 @@
 - Mục lục đầy đủ đến GĐ1391: `docs/progress-archive/INDEX-MUC-LUC-DEN-GD1391.md` (grep "GĐxx"). GĐ1382–1391 tóm tắt ở mục Trạng thái hiện tại; GĐ1392 gọn PROGRESS 190→37KB; GĐ1393 dời mục lục để PROGRESS < 30KB.
 - GĐ1409 (Sữa chua granola — lối ra đầu tiên của ngũ cốc granola ở máy xay): 14 cốc×18k, unlock 68. Dời GĐ1395–1401 sang archive. Full suite 503/4518 xanh.
 - GĐ1410 (Mì xào trứng — lối ra đầu tiên của mì tươi vắt ở chảo chiên): 4 đĩa×25k, unlock 40. Full suite 503/4521 xanh.
+- GĐ1411 (Gà nướng mật ong — lối ra đầu tiên của mật ong rừng ở bếp nướng): 12 phần×55k, unlock 82; buy 39k để giữ biên hàng cao cấp 1.35–1.42 (latePremium). Full suite 503/4524 xanh.
