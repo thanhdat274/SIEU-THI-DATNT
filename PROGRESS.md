@@ -139,3 +139,4 @@
 - GĐ1459: Cá basa chiên sốt me (u55, chảo chiên: 2 basa + 1 me dầm bà Tám → 7 phần, bán 24k) — lối ra bếp thứ 2 cho me dầm; test recipeDepth.
 - GĐ1460: Cơm cháy chà bông (u56, chảo chiên: 1 túi gạo + 1 chà bông → 16 miếng, bán 15k) — món khô để lâu; test recipeDepth.
 - GĐ1461: Xôi lạp xưởng trứng (u57, quây xôi: 1 nếp + 1 lạp xưởng bà Tám + 2 trứng → 16 gói, bán 12k) — lối ra thứ 3 cho lạp xưởng; test recipeDepth.
+- GĐ1462: Bánh đa trộn giò thủ (u58, bếp nồi: 2 bánh đa + 1 giò thủ + 1 hành phi → 10 tô, bán 17k) — lối ra thứ 2 cho bánh đa; test recipeDepth.
