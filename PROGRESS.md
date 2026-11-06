@@ -110,3 +110,4 @@
 - GĐ1416–1419 (lối ra đầu tiên: yến mạch, mắc ca, yến sào, kem que, bánh bao đông lạnh, sữa chua nếp, nước mắm, mứt Tết, dầu ăn, sữa hạt; bia & snack đóng gói giữ bán thẳng): chi tiết ở docs/progress-archive/PROGRESS-GD1416-1419.md
 - GĐ1420–1422 (cà phê lon, kem cây hộp; rà catalog x_* ~70 nguyên liệu chưa có lối ra — đợt 1–2: khoai tây chiên, gà viên, cá basa, pizza, mực khoanh, chả cá, cánh gà, cá hồi): chi tiết ở docs/progress-archive/PROGRESS-GD1420-1422.md
 - GĐ1423 (đợt 3 catalog — trái cây ở máy xay u35: Sinh tố bơ, Nước ép thơm, Sinh tố đu đủ, Sinh tố thanh long tím). Full suite 503/4611 xanh.
+- GĐ1424 (đợt 4: Canh sườn bí đỏ, Canh khổ qua nhồi thịt ở bếp nồi nấu; Bò xào bông cải, Cá thu chiên ở chảo chiên). 503/4623 xanh.

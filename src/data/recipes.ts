@@ -322,6 +322,14 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'sinh_to_du_du', name: 'Sinh tố đu đủ', category: 'drink', buy: 7000, sell: 12000, color: 0xf0904a, unlock: 35 },
   // GĐ1423: Sinh tố thanh long tím — lối ra ĐẦU TIÊN của thanh long ruột tím.
   { id: 'sinh_to_thanh_long', name: 'Sinh tố thanh long tím', category: 'drink', buy: 7000, sell: 12000, color: 0xc0306a, unlock: 35 },
+  // GĐ1424: Canh sườn bí đỏ — lối ra ĐẦU TIÊN của sườn heo.
+  { id: 'canh_suon_bi_do', name: 'Canh sườn bí đỏ', category: 'fresh', buy: 8000, sell: 12000, color: 0xe89a3a, unlock: 35 },
+  // GĐ1424: Canh khổ qua nhồi thịt — lối ra ĐẦU TIÊN của khổ qua.
+  { id: 'canh_kho_qua_nhoi', name: 'Canh khổ qua nhồi thịt', category: 'fresh', buy: 7000, sell: 11000, color: 0x6a9a4a, unlock: 37 },
+  // GĐ1424: Bò xào bông cải — lối ra ĐẦU TIÊN của bông cải xanh.
+  { id: 'bo_xao_bong_cai', name: 'Bò xào bông cải', category: 'fresh', buy: 10000, sell: 16000, color: 0x5a8a3a, unlock: 35 },
+  // GĐ1424: Cá thu chiên — lối ra ĐẦU TIÊN của cá thu tươi.
+  { id: 'ca_thu_chien', name: 'Cá thu chiên', category: 'fresh', buy: 6000, sell: 10000, color: 0xb08a5a, unlock: 37 },
   // GĐ1409: Sữa chua granola — lối ra ĐẦU TIÊN của ngũ cốc granola: mẻ (granola 130k + sữa chua) → 14 cốc × 18k = 252k.
   { id: 'sua_chua_granola', name: 'Sữa chua granola', category: 'fresh', buy: 11000, sell: 18000, color: 0xe9d8b4, unlock: 68 },
   // GĐ1408: Cà phê phin sữa — lối ra ĐẦU TIÊN của cà phê xay nguyên chất: mẻ (cà phê xay 150k + sữa đặc 22k) = 172k → 25 ly × 12k = 300k.
@@ -800,6 +808,22 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_sinh_to_thanh_long', name: 'Sinh tố thanh long tím', station: 'blender',
     inputs: [{ productId: 'x_thanh_long_tim', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
     outputId: 'sinh_to_thanh_long', outputQty: 5, durationMin: 6, unlock: 35, reputationGain: 1 },
+  // GĐ1424: Canh sườn bí đỏ ở bếp nồi nấu. Mở 35 (> golden 30, ≥ cấp nguyên liệu).
+  { id: 'recipe_canh_suon_bi_do', name: 'Canh sườn bí đỏ', station: 'hot_kettle',
+    inputs: [{ productId: 'x_suon_heo', quantity: 1 }, { productId: 'x_bi_do', quantity: 1 }],
+    outputId: 'canh_suon_bi_do', outputQty: 6, durationMin: 20, unlock: 35, reputationGain: 2 },
+  // GĐ1424: Canh khổ qua nhồi thịt ở bếp nồi nấu. Mở 37 (> golden 30, ≥ cấp nguyên liệu).
+  { id: 'recipe_canh_kho_qua_nhoi', name: 'Canh khổ qua nhồi thịt', station: 'hot_kettle',
+    inputs: [{ productId: 'x_kho_qua', quantity: 1 }, { productId: 'x_thit_xay', quantity: 1 }],
+    outputId: 'canh_kho_qua_nhoi', outputQty: 6, durationMin: 20, unlock: 37, reputationGain: 2 },
+  // GĐ1424: Bò xào bông cải ở chảo chiên. Mở 35 (> golden 30, ≥ cấp nguyên liệu).
+  { id: 'recipe_bo_xao_bong_cai', name: 'Bò xào bông cải', station: 'fryer',
+    inputs: [{ productId: 'x_thit_bo', quantity: 1 }, { productId: 'x_bong_cai_xanh', quantity: 1 }],
+    outputId: 'bo_xao_bong_cai', outputQty: 6, durationMin: 10, unlock: 35, reputationGain: 2 },
+  // GĐ1424: Cá thu chiên ở chảo chiên. Mở 37 (> golden 30, ≥ cấp nguyên liệu).
+  { id: 'recipe_ca_thu_chien', name: 'Cá thu chiên', station: 'fryer',
+    inputs: [{ productId: 'x_ca_thu_tuoi', quantity: 1 }],
+    outputId: 'ca_thu_chien', outputQty: 5, durationMin: 10, unlock: 37, reputationGain: 2 },
   // GĐ1409: Sữa chua granola ở máy xay: lãi dương, hời hơn bán thẳng nguyên liệu. Mở 68 = cấp granola (> golden 30).
   { id: 'recipe_sua_chua_granola', name: 'Sữa chua granola', station: 'blender',
     inputs: [{ productId: 'ngu_coc', quantity: 1 }, { productId: 'suachua', quantity: 1 }],
