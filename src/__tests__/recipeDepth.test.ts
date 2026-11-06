@@ -1790,6 +1790,28 @@ describe('GĐ1391 — cháo lòng (món sáng Sài Gòn, ấm nước)', () => {
   });
 });
 
+/** GĐ1398 — Cua hấp bia: lối ra đầu tiên của cua biển sống (nồi hấp). */
+describe('GĐ1398 — cua hấp bia (nồi hấp)', () => {
+  const recipe = RECIPE_MAP['recipe_cua_hap_bia'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm nồi hấp và dùng cua biển sống', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'cua_hap_bia')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'cua_hap_bia').length).toBe(1);
+    expect(recipe.station).toBe('steamer');
+    expect(recipe.inputs.some((i) => i.productId === 'cua_bien_tuoi')).toBe(true);
+  });
+});
+
 /** GĐ1397 — Tôm nướng muối ớt: lối ra đầu tiên của tôm sú tươi (bếp nướng). */
 describe('GĐ1397 — tôm nướng muối ớt (bếp nướng)', () => {
   const recipe = RECIPE_MAP['recipe_tom_nuong'];

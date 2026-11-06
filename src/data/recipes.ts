@@ -260,6 +260,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   // GĐ1390: Gỏi cuốn — món ăn lành trứ danh (bánh tráng gói tôm luộc):
   // mẻ (bánh tráng 5k×2 + tôm đông lạnh 90k) = 100k → 12 cuốn × 14k = 168k, lãi 68k/mẻ.
   { id: 'goi_cuon', name: 'Gỏi cuốn', category: 'fresh', buy: 8500, sell: 14000, color: 0xa8d8b9, unlock: 44 },
+  // GĐ1398: Cua hấp bia — lối ra ĐẦU TIÊN của cua biển sống: mẻ (cua 280k + bia chai 15k) = 295k → 12 phần × 36k = 432k.
+  { id: 'cua_hap_bia', name: 'Cua hấp bia', category: 'fresh', buy: 25000, sell: 36000, color: 0xd35400, unlock: 55 },
   // GĐ1397: Tôm nướng muối ớt — lối ra ĐẦU TIÊN của tôm sú tươi: mẻ (tôm 190k + gia vị 8k) = 198k → 12 xiên × 26k = 312k.
   { id: 'tom_nuong', name: 'Tôm nướng muối ớt', category: 'fresh', buy: 16500, sell: 26000, color: 0xe8603c, unlock: 42 },
   // GĐ1394: Mực nướng sa tế — lối ra ĐẦU TIÊN của mực ống tươi: mẻ (mực 160k + gia vị 8k) = 168k → 12 xiên × 22k = 264k.
@@ -594,6 +596,10 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_goi_cuon', name: 'Gỏi cuốn', station: 'hot_kettle',
     inputs: [{ productId: 'banhtrang', quantity: 2 }, { productId: 'hai_san', quantity: 1 }],
     outputId: 'goi_cuon', outputQty: 12, durationMin: 15, unlock: 44, reputationGain: 2 },
+  // GĐ1398: Cua hấp bia ở nồi hấp: mẻ 295k → 432k, lãi 137k/mẻ, hời hơn bán thẳng (401k < 432k). Mở 55 (> golden 30).
+  { id: 'recipe_cua_hap_bia', name: 'Cua hấp bia', station: 'steamer',
+    inputs: [{ productId: 'cua_bien_tuoi', quantity: 1 }, { productId: 'bia_chai', quantity: 1 }],
+    outputId: 'cua_hap_bia', outputQty: 12, durationMin: 20, unlock: 55, reputationGain: 4 },
   // GĐ1397: Tôm nướng muối ớt ở bếp nướng: mẻ 198k → 312k, lãi 114k/mẻ, hời hơn bán thẳng (272k < 312k). Mở 42 (> golden 30).
   { id: 'recipe_tom_nuong', name: 'Tôm nướng muối ớt', station: 'food_grill',
     inputs: [{ productId: 'tom_su_tuoi', quantity: 1 }, { productId: 'giavi', quantity: 1 }],
