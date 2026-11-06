@@ -264,6 +264,13 @@ export function SummaryPanel({ day }: { day: number }) {
               </div>
             </Callout>
           )}
+          {/* Playtest P1 T5: ngày đầu đưa lãi gộp bán hàng lên đầu — tiền nhập kho là vốn nằm trên kệ, không phải lỗ */}
+          {day === 1 && goodsRevenue > 0 && (
+            <p style={{ margin: '0 0 8px', fontSize: 15 }}>
+              🎉 Ngày đầu bán hàng lãi gộp <b style={{ color: '#2ecc71' }}>{trendMark(goodsRevenue - goodsCost)}{formatMoney(goodsRevenue - goodsCost)}</b>
+              <br /><small style={{ opacity: 0.8 }}>Tiền nhập kho là vốn còn nằm trên kệ — bán dần sẽ về lại.</small>
+            </p>
+          )}
           <table style={{ ...styles.table, fontSize: 15 }}>
             <tbody>
               <tr><td style={styles.left}>Doanh thu</td><td>{formatMoney(st.revenue)}</td></tr>
