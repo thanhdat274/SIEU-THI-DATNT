@@ -260,6 +260,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   // GĐ1390: Gỏi cuốn — món ăn lành trứ danh (bánh tráng gói tôm luộc):
   // mẻ (bánh tráng 5k×2 + tôm đông lạnh 90k) = 100k → 12 cuốn × 14k = 168k, lãi 68k/mẻ.
   { id: 'goi_cuon', name: 'Gỏi cuốn', category: 'fresh', buy: 8500, sell: 14000, color: 0xa8d8b9, unlock: 44 },
+  // GĐ1413: Bánh pía nướng nóng — lối ra ĐẦU TIÊN của bánh pía: 1 hộp (28k) nướng lại → 4 cái × 14k = 56k.
+  { id: 'banh_pia_nuong', name: 'Bánh pía nướng nóng', category: 'dry', buy: 9000, sell: 14000, color: 0xc98a4a, unlock: 40 },
   // GĐ1412: Trà thảo mộc nấu — lối ra ĐẦU TIÊN của trà thảo mộc hộp ở bếp: mẻ (trà 65k + đường 17k) → 12 ly × 12k.
   { id: 'tra_thao_moc_nau', name: 'Trà thảo mộc nấu', category: 'drink', buy: 7000, sell: 12000, color: 0x6f9a5a, unlock: 59 },
   // GĐ1411: Gà nướng mật ong — lối ra ĐẦU TIÊN của mật ong rừng: mẻ (gà 130k + mật ong 260k) → 12 phần × 55k = 660k.
@@ -620,6 +622,10 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_goi_cuon', name: 'Gỏi cuốn', station: 'hot_kettle',
     inputs: [{ productId: 'banhtrang', quantity: 2 }, { productId: 'hai_san', quantity: 1 }],
     outputId: 'goi_cuon', outputQty: 12, durationMin: 15, unlock: 44, reputationGain: 2 },
+  // GĐ1413: Bánh pía nướng nóng ở bếp nướng. Mở 40 = cấp bánh pía (> golden 30).
+  { id: 'recipe_banh_pia_nuong', name: 'Bánh pía nướng nóng', station: 'food_grill',
+    inputs: [{ productId: 'banh_pia', quantity: 1 }],
+    outputId: 'banh_pia_nuong', outputQty: 4, durationMin: 6, unlock: 40, reputationGain: 1 },
   // GĐ1412: Trà thảo mộc nấu ở bếp nồi nấu. Mở 59 = cấp trà thảo mộc (> golden 30).
   { id: 'recipe_tra_thao_moc_nau', name: 'Trà thảo mộc nấu', station: 'hot_kettle',
     inputs: [{ productId: 'tra_thao_moc', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],

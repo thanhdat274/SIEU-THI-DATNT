@@ -1922,6 +1922,28 @@ describe('GĐ1412 — trà thảo mộc nấu (bếp nồi nấu)', () => {
   });
 });
 
+/** GĐ1413 — Bánh pía nướng nóng: lối ra đầu tiên của bánh pía (bếp nướng). */
+describe('GĐ1413 — bánh pía nướng (bếp nướng)', () => {
+  const recipe = RECIPE_MAP['recipe_banh_pia_nuong'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm bếp nướng và dùng bánh pía', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'banh_pia_nuong')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'banh_pia_nuong').length).toBe(1);
+    expect(recipe.station).toBe('food_grill');
+    expect(recipe.inputs.some((i) => i.productId === 'banh_pia')).toBe(true);
+  });
+});
+
 /** GĐ1405 — Sữa hạt điều: lối ra đầu tiên của hạt điều rang muối (máy xay). */
 describe('GĐ1405 — sữa hạt điều (máy xay)', () => {
   const recipe = RECIPE_MAP['recipe_sua_hat_dieu'];
