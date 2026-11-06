@@ -2846,6 +2846,116 @@ describe('GĐ1426 — bắp cải xào cà rốt (chảo chiên)', () => {
   });
 });
 
+/** GĐ1427 — Cá hồi hấp xì dầu: lối ra đầu tiên của cá hồi đông lạnh (nồi hấp). */
+describe('GĐ1427 — cá hồi hấp xì dầu (nồi hấp)', () => {
+  const recipe = RECIPE_MAP['recipe_ca_hoi_hap_xi_dau'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm nồi hấp và dùng cá hồi đông lạnh', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'ca_hoi_hap_xi_dau')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'ca_hoi_hap_xi_dau').length).toBe(1);
+    expect(recipe.station).toBe('steamer');
+    expect(recipe.inputs.some((i) => i.productId === 'x_ca_hoi_dong_lanh')).toBe(true);
+  });
+});
+
+/** GĐ1427 — Chả mực chiên: lối ra đầu tiên của chả mực đông lạnh (chảo chiên). */
+describe('GĐ1427 — chả mực chiên (chảo chiên)', () => {
+  const recipe = RECIPE_MAP['recipe_cha_muc_chien'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm chảo chiên và dùng chả mực đông lạnh', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'cha_muc_chien')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'cha_muc_chien').length).toBe(1);
+    expect(recipe.station).toBe('fryer');
+    expect(recipe.inputs.some((i) => i.productId === 'x_cha_muc')).toBe(true);
+  });
+});
+
+/** GĐ1427 — Lẩu viên thập cẩm (phần): lối ra đầu tiên của viên thả lẩu (bếp nồi nấu). */
+describe('GĐ1427 — lẩu viên thập cẩm (phần) (bếp nồi nấu)', () => {
+  const recipe = RECIPE_MAP['recipe_lau_vien_thap_cam'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm bếp nồi nấu và dùng viên thả lẩu', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'lau_vien_thap_cam')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'lau_vien_thap_cam').length).toBe(1);
+    expect(recipe.station).toBe('hot_kettle');
+    expect(recipe.inputs.some((i) => i.productId === 'x_vien_tha_lau')).toBe(true);
+  });
+});
+
+/** GĐ1427 — Bò viên nước lèo: lối ra đầu tiên của bò viên (bếp nồi nấu). */
+describe('GĐ1427 — bò viên nước lèo (bếp nồi nấu)', () => {
+  const recipe = RECIPE_MAP['recipe_bo_vien_nuoc_leo'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm bếp nồi nấu và dùng bò viên', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'bo_vien_nuoc_leo')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'bo_vien_nuoc_leo').length).toBe(1);
+    expect(recipe.station).toBe('hot_kettle');
+    expect(recipe.inputs.some((i) => i.productId === 'x_bo_vien')).toBe(true);
+  });
+});
+
+/** GĐ1427 — Cá viên chiên nước mắm: lối ra đầu tiên của cá viên (chảo chiên). */
+describe('GĐ1427 — cá viên chiên nước mắm (chảo chiên)', () => {
+  const recipe = RECIPE_MAP['recipe_ca_vien_chien_mam'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm chảo chiên và dùng cá viên', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'ca_vien_chien_mam')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'ca_vien_chien_mam').length).toBe(1);
+    expect(recipe.station).toBe('fryer');
+    expect(recipe.inputs.some((i) => i.productId === 'x_ca_vien')).toBe(true);
+  });
+});
+
 /** GĐ1405 — Sữa hạt điều: lối ra đầu tiên của hạt điều rang muối (máy xay). */
 describe('GĐ1405 — sữa hạt điều (máy xay)', () => {
   const recipe = RECIPE_MAP['recipe_sua_hat_dieu'];
