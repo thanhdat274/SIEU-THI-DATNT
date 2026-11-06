@@ -286,6 +286,10 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'banh_bao_dong_lanh_hap', name: 'Bánh bao hấp từ đông lạnh', category: 'fresh', buy: 10000, sell: 18000, color: 0xf5efe0, unlock: 35 },
   // GĐ1417: Sinh tố sữa chua nếp — lối ra ĐẦU TIÊN của sữa chua nếp cốc.
   { id: 'sinh_to_sua_chua_nep', name: 'Sinh tố sữa chua nếp', category: 'drink', buy: 7000, sell: 12000, color: 0xe6d4e8, unlock: 43 },
+  // GĐ1418: Cánh gà chiên nước mắm — lối ra ĐẦU TIÊN của nước mắm.
+  { id: 'canh_ga_chien_mam', name: 'Cánh gà chiên nước mắm', category: 'fresh', buy: 15000, sell: 24000, color: 0xc0702a, unlock: 35 },
+  // GĐ1418: Trà mứt gừng ngày Tết — lối ra ĐẦU TIÊN của mứt Tết.
+  { id: 'tra_mut_gung', name: 'Trà mứt gừng ngày Tết', category: 'drink', buy: 6000, sell: 10000, color: 0xd8a050, unlock: 50 },
   // GĐ1409: Sữa chua granola — lối ra ĐẦU TIÊN của ngũ cốc granola: mẻ (granola 130k + sữa chua) → 14 cốc × 18k = 252k.
   { id: 'sua_chua_granola', name: 'Sữa chua granola', category: 'fresh', buy: 11000, sell: 18000, color: 0xe9d8b4, unlock: 68 },
   // GĐ1408: Cà phê phin sữa — lối ra ĐẦU TIÊN của cà phê xay nguyên chất: mẻ (cà phê xay 150k + sữa đặc 22k) = 172k → 25 ly × 12k = 300k.
@@ -692,6 +696,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_sinh_to_sua_chua_nep', name: 'Sinh tố sữa chua nếp', station: 'blender',
     inputs: [{ productId: 'sua_chua_hop', quantity: 2 }, { productId: 'x_duong', quantity: 1 }],
     outputId: 'sinh_to_sua_chua_nep', outputQty: 6, durationMin: 6, unlock: 43, reputationGain: 1 },
+  // GĐ1418: Cánh gà chiên nước mắm ở chảo chiên. Mở 35 (> golden 30, ≥ cấp nguyên liệu).
+  { id: 'recipe_canh_ga_chien_mam', name: 'Cánh gà chiên nước mắm', station: 'fryer',
+    inputs: [{ productId: 'ga_ta_tuoi', quantity: 1 }, { productId: 'nuocmam', quantity: 1 }],
+    outputId: 'canh_ga_chien_mam', outputQty: 10, durationMin: 15, unlock: 35, reputationGain: 3 },
+  // GĐ1418: Trà mứt gừng ngày Tết ở bếp nồi nấu. Mở 50 (> golden 30, ≥ cấp nguyên liệu).
+  { id: 'recipe_tra_mut_gung', name: 'Trà mứt gừng ngày Tết', station: 'hot_kettle',
+    inputs: [{ productId: 'mut_tet', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
+    outputId: 'tra_mut_gung', outputQty: 12, durationMin: 12, unlock: 50, reputationGain: 2 },
   // GĐ1409: Sữa chua granola ở máy xay: lãi dương, hời hơn bán thẳng nguyên liệu. Mở 68 = cấp granola (> golden 30).
   { id: 'recipe_sua_chua_granola', name: 'Sữa chua granola', station: 'blender',
     inputs: [{ productId: 'ngu_coc', quantity: 1 }, { productId: 'suachua', quantity: 1 }],
