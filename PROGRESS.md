@@ -130,3 +130,4 @@
 - GĐ1465: Bánh tráng nướng chà bông (u61, bếp nướng: 2 bánh tráng + 1 chà bông + 4 trứng → 14 cái, bán 12k) — lối ra thứ 3 cho bánh tráng.
 - GĐ1466: Lạp xưởng xào dưa muối (u62, bếp nồi: 1 lạp xưởng + 3 dưa muối → 8 đĩa, bán 18k) — lối ra thứ 3 cho dưa muối.
 - GĐ1467: Ô mai chanh muối me (u63, bếp nồi: 1 chanh muối + 1 me dầm + 1 đường → 10 hũ, bán 15k, hàng khô) — nối 2 hàng xóm.
+- GĐ1468: Bánh mì lạp xưởng nướng (u64, bếp nướng: 6 bánh mì + 1 lạp xưởng + 1 dưa muối → 12 ổ, bán 20k).
