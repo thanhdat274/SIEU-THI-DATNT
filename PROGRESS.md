@@ -132,3 +132,4 @@
 - GĐ1467: Ô mai chanh muối me (u63, bếp nồi: 1 chanh muối + 1 me dầm + 1 đường → 10 hũ, bán 15k, hàng khô) — nối 2 hàng xóm.
 - GĐ1468: Bánh mì lạp xưởng nướng (u64, bếp nướng: 6 bánh mì + 1 lạp xưởng + 1 dưa muối → 12 ổ, bán 20k).
 - GĐ1469: Chả lụa chiên sốt me (u65, chảo chiên: 2 chả lụa bà Tám + 1 me dầm → 10 phần, bán 14k).
+- GĐ1470: Xôi chả lụa dưa muối (u66, quây xôi: 1 nếp + 1 chả lụa + 1 dưa muối → 14 gói, bán 10k).
