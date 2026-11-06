@@ -90,7 +90,7 @@
   - ✅ **P0 M4 (ĐÃ SỬA, test alertCap + soi trình duyệt):** tối đa 2 thẻ thông báo (nguy cấp + hướng dẫn ngày đầu luôn hiện), còn lại gom sau nút "+N thông báo".
   - ✅ **P1 M3 (ĐÃ SỬA, test reviveLots):** GỐC là lỗi save — life Infinity qua JSON thành null → hàng gia dụng (diêm…) báo cận hạn và BỊ HỎNG qua đêm sau mỗi lần nạp; applySnapshot giờ trả null → Infinity. Cảnh báo gộp cùng tên, bỏ lặp số tiền.
   - ✅ **P1 M5 (nửa đầu ĐÃ SỬA, test groupTools):** menu Thêm gom nhóm → mỗi tiêu đề 1 lần. Còn: huy hiệu đè dòng tiêu đề (cần soi CSS trên máy thật).
-  - **P1 M7:** màn ngang 812×375: HUD + băng thông tin chiếm ~80% chiều cao → thu băng thông tin còn 1 dòng.
+  - ✅ **P1 M7 ĐÃ SỬA:** màn thấp ≤480px ô đồng hồ còn 1 dòng (giờ + ngày), HUD trên ~135→95px (test landscapeTimeChip).
   - ✅ **P1 A1 (ĐÃ SỬA, test trendMark):** ▲/▼ cạnh lãi/lỗ ở 9 bảng (Tổng kết, Lịch sử, Sổ nấu, Combo, Giá, Online, Quán, Tiệm xôi, Kỳ).
   - ✅ **P1 (đã rà):** "vẫn lời −38.400đ" không tái hiện — VendorAlert.tsx:42 chỉ in "vẫn lời" khi rush.net > 0, lỗ thì in "không còn lời".
   - P2 (M8 dời "Chơi lại từ đầu" vào Cài đặt; chữ to; tiết kiệm pin) để sau.

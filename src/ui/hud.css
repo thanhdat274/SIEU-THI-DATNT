@@ -589,6 +589,9 @@
 @media (max-height: 480px) {
   #ui .hud-chip { min-height: 36px; padding: 3px 10px; }
   #ui .hud-place { display: none; }
+  /* Playtest P1 M7: màn ngang 812×375 — ô đồng hồ thu còn 1 dòng (giờ + ngày); dự báo/giờ vàng/lễ ẩn */
+  #ui .hud-time > span > small ~ small { display: none; }
+  #ui .hud-time > span > b, #ui .hud-time > span > small { display: inline; margin-right: 6px; }
   #ui .hud-tool { padding: 4px 6px; }
   #ui .hud-tool-icon { font-size: 17px; }
 }
