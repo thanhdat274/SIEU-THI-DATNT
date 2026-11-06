@@ -34,6 +34,8 @@ export const NEIGHBOR2_PRODUCTS: { id: string; name: string; category: Category;
   { id: 'hx_banh_da', name: 'Bánh đa (bì)', category: 'dry', buy: 14000, sell: 22000, color: 0xd9b36a, unlock: 38 },
   // GĐ1321: mở rộng đặc sản bà Tám (hướng 3) — bánh cuốn tay, biên ~1.65× như chuẩn, mở 40 sau mốc golden 30 → sim không đổi.
   { id: 'hx_banh_cuon', name: 'Bánh cuốn nhà làm (đĩa)', category: 'fresh', buy: 20000, sell: 33000, color: 0xf0e6d2, unlock: 40 },
+  // GĐ1438: lạp xưởng tươi nhà bà Tám (hướng 3) — biên ~1.65×, mở 44 > golden 30; lối ra: Cơm chiên lạp xưởng (chảo chiên).
+  { id: 'hx_lap_xuong', name: 'Lạp xưởng tươi bà Tám', category: 'cold', buy: 48000, sell: 79000, color: 0xb8323a, unlock: 44 },
 ];
 
 export const HOMEMADE_IDS: ReadonlySet<string> = new Set(HOMEMADE_PRODUCTS.map((h) => h.id));
