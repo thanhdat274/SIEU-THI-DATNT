@@ -22,3 +22,12 @@ describe('GĐ1433 — Sổ nấu gộp món khóa xa', () => {
     expect(s.visible.length + s.hiddenCount).toBe(fry.length);
   });
 });
+
+describe('GĐ1434 — nhịp mở món: không dồn quá nhiều công thức vào một cấp', () => {
+  it('mỗi cấp mở tối đa 13 công thức (trừ đợt bếp cũ ở cấp 36, giữ nguyên để không lệch sim)', () => {
+    const per = new Map<number, number>();
+    for (const r of RECIPES) per.set(r.unlock, (per.get(r.unlock) ?? 0) + 1);
+    per.delete(36);
+    expect(Math.max(...per.values())).toBeLessThanOrEqual(13);
+  });
+});
