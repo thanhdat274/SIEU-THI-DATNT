@@ -29,6 +29,7 @@ import { logoutGoogle, deleteAccount } from '../net/firebase';
 import { deleteAccountData } from '../net/account';
 import { useSession } from '../net/session';
 import { MoneyChip, MusicToggle, SoundToggle } from './HudChips';
+import { HudTour } from './HudTour';
 import { Panels } from './Panels';
 import { hubFirst, hubOf } from './hubs';
 import { ToolButton, type ToolDef } from './HudToolButton';
@@ -219,6 +220,8 @@ Bản đang chơi được giữ lại, khôi phục lần nữa là trở lại
   const openType = useGame((s) => s.panel?.type ?? null);
   // Hướng dẫn ngày đầu đang hiện và đang dừng ở bước nào (để nhấp nháy đúng nút dock)
   const tutActive = useGame(tutorialActive);
+  // GĐ1503 — tour HUD hiện một lần cho ván mới (ngày 1, xong hướng dẫn, không mở bảng nào)
+  const hudTourDone = useGame((s) => s.hudTourDone);
   const tutStep = useGame(tutorialStep);
   type Tool = { icon: string; label: string; on: () => void; badge?: string; lock?: number; active?: boolean; more?: boolean; /** Nhóm trong menu Thêm: tiêu đề nhỏ hiện trước cụm nút cùng nhóm */ group?: string; /** Màn hẹp (điện thoại đứng): dời vào menu Thêm cho dock vừa một hàng */ narrowMore?: boolean; /** Bước hướng dẫn ngày đầu đang chỉ tới nút này: viền vàng nhấp nháy */ pulse?: boolean };
   const tools: Tool[] = [
@@ -269,6 +272,9 @@ Bản đang chơi được giữ lại, khôi phục lần nữa là trở lại
   return (
     <>
       <Joystick />
+      {/* GĐ1503 — tour HUD khoanh vùng: ngày đầu, xong hướng dẫn, không mở bảng nào */}
+      {!hudTourDone && !tutActive && openType == null && day === 1 && level <= 3 && location === 'Nhà của bạn'
+        && <HudTour onDone={() => useGame.getState().markHudTourDone()} />}
       {/* Cột trái trên: ngày giờ, tiền, cấp; thông báo xếp ngay bên dưới nên không đè lên cụm bên phải */}
       <div className="hud-left">
       <div className="hud-status">

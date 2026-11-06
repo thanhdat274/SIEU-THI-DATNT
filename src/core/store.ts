@@ -103,6 +103,7 @@ export const newGameData = () => ({
   shelfProfit: {} as Record<number, { profit: number; since: number }>,
   impulseHinted: false,
   dineSeatHinted: false,
+  hudTourDone: false,
   prices: {} as Record<string, number>,
   happyHour: null as HappyHour | null,
   stats: emptyStats(),

@@ -89,6 +89,7 @@ const LOCAL_ONLY: Record<string, string> = {
   contributeLandmark: 'sân chơi — lượt góp và tiền là trạng thái chung; cả hẻm góp tối đa 1 lượt/ngày như chơi đơn, máy chạy kiểm tra và cập nhật nguồn chân lý',
   checkWelcomeBack: 'thưởng "Chào mừng quay lại" khi nạp bản lưu chơi đơn — theo lastSeenAt lưu trong máy, không dùng ở hẻm online, chạy cục bộ',
   collectOfflineRevenue: 'GĐ1497 — doanh thu vắng mặt tính theo lastSeenAt lưu trong máy (chỉ gọi ở màn đăng nhập chơi đơn, không chạy ở hẻm online), cộng tiền cục bộ',
+  markHudTourDone: 'GĐ1503 — chốt cờ đã xem tour HUD trên chính máy đó, thuần giao diện',
   dismissUnlockAct: 'đóng banner "Mới mở" — thêm một id vào danh sách chung, làm lại nhiều lần không đổi gì nên không cần khoá chỗ',
   learnSkill: 'học một kỹ năng theo id (thêm vào danh sách, không đè)',
   buyLicense: 'mua giấy phép theo id tờ',

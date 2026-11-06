@@ -197,6 +197,10 @@ export interface GameState {
   impulseHinted: boolean;
   /** GĐ1502 — đã dạy một lần "mua thêm bàn ghế" khi khách bỏ về vì hết chỗ ngồi khu ăn tại chỗ. */
   dineSeatHinted: boolean;
+  /** GĐ1503 — đã xem tour HUD khoanh vùng (ngày đầu, sau hướng dẫn). */
+  hudTourDone: boolean;
+  /** GĐ1503 — chốt cờ đã xem tour HUD. */
+  markHudTourDone: () => void;
   /** Giá bán người chơi tự đặt; không có thì dùng giá gợi ý. */
   prices: Record<string, number>;
   /** Giờ vàng tự đặt: khung 2 tiếng giảm giá kéo khách về (null = tắt). */
