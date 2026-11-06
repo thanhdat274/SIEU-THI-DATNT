@@ -438,6 +438,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'banh_mi_cha_lua_ba_tam', name: 'Bánh mì chả lụa bà Tám', category: 'fresh', buy: 9000, sell: 15000, color: 0xe6c49a, unlock: 39 },
   // GĐ1452: Cá basa kho dưa muối — lối ra ĐẦU TIÊN của dưa muối hàng xóm.
   { id: 'ca_kho_dua_muoi', name: 'Cá basa kho dưa muối', category: 'fresh', buy: 12000, sell: 20000, color: 0xa07a3a, unlock: 33 },
+  // GĐ1453: Bánh bao lạp xưởng — lối ra ĐẦU TIÊN của lạp xưởng bà Tám.
+  { id: 'banh_bao_lap_xuong', name: 'Bánh bao lạp xưởng', category: 'fresh', buy: 10000, sell: 16000, color: 0xf5ece0, unlock: 45 },
   // GĐ1409: Sữa chua granola — lối ra ĐẦU TIÊN của ngũ cốc granola: mẻ (granola 130k + sữa chua) → 14 cốc × 18k = 252k.
   { id: 'sua_chua_granola', name: 'Sữa chua granola', category: 'fresh', buy: 11000, sell: 18000, color: 0xe9d8b4, unlock: 68 },
   // GĐ1408: Cà phê phin sữa — lối ra ĐẦU TIÊN của cà phê xay nguyên chất: mẻ (cà phê xay 150k + sữa đặc 22k) = 172k → 25 ly × 12k = 300k.
@@ -1148,6 +1150,10 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_ca_kho_dua_muoi', name: 'Cá basa kho dưa muối', station: 'hot_kettle',
     inputs: [{ productId: 'x_ca_basa', quantity: 1 }, { productId: 'hx_dua_muoi', quantity: 2 }],
     outputId: 'ca_kho_dua_muoi', outputQty: 5, durationMin: 20, unlock: 33, reputationGain: 2 },
+  // GĐ1453: Bánh bao lạp xưởng ở nồi hấp. Mở 45 (> golden 30, ≥ cấp nguyên liệu).
+  { id: 'recipe_banh_bao_lap_xuong', name: 'Bánh bao lạp xưởng', station: 'steamer',
+    inputs: [{ productId: 'botmi', quantity: 3 }, { productId: 'hx_lap_xuong', quantity: 1 }],
+    outputId: 'banh_bao_lap_xuong', outputQty: 12, durationMin: 25, unlock: 45, reputationGain: 3 },
   // GĐ1409: Sữa chua granola ở máy xay: lãi dương, hời hơn bán thẳng nguyên liệu. Mở 68 = cấp granola (> golden 30).
   { id: 'recipe_sua_chua_granola', name: 'Sữa chua granola', station: 'blender',
     inputs: [{ productId: 'ngu_coc', quantity: 1 }, { productId: 'suachua', quantity: 1 }],
