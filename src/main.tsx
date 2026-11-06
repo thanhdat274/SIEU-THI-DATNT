@@ -168,7 +168,13 @@ useSession.subscribe((s, prev) => {
     controller.follow = player.position;
     // Lúc này save đã nạp xong, tiệm đã bày hàng: nạp trước nốt pipeline cho hàng hóa trong tiệm
     precompile();
-    if (!isGuest()) useGame.getState().notify(`🏪 Ngày ${useGame.getState().day} · chúc buôn may bán đắt!`);
+    // Playtest P0 T1: bản lưu đang mở cửa → đứng lại sau quầy, báo rõ tiệm vẫn mở
+    const g = useGame.getState();
+    if (!isGuest() && g.shopOpen) {
+      const spot = shopSpot();
+      player.teleport(spot.x, spot.z);
+      g.notify(`🏪 Ngày ${g.day} · tiệm vẫn đang mở cửa như lúc bạn rời — vào quầy tiếp khách nhé!`);
+    } else if (!isGuest()) g.notify(`🏪 Ngày ${g.day} · chúc buôn may bán đắt!`);
   }
 });
 

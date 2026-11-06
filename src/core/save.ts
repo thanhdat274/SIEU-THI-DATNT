@@ -40,7 +40,8 @@ const MIGRATIONS: Record<number, (data: Record<string, unknown>) => Record<strin
 };
 
 /** Các trường được lưu; còn lại (giao diện, khách đang đi) là tạm thời. */
-export type SaveData = ReturnType<typeof newGameData> & { saveVersion?: number };
+/** shopOpen (playtest P0 T1): tùy chọn — save cũ thiếu trường thì coi như đóng cửa. */
+export type SaveData = ReturnType<typeof newGameData> & { saveVersion?: number; shopOpen?: boolean };
 
 function migrate(data: Partial<SaveData>): Partial<SaveData> {
   let d = data as Record<string, unknown>;
@@ -66,6 +67,8 @@ export function snapshot(): SaveData {
     social: s.social, online: s.online, licenses: s.licenses, inspection: s.inspection,
     garden: s.garden, analytics: s.analytics,
     weatherSeed: s.weatherSeed, weather: s.weather, forecast: s.forecast,
+    // Playtest P0 T1: vào lại game giữa ngày thì tiệm vẫn mở như lúc rời
+    shopOpen: s.shopOpen,
     saveVersion: SAVE_VERSION,
   };
 }
@@ -114,7 +117,7 @@ export function applySnapshot(raw: Partial<SaveData>) {
   // `branch` mặc định null nên không vào MERGE_DEEP: bản schema cũ thiếu field mới (staff...) phải
   // bù từ newBranch() — thiếu là UI HUD đọc `branch.staff.some` sập cả cây React.
   merged.branch = normalizeBranch(merged.branch);
-  useGame.setState(merged);
+  useGame.setState({ ...merged, shopOpen: data.shopOpen === true });
 }
 
 /**
