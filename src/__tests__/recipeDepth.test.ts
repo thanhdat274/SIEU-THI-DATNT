@@ -3858,6 +3858,28 @@ describe('GĐ1454 — thịt kho cà pháo (bếp nồi)', () => {
   });
 });
 
+/** GĐ1456 — Cánh gà chiên chanh muối: lối ra đầu tiên của chanh muối hàng xóm (chảo chiên). */
+describe('GĐ1456 — cánh gà chiên chanh muối (chảo chiên)', () => {
+  const recipe = RECIPE_MAP['recipe_canh_ga_chanh_muoi'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm chảo chiên và dùng chanh muối hàng xóm', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'canh_ga_chanh_muoi')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'canh_ga_chanh_muoi').length).toBe(1);
+    expect(recipe.station).toBe('fryer');
+    expect(recipe.inputs.some((i) => i.productId === 'hx_chanh_muoi')).toBe(true);
+  });
+});
+
 /** GĐ1405 — Sữa hạt điều: lối ra đầu tiên của hạt điều rang muối (máy xay). */
 describe('GĐ1405 — sữa hạt điều (máy xay)', () => {
   const recipe = RECIPE_MAP['recipe_sua_hat_dieu'];
