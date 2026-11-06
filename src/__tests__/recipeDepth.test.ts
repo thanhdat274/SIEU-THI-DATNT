@@ -4078,6 +4078,28 @@ describe('GĐ1465 — bánh tráng nướng chà bông (bếp nướng)', () => 
   });
 });
 
+/** GĐ1466 — Lạp xưởng xào dưa muối: lối ra đầu tiên của dưa muối hàng xóm (bếp nồi). */
+describe('GĐ1466 — lạp xưởng xào dưa muối (bếp nồi)', () => {
+  const recipe = RECIPE_MAP['recipe_lap_xuong_xao_dua_muoi'];
+  it('có công thức, mở sau golden 30', () => {
+    expect(recipe).toBeDefined();
+    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
+  });
+  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
+    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
+    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
+    const value = recipe.outputQty * productById(recipe.outputId).sell;
+    expect(value).toBeGreaterThan(cost);
+    expect(value).toBeGreaterThan(raw);
+  });
+  it('outputId duy nhất; đúng trạm bếp nồi và dùng dưa muối hàng xóm', () => {
+    expect(COOKED_PRODUCTS.some((c) => c.id === 'lap_xuong_xao_dua_muoi')).toBe(true);
+    expect(RECIPES.filter((r) => r.outputId === 'lap_xuong_xao_dua_muoi').length).toBe(1);
+    expect(recipe.station).toBe('hot_kettle');
+    expect(recipe.inputs.some((i) => i.productId === 'hx_dua_muoi')).toBe(true);
+  });
+});
+
 /** GĐ1405 — Sữa hạt điều: lối ra đầu tiên của hạt điều rang muối (máy xay). */
 describe('GĐ1405 — sữa hạt điều (máy xay)', () => {
   const recipe = RECIPE_MAP['recipe_sua_hat_dieu'];
