@@ -12,6 +12,7 @@ import { saveGame, resetGame, readBackupSave, restoreBackup } from '../core/save
 import { FEATURES, xpToNext } from '../data/levels';
 import { xpGainDelta } from '../data/xpGain';
 import { decorPopupLine } from '../data/decorPopup';
+import { radialPositions } from '../data/radialMenu';
 import { formatMoney, productById } from '../data/products';
 import { trialCost } from '../core/slices/build';
 import { todayLine, todayMissedLine, todayPeakLine, todayExpectSoFar, todayTopSeller } from '../data/todayScore';
@@ -459,6 +460,14 @@ Online: ${coop.peers.map((p) => (p.id === coop.selfId ? 'bạn' : p.name)).join(
           )}
         </div>
       )}
+      {TOUCH && buildMode && placing?.movingUid !== undefined && (
+        <RadialMenu items={[
+          { icon: '↻', label: 'Xoay', run: worldActions.rotate },
+          { icon: '📦', label: 'Cất kho', run: () => stashFurniture(placing.movingUid!) },
+          { icon: '💰', label: 'Bán', run: () => sellFurniture(placing.movingUid!) },
+          { icon: '✕', label: 'Huỷ', run: worldActions.cancel },
+        ]} />
+      )}
       <Suspense fallback={null}><ChapterDialogue /></Suspense>
 
       {/* Dưới cùng: dải kế hoạch hôm nay (hoặc gợi ý giờ vắng), gợi ý tương tác, rồi thanh công cụ */}
@@ -608,4 +617,17 @@ function XpGain() {
     return () => clearTimeout(t);
   }, [dayXp]);
   return shown ? <span className="hud-xp-gain" style={{ position: 'absolute', top: -14, left: 6, fontSize: 11, fontWeight: 700, color: '#f1c40f', pointerEvents: 'none' }}>+{shown} XP</span> : null;
+}
+
+/** GĐ1535: menu quạt quanh giữa màn hình khi đang dời một món — các nút cũ ở thanh dưới vẫn giữ. */
+function RadialMenu({ items }: { items: { icon: string; label: string; run: () => void }[] }) {
+  const pos = radialPositions(items.length);
+  return (
+    <div className="hud-radial" style={{ position: 'fixed', left: '50%', top: '55%', width: 0, height: 0, pointerEvents: 'none', zIndex: 5 }}>
+      {items.map((it, i) => (
+        <button key={it.label} type="button" className="hud-btn" title={it.label} aria-label={it.label} onClick={it.run}
+          style={{ position: 'absolute', left: pos[i].x - 20, top: pos[i].y - 20, width: 40, height: 40, borderRadius: '50%', padding: 0, pointerEvents: 'auto' }}>{it.icon}</button>
+      ))}
+    </div>
+  );
 }

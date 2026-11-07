@@ -99,7 +99,7 @@ Gieo → thu → chế biến qua 18 nhà máy (chuỗi tới 4 tầng sâu) →
 | 9 | **Vật liệu nâng cấp không tính chỗ kho** (14 loại miễn) | ⏸ chưa áp dụng | game chưa có vật liệu nâng cấp — làm khi thêm |
 | 10 | **Trần EXP theo độ cũ** (×0,8^k sau 3 bậc, 0 sau 15) + thông thạo -5% chờ | ✅ GĐ1522 | — |
 | 11 | **Điểm danh không reset** + rương trọng số | ✅ ân hạn + GĐ1533 | — |
-| 12 | **Menu quạt trên vật thể + "+N EXP" minh bạch + popup 3D decor** | 🟡 GĐ1529 +XP, GĐ1532 decor | menu quạt trên vật thể — đợt chơi thật |
+| 12 | **Menu quạt trên vật thể + "+N EXP" minh bạch + popup 3D decor** | ✅ GĐ1529 +XP, GĐ1532 decor, GĐ1535 menu quạt (cảm ứng) | — |
 
 **Công thức mượn được ngay (1 dòng code):**
 - Tăng tốc: `xu = ceil(phútCònLại / 15)`; xây: `1 xu / 3 phút`.
