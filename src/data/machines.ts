@@ -64,7 +64,7 @@ export function machineFeeAt(type: Furniture['type'], minutes: number, level: nu
 export function machinePopupLine(type: Furniture['type'], earned?: number): string | null {
   if (!isMachine(type)) return null;
   const t = MACHINE_TYPES[type];
-  const night = NIGHT_MACHINES.has(type) ? ' · tối ×1,5' : '';
+  const night = NIGHT_MACHINES.has(type) ? ' · tối ×1,5' : type === 'claw_machine' || type === 'cotton_candy' ? ' · cuối tuần ×1,5' : '';
   return `${t.icon} ${t.fee.toLocaleString('vi-VN')}đ/lượt · hoàn vốn ~${Math.round(t.price / t.fee)} lượt${night}${earned ? ` · đã thu ${earned.toLocaleString('vi-VN')}đ` : ''}`;
 }
 

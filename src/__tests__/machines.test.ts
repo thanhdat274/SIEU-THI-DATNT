@@ -138,3 +138,12 @@ describe('GĐ1549 — kẹo bông cuối tuần', () => {
     expect(machineFeeAt('cotton_candy', 600, 46, wd)).toBe(2_500);
   });
 });
+
+describe('GĐ1550 — dòng thông tin ghi giá cuối tuần', () => {
+  it('gắp thú + kẹo bông ghi "cuối tuần ×1,5"', async () => {
+    const { machinePopupLine } = await import('../data/machines');
+    expect(machinePopupLine('claw_machine')).toContain('cuối tuần');
+    expect(machinePopupLine('cotton_candy')).toContain('cuối tuần');
+    expect(machinePopupLine('shoe_shine')).not.toContain('×1,5');
+  });
+});
