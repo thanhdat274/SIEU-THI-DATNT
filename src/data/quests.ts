@@ -9,6 +9,9 @@ import type { Weather } from './weather';
 import { isWeekend } from './calendar';
 import { WEEKEND_SNACKS } from './products';
 import { SUPPLY_CONTRACTS } from './contracts';
+import { SHOP_TIERS } from './shopTiers';
+import { WAREHOUSE_TIERS } from './warehouse';
+import { ROLES } from './staff';
 
 /** GĐ1618: cấp sớm nhất có hợp đồng cung cấp — bước cốt truyện hợp đồng ghi rõ khi chưa tới cấp. */
 export const FIRST_CONTRACT_LEVEL = Math.min(...SUPPLY_CONTRACTS.map((d) => d.unlock));
@@ -442,14 +445,24 @@ export const STORY_STEPS: readonly StoryStep[] = [
   { id: 'story_level_100', icon: '🎆', title: 'Đỉnh cao tạp hóa', description: 'Đạt cấp 100 — mốc cuối game', target: 100, money: 100000000, xp: 20000, measure: (c) => c.level },
 ];
 
+/** GĐ1620: cấp tối thiểu để làm được bước cốt truyện (kho/mặt bằng/thuê người/hợp đồng); 0 = không chặn. */
+export function storyGateLevel(step: StoryStep): number {
+  const k = step.measure.toString();
+  if (k.includes('warehouseTier')) return WAREHOUSE_TIERS[step.target]?.unlock ?? 0;
+  if (k.includes('shopTier')) return SHOP_TIERS[step.target]?.unlock ?? 0;
+  if (k.includes('staffCount')) return Math.min(...Object.values(ROLES).map((r) => r.unlock));
+  if (k.includes('contractsDone')) return FIRST_CONTRACT_LEVEL;
+  return 0;
+}
+
 /** Bước cốt truyện đang làm (bước đầu tiên chưa nhận thưởng); null khi đã xong hết. */
 export function storyQuest(c: QuestContext): Quest | null {
   const claimed = new Set(c.log.claimedStory);
   const step = STORY_STEPS.find((s) => !claimed.has(s.id));
   if (!step) return null;
   const v = step.measure(c);
-  const description = step.id === 'story_first_contract' && c.level < FIRST_CONTRACT_LEVEL
-    ? `${step.description} — hợp đồng mở từ cấp ${FIRST_CONTRACT_LEVEL}` : step.description;
+  const gate = storyGateLevel(step);
+  const description = gate > c.level ? `${step.description} — mở từ cấp ${gate}` : step.description;
   return {
     id: step.id, icon: step.icon, title: step.title, description,
     current: Math.min(v, step.target), target: step.target, money: step.money, xp: step.xp,
