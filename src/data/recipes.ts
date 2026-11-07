@@ -1060,8 +1060,8 @@ export const RECIPES: Recipe[] = [
     outputId: 'bap_ngot_nuong', outputQty: 3, durationMin: 10, unlock: 45, reputationGain: 1 },
   // GĐ1426: Chè khoai môn ở bếp nồi nấu. Mở 35 (> golden 30, ≥ cấp nguyên liệu).
   { id: 'recipe_che_khoai_mon', name: 'Chè khoai môn', station: 'hot_kettle',
-    inputs: [{ productId: 'x_khoai_mon', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
-    outputId: 'che_khoai_mon', outputQty: 6, durationMin: 10, unlock: 47, reputationGain: 1 },
+    inputs: [{ productId: 'x_khoai_mon', quantity: 1 }, { productId: 'x_duong', quantity: 1 }, { productId: 'x_dua_cot_hop', quantity: 1 }], // GĐ1681: chè khoai môn nấu nước cốt dừa
+    outputId: 'che_khoai_mon', outputQty: 8, durationMin: 10, unlock: 47, reputationGain: 1 },
   // GĐ1426: Bắp cải xào cà rốt ở chảo chiên. Mở 35 (> golden 30, ≥ cấp nguyên liệu).
   { id: 'recipe_bap_cai_xao_ca_rot', name: 'Bắp cải xào cà rốt', station: 'fryer',
     inputs: [{ productId: 'x_bap_cai', quantity: 1 }, { productId: 'x_ca_rot', quantity: 1 }],
