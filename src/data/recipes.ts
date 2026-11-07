@@ -1056,7 +1056,7 @@ export const RECIPES: Recipe[] = [
     outputId: 'khoai_lang_nuong_than', outputQty: 4, durationMin: 10, unlock: 43, reputationGain: 1 },
   // GĐ1426: Bắp ngọt nướng mỡ hành ở bếp nướng. Mở 35 (> golden 30, ≥ cấp nguyên liệu).
   { id: 'recipe_bap_ngot_nuong', name: 'Bắp ngọt nướng mỡ hành', station: 'food_grill',
-    inputs: [{ productId: 'x_bap', quantity: 1 }],
+    inputs: [{ productId: 'x_bap', quantity: 1 }, { productId: 'x_hanh_la', quantity: 1 }], // GĐ1680: mỡ hành cần hành lá
     outputId: 'bap_ngot_nuong', outputQty: 3, durationMin: 10, unlock: 45, reputationGain: 1 },
   // GĐ1426: Chè khoai môn ở bếp nồi nấu. Mở 35 (> golden 30, ≥ cấp nguyên liệu).
   { id: 'recipe_che_khoai_mon', name: 'Chè khoai môn', station: 'hot_kettle',
