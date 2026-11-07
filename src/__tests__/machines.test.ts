@@ -236,3 +236,12 @@ describe('GĐ1578 kẹo bông ngày lễ', () => {
     expect(popup1578('cotton_candy')).toContain('ngày lễ');
   });
 });
+
+import { boostedMachinesToday } from '../data/machines';
+describe('GĐ1579 máy tăng phí hôm nay', () => {
+  it('chỉ nêu máy có tăng', () => {
+    const fs = [{ uid: 1, type: 'shoe_shine' }, { uid: 2, type: 'scale_machine' }] as never;
+    expect(boostedMachinesToday(fs, 50, 3, 'rain')).toEqual(['shoe_shine']);
+    expect(boostedMachinesToday(fs, 50, 3, 'sunny').includes('shoe_shine')).toBe(false);
+  });
+});

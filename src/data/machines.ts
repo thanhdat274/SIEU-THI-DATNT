@@ -105,3 +105,9 @@ export function idleMachineHint(furniture: Furniture[], byService: Record<string
   if (!idle.length) return null;
   return `💤 Chưa ai chơi hôm nay: ${idle.map((t) => MACHINE_TYPES[t].icon + ' ' + MACHINE_TYPES[t].name).join(', ')} — thử dời gần cửa ra vào`;
 }
+
+/** GĐ1579 — các máy đang sở hữu được tăng phí cả ngày hôm nay (cuối tuần/lễ/mưa; đo lúc 10h nên không tính giờ tối). */
+export function boostedMachinesToday(furniture: Furniture[], level: number, day: number, weather?: string): MachineId[] {
+  const types = [...new Set(furniture.filter((f) => isMachine(f.type) && !f.broken).map((f) => f.type as MachineId))];
+  return types.filter((t) => machineFeeAt(t, 600, level, day, weather) > machineFee(t));
+}

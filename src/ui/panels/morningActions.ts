@@ -1,4 +1,5 @@
 import { cungGoodsAction, sapEventActions, tiemXoiCungAction } from '../../data/dayEventActions';
+import { boostedMachinesToday, MACHINE_TYPES } from '../../data/machines';
 import { giftableCount, REGULAR_GIFT_LEVEL } from '../../data/regularGift';
 import { REGULARS } from '../../data/regulars';
 import type { GameState } from '../../core/store';
@@ -54,8 +55,8 @@ export function buildMorningActions(c: MorningActionsCtx): DayAction[] {
   if (branch?.open && isQuanMatchDay(day, weather)) candidates.push({ icon: '⚽', text: 'Tối nay có trận — tiện lợi đông 22h–24h ×1,2, xếp đủ kệ', panel: 'branch', danger: false, priority: 3 });
   // GĐ1573 — cấp ≥38: nhắc số khách quen còn tặng quà được hôm nay
   if (level >= REGULAR_GIFT_LEVEL) { const n = giftableCount(REGULARS.filter((r) => r.unlock <= level && (regulars[r.id]?.visits ?? 0) > 0), regulars, level, day, storage); if (n > 0) candidates.push({ icon: '🎁', text: `Còn ${n} khách quen có thể tặng quà hôm nay (+3 thân thiết)`, panel: 'regulars', danger: false, priority: 1 }); }
-  // GĐ1572 — trời mưa + có máy đánh giày (cấp ≥42): nhắc phí ×1,5 hôm nay
-  if (level >= 42 && (weather === 'rain' || weather === 'storm') && c.furniture?.some((f) => f.type === 'shoe_shine' && !f.broken)) candidates.push({ icon: '👞', text: 'Trời mưa — máy đánh giày thu ×1,5 hôm nay', panel: 'business', danger: false, priority: 1 });
+  // GĐ1572 → GĐ1579 — máy được tăng phí hôm nay (mưa/cuối tuần/lễ): nhắc chung một dòng
+  { const up = c.furniture ? boostedMachinesToday(c.furniture, level, day, weather) : []; if (up.length) candidates.push({ icon: '🎰', text: `Hôm nay ${up.map((t) => MACHINE_TYPES[t].name.toLowerCase()).join(', ')} thu ×1,5`, panel: 'business', danger: false, priority: 1 }); }
   // GĐ589: ngày cúng — tiệm xôi đông; GĐ599: thợ tự nấu ×1,3 nên chỉ nhắc thêm thợ khi còn thiếu
   const xoiCungAct = tiemXoiCungAction(biz.tiemXoi, day); // GĐ599 → GĐ635
   if (xoiCungAct) candidates.push(xoiCungAct);
