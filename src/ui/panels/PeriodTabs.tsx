@@ -21,7 +21,7 @@ export function Week() {
   // Thử thách tuần hiện tại; save cũ thiếu counter trong tally thì tiến độ coi như 0.
   const ch = weeklyChallenge(Math.ceil(day / 7), level);
   const blocker = useGame((s) => periodBlocker(ch.measure, questContext(s)));
-  const chTarget = ch.target(level);
+  const chTarget = ch.target(level, biz.services);
   const chCurrent = ch.measure === 'revenue' ? w.revenue : (w[ch.measure] ?? 0);
   const chMet = chTarget > 0 && chCurrent >= chTarget;
   // GĐ121: nhịp chạy tuần — có theo kịp không? có nguy cơ mất chuỗi không? (thuần đọc tally+streak)
@@ -57,7 +57,7 @@ export function Week() {
           <div style={iconTile}>{ch.icon}</div>
           <div style={{ flex: 1, minWidth: 160 }}>
             <b>🎯 {ch.title}</b>
-            <div style={sub}>{ch.desc(level)}</div>
+            <div style={sub}>{ch.desc(level, biz.services)}</div>
             {blocker && <div style={{ ...sub, color: '#f39c12' }}>⚠️ {blocker}</div>}
           </div>
         </div>
@@ -195,7 +195,7 @@ export function Month() {
   const m = monthOf(day);
   const ch = monthlyChallenge(mo.month, level);
   const blocker = useGame((s) => periodBlocker(ch.measure, questContext(s)));
-  const chTarget = ch.target(level);
+  const chTarget = ch.target(level, biz.services);
   const chCurrent = ch.measure === 'revenue' ? mo.revenue : (mo[ch.measure] ?? 0);
   const chMet = chTarget > 0 && chCurrent >= chTarget;
   const remainingDays = daysRemainingInMonth(day);
@@ -221,7 +221,7 @@ export function Month() {
           <div style={iconTile}>{ch.icon}</div>
           <div style={{ flex: 1, minWidth: 160 }}>
             <b>🎯 {ch.title}</b>
-            <div style={sub}>{ch.desc(level)}</div>
+            <div style={sub}>{ch.desc(level, biz.services)}</div>
             {blocker && <div style={{ ...sub, color: '#f39c12' }}>⚠️ {blocker}</div>}
           </div>
         </div>

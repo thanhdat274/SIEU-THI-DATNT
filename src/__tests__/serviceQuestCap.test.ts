@@ -30,3 +30,16 @@ describe('GĐ1653 — trần mục tiêu lời dịch vụ', () => {
     expect(serviceQuestTarget(10, SERVICES.map((s) => s.id))).toBe(serviceQuestTarget(10));
   });
 });
+
+describe('GĐ1654 — thử thách tuần/tháng dịch vụ theo sức kiếm', () => {
+  it('chỉ nạp tiền ở cấp 10: tuần/tháng ≤ 70% sức kiếm cả kỳ; không truyền dịch vụ thì giữ gốc', async () => {
+    const { WEEKLY_CHALLENGES } = await import('../data/bizWeeks');
+    const per = expectedServiceIncomePerDay(['topup'], customersPerDay(10) * 2);
+    const w = WEEKLY_CHALLENGES.find((c) => c.id === 'wq_service')!;
+    const m = WEEKLY_CHALLENGES.find((c) => c.id === 'mq_services') ?? (await import('../data/bizWeeks')).MONTHLY_CHALLENGES.find((c) => c.id === 'mq_services')!;
+    expect(w.target(10)).toBeGreaterThan(per * 7); // lỗi cũ: vượt sức
+    expect(w.target(10, ['topup'])).toBeLessThanOrEqual(per * 7 * 0.7);
+    expect(m.target(10, ['topup'])).toBeLessThanOrEqual(per * 28 * 0.7);
+    expect(w.desc(10, ['topup'])).toContain((w.target(10, ['topup'])).toLocaleString('vi-VN'));
+  });
+});

@@ -3,13 +3,17 @@
  * Tách từ `data/biz.ts` (GĐ972) — `biz.ts` vẫn xuất lại toàn bộ nên chỗ dùng cũ không đổi.
  */
 import { formatMoney } from './products';
-import { xpToNext } from './levels';
+import { customersPerDay, xpToNext } from './levels';
+import { expectedServiceIncomePerDay } from './services';
 import { onlineOrderCap } from './online';
 import { expectedCookOrdersPerDay } from './phoneOrders';
 import { farmDailyCap } from './garden';
 
 /** GĐ1641: trần đơn app khả thi trong N ngày (70% trần 5★) — giữ thử thách đơn app làm được ở cấp cao. */
 const onlineCap = (lv: number, days: number) => Math.max(1, Math.floor(onlineOrderCap(5, lv) * days * 0.7));
+/** GĐ1654: thử thách dịch vụ ≤ 70% lời kỳ vọng của dịch vụ đang có trong kỳ (tròn nghìn); chưa có dịch vụ → giữ gốc. */
+const serviceCap = (base: number, lv: number, days: number, owned?: string[]) =>
+  !owned?.length ? base : Math.min(base, Math.max(1000, Math.floor((expectedServiceIncomePerDay(owned, customersPerDay(lv) * 2) * days * 0.7) / 1000) * 1000));
 
 // ───────────────────────── Báo cáo tuần ─────────────────────────
 
@@ -79,11 +83,12 @@ export interface WeeklyChallenge {
   /** Cấp tối thiểu mới vào vòng xoay thử thách này (bám mốc mở của từng hệ). */
   minLevel: number;
   /** Mục tiêu theo cấp (làm tròn đẹp). */
-  target: (level: number) => number;
+  /** GĐ1654: `owned` = dịch vụ đang có (chỉ thử thách dịch vụ dùng — trần theo sức kiếm thật). */
+  target: (level: number, owned?: string[]) => number;
   /** Thưởng gốc theo cấp (làm tròn nghìn). */
   reward: (level: number) => number;
   /** Mô tả một câu, có mốc cụ thể theo cấp. */
-  desc: (level: number) => string;
+  desc: (level: number, owned?: string[]) => string;
 }
 
 /** Kết quả thử thách tuần của một tuần đã chốt. */
@@ -106,7 +111,7 @@ const round1k = (n: number) => Math.round(n / 1000) * 1000;
 
 /** Gói dựng gọn: `descText` nhận đúng mục tiêu đã tính nên mô tả luôn khớp mốc thật. */
 const weekly = (def: Omit<WeeklyChallenge, 'desc'>, descText: (target: number) => string): WeeklyChallenge => ({
-  ...def, desc: (level) => descText(def.target(level)),
+  ...def, desc: (level, owned) => descText(def.target(level, owned)),
 });
 
 /** Thử thách tuần: mục tiêu ~4–6× nhiệm vụ ngày cùng hệ, thưởng ~2× (dịch vụ đo tiền lời nên
@@ -119,7 +124,7 @@ export const WEEKLY_CHALLENGES: WeeklyChallenge[] = [
     target: (lv) => 5 + lv, reward: (lv) => round1k(120000 * (1 + 0.25 * (lv - 1))) },
     (t) => `Nhận ${t} lời khen 5★ trong tuần`),
   weekly({ id: 'wq_service', icon: '🧾', title: 'Lời từ dịch vụ', unit: 'đ', measure: 'services', minLevel: 3,
-    target: (lv) => round10k(scale(100000, lv, 0.15)), reward: (lv) => round1k(100000 * (1 + 0.25 * (lv - 1))) },
+    target: (lv, owned) => serviceCap(round10k(scale(100000, lv, 0.15)), lv, 7, owned), reward: (lv) => round1k(100000 * (1 + 0.25 * (lv - 1))) },
     (t) => `Lời từ dịch vụ ở quầy cả tuần đạt ${formatMoney(t)}`),
   weekly({ id: 'wq_combo', icon: '🎁', title: 'Bán theo combo', unit: 'combo', measure: 'combos', minLevel: 6,
     target: (lv) => 8 + 2 * lv, reward: (lv) => round1k(130000 * (1 + 0.25 * (lv - 1))) },
@@ -182,14 +187,14 @@ export const STREAK_XP_FROM = 3;
 export const STREAK_XP_RATE_WEEK = 0.35;
 export const STREAK_XP_RATE_MONTH = 0.7;
 
-export function closeWeek(t: WeekTally, endDay: number, level: number, streak: number): WeekReport {
+export function closeWeek(t: WeekTally, endDay: number, level: number, streak: number, owned?: string[]): WeekReport {
   const lines = Object.entries(t.items);
   const best = [...lines].sort((a, b) => b[1].gross - a[1].gross)[0]?.[0];
   const worst = lines.filter(([, l]) => l.qty > 0).sort((a, b) => a[1].gross / a[1].qty - b[1].gross / b[1].qty)[0]?.[0];
   const goalMet = t.goal !== null && t.revenue >= t.goal;
   const week = Math.ceil(endDay / WEEK_DAYS);
   const ch = weeklyChallenge(week, level);
-  const chTarget = ch.target(level);
+  const chTarget = ch.target(level, owned);
   const chCurrent = ch.measure === 'revenue' ? t.revenue : (t[ch.measure] ?? 0);
   const chMet = chCurrent >= chTarget;
   // GĐ169 — tiền thưởng thử thách giữ hệ số nhỏ nhất (thưởng gốc, bỏ nhân chuỗi ×1.2→×1.8 cũ);
@@ -205,7 +210,7 @@ export function closeWeek(t: WeekTally, endDay: number, level: number, streak: n
     streakXp,
     challenge: {
       id: ch.id, icon: ch.icon, title: ch.title, unit: ch.unit,
-      target: chTarget, current: chCurrent, met: chMet, reward: chReward, desc: ch.desc(level),
+      target: chTarget, current: chCurrent, met: chMet, reward: chReward, desc: ch.desc(level, owned),
     },
     challengeStreak: chMet ? streak + 1 : 0,
   };
@@ -321,7 +326,7 @@ export const MONTHLY_CHALLENGES: WeeklyChallenge[] = [
     target: (lv) => 90 + 8 * lv, reward: (lv) => round1k(1100000 * (1 + 0.25 * (lv - 1))) },
     (t) => `Bán ${t} món nhà làm trong tháng`),
   weekly({ id: 'mq_services', icon: '🧾', title: 'Dịch vụ đều tay', unit: 'đ', measure: 'services', minLevel: 3,
-    target: (lv) => round10k(scale(700000, lv, 0.15)), reward: (lv) => round1k(600000 * (1 + 0.25 * (lv - 1))) },
+    target: (lv, owned) => serviceCap(round10k(scale(700000, lv, 0.15)), lv, 28, owned), reward: (lv) => round1k(600000 * (1 + 0.25 * (lv - 1))) },
     (t) => `Lời từ dịch vụ ở quầy cả tháng đạt ${formatMoney(t)}`),
 ];
 
@@ -331,13 +336,13 @@ export function monthlyChallenge(month: number, level: number): WeeklyChallenge 
   return pool[month % pool.length] ?? MONTHLY_CHALLENGES[0];
 }
 
-export function closeMonth(t: MonthTally, endDay: number, level: number, streak: number): MonthReport {
+export function closeMonth(t: MonthTally, endDay: number, level: number, streak: number, owned?: string[]): MonthReport {
   const lines = Object.entries(t.items);
   const best = [...lines].sort((a, b) => b[1].gross - a[1].gross)[0]?.[0];
   const worst = lines.filter(([, l]) => l.qty > 0).sort((a, b) => a[1].gross / a[1].qty - b[1].gross / b[1].qty)[0]?.[0];
   const goalMet = t.goal !== null && t.revenue >= t.goal;
   const ch = monthlyChallenge(t.month, level);
-  const chTarget = ch.target(level);
+  const chTarget = ch.target(level, owned);
   const chCurrent = ch.measure === 'revenue' ? t.revenue : (t[ch.measure] ?? 0);
   const chMet = chCurrent >= chTarget;
   // GĐ169 — tiền thưởng thử thách tháng giữ hệ số nhỏ nhất (thưởng gốc, bỏ nhân chuỗi ×1.2→×1.8 cũ);
@@ -352,7 +357,7 @@ export function closeMonth(t: MonthTally, endDay: number, level: number, streak:
     streakXp,
     challenge: {
       id: ch.id, icon: ch.icon, title: ch.title, unit: ch.unit,
-      target: chTarget, current: chCurrent, met: chMet, reward: chReward, desc: ch.desc(level),
+      target: chTarget, current: chCurrent, met: chMet, reward: chReward, desc: ch.desc(level, owned),
     },
     monthStreak: chMet ? streak + 1 : 0,
   };
