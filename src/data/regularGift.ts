@@ -13,6 +13,7 @@ export function regularGiftPlan(
   def: RegularDef, prog: RegularProgress | undefined, level: number, day: number, storage: Record<string, number>,
 ): GiftPlan {
   if (level < REGULAR_GIFT_LEVEL) return { error: `Mở ở cấp ${REGULAR_GIFT_LEVEL}` };
+  if ((prog?.visits ?? 0) <= 0) return { error: 'Chưa quen — chờ khách ghé lần đầu' }; // GĐ1574
   if (prog?.lastGiftDay === day) return { error: 'Hôm nay đã tặng rồi' };
   const id = def.favorites.find((f) => productById(f).unlock <= level && (storage[f] ?? 0) > 0);
   return id ? { productId: id } : { error: 'Kho không có món khách thích' };

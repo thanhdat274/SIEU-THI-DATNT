@@ -5,19 +5,20 @@ import { productById } from '../data/products';
 
 const def = REGULARS[0];
 const fav = def.favorites.find((f) => productById(f).unlock <= 60)!;
+const met = { visits: 1 } as never;
 
 describe('GĐ1557 tặng quà khách quen', () => {
   it('khoá dưới cấp 38', () => {
-    expect('error' in regularGiftPlan(def, undefined, REGULAR_GIFT_LEVEL - 1, 5, { [fav]: 3 })).toBe(true);
+    expect('error' in regularGiftPlan(def, met, REGULAR_GIFT_LEVEL - 1, 5, { [fav]: 3 })).toBe(true);
   });
   it('chọn món khách thích còn trong kho', () => {
-    expect(regularGiftPlan(def, undefined, 60, 5, { [fav]: 3 })).toEqual({ productId: fav });
+    expect(regularGiftPlan(def, met, 60, 5, { [fav]: 3 })).toEqual({ productId: fav });
   });
   it('kho trống → lỗi', () => {
-    expect(regularGiftPlan(def, undefined, 60, 5, {})).toEqual({ error: 'Kho không có món khách thích' });
+    expect(regularGiftPlan(def, met, 60, 5, {})).toEqual({ error: 'Kho không có món khách thích' });
   });
   it('mỗi ngày 1 lần', () => {
-    const prog = { lastGiftDay: 5 } as never;
+    const prog = { visits: 1, lastGiftDay: 5 } as never;
     expect(regularGiftPlan(def, prog, 60, 5, { [fav]: 3 })).toEqual({ error: 'Hôm nay đã tặng rồi' });
     expect(regularGiftPlan(def, prog, 60, 6, { [fav]: 3 })).toEqual({ productId: fav });
   });
@@ -34,9 +35,9 @@ describe('GĐ1558 quà sinh nhật', () => {
 import { giftableCount } from '../data/regularGift';
 describe('GĐ1559 đếm khách tặng được', () => {
   it('trừ khách đã tặng hôm nay', () => {
-    expect(giftableCount([def], {}, 60, 5, { [fav]: 1 })).toBe(1);
-    expect(giftableCount([def], { [def.id]: { lastGiftDay: 5 } as never }, 60, 5, { [fav]: 1 })).toBe(0);
-    expect(giftableCount([def], {}, 30, 5, { [fav]: 1 })).toBe(0);
+    expect(giftableCount([def], { [def.id]: met }, 60, 5, { [fav]: 1 })).toBe(1);
+    expect(giftableCount([def], { [def.id]: { visits: 1, lastGiftDay: 5 } as never }, 60, 5, { [fav]: 1 })).toBe(0);
+    expect(giftableCount([def], { [def.id]: met }, 30, 5, { [fav]: 1 })).toBe(0);
   });
 });
 
@@ -58,7 +59,13 @@ describe('GĐ1563 xếp sổ khách quen', () => {
   });
   it('khách đã tặng hôm nay xuống cuối', () => {
     const st = Object.fromEntries([a, b, c].flatMap((d) => d.favorites.map((f) => [f, 5])));
-    const out = sortForGift([a, b, c], { [a.id]: { lastGiftDay: 5 } as never }, 99, 5, st, () => false);
+    const out = sortForGift([a, b, c], { [a.id]: { visits: 1, lastGiftDay: 5 } as never, [b.id]: met, [c.id]: met }, 99, 5, st, () => false);
     expect(out.at(-1)).toBe(a);
+  });
+});
+
+describe('GĐ1574 chưa quen không tặng được', () => {
+  it('visits 0 → lỗi', () => {
+    expect(regularGiftPlan(def, undefined, 60, 5, { [fav]: 3 })).toEqual({ error: 'Chưa quen — chờ khách ghé lần đầu' });
   });
 });
