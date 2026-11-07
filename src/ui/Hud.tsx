@@ -1,4 +1,5 @@
 import { wantsRestockButton } from '../core/bizAchieve';
+import { hudThemeOn } from '../data/hudTheme';
 import { faintMinutes } from '../data/biz';
 import { Joystick } from './Joystick';
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
@@ -103,6 +104,13 @@ export function Hud() {
   // không phải vẽ lại 60 lần/giây — chỉ vẽ lại khi đồng hồ chạy qua một phút mới.
   const minutes = useClock((c) => Math.floor(c.minutes));
   const reviews = useGame((s) => s.reviews);
+  // GĐ1521: theme HUD theo dịp lễ (chỉ CSS variables)
+  const hudTheme = hudThemeOn(day);
+  useEffect(() => {
+    const root = document.getElementById('ui');
+    if (!root) return;
+    if (hudTheme) root.dataset.hudTheme = hudTheme; else delete root.dataset.hudTheme;
+  }, [hudTheme]);
   const placing = useGame((s) => s.placing);
   const sellFurniture = useGame((s) => s.sellFurniture);
   const stashFurniture = useGame((s) => s.stashFurniture);

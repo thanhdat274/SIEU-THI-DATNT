@@ -7,7 +7,7 @@ import type { Staff } from '../data/staff';
 /** GĐ1520 — 🧧 lì xì nhân viên dịp Tết: mỗi Tết một lần, trừ tiền, cả đội +kinh nghiệm. */
 const tet = Array.from({ length: 800 }, (_, i) => i + 1).find((d) => festivalOn(d)?.id === 'tet')!;
 const notTet = Array.from({ length: 800 }, (_, i) => i + 1).find((d) => !festivalOn(d))!;
-const mk = (id: number): Staff => ({ id, name: 'NV' + id, role: 'cashier', skill: 1, wage: 100000, shift: 'day', exp: 0 } as Staff);
+const mk = (id: number): Staff => ({ id, name: 'NV' + id, role: 'cashier', skill: 1, wage: 100000, shift: 'day', exp: 0 } as unknown as Staff);
 beforeEach(() => useGame.setState({ ...newGameData(), staff: [mk(1), mk(2)], money: 1_000_000, lixiDay: 0 }));
 
 describe('lì xì Tết (GĐ1520)', () => {

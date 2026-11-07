@@ -808,3 +808,8 @@
 #ui .hud-tour-tip small { display: block; margin-top: 4px; font-size: 11px; opacity: 0.75; }
 #ui .hud-tour-skip { position: fixed; right: 10px; top: 10px; background: rgba(58, 58, 77, 0.9); color: #fff; border: 1px solid rgba(255, 255, 255, 0.25); border-radius: 8px; padding: 6px 10px; font-size: 12px; cursor: pointer; }
 #ui .hud-tour-skip:hover { background: rgba(241, 196, 15, 0.25); }
+
+/* GĐ1521 — theme HUD theo dịp lễ (data-hud-theme gắn trên #ui) */
+#ui[data-hud-theme='tet'] { --hud-accent: #ffcc33; --hud-bg: rgba(120, 18, 18, 0.84); --hud-bg-solid: #6e1414; --hud-line: rgba(255, 204, 51, 0.25); }
+#ui[data-hud-theme='trung_thu'] { --hud-accent: #ffb347; --hud-bg: rgba(28, 26, 64, 0.84); --hud-bg-solid: #1c1a40; --hud-line: rgba(255, 179, 71, 0.22); }
+#ui[data-hud-theme='giang_sinh'] { --hud-accent: #ff5e5e; --hud-bg: rgba(14, 54, 34, 0.84); --hud-bg-solid: #0e3622; --hud-line: rgba(255, 255, 255, 0.16); }
