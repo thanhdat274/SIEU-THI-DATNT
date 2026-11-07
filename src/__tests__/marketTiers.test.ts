@@ -69,3 +69,25 @@ describe('marketTiers (GĐ1518)', () => {
     expect(hi.units!).toBeLessThan(lo.units!);
   });
 });
+
+import { MARKET_HOT_BONUS, marketHotCategory } from '../data/chophien';
+import { CATEGORIES, productById } from '../data/products';
+describe('sạp thu mua giá cao (GĐ1519)', () => {
+  it('nhóm hot tất định theo tuần, xoay qua mọi nhóm', () => {
+    expect(marketHotCategory(7)).toBe(marketHotCategory(13));
+    const n = Object.keys(CATEGORIES).length;
+    const seen = new Set(Array.from({ length: n }, (_, i) => marketHotCategory(i * 7)));
+    expect(seen.size).toBe(n);
+  });
+  it('món thuộc nhóm hot được trả thêm 15% (dưới trần), xóm không đổi', () => {
+    const p = PRODUCTS.find((x) => x.sell >= 5000)!;
+    const day = Array.from({ length: 200 }, (_, i) => i * 7).find((d) => marketHotCategory(d) === p.category)!;
+    const other = Array.from({ length: 200 }, (_, i) => i * 7).find((d) => marketHotCategory(d) !== p.category)!;
+    const row = { id: p.id, name: p.name, qty: 10, est: Math.round(10 * p.sell * 0.75), reason: 'slow' as const };
+    const hot = marketTierQuote({ day, rows: [row], total: 0, units: 10 }, 'phuong', 0.5);
+    const cold = marketTierQuote({ day: other, rows: [row], total: 0, units: 10 }, 'phuong', 0.5);
+    expect(hot.gross).toBe(Math.round(cold.gross * (1 + MARKET_HOT_BONUS)));
+    expect(marketTierQuote({ day, rows: [row], total: 0, units: 10 }, 'xom', 1).gross).toBe(row.est);
+    expect(productById(p.id).category).toBe(p.category);
+  });
+});

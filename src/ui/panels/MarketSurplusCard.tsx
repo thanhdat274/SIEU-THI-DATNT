@@ -1,7 +1,7 @@
 import { useGame } from '../../core/store';
-import { formatMoney } from '../../data/products';
+import { CATEGORIES, formatMoney } from '../../data/products';
 import { useState } from 'react';
-import { MARKET_TIERS, MARKET_MULT_MAX, MARKET_MULT_MIN, marketClearValue, marketTierQuote, marketTierUnlocked, type MarketClearValue, type MarketTier } from '../../data/chophien';
+import { MARKET_TIERS, MARKET_HOT_BONUS, marketHotCategory, MARKET_MULT_MAX, MARKET_MULT_MIN, marketClearValue, marketTierQuote, marketTierUnlocked, type MarketClearValue, type MarketTier } from '../../data/chophien';
 import { itemHealthList, shelfCount } from '../../data/analytics';
 import { Callout, styles } from './shared';
 
@@ -55,6 +55,7 @@ function MarketTierCard({ level }: { level: number }) {
         })}
       </div>
       <div style={{ fontSize: 11, opacity: 0.8, marginTop: 3 }}>Tối đa {def.maxItems} loại / {def.maxUnits} món · phí sạp {Math.round(def.fee * 100)}%</div>
+      {tier !== 'xom' && <div style={{ fontSize: 11, marginTop: 2 }}>🔥 Sạp thu mua hôm nay: <b>{CATEGORIES[marketHotCategory(s.day)]}</b> trả thêm {Math.round(MARKET_HOT_BONUS * 100)}%</div>}
       {tier !== 'xom' && (
         <label style={{ display: 'block', fontSize: 12, marginTop: 4 }}>
           Giá rao: <b>{mult.toFixed(1)}×</b> giá chợ (rao cao bán được ít)

@@ -1,6 +1,6 @@
 import type { DayAction } from './dayPlan';
 import { WEEK_DAYS } from './biz';
-import { productById } from './products';
+import { productById, CATEGORIES, type Category } from './products';
 import { needsCold } from './freshness';
 import { scarcityMul } from './market';
 import type { ItemHealth } from './analytics';
@@ -131,6 +131,14 @@ export const MARKET_MULT_MIN = 0.3;
 export const MARKET_MULT_MAX = 3;
 export const MARKET_PRICE_CAP = 0.95;
 
+/** GĐ1519 — "sạp thu mua giá cao" (Việt hoá cơ chế nơi thu mua theo nhóm hàng): mỗi phiên chợ phường/đầu mối
+ *  có MỘT nhóm hàng được trả thêm, xoay theo tuần, tất định (không RNG). Vẫn chịu trần 95% giá lẻ. */
+export const MARKET_HOT_BONUS = 0.15;
+export function marketHotCategory(day: number): Category {
+  const cats = Object.keys(CATEGORIES) as Category[];
+  return cats[Math.floor(Math.max(0, day) / MARKET_EVERY) % cats.length];
+}
+
 export const isMarketTier = (t: unknown): t is MarketTier => typeof t === 'string' && t in MARKET_TIERS;
 export const marketTierUnlocked = (tier: MarketTier, level: number) => level >= MARKET_TIERS[tier].unlock;
 export function clampMarketMult(m: unknown): number {
@@ -154,9 +162,11 @@ export function marketTierQuote(val: MarketClearValue, tier: MarketTier, mult: n
     for (const r of val.rows) {
       const qty = Math.floor(r.qty * st);
       if (qty <= 0) continue;
-      const sell = productById(r.id).sell;
+      const prod = productById(r.id);
+      const sell = prod.sell;
       const legacyUnit = r.est / r.qty; // = giá lẻ × 0,75 × hệ khan hiếm
-      const unit = Math.min(legacyUnit * m, sell * MARKET_PRICE_CAP);
+      const hot = prod.category === marketHotCategory(val.day) ? 1 + MARKET_HOT_BONUS : 1;
+      const unit = Math.min(legacyUnit * m * hot, sell * MARKET_PRICE_CAP);
       rows.push({ ...r, qty, est: Math.round(qty * unit) });
     }
   }
