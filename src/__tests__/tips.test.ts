@@ -40,3 +40,10 @@ describe('GĐ1585 mẹo nhiệm vụ tặng quà', () => {
     expect(TIPS.some((t) => t.from === 38 && t.text.includes('tặng quà khách quen 2 lần'))).toBe(true);
   });
 });
+
+describe('GĐ1589 mẹo quà sinh nhật', () => {
+  it('cấp 38', async () => {
+    const { TIPS } = await import('../data/tips');
+    expect(TIPS.some((t) => t.from === 38 && t.text.includes('+30 XP'))).toBe(true);
+  });
+});
