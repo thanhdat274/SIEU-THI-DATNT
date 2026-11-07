@@ -133,5 +133,5 @@ Paywall tủ nguyên liệu 290.000×200 cấp (bồn tiêu tiền), Côn trùng
 
 1. **🥕 "Mua đủ N mỗi loại" trên cảnh báo thiếu hàng** — 1 nút hết rủi ro bếp dừng; áp dụng NGAY cho kho tạp hóa (mục K1 KE-HOACH).
 2. **Chợ đồ cũ người chơi thật**: tự định giá + hiển thị % so giá shop + hạn giờ rao; quan sát: landmark bị bán tháo ~10% giá → người mới sắm đồ cuối game rẻ, người cũ thu hồi vốn. Cần backend — để lâu dài.
-3. **Tủ Trao Đổi**: 5 slot offer nguyên liệu + History + cooldown 3h/quán — hệ nhỏ, làm được 1 GĐ khi hẻm online có server.
+3. **Tủ Trao Đổi**: 5 slot offer nguyên liệu + History + cooldown 3h/quán — ⏸ GĐ1609: hẻm online là một tiệm chung (kho dùng chung) nên trao đổi trong hẻm vô nghĩa; giữa các hẻm cần kho lưu mới trên server.
 4. **Thanh tra 3/3 lần hối lộ thành công** (10→16→18% mức phạt) — mình giữ rủi ro bị bắt cho lựa chọn có nghĩa.
