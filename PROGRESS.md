@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (07/11/2026)
+- **GĐ1617** — QA trình duyệt GĐ1616 (cấp 10, ván mới): "Lời 47.000đ từ dịch vụ — chưa mở dịch vụ nào: mở ở 📈 Kinh doanh". Save tạm đã xoá từ trang không mở game (0 IndexedDB).
 - **GĐ1616** — "Lời từ dịch vụ" hiện từ cấp 3 dù chưa mở dịch vụ nào: mô tả thêm "— chưa mở dịch vụ nào: mở ở 📈 Kinh doanh" (`hasService` tính trực tiếp từ biz.services). Đã rà hết 15 việc ngày: các việc còn lại đều làm được với tiệm ván mới. Full suite 575/5185 xanh.
 - **GĐ1615** — QA trình duyệt GĐ1614: có Bếp nướng, không nhân viên → "Giao 7 đơn nấu — cần thuê 🛵 Giao hàng để khách gọi điện đặt". Bài học QA: xoá save tạm phải chạy từ trang KHÔNG mở game (vd. `/src/data/critic.ts`), nếu không game lưu lại ngay — save tạm GĐ1613 đã sót và nay đã xoá sạch (0 IndexedDB trên 127.0.0.1).
 - **GĐ1614** — "Giao đơn nấu" khi có bếp nhưng chưa có người giao (điện thoại không đổ chuông → không thể có đơn): mô tả đổi thành "… — cần thuê 🛵 Giao hàng để khách gọi điện đặt" (`hasCourier` tính trực tiếp, không lưu). Full suite 575/5184 xanh.
