@@ -6,6 +6,14 @@ import { STATIONS } from '../data/recipes';
 
 /** GĐ1504 — nhóm đồ dùng bếp/trang trí Việt dựng theo builder chung. */
 const DECOR_TYPES = new Set<string>(['kho_dao', 'ke_gia_vi', 'ke_chen', 'thung_rac', 'tham_chan', 'den_long', 'tranh_dong_ho', 'bon_rua']);
+
+/** GĐ1505 — bảng hiệu đặc sản 4 miền: màu vải + biểu tượng riêng từng miền. */
+const FLAG_COLORS: Record<string, number> = { bang_hieu_bac: 0xc0392b, bang_hieu_trung: 0xd4ac0d, bang_hieu_nam: 0x1e8449, bang_hieu_tay_nguyen: 0x8d6e63 };
+const FLAG_ICONS: Record<string, string> = { bang_hieu_bac: '🏔️', bang_hieu_trung: '⛵', bang_hieu_nam: '🌾', bang_hieu_tay_nguyen: '🌲' };
+DECOR_TYPES.add('bang_hieu_bac');
+DECOR_TYPES.add('bang_hieu_trung');
+DECOR_TYPES.add('bang_hieu_nam');
+DECOR_TYPES.add('bang_hieu_tay_nguyen');
 import { createCounter } from '../world/buildings';
 import { productParts } from '../render/productModels';
 import type { ShelfInstancer } from './shelfInstancer';
@@ -590,7 +598,25 @@ export class FurnitureView {
         break;
       }
     }
-    const badge = makeBadgeSprite('🩷', 0.35);
+    if (FLAG_COLORS[this.type]) {
+      // Bảng hiệu đặc sản: 2 cột gỗ + bảng vải màu miền, icon miền nổi trên bảng
+      const cloth = new THREE.Mesh(new THREE.BoxGeometry(w, 0.42, 0.04), new THREE.MeshStandardMaterial({ color: FLAG_COLORS[this.type] }));
+      cloth.position.y = 1.15;
+      const stripe = new THREE.Mesh(new THREE.BoxGeometry(w - 0.1, 0.1, 0.05), gold);
+      stripe.position.set(0, 1.32, 0.005);
+      for (const x of [-w / 2 + 0.05, w / 2 - 0.05]) {
+        const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.035, 1.5, 8), wood);
+        pole.position.set(x, 0.75, 0);
+        this.group.add(pole);
+      }
+      const icon = makeBadgeSprite(FLAG_ICONS[this.type] ?? '🚩', 0.34);
+      icon.position.set(0, 1.12, 0.06);
+      this.group.add(cloth, stripe, icon);
+      const badge = makeBadgeSprite('🩷', 0.3);
+      badge.position.y = 1.62;
+      this.group.add(badge);
+      return;
+    }    const badge = makeBadgeSprite('🩷', 0.35);
     badge.position.y = 1.75;
     this.group.add(badge);
   }

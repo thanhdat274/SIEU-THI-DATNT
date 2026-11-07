@@ -8,6 +8,7 @@ export type FurnitureType =
   | 'vending_drink' | 'scale_machine' | 'claw_machine'
   | 'toilet_squat' | 'toilet_porcelain' | 'toilet_smart'
   | 'kho_dao' | 'ke_gia_vi' | 'ke_chen' | 'thung_rac' | 'tham_chan' | 'den_long' | 'tranh_dong_ho' | 'bon_rua'
+  | 'bang_hieu_bac' | 'bang_hieu_trung' | 'bang_hieu_nam' | 'bang_hieu_tay_nguyen'
   | CookingStation;
 
 /** Trạm nấu: id trùng tên trạm trong recipes.ts; đặt trong tiệm mới nấu được món của trạm đó. */
@@ -200,6 +201,27 @@ export const FURNITURE: FurnitureDef[] = [
   {
     type: 'bon_rua', name: 'Bồn rửa inox', price: 150000, unlock: 18, size: [0.9, 0.6], tiers: 0, slots: 0, capacity: 0,
     categories: [], decor: 5, desc: 'Bồn rửa inox cho khu quầy nấu — rửa tay, rửa rau tiện sạch (+5 🩷)',
+  },
+  // ──────────────────────────────────────────────
+  // GĐ1505 — BẢNG HIỆU VINH DANH ĐẶC SẢN 4 MIỀN: bày đủ bộ đặc sản miền (mối lái vùng xa,
+  // tham khảo hệ "cờ vinh danh ẩm thực") thì bảng sáng +4 🩷 và đặc sản miền đó +2% giá;
+  // đủ bộ mà mọi loại lên 1★ → +12 🩷 (tổng 16) và +5% giá. Tính điểm ở data/regionFlags.ts
+  // ──────────────────────────────────────────────
+  {
+    type: 'bang_hieu_bac', name: 'Bảng hiệu đặc sản miền Bắc', price: 260000, unlock: 42, size: [0.8, 0.15], tiers: 0, slots: 0, capacity: 0,
+    categories: [], decor: 4, desc: 'Bảng vải đỏ treo cao — bày đủ Trà shan tuyết + Cốm Vòng thì sáng (+4 🩷, đặc sản miền Bắc +2% giá)',
+  },
+  {
+    type: 'bang_hieu_trung', name: 'Bảng hiệu đặc sản miền Trung', price: 260000, unlock: 42, size: [0.8, 0.15], tiers: 0, slots: 0, capacity: 0,
+    categories: [], decor: 4, desc: 'Bảng vải vàng ruộm — bày đủ Mè xửng + Nem chua thì sáng (+4 🩷, đặc sản miền Trung +2% giá)',
+  },
+  {
+    type: 'bang_hieu_nam', name: 'Bảng hiệu đặc sản miền Nam', price: 260000, unlock: 42, size: [0.8, 0.15], tiers: 0, slots: 0, capacity: 0,
+    categories: [], decor: 4, desc: 'Bảng vải xanh lá — bày đủ 5 loại đặc sản miền Nam thì sáng (+4 🩷, đặc sản miền Nam +2% giá)',
+  },
+  {
+    type: 'bang_hieu_tay_nguyen', name: 'Bảng hiệu đặc sản Tây Nguyên', price: 260000, unlock: 42, size: [0.8, 0.15], tiers: 0, slots: 0, capacity: 0,
+    categories: [], decor: 4, desc: 'Bảng vải nâu đất — bày đủ Khô bò + Mắc khén thì sáng (+4 🩷, đặc sản Tây Nguyên +2% giá)',
   },
 ];
 

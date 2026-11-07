@@ -11,6 +11,8 @@ import { comboById, maxActiveCombos } from '../../data/combos';
 import { paymentById } from '../../data/payments';
 import { COOKED_PRODUCT_IDS } from '../../data/recipes';
 import { dishPriceMul } from '../../data/dishStars';
+import { REGION_IDS } from '../../data/regionSpecialty';
+import { regionPriceMul, stockedProductIds } from '../../data/regionFlags';
 import { type GameState, type SetState, type GetState, addHour } from '../gameTypes';
 import { copyStock, takeStock } from '../stock';
 import { HOMEGROWN_PREMIUM } from '../../data/garden';
@@ -72,7 +74,8 @@ export const createSalesSlice = (set: SetState, get: GetState): Pick<GameState, 
     // GĐ1496 — món nấu bán được cộng lượt ("sao món"): thưởng giá theo sao TRƯỚC lượt này
     // (sao kiếm từ những lượt bán trước), cộng thẳng vào tiền + doanh thu như premium nhà trồng.
     const servedCounts = { ...s.servedCounts };
-    let starPremium = 0;
+    // GĐ1505 — bảng hiệu đặc sản 4 miền: bày đủ bộ đặc sản miền thì đặc sản miền đó +2%/+5% giá    const servedCounts = { ...s.servedCounts };
+    const stocked = stockedProductIds(s.furniture);    let starPremium = 0;
     for (const it of items) {
       salesToday[it.id] = (salesToday[it.id] ?? 0) + 1;
       const line = byItem[it.id] ?? { qty: 0, revenue: 0, cost: 0 };
@@ -80,6 +83,9 @@ export const createSalesSlice = (set: SetState, get: GetState): Pick<GameState, 
       if (COOKED_PRODUCT_IDS.has(it.id)) {
         itemPremium = Math.round(it.price * (dishPriceMul(servedCounts[it.id] ?? 0) - 1));
         servedCounts[it.id] = (servedCounts[it.id] ?? 0) + 1;
+      }
+      if (REGION_IDS.has(it.id)) {
+        itemPremium += Math.round(it.price * (regionPriceMul(it.id, s.furniture, stocked, s.servedCounts ?? {}) - 1));
       }
       starPremium += itemPremium;
       byItem[it.id] = { qty: line.qty + 1, revenue: line.revenue + it.price + itemPremium, cost: line.cost + productById(it.id).buy };
