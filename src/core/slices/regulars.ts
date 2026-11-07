@@ -226,6 +226,7 @@ export const createRegularsSlice = (set: SetState, get: GetState): Pick<GameStat
     get().adjustFriendship(id, gain);
     const after = get().regulars[id];
     if (after) set({ regulars: { ...get().regulars, [id]: { ...after, lastGiftDay: s.day } } });
+    set({ stats: { ...get().stats, gifts: (get().stats.gifts ?? 0) + 1 } }); // GĐ1584
     s.notify(`🎁 Tặng ${def.name} 1 ${productById(plan.productId).name} · +${gain} thân thiết${gain > 3 ? ' (🎂 sinh nhật ×2)' : ''}`);
     return true;
   },

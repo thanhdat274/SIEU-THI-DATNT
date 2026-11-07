@@ -4,6 +4,8 @@ import type { PaymentMethod } from '../data/payments';
 import type { ReviewReason } from '../data/reviews';
 
 export interface DayStats {
+  /** GĐ1584 — số lần tặng quà khách quen trong ngày (tuỳ chọn, save cũ = 0). */
+  gifts?: number;
   revenue: number;
   spent: number;
   wages: number;
