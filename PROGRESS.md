@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (07/11/2026)
+- **GĐ1603** — Mẹo cấp 32: mốc sao món nấu 20/100/800 lượt và dòng đếm 3★ ở Sổ nấu.
 - **GĐ1602** — Đầu Sổ nấu hiện "🏆 N món đã đạt 3★" (maxedDishLine). QA trình duyệt nhãn GĐ1601 hiện đúng; save QA đã xoá.
 - **GĐ1601** — Sổ nấu: món đã 3★ hiện "🏆 bậc cao nhất" thay vì để trống mục tiêu (dishMaxLabel). Rà KE-HOACH I4/K1: kiên nhẫn 60%, trần vắng mặt 30+cấp×5, nút Nhập đủ đều đã có.
 - **GĐ1600** — Rà soát + QA save mới: bán đầu tiên ~35s, không lỗi console. Chuỗi GĐ1591–1599 (tặng quà, gắp trúng) đều là đếm/hiển thị, không đổi kinh tế; mọi trường mới tuỳ chọn. Lưu trữ GĐ1565–1572. Save QA đã xoá.

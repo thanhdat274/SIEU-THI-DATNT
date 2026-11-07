@@ -24,6 +24,7 @@ export const TIPS: readonly Tip[] = [
   { from: 45, text: 'Phục vụ kịp món nhà phê bình gọi sẽ có thêm đánh giá 5★.' },
   { from: 50, text: 'Ngày lễ hội, máy chụp ảnh lấy liền thu phí cao hơn 50%.' },
   { from: 25, text: 'Tab Dịch vụ cho biết máy nào hôm nay chưa ai chơi — dời máy đó gần cửa.' },
+  { from: 32, text: 'Món nấu bán đủ 20/100/800 lượt lên 1★/2★/3★, giá bán tăng và đổi đồ đựng xịn hơn — Sổ nấu đếm số món đã 3★.' },
 ];
 
 export const TIP_EVERY_MINUTES = 30;

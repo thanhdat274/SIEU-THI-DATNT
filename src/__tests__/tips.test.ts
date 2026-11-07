@@ -54,3 +54,10 @@ describe('GĐ1594 mẹo gắp trúng có chỗ xem', () => {
     expect(TIPS.some((t) => t.from === 44 && t.text.includes('tab Dịch vụ'))).toBe(true);
   });
 });
+
+describe('GĐ1603 mẹo sao món', () => {
+  it('cấp 32', async () => {
+    const { TIPS } = await import('../data/tips');
+    expect(TIPS.some((t) => t.from === 32 && t.text.includes('3★'))).toBe(true);
+  });
+});
