@@ -1036,8 +1036,8 @@ export const RECIPES: Recipe[] = [
     outputId: 'muc_hap_gung', outputQty: 6, durationMin: 10, unlock: 41, reputationGain: 2 },
   // GĐ1425: Cá rô phi chiên xù ở chảo chiên. Mở 39 (> golden 30, ≥ cấp nguyên liệu).
   { id: 'recipe_ca_ro_phi_chien_xu', name: 'Cá rô phi chiên xù', station: 'fryer',
-    inputs: [{ productId: 'x_ca_ro_phi', quantity: 1 }],
-    outputId: 'ca_ro_phi_chien_xu', outputQty: 5, durationMin: 10, unlock: 39, reputationGain: 2 },
+    inputs: [{ productId: 'x_ca_ro_phi', quantity: 1 }, { productId: 'x_bot_chien', quantity: 1 }], // GĐ1688: chiên xù cần bột chiên
+    outputId: 'ca_ro_phi_chien_xu', outputQty: 6, durationMin: 10, unlock: 39, reputationGain: 2 },
   // GĐ1425: Ức gà nướng ở bếp nướng. Mở 35 (> golden 30, ≥ cấp nguyên liệu).
   { id: 'recipe_uc_ga_nuong', name: 'Ức gà nướng', station: 'food_grill',
     inputs: [{ productId: 'x_uc_ga', quantity: 1 }],
