@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (07/11/2026)
+- GĐ1678: đơn tiệc mới 💒 Mâm xôi gấc đám cưới (cấp 43, 30 phần xôi gấc, thưởng 150k) — lối bán lớn cho gấc nhà trồng; test sweep GĐ267 chỉ xét đơn đã mở ở cấp 40.
 - GĐ1677: Hội thi làm bánh hút Trứng ngỗng (nguyên liệu bánh flan, trại có ngỗng bán được giá).
 - GĐ1676: test mọi giống (kể cả gấc/thơm/gừng mới) dựng được mô hình 3D ở cả 4 giai đoạn, giai đoạn chín đủ cỡ.
 - GĐ1675: Tết Trung thu hút Bưởi (mâm cỗ trông trăng) + Chè bưởi.

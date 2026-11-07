@@ -102,6 +102,12 @@ export const PARTY_ORDERS: PartyOrderDef[] = [
     description: 'Cả lớp gom tiền đặt giỏ quà tặng cô nhân 20/11 — bé nhờ tiệm gói giùm cho đẹp.',
     items: { gio_qua_2011: 3 }, bonus: 130000, xp: 120,
   },
+  // GĐ1665+1678: đơn mâm xôi gấc đám cưới — lối bán lớn cho xôi gấc tự nấu từ gấc nhà trồng.
+  {
+    id: 'xoi_gac_cuoi', icon: '💒', title: 'Mâm xôi gấc đám cưới', from: 'Nhà cô dâu đầu hẻm', unlock: 43, days: 3,
+    description: 'Nhà có đám cưới, cần xôi gấc đỏ thắm bày mâm cỗ — đặt trước để tiệm kịp nấu.',
+    items: { xoi_gac: 30 }, bonus: 150000, xp: 120,
+  },
   // Đơn riêng theo câu chuyện từng khách quen
   {
     id: 'xoi_dam_gio', icon: '🍙', title: 'Mẻ xôi đám giỗ', from: regularById('ba_nam')!.name, regular: 'ba_nam', unlock: 12, days: 2,
