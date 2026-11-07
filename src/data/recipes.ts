@@ -912,7 +912,7 @@ export const RECIPES: Recipe[] = [
     outputId: 'hot_vit_luoc', outputQty: 10, durationMin: 10, unlock: 35, reputationGain: 1 },
   // GĐ1415: Bánh mì bơ tỏi ở bếp nướng. Mở 63 (> golden 30, ≥ cấp nguyên liệu).
   { id: 'recipe_banh_mi_bo_toi', name: 'Bánh mì bơ tỏi', station: 'food_grill',
-    inputs: [{ productId: 'x_banh_mi', quantity: 10 }, { productId: 'bo_sua', quantity: 1 }],
+    inputs: [{ productId: 'x_banh_mi', quantity: 10 }, { productId: 'bo_sua', quantity: 1 }, { productId: 'x_toi', quantity: 1 }], // GĐ1691: bơ tỏi cần tỏi
     outputId: 'banh_mi_bo_toi', outputQty: 10, durationMin: 10, unlock: 63, reputationGain: 2 },
   // GĐ1416: Sữa yến mạch đường đen ở máy xay. Mở 73 (> golden 30, ≥ cấp nguyên liệu).
   { id: 'recipe_sua_yen_mach_xay', name: 'Sữa yến mạch đường đen', station: 'blender',
