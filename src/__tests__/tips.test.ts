@@ -11,3 +11,10 @@ describe('GĐ1552 — Bạn có biết?', () => {
     expect(tipAt(50, 2, 600)).not.toBe(tipAt(50, 2, 630));
   });
 });
+
+describe('GĐ1562 mẹo tặng quà khách quen', () => {
+  it('mở ở cấp 38', async () => {
+    const { TIPS } = await import('../data/tips');
+    expect(TIPS.some((t) => t.from === 38 && t.text.includes('khách quen'))).toBe(true);
+  });
+});
