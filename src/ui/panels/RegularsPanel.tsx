@@ -6,6 +6,7 @@ import { arcById, currentArcStep } from '../../data/regularArc';
 import { lifetimeRegularVisits, vipTierOf, nextTierOf, monthlyTriAn, regularQuote, EMOTIONAL_FRIENDSHIP } from '../../data/regularTrust';
 import { Callout, Footer, Swatch, styles } from './shared';
 import { DebtBook } from './DebtBook';
+import { regularGiftPlan, REGULAR_GIFT_LEVEL, REGULAR_GIFT_FRIENDSHIP } from '../../data/regularGift';
 
 /** GĐ793 — nút đòi khách quen bị rival lôi kéo (cùng kiểu nút vàng accent của hệ thống). */
 const rescueBtn: React.CSSProperties = {
@@ -25,7 +26,7 @@ export const PERK_ICONS: Record<PerkEffect, string> = {
 
 /** Khách quen: điểm thân thiết, món ưa thích đã biết, perk đã mở. */
 export function RegularsPanel() {
-  const { level, day, regulars, biz, money, storage, closePanel, rescuePoachedRegular } = useGame();
+  const { level, day, regulars, biz, money, storage, closePanel, rescuePoachedRegular, giftRegular } = useGame();
   const arcs = biz.regularArcs ?? {};
   const rival = biz.rival;
   const poached = rival?.poached ?? {};
@@ -136,6 +137,19 @@ export function RegularsPanel() {
                 <div style={{ fontSize: 12, marginTop: 4 }}>
                   Thích: {r.favorites.map((id) => (prog?.discovered.includes(id) ? productById(id).name : '???')).join(', ')}
                 </div>
+                {level >= REGULAR_GIFT_LEVEL && (() => {
+                  const plan = regularGiftPlan(r, prog, level, day, storage);
+                  const err = 'error' in plan ? plan.error : null;
+                  return (
+                    <button
+                      disabled={!!err}
+                      onClick={() => giftRegular(r.id)}
+                      style={{ marginTop: 4, fontSize: 12, padding: '3px 8px', borderRadius: 6, border: 'none', cursor: err ? 'default' : 'pointer', opacity: err ? 0.55 : 1 }}
+                    >
+                      {'productId' in plan ? `🎁 Tặng 1 ${productById(plan.productId).name} (+${REGULAR_GIFT_FRIENDSHIP} 💛)` : `🎁 ${err}`}
+                    </button>
+                  );
+                })()}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, fontSize: 12 }}>
                   <span>💛 {pts}</span>
                   {next && (

@@ -61,6 +61,8 @@ export interface RegularProgress {
   visits: number;
   lastVisitDay?: number;
   lastFriendshipDay?: number;
+  /** GĐ1557 — ngày gần nhất người chơi tặng quà (mỗi khách 1 lần/ngày). */
+  lastGiftDay?: number;
   perks: string[];
   /** Món ưa thích người chơi đã phát hiện (khách mua được). */
   discovered: string[];

@@ -7,11 +7,12 @@ import { copyStock, takeStock } from '../stock';
 import { arcForRegular, arcById, currentArcStep, arcStepFulfilled } from '../../data/regularArc';
 import { satisfiedLine, walkoutLine } from '../../data/regularTrust';
 import { REP_CAP } from '../../data/reputation';
+import { regularGiftPlan, REGULAR_GIFT_FRIENDSHIP } from '../../data/regularGift';
 import { type GameState, type SetState, type GetState, addHour } from '../gameTypes';
 
 /** Khách: lượt ghé, khách quen, lời hẹn giữ món, sổ nợ, đánh giá. */
 
-export const createRegularsSlice = (set: SetState, get: GetState): Pick<GameState, 'recordVisit' | 'regularVisit' | 'addReservation' | 'cancelReservation' | 'adjustFriendship' | 'rescuePoachedRegular' | 'checkoutOnCredit' | 'collectDebt' | 'collectDebtPartial' | 'remindDebt' | 'forgiveDebt' | 'addReview'> => ({
+export const createRegularsSlice = (set: SetState, get: GetState): Pick<GameState, 'recordVisit' | 'regularVisit' | 'addReservation' | 'cancelReservation' | 'adjustFriendship' | 'rescuePoachedRegular' | 'checkoutOnCredit' | 'collectDebt' | 'collectDebtPartial' | 'remindDebt' | 'forgiveDebt' | 'giftRegular' | 'addReview'> => ({
   recordVisit: (happy, sample) => {
     const s = get();
     set({
@@ -207,6 +208,25 @@ export const createRegularsSlice = (set: SetState, get: GetState): Pick<GameStat
     set({ debts });
     s.adjustFriendship(regularId, FORGIVE_FRIEND_GAIN);
     s.notify(`🤝 Xoá nợ ${formatMoney(debt.amount)} cho ${regularById(regularId)?.name} · +${FORGIVE_FRIEND_GAIN} thân thiết`);
+  },
+  // GĐ1557 — tặng 1 món khách thích từ kho: +3 thân thiết, mỗi khách 1 lần/ngày (cấp ≥38).
+  giftRegular: (id) => {
+    const s = get();
+    const def = regularById(id);
+    if (!def) return false;
+    const plan = regularGiftPlan(def, s.regulars[id], s.level, s.day, s.storage);
+    if ('error' in plan) {
+      s.notify(`🎁 ${plan.error}`);
+      return false;
+    }
+    const stock = copyStock({ storage: s.storage, storageLots: s.storageLots });
+    takeStock(stock, plan.productId, 1);
+    set({ storage: stock.storage, storageLots: stock.storageLots });
+    get().adjustFriendship(id, REGULAR_GIFT_FRIENDSHIP);
+    const after = get().regulars[id];
+    if (after) set({ regulars: { ...get().regulars, [id]: { ...after, lastGiftDay: s.day } } });
+    s.notify(`🎁 Tặng ${def.name} 1 ${productById(plan.productId).name} · +${REGULAR_GIFT_FRIENDSHIP} thân thiết`);
+    return true;
   },
   addReview: (stars, reason, productId) => {
     const s = get();

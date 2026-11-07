@@ -102,6 +102,7 @@ const LOCAL_ONLY: Record<string, string> = {
   collectDebtPartial: 'chấp nhận trả góp nợ khách quen theo id người (amount giảm nửa, since = hôm nay — sửa đúng một chỗ trong sổ nợ)',
   remindDebt: 'nhắc nợ một khách quen theo id người',
   forgiveDebt: 'xoá nợ một khách quen theo id người',
+  giftRegular: 'tặng quà một khách quen theo id người',
   addReservation: 'nhận giữ món cho một khách quen (thêm hẹn mới)',
   cancelReservation: 'huỷ lời hẹn của một khách quen theo id người',
   adjustFriendship: 'cộng/trừ thân thiết một khách quen theo id người',

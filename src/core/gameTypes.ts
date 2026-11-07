@@ -333,6 +333,8 @@ export interface GameState {
   collectDebtPartial: (regularId: string) => number;
   remindDebt: (regularId: string) => void;
   forgiveDebt: (regularId: string) => void;
+  /** GĐ1557 — tặng 1 món khách thích từ kho, +3 thân thiết, 1 lần/ngày/khách (cấp ≥38). */
+  giftRegular: (regularId: string) => boolean;
   /** Người bán rong đang chờ ở tiệm xin lấy sỉ (null = không có). */
   vendorOffer: VendorOffer | null;
   /** Ngày người bán rong đã ghé gần nhất (mỗi ngày tối đa một lần). */
