@@ -24,3 +24,13 @@ describe('GĐ1634 — chi nhánh, hợp đồng, lô hàng, kho, tiệm xôi, s�
       expect(readFileSync(`src/ui/${f}.tsx`, 'utf8'), f).toContain('shortLabel(');
   });
 });
+
+describe('GĐ1649 — nhập gấp bán sỉ và đơn nhập nêu số thiếu', () => {
+  it('VendorAlert dùng shortLabel; OrderPanel ghi "thiếu X" thay vì "không đủ tiền"', async () => {
+    const { readFileSync } = await import('node:fs');
+    expect(readFileSync('src/ui/VendorAlert.tsx', 'utf8')).toContain('shortLabel(');
+    const order = readFileSync('src/ui/OrderPanel.tsx', 'utf8');
+    expect(order).toContain('thiếu {formatMoney(total - money)}');
+    expect(order).not.toContain('· không đủ tiền</span>');
+  });
+});
