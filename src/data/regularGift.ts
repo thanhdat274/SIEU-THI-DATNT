@@ -20,3 +20,10 @@ export function regularGiftPlan(
 
 // GĐ1558 — tặng đúng ngày sinh nhật khách: thân thiết gấp đôi (+6).
 export const giftFriendship = (birthday: boolean): number => REGULAR_GIFT_FRIENDSHIP * (birthday ? 2 : 1);
+
+// GĐ1559 — đếm khách quen (đã gặp) còn tặng được hôm nay, hiện ở đầu sổ khách quen.
+export function giftableCount(
+  defs: RegularDef[], regulars: Record<string, RegularProgress>, level: number, day: number, storage: Record<string, number>,
+): number {
+  return defs.filter((d) => 'productId' in regularGiftPlan(d, regulars[d.id], level, day, storage)).length;
+}

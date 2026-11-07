@@ -30,3 +30,12 @@ describe('GĐ1558 quà sinh nhật', () => {
     expect(giftFriendship(true)).toBe(6);
   });
 });
+
+import { giftableCount } from '../data/regularGift';
+describe('GĐ1559 đếm khách tặng được', () => {
+  it('trừ khách đã tặng hôm nay', () => {
+    expect(giftableCount([def], {}, 60, 5, { [fav]: 1 })).toBe(1);
+    expect(giftableCount([def], { [def.id]: { lastGiftDay: 5 } as never }, 60, 5, { [fav]: 1 })).toBe(0);
+    expect(giftableCount([def], {}, 30, 5, { [fav]: 1 })).toBe(0);
+  });
+});

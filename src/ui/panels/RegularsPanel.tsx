@@ -6,7 +6,7 @@ import { arcById, currentArcStep } from '../../data/regularArc';
 import { lifetimeRegularVisits, vipTierOf, nextTierOf, monthlyTriAn, regularQuote, EMOTIONAL_FRIENDSHIP } from '../../data/regularTrust';
 import { Callout, Footer, Swatch, styles } from './shared';
 import { DebtBook } from './DebtBook';
-import { regularGiftPlan, REGULAR_GIFT_LEVEL, giftFriendship } from '../../data/regularGift';
+import { regularGiftPlan, REGULAR_GIFT_LEVEL, giftFriendship, giftableCount } from '../../data/regularGift';
 
 /** GĐ793 — nút đòi khách quen bị rival lôi kéo (cùng kiểu nút vàng accent của hệ thống). */
 const rescueBtn: React.CSSProperties = {
@@ -42,6 +42,7 @@ export function RegularsPanel() {
   return (
     <>
       <h2 style={styles.title}>💛 Khách quen</h2>
+      {level >= REGULAR_GIFT_LEVEL && <p style={styles.sub}>🎁 Hôm nay còn tặng quà được {giftableCount(met, regulars, level, day, storage)} khách quen</p>}
       <DebtBook />
       <p style={styles.sub}>
         Khách quen ghé vào giờ quen. Bán đúng món họ thích thì thân hơn (+2, món khác +1, mỗi ngày một lần);
