@@ -54,3 +54,8 @@ export function giftPanelLine(left: number, gifts: number | undefined): string {
 export function giftXp(birthday: boolean): number {
   return birthday ? 30 : 0;
 }
+
+/** GĐ1595 — đuôi thông báo sau khi tặng: còn tặng được bao nhiêu khách hôm nay. */
+export function giftRemainNote(left: number): string {
+  return left > 0 ? ' · còn tặng được ' + left + ' khách' : ' · hôm nay đã tặng hết';
+}

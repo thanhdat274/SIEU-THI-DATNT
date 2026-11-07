@@ -1,13 +1,13 @@
 import { formatMoney, productById } from '../../data/products';
 import { composeReview, REVIEW_CAP } from '../../data/reviews';
-import { regularById, regularCheckout, BIRTHDAY_BONUS, isBirthday, regularFriendship, regularWalkout, INFLUENCER_ID, RESERVE_BONUS, RESERVE_MISS_LOSS, rescueGiftFor } from '../../data/regulars';
+import { REGULARS, regularById, regularCheckout, BIRTHDAY_BONUS, isBirthday, regularFriendship, regularWalkout, INFLUENCER_ID, RESERVE_BONUS, RESERVE_MISS_LOSS, rescueGiftFor } from '../../data/regulars';
 import { FORGIVE_FRIEND_GAIN, installmentNow, REMIND_FRIEND_LOSS } from '../../data/credit';
 import { counterActive, RESCUE_FEE, RESCUE_FRIENDSHIP } from '../../data/biz';
 import { copyStock, takeStock } from '../stock';
 import { arcForRegular, arcById, currentArcStep, arcStepFulfilled } from '../../data/regularArc';
 import { satisfiedLine, walkoutLine } from '../../data/regularTrust';
 import { REP_CAP } from '../../data/reputation';
-import { regularGiftPlan, giftFriendship, giftXp } from '../../data/regularGift';
+import { regularGiftPlan, giftFriendship, giftXp, giftableCount, giftRemainNote } from '../../data/regularGift';
 import { type GameState, type SetState, type GetState, addHour } from '../gameTypes';
 
 /** Khách: lượt ghé, khách quen, lời hẹn giữ món, sổ nợ, đánh giá. */
@@ -229,7 +229,7 @@ export const createRegularsSlice = (set: SetState, get: GetState): Pick<GameStat
     set({ stats: { ...get().stats, gifts: (get().stats.gifts ?? 0) + 1 } }); // GĐ1584
     const bxp = giftXp(gain > 3); // GĐ1588
     if (bxp) get().addXp(bxp);
-    s.notify(`🎁 Tặng ${def.name} 1 ${productById(plan.productId).name} · +${gain} thân thiết${gain > 3 ? ' (🎂 sinh nhật ×2, +' + bxp + ' XP)' : ''}`);
+    s.notify(`🎁 Tặng ${def.name} 1 ${productById(plan.productId).name} · +${gain} thân thiết${gain > 3 ? ' (🎂 sinh nhật ×2, +' + bxp + ' XP)' : ''}${giftRemainNote(giftableCount(REGULARS.filter((r) => r.unlock <= s.level), get().regulars, s.level, s.day, get().storage))}`);
     return true;
   },
   addReview: (stars, reason, productId) => {

@@ -94,3 +94,11 @@ describe('GĐ1588 giftXp', () => {
     expect(giftXp(false)).toBe(0);
   });
 });
+
+describe('GĐ1595 giftRemainNote', () => {
+  it('còn / hết', async () => {
+    const { giftRemainNote } = await import('../data/regularGift');
+    expect(giftRemainNote(2)).toContain('còn tặng được 2');
+    expect(giftRemainNote(0)).toContain('đã tặng hết');
+  });
+});
