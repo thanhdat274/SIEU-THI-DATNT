@@ -33,3 +33,10 @@ describe('GĐ1582 mẹo khen sàn sạch', () => {
     expect(TIPS.some((t) => t.from === 35 && t.text.includes('+50 XP'))).toBe(true);
   });
 });
+
+describe('GĐ1585 mẹo nhiệm vụ tặng quà', () => {
+  it('cấp 38', async () => {
+    const { TIPS } = await import('../data/tips');
+    expect(TIPS.some((t) => t.from === 38 && t.text.includes('tặng quà khách quen 2 lần'))).toBe(true);
+  });
+});

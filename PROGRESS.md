@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (07/11/2026)
+- **GĐ1585** — Mẹo cấp 38: nhiệm vụ ngày tặng quà khách quen.
 - **GĐ1584** — Nhiệm vụ ngày "Tặng quà khách quen" (cấp 38, 2 lần; stats.gifts tuỳ chọn, an toàn save cũ).
 - **GĐ1583** — Cảnh báo sàn bẩn trên HUD (cấp 18, sàn ≥30) thêm "đoàn kiểm tra ghé lúc này sẽ lập biên bản" (`dirtInspectionNote`). Thuần UI.
 - **GĐ1582** — Mẹo cấp 35: sàn sạch lúc đoàn kiểm tra ghé được khen +50 XP.
