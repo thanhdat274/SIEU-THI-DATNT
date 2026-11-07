@@ -5,6 +5,7 @@ import {
   orderAssessment, orderGap, orderRateTone, ratingImpact,
 } from '../../data/online';
 import { formatMoney } from '../../data/products';
+import { shortLabel } from '../shortLabel';
 import { onlineNet } from '../../data/onlineNet';
 import { onlineRatingValue, RATING_FLOOR, RATING_TARGET } from '../../data/onlineRatingValue';
 import { Footer, styles, Callout } from './shared';
@@ -31,7 +32,7 @@ export function OnlinePanel() {
       {!registered ? (
         <div style={styles.card}>
           <span style={{ flex: 1, fontSize: 13 }}>Mở gian hàng trên app: {formatMoney(ONLINE_OPEN_COST)} (trả một lần){level < ONLINE_UNLOCK && ` · cần cấp ${ONLINE_UNLOCK}`}</span>
-          <button style={{ ...styles.btn, background: '#f1c40f' }} disabled={level < ONLINE_UNLOCK || money < ONLINE_OPEN_COST} onClick={openOnline}>Mở gian hàng</button>
+          <button style={{ ...styles.btn, background: '#f1c40f' }} disabled={level < ONLINE_UNLOCK || money < ONLINE_OPEN_COST} onClick={openOnline}>{level < ONLINE_UNLOCK ? 'Mở gian hàng' : shortLabel('Mở gian hàng', ONLINE_OPEN_COST, money)}</button>
         </div>
       ) : (
         <>

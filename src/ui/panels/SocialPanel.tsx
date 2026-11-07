@@ -1,5 +1,6 @@
 import { useGame } from '../../core/store';
 import { formatMoney, fmtMul } from '../../data/products';
+import { shortLabel } from '../shortLabel';
 import { activeBuzz, APOLOGY_COST, promoBoost, PROMO_MIN_FOLLOWERS, SOCIAL_UNLOCK } from '../../data/social';
 import { crisisStatus, recentAvgRevenue } from '../../data/minorPayoff';
 import { socialValue } from '../../data/socialValue';
@@ -54,7 +55,7 @@ export function SocialPanel() {
         return (
           <div style={{ ...styles.card, background: '#5a2d2d', marginBottom: 10, flexWrap: 'wrap' }}>
             <span style={{ flex: 1, minWidth: 160, fontSize: 13 }}>Một bài chê tiệm đang lan truyền. Đăng bài xin lỗi kèm phiếu giảm giá để khách quay lại.</span>
-            <button style={{ ...styles.btn, background: '#f1c40f' }} disabled={money < APOLOGY_COST} onClick={apologize}>🙏 Xin lỗi ({formatMoney(APOLOGY_COST)})</button>
+            <button style={{ ...styles.btn, background: '#f1c40f' }} disabled={money < APOLOGY_COST} onClick={apologize}>{shortLabel(`🙏 Xin lỗi (${formatMoney(APOLOGY_COST)})`, APOLOGY_COST, money)}</button>
             {cs.daysLeft > 0 && (
               <div style={{ flexBasis: '100%', fontSize: 12, opacity: 0.85 }}>
                 Còn {cs.daysLeft} ngày khủng hoảng (hết hạn ngày {cs.until}) — xin lỗi đưa khách từ ×{fmtMul(cs.crisisMul)} lên ×{fmtMul(cs.apologyMul)}:

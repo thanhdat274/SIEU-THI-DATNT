@@ -5,6 +5,7 @@ import { hasUpgrade, UPGRADES } from '../../data/upgrades';
 import { Callout } from './shared';
 import { BREAKFAST, HOME_ITEMS, petActive, PETS, VEHICLES } from '../../data/biz';
 import { formatMoney, productById } from '../../data/products';
+import { shortLabel } from '../shortLabel';
 import { BILL_RUSH_DAYS, dayOfMonth, SERVICE_BUY_ALONG, SERVICES } from '../../data/services';
 import { roiOf } from '../../data/serviceRoi';
 import { catPayoff, dogPayoff, CAT_PITCH_MIN } from '../../data/petPayoff';
@@ -218,7 +219,7 @@ export function Upgrades() {
               </div>
               {!owned && (
                 <button style={btn} disabled={level < u.unlock || money < u.price} onClick={() => buyUpgrade(u.id)}>
-                  {level < u.unlock ? `Cần cấp ${u.unlock}` : `Mua ${formatMoney(u.price)}`}
+                  {level < u.unlock ? `Cần cấp ${u.unlock}` : shortLabel(`Mua ${formatMoney(u.price)}`, u.price, money)}
                 </button>
               )}
             </div>
