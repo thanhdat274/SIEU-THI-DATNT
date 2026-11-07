@@ -65,7 +65,7 @@ import type { NavGrid } from '../world/navGrid';
 import { CoinPopFX } from '../render/fx/coinPop';
 import {
   DINE_UNLOCK, DINE_WAIT_SECONDS, EAT_SECONDS, TOILET_NEED_CHANCE, TOILET_STRICT_UNLOCK, TOILET_USE_SECONDS,
-  dineTip, freeSeat, freeToilet, isToilet, toiletFee, wantsDineIn, type SeatInfo,
+  dineTip, freeSeat, freeToilet, isToilet, toiletFee, wantsDineIn, type SeatInfo, menuTipMul,
 } from '../data/dineIn';
 import { MACHINE_VISIT_CHANCE, MACHINE_USE_SECONDS, MACHINE_TYPES, freeMachine, isMachine, machineFee, type MachineId } from '../data/machines';
 import {
@@ -742,7 +742,9 @@ export class CustomerManager {
         c.seat = undefined;
         // GĐ1492 — tip = 10% tiền món tươi (chờ ghế lâu thì còn 60%): tiền sạch vào két + sổ ngày
         const freshTotal = c.basket.filter((it) => COOKED_PRODUCT_IDS.has(it.id)).reduce((n, it) => n + it.price, 0);
-        const tip = dineTip(freshTotal, waitedSec);
+        const lv = useGame.getState().level;
+        const menuN = [...stockedProductIds(useGame.getState().furniture)].filter((id) => COOKED_PRODUCT_IDS.has(id)).length;
+        const tip = Math.round(dineTip(freshTotal, waitedSec) * menuTipMul(lv, menuN)); // GĐ1536
         if (tip > 0) {
           earnTip(tip);
           this.coinFx.spawn(c.mesh.position, tip);

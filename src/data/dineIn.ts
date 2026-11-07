@@ -129,3 +129,18 @@ export function freeSeat(furniture: Furniture[], occupiedChairs: ReadonlySet<num
   }
   return best ? best.seat : null;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GĐ1536 — thực đơn tối thiểu theo cấp quán (Midnight #9, mốc 3→12 món): số món nấu
+// KHÁC NHAU đang bày kệ đạt mục tiêu cấp thì tip ×1,2; dưới một nửa mục tiêu tip ×0,8.
+// Chỉ từ cấp 31 (golden ≤30 không đổi). Tip là thu phụ → bán lẻ vẫn chính.
+// ─────────────────────────────────────────────────────────────────────────────
+export const MENU_RULE_UNLOCK = 31;
+export const menuTarget = (level: number) => Math.min(12, 3 + Math.max(0, Math.floor((level - 30) / 7)));
+export function menuTipMul(level: number, distinctCooked: number): number {
+  if (level < MENU_RULE_UNLOCK) return 1;
+  const t = menuTarget(level);
+  if (distinctCooked >= t) return 1.2;
+  if (distinctCooked * 2 < t) return 0.8;
+  return 1;
+}

@@ -91,7 +91,7 @@ Paywall tủ nguyên liệu 290.000×200 cấp (bồn tiêu tiền), Côn trùng
 | 6 | **Trang trí nhiều lớp**: sơn nền/tường theo ô + vách ngăn chia khu | ⏸ chờ siêu thị nhiều khu | — |
 | 7 | **Đồ dùng bếp = decor khu bếp** | ✅ đã có đồ bếp | — |
 | 8 | **Cờ vinh danh đặc sản vùng miền** (bản Việt hoá của B4) | ✅ regionFlags | — |
-| 9 | Thực đơn tối thiểu theo cấp quán | đề xuất sẵn (3→12) | chốt khi mở khu ăn siêu thị |
+| 9 | Thực đơn tối thiểu theo cấp quán | ✅ GĐ1536 (tip theo độ đủ thực đơn) | — |
 | 10 | Mở rộng từng ô tiếp giáp | có nền tảng warehouse | khi siêu thị mở phase 2 |
 | 11 | Thu nhập khi vắng mặt | ✅ GĐ1497 + GĐ1531 (≈5%) | — |
 | 12 | Sự kiện theo lịch (Tết/Trung thu) | ✅ GĐ1513 | — |
