@@ -27,7 +27,7 @@ export const PROFESSIONS: ProfessionDef[] = [
   {
     id: 'construction', name: 'Công nhân xây dựng', icon: '👷', archetype: 'construction_worker',
     hours: [h(5.5, 7.5), h(11, 12.5), h(17, 19)],
-    likes: ['mi', 'tangluc', 'nuoc', 'banhmi', 'x_redbull_lon', 'x_sting_dau', 'x_nuoc_dien_giai', 'x_tra_da', 'banh_mi_trung_nuong', 'nuoc_mia', 'com_chien_trung'],
+    likes: ['mi', 'tangluc', 'nuoc', 'banhmi', 'x_redbull_lon', 'x_sting_dau', 'x_nuoc_dien_giai', 'x_tra_da', 'banh_mi_trung_nuong', 'nuoc_mia', 'com_chien_trung', 'ga_xao_sa'],
     loyalty: 0.75, extraItems: 0, sensitivity: 1.2, patience: 0.8,
   },
   {
