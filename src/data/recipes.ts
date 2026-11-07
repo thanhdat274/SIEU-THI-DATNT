@@ -1028,8 +1028,8 @@ export const RECIPES: Recipe[] = [
     outputId: 'ca_thu_chien', outputQty: 5, durationMin: 10, unlock: 37, reputationGain: 2 },
   // GĐ1425: Tôm hấp nước dừa ở nồi hấp. Mở 37 (> golden 30, ≥ cấp nguyên liệu).
   { id: 'recipe_tom_tuoi_hap', name: 'Tôm hấp nước dừa', station: 'steamer',
-    inputs: [{ productId: 'x_tom_tuoi', quantity: 1 }],
-    outputId: 'tom_tuoi_hap', outputQty: 6, durationMin: 10, unlock: 37, reputationGain: 2 },
+    inputs: [{ productId: 'x_tom_tuoi', quantity: 1 }, { productId: 'x_nuoc_dua_hop', quantity: 1 }], // GĐ1684: hấp nước dừa cần nước dừa
+    outputId: 'tom_tuoi_hap', outputQty: 7, durationMin: 10, unlock: 37, reputationGain: 2 },
   // GĐ1425: Mực hấp gừng ở nồi hấp. Mở 41 (> golden 30, ≥ cấp nguyên liệu).
   { id: 'recipe_muc_hap_gung', name: 'Mực hấp gừng', station: 'steamer',
     inputs: [{ productId: 'x_muc_tuoi', quantity: 1 }, { productId: 'x_gung', quantity: 1 }], // GĐ1682: hấp gừng cần gừng
