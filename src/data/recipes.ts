@@ -495,6 +495,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   // GĐ1479: Canh chua dưa muối cá basa — lối ra ĐẦU TIÊN của dưa muối hàng xóm.
   // GĐ1655: Cá kho thơm — món kho Nam Bộ, dùng thơm (nay trồng được ở trại) + cá + nước mắm hàng xóm.
   { id: 'ca_kho_thom', name: 'Cá kho thơm', category: 'fresh', buy: 13000, sell: 21000, color: 0xb8742a, unlock: 41 },
+  // GĐ1662 — canh chua cá: món canh quốc dân, dùng thơm trại + cà chua
+  { id: 'canh_chua_ca', name: 'Canh chua cá', category: 'fresh', buy: 13000, sell: 21000, color: 0xe0a040, unlock: 42 },
   { id: 'canh_chua_dua_muoi_ca', name: 'Canh chua dưa muối cá basa', category: 'fresh', buy: 12000, sell: 20000, color: 0xc8b860, unlock: 75 },
   // GĐ1480: Bánh bao giò thủ — lối ra ĐẦU TIÊN của giò thủ bà Tám.
   { id: 'banh_bao_gio_thu', name: 'Bánh bao giò thủ', category: 'fresh', buy: 11000, sell: 18000, color: 0xf0e4d0, unlock: 76 },
@@ -1341,6 +1343,9 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_ca_kho_thom', name: 'Cá kho thơm', station: 'hot_kettle',
     inputs: [{ productId: 'ca', quantity: 1 }, { productId: 'x_thom', quantity: 1 }, { productId: 'hx_nuoc_mam', quantity: 1 }],
     outputId: 'ca_kho_thom', outputQty: 8, durationMin: 18, unlock: 41, reputationGain: 2 },
+  { id: 'recipe_canh_chua_ca', name: 'Canh chua cá', station: 'hot_kettle',
+    inputs: [{ productId: 'ca', quantity: 1 }, { productId: 'x_thom', quantity: 1 }, { productId: 'x_ca_chua', quantity: 1 }, { productId: 'hx_nuoc_mam', quantity: 1 }],
+    outputId: 'canh_chua_ca', outputQty: 9, durationMin: 20, unlock: 42, reputationGain: 3 },
   { id: 'recipe_canh_chua_dua_muoi_ca', name: 'Canh chua dưa muối cá basa', station: 'hot_kettle',
     inputs: [{ productId: 'x_ca_basa', quantity: 2 }, { productId: 'hx_dua_muoi', quantity: 2 }, { productId: 'hx_me_dam', quantity: 1 }],
     outputId: 'canh_chua_dua_muoi_ca', outputQty: 11, durationMin: 20, unlock: 75, reputationGain: 3 },
