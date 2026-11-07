@@ -1,0 +1,44 @@
+
+Bán hàng & kiếm xu — Cẩm nang HappyTown
+HappyTown › Cẩm nang người chơi › Bán hàng & kiếm xu
+Bán hàng & kiếm xu
+Cập nhật 14/10/2026 · 500 từ
+Bán ở đâu được giá?
+Mở Túi đồ là bán được ở bất cứ đâu (Thành phố giá ×1,2, Đại đô thị ×1,35). Các nơi thu mua giá cao hơn:
+ | Nơi | Thưởng giá
+ | Nhà lớn trưởng làng (Đảo bí ẩn) | +35%
+ | Sạp Hải Sản (Chợ làng) | +30%
+ | Sạp Hoa Cây | +25%
+ | Siêu thị FarmMart · Sạp Rau Củ - Đồ Ăn | +20%
+ | Sạp Thịt-Trứng · Sạp nông sản ở trại · Quán ăn (trứng, sữa) | +15%
+ | Sạp Rau Củ | +10%
+ | Tiệm bánh cô Lan | Lúa mì +30%, bột +20%
+Đơn hàng giao tận nơi
+Cư dân có bong bóng vàng trên đầu là đang đặt hàng. Xem hết ở nút Giao hàng / Thư.
+Đủ hàng thì bấm Giao ngay, hoặc Đến gặp họ rồi bấm E.
+Đơn trả ×1,6 giá bán; giao trong 4 phút được thêm +50%. Đơn VIP (6 cư dân Đại đô thị) trả ×2,6.
+Sắp xếp đơn theo Giao được trước / Giá trị cao / Sắp hết giờ.
+Chưa biết làm món đó? Bấm “Cách làm món này”.
+Tặng quà cư dân
+Đổi quà ở Đổi quà bằng phiếu quà hoặc mua bằng xu (150 xu/phiếu). Gặp cư dân (hoặc bấm vào nhà họ) → Tặng quà. Mỗi cư dân nhận quà tự do 1 lần/ngày; giao đúng đơn quà thì được trả cao hơn.
+ | Quà | Phiếu | Mua bằng xu | Giao đơn quà | Tặng tự do
+ | Bánh dango | 2 | 300 | 540 | ~324
+ | Bó hoa | 3 | 450 | 720 | ~432
+ | Hộp cà phê | 3 | 450 | 780 | ~468
+ | Bánh kem | 4 | 600 | 1.100 | ~660
+ | Gấu bông | 5 | 750 | 1.300 | ~780
+ | Chậu cây cảnh | 6 | 900 | 1.800 | ~1.080
+ | Trang sức | 10 | 1.500 | 3.600 | ~2.160
+Việc làm & dịch vụ ở Thành phố
+Văn phòng: làm ca nhập liệu / chăm sóc khách hàng / trợ lý dự án (15–40⚡ → 110–380 xu, chạm thêm được thưởng).
+Ngân hàng HappyTown: lãi 1%/ngày (tối đa 800 xu/ngày); gửi có kỳ hạn 3 ngày 6% · 7 ngày 16% · 14 ngày 38%.
+Khách sạn (1 lần/ngày): phòng thường 600 xu, VIP 1.500 xu — ngủ tới sáng, hồi đầy năng lượng.
+Quán ăn (Việt, sushi, ramen, pizza, burger, cà phê): hồi năng lượng và cho hiệu ứng tốt (thêm XP, cây mọc nhanh, may mắn câu cá, bán được giá).
+Siêu thị FarmMart: chạm hàng trên kệ cho vào giỏ, thanh toán ở quầy; mỗi ngày vài món giảm 30%.
+Tiệm giặt Bong Bóng: giặt nhanh 25 xu → bán được giá hơn 5% trong 20 phút.
+Cây xăng HappyGas: Thuê xe tải miễn phí, nạp +50⚡ giá 400 xu.
+Nguồn nhỏ khác
+Rương báu mỗi ngày (+150–299 xu, +1 phiếu quà).
+Đài phun nước: ném 50 xu để ước (tối đa 5 lần/ngày) — có thể ra kim cương.
+Điểm chụp ảnh: +XP và điểm sự kiện, mỗi điểm 1 lần/ngày.
+Chạm vào thú cozy đi dạo (capybara, nai con…) được chút XP.
