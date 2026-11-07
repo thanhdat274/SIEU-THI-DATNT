@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (07/11/2026)
+- **GĐ1599** — QA trình duyệt nút 🎁 (save QA cấp 40): "Kho hết Sữa hộp — nhập thêm để tặng" và "Chưa quen…" hiện đúng. Save QA đã xoá.
 - **GĐ1598** — Nút tặng quà khi kho trống gọi tên món khách thích đã biết ("Kho hết X — nhập thêm để tặng"); món chưa khám phá vẫn giấu.
 - **GĐ1597** — Nhiệm vụ "Tặng quà khách quen" thêm dòng hướng dẫn chỗ bấm 🎁.
 - **GĐ1596** — Test store cho thông báo tặng quà + QA trình duyệt: "… +3 thân thiết · hôm nay đã tặng hết". Save QA đã xoá.
