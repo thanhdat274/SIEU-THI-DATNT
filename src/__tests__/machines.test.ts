@@ -156,3 +156,13 @@ describe('GĐ1551 — máy chụp ảnh lấy liền', () => {
     expect(furnitureDef('photo_booth').price).toBe(MACHINE_TYPES.photo_booth.price);
   });
 });
+
+import { machineDayLine } from '../data/machines';
+describe('GĐ1564 dòng máy thu phí hôm nay', () => {
+  it('chỉ tính máy, xếp nhiều trước', () => {
+    expect(machineDayLine({ laundry: 9000 })).toBeNull();
+    const l = machineDayLine({ laundry: 9000, vending_drink: 1200, claw_machine: 3600 })!;
+    expect(l).toContain('4.800đ');
+    expect(l.indexOf('🧸')).toBeLessThan(l.indexOf('🥤'));
+  });
+});

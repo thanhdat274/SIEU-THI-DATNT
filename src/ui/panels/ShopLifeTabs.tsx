@@ -1,4 +1,5 @@
 import { useGame } from '../../core/store';
+import { machineDayLine } from '../../data/machines';
 import { buyHomeItem, buyService, buyPet, buyUpgrade, buyVehicle, feedPet } from '../../core/biz';
 import { hasUpgrade, UPGRADES } from '../../data/upgrades';
 import { Callout } from './shared';
@@ -100,6 +101,7 @@ export function Services() {
           Phải có người đứng quầy mới phục vụ được.
         </div>
         <div style={{ fontSize: 12, marginTop: 4 }}>Hôm nay lời từ dịch vụ: <b>{formatMoney(stats.services ?? 0)}</b></div>
+        {machineDayLine(stats.byService) && <div style={{ fontSize: 12, marginTop: 2 }}>{machineDayLine(stats.byService)}</div>}
       </div>
       {SERVICES.map((sv) => (
         <div key={sv.id} style={{ ...card, opacity: level < sv.unlock ? 0.5 : 1 }}>

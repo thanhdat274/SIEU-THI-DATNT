@@ -75,3 +75,11 @@ export const MACHINE_IMPULSE_LEVEL = 40;
 export const MACHINE_IMPULSE_CHANCE = 0.3;
 export const machineImpulse = (level: number, roll: number): boolean =>
   level >= MACHINE_IMPULSE_LEVEL && roll < MACHINE_IMPULSE_CHANCE;
+
+// GĐ1564 — dòng "máy thu phí hôm nay" tách từ stats.byService (vốn gộp chung với dịch vụ khác).
+export function machineDayLine(byService: Record<string, number> | undefined): string | null {
+  const rows = Object.entries(byService ?? {}).filter(([id, v]) => isMachine(id) && v > 0).sort((a, b) => b[1] - a[1]);
+  if (!rows.length) return null;
+  const total = rows.reduce((n, [, v]) => n + v, 0);
+  return `🎰 Máy thu phí hôm nay: ${total.toLocaleString('vi-VN')}đ (${rows.map(([id, v]) => `${MACHINE_TYPES[id as MachineId].icon} ${v.toLocaleString('vi-VN')}đ`).join(' · ')})`;
+}
