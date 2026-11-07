@@ -108,6 +108,12 @@ export const PARTY_ORDERS: PartyOrderDef[] = [
     description: 'Nhà có đám cưới, cần xôi gấc đỏ thắm bày mâm cỗ — đặt trước để tiệm kịp nấu.',
     items: { xoi_gac: 30 }, bonus: 240000, xp: 160,
   },
+  // GĐ1709: đơn món nấu thứ 2 của chuỗi sả (trồng GĐ1704 → gà xào sả GĐ1706).
+  {
+    id: 'gio_ga_xao_sa', icon: '🕯️', title: 'Mâm cỗ giỗ ông', from: 'Nhà chú Tư cuối hẻm', unlock: 52, days: 3,
+    description: 'Nhà làm giỗ ông, đặt gà xào sả bày mâm cúng và đãi bà con — cần nấu đủ phần trước ngày giỗ.',
+    items: { ga_xao_sa: 16 }, bonus: 260000, xp: 170,
+  },
   // Đơn riêng theo câu chuyện từng khách quen
   {
     id: 'xoi_dam_gio', icon: '🍙', title: 'Mẻ xôi đám giỗ', from: regularById('ba_nam')!.name, regular: 'ba_nam', unlock: 12, days: 2,
