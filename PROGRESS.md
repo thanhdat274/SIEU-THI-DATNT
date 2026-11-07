@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (07/11/2026)
+- GĐ1633: Đào tạo/Thăng chức nhân viên, gọi Grab đơn app, mua quảng cáo cũng ghi "Thiếu X₫" khi thiếu tiền — hết nút mua xám câm trong panels. 5203 test xanh.
 - GĐ1632: nút Xin cấp/Gia hạn giấy phép, Mở gian hàng online, Xin lỗi MXH, Mua nâng cấp tiệm cũng ghi "Thiếu X₫" khi thiếu tiền (shortLabel). 5202 test xanh.
 - GĐ1631: bảng Xây dựng — nút "Chọn" đồ và "Thuê thợ" mở rộng khi thiếu tiền ghi "Thiếu X₫" thay vì nút xám câm (helper shortLabel + test). 580 tệp/5202 test xanh.
 - GĐ1630: rà nốt playtest đợt 2 — M3 (đồ gia dụng vốn không hết hạn; tên đã gộp) và M5 (groupTools gom nhóm) đã xong từ trước, M7 màn ngang 812×375 không cuộn/không tràn → không sửa; thêm test khóa đồ gia dụng hạn vô tận.

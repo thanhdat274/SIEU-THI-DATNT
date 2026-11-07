@@ -6,6 +6,7 @@ import { promoEffect } from '../../data/analytics';
 import { summarizeReviews } from '../../data/reviews';
 import { REGULAR_NAMES } from '../../core/biz';
 import { formatMoney, productById } from '../../data/products';
+import { shortLabel } from '../shortLabel';
 import { counterPayoff, recentAvgRevenue } from '../../data/minorPayoff';
 import { priceCounterViability } from '../../data/priceCounter';
 import { rivalDrag } from '../../data/rivalDrag';
@@ -288,7 +289,7 @@ export function Market() {
                 </div>
                 {locked ? <span style={{ ...pill, background: 'rgba(255,255,255,0.1)' }}>Cấp {a.unlock}</span>
                   : on ? <span style={{ ...pill, background: 'rgba(46,204,113,0.2)', color: '#2ecc71' }}>✓ Tới ngày {on.untilDay}</span>
-                    : <button style={{ ...btn, marginLeft: 0, whiteSpace: 'nowrap', opacity: money < a.price ? 0.5 : 1 }} disabled={money < a.price} onClick={() => buyAd(a.id)}>{formatMoney(a.price)}</button>}
+                    : <button style={{ ...btn, marginLeft: 0, whiteSpace: 'nowrap', opacity: money < a.price ? 0.5 : 1 }} disabled={money < a.price} onClick={() => buyAd(a.id)}>{shortLabel(formatMoney(a.price), a.price, money)}</button>}
               </div>
             );
           })}

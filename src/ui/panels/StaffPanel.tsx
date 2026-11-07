@@ -5,6 +5,7 @@ import { Dropdown } from '../Dropdown';
 import { useGame } from '../../core/store';
 import { dailyWage, maxStaff, ROLES, SHIFTS, type Shift, type Staff } from '../../data/staff';
 import { formatMoney, fmtMul } from '../../data/products';
+import { shortLabel } from '../shortLabel';
 import { hasUpgrade } from '../../data/upgrades';
 import { branchStaffWish } from '../../data/branches';
 import { BranchShiftStrip, BranchValueLine, NightStaffLine, NightStrip, ShiftValueStrip, StaffIdleLine, StaffValueLine, CourierValueLine, StaffPoachWarn } from './StaffLines';
@@ -185,7 +186,7 @@ export function StaffPanel() {
                         title={st.trainedDay === day ? 'Hôm nay đã học rồi' : 'Cộng kinh nghiệm, đủ thì lên sao (lương tăng theo)'}
                         onClick={() => trainStaff(st.id)}
                       >
-                        🎓 Đào tạo {formatMoney(trainCost(st.skill))}
+                        {st.trainedDay === day ? `🎓 Đào tạo ${formatMoney(trainCost(st.skill))}` : shortLabel(`🎓 Đào tạo ${formatMoney(trainCost(st.skill))}`, trainCost(st.skill), money)}
                       </button>
                       {tv.paybackDays !== null && (
                         <span style={{ fontSize: 12, color: tv.worth ? '#2ecc71' : '#e67e22' }} title="Ước theo giá trị hôm nay của ca này">
@@ -404,7 +405,7 @@ export function PromoteRow({ st, level, money, onPromote }: { st: Staff; level: 
         {chk.ok ? ` — đủ điều kiện (lương ×${fmtMul(chk.def.raise)})` : ` — cần ${chk.missing.join(', ')}`}
       </span>
       <button style={styles.btn} disabled={!chk.ok || money < chk.def.cost} onClick={() => onPromote(st.id)}>
-        Thăng chức · {formatMoney(chk.def.cost)}
+        {chk.ok ? shortLabel(`Thăng chức · ${formatMoney(chk.def.cost)}`, chk.def.cost, money) : `Thăng chức · ${formatMoney(chk.def.cost)}`}
       </button>
       {chk.ok && (() => {
         const w = promotionWorth(st, chk.to);

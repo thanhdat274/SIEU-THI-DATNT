@@ -144,7 +144,7 @@ export function OnlinePanel() {
                       {/* Grab */}
                       <div style={{ marginTop: 5 }}>
                         <button style={{ ...btn, background: '#2ecc71' }} disabled={!enough || money < grabFee(o.km, evGrab)} onClick={() => acceptOnline(o.id, 'grab')}>
-                          🟢 Grab {formatMoney(grabFee(o.km, evGrab))} (~{a.grabTravelT}′)
+                          🟢 {enough ? shortLabel(`Grab ${formatMoney(grabFee(o.km, evGrab))}`, grabFee(o.km, evGrab), money) : `Grab ${formatMoney(grabFee(o.km, evGrab))}`} (~{a.grabTravelT}′)
                         </button>
                         <small style={{ display: 'block', fontSize: 11, opacity: 0.8, marginTop: 1 }}>
                           Grab ~{a.grabTravelT}′ · phí {formatMoney(grabFee(o.km, evGrab))} → {grabStars}★ (điểm về {grabNext.toFixed(1)})
