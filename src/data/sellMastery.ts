@@ -31,3 +31,11 @@ export function masteryBadge(level: number, count: number): string {
 // GĐ1575 — lên bậc thông thạo thưởng chút XP (Đồng 20 / Bạc 60 / Vàng 150). Chỉ XP, không tiền.
 export const SELL_MASTERY_XP = [20, 60, 150] as const;
 export const masteryXp = (tier: number): number => SELL_MASTERY_XP[tier - 1] ?? 0;
+
+/** GĐ1577 — dòng tổng kết ở Sổ tay Tiệm: số món mỗi bậc thông thạo. */
+export function masterySummary(soldEver: Record<string, number>): string | null {
+  const n = [0, 0, 0];
+  for (const c of Object.values(soldEver)) { const t = sellMasteryTier(c); if (t) n[t - 1]++; }
+  if (!n.some(Boolean)) return null;
+  return `Thông thạo: ${SELL_MASTERY_NAMES.map((name, i) => `${name.split(' ')[0]} ${n[i]}`).join(' · ')}`;
+}

@@ -40,3 +40,11 @@ describe('GĐ1575 XP lên bậc thông thạo', () => {
     expect(s.level > lv0 || s.xp - xp0 === 20).toBe(true);
   });
 });
+
+import { masterySummary } from '../data/sellMastery';
+describe('GĐ1577 tổng kết thông thạo', () => {
+  it('đếm theo bậc', () => {
+    expect(masterySummary({ a: 10 })).toBeNull();
+    expect(masterySummary({ a: 250, b: 1200, c: 5000, d: 300 })).toBe('Thông thạo: 🥉 2 · 🥈 1 · 🥇 1');
+  });
+});

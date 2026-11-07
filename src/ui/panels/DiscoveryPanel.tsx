@@ -6,6 +6,7 @@ import {
   type DiscoveryStatus,
 } from '../../data/discovery';
 import { Footer, styles } from './shared';
+import { masterySummary, SELL_MASTERY_LEVEL } from '../../data/sellMastery';
 
 const CATEGORY_LABEL = { ...CATEGORIES, all: 'Tất cả ngành' } as const;
 const STATUS_ALL = 'all' as const;
@@ -48,6 +49,7 @@ export function DiscoveryPanel() {
   return (
     <>
       <h2 style={styles.title}>🔍 Sổ tay Tiệm — Album hàng hóa</h2>
+      {level >= SELL_MASTERY_LEVEL && masterySummary(soldEver) && <p style={styles.sub}>{masterySummary(soldEver)}</p>}
       <p style={styles.sub}>
         Đã bán và khám phá hàng của tiệm. Bán món nào ở quầy hoặc giao đơn (điện thoại, tiệc, hợp đồng, app)
         là món đó được đánh dấu <b style={{ color: STATUS_COLOR.sold }}>đã bán</b>. Mở khóa đủ cấp là nắm được
