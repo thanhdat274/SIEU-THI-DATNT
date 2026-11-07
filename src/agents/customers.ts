@@ -456,6 +456,8 @@ export class CustomerManager {
       const machine = freeMachine(s.furniture, this.machineBusy);
       if (machine) {
         const machineUid = machine.uid;
+        // GĐ1542 — ghi sổ theo loại máy (biz.serviceLife) để biết máy đã thu được bao nhiêu.
+        const machineType = machine.type;
         const fee = machineFeeAt(machine.type, s.minutes, s.level, s.day);
         const icon = MACHINE_TYPES[machine.type as MachineId].icon;
         this.machineBusy.add(machineUid);
@@ -467,7 +469,7 @@ export class CustomerManager {
         c.plan.push(() => {
           this.machineBusy.delete(machineUid);
           if (fee > 0) {
-            earnService(undefined, fee);
+            earnService(machineType, fee);
             this.coinFx.spawn(c.mesh.position, fee);
           }
         });

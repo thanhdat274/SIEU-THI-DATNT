@@ -57,9 +57,9 @@ export function machineFeeAt(type: Furniture['type'], minutes: number, level: nu
 }
 
 /** GĐ1539 — dòng thông tin khi cầm/dời máy thu phí ở chế độ xây: phí/lượt và số lượt hoàn vốn. */
-export function machinePopupLine(type: Furniture['type']): string | null {
+export function machinePopupLine(type: Furniture['type'], earned?: number): string | null {
   if (!isMachine(type)) return null;
   const t = MACHINE_TYPES[type];
   const night = NIGHT_MACHINES.has(type) ? ' · tối ×1,5' : '';
-  return `${t.icon} ${t.fee.toLocaleString('vi-VN')}đ/lượt · hoàn vốn ~${Math.round(t.price / t.fee)} lượt${night}`;
+  return `${t.icon} ${t.fee.toLocaleString('vi-VN')}đ/lượt · hoàn vốn ~${Math.round(t.price / t.fee)} lượt${night}${earned ? ` · đã thu ${earned.toLocaleString('vi-VN')}đ` : ''}`;
 }

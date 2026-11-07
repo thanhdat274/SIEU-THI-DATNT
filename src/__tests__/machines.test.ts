@@ -92,3 +92,11 @@ describe('GĐ1541 — gắp thú cuối tuần', () => {
     expect(machineFeeAt('scale_machine', 600, 40, we)).toBe(1_000);
   });
 });
+
+describe('GĐ1542 — sổ thu theo máy', () => {
+  it('dòng thông tin hiện "đã thu" khi có số, ẩn khi chưa thu', async () => {
+    const { machinePopupLine } = await import('../data/machines');
+    expect(machinePopupLine('claw_machine', 54_000)).toContain('đã thu 54.000đ');
+    expect(machinePopupLine('claw_machine')).not.toContain('đã thu');
+  });
+});

@@ -116,6 +116,7 @@ export function Hud() {
     if (hudTheme) root.dataset.hudTheme = hudTheme; else delete root.dataset.hudTheme;
   }, [hudTheme]);
   const placing = useGame((s) => s.placing);
+  const serviceLife = useGame((s) => s.biz.serviceLife);
   const sellFurniture = useGame((s) => s.sellFurniture);
   const stashFurniture = useGame((s) => s.stashFurniture);
   const trialCount = useGame((s) => s.furniture.filter((f) => f.trial).length);
@@ -480,7 +481,7 @@ Online: ${coop.peers.map((p) => (p.id === coop.selfId ? 'bạn' : p.name)).join(
               <>
                 {TOUCH ? 'Chạm để dời, chạm lại để đặt' : 'Bấm để đặt'}
                 {decorPopupLine(placing.type) && <div style={{ fontSize: 12, color: '#f1c40f' }}>{decorPopupLine(placing.type)}</div>}
-                {machinePopupLine(placing.type) && <div style={{ fontSize: 12, color: '#81ecec' }}>{machinePopupLine(placing.type)}</div>}
+                {machinePopupLine(placing.type, serviceLife?.[placing.type]) && <div style={{ fontSize: 12, color: '#81ecec' }}>{machinePopupLine(placing.type, serviceLife?.[placing.type])}</div>}
                 <span className="hud-alert-actions">
                   <button className="hud-btn" onClick={worldActions.rotate}>↻ Xoay</button>
                   {TOUCH && <button className="hud-btn primary" onClick={worldActions.place}>✓ Đặt</button>}
