@@ -13,6 +13,7 @@ import { runBranch } from './branch';
 import { endDay } from './endDay';
 import { updateOnline } from './online';
 import { updatePhones, cookSpeed, bartenderBoost } from './orders';
+import { maybeInspection } from '../inspection';
 
 /** Đồng hồ và nhịp ngày: tick mỗi khung hình (chi nhánh, điện thoại, mẻ nấu), đi ngủ, thông báo, mở bảng. */
 
@@ -65,6 +66,8 @@ export const createClockSlice = (set: SetState, get: GetState): Pick<GameState, 
     updatePhones(set, get);
     updateOnline(set, get);
     maybeSurprise(minutes - s.minutes);
+    // GĐ1506 — đoàn kiểm tra vệ sinh: gieo metaRng theo phút game (chỉ máy chạy chạy tới đây)
+    maybeInspection(minutes - s.minutes);
     // Các mẻ nấu đang chạy: hết giờ thì thành phẩm vào kho (bày bán như hàng thường)
     const jobs = get().cookJobs;
     if (jobs.length && s.speed > 0) {
