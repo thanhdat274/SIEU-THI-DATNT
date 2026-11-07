@@ -147,3 +147,12 @@ describe('GĐ1550 — dòng thông tin ghi giá cuối tuần', () => {
     expect(machinePopupLine('shoe_shine')).not.toContain('×1,5');
   });
 });
+
+describe('GĐ1551 — máy chụp ảnh lấy liền', () => {
+  it('cấp 50, phí 3.000, hoàn vốn 100 lượt, giá khớp catalog', () => {
+    expect(furnitureDef('photo_booth').unlock).toBe(50);
+    expect(machineFee('photo_booth')).toBe(3_000);
+    expect(MACHINE_TYPES.photo_booth.price / MACHINE_TYPES.photo_booth.fee).toBe(100);
+    expect(furnitureDef('photo_booth').price).toBe(MACHINE_TYPES.photo_booth.price);
+  });
+});

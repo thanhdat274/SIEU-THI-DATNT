@@ -5,7 +5,7 @@ export type FurnitureType =
   | 'shelf' | 'bigShelf' | 'fridge' | 'freezer' | 'produce' | 'meat_counter'
   | 'checkout' | 'cartStation' | 'plant' | 'wall'
   | 'dining_table' | 'chair'
-  | 'vending_drink' | 'scale_machine' | 'claw_machine' | 'massage_chair' | 'shoe_shine' | 'cotton_candy'
+  | 'vending_drink' | 'scale_machine' | 'claw_machine' | 'massage_chair' | 'shoe_shine' | 'cotton_candy' | 'photo_booth'
   | 'toilet_squat' | 'toilet_porcelain' | 'toilet_smart'
   | 'kho_dao' | 'ke_gia_vi' | 'ke_chen' | 'thung_rac' | 'tham_chan' | 'den_long' | 'tranh_dong_ho' | 'bon_rua'
   | 'bang_hieu_bac' | 'bang_hieu_trung' | 'bang_hieu_nam' | 'bang_hieu_tay_nguyen'
@@ -158,6 +158,10 @@ export const FURNITURE: FurnitureDef[] = [
   {
     type: 'cotton_candy', name: 'Máy kẹo bông', price: 250000, unlock: 46, size: [0.7, 0.7], tiers: 0, slots: 0, capacity: 0,
     categories: [], desc: 'Bỏ tiền máy quay ra cây kẹo bông, 2.500đ/lượt — trẻ con mê (GĐ1548)',
+  },
+  {
+    type: 'photo_booth', name: 'Máy chụp ảnh lấy liền', price: 300000, unlock: 50, size: [0.9, 0.9], tiers: 0, slots: 0, capacity: 0,
+    categories: [], desc: 'Nhóm bạn chui vào chụp tấm ảnh dán, 3.000đ/lượt (GĐ1551)',
   },
   {
     type: 'scale_machine', name: 'Máy cân sức khỏe', price: 100000, unlock: 25, size: [0.6, 0.6], tiers: 0, slots: 0, capacity: 0,

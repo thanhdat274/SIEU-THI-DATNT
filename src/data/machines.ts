@@ -13,7 +13,7 @@ export const MACHINE_VISIT_CHANCE = 0.15;
 /** Một lượt dùng máy kéo dài bao nhiêu giây game. */
 export const MACHINE_USE_SECONDS = 6;
 
-export type MachineId = 'vending_drink' | 'scale_machine' | 'claw_machine' | 'massage_chair' | 'shoe_shine' | 'cotton_candy';
+export type MachineId = 'vending_drink' | 'scale_machine' | 'claw_machine' | 'massage_chair' | 'shoe_shine' | 'cotton_candy' | 'photo_booth';
 
 export const MACHINE_TYPES: Record<MachineId, { name: string; price: number; fee: number; icon: string }> = {
   vending_drink: { name: 'Máy bán nước tự động', price: 120_000, fee: 1_200, icon: '🥤' },
@@ -25,6 +25,8 @@ export const MACHINE_TYPES: Record<MachineId, { name: string; price: number; fee
   shoe_shine: { name: 'Máy đánh giày', price: 200_000, fee: 2_000, icon: '👞' },
   // GĐ1548 — máy kẹo bông (cấp 46), hoàn vốn 100 lượt.
   cotton_candy: { name: 'Máy kẹo bông', price: 250_000, fee: 2_500, icon: '🍭' },
+  // GĐ1551 — máy chụp ảnh lấy liền (cấp 50), hoàn vốn 100 lượt.
+  photo_booth: { name: 'Máy chụp ảnh lấy liền', price: 300_000, fee: 3_000, icon: '📸' },
 };
 
 export const isMachine = (type: string): type is MachineId => type in MACHINE_TYPES;
