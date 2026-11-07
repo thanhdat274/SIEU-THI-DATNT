@@ -1032,7 +1032,7 @@ export const RECIPES: Recipe[] = [
     outputId: 'tom_tuoi_hap', outputQty: 6, durationMin: 10, unlock: 37, reputationGain: 2 },
   // GĐ1425: Mực hấp gừng ở nồi hấp. Mở 41 (> golden 30, ≥ cấp nguyên liệu).
   { id: 'recipe_muc_hap_gung', name: 'Mực hấp gừng', station: 'steamer',
-    inputs: [{ productId: 'x_muc_tuoi', quantity: 1 }],
+    inputs: [{ productId: 'x_muc_tuoi', quantity: 1 }, { productId: 'x_gung', quantity: 1 }], // GĐ1682: hấp gừng cần gừng
     outputId: 'muc_hap_gung', outputQty: 6, durationMin: 10, unlock: 41, reputationGain: 2 },
   // GĐ1425: Cá rô phi chiên xù ở chảo chiên. Mở 39 (> golden 30, ≥ cấp nguyên liệu).
   { id: 'recipe_ca_ro_phi_chien_xu', name: 'Cá rô phi chiên xù', station: 'fryer',
