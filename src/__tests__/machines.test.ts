@@ -174,3 +174,14 @@ describe('GĐ1565 tổng máy trong ngày', () => {
     expect(machineDayTotal(undefined)).toBe(0);
   });
 });
+
+import { clawWin } from '../data/machines';
+describe('GĐ1566 gắp trúng', () => {
+  it('chỉ máy gắp, cấp 44, ~1/20', () => {
+    let n = 0;
+    for (let m = 0; m < 2000; m++) if (clawWin('claw_machine', 44, 3, 5, m)) n++;
+    expect(n).toBe(100);
+    expect(clawWin('claw_machine', 43, 0, 0, 0)).toBe(false);
+    expect(clawWin('photo_booth', 50, 0, 0, 0)).toBe(false);
+  });
+});

@@ -67,7 +67,7 @@ import {
   DINE_UNLOCK, DINE_WAIT_SECONDS, EAT_SECONDS, TOILET_NEED_CHANCE, TOILET_STRICT_UNLOCK, TOILET_USE_SECONDS,
   dineTip, freeSeat, freeToilet, isToilet, toiletFee, wantsDineIn, type SeatInfo, menuTipMul,
 } from '../data/dineIn';
-import { MACHINE_VISIT_CHANCE, MACHINE_USE_SECONDS, MACHINE_TYPES, freeMachine, isMachine, machineFeeAt, machineImpulse, MACHINE_IMPULSE_LEVEL, type MachineId } from '../data/machines';
+import { MACHINE_VISIT_CHANCE, MACHINE_USE_SECONDS, MACHINE_TYPES, freeMachine, isMachine, machineFeeAt, machineImpulse, MACHINE_IMPULSE_LEVEL, clawWin, type MachineId } from '../data/machines';
 import {
   Customer, FRANTIC_AT, IMPATIENT_AT, PATIENCE_MINUTES, SIDEWALK_Z, impatienceEmoji, patienceMultiplier, counterQueueScore, leastScore, reviewStars, type Deal,
 } from './customerEntity';
@@ -473,6 +473,7 @@ export class CustomerManager {
             earnService(machineType, fee);
             this.coinFx.spawn(c.mesh.position, fee);
           }
+          if (clawWin(machineType, s.level, machineUid, s.day, s.minutes)) c.say('🧸 Gắp trúng!', 2.5);
         });
       }
     }

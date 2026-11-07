@@ -87,3 +87,9 @@ export function machineDayLine(byService: Record<string, number> | undefined): s
 /** GĐ1565 — tổng phí máy trong ngày (cho dòng "trong đó máy thu phí" ở Tổng kết ngày). */
 export const machineDayTotal = (byService: Record<string, number> | undefined): number =>
   Object.entries(byService ?? {}).reduce((n, [id, v]) => n + (isMachine(id) ? v : 0), 0);
+
+// GĐ1566 — máy gắp thú thỉnh thoảng gắp trúng (~1/20 lượt, cấp ≥44): chỉ bong bóng vui, không đụng tiền.
+// Băm theo máy/ngày/phút — không rút RNG nên chuỗi mô phỏng không đổi.
+export const CLAW_WIN_LEVEL = 44;
+export const clawWin = (type: string, level: number, uid: number, day: number, minutes: number): boolean =>
+  type === 'claw_machine' && level >= CLAW_WIN_LEVEL && (uid * 7 + day * 31 + Math.floor(minutes)) % 20 === 0;
