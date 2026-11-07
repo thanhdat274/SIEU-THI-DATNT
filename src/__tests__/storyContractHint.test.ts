@@ -25,4 +25,28 @@ describe('GĐ1618 — gợi ý cấp mở hợp đồng ở bước cốt truy�
     expect(at(3, 'story_warehouse').description).toBe('Nâng cấp nhà kho 1 lần — mở từ cấp 8');
     expect(at(8, 'story_warehouse').description).toBe('Nâng cấp nhà kho 1 lần');
   });
+  it('GĐ1621: mọi bước đo kho/mặt bằng/nhân viên/hợp đồng đều có cấp chặn', () => {
+    const ctx = { warehouseTier: 0, shopTier: 0, staffCount: 0, totals: { contractsDone: 0 } } as never;
+    for (const st of STORY_STEPS) {
+      const src = st.measure.toString();
+      if (/warehouseTier|shopTier|staffCount|contractsDone/.test(src)) expect(storyGateLevel(st), st.id).toBeGreaterThan(0);
+    }
+    void ctx;
+  });
+  it('GĐ1621: không bước nào đòi bậc kho/mặt bằng vượt bậc cao nhất (kẹt vĩnh viễn)', async () => {
+    const { WAREHOUSE_TIERS } = await import('../data/warehouse');
+    const { SHOP_TIERS } = await import('../data/shopTiers');
+    for (const st of STORY_STEPS) {
+      if (st.id.startsWith('story_warehouse')) expect(st.target, st.id).toBeLessThan(WAREHOUSE_TIERS.length);
+      if (st.id.startsWith('story_expand') || st.id.startsWith('story_shop_tier')) expect(st.target, st.id).toBeLessThan(SHOP_TIERS.length);
+    }
+  });
+  it('GĐ1621: bước đặt theo tên bậc trỏ đúng bậc đó', async () => {
+    const { SHOP_TIERS } = await import('../data/shopTiers');
+    const { WAREHOUSE_TIERS } = await import('../data/warehouse');
+    const t = (id: string) => STORY_STEPS.find((s) => s.id === id)!.target;
+    expect(SHOP_TIERS[t('story_shop_tier_6')].name).toBe('Siêu thị khang trang');
+    expect(SHOP_TIERS[t('story_shop_tier_7')].name).toBe('Đại siêu thị');
+    expect(WAREHOUSE_TIERS[t('story_warehouse_7')].name).toBe('Tổng kho logistics');
+  });
 });
