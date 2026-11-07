@@ -1,4 +1,5 @@
 import { applyChest } from '../../data/giftChest';
+import { weekendGift } from '../../data/weekendGift';
 import { vietSetCount } from '../../data/decorSets';
 import { dailyQuests, betBonusMoney, betStatus, BET_TIERS, BET_QUEST_ID, betCoreSetProgress, storyQuest } from '../../data/quests';
 import { fitList, levelUpToast } from '../../data/onboarding';
@@ -45,7 +46,7 @@ export const createProgressSlice = (set: SetState, get: GetState): Pick<GameStat
     // Vé tha thứ: bỏ quên đúng 1 ngày, chuỗi đang ≥3 và cách lần tha trước ít nhất 7 ngày thì vẫn giữ chuỗi
     const grace = s.day - s.giftLastDay === 2 && s.giftStreak >= 3 && s.day - s.giftGraceDay >= 7;
     const streak = s.giftLastDay === s.day - 1 || grace ? s.giftStreak + 1 : 1;
-    const gift = applyChest(scaledGiftEco(giftOfStreak(streak), s.level, recentAvgProfit(s.history)), streak, s.level, s.day); // GĐ1533
+    const gift = weekendGift(applyChest(scaledGiftEco(giftOfStreak(streak), s.level, recentAvgProfit(s.history)), streak, s.level, s.day), s.level, s.day); // GĐ1533 + GĐ1555
     set({
       giftStreak: streak,
       giftLastDay: s.day,
