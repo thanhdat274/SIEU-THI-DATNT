@@ -115,3 +115,10 @@ describe('GĐ1596 thông báo tặng quà qua store', () => {
     expect(useGame.getState().message).toMatch(/còn tặng được|đã tặng hết/);
   });
 });
+
+describe('GĐ1598 lỗi kho gọi tên món đã biết', () => {
+  it('đã biết món → nêu tên', () => {
+    const prog = { visits: 1, discovered: [fav] } as never;
+    expect(regularGiftPlan(def, prog, 60, 5, {})).toEqual({ error: 'Kho hết ' + productById(fav).name + ' — nhập thêm để tặng' });
+  });
+});

@@ -16,7 +16,10 @@ export function regularGiftPlan(
   if ((prog?.visits ?? 0) <= 0) return { error: 'Chưa quen — chờ khách ghé lần đầu' }; // GĐ1574
   if (prog?.lastGiftDay === day) return { error: 'Hôm nay đã tặng rồi' };
   const id = def.favorites.find((f) => productById(f).unlock <= level && (storage[f] ?? 0) > 0);
-  return id ? { productId: id } : { error: 'Kho không có món khách thích' };
+  if (id) return { productId: id };
+  // GĐ1598 — đã biết món khách thích thì gọi tên để nhập đúng hàng
+  const known = def.favorites.find((f) => productById(f).unlock <= level && prog?.discovered?.includes(f));
+  return { error: known ? 'Kho hết ' + productById(known).name + ' — nhập thêm để tặng' : 'Kho không có món khách thích' };
 }
 
 // GĐ1558 — tặng đúng ngày sinh nhật khách: thân thiết gấp đôi (+6).
