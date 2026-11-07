@@ -147,7 +147,12 @@ export const NO_STATION_DESC = (task: string) => `${task} — tiệm chưa có b
 /** GĐ1614 — đơn nấu chỉ tới qua điện thoại, mà điện thoại chỉ đổ chuông khi có người giao hàng. */
 export const NO_COURIER_DESC = 'Giao {n} đơn nấu — cần thuê 🛵 Giao hàng để khách gọi điện đặt';
 
+/** GĐ1616 — chưa mở dịch vụ nào thì không có lời dịch vụ: chỉ chỗ mở (bộ việc giữ nguyên). */
+export const NO_SERVICE_DESC = 'Lời {n}đ từ dịch vụ — chưa mở dịch vụ nào: mở ở 📈 Kinh doanh';
+
 export interface QuestContext {
+  /** GĐ1616 — đã mở ít nhất một dịch vụ (thiếu = không biết, giữ mô tả cũ). */
+  hasService?: boolean;
   /** GĐ1614 — tiệm có nhân viên giao hàng (thiếu = không biết, giữ mô tả cũ). */
   hasCourier?: boolean;
   /** GĐ1612 — tiệm đang có ít nhất một trạm nấu (thiếu = không biết, giữ mô tả cũ). */
@@ -258,7 +263,7 @@ export function dailyQuests(c: QuestContext): Quest[] {
   const optional: DailyDef[] = [
     // GĐ1584 — tặng quà khách quen (cấp ≥38, sau golden nên vòng xoay cấp thấp không đổi)
     { id: 'daily_gift', icon: '🎁', title: 'Tặng quà khách quen', unit: 'lần', target: 2, current: c.stats.gifts ?? 0, money: scale(40000, lv, 0.25), xp: scale(40, lv, 0.1), show: lv >= 38, desc: 'Mở bảng Khách quen, bấm 🎁 tặng {n} món khách thích' },
-    { id: 'daily_services', icon: '🏦', title: 'Lời từ dịch vụ', unit: 'đ', target: scale(20000, lv, 0.15), current: c.stats.services ?? 0, money: scale(50000, lv, 0.25), xp: scale(35, lv, 0.1), show: lv >= (SERVICES[0]?.unlock ?? 99) },
+    { id: 'daily_services', icon: '🏦', title: 'Lời từ dịch vụ', unit: 'đ', target: scale(20000, lv, 0.15), current: c.stats.services ?? 0, money: scale(50000, lv, 0.25), xp: scale(35, lv, 0.1), show: lv >= (SERVICES[0]?.unlock ?? 99), ...(c.hasService === false ? { desc: NO_SERVICE_DESC } : {}) },
     { id: 'daily_combo', icon: '🎁', title: 'Bán theo combo', unit: 'combo', target: scale(3, lv, 0.1), current: c.stats.combos ?? 0, money: scale(90000, lv, 0.25), xp: scale(55, lv, 0.1), show: lv >= COMBO_UNLOCK && unlockedCombos(lv).length > 0 },
     { id: 'daily_cooked', icon: '🍳', title: 'Bán món nhà làm', unit: 'món', target: scale(5, lv, 0.15), current: cookedSoldToday(c), money: scale(100000, lv, 0.25), xp: scale(60, lv, 0.1), show: lv >= COOK_UNLOCK, ...(c.hasCookStation === false ? { desc: NO_STATION_DESC('Bán {n} món nhà làm') } : {}) },
     // Trần đơn app/ngày (data/online.ts): đơn chỉ đổ về trong ONLINE_HOURS (870 phút), cách nhau

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { newGameData, questContext, useGame } from '../core/store';
-import { dailyQuests, NO_COURIER_DESC, NO_STATION_DESC } from '../data/quests';
+import { dailyQuests, NO_COURIER_DESC, NO_SERVICE_DESC, NO_STATION_DESC } from '../data/quests';
 import { COOK_UNLOCK } from '../data/recipes';
 
 // GĐ1612 — việc nấu trong bộ ngày khi tiệm CHƯA có bếp: giữ chỗ (không xáo bộ) nhưng chỉ chỗ mua bếp.
@@ -41,5 +41,20 @@ describe('GĐ1612 — nhiệm vụ nấu khi chưa có bếp', () => {
       return;
     }
     throw new Error('không gặp việc giao đơn nấu');
+  });
+
+  it('GĐ1616: chưa mở dịch vụ → "Lời từ dịch vụ" chỉ chỗ mở; ván mới tính là chưa có', () => {
+    useGame.setState({ ...newGameData(), level: 10 });
+    expect(questContext(useGame.getState()).hasService).toBe(false);
+    for (let day = 1; day <= 40; day++) {
+      useGame.setState({ ...newGameData(), level: 10, day });
+      const ctx = questContext(useGame.getState());
+      const q = dailyQuests(ctx).find((x) => x.id === 'daily_services');
+      if (!q) continue;
+      expect(q.description).toBe(NO_SERVICE_DESC.replace('{n}', q.target.toLocaleString('vi-VN')));
+      expect(dailyQuests({ ...ctx, hasService: true }).map((x) => x.id)).toEqual(dailyQuests(ctx).map((x) => x.id));
+      return;
+    }
+    throw new Error('không gặp việc dịch vụ');
   });
 });
