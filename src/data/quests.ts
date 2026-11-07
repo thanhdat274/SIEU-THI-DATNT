@@ -8,6 +8,10 @@ import { SOCIAL_UNLOCK } from './social';
 import type { Weather } from './weather';
 import { isWeekend } from './calendar';
 import { WEEKEND_SNACKS } from './products';
+import { SUPPLY_CONTRACTS } from './contracts';
+
+/** GĐ1618: cấp sớm nhất có hợp đồng cung cấp — bước cốt truyện hợp đồng ghi rõ khi chưa tới cấp. */
+export const FIRST_CONTRACT_LEVEL = Math.min(...SUPPLY_CONTRACTS.map((d) => d.unlock));
 
 /** Số liệu cộng dồn cả ván, để đo nhiệm vụ cốt truyện. */
 export interface Totals {
@@ -444,8 +448,10 @@ export function storyQuest(c: QuestContext): Quest | null {
   const step = STORY_STEPS.find((s) => !claimed.has(s.id));
   if (!step) return null;
   const v = step.measure(c);
+  const description = step.id === 'story_first_contract' && c.level < FIRST_CONTRACT_LEVEL
+    ? `${step.description} — hợp đồng mở từ cấp ${FIRST_CONTRACT_LEVEL}` : step.description;
   return {
-    id: step.id, icon: step.icon, title: step.title, description: step.description,
+    id: step.id, icon: step.icon, title: step.title, description,
     current: Math.min(v, step.target), target: step.target, money: step.money, xp: step.xp,
     done: v >= step.target, claimed: false,
   };
