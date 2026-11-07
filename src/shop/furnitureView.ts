@@ -5,7 +5,7 @@ import { MACHINE_TYPES, type MachineId } from '../data/machines';
 import { STATIONS } from '../data/recipes';
 
 /** GĐ1504 — nhóm đồ dùng bếp/trang trí Việt dựng theo builder chung. */
-const DECOR_TYPES = new Set<string>(['kho_dao', 'ke_gia_vi', 'ke_chen', 'thung_rac', 'tham_chan', 'den_long', 'tranh_dong_ho', 'bon_rua']);
+const DECOR_TYPES = new Set<string>(['kho_dao', 'ke_gia_vi', 'ke_chen', 'thung_rac', 'tham_chan', 'den_long', 'tranh_dong_ho', 'bon_rua', 'binh_bat_trang', 'trong_dong', 'chua_mot_cot']);
 
 /** GĐ1505 — bảng hiệu đặc sản 4 miền: màu vải + biểu tượng riêng từng miền. */
 const FLAG_COLORS: Record<string, number> = { bang_hieu_bac: 0xc0392b, bang_hieu_trung: 0xd4ac0d, bang_hieu_nam: 0x1e8449, bang_hieu_tay_nguyen: 0x8d6e63 };
@@ -595,6 +595,51 @@ export class FurnitureView {
         const tap = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.16, 8), steel);
         tap.position.set(0, 0.95, -d / 2 + 0.08);
         this.group.add(basin, legs, tap);
+        break;
+      }
+      case 'binh_bat_trang': {
+        const blue = new THREE.MeshStandardMaterial({ color: 0x2e5c9a });
+        const body = new THREE.Mesh(new THREE.SphereGeometry(0.2, 14, 10), white);
+        body.position.y = 0.32;
+        body.scale.y = 1.3;
+        const band = new THREE.Mesh(new THREE.CylinderGeometry(0.205, 0.205, 0.08, 14), blue);
+        band.position.y = 0.34;
+        const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.1, 0.22, 12), white);
+        neck.position.y = 0.66;
+        const lip = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.08, 0.04, 12), blue);
+        lip.position.y = 0.78;
+        this.group.add(body, band, neck, lip);
+        break;
+      }
+      case 'trong_dong': {
+        const bronze = new THREE.MeshStandardMaterial({ color: 0x8c6a2f, metalness: 0.6, roughness: 0.45 });
+        const stand = new THREE.Mesh(new THREE.BoxGeometry(w, 0.3, d), wood);
+        stand.position.y = 0.15;
+        const drum = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.32, 0.45, 18), bronze);
+        drum.position.y = 0.53;
+        const face = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 0.03, 18), bronze);
+        face.position.y = 0.77;
+        const star = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.035, 12), gold);
+        star.position.y = 0.78;
+        this.group.add(stand, drum, face, star);
+        break;
+      }
+      case 'chua_mot_cot': {
+        const water = new THREE.Mesh(new THREE.BoxGeometry(w, 0.14, d), new THREE.MeshStandardMaterial({ color: 0x3c8dbc }));
+        water.position.y = 0.07;
+        const pillar = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.55, 10), new THREE.MeshStandardMaterial({ color: 0xbdc3c7 }));
+        pillar.position.y = 0.35;
+        const hall = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.3, 0.5), red);
+        hall.position.y = 0.77;
+        const roof = new THREE.Mesh(new THREE.ConeGeometry(0.48, 0.3, 4), new THREE.MeshStandardMaterial({ color: 0x5d4037 }));
+        roof.position.y = 1.07;
+        roof.rotation.y = Math.PI / 4;
+        this.group.add(water, pillar, hall, roof);
+        for (const [x, z] of [[-0.4, -0.35], [0.38, 0.4]]) {
+          const lotus = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 6), new THREE.MeshStandardMaterial({ color: 0xf8a5c2 }));
+          lotus.position.set(x, 0.16, z);
+          this.group.add(lotus);
+        }
         break;
       }
     }

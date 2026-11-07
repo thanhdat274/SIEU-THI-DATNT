@@ -9,6 +9,7 @@ export type FurnitureType =
   | 'toilet_squat' | 'toilet_porcelain' | 'toilet_smart'
   | 'kho_dao' | 'ke_gia_vi' | 'ke_chen' | 'thung_rac' | 'tham_chan' | 'den_long' | 'tranh_dong_ho' | 'bon_rua'
   | 'bang_hieu_bac' | 'bang_hieu_trung' | 'bang_hieu_nam' | 'bang_hieu_tay_nguyen'
+  | 'binh_bat_trang' | 'trong_dong' | 'chua_mot_cot'
   | CookingStation;
 
 /** Trạm nấu: id trùng tên trạm trong recipes.ts; đặt trong tiệm mới nấu được món của trạm đó. */
@@ -222,6 +223,23 @@ export const FURNITURE: FurnitureDef[] = [
   {
     type: 'bang_hieu_tay_nguyen', name: 'Bảng hiệu đặc sản Tây Nguyên', price: 260000, unlock: 42, size: [0.8, 0.15], tiers: 0, slots: 0, capacity: 0,
     categories: [], decor: 4, desc: 'Bảng vải nâu đất — bày đủ Khô bò + Mắc khén thì sáng (+4 🩷, đặc sản Tây Nguyên +2% giá)',
+  },
+  // ──────────────────────────────────────────────
+  // GĐ1510 — TRANG TRÍ "KHOE" TẦNG 2–3 (mục 2.3/D6 tài liệu tham khảo: landmark đắt cuối game,
+  // điểm/đồng THẤP hẳn đồ rẻ — đồ rẻ hiệu quả trên từng đồng, đồ đắt để tự hào cơ ngơi).
+  // Đồ bếp GĐ1504 ≈ 84 🩷/triệu; bình gốm ≈ 13; trống đồng ≈ 7; chùa Một Cột 5.
+  // ──────────────────────────────────────────────
+  {
+    type: 'binh_bat_trang', name: 'Bình gốm Bát Tràng', price: 900000, unlock: 36, size: [0.5, 0.5], tiers: 0, slots: 0, capacity: 0,
+    categories: [], decor: 12, desc: 'Bình men lam vẽ tay cao ngang hông — góc tiệm sang hẳn lên (+12 🩷)',
+  },
+  {
+    type: 'trong_dong', name: 'Trống đồng Đông Sơn', price: 2500000, unlock: 45, size: [0.9, 0.9], tiers: 0, slots: 0, capacity: 0,
+    categories: [], decor: 18, desc: 'Bản sao trống đồng đặt bệ gỗ — món khoe của siêu thị có tiếng (+18 🩷)',
+  },
+  {
+    type: 'chua_mot_cot', name: 'Mô hình chùa Một Cột', price: 6000000, unlock: 55, size: [1.2, 1.2], tiers: 0, slots: 0, capacity: 0,
+    categories: [], decor: 30, desc: 'Mô hình chùa trên hồ sen thu nhỏ — niềm tự hào của cơ ngơi lớn (+30 🩷)',
   },
 ];
 
