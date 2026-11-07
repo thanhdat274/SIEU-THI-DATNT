@@ -7,6 +7,7 @@ export type FurnitureType =
   | 'dining_table' | 'chair'
   | 'vending_drink' | 'scale_machine' | 'claw_machine'
   | 'toilet_squat' | 'toilet_porcelain' | 'toilet_smart'
+  | 'kho_dao' | 'ke_gia_vi' | 'ke_chen' | 'thung_rac' | 'tham_chan' | 'den_long' | 'tranh_dong_ho' | 'bon_rua'
   | CookingStation;
 
 /** Trạm nấu: id trùng tên trạm trong recipes.ts; đặt trong tiệm mới nấu được món của trạm đó. */
@@ -163,6 +164,42 @@ export const FURNITURE: FurnitureDef[] = [
   {
     type: 'toilet_smart', name: 'Nhà vệ sinh thông minh', price: 4000000, unlock: 45, size: [1.0, 0.9], tiers: 0, slots: 0, capacity: 0,
     categories: [], desc: 'Bồn thông minh tự rửa, khách trả 8.000đ/lượt — tiện nghi của siêu thị lớn',
+  },
+  // ──────────────────────────────────────────────
+  // GĐ1504 — ĐỒ DÙNG BẾP & TRANG TRÍ VIỆT: đặt kèm cộng điểm 🩷 (kéo khách theo sao
+  // danh tiếng — mục 7.2 tài liệu tham khảo); giá rẻ–trung, tạp hóa nhỏ cũng trang trí được
+  // ──────────────────────────────────────────────
+  {
+    type: 'tham_chan', name: 'Thảm chùi chân', price: 15000, unlock: 5, size: [0.8, 0.5], tiers: 0, slots: 0, capacity: 0,
+    categories: [], decor: 3, desc: 'Đặt trước cửa cho khách chùi chân — sạch sàn, cửa tiệm nhìn ra đẹp mắt (+3 🩷)',
+  },
+  {
+    type: 'thung_rac', name: 'Thùng rác có nắp', price: 20000, unlock: 5, size: [0.5, 0.5], tiers: 0, slots: 0, capacity: 0,
+    categories: [], decor: 2, desc: 'Góc tiệm sạch sẽ, khách không phải cầm rác trên tay (+2 🩷)',
+  },
+  {
+    type: 'den_long', name: 'Đèn lồng đỏ', price: 45000, unlock: 8, size: [0.4, 0.4], tiers: 0, slots: 0, capacity: 0,
+    categories: [], decor: 7, desc: 'Đèn lồng đỏ treo cao phát ánh sáng ấm — đáng tiền mỗi dịp lễ (+7 🩷)',
+  },
+  {
+    type: 'kho_dao', name: 'Giá dao nam châm', price: 60000, unlock: 10, size: [0.6, 0.2], tiers: 0, slots: 0, capacity: 0,
+    categories: [], decor: 6, desc: 'Giá dao gắn cạnh quầy cắt pound — gọn gàng như tiệm thịt thật (+6 🩷)',
+  },
+  {
+    type: 'ke_gia_vi', name: 'Kệ gia vị', price: 80000, unlock: 12, size: [0.6, 0.4], tiers: 0, slots: 0, capacity: 0,
+    categories: [], decor: 8, desc: 'Lọ muối, tiêu, ớt, bột ngọt xếp ngay ngắn — mùi vị nhìn là thấy (+8 🩷)',
+  },
+  {
+    type: 'ke_chen', name: 'Kệ chén bát', price: 90000, unlock: 14, size: [0.7, 0.4], tiers: 0, slots: 0, capacity: 0,
+    categories: [], decor: 8, desc: 'Chén đĩa xếp tầng cho khu quầy đồ nấu nhìn ra chuyên nghiệp (+8 🩷)',
+  },
+  {
+    type: 'tranh_dong_ho', name: 'Tranh Đông Hồ', price: 120000, unlock: 15, size: [0.6, 0.1], tiers: 0, slots: 0, capacity: 0,
+    categories: [], decor: 10, desc: 'Tranh dân gian Đông Hồ treo tường — chữ Hán, cá chép, gà đàn: khách quý nhìn là mến (+10 🩷)',
+  },
+  {
+    type: 'bon_rua', name: 'Bồn rửa inox', price: 150000, unlock: 18, size: [0.9, 0.6], tiers: 0, slots: 0, capacity: 0,
+    categories: [], decor: 5, desc: 'Bồn rửa inox cho khu quầy nấu — rửa tay, rửa rau tiện sạch (+5 🩷)',
   },
 ];
 

@@ -3,6 +3,9 @@ import type { Tier } from '../core/store';
 import { furnitureDef, isCookStation, type FurnitureType } from '../data/furniture';
 import { MACHINE_TYPES, type MachineId } from '../data/machines';
 import { STATIONS } from '../data/recipes';
+
+/** GĐ1504 — nhóm đồ dùng bếp/trang trí Việt dựng theo builder chung. */
+const DECOR_TYPES = new Set<string>(['kho_dao', 'ke_gia_vi', 'ke_chen', 'thung_rac', 'tham_chan', 'den_long', 'tranh_dong_ho', 'bon_rua']);
 import { createCounter } from '../world/buildings';
 import { productParts } from '../render/productModels';
 import type { ShelfInstancer } from './shelfInstancer';
@@ -52,6 +55,7 @@ export class FurnitureView {
     else if (type === 'chair') this.buildChair();
     else if (type === 'vending_drink' || type === 'scale_machine' || type === 'claw_machine') this.buildMachine();
     else if (type === 'toilet_squat' || type === 'toilet_porcelain' || type === 'toilet_smart') this.buildToilet();
+    else if (DECOR_TYPES.has(type)) this.buildDecorProp();
     else if (isCookStation(type)) this.buildCookStation();
     else if (type === 'freezer') this.buildChest(0xf4f6f7, 0.85, true);
     else if (type === 'produce') this.buildChest(0x8b5a2b, 0.75, false);
@@ -496,6 +500,98 @@ export class FurnitureView {
     }
     const badge = makeBadgeSprite('🚽', 0.45);
     badge.position.y = 1.8;
+    this.group.add(badge);
+  }
+
+  /** GĐ1504 — đồ dùng bếp/trang trí Việt: mỗi món một dựng đơn giản đúng hình, điểm 🩷 đọc từ FurnitureDef. */
+  private buildDecorProp() {
+    const [w, d] = furnitureDef(this.type).size;
+    const wood = new THREE.MeshStandardMaterial({ color: 0x8b5a2b });
+    const steel = new THREE.MeshStandardMaterial({ color: 0x95a5a6, metalness: 0.5, roughness: 0.4 });
+    const white = new THREE.MeshStandardMaterial({ color: 0xf5f6fa });
+    const red = new THREE.MeshStandardMaterial({ color: 0xc0392b });
+    const gold = new THREE.MeshStandardMaterial({ color: 0xf1c40f });
+    switch (this.type) {
+      case 'tham_chan': {
+        const mat = new THREE.Mesh(new THREE.BoxGeometry(w, 0.03, d), red);
+        mat.position.y = 0.015;
+        this.group.add(mat);
+        break;
+      }
+      case 'thung_rac': {
+        const body = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.15, 0.5, 12), new THREE.MeshStandardMaterial({ color: 0x27ae60 }));
+        body.position.y = 0.25;
+        const lid = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.04, 12), new THREE.MeshStandardMaterial({ color: 0x1e8449 }));
+        lid.position.y = 0.52;
+        this.group.add(body, lid);
+        break;
+      }
+      case 'den_long': {
+        const string = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, 0.5, 6), steel);
+        string.position.y = 1.35;
+        const lantern = new THREE.Mesh(new THREE.SphereGeometry(0.18, 12, 10), new THREE.MeshStandardMaterial({ color: 0xe74c3c, emissive: 0xe74c3c, emissiveIntensity: 0.4 }));
+        lantern.position.y = 0.95;
+        lantern.scale.y = 1.15;
+        const caps = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.04, 10), gold);
+        caps.position.y = 1.13;
+        this.group.add(string, lantern, caps);
+        break;
+      }
+      case 'kho_dao': {
+        const bar = new THREE.Mesh(new THREE.BoxGeometry(w, 0.08, 0.06), steel);
+        bar.position.y = 1.1;
+        this.group.add(bar);
+        for (const x of [-0.18, -0.06, 0.06, 0.18]) {
+          const knife = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.22, 0.02), steel);
+          knife.position.set(x, 0.95, 0);
+          this.group.add(knife);
+        }
+        break;
+      }
+      case 'ke_gia_vi': {
+        const frame = new THREE.Mesh(new THREE.BoxGeometry(w, 0.5, d), wood);
+        frame.position.y = 0.9;
+        this.group.add(frame);
+        for (const x of [-0.15, 0, 0.15]) {
+          const jar = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.14, 10), white);
+          jar.position.set(x, 1.2, 0);
+          this.group.add(jar);
+        }
+        break;
+      }
+      case 'ke_chen': {
+        const frame = new THREE.Mesh(new THREE.BoxGeometry(w, 0.7, d), wood);
+        frame.position.y = 0.35;
+        this.group.add(frame);
+        for (const y of [0.25, 0.5]) {
+          const plate = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.1, 0.05, 12), white);
+          plate.position.set(0, y + 0.05, 0);
+          this.group.add(plate);
+        }
+        break;
+      }
+      case 'tranh_dong_ho': {
+        // Tranh treo cao như tranh tường: khung gỗ + mặt tranh vàng chữ
+        const frame = new THREE.Mesh(new THREE.BoxGeometry(w, 0.8, 0.05), wood);
+        frame.position.y = 1.4;
+        const art = new THREE.Mesh(new THREE.BoxGeometry(w - 0.08, 0.72, 0.02), new THREE.MeshStandardMaterial({ color: 0xf9e79f }));
+        art.position.set(0, 1.4, 0.03);
+        this.group.add(frame, art);
+        break;
+      }
+      case 'bon_rua': {
+        const basin = new THREE.Mesh(new THREE.BoxGeometry(w, 0.25, d), steel);
+        basin.position.y = 0.75;
+        const legs = new THREE.Mesh(new THREE.BoxGeometry(w * 0.9, 0.62, d * 0.85), new THREE.MeshStandardMaterial({ color: 0x616e6e }));
+        legs.position.y = 0.31;
+        const tap = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.16, 8), steel);
+        tap.position.set(0, 0.95, -d / 2 + 0.08);
+        this.group.add(basin, legs, tap);
+        break;
+      }
+    }
+    const badge = makeBadgeSprite('🩷', 0.35);
+    badge.position.y = 1.75;
     this.group.add(badge);
   }
 
