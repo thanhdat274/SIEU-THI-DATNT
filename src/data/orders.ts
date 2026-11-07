@@ -106,7 +106,7 @@ export const PARTY_ORDERS: PartyOrderDef[] = [
   {
     id: 'xoi_gac_cuoi', icon: '💒', title: 'Mâm xôi gấc đám cưới', from: 'Nhà cô dâu đầu hẻm', unlock: 43, days: 3,
     description: 'Nhà có đám cưới, cần xôi gấc đỏ thắm bày mâm cỗ — đặt trước để tiệm kịp nấu.',
-    items: { xoi_gac: 30 }, bonus: 150000, xp: 120,
+    items: { xoi_gac: 30 }, bonus: 240000, xp: 160,
   },
   // Đơn riêng theo câu chuyện từng khách quen
   {
