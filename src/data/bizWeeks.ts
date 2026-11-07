@@ -4,6 +4,10 @@
  */
 import { formatMoney } from './products';
 import { xpToNext } from './levels';
+import { onlineOrderCap } from './online';
+
+/** GĐ1641: trần đơn app khả thi trong N ngày (70% trần 5★) — giữ thử thách đơn app làm được ở cấp cao. */
+const onlineCap = (lv: number, days: number) => Math.max(1, Math.floor(onlineOrderCap(5, lv) * days * 0.7));
 
 // ───────────────────────── Báo cáo tuần ─────────────────────────
 
@@ -119,7 +123,7 @@ export const WEEKLY_CHALLENGES: WeeklyChallenge[] = [
     target: (lv) => 8 + 2 * lv, reward: (lv) => round1k(130000 * (1 + 0.25 * (lv - 1))) },
     (t) => `Bán ${t} combo trong tuần`),
   weekly({ id: 'wq_online', icon: '🛵', title: 'Giao đơn app', unit: 'đơn', measure: 'onlineDone', minLevel: 10,
-    target: (lv) => 10 + lv, reward: (lv) => round1k(160000 * (1 + 0.25 * (lv - 1))) },
+    target: (lv) => Math.min(10 + lv, onlineCap(lv, 7)), reward: (lv) => round1k(160000 * (1 + 0.25 * (lv - 1))) },
     (t) => `Giao ${t} đơn app tới tay khách trong tuần`),
   weekly({ id: 'wq_farm', icon: '🌾', title: 'Thu hoạch trại', unit: 'sản phẩm', measure: 'farmHarvest', minLevel: 8,
     target: (lv) => 20 + 3 * lv, reward: (lv) => round1k(120000 * (1 + 0.25 * (lv - 1))) },
@@ -306,7 +310,7 @@ export const MONTHLY_CHALLENGES: WeeklyChallenge[] = [
     target: (lv) => 20 + 4 * lv, reward: (lv) => round1k(700000 * (1 + 0.25 * (lv - 1))) },
     (t) => `Nhận ${t} lời khen 5★ trong tháng`),
   weekly({ id: 'mq_online', icon: '🛵', title: 'Đơn app dày đặc', unit: 'đơn', measure: 'onlineDone', minLevel: 10,
-    target: (lv) => 60 + 5 * lv, reward: (lv) => round1k(900000 * (1 + 0.25 * (lv - 1))) },
+    target: (lv) => Math.min(60 + 5 * lv, onlineCap(lv, 28)), reward: (lv) => round1k(900000 * (1 + 0.25 * (lv - 1))) },
     (t) => `Giao ${t} đơn app tới tay khách trong tháng`),
   weekly({ id: 'mq_farm', icon: '🌾', title: 'Mảnh vườn bội thu', unit: 'sản phẩm', measure: 'farmHarvest', minLevel: 8,
     target: (lv) => 150 + 15 * lv, reward: (lv) => round1k(700000 * (1 + 0.25 * (lv - 1))) },

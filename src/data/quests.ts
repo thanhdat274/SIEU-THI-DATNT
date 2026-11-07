@@ -2,7 +2,7 @@ import type { DayStats } from '../core/store';
 import { COOKED_PRODUCT_IDS, COOK_UNLOCK } from './recipes';
 import { unlockedCombos, COMBO_UNLOCK } from './combos';
 import { SERVICES } from './services';
-import { ONLINE_UNLOCK } from './online';
+import { ONLINE_UNLOCK, onlineOrderCap } from './online';
 import { GARDEN_UNLOCK } from './garden';
 import { PROMO_MIN_FOLLOWERS, SOCIAL_UNLOCK } from './social';
 import type { Weather } from './weather';
@@ -158,6 +158,8 @@ export const NO_COURIER_DESC = 'Giao {n} đơn nấu — cần thuê 🛵 Giao h
 /** GĐ1624: việc đơn app khi gian hàng app chưa mở/đang tạm ngưng. */
 export const NO_COMBO_DESC = 'Bán {n} combo — chưa bật combo nào: bật ở ⋯ Thêm › 🎁 Combo';
 export const NO_CROP_DESC = 'Thu {n} sản phẩm — trại chưa gieo luống nào: gieo ở 🌱 Mở rộng › 🚜 Trang trại';
+/** GĐ1641: đơn app/ngày có trần thật (onlineOrderCap ở 5★) — mục tiêu không vượt 70% trần, kẻo cấp cao bất khả thi. */
+export const onlineQuestTarget = (lv: number) => Math.min(scale(3, lv, 0.07), Math.max(1, Math.floor(onlineOrderCap(5, lv) * 0.7)));
 export const NO_ONLINE_DESC = 'Giao {n} đơn app — gian hàng app chưa nhận đơn: mở ở 🌱 Mở rộng › 📲 Online';
 /** GĐ1625: chưa đủ người theo dõi để đăng quảng bá. */
 export const FEW_FOLLOWERS_DESC = (have: number) => `Đăng bài quảng bá — cần ${PROMO_MIN_FOLLOWERS} người theo dõi (đang ${have}): bán tốt để khách khen trên mạng`;
@@ -293,7 +295,7 @@ export function dailyQuests(c: QuestContext): Quest[] {
     // Chốt step 0.07 (cũ 0.1 làm cấp 40 phải giao 15/16 đơn — gần như toàn bộ trần):
     //   cấp mở khoá 10 → round(3 × (1 + 0.07×9)) = 5 đơn (~nửa trần lúc mới mở, dải 4–6),
     //   cấp 40         → round(3 × (1 + 0.07×39)) = 11 đơn ≈ 70% trần 16 đơn/ngày (dải 60–75%).
-    { id: 'daily_online', icon: '🛵', title: 'Giao đơn app', unit: 'đơn', target: scale(3, lv, 0.07), current: c.stats.onlineDone ?? 0, money: scale(120000, lv, 0.25), xp: scale(60, lv, 0.1), show: lv >= ONLINE_UNLOCK, ...(c.hasOnlineOpen === false ? { desc: NO_ONLINE_DESC } : {}) },
+    { id: 'daily_online', icon: '🛵', title: 'Giao đơn app', unit: 'đơn', target: onlineQuestTarget(lv), current: c.stats.onlineDone ?? 0, money: scale(120000, lv, 0.25), xp: scale(60, lv, 0.1), show: lv >= ONLINE_UNLOCK, ...(c.hasOnlineOpen === false ? { desc: NO_ONLINE_DESC } : {}) },
     { id: 'daily_farm', icon: '🌾', title: 'Thu hoạch trại', unit: 'sản phẩm', target: scale(6, lv, 0.15), current: c.stats.farmHarvest ?? 0, money: scale(90000, lv, 0.25), xp: scale(50, lv, 0.1), show: lv >= GARDEN_UNLOCK, ...(c.plantedPlots === 0 ? { desc: NO_CROP_DESC } : {}) },
     // promote() chỉ cho đăng 1 bài/ngày (data/social.ts) nên mục tiêu cố định 1, đo cả bài xin lỗi khi khủng hoảng
     { id: 'daily_social', icon: '📱', title: 'Lên mạng xã hội', unit: 'bài', target: 1, current: c.stats.socialPosts ?? 0, money: scale(70000, lv, 0.25), xp: scale(40, lv, 0.1), show: lv >= SOCIAL_UNLOCK, desc: c.socialFollowers !== undefined && c.socialFollowers < PROMO_MIN_FOLLOWERS ? FEW_FOLLOWERS_DESC(c.socialFollowers) : 'Đăng bài quảng bá (hoặc xin lỗi khi khủng hoảng) hôm nay' },
