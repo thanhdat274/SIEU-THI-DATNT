@@ -828,7 +828,7 @@ export const RECIPES: Recipe[] = [
   // mẻ (basa 85k + gừng 7k + hành phi 3k) = 95k → 6 con × 32k = 192k, lãi 97k/mẻ, nấu hời hơn
   // bán thẳng nguyên liệu (136k < 192k). Mở 72 = đúng cấp basa (> golden 30 → sim không đổi).
   { id: 'recipe_ca_basa_chien_sa', name: 'Cá basa chiên sả', station: 'fryer',
-    inputs: [{ productId: 'ca_basa', quantity: 1 }, { productId: 'x_gung', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 2 }],
+    inputs: [{ productId: 'ca_basa', quantity: 1 }, { productId: 'x_sa', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 2 }], // GĐ1690: chiên sả dùng sả thay gừng
     outputId: 'ca_basa_chien_sa', outputQty: 6, durationMin: 15, unlock: 72, reputationGain: 3 },
   // GĐ1352: Sò điệp nướng mỡ hành — sò điệp đông lạnh (so_diep 67) nướng vỏ rưới mỡ hành ở bếp nướng:
   // mẻ (sò điệp 180k + hành phi 3k) = 183k → 6 vỏ × 50k = 300k, lãi 117k/mẻ, nấu hời hơn
