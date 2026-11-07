@@ -17,6 +17,8 @@ export interface TitleContext {
   prestige: number;
   /** GĐ171: đã hoàn thành TRỌN BỘ mục tiêu vòng tái sinh hiện tại (checkTitles tính qua ngGoalProgress). */
   ngGoalsAllDone?: boolean;
+  /** GĐ1517: số loại món bộ "Đồ Việt" đang đặt (decorSets.vietSetCount). */
+  vietSetPieces?: number;
 }
 
 export interface TitleDef {
@@ -53,6 +55,8 @@ export const TITLES: TitleDef[] = [
   { id: 'cap_90', icon: '👑', name: 'Đệ nhất phố hẻm', description: 'Đạt cấp 90 — mốc hiếm cuối run.', done: (c) => c.level >= 90 },
   // GĐ171: danh hiệu trọn bộ mục tiêu vòng tái sinh — nhét một lần duy nhất (titles giữ qua NG+),
   // đích cuối hướng danh hiệu cho cuốn mục tiêu vòng thay vì chỉ tiền.
+  // GĐ1517 — đủ trọn bộ sưu tập decor → danh hiệu (Việt hoá mốc "đủ 8/8 nhận danh hiệu" của sổ sưu tập tham khảo)
+  { id: 'giu_hon_viet', icon: '🏺', name: 'Giữ hồn đất Việt', description: 'Bày đủ trọn bộ 5 món "Đồ Việt" trong tiệm.', done: (c) => (c.vietSetPieces ?? 0) >= 5 },
   { id: 'chu_hem_lao_lang', icon: '🧭', name: 'Chủ hẻm lão làng', description: 'Hoàn thành trọn bộ mục tiêu của một vòng tái sinh (NG+).', done: (c) => c.ngGoalsAllDone === true },
 ];
 

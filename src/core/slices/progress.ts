@@ -1,3 +1,4 @@
+import { vietSetCount } from '../../data/decorSets';
 import { dailyQuests, betBonusMoney, betStatus, BET_TIERS, BET_QUEST_ID, betCoreSetProgress, storyQuest } from '../../data/quests';
 import { fitList, levelUpToast } from '../../data/onboarding';
 import { MAX_LEVEL, unlocksAt, xpToNext } from '../../data/levels';
@@ -191,6 +192,7 @@ export const createProgressSlice = (set: SetState, get: GetState): Pick<GameStat
       closeRegulars: Object.values(s.regulars).filter((r) => r.perks.length).length,
       prestige: s.biz.prestige.level,
       ngGoalsAllDone,
+      vietSetPieces: vietSetCount(s.furniture),
     };
     const fresh = TITLES.filter((t) => !s.titles.includes(t.id) && t.done(ctx));
     // Danh hiệu NG+ độc quyền: cần đủ số lần tái sinh (bộ sưu tập giữ qua vòng) + thỏa điều kiện thường.

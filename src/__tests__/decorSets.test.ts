@@ -23,3 +23,14 @@ describe('decorSets (GĐ1515)', () => {
     expect(vietSetCount([f('binh_bat_trang'), f('trong_dong', { broken: true }), f('chua_mot_cot', { trial: true })])).toBe(1);
   });
 });
+
+import { TITLES as T2 } from '../data/titles';
+describe('danh hiệu trọn bộ Đồ Việt (GĐ1517)', () => {
+  it('đủ 5 loại mới mở danh hiệu', () => {
+    const t = T2.find((x) => x.id === 'giu_hon_viet')!;
+    const base = { level: 60, day: 100, customers: 0, itemsSold: 0, revenue: 0, rating: 0, reviewCount: 0, closeRegulars: 0, ordersDone: 0, staffCount: 0, prestige: 0 };
+    expect(t.done({ ...base, vietSetPieces: 4 })).toBe(false);
+    expect(t.done({ ...base, vietSetPieces: 5 })).toBe(true);
+    expect(t.done(base)).toBe(false);
+  });
+});
