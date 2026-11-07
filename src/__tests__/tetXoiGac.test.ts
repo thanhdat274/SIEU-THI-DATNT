@@ -50,3 +50,10 @@ describe('GĐ1675 — Trung thu hút bưởi', () => {
     expect(hot).toContain('che_buoi');
   });
 });
+
+// GĐ1677 — hội thi làm bánh hút trứng ngỗng (nguyên liệu bánh flan).
+describe('GĐ1677 — hội thi làm bánh hút trứng ngỗng', () => {
+  it('trung_goos nằm trong hàng hot hội thi làm bánh', () => {
+    expect(FESTIVALS.find((e) => e.id === 'hoi_banh')!.hot).toContain('trung_goos');
+  });
+});
