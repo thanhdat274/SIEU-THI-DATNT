@@ -4,7 +4,7 @@ import { metaRng } from './rand';
 import { formatMoney } from '../data/products';
 import {
   DIRT_FAIL_AT, INSPECTION_CHANCE, INSPECTION_NOTES, INSPECTION_PRAISE, INSPECTION_ROLL_EVERY,
-  INSPECTION_UNLOCK, inspectionFine, inspectionOutcome, pickNote,
+  INSPECTION_UNLOCK, inspectionFine, inspectionOutcome, pickNote, finePaidXp,
 } from '../data/inspection';
 
 /**
@@ -52,6 +52,8 @@ export function maybeInspection(dtMinutes: number) {
       const out = inspectionOutcome(choice as 0 | 1, fine, st.dirt, metaRng);
       useGame.setState({ money: Math.max(0, st.money - out.money), dirt: Math.max(0, Math.min(st.dirt, out.dirt)) });
       st.notify(out.message);
+      const xp = finePaidXp(choice as 0 | 1, fine, st.level);
+      if (xp > 0) { st.addXp(xp); st.notify(`📜 Nộp phạt đàng hoàng: +${xp} XP`); }
     },
   });
 }

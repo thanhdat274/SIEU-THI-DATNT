@@ -80,3 +80,10 @@ export function inspectionOutcome(choice: 0 | 1, fine: number, dirt: number, rng
       : `🧹 Quét vội xong ngay trước mặt đoàn — chỉ nộp ${formatMoney(quick)}, sàn cũng sạch hơn!`,
   };
 }
+
+// GĐ1546 — nộp phạt đủ (không vệ sinh gấp) được ghi điểm 'làm ăn đàng hoàng': XP = 0,2% tiền phạt.
+// Từ cấp 35 (> golden 30).
+export const FINE_XP_LEVEL = 35;
+export const FINE_XP_PCT = 0.002;
+export const finePaidXp = (choice: 0 | 1, fine: number, level: number): number =>
+  choice === 0 && level >= FINE_XP_LEVEL ? Math.max(1, Math.round(fine * FINE_XP_PCT)) : 0;

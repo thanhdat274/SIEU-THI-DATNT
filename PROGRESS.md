@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (07/11/2026)
+- **GĐ1546** — Nộp phạt đàng hoàng có XP: chọn nộp đủ biên bản vệ sinh ở cấp ≥35 được XP = 0,2% tiền phạt (`finePaidXp`, đối chiếu thanh tra tham khảo 0,05–0,5%). Test finePaidXp.test.ts.
 - **GĐ1545** — Nhà phê bình lên sóng: phục vụ kịp ở giai đoạn nghiêm ngặt (cấp ≥45) thêm 3 đánh giá 5★, đối xứng với 3 đánh giá 1★ khi hụt hẹn (`criticPraiseReviews`). Test criticPraise.test.ts.
 - **GĐ1544** — Chơi máy xong mua thêm: cấp ≥40, khách ghé máy 30% thêm 1 món muốn mua (`machineImpulse`) — máy kéo thêm doanh thu bán lẻ. Test machines.test.ts. (Kèm lưu trữ GĐ1528–1532.)
 - **GĐ1543** — QA trình duyệt bù cho GĐ1540 (save khách mới, IndexedDB trống trước/sau): bán món đầu sau ~46 giây game kể từ mở cửa (tự mở cửa do vòng lặp main.tsx); ghế mát-xa cấp 40 lúc 19h thu 3.600đ/lượt (giá tối ×1,5), ghi vào sổ theo máy. Không lỗi.
