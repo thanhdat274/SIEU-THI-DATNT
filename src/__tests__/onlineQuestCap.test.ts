@@ -36,3 +36,23 @@ describe('GĐ1642 — mục tiêu đơn nấu không vượt số đơn nấu th
     }
   });
 });
+
+describe('GĐ1643 — mục tiêu thu hoạch trại không vượt sức trại', () => {
+  it('ngày/tuần/tháng ≤ trần luống × cây sai nhất cho mọi cấp 8–200', async () => {
+    const { farmDailyCap } = await import('../data/garden');
+    const { newGameData, questContext, useGame } = await import('../core/store');
+    const { dailyQuests } = await import('../data/quests');
+    const wk = WEEKLY_CHALLENGES.find((c) => c.id === 'wq_farm')!;
+    const mo = MONTHLY_CHALLENGES.find((c) => c.id === 'mq_farm')!;
+    expect(farmDailyCap(8)).toBeCloseTo(4 * 8 / 3); // 4 luống × cải 8 món/3 ngày
+    for (let lv = 8; lv <= 200; lv += 8) {
+      expect(wk.target(lv), `tuần ${lv}`).toBeLessThanOrEqual(farmDailyCap(lv) * 7);
+      expect(mo.target(lv), `tháng ${lv}`).toBeLessThanOrEqual(farmDailyCap(lv) * 28);
+      for (let d = 1; d <= 30; d++) {
+        useGame.setState({ ...newGameData(), level: lv, day: d });
+        const q = dailyQuests(questContext(useGame.getState())).find((x) => x.id === 'daily_farm');
+        if (q) { expect(q.target, `ngày ${lv}`).toBeLessThanOrEqual(farmDailyCap(lv)); break; }
+      }
+    }
+  });
+});

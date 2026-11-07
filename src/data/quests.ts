@@ -4,7 +4,7 @@ import { unlockedCombos, COMBO_UNLOCK } from './combos';
 import { SERVICES } from './services';
 import { ONLINE_UNLOCK, onlineOrderCap } from './online';
 import { expectedCookOrdersPerDay } from './phoneOrders';
-import { GARDEN_UNLOCK } from './garden';
+import { farmDailyCap, GARDEN_UNLOCK } from './garden';
 import { PROMO_MIN_FOLLOWERS, SOCIAL_UNLOCK } from './social';
 import type { Weather } from './weather';
 import { isWeekend } from './calendar';
@@ -297,7 +297,7 @@ export function dailyQuests(c: QuestContext): Quest[] {
     //   cấp mở khoá 10 → round(3 × (1 + 0.07×9)) = 5 đơn (~nửa trần lúc mới mở, dải 4–6),
     //   cấp 40         → round(3 × (1 + 0.07×39)) = 11 đơn ≈ 70% trần 16 đơn/ngày (dải 60–75%).
     { id: 'daily_online', icon: '🛵', title: 'Giao đơn app', unit: 'đơn', target: onlineQuestTarget(lv), current: c.stats.onlineDone ?? 0, money: scale(120000, lv, 0.25), xp: scale(60, lv, 0.1), show: lv >= ONLINE_UNLOCK, ...(c.hasOnlineOpen === false ? { desc: NO_ONLINE_DESC } : {}) },
-    { id: 'daily_farm', icon: '🌾', title: 'Thu hoạch trại', unit: 'sản phẩm', target: scale(6, lv, 0.15), current: c.stats.farmHarvest ?? 0, money: scale(90000, lv, 0.25), xp: scale(50, lv, 0.1), show: lv >= GARDEN_UNLOCK, ...(c.plantedPlots === 0 ? { desc: NO_CROP_DESC } : {}) },
+    { id: 'daily_farm', icon: '🌾', title: 'Thu hoạch trại', unit: 'sản phẩm', target: Math.max(1, Math.min(scale(6, lv, 0.15), Math.floor(farmDailyCap(lv) * 0.7))), current: c.stats.farmHarvest ?? 0, money: scale(90000, lv, 0.25), xp: scale(50, lv, 0.1), show: lv >= GARDEN_UNLOCK, ...(c.plantedPlots === 0 ? { desc: NO_CROP_DESC } : {}) },
     // promote() chỉ cho đăng 1 bài/ngày (data/social.ts) nên mục tiêu cố định 1, đo cả bài xin lỗi khi khủng hoảng
     { id: 'daily_social', icon: '📱', title: 'Lên mạng xã hội', unit: 'bài', target: 1, current: c.stats.socialPosts ?? 0, money: scale(70000, lv, 0.25), xp: scale(40, lv, 0.1), show: lv >= SOCIAL_UNLOCK, desc: c.socialFollowers !== undefined && c.socialFollowers < PROMO_MIN_FOLLOWERS ? FEW_FOLLOWERS_DESC(c.socialFollowers) : 'Đăng bài quảng bá (hoặc xin lỗi khi khủng hoảng) hôm nay' },
     { id: 'daily_cook_orders', icon: '🥡', title: 'Giao đơn nấu', unit: 'đơn', target: Math.max(1, Math.min(scale(2, lv, 0.1), Math.floor(expectedCookOrdersPerDay(lv)))), current: c.stats.cookOrders ?? 0, money: scale(110000, lv, 0.25), xp: scale(55, lv, 0.1), show: lv >= COOK_UNLOCK, ...(c.hasCookStation === false ? { desc: NO_STATION_DESC('Giao {n} đơn nấu') } : c.hasCourier === false ? { desc: NO_COURIER_DESC } : {}) },

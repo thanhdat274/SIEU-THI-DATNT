@@ -6,6 +6,7 @@ import { formatMoney } from './products';
 import { xpToNext } from './levels';
 import { onlineOrderCap } from './online';
 import { expectedCookOrdersPerDay } from './phoneOrders';
+import { farmDailyCap } from './garden';
 
 /** GĐ1641: trần đơn app khả thi trong N ngày (70% trần 5★) — giữ thử thách đơn app làm được ở cấp cao. */
 const onlineCap = (lv: number, days: number) => Math.max(1, Math.floor(onlineOrderCap(5, lv) * days * 0.7));
@@ -127,7 +128,7 @@ export const WEEKLY_CHALLENGES: WeeklyChallenge[] = [
     target: (lv) => Math.min(10 + lv, onlineCap(lv, 7)), reward: (lv) => round1k(160000 * (1 + 0.25 * (lv - 1))) },
     (t) => `Giao ${t} đơn app tới tay khách trong tuần`),
   weekly({ id: 'wq_farm', icon: '🌾', title: 'Thu hoạch trại', unit: 'sản phẩm', measure: 'farmHarvest', minLevel: 8,
-    target: (lv) => 20 + 3 * lv, reward: (lv) => round1k(120000 * (1 + 0.25 * (lv - 1))) },
+    target: (lv) => Math.max(1, Math.min(20 + 3 * lv, Math.floor(farmDailyCap(lv) * 7 * 0.7))), reward: (lv) => round1k(120000 * (1 + 0.25 * (lv - 1))) },
     (t) => `Thu hoạch ${t} nông sản trong tuần`),
   weekly({ id: 'wq_social', icon: '📱', title: 'Lên mạng xã hội', unit: 'bài', measure: 'socialPosts', minLevel: 8,
     target: () => 4, reward: (lv) => round1k(90000 * (1 + 0.25 * (lv - 1))) },
@@ -314,7 +315,7 @@ export const MONTHLY_CHALLENGES: WeeklyChallenge[] = [
     target: (lv) => Math.min(60 + 5 * lv, onlineCap(lv, 28)), reward: (lv) => round1k(900000 * (1 + 0.25 * (lv - 1))) },
     (t) => `Giao ${t} đơn app tới tay khách trong tháng`),
   weekly({ id: 'mq_farm', icon: '🌾', title: 'Mảnh vườn bội thu', unit: 'sản phẩm', measure: 'farmHarvest', minLevel: 8,
-    target: (lv) => 150 + 15 * lv, reward: (lv) => round1k(700000 * (1 + 0.25 * (lv - 1))) },
+    target: (lv) => Math.max(1, Math.min(150 + 15 * lv, Math.floor(farmDailyCap(lv) * 28 * 0.7))), reward: (lv) => round1k(700000 * (1 + 0.25 * (lv - 1))) },
     (t) => `Thu hoạch ${t} nông sản trong tháng`),
   weekly({ id: 'mq_cooked', icon: '🍲', title: 'Bếp chạy cả tháng', unit: 'món', measure: 'cookedSold', minLevel: 21,
     target: (lv) => 90 + 8 * lv, reward: (lv) => round1k(1100000 * (1 + 0.25 * (lv - 1))) },

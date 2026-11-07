@@ -132,6 +132,13 @@ export const LAND_TIERS: LandTier[] = [
   { name: 'Trang trại đầu ngõ', plots: 12, caps: { chicken: 16, duck: 8, goose: 8, pig: 4, cow: 3, goat: 3, dong_tao: 3 }, cost: 40_000_000, unlock: 24 },
 ];
 
+/** GĐ1643: trần thu hoạch/ngày khả thi ở cấp này (luống của bậc đất đã mở được × cây sai nhất đã mở, chưa tính đúng vụ/may). */
+export function farmDailyCap(level: number): number {
+  const plots = Math.max(...LAND_TIERS.filter((t) => t.unlock <= level).map((t) => t.plots));
+  const rate = Math.max(...CROPS.filter((c) => c.unlock <= level).map((c) => c.yieldQty / (c.regrowDays || c.days)));
+  return plots * rate;
+}
+
 export const cropById = (id: string) => CROPS.find((c) => c.id === id)!;
 
 /** Số luống đất ở bậc đất đang mở (bậc 0 là mảnh trại ban đầu). */
