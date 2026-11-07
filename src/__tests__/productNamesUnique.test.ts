@@ -10,7 +10,7 @@ describe('GĐ1694 — tên mặt hàng không trùng', () => {
 // Cặp trùng tên có từ trước (nhiều cặp cố ý: *_tp = hàng làm sẵn nhập về vs món tự nấu). Danh sách chỉ được GIẢM.
 const LEGACY_DUP = new Set([
   'x_banh_trang', 'xuc_xich_nuong',
-  'banh_trang_nuong', 'hot_vit_lon', 'ca_phe_sua_da', 'tra_sua', 'xoi_dau_xanh', 'xoi_man', 'xoi_trung', 'xoi_dua', 'nuoc_mia',
+  'banh_trang_nuong', 'ca_phe_sua_da', 'tra_sua', 'xoi_dau_xanh', 'xoi_man', 'xoi_trung', 'xoi_dua', 'nuoc_mia',
 ]);
 
   it('không có cặp trùng tên MỚI (ngoài danh sách cũ đã khoá)', () => {

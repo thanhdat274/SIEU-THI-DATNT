@@ -74,7 +74,7 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'mi_trung_nong', name: 'Mì trứng nấu sẵn', category: 'fresh', buy: 5500, sell: 10500, color: 0xe67e22, unlock: 21 },
   { id: 'che_dau_xanh', name: 'Chè đậu xanh', category: 'fresh', buy: 7800, sell: 14900, color: 0xfadbd8, unlock: 22 },
   // GĐ1094: Hột vịt lộn — mẻ (vịt 32k + rau 10k + muối 5k) = 47k → 10 phần × 7k = 70k, lãi 23k/mẻ, nấu hời hơn bán nguyên liệu (68k < 70k)
-  { id: 'hot_vit_lon', name: 'Hột vịt lộn', category: 'fresh', buy: 3500, sell: 7000, color: 0xd9b382, unlock: 34 },
+  { id: 'hot_vit_lon', name: 'Hột vịt lộn rau răm', category: 'fresh', buy: 3500, sell: 7000, color: 0xd9b382, unlock: 34 },
   // GĐ1660 — hột vịt muối: lối ra thứ hai của trứng vịt trại
   { id: 'hot_vit_muoi', name: 'Hột vịt muối', category: 'fresh', buy: 4000, sell: 7000, color: 0xe9e2c8, unlock: 44 },
   // GĐ1661 — trứng ngỗng luộc: lối ra thứ hai của trứng ngỗng trại (vẫn lỗ hơn bán lẻ → lời khuyên "bán" giữ nguyên)
@@ -741,7 +741,7 @@ export const RECIPES: Recipe[] = [
     outputId: 'ga_kho_gung', outputQty: 8, durationMin: 25, unlock: 52, reputationGain: 3 },
   // GĐ1094: Hột vịt lộn — món ăn vặt đường phố của trứng vịt trại (vịt mở cấp 16 nhưng chưa có lối ra bếp);
   // 1 vỉ 10 quả + rau răm + muối. Mở 34 > mốc golden 30 → sim không đổi.
-  { id: 'recipe_hot_vit_lon', name: 'Hột vịt lộn', station: 'hot_kettle',
+  { id: 'recipe_hot_vit_lon', name: 'Hột vịt lộn rau răm', station: 'hot_kettle',
     inputs: [{ productId: 'trung_vit', quantity: 1 }, { productId: 'rau', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }],
     outputId: 'hot_vit_lon', outputQty: 10, durationMin: 12, unlock: 34, reputationGain: 2 },
   { id: 'recipe_hot_vit_muoi', name: 'Hột vịt muối', station: 'hot_kettle',
