@@ -63,7 +63,7 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   // hành phi + tương ớt quê (GĐ1321): mẻ (bánh tráng 10k + trứng 25k + hành phi 1.5k×2 + tương ớt 30k) = 68k →
   // 8 phần × 22k = 176k, lãi 108k/mẻ, nấu hời hơn bán thẳng nguyên liệu (104k < 176k).
   // Khép chuỗi hàng xóm → bếp nướng, mở 36 (> golden 30 → sim không đổi).
-  { id: 'banh_trang_nuong', name: 'Bánh tráng nướng', category: 'fresh', buy: 11000, sell: 22000, color: 0xe67e22, unlock: 36 },
+  { id: 'banh_trang_nuong', name: 'Bánh tráng nướng trứng', category: 'fresh', buy: 11000, sell: 22000, color: 0xe67e22, unlock: 36 },
   // GĐ1328: Bánh đa trộn — món trộn Hà Nội từ bánh đa bì bà Tám (GĐ1085) + cà pháo muối + tương ớt quê + thịt heo:
   // mẻ (bánh đa 14k + cà pháo 8k + tương ớt 30k + thịt 30k) = 82k → 8 phần × 24k = 192k, lãi 110k/mẻ,
   // nấu hời hơn bán thẳng nguyên liệu (123k < 192k). Khép chuỗi hàng xóm → bếp nướng, mở 38 (> golden 30 → sim không đổi).
@@ -666,7 +666,7 @@ export const RECIPES: Recipe[] = [
     outputId: 'bo_gio_kho_bo', outputQty: 8, durationMin: 20, unlock: 50, reputationGain: 2 },
   // GĐ1328: Bánh tráng nướng — khép chuỗi "hàng xóm (bánh tráng phơi sương GĐ1077 + tương ớt GĐ1321) → bếp nướng".
   // Đồ nhà hàng xóm vốn chỉ bán thẳng làm đồ khô giờ có LỐI RA BẾP (món ăn vặt). Mở 36 (sau mốc golden 30 → sim không đổi).
-  { id: 'recipe_banh_trang_nuong', name: 'Bánh tráng nướng', station: 'food_grill',
+  { id: 'recipe_banh_trang_nuong', name: 'Bánh tráng nướng trứng', station: 'food_grill',
     inputs: [{ productId: 'hx_banh_trang', quantity: 1 }, { productId: 'trung', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 2 }, { productId: 'hx_tuong_ot', quantity: 1 }],
     outputId: 'banh_trang_nuong', outputQty: 8, durationMin: 15, unlock: 36, reputationGain: 2 },
   // GĐ1328: Bánh đa trộn — khép chuỗi "bà Tám (bánh đa GĐ1085) + cà pháo muối hàng xóm GĐ1077 → bếp nướng".

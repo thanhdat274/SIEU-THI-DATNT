@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (07/11/2026)
+- GĐ1698: "Bánh tráng nướng trứng" (món nấu) và "Bánh tráng (xấp lớn)" (x_banh_trang) — hết hẳn mặt hàng trùng tên, test productNamesUnique không còn ngoại lệ.
 - GĐ1697: 13 hàng làm sẵn *_tp thêm hậu tố "(làm sẵn)" để khỏi trùng tên món tự nấu; danh sách trùng cũ 10→2 (bánh tráng, bánh tráng nướng).
 - GĐ1696: món nấu hot_vit_lon đổi tên "Hột vịt lộn rau răm" (tách khỏi hàng sống hotvit); danh sách trùng cũ 11→10.
 - GĐ1695: tách tên 5 cặp hàng trùng tên khác hàng (Áo mưa bộ, Cá basa phi lê (ký), Lạp xưởng (ký), Chả cá thác lác (ký), Bánh pía (hộp 4 cái)) — đổi tên hiển thị, giữ mã/giá; danh sách trùng cũ 16→11.

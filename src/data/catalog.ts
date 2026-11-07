@@ -170,7 +170,7 @@ export const CATALOG_PRODUCTS: Product[] = [
   p('x_vai', 'Vải', 'fresh', 22000, 32000, 0xcb4d8c, 30),
   p('x_buoi', 'Bưởi', 'fresh', 16000, 24000, 0x684dcb, 24),
   p('x_chanh_day', 'Chanh dây', 'fresh', 12000, 18000, 0x4da9cb, 26),
-  p('x_banh_trang', 'Bánh tráng', 'dry', 10000, 14000, 0x644dcb, 20),
+  p('x_banh_trang', 'Bánh tráng (xấp lớn)', 'dry', 10000, 14000, 0x644dcb, 20),
   p('x_bot_nang', 'Bột năng', 'dry', 8000, 11000, 0xcb6a4d, 24),
   p('x_bot_gao', 'Bột gạo', 'dry', 9000, 13000, 0xcb4d59, 24),
   p('x_nui_kho', 'Nui khô', 'dry', 12000, 17000, 0xcb4d81, 26),
