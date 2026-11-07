@@ -141,7 +141,12 @@ export interface Quest {
 }
 
 /** Những gì nhiệm vụ cần đọc từ trạng thái game. */
+/** GĐ1612 — tiệm chưa có bếp: việc nấu vẫn giữ chỗ trong bộ (không xáo danh sách giữa ngày) nhưng chỉ chỗ mua bếp. */
+export const NO_STATION_DESC = (task: string) => `${task} — tiệm chưa có bếp: mua ở 🛠️ Xây dựng`;
+
 export interface QuestContext {
+  /** GĐ1612 — tiệm đang có ít nhất một trạm nấu (thiếu = không biết, giữ mô tả cũ). */
+  hasCookStation?: boolean;
   day: number;
   level: number;
   stats: DayStats;
@@ -250,7 +255,7 @@ export function dailyQuests(c: QuestContext): Quest[] {
     { id: 'daily_gift', icon: '🎁', title: 'Tặng quà khách quen', unit: 'lần', target: 2, current: c.stats.gifts ?? 0, money: scale(40000, lv, 0.25), xp: scale(40, lv, 0.1), show: lv >= 38, desc: 'Mở bảng Khách quen, bấm 🎁 tặng {n} món khách thích' },
     { id: 'daily_services', icon: '🏦', title: 'Lời từ dịch vụ', unit: 'đ', target: scale(20000, lv, 0.15), current: c.stats.services ?? 0, money: scale(50000, lv, 0.25), xp: scale(35, lv, 0.1), show: lv >= (SERVICES[0]?.unlock ?? 99) },
     { id: 'daily_combo', icon: '🎁', title: 'Bán theo combo', unit: 'combo', target: scale(3, lv, 0.1), current: c.stats.combos ?? 0, money: scale(90000, lv, 0.25), xp: scale(55, lv, 0.1), show: lv >= COMBO_UNLOCK && unlockedCombos(lv).length > 0 },
-    { id: 'daily_cooked', icon: '🍳', title: 'Bán món nhà làm', unit: 'món', target: scale(5, lv, 0.15), current: cookedSoldToday(c), money: scale(100000, lv, 0.25), xp: scale(60, lv, 0.1), show: lv >= COOK_UNLOCK },
+    { id: 'daily_cooked', icon: '🍳', title: 'Bán món nhà làm', unit: 'món', target: scale(5, lv, 0.15), current: cookedSoldToday(c), money: scale(100000, lv, 0.25), xp: scale(60, lv, 0.1), show: lv >= COOK_UNLOCK, ...(c.hasCookStation === false ? { desc: NO_STATION_DESC('Bán {n} món nhà làm') } : {}) },
     // Trần đơn app/ngày (data/online.ts): đơn chỉ đổ về trong ONLINE_HOURS (870 phút), cách nhau
     // orderGap(5★, cấp) × hệ số ngẫu nhiên trung bình 1.0 ⇒ tối đa ~870/max(35, 95−cấp) đơn:
     // cấp 10 ≈ 10 đơn, cấp 40 ≈ 16 đơn, từ cấp ≥ 60 chạm sàn 35 phút ⇒ trần ~25 đơn/ngày.
@@ -261,7 +266,7 @@ export function dailyQuests(c: QuestContext): Quest[] {
     { id: 'daily_farm', icon: '🌾', title: 'Thu hoạch trại', unit: 'sản phẩm', target: scale(6, lv, 0.15), current: c.stats.farmHarvest ?? 0, money: scale(90000, lv, 0.25), xp: scale(50, lv, 0.1), show: lv >= GARDEN_UNLOCK },
     // promote() chỉ cho đăng 1 bài/ngày (data/social.ts) nên mục tiêu cố định 1, đo cả bài xin lỗi khi khủng hoảng
     { id: 'daily_social', icon: '📱', title: 'Lên mạng xã hội', unit: 'bài', target: 1, current: c.stats.socialPosts ?? 0, money: scale(70000, lv, 0.25), xp: scale(40, lv, 0.1), show: lv >= SOCIAL_UNLOCK, desc: 'Đăng bài quảng bá (hoặc xin lỗi khi khủng hoảng) hôm nay' },
-    { id: 'daily_cook_orders', icon: '🥡', title: 'Giao đơn nấu', unit: 'đơn', target: scale(2, lv, 0.1), current: c.stats.cookOrders ?? 0, money: scale(110000, lv, 0.25), xp: scale(55, lv, 0.1), show: lv >= COOK_UNLOCK },
+    { id: 'daily_cook_orders', icon: '🥡', title: 'Giao đơn nấu', unit: 'đơn', target: scale(2, lv, 0.1), current: c.stats.cookOrders ?? 0, money: scale(110000, lv, 0.25), xp: scale(55, lv, 0.1), show: lv >= COOK_UNLOCK, ...(c.hasCookStation === false ? { desc: NO_STATION_DESC('Giao {n} đơn nấu') } : {}) },
     // ── GĐ160 — việc tuỳ chọn mở TỪ CẤP 1 + biến thể theo hoàn cảnh ──
     // "Sớm hôm đón khách": đo doanh thu khung sáng sớm 6h–9h (sổ theo giờ) — khuyến khích mở cửa sớm
     // đón nửa giờ vàng đầu ngày (6h–8h30) mà lịch tự động 8h đang bỏ lỡ (cùng nhịp với cảnh báo lịch).

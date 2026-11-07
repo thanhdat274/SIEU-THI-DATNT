@@ -1,3 +1,4 @@
+import { isCookStation } from '../data/furniture';
 import { create } from 'zustand';
 import { emptyQuestLog, emptyTotals, type QuestContext } from '../data/quests';
 import { recentAvgSalesProfit } from '../data/gifts';
@@ -73,6 +74,7 @@ export const questContext = (s: GameState): QuestContext => {
     weather: s.weather,
     regularsServedToday,
     regularsComingToday,
+    hasCookStation: s.furniture.some((f) => isCookStation(f.type)),
   };
 };
 
