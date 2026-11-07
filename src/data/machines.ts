@@ -93,3 +93,11 @@ export const machineDayTotal = (byService: Record<string, number> | undefined): 
 export const CLAW_WIN_LEVEL = 44;
 export const clawWin = (type: string, level: number, uid: number, day: number, minutes: number): boolean =>
   type === 'claw_machine' && level >= CLAW_WIN_LEVEL && (uid * 7 + day * 31 + Math.floor(minutes)) % 20 === 0;
+
+// GĐ1567 — từ 14h, máy đã đặt (không hỏng) mà hôm nay chưa thu đồng nào: gợi ý dời gần cửa.
+export function idleMachineHint(furniture: Furniture[], byService: Record<string, number> | undefined, minutes: number): string | null {
+  if (minutes < 14 * 60) return null;
+  const idle = [...new Set(furniture.filter((f) => isMachine(f.type) && !f.broken && !(byService?.[f.type] ?? 0)).map((f) => f.type as MachineId))];
+  if (!idle.length) return null;
+  return `💤 Chưa ai chơi hôm nay: ${idle.map((t) => MACHINE_TYPES[t].icon + ' ' + MACHINE_TYPES[t].name).join(', ')} — thử dời gần cửa ra vào`;
+}

@@ -185,3 +185,15 @@ describe('GĐ1566 gắp trúng', () => {
     expect(clawWin('photo_booth', 50, 0, 0, 0)).toBe(false);
   });
 });
+
+import { idleMachineHint } from '../data/machines';
+describe('GĐ1567 máy chưa ai chơi', () => {
+  const fs = [{ uid: 1, type: 'claw_machine' }, { uid: 2, type: 'vending_drink' }] as never;
+  it('sau 14h nêu máy chưa thu', () => {
+    expect(idleMachineHint(fs, {}, 13 * 60)).toBeNull();
+    const h = idleMachineHint(fs, { vending_drink: 1200 }, 15 * 60)!;
+    expect(h).toContain('Máy gắp thú');
+    expect(h).not.toContain('bán nước');
+    expect(idleMachineHint(fs, { vending_drink: 1, claw_machine: 1 }, 900)).toBeNull();
+  });
+});

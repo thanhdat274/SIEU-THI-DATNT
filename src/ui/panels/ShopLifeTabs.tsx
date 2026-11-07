@@ -1,5 +1,5 @@
 import { useGame } from '../../core/store';
-import { machineDayLine } from '../../data/machines';
+import { machineDayLine, idleMachineHint } from '../../data/machines';
 import { buyHomeItem, buyService, buyPet, buyUpgrade, buyVehicle, feedPet } from '../../core/biz';
 import { hasUpgrade, UPGRADES } from '../../data/upgrades';
 import { Callout } from './shared';
@@ -90,7 +90,7 @@ export function Pets() {
 
 /** Dịch vụ ở quầy: mua thiết bị một lần, khách ghé dùng dịch vụ và hay mua kèm. */
 export function Services() {
-  const { biz, level, day, stats } = useGame();
+  const { biz, level, day, stats, furniture, minutes } = useGame();
   const owned = biz.services ?? [];
   return (
     <>
@@ -102,6 +102,7 @@ export function Services() {
         </div>
         <div style={{ fontSize: 12, marginTop: 4 }}>Hôm nay lời từ dịch vụ: <b>{formatMoney(stats.services ?? 0)}</b></div>
         {machineDayLine(stats.byService) && <div style={{ fontSize: 12, marginTop: 2 }}>{machineDayLine(stats.byService)}</div>}
+        {idleMachineHint(furniture, stats.byService, minutes) && <div style={{ fontSize: 12, marginTop: 2, opacity: 0.8 }}>{idleMachineHint(furniture, stats.byService, minutes)}</div>}
       </div>
       {SERVICES.map((sv) => (
         <div key={sv.id} style={{ ...card, opacity: level < sv.unlock ? 0.5 : 1 }}>
