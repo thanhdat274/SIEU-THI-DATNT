@@ -70,3 +70,8 @@ export function starBoostBlock(level: number, served: number, have: number): Sta
   if (have < 1) return 'no-item';
   return null;
 }
+
+/** GĐ1601 — nhãn khi món đã chạm 3★ (đồ đựng bậc cao nhất); null nếu còn bậc kế. */
+export function dishMaxLabel(goal: DishStarGoal): string | null {
+  return goal.nextAt == null ? ' · 🏆 bậc cao nhất' : null;
+}

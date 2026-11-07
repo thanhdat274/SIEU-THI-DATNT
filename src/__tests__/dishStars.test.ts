@@ -93,3 +93,13 @@ describe('servedCounts + thưởng giá theo sao qua checkout (GĐ1496)', () => 
     expect(Object.keys(s.servedCounts)).toHaveLength(0);
   });
 });
+
+describe('GĐ1601 dishMaxLabel', () => {
+  it('chỉ hiện khi 3★', async () => {
+    const { dishMaxLabel, dishStarGoalOf } = await import('../data/dishStars');
+    const { RECIPES } = await import('../data/recipes');
+    const id = RECIPES[0].outputId;
+    expect(dishMaxLabel(dishStarGoalOf(id, 5))).toBeNull();
+    expect(dishMaxLabel(dishStarGoalOf(id, 900))).toContain('bậc cao nhất');
+  });
+});

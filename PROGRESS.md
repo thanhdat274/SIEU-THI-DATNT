@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (07/11/2026)
+- **GĐ1601** — Sổ nấu: món đã 3★ hiện "🏆 bậc cao nhất" thay vì để trống mục tiêu (dishMaxLabel). Rà KE-HOACH I4/K1: kiên nhẫn 60%, trần vắng mặt 30+cấp×5, nút Nhập đủ đều đã có.
 - **GĐ1600** — Rà soát + QA save mới: bán đầu tiên ~35s, không lỗi console. Chuỗi GĐ1591–1599 (tặng quà, gắp trúng) đều là đếm/hiển thị, không đổi kinh tế; mọi trường mới tuỳ chọn. Lưu trữ GĐ1565–1572. Save QA đã xoá.
 - **GĐ1599** — QA trình duyệt nút 🎁 (save QA cấp 40): "Kho hết Sữa hộp — nhập thêm để tặng" và "Chưa quen…" hiện đúng. Save QA đã xoá.
 - **GĐ1598** — Nút tặng quà khi kho trống gọi tên món khách thích đã biết ("Kho hết X — nhập thêm để tặng"); món chưa khám phá vẫn giấu.

@@ -11,7 +11,7 @@ import { supplyOutletOf } from '../../data/supplyOutlet';
 import { splitLockedRecipes } from '../../data/cookList';
 import { cookSpeed, bartenderBoost } from '../../core/slices/orders';
 import { FESTIVALS, festivalOn } from '../../data/calendar';
-import { dishStarGoalOf, dishVessel , STAR_BOOST_ITEM, STAR_BOOST_UNLOCK } from '../../data/dishStars';
+import { dishStarGoalOf, dishVessel, dishMaxLabel, STAR_BOOST_ITEM, STAR_BOOST_UNLOCK } from '../../data/dishStars';
 import { Footer, styles, Tabs } from './shared';
 
 /** Sổ nấu: công thức theo trạm, nguyên liệu lấy từ kho (lô cận hạn trước), mẻ xong về kho chờ bày kệ. */
@@ -130,6 +130,7 @@ export function CookPanel() {
                             {goal.nextAt != null && (
                               <span style={{ opacity: 0.75 }}> · còn {goal.toGo} lượt → {goal.nextVessel}</span>
                             )}
+                            {dishMaxLabel(goal) && <span style={{ color: '#f1c40f' }}>{dishMaxLabel(goal)}</span>}
                             <span style={{ opacity: 0.6 }}> · đã bán {served}</span>
                             {level >= STAR_BOOST_UNLOCK && goal.nextAt != null && (
                               <button className="mini" style={{ marginLeft: 6 }} disabled={(storage[STAR_BOOST_ITEM] ?? 0) < 1} title="Dùng 1 tổ yến: +10 lượt bán về phía sao kế" onClick={() => useGame.getState().boostDishStar(r.outputId)}>✨ Nâng sao (1 tổ yến)</button>
