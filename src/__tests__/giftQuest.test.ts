@@ -20,3 +20,7 @@ describe('GĐ1584 daily_gift', () => {
     expect(find(40)?.current).toBe(0);
   });
 });
+
+describe('GĐ1597 daily_gift có hướng dẫn', () => {
+  it('desc chỉ chỗ bấm', () => { expect(find(40)?.description).toContain('bảng Khách quen'); });
+});

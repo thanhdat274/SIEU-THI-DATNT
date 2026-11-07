@@ -247,7 +247,7 @@ export function dailyQuests(c: QuestContext): Quest[] {
   // cùng một ngày nào đó luôn ra cùng tổ hợp, và pool xoay hết một vòng thì lặp lại.
   const optional: DailyDef[] = [
     // GĐ1584 — tặng quà khách quen (cấp ≥38, sau golden nên vòng xoay cấp thấp không đổi)
-    { id: 'daily_gift', icon: '🎁', title: 'Tặng quà khách quen', unit: 'lần', target: 2, current: c.stats.gifts ?? 0, money: scale(40000, lv, 0.25), xp: scale(40, lv, 0.1), show: lv >= 38 },
+    { id: 'daily_gift', icon: '🎁', title: 'Tặng quà khách quen', unit: 'lần', target: 2, current: c.stats.gifts ?? 0, money: scale(40000, lv, 0.25), xp: scale(40, lv, 0.1), show: lv >= 38, desc: 'Mở bảng Khách quen, bấm 🎁 tặng {n} món khách thích' },
     { id: 'daily_services', icon: '🏦', title: 'Lời từ dịch vụ', unit: 'đ', target: scale(20000, lv, 0.15), current: c.stats.services ?? 0, money: scale(50000, lv, 0.25), xp: scale(35, lv, 0.1), show: lv >= (SERVICES[0]?.unlock ?? 99) },
     { id: 'daily_combo', icon: '🎁', title: 'Bán theo combo', unit: 'combo', target: scale(3, lv, 0.1), current: c.stats.combos ?? 0, money: scale(90000, lv, 0.25), xp: scale(55, lv, 0.1), show: lv >= COMBO_UNLOCK && unlockedCombos(lv).length > 0 },
     { id: 'daily_cooked', icon: '🍳', title: 'Bán món nhà làm', unit: 'món', target: scale(5, lv, 0.15), current: cookedSoldToday(c), money: scale(100000, lv, 0.25), xp: scale(60, lv, 0.1), show: lv >= COOK_UNLOCK },
