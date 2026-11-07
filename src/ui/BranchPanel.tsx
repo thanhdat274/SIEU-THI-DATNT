@@ -143,7 +143,7 @@ export function BranchPanel() {
           <div style={{ ...st.event, display: 'block' }}>
             <div style={st.row}>
               <b>🥤 Máy bán hàng tự động ngoài cửa</b>
-              <button style={st.primary} onClick={toggleVending}>{branch.vendingEnabled ? 'Tắt máy' : `Lắp máy · ${formatMoney(VENDING_COST)}`}</button>
+              <button style={st.primary} disabled={!branch.vendingEnabled && money < VENDING_COST} onClick={toggleVending}>{branch.vendingEnabled ? 'Tắt máy' : shortLabel(`Lắp máy · ${formatMoney(VENDING_COST)}`, VENDING_COST, money)}</button>
             </div>
             <div style={st.sub}>
               Bán kể cả khi đóng cửa / không ai trực — chỉ cần có người giao/xếp hàng trực để nạp hàng định kỳ từ kho chung.
