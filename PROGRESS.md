@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (07/11/2026)
+- **GĐ1580** — Rà soát + QA save mới: bán đầu tiên ~41s. Gom: nhắc máy Sổ đầu ngày còn 1 dòng chung (GĐ1579); thông thạo (XP, tiến độ, tổng kết) trong `sellMastery.ts`. Trình duyệt: Sổ tay hiện "Thông thạo: 🥉 1 · 🥈 1 · 🥇 0". Save QA đã xoá.
 - **GĐ1579** — Gộp nhắc Sổ đầu ngày: thay dòng riêng máy đánh giày (GĐ1572) bằng 1 dòng chung "Hôm nay <các máy> thu ×1,5" cho mọi máy đang được tăng phí (mưa/cuối tuần/lễ) — `boostedMachinesToday`.
 - **GĐ1578** — Máy kẹo bông (cấp 46) ×1,5 cả ngày lễ hội (ngoài cuối tuần); popup "cuối tuần & ngày lễ ×1,5". Test GĐ1549 chọn ngày thường không trùng lễ.
 - **GĐ1577** — Sổ tay Tiệm (cấp 36) hiện "Thông thạo: 🥉 N · 🥈 N · 🥇 N" (`masterySummary`). Thuần UI.
@@ -47,14 +48,6 @@
 - **GĐ1555** — Quà điểm danh cuối tuần (cẩm nang HappyTown "cuối tuần thưởng nhiều hơn"): thứ 7/CN cấp ≥37 tiền quà +25%, XP giữ nguyên (`src/data/weekendGift.ts`). Test weekendGift.test.ts.
 - **GĐ1554** — Huy hiệu thông thạo ở kệ: khi chọn hàng bày, gợi ý món ghép 🥉/🥈/🥇 theo bậc thông thạo (cấp ≥36, `masteryBadge`). Test sellMastery.test.ts.
 - **GĐ1553** — Thông thạo món bán (Xóm B5): bán 1 món cả ván 200/1.000/4.000 lần → báo 🥉/🥈/🥇 (cấp ≥36), đọc từ `soldEver` sẵn có, không thêm tiền/XP/save (`src/data/sellMastery.ts`). Test sellMastery.test.ts.
-- **GĐ1552** — "Bạn có biết?" (Xóm B10): dải mẹo xoay 30 phút game trên HUD, lọc theo cấp (`src/data/tips.ts`), nút ✕ ẩn trong phiên (không vào save). Đã thấy hiện trên save khách mới. Test tips.test.ts.
-- **GĐ1551** — Máy chụp ảnh lấy liền (máy thu phí thứ 7, cấp 50): 300k, 3.000đ/lượt, hoàn vốn 100 lượt. Test machines.test.ts.
-- **GĐ1550** — Audit 1541–1549 + QA save trắng (IndexedDB trống trước/sau): bán món đầu ~38 giây game sau mở cửa; máy kẹo bông + đánh giày ở cấp 46 mỗi máy thu 1 lượt đúng giá. Sửa từ audit: dòng thông tin máy ghi thêm "cuối tuần ×1,5" cho gắp thú/kẹo bông. Máy thu phí gom hết ở machines.ts, không trùng.
-- **GĐ1549** — Kẹo bông cuối tuần: máy kẹo bông cũng ×1,5 phí thứ 7/CN như gắp thú (máy của trẻ con). Test machines.test.ts.
-- **GĐ1548** — Máy kẹo bông (máy thu phí thứ 6, cấp 46): 250k, 2.500đ/lượt, hoàn vốn 100 lượt. Test machines.test.ts.
-- **GĐ1547** — Máy đánh giày (máy thu phí thứ 5, cấp 42): 200k, 2.000đ/lượt, hoàn vốn 100 lượt (danh sách máy tham khảo có máy đánh giày). Test machines.test.ts.
-- **GĐ1546** — Nộp phạt đàng hoàng có XP: chọn nộp đủ biên bản vệ sinh ở cấp ≥35 được XP = 0,2% tiền phạt (`finePaidXp`, đối chiếu thanh tra tham khảo 0,05–0,5%). Test finePaidXp.test.ts.
-- **GĐ1545** — Nhà phê bình lên sóng: phục vụ kịp ở giai đoạn nghiêm ngặt (cấp ≥45) thêm 3 đánh giá 5★, đối xứng với 3 đánh giá 1★ khi hụt hẹn (`criticPraiseReviews`). Test criticPraise.test.ts.
 - GĐ1394–1408 + GĐ1490–1505 (chuỗi khu ăn tại chỗ: bàn ghế, khách ngồi ăn, tip, máy thu phí, toilet, decor × sao, sao món, vắng mặt, nhà phê bình, toast ghế, tour HUD, đồ bếp decor, bảng hiệu đặc sản; khoá 1 tab): docs/progress-archive/PROGRESS-GD1490-1505.md
 - GĐ1382–1393 (món mới từ nguyên liệu có sẵn, gọn PROGRESS, đổi "Ấm nước nóng" → "Bếp nồi nấu" GĐ1394 xem dòng riêng): chi tiết `docs/progress-archive/PROGRESS-GD1382-1391.md`.
 - GĐ960–1005 (tách file thuần + QA trình duyệt, chi tiết): `docs/progress-archive/PROGRESS-GD960-1005.md`
