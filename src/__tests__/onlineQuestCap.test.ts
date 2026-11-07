@@ -56,3 +56,19 @@ describe('GĐ1643 — mục tiêu thu hoạch trại không vượt sức trại
     }
   });
 });
+
+describe('GĐ1644 — mục tiêu khách theo cấp nằm trong lượng khách cơ sở', () => {
+  it('daily_customers/daily_smile ≤ 50% customersPerDay mọi cấp 1–200', async () => {
+    const { customersPerDay } = await import('../data/levels');
+    const { newGameData, questContext, useGame } = await import('../core/store');
+    const { dailyQuests } = await import('../data/quests');
+    for (let lv = 1; lv <= 200; lv += 9) {
+      const seen = new Set<string>();
+      for (let d = 1; d <= 30 && seen.size < 2; d++) {
+        useGame.setState({ ...newGameData(), level: lv, day: d });
+        for (const q of dailyQuests(questContext(useGame.getState())))
+          if (q.id === 'daily_customers' || q.id === 'daily_smile') { seen.add(q.id); expect(q.target, `${q.id} cấp ${lv}`).toBeLessThanOrEqual(customersPerDay(lv) * 0.5); }
+      }
+    }
+  });
+});
