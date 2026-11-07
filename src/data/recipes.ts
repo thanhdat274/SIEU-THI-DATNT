@@ -508,6 +508,7 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'nem_nuong_cuon', name: 'Nem nướng cuốn', category: 'fresh', buy: 12000, sell: 20000, color: 0xd0884a, unlock: 83 },
   // GĐ1488: Cơm cá cơm rim — lối ra ĐẦU TIÊN của cá cơm khô bà Tám.
   { id: 'com_ca_com_rim', name: 'Cơm cá cơm rim', category: 'fresh', buy: 15000, sell: 25000, color: 0xd8b080, unlock: 84 },
+  { id: 'mam_co_ngo', name: 'Mâm cỗ đầu ngõ', category: 'fresh', buy: 100000, sell: 140000, color: 0xc0392b, unlock: 85 },
   // GĐ1409: Sữa chua granola — lối ra ĐẦU TIÊN của ngũ cốc granola: mẻ (granola 130k + sữa chua) → 14 cốc × 18k = 252k.
   { id: 'sua_chua_granola', name: 'Sữa chua granola', category: 'fresh', buy: 11000, sell: 18000, color: 0xe9d8b4, unlock: 68 },
   // GĐ1408: Cà phê phin sữa — lối ra ĐẦU TIÊN của cà phê xay nguyên chất: mẻ (cà phê xay 150k + sữa đặc 22k) = 172k → 25 ly × 12k = 300k.
@@ -1358,6 +1359,12 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_com_ca_com_rim', name: 'Cơm cá cơm rim', station: 'rice_station',
     inputs: [{ productId: 'gao', quantity: 2 }, { productId: 'hx_ca_kho', quantity: 1 }],
     outputId: 'com_ca_com_rim', outputQty: 12, durationMin: 30, unlock: 84, reputationGain: 3 },
+  // GĐ1523: Mâm cỗ đầu ngõ — món CUỐI CHUỖI (mục C#4 TONG-HOP Xóm "mâm cỗ = 5 món làm sẵn"): bày 5 món tự nấu
+  // (cháo, măng xào, xôi, nem cuốn, cơm cá cơm ≈ 105k giá lẻ) thành 1 mâm 140k + uy tín cao. Mở 85 (> golden 30,
+  // tránh mốc soát biên 82/86/91/96/100), biên nhập 100k → 1,4.
+  { id: 'recipe_mam_co_ngo', name: 'Mâm cỗ đầu ngõ', station: 'gift_wrap',
+    inputs: [{ productId: 'chao_lap_xuong', quantity: 1 }, { productId: 'mang_kho_xao_lap_xuong', quantity: 1 }, { productId: 'xoi_muoi_me', quantity: 1 }, { productId: 'nem_nuong_cuon', quantity: 1 }, { productId: 'com_ca_com_rim', quantity: 1 }],
+    outputId: 'mam_co_ngo', outputQty: 1, durationMin: 15, unlock: 85, reputationGain: 6 },
   // GĐ1409: Sữa chua granola ở máy xay: lãi dương, hời hơn bán thẳng nguyên liệu. Mở 68 = cấp granola (> golden 30).
   { id: 'recipe_sua_chua_granola', name: 'Sữa chua granola', station: 'blender',
     inputs: [{ productId: 'ngu_coc', quantity: 1 }, { productId: 'suachua', quantity: 1 }],
