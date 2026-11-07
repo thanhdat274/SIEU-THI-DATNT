@@ -13,6 +13,7 @@ import { FEATURES, xpToNext } from '../data/levels';
 import { xpGainDelta } from '../data/xpGain';
 import { decorPopupLine } from '../data/decorPopup';
 import { machinePopupLine } from '../data/machines';
+import { tipAt } from '../data/tips';
 import { radialPositions } from '../data/radialMenu';
 import { formatMoney, productById } from '../data/products';
 import { trialCost } from '../core/slices/build';
@@ -475,6 +476,7 @@ Online: ${coop.peers.map((p) => (p.id === coop.selfId ? 'bạn' : p.name)).join(
       {/* Dưới cùng: dải kế hoạch hôm nay (hoặc gợi ý giờ vắng), gợi ý tương tác, rồi thanh công cụ */}
       <div className="hud-bottom">
         <Suspense fallback={null}><TodayAgendaStrip /></Suspense>
+        {!buildMode && <TipStrip />}
         {buildMode && (
           <div className="hud-alert build">
             {placing ? (
@@ -631,6 +633,21 @@ function RadialMenu({ items }: { items: { icon: string; label: string; run: () =
         <button key={it.label} type="button" className="hud-btn" title={it.label} aria-label={it.label} onClick={it.run}
           style={{ position: 'absolute', left: pos[i].x - 20, top: pos[i].y - 20, width: 40, height: 40, borderRadius: '50%', padding: 0, pointerEvents: 'auto' }}>{it.icon}</button>
       ))}
+    </div>
+  );
+}
+
+/** GĐ1552 — dải mẹo "Bạn có biết?" xoay 30 phút game; ✕ ẩn trong phiên (không vào save). */
+function TipStrip() {
+  const level = useGame((s) => s.level);
+  const day = useGame((s) => s.day);
+  const slot = useGame((s) => Math.floor(s.minutes / 30));
+  const [hidden, setHidden] = useState(false);
+  if (hidden) return null;
+  return (
+    <div style={{ fontSize: 12, color: '#dfe6e9', background: 'rgba(0,0,0,0.35)', borderRadius: 8, padding: '3px 8px', display: 'flex', gap: 6, alignItems: 'center', pointerEvents: 'auto' }}>
+      <span>💡 Bạn có biết? {tipAt(level, day, slot * 30)}</span>
+      <button onClick={() => setHidden(true)} style={{ background: 'none', border: 'none', color: '#b2bec3', cursor: 'pointer' }} aria-label="Ẩn mẹo">✕</button>
     </div>
   );
 }
