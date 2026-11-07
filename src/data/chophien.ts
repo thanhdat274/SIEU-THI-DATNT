@@ -61,6 +61,9 @@ export interface MarketClearInput {
   shelved: Record<string, number>;
   /** Sức khoẻ từng món (itemHealthList) — để biết tốc độ bán / còn vài ngày hàng. */
   health: ItemHealth[];
+  /** GĐ1518 chợ 3 cấp: trần riêng theo cấp chợ (mặc định = chợ xóm). */
+  maxItems?: number;
+  maxUnits?: number;
 }
 
 /**
@@ -92,11 +95,11 @@ export function marketClearValue(input: MarketClearInput): MarketClearValue | nu
 
   // Chọn món đáng gánh nhất (theo ước giá), chặn số món + tổng đơn vị
   rows.sort((a, b) => b.est - a.est);
-  const picked = rows.slice(0, MAX_CLEAR_ITEMS);
+  const picked = rows.slice(0, input.maxItems ?? MAX_CLEAR_ITEMS);
   let units = 0;
   const final: MarketClearRow[] = [];
   for (const r of picked) {
-    const take = Math.min(r.qty, MAX_CLEAR_UNITS - units);
+    const take = Math.min(r.qty, (input.maxUnits ?? MAX_CLEAR_UNITS) - units);
     if (take <= 0) continue;
     const p = productById(r.id);
     // giá giữ nguyên hệ khan hiếm của lượng trước khi gánh; chỉ giảm số món
@@ -111,6 +114,55 @@ export function marketClearValue(input: MarketClearInput): MarketClearValue | nu
     total: final.reduce((n, r) => n + r.est, 0),
     units,
   };
+}
+
+// ───── GĐ1518: CHỢ 3 CẤP (Việt hoá cơ chế "chợ nhiều cấp" — chỉ cơ chế, không tên/asset) ─────
+// Chợ xóm = chợ phiên cũ y nguyên. Chợ phường / chợ đầu mối mở sau golden 30: trần lớn hơn,
+// thu phí sạp, người chơi tự đặt giá 0,3–3× (giá cao bán được ít). Không RNG → solo = co-op,
+// báo giá = kết quả thật. Giá/món chặn ≤ 95% giá lẻ → bán ở tiệm luôn lời hơn.
+export type MarketTier = 'xom' | 'phuong' | 'daumoi';
+export interface MarketTierDef { id: MarketTier; name: string; unlock: number; maxItems: number; maxUnits: number; fee: number; demand: number }
+export const MARKET_TIERS: Record<MarketTier, MarketTierDef> = {
+  xom: { id: 'xom', name: 'Chợ xóm', unlock: 0, maxItems: MAX_CLEAR_ITEMS, maxUnits: MAX_CLEAR_UNITS, fee: 0, demand: 1 },
+  phuong: { id: 'phuong', name: 'Chợ phường', unlock: 32, maxItems: 6, maxUnits: 30, fee: 0.02, demand: 1 },
+  daumoi: { id: 'daumoi', name: 'Chợ đầu mối', unlock: 40, maxItems: 8, maxUnits: 60, fee: 0.05, demand: 1.1 },
+};
+export const MARKET_MULT_MIN = 0.3;
+export const MARKET_MULT_MAX = 3;
+export const MARKET_PRICE_CAP = 0.95;
+
+export const isMarketTier = (t: unknown): t is MarketTier => typeof t === 'string' && t in MARKET_TIERS;
+export const marketTierUnlocked = (tier: MarketTier, level: number) => level >= MARKET_TIERS[tier].unlock;
+export function clampMarketMult(m: unknown): number {
+  const n = typeof m === 'number' && Number.isFinite(m) ? m : 1;
+  return Math.min(MARKET_MULT_MAX, Math.max(MARKET_MULT_MIN, n));
+}
+/** Tỉ lệ bán được: ≤0,5× bán hết, rồi giảm thẳng; không bao giờ tăng khi giá tăng. */
+export function marketSellThrough(mult: number, tier: MarketTier): number {
+  const base = Math.min(1, Math.max(0.05, 1.3 - 0.6 * clampMarketMult(mult)));
+  return Math.min(1, base * MARKET_TIERS[tier].demand);
+}
+
+export interface MarketQuote { rows: MarketClearRow[]; units: number; gross: number; fee: number; net: number }
+/** Báo giá phiên chợ cấp 2–3 từ bản định giá (đã chặn trần theo cấp). Xóm: giữ nguyên est cũ. */
+export function marketTierQuote(val: MarketClearValue, tier: MarketTier, mult: number): MarketQuote {
+  const def = MARKET_TIERS[tier];
+  const rows: MarketClearRow[] = [];
+  if (tier === 'xom') rows.push(...val.rows);
+  else {
+    const m = clampMarketMult(mult), st = marketSellThrough(m, tier);
+    for (const r of val.rows) {
+      const qty = Math.floor(r.qty * st);
+      if (qty <= 0) continue;
+      const sell = productById(r.id).sell;
+      const legacyUnit = r.est / r.qty; // = giá lẻ × 0,75 × hệ khan hiếm
+      const unit = Math.min(legacyUnit * m, sell * MARKET_PRICE_CAP);
+      rows.push({ ...r, qty, est: Math.round(qty * unit) });
+    }
+  }
+  const gross = rows.reduce((n, r) => n + r.est, 0);
+  const fee = Math.round(gross * def.fee);
+  return { rows, units: rows.reduce((n, r) => n + r.qty, 0), gross, fee, net: gross - fee };
 }
 
 /** GĐ290: Biến phiên chợ đầu ngõ thành việc sáng trong 'Việc hôm nay' khi có hàng dư đáng gánh. */

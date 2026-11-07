@@ -1,5 +1,6 @@
 /** Kiểu dữ liệu, hằng số và hàm nhỏ của trạng thái game (useGame ghép ở store.ts). */
 import type { FurnitureType } from '../data/furniture';
+import type { MarketTier } from '../data/chophien';
 import { warehouseTier } from '../data/warehouse';
 import type { QuestLog, Totals } from '../data/quests';
 import { casesFor } from '../data/products';
@@ -345,7 +346,7 @@ export interface GameState {
   acceptWholesale: (rush?: boolean) => boolean;
   declineWholesale: () => void;
   /** Bán chợ phiên: xả hàng DƯ định kỳ, một lần mỗi ngày chợ. */
-  sellMarketSurplus: () => { ok: boolean; reason?: 'already' | 'no-surplus'; units?: number; pay?: number };
+  sellMarketSurplus: (opts?: { tier?: MarketTier; mult?: number }) => { ok: boolean; reason?: 'already' | 'no-surplus' | 'locked'; units?: number; pay?: number; fee?: number };
   /** Đơn khách gọi điện hôm nay (đang đổ chuông hoặc đang mang đi giao). */
   phoneOrders: PhoneOrder[];
   /** Số khung giờ gọi điện hôm nay đã xét (chỉ số tiếp theo trong PHONE_SLOTS). */
