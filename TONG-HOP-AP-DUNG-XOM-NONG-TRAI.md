@@ -88,18 +88,18 @@ Gieo → thu → chế biến qua 18 nhà máy (chuỗi tới 4 tầng sâu) →
 
 | # | Hệ | State trong repo | Việc còn lại (nếu làm) |
 |---|---|---|---|
-| 1 | **Chợ cấp: tạp hóa → siêu thị** (mỗi cấp mở slot + đổi phí; phí cấp nhỏ rẻ hơn) | ❌ | GĐ mở siêu thị: 3 cấp "chợ đầu ngõ → chợ phường → siêu thị", phí 2/5/5%, giá bán tự đặt 0,3–3× |
-| 2 | **Sổ sưu tập decor vùng** (4 bộ × 8, rarity, điểm × sao, mốc 2/4/6 buff, mảnh nâng sao) | ✅ điểm 🩷 GĐ1495 | thêm rarity + mảnh trùng + mốc buff; buff gắn nhóm hàng mình có (kệ khô/gia vị/hàng lạnh/ăn tại chỗ) |
-| 3 | **Vòng quay/đổi quà theo kỳ 28 ngày** đưa món Hiếm/Báu | ❌ | khi có bộ sưu tập: 1 quay miễn phí/ngày + vé bằng xu, tối đa 10 vé/ngày |
-| 4 | **Món combo cuối chuỗi bếp** ("Mâm cỗ" = 5 món làm sẵn) | khu ăn GĐ1490–1494 | thêm 1 món đặc biệt mỗi nhóm món: dùng chính món đã bán để ghép, thưởng EXP to |
-| 5 | **Generator đơn/contract theo độ sâu + thời gian dây chuyền** | có hệ hợp đồng | thêm ràng buộc "số lượng ≤ sản lượng làm kịp"; boost món đang có trong kho; sàn trọng số |
-| 6 | **"Hàng hot tuần này" +25%** (chợ phiên) | chưa | xoay 3 mặt hàng mỗi tuần, đơn/bán có mặt hàng đó được thưởng thêm |
+| 1 | **Chợ cấp: tạp hóa → siêu thị** (mỗi cấp mở slot + đổi phí; phí cấp nhỏ rẻ hơn) | ✅ GĐ1518–1519 | — |
+| 2 | **Sổ sưu tập decor vùng** (4 bộ × 8, rarity, điểm × sao, mốc 2/4/6 buff, mảnh nâng sao) | ✅ GĐ1495 + GĐ1515 | rarity/mảnh trùng bỏ (trùng đã cộng decor gốc) |
+| 3 | **Vòng quay/đổi quà theo kỳ 28 ngày** đưa món Hiếm/Báu | ✅ GĐ1528 (bản gọn) | vé mua bằng xu bỏ (chống phình) |
+| 4 | **Món combo cuối chuỗi bếp** ("Mâm cỗ" = 5 món làm sẵn) | ✅ GĐ1523 | — |
+| 5 | **Generator đơn/contract theo độ sâu + thời gian dây chuyền** | ✅ GĐ1527 | — |
+| 6 | **"Hàng hot tuần này" +25%** (chợ phiên) | ✅ GĐ1519 (+15%) | — |
 | 7 | **Mở rộng tiếp giáp từng vùng** `giá = 1000·k·(k+1)` | có nền tảng warehouse | khi siêu thị phase 2 — 2 game xác nhận cùng mô hình |
-| 8 | **Kho = nhà 5 cấp** (+60/150/300/500 chỗ, quà vật liệu hằng ngày) | ✅ có kho | gói nâng kho theo cấp quán thay vì mua chỗ rời |
-| 9 | **Vật liệu nâng cấp không tính chỗ kho** (14 loại miễn) | chưa | lưới an toàn khi thêm vật liệu nâng cấp |
-| 10 | **Trần EXP theo độ cũ** (×0,8^k sau 3 bậc, 0 sau 15) + thông thạo -5% chờ | có sao món | chống farm khi có chợ; thông thạo = hạng theo số đơn đã làm của 1 món |
-| 11 | **Điểm danh không reset** + rương trọng số | ✅ điểm danh có | đổi luật reset (bỏ 1 ngày giữ nguyên chuỗi) — tỉ lệ rương 30/20/20/15/10/5 |
-| 12 | **Menu quạt trên vật thể + "+N EXP" minh bạch + popup 3D decor** | ❌ | UX đợt chơi thật tiếp theo |
+| 8 | **Kho = nhà 5 cấp** (+60/150/300/500 chỗ, quà vật liệu hằng ngày) | ✅ kho 7 cấp | — |
+| 9 | **Vật liệu nâng cấp không tính chỗ kho** (14 loại miễn) | ⏸ chưa áp dụng | game chưa có vật liệu nâng cấp — làm khi thêm |
+| 10 | **Trần EXP theo độ cũ** (×0,8^k sau 3 bậc, 0 sau 15) + thông thạo -5% chờ | ✅ GĐ1522 | — |
+| 11 | **Điểm danh không reset** + rương trọng số | ✅ ân hạn + GĐ1533 | — |
+| 12 | **Menu quạt trên vật thể + "+N EXP" minh bạch + popup 3D decor** | 🟡 GĐ1529 +XP, GĐ1532 decor | menu quạt trên vật thể — đợt chơi thật |
 
 **Công thức mượn được ngay (1 dòng code):**
 - Tăng tốc: `xu = ceil(phútCònLại / 15)`; xây: `1 xu / 3 phút`.

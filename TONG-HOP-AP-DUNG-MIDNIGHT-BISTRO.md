@@ -87,14 +87,14 @@ Paywall tủ nguyên liệu 290.000×200 cấp (bồn tiêu tiền), Côn trùng
 | 2 | Nhà vệ sinh 3 bậc thu phí chậm | ✅ GĐ1494 | — |
 | 3 | Máy thu phí mỗi lượt (giá = thu/lượt × 90) | ✅ GĐ1493 | thêm máy khi mở khu ăn của siêu thị |
 | 4 | Điểm trang trí × sao, bỏ trần | ✅ GĐ1495 | — |
-| 5 | Sao món + đồ đựng 4 bậc kiểu Việt | ✅ GĐ1496 (chuỗi song song) | thêm "nguyên liệu nâng sao" từ hàng tạp hóa quý |
-| 6 | **Trang trí nhiều lớp**: sơn nền/tường theo ô + vách ngăn chia khu | ❌ | làm khi có siêu thị nhiều khu — 40 màu × giá 1 mức rẻ, vách +3 |
-| 7 | **Đồ dùng bếp = decor khu bếp** | ❌ | nhóm rẻ 150–800 (+3…+9): giá dao, kệ gia vị, thùng rác, bồn rửa 3 bậc |
-| 8 | **Cờ vinh danh đặc sản vùng miền** (bản Việt hoá của B4) | ❌ | thay 62 nước bằng **Bắc/Trung/Nam/Tây Nguyên + vài vùng**: đủ món 1 vùng = +10 decor + buff; 5★ = +20; buff tương ứng: bồi bàn nhanh / khách về nhanh |
+| 5 | Sao món + đồ đựng 4 bậc kiểu Việt | ✅ GĐ1496 + GĐ1526 | — |
+| 6 | **Trang trí nhiều lớp**: sơn nền/tường theo ô + vách ngăn chia khu | ⏸ chờ siêu thị nhiều khu | — |
+| 7 | **Đồ dùng bếp = decor khu bếp** | ✅ đã có đồ bếp | — |
+| 8 | **Cờ vinh danh đặc sản vùng miền** (bản Việt hoá của B4) | ✅ regionFlags | — |
 | 9 | Thực đơn tối thiểu theo cấp quán | đề xuất sẵn (3→12) | chốt khi mở khu ăn siêu thị |
 | 10 | Mở rộng từng ô tiếp giáp | có nền tảng warehouse | khi siêu thị mở phase 2 |
-| 11 | Thu nhập khi vắng mặt | ✅ có | đối chiếu tỷ lệ ~5% tốc độ chơi thật |
-| 12 | Sự kiện theo lịch (Tết/Trung thu) | chưa | đồ "khoe" giá cao điểm thấp, 1–2 món/đợt |
+| 11 | Thu nhập khi vắng mặt | ✅ GĐ1497 + GĐ1531 (≈5%) | — |
+| 12 | Sự kiện theo lịch (Tết/Trung thu) | ✅ GĐ1513 | — |
 
 **Công thức mượn được ngay (1 dòng code):** điểm danh `floor(1500×N/1000)×1000`; máy thu phí `giá = thu/lượt × 90`; decor khách/phút `decorScore/200 × rating/5`; buff cờ `+0.5%/nước, +1% khi 5★`.
 
