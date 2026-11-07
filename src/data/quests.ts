@@ -459,7 +459,7 @@ export const STORY_STEPS: readonly StoryStep[] = [
   { id: 'story_shop_tier_7', icon: '🏗️', title: 'Đại siêu thị', description: 'Mở rộng tiệm lên Đại siêu thị (mặt bằng tối đa)', target: 6, money: 25000000, xp: 5000, measure: (c) => c.shopTier },
   { id: 'story_revenue_1b', icon: '👑', title: 'Tỷ đồng doanh thu', description: 'Đạt tổng doanh thu 1.000.000.000đ', target: 1000000000, money: 50000000, xp: 9000, measure: (c) => c.totals.revenue },
   { id: 'story_level_90', icon: '🎖️', title: 'Huyền thoại sống', description: 'Đạt cấp 90', target: 90, money: 30000000, xp: 7000, measure: (c) => c.level },
-  { id: 'story_level_100', icon: '🎆', title: 'Đỉnh cao tạp hóa', description: 'Đạt cấp 100 — mốc cuối game', target: 100, money: 100000000, xp: 20000, measure: (c) => c.level },
+  { id: 'story_level_100', icon: '🎆', title: 'Đỉnh cao tạp hóa', description: 'Đạt cấp 100 — đủ tái sinh, đường lên cấp 200 còn dài', target: 100, money: 100000000, xp: 20000, measure: (c) => c.level },
 ];
 
 /** GĐ1620: cấp tối thiểu để làm được bước cốt truyện (kho/mặt bằng/thuê người/hợp đồng); 0 = không chặn. */

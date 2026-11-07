@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (07/11/2026)
+- GĐ1645: bước cốt truyện cấp 100 không còn gọi là "mốc cuối game" (trần cấp 200); test storyLevel100Text.
 - GĐ1644: rà mục tiêu khách ở cấp 200 — khách cơ sở 20+4×cấp = 820/ngày, việc "Đón khách" 204/"Khách vui vẻ" 247 vẫn khả thi → không sửa, thêm test khóa ≤50% customersPerDay mọi cấp. Xong đợt rà mục tiêu theo cấp sau khi nâng trần 200 (GĐ1641–1644).
 - GĐ1643: mục tiêu thu hoạch trại vượt sức trại (cấp 8 đòi 12 khi 4 luống chỉ ra ~10,7/ngày; cấp 200 đòi 185/ngày, 620/tuần, 3150/tháng khi trần ~32/ngày) → cắt ở 70% farmDailyCap (luống bậc đất đã mở được × cây sai nhất). 5210 test xanh.
 - GĐ1642: đơn nấu qua điện thoại chỉ ~1,4–1,75 đơn/ngày (9 khung × xác suất gọi × 30%) mà việc ngày đòi 6 (cấp 21) → 12 (cấp 50), tuần đòi 4+cấp → cắt theo expectedCookOrdersPerDay (ngày ≥1, tuần 70% × 7 ngày). 5209 test xanh.
