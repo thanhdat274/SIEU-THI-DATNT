@@ -58,3 +58,14 @@ describe('GĐ1537 — ghế mát-xa chân', () => {
     expect(furnitureDef('massage_chair').price).toBe(MACHINE_TYPES.massage_chair.price);
   });
 });
+
+describe('GĐ1538 — phí máy giờ tối', () => {
+  it('từ 18h, cấp ≥35: nước + mát-xa ×1,5; máy khác, giờ ngày, cấp thấp giữ nguyên', async () => {
+    const { machineFeeAt } = await import('../data/machines');
+    expect(machineFeeAt('vending_drink', 19 * 60, 35)).toBe(1_800);
+    expect(machineFeeAt('massage_chair', 18 * 60, 40)).toBe(3_600);
+    expect(machineFeeAt('claw_machine', 19 * 60, 40)).toBe(1_800);
+    expect(machineFeeAt('vending_drink', 12 * 60, 40)).toBe(1_200);
+    expect(machineFeeAt('vending_drink', 19 * 60, 34)).toBe(1_200);
+  });
+});

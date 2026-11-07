@@ -39,3 +39,16 @@ export function freeMachine(furniture: Furniture[], busyUids: ReadonlySet<number
   }
   return null;
 }
+
+// GĐ1538 — giờ tối (từ 18h) dân xóm đi làm về: máy bán nước và ghế mát-xa đông khách,
+// phí lượt ×1,5. Chỉ từ cấp 35 (> golden 30) để nhịp đầu game không đổi.
+export const NIGHT_FEE_LEVEL = 35;
+export const NIGHT_FEE_START = 18 * 60;
+const NIGHT_MACHINES: ReadonlySet<string> = new Set(['vending_drink', 'massage_chair']);
+
+/** Phí một lượt theo giờ trong ngày và cấp tiệm. */
+export function machineFeeAt(type: Furniture['type'], minutes: number, level: number): number {
+  const base = machineFee(type);
+  if (level < NIGHT_FEE_LEVEL || minutes < NIGHT_FEE_START || !NIGHT_MACHINES.has(type)) return base;
+  return Math.round(base * 1.5);
+}

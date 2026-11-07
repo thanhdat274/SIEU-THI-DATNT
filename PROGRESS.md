@@ -115,3 +115,4 @@
 - Tham chiếu cũ dời theo GĐ1394–1408: PROGRESS-GD1404-1407.md · PROGRESS-GD1427-1429.md · PROGRESS-GD250-257.md · INDEX-GD1-250.md (trong docs/progress-archive/)
 
 - **GĐ1537** — Ghế mát-xa chân (máy thu phí thứ 4, cấp 38): 240k, 2.400đ/lượt, hoàn vốn 100 lượt; Midnight #3 (thêm máy thu phí). Test machines.test.ts.
+- **GĐ1538** — Phí máy giờ tối: từ 18h (cấp ≥35) máy bán nước + ghế mát-xa ×1,5 phí/lượt (`machineFeeAt`). Test machines.test.ts.

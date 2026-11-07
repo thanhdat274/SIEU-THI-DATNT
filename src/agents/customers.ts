@@ -67,7 +67,7 @@ import {
   DINE_UNLOCK, DINE_WAIT_SECONDS, EAT_SECONDS, TOILET_NEED_CHANCE, TOILET_STRICT_UNLOCK, TOILET_USE_SECONDS,
   dineTip, freeSeat, freeToilet, isToilet, toiletFee, wantsDineIn, type SeatInfo, menuTipMul,
 } from '../data/dineIn';
-import { MACHINE_VISIT_CHANCE, MACHINE_USE_SECONDS, MACHINE_TYPES, freeMachine, isMachine, machineFee, type MachineId } from '../data/machines';
+import { MACHINE_VISIT_CHANCE, MACHINE_USE_SECONDS, MACHINE_TYPES, freeMachine, isMachine, machineFeeAt, type MachineId } from '../data/machines';
 import {
   Customer, FRANTIC_AT, IMPATIENT_AT, PATIENCE_MINUTES, SIDEWALK_Z, impatienceEmoji, patienceMultiplier, counterQueueScore, leastScore, reviewStars, type Deal,
 } from './customerEntity';
@@ -456,7 +456,7 @@ export class CustomerManager {
       const machine = freeMachine(s.furniture, this.machineBusy);
       if (machine) {
         const machineUid = machine.uid;
-        const fee = machineFee(machine.type);
+        const fee = machineFeeAt(machine.type, s.minutes, s.level);
         const icon = MACHINE_TYPES[machine.type as MachineId].icon;
         this.machineBusy.add(machineUid);
         c.plan.push(() => this.walk(c, this.shop.spotFor(machine)));
