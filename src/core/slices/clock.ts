@@ -32,6 +32,8 @@ export const createClockSlice = (set: SetState, get: GetState): Pick<GameState, 
   tick: (dt) => {
     const s = get();
     const minutes = s.minutes + dt * MINUTES_PER_SECOND * s.speed;
+    // GĐ1506: phút game đã trôi của nhịp tick này — phải tính TRƯỚC khi ghi thẳng get().minutes
+    // (mutation tại chỗ làm s.minutes === minutes, trừ lại luôn ra 0 — sự kiện theo thời gian sẽ chết).
     // Ăn sáng no bụng thì thức khuya được thêm một chút mới ngất
     if (minutes >= faintMinutes(s.biz.breakfastDay === s.day)) {
       if (faintGuard.spare()) {
@@ -53,6 +55,7 @@ export const createClockSlice = (set: SetState, get: GetState): Pick<GameState, 
     }
     // Đồng hồ chạy mỗi khung hình: ghi thẳng vào state (không set) để cả đống component
     // dùng nguyên `useGame()` không phải vẽ lại 60 lần/giây. UI đọc giờ qua useClock bên dưới.
+    const elapsedMinutes = minutes - s.minutes; // GĐ1506 — chốt trước khi mutation
     get().minutes = minutes;
     useClock.setState({ minutes });
     if (s.branch && minutes - s.branch.simAt >= 10) set(runBranch(get, minutes));
@@ -67,7 +70,7 @@ export const createClockSlice = (set: SetState, get: GetState): Pick<GameState, 
     updateOnline(set, get);
     maybeSurprise(minutes - s.minutes);
     // GĐ1506 — đoàn kiểm tra vệ sinh: gieo metaRng theo phút game (chỉ máy chạy chạy tới đây)
-    maybeInspection(minutes - s.minutes);
+    maybeInspection(elapsedMinutes);
     // Các mẻ nấu đang chạy: hết giờ thì thành phẩm vào kho (bày bán như hàng thường)
     const jobs = get().cookJobs;
     if (jobs.length && s.speed > 0) {
