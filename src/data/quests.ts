@@ -465,6 +465,16 @@ export function storyGateLevel(step: StoryStep): number {
   return 0;
 }
 
+/** GĐ1626: lý do thử thách tuần/tháng chưa làm được (cùng điều kiện gợi ý việc ngày); null = làm được. */
+export function periodBlocker(measure: string, c: Pick<QuestContext, 'hasCookStation' | 'hasCourier' | 'hasService' | 'hasOnlineOpen' | 'socialFollowers'>): string | null {
+  if ((measure === 'cookedSold' || measure === 'cookOrders') && c.hasCookStation === false) return 'Tiệm chưa có bếp: mua ở 🛠️ Xây dựng';
+  if (measure === 'cookOrders' && c.hasCourier === false) return 'Cần thuê 🛵 Giao hàng để khách gọi điện đặt';
+  if (measure === 'services' && c.hasService === false) return 'Chưa mở dịch vụ nào: mở ở 📈 Kinh doanh › 🧾 Dịch vụ';
+  if (measure === 'onlineDone' && c.hasOnlineOpen === false) return 'Gian hàng app chưa nhận đơn: mở ở 🌱 Mở rộng › 📲 Online';
+  if (measure === 'socialPosts' && c.socialFollowers !== undefined && c.socialFollowers < PROMO_MIN_FOLLOWERS) return `Cần ${PROMO_MIN_FOLLOWERS} người theo dõi mới đăng được (đang ${c.socialFollowers})`;
+  return null;
+}
+
 /** Bước cốt truyện đang làm (bước đầu tiên chưa nhận thưởng); null khi đã xong hết. */
 export function storyQuest(c: QuestContext): Quest | null {
   const claimed = new Set(c.log.claimedStory);

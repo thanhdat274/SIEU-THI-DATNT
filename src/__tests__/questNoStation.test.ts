@@ -88,3 +88,17 @@ describe('GĐ1612 — nhiệm vụ nấu khi chưa có bếp', () => {
     throw new Error('không gặp việc MXH');
   });
 });
+
+describe('GĐ1626 — thử thách tuần/tháng nêu lý do chưa làm được', () => {
+  it('ván mới: dịch vụ/app/MXH/bếp có lý do; doanh thu thì không', async () => {
+    const { periodBlocker } = await import('../data/quests');
+    useGame.setState({ ...newGameData(), level: 30 });
+    const ctx = questContext(useGame.getState());
+    expect(periodBlocker('services', ctx)).toContain('📈 Kinh doanh');
+    expect(periodBlocker('onlineDone', ctx)).toContain('📲 Online');
+    expect(periodBlocker('socialPosts', ctx)).toContain('đang 0');
+    expect(periodBlocker('cookedSold', ctx)).toContain('chưa có bếp');
+    expect(periodBlocker('revenue', ctx)).toBeNull();
+    expect(periodBlocker('onlineDone', { ...ctx, hasOnlineOpen: true })).toBeNull();
+  });
+});
