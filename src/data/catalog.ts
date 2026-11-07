@@ -149,6 +149,7 @@ export const CATALOG_PRODUCTS: Product[] = [
   p('x_kho_qua', 'Khổ qua', 'fresh', 9000, 13000, 0x4dcbcb, 22),
   p('x_gung', 'Gừng', 'fresh', 7000, 11000, 0x4dcbc0, 20),
   p('x_sa', 'Sả', 'fresh', 2000, 3000, 0x9acd32, 40), // GĐ1683: cho đậu hũ chiên sả
+  p('x_nuoc_mam', 'Nước mắm', 'dry', 20000, 26000, 0xa0522d, 40), // GĐ1686: cho cá viên chiên nước mắm
   p('x_rau_mui', 'Rau mùi', 'fresh', 3000, 5000, 0x4fcb4d, 24),
   p('x_bap', 'Bắp ngọt', 'fresh', 6000, 9000, 0xabcb4d, 22),
   p('x_tao', 'Táo', 'fresh', 18000, 26000, 0xcb6c4d, 22),

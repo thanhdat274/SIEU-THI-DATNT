@@ -1084,8 +1084,8 @@ export const RECIPES: Recipe[] = [
     outputId: 'bo_vien_nuoc_leo', outputQty: 6, durationMin: 10, unlock: 53, reputationGain: 2 },
   // GĐ1427: Cá viên chiên nước mắm ở chảo chiên. Mở 35 (> golden 30, ≥ cấp nguyên liệu).
   { id: 'recipe_ca_vien_chien_mam', name: 'Cá viên chiên nước mắm', station: 'fryer',
-    inputs: [{ productId: 'x_ca_vien', quantity: 1 }],
-    outputId: 'ca_vien_chien_mam', outputQty: 6, durationMin: 10, unlock: 55, reputationGain: 2 },
+    inputs: [{ productId: 'x_ca_vien', quantity: 1 }, { productId: 'x_nuoc_mam', quantity: 1 }], // GĐ1686: chiên nước mắm cần nước mắm
+    outputId: 'ca_vien_chien_mam', outputQty: 9, durationMin: 10, unlock: 55, reputationGain: 2 },
   // GĐ1428: Nước ép táo ở máy xay. Mở 35 (> golden 30, ≥ cấp nguyên liệu).
   { id: 'recipe_nuoc_ep_tao', name: 'Nước ép táo', station: 'blender',
     inputs: [{ productId: 'x_tao', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
