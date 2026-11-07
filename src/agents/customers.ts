@@ -39,7 +39,7 @@ import {
 } from '../data/staff';
 import {
   CRITIC_CHANCE, CRITIC_HARD_UNLOCK, CRITIC_PENALTY_REVIEWS, CRITIC_UNLOCK, CRITIC_WINDOW_MINUTES,
-  criticReward, pickCriticDish, criticPraiseReviews,
+  criticReward, pickCriticDish, criticPraiseReviews, criticCallText,
 } from '../data/critic';
 import { metaRng } from '../core/rand';
 import { theftCatchChance, theftSpawnChance } from '../data/theftRisk';
@@ -1181,7 +1181,8 @@ export class CustomerManager {
     this.criticProduct = pickCriticDish(RECIPES, s.level, this.criticHard, (r) => stations.has(r.station) && !offSeason(r.outputId, s.day));
     this.criticUntil = s.minutes + CRITIC_WINDOW_MINUTES;
     this.criticAt = null;
-    s.notify(`🎩 Nhà phê bình gọi ${productById(this.criticProduct).name} — phục vụ trong ${CRITIC_WINDOW_MINUTES} phút!`);
+    const st = RECIPES.find((r) => r.outputId === this.criticProduct && stations.has(r.station))?.station;
+    s.notify(criticCallText(productById(this.criticProduct).name, st ? furnitureDef(st).name : null, CRITIC_WINDOW_MINUTES));
     playSfx('door');
   }
 

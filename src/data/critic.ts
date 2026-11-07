@@ -47,3 +47,7 @@ export function pickCriticDish<R extends { outputId: string; unlock: number; sta
   const list = pool.length ? pool : recipes;
   return list[Math.floor(metaRng() * list.length)].outputId;
 }
+
+/** GĐ1606 — câu gọi món kèm bếp đang có để nấu (người chơi biết ngay ra trạm nào); không có bếp thì giữ câu cũ. */
+export const criticCallText = (dish: string, station: string | null, minutes: number) =>
+  `🎩 Nhà phê bình gọi ${dish}${station ? ` (${station})` : ''} — phục vụ trong ${minutes} phút!`;

@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (07/11/2026)
+- **GĐ1606** — Thông báo nhà phê bình gọi món ghi kèm bếp đang có để nấu ("… gọi Xôi gấc (Bếp xôi) — …"); không thêm thông báo mới (`criticCallText`).
 - **GĐ1605** — Nhà phê bình lọc như đơn điện thoại: chỉ gọi món nấu được bằng trạm ĐANG có trong tiệm và không trái mùa (không khớp gì thì lùi về mọi món đã mở). Rà HappyTown P0/P1: ngoại hình riêng khách quen + nhờ vả nhiều ngày đã có.
 - **GĐ1604** — Sửa nhà phê bình (rà lại KE-HOACH I1): từ cấp 45 trước đây có thể gọi món khóa tới cấp 100 → không nấu được, phạt 3★1 chắc chắn. Nay nghiêm ngặt gọi mọi món ĐÃ MỞ (kể cả món mới mở); nhẹ chỉ gọi món mở từ ≥10 cấp. Chạy ở máy chạy sim như cũ → hẻm online không đổi. Đối chiếu xong 6 tài liệu tham khảo: mọi mục còn lại đều chờ siêu thị phase 2/backend.
 - **GĐ1603** — Mẹo cấp 32: mốc sao món nấu 20/100/800 lượt và dòng đếm 3★ ở Sổ nấu.

@@ -4,7 +4,7 @@ import { setSimSeed } from '../core/rand';
 import { CustomerManager } from '../agents/customers';
 import {
   CRITIC_CHANCE, CRITIC_HARD_UNLOCK, CRITIC_PENALTY_REVIEWS, CRITIC_REWARD_HARD, CRITIC_REWARD_SOFT,
-  CRITIC_SOFT_LAG, CRITIC_UNLOCK, CRITIC_WINDOW_MINUTES, criticReward, pickCriticDish,
+  CRITIC_SOFT_LAG, CRITIC_UNLOCK, CRITIC_WINDOW_MINUTES, criticReward, pickCriticDish, criticCallText,
 } from '../data/critic';
 import { RECIPES } from '../data/recipes';
 import { productById } from '../data/products';
@@ -54,6 +54,13 @@ describe('GĐ1605 — nhà phê bình chỉ gọi món nấu được bằng tr�
     const id = pickCriticDish(RECIPES, 100, true, () => false);
     expect(RECIPES.some((r) => r.outputId === id && r.unlock <= 100)).toBe(true);
     setSimSeed(1);
+  });
+});
+
+describe('GĐ1606 — câu gọi món kèm tên bếp', () => {
+  it('có bếp thì ghi trong ngoặc, không có thì giữ câu cũ', () => {
+    expect(criticCallText('Xôi gấc', 'Bếp xôi', 30)).toBe('🎩 Nhà phê bình gọi Xôi gấc (Bếp xôi) — phục vụ trong 30 phút!');
+    expect(criticCallText('Xôi gấc', null, 30)).toBe('🎩 Nhà phê bình gọi Xôi gấc — phục vụ trong 30 phút!');
   });
 });
 
