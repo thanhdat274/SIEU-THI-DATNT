@@ -1,7 +1,8 @@
 import type { DayStats } from '../core/store';
 import { COOKED_PRODUCT_IDS, COOK_UNLOCK } from './recipes';
 import { unlockedCombos, COMBO_UNLOCK } from './combos';
-import { SERVICES } from './services';
+import { expectedServiceIncomePerDay, SERVICES } from './services';
+import { customersPerDay } from './levels';
 import { ONLINE_UNLOCK, onlineOrderCap } from './online';
 import { expectedCookOrdersPerDay } from './phoneOrders';
 import { farmDailyCap, GARDEN_UNLOCK } from './garden';
@@ -169,6 +170,8 @@ export const NO_SERVICE_DESC = 'Lời {n}đ từ dịch vụ — chưa mở dị
 export interface QuestContext {
   /** GĐ1616 — đã mở ít nhất một dịch vụ (thiếu = không biết, giữ mô tả cũ). */
   hasService?: boolean;
+  /** GĐ1653: các dịch vụ đang có — để mục tiêu lời dịch vụ theo sức kiếm thật. */
+  serviceIds?: string[];
   /** GĐ1624: gian hàng app đang nhận đơn. */
   hasOnlineOpen?: boolean;
   /** GĐ1640: số luống đang có cây (undefined = không rõ). */
@@ -207,6 +210,13 @@ export interface QuestContext {
 }
 
 const scale = (base: number, level: number, step: number) => Math.round(base * (1 + step * (level - 1)));
+/** GĐ1653: mục tiêu "Lời từ dịch vụ" ≤ 70% lời kỳ vọng của các dịch vụ đang có (tròn nghìn, tối thiểu 1.000đ). */
+export const serviceQuestTarget = (lv: number, owned?: string[]) => {
+  const base = scale(20000, lv, 0.15);
+  if (!owned?.length) return base;
+  const cap = Math.max(1000, Math.floor((expectedServiceIncomePerDay(owned, customersPerDay(lv) * 2) * 0.7) / 1000) * 1000);
+  return Math.min(base, cap);
+};
 
 /** Món nhà làm bán được trong ngày (đọc từ sổ bán theo món). */
 const cookedSoldToday = (c: QuestContext) =>
@@ -287,7 +297,7 @@ export function dailyQuests(c: QuestContext): Quest[] {
   const optional: DailyDef[] = [
     // GĐ1584 — tặng quà khách quen (cấp ≥38, sau golden nên vòng xoay cấp thấp không đổi)
     { id: 'daily_gift', icon: '🎁', title: 'Tặng quà khách quen', unit: 'lần', target: 2, current: c.stats.gifts ?? 0, money: scale(40000, lv, 0.25), xp: scale(40, lv, 0.1), show: lv >= 38, desc: 'Mở bảng Khách quen, bấm 🎁 tặng {n} món khách thích' },
-    { id: 'daily_services', icon: '🏦', title: 'Lời từ dịch vụ', unit: 'đ', target: scale(20000, lv, 0.15), current: c.stats.services ?? 0, money: scale(50000, lv, 0.25), xp: scale(35, lv, 0.1), show: lv >= (SERVICES[0]?.unlock ?? 99), ...(c.hasService === false ? { desc: NO_SERVICE_DESC } : {}) },
+    { id: 'daily_services', icon: '🏦', title: 'Lời từ dịch vụ', unit: 'đ', target: serviceQuestTarget(lv, c.serviceIds), current: c.stats.services ?? 0, money: scale(50000, lv, 0.25), xp: scale(35, lv, 0.1), show: lv >= (SERVICES[0]?.unlock ?? 99), ...(c.hasService === false ? { desc: NO_SERVICE_DESC } : {}) },
     { id: 'daily_combo', icon: '🎁', title: 'Bán theo combo', unit: 'combo', target: scale(3, lv, 0.1), current: c.stats.combos ?? 0, money: scale(90000, lv, 0.25), xp: scale(55, lv, 0.1), show: lv >= COMBO_UNLOCK && unlockedCombos(lv).length > 0, ...(c.activeCombos === 0 ? { desc: NO_COMBO_DESC } : {}) },
     { id: 'daily_cooked', icon: '🍳', title: 'Bán món nhà làm', unit: 'món', target: scale(5, lv, 0.15), current: cookedSoldToday(c), money: scale(100000, lv, 0.25), xp: scale(60, lv, 0.1), show: lv >= COOK_UNLOCK, ...(c.hasCookStation === false ? { desc: NO_STATION_DESC('Bán {n} món nhà làm') } : {}) },
     // Trần đơn app/ngày (data/online.ts): đơn chỉ đổ về trong ONLINE_HOURS (870 phút), cách nhau

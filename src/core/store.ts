@@ -77,6 +77,7 @@ export const questContext = (s: GameState): QuestContext => {
     hasCookStation: s.furniture.some((f) => isCookStation(f.type)),
     hasCourier: s.staff.some((w) => w.role === 'courier'),
     hasService: (s.biz.services ?? []).length > 0,
+    serviceIds: s.biz.services ?? [],
     hasOnlineOpen: !!s.online?.open,
     activeCombos: s.activeCombos?.length ?? 0,
     plantedPlots: s.garden?.plots?.filter((p) => p.crop).length ?? 0,
