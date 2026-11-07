@@ -7,10 +7,9 @@ describe('GĐ1694 — tên mặt hàng không trùng', () => {
     const ids = PRODUCTS.map((p) => p.id);
     expect(ids.length).toBe(new Set(ids).size);
   });
-// Cặp trùng tên có từ trước (nhiều cặp cố ý: *_tp = hàng làm sẵn nhập về vs món tự nấu). Danh sách chỉ được GIẢM.
+// Cặp trùng tên có từ trước (nhiều cặp cố ý: *_tp = hàng làm sẵn nhập về vs món tự nấu). Danh sách chỉ được GIẢM. GĐ1697: hàng *_tp thêm hậu tố "(làm sẵn)".
 const LEGACY_DUP = new Set([
-  'x_banh_trang', 'xuc_xich_nuong',
-  'banh_trang_nuong', 'ca_phe_sua_da', 'tra_sua', 'xoi_dau_xanh', 'xoi_man', 'xoi_trung', 'xoi_dua', 'nuoc_mia',
+  'x_banh_trang', 'banh_trang_nuong',
 ]);
 
   it('không có cặp trùng tên MỚI (ngoài danh sách cũ đã khoá)', () => {
@@ -22,6 +21,11 @@ const LEGACY_DUP = new Set([
       else seen.set(k, p.id);
     }
     expect(dup).toEqual([]);
+  });
+  it('GĐ1697: mọi hàng làm sẵn *_tp ghi rõ "(làm sẵn)"', () => {
+    const tp = PRODUCTS.filter((p) => /^x_.*_tp$/.test(p.id));
+    expect(tp.length).toBeGreaterThan(0);
+    for (const p of tp) expect(p.name.endsWith('(làm sẵn)')).toBe(true);
   });
   it('danh sách cũ không chứa mã đã hết trùng (giữ danh sách gọn)', () => {
     const names = PRODUCTS.map((p) => p.name.trim().toLowerCase());
