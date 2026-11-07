@@ -166,3 +166,11 @@ describe('GĐ1564 dòng máy thu phí hôm nay', () => {
     expect(l.indexOf('🧸')).toBeLessThan(l.indexOf('🥤'));
   });
 });
+
+import { machineDayTotal } from '../data/machines';
+describe('GĐ1565 tổng máy trong ngày', () => {
+  it('bỏ dịch vụ không phải máy', () => {
+    expect(machineDayTotal({ laundry: 9000, photo_booth: 3000, scale_machine: 1000 })).toBe(4000);
+    expect(machineDayTotal(undefined)).toBe(0);
+  });
+});

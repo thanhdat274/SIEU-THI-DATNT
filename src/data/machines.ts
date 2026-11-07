@@ -83,3 +83,7 @@ export function machineDayLine(byService: Record<string, number> | undefined): s
   const total = rows.reduce((n, [, v]) => n + v, 0);
   return `🎰 Máy thu phí hôm nay: ${total.toLocaleString('vi-VN')}đ (${rows.map(([id, v]) => `${MACHINE_TYPES[id as MachineId].icon} ${v.toLocaleString('vi-VN')}đ`).join(' · ')})`;
 }
+
+/** GĐ1565 — tổng phí máy trong ngày (cho dòng "trong đó máy thu phí" ở Tổng kết ngày). */
+export const machineDayTotal = (byService: Record<string, number> | undefined): number =>
+  Object.entries(byService ?? {}).reduce((n, [id, v]) => n + (isMachine(id) ? v : 0), 0);

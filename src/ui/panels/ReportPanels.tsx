@@ -1,4 +1,5 @@
 import { trendMark } from '../trendMark';
+import { machineDayTotal } from '../../data/machines';
 import { cungGoodsAction, nextEventLine, sapEventActions, tiemXoiCungAction } from '../../data/dayEventActions';
 import { tiemXoiMorning, TIEM_XOI_WAGE } from '../../data/tiemXoi';
 import { useState } from 'react';
@@ -275,6 +276,7 @@ export function SummaryPanel({ day }: { day: number }) {
             <tbody>
               <tr><td style={styles.left}>Doanh thu</td><td>{formatMoney(st.revenue)}</td></tr>
               {!!st.comboDiscount && <tr><td style={styles.left}>  trong đó đã giảm cho {st.combos} combo</td><td style={{ opacity: 0.75 }}>-{formatMoney(st.comboDiscount)}</td></tr>}
+              {machineDayTotal(st.byService) > 0 && <tr><td style={styles.left}>  trong đó 🎰 máy thu phí</td><td style={{ opacity: 0.75 }}>{formatMoney(machineDayTotal(st.byService))}</td></tr>}
               <tr><td style={styles.left}>Lãi gộp trên hàng bán (giá bán − giá nhập)</td><td style={{ color: '#2ecc71' }}>{formatMoney(goodsRevenue - goodsCost - (st.comboDiscount ?? 0))}</td></tr>
               <tr><td style={styles.left}>Chi tiêu (nhập hàng, nội thất)</td><td>{st.spent > 0 ? `-${formatMoney(st.spent)}` : '0đ'}</td></tr>
               <tr><td style={styles.left}>Lương nhân viên</td><td>{st.wages > 0 ? `-${formatMoney(st.wages)}` : '0đ'}</td></tr>
