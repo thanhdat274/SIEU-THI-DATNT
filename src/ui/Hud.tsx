@@ -10,6 +10,7 @@ import { dirtLoss } from '../data/dirtLoss';
 import { worldActions } from '../core/actions';
 import { saveGame, resetGame, readBackupSave, restoreBackup } from '../core/save';
 import { FEATURES, xpToNext } from '../data/levels';
+import { xpGainDelta } from '../data/xpGain';
 import { formatMoney, productById } from '../data/products';
 import { trialCost } from '../core/slices/build';
 import { todayLine, todayMissedLine, todayPeakLine, todayExpectSoFar, todayTopSeller } from '../data/todayScore';
@@ -335,8 +336,9 @@ ${forecastText}`}>
           </span>
         </div>
         <MoneyChip money={money} />
-        <button className="hud-chip hud-level" title={`${xp}/${xpToNext(level)} XP · xem lộ trình cấp`} onClick={() => openPanel({ type: 'levels' })}>
+        <button className="hud-chip hud-level" style={{ position: 'relative' }} title={`${xp}/${xpToNext(level)} XP · xem lộ trình cấp`} onClick={() => openPanel({ type: 'levels' })}>
           <span className="hud-level-num">{level}</span>
+          <XpGain />
           <span>
             <small>Cấp · {Math.round(progress * 100)}%</small>
             <span className="hud-xp"><span style={{ width: `${progress * 100}%` }} /></span>
@@ -589,3 +591,19 @@ Bước ${stepNo}/${STORY_STEPS.length} của cốt truyện · bấm xem Nhiệ
 }
 
 /** Khách ở quầy xin ghi sổ / mặc cả / thiếu tiền lẻ: chọn nhanh, thế giới dừng chờ chủ quyết định (GĐ102). */
+
+/** GĐ1529: chip "+N XP" nổi cạnh cấp mỗi lần nhận XP (1,5 giây), thuần hiển thị. */
+function XpGain() {
+  const dayXp = useGame((s) => s.stats.xp);
+  const prev = useRef(dayXp);
+  const [shown, setShown] = useState(0);
+  useEffect(() => {
+    const d = xpGainDelta(prev.current, dayXp);
+    prev.current = dayXp;
+    if (!d) return;
+    setShown(d);
+    const t = setTimeout(() => setShown(0), 1500);
+    return () => clearTimeout(t);
+  }, [dayXp]);
+  return shown ? <span className="hud-xp-gain" style={{ position: 'absolute', top: -14, left: 6, fontSize: 11, fontWeight: 700, color: '#f1c40f', pointerEvents: 'none' }}>+{shown} XP</span> : null;
+}
