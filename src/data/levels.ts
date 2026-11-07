@@ -5,7 +5,7 @@ import { PRODUCTS } from './products';
 import { QUAN_NUOC_UNLOCK } from './quanNuoc';
 import { SHOP_TIERS } from './shopTiers';
 
-export const MAX_LEVEL = 100;
+export const MAX_LEVEL = 200;
 
 /** Tính năng mở khóa theo cấp. */
 export const FEATURES = {
