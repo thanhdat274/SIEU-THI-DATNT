@@ -1108,7 +1108,7 @@ export const RECIPES: Recipe[] = [
     outputId: 'nuoc_chom_chom', outputQty: 5, durationMin: 6, unlock: 41, reputationGain: 1 },
   // GĐ1429: Đậu hũ chiên sả ở chảo chiên. Mở 35 (> golden 30, ≥ cấp nguyên liệu).
   { id: 'recipe_dau_hu_chien_sa', name: 'Đậu hũ chiên sả', station: 'fryer',
-    inputs: [{ productId: 'x_dau_hu', quantity: 4 }],
+    inputs: [{ productId: 'x_dau_hu', quantity: 4 }, { productId: 'x_sa', quantity: 1 }], // GĐ1683: chiên sả cần sả
     outputId: 'dau_hu_chien_sa', outputQty: 6, durationMin: 8, unlock: 43, reputationGain: 1 },
   // GĐ1429: Trứng xào cà chua ở chảo chiên. Mở 35 (> golden 30, ≥ cấp nguyên liệu).
   { id: 'recipe_trung_xao_ca_chua', name: 'Trứng xào cà chua', station: 'fryer',
