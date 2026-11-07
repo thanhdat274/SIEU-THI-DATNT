@@ -24,3 +24,7 @@ export function masteryBadge(level: number, count: number): string {
   const t = sellMasteryTier(count);
   return level >= SELL_MASTERY_LEVEL && t > 0 ? ` · ${SELL_MASTERY_NAMES[t - 1].split(' ')[0]}` : '';
 }
+
+// GĐ1575 — lên bậc thông thạo thưởng chút XP (Đồng 20 / Bạc 60 / Vàng 150). Chỉ XP, không tiền.
+export const SELL_MASTERY_XP = [20, 60, 150] as const;
+export const masteryXp = (tier: number): number => SELL_MASTERY_XP[tier - 1] ?? 0;

@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (07/11/2026)
+- **GĐ1575** — Lên bậc thông thạo món (cấp 36) thưởng XP Đồng 20 / Bạc 60 / Vàng 150 (`masteryXp`), báo trong tin chúc mừng. Chỉ XP, không tiền; recordDiscovery vẫn LOCAL_ONLY.
 - **GĐ1574** — Sửa: chỉ tặng quà khách đã ghé ≥1 lần (trước sổ đếm cả khách chưa gặp, lệch với Sổ đầu ngày). Lỗi "Chưa quen — chờ khách ghé lần đầu".
 - **GĐ1573** — Sổ đầu ngày (cấp 38) nhắc "Còn N khách quen có thể tặng quà hôm nay" (chỉ khách đã ghé ≥1 lần; `giftableCount`).
 - **GĐ1572** — Sổ đầu ngày: trời mưa/bão + có máy đánh giày (cấp 42) nhắc "thu ×1,5 hôm nay" (ctx tuỳ chọn `furniture`). Ghi chú: longSessionLeak thỉnh thoảng trượt khi chạy full suite, chạy riêng qua.

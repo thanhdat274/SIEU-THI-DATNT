@@ -22,3 +22,20 @@ describe('GĐ1554 — huy hiệu thông thạo ở kệ', () => {
     expect(masteryBadge(40, 10)).toBe('');
   });
 });
+
+import { masteryXp } from '../data/sellMastery';
+import { useGame as G1575 } from '../core/store';
+describe('GĐ1575 XP lên bậc thông thạo', () => {
+  it('bảng XP', () => {
+    expect([masteryXp(1), masteryXp(2), masteryXp(3), masteryXp(0)]).toEqual([20, 60, 150, 0]);
+  });
+  it('store: vượt 200 lần bán ở cấp 36 cộng XP', () => {
+    const st = G1575.getState();
+    G1575.setState({ level: 36, soldEver: { mi: 199 }, biz: { ...st.biz, discoveryClaimed: [10, 25, 50, 100, 200, 500, 1000, 2000, 5000] } });
+    const xp0 = G1575.getState().xp, lv0 = G1575.getState().level;
+    G1575.getState().recordDiscovery(['mi']);
+    const s = G1575.getState();
+    expect(s.soldEver.mi).toBe(200);
+    expect(s.level > lv0 || s.xp - xp0 === 20).toBe(true);
+  });
+});
