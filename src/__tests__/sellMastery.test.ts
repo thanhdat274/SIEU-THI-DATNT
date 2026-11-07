@@ -13,3 +13,12 @@ describe('GĐ1553 — thông thạo món bán', () => {
     expect(masteryUps({ mi: 201 }, { mi: 202 })).toEqual([]);
   });
 });
+
+describe('GĐ1554 — huy hiệu thông thạo ở kệ', () => {
+  it('chỉ hiện từ cấp 36 khi đã có bậc', async () => {
+    const { masteryBadge } = await import('../data/sellMastery');
+    expect(masteryBadge(36, 1000)).toBe(' · 🥈');
+    expect(masteryBadge(35, 1000)).toBe('');
+    expect(masteryBadge(40, 10)).toBe('');
+  });
+});

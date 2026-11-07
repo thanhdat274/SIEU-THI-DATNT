@@ -18,3 +18,9 @@ export function masteryUps(before: Record<string, number>, after: Record<string,
   }
   return ups;
 }
+
+/** GĐ1554 — huy hiệu nhỏ ghép vào gợi ý món khi chọn hàng bày kệ (cấp ≥36, đã có bậc). */
+export function masteryBadge(level: number, count: number): string {
+  const t = sellMasteryTier(count);
+  return level >= SELL_MASTERY_LEVEL && t > 0 ? ` · ${SELL_MASTERY_NAMES[t - 1].split(' ')[0]}` : '';
+}
