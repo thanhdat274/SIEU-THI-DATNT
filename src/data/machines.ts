@@ -53,8 +53,8 @@ const NIGHT_MACHINES: ReadonlySet<string> = new Set(['vending_drink', 'massage_c
 
 /** Phí một lượt theo giờ trong ngày và cấp tiệm. */
 export function machineFeeAt(type: Furniture['type'], minutes: number, level: number, day?: number): number {
-  // GĐ1541 — cuối tuần trẻ con theo bố mẹ đi chợ: máy gắp thú ×1,5 (cấp ≥ NIGHT_FEE_LEVEL).
-  if (type === 'claw_machine' && day !== undefined && level >= NIGHT_FEE_LEVEL && isWeekend(day)) return Math.round(machineFee(type) * 1.5);
+  // GĐ1541 — cuối tuần trẻ con theo bố mẹ đi chợ: máy gắp thú ×1,5 (cấp ≥ NIGHT_FEE_LEVEL); GĐ1549 thêm máy kẹo bông.
+  if ((type === 'claw_machine' || type === 'cotton_candy') && day !== undefined && level >= NIGHT_FEE_LEVEL && isWeekend(day)) return Math.round(machineFee(type) * 1.5);
   const base = machineFee(type);
   if (level < NIGHT_FEE_LEVEL || minutes < NIGHT_FEE_START || !NIGHT_MACHINES.has(type)) return base;
   return Math.round(base * 1.5);

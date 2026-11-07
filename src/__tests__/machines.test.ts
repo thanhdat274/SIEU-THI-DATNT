@@ -127,3 +127,14 @@ describe('GĐ1548 — máy kẹo bông', () => {
     expect(furnitureDef('cotton_candy').price).toBe(MACHINE_TYPES.cotton_candy.price);
   });
 });
+
+describe('GĐ1549 — kẹo bông cuối tuần', () => {
+  it('cuối tuần ×1,5 như gắp thú, ngày thường giữ nguyên', async () => {
+    const { machineFeeAt } = await import('../data/machines');
+    const { isWeekend } = await import('../data/calendar');
+    const we = [1, 2, 3, 4, 5, 6, 7].find((d) => isWeekend(d))!;
+    const wd = [1, 2, 3, 4, 5, 6, 7].find((d) => !isWeekend(d))!;
+    expect(machineFeeAt('cotton_candy', 600, 46, we)).toBe(3_750);
+    expect(machineFeeAt('cotton_candy', 600, 46, wd)).toBe(2_500);
+  });
+});
