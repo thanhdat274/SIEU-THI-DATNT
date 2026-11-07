@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (07/11/2026)
+- GĐ1689: mực khoanh chiên giòn nay dùng bột chiên giòn — test mucKhoanhBot.
 - GĐ1688: cá rô phi chiên xù nay dùng bột chiên giòn, mẻ 5→6 — test caRoPhiXu.
 - GĐ1687: cánh gà nướng → "Cánh gà nướng mật ong", dùng mật ong, mẻ 8→10 — test canhGaMatOng.
 - GĐ1686: thêm Nước mắm chai (x_nuoc_mam, cấp 40); cá viên chiên nước mắm dùng nó, mẻ 6→9 — test caVienMam.

@@ -980,7 +980,7 @@ export const RECIPES: Recipe[] = [
     outputId: 'pizza_nuong_nong', outputQty: 6, durationMin: 8, unlock: 41, reputationGain: 1 },
   // GĐ1422: Mực khoanh chiên giòn ở chảo chiên. Mở 35 (> golden 30, ≥ cấp nguyên liệu).
   { id: 'recipe_muc_khoanh_chien', name: 'Mực khoanh chiên giòn', station: 'fryer',
-    inputs: [{ productId: 'x_muc_khoanh_dong_lanh', quantity: 1 }],
+    inputs: [{ productId: 'x_muc_khoanh_dong_lanh', quantity: 1 }, { productId: 'x_bot_chien', quantity: 1 }], // GĐ1689: chiên giòn cần bột chiên
     outputId: 'muc_khoanh_chien', outputQty: 6, durationMin: 8, unlock: 43, reputationGain: 1 },
   // GĐ1422: Cánh gà nướng ở bếp nướng. Mở 35 (> golden 30, ≥ cấp nguyên liệu).
   { id: 'recipe_canh_ga_nuong_mat', name: 'Cánh gà nướng mật ong', station: 'food_grill',
