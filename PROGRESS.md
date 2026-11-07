@@ -20,7 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (07/11/2026)
-- **GĐ1590** — Rà soát + QA save mới: bán đầu tiên ~38s, không lỗi console; chuỗi tặng quà GĐ1584–1589 gọn trong  (nhiệm vụ, báo cáo, XP sinh nhật). Lưu trữ GĐ1557–1564. Save QA đã xoá.
+- **GĐ1590** — Rà soát + QA save mới: bán đầu tiên ~38s, không lỗi console; chuỗi tặng quà GĐ1584–1589 gọn trong regularGift.ts (nhiệm vụ, báo cáo, XP sinh nhật). Lưu trữ GĐ1557–1564. Save QA đã xoá.
 - **GĐ1589** — Mẹo cấp 38: quà sinh nhật ×2 thân thiết +30 XP.
 - **GĐ1588** — Tặng quà đúng sinh nhật khách quen +30 XP.
 - **GĐ1587** — Bảng Khách quen hiện thêm "đã tặng N" hôm nay.
