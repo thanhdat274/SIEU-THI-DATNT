@@ -20,7 +20,7 @@ export const TIPS: readonly Tip[] = [
   { from: 37, text: 'Quà điểm danh thứ 7, chủ nhật được thêm 25% tiền.' },
   { from: 38, text: 'Mỗi ngày tặng mỗi khách quen 1 món họ thích để +3 thân thiết — đúng sinh nhật +6.' },
   { from: 40, text: 'Khách chơi máy xong thường mua thêm một món.' },
-  { from: 44, text: 'Thỉnh thoảng khách gắp trúng thú bông ở máy gắp — đặt máy chỗ dễ thấy cho vui mắt.' },
+  { from: 44, text: 'Thỉnh thoảng khách gắp trúng thú bông ở máy gắp — đặt máy chỗ dễ thấy cho vui mắt; số lần trúng ghi ở tab Dịch vụ và tổng kết ngày.' },
   { from: 45, text: 'Phục vụ kịp món nhà phê bình gọi sẽ có thêm đánh giá 5★.' },
   { from: 50, text: 'Ngày lễ hội, máy chụp ảnh lấy liền thu phí cao hơn 50%.' },
   { from: 25, text: 'Tab Dịch vụ cho biết máy nào hôm nay chưa ai chơi — dời máy đó gần cửa.' },

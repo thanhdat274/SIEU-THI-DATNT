@@ -47,3 +47,10 @@ describe('GĐ1589 mẹo quà sinh nhật', () => {
     expect(TIPS.some((t) => t.from === 38 && t.text.includes('+30 XP'))).toBe(true);
   });
 });
+
+describe('GĐ1594 mẹo gắp trúng có chỗ xem', () => {
+  it('cấp 44', async () => {
+    const { TIPS } = await import('../data/tips');
+    expect(TIPS.some((t) => t.from === 44 && t.text.includes('tab Dịch vụ'))).toBe(true);
+  });
+});
