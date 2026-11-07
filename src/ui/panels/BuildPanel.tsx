@@ -3,6 +3,7 @@ import { useGame } from '../../core/store';
 import { FLOOR_COLORS, PAINT_PRICE, ROOF_COLORS, SHOP_TIERS, WALL_COLORS, rentDelta, rentOf, spaceUsePct, type ShopStyle } from '../../data/shopTiers';
 import { FURNITURE, furnitureDef, type FurnitureType } from '../../data/furniture';
 import { festivalShopName, festivalShopOpen } from '../../data/festivalDeco';
+import { VIET_SET, VIET_SET_TIERS, vietSetCount, vietSetDecorBonus } from '../../data/decorSets';
 import { departmentsUnlockedAtTier } from '../../data/departments';
 import { bigBasketInsight, BIG_BASKET_TIER } from '../../data/bigBasket';
 import { meatCounterPayoff, meatChainCooled } from '../../data/meatCounterPayoff';
@@ -81,6 +82,13 @@ export function FurnitureTab() {
         <Callout tone="warn" style={{ marginBottom: 8 }} title="🥩 Chuỗi lạnh Khu thịt cá">
           <div style={{ marginTop: 2, fontSize: 12 }}>{coldLine}</div>
         </Callout>
+      )}
+      {level > 30 && (
+        <div style={{ fontSize: 12, opacity: 0.85, margin: '4px 0 8px' }}>
+          🏺 Bộ Đồ Việt: {vietSetCount(furniture)}/{VIET_SET.length} món
+          {' · '}mốc {VIET_SET_TIERS.map(([n, b]) => `${n} món +${b}🩷`).join(', ')}
+          {vietSetDecorBonus(furniture) > 0 && <b> · đang +{vietSetDecorBonus(furniture)}🩷</b>}
+        </div>
       )}
       <div style={{ display: 'grid', gap: 8 }}>
         {FURNITURE.map((f) => {

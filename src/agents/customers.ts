@@ -52,6 +52,7 @@ import {
   impulseChance, impulseOptions, impulseWeight, shelfAttention, stockedAttention, weightedPick, decorScoreOf, decorVisitBoost, type ShopGeom,
 } from '../data/layout';
 import { regionFlagDecorBonus, stockedProductIds } from '../data/regionFlags';
+import { vietSetDecorBonus } from '../data/decorSets';
 import { playSfx } from '../core/audio';
 
 /** Tỉ lệ món khách chọn trong số hàng đang giảm giá (nếu có). */
@@ -167,7 +168,7 @@ export class CustomerManager {
         // GĐ1495 — bỏ trần "+25% chậu cây": điểm trang trí 🩷 cộng dồn mọi đồ decor, kéo khách
         // theo sao danh tiếng (quán đẹp chỉ phát huy khi phục vụ tốt); không máy trong sim cũ → 0.
         // GĐ1505 — bảng hiệu đặc sản 4 miền: bày đủ bộ đặc sản miền (mối lái vùng xa) thì +🩷 thêm
-        const decorBoost = decorVisitBoost(decorScoreOf(s.furniture) + regionFlagDecorBonus(s.furniture, stockedProductIds(s.furniture), s.servedCounts ?? {}), reputationOf(s.repLog).overall);
+        const decorBoost = decorVisitBoost(decorScoreOf(s.furniture) + vietSetDecorBonus(s.furniture) + regionFlagDecorBonus(s.furniture, stockedProductIds(s.furniture), s.servedCounts ?? {}), reputationOf(s.repLog).overall);
         // Đang mưa thì ít người ra đường, tạnh mưa lại đông như thường
         const traffic = skyAt(s.weatherSeed, s.day, s.weather, s.minutes).traffic * festival * eventTraffic;
       // Bày hàng rẻ hơn giá gợi ý thì tiếng lành đồn xa, thêm người ghé; sàn bẩn thì ngại vào; giờ vàng kéo khách về đúng khung
