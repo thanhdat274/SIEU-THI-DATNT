@@ -473,7 +473,11 @@ export class CustomerManager {
             earnService(machineType, fee);
             this.coinFx.spawn(c.mesh.position, fee);
           }
-          if (clawWin(machineType, s.level, machineUid, s.day, s.minutes)) c.say('🧸 Gắp trúng!', 2.5);
+          if (clawWin(machineType, s.level, machineUid, s.day, s.minutes)) {
+            c.say('🧸 Gắp trúng!', 2.5);
+            const g = useGame.getState(); // GĐ1592 — đếm cho tab Dịch vụ
+            useGame.setState({ stats: { ...g.stats, clawWins: (g.stats.clawWins ?? 0) + 1 } });
+          }
         });
       }
     }

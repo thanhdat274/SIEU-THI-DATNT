@@ -245,3 +245,11 @@ describe('GĐ1579 máy tăng phí hôm nay', () => {
     expect(boostedMachinesToday(fs, 50, 3, 'sunny').includes('shoe_shine')).toBe(false);
   });
 });
+
+describe('GĐ1592 clawWinLine', () => {
+  it('null khi 0, đếm khi có', async () => {
+    const { clawWinLine } = await import('../data/machines');
+    expect(clawWinLine(undefined)).toBeNull();
+    expect(clawWinLine(2)).toContain('2 lần');
+  });
+});

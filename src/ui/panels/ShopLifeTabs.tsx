@@ -1,5 +1,5 @@
 import { useGame } from '../../core/store';
-import { machineDayLine, idleMachineHint } from '../../data/machines';
+import { machineDayLine, idleMachineHint, clawWinLine } from '../../data/machines';
 import { buyHomeItem, buyService, buyPet, buyUpgrade, buyVehicle, feedPet } from '../../core/biz';
 import { hasUpgrade, UPGRADES } from '../../data/upgrades';
 import { Callout } from './shared';
@@ -102,6 +102,7 @@ export function Services() {
         </div>
         <div style={{ fontSize: 12, marginTop: 4 }}>Hôm nay lời từ dịch vụ: <b>{formatMoney(stats.services ?? 0)}</b></div>
         {machineDayLine(stats.byService) && <div style={{ fontSize: 12, marginTop: 2 }}>{machineDayLine(stats.byService)}</div>}
+        {clawWinLine(stats.clawWins) && <div style={{ fontSize: 12, marginTop: 2 }}>{clawWinLine(stats.clawWins)}</div>}
         {idleMachineHint(furniture, stats.byService, minutes) && <div style={{ fontSize: 12, marginTop: 2, opacity: 0.8 }}>{idleMachineHint(furniture, stats.byService, minutes)}</div>}
       </div>
       {SERVICES.map((sv) => (

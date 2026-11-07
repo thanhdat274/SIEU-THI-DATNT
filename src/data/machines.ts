@@ -111,3 +111,8 @@ export function boostedMachinesToday(furniture: Furniture[], level: number, day:
   const types = [...new Set(furniture.filter((f) => isMachine(f.type) && !f.broken).map((f) => f.type as MachineId))];
   return types.filter((t) => machineFeeAt(t, 600, level, day, weather) > machineFee(t));
 }
+
+/** GĐ1592 — dòng tab Dịch vụ: số lần gắp trúng thú bông hôm nay (null nếu chưa). */
+export function clawWinLine(wins: number | undefined): string | null {
+  return wins && wins > 0 ? '🧸 Gắp trúng thú bông hôm nay: ' + wins + ' lần' : null;
+}
