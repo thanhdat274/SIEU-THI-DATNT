@@ -4,6 +4,7 @@ import { branchPowerPayoff } from '../data/branchPowerPayoff';
 import { landmarkNightLine } from '../data/landmark';
 import { licenseById, licenseStatus } from '../data/licenses';
 import { formatMoney } from '../data/products';
+import { shortLabel } from './shortLabel';
 import { st } from './branchStyles';
 
 /** Tab "🌙 Ban đêm" của cửa hàng tiện lợi: nhóm khách đêm, rượu bia, giao đêm, điện lạnh. */
@@ -70,7 +71,7 @@ export function BranchNightTab() {
             <span style={{ flex: 1 }}>{u.icon} <b>{u.name}</b> <span style={st.sub}>— {u.desc}</span></span>
             {hasPower(branch, u.id)
               ? <span style={{ color: '#2ecc71' }}>✅ Đã lắp</span>
-              : <button style={st.btn} disabled={money < u.price} onClick={() => buyBranchPower(u.id)}>Lắp · {formatMoney(u.price)}</button>}
+              : <button style={st.btn} disabled={money < u.price} onClick={() => buyBranchPower(u.id)}>{shortLabel(`Lắp · ${formatMoney(u.price)}`, u.price, money)}</button>}
           </div>
         ))}
         {ppo.line && <div style={{ ...st.sub, color: '#2ecc71', marginTop: 2 }}>{ppo.line}</div>}

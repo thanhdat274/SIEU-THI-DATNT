@@ -2,6 +2,7 @@ import { fitLots, nearestLife } from '../../data/freshness';
 import { storageCapacity, storageUsed, useGame } from '../../core/store';
 import { warehouseTier, WAREHOUSE_TIERS } from '../../data/warehouse';
 import { caseSize, describeUnits, formatMoney, productById } from '../../data/products';
+import { shortLabel } from '../shortLabel';
 import { storeMissRevenue, coldOverflow } from '../../data/advice';
 import { stockCapital, pendingCapital } from '../../data/stockCapital';
 import { stockTurn } from '../../data/stockTurn';
@@ -113,7 +114,7 @@ export function StoragePanel() {
             <b>Nâng lên {next.name}</b>: chứa {next.cases} thùng, giữ lạnh {next.cold} món, {next.racks} kệ, {next.fridges} tủ lạnh.
           </span>
           <button style={styles.btn} disabled={level < next.unlock || money < next.price} onClick={upgradeWarehouse}>
-            {level < next.unlock ? `🔒 Cấp ${next.unlock}` : formatMoney(next.price)}
+            {level < next.unlock ? `🔒 Cấp ${next.unlock}` : shortLabel(formatMoney(next.price), next.price, money)}
           </button>
         </div>
       )}

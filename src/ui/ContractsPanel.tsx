@@ -2,6 +2,7 @@ import { useGame } from '../core/store';
 import { describeRep, meetsRep, repScore, reputationOf } from '../data/reputation';
 import { CONTRACT_STREAK_BONUS, CONTRACT_STREAK_EVERY, CONTRACT_COMMIT_BONUS, SUPPLY_CONTRACTS, supplyContractById, contractValue, commitBonusValue, commitDeposit, contractStreakProgress, contractAcceptRoi, type SupplyContract } from '../data/contracts';
 import { formatMoney, productById } from '../data/products';
+import { shortLabel } from './shortLabel';
 import { Callout } from './panels/shared';
 import { commitTry } from '../data/commitTry';
 import { contractPortfolio } from '../data/contractPortfolio';
@@ -117,7 +118,7 @@ function ActiveContracts() {
                           : { c: '#2ecc71', t: `đáng: cọc ${formatMoney(ct.deposit)} hoàn khi giao, lấy +${formatMoney(ct.bonus)}` };
                       return <span style={{ color: line.c, width: '100%' }}>{line.t}.</span>;
                     })()}
-                    <button style={{ ...btn, background: money < deposit ? '#777' : '#f1c40f', color: '#222' }} disabled={money < deposit} onClick={() => commitContract(id)}>🤝 Cam kết</button>
+                    <button style={{ ...btn, background: money < deposit ? '#777' : '#f1c40f', color: '#222' }} disabled={money < deposit} onClick={() => commitContract(id)}>{shortLabel('🤝 Cam kết', deposit, money)}</button>
                   </>
                 )}
               </div>

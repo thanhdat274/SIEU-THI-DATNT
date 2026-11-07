@@ -16,3 +16,11 @@ describe('GĐ1632 — các bảng mua bằng tiền dùng shortLabel', () => {
       expect(readFileSync(`src/ui/panels/${f}.tsx`, 'utf8'), f).toContain('shortLabel(');
   });
 });
+
+describe('GĐ1634 — chi nhánh, hợp đồng, lô hàng, kho, tiệm xôi, sạp cũng nêu số thiếu', () => {
+  it('dùng shortLabel', async () => {
+    const { readFileSync } = await import('node:fs');
+    for (const f of ['BranchNightTab', 'BranchPanel', 'ContractsPanel', 'OrderPanel', 'panels/StoragePanel', 'panels/TiemXoiSection', 'panels/ZoneMapSection'])
+      expect(readFileSync(`src/ui/${f}.tsx`, 'utf8'), f).toContain('shortLabel(');
+  });
+});

@@ -8,6 +8,7 @@ import { Dropdown } from './Dropdown';
 import { lastActionResult } from '../net/coop';
 import { storageCapacity, storageUsed, useClock, useGame, wagesDue } from '../core/store';
 import { caseSize, casesFor, CATEGORIES, describeUnits, formatMoney, productById, unlockedProducts, type Category } from '../data/products';
+import { shortLabel } from './shortLabel';
 import { shelfLife } from '../data/freshness';
 import { visibleSuppliers } from '../data/visibleSuppliers';
 import { bulkDiscount, orderTotal, SUPPLIERS, supplierSells, trending, unitCost } from '../data/suppliers';
@@ -385,7 +386,7 @@ export function OrderPanel() {
                   disabled={money < offer.dealPrice}
                   style={{ ...st.btn, flexShrink: 0, background: money < offer.dealPrice ? 'rgba(255,255,255,0.08)' : 'rgba(155,89,182,0.5)' }}
                 >
-                  {money < offer.dealPrice ? 'Thiếu tiền' : 'Nhận lô'}
+                  {shortLabel('Nhận lô', offer.dealPrice, money)}
                 </button>
               )}
             </div>

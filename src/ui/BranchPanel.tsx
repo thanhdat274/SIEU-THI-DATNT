@@ -6,6 +6,7 @@ import { branchOperatingBalanceToday, branchBuildPayback } from '../data/branchN
 import { branchMissSummary } from '../data/venueTrend';
 import { vendingPayoff } from '../data/minorPayoff';
 import { formatMoney, productById, fmtMul } from '../data/products';
+import { shortLabel } from './shortLabel';
 import { haulTripPlan, autoHaulCfg, HAUL_REFILL_BELOW, HAUL_TRIP_EVERY, HAUL_BELOW_MIN, HAUL_BELOW_MAX, HAUL_EVERY_MIN, HAUL_EVERY_MAX } from '../data/branchHaul';
 import { Callout } from './panels/shared';
 import { BranchNightTab } from './BranchNightTab';
@@ -31,7 +32,7 @@ export function BranchPanel() {
         </ul>
         {level < CONVENIENCE.unlock
           ? <p style={st.warn}>🔒 Mở ở cấp {CONVENIENCE.unlock}</p>
-          : <button style={st.primary} disabled={money < CONVENIENCE.openCost} onClick={openBranch}>Mua mặt bằng</button>}
+          : <button style={st.primary} disabled={money < CONVENIENCE.openCost} onClick={openBranch}>{shortLabel('Mua mặt bằng', CONVENIENCE.openCost, money)}</button>}
         {level >= CONVENIENCE.unlock && money < CONVENIENCE.openCost && <p style={st.warn}>Chưa đủ tiền — có thể vay ở mục Kinh doanh.</p>}
       </>
     );
