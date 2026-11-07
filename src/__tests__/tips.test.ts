@@ -26,3 +26,10 @@ describe('GĐ1569 mẹo máy', () => {
     expect(typeof tipAt(1, 1, 0)).toBe('string');
   });
 });
+
+describe('GĐ1582 mẹo khen sàn sạch', () => {
+  it('cấp 35', async () => {
+    const { TIPS } = await import('../data/tips');
+    expect(TIPS.some((t) => t.from === 35 && t.text.includes('+50 XP'))).toBe(true);
+  });
+});
