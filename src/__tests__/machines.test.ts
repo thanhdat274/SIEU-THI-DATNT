@@ -253,3 +253,11 @@ describe('GĐ1592 clawWinLine', () => {
     expect(clawWinLine(2)).toContain('2 lần');
   });
 });
+
+describe('GĐ1593 tổng kết ngày dòng gắp trúng', () => {
+  it('ReportPanels hiện st.clawWins', async () => {
+    const fs = await import('node:fs');
+    const src = fs.readFileSync('src/ui/panels/ReportPanels.tsx', 'utf8');
+    expect(src).toContain('!!st.clawWins');
+  });
+});

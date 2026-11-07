@@ -279,6 +279,7 @@ export function SummaryPanel({ day }: { day: number }) {
               {!!st.comboDiscount && <tr><td style={styles.left}>  trong đó đã giảm cho {st.combos} combo</td><td style={{ opacity: 0.75 }}>-{formatMoney(st.comboDiscount)}</td></tr>}
               {machineDayTotal(st.byService) > 0 && <tr><td style={styles.left}>  trong đó 🎰 máy thu phí</td><td style={{ opacity: 0.75 }}>{formatMoney(machineDayTotal(st.byService))}</td></tr>}
               {giftReportLine(st.gifts) && <tr><td style={styles.left}>🎁 Quà tặng khách quen</td><td style={{ opacity: 0.75 }}>{giftReportLine(st.gifts)}</td></tr>}
+              {!!st.clawWins && <tr><td style={styles.left}>🧸 Khách gắp trúng thú bông</td><td style={{ opacity: 0.75 }}>{st.clawWins} lần</td></tr>}
               <tr><td style={styles.left}>Lãi gộp trên hàng bán (giá bán − giá nhập)</td><td style={{ color: '#2ecc71' }}>{formatMoney(goodsRevenue - goodsCost - (st.comboDiscount ?? 0))}</td></tr>
               <tr><td style={styles.left}>Chi tiêu (nhập hàng, nội thất)</td><td>{st.spent > 0 ? `-${formatMoney(st.spent)}` : '0đ'}</td></tr>
               <tr><td style={styles.left}>Lương nhân viên</td><td>{st.wages > 0 ? `-${formatMoney(st.wages)}` : '0đ'}</td></tr>
