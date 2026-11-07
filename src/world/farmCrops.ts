@@ -18,6 +18,7 @@ const CROP_LOOK: Record<string, CropLook> = {
   // GĐ1656 — nếp: dáng lúa, lá ngả vàng hơn; đậu xanh: bụi lá thấp (trước đây rơi về dáng cây ăn trái)
   nep: { kind: 'rice', canopy: 0x8fb848 },
   dau_xanh: { kind: 'leaf', canopy: 0x4f9a3c },
+  gac: { kind: 'tree', canopy: 0x3f7f35, trunk: 0x6b4a2b, fruit: 0xd9301f, fruitSize: 0.12, fruitN: 5 }, // GĐ1665 — giàn gấc trái đỏ
   bap: { kind: 'corn', canopy: 0x4f9e46, fruit: 0xe8c34a },
   mia: { kind: 'cane', canopy: 0x67a24a },
   traicay: { kind: 'tree', canopy: 0x3d8c3d, trunk: 0x7a5230, fruit: 0xd94f3d },

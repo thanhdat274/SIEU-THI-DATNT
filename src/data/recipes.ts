@@ -574,6 +574,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'xoi_thap_cam', name: 'Xôi thập cẩm', category: 'fresh', buy: 2900, sell: 5500, color: 0xe17055, unlock: 36 },
   { id: 'xoi_vo', name: 'Xôi vò', category: 'fresh', buy: 1500, sell: 2800, color: 0xf4d03f, unlock: 36 },
   { id: 'xoi_bap', name: 'Xôi bắp', category: 'fresh', buy: 1400, sell: 2600, color: 0xf9ca24, unlock: 36 },
+  // GĐ1665 — xôi gấc: xôi đỏ ngày Tết/đám cưới từ gấc trại
+  { id: 'xoi_gac', name: 'Xôi gấc', category: 'fresh', buy: 2000, sell: 3600, color: 0xd9301f, unlock: 43 },
   // GĐ1087: Xôi mít — xôi dừa thêm mít trộn, món ngọt đặc trưng miền Tây, dùng mít của nông trại (liên hệ nông trại → tiệm xôi)
   { id: 'xoi_mit', name: 'Xôi mít', category: 'fresh', buy: 1600, sell: 3000, color: 0xf8c471, unlock: 36 },
   // GĐ1321: Xôi nếp cẩm — món cẩm cao cấp của gạo nếp cẩm (mở cấp 70, sau mốc golden 30 → sim không đổi).
@@ -1659,6 +1661,9 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_xoi_bap', name: 'Xôi bắp', station: 'rice_station',
     inputs: [{ productId: 'nep', quantity: 1 }, { productId: 'bap', quantity: 1 }, { productId: 'x_dua_cot_hop', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
     outputId: 'xoi_bap', outputQty: 40, durationMin: 12, unlock: 36, reputationGain: 2 },
+  { id: 'recipe_xoi_gac', name: 'Xôi gấc', station: 'rice_station',
+    inputs: [{ productId: 'nep', quantity: 1 }, { productId: 'x_gac', quantity: 1 }, { productId: 'x_dua_cot_hop', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
+    outputId: 'xoi_gac', outputQty: 40, durationMin: 15, unlock: 43, reputationGain: 2 },
   { id: 'recipe_xoi_mit', name: 'Xôi mít', station: 'rice_station',
     inputs: [{ productId: 'nep', quantity: 1 }, { productId: 'x_mit', quantity: 1 }, { productId: 'x_dua_cot_hop', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
     outputId: 'xoi_mit', outputQty: 40, durationMin: 12, unlock: 36, reputationGain: 2 },

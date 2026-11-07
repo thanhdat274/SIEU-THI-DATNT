@@ -191,6 +191,7 @@ export const CROPS: CropDef[] = [
   { id: 'vai', productId: 'x_vai', name: 'Vải thiều', icon: '🍒', days: 10, regrowDays: 3, seedCost: 70000, yieldQty: 6, unlock: 32, season: [5, 7] },
   { id: 'nhan', productId: 'x_nhan', name: 'Nhãn', icon: '🍇', days: 11, regrowDays: 4, seedCost: 72000, yieldQty: 6, unlock: 32, season: [7, 9] },
   // GĐ1651: Thơm (dứa) — tự cung quán nước "Trà dứa"/"Nước ép thơm" (nông trại → quán nước); vụ dài, không tái sinh.
+  { id: 'gac', productId: 'x_gac', name: 'Gấc', icon: '🔴', days: 12, seedCost: 60000, yieldQty: 3, unlock: 43 }, // GĐ1665
   { id: 'thom', productId: 'x_thom', name: 'Thơm (dứa)', icon: '🍍', days: 9, seedCost: 30000, yieldQty: 4, unlock: 34 },
   // GĐ1652: Gừng — tự cung quán nước "Trà gừng nóng" và món bếp có gừng (gà kho gừng…); củ ngắn ngày, không tái sinh.
   { id: 'gung', productId: 'x_gung', name: 'Gừng', icon: '🫚', days: 6, seedCost: 20000, yieldQty: 4, unlock: 36 },

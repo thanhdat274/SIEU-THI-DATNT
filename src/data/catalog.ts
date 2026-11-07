@@ -161,6 +161,7 @@ export const CATALOG_PRODUCTS: Product[] = [
   p('x_cam', 'Cam', 'fresh', 10000, 15000, 0xcb4da5, 20),
   p('x_du_du', 'Đu đủ', 'fresh', 8000, 12000, 0xcb964d, 20),
   p('x_thom', 'Thơm (dứa)', 'fresh', 10000, 15000, 0xcb4f4d, 22),
+  p('x_gac', 'Trái gấc', 'fresh', 25000, 38000, 0xd9301f, 43), // GĐ1665 — nguyên liệu xôi gấc
   p('x_oi', 'Ổi', 'fresh', 10000, 15000, 0x4db2cb, 20),
   p('x_bo', 'Bơ', 'fresh', 18000, 26000, 0xcb6a4d, 26),
   p('x_mit', 'Mít', 'fresh', 16000, 24000, 0x59cb4d, 26),
