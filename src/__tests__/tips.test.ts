@@ -18,3 +18,11 @@ describe('GĐ1562 mẹo tặng quà khách quen', () => {
     expect(TIPS.some((t) => t.from === 38 && t.text.includes('khách quen'))).toBe(true);
   });
 });
+
+describe('GĐ1569 mẹo máy', () => {
+  it('có mẹo lễ hội cấp 50 và tăng dần không bắt buộc', async () => {
+    const { TIPS, tipAt } = await import('../data/tips');
+    expect(TIPS.some((t) => t.from === 50 && t.text.includes('lễ hội'))).toBe(true);
+    expect(typeof tipAt(1, 1, 0)).toBe('string');
+  });
+});

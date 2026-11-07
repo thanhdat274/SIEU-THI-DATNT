@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (07/11/2026)
+- **GĐ1569** — Thêm 3 mẹo: máy chưa ai chơi (25), gắp trúng (44), máy chụp ảnh ngày lễ (50).
 - **GĐ1568** — Máy chụp ảnh (cấp 50) ×1,5 phí vào ngày lễ hội (`festivalOn`); popup xây ghi "ngày lễ ×1,5". Cấp 50 > golden.
 - **GĐ1567** — Tab Dịch vụ: từ 14h nêu máy thu phí chưa ai chơi hôm nay, gợi ý dời gần cửa (`idleMachineHint`). Thuần UI.
 - **GĐ1566** — Máy gắp thú (cấp 44) ~1/20 lượt khách "🧸 Gắp trúng!" — chỉ bong bóng, không tiền; băm máy/ngày/phút, không rút RNG nên golden/sim không đổi (`clawWin`).
