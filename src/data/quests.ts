@@ -11,7 +11,7 @@ import { WEEKEND_SNACKS } from './products';
 import { SUPPLY_CONTRACTS } from './contracts';
 import { SHOP_TIERS } from './shopTiers';
 import { WAREHOUSE_TIERS } from './warehouse';
-import { ROLES } from './staff';
+import { maxStaff } from './staff';
 
 /** GĐ1618: cấp sớm nhất có hợp đồng cung cấp — bước cốt truyện hợp đồng ghi rõ khi chưa tới cấp. */
 export const FIRST_CONTRACT_LEVEL = Math.min(...SUPPLY_CONTRACTS.map((d) => d.unlock));
@@ -451,7 +451,8 @@ export function storyGateLevel(step: StoryStep): number {
   const id = step.id;
   if (id.startsWith('story_warehouse')) return WAREHOUSE_TIERS[step.target]?.unlock ?? 0;
   if (id.startsWith('story_expand') || id.startsWith('story_shop_tier')) return SHOP_TIERS[step.target]?.unlock ?? 0;
-  if (id.startsWith('story_hire')) return Math.min(...Object.values(ROLES).map((r) => r.unlock));
+  // GĐ1622: số người thuê bị trần maxStaff(cấp) → cấp nhỏ nhất đủ chỗ cho target người.
+  if (id.startsWith('story_hire')) { for (let l = 1; l <= 100; l++) if (maxStaff(l) >= step.target) return l; return 0; }
   if (id === 'story_first_contract') return FIRST_CONTRACT_LEVEL;
   return 0;
 }

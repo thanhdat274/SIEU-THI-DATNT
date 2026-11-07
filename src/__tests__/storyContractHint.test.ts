@@ -49,4 +49,12 @@ describe('GĐ1618 — gợi ý cấp mở hợp đồng ở bước cốt truy�
     expect(SHOP_TIERS[t('story_shop_tier_7')].name).toBe('Đại siêu thị');
     expect(WAREHOUSE_TIERS[t('story_warehouse_7')].name).toBe('Tổng kho logistics');
   });
+  it('GĐ1622: bước thuê N người nêu cấp đủ chỗ (trần maxStaff)', async () => {
+    const { maxStaff } = await import('../data/staff');
+    for (const st of STORY_STEPS.filter((s) => s.id.startsWith('story_hire'))) {
+      const l = storyGateLevel(st);
+      expect(maxStaff(l), st.id).toBeGreaterThanOrEqual(st.target);
+      expect(maxStaff(l - 1), st.id).toBeLessThan(st.target);
+    }
+  });
 });
