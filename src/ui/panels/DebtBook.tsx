@@ -62,7 +62,7 @@ export function DebtBook() {
                     : ''}
               </span>
             </span>
-            <button style={styles.btn} disabled={d.reminded} onClick={() => remindDebt(id)} title="Lần ghé tới chắc chắn trả, nhưng khách hơi ngại">Nhắc nợ</button>
+            <button style={styles.btn} disabled={d.reminded} onClick={() => remindDebt(id)} title="Lần ghé tới chắc chắn trả, nhưng khách hơi ngại">{d.reminded ? "✅ Đã nhắc" : "Nhắc nợ"}</button>
             <button style={styles.btn} onClick={() => forgiveDebt(id)} title="Mất tiền nhưng khách thân hơn">Xoá nợ</button>
           </div>
         );

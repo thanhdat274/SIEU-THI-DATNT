@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (07/11/2026)
+- GĐ1648: sổ nợ — nút "Nhắc nợ" đã bấm ghi "✅ Đã nhắc"; test debtRemindLabel.
 - GĐ1647: nút "Học" kỹ năng khi hết điểm ghi "Hết điểm — cấp N" (cấp có điểm kế tiếp); test skillNextPoint.
 - GĐ1646: nút "📣 Đăng bài" (MXH) khi khóa nêu lý do trên nút (🔒 cấp / cần N theo dõi); test socialPromoLabel.
 - GĐ1645: bước cốt truyện cấp 100 không còn gọi là "mốc cuối game" (trần cấp 200); test storyLevel100Text.
