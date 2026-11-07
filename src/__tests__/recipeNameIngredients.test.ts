@@ -15,6 +15,11 @@ const RULES: [RegExp, string[]][] = [
 ];
 
 describe('GĐ1692 — tên món khớp nguyên liệu gia vị', () => {
+  it('GĐ1702: mỗi luật bắt được tên mẫu', () => {
+    const samples = ['Cá basa chiên sả', 'Bánh mì bơ tỏi', 'Mực hấp gừng', 'Chè cốt dừa', 'Tôm hấp nước dừa', 'Cá viên chiên nước mắm', 'Cá hồi hấp xì dầu', 'Cánh gà nướng mật ong'];
+    RULES.forEach(([re], i) => expect(re.test(samples[i])).toBe(true));
+    expect(RULES[0][0].test('Bánh sảng khoái')).toBe(false); // không khớp chữ chứa 'sả'
+  });
   it('mọi công thức mở >30 có tên gia vị đều dùng nguyên liệu đó', () => {
     const bad: string[] = [];
     for (const r of RECIPES) {

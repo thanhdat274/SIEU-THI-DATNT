@@ -8,6 +8,11 @@ const RULES: [RegExp, RegExp][] = [
 ];
 
 describe('GĐ1701 — tên món quán nước khớp nguyên liệu', () => {
+  it('GĐ1702: mỗi luật thật sự bắt được tên mẫu (regex không câm với chữ Việt)', () => {
+    const samples = ['Trà gừng', 'Nước dừa', 'Trà chanh', 'Cam gừng đá', 'Trà sữa', 'Trà tắc', 'Trà mật ong', 'Soda bạc hà'];
+    RULES.forEach(([name], i) => expect(name.test(samples[i])).toBe(true));
+    expect(RULES[3][0].test('Cà phê cốt dừa')).toBe(false); // "cam" không khớp nhầm
+  });
   it('mọi món có tên nguyên liệu đều dùng nguyên liệu đó', () => {
     const bad: string[] = [];
     for (const q of QUAN_RECIPES) {
