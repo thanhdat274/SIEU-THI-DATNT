@@ -1,5 +1,6 @@
 import { useGame } from '../../core/store';
 import { productById, formatMoney, fmtMul } from '../../data/products';
+import { shortLabel } from '../shortLabel';
 import {
   ANIMALS, ANIMAL_ORDER, animalMode, CROPS, EGG_PER_TRAY, FARM_BUILDING_MAX_STAR, FARM_BUILDINGS, FARM_BUILDING_ORDER, FARM_ORDER_UNLOCK,
   FERTILIZER_PRODUCT, GARDEN_UNLOCK, cropById, inSeason, LAND_TIERS, monthOf, penCap, fattenReady, plotLabel, plotReady,
@@ -210,7 +211,7 @@ export function GardenPanel() {
                         <button key={c.id} style={{ ...styles.btn, background: money >= c.seedCost ? (onSeason && c.season ? '#1e8449' : '#2ecc71') : '#555', color: '#fff' }}
                           onClick={() => plantCrop(i, c.id)}
                           title={`~${c.days} ngày, thu ${c.yieldQty} món${c.regrowDays ? `, sau đó mỗi ${c.regrowDays} ngày ra trái tiếp` : ''}${c.season ? `, mùa vụ tháng ${c.season[0]}–${c.season[1]} (đúng vụ ×1,5)` : ''}`}>
-                          {c.icon} {c.name}{newUnlockMark(c.unlock, level)} ({formatMoney(c.seedCost)}){onSeason && c.season ? ' 🌤️' : ''}
+                          {c.icon} {c.name}{newUnlockMark(c.unlock, level)} ({money >= c.seedCost ? formatMoney(c.seedCost) : shortLabel('', c.seedCost, money)}){onSeason && c.season ? ' 🌤️' : ''}
                         </button>
                       );
                     })}
