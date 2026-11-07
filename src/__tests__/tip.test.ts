@@ -35,12 +35,14 @@ const fakeCustomer = (basket: { id: string; price: number }[]) => ({
 });
 
 describe('dineTip — công thức tip thuần (GĐ1492)', () => {
-  it('phục vụ ngay: 10% tiền món tươi; chờ ghế: còn nửa', () => {
+  it('phục vụ ngay: 10% tiền món tươi; chờ ≤ nửa ngưỡng vẫn đủ, chờ lâu còn 60% (GĐ1511)', () => {
     expect(TIP_RATE).toBe(0.1);
-    expect(dineTip(30_000, false)).toBe(3_000);
-    expect(dineTip(30_000, true)).toBe(1_500);
-    expect(dineTip(0, false)).toBe(0);
-    expect(dineTip(-5, false)).toBe(0);
+    expect(dineTip(30_000, 0)).toBe(3_000);
+    expect(dineTip(30_000, DINE_WAIT_SECONDS / 2)).toBe(3_000);
+    expect(dineTip(30_000, DINE_WAIT_SECONDS / 2 + 1)).toBe(1_800);
+    expect(dineTip(30_000, DINE_WAIT_SECONDS)).toBe(1_800);
+    expect(dineTip(0, 0)).toBe(0);
+    expect(dineTip(-5, 0)).toBe(0);
   });
 });
 
@@ -95,23 +97,23 @@ describe('tip đi vào két + sổ ngày khi khách ăn xong (GĐ1492)', () => {
     expect(said.some((t) => t.includes('tip'))).toBe(true);
   });
 
-  it('phải chờ ghế (diningWait > 0 khi ngồi): tip còn nửa', () => {
+  it('chờ ghế lâu (> nửa ngưỡng) mới ngồi: tip còn 60% (GĐ1511)', () => {
     seedTrúngQuay();
-    // Ban đầu không có ghế → khách chờ; rồi ghế xuất hiện → ngồi với waited = true
+    // Ban đầu không có ghế → khách chờ; rồi ghế xuất hiện → ngồi sau 7s chờ
     useGame.setState({ level: DINE_UNLOCK, furniture: [mkFurniture(1, 'dining_table', 0, 0)] });
     const c = fakeCustomer([{ id: [...COOKED_PRODUCT_IDS][0], price: 30_000 }]);
     expect(manager.maybeDineIn(c as never, fakeCounter as never)).toBe(true);
     expect(c.seat).toBeUndefined();
     useGame.setState({ furniture: [mkFurniture(1, 'dining_table', 0, 0), mkFurniture(2, 'chair', 0.85, 0)] });
-    manager.updateSeatWaiting(c as never, 4);
+    manager.updateSeatWaiting(c as never, 7);
     expect(c.seat).toEqual({ tableUid: 1, chairUid: 2 });
-    expect(c.diningWait).toBe(4);
+    expect(c.diningWait).toBe(7);
     const s0 = useGame.getState();
     c.plan[0]!();
     c.plan[1]!();
     const s1 = useGame.getState();
-    expect(s1.money).toBe(s0.money + 1_500);
-    expect(s1.stats.tips ?? 0).toBe(1_500);
+    expect(s1.money).toBe(s0.money + 1_800);
+    expect(s1.stats.tips ?? 0).toBe(1_800);
   });
 
   it('chờ quá DINE_WAIT_SECONDS → bỏ về buồn, ghi mất khách vì chờ, không tip', () => {

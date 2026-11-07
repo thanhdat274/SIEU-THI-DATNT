@@ -724,8 +724,8 @@ export class CustomerManager {
   private seatCustomer(c: Customer, seat: SeatInfo) {
     const chair = useGame.getState().furniture.find((f) => f.uid === seat.chairUid);
     if (!chair) return false;
-    // Tip tính theo việc có phải chờ ghế hay không — khoá ngay lúc ngồi
-    const waited = c.diningWait > 0;
+    // Tip tính theo số giây đã chờ ghế (GĐ1511: 2 nấc) — khoá ngay lúc ngồi
+    const waitedSec = c.diningWait;
     this.seatBusy.add(seat.chairUid);
     c.seat = seat;
     c.state = 'toSeat';
@@ -739,9 +739,9 @@ export class CustomerManager {
       () => {
         if (c.seat) this.seatBusy.delete(c.seat.chairUid);
         c.seat = undefined;
-        // GĐ1492 — tip = 10% tiền món tươi (chờ ghế thì còn nửa): tiền sạch vào két + sổ ngày
+        // GĐ1492 — tip = 10% tiền món tươi (chờ ghế lâu thì còn 60%): tiền sạch vào két + sổ ngày
         const freshTotal = c.basket.filter((it) => COOKED_PRODUCT_IDS.has(it.id)).reduce((n, it) => n + it.price, 0);
-        const tip = dineTip(freshTotal, waited);
+        const tip = dineTip(freshTotal, waitedSec);
         if (tip > 0) {
           earnTip(tip);
           this.coinFx.spawn(c.mesh.position, tip);

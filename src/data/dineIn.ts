@@ -68,12 +68,16 @@ export function wantsDineIn(args: { level: number; hasCooked: boolean; roll: num
 
 /**
  * GĐ1492 — tiền tip của một lượt ăn tại chỗ: 10% tổng tiền món nấu tươi khi được
- * phục vụ ngay; phải chờ ghế (mất kiên nhẫn một phần) thì còn nửa; bỏ về thì không tip.
- * `waited` = khách đã phải đứng chờ ghế bao lâu đó trước khi ngồi được.
+ * phục vụ nhanh; bỏ về thì không tip.
+ * GĐ1511 — tip 2 nấc theo kiên nhẫn: chờ ghế ≤ nửa ngưỡng (DINE_WAIT_SECONDS/2) vẫn đủ 10%;
+ * chờ lâu hơn còn 60% (khách hơi phật ý nhưng vẫn ngồi). Truyền số giây đã chờ (0 = ngồi ngay).
  */
-export function dineTip(freshTotal: number, waited: boolean): number {
+export const TIP_PATIENT_SECONDS = DINE_WAIT_SECONDS / 2;
+export const TIP_LATE_FACTOR = 0.6;
+export function dineTip(freshTotal: number, waitedSeconds: number): number {
   if (freshTotal <= 0) return 0;
-  return Math.round(freshTotal * TIP_RATE * (waited ? 0.5 : 1));
+  const f = waitedSeconds <= TIP_PATIENT_SECONDS ? 1 : TIP_LATE_FACTOR;
+  return Math.round(freshTotal * TIP_RATE * f);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
