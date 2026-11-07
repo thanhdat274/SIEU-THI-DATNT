@@ -52,3 +52,11 @@ export function machineFeeAt(type: Furniture['type'], minutes: number, level: nu
   if (level < NIGHT_FEE_LEVEL || minutes < NIGHT_FEE_START || !NIGHT_MACHINES.has(type)) return base;
   return Math.round(base * 1.5);
 }
+
+/** GĐ1539 — dòng thông tin khi cầm/dời máy thu phí ở chế độ xây: phí/lượt và số lượt hoàn vốn. */
+export function machinePopupLine(type: Furniture['type']): string | null {
+  if (!isMachine(type)) return null;
+  const t = MACHINE_TYPES[type];
+  const night = NIGHT_MACHINES.has(type) ? ' · tối ×1,5' : '';
+  return `${t.icon} ${t.fee.toLocaleString('vi-VN')}đ/lượt · hoàn vốn ~${Math.round(t.price / t.fee)} lượt${night}`;
+}

@@ -69,3 +69,13 @@ describe('GĐ1538 — phí máy giờ tối', () => {
     expect(machineFeeAt('vending_drink', 19 * 60, 34)).toBe(1_200);
   });
 });
+
+describe('GĐ1539 — dòng thông tin máy khi đặt', () => {
+  it('máy: phí + hoàn vốn (+ ghi chú tối); đồ thường: null', async () => {
+    const { machinePopupLine } = await import('../data/machines');
+    expect(machinePopupLine('massage_chair')).toContain('100 lượt');
+    expect(machinePopupLine('massage_chair')).toContain('tối');
+    expect(machinePopupLine('claw_machine')).not.toContain('tối');
+    expect(machinePopupLine('shelf')).toBeNull();
+  });
+});

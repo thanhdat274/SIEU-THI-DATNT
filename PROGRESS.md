@@ -116,3 +116,4 @@
 
 - **GĐ1537** — Ghế mát-xa chân (máy thu phí thứ 4, cấp 38): 240k, 2.400đ/lượt, hoàn vốn 100 lượt; Midnight #3 (thêm máy thu phí). Test machines.test.ts.
 - **GĐ1538** — Phí máy giờ tối: từ 18h (cấp ≥35) máy bán nước + ghế mát-xa ×1,5 phí/lượt (`machineFeeAt`). Test machines.test.ts.
+- **GĐ1539** — Dòng thông tin máy khi cầm/dời ở chế độ xây: phí/lượt, số lượt hoàn vốn, ghi chú "tối ×1,5" (`machinePopupLine`). Test machines.test.ts.
