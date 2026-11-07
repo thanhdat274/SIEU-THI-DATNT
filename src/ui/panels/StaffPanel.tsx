@@ -1,4 +1,5 @@
 import type * as React from 'react';
+import { lixiBlock, lixiCost, LIXI_PER_STAFF } from '../../data/lixi';
 import { useState } from 'react';
 import { Dropdown } from '../Dropdown';
 import { useGame } from '../../core/store';
@@ -141,6 +142,7 @@ export function StaffPanel() {
       {tab === 'team' && (
         <div style={{ display: 'grid', gap: 8 }}>
           <DeployBoard />
+          <LixiStrip />
           <ShiftValueStrip sum={shiftSum} hasData={!!stats?.byHour && Object.keys(stats.byHour).length > 0} />
           <NightStrip p={nightStrip} />
           {branch && <b style={staffSt.section}>🏬 Tiệm chính ({staff.length}/{max})</b>}
@@ -468,3 +470,19 @@ export const staffSt: Record<string, React.CSSProperties> = {
   hire: { flex: 'none', border: 'none', background: '#f1c40f', color: '#222', fontWeight: 700, borderRadius: 8, padding: '6px 14px', cursor: 'pointer', fontSize: 13 },
   toggle: { display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, marginTop: 4, padding: '8px 12px', borderRadius: 10, background: 'rgba(255,255,255,0.05)' },
 };
+
+/** GĐ1520: dải lì xì Tết — chỉ hiện trong dịp Tết khi có nhân viên. */
+function LixiStrip() {
+  const { day, lixiDay, staff, money, giveLixi } = useGame();
+  const block = lixiBlock(day, lixiDay ?? 0, staff.length, money);
+  if (block === 'not-tet' || block === 'no-staff') return null;
+  return (
+    <div style={{ background: '#c0392b22', borderRadius: 6, padding: 8, fontSize: 13 }}>
+      🧧 Tết đến — mừng tuổi mỗi người {formatMoney(LIXI_PER_STAFF)}, cả đội thêm kinh nghiệm như học một buổi.
+      <button style={{ ...styles.btn, marginTop: 6, width: '100%', background: '#c0392b', opacity: block ? 0.5 : 1 }}
+        disabled={!!block} onClick={() => giveLixi()}>
+        {block === 'given' ? 'Đã lì xì Tết này' : `🧧 Lì xì cả đội (${formatMoney(lixiCost(staff.length))})`}
+      </button>
+    </div>
+  );
+}

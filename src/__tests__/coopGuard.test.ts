@@ -72,6 +72,7 @@ const LOCAL_ONLY: Record<string, string> = {
   fire: 'cho nhân viên nghỉ việc theo id người',
   setShift: 'đổi ca một nhân viên theo id người',
   trainStaff: 'đào tạo một nhân viên theo id người',
+  giveLixi: 'lì xì Tết cả đội — cờ lixiDay toàn cục chốt một lần mỗi kỳ Tết',
   promoteStaff: 'thăng chức một nhân viên tiệm chính theo id người',
   transferStaff: 'điều nhân viên sang chi nhánh/tiệm chính theo id người',
   buyUpgrade: 'nâng cấp tiệm — cờ toàn cục, ai bấm cũng cùng kết quả',

@@ -339,6 +339,8 @@ export interface GameState {
   vendorDay: number;
   /** Ngày đã bán chợ phiên gần nhất (chặn bán lại cùng một ngày chợ). */
   marketClearedDay: number;
+  /** GĐ1520: ngày lì xì nhân viên gần nhất (0 = chưa). */
+  lixiDay: number;
   /** Bản ghi lần bán chợ phiên gần nhất (để tổng kết cuối ngày). */
   marketLast: { day: number; units: number; revenue: number };
   /** Người bán rong vào tới quầy: đưa đề nghị lấy sỉ. */
@@ -538,6 +540,7 @@ export interface GameState {
   denyStaffRest: (id: number, bump?: number) => void;
   /** Đào tạo nhân viên: tốn tiền, cộng kinh nghiệm, mỗi người một buổi mỗi ngày. */
   trainStaff: (id: number) => void;
+  giveLixi: () => void;
   /** Thăng chức nhân viên tiệm chính (thu ngân → trưởng quầy → quản lý). */
   promoteStaff: (id: number) => void;
   /** Thăng chức nhân viên chi nhánh. */
