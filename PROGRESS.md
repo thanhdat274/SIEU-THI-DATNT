@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (07/11/2026)
+- GĐ1659: bếp thêm Gà Đông Tảo hấp gừng (cấp 43, nồi nước) — gà quý + gừng trại; giá giữ dưới gà nướng để lời khuyên "bán lẻ hời hơn" không đổi.
 - GĐ1658: quán nước thêm 🐐 Sữa dê đá (cấp 36) — sữa dê trại có lối ra thứ hai (trước chỉ 1 công thức bếp).
 - GĐ1657: mít 🍈 (trước trùng 🍍 với thơm), nếp 🍙 (trước trùng 🌾 với lúa) — test mỗi giống một icon.
 - GĐ1656: lúa nếp/đậu xanh có dáng riêng trên luống (trước rơi về dáng cây ăn trái) + test mọi giống đều có dáng.

@@ -595,6 +595,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'canh_rau_thit', name: 'Canh rau thịt', category: 'fresh', buy: 6700, sell: 12700, color: 0x27ae60, unlock: 40 },
   // GĐ1094: Gà Đông Tảo nướng — mẻ (Đông Tảo 380k + rau 10k + muối 5k) = 395k → 3 phần × 180k = 540k, lãi 145k/mẻ, nấu hời hơn bán nguyên liệu (473k < 540k)
   { id: 'ga_dt_nuong', name: 'Gà Đông Tảo nướng', category: 'fresh', buy: 90000, sell: 180000, color: 0xb03a2e, unlock: 42 },
+  // GĐ1659 — gà Đông Tảo hấp gừng: lối ra thứ hai của gà quý nhà trại, dùng gừng trại
+  { id: 'ga_dt_hap_gung', name: 'Gà Đông Tảo hấp gừng', category: 'fresh', buy: 88000, sell: 172000, color: 0xe8c07a, unlock: 43 },
 
   // --- Combo ---
   { id: 'combo_xoi_doi', name: 'Suất Xôi Đôi', category: 'fresh', buy: 4300, sell: 8200, color: 0xe17055, unlock: 36 },
@@ -642,6 +644,9 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_ga_dt_nuong', name: 'Gà Đông Tảo nướng', station: 'food_grill',
     inputs: [{ productId: 'thit_ga_dt', quantity: 1 }, { productId: 'rau', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }],
     outputId: 'ga_dt_nuong', outputQty: 3, durationMin: 30, unlock: 42, reputationGain: 4 },
+  { id: 'recipe_ga_dt_hap_gung', name: 'Gà Đông Tảo hấp gừng', station: 'hot_kettle',
+    inputs: [{ productId: 'thit_ga_dt', quantity: 1 }, { productId: 'x_gung', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }],
+    outputId: 'ga_dt_hap_gung', outputQty: 3, durationMin: 30, unlock: 43, reputationGain: 4 },
   { id: 'recipe_canh', name: 'Canh rau thịt', station: 'hot_kettle',
     inputs: [{ productId: 'rau', quantity: 2 }, { productId: 'thit', quantity: 1 }],
     outputId: 'canh_rau_thit', outputQty: 12, durationMin: 18, unlock: 40, reputationGain: 3 },
