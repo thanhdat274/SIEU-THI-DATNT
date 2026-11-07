@@ -78,3 +78,11 @@ describe('GĐ1586 giftReportLine', () => {
     expect(giftReportLine(3)).toBe('3 món');
   });
 });
+
+describe('GĐ1587 giftPanelLine', () => {
+  it('kèm số đã tặng', async () => {
+    const { giftPanelLine } = await import('../data/regularGift');
+    expect(giftPanelLine(3, undefined)).toBe('🎁 Hôm nay còn tặng quà được 3 khách quen');
+    expect(giftPanelLine(1, 2)).toContain('đã tặng 2');
+  });
+});

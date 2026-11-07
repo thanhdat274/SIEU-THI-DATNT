@@ -43,3 +43,9 @@ export function sortForGift(
 export function giftReportLine(gifts: number | undefined): string | null {
   return gifts && gifts > 0 ? gifts + ' món' : null;
 }
+
+/** GĐ1587 — dòng đầu bảng Khách quen: còn tặng được bao nhiêu, đã tặng bao nhiêu hôm nay. */
+export function giftPanelLine(left: number, gifts: number | undefined): string {
+  const done = gifts ?? 0;
+  return '🎁 Hôm nay còn tặng quà được ' + left + ' khách quen' + (done > 0 ? ' · đã tặng ' + done : '');
+}
