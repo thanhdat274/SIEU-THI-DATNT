@@ -77,6 +77,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'hot_vit_lon', name: 'Hột vịt lộn', category: 'fresh', buy: 3500, sell: 7000, color: 0xd9b382, unlock: 34 },
   // GĐ1660 — hột vịt muối: lối ra thứ hai của trứng vịt trại
   { id: 'hot_vit_muoi', name: 'Hột vịt muối', category: 'fresh', buy: 4000, sell: 7000, color: 0xe9e2c8, unlock: 44 },
+  // GĐ1661 — trứng ngỗng luộc: lối ra thứ hai của trứng ngỗng trại (vẫn lỗ hơn bán lẻ → lời khuyên "bán" giữ nguyên)
+  { id: 'trung_ngong_luoc', name: 'Trứng ngỗng luộc', category: 'fresh', buy: 18000, sell: 30000, color: 0xf4f1e8, unlock: 45 },
   // GĐ1089: Chè bưởi — mẻ (bưởi 16k + đường 17k) = 33k → 6 phần × 11k = 66k, lãi 33k/mẻ, nấu hời hơn bán nguyên liệu (45k < 66k)
   { id: 'che_buoi', name: 'Chè bưởi', category: 'fresh', buy: 5500, sell: 11000, color: 0xa9dfbf, unlock: 38 },
   // GĐ1091: Chè nhãn — mẻ (nhãn 24k + đường 17k) = 41k → 6 phần × 11k = 66k, lãi 25k/mẻ, nấu hời hơn bán nguyên liệu (55k < 66k)
@@ -739,6 +741,9 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_hot_vit_muoi', name: 'Hột vịt muối', station: 'hot_kettle',
     inputs: [{ productId: 'trung_vit', quantity: 1 }, { productId: 'x_muoi', quantity: 2 }],
     outputId: 'hot_vit_muoi', outputQty: 10, durationMin: 15, unlock: 44, reputationGain: 2 },
+  { id: 'recipe_trung_ngong_luoc', name: 'Trứng ngỗng luộc', station: 'hot_kettle',
+    inputs: [{ productId: 'trung_goos', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }],
+    outputId: 'trung_ngong_luoc', outputQty: 10, durationMin: 15, unlock: 45, reputationGain: 3 },
 
   // --- Máy xay (blender) ---
   { id: 'recipe_sinh_to', name: 'Sinh tố trái cây', station: 'blender',
