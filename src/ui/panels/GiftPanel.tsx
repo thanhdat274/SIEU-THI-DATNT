@@ -15,7 +15,7 @@ export function GiftPanel() {
   const avg = recentAvgProfit(history);
   const gifts = DAILY_GIFTS.map((g) => scaledGiftEco(g, level, avg));
   const wheelPrizes = WHEEL_PRIZES.map((p) => scaledPrize(p, level));
-  const odds = wheelOdds(level);
+  const odds = wheelOdds(level, day);
   // Chuỗi còn giữ được hôm nay không: nối tiếp bình thường, hoặc được tha vì bỏ quên đúng 1 ngày (chuỗi ≥3, hồi 7 ngày)
   const graceToday = day - giftLastDay === 2 && giftStreak >= 3 && day - giftGraceDay >= 7;
   const live = claimedToday || giftLastDay === day - 1 || graceToday ? giftStreak : 0;

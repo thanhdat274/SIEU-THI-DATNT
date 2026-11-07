@@ -146,12 +146,13 @@ export const createProgressSlice = (set: SetState, get: GetState): Pick<GameStat
   spinWheel: () => {
     const s = get();
     if (s.wheelLastDay === s.day) return null;
-    const prize = scaledPrize(spinWheelPrize(), s.level);
+    const prize = scaledPrize(spinWheelPrize(s.level, s.day), s.level);
     set({
       wheelLastDay: s.day,
       wheelLastPrize: { icon: prize.icon, label: prize.label },
       ...(prize.boost ? { wheelBoost: 1 + prize.boost } : {}),
       ...(prize.money ? { money: s.money + prize.money } : {}),
+      ...(prize.furniture ? { furnStash: { ...s.furnStash, [prize.furniture]: (s.furnStash[prize.furniture] ?? 0) + 1 } } : {}),
     });
     if (prize.xp) get().addXp(prize.xp);
     s.notify(`🎡 Vòng quay may mắn: ${prize.icon} ${prize.label}!`);
