@@ -25,19 +25,25 @@ export function HudTour({ onDone }: { onDone: () => void }) {
     return () => window.removeEventListener('resize', measure);
   }, [step.sel]);
 
+  // Bấm vào element được khoanh thì đi tiếp: element nằm NGOÀI lớp phủ (lỗ chừa trống)
+  // nên click của nó KHÔNG bubble lên overlay — phải nghe ở document (bắt pha capture).
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const onDocClick = (e: MouseEvent) => {
+      const el = document.querySelector(step.sel);
+      if (!el || !el.contains(e.target as Node)) return;
+      if (index + 1 >= HUD_TOUR_STEPS.length) onDone();
+      else setIndex(index + 1);
+    };
+    document.addEventListener('click', onDocClick, true);
+    return () => document.removeEventListener('click', onDocClick, true);
+  }, [step.sel, index, onDone]);
+
   // Môi trường node (test render tĩnh) hoặc hết bước → không vẽ gì
   if (typeof document === 'undefined' || index >= HUD_TOUR_STEPS.length) return null;
   if (!rect) return null;
 
   const pad = 6;
-  const advance = (e: React.MouseEvent) => {
-    const el = document.querySelector(step.sel);
-    // Chỉ đi tiếp khi bấm đúng vùng được khoanh — bấm nền mờ thì bỏ qua
-    if (el && el.contains(e.target as Node)) {
-      if (index + 1 >= HUD_TOUR_STEPS.length) onDone();
-      else setIndex(index + 1);
-    }
-  };
   const [l, t, r, b] = [rect.left - pad, rect.top - pad, rect.right + pad, rect.bottom + pad];
   const vw = window.innerWidth;
   const vh = window.innerHeight;
@@ -47,7 +53,7 @@ export function HudTour({ onDone }: { onDone: () => void }) {
   const tipTop = tipBelow ? b + 10 : Math.max(10, t - 86);
 
   return (
-    <div className="hud-tour" onClick={advance}>
+    <div className="hud-tour">
       {shade(0, 0, vw, t, 'top')}
       {shade(0, b, vw, vh - b, 'bottom')}
       {shade(0, t, l, b - t, 'left')}

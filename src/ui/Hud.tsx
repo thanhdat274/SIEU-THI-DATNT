@@ -273,7 +273,7 @@ Bản đang chơi được giữ lại, khôi phục lần nữa là trở lại
     <>
       <Joystick />
       {/* GĐ1503 — tour HUD khoanh vùng: ngày đầu, xong hướng dẫn, không mở bảng nào */}
-      {!hudTourDone && !tutActive && openType == null && day === 1 && level <= 3 && location === 'Nhà của bạn'
+      {!hudTourDone && !tutActive && openType == null && day === 1 && level <= 3
         && <HudTour onDone={() => useGame.getState().markHudTourDone()} />}
       {/* Cột trái trên: ngày giờ, tiền, cấp; thông báo xếp ngay bên dưới nên không đè lên cụm bên phải */}
       <div className="hud-left">
