@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (07/11/2026)
+- GĐ1655: bếp thêm món "Cá kho thơm" (bếp nồi nấu, cấp 41: cá + thơm + nước mắm hàng xóm → 8 phần) — thơm nay trồng được ở trại; test caKhoThom; full xanh (longSessionLeak đỏ lẻ do tải, chạy lại xanh).
 - GĐ1654: thử thách tuần "Lời từ dịch vụ"/tháng "Dịch vụ đều tay" ≤ 70% sức kiếm cả kỳ của dịch vụ đang có (truyền biz.services vào target/desc, closeWeek/closeMonth, chip HUD, PeriodTabs); test serviceQuestCap; full 589/5230 xanh.
 - GĐ1653: việc ngày "Lời từ dịch vụ" ≤ 70% lời kỳ vọng của dịch vụ đang có (cấp 10 chỉ nạp tiền: 47k → ≤19k vì sức kiếm ~27k); thử thách tuần/tháng dịch vụ chưa đổi (chỉ theo cấp); test serviceQuestCap; full 589/5229 xanh.
 - GĐ1652: nông trại thêm giống "🫚 Gừng" (cấp 36, 6 ngày, 4 củ) tự cung Trà gừng nóng + món bếp có gừng; test gungCrop; full 588/5225 xanh.
