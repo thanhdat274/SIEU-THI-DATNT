@@ -39,6 +39,13 @@ interface SessionState {
   netBusy: boolean;
   /** Chỗ đang bị khoá trong hẻm (vd. 'build' = có người đang sửa bố cục). */
   alleyLocks: { key: string; id: number; name: string }[];
+  /**
+   * GĐ1496 — khoá một tab duy nhất: 'checking' đang xin khoá lúc mở trang, 'held' giữ được
+   * (tab này được chơi), 'blocked' tab khác đang mở game (chặn, hiện nút Thử lại).
+   */
+  tabLock: 'checking' | 'held' | 'blocked';
+  /** initSaves đã nạp xong bản lưu chưa — chỉ chạy sau khi giữ được khoá tab. */
+  savesLoaded: boolean;
 }
 
 export const useSession = create<SessionState>(() => ({
@@ -51,4 +58,6 @@ export const useSession = create<SessionState>(() => ({
   coop: null,
   netBusy: false,
   alleyLocks: [],
+  tabLock: 'checking',
+  savesLoaded: false,
 }));
