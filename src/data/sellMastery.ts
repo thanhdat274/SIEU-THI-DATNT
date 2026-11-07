@@ -22,7 +22,10 @@ export function masteryUps(before: Record<string, number>, after: Record<string,
 /** GĐ1554 — huy hiệu nhỏ ghép vào gợi ý món khi chọn hàng bày kệ (cấp ≥36, đã có bậc). */
 export function masteryBadge(level: number, count: number): string {
   const t = sellMasteryTier(count);
-  return level >= SELL_MASTERY_LEVEL && t > 0 ? ` · ${SELL_MASTERY_NAMES[t - 1].split(' ')[0]}` : '';
+  if (level < SELL_MASTERY_LEVEL || t === 0) return '';
+  // GĐ1576 — kèm tiến độ tới bậc kế (bậc Vàng thì thôi).
+  const next = SELL_MASTERY_TIERS[t];
+  return ` · ${SELL_MASTERY_NAMES[t - 1].split(' ')[0]}${next ? ` ${count.toLocaleString('vi-VN')}/${next.toLocaleString('vi-VN')}` : ''}`;
 }
 
 // GĐ1575 — lên bậc thông thạo thưởng chút XP (Đồng 20 / Bạc 60 / Vàng 150). Chỉ XP, không tiền.
