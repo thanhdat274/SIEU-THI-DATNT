@@ -16,3 +16,12 @@ describe('GĐ1581 XP khi đoàn khen', () => {
     expect(praiseXp(34)).toBe(0);
   });
 });
+
+import { dirtInspectionNote } from '../data/inspection';
+describe('GĐ1583 HUD nhắc đoàn kiểm tra', () => {
+  it('cấp 18 + sàn ≥30', () => {
+    expect(dirtInspectionNote(18, 30)).toContain('biên bản');
+    expect(dirtInspectionNote(17, 80)).toBe('');
+    expect(dirtInspectionNote(40, 29)).toBe('');
+  });
+});

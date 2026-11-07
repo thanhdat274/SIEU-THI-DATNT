@@ -91,3 +91,7 @@ export const finePaidXp = (choice: 0 | 1, fine: number, level: number): number =
 // GĐ1581 — đoàn khen sàn sạch: từ cấp 35 thưởng cố định 50 XP (giữ sàn sạch đáng được ghi nhận).
 export const PRAISE_XP = 50;
 export const praiseXp = (level: number): number => (level >= FINE_XP_LEVEL ? PRAISE_XP : 0);
+
+/** GĐ1583 — đuôi cảnh báo sàn bẩn trên HUD: từ cấp mở đoàn kiểm tra, nhắc sàn bẩn sẽ bị phạt. */
+export const dirtInspectionNote = (level: number, dirt: number): string =>
+  level >= INSPECTION_UNLOCK && dirt >= DIRT_FAIL_AT ? ' · đoàn kiểm tra ghé lúc này sẽ lập biên bản' : '';

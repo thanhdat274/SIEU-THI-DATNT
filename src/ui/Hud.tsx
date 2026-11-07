@@ -7,6 +7,7 @@ import { useAlertCap } from './alertCap';
 import { formatClock, questContext, useClock, useGame } from '../core/store';
 import { claimableCount, dailyQuests, dailySetProgress, storyQuest, STORY_STEPS } from '../data/quests';
 import { dirtLoss } from '../data/dirtLoss';
+import { dirtInspectionNote } from '../data/inspection';
 import { worldActions } from '../core/actions';
 import { saveGame, resetGame, readBackupSave, restoreBackup } from '../core/save';
 import { FEATURES, xpToNext } from '../data/levels';
@@ -362,7 +363,7 @@ ${forecastText}`}>
         {wheelBoost > 1 && <div className="hud-alert info">🍀 Vòng quay may mắn: hôm nay khách ghé đông thêm {Math.round((wheelBoost - 1) * 100)}%</div>}
         {dirt >= 30 && (
           <div className={`hud-alert ${dirt >= 60 ? 'warn' : 'info'}`}>
-            🧹 Sàn tiệm bẩn ({Math.round(dirt)}%){dirt >= 60 ? ', khách ngại vào' : ''} · đứng trong tiệm bấm <b>[C]</b> (giữ phím) để tự lau
+            🧹 Sàn tiệm bẩn ({Math.round(dirt)}%){dirt >= 60 ? ', khách ngại vào' : ''}{dirtInspectionNote(level, dirt)} · đứng trong tiệm bấm <b>[C]</b> (giữ phím) để tự lau
             {(() => {
               const s = useGame.getState().stats;
               const dl = dirtLoss({ dirt, level, customers: s.customers, revenue: s.revenue });
