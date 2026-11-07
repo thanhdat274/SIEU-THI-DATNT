@@ -315,7 +315,7 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   // GĐ1422: Mực khoanh chiên giòn — lối ra ĐẦU TIÊN của mực khoanh đông lạnh.
   { id: 'muc_khoanh_chien', name: 'Mực khoanh chiên giòn', category: 'fresh', buy: 6000, sell: 9000, color: 0xe8c890, unlock: 43 },
   // GĐ1422: Cánh gà nướng — lối ra ĐẦU TIÊN của cánh gà đông lạnh.
-  { id: 'canh_ga_nuong_mat', name: 'Cánh gà nướng', category: 'fresh', buy: 6000, sell: 9000, color: 0xb8602a, unlock: 45 },
+  { id: 'canh_ga_nuong_mat', name: 'Cánh gà nướng mật ong', category: 'fresh', buy: 6000, sell: 9000, color: 0xb8602a, unlock: 45 },
   // GĐ1422: Chả cá thác lác chiên — lối ra ĐẦU TIÊN của chả cá thác lác.
   { id: 'cha_ca_thac_lac_chien', name: 'Chả cá thác lác chiên', category: 'fresh', buy: 6000, sell: 9000, color: 0xd8b070, unlock: 47 },
   // GĐ1422: Cá hồi phi lê nướng — lối ra ĐẦU TIÊN của cá hồi phi lê.
@@ -983,9 +983,9 @@ export const RECIPES: Recipe[] = [
     inputs: [{ productId: 'x_muc_khoanh_dong_lanh', quantity: 1 }],
     outputId: 'muc_khoanh_chien', outputQty: 6, durationMin: 8, unlock: 43, reputationGain: 1 },
   // GĐ1422: Cánh gà nướng ở bếp nướng. Mở 35 (> golden 30, ≥ cấp nguyên liệu).
-  { id: 'recipe_canh_ga_nuong_mat', name: 'Cánh gà nướng', station: 'food_grill',
-    inputs: [{ productId: 'x_canh_ga', quantity: 1 }],
-    outputId: 'canh_ga_nuong_mat', outputQty: 8, durationMin: 12, unlock: 45, reputationGain: 2 },
+  { id: 'recipe_canh_ga_nuong_mat', name: 'Cánh gà nướng mật ong', station: 'food_grill',
+    inputs: [{ productId: 'x_canh_ga', quantity: 1 }, { productId: 'x_mat_ong', quantity: 1 }], // GĐ1687: nướng mật ong
+    outputId: 'canh_ga_nuong_mat', outputQty: 10, durationMin: 12, unlock: 45, reputationGain: 2 },
   // GĐ1422: Chả cá thác lác chiên ở chảo chiên. Mở 35 (> golden 30, ≥ cấp nguyên liệu).
   { id: 'recipe_cha_ca_thac_lac_chien', name: 'Chả cá thác lác chiên', station: 'fryer',
     inputs: [{ productId: 'x_cha_ca_thac_lat', quantity: 1 }],
