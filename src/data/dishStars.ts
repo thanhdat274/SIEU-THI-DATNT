@@ -75,3 +75,9 @@ export function starBoostBlock(level: number, served: number, have: number): Sta
 export function dishMaxLabel(goal: DishStarGoal): string | null {
   return goal.nextAt == null ? ' · 🏆 bậc cao nhất' : null;
 }
+
+/** GĐ1602 — dòng đầu Sổ nấu: bao nhiêu món đã đạt 3★ (null nếu chưa có món nào). */
+export function maxedDishLine(served: Record<string, number>, ids: readonly string[]): string | null {
+  const n = new Set(ids.filter((id) => dishStars(served[id] ?? 0) >= DISH_STAR_STEPS.length)).size;
+  return n > 0 ? '🏆 ' + n + ' món đã đạt 3★' : null;
+}

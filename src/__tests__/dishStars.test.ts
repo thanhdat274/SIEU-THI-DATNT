@@ -103,3 +103,11 @@ describe('GĐ1601 dishMaxLabel', () => {
     expect(dishMaxLabel(dishStarGoalOf(id, 900))).toContain('bậc cao nhất');
   });
 });
+
+describe('GĐ1602 maxedDishLine', () => {
+  it('đếm món 3★, trùng id tính 1', async () => {
+    const { maxedDishLine } = await import('../data/dishStars');
+    expect(maxedDishLine({}, ['a'])).toBeNull();
+    expect(maxedDishLine({ a: 900, b: 50 }, ['a', 'a', 'b'])).toBe('🏆 1 món đã đạt 3★');
+  });
+});

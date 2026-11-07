@@ -11,7 +11,7 @@ import { supplyOutletOf } from '../../data/supplyOutlet';
 import { splitLockedRecipes } from '../../data/cookList';
 import { cookSpeed, bartenderBoost } from '../../core/slices/orders';
 import { FESTIVALS, festivalOn } from '../../data/calendar';
-import { dishStarGoalOf, dishVessel, dishMaxLabel, STAR_BOOST_ITEM, STAR_BOOST_UNLOCK } from '../../data/dishStars';
+import { dishStarGoalOf, dishVessel, dishMaxLabel, maxedDishLine, STAR_BOOST_ITEM, STAR_BOOST_UNLOCK } from '../../data/dishStars';
 import { Footer, styles, Tabs } from './shared';
 
 /** Sổ nấu: công thức theo trạm, nguyên liệu lấy từ kho (lô cận hạn trước), mẻ xong về kho chờ bày kệ. */
@@ -41,6 +41,7 @@ export function CookPanel() {
   return (
     <>
       <h2 style={styles.title}>🍳 Sổ nấu</h2>
+      {maxedDishLine(servedCounts, RECIPES.map((r) => r.outputId)) && <p style={styles.sub}>{maxedDishLine(servedCounts, RECIPES.map((r) => r.outputId))}</p>}
       {/* GĐ99: mô tả đủ 4 câu chiếm ~1/4 màn 390px — giữ 2 dòng chính, giải thích vào thẻ gập */}
       <p style={{ ...styles.sub, marginBottom: 4 }}>
         Món nhà làm không nhập được ở mối nào — nấu từ nguyên liệu trong kho (lô cận hạn dùng trước), nấu xong tự về kho bày như hàng thường.
