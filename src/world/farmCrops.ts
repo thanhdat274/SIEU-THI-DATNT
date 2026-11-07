@@ -37,6 +37,7 @@ const CROP_LOOK: Record<string, CropLook> = {
   gung: { kind: 'leaf', canopy: 0x6aa84f },
   mit: { kind: 'tree', canopy: 0x3f8f45, fruit: 0x9fb545, fruitSize: 0.1, fruitN: 3 },
   buoi: { kind: 'tree', canopy: 0x3c8c3f, fruit: 0xd9e06a, fruitSize: 0.08, fruitN: 4 },
+  sa: { kind: 'cane', canopy: 0x9acd32 }, // GĐ1704 — bụi sả lá dài xanh nhạt
 };
 /** GĐ1656: giống có dáng riêng (không rơi về dáng cây ăn trái mặc định) — để test. */
 export const cropHasLook = (id: string) => id in CROP_LOOK;

@@ -197,6 +197,7 @@ export const CROPS: CropDef[] = [
   { id: 'gung', productId: 'x_gung', name: 'Gừng', icon: '🫚', days: 6, seedCost: 20000, yieldQty: 4, unlock: 36 },
   { id: 'mit', productId: 'x_mit', name: 'Mít', icon: '🍈', days: 14, regrowDays: 5, seedCost: 90000, yieldQty: 3, unlock: 36 },
   { id: 'buoi', productId: 'x_buoi', name: 'Bưởi', icon: '🍐', days: 13, regrowDays: 5, seedCost: 80000, yieldQty: 4, unlock: 38, season: [12, 2] },
+  { id: 'sa', productId: 'x_sa', name: 'Sả', icon: '🌿', days: 5, seedCost: 6000, yieldQty: 6, unlock: 40 }, // GĐ1704: trồng sả cho đậu hũ/cá basa chiên sả, trà sả đá
 ];
 
 /** Tháng thật (1–12) của ngày game: ngày 1 của ván là 1/1 theo data/calendar. */

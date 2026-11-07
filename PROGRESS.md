@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (07/11/2026)
+- GĐ1704: nông trại trồng được Sả 🌿 (cấp 40, 5 ngày, hạt 6k, thu 6) — dáng bụi lá dài; cấp cho đậu hũ/cá basa chiên sả, trà sả đá. Test cropSa.
 - GĐ1703: quán nước thêm món mát "Trà sả đá" 🌿 (cấp 40, 15k: trà + sả + đường + đá) — lối ra quán cho sả; test quanTraSa.
 - GĐ1702: test tên-nguyên liệu (bếp + quán) tự kiểm mỗi luật bắt được tên mẫu và không khớp nhầm — chống regex câm với chữ Việt.
 - GĐ1701: test khoá tên món quán nước khớp nguyên liệu (gừng/dừa/chanh/cam/sữa/tắc/mật ong/bạc hà) — hiện đã sạch, quanNameIngredients.
