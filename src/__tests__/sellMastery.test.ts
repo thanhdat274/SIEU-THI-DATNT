@@ -1,0 +1,15 @@
+import { describe, it, expect } from 'vitest';
+import { sellMasteryTier, masteryUps } from '../data/sellMastery';
+
+describe('GĐ1553 — thông thạo món bán', () => {
+  it('bậc theo 200/1000/4000', () => {
+    expect(sellMasteryTier(199)).toBe(0);
+    expect(sellMasteryTier(200)).toBe(1);
+    expect(sellMasteryTier(1000)).toBe(2);
+    expect(sellMasteryTier(4000)).toBe(3);
+  });
+  it('chỉ báo món vừa vượt ngưỡng', () => {
+    expect(masteryUps({ mi: 199, nuoc: 50 }, { mi: 201, nuoc: 51 })).toEqual([['mi', 1]]);
+    expect(masteryUps({ mi: 201 }, { mi: 202 })).toEqual([]);
+  });
+});

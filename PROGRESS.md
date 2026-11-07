@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (07/11/2026)
+- **GĐ1553** — Thông thạo món bán (Xóm B5): bán 1 món cả ván 200/1.000/4.000 lần → báo 🥉/🥈/🥇 (cấp ≥36), đọc từ `soldEver` sẵn có, không thêm tiền/XP/save (`src/data/sellMastery.ts`). Test sellMastery.test.ts.
 - **GĐ1552** — "Bạn có biết?" (Xóm B10): dải mẹo xoay 30 phút game trên HUD, lọc theo cấp (`src/data/tips.ts`), nút ✕ ẩn trong phiên (không vào save). Đã thấy hiện trên save khách mới. Test tips.test.ts.
 - **GĐ1551** — Máy chụp ảnh lấy liền (máy thu phí thứ 7, cấp 50): 300k, 3.000đ/lượt, hoàn vốn 100 lượt. Test machines.test.ts.
 - **GĐ1550** — Audit 1541–1549 + QA save trắng (IndexedDB trống trước/sau): bán món đầu ~38 giây game sau mở cửa; máy kẹo bông + đánh giày ở cấp 46 mỗi máy thu 1 lượt đúng giá. Sửa từ audit: dòng thông tin máy ghi thêm "cuối tuần ×1,5" cho gắp thú/kẹo bông. Máy thu phí gom hết ở machines.ts, không trùng.

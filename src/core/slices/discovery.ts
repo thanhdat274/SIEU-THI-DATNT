@@ -7,6 +7,8 @@
  */
 import { formatMoney } from '../../data/products';
 import { discoveryReward, milestonesClaimed, nextMilestone, recordSold, soldCount } from '../../data/discovery';
+import { masteryUps, SELL_MASTERY_LEVEL, SELL_MASTERY_NAMES } from '../../data/sellMastery';
+import { productById } from '../../data/products';
 import type { GameState, GetState, SetState } from '../gameTypes';
 
 export const createDiscoverySlice = (set: SetState, get: GetState): Pick<GameState, 'recordDiscovery'> => ({
@@ -15,6 +17,11 @@ export const createDiscoverySlice = (set: SetState, get: GetState): Pick<GameSta
     const s = get();
     const newEver = recordSold(s.soldEver, ids);
     if (newEver === s.soldEver) return; // không có món hợp lệ nào đổi — bỏ qua (không đẻ state mới)
+    if (s.level >= SELL_MASTERY_LEVEL) {
+      for (const [id, tier] of masteryUps(s.soldEver, newEver)) {
+        s.notify(`${SELL_MASTERY_NAMES[tier - 1]} — tiệm đã thông thạo bán ${productById(id)?.name ?? id}!`);
+      }
+    }
     const count = soldCount(newEver);
     const claimed = s.biz.discoveryClaimed ?? [];
     const newly = milestonesClaimed(count, claimed);
