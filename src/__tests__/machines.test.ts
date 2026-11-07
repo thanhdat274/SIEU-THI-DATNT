@@ -197,3 +197,16 @@ describe('GĐ1567 máy chưa ai chơi', () => {
     expect(idleMachineHint(fs, { vending_drink: 1, claw_machine: 1 }, 900)).toBeNull();
   });
 });
+
+import { machineFeeAt as feeAt1568, machinePopupLine as popup1568 } from '../data/machines';
+import { festivalOn } from '../data/calendar';
+describe('GĐ1568 máy chụp ảnh ngày lễ', () => {
+  it('×1,5 ngày lễ từ cấp 50', () => {
+    let fest = 1; while (!festivalOn(fest)) fest++;
+    let plain = 1; while (festivalOn(plain)) plain++;
+    expect(feeAt1568('photo_booth', 600, 50, fest)).toBe(4500);
+    expect(feeAt1568('photo_booth', 600, 49, fest)).toBe(3000);
+    expect(feeAt1568('photo_booth', 600, 50, plain)).toBe(3000);
+    expect(popup1568('photo_booth')).toContain('ngày lễ');
+  });
+});
