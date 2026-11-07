@@ -12,3 +12,14 @@ describe('Playtest P1 T5 — ngày đầu điền gợi ý giữ vốn', () => {
     expect(suggestBudget(100_000, 90_000, 1)).toBe(10_000);
   });
 });
+
+import { describe as d2, expect as e2, it as i2 } from 'vitest';
+import { suggestBudget as sb2 } from '../data/suggestBudget';
+d2('suggestBudget sàn 1 thùng ngày 1 (GĐ1514)', () => {
+  i2('trần 40% không thấp hơn thùng gợi ý rẻ nhất, vẫn không vượt tiền rảnh; ngày sau không đổi', () => {
+    e2(sb2(300_000, 0, 1, 122_400)).toBe(122_400);
+    e2(sb2(300_000, 0, 1, 90_000)).toBe(120_000);
+    e2(sb2(100_000, 0, 1, 122_400)).toBe(100_000);
+    e2(sb2(300_000, 0, 2, 122_400)).toBe(300_000);
+  });
+});

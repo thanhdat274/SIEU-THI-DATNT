@@ -223,9 +223,11 @@ export function OrderPanel() {
   const fillSuggest = () => {
     const c: Record<string, number> = {};
     const g = useGame.getState();
-    const budget = suggestBudget(money, wagesDue(g), g.day);
+    const cand = shown.filter((it) => it.suggest > 0 && displayable(it.p.id));
+    const minCase = Math.min(...cand.map((r) => orderTotal(supplier, { [r.p.id]: caseSize(r.p.id) }, day)), Infinity);
+    const budget = suggestBudget(money, wagesDue(g), g.day, Number.isFinite(minCase) ? minCase : 0);
     let cut = false;
-    for (const r of shown.filter((it) => it.suggest > 0 && displayable(it.p.id))) {
+    for (const r of cand) {
       c[r.p.id] = maxFit(c, r.p.id, r.suggest, budget);
       if (c[r.p.id] < r.suggest) cut = true;
     }
