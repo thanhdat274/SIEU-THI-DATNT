@@ -1,4 +1,5 @@
 import { furnitureDef, isCookStation } from '../../data/furniture';
+import { masteredDuration, masteryTier, masteryCut, MASTERY_NAMES, MASTERY_UNLOCK } from '../../data/cookMastery';
 import { formatMoney, productById } from '../../data/products';
 import type { Lot } from '../../data/freshness';
 import { regularById, regularFriendship } from '../../data/regulars';
@@ -141,8 +142,12 @@ export const createOrdersSlice = (set: SetState, get: GetState): Pick<GameState,
       }
     }
     const id = Math.max(0, ...s.cookJobs.map((j) => j.id)) + 1;
-    set({ ...k, garden: { ...s.garden, homegrown }, cookJobs: [...s.cookJobs, { id, recipeId, remaining: r.durationMin, total: r.durationMin }] });
-    s.notify(`🍳 Đang nấu ${r.name} (${r.durationMin} phút) — nguyên liệu đã trừ kho, nấu xong tự vào kho`);
+    const done = s.cookMastery?.[recipeId] ?? 0;
+    const dur = masteredDuration(r.durationMin, done, s.level);
+    const tierBefore = masteryTier(done), tierAfter = masteryTier(done + 1);
+    set({ ...k, garden: { ...s.garden, homegrown }, cookMastery: { ...(s.cookMastery ?? {}), [recipeId]: done + 1 }, cookJobs: [...s.cookJobs, { id, recipeId, remaining: dur, total: dur }] });
+    s.notify(`🍳 Đang nấu ${r.name} (${dur} phút) — nguyên liệu đã trừ kho, nấu xong tự vào kho`);
+    if (s.level >= MASTERY_UNLOCK && tierAfter > tierBefore) s.notify(`${MASTERY_NAMES[tierAfter]} món ${r.name}! Mẻ sau nấu nhanh hơn ${Math.round(masteryCut(done + 1, s.level) * 100)}%`);
     return true;
   },
   declineOrder: () => set({ order: null }),

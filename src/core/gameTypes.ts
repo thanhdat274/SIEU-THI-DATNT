@@ -341,6 +341,8 @@ export interface GameState {
   marketClearedDay: number;
   /** GĐ1520: ngày lì xì nhân viên gần nhất (0 = chưa). */
   lixiDay: number;
+  /** GĐ1522: số mẻ đã nấu theo công thức (thông thạo món). */
+  cookMastery: Record<string, number>;
   /** Bản ghi lần bán chợ phiên gần nhất (để tổng kết cuối ngày). */
   marketLast: { day: number; units: number; revenue: number };
   /** Người bán rong vào tới quầy: đưa đề nghị lấy sỉ. */

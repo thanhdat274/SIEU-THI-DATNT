@@ -1,4 +1,5 @@
 import { trendMark } from '../trendMark';
+import { masteredDuration, masteryTier, MASTERY_NAMES, MASTERY_UNLOCK } from '../../data/cookMastery';
 import { useGame, useClock } from '../../core/store';
 import { useState } from 'react';
 import { RECIPES, STATIONS, type CookingStation } from '../../data/recipes';
@@ -19,6 +20,7 @@ export function CookPanel() {
   // GĐ1118 — bản đồ hạn còn lại của hàng sắp hỏng (kho + kệ) để nhắc nấu ngay trên dòng công thức
   const expiringMap = new Map(expiringSoon(storage, storageLots, furniture.flatMap((f) => f.tiers)).map((l) => [l.id, l.life]));
   const day = useGame((s) => s.day);
+  const cookMastery = useGame((s) => s.cookMastery);
   // GĐ161: giờ hiện tại (vẽ lại 1 lần mỗi phút game như Hud) + tốc độ trạm thật
   // (đầu bếp/pha chế trực ca — cùng nguồn cookSpeed/bartenderBoost với tick đồng hồ)
   const minutes = useClock((c) => Math.floor(c.minutes));
@@ -112,7 +114,7 @@ export function CookPanel() {
                           const have = storage[i.productId] ?? 0;
                           return `${i.quantity} ${productById(i.productId).name} (${have})`;
                         }).join(' + ')}
-                        {' '}→ <b>{r.outputQty} × {out.name}</b> · {r.durationMin} phút
+                        {' '}→ <b>{r.outputQty} × {out.name}</b> · {masteredDuration(r.durationMin, cookMastery?.[r.id] ?? 0, level)} phút{level >= MASTERY_UNLOCK && masteryTier(cookMastery?.[r.id] ?? 0) > 0 ? ` · ${MASTERY_NAMES[masteryTier(cookMastery?.[r.id] ?? 0)]}` : ''}
                       </div>
                       {/* GĐ1496 — sao món theo lượt bán: đồ đựng đổi bậc + giá bán tăng, mục tiêu ngắn đếm ngược được */}
                       {(() => {

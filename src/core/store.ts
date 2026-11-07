@@ -155,6 +155,7 @@ export const newGameData = () => ({
   vendorDay: 0,
   marketClearedDay: 0,
   lixiDay: 0,
+  cookMastery: {},
   marketLast: { day: 0, units: 0, revenue: 0 } as { day: number; units: number; revenue: number },
   contracts: {} as Record<string, ContractState>,
   event: null as RandomEvent | null,
