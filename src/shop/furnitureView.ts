@@ -5,7 +5,7 @@ import { MACHINE_TYPES, type MachineId } from '../data/machines';
 import { STATIONS } from '../data/recipes';
 
 /** GĐ1504 — nhóm đồ dùng bếp/trang trí Việt dựng theo builder chung. */
-const DECOR_TYPES = new Set<string>(['kho_dao', 'ke_gia_vi', 'ke_chen', 'thung_rac', 'tham_chan', 'den_long', 'tranh_dong_ho', 'bon_rua', 'binh_bat_trang', 'trong_dong', 'chua_mot_cot']);
+const DECOR_TYPES = new Set<string>(['kho_dao', 'ke_gia_vi', 'ke_chen', 'thung_rac', 'tham_chan', 'den_long', 'tranh_dong_ho', 'bon_rua', 'binh_bat_trang', 'trong_dong', 'chua_mot_cot', 'mam_ngu_qua', 'den_ong_sao']);
 
 /** GĐ1505 — bảng hiệu đặc sản 4 miền: màu vải + biểu tượng riêng từng miền. */
 const FLAG_COLORS: Record<string, number> = { bang_hieu_bac: 0xc0392b, bang_hieu_trung: 0xd4ac0d, bang_hieu_nam: 0x1e8449, bang_hieu_tay_nguyen: 0x8d6e63 };
@@ -595,6 +595,36 @@ export class FurnitureView {
         const tap = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.16, 8), steel);
         tap.position.set(0, 0.95, -d / 2 + 0.08);
         this.group.add(basin, legs, tap);
+        break;
+      }
+      case 'mam_ngu_qua': {
+        // GĐ1513 — mâm gỗ đỏ + 5 loại quả (bưởi, chuối, quýt, xoài, dừa) chụm giữa
+        const tray = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.22, 0.06, 16), new THREE.MeshStandardMaterial({ color: 0x8e2418 }));
+        tray.position.y = 0.03;
+        this.group.add(tray);
+        const fruits: [number, number, number, number, number][] = [
+          [0, 0.16, 0, 0.11, 0x9acd32], [0.12, 0.1, 0.06, 0.06, 0xffa500], [-0.12, 0.1, 0.06, 0.06, 0xff8c00],
+          [0.07, 0.1, -0.12, 0.07, 0xffd700], [-0.08, 0.11, -0.1, 0.07, 0x6b8e23],
+        ];
+        for (const [x, y, z, r, c] of fruits) {
+          const m = new THREE.Mesh(new THREE.SphereGeometry(r, 10, 8), new THREE.MeshStandardMaterial({ color: c }));
+          m.position.set(x, y, z);
+          this.group.add(m);
+        }
+        break;
+      }
+      case 'den_ong_sao': {
+        // GĐ1513 — cột tre + ngôi sao đỏ (hai hình nón dẹt ghép) trên đỉnh
+        const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.025, 1.1, 8), new THREE.MeshStandardMaterial({ color: 0xc8a165 }));
+        pole.position.y = 0.55;
+        const red = new THREE.MeshStandardMaterial({ color: 0xe74c3c, emissive: 0x551100 });
+        const star = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.05, 5), red);
+        star.rotation.x = Math.PI / 2;
+        star.position.y = 1.2;
+        const tail = new THREE.Mesh(new THREE.ConeGeometry(0.04, 0.2, 6), new THREE.MeshStandardMaterial({ color: 0xf1c40f }));
+        tail.position.y = 0.98;
+        tail.rotation.x = Math.PI;
+        this.group.add(pole, star, tail);
         break;
       }
       case 'binh_bat_trang': {

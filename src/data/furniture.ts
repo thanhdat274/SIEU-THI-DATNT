@@ -10,6 +10,7 @@ export type FurnitureType =
   | 'kho_dao' | 'ke_gia_vi' | 'ke_chen' | 'thung_rac' | 'tham_chan' | 'den_long' | 'tranh_dong_ho' | 'bon_rua'
   | 'bang_hieu_bac' | 'bang_hieu_trung' | 'bang_hieu_nam' | 'bang_hieu_tay_nguyen'
   | 'binh_bat_trang' | 'trong_dong' | 'chua_mot_cot'
+  | 'mam_ngu_qua' | 'den_ong_sao'
   | CookingStation;
 
 /** Trạm nấu: id trùng tên trạm trong recipes.ts; đặt trong tiệm mới nấu được món của trạm đó. */
@@ -39,6 +40,8 @@ export interface FurnitureDef {
   seatSlots?: number;
   /** GĐ1495 — điểm trang trí 🩷: cộng vào decorScore kéo khách (chỉ phát huy khi danh tiếng tốt). */
   decor?: number;
+  /** GĐ1513 — chỉ MUA được trong dịp lễ này (id trong calendar FESTIVALS); mua rồi giữ mãi. */
+  festival?: string;
   desc: string;
 }
 
@@ -240,6 +243,16 @@ export const FURNITURE: FurnitureDef[] = [
   {
     type: 'chua_mot_cot', name: 'Mô hình chùa Một Cột', price: 6000000, unlock: 55, size: [1.2, 1.2], tiers: 0, slots: 0, capacity: 0,
     categories: [], decor: 30, desc: 'Mô hình chùa trên hồ sen thu nhỏ — niềm tự hào của cơ ngơi lớn (+30 🩷)',
+  },
+  // GĐ1513 — ĐỒ TRANG TRÍ THEO DỊP (mục festival-gated decor tài liệu Midnight, Việt hoá): chỉ bán
+  // trong cửa sổ lễ của lịch game → lý do ghé lại mỗi mùa lễ; mua rồi giữ mãi. Unlock > golden 30.
+  {
+    type: 'mam_ngu_qua', name: 'Mâm ngũ quả ngày Tết', price: 700000, unlock: 32, size: [0.6, 0.6], tiers: 0, slots: 0, capacity: 0,
+    categories: [], decor: 10, festival: 'tet', desc: 'Chỉ bán dịp Tết Nguyên Đán — mâm ngũ quả bày quầy, giữ không khí Tết quanh năm (+10 🩷)',
+  },
+  {
+    type: 'den_ong_sao', name: 'Đèn ông sao Trung thu', price: 500000, unlock: 32, size: [0.5, 0.5], tiers: 0, slots: 0, capacity: 0,
+    categories: [], decor: 8, festival: 'trung_thu', desc: 'Chỉ bán dịp Tết Trung thu — đèn ông sao năm cánh treo cột (+8 🩷)',
   },
 ];
 

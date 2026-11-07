@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useGame } from '../../core/store';
 import { FLOOR_COLORS, PAINT_PRICE, ROOF_COLORS, SHOP_TIERS, WALL_COLORS, rentDelta, rentOf, spaceUsePct, type ShopStyle } from '../../data/shopTiers';
 import { FURNITURE, furnitureDef, type FurnitureType } from '../../data/furniture';
+import { festivalShopName, festivalShopOpen } from '../../data/festivalDeco';
 import { departmentsUnlockedAtTier } from '../../data/departments';
 import { bigBasketInsight, BIG_BASKET_TIER } from '../../data/bigBasket';
 import { meatCounterPayoff, meatChainCooled } from '../../data/meatCounterPayoff';
@@ -34,7 +35,7 @@ export function BuildPanel() {
 }
 
 export function FurnitureTab() {
-  const { level, money, furniture, storage, stats, weather, setPlacing, demolishAll } = useGame();
+  const { level, day, money, furniture, storage, stats, weather, setPlacing, demolishAll } = useGame();
   const furnStash = useGame((s) => s.furnStash);
   const stashed = Object.entries(furnStash).filter(([, n]) => n > 0) as [FurnitureType, number][];
   // GĐ1251: soi quyết định MUA KỆ bằng số liệu bỏ lỡ hôm nay (storeMissRevenue GĐ131) —
@@ -83,7 +84,8 @@ export function FurnitureTab() {
       )}
       <div style={{ display: 'grid', gap: 8 }}>
         {FURNITURE.map((f) => {
-          const locked = f.unlock > level;
+          const offFest = !festivalShopOpen(f, day);
+          const locked = f.unlock > level || offFest;
           return (
             <div key={f.type} style={{ ...styles.card, opacity: locked ? 0.5 : 1 }}>
               <div style={{ flex: 1 }}>
@@ -91,7 +93,7 @@ export function FurnitureTab() {
                 <div style={{ fontSize: 12, opacity: 0.75 }}>{f.desc}</div>
               </div>
               {locked ? (
-                <span style={{ fontSize: 12 }}>🔒 Cấp {f.unlock}</span>
+                <span style={{ fontSize: 12 }}>{f.unlock > level ? `🔒 Cấp ${f.unlock}` : `🗓 Chỉ bán dịp ${festivalShopName(f)}`}</span>
               ) : (
                 <>
                   <button style={styles.btn} title="Đặt xem trước, chưa trả tiền" onClick={() => setPlacing({ type: f.type, rot: 0, source: 'trial' })}>

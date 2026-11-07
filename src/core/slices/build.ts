@@ -1,4 +1,5 @@
 import { furnitureDef } from '../../data/furniture';
+import { festivalShopName, festivalShopOpen } from '../../data/festivalDeco';
 import { formatMoney } from '../../data/products';
 import { PAINT_PRICE, SHOP_TIERS } from '../../data/shopTiers';
 import { repairCost } from '../../data/risks';
@@ -93,6 +94,10 @@ export const createBuildSlice = (set: SetState, get: GetState): Pick<GameState, 
   placeFurniture: (type, x, z, rot) => {
     const s = get();
     const def = furnitureDef(type);
+    if (!festivalShopOpen(def, s.day)) {
+      s.notify(`🗓 ${def.name} chỉ bán dịp ${festivalShopName(def)}`);
+      return false;
+    }
     if (s.money < def.price) {
       s.notify('Không đủ tiền!');
       return false;
