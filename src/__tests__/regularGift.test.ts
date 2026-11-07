@@ -22,3 +22,11 @@ describe('GĐ1557 tặng quà khách quen', () => {
     expect(regularGiftPlan(def, prog, 60, 6, { [fav]: 3 })).toEqual({ productId: fav });
   });
 });
+
+import { giftFriendship } from '../data/regularGift';
+describe('GĐ1558 quà sinh nhật', () => {
+  it('ngày sinh nhật ×2', () => {
+    expect(giftFriendship(false)).toBe(3);
+    expect(giftFriendship(true)).toBe(6);
+  });
+});

@@ -1,12 +1,12 @@
 import { useGame, formatClock } from '../../core/store';
 import { productById, formatMoney } from '../../data/products';
-import { nextPerk, birthdayLabel, REGULARS, regularById, rescueGiftFor, type PerkEffect } from '../../data/regulars';
+import { isBirthday, nextPerk, birthdayLabel, REGULARS, regularById, rescueGiftFor, type PerkEffect } from '../../data/regulars';
 import { RESCUE_FEE, atRiskOfPoach } from '../../data/biz';
 import { arcById, currentArcStep } from '../../data/regularArc';
 import { lifetimeRegularVisits, vipTierOf, nextTierOf, monthlyTriAn, regularQuote, EMOTIONAL_FRIENDSHIP } from '../../data/regularTrust';
 import { Callout, Footer, Swatch, styles } from './shared';
 import { DebtBook } from './DebtBook';
-import { regularGiftPlan, REGULAR_GIFT_LEVEL, REGULAR_GIFT_FRIENDSHIP } from '../../data/regularGift';
+import { regularGiftPlan, REGULAR_GIFT_LEVEL, giftFriendship } from '../../data/regularGift';
 
 /** GĐ793 — nút đòi khách quen bị rival lôi kéo (cùng kiểu nút vàng accent của hệ thống). */
 const rescueBtn: React.CSSProperties = {
@@ -146,7 +146,7 @@ export function RegularsPanel() {
                       onClick={() => giftRegular(r.id)}
                       style={{ marginTop: 4, fontSize: 12, padding: '3px 8px', borderRadius: 6, border: 'none', cursor: err ? 'default' : 'pointer', opacity: err ? 0.55 : 1 }}
                     >
-                      {'productId' in plan ? `🎁 Tặng 1 ${productById(plan.productId).name} (+${REGULAR_GIFT_FRIENDSHIP} 💛)` : `🎁 ${err}`}
+                      {'productId' in plan ? `🎁 Tặng 1 ${productById(plan.productId).name} (+${giftFriendship(isBirthday(r, day))} 💛)` : `🎁 ${err}`}
                     </button>
                   );
                 })()}

@@ -17,3 +17,6 @@ export function regularGiftPlan(
   const id = def.favorites.find((f) => productById(f).unlock <= level && (storage[f] ?? 0) > 0);
   return id ? { productId: id } : { error: 'Kho không có món khách thích' };
 }
+
+// GĐ1558 — tặng đúng ngày sinh nhật khách: thân thiết gấp đôi (+6).
+export const giftFriendship = (birthday: boolean): number => REGULAR_GIFT_FRIENDSHIP * (birthday ? 2 : 1);

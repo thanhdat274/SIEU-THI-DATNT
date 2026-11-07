@@ -7,7 +7,7 @@ import { copyStock, takeStock } from '../stock';
 import { arcForRegular, arcById, currentArcStep, arcStepFulfilled } from '../../data/regularArc';
 import { satisfiedLine, walkoutLine } from '../../data/regularTrust';
 import { REP_CAP } from '../../data/reputation';
-import { regularGiftPlan, REGULAR_GIFT_FRIENDSHIP } from '../../data/regularGift';
+import { regularGiftPlan, giftFriendship } from '../../data/regularGift';
 import { type GameState, type SetState, type GetState, addHour } from '../gameTypes';
 
 /** Khách: lượt ghé, khách quen, lời hẹn giữ món, sổ nợ, đánh giá. */
@@ -222,10 +222,11 @@ export const createRegularsSlice = (set: SetState, get: GetState): Pick<GameStat
     const stock = copyStock({ storage: s.storage, storageLots: s.storageLots });
     takeStock(stock, plan.productId, 1);
     set({ storage: stock.storage, storageLots: stock.storageLots });
-    get().adjustFriendship(id, REGULAR_GIFT_FRIENDSHIP);
+    const gain = giftFriendship(isBirthday(def, s.day));
+    get().adjustFriendship(id, gain);
     const after = get().regulars[id];
     if (after) set({ regulars: { ...get().regulars, [id]: { ...after, lastGiftDay: s.day } } });
-    s.notify(`🎁 Tặng ${def.name} 1 ${productById(plan.productId).name} · +${REGULAR_GIFT_FRIENDSHIP} thân thiết`);
+    s.notify(`🎁 Tặng ${def.name} 1 ${productById(plan.productId).name} · +${gain} thân thiết${gain > 3 ? ' (🎂 sinh nhật ×2)' : ''}`);
     return true;
   },
   addReview: (stars, reason, productId) => {
