@@ -114,7 +114,7 @@ export interface CookJob {
 }
 
 export type Panel =
-  | { type: 'order' }
+  | { type: 'order'; autofill?: boolean } // GĐ1512: autofill = mở từ nút 'Nhập đủ' trên toast → tự điền gợi ý
   | { type: 'shelf'; uid: number }
   | { type: 'build' }
   | { type: 'arrange' }

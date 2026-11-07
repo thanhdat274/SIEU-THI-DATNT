@@ -11,6 +11,10 @@ const patch = (b: Partial<GameState['biz']>) => useGame.setState({ biz: { ...S()
 
 // ───── Thành tựu ─────
 
+/** GĐ1512 — nhãn cảnh báo sắp hết hàng; toast chứa nhãn này thì HUD gắn nút 1 chạm "📦 Nhập đủ". */
+export const LOW_STOCK_TAG = '📉 Sắp hết hàng';
+export const wantsRestockButton = (message: string | null | undefined): boolean => !!message && message.includes(LOW_STOCK_TAG);
+
 export function achievementCtx(s: GameState): AchievementCtx {
   return {
     totals: s.totals, level: s.level, ordersDone: s.ordersDone, phoneOrdersDone: s.phoneOrdersDone,
@@ -77,7 +81,7 @@ export function stockReminders() {
   for (const id of spoil) reminded.add(`exp:${id}`);
   const names = (ids: string[]) => ids.slice(0, 4).map((id) => productById(id).name).join(', ') + (ids.length > 4 ? '…' : '');
   const parts: string[] = [];
-  if (low.length) parts.push(`📉 Sắp hết hàng: ${names(low)} — nhập thêm`);
+  if (low.length) parts.push(`${LOW_STOCK_TAG}: ${names(low)} — nhập thêm`);
   if (spoil.length) parts.push(`⏳ Sắp hỏng (còn dưới 1 ngày): ${names(spoil)} — giảm giá bán bớt`);
   if (parts.length) s.notify(parts.join(' · '));
 }

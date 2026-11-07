@@ -286,6 +286,20 @@
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
 }
 
+#ui .hud-toast-btn {
+  display: block;
+  margin: 8px auto 0;
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: 0;
+  background: var(--hud-accent);
+  color: #1d1f2b;
+  font: inherit;
+  font-size: 15px;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
 /* ---------- Dưới: gợi ý + thanh công cụ ---------- */
 #ui .hud-bottom {
   bottom: 14px;

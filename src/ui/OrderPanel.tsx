@@ -232,6 +232,16 @@ export function OrderPanel() {
     setCart(c);
     if (cut) notify(useGame.getState().day <= 1 ? '💰 Ngày đầu chỉ điền ~40% tiền mặt — giữ vốn, bán xong nhập thêm' : '💰/📦 Điền tới hết tiền hoặc hết chỗ kho — nâng cấp để nhập thêm');
   };
+  // GĐ1512 (K1) — mở từ nút "📦 Nhập đủ" trên cảnh báo sắp hết hàng: tự điền giỏ gợi ý một lần
+  // (người chơi vẫn xem lại và bấm Đặt). Xoá cờ ngay để mở lại bảng không điền lần nữa.
+  useEffect(() => {
+    const p = useGame.getState().panel;
+    if (p?.type === 'order' && p.autofill) {
+      useGame.setState({ panel: { type: 'order' } });
+      fillSuggest();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   // GĐ205: điền giỏ đúng thứ mà rốn kho chung đang cần cho CHI NHÁNH (phiếu nạp kho GĐ202). Khác
   // fillSuggest (đặt theo nhu cầu tiệm chính): ưu tiên đúng kệ chi nhánh đang trống, quy theo thùng.
   // Chỉ thêm món nhà cung cấp hiện tại bán + còn vừa ngân sách (chừa lương) và chỗ kho.

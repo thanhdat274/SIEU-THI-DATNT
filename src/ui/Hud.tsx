@@ -1,3 +1,4 @@
+import { wantsRestockButton } from '../core/bizAchieve';
 import { faintMinutes } from '../data/biz';
 import { Joystick } from './Joystick';
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
@@ -438,7 +439,15 @@ Online: ${coop.peers.map((p) => (p.id === coop.selfId ? 'bạn' : p.name)).join(
         />
       </div>
 
-      {message && <div className="hud-toast" role="status">{message}</div>}
+      {message && (
+        <div className="hud-toast" role="status">
+          {message}
+          {/* GĐ1512 (K1) — 1 chạm từ cảnh báo sắp hết hàng: mở Nhập hàng và tự điền giỏ gợi ý (vẫn phải bấm Đặt) */}
+          {wantsRestockButton(message) && (
+            <button type="button" className="hud-toast-btn" onClick={() => openPanel({ type: 'order', autofill: true })}>📦 Nhập đủ</button>
+          )}
+        </div>
+      )}
       <Suspense fallback={null}><ChapterDialogue /></Suspense>
 
       {/* Dưới cùng: dải kế hoạch hôm nay (hoặc gợi ý giờ vắng), gợi ý tương tác, rồi thanh công cụ */}
