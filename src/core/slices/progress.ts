@@ -74,7 +74,7 @@ export const createProgressSlice = (set: SetState, get: GetState): Pick<GameStat
     }
     return reward;
   },
-  /** GĐ1497 — doanh thu khi vắng mặt: khu ăn tại chỗ chạy chậm 55%, trần 30 + cấp×5 phút thực,
+  /** GĐ1497 — doanh thu khi vắng mặt: khu ăn tại chỗ chạy ≈5% tốc độ chơi thật (GĐ1531), trần 30 + cấp×5 phút thực,
    *  đủ điều kiện (bàn ghế + trạm nấu + món nấu bày kệ) mới có thu; chỉ tiền, không XP/không lượt sao. */
   collectOfflineRevenue: () => {
     const s = get();

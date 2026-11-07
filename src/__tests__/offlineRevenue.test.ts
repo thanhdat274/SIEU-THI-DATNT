@@ -1,7 +1,7 @@
 import { describe, expect, it, beforeEach } from 'vitest';
 import { newGameData, useGame } from '../core/store';
 import {
-  GAME_MINUTES_PER_DAY, OFFLINE_EFFICIENCY, OFFLINE_MIN_MINUTES, offlineCapMinutes, offlineRevenue,
+  GAME_MINUTES_PER_DAY, OFFLINE_EFFICIENCY, OFFLINE_PLAY_RATE, OFFLINE_MIN_MINUTES, offlineCapMinutes, offlineRevenue,
 } from '../data/offlineRevenue';
 import { MINUTES_PER_SECOND } from '../core/gameTypes';
 
@@ -45,17 +45,17 @@ describe('offlineRevenue — doanh thu vắng mặt (GĐ1497)', () => {
   it('công thức: phút vắng (chốt trần) × MPS × 55% × lãi/phút game, làm tròn chẵn trăm', () => {
     const r = offlineRevenue(base); // vắng 120 phút > trần cấp 10 = 80 phút
     expect(r.minutesCounted).toBe(80);
-    // gameMinutes = 80 × 2 × 0.55 = 88; lãi 1.000đ/phút game → 88.000đ
-    expect(r.gain).toBe(88_000);
+    // GĐ1531: gameMinutes = 80 × 60 × 2 × 5% = 480; lãi 1.000đ/phút game → 480.000đ
+    expect(r.gain).toBe(480_000);
     // khách ước lượng theo giá trị đơn mặc định 50.000đ
-    expect(r.customers).toBe(2);
+    expect(r.customers).toBe(10);
     expect(r.reason).toBeNull();
   });
 
   it('trần tăng theo cấp: cấp 30 tính được 180 phút', () => {
     const r = offlineRevenue({ ...base, level: 30 }); // trần 180 < 120 phút vắng → tính hết
     expect(r.minutesCounted).toBe(120);
-    expect(r.gain).toBe(Math.round((120 * MINUTES_PER_SECOND * OFFLINE_EFFICIENCY * 1_000) / 100) * 100);
+    expect(r.gain).toBe(Math.round((120 * 60 * MINUTES_PER_SECOND * OFFLINE_PLAY_RATE * 1_000) / 100) * 100);
   });
 });
 
@@ -93,5 +93,13 @@ describe('collectOfflineRevenue — action qua store (GĐ1497)', () => {
     expect(useGame.getState().collectOfflineRevenue().gain).toBe(0);
     useGame.setState({ lastSeenAt: Date.now() - 2 * 60_000 });
     expect(useGame.getState().collectOfflineRevenue().reason).toContain('5 phút');
+  });
+});
+
+describe('GĐ1531 tỉ lệ vắng mặt ≈ 5% tốc độ chơi thật', () => {
+  it('1 phút thật vắng = 5% số phút game của 1 phút chơi thật', () => {
+    const away = offlineRevenue({ ...base, awayMinutes: 60, level: 30 }).gain;
+    const active = 60 * 60 * MINUTES_PER_SECOND * 1_000; // 60 phút chơi thật × 1.000đ/phút game
+    expect(away / active).toBeCloseTo(0.05, 3);
   });
 });

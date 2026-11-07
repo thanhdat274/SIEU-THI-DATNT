@@ -3,7 +3,7 @@ import { MINUTES_PER_SECOND } from '../core/gameTypes';
 // ─────────────────────────────────────────────────────────────────────────────
 // GĐ1497 — doanh thu vắng mặt: quay lại sau một thời gian, khu ăn tại chỗ vẫn
 // "chạy chậm" kiếm tiền giúp. Công bằng bằng số:
-//   · hiệu suất 55% so với đang chơi;
+//   · ≈5% tốc độ chơi thật (GĐ1531 sửa quy đổi phút/giây);
 //   · thời gian tính tối đa = 30 + cấp × 5 phút THỰC;
 //   · vắng < 5 phút không tính;
 //   · chỉ cộng tiền — không XP, không lượt bán sao món (chặn farm);
@@ -11,6 +11,9 @@ import { MINUTES_PER_SECOND } from '../core/gameTypes';
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const OFFLINE_EFFICIENCY = 0.55;
+/** GĐ1531 — TONG-HOP Midnight C#11: vắng mặt ≈ 5% tốc độ chơi thật. Bản cũ nhân PHÚT thật với MPS
+ *  (phút game / GIÂY thật) nên hụt 60× (thực tế ~0,9%). Giờ quy đổi đúng: phút thật × 60 × MPS × 5%. */
+export const OFFLINE_PLAY_RATE = 0.05;
 export const OFFLINE_MIN_MINUTES = 5;
 /** Số phút game trong một "ngày" kinh tế (cả ngày 24h). */
 export const GAME_MINUTES_PER_DAY = 24 * 60;
@@ -49,8 +52,8 @@ export function offlineRevenue(input: OfflineRevenueInput): OfflineRevenueResult
   if (missing) return zero(missing);
   if (!(input.recentAvgDailyProfit > 0)) return zero('chưa có lãi bán hàng gần đây để ước tính');
   const minutesCounted = Math.min(input.awayMinutes, offlineCapMinutes(input.level));
-  // Thời gian vắng quy về phút game (1 giây thật = MPS phút game ở 1×), nhân hiệu suất 55%
-  const gameMinutes = minutesCounted * MINUTES_PER_SECOND * OFFLINE_EFFICIENCY;
+  // Phút thật → phút game (×60 giây × MPS), rồi chỉ tính 5% tốc độ chơi thật
+  const gameMinutes = minutesCounted * 60 * MINUTES_PER_SECOND * OFFLINE_PLAY_RATE;
   const ratePerGameMin = input.recentAvgDailyProfit / GAME_MINUTES_PER_DAY;
   const gain = Math.round((ratePerGameMin * gameMinutes) / 100) * 100;
   const ticket = input.avgTicket && input.avgTicket > 0 ? input.avgTicket : 50_000;
