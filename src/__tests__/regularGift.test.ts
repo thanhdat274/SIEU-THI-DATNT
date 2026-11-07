@@ -48,3 +48,17 @@ describe('GĐ1561 Sổ đầu ngày nhắc quà sinh nhật', () => {
     expect(birthdayHint(def, have, 37).text).not.toContain('tặng quà');
   });
 });
+
+import { sortForGift } from '../data/regularGift';
+describe('GĐ1563 xếp sổ khách quen', () => {
+  const [a, b, c] = REGULARS;
+  it('sinh nhật lên đầu, dưới cấp 38 giữ nguyên', () => {
+    expect(sortForGift([a, b, c], {}, 60, 5, {}, (d) => d === c)[0]).toBe(c);
+    expect(sortForGift([a, b, c], {}, 30, 5, {}, (d) => d === c)[0]).toBe(a);
+  });
+  it('khách đã tặng hôm nay xuống cuối', () => {
+    const st = Object.fromEntries([a, b, c].flatMap((d) => d.favorites.map((f) => [f, 5])));
+    const out = sortForGift([a, b, c], { [a.id]: { lastGiftDay: 5 } as never }, 99, 5, st, () => false);
+    expect(out.at(-1)).toBe(a);
+  });
+});

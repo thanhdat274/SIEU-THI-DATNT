@@ -27,3 +27,13 @@ export function giftableCount(
 ): number {
   return defs.filter((d) => 'productId' in regularGiftPlan(d, regulars[d.id], level, day, storage)).length;
 }
+
+// GĐ1563 — xếp sổ khách quen (cấp ≥38): sinh nhật hôm nay trước, rồi khách còn tặng được; giữ thứ tự gốc trong nhóm.
+export function sortForGift(
+  defs: RegularDef[], regulars: Record<string, RegularProgress>, level: number, day: number,
+  storage: Record<string, number>, birthday: (d: RegularDef) => boolean,
+): RegularDef[] {
+  if (level < REGULAR_GIFT_LEVEL) return defs;
+  const rank = (d: RegularDef) => (birthday(d) ? 0 : 'productId' in regularGiftPlan(d, regulars[d.id], level, day, storage) ? 1 : 2);
+  return defs.map((d, i) => ({ d, i, r: rank(d) })).sort((a, b) => a.r - b.r || a.i - b.i).map((x) => x.d);
+}

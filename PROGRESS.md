@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (07/11/2026)
+- **GĐ1563** — Sổ khách quen (cấp 38) xếp sinh nhật hôm nay lên đầu, rồi khách còn tặng quà được, đã tặng xuống cuối (`sortForGift`, ổn định trong nhóm). Thuần UI.
 - **GĐ1562** — Dải "Bạn có biết?" thêm 3 mẹo: thông thạo món (36), quà cuối tuần (37), tặng quà khách quen (38). Rà Midnight #5 (máy giữ kiên nhẫn): đã đúng sẵn — kiên nhẫn chỉ trừ khi đứng hàng quầy.
 - **GĐ1561** — Sổ đầu ngày nhắc sinh nhật khách quen (cấp 38) thêm "· tặng quà +6". QA UI GĐ1557–1559 trong trình duyệt: nút 🎁 bấm được → "Hôm nay đã tặng rồi", dòng đếm 21→20; save QA đã xoá.
 - **GĐ1560** — Rà soát + QA save mới: bán đầu tiên ~54s. Tặng quà khách quen GĐ1557–1559 gom trong 1 file `data/regularGift.ts`, 1 action LOCAL_ONLY; QA store thật: tặng trừ 1 món kho, +3 thân thiết, lần 2 cùng ngày bị chặn. Save QA đã xoá.

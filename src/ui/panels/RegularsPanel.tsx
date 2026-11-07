@@ -6,7 +6,7 @@ import { arcById, currentArcStep } from '../../data/regularArc';
 import { lifetimeRegularVisits, vipTierOf, nextTierOf, monthlyTriAn, regularQuote, EMOTIONAL_FRIENDSHIP } from '../../data/regularTrust';
 import { Callout, Footer, Swatch, styles } from './shared';
 import { DebtBook } from './DebtBook';
-import { regularGiftPlan, REGULAR_GIFT_LEVEL, giftFriendship, giftableCount } from '../../data/regularGift';
+import { regularGiftPlan, REGULAR_GIFT_LEVEL, giftFriendship, giftableCount, sortForGift } from '../../data/regularGift';
 
 /** GĐ793 — nút đòi khách quen bị rival lôi kéo (cùng kiểu nút vàng accent của hệ thống). */
 const rescueBtn: React.CSSProperties = {
@@ -109,7 +109,7 @@ export function RegularsPanel() {
         </div>
       )}
       <div style={{ display: 'grid', gap: 6, maxWidth: 560 }}>
-        {met.map((r) => {
+        {sortForGift(met, regulars, level, day, storage, (d) => isBirthday(d, day)).map((r) => {
           const prog = regulars[r.id];
           const next = nextPerk(r, prog);
           const pts = prog?.friendship ?? 0;
