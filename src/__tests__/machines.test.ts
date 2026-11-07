@@ -133,7 +133,8 @@ describe('GĐ1549 — kẹo bông cuối tuần', () => {
     const { machineFeeAt } = await import('../data/machines');
     const { isWeekend } = await import('../data/calendar');
     const we = [1, 2, 3, 4, 5, 6, 7].find((d) => isWeekend(d))!;
-    const wd = [1, 2, 3, 4, 5, 6, 7].find((d) => !isWeekend(d))!;
+    const { festivalOn } = await import('../data/calendar');
+    const wd = Array.from({ length: 60 }, (_, i) => i + 1).find((d) => !isWeekend(d) && !festivalOn(d))!; // GĐ1578: tránh ngày lễ
     expect(machineFeeAt('cotton_candy', 600, 46, we)).toBe(3_750);
     expect(machineFeeAt('cotton_candy', 600, 46, wd)).toBe(2_500);
   });
@@ -219,5 +220,19 @@ describe('GĐ1571 đánh giày ngày mưa', () => {
     expect(feeAt1571('shoe_shine', 600, 42, 3, 'sunny')).toBe(2000);
     expect(feeAt1571('shoe_shine', 600, 41, 3, 'rain')).toBe(2000);
     expect(popup1571('shoe_shine')).toContain('trời mưa');
+  });
+});
+
+import { machineFeeAt as feeAt1578, machinePopupLine as popup1578 } from '../data/machines';
+import { festivalOn as fest1578 } from '../data/calendar';
+import { isWeekend as wk1578 } from '../data/calendar';
+describe('GĐ1578 kẹo bông ngày lễ', () => {
+  it('×1,5 ngày lễ từ cấp 46', () => {
+    let d = 1; while (!fest1578(d)) d++;
+    expect(feeAt1578('cotton_candy', 600, 46, d)).toBe(3750);
+    expect(feeAt1578('cotton_candy', 600, 45, d)).toBe(2500);
+    let p = 1; while (fest1578(p) || wk1578(p)) p++;
+    expect(feeAt1578('cotton_candy', 600, 46, p)).toBe(2500);
+    expect(popup1578('cotton_candy')).toContain('ngày lễ');
   });
 });

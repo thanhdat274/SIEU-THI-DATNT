@@ -57,8 +57,8 @@ const NIGHT_MACHINES: ReadonlySet<string> = new Set(['vending_drink', 'massage_c
 export function machineFeeAt(type: Furniture['type'], minutes: number, level: number, day?: number, weather?: string): number {
   // GĐ1571 — trời mưa giày dép lấm bẩn: máy đánh giày ×1,5 (cấp ≥42).
   if (type === 'shoe_shine' && level >= 42 && (weather === 'rain' || weather === 'storm')) return Math.round(machineFee(type) * 1.5);
-  // GĐ1568 — ngày lễ hội ai cũng muốn chụp ảnh kỷ niệm: máy chụp ảnh ×1,5 (cấp ≥50).
-  if (type === 'photo_booth' && day !== undefined && level >= 50 && festivalOn(day)) return Math.round(machineFee(type) * 1.5);
+  // GĐ1568 máy chụp ảnh (cấp ≥50) / GĐ1578 kẹo bông (cấp ≥46) ×1,5 ngày lễ hội.
+  if (day !== undefined && festivalOn(day) && ((type === 'photo_booth' && level >= 50) || (type === 'cotton_candy' && level >= 46))) return Math.round(machineFee(type) * 1.5);
   // GĐ1541 — cuối tuần trẻ con theo bố mẹ đi chợ: máy gắp thú ×1,5 (cấp ≥ NIGHT_FEE_LEVEL); GĐ1549 thêm máy kẹo bông.
   if ((type === 'claw_machine' || type === 'cotton_candy') && day !== undefined && level >= NIGHT_FEE_LEVEL && isWeekend(day)) return Math.round(machineFee(type) * 1.5);
   const base = machineFee(type);
@@ -70,7 +70,7 @@ export function machineFeeAt(type: Furniture['type'], minutes: number, level: nu
 export function machinePopupLine(type: Furniture['type'], earned?: number): string | null {
   if (!isMachine(type)) return null;
   const t = MACHINE_TYPES[type];
-  const night = NIGHT_MACHINES.has(type) ? ' · tối ×1,5' : type === 'claw_machine' || type === 'cotton_candy' ? ' · cuối tuần ×1,5' : type === 'photo_booth' ? ' · ngày lễ ×1,5' : type === 'shoe_shine' ? ' · trời mưa ×1,5' : '';
+  const night = NIGHT_MACHINES.has(type) ? ' · tối ×1,5' : type === 'cotton_candy' ? ' · cuối tuần & ngày lễ ×1,5' : type === 'claw_machine' ? ' · cuối tuần ×1,5' : type === 'photo_booth' ? ' · ngày lễ ×1,5' : type === 'shoe_shine' ? ' · trời mưa ×1,5' : '';
   return `${t.icon} ${t.fee.toLocaleString('vi-VN')}đ/lượt · hoàn vốn ~${Math.round(t.price / t.fee)} lượt${night}${earned ? ` · đã thu ${earned.toLocaleString('vi-VN')}đ` : ''}`;
 }
 
