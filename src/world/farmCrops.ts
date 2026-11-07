@@ -3,39 +3,45 @@ import { riceGeometry, riceMaterial } from '../render/riceModel';
 
 /** Mô hình 3D cây trồng trên luống theo giống và giai đoạn lớn; tách từ farm.ts (GĐ987). */
 
+interface CropLook {
+  kind: 'leaf' | 'corn' | 'cane' | 'banana' | 'tree' | 'rice';
+  canopy: number;
+  trunk?: number;
+  fruit?: number;
+  fruitSize?: number;
+  fruitN?: number;
+}
+/** Bề ngoài từng giống: rau lá / bắp / mía / chuối / cây ăn trái (tán + màu trái chín). */
+const CROP_LOOK: Record<string, CropLook> = {
+  rau_cai: { kind: 'leaf', canopy: 0x3f9b3f },
+  lua: { kind: 'rice', canopy: 0x5fae45 },
+  // GĐ1656 — nếp: dáng lúa, lá ngả vàng hơn; đậu xanh: bụi lá thấp (trước đây rơi về dáng cây ăn trái)
+  nep: { kind: 'rice', canopy: 0x8fb848 },
+  dau_xanh: { kind: 'leaf', canopy: 0x4f9a3c },
+  bap: { kind: 'corn', canopy: 0x4f9e46, fruit: 0xe8c34a },
+  mia: { kind: 'cane', canopy: 0x67a24a },
+  traicay: { kind: 'tree', canopy: 0x3d8c3d, trunk: 0x7a5230, fruit: 0xd94f3d },
+  traicay_nam: { kind: 'tree', canopy: 0x2f7d33, trunk: 0x6e4a28, fruit: 0xe8862c, fruitN: 8 },
+  chuoi: { kind: 'banana', canopy: 0x3f9c3a, fruit: 0xf0d85a },
+  oi: { kind: 'tree', canopy: 0x357f39, fruit: 0xe8a0b8, fruitN: 6 },
+  xoai: { kind: 'tree', canopy: 0x2e7d36, fruit: 0xf0b02e, fruitSize: 0.06, fruitN: 6 },
+  cam: { kind: 'tree', canopy: 0x2f8a3a, fruit: 0xf08c1e, fruitN: 7 },
+  // GĐ1088 — Chanh dây: dáng cây ăn trái, quả tím (dáng tán như cam/ổi)
+  chanhday: { kind: 'tree', canopy: 0x4da94f, fruit: 0x8e6f9f, fruitN: 6 },
+  vai: { kind: 'tree', canopy: 0x3a8f42, fruit: 0xd23b3b, fruitSize: 0.045, fruitN: 9 },
+  nhan: { kind: 'tree', canopy: 0x4a9950, fruit: 0xd8b64a, fruitSize: 0.045, fruitN: 9 },
+  // GĐ1651 — Thơm: bụi lá thấp
+  thom: { kind: 'leaf', canopy: 0x5a8f3a },
+  // GĐ1652 — Gừng: lá mảnh thấp
+  gung: { kind: 'leaf', canopy: 0x6aa84f },
+  mit: { kind: 'tree', canopy: 0x3f8f45, fruit: 0x9fb545, fruitSize: 0.1, fruitN: 3 },
+  buoi: { kind: 'tree', canopy: 0x3c8c3f, fruit: 0xd9e06a, fruitSize: 0.08, fruitN: 4 },
+};
+/** GĐ1656: giống có dáng riêng (không rơi về dáng cây ăn trái mặc định) — để test. */
+export const cropHasLook = (id: string) => id in CROP_LOOK;
+
 /** Trả hàm dựng cây cho một luống: (giống, giai đoạn 0..3) → nhóm mesh đã co theo giai đoạn. Hình/material dùng chung trong một lần tạo. */
 export function createCropBuilder(): (cropId: string, stage: number) => THREE.Group {
-  interface CropLook {
-    kind: 'leaf' | 'corn' | 'cane' | 'banana' | 'tree' | 'rice';
-    canopy: number;
-    trunk?: number;
-    fruit?: number;
-    fruitSize?: number;
-    fruitN?: number;
-  }
-  /** Bề ngoài từng giống: rau lá / bắp / mía / chuối / cây ăn trái (tán + màu trái chín). */
-  const CROP_LOOK: Record<string, CropLook> = {
-    rau_cai: { kind: 'leaf', canopy: 0x3f9b3f },
-    lua: { kind: 'rice', canopy: 0x5fae45 },
-    bap: { kind: 'corn', canopy: 0x4f9e46, fruit: 0xe8c34a },
-    mia: { kind: 'cane', canopy: 0x67a24a },
-    traicay: { kind: 'tree', canopy: 0x3d8c3d, trunk: 0x7a5230, fruit: 0xd94f3d },
-    traicay_nam: { kind: 'tree', canopy: 0x2f7d33, trunk: 0x6e4a28, fruit: 0xe8862c, fruitN: 8 },
-    chuoi: { kind: 'banana', canopy: 0x3f9c3a, fruit: 0xf0d85a },
-    oi: { kind: 'tree', canopy: 0x357f39, fruit: 0xe8a0b8, fruitN: 6 },
-    xoai: { kind: 'tree', canopy: 0x2e7d36, fruit: 0xf0b02e, fruitSize: 0.06, fruitN: 6 },
-    cam: { kind: 'tree', canopy: 0x2f8a3a, fruit: 0xf08c1e, fruitN: 7 },
-    // GĐ1088 — Chanh dây: dáng cây ăn trái, quả tím (dáng tán như cam/ổi)
-    chanhday: { kind: 'tree', canopy: 0x4da94f, fruit: 0x8e6f9f, fruitN: 6 },
-    vai: { kind: 'tree', canopy: 0x3a8f42, fruit: 0xd23b3b, fruitSize: 0.045, fruitN: 9 },
-    nhan: { kind: 'tree', canopy: 0x4a9950, fruit: 0xd8b64a, fruitSize: 0.045, fruitN: 9 },
-    // GĐ1651 — Thơm: bụi lá thấp
-    thom: { kind: 'leaf', canopy: 0x5a8f3a },
-    // GĐ1652 — Gừng: lá mảnh thấp
-    gung: { kind: 'leaf', canopy: 0x6aa84f },
-    mit: { kind: 'tree', canopy: 0x3f8f45, fruit: 0x9fb545, fruitSize: 0.1, fruitN: 3 },
-    buoi: { kind: 'tree', canopy: 0x3c8c3f, fruit: 0xd9e06a, fruitSize: 0.08, fruitN: 4 },
-  };
 
   // Hình đơn vị dùng chung + material cache theo màu — 12 luống đầy cây vẫn nhẹ
   const plantSphere = new THREE.SphereGeometry(1, 8, 6);
