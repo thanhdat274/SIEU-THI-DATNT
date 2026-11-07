@@ -23,9 +23,16 @@ interface LocksLike {
 // phải nhả khoá cũ trước khi xin lại, nếu không dev sửa code sẽ tự khoá chính mình.
 const g = globalThis as typeof globalThis & { __tabLockRelease?: Release; navigator?: { locks?: LocksLike } };
 
+/** Lối thoát QA/dev: URL có `lock=off` thì bỏ khoá (hai phiên QA cùng trình duyệt không chặn nhau). */
+export const lockDisabledByParam = (search: string): boolean => search.includes('lock=off');
+
 /** Xin giữ khoá suốt vòng đời trang. Resolve `true` = giữ được (tab này được chơi),
  * `false` = tab khác đang mở. Không bao giờ reject (lỗi API coi như không khoá). */
 export async function acquireTabLock(): Promise<boolean> {
+  if (lockDisabledByParam(typeof location === 'undefined' ? '' : location.search)) {
+    console.warn('[tabLock] ?lock=off — bỏ qua khoá 1 tab (chế độ QA/dev)');
+    return true;
+  }
   const locks = g.navigator?.locks;
   if (!locks) {
     console.warn('[tabLock] trình duyệt không hỗ trợ Web Locks — bỏ qua khoá 1 tab');

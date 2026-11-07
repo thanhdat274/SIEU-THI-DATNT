@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { acquireTabLock } from '../tabLock';
+import { acquireTabLock, lockDisabledByParam } from '../tabLock';
 
 /**
  * GĐ1496 — Khoá một tab duy nhất. Fake đúng phần Web Locks mình dùng: một tên khoá,
@@ -100,5 +100,13 @@ describe('acquireTabLock — khoá 1 tab mỗi trình duyệt (GĐ1496)', () => 
     expect(locks.heldCount()).toBe(1);
     locks.releaseAll();
     expect(locks.heldCount()).toBe(0);
+  });
+
+  it('?lock=off — lối thoát QA/dev: predicate nhận đúng URL có tham số', () => {
+    expect(lockDisabledByParam('?lock=off')).toBe(true);
+    expect(lockDisabledByParam('?t=123&lock=off')).toBe(true);
+    expect(lockDisabledByParam('?t=123')).toBe(false);
+    expect(lockDisabledByParam('')).toBe(false);
+    expect(lockDisabledByParam('?lockoff')).toBe(false);
   });
 });
