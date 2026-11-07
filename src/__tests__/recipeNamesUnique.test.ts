@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { RECIPES } from '../data/recipes';
+import { productById } from '../data/products';
 import { QUAN_RECIPES } from '../data/quanRecipes';
 
 // GĐ1699 — tên công thức bếp và tên món quán nước không trùng (cùng tinh thần GĐ1694–1698).
@@ -18,5 +19,9 @@ describe('GĐ1699 — tên công thức duy nhất', () => {
   it('món quán nước: id và tên duy nhất', () => {
     expect(dups(QUAN_RECIPES.map((r) => r.id))).toEqual([]);
     expect(dups(QUAN_RECIPES.map((r) => r.name))).toEqual([]);
+  });
+  it('GĐ1700: tên công thức bếp trùng tên món nó nấu ra', () => {
+    const bad = RECIPES.filter((r) => productById(r.outputId)?.name !== r.name).map((r) => r.id);
+    expect(bad).toEqual([]);
   });
 });
