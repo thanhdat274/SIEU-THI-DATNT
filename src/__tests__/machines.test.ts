@@ -144,7 +144,7 @@ describe('GĐ1550 — dòng thông tin ghi giá cuối tuần', () => {
     const { machinePopupLine } = await import('../data/machines');
     expect(machinePopupLine('claw_machine')).toContain('cuối tuần');
     expect(machinePopupLine('cotton_candy')).toContain('cuối tuần');
-    expect(machinePopupLine('shoe_shine')).not.toContain('×1,5');
+    expect(machinePopupLine('shoe_shine')).not.toContain('cuối tuần'); // GĐ1571: giờ có 'trời mưa ×1,5'
   });
 });
 
@@ -208,5 +208,16 @@ describe('GĐ1568 máy chụp ảnh ngày lễ', () => {
     expect(feeAt1568('photo_booth', 600, 49, fest)).toBe(3000);
     expect(feeAt1568('photo_booth', 600, 50, plain)).toBe(3000);
     expect(popup1568('photo_booth')).toContain('ngày lễ');
+  });
+});
+
+import { machineFeeAt as feeAt1571, machinePopupLine as popup1571 } from '../data/machines';
+describe('GĐ1571 đánh giày ngày mưa', () => {
+  it('×1,5 khi mưa/bão từ cấp 42', () => {
+    expect(feeAt1571('shoe_shine', 600, 42, 3, 'rain')).toBe(3000);
+    expect(feeAt1571('shoe_shine', 600, 42, 3, 'storm')).toBe(3000);
+    expect(feeAt1571('shoe_shine', 600, 42, 3, 'sunny')).toBe(2000);
+    expect(feeAt1571('shoe_shine', 600, 41, 3, 'rain')).toBe(2000);
+    expect(popup1571('shoe_shine')).toContain('trời mưa');
   });
 });

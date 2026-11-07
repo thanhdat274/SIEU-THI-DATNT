@@ -458,7 +458,7 @@ export class CustomerManager {
         const machineUid = machine.uid;
         // GĐ1542 — ghi sổ theo loại máy (biz.serviceLife) để biết máy đã thu được bao nhiêu.
         const machineType = machine.type;
-        const fee = machineFeeAt(machine.type, s.minutes, s.level, s.day);
+        const fee = machineFeeAt(machine.type, s.minutes, s.level, s.day, s.weather);
         const icon = MACHINE_TYPES[machine.type as MachineId].icon;
         this.machineBusy.add(machineUid);
         if (s.level >= MACHINE_IMPULSE_LEVEL && machineImpulse(s.level, simRng()())) c.wants.push(...this.chooseWants(1));
