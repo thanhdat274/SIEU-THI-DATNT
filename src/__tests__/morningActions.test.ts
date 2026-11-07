@@ -72,3 +72,17 @@ describe('GĐ1572 — nhắc máy đánh giày ngày mưa', () => {
     expect(buildMorningActions(base({ level: 41, weather: 'rain', furniture: shoe })).some((x) => x.text.includes('đánh giày'))).toBe(false);
   });
 });
+
+import { REGULARS } from '../data/regulars';
+describe('GĐ1573 — nhắc tặng quà khách quen', () => {
+  const r = REGULARS[0];
+  const st = Object.fromEntries(r.favorites.map((f) => [f, 5]));
+  const prog = { [r.id]: { friendship: 0, visits: 2, perks: [], discovered: [] } } as never;
+  it('cấp 38 có khách đã quen + hàng thích → có nhắc', () => {
+    expect(buildMorningActions(base({ level: 60, regulars: prog, storage: st })).some((x) => x.text.includes('tặng quà'))).toBe(true);
+  });
+  it('chưa quen ai hoặc dưới cấp → không', () => {
+    expect(buildMorningActions(base({ level: 60, storage: st })).some((x) => x.text.includes('tặng quà'))).toBe(false);
+    expect(buildMorningActions(base({ level: 37, regulars: prog, storage: st })).some((x) => x.text.includes('tặng quà'))).toBe(false);
+  });
+});

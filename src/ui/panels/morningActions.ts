@@ -1,4 +1,6 @@
 import { cungGoodsAction, sapEventActions, tiemXoiCungAction } from '../../data/dayEventActions';
+import { giftableCount, REGULAR_GIFT_LEVEL } from '../../data/regularGift';
+import { REGULARS } from '../../data/regulars';
 import type { GameState } from '../../core/store';
 import { caseSize, formatMoney } from '../../data/products';
 import { debtDayAction } from '../../data/debtLedger';
@@ -50,6 +52,8 @@ export function buildMorningActions(c: MorningActionsCtx): DayAction[] {
   // GĐ604: đêm có trận — tiện lợi đông sau 22h (GĐ601)
   candidates.push(...sapEventActions(biz.sapRong, biz.sapKinds, day, weather)); // GĐ625/631 → GĐ632 tách hàm thuần
   if (branch?.open && isQuanMatchDay(day, weather)) candidates.push({ icon: '⚽', text: 'Tối nay có trận — tiện lợi đông 22h–24h ×1,2, xếp đủ kệ', panel: 'branch', danger: false, priority: 3 });
+  // GĐ1573 — cấp ≥38: nhắc số khách quen còn tặng quà được hôm nay
+  if (level >= REGULAR_GIFT_LEVEL) { const n = giftableCount(REGULARS.filter((r) => r.unlock <= level && (regulars[r.id]?.visits ?? 0) > 0), regulars, level, day, storage); if (n > 0) candidates.push({ icon: '🎁', text: `Còn ${n} khách quen có thể tặng quà hôm nay (+3 thân thiết)`, panel: 'regulars', danger: false, priority: 1 }); }
   // GĐ1572 — trời mưa + có máy đánh giày (cấp ≥42): nhắc phí ×1,5 hôm nay
   if (level >= 42 && (weather === 'rain' || weather === 'storm') && c.furniture?.some((f) => f.type === 'shoe_shine' && !f.broken)) candidates.push({ icon: '👞', text: 'Trời mưa — máy đánh giày thu ×1,5 hôm nay', panel: 'business', danger: false, priority: 1 });
   // GĐ589: ngày cúng — tiệm xôi đông; GĐ599: thợ tự nấu ×1,3 nên chỉ nhắc thêm thợ khi còn thiếu
