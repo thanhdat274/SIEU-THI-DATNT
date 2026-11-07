@@ -99,6 +99,8 @@ describe('GĐ1626 — thử thách tuần/tháng nêu lý do chưa làm được
     expect(periodBlocker('socialPosts', ctx)).toContain('đang 0');
     expect(periodBlocker('cookedSold', ctx)).toContain('chưa có bếp');
     expect(periodBlocker('revenue', ctx)).toBeNull();
+    expect(periodBlocker('combos', ctx)).toContain('🎁 Combo'); // GĐ1639
+    expect(periodBlocker('combos', { ...ctx, activeCombos: 2 })).toBeNull();
     expect(periodBlocker('onlineDone', { ...ctx, hasOnlineOpen: true })).toBeNull();
   });
 });
