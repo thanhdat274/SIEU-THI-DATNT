@@ -1528,7 +1528,7 @@ export const RECIPES: Recipe[] = [
   // cốt dừa ở ấm nước: mẻ (nếp 30k + đường 17k + nước cốt dừa 10k) = 57k → 12 viên × 9k = 108k, lãi 51k/mẻ,
   // nấu hời hơn bán thẳng nguyên liệu (77k < 108k). Mở 38 ≥ mọi nguyên liệu (1/1/30) (> golden 30 → sim không đổi).
   { id: 'recipe_che_troi_nuoc', name: 'Chè trôi nước', station: 'hot_kettle',
-    inputs: [{ productId: 'nep', quantity: 1 }, { productId: 'x_duong', quantity: 1 }, { productId: 'x_dua_cot_hop', quantity: 1 }],
+    inputs: [{ productId: 'nep', quantity: 1 }, { productId: 'x_duong', quantity: 1 }, { productId: 'x_dua_cot_hop', quantity: 1 }, { productId: 'x_gung', quantity: 1 }],
     outputId: 'che_troi_nuoc', outputQty: 12, durationMin: 18, unlock: 38, reputationGain: 2 },
   // GĐ1381: Chè Thái — chè trái cây thập cẩm trứ danh: trái cây trộn sữa tươi lạnh chan nước đường ở
   // ấm nước: mẻ (trái cây 25k + sữa tươi 28k + đường 17k) = 70k → 6 chén × 22k = 132k, lãi 62k/mẻ,

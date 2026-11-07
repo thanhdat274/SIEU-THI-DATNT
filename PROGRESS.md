@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (07/11/2026)
+- GĐ1664: Chè trôi nước thêm gừng vào công thức (đúng món thật, gừng trại thêm lối ra) — vẫn lời.
 - GĐ1663: quán nước thêm 🍊 Cam gừng đá (cấp 37) — gừng trại có món mát (trước chỉ trà gừng nóng).
 - GĐ1662: bếp thêm Canh chua cá (cấp 42, nồi nước: cá + thơm trại + cà chua + nước mắm).
 - GĐ1661: bếp thêm Trứng ngỗng luộc (cấp 45) — trứng ngỗng trại có lối ra thứ hai; giá giữ lời khuyên "bán lẻ hời hơn".
