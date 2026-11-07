@@ -13,7 +13,7 @@ const COLORS: Record<FurnitureType, string> = {
   shelf: '#a0703f', bigShelf: '#7f8c99', fridge: '#4aa3df', freezer: '#76c7e8', produce: '#5fa846', meat_counter: '#c0504d',
   checkout: '#c0504d', cartStation: '#8e7cc3', plant: '#3f9d5a', wall: '#c9bfa6',
   dining_table: '#b98a4e', chair: '#a9713c',
-  vending_drink: '#2980b9', scale_machine: '#95a5a6', claw_machine: '#c0392b',
+  vending_drink: '#2980b9', scale_machine: '#95a5a6', claw_machine: '#c0392b', massage_chair: '#6c3483',
   toilet_squat: '#bdc3c7', toilet_porcelain: '#ecf0f1', toilet_smart: '#7fb3d5',
   kho_dao: '#95a5a6', ke_gia_vi: '#e67e22', ke_chen: '#ecf0f1', thung_rac: '#27ae60', tham_chan: '#c0392b', den_long: '#e74c3c', tranh_dong_ho: '#f1c40f', bon_rua: '#7f8c8d',
   bang_hieu_bac: '#c0392b', bang_hieu_trung: '#d4ac0d', bang_hieu_nam: '#1e8449', bang_hieu_tay_nguyen: '#8d6e63', binh_bat_trang: '#2e5c9a', trong_dong: '#8c6a2f', chua_mot_cot: '#c0392b', mam_ngu_qua: '#e67e22', den_ong_sao: '#e74c3c',
@@ -23,7 +23,7 @@ const COLORS: Record<FurnitureType, string> = {
 const ICONS: Record<FurnitureType, string> = {
   shelf: '🗄️', bigShelf: '🏬', fridge: '🧊', freezer: '❄️', produce: '🥬', meat_counter: '🥩', checkout: '🧾', cartStation: '🛒', plant: '🪴', wall: '🧱',
   dining_table: '🍽️', chair: '🪑',
-  vending_drink: '🥤', scale_machine: '⚖️', claw_machine: '🧸',
+  vending_drink: '🥤', scale_machine: '⚖️', claw_machine: '🧸', massage_chair: '💆',
   toilet_squat: '🚽', toilet_porcelain: '🚽', toilet_smart: '🛁',
   kho_dao: '🔪', ke_gia_vi: '🧂', ke_chen: '🍽️', thung_rac: '🗑️', tham_chan: '🟥', den_long: '🏮', tranh_dong_ho: '🖼️', bon_rua: '🚰',
   bang_hieu_bac: '🚩', bang_hieu_trung: '🚩', bang_hieu_nam: '🚩', bang_hieu_tay_nguyen: '🚩', binh_bat_trang: '🏺', trong_dong: '🥁', chua_mot_cot: '🛕', mam_ngu_qua: '🍊', den_ong_sao: '⭐',

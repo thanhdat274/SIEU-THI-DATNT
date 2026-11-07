@@ -48,3 +48,13 @@ describe('machines — máy tự phục vụ thu phí mỗi lượt (GĐ1493)', 
     }
   });
 });
+
+describe('GĐ1537 — ghế mát-xa chân', () => {
+  it('mở cấp 38 (> golden 30), phí 2.400, hoàn vốn đúng 100 lượt, là máy thu phí', () => {
+    expect(furnitureDef('massage_chair').unlock).toBe(38);
+    expect(isMachine('massage_chair')).toBe(true);
+    expect(machineFee('massage_chair')).toBe(2_400);
+    expect(MACHINE_TYPES.massage_chair.price / MACHINE_TYPES.massage_chair.fee).toBe(100);
+    expect(furnitureDef('massage_chair').price).toBe(MACHINE_TYPES.massage_chair.price);
+  });
+});

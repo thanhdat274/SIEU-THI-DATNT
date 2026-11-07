@@ -12,12 +12,14 @@ export const MACHINE_VISIT_CHANCE = 0.15;
 /** Một lượt dùng máy kéo dài bao nhiêu giây game. */
 export const MACHINE_USE_SECONDS = 6;
 
-export type MachineId = 'vending_drink' | 'scale_machine' | 'claw_machine';
+export type MachineId = 'vending_drink' | 'scale_machine' | 'claw_machine' | 'massage_chair';
 
 export const MACHINE_TYPES: Record<MachineId, { name: string; price: number; fee: number; icon: string }> = {
   vending_drink: { name: 'Máy bán nước tự động', price: 120_000, fee: 1_200, icon: '🥤' },
   scale_machine: { name: 'Máy cân sức khỏe', price: 100_000, fee: 1_000, icon: '⚖️' },
   claw_machine: { name: 'Máy gắp thú', price: 180_000, fee: 1_800, icon: '🧸' },
+  // GĐ1537 — ghế mát-xa chân (cấp 38): đắt hơn, phí cao hơn, vẫn hoàn vốn ~100 lượt.
+  massage_chair: { name: 'Ghế mát-xa chân', price: 240_000, fee: 2_400, icon: '💆' },
 };
 
 export const isMachine = (type: string): type is MachineId => type in MACHINE_TYPES;

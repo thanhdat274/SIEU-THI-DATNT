@@ -5,7 +5,7 @@ export type FurnitureType =
   | 'shelf' | 'bigShelf' | 'fridge' | 'freezer' | 'produce' | 'meat_counter'
   | 'checkout' | 'cartStation' | 'plant' | 'wall'
   | 'dining_table' | 'chair'
-  | 'vending_drink' | 'scale_machine' | 'claw_machine'
+  | 'vending_drink' | 'scale_machine' | 'claw_machine' | 'massage_chair'
   | 'toilet_squat' | 'toilet_porcelain' | 'toilet_smart'
   | 'kho_dao' | 'ke_gia_vi' | 'ke_chen' | 'thung_rac' | 'tham_chan' | 'den_long' | 'tranh_dong_ho' | 'bon_rua'
   | 'bang_hieu_bac' | 'bang_hieu_trung' | 'bang_hieu_nam' | 'bang_hieu_tay_nguyen'
@@ -146,6 +146,10 @@ export const FURNITURE: FurnitureDef[] = [
   {
     type: 'vending_drink', name: 'Máy bán nước tự động', price: 120000, unlock: 30, size: [0.8, 0.7], tiers: 0, slots: 0, capacity: 0,
     categories: [], desc: 'Khách ghé lấy nước trả phí 1.200đ/lượt — giá máy tương đương ~100 lượt (đi cùng khu ăn uống)',
+  },
+  {
+    type: 'massage_chair', name: 'Ghế mát-xa chân', price: 240000, unlock: 38, size: [0.8, 0.8], tiers: 0, slots: 0, capacity: 0,
+    categories: [], desc: 'Khách ngồi mát-xa chân một lượt trả 2.400đ rồi mới đi mua hàng (GĐ1537)',
   },
   {
     type: 'scale_machine', name: 'Máy cân sức khỏe', price: 100000, unlock: 25, size: [0.6, 0.6], tiers: 0, slots: 0, capacity: 0,

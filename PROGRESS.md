@@ -113,3 +113,5 @@
 - GĐ1490–1505 (khu ăn tại chỗ theo tham khảo Midnight Bistro + bảng hiệu đặc sản 4 miền + khoá 1 tab): docs/progress-archive/PROGRESS-GD1490-1505.md
 - GĐ1506–1513 (đoàn kiểm tra vệ sinh, sửa maybeSurprise, decor khoe, tip 2 nấc, nút Nhập đủ, decor theo dịp lễ): docs/progress-archive/PROGRESS-GD1506-1513.md
 - Tham chiếu cũ dời theo GĐ1394–1408: PROGRESS-GD1404-1407.md · PROGRESS-GD1427-1429.md · PROGRESS-GD250-257.md · INDEX-GD1-250.md (trong docs/progress-archive/)
+
+- **GĐ1537** — Ghế mát-xa chân (máy thu phí thứ 4, cấp 38): 240k, 2.400đ/lượt, hoàn vốn 100 lượt; Midnight #3 (thêm máy thu phí). Test machines.test.ts.
