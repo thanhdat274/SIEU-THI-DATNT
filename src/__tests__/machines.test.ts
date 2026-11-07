@@ -79,3 +79,16 @@ describe('GĐ1539 — dòng thông tin máy khi đặt', () => {
     expect(machinePopupLine('shelf')).toBeNull();
   });
 });
+
+describe('GĐ1541 — gắp thú cuối tuần', () => {
+  it('cuối tuần cấp ≥35: ×1,5; ngày thường hoặc cấp thấp: giữ nguyên', async () => {
+    const { machineFeeAt } = await import('../data/machines');
+    const { isWeekend } = await import('../data/calendar');
+    const we = [1, 2, 3, 4, 5, 6, 7].find((d) => isWeekend(d))!;
+    const wd = [1, 2, 3, 4, 5, 6, 7].find((d) => !isWeekend(d))!;
+    expect(machineFeeAt('claw_machine', 600, 40, we)).toBe(2_700);
+    expect(machineFeeAt('claw_machine', 600, 40, wd)).toBe(1_800);
+    expect(machineFeeAt('claw_machine', 600, 30, we)).toBe(1_800);
+    expect(machineFeeAt('scale_machine', 600, 40, we)).toBe(1_000);
+  });
+});

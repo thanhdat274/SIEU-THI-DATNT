@@ -456,7 +456,7 @@ export class CustomerManager {
       const machine = freeMachine(s.furniture, this.machineBusy);
       if (machine) {
         const machineUid = machine.uid;
-        const fee = machineFeeAt(machine.type, s.minutes, s.level);
+        const fee = machineFeeAt(machine.type, s.minutes, s.level, s.day);
         const icon = MACHINE_TYPES[machine.type as MachineId].icon;
         this.machineBusy.add(machineUid);
         c.plan.push(() => this.walk(c, this.shop.spotFor(machine)));
