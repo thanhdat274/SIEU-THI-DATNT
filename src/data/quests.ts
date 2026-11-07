@@ -475,6 +475,13 @@ export function periodBlocker(measure: string, c: Pick<QuestContext, 'hasCookSta
   return null;
 }
 
+/** GĐ1628: cấp cần đạt để làm bước cốt truyện id này (0 = làm được ngay ở cấp hiện tại). */
+export function storyLockLevel(id: string, level: number): number {
+  const step = STORY_STEPS.find((x) => x.id === id);
+  const gate = step ? storyGateLevel(step) : 0;
+  return gate > level ? gate : 0;
+}
+
 /** Bước cốt truyện đang làm (bước đầu tiên chưa nhận thưởng); null khi đã xong hết. */
 export function storyQuest(c: QuestContext): Quest | null {
   const claimed = new Set(c.log.claimedStory);

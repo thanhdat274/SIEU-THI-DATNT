@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { newGameData, questContext, useGame } from '../core/store';
-import { FIRST_CONTRACT_LEVEL, STORY_STEPS, storyGateLevel, storyQuest } from '../data/quests';
+import { FIRST_CONTRACT_LEVEL, STORY_STEPS, storyGateLevel, storyLockLevel, storyQuest } from '../data/quests';
 
 // GĐ1618 — bước "Đối tác đầu tiên" tới trước cấp mở hợp đồng: ghi rõ cấp mở thay vì kẹt câm.
 describe('GĐ1618 — gợi ý cấp mở hợp đồng ở bước cốt truyện', () => {
@@ -56,5 +56,11 @@ describe('GĐ1618 — gợi ý cấp mở hợp đồng ở bước cốt truy�
       expect(maxStaff(l), st.id).toBeGreaterThanOrEqual(st.target);
       expect(maxStaff(l - 1), st.id).toBeLessThan(st.target);
     }
+  });
+  it('GĐ1628: storyLockLevel cho chip HUD — khóa dưới cấp mở, 0 khi đủ cấp hoặc bước không chặn', () => {
+    expect(storyLockLevel('story_warehouse', 3)).toBe(8);
+    expect(storyLockLevel('story_warehouse', 8)).toBe(0);
+    expect(storyLockLevel('story_level_3', 1)).toBe(0);
+    expect(storyLockLevel('khong_co', 1)).toBe(0);
   });
 });
