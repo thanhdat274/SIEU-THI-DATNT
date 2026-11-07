@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (07/11/2026)
+- GĐ1638: việc ngày "Bán theo combo" khi chưa bật combo nào ghi chỗ bật (⋯ Thêm › 🎁 Combo); giữ chỗ, bộ việc không xáo (QuestContext.activeCombos, không vào save).
 - GĐ1637: nút gieo hạt ở vườn khi thiếu tiền ghi "(Thiếu X₫)" thay cho giá. Cả bộ: 3 test hàng cuối run đỏ do việc dở dang chưa commit của phiên khác (lateGameProducts), không đụng.
 - GĐ1636: nút lắp máy bán hàng tự động ở chi nhánh khóa và ghi "Thiếu X₫" khi thiếu tiền. Rà xong bảng việc còn lại của 2 tài liệu tham khảo: phần chưa làm đều chờ siêu thị nhiều khu.
 - GĐ1635: nút nâng bậc quán nước khóa khi thiếu tiền và ghi "Thiếu X₫" (trước bấm mới báo); QA trình duyệt GĐ1631: bảng Xây dựng hiện "Thiếu 149.000đ". saveStore/longSessionLeak đỏ khi cả bộ chạy song song với phiên khác, chạy riêng xanh.

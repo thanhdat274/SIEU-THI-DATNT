@@ -156,6 +156,7 @@ export const NO_COURIER_DESC = 'Giao {n} đơn nấu — cần thuê 🛵 Giao h
 
 /** GĐ1616 — chưa mở dịch vụ nào thì không có lời dịch vụ: chỉ chỗ mở (bộ việc giữ nguyên). */
 /** GĐ1624: việc đơn app khi gian hàng app chưa mở/đang tạm ngưng. */
+export const NO_COMBO_DESC = 'Bán {n} combo — chưa bật combo nào: bật ở ⋯ Thêm › 🎁 Combo';
 export const NO_ONLINE_DESC = 'Giao {n} đơn app — gian hàng app chưa nhận đơn: mở ở 🌱 Mở rộng › 📲 Online';
 /** GĐ1625: chưa đủ người theo dõi để đăng quảng bá. */
 export const FEW_FOLLOWERS_DESC = (have: number) => `Đăng bài quảng bá — cần ${PROMO_MIN_FOLLOWERS} người theo dõi (đang ${have}): bán tốt để khách khen trên mạng`;
@@ -166,6 +167,8 @@ export interface QuestContext {
   hasService?: boolean;
   /** GĐ1624: gian hàng app đang nhận đơn. */
   hasOnlineOpen?: boolean;
+  /** GĐ1638: số combo đang bật (undefined = không rõ, không gợi ý). */
+  activeCombos?: number;
   /** GĐ1625: số người theo dõi trang MXH. */
   socialFollowers?: number;
   /** GĐ1614 — tiệm có nhân viên giao hàng (thiếu = không biết, giữ mô tả cũ). */
@@ -279,7 +282,7 @@ export function dailyQuests(c: QuestContext): Quest[] {
     // GĐ1584 — tặng quà khách quen (cấp ≥38, sau golden nên vòng xoay cấp thấp không đổi)
     { id: 'daily_gift', icon: '🎁', title: 'Tặng quà khách quen', unit: 'lần', target: 2, current: c.stats.gifts ?? 0, money: scale(40000, lv, 0.25), xp: scale(40, lv, 0.1), show: lv >= 38, desc: 'Mở bảng Khách quen, bấm 🎁 tặng {n} món khách thích' },
     { id: 'daily_services', icon: '🏦', title: 'Lời từ dịch vụ', unit: 'đ', target: scale(20000, lv, 0.15), current: c.stats.services ?? 0, money: scale(50000, lv, 0.25), xp: scale(35, lv, 0.1), show: lv >= (SERVICES[0]?.unlock ?? 99), ...(c.hasService === false ? { desc: NO_SERVICE_DESC } : {}) },
-    { id: 'daily_combo', icon: '🎁', title: 'Bán theo combo', unit: 'combo', target: scale(3, lv, 0.1), current: c.stats.combos ?? 0, money: scale(90000, lv, 0.25), xp: scale(55, lv, 0.1), show: lv >= COMBO_UNLOCK && unlockedCombos(lv).length > 0 },
+    { id: 'daily_combo', icon: '🎁', title: 'Bán theo combo', unit: 'combo', target: scale(3, lv, 0.1), current: c.stats.combos ?? 0, money: scale(90000, lv, 0.25), xp: scale(55, lv, 0.1), show: lv >= COMBO_UNLOCK && unlockedCombos(lv).length > 0, ...(c.activeCombos === 0 ? { desc: NO_COMBO_DESC } : {}) },
     { id: 'daily_cooked', icon: '🍳', title: 'Bán món nhà làm', unit: 'món', target: scale(5, lv, 0.15), current: cookedSoldToday(c), money: scale(100000, lv, 0.25), xp: scale(60, lv, 0.1), show: lv >= COOK_UNLOCK, ...(c.hasCookStation === false ? { desc: NO_STATION_DESC('Bán {n} món nhà làm') } : {}) },
     // Trần đơn app/ngày (data/online.ts): đơn chỉ đổ về trong ONLINE_HOURS (870 phút), cách nhau
     // orderGap(5★, cấp) × hệ số ngẫu nhiên trung bình 1.0 ⇒ tối đa ~870/max(35, 95−cấp) đơn:

@@ -102,3 +102,23 @@ describe('GĐ1626 — thử thách tuần/tháng nêu lý do chưa làm được
     expect(periodBlocker('onlineDone', { ...ctx, hasOnlineOpen: true })).toBeNull();
   });
 });
+
+describe('GĐ1638 — "Bán theo combo" khi chưa bật combo nào', () => {
+  it('ván mới chưa bật → mô tả chỉ chỗ bật; bật rồi thì câu gốc; bộ việc không đổi', async () => {
+    const { NO_COMBO_DESC } = await import('../data/quests');
+    useGame.setState({ ...newGameData(), level: 30 });
+    expect(questContext(useGame.getState()).activeCombos).toBe(0);
+    for (let day = 1; day <= 60; day++) {
+      useGame.setState({ ...newGameData(), level: 30, day });
+      const ctx = questContext(useGame.getState());
+      const q = dailyQuests(ctx).find((x) => x.id === 'daily_combo');
+      if (!q) continue;
+      expect(q.description).toBe(NO_COMBO_DESC.replace('{n}', q.target.toLocaleString('vi-VN')));
+      const on = dailyQuests({ ...ctx, activeCombos: 1 });
+      expect(on.map((x) => x.id)).toEqual(dailyQuests(ctx).map((x) => x.id));
+      expect(on.find((x) => x.id === 'daily_combo')!.description).not.toContain('chưa bật');
+      return;
+    }
+    throw new Error('không gặp việc combo');
+  });
+});
