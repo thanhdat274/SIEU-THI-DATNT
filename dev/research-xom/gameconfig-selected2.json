@@ -1,0 +1,3614 @@
+{
+ "truckOrders": {
+  "pick": {
+   "penGoods": {
+    "exclude": [
+     "phan_chuong"
+    ],
+    "bulkShare": 0.1,
+    "truckQtyMul": 2
+   },
+   "_note": "Chọn món theo thứ người chơi làm được (server domain/trade/truckPool.ts, 08 §5). Độ sâu = số tầng làm ra (1 = trồng/thu thẳng). depthWeight/qtyCapByDepth: chỉ số = độ sâu - 1, sâu hơn thì dùng phần tử cuối. lineTimeBudgetSeconds: số lượng 1 dòng không vượt quá số cái làm kịp trong khoảng này (tính trọn dây chuyền, 1 luống/1 con/1 cây/1 máy). Mỗi đơn tối đa maxDeepLines món có độ sâu >= deepFromDepth. Món quá rẻ so với cấp (giá x trần số lượng < valueFitPerLevel x cấp) bị giảm trọng số theo tỉ lệ, thấp nhất valueFitMinWeight. Món đang có trong kho được nhân stockWeightMul. v3.2 (econ-rebalance EXP, 'time is the key factor'): depthWeight chỉ dùng tới cấp depthWeightLevelRange[0], nội suy tuyến tính sang depthWeightLate tới depthWeightLevelRange[1] — cấp cao thiên về món sâu/lâu hơn (EXP/đơn giờ theo chainMinutesPerUnit). recentUnlockBoost nhân thêm trọng số món mở khoá trong withinLevels cấp gần nhất. CB4 (docs/53 §6). marketLine: từ minLevel, món quê tự làm được nếu mua thêm tối đa maxMarketItems đặc sản miền khác đã mở (công thức riêng cần chợ, món hai miền ở quê thuộc cặp) được lên đơn; tổng trọng số nhóm kéo về target (hệ số trong [1/maxMul, maxMul]), số lượng tối đa qtyCap. underusedBoost: món có tỉ trọng trọng số dưới sàn (minShare riêng từng món, còn lại defaultMinShare) thì được nhân lên tới sàn, tối đa x maxMul. homeSpecialtyShare: tổng trọng số đặc sản quê kéo về target (hệ số trong [1/maxMul, maxMul]) để 3 quê cùng tỉ lệ. CB8: valueFitExempt = món trung gian rẻ không bị giảm trọng số hợp cấp; cùng sàn riêng 0,6% cho bơ sáp, táo, nhãn lồng, tỏi đảo, giữ mọi món dùng ít của CB1 ≥ 0,5% dòng đơn ở Lv30 (docs/53 §6). penGoods (I554 Q5, chủ dự án chốt 30/10): đồ chuồng = sản phẩm vật nuôi trong animals_v3.json trừ exclude; bulkShare = tỉ lệ dòng đơn sỉ là đồ chuồng, chia đều các món người chơi đang nuôi được (không nuôi món nào thì không ép); truckQtyMul = số lượng dòng đồ chuồng của đơn xe tải thường x hệ số, kẹp trần qtyPerLine[1] (đã nhân capacityScale khi theo nhịp). Ghe: boatOrders.penGoodsQtyMul (thùng đồ chuồng x hệ số, kẹp trần qtyPerCrate).",
+   "depthWeight": [
+    1,
+    1,
+    0.5,
+    0.25
+   ],
+   "qtyCapByDepth": [
+    12,
+    6,
+    4,
+    2
+   ],
+   "lineTimeBudgetSeconds": 14400,
+   "stockWeightMul": 3,
+   "deepFromDepth": 3,
+   "maxDeepLines": 1,
+   "crossRegionQtyCap": 3,
+   "valueFitPerLevel": 20,
+   "valueFitMinWeight": 0.15,
+   "depthWeightLate": [
+    0.4,
+    0.9,
+    1.4,
+    1.8
+   ],
+   "depthWeightLevelRange": [
+    10,
+    40
+   ],
+   "recentUnlockBoost": {
+    "withinLevels": 5,
+    "multiplier": 1.6
+   },
+   "marketLine": {
+    "minLevel": 15,
+    "maxMarketItems": 1,
+    "qtyCap": 2,
+    "target": 0.17,
+    "maxMul": 8
+   },
+   "underusedBoost": {
+    "maxMul": 4,
+    "defaultMinShare": 0.005,
+    "minShare": {
+     "mat_ong": 0.011,
+     "sua_de": 0.01,
+     "trung_vit": 0.011,
+     "bo_sap": 0.006,
+     "tao": 0.006,
+     "nhan_long": 0.006,
+     "toi_dao": 0.006
+    }
+   },
+   "homeSpecialtyShare": {
+    "target": 0.24,
+    "maxMul": 2
+   },
+   "valueFitExempt": [
+    "bot_gao",
+    "banh_mi",
+    "banh_bong_lan",
+    "len"
+   ]
+  },
+  "slots": 9,
+  "unlockLevel": 1,
+  "itemsPerOrder": [
+   1,
+   3
+  ],
+  "rewardGoldMul": 1.3,
+  "marketWaveLineBonus": 0.25,
+  "rewardExp": "exp.truckOrderExp",
+  "targetValue": {
+   "min": {
+    "perLevel": 40
+   },
+   "max": {
+    "perLevel": 120
+   }
+  },
+  "qtyPerLine": [
+   1,
+   12
+  ],
+  "refillAfterDeleteSeconds": 900,
+  "refillAfterCompleteSeconds": 60,
+  "bulk": {
+   "minLevel": 41,
+   "maxSlots": 1,
+   "lines": [
+    1,
+    2
+   ],
+   "qty": [
+    40,
+    200
+   ],
+   "qtyMulMax": 2.5,
+   "expireSeconds": 259200,
+   "minEffort": 1
+  }
+ },
+ "boatOrders": {
+  "maxSailsPerDay": 20,
+  "penGoodsQtyMul": 1.5,
+  "_note": "GHE-CAP (chủ dự án chốt 26/10/2026): trần cứng số chuyến ghe (lần gửi ghe, POST /boat/sail) mỗi ngày giờ VN. Ghe hết hạn tự động không tính. Đủ trần thì ghe mới chờ tới 0h VN; ghe đang cập bến không bị hết hạn trong lúc bị chặn.",
+  "unlockLevel": 17,
+  "itemTypes": 3,
+  "cratesPerType": 3,
+  "qtyPerCrate": [
+   3,
+   8
+  ],
+  "deadlineSeconds": 57600,
+  "cooldownSeconds": 7200,
+  "targetValuePerLevel": 60,
+  "crateRewardMul": 1.5,
+  "marketWaveCrateBonus": 0.25,
+  "marketWaveCrates": 2,
+  "repeatCrateRewardMul": [
+   1,
+   1.2,
+   1.5
+  ],
+  "fullShipBonus": {
+   "goldMul": 0.5,
+   "guaranteedDrop": 1
+  },
+  "helpRequestsPerShip": 3,
+  "helperFillsFromOwnStorage": true,
+  "pick": {
+   "_note": "CB4 (docs/53 §6, server domain/trade/boat.ts#pickBoatTypes): trọng số chọn loại hàng theo cách chủ ghe làm ra — selfMade tự làm trọn, market cần mua thêm tối đa maxMarketItems đặc sản miền khác, other còn lại (đặc sản miền khác, món ba miền, công trình chưa có); mỗi ghe tối đa maxOtherTypes loại other.",
+   "selfMade": 1,
+   "market": 0.5,
+   "other": 0.15,
+   "maxMarketItems": 1,
+   "maxOtherTypes": 1
+  }
+ },
+ "speedUp": {
+  "xuCost": {
+   "exponent": 1,
+   "divisor": 15,
+   "min": 1,
+   "_formula": "ceil(remainingMinutes / 15)"
+  },
+  "appliesTo": [
+   "field",
+   "tree",
+   "animal",
+   "factory_job",
+   "boat_cooldown"
+  ]
+ },
+ "itemSpeedUp": {
+  "_note": "D-speedup-items (T-econ #2): đồng hồ cát — khác speedUp ở trên (xu, hoàn tất NGAY), đồng hồ cát CẮT BỚT reduceSeconds khỏi remaining time của ĐÚNG 1 mục tiêu (factory_job/animal/construction), tốn 1 vật phẩm trong kho (items.json), không tốn xu. Dùng khi còn tồn kho — hết thì quay lại dùng xu (speedUp) hoặc chờ.",
+  "items": {
+   "dong_ho_cat_15p": {
+    "reduceSeconds": 900
+   },
+   "dong_ho_cat_1h": {
+    "reduceSeconds": 3600
+   }
+  },
+  "appliesTo": [
+   "factory_job",
+   "animal",
+   "construction"
+  ]
+ },
+ "levelRewards": {
+  "_note": "Quà lên cấp 200 cấp (Đợt C, cờ level_rewards_v2, docs/56 §3.4; packages/shared/src/rules/levelRewards.ts). LC1 sinh bằng tools/gen_level_rewards.py, đừng sửa tay. Chỉ đọc khi cờ bật: vàng/xu thay level.levelUpReward, items/veLoc/decor/expBuff trao qua outbox LEVEL_UP (domain/levelRewards/grant.ts), bỏ quà mốc cũ (levels.json milestoneGift, đã gộp vào dòng). Tổng vàng Lv2–200 2.021.450, xu 904.",
+  "rows": [
+   {
+    "level": 2,
+    "gold": 100,
+    "xu": 1,
+    "items": []
+   },
+   {
+    "level": 3,
+    "gold": 150,
+    "xu": 1,
+    "items": [
+     [
+      "dong_ho_cat_15p",
+      1
+     ]
+    ]
+   },
+   {
+    "level": 4,
+    "gold": 200,
+    "xu": 1,
+    "items": []
+   },
+   {
+    "level": 5,
+    "gold": 250,
+    "xu": 1,
+    "items": [],
+    "veLoc": 1
+   },
+   {
+    "level": 6,
+    "gold": 350,
+    "xu": 1,
+    "items": [
+     [
+      "dong_ho_cat_15p",
+      2
+     ]
+    ]
+   },
+   {
+    "level": 7,
+    "gold": 400,
+    "xu": 1,
+    "items": []
+   },
+   {
+    "level": 8,
+    "gold": 450,
+    "xu": 1,
+    "items": []
+   },
+   {
+    "level": 9,
+    "gold": 500,
+    "xu": 1,
+    "items": []
+   },
+   {
+    "level": 10,
+    "gold": 550,
+    "xu": 1,
+    "items": [
+     [
+      "dong_ho_cat_1h",
+      1
+     ]
+    ],
+    "veLoc": 1
+   },
+   {
+    "level": 11,
+    "gold": 600,
+    "xu": 1,
+    "items": [
+     [
+      "phan_nhanh",
+      2
+     ]
+    ]
+   },
+   {
+    "level": 12,
+    "gold": 700,
+    "xu": 1,
+    "items": [
+     [
+      "van_go",
+      4
+     ]
+    ]
+   },
+   {
+    "level": 13,
+    "gold": 750,
+    "xu": 1,
+    "items": [
+     [
+      "dong_ho_cat_15p",
+      1
+     ]
+    ]
+   },
+   {
+    "level": 14,
+    "gold": 800,
+    "xu": 1,
+    "items": [
+     [
+      "phan_sieu_toc",
+      1
+     ]
+    ]
+   },
+   {
+    "level": 15,
+    "gold": 850,
+    "xu": 1,
+    "items": [
+     [
+      "dong_ho_cat_1h",
+      1
+     ]
+    ],
+    "veLoc": 1
+   },
+   {
+    "level": 16,
+    "gold": 950,
+    "xu": 1,
+    "items": [
+     [
+      "phan_nhanh",
+      2
+     ]
+    ]
+   },
+   {
+    "level": 17,
+    "gold": 1000,
+    "xu": 1,
+    "items": [
+     [
+      "dinh",
+      4
+     ]
+    ]
+   },
+   {
+    "level": 18,
+    "gold": 1050,
+    "xu": 1,
+    "items": [
+     [
+      "dong_ho_cat_15p",
+      1
+     ]
+    ]
+   },
+   {
+    "level": 19,
+    "gold": 1150,
+    "xu": 1,
+    "items": [
+     [
+      "phan_sieu_toc",
+      1
+     ]
+    ]
+   },
+   {
+    "level": 20,
+    "gold": 1200,
+    "xu": 1,
+    "items": [],
+    "decor": [
+     "hang_rao_tre"
+    ],
+    "veLoc": 1
+   },
+   {
+    "level": 21,
+    "gold": 1250,
+    "xu": 1,
+    "items": [
+     [
+      "phan_nhanh",
+      2
+     ]
+    ]
+   },
+   {
+    "level": 22,
+    "gold": 1350,
+    "xu": 1,
+    "items": [
+     [
+      "son",
+      4
+     ]
+    ]
+   },
+   {
+    "level": 23,
+    "gold": 1400,
+    "xu": 1,
+    "items": [
+     [
+      "dong_ho_cat_15p",
+      1
+     ]
+    ]
+   },
+   {
+    "level": 24,
+    "gold": 1450,
+    "xu": 1,
+    "items": [
+     [
+      "phan_sieu_toc",
+      1
+     ]
+    ]
+   },
+   {
+    "level": 25,
+    "gold": 1550,
+    "xu": 11,
+    "items": [
+     [
+      "dong_ho_cat_1h",
+      1
+     ]
+    ],
+    "decor": [
+     "coi_da_gia_gao"
+    ],
+    "veLoc": 1,
+    "expBuff": {
+     "pct": 0.05,
+     "hours": 72
+    }
+   },
+   {
+    "level": 26,
+    "gold": 1600,
+    "xu": 1,
+    "items": [
+     [
+      "phan_nhanh",
+      2
+     ]
+    ]
+   },
+   {
+    "level": 27,
+    "gold": 1700,
+    "xu": 1,
+    "items": [
+     [
+      "ban_le",
+      4
+     ]
+    ]
+   },
+   {
+    "level": 28,
+    "gold": 1750,
+    "xu": 1,
+    "items": [
+     [
+      "dong_ho_cat_15p",
+      1
+     ]
+    ]
+   },
+   {
+    "level": 29,
+    "gold": 1800,
+    "xu": 1,
+    "items": [
+     [
+      "phan_sieu_toc",
+      1
+     ]
+    ]
+   },
+   {
+    "level": 30,
+    "gold": 1900,
+    "xu": 1,
+    "items": [],
+    "decor": [
+     "duong_gach"
+    ],
+    "veLoc": 1
+   },
+   {
+    "level": 31,
+    "gold": 1950,
+    "xu": 2,
+    "items": [
+     [
+      "phan_nhanh",
+      2
+     ]
+    ]
+   },
+   {
+    "level": 32,
+    "gold": 2050,
+    "xu": 2,
+    "items": [
+     [
+      "oc_vit",
+      4
+     ]
+    ]
+   },
+   {
+    "level": 33,
+    "gold": 2100,
+    "xu": 2,
+    "items": [
+     [
+      "dong_ho_cat_15p",
+      1
+     ]
+    ]
+   },
+   {
+    "level": 34,
+    "gold": 2200,
+    "xu": 2,
+    "items": [
+     [
+      "phan_sieu_toc",
+      1
+     ]
+    ]
+   },
+   {
+    "level": 35,
+    "gold": 2250,
+    "xu": 2,
+    "items": [
+     [
+      "dong_ho_cat_1h",
+      1
+     ]
+    ],
+    "veLoc": 1
+   },
+   {
+    "level": 36,
+    "gold": 2350,
+    "xu": 2,
+    "items": [
+     [
+      "phan_nhanh",
+      2
+     ]
+    ]
+   },
+   {
+    "level": 37,
+    "gold": 2450,
+    "xu": 2,
+    "items": [
+     [
+      "ton",
+      4
+     ]
+    ]
+   },
+   {
+    "level": 38,
+    "gold": 2500,
+    "xu": 2,
+    "items": [
+     [
+      "dong_ho_cat_15p",
+      1
+     ]
+    ]
+   },
+   {
+    "level": 39,
+    "gold": 2600,
+    "xu": 2,
+    "items": [
+     [
+      "phan_sieu_toc",
+      1
+     ]
+    ]
+   },
+   {
+    "level": 40,
+    "gold": 3850,
+    "xu": 2,
+    "items": [
+     [
+      "nhan_sam",
+      10
+     ]
+    ],
+    "decor": [
+     "lu_nuoc"
+    ],
+    "veLoc": 1
+   },
+   {
+    "level": 41,
+    "gold": 2750,
+    "xu": 2,
+    "items": [
+     [
+      "phan_nhanh",
+      2
+     ]
+    ]
+   },
+   {
+    "level": 42,
+    "gold": 2850,
+    "xu": 2,
+    "items": [
+     [
+      "van_go",
+      4
+     ]
+    ]
+   },
+   {
+    "level": 43,
+    "gold": 2900,
+    "xu": 2,
+    "items": [
+     [
+      "dong_ho_cat_15p",
+      1
+     ]
+    ]
+   },
+   {
+    "level": 44,
+    "gold": 3000,
+    "xu": 2,
+    "items": [
+     [
+      "phan_sieu_toc",
+      1
+     ]
+    ]
+   },
+   {
+    "level": 45,
+    "gold": 3050,
+    "xu": 2,
+    "items": [
+     [
+      "dong_ho_cat_1h",
+      1
+     ]
+    ],
+    "veLoc": 1
+   },
+   {
+    "level": 46,
+    "gold": 3150,
+    "xu": 2,
+    "items": [
+     [
+      "phan_nhanh",
+      2
+     ]
+    ]
+   },
+   {
+    "level": 47,
+    "gold": 3250,
+    "xu": 2,
+    "items": [
+     [
+      "dinh",
+      4
+     ]
+    ]
+   },
+   {
+    "level": 48,
+    "gold": 3350,
+    "xu": 2,
+    "items": [
+     [
+      "dong_ho_cat_15p",
+      1
+     ]
+    ]
+   },
+   {
+    "level": 49,
+    "gold": 3400,
+    "xu": 2,
+    "items": [
+     [
+      "phan_sieu_toc",
+      1
+     ]
+    ]
+   },
+   {
+    "level": 50,
+    "gold": 3500,
+    "xu": 17,
+    "items": [],
+    "decor": [
+     "ghe_da",
+     "guong_nuoc_tre"
+    ],
+    "veLoc": 1,
+    "expBuff": {
+     "pct": 0.05,
+     "hours": 72
+    }
+   },
+   {
+    "level": 51,
+    "gold": 3600,
+    "xu": 2,
+    "items": [
+     [
+      "phan_nhanh",
+      3
+     ]
+    ]
+   },
+   {
+    "level": 52,
+    "gold": 3700,
+    "xu": 2,
+    "items": [
+     [
+      "son",
+      6
+     ]
+    ]
+   },
+   {
+    "level": 53,
+    "gold": 3750,
+    "xu": 2,
+    "items": [
+     [
+      "dong_ho_cat_15p",
+      2
+     ]
+    ]
+   },
+   {
+    "level": 54,
+    "gold": 3850,
+    "xu": 2,
+    "items": [
+     [
+      "phan_sieu_toc",
+      1
+     ]
+    ]
+   },
+   {
+    "level": 55,
+    "gold": 3950,
+    "xu": 2,
+    "items": [
+     [
+      "dong_ho_cat_1h",
+      1
+     ]
+    ],
+    "veLoc": 1
+   },
+   {
+    "level": 56,
+    "gold": 4050,
+    "xu": 2,
+    "items": [
+     [
+      "phan_nhanh",
+      3
+     ]
+    ]
+   },
+   {
+    "level": 57,
+    "gold": 4150,
+    "xu": 2,
+    "items": [
+     [
+      "ban_le",
+      6
+     ]
+    ]
+   },
+   {
+    "level": 58,
+    "gold": 4200,
+    "xu": 2,
+    "items": [
+     [
+      "dong_ho_cat_15p",
+      2
+     ]
+    ]
+   },
+   {
+    "level": 59,
+    "gold": 4300,
+    "xu": 2,
+    "items": [
+     [
+      "phan_sieu_toc",
+      1
+     ]
+    ]
+   },
+   {
+    "level": 60,
+    "gold": 6200,
+    "xu": 2,
+    "items": [
+     [
+      "nhan_sam",
+      10
+     ]
+    ],
+    "decor": [
+     "cong_lang"
+    ],
+    "veLoc": 1
+   },
+   {
+    "level": 61,
+    "gold": 4500,
+    "xu": 3,
+    "items": [
+     [
+      "phan_nhanh",
+      3
+     ]
+    ]
+   },
+   {
+    "level": 62,
+    "gold": 4600,
+    "xu": 3,
+    "items": [
+     [
+      "oc_vit",
+      6
+     ]
+    ]
+   },
+   {
+    "level": 63,
+    "gold": 4700,
+    "xu": 3,
+    "items": [
+     [
+      "dong_ho_cat_15p",
+      2
+     ]
+    ]
+   },
+   {
+    "level": 64,
+    "gold": 4800,
+    "xu": 3,
+    "items": [
+     [
+      "phan_sieu_toc",
+      1
+     ]
+    ]
+   },
+   {
+    "level": 65,
+    "gold": 4900,
+    "xu": 3,
+    "items": [
+     [
+      "dong_ho_cat_1h",
+      1
+     ]
+    ],
+    "veLoc": 1
+   },
+   {
+    "level": 66,
+    "gold": 5000,
+    "xu": 3,
+    "items": [
+     [
+      "phan_nhanh",
+      3
+     ]
+    ]
+   },
+   {
+    "level": 67,
+    "gold": 5100,
+    "xu": 3,
+    "items": [
+     [
+      "ton",
+      6
+     ]
+    ]
+   },
+   {
+    "level": 68,
+    "gold": 5200,
+    "xu": 3,
+    "items": [
+     [
+      "dong_ho_cat_15p",
+      2
+     ]
+    ]
+   },
+   {
+    "level": 69,
+    "gold": 5300,
+    "xu": 3,
+    "items": [
+     [
+      "phan_sieu_toc",
+      1
+     ]
+    ]
+   },
+   {
+    "level": 70,
+    "gold": 5400,
+    "xu": 3,
+    "items": [],
+    "decor": [
+     "hoa_dao"
+    ],
+    "veLoc": 1
+   },
+   {
+    "level": 71,
+    "gold": 5500,
+    "xu": 3,
+    "items": [
+     [
+      "phan_nhanh",
+      3
+     ]
+    ]
+   },
+   {
+    "level": 72,
+    "gold": 5600,
+    "xu": 3,
+    "items": [
+     [
+      "van_go",
+      6
+     ]
+    ]
+   },
+   {
+    "level": 73,
+    "gold": 5700,
+    "xu": 3,
+    "items": [
+     [
+      "dong_ho_cat_15p",
+      2
+     ]
+    ]
+   },
+   {
+    "level": 74,
+    "gold": 5800,
+    "xu": 3,
+    "items": [
+     [
+      "phan_sieu_toc",
+      1
+     ]
+    ]
+   },
+   {
+    "level": 75,
+    "gold": 5900,
+    "xu": 23,
+    "items": [
+     [
+      "dong_ho_cat_1h",
+      1
+     ]
+    ],
+    "decor": [
+     "chuong_bo_cau"
+    ],
+    "veLoc": 1,
+    "expBuff": {
+     "pct": 0.05,
+     "hours": 72
+    }
+   },
+   {
+    "level": 76,
+    "gold": 6000,
+    "xu": 3,
+    "items": [
+     [
+      "phan_nhanh",
+      3
+     ]
+    ]
+   },
+   {
+    "level": 77,
+    "gold": 6100,
+    "xu": 3,
+    "items": [
+     [
+      "dinh",
+      6
+     ]
+    ]
+   },
+   {
+    "level": 78,
+    "gold": 6200,
+    "xu": 3,
+    "items": [
+     [
+      "dong_ho_cat_15p",
+      2
+     ]
+    ]
+   },
+   {
+    "level": 79,
+    "gold": 6350,
+    "xu": 3,
+    "items": [
+     [
+      "phan_sieu_toc",
+      1
+     ]
+    ]
+   },
+   {
+    "level": 80,
+    "gold": 8850,
+    "xu": 3,
+    "items": [
+     [
+      "nhan_sam",
+      10
+     ]
+    ],
+    "decor": [
+     "leu_rom"
+    ],
+    "veLoc": 1
+   },
+   {
+    "level": 81,
+    "gold": 6550,
+    "xu": 3,
+    "items": [
+     [
+      "phan_nhanh",
+      3
+     ]
+    ]
+   },
+   {
+    "level": 82,
+    "gold": 6650,
+    "xu": 3,
+    "items": [
+     [
+      "son",
+      6
+     ]
+    ]
+   },
+   {
+    "level": 83,
+    "gold": 6750,
+    "xu": 3,
+    "items": [
+     [
+      "dong_ho_cat_15p",
+      2
+     ]
+    ]
+   },
+   {
+    "level": 84,
+    "gold": 6850,
+    "xu": 3,
+    "items": [
+     [
+      "phan_sieu_toc",
+      1
+     ]
+    ]
+   },
+   {
+    "level": 85,
+    "gold": 7000,
+    "xu": 3,
+    "items": [
+     [
+      "dong_ho_cat_1h",
+      1
+     ]
+    ],
+    "veLoc": 1
+   },
+   {
+    "level": 86,
+    "gold": 7100,
+    "xu": 3,
+    "items": [
+     [
+      "phan_nhanh",
+      3
+     ]
+    ]
+   },
+   {
+    "level": 87,
+    "gold": 7200,
+    "xu": 3,
+    "items": [
+     [
+      "ban_le",
+      6
+     ]
+    ]
+   },
+   {
+    "level": 88,
+    "gold": 7300,
+    "xu": 3,
+    "items": [
+     [
+      "dong_ho_cat_15p",
+      2
+     ]
+    ]
+   },
+   {
+    "level": 89,
+    "gold": 7450,
+    "xu": 3,
+    "items": [
+     [
+      "phan_sieu_toc",
+      1
+     ]
+    ]
+   },
+   {
+    "level": 90,
+    "gold": 7550,
+    "xu": 3,
+    "items": [],
+    "decor": [
+     "gieng_nuoc"
+    ],
+    "veLoc": 1
+   },
+   {
+    "level": 91,
+    "gold": 7650,
+    "xu": 3,
+    "items": [
+     [
+      "phan_nhanh",
+      3
+     ]
+    ]
+   },
+   {
+    "level": 92,
+    "gold": 7800,
+    "xu": 3,
+    "items": [
+     [
+      "oc_vit",
+      6
+     ]
+    ]
+   },
+   {
+    "level": 93,
+    "gold": 7900,
+    "xu": 3,
+    "items": [
+     [
+      "dong_ho_cat_15p",
+      2
+     ]
+    ]
+   },
+   {
+    "level": 94,
+    "gold": 8000,
+    "xu": 3,
+    "items": [
+     [
+      "phan_sieu_toc",
+      1
+     ]
+    ]
+   },
+   {
+    "level": 95,
+    "gold": 8150,
+    "xu": 3,
+    "items": [
+     [
+      "dong_ho_cat_1h",
+      1
+     ]
+    ],
+    "veLoc": 1
+   },
+   {
+    "level": 96,
+    "gold": 8250,
+    "xu": 3,
+    "items": [
+     [
+      "phan_nhanh",
+      3
+     ]
+    ]
+   },
+   {
+    "level": 97,
+    "gold": 8350,
+    "xu": 3,
+    "items": [
+     [
+      "ton",
+      6
+     ]
+    ]
+   },
+   {
+    "level": 98,
+    "gold": 8500,
+    "xu": 3,
+    "items": [
+     [
+      "dong_ho_cat_15p",
+      2
+     ]
+    ]
+   },
+   {
+    "level": 99,
+    "gold": 8600,
+    "xu": 3,
+    "items": [
+     [
+      "phan_sieu_toc",
+      1
+     ]
+    ]
+   },
+   {
+    "level": 100,
+    "gold": 11750,
+    "xu": 38,
+    "items": [
+     [
+      "nhan_sam",
+      10
+     ]
+    ],
+    "decor": [
+     "gian_hoa_giay",
+     "trau_vang_tram_cap"
+    ],
+    "veLoc": 1,
+    "expBuff": {
+     "pct": 0.05,
+     "hours": 72
+    }
+   },
+   {
+    "level": 101,
+    "gold": 8850,
+    "xu": 4,
+    "items": [
+     [
+      "phan_nhanh",
+      4
+     ]
+    ]
+   },
+   {
+    "level": 102,
+    "gold": 9000,
+    "xu": 4,
+    "items": [
+     [
+      "van_go",
+      8
+     ]
+    ]
+   },
+   {
+    "level": 103,
+    "gold": 9100,
+    "xu": 4,
+    "items": [
+     [
+      "dong_ho_cat_15p",
+      3
+     ]
+    ]
+   },
+   {
+    "level": 104,
+    "gold": 9250,
+    "xu": 4,
+    "items": [
+     [
+      "phan_sieu_toc",
+      2
+     ]
+    ]
+   },
+   {
+    "level": 105,
+    "gold": 9350,
+    "xu": 4,
+    "items": [
+     [
+      "dong_ho_cat_1h",
+      1
+     ]
+    ],
+    "veLoc": 1
+   },
+   {
+    "level": 106,
+    "gold": 9500,
+    "xu": 4,
+    "items": [
+     [
+      "phan_nhanh",
+      4
+     ]
+    ]
+   },
+   {
+    "level": 107,
+    "gold": 9600,
+    "xu": 4,
+    "items": [
+     [
+      "dinh",
+      8
+     ]
+    ]
+   },
+   {
+    "level": 108,
+    "gold": 9750,
+    "xu": 4,
+    "items": [
+     [
+      "dong_ho_cat_15p",
+      3
+     ]
+    ]
+   },
+   {
+    "level": 109,
+    "gold": 9850,
+    "xu": 4,
+    "items": [
+     [
+      "phan_sieu_toc",
+      2
+     ]
+    ]
+   },
+   {
+    "level": 110,
+    "gold": 10000,
+    "xu": 4,
+    "items": [],
+    "decor": [
+     "ao_sen"
+    ],
+    "veLoc": 1
+   },
+   {
+    "level": 111,
+    "gold": 10100,
+    "xu": 4,
+    "items": [
+     [
+      "phan_nhanh",
+      4
+     ]
+    ]
+   },
+   {
+    "level": 112,
+    "gold": 10250,
+    "xu": 4,
+    "items": [
+     [
+      "son",
+      8
+     ]
+    ]
+   },
+   {
+    "level": 113,
+    "gold": 10400,
+    "xu": 4,
+    "items": [
+     [
+      "dong_ho_cat_15p",
+      3
+     ]
+    ]
+   },
+   {
+    "level": 114,
+    "gold": 10500,
+    "xu": 4,
+    "items": [
+     [
+      "phan_sieu_toc",
+      2
+     ]
+    ]
+   },
+   {
+    "level": 115,
+    "gold": 10650,
+    "xu": 4,
+    "items": [
+     [
+      "dong_ho_cat_1h",
+      1
+     ]
+    ],
+    "veLoc": 1
+   },
+   {
+    "level": 116,
+    "gold": 10750,
+    "xu": 4,
+    "items": [
+     [
+      "phan_nhanh",
+      4
+     ]
+    ]
+   },
+   {
+    "level": 117,
+    "gold": 10900,
+    "xu": 4,
+    "items": [
+     [
+      "ban_le",
+      8
+     ]
+    ]
+   },
+   {
+    "level": 118,
+    "gold": 11050,
+    "xu": 4,
+    "items": [
+     [
+      "dong_ho_cat_15p",
+      3
+     ]
+    ]
+   },
+   {
+    "level": 119,
+    "gold": 11150,
+    "xu": 4,
+    "items": [
+     [
+      "phan_sieu_toc",
+      2
+     ]
+    ]
+   },
+   {
+    "level": 120,
+    "gold": 14900,
+    "xu": 4,
+    "items": [
+     [
+      "nhan_sam",
+      10
+     ]
+    ],
+    "decor": [
+     "bo_tra_hue"
+    ],
+    "veLoc": 1
+   },
+   {
+    "level": 121,
+    "gold": 11450,
+    "xu": 4,
+    "items": [
+     [
+      "phan_nhanh",
+      4
+     ]
+    ]
+   },
+   {
+    "level": 122,
+    "gold": 11600,
+    "xu": 4,
+    "items": [
+     [
+      "oc_vit",
+      8
+     ]
+    ]
+   },
+   {
+    "level": 123,
+    "gold": 11700,
+    "xu": 4,
+    "items": [
+     [
+      "dong_ho_cat_15p",
+      3
+     ]
+    ]
+   },
+   {
+    "level": 124,
+    "gold": 11850,
+    "xu": 4,
+    "items": [
+     [
+      "phan_sieu_toc",
+      2
+     ]
+    ]
+   },
+   {
+    "level": 125,
+    "gold": 12000,
+    "xu": 34,
+    "items": [
+     [
+      "dong_ho_cat_1h",
+      1
+     ]
+    ],
+    "decor": [
+     "cong_lang_nho"
+    ],
+    "veLoc": 1,
+    "expBuff": {
+     "pct": 0.05,
+     "hours": 72
+    }
+   },
+   {
+    "level": 126,
+    "gold": 12150,
+    "xu": 4,
+    "items": [
+     [
+      "phan_nhanh",
+      4
+     ]
+    ]
+   },
+   {
+    "level": 127,
+    "gold": 12300,
+    "xu": 4,
+    "items": [
+     [
+      "ton",
+      8
+     ]
+    ]
+   },
+   {
+    "level": 128,
+    "gold": 12400,
+    "xu": 4,
+    "items": [
+     [
+      "dong_ho_cat_15p",
+      3
+     ]
+    ]
+   },
+   {
+    "level": 129,
+    "gold": 12550,
+    "xu": 4,
+    "items": [
+     [
+      "phan_sieu_toc",
+      2
+     ]
+    ]
+   },
+   {
+    "level": 130,
+    "gold": 12700,
+    "xu": 4,
+    "items": [],
+    "decor": [
+     "bo_van_tre"
+    ],
+    "veLoc": 1
+   },
+   {
+    "level": 131,
+    "gold": 12850,
+    "xu": 4,
+    "items": [
+     [
+      "phan_nhanh",
+      4
+     ]
+    ]
+   },
+   {
+    "level": 132,
+    "gold": 13000,
+    "xu": 4,
+    "items": [
+     [
+      "van_go",
+      8
+     ]
+    ]
+   },
+   {
+    "level": 133,
+    "gold": 13150,
+    "xu": 4,
+    "items": [
+     [
+      "dong_ho_cat_15p",
+      3
+     ]
+    ]
+   },
+   {
+    "level": 134,
+    "gold": 13300,
+    "xu": 4,
+    "items": [
+     [
+      "phan_sieu_toc",
+      2
+     ]
+    ]
+   },
+   {
+    "level": 135,
+    "gold": 13400,
+    "xu": 4,
+    "items": [
+     [
+      "dong_ho_cat_1h",
+      1
+     ]
+    ],
+    "veLoc": 1
+   },
+   {
+    "level": 136,
+    "gold": 13550,
+    "xu": 4,
+    "items": [
+     [
+      "phan_nhanh",
+      4
+     ]
+    ]
+   },
+   {
+    "level": 137,
+    "gold": 13700,
+    "xu": 4,
+    "items": [
+     [
+      "dinh",
+      8
+     ]
+    ]
+   },
+   {
+    "level": 138,
+    "gold": 13850,
+    "xu": 4,
+    "items": [
+     [
+      "dong_ho_cat_15p",
+      3
+     ]
+    ]
+   },
+   {
+    "level": 139,
+    "gold": 14000,
+    "xu": 4,
+    "items": [
+     [
+      "phan_sieu_toc",
+      2
+     ]
+    ]
+   },
+   {
+    "level": 140,
+    "gold": 18350,
+    "xu": 4,
+    "items": [
+     [
+      "nhan_sam",
+      10
+     ]
+    ],
+    "decor": [
+     "nha_san"
+    ],
+    "veLoc": 1
+   },
+   {
+    "level": 141,
+    "gold": 14300,
+    "xu": 4,
+    "items": [
+     [
+      "phan_nhanh",
+      4
+     ]
+    ]
+   },
+   {
+    "level": 142,
+    "gold": 14450,
+    "xu": 4,
+    "items": [
+     [
+      "son",
+      8
+     ]
+    ]
+   },
+   {
+    "level": 143,
+    "gold": 14600,
+    "xu": 4,
+    "items": [
+     [
+      "dong_ho_cat_15p",
+      3
+     ]
+    ]
+   },
+   {
+    "level": 144,
+    "gold": 14750,
+    "xu": 4,
+    "items": [
+     [
+      "phan_sieu_toc",
+      2
+     ]
+    ]
+   },
+   {
+    "level": 145,
+    "gold": 14900,
+    "xu": 4,
+    "items": [
+     [
+      "dong_ho_cat_1h",
+      1
+     ]
+    ],
+    "veLoc": 1
+   },
+   {
+    "level": 146,
+    "gold": 15050,
+    "xu": 4,
+    "items": [
+     [
+      "phan_nhanh",
+      4
+     ]
+    ]
+   },
+   {
+    "level": 147,
+    "gold": 15200,
+    "xu": 4,
+    "items": [
+     [
+      "ban_le",
+      8
+     ]
+    ]
+   },
+   {
+    "level": 148,
+    "gold": 15400,
+    "xu": 4,
+    "items": [
+     [
+      "dong_ho_cat_15p",
+      3
+     ]
+    ]
+   },
+   {
+    "level": 149,
+    "gold": 15550,
+    "xu": 4,
+    "items": [
+     [
+      "phan_sieu_toc",
+      2
+     ]
+    ]
+   },
+   {
+    "level": 150,
+    "gold": 15700,
+    "xu": 39,
+    "items": [],
+    "decor": [
+     "ao_sen",
+     "kieu_son_son"
+    ],
+    "veLoc": 1,
+    "expBuff": {
+     "pct": 0.05,
+     "hours": 72
+    }
+   },
+   {
+    "level": 151,
+    "gold": 15850,
+    "xu": 5,
+    "items": [
+     [
+      "phan_nhanh",
+      4
+     ]
+    ]
+   },
+   {
+    "level": 152,
+    "gold": 16000,
+    "xu": 5,
+    "items": [
+     [
+      "oc_vit",
+      8
+     ]
+    ]
+   },
+   {
+    "level": 153,
+    "gold": 16150,
+    "xu": 5,
+    "items": [
+     [
+      "dong_ho_cat_15p",
+      3
+     ]
+    ]
+   },
+   {
+    "level": 154,
+    "gold": 16300,
+    "xu": 5,
+    "items": [
+     [
+      "phan_sieu_toc",
+      2
+     ]
+    ]
+   },
+   {
+    "level": 155,
+    "gold": 16500,
+    "xu": 5,
+    "items": [
+     [
+      "dong_ho_cat_1h",
+      1
+     ]
+    ],
+    "veLoc": 1
+   },
+   {
+    "level": 156,
+    "gold": 16650,
+    "xu": 5,
+    "items": [
+     [
+      "phan_nhanh",
+      4
+     ]
+    ]
+   },
+   {
+    "level": 157,
+    "gold": 16800,
+    "xu": 5,
+    "items": [
+     [
+      "ton",
+      8
+     ]
+    ]
+   },
+   {
+    "level": 158,
+    "gold": 16950,
+    "xu": 5,
+    "items": [
+     [
+      "dong_ho_cat_15p",
+      3
+     ]
+    ]
+   },
+   {
+    "level": 159,
+    "gold": 17150,
+    "xu": 5,
+    "items": [
+     [
+      "phan_sieu_toc",
+      2
+     ]
+    ]
+   },
+   {
+    "level": 160,
+    "gold": 22100,
+    "xu": 5,
+    "items": [
+     [
+      "nhan_sam",
+      10
+     ]
+    ],
+    "decor": [
+     "bo_lua_vang"
+    ],
+    "veLoc": 1
+   },
+   {
+    "level": 161,
+    "gold": 17450,
+    "xu": 5,
+    "items": [
+     [
+      "phan_nhanh",
+      4
+     ]
+    ]
+   },
+   {
+    "level": 162,
+    "gold": 17600,
+    "xu": 5,
+    "items": [
+     [
+      "van_go",
+      8
+     ]
+    ]
+   },
+   {
+    "level": 163,
+    "gold": 17800,
+    "xu": 5,
+    "items": [
+     [
+      "dong_ho_cat_15p",
+      3
+     ]
+    ]
+   },
+   {
+    "level": 164,
+    "gold": 17950,
+    "xu": 5,
+    "items": [
+     [
+      "phan_sieu_toc",
+      2
+     ]
+    ]
+   },
+   {
+    "level": 165,
+    "gold": 18100,
+    "xu": 5,
+    "items": [
+     [
+      "dong_ho_cat_1h",
+      1
+     ]
+    ],
+    "veLoc": 1
+   },
+   {
+    "level": 166,
+    "gold": 18300,
+    "xu": 5,
+    "items": [
+     [
+      "phan_nhanh",
+      4
+     ]
+    ]
+   },
+   {
+    "level": 167,
+    "gold": 18450,
+    "xu": 5,
+    "items": [
+     [
+      "dinh",
+      8
+     ]
+    ]
+   },
+   {
+    "level": 168,
+    "gold": 18600,
+    "xu": 5,
+    "items": [
+     [
+      "dong_ho_cat_15p",
+      3
+     ]
+    ]
+   },
+   {
+    "level": 169,
+    "gold": 18800,
+    "xu": 5,
+    "items": [
+     [
+      "phan_sieu_toc",
+      2
+     ]
+    ]
+   },
+   {
+    "level": 170,
+    "gold": 18950,
+    "xu": 5,
+    "items": [],
+    "decor": [
+     "nha_nhac_cung_dinh"
+    ],
+    "veLoc": 1
+   },
+   {
+    "level": 171,
+    "gold": 19150,
+    "xu": 5,
+    "items": [
+     [
+      "phan_nhanh",
+      4
+     ]
+    ]
+   },
+   {
+    "level": 172,
+    "gold": 19300,
+    "xu": 5,
+    "items": [
+     [
+      "son",
+      8
+     ]
+    ]
+   },
+   {
+    "level": 173,
+    "gold": 19450,
+    "xu": 5,
+    "items": [
+     [
+      "dong_ho_cat_15p",
+      3
+     ]
+    ]
+   },
+   {
+    "level": 174,
+    "gold": 19650,
+    "xu": 5,
+    "items": [
+     [
+      "phan_sieu_toc",
+      2
+     ]
+    ]
+   },
+   {
+    "level": 175,
+    "gold": 19800,
+    "xu": 45,
+    "items": [
+     [
+      "dong_ho_cat_1h",
+      1
+     ]
+    ],
+    "decor": [
+     "thuyen_rong_mini"
+    ],
+    "veLoc": 1,
+    "expBuff": {
+     "pct": 0.05,
+     "hours": 72
+    }
+   },
+   {
+    "level": 176,
+    "gold": 20000,
+    "xu": 5,
+    "items": [
+     [
+      "phan_nhanh",
+      4
+     ]
+    ]
+   },
+   {
+    "level": 177,
+    "gold": 20150,
+    "xu": 5,
+    "items": [
+     [
+      "ban_le",
+      8
+     ]
+    ]
+   },
+   {
+    "level": 178,
+    "gold": 20350,
+    "xu": 5,
+    "items": [
+     [
+      "dong_ho_cat_15p",
+      3
+     ]
+    ]
+   },
+   {
+    "level": 179,
+    "gold": 20500,
+    "xu": 5,
+    "items": [
+     [
+      "phan_sieu_toc",
+      2
+     ]
+    ]
+   },
+   {
+    "level": 180,
+    "gold": 26100,
+    "xu": 5,
+    "items": [
+     [
+      "nhan_sam",
+      10
+     ]
+    ],
+    "decor": [
+     "thuyen_hoa"
+    ],
+    "veLoc": 1
+   },
+   {
+    "level": 181,
+    "gold": 20850,
+    "xu": 5,
+    "items": [
+     [
+      "phan_nhanh",
+      4
+     ]
+    ]
+   },
+   {
+    "level": 182,
+    "gold": 21050,
+    "xu": 5,
+    "items": [
+     [
+      "oc_vit",
+      8
+     ]
+    ]
+   },
+   {
+    "level": 183,
+    "gold": 21250,
+    "xu": 5,
+    "items": [
+     [
+      "dong_ho_cat_15p",
+      3
+     ]
+    ]
+   },
+   {
+    "level": 184,
+    "gold": 21400,
+    "xu": 5,
+    "items": [
+     [
+      "phan_sieu_toc",
+      2
+     ]
+    ]
+   },
+   {
+    "level": 185,
+    "gold": 21600,
+    "xu": 5,
+    "items": [
+     [
+      "dong_ho_cat_1h",
+      1
+     ]
+    ],
+    "veLoc": 1
+   },
+   {
+    "level": 186,
+    "gold": 21750,
+    "xu": 5,
+    "items": [
+     [
+      "phan_nhanh",
+      4
+     ]
+    ]
+   },
+   {
+    "level": 187,
+    "gold": 21950,
+    "xu": 5,
+    "items": [
+     [
+      "ton",
+      8
+     ]
+    ]
+   },
+   {
+    "level": 188,
+    "gold": 22150,
+    "xu": 5,
+    "items": [
+     [
+      "dong_ho_cat_15p",
+      3
+     ]
+    ]
+   },
+   {
+    "level": 189,
+    "gold": 22300,
+    "xu": 5,
+    "items": [
+     [
+      "phan_sieu_toc",
+      2
+     ]
+    ]
+   },
+   {
+    "level": 190,
+    "gold": 22500,
+    "xu": 5,
+    "items": [],
+    "decor": [
+     "ruong_bac_thang"
+    ],
+    "veLoc": 1
+   },
+   {
+    "level": 191,
+    "gold": 22700,
+    "xu": 5,
+    "items": [
+     [
+      "phan_nhanh",
+      4
+     ]
+    ]
+   },
+   {
+    "level": 192,
+    "gold": 22850,
+    "xu": 5,
+    "items": [
+     [
+      "van_go",
+      8
+     ]
+    ]
+   },
+   {
+    "level": 193,
+    "gold": 23050,
+    "xu": 5,
+    "items": [
+     [
+      "dong_ho_cat_15p",
+      3
+     ]
+    ]
+   },
+   {
+    "level": 194,
+    "gold": 23250,
+    "xu": 5,
+    "items": [
+     [
+      "phan_sieu_toc",
+      2
+     ]
+    ]
+   },
+   {
+    "level": 195,
+    "gold": 23450,
+    "xu": 5,
+    "items": [
+     [
+      "dong_ho_cat_1h",
+      1
+     ]
+    ],
+    "veLoc": 1
+   },
+   {
+    "level": 196,
+    "gold": 23600,
+    "xu": 5,
+    "items": [
+     [
+      "phan_nhanh",
+      4
+     ]
+    ]
+   },
+   {
+    "level": 197,
+    "gold": 23800,
+    "xu": 5,
+    "items": [
+     [
+      "dinh",
+      8
+     ]
+    ]
+   },
+   {
+    "level": 198,
+    "gold": 24000,
+    "xu": 5,
+    "items": [
+     [
+      "dong_ho_cat_15p",
+      3
+     ]
+    ]
+   },
+   {
+    "level": 199,
+    "gold": 24200,
+    "xu": 5,
+    "items": [
+     [
+      "phan_sieu_toc",
+      2
+     ]
+    ]
+   },
+   {
+    "level": 200,
+    "gold": 30350,
+    "xu": 65,
+    "items": [
+     [
+      "nhan_sam",
+      10
+     ]
+    ],
+    "decor": [
+     "bo_lua_vang",
+     "tuong_lua_vang"
+    ],
+    "veLoc": 1,
+    "expBuff": {
+     "pct": 0.05,
+     "hours": 72
+    }
+   }
+  ]
+ },
+ "housePerks": {
+  "_note": "Quyền lợi nhà 5 cấp (Đợt C, cờ house_v2, docs/56 §3.5; packages/shared/src/rules/housePerks.ts). N2 (chủ duyệt 20/10): nhà lá cấp 1 không quyền lợi. storageBonus là TỔNG chỗ thêm ở cấp đó, cộng vào CẢ Hầm và Kho; dailyMaterials = số vật liệu rút ngẫu nhiên trong 6 vật liệu nâng Hầm/Kho mỗi ngày (mốc 0h giờ VN); dailyItems cộng thêm. Chỉ đọc khi cờ house_v2 bật.",
+  "levels": [
+   {
+    "level": 2,
+    "storageBonus": 60,
+    "dailyMaterials": 1,
+    "dailyItems": []
+   },
+   {
+    "level": 3,
+    "storageBonus": 150,
+    "dailyMaterials": 2,
+    "dailyItems": []
+   },
+   {
+    "level": 4,
+    "storageBonus": 300,
+    "dailyMaterials": 3,
+    "dailyItems": []
+   },
+   {
+    "level": 5,
+    "storageBonus": 500,
+    "dailyMaterials": 5,
+    "dailyItems": [
+     [
+      "dong_ho_cat_15p",
+      1
+     ]
+    ]
+   }
+  ]
+ },
+ "storageEasy": {
+  "_note": "Hầm/Kho dễ hơn (Đợt C, cờ storage_easy, docs/56 §3.3; packages/shared/src/rules/storageGen.ts). HK1 điền. Chỉ đọc khi cờ bật. freeItemIds: 14 vật liệu nâng Hầm/Kho và mở đất, không tính vào chỗ đã dùng (Hầm/Kho đầy vẫn nhận); bulkSteps: số nấc của nút Nâng N nấc (POST /storage/:kind/upgrade-many, cùng nút Nâng hết mức).",
+  "freeItemIds": [
+   "van_go",
+   "dinh",
+   "son",
+   "ban_le",
+   "oc_vit",
+   "ton",
+   "so_do",
+   "coc_moc",
+   "bua",
+   "dao_phat",
+   "riu",
+   "cua",
+   "xeng",
+   "thuoc_no"
+  ],
+  "bulkSteps": [
+   5
+  ]
+ },
+ "dailyLogin": {
+  "cycleDays": 7,
+  "resetOnMiss": false,
+  "rewards": [
+   {
+    "gold": 100,
+    "day": 1
+   },
+   {
+    "randomMaterial": 1,
+    "day": 2
+   },
+   {
+    "items": [
+     [
+      "phan_nhanh",
+      2
+     ]
+    ],
+    "day": 3
+   },
+   {
+    "gold": 300,
+    "day": 4
+   },
+   {
+    "randomMaterial": 2,
+    "day": 5
+   },
+   {
+    "gold": 500,
+    "day": 6
+   },
+   {
+    "xu": 5,
+    "decor": "bu_nhin",
+    "day": 7
+   }
+  ]
+ },
+ "luckyWheel": {
+  "_note": "Vòng quay Lộc (docs/48). 4 kỳ 28 ngày xoay 4 bộ đợt A. Ngày bắt đầu kỳ 1 (19/10/2026 00:00 giờ VN) là ngày tạm do PR 2 chọn vì kế hoạch chưa chốt ngày; vòng quay đang sau cờ nên đổi ở đây thoải mái, chỉ cần các kỳ không chồng nhau. Dòng goldByLevel từ cấp 40 (CG8) chỉ dùng khi cờ order_scale bật; tắt thì tra với min(cấp, 30) như cũ. Vàng ít = 400 × vàng/ngày(L) ÷ vàng/ngày(Lv26–30) theo sim CS4, làm tròn 50, giữ không giảm; vàng nhiều = 5 × vàng ít.",
+  "periodDays": 28,
+  "periods": [
+   {
+    "id": "ky_1",
+    "startsAt": "2026-10-19T00:00:00+07:00",
+    "featuredSet": "bac_bo"
+   },
+   {
+    "id": "ky_2",
+    "startsAt": "2026-11-16T00:00:00+07:00",
+    "featuredSet": "trung_bo"
+   },
+   {
+    "id": "ky_3",
+    "startsAt": "2026-12-14T00:00:00+07:00",
+    "featuredSet": "nam_bo"
+   },
+   {
+    "id": "ky_4",
+    "startsAt": "2027-01-11T00:00:00+07:00",
+    "featuredSet": "tay_bac"
+   }
+  ],
+  "freeSpinsPerDay": 1,
+  "tickets": {
+   "priceXu": 2,
+   "pack10Xu": 20,
+   "pack10Bonus": 1,
+   "buyLimitPerDay": 10
+  },
+  "pointsPerSpin": 10,
+  "bau": {
+   "baseBp": 50,
+   "softFrom": 76,
+   "softStepBp": 600,
+   "hardAt": 90
+  },
+  "hiem": {
+   "weight": 200,
+   "guaranteeAt": 30,
+   "featuredShareBp": 5000,
+   "featuredAfterLoss": true
+  },
+  "quy": {
+   "weight": 900
+  },
+  "thuong": {
+   "weight": 1600
+  },
+  "fillers": [
+   {
+    "id": "vang_it",
+    "weight": 2550,
+    "reward": {
+     "goldByLevel": [
+      [
+       1,
+       100
+      ],
+      [
+       10,
+       150
+      ],
+      [
+       20,
+       250
+      ],
+      [
+       30,
+       400
+      ],
+      [
+       40,
+       650
+      ],
+      [
+       60,
+       650
+      ],
+      [
+       100,
+       650
+      ],
+      [
+       150,
+       650
+      ],
+      [
+       200,
+       650
+      ]
+     ]
+    }
+   },
+   {
+    "id": "vang_nhieu",
+    "weight": 500,
+    "reward": {
+     "goldByLevel": [
+      [
+       1,
+       450
+      ],
+      [
+       10,
+       700
+      ],
+      [
+       20,
+       1250
+      ],
+      [
+       30,
+       2000
+      ],
+      [
+       40,
+       3250
+      ],
+      [
+       60,
+       3250
+      ],
+      [
+       100,
+       3250
+      ],
+      [
+       150,
+       3250
+      ],
+      [
+       200,
+       3250
+      ]
+     ]
+    }
+   },
+   {
+    "id": "phan_nhanh",
+    "weight": 1200,
+    "reward": {
+     "items": [
+      {
+       "id": "phan_nhanh",
+       "qty": 2
+      }
+     ]
+    }
+   },
+   {
+    "id": "dh_15p",
+    "weight": 800,
+    "reward": {
+     "items": [
+      {
+       "id": "dong_ho_cat_15p",
+       "qty": 1
+      }
+     ]
+    }
+   },
+   {
+    "id": "dh_1h",
+    "weight": 300,
+    "reward": {
+     "items": [
+      {
+       "id": "dong_ho_cat_1h",
+       "qty": 1
+      }
+     ]
+    }
+   },
+   {
+    "id": "sieu_toc",
+    "weight": 150,
+    "reward": {
+     "items": [
+      {
+       "id": "phan_sieu_toc",
+       "qty": 1
+      }
+     ]
+    }
+   },
+   {
+    "id": "vat_lieu",
+    "weight": 1000,
+    "reward": {
+     "randomMaterial": 3
+    }
+   },
+   {
+    "id": "xu_2",
+    "weight": 200,
+    "reward": {
+     "xu": 2
+    }
+   },
+   {
+    "id": "xu_10",
+    "weight": 30,
+    "reward": {
+     "xu": 10
+    }
+   },
+   {
+    "id": "ve",
+    "weight": 200,
+    "reward": {
+     "veLoc": 1
+    }
+   },
+   {
+    "id": "diem",
+    "weight": 320,
+    "reward": {
+     "diemLoc": 30
+    }
+   }
+  ],
+  "exchange": {
+   "ticket": {
+    "cost": 100,
+    "perWeek": 3
+   },
+   "quy": {
+    "cost": 150
+   },
+   "hiem": {
+    "cost": 400,
+    "perPeriod": 1
+   },
+   "bau": {
+    "cost": 1200,
+    "perPeriod": 1
+   }
+  },
+  "maxLevelDupPoints": {
+   "thuong": 5,
+   "quy": 10,
+   "hiem": 40,
+   "bau": 100
+  }
+ },
+ "fishing": {
+  "_note": "Đi câu (AO-RUNG, cờ fishing + fishing_visit). CAU-VUI: fight = giằng co theo bậc cá (vùng xanh zone, sức kéo pull, thời lượng durationMs; headStart = tiến độ khởi đầu khi giật chuẩn; minElapsedFrac/graceMs = khung thời gian server nhận kết quả); fakeNibble = 0–2 lần phao nhấp giả; streak = nâng trọng số bậc hiếm theo chuỗi giật chuẩn; weight = cân nặng gram (bands = 4 cỡ cá: thường, to 1/25, khủng 1/1.000, thần 1/20.000 nặng hơn con to nhất của loài × mul); trophy = Giỏ cá khủng (cờ fishing_trophy: slots ô, bán thương lái = giá bán loài × sellMul theo cỡ); v2 = Câu cá 2.0 (cờ fishing_v2: signals = 0–3 tín hiệu giả rỉa/đụng trước lần cắn thật, cá hiếm dùng rareCountWeights; startleMs = giật hụt lần 1 cá cắn lại sau chừng này ms; fleeBait = mồi mất thêm khi giật hụt lần 2; peekHoldMs = máy khách hỏi phao sớm tối đa chừng này ms (máy khách hỏi trước 1 giây, chừa 0,5 giây cho đồng hồ máy lệch), server dựng sẵn câu trả lời rồi giữ tới đúng mốc mới gửi (không gửi trước giờ cắn); fight.redLo/redGraceMs = vùng đỏ vòng lực và ân hạn trước khi đứt, warnMs = báo trước cá vùng, thrashFrac = ngưỡng cá vùng, bigPull = cá to/khủng/thần nhân sức kéo; newbie = đỡ người mới theo số lần quăng; snapHelp = đứt dây liền run lần thì trận sau nhân sức kéo pullMul); bait = mồi bạn tặng; visit = câu ké ao bạn; leaderboard = bảng cá to tuần. Mỗi buổi castsPerSession lần quăng; một buổi hồi sau regenMinutes phút, dồn tối đa maxSessions buổi. Mỗi lần quăng bốc theo trọng số: missWeight là hụt, còn lại theo dropTable (4 bậc hiếm thuong/kha/hiem/rat_hiem, ca_linh theo mùa tháng 8–11, ca_ho cần Ao bến cấp 3, ruong_chim mở ra đúng 1 dòng loot: vàng 100–300 / 1.000, vật liệu, phân nhanh, ve_loc = +1 Vé Lộc, đồng hồ cát, xương gặm, nước thần; KHÔNG ra xu. Rương Báu (RB-0/RB-1) chưa có: 5 trọng số rương tạm đổi thành vàng 100–300). Mã cá nằm trong items.json (loại ca).",
+  "castsPerSession": 5,
+  "regenMinutes": 60,
+  "maxSessions": 3,
+  "missWeight": 20,
+  "dropTable": [
+   {
+    "item": "ca_ro",
+    "tier": "thuong",
+    "qty": [
+     1,
+     1
+    ],
+    "weight": 30
+   },
+   {
+    "item": "ca_chep",
+    "tier": "thuong",
+    "qty": [
+     1,
+     1
+    ],
+    "weight": 28
+   },
+   {
+    "item": "ca_tre",
+    "tier": "thuong",
+    "qty": [
+     1,
+     1
+    ],
+    "weight": 26
+   },
+   {
+    "item": "ca_me",
+    "tier": "thuong",
+    "qty": [
+     1,
+     1
+    ],
+    "weight": 25
+   },
+   {
+    "item": "ca_diec",
+    "tier": "thuong",
+    "qty": [
+     1,
+     1
+    ],
+    "weight": 25
+   },
+   {
+    "item": "ca_ro_phi",
+    "tier": "thuong",
+    "qty": [
+     1,
+     1
+    ],
+    "weight": 24
+   },
+   {
+    "item": "ca_tra",
+    "tier": "thuong",
+    "qty": [
+     1,
+     1
+    ],
+    "weight": 22
+   },
+   {
+    "item": "tom_cang",
+    "tier": "thuong",
+    "qty": [
+     1,
+     1
+    ],
+    "weight": 20
+   },
+   {
+    "item": "ca_linh",
+    "tier": "thuong",
+    "qty": [
+     1,
+     1
+    ],
+    "weight": 25,
+    "months": [
+     8,
+     9,
+     10,
+     11
+    ]
+   },
+   {
+    "item": "ca_tram",
+    "tier": "kha",
+    "qty": [
+     1,
+     1
+    ],
+    "weight": 12
+   },
+   {
+    "item": "ca_loc",
+    "tier": "kha",
+    "qty": [
+     1,
+     1
+    ],
+    "weight": 12
+   },
+   {
+    "item": "ca_chach",
+    "tier": "kha",
+    "qty": [
+     1,
+     1
+    ],
+    "weight": 10
+   },
+   {
+    "item": "luon",
+    "tier": "kha",
+    "qty": [
+     1,
+     1
+    ],
+    "weight": 10
+   },
+   {
+    "item": "ca_that_lat",
+    "tier": "hiem",
+    "qty": [
+     1,
+     1
+    ],
+    "weight": 5
+   },
+   {
+    "item": "ca_chinh",
+    "tier": "hiem",
+    "qty": [
+     1,
+     1
+    ],
+    "weight": 4
+   },
+   {
+    "item": "ca_lang",
+    "tier": "hiem",
+    "qty": [
+     1,
+     1
+    ],
+    "weight": 4
+   },
+   {
+    "item": "ca_loc_khung",
+    "tier": "hiem",
+    "qty": [
+     1,
+     1
+    ],
+    "weight": 3
+   },
+   {
+    "item": "ca_chep_vang",
+    "tier": "hiem",
+    "qty": [
+     1,
+     1
+    ],
+    "weight": 3
+   },
+   {
+    "item": "ca_anh_vu",
+    "tier": "rat_hiem",
+    "qty": [
+     1,
+     1
+    ],
+    "weight": 1
+   },
+   {
+    "item": "ca_chien",
+    "tier": "rat_hiem",
+    "qty": [
+     1,
+     1
+    ],
+    "weight": 1
+   },
+   {
+    "item": "ca_ho",
+    "tier": "rat_hiem",
+    "qty": [
+     1,
+     1
+    ],
+    "weight": 1,
+    "minAoLevel": 3
+   },
+   {
+    "item": "ruong_chim",
+    "qty": [
+     1,
+     1
+    ],
+    "weight": 4,
+    "loot": [
+     {
+      "gold": [
+       100,
+       300
+      ],
+      "weight": 12
+     },
+     {
+      "gold": [
+       1000,
+       1000
+      ],
+      "weight": 2
+     },
+     {
+      "item": "van_go",
+      "qty": [
+       1,
+       1
+      ],
+      "weight": 6
+     },
+     {
+      "item": "dinh",
+      "qty": [
+       1,
+       1
+      ],
+      "weight": 6
+     },
+     {
+      "item": "son",
+      "qty": [
+       1,
+       1
+      ],
+      "weight": 6
+     },
+     {
+      "item": "ban_le",
+      "qty": [
+       1,
+       1
+      ],
+      "weight": 6
+     },
+     {
+      "item": "oc_vit",
+      "qty": [
+       1,
+       1
+      ],
+      "weight": 6
+     },
+     {
+      "item": "ton",
+      "qty": [
+       1,
+       1
+      ],
+      "weight": 6
+     },
+     {
+      "item": "bua",
+      "qty": [
+       1,
+       1
+      ],
+      "weight": 3
+     },
+     {
+      "item": "coc_moc",
+      "qty": [
+       1,
+       1
+      ],
+      "weight": 3
+     },
+     {
+      "item": "xeng",
+      "qty": [
+       1,
+       1
+      ],
+      "weight": 3
+     },
+     {
+      "item": "riu",
+      "qty": [
+       1,
+       1
+      ],
+      "weight": 3
+     },
+     {
+      "item": "cua",
+      "qty": [
+       1,
+       1
+      ],
+      "weight": 3
+     },
+     {
+      "item": "dao_phat",
+      "qty": [
+       1,
+       1
+      ],
+      "weight": 3
+     },
+     {
+      "item": "thuoc_no",
+      "qty": [
+       1,
+       1
+      ],
+      "weight": 3
+     },
+     {
+      "item": "phan_nhanh",
+      "qty": [
+       1,
+       1
+      ],
+      "weight": 8
+     },
+     {
+      "item": "ve_loc",
+      "qty": [
+       1,
+       1
+      ],
+      "weight": 5
+     },
+     {
+      "item": "dong_ho_cat_15p",
+      "qty": [
+       1,
+       1
+      ],
+      "weight": 4
+     },
+     {
+      "item": "xuong_gam",
+      "qty": [
+       1,
+       1
+      ],
+      "weight": 4
+     },
+     {
+      "item": "nuoc_than",
+      "qty": [
+       1,
+       1
+      ],
+      "weight": 3
+     },
+     {
+      "item": "moi_cau",
+      "qty": [
+       1,
+       2
+      ],
+      "weight": 6
+     },
+     {
+      "gold": [
+       100,
+       300
+      ],
+      "weight": 5
+     }
+    ]
+   }
+  ],
+  "fight": {
+   "headStart": 0.3,
+   "minElapsedFrac": 0.8,
+   "graceMs": 12000,
+   "tiers": {
+    "thuong": {
+     "durationMs": [
+      3000,
+      3500
+     ],
+     "zone": 0.5,
+     "pull": 0.3,
+     "pullEveryMs": 900
+    },
+    "kha": {
+     "durationMs": [
+      3500,
+      4200
+     ],
+     "zone": 0.42,
+     "pull": 0.45,
+     "pullEveryMs": 800
+    },
+    "hiem": {
+     "durationMs": [
+      4500,
+      5200
+     ],
+     "zone": 0.35,
+     "pull": 0.6,
+     "pullEveryMs": 700
+    },
+    "rat_hiem": {
+     "durationMs": [
+      5200,
+      6000
+     ],
+     "zone": 0.3,
+     "pull": 0.75,
+     "pullEveryMs": 600
+    }
+   }
+  },
+  "fakeNibble": {
+   "countWeights": [
+    40,
+    40,
+    20
+   ],
+   "leadMs": 2500,
+   "tailMs": 1500,
+   "minGapMs": 1800,
+   "spookWindowMs": 900
+  },
+  "streak": {
+   "maxSteps": 5,
+   "bonusPerStep": {
+    "kha": 0.15,
+    "hiem": 0.25,
+    "rat_hiem": 0.4
+   }
+  },
+  "weight": {
+   "skew": 1.6,
+   "bands": {
+    "normalTop": 0.7,
+    "to": {
+     "chance": 0.04,
+     "t": [
+      0.7,
+      0.92
+     ]
+    },
+    "khung": {
+     "chance": 0.001,
+     "t": [
+      0.92,
+      1
+     ]
+    },
+    "than": {
+     "chance": 0.00005,
+     "mul": [
+      1.3,
+      1.5
+     ]
+    }
+   },
+   "byTier": {
+    "thuong": [
+     300,
+     1500
+    ],
+    "kha": [
+     1000,
+     4000
+    ],
+    "hiem": [
+     3000,
+     12000
+    ],
+    "rat_hiem": [
+     8000,
+     40000
+    ]
+   },
+   "species": {
+    "ca_ro": [
+     100,
+     400
+    ],
+    "ca_chep": [
+     800,
+     5000
+    ],
+    "ca_tre": [
+     300,
+     1200
+    ],
+    "ca_me": [
+     200,
+     800
+    ],
+    "ca_diec": [
+     300,
+     1500
+    ],
+    "ca_ro_phi": [
+     200,
+     900
+    ],
+    "ca_tra": [
+     1000,
+     6000
+    ],
+    "tom_cang": [
+     50,
+     300
+    ],
+    "ca_linh": [
+     100,
+     600
+    ],
+    "ca_tram": [
+     2000,
+     12000
+    ],
+    "ca_loc": [
+     800,
+     4000
+    ],
+    "ca_chach": [
+     200,
+     1000
+    ],
+    "luon": [
+     300,
+     1500
+    ],
+    "ca_that_lat": [
+     3000,
+     9000
+    ],
+    "ca_chinh": [
+     4000,
+     14000
+    ],
+    "ca_lang": [
+     3000,
+     12000
+    ],
+    "ca_loc_khung": [
+     5000,
+     18000
+    ],
+    "ca_chep_vang": [
+     2000,
+     7000
+    ],
+    "ca_anh_vu": [
+     8000,
+     25000
+    ],
+    "ca_chien": [
+     10000,
+     30000
+    ],
+    "ca_ho": [
+     15000,
+     45000
+    ]
+   }
+  },
+  "bait": {
+   "receivePerDay": 5,
+   "givePerFriendPerDay": 1,
+   "stockMax": 10,
+   "giverExp": 10,
+   "giverExpPerDay": 10
+  },
+  "visit": {
+   "castsPerFriendPerDay": 5,
+   "ownerGoldPerFish": 20,
+   "ownerGoldPerDay": 200
+  },
+  "leaderboard": {
+   "top": 10
+  },
+  "trophy": {
+   "slots": 20,
+   "sellMul": {
+    "khung": 10,
+    "than": 50
+   }
+  },
+  "v2": {
+   "signals": {
+    "countWeights": [
+     25,
+     40,
+     25,
+     10
+    ],
+    "rareCountWeights": [
+     5,
+     25,
+     40,
+     30
+    ],
+    "dungChance": 0.4,
+    "leadMs": 2500,
+    "tailMs": 1500,
+    "minGapMs": 1500
+   },
+   "startleMs": [
+    3000,
+    5000
+   ],
+   "fleeBait": 1,
+   "peekHoldMs": 1500,
+   "fight": {
+    "redLo": 0.9,
+    "redGraceMs": 400,
+    "warnMs": 300,
+    "thrashFrac": 0.6,
+    "bigPull": {
+     "to": 1.15,
+     "khung": 1.3,
+     "than": 1.45
+    }
+   },
+   "newbie": {
+    "assistCasts": 10,
+    "easyCasts": 20,
+    "easyRedBonusMs": 300,
+    "easyWarnMs": 500
+   },
+   "snapHelp": {
+    "run": 3,
+    "pullMul": 0.8
+   },
+   "exp": {
+    "thuong": 5,
+    "kha": 15,
+    "hiem": 40,
+    "rat_hiem": 40
+   }
+  },
+  "rods": [
+   {
+    "level": 1,
+    "riseMul": 1,
+    "redGraceMs": 400,
+    "windowBonusMs": 0,
+    "zoneBonus": 0,
+    "needAoBenLevel": 1
+   },
+   {
+    "level": 2,
+    "riseMul": 0.92,
+    "redGraceMs": 550,
+    "windowBonusMs": 150,
+    "zoneBonus": 0.08,
+    "needAoBenLevel": 2,
+    "cost": {
+     "gold": 20000,
+     "items": {
+      "van_go": 10
+     },
+     "fish": [
+      {
+       "tier": "thuong",
+       "count": 20,
+       "species": 4
+      }
+     ]
+    }
+   },
+   {
+    "level": 3,
+    "riseMul": 0.85,
+    "redGraceMs": 700,
+    "windowBonusMs": 300,
+    "zoneBonus": 0.15,
+    "needAoBenLevel": 3,
+    "cost": {
+     "gold": 80000,
+     "items": {
+      "van_go": 30
+     },
+     "fish": [
+      {
+       "tier": "thuong",
+       "count": 50,
+       "species": 6
+      },
+      {
+       "tier": "kha",
+       "count": 8,
+       "species": 3
+      }
+     ],
+     "record": {
+      "item": "ca_chep",
+      "minG": 3000
+     }
+    }
+   },
+   {
+    "level": 4,
+    "riseMul": 0.78,
+    "redGraceMs": 850,
+    "windowBonusMs": 450,
+    "zoneBonus": 0.22,
+    "needAoBenLevel": 4,
+    "cost": {
+     "gold": 250000,
+     "items": {
+      "van_go": 80
+     },
+     "fish": [
+      {
+       "tier": "thuong",
+       "count": 100,
+       "species": 8
+      },
+      {
+       "tier": "kha",
+       "count": 20,
+       "species": 4
+      },
+      {
+       "tier": "hiem",
+       "count": 3,
+       "species": 3
+      }
+     ],
+     "record": {
+      "item": "ca_tram",
+      "minG": 7000
+     }
+    }
+   },
+   {
+    "level": 5,
+    "riseMul": 0.7,
+    "redGraceMs": 1000,
+    "windowBonusMs": 600,
+    "zoneBonus": 0.3,
+    "needAoBenLevel": 5,
+    "cost": {
+     "gold": 700000,
+     "items": {
+      "van_go": 180
+     },
+     "fish": [
+      {
+       "tier": "thuong",
+       "count": 150,
+       "species": 8
+      },
+      {
+       "tier": "kha",
+       "count": 40,
+       "species": 4
+      },
+      {
+       "tier": "hiem",
+       "count": 10,
+       "species": 5
+      },
+      {
+       "tier": "rat_hiem",
+       "count": 1,
+       "species": 1
+      }
+     ],
+     "record": {
+      "item": "ca_lang",
+      "minG": 7500
+     }
+    }
+   }
+  ]
+ },
+ "greenhouse": {
+  "_note": "Nhà kính (Đợt C, cờ greenhouse, docs/56 §3.2; packages/shared/src/rules/greenhouse.ts). C0 chỉ khai, chưa ai đọc. Mở ở unlockLevel; plotsByLevel: count là TỔNG số ô từ cấp đó. Thương lái (CGH3) bán cành cây miền khác giá round(traderPriceMul × giá cây), chỉ lấy vàng, tối đa crossRegionCapPerItemPerDay cành mỗi món mỗi ngày VN; traderDailyCap chưa dùng. Bạn tặng cành (CGH3): cuttingsPerFriendPerDay mỗi cặp mỗi ngày, người nhận tối đa cuttingGiftsReceivedPerDay cành mỗi ngày.",
+  "unlockLevel": 40,
+  "plotsByLevel": [
+   {
+    "level": 40,
+    "count": 2
+   },
+   {
+    "level": 50,
+    "count": 4
+   }
+  ],
+  "traderPriceMul": 1.6,
+  "cuttingsPerFriendPerDay": 1,
+  "cuttingGiftsReceivedPerDay": 5,
+  "crossRegionCapPerItemPerDay": 3
+ },
+ "cropRotation": {
+  "_note": "Luân canh (Đợt B, cờ crop_rotation, docs/55 §3; packages/shared/src/rules/cropRotation.ts). Đất tơi xốp (BR1): gieo giống khác họ (crops[].family) với vụ vừa gặt trên cùng luống, gặt vụ đó được cộng rotationBonusMax × min(1, growSeconds vụ trước / rotationFullSeconds) EXP (math/rotation.ts#rotationBonus), chốt lúc gieo, không hết hạn. Cùng họ = 0, không có thưởng chuỗi (C6). Nằm ngoài trần hiệu ứng (C31). Nhổ bỏ làm mất dấu.",
+  "rotationBonusMax": 0.15,
+  "rotationFullSeconds": 3600
+ },
+ "treeAge": {
+  "_note": "Tuổi cây (Đợt B, cờ tree_age, docs/55 §3; packages/shared/src/rules/treeAge.ts, math/treeAge.ts). Tuổi chặn ở treeAgeMax và cấp người chơi / treeAgeLevelDiv; mỗi tuổi bớt treeAgeGapStep cấp khoảng cách khi tính EXP hái. Lộc tình làng: lượt hái kế được thêm sản lượng × locYieldPct, làm tròn lên, ít nhất locYieldMin (C47); nằm ngoài trần hiệu ứng (C31); chỉ có khi đủ reviveHelpers người khác nhau cứu cây héo (tự cứu không có). Chặn tài khoản phụ (BT1b): người cứu chỉ tính vào Lộc khi đã liên kết tài khoản (không phải khách), cấp ≥ locHelperMinLevel, là bạn của chủ ít nhất locHelperFriendDays ngày, thiết bị và dải IP (/24, IPv6 /64) khác mọi thiết bị, dải IP chủ dùng trong locHelperRecentDays ngày; người không đủ điều kiện vẫn cứu được và nhận EXP như thường. Cổ thụ: tuổi ≥ coThuAge, chủ được đặt tên dài tối đa nameMaxLen ký tự (qua lọc từ cấm); chỉ đổi hình, không thêm EXP hay vàng (C15).",
+  "treeAgeMax": 20,
+  "treeAgeLevelDiv": 10,
+  "treeAgeGapStep": 2,
+  "locYieldPct": 0.1,
+  "locYieldMin": 1,
+  "coThuAge": 5,
+  "nameMaxLen": 16,
+  "locHelperMinLevel": 10,
+  "locHelperFriendDays": 3,
+  "locHelperRecentDays": 30
+ }
+}
