@@ -14,6 +14,9 @@ export const CRITIC_HARD_UNLOCK = 45;
 export const CRITIC_CHANCE = 0.5;
 /** Khung thời gian phục vụ (phút game) kể từ khi gọi món. */
 export const CRITIC_WINDOW_MINUTES = 30;
+/** GĐ1608 — chừa phút để bày món lên kệ: chỉ gọi món nấu xong trong (khung − ngần này) phút. */
+export const CRITIC_SHELVE_MARGIN = 5;
+export const criticCookFits = (durationMin: number | undefined) => (durationMin ?? 0) <= CRITIC_WINDOW_MINUTES - CRITIC_SHELVE_MARGIN;
 
 export const CRITIC_REWARD_SOFT = 200_000;
 export const CRITIC_REWARD_HARD = 500_000;

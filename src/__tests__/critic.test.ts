@@ -4,7 +4,7 @@ import { setSimSeed } from '../core/rand';
 import { CustomerManager } from '../agents/customers';
 import {
   CRITIC_CHANCE, CRITIC_HARD_UNLOCK, CRITIC_PENALTY_REVIEWS, CRITIC_REWARD_HARD, CRITIC_REWARD_SOFT,
-  CRITIC_SOFT_LAG, CRITIC_UNLOCK, CRITIC_WINDOW_MINUTES, criticReward, pickCriticDish, criticCallText,
+  CRITIC_SOFT_LAG, CRITIC_UNLOCK, CRITIC_WINDOW_MINUTES, criticReward, pickCriticDish, criticCallText, criticCookFits,
 } from '../data/critic';
 import { RECIPES } from '../data/recipes';
 import { productById } from '../data/products';
@@ -61,6 +61,19 @@ describe('GĐ1606 — câu gọi món kèm tên bếp', () => {
   it('có bếp thì ghi trong ngoặc, không có thì giữ câu cũ', () => {
     expect(criticCallText('Xôi gấc', 'Bếp xôi', 30)).toBe('🎩 Nhà phê bình gọi Xôi gấc (Bếp xôi) — phục vụ trong 30 phút!');
     expect(criticCallText('Xôi gấc', null, 30)).toBe('🎩 Nhà phê bình gọi Xôi gấc — phục vụ trong 30 phút!');
+  });
+});
+
+describe('GĐ1608 — chỉ gọi món nấu kịp trong khung chờ', () => {
+  it('món ≤25 phút được gọi, món 30 phút thì không', () => {
+    expect(criticCookFits(25)).toBe(true);
+    expect(criticCookFits(30)).toBe(false);
+    for (let s = 1; s <= 100; s++) {
+      setSimSeed(s);
+      const id = pickCriticDish(RECIPES, 100, true, (r) => criticCookFits(r.durationMin));
+      expect(RECIPES.some((r) => r.outputId === id && criticCookFits(r.durationMin))).toBe(true);
+    }
+    setSimSeed(1);
   });
 });
 
