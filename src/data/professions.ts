@@ -45,7 +45,7 @@ export const PROFESSIONS: ProfessionDef[] = [
   {
     id: 'chef', name: 'Đầu bếp quán ăn', icon: '👨‍🍳', archetype: 'chef',
     hours: [h(5, 8), h(14, 16)],
-    likes: ['giavi', 'dauan', 'nuocmam', 'trung', 'gao', 'rau', 'thit', 'x_hat_nem', 'x_bot_ngot', 'x_toi', 'x_hanh_kho'],
+    likes: ['giavi', 'dauan', 'nuocmam', 'trung', 'gao', 'rau', 'thit', 'x_hat_nem', 'x_bot_ngot', 'x_toi', 'x_hanh_kho', 'x_sa'],
     loyalty: 0.85, extraItems: 3, sensitivity: 1.1, patience: 1.1,
   },
   {
