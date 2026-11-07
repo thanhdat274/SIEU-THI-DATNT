@@ -153,7 +153,7 @@ export function MorningPanel() {
     day, storage, shelved,
     health: itemHealthList(analytics, level, storage, shelved, stateDemand),
   });
-  const actions = buildMorningActions({ day, level, weather, weatherSeed, storage, staff, regulars, expected, debts, biz, branch, branchChores, quanHealth, haveStock, dueContracts, chophien, lastSummary });
+  const actions = buildMorningActions({ day, level, weather, weatherSeed, storage, staff, regulars, expected, debts, biz, branch, branchChores, quanHealth, haveStock, dueContracts, chophien, lastSummary, furniture: useGame.getState().furniture });
   const nextEvt = nextEventLine(day, level, QUAN_NUOC_UNLOCK, forecast[0]); // GĐ637
   // GĐ132: mồi "🧭 Sắp mở khóa" cho người chơi MỚI (tuần đầu) — 1–2 hệ lớn sắp mở + XP còn thiếu (thuần đọc)
   const earlyUnlocks = earlyUnlockTeaser({ level, xp, day });

@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (07/11/2026)
+- **GĐ1572** — Sổ đầu ngày: trời mưa/bão + có máy đánh giày (cấp 42) nhắc "thu ×1,5 hôm nay" (ctx tuỳ chọn `furniture`). Ghi chú: longSessionLeak thỉnh thoảng trượt khi chạy full suite, chạy riêng qua.
 - **GĐ1571** — Máy đánh giày (cấp 42) ×1,5 phí khi trời mưa/bão (`machineFeeAt` thêm tham số weather; popup "trời mưa ×1,5").
 - **GĐ1570** — Rà soát + QA save mới: bán đầu tiên ~41s. Máy thu phí GĐ1564–1568 gom trong `data/machines.ts` (dòng ngày, tổng ngày, máy rảnh, gắp trúng, ảnh ngày lễ); tặng quà khách quen trong `regularGift.ts`. Trình duyệt: tab Dịch vụ hiện "🎰 Máy thu phí hôm nay: 6.000đ (🧸 3.600đ · 🥤 2.400đ)". Lưu ý QA: tiêm đồ giả thiếu `tiers` làm vỡ UI — dùng đồ thật. Save QA đã xoá.
 - **GĐ1569** — Thêm 3 mẹo: máy chưa ai chơi (25), gắp trúng (44), máy chụp ảnh ngày lễ (50).

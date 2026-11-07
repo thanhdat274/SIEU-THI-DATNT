@@ -60,3 +60,15 @@ describe('GĐ1102 (QA nối) — việc sáng "món menu quán ngừng bán" qua
     expect(a.filter((x) => x.text.includes('ngừng bán')).length).toBe(0);
   });
 });
+
+describe('GĐ1572 — nhắc máy đánh giày ngày mưa', () => {
+  const shoe = [{ uid: 1, type: 'shoe_shine' }] as never;
+  it('mưa + có máy + cấp 42 → có nhắc', () => {
+    expect(buildMorningActions(base({ level: 42, weather: 'rain', furniture: shoe })).some((x) => x.text.includes('đánh giày'))).toBe(true);
+  });
+  it('nắng, thiếu máy hoặc dưới cấp → không', () => {
+    expect(buildMorningActions(base({ level: 42, weather: 'sunny', furniture: shoe })).some((x) => x.text.includes('đánh giày'))).toBe(false);
+    expect(buildMorningActions(base({ level: 42, weather: 'rain', furniture: [] })).some((x) => x.text.includes('đánh giày'))).toBe(false);
+    expect(buildMorningActions(base({ level: 41, weather: 'rain', furniture: shoe })).some((x) => x.text.includes('đánh giày'))).toBe(false);
+  });
+});

@@ -28,6 +28,8 @@ export interface MorningActionsCtx {
   haveStock: (id: string) => boolean;
   dueContracts: { cs: { dueDay: number }; def: ReturnType<typeof supplyContractById> }[];
   chophien: ReturnType<typeof marketClearValue>; lastSummary: S['lastSummary'];
+  /** GĐ1572 — tuỳ chọn: nội thất để nhắc máy đánh giày ngày mưa. */
+  furniture?: S['furniture'];
 }
 
 /** GĐ76/945: gộp mọi nhắc chuẩn bị ngày thành một danh sách ưu tiên (danger trước, khử trùng, cap 7). Tách nguyên văn khỏi MorningPanel. */
@@ -48,6 +50,8 @@ export function buildMorningActions(c: MorningActionsCtx): DayAction[] {
   // GĐ604: đêm có trận — tiện lợi đông sau 22h (GĐ601)
   candidates.push(...sapEventActions(biz.sapRong, biz.sapKinds, day, weather)); // GĐ625/631 → GĐ632 tách hàm thuần
   if (branch?.open && isQuanMatchDay(day, weather)) candidates.push({ icon: '⚽', text: 'Tối nay có trận — tiện lợi đông 22h–24h ×1,2, xếp đủ kệ', panel: 'branch', danger: false, priority: 3 });
+  // GĐ1572 — trời mưa + có máy đánh giày (cấp ≥42): nhắc phí ×1,5 hôm nay
+  if (level >= 42 && (weather === 'rain' || weather === 'storm') && c.furniture?.some((f) => f.type === 'shoe_shine' && !f.broken)) candidates.push({ icon: '👞', text: 'Trời mưa — máy đánh giày thu ×1,5 hôm nay', panel: 'business', danger: false, priority: 1 });
   // GĐ589: ngày cúng — tiệm xôi đông; GĐ599: thợ tự nấu ×1,3 nên chỉ nhắc thêm thợ khi còn thiếu
   const xoiCungAct = tiemXoiCungAction(biz.tiemXoi, day); // GĐ599 → GĐ635
   if (xoiCungAct) candidates.push(xoiCungAct);
