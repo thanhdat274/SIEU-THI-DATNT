@@ -11,6 +11,7 @@ import { worldActions } from '../core/actions';
 import { saveGame, resetGame, readBackupSave, restoreBackup } from '../core/save';
 import { FEATURES, xpToNext } from '../data/levels';
 import { xpGainDelta } from '../data/xpGain';
+import { decorPopupLine } from '../data/decorPopup';
 import { formatMoney, productById } from '../data/products';
 import { trialCost } from '../core/slices/build';
 import { todayLine, todayMissedLine, todayPeakLine, todayExpectSoFar, todayTopSeller } from '../data/todayScore';
@@ -468,6 +469,7 @@ Online: ${coop.peers.map((p) => (p.id === coop.selfId ? 'bạn' : p.name)).join(
             {placing ? (
               <>
                 {TOUCH ? 'Chạm để dời, chạm lại để đặt' : 'Bấm để đặt'}
+                {decorPopupLine(placing.type) && <div style={{ fontSize: 12, color: '#f1c40f' }}>{decorPopupLine(placing.type)}</div>}
                 <span className="hud-alert-actions">
                   <button className="hud-btn" onClick={worldActions.rotate}>↻ Xoay</button>
                   {TOUCH && <button className="hud-btn primary" onClick={worldActions.place}>✓ Đặt</button>}
