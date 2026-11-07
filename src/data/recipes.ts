@@ -246,6 +246,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   // GĐ1383: Chè bắp — chè ngọt dân gian trứ danh (hạt bắp nếp nấu dẻo chan cốt dừa):
   // mẻ (bắp 8k + nếp 30k + nước cốt dừa 10k + đường 17k) = 65k → 8 chén × 16k = 128k, lãi 63k/mẻ.
   { id: 'che_bap', name: 'Chè bắp', category: 'fresh', buy: 8000, sell: 16000, color: 0xf9e79f, unlock: 40 },
+  // GĐ1672 — chè chuối: chè quốc dân từ chuối nhà trồng + nước cốt dừa
+  { id: 'che_chuoi', name: 'Chè chuối', category: 'fresh', buy: 7000, sell: 14000, color: 0xf3e2b0, unlock: 44 },
   // GĐ1384: Bún mắm — món nước miền Tây trứ danh (nước lèo mắm ruốc đậm đà):
   // mẻ (bún 12k + mắm ruốc 36k + thịt heo 30k + hành phi 3k) = 81k → 8 tô × 18k = 144k, lãi 63k/mẻ.
   { id: 'bun_mam', name: 'Bún mắm', category: 'fresh', buy: 10000, sell: 18000, color: 0x8d6e4c, unlock: 40 },
@@ -1544,6 +1546,9 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_che_bap', name: 'Chè bắp', station: 'hot_kettle',
     inputs: [{ productId: 'bap', quantity: 1 }, { productId: 'nep', quantity: 1 }, { productId: 'x_dua_cot_hop', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
     outputId: 'che_bap', outputQty: 8, durationMin: 18, unlock: 40, reputationGain: 2 },
+  { id: 'recipe_che_chuoi', name: 'Chè chuối', station: 'hot_kettle',
+    inputs: [{ productId: 'x_chuoi', quantity: 1 }, { productId: 'x_dua_cot_hop', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
+    outputId: 'che_chuoi', outputQty: 8, durationMin: 18, unlock: 44, reputationGain: 2 },
   // GĐ1384: Bún mắm — món nước miền Tây trứ danh: bún tươi nấu nước lèo mắm ruốc đậm đà cùng thịt heo ở
   // ấm nước: mẻ (bún 12k + mắm ruốc 36k + thịt heo 30k + hành phi 3k) = 81k → 8 tô × 18k = 144k, lãi 63k/mẻ,
   // nấu hời hơn bán thẳng nguyên liệu (117k < 144k). Mở 40 ≥ mọi nguyên liệu (33/34/30/36) (> golden 30 → sim không đổi).
