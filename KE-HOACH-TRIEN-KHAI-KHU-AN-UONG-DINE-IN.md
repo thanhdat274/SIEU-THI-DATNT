@@ -229,3 +229,113 @@
 ### G7. Thứ tự ưu tiên giữ nguyên, thêm 1 mục mới
 
 Giữ chuỗi GĐ1489 → 1497 như section B/F. Bổ sung đề xuất **GĐ1498 (nhẹ)**: tour HUD khoanh vùng + toast chẩn đoán nút thắt (G2, G6.2) — làm sau khi 1490 chạy được, vì cần dữ liệu "khách bỏ về vì hết ghế" để kích hoạt toast.
+
+## H. Cập nhật sau lần 7 — chơi tiếp Level 5→6 + quét đủ Shop 300 món (07/11/2026)
+
+> Chi tiết cơ chế: PHAN-TICH mục 9; số liệu thô: PHU-LUC mục J. Bản tổng hợp áp dụng: `TONG-HOP-AP-DUNG-MIDNIGHT-BISTRO.md`.
+
+### H1. 🆕 Cờ vinh danh đặc sản vùng miền — đề xuất thành GĐ mới sau GĐ1497
+
+Phát hiện lớn đợt này: sổ Quests có hệ **5-Star Culinary Honors** — học đủ mọi món của 1 quốc gia → cờ nước đó **+10 điểm decor + buff +0.5% tốc độ**; đưa hết lên 5★ → **+20 decor + thêm +1%**; **cờ bị tước khi nước đó ra món mới**. Buff chia 2 loại: tốc độ bồi bàn (16 nước) / tốc độ khách di chuyển (15 nước).
+
+→ Việt hoá thành **"Bảng hiệu đặc sản vùng miền"** cho khu ăn trong siêu thị:
+- Vùng = Bắc / Trung / Nam / Tây Nguyên (+ tùy chọn Nhập khẩu cho món ngoại).
+- Đủ món đặc sản của 1 vùng → treo **bảng hiệu vải vùng đó** (item decor 3D): +10 điểm trang trí + buff khu ăn (bồi bàn bưng món nhanh 0.5%).
+- Món đặc sản của vùng lên 5★ hết → bảng hiệu đổi màu vinh danh: +20 + thêm 1%.
+- Cài đặt: chỉ là cờ `regionFlags` + điều kiện đếm món theo vùng; mesh bảng hiệu dùng chung 1 mesh đổi texture. **Chi phí thấp, chiều sâu cao** — biến mục tiêu "nâng sao món" (đã có từ GĐ sao món) thành bộ sưu tập có lợi ích chạy được.
+
+### H2. Trang trí nhiều lớp cho khu ăn — chốt số từ Shop (đi kèm GĐ1494 tầng 2)
+
+- **Vách ngăn chia khu 6–9 loại, giá 150–1.300, đều +3 điểm**: gỗ nan 150 → kính mờ 300 → kính trong 330 → shoji 380 → tre 750 → kính màu 890 → mashrabiya 960–1.300. Dùng để rào khu ăn uống khỏi lối đi siêu thị **mà không chặn khách** (game gốc: divider không chặn path). Khớp nhu cầu "khu tạp hóa – khu ăn uống – khu chợ" của siêu thị mình.
+- **Sơn/át nền theo ô, 1 giá duy nhất 280/ô (+1 điểm), đủ 40 màu** — khi siêu thị có nhiều khu, mỗi khu một màu nền là chi phí code thấp nhất để cá nhân hoá.
+- **Đồ dùng bếp = decor khu bếp ăn**: kệ gia vị 340 (+9), giá dao 540 (+6), treo chảo 680 (+6), máy rửa bát 1.500 (+5), tủ lạnh 780 (+5), **bồn rửa 3 bậc 2.000/20.000/75.000 (+3/+8/+15)** — bồn rửa khớp luôn chuỗi "nhà vệ sinh 3 bậc" GĐ1494 của mình (tiện nghi vệ sinh khu ăn).
+
+### H3. Số liệu hiệu chỉnh cho các GĐ đang làm
+
+- **GĐ1492 (máy thu phí)**: chốt đủ 9 máy gốc, hoàn vốn 88–100 lượt — giữ nguyên công thức `giá = thu/lượt × 90`. Máy bán nước/snack của họ là vending 1.800/20₫ (90 lượt) — máy bán nước GĐ1493 của mình 120.000/1.200 hơi lệch (100 lượt, ổn).
+- **GĐ1493 (toilet)**: thang 5 bậc 500→60.000, phí 1→50₫, hoàn vốn 500–1.200 lượt — xác nhận toilet KHÔNG phải nguồn lời; bậc 2 (1.500/2₫, 750 lượt) là "đúng giá" nhất nếu làm thêm bậc.
+- **GĐ1496 song song (sao món + đồ đựng)**: game gốc **cũng dùng 5 mốc đồ đựng** (giấy → lá → gỗ → sứ → bạc → vàng) và yêu cầu **nguyên liệu hiếm để lên sao** — đã khớp thiết kế; còn thiếu duy nhất **"còn N lượt → đổi bậc kế"** hiển thị trên thẻ món (đã làm) và **View dishes / Sell all trên nguyên liệu** (làm khi có kho nguyên liệu).
+- **Thực đơn tối thiểu 12 món** chốt chính thức (màn Kitchen hiển thị "Selling 4 dishes (min 12)") — khi siêu thị mở khu ăn, lấy mốc này.
+- **Doanh thu vắng mặt**: 55 phút vắng (quán bé, 3.5★) = 999 xu ≈ 1–5% tốc độ chơi thật — đối chiếu công thức GĐ1496 đang có, chỉnh về bậc này để không phá nhịp.
+
+### H4. Trạng thái mở/đóng cửa — chi tiết UI nhỏ
+
+Sau reload, game gốc để quán **đóng** (biển đỏ + khánh trên cửa); bấm khánh mới mở bán. Với siêu thị mình: khi có khu ăn, **biển "ĐANG MỞ/ĐÓNG" treo cửa 3D** (đã có shopOpen) + riêng khu ăn có thể mở/đóng độc lập về sau (để "quán ăn đóng sớm còn bán tạp hóa") — ghi vào backlog, không làm trong đợt này.
+
+### H5. Thứ tự đề xuất cập nhật (nối GĐ1498 ở G7)
+
+| GĐ | Nội dung | Nguồn |
+|---|---|---|
+| GĐ1498 | Tour HUD + toast chẩn đoán (G7) | lần 6 |
+| GĐ1499 | Vách ngăn + sơn nền theo ô cho siêu thị/khu ăn | H2 |
+| GĐ1500 | Đồ dùng bếp decor + bồn rửa 3 bậc | H2 |
+| GĐ1501 | Bảng hiệu đặc sản vùng miền (+buff) | H1 |
+
+## I. Cập nhật sau lần 8 — Sổ hướng dẫn chính thức + nhân viên + nhà phê bình + thanh tra (07/11/2026, Level 10)
+
+> Sổ hướng dẫn 17 mục của game tự công bố công thức — mức tin cậy cao nhất. Chi tiết: PHAN-TICH mục 10, PHU-LUC mục K.
+
+### I1. GĐ1497 (Nhà phê bình ẩm thực) — có bản spec đầy đủ từ game gốc
+
+Lấy nguyên luồng này (Việt hoá):
+1. Mở ở cấp quán tương ứng; tần suất ≤ 1 lần/5 giờ chơi, cần 3 giờ sạch phạt.
+2. **Đi cùng 4 người hộ tống** (quay phim/chụp ảnh/trợ lý/MC) — đi thành hàng, đứng quanh bàn → dàn cảnh 3D "đáng nhớ" hơn 1 nhân vật đơn lẻ.
+3. **Bán kính xã giao**: khách ngồi trong 4 ô nhường chỗ vô điều kiện; không ai ngồi được trong 5 ô → ép bố trí "bàn VIP" khu ăn, học được từ siêu thị của mình: đặt bàn critic nơi ít vướng.
+4. Gọi món: **ngẫu nhiên từ TOÀN BỘ món trong game** ở cấp cao (dưới đó 50% vào menu mình) → khuyến khích mở rộng thực đơn xuyên vùng.
+5. Kết quả: bán được = ăn 20s + **thưởng lớn đột biến (gốc 123.000 ≈ 80 phút doanh thu)**; không bán/phục vụ trễ = **kẹp sao 2★ 30 phút, đếm ngược hiển thị, thoát game không thoát phạt**.
+6. Hiệu chỉnh số cho mình: thưởng ≈ 60–90 phút doanh thu khu ăn ở cấp tương ứng; hình phạt 20–30 phút đủ đau mà không hủy diệt.
+
+### I2. 🆕 Sự kiện "thanh tra" — đề xuất thêm cho siêu thị (song hành nhà phê bình)
+
+Game gốc có **thanh tra an toàn thực phẩm** (Lv6+): mỗi 35–60 phút, phạt = một phần doanh thu từ lần trước; chọn **nộp phạt chắc (+XP)** hoặc **hối lộ rẻ nhưng có thể bị bắt** (mất cả hai). Với mình: đổi thành **"đoàn kiểm tra hàng hóa"** của khu siêu thị — phạt nhẹ hoặc "chi phí xử lý nhanh" có rủi ro; văn liệu đời thường kiểu "khách vứt vỏ bim bim sai chỗ". Điểm cộng: tạo nhịp "sự kiện bất ngờ" giữa những ngày êm, dạy giữ vệ sinh bố cục. (Nếu ngại chủ đề hối lộ → chỉ làm 2 nút "Nộp phạt / Xin hoãn có phí".)
+
+### I3. Nhân viên khu ăn — bảng tier mẫu để cân bằng (nếu mở tuyển người cho siêu thị)
+
+| Tier | Tỷ lệ | Tốc độ | Lương/ngày | Phí sa thải |
+|---|---|---|---|---|
+| Tập sự | 60% | ×0.90–1.00 | 112/168 | 5.000 |
+| Lao công | 30% | ×1.00–1.10 | 160/240 | 10.000 |
+| Thợ chính | 7% | ×1.10–1.20 | 256/384 | 20.000 |
+| Huyền thoại | 3% | ×1.20–1.30 | 400/600 | 40.000 |
+
+Học 3 điểm: (a) **trait có cả XẤU** (lởm 8% hao nguyên liệu, làm rơi món 5%, lười nghỉ 2s) — tier đắt vẫn có rủi ro, tránh "tier cao = thuần tốt"; (b) **hợp đồng 30 ngày + cửa sổ gia hạn 5 phút** tạo nhịp quay lại; (c) **nhân viên mặc định miễn lương khi cháy túi** = lưới an toàn cho người mới (Tạp Hóa mình có nhân viên trả lương ngày — cân nhắc "người nhà" miễn phí giống vậy).
+⚠️ Lưu ý scale: lương gốc 112–600/ngày với doanh thu ~1.500/phút của họ; số mình phải nhân theo nền kinh tế riêng.
+
+### I4. Hiệu chỉnh số cho các GĐ đã làm
+
+- **GĐ1491 (kiên nhẫn)**: game gốc có 2 MỐC: món trong 37s đầu = hài lòng 100%, 38–75s = chỉ 60% (vẫn có tiền), quá 75s = 0. Mình nên thêm bậc 60% thay vì nhị phân đúng/sai — khách chậm vẫn trả tiền, chỉ mất điểm.
+- **GĐ1494 (toilet)**: từ cấp 45+ (mốc "Siêu thị tạp hóa" của mình) nên bật **chế độ nghiêm ngặt** như game gốc Lv8: không toilet/chờ >5s thì khách GIẬN mất sao — hiện mình chỉ có "rủi ro mở sau"; nghiêm ngặt theo cấp là biến thể tốt.
+- **GĐ1496 song song (sao món + đồ đựng)**: ngưỡng đồ đựng chính thức của game gốc = **50/250/2.500/10.000/20.000 lượt, 6 bậc giấy→vàng, thưởng giá tới +220%, nâng sao KHÔNG cần xu (chỉ lượt bán + nguyên liệu học × số sao)**. Đối chiếu chuỗi của mình (20/100/800 lượt, 4 bậc) — của mình ngắn hơn để người chơi thấy tiến bộ sớm; cân nhắc thêm bậc 5–6 cuối làm mục tiêu dài hạn.
+- **GĐ thu nhập vắng mặt**: trần = **30 + cấp×5 phút**, <5 phút không tính, <15 phút tự cộng kèm thông báo — chuẩn hoá công thức trần nếu chưa có.
+
+### I5. Xã hội cho khu ăn (khi có backend)
+
+Bầu 😍/🙂 khi ghé thăm (1 lần/ngày/quán) → **bảng "Quán đẹp nhất" auto theo票, thưởng theo hạng (gốc: 200k→30k top 1–5 hàng ngày, tới 1tr cho top tuần)** — khớp sẵn hẻm online của mình: khách ghé hẻm bầu cho quán đẹp, bảng xếp hạng treo giữa hẻm. Patch notes gửi qua hòm thư trong game (kèm huy hiệu Admin) — tầng truyền thông sau khi có backend.
+
+## J. Cập nhật sau lần 9 — mở rộng + theme + thanh tra lần 2 (07/11/2026)
+
+### J1. Mở rộng mặt bằng (khi siêu thị phase 2)
+Game gốc mua đất KHÔNG hộp xác nhận, tường tự giãn, đồ giữ nguyên. Mình NÊN giữ hộp xác nhận (đơn giá cao) nhưng copy: (a) **thang giá ~×1.8 mỗi mốc** (2.000 → 2.500 → 4.500…), (b) **mua xong là tường giãn + đồ không xê dịch** — không phải xếp lại, (c) thanh tiến độ mốc "Level n/8" ngay trong tab mở rộng.
+
+### J2. Theme màu giao diện — đề xuất thêm
+8 theme HUD (Summer Dream → Gothic Romance) chỉ là bộ biến màu — với mình: mở theme theo tiến trình/quà sự kiện (VD: theme Tết, theme Trung thu) — chi phí CSS, giá trị "sở hữu" cao. Khớp save `style` đã có.
+
+### J3. Thanh tra — chốt tỷ lệ
+Phạt ≈ 5–15 phút doanh thu hiện tại của quán (gốc: 2.000 ở Level 6, 10.000 ở Level 13); lựa chọn "nộp phạt chắc (+XP)" vs "xử lý nhanh ≈ 10–16% mức phạt nhưng có rủi ro bị bắt". Với khu ăn siêu thị: chạy mỗi 35–60 phút chơi, báo cáo phải xử lý trước khi có cái mới.
+
+### J4. Thước kinh tế tham chiếu (để cân bằng khu ăn của mình)
+Level 5→14 của game gốc: 18k→113k xu (~×6) sau 4–5 giờ; quán 2 bàn/6 ghế + 2 bếp + 2 bồi ở rating 3.4–3.7 giữ ~10–14 khách liên tục. Khu ăn của mình nên nhắm: **mỗi khu bàn mới tăng doanh thu nhìn thấy được trong 1–2 phút** — đúng tốc độ hồi vốn mà game gốc làm với bàn ghế (20–150 xu, ăn ngay trong 2–3 lượt khách).
+
+## K. Cập nhật sau lần 10 — 3 UI kinh tế vi mô (07/11/2026, Level 17)
+
+### K1. Nút "Nhập đủ" trên cảnh báo thiếu hàng — áp dụng ngay cho kho tạp hóa
+Game gốc: cảnh báo 🥕 mở modal liệt kê từng mặt hàng sắp cạn + **nút "Buy up to N each"** (N tính từ tiền + chỗ kho) mua một phát tất cả. Mình đã có chuỗi giao hàng (deliveries) — thêm **nút "Nhập đủ mỗi loại" trên chính toast/bảng cảnh báo thiếu hàng**: biến cảnh báo thành hành động 1 chạm. Thang gói giữ −10%/−20% cho gói lớn (đã khớp nhập sỉ hiện có).
+
+### K2. Chợ đồ cũ giữa người chơi (khi có backend — bổ sung mục D "chưa làm")
+Cơ chế đo được: người chơi tự định giá **hiển thị % so với giá shop** (▲đắt /▼rẻ), tin rao có hạn giờ, My Stall + Collect. Quan sát thật: đồ landmark bị bán tháo ~10% giá — chợ tự biến thành "tiệm đồ cũ giá phế liệu" → người mới mua được đồ cuối game rẻ, người cũ thu hồi vốn tốt hơn bán lại shop 10%. Với hẻm online của mình: chợ đồ cũ giữa các quán trong hẻm là hệ nhẹ (bảng tin) mà tăng lưu thông.
+
+### K3. Tủ Trao Đổi nguyên liệu (khi có backend)
+5 slot offer (cho X n Y / muốn Z n W) + History + cooldown 3h/quán — đủ nhỏ để làm trong 1 GĐ nếu hẻm online đã có server. Nguyên liệu quý (như "hàng hiệu" đặc sản nâng sao của mình) sẽ tự có thị trường chéo.
+
+### K4. Thanh tra — chốt hẳn số
+3/3 lần hối lộ thành công (10% → 16% → 18% của mức phạt) — có thể luôn thành công trong game gốc, nhưng MÌNH NÊN GIỮ rủi ro bị bắt (đã ghi I2) để lựa chọn có nghĩa. Phạt tăng theo doanh thu giữa các lần: 2.000 (Lv6) → 10.000 (Lv13) → 11.000 (Lv17).

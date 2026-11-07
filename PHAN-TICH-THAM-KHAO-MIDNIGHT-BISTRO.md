@@ -559,3 +559,168 @@ Ngay sau khi mở cửa với 2 bàn/8 ghế nhưng 1 đầu bếp + 1 bồi bà
 7. **Tour HUD khoanh vùng sau tutorial** — dạy đọc bảng giá trị top-bar bằng 8–10 lần bấm có ring sáng.
 8. Điểm danh copy nguyên công thức **1.500×ngày, làm tròn xuống nghìn**.
 
+
+---
+
+## 9. Bổ sung lần 7 — chơi tiếp Level 5→6, quét đủ Shop 300 món + sổ Quests (07/11/2026)
+
+> Đợt này save cũ còn nguyên ("Nghien Cuu Tap Hoa", Level 5 74%), chơi thật ~15 phút lên Level 6, dùng DOM của game trích xuất chính xác toàn bộ cửa hàng. Bản tổng hợp áp dụng: `TONG-HOP-AP-DUNG-MIDNIGHT-BISTRO.md`. Số liệu thô Shop ở **PHU-LUC mục J**.
+
+### 9.1 🆕 Cờ Vinh Danh Ẩm Thực theo quốc gia (Quests → 5-Star Culinary Honors) — hệ chưa ghi lần nào
+
+- Học **đủ mọi món của 1 quốc gia** → cờ nước đó: **+10 điểm decor** + **buff +0.5% tốc độ**. Đưa mọi món nước đó lên **5★** → **+20 decor** + **thêm +1% tốc độ**. Tổng 62 cờ (đếm "Claimed 0/62").
+- Buff chia 2 loại và **mỗi nước cố định 1 loại**:
+  - **Tốc độ bồi bàn** (16 nước): Ý, Việt Nam (27 món — nhiều nhất), Thái, Hy Lạp, Tây Ban Nha, Nhật, Đức, Cuba, Đài Loan, Thụy Sĩ, Mexico, Anh, Hàn, Thụy Điển, Indonesia, Malaysia.
+  - **Tốc độ khách di chuyển** (15 nước): Pháp (13 món), Thổ, Mỹ (9), Puerto Rico, Ấn (5), Nga, TQ (9), Brazil, Philippines, Iceland, Mông Cổ, Greenland, Campuchia, Peru, Nam Phi.
+- **Cờ bị tước khi nước đó ra món mới** chưa học → mục tiêu dài hạn có "tuổi đời", chống done-and-forgotten.
+- Thanh tổng hợp trên đầu sổ: "Waiter speed +0% (0/16 countries contributing)" — buff cộng dồn theo số nước.
+
+**Ý nghĩa với Tạp Hóa:** đây là mảnh ghép cho ý tưởng "bảng hiệu vinh danh vùng miền" (mục 3/10 của mình) — Việt hoá thành **đặc sản Bắc/Trung/Nam/Tây Nguyên + vài miền nhỏ**: đủ món 1 vùng = +10 decor + buff bồi bàn (hoặc khách về nhanh hơn), đặc sản 5★ = +20. Nhờ thế khu ăn trong siêu thị có "bộ sưu tập" dài hạn mà không cần hệ mới.
+
+### 9.2 Quét đủ Shop 300 món ở Level 6 — chỉ có 4 món khóa cấp
+
+- Toàn bộ 300 món (60 Commercial + 230 Decor + 10 Special) đều mở tự do theo tiền, **trừ 4 chiếc cửa khóa "Level 10"**: Grand French Double Doors / Arched Bronze & Cast Glass / Artisan Statement (60.000, +10) và Gilded Temple Gate (120.000, +10) — khớp luật "mỗi 10 cấp thêm 1 cửa", và cho thấy **khóa cấp dùng rất tiết kiệm, chỉ cho item biểu tượng**.
+- Ghi nhận đợt này: đồ **Halloween 2026** (ghế dơi, bàn bí ngô — 250.000, +1 điểm) = event theo **ngày thật**; nút **Dùng thử (Try it)** trên mọi thẻ kể cả item không đủ tiền (hiện "Need Money").
+- Số liệu đầy đủ: PHU-LUC mục J1–J3.
+
+### 9.3 Kinh tế đo thật ở Level 5–6 (2 bàn/6 ghế, rating 3.5, decor 55)
+
+- Quán chơi thật: 10–14 khách liên tục, tiền **18.349 → 24.547 trong ~4 phút** (~1.500/phút) — chỗ ngồi là nút thắt, game tự toast dạy "mua thêm bàn ghế".
+- **Earnings While Away**: vắng 55 phút → **999 xu + "~199 guests dropped by"** ≈ 18 xu/phút ≈ **1–5% tốc độ chơi thật** — đủ ngọt để quay lại, không phá cân bằng (đối chiếu mục 6.5 của mình: đưa về cùng bậc độ lớn).
+- Sau mỗi lần reload: toast "Welcome, owner …" + hộp thu tiền vắng nhà hiện ngay; **quán mặc định ĐÓNG CỬA** (biển đỏ trên cửa) — phải bấm **khánh treo trên cửa** mới mở bán. Trạng thái mở/đóng được biểu tượng hoá ngay trên cửa 3D.
+- Nút bấm lên cấp vẫn hoạt động mượt khi để máy tự chạy: 94% → 100% chỉ nhờ khách tự vào trong ~40 giây.
+
+### 9.4 Cập nhật thứ tự làm (nối tiếp mục 7.5)
+
+| GĐ | Nội dung | Nguồn |
+|---|---|---|
+| 11 | **Cờ vinh danh đặc sản vùng miền** (+10 decor +0.5% buff, 5★ +20 +1%, tước khi thêm món mới) | 9.1 |
+| 12 | **Trang trí nhiều lớp** — sơn nền/tường theo ô giá 1 mức + 4–6 loại vách ngăn +3 | 9.2, 7.1 |
+| 13 | Đồ dùng bếp làm decor khu bếp (giá dao, kệ gia vị, bồn rửa 3 bậc) | 7.2 |
+| 14 | Event theo lịch thật (Tết/Trung thu) — 1–2 món "khoe" giá cao điểm thấp | 9.2 |
+| 15 | Biểu tượng mở/đóng cửa trên cửa 3D (khánh + biển) | 9.3 |
+
+---
+
+## 10. Bổ sung lần 8 — đọc trọn Sổ hướng dẫn 17 mục + Staff Roster + bảng xếp hạng thật (07/11/2026, Level 10)
+
+> Save đã lên Level 10 (người chơi tự chơi thêm), Day 3, 62k xu. Đợt này dump được **toàn bộ sổ hướng dẫn trong game (17 mục)** — nơi game tự công bố công thức chính xác nhất. Trước giờ các con số của mình chủ yếu suy từ bundle + đo; lần này là **lời game tuyên bố**.
+
+### 10.1 Các công thức game TỰ CÔNG BỐ (đối chiếu với dữ liệu cũ)
+
+| Hệ | Công thức chính thức (từ Game guide) | Đối chiếu |
+|---|---|---|
+| XP | Khách 5★ cho **2 XP**, khách khác **1 XP** | mới |
+| Thưởng lên cấp | **1.000 × cấp mới + 1 nguyên liệu** (Lv5 → 5.000) | khớp mục 8.5 |
+| Thu nhập vắng mặt | Mở ở **Lv5**; tối đa tính **30 + cấp×5 phút** (Lv5=55, Lv10=80); vắng <5 phút không tính; <15 phút tự cộng kèm thông báo; "người online kiếm nhiều hơn để công bằng" | chốt công thức trần — trước chỉ đo 999/55 phút |
+| Kiên nhẫn khách | Ngồi 75s: món trong **37s đầu = 100%**, giây **38–75 = 60%**, quá 75s / chờ ghế >10s / bị đuổi khi di chuyển bàn = 0% | chính xác hoá mục 2.3 (trước chỉ có 75s tổng) |
+| Tần suất khách | **7 khách/phút ở 0★ → 17 ở 5★**; thêm decor: ở 5★ **mỗi 20 điểm decor +1 khách/phút** | ⚠️ công thức decor của bundle (mục 2.3: decor/200×sao/5) khác 10× so với guide (decor/20 ở 5★) — cần QA lại trên game mình, có thể guide làm tròn cho người chơi |
+| Nâng sao món | Đủ lượt bán **+ nguyên liệu học × số sao mới**, KHÔNG cần xu; mỗi ngôi +giá, tổng tới **+220%** | mới — bổ sung mục 2.5 (trước nghĩ cần cả xu) |
+| Đồ đựng theo sao | 0★ giấy → 1★ lá (50 lượt) → 2★ gỗ (250) → 3★ sứ (2.500) → 4★ bạc (10.000) → 5★ vàng (20.000) | chốt ngưỡng chính thức — khớp hướng 4 bậc GĐ1496 song song |
+| Điểm danh | Ngày 1 = 1.000, mỗi ngày +~1.500 (guide viết "làm tròn lên nghìn" nhưng bảng đo được ở 8.3 là **làm tròn XUỐNG**) + **1 nguyên liệu/ngày** | guide mâu thuẫn dữ liệu đo — tin bảng đo |
+
+### 10.2 Nhân viên — bảng tier CHÍNH THỨC + trait + hợp đồng (bổ sung 6.6/8.4)
+
+| Tier | Tỷ lệ ra | Tốc độ | Lương/ngày (bồi/bếp) | Phí sa thải |
+|---|---|---|---|---|
+| Apprentice | 60% | ×0.90–1.00 | 112 / 168 | 5.000 |
+| Skilled | 30% | ×1.00–1.10 | 160 / 240 | 10.000 |
+| Master | 7% | ×1.10–1.20 | 256 / 384 | 20.000 |
+| Legend | 3% | ×1.20–1.30 | 400 / 600 | 40.000 |
+
+- **3 loại nhân viên**: Mặc định (Tata/Sasa — ở mãi, không sa thải được, **miễn lương khi cháy túi**), Tuyển (hợp đồng **30 ngày game**; hết hạn có **1 giờ game = 5 phút thật** để gia hạn theo giá họ đòi, không gia hạn thì tự động gia hạn theo giá mới), **Bạn bè** (không hợp đồng, sa thải miễn phí, tốc độ ×1.15–1.20, lương 320/480, giữ tên quán của bạn, không đòi tăng lương; hủy kết bạn = nghỉ việc ngay).
+- **Trả lương cuối ngày: mặc định trả trước, rồi theo thâm niên; ai không được trả nghỉ việc NGAY** — áp lực dòng tiền thật sự.
+- Đăng tin lương cao hơn → ứng viên về nhanh hơn + nhiều hơn. Master/Legend có thể có **1 nhược điểm để đổi lương −20%**.
+- **Trait** (mỗi người 1 cái, có tốt có XẤU): Bếp — Quick Hands (+10%), Perfectionist (−20%), Sloppy (8% tốn gấp đôi nguyên liệu), Charming (tip +15%), Diplomat (khách chờ +5%); Bồi — Swift (+10%), Forgetful (5% hỏi lại đơn), Clumsy (5% đánh rơi món nấu lại), Lazy (nghỉ 2s sau mỗi việc), Charming, Diplomat. → **trait xấu là thiết kế hay**: tier cao đắt nhưng có thể lởm, tạo lựa chọn.
+
+### 10.3 🆕 Thanh tra an toàn thực phẩm (Food safety audit, Lv6+) — cơ chế HỐI LỒ
+
+- Thanh tra ghé **mỗi 35–60 phút**; phạt = một phần **số xu kiếm được kể từ lần phạt trước** (có trần). Phải xử lý báo cáo trước khi có báo cáo mới.
+- 2 lựa chọn: **Nộp phạt** (chắc chắn + được chút XP) hoặc **Hối lộ** (rẻ hơn nhưng **đu được hoặc bị bắt** — bị bắt thì mất tiền hối lộ VÀ bị phạt như thường). Đo thật: vụ phạt 2.000 vs hối lộ 200, hối lộ thành công với câu "Thanh tra gật gù…".
+- Báo cáo kèm lý do hài hước ("món bò thơm quá khiến người đi đường tông vào cột đèn").
+- → **Nghiệm được cho game mình**: sự kiện "kiểm tra hàng hóa/hộp kinh doanh" cho siêu thị — nộp phạt chắc vs "xử lý nhanh" rẻ nhưng có rủi ro — cờ bạc nhẹ, văn liệu đời thường. ĐỪNG copy chuyện hối lộ nguyên văn nếu ngại nhạy cảm; chuyển thành "chi phí xử lý nhanh" vs "chờ xác minh".
+
+### 10.4 🆕 Nhà phê bình ẩm thực — cơ chế ĐẦY ĐỦ (đi vào GĐ1497 của mình)
+
+- Mở ở **Lv7**; tối đa **mỗi 5 giờ chơi**, và phải **3 giờ liền không bị phạt**; thời gian chơi cộng dồn qua các phiên.
+- Đi cùng **4 người hộ tống** (quay phim, chụp ảnh, trợ lý, dẫn chương trình) — đi thành hàng, đứng quanh bàn critic; **khách ngồi trong bán kính 4 ô phải đứng dậy nhường** (không mất tiền, không mất sao); khi critic đang ngồi, không ai được ngồi trong 5 ô.
+- Ngồi 5s rồi gọi món: **Lv10+ gọi NGẪU NHIÊN từ mọi món trong game** (183 món!), dưới Lv10 chỉ 50% rơi vào menu mình.
+- Bán được món: ăn 20s, trả tiền, **+123.000 xu**. Không bán món họ gọi: bỏ về; **Lv10+ sao bị kẹp 2★ trong 30 phút**; phục vụ trễ cũng vậy. Hình phạt **không thoát được** — thoát game thì hình phạt tiếp tục ở phiên sau.
+- → GĐ1497 (nhà phê bình) của mình nên lấy: dàn hộ tống + bán kính nhường chỗ + hình phạt "kẹp sao có đếm ngược" + phần thưởng lớn đột biến. Con số 123.000 = ~80 phút doanh thu Level 5–6 của mình — hiệu ứng "trúng số" đáng nhớ.
+
+### 10.5 🆕 Các hệ xã hội — số chốt từ guide + đo bảng xếp hạng thật
+
+- **Next Door Bistro** (Lv2): bảng hiệu bên trái **đổi quán ngẫu nhiên mỗi phút**, cờ = quốc gia chủ quán; vào thăm lấy giỏ quà (mỗi quán 4 giờ/lần, 1 nguyên liệu + 100–1.500 xu), dùng Tủ Trao Đổi của họ; ra về **bầu 😍/🙂 (mỗi quán 1 lần/ngày)**.
+- **Bảng "Quán đẹp nhất" (Prettiest Restaurants)** ở công viên bên phải: **top 5 mỗi ngày (200k/150k/100k/50k/30k) + top 10 tuần (tới 1.000.000)**, giữ lịch 7 ngày, **bấm nhận thưởng ngay trên bảng**; đo thật: toàn top toàn quán VN/ID/MY/PH — cộng đồng SEA rất hoạt động,票 đếm được (😍 6 🙂 0).
+- **Tủ Trao Đổi** (Lv3): tối đa 5 offer, 1–99 nguyên liệu mỗi bên, **mỗi quán 3 giờ/lượt trao**, khi ghé thăm có 1 offer ngẫu nhiên của game ở slot 0.
+- **Chợ Nội Thất/Flea Market** (Lv4): đồ phải vào kho rồi mới rao bán; có người mua thì nổi bong bóng xu trên sạp → vào "My Stall" nhận.
+- **Hòm thư = kênh patch notes**: game gửi cập nhật tính năng thành thư có nhãn NEW + nút Read all/Clear read; thư hệ thống có huy hiệu Admin. → cách truyền thông nhẹ nhàng mình có thể copy (GĐ toast đã có, thư là tầng tiếp theo khi có backend).
+
+### 10.6 Chi tiết lẻ đáng ghi (mới)
+
+- **Máy chơi game KHÔNG cộng XP, không tính sao**; khách đang chơi **không giữ ghế và đóng băng kiên nhẫn** — thiết kế chống nghẽn thông minh: máy = "bể chứa khách khi quán quá tải".
+- **Lv8+ "Vệ sinh nghiêm ngặt"**: chưa có toilet hoặc chờ >5s → khách nổi giận 🚽❌ mất điểm hài lòng; dưới Lv8 chỉ về bình thường. Độ khó của toilet TĂNG THEO CẤP — toilet từ "thiện chí" thành "bắt buộc".
+- **Nút 🥕 mua gấp nguyên liệu**: "Buy up to N each" — mua một phát mọi nguyên liệu sắp cạn của các món đang bán — chống sập bếp 1 nút.
+- **Bán switch từng món** (on/off), giữ tối thiểu 12 món bật, 3 món đầu khóa bật — kiểm soát xác suất khách gọi.
+- Nguyên liệu trong tủ học bán được 1.000/cái; tủ đầy → chấm đỏ trên nút 🍳.
+- Đồ trong kho: Storage 0/5 chỗ, có search + sort; "kho đầy thì không mua được đồ ở chợ".
+
+---
+
+## 11. Bổ sung lần 9 — mua mở rộng thật + Settings + thanh tra lần 2 (07/11/2026, Level 13→14)
+
+> Người chơi đã tự chơi lên Level 13, Day 5, ~101k xu (mốc kinh tế quý để đối chiếu). Đợt này đi sâu hành vi mua + tuỳ biến.
+
+### 11.1 Mua mở rộng 11×11 — luồng mua đất đo thật
+
+- **KHÔNG có hộp xác nhận** — bấm "Buy Expansion" là trừ tiền + tường tự giãn ngay, đồ cũ giữ nguyên vị trí, camera tự chỉnh. Đơn giản hoá tối đa: mở rộng là phần thưởng, không phải quyết định rủi ro.
+- Thang giá đo được: **2.000 (7×7→9×9) → 2.500 (9×9→11×11) → 4.500 (11×11→13×13)** — tăng ~×1.8 mỗi mốc, hiển thị kèm thanh tiến độ "Level 2/8". Sau 23×23 chuyển sang mua từng ô lẻ tới 39×39.
+- **Cảnh báo nhỏ**: không confirm nghĩa là bấm nhầm cũng mất tiền — với game mình (đơn giá cao hơn nhiều) nên GIỮ hộp xác nhận, nhưng học cái "mua xong tường tự giãn + đồ không xê dịch".
+
+### 11.2 Settings — cá nhân hoá giao diện
+
+- **12 ngôn ngữ** (ID, MS, VI, EN, IT, FR, DE, RU, ES, ZH, JA, KO) — game nhắm cộng đồng SEA trước (bảng xếp hạng toàn quán VN/ID/MY/PH).
+- **🎨 8 Theme màu giao diện**: Summer Dream, Warm Rustic Palette, Pastel Paradise Dreams, Cool Waters, Gothic Romance, Vibrant Summer, Ocean Breeze, Warm Autumn Glow — đổi cả HUD lẫn màu panel. → Cực rẻ để làm (chỉ là bộ CSS variables) mà người chơi "mua" cảm giác sở hữu. Game mình có `style` trong save — nên cho mở theme HUD theo tiến trình.
+- Chọn bài nhạc nền (2 bài), Sound/Music riêng, Login/Cloud Sync, **Restart from scratch** (xoá ván ngay trong game — có hộp xác nhận riêng), Feedback + Discord.
+
+### 11.3 Thanh tra lần 2 (Level 13) — xác nhận phạt theo doanh thu
+
+- Lần này phạt **10.000** vs hối lộ **1.600** (lần trước ở Level 6: 2.000/200) → **phạt tăng theo số xu kiếm được từ lần phạt trước** (đúng như guide), hối lộ ≈ 10–16% mức phạt (không cố định).
+- Câu thoại hài khác mỗi lần ("món bò thơm quá khiến người đi đường tông cột đèn", "góc nghiêng 45 độ — vui mỉm cười nhiều hơn", "tiền vào cặp kiệm, thanh tra chúc quán đông").
+- Ở Level 13 phạt 10.000 = ~10 phút doanh thu → đủ đau để nhớ, không đủ để chết. **Tỷ lệ này tốt cho game mình**: phạt sự kiện ≈ 5–15 phút doanh thu hiện tại.
+
+### 11.4 Nhịp kinh tế người chơi thật (thước đối chiếu cho mình)
+
+Level 5→14, Day 1→5, 18k→113k xu sau ~4–5 giờ chơi rải rác (gồm cả idle). Tăng tiền ~×6 mỗi 10 cấp ở giai đoạn đầu; opening bậc thang: mỗi cấp thưởng 1.000×cấp chiếm tỷ trọng lớn trong thu nhập đầu game (Lv14 = 14.000 xu một phát).
+
+---
+
+## 12. Bổ sung lần 10 — UI kinh tế vi mô: 🥕 mua gấp, Tủ Trao Đổi, Chợ đồ cũ (07/11/2026, Level 17)
+
+> Người chơi tự chơi tới Level 17, Day 7, 162k xu. Đợt này chụp đủ 3 UI kinh tế chưa mở lần nào + thanh tra lần 3.
+
+### 12.1 🥕 "Nguyên liệu sắp cạn" — UI mua gấp 1 nút (chống sập bếp)
+
+- Modal "Cooking ingredients running low!" liệt kê từng nguyên liệu đang cạn của món đang bán (Tomato/Bread loaf/Pork — In stock: 0).
+- **Nút đầu modal: "Buy up to 3253 each"** — một phát mua MỌI nguyên liệu sắp cạn lên tới N (N tính từ tiền + chỗ trống tủ; loại hết chỗ/hết tiền thì bỏ qua).
+- Mỗi loại 4 gói: **+50, +100, +500 (−10%), +1000 (−20%)** — thang khuyến mãi như mục 7.4; đơn giá từng loại khác nhau (Tomato 1, Bread 1, Pork 2 xu/đơn vị).
+- → Game mình đã có nhập hàng + giao hàng; học được **nút "Nhập đủ N mỗi loại" trên chính cảnh báo thiếu hàng** — biến cảnh báo thành hành động 1 chạm (chớp mắt là hết rủi ro bếp dừng).
+
+### 12.2 Tủ Trao Đổi (Swap Box) — UI thật
+
+5 slot, mỗi slot: **Offer** (chọn nguyên liệu từ tủ + stepper 1–99) ↔ **Want** (chọn loại mong muốn + số lượng) + nút Post offer; có tab **History**. Khi người khác trade xong: bấm Collect nhận (cần chỗ tủ). Đúng guide 10.5. Với mình: nếu mở hẻm online, "tủ trao đổi nguyên liệu quý giữa người chơi" là hệ nhẹ (chỉ là 5 bản ghi offer) mà tạo chợ chéo thật.
+
+### 12.3 Chợ đồ cũ (Flea Market) — kinh tế người chơi THẬT đo được
+
+Browse/My Stall + search/filter/sort/Refresh. Tin rao thật của người chơi:
+- **Giá tự định so với giá shop, hiển thị %**: có người bán ĐẮT hơn (▲60% Wooden Chair 80 xu), có người rẻ hơn (▼30–37%), và **đồ landmark bị bán tháo ▼89–90%** (Trojan Horse 1.000.000 → 100.000; Dong Son Drum 1.900.000 → 200.000) — đúng bằng mức "bán lại cho shop 10%", tức chợ này là nơi đồ cũ tìm chủ mới giá bằng phế liệu + chút dịch vụ.
+- Mỗi tin có **hạn giờ còn lại** ("897h left") — khan hiếm thời gian, không phải khan hiếm số lượng.
+- Mua bán cần tài khoản; browse tự do. → Với mình (khi có backend): chợ đồ cũ giữa người chơi + hiển thị % so giá shop là cách để cộng đồng tự tạo "thị trường đồ cũ" mà không cần hệ đấu giá.
+
+### 12.4 Thanh tra lần 3 (Level 17): phạt 11.000 / hối lộ 2.000 — hối lộ 3/3 lần thành công
+
+Tỷ lệ hối lộ/phạt: 10% → 16% → 18% (không cố định, tăng chậm hơn phạt). 3 lần đều thành công — có thể tỉ lệ thành công cao (hoặc luôn thành công, rủi ro chỉ là lore). Phạt tăng theo doanh thu từ lần trước (2.000 → 10.000 → 11.000).
+
+### 12.5 Nhịp tiến độ người chơi thật (cập nhật)
+
+Level 14→17, Day 5→7 trong ~2 giờ tự chơi; 113k → 162k xu. Người chơi thật chỉ mua mở rộng + máy + nguyên liệu, chưa đụng landmark — đúng "giữa game là giai đoạn tăng diện tích + máy thu phí".

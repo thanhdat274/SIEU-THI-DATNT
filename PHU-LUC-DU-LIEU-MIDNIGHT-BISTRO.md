@@ -1146,3 +1146,139 @@ Món chưa học: giá học (Insalata 150, Burger 350, Shuǐjiǎo 500) + "Ingre
 ~45 phút chơi từ Level 1: lên Level 5, tiền 8.000 → đỉnh ~19.000 (đã tiêu ~10.000 mua sắm), Learned 4/183, decor 54, rating ~3.7, 13 khách đang ở, mở rộng 9×9. Mở khóa đi qua: L2 hàng xóm, L3 tủ trao đổi, L4 chợ nội thất, L5 doanh thu vắng mặt — đúng thứ tự "thưởng trước, rủi ro sau".
 
 (End of new I section)
+
+## J. Bổ sung lần 7 — quét đủ Shop 300 món bằng DOM ở Level 6 (07/11/2026)
+
+> Trích xuất trực tiếp `.shop-card` của game khi chơi thật (Level 6, 18–24k xu). Khác H1 (đo tay từng nhóm): lần này có **toàn bộ trường** của 300 món gồm điểm decor, phí/lượt, khóa cấp. Tên mô tả chỉ để đối chiếu — không đưa vào game.
+
+### J1. Khóa cấp — duy nhất 4 món, đều là CỬA, đều Level 10
+| Món | Giá | Điểm |
+|---|---|---|
+| Grand French Double Doors | 60.000 | +10 |
+| Arched Bronze & Cast Glass Door | 60.000 | +10 |
+| Artisan Statement Double Doors | 60.000 | +10 |
+| Gilded Temple Gate | 120.000 | +10 |
+
+→ 296/300 món mở theo tiền. Khóa cấp chỉ dùng cho item biểu tượng cửa (khớp luật "mỗi 10 cấp thêm 1 cửa", mục 2.2).
+
+### J2. Máy thu phí — chốt đủ 9 máy + 5 toilet (phí/lượt)
+| Máy | Giá | Phí/lượt | Hoàn vốn (lượt) |
+|---|---|---|---|
+| Mystery Gift Claw Machine | 1.500 | 15 | 100 |
+| Automatic Shoe Polisher | 2.000 | 20 | 100 |
+| Snack Carousel Vending | 1.800 | 20 | 90 |
+| Chilled Drink Vending | 1.800 | 20 | 90 |
+| Cotton Candy Machine | 2.200 | 25 | 88 |
+| Plush Claw Machine | 2.200 | 24 | 92 |
+| Vintage Photobooth | 3.000 | 30 | 100 |
+| Executive Massage Chair | 3.600 | 40 | 90 |
+
+Toilet: 500/1₫, 1.500/2₫, 4.500/8₫, 12.000/20₫, 60.000/50₫ (hoàn vốn 500–1.200 lượt — tiện ích, không phải nguồn lời).
+
+### J3. Vách ngăn chia khu (Zone Divider) — 9 loại, đều +3 điểm
+Wooden Slat 150 · Frosted Glass 300 · Low Brick Wall 220 (+2) · Clear Glass 330 · Shoji 380 · Zen Bamboo 750 · Stained Glass 890 · Rose Trellis 650 · Aquarium Water Wall 960 · Moroccan Mashrabiya 1.300. Kèm rào thấp: Low Iron Railing 180 (+2), Low Picket Fence 100 (+2), Victorian Cast Iron Railing 300 (+2), VIP Velvet Rope 800 (+2), Mosaic Tile Wall 830 (+2).
+
+### J4. Nền/sơn theo ô — bảng giá–điểm chốt
+- **Tile Floor: 40 màu × 280 xu = +1/ô** ( Scarlet → Onyx black; liệt kê trong dump).
+- Nền đặc biệt: Pastel Terrazzo 330 (+1), Royal Encaustic Blue 390 (+1), Gold Leaf Tile 24K 840 (+3), Lapis Mandala 1.300 (+3), Moonstone 1.300 (+3), Ancient Lotus Brick 1.300 (+3).
+- Nền ngoài trời: Mossy/Red Clay/Dark Loam 500 (+1), Grass 700 (+1), Sand 1.000 (+1), Cobblestone mat 60 (+1).
+- Wall Paint: 420–2.000 (+1); Wall Skirt (ốp chân): 330–1.800 (+1–2); Azulejo Low Wall 800 (+2).
+
+### J5. Đồ dùng bếp = decor (bổ sung số chốt cho H2)
+Magnetic Knife Strip & Board 540 (+6) · Hanging Copper Pans 680 (+6) · Daily Special Chalkboard 310 (+6) · Dried Herb Hangings 220 (+3) · Rolling Pin & Spoon Rack 260 (+4) · Spice Jar Shelf 340 (+9) · Rustic Wine Rack 1.650 (+9) · Wooden Dish Hutch 2.400 (+4) · Apothecary Tea Cabinet 3.200 (+8) · Samovar Tea Station 1.300 (+11) · Steam Dishwasher 1.500 (+5) · Digital Grill Microwave 800 (+5) · Inverter Fridge 780 (+5) · Bồn rửa: Porcelain 2.000 (+3) → Marble Vanity 20.000 (+8) → Royal Gold-Plated 75.000 (+15).
+
+### J6. Special (landmark) — đủ 12 món (trước đếm 10)
+Water Puppet Stage Pavilion **1.900.000 (+200)** · Egyptian Pyramid 1.900.000 (+200) · The Last Supper 2.200.000 (+200) · Dong Son Bronze Drum 1.900.000 (+120) · Petronas Twin Towers 1.900.000 (+120) · Masterpiece Mona Lisa 1.900.000 (+120) · The Scream 1.500.000 (+120) · Trojan Horse 1.000.000 (+60) · Nyan Cat 1.000.000 (+60) · Tennis/Golf World Cup Trophy 1.500.000 (+50 mỗi món) · Egyptian Mummy 1.000.000 (+50).
+Decor khủng ngoài Special: Buddha 600k (+50), Mother-of-Pearl World Map 600k (+50), Triumphal Tapestry 900k (+50), Dragonfly Stained Glass Lamp 200k (+60), Royal Grand Knight Armor 90k (+35), Qin Terracotta General 260k (+35), Maneki Neko 180k (+30).
+
+### J7. Mở rộng — số chốt đợt này
+Diện tích 9×9 → 11×11: **2.500** (Level 1/8) · Kho đồ +6 chỗ: **5.000** (0/9) · Tủ nguyên liệu +100: **290.000** (0/200). Event Halloween 2026: ghế dơi + bàn bí ngô, 250.000 (+1 mỗi món).
+
+### J8. Cờ vinh danh quốc gia — dữ liệu sổ Quests (chi tiết cho 9.1 PHAN-TICH)
+Tổng 62 cờ (Claimed 0/62). Buff bồi bàn 16 nước; buff khách di chuyển 15 nước (danh sách trong PHAN-TICH 9.1). Việt Nam 27 món (1/27), Pháp 13, Mexico 13, Tây Ban Nha 12, Malaysia 11, Indonesia 10, Ý 9, TQ 9, Mỹ 9… Mỗi nước: học đủ → +10 decor +0.5% tốc độ; 5★ hết → +20 decor + thêm 1%; cờ bị tước khi nước có món mới.
+
+## K. Bổ sung lần 8 — Sổ hướng dẫn 17 mục (full text tóm lược) + dữ liệu thật (07/11/2026, Level 10)
+
+### K1. Bảng tier nhân viên — chính thức từ guide
+| Tier | Tỷ lệ | Tốc độ | Lương bồi/bếp /ngày | Sa thải |
+|---|---|---|---|---|
+| Apprentice | 60% | ×0.90–1.00 | 112 / 168 | 5.000 |
+| Skilled | 30% | ×1.00–1.10 | 160 / 240 | 10.000 |
+| Master | 7% | ×1.10–1.20 | 256 / 384 | 20.000 |
+| Legend | 3% | ×1.20–1.30 | 400 / 600 | 40.000 |
+
+3 loại nhân sự: Mặc định (mãi mãi, không sa thải, miễn lương nếu cháy túi) · Tuyển (hợp đồng 30 ngày game, gia hạn trong 1 giờ game = 5 phút thật, quá hạn tự gia hạn theo giá mới) · Bạn bè (×1.15–1.20, 320/480, sa thải free, giữ tên quán chủ, hủy kết bạn = nghỉ). Trả lương cuối ngày: mặc định trước → thâm niên; thiếu tiền người chưa trả nghỉ ngay. Master/Legend có thể kèm 1 nhược điểm đổi lương −20%.
+
+### K2. Trait nhân viên (đầy đủ)
+- **Bếp**: Quick Hands nấu +10% · Perfectionist nấu −20% · Sloppy 8% hao gấp đôi nguyên liệu · Charming tip +15% · Diplomat khách chờ +5%.
+- **Bồi**: Swift đi +10% · Forgetful 5% hỏi lại đơn · Clumsy 5% rơi món nấu lại · Lazy nghỉ 2s/việc · Charming · Diplomat.
+
+### K3. Ngưỡng đồ đựng theo sao — chốt chính thức
+| Sao | Lượt bán | Đồ ăn | Đồ uống |
+|---|---|---|---|
+| 0★ | 0 | Đĩa giấy | Cốc giấy |
+| 1★ | 50 | Lá | Cốc lá |
+| 2★ | 250 | Gỗ | Cốc gỗ |
+| 3★ | 2.500 | Sứ | Cốc sứ |
+| 4★ | 10.000 | Bạc | Cốc bạc |
+| 5★ | 20.000 | Vàng | Cốc vàng |
+
+Nâng sao = lượt bán + nguyên liệu học × số sao (KHÔNG cần xu); tổng thưởng giá tới +220%. Tủ nguyên liệu học: bán 1.000/cái; đầy → chấm đỏ.
+
+### K4. Khách — số chốt từ guide
+7 khách/phút ở 0★ → 17 ở 5★ (chưa tính decor); ở 5★ mỗi 20 điểm decor +1 khách/phút. Kiên nhẫn ngồi 75s: món ≤37s = 100%, 38–75s = 60%, quá 75s = 0%; chờ ghế >10s = bỏ về 0%. Hàng chờ vô hạn, khách đi lang thang khi chờ. XP: 5★ = 2, còn lại = 1. Thưởng lên cấp = 1.000 × cấp + 1 nguyên liệu. Trần thu nhập vắng mặt = 30 + cấp×5 phút; <5 phút không tính; <15 phút tự cộng.
+
+### K5. Thanh tra (Lv6+) — số liệu đo thật + guide
+Mỗi 35–60 phút 1 báo cáo; phạt = một phần xu kiếm được từ lần phạt trước (có trần). Vụ đo thật: phạt 2.000 hoặc hối lộ 200 ("Just luck") — hối lộ thành công: "The inspector nodded… And moved on. −200". Hối lộ rủi ro: bị bắt = mất hối lộ + vẫn phạt. Nộp phạt được chút XP. Phải xử lý trước khi có báo cáo mới.
+
+### K6. Nhà phê bình (Lv7+) — quy trình đầy đủ
+≤ 1 lần/5 giờ chơi + sạch phạt 3 giờ liền; đi cùng 4 người hộ tống (đứng quanh bàn); khách trong 4 ô phải nhường chỗ (0 mất mát), cấm ngồi trong 5 ô quanh critic; 5s sau ngồi thì gọi món (Lv10+: NGẪU NHIÊN toàn bộ 183 món; <Lv10: 50% vào menu mình); bán được = ăn 20s + **123.000 xu**; không bán/phục vụ trễ = bỏ về + (Lv10+) **kẹp 2★ trong 30 phút**, hình phạt bền qua các phiên.
+
+### K7. Xã hội — số chốt
+Next Door: đổi quán mỗi phút, giỏ quà 4h/quán (1 nguyên liệu + 100–1.500 xu), vote 😍/🙂 1 lần/ngày/quán. Bảng Quán đẹp: top 5 ngày (200k/150k/100k/50k/30k), top 10 tuần (tới 1.000.000), lịch 7 ngày, nhận thưởng trên bảng. Đo thật top 31/10–06/11: toàn quán VN/ID/MY/PH,票 cao nhất 😍6. Tủ Trao Đổi: 5 offer, 1–99/bên, 3h/quán, slot 0 = offer ngẫu nhiên của game. Flea Market: phải cất kho mới rao; bán xong bong bóng xu trên sạp. Bạn bè: tối đa 20, chặn tối đa 50.
+
+### K8. Hòm thư (Mailbox) — đo thật
+2 thư patch notes có nhãn NEW ("Items: buy another copy from the selection popup", "Shop: pick up where you left off"), nút Read all / Clear read, xoá từng thư; thư hệ thống có huy hiệu Admin. Storage: 0/5 chỗ, search + sort Newest.
+
+### K9. Mốc mở khóa theo cấp (tổng hợp guide)
+Lv2 Next Door · Lv3 Swap Box + giỏ quà · Lv4 Flea Market · Lv5 thu nhập vắng mặt · Lv6 Thanh tra · Lv7 Nhà phê bình · Lv8 Vệ sinh nghiêm ngặt (toilet bắt buộc) · Lv10+ mỗi 10 cấp +1 cửa (tối đa +10 cửa ở Lv100).
+
+## L. Bổ sung lần 9 — mở rộng + Settings + thanh tra lần 2 (07/11/2026, Level 13→14)
+
+### L1. Thang giá mở rộng (đo thật)
+7×7→9×9 = 2.000 · 9×9→11×11 = **2.500 (đã mua, không hộp xác nhận, tường tự giãn)** · 11×11→13×13 = 4.500 (Level 2/8) · … tới 23×23 (8 mốc) rồi mua từng ô tới 39×39. Thanh tiến độ hiện trong tab Expansion. Kho đồ 5.000 (+6 chỗ, 0/9), Tủ nấu +100 = 290.000 (0/200).
+
+### L2. Settings (đo đủ)
+12 ngôn ngữ: ID, MS, EN, VI, IT, FR, DE, RU, ES, ZH, JA, KO. 8 Theme màu HUD: Summer Dream · Warm Rustic Palette · Pastel Paradise Dreams · Cool Waters · Gothic Romance · Vibrant Summer · Ocean Breeze · Warm Autumn Glow. Nhạc nền chọn được (Cloud Miles / Golden Afternoon), Sound/Music toggle riêng, Login/Cloud Sync, Restart from scratch, Feedback, Discord.
+
+### L3. Thanh tra lần 2 (Level 13)
+Phạt 10.000 / hối lộ 1.600 (lần 1: 2.000/200) → phạt ∝ doanh thu từ lần phạt trước; hối lộ ≈ 10–16% phạt; 2/2 lần hối lộ thành công (kết quả: "tiền vào cặp kiệm, thanh tra chúc quán đông"). Câu vi phạm hài: "góc nghiêng 45° — vui mỉm cười nhiều hơn".
+
+### L4. Bảng Quán đẹp — UI chụp màn hình
+Huy chương 🥇🥈🥉 + hạng 4–5, cờ nước, tên quán, thưởng trên dòng (200k/150k/100k/50k/30k),票 😍–🙂 đếm riêng, nút Visit, dòng "next daily top is announced in 19h 53m". Bảng mở bằng icon 🏆 trên building bên phải phố.
+
+### L5. Kinh tế người chơi thật (tham chiếu)
+Level 5→14, Day 1→5: 18k → 113k xu sau ~4–5 giờ chơi rải rác. Thưởng lên cấp 1.000×cấp (Lv14 = 14.000) là khoản đột biến lớn đầu game. Rating dao động 3.4–3.7 khi chỉ 2 bàn/6 ghế + 2 bếp.
+
+## M. Bổ sung lần 10 — 3 UI kinh tế vi mô (07/11/2026, Level 17, Day 7)
+
+### M1. Modal 🥕 "Cooking ingredients running low!"
+Nút đầu: "Buy up to 3253 each" (N = tính từ tiền + chỗ tủ trống). Mỗi nguyên liệu cạn 1 card: tên + In stock: 0 + 4 gói +50 / +100 / +500 (−10%) / +1000 (−20%). Đơn giá ví dụ: Tomato 1 xu, Bread loaf 1 xu, Pork 2 xu/đơn vị.
+
+### M2. Tủ Trao Đổi — UI
+5 slot offer: Offer (dropdown nguyên liệu tủ + stepper − 1 +) / Want (dropdown + stepper) / nút Post offer (xám → xanh khi hợp lệ). Tab History bên cạnh. Đặt ở sạp trắng vỉa hè trái, click trực tiếp được.
+
+### M3. Chợ đồ cũ — tin rao thật đo được
+| Người bán | Đồ | Giá shop | Chênh | Giá rao | Hạn |
+|---|---|---|---|---|---|
+| cơm gà 43 - bình dân | Wooden Chair | 50 | ▲60% | 80 | 897h |
+| Tinder | Golden Lucky Bamboo | 1.040 | ▼30% | 728 | 890h |
+| Bò Thanh Vĩ Đại | Cyber Hologram Table | 2.400 | ▼37% | 900 | 865h |
+| Bò Thanh Vĩ Đại | Golden Throne Chair | 2.400 | ▼17% | 2.000 | 865h |
+| Tinder | Trojan Horse Miniature | 1.000.000 | ▼90% | 100.000 | — |
+| Tinder | Dong Son Bronze Drum | 1.900.000 | ▼89% | 200.000 | — |
+
+Browse tự do (không cần tài khoản); mua/rao cần tài khoản. Tin rao có hạn giờ đếm ngược; My Stall có nút Collect khi bán được (bong bóng xu trên sạp).
+
+### M4. Thanh tra lần 3
+Level 17: phạt 11.000 / hối lộ 2.000 (18%) — thành công lần 3/3. Chuỗi phạt 2.000 → 10.000 → 11.000 theo doanh thu giữa các lần.
