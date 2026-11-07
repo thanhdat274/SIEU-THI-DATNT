@@ -51,7 +51,7 @@ export const PROFESSIONS: ProfessionDef[] = [
   {
     id: 'mom', name: 'Mẹ bỉm sữa', icon: '🤱', archetype: 'young_mom',
     hours: [h(8.5, 10.5), h(15.5, 18)],
-    likes: ['sua', 'x_ta_giay', 'x_sua_bot_tre_em', 'x_khan_uot', 'trung', 'rau', 'traicay', 'x_yakult', 'che_dau_xanh', 'sinh_to_trai_cay', 'banh_bao_hap'],
+    likes: ['sua', 'x_ta_giay', 'x_sua_bot_tre_em', 'x_khan_uot', 'trung', 'rau', 'traicay', 'x_yakult', 'che_dau_xanh', 'sinh_to_trai_cay', 'banh_bao_hap', 'x_sa'],
     loyalty: 0.7, extraItems: 2, sensitivity: 1.15, patience: 0.9,
   },
   {
