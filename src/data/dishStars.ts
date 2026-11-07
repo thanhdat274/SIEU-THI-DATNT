@@ -57,3 +57,16 @@ export function dishStarGoalOf(productId: string, served: number): DishStarGoal 
     nextVessel: vessels[Math.min(stars + 1, vessels.length - 1)],
   };
 }
+
+/** GĐ1526 — "nguyên liệu nâng sao" (TONG-HOP C#5 việc còn lại): dùng 1 hũ hàng tạp hoá quý
+ *  để món được tính thêm lượt bán về phía sao kế. Chỉ cho món chưa 3★, mở cùng hàng quý (cấp 66). */
+export const STAR_BOOST_ITEM = 'to_yen';
+export const STAR_BOOST_SERVED = 10;
+export const STAR_BOOST_UNLOCK = 66;
+export type StarBoostBlock = 'locked' | 'maxed' | 'no-item' | null;
+export function starBoostBlock(level: number, served: number, have: number): StarBoostBlock {
+  if (level < STAR_BOOST_UNLOCK) return 'locked';
+  if (dishStars(served) >= DISH_STAR_STEPS.length) return 'maxed';
+  if (have < 1) return 'no-item';
+  return null;
+}

@@ -117,6 +117,7 @@ const LOCAL_ONLY: Record<string, string> = {
   restockAndAnswerPhone: 'nhập bù rồi nghe một cuộc gọi theo id đơn',
   declinePhone: 'từ chối một cuộc gọi theo id đơn',
   deliverPhone: 'mang đơn gọi điện tới nhà khách theo id đơn',
+  boostDishStar: 'dùng 1 tổ yến nâng lượt bán một món theo id',
   startCook: 'bắt đầu một mẻ nấu theo id công thức (thêm job mới vào hàng)',
   replaceEmptySlots: 'đổi các ô kệ hết hàng sang món khác trong kho — quét toàn kệ một lượt',
   apologize: 'đăng bài xin lỗi khi khủng hoảng — một bài/ngày, cờ toàn cục',

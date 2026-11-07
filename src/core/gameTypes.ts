@@ -372,6 +372,8 @@ export interface GameState {
   cookJobs: CookJob[];
   /** Bắt đầu một mẻ: trừ nguyên liệu khỏi kho (lô cận hạn trước), trả false nếu chưa đủ điều kiện. */
   startCook: (recipeId: string) => boolean;
+  /** GĐ1526: dùng 1 tổ yến nâng lượt bán của món về phía sao kế. */
+  boostDishStar: (productId: string) => boolean;
   /** Hợp đồng cung cấp đang giữ (khách sỉ / đơn buôn dài hạn). */
   contracts: Record<string, ContractState>;
   acceptContract: (id: string) => void;
