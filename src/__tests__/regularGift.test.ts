@@ -102,3 +102,16 @@ describe('GĐ1595 giftRemainNote', () => {
     expect(giftRemainNote(0)).toContain('đã tặng hết');
   });
 });
+
+describe('GĐ1596 thông báo tặng quà qua store', () => {
+  it('kèm đuôi còn tặng / đã tặng hết', async () => {
+    const { useGame } = await import('../core/store');
+    const { REGULARS } = await import('../data/regulars');
+    const r = REGULARS[0];
+    const fav = r.favorites[0];
+    const s = useGame.getState();
+    useGame.setState({ level: 40, storage: { ...s.storage, [fav]: 5 }, regulars: { ...s.regulars, [r.id]: { friendship: 5, visits: 2, discovered: [fav], perks: [] } } });
+    expect(useGame.getState().giftRegular(r.id)).toBe(true);
+    expect(useGame.getState().message).toMatch(/còn tặng được|đã tặng hết/);
+  });
+});
