@@ -3,6 +3,7 @@ import { COOKED_PRODUCT_IDS, COOK_UNLOCK } from './recipes';
 import { unlockedCombos, COMBO_UNLOCK } from './combos';
 import { SERVICES } from './services';
 import { ONLINE_UNLOCK, onlineOrderCap } from './online';
+import { expectedCookOrdersPerDay } from './phoneOrders';
 import { GARDEN_UNLOCK } from './garden';
 import { PROMO_MIN_FOLLOWERS, SOCIAL_UNLOCK } from './social';
 import type { Weather } from './weather';
@@ -299,7 +300,7 @@ export function dailyQuests(c: QuestContext): Quest[] {
     { id: 'daily_farm', icon: '🌾', title: 'Thu hoạch trại', unit: 'sản phẩm', target: scale(6, lv, 0.15), current: c.stats.farmHarvest ?? 0, money: scale(90000, lv, 0.25), xp: scale(50, lv, 0.1), show: lv >= GARDEN_UNLOCK, ...(c.plantedPlots === 0 ? { desc: NO_CROP_DESC } : {}) },
     // promote() chỉ cho đăng 1 bài/ngày (data/social.ts) nên mục tiêu cố định 1, đo cả bài xin lỗi khi khủng hoảng
     { id: 'daily_social', icon: '📱', title: 'Lên mạng xã hội', unit: 'bài', target: 1, current: c.stats.socialPosts ?? 0, money: scale(70000, lv, 0.25), xp: scale(40, lv, 0.1), show: lv >= SOCIAL_UNLOCK, desc: c.socialFollowers !== undefined && c.socialFollowers < PROMO_MIN_FOLLOWERS ? FEW_FOLLOWERS_DESC(c.socialFollowers) : 'Đăng bài quảng bá (hoặc xin lỗi khi khủng hoảng) hôm nay' },
-    { id: 'daily_cook_orders', icon: '🥡', title: 'Giao đơn nấu', unit: 'đơn', target: scale(2, lv, 0.1), current: c.stats.cookOrders ?? 0, money: scale(110000, lv, 0.25), xp: scale(55, lv, 0.1), show: lv >= COOK_UNLOCK, ...(c.hasCookStation === false ? { desc: NO_STATION_DESC('Giao {n} đơn nấu') } : c.hasCourier === false ? { desc: NO_COURIER_DESC } : {}) },
+    { id: 'daily_cook_orders', icon: '🥡', title: 'Giao đơn nấu', unit: 'đơn', target: Math.max(1, Math.min(scale(2, lv, 0.1), Math.floor(expectedCookOrdersPerDay(lv)))), current: c.stats.cookOrders ?? 0, money: scale(110000, lv, 0.25), xp: scale(55, lv, 0.1), show: lv >= COOK_UNLOCK, ...(c.hasCookStation === false ? { desc: NO_STATION_DESC('Giao {n} đơn nấu') } : c.hasCourier === false ? { desc: NO_COURIER_DESC } : {}) },
     // ── GĐ160 — việc tuỳ chọn mở TỪ CẤP 1 + biến thể theo hoàn cảnh ──
     // "Sớm hôm đón khách": đo doanh thu khung sáng sớm 6h–9h (sổ theo giờ) — khuyến khích mở cửa sớm
     // đón nửa giờ vàng đầu ngày (6h–8h30) mà lịch tự động 8h đang bỏ lỡ (cùng nhịp với cảnh báo lịch).

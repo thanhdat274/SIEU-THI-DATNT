@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (07/11/2026)
+- GĐ1642: đơn nấu qua điện thoại chỉ ~1,4–1,75 đơn/ngày (9 khung × xác suất gọi × 30%) mà việc ngày đòi 6 (cấp 21) → 12 (cấp 50), tuần đòi 4+cấp → cắt theo expectedCookOrdersPerDay (ngày ≥1, tuần 70% × 7 ngày). 5209 test xanh.
 - GĐ1641: cấp tối đa 200 làm mục tiêu đơn app vượt trần đơn thật (việc ngày 45 đơn vs trần ~25; tuần 210 vs ~175) → cắt ở 70% onlineOrderCap 5★ cho việc ngày, thử thách tuần, tháng; cấp thấp giữ nguyên. QA trình duyệt GĐ1638/1640: gợi ý combo/gieo hiện trong bảng Nhiệm vụ. 581 tệp/5208 test xanh.
 - GĐ1640: việc ngày "Thu hoạch trại" và thử thách tuần/tháng thu hoạch nêu "trại chưa gieo luống nào: gieo ở 🌱 Mở rộng › 🚜 Trang trại" (QuestContext.plantedPlots, không vào save).
 - GĐ1639: thử thách tuần/tháng đo combo hiện "⚠️ Chưa bật combo nào: bật ở ⋯ Thêm › 🎁 Combo" khi chưa bật (periodBlocker).

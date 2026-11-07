@@ -5,6 +5,7 @@
 import { formatMoney } from './products';
 import { xpToNext } from './levels';
 import { onlineOrderCap } from './online';
+import { expectedCookOrdersPerDay } from './phoneOrders';
 
 /** GĐ1641: trần đơn app khả thi trong N ngày (70% trần 5★) — giữ thử thách đơn app làm được ở cấp cao. */
 const onlineCap = (lv: number, days: number) => Math.max(1, Math.floor(onlineOrderCap(5, lv) * days * 0.7));
@@ -135,7 +136,7 @@ export const WEEKLY_CHALLENGES: WeeklyChallenge[] = [
     target: (lv) => 12 + 2 * lv, reward: (lv) => round1k(180000 * (1 + 0.25 * (lv - 1))) },
     (t) => `Bán ${t} món nhà làm trong tuần`),
   weekly({ id: 'wq_cook_orders', icon: '🥡', title: 'Giao đơn nấu', unit: 'đơn', measure: 'cookOrders', minLevel: 21,
-    target: (lv) => 4 + lv, reward: (lv) => round1k(170000 * (1 + 0.25 * (lv - 1))) },
+    target: (lv) => Math.max(1, Math.min(4 + lv, Math.floor(expectedCookOrdersPerDay(lv) * 7 * 0.7))), reward: (lv) => round1k(170000 * (1 + 0.25 * (lv - 1))) },
     (t) => `Giao ${t} đơn nấu trong tuần`),
 ];
 

@@ -18,3 +18,21 @@ describe('GĐ1641 — mục tiêu đơn app không vượt trần đơn thật',
     }
   });
 });
+
+describe('GĐ1642 — mục tiêu đơn nấu không vượt số đơn nấu thật', () => {
+  it('việc ngày ≤ kỳ vọng đơn nấu/ngày (≥1); tuần ≤ 7 ngày kỳ vọng', async () => {
+    const { expectedCookOrdersPerDay } = await import('../data/phoneOrders');
+    const { COOK_UNLOCK } = await import('../data/recipes');
+    const { newGameData, questContext, useGame } = await import('../core/store');
+    const { dailyQuests } = await import('../data/quests');
+    const wk = WEEKLY_CHALLENGES.find((c) => c.id === 'wq_cook_orders')!;
+    for (const lv of [COOK_UNLOCK, 40, 100, 200]) {
+      expect(wk.target(lv), `tuần cấp ${lv}`).toBeLessThanOrEqual(expectedCookOrdersPerDay(lv) * 7);
+      for (let d = 1; d <= 40; d++) {
+        useGame.setState({ ...newGameData(), level: lv, day: d });
+        const q = dailyQuests(questContext(useGame.getState())).find((x) => x.id === 'daily_cook_orders');
+        if (q) expect(q.target, `ngày cấp ${lv}`).toBeLessThanOrEqual(Math.max(1, expectedCookOrdersPerDay(lv)));
+      }
+    }
+  });
+});
