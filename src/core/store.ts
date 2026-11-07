@@ -78,6 +78,7 @@ export const questContext = (s: GameState): QuestContext => {
     hasCourier: s.staff.some((w) => w.role === 'courier'),
     hasService: (s.biz.services ?? []).length > 0,
     hasOnlineOpen: !!s.online?.open,
+    socialFollowers: Math.floor(s.social?.followers ?? 0),
   };
 };
 

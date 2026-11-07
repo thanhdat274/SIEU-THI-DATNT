@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (07/11/2026)
+- GĐ1625: việc "Lên mạng xã hội" khi dưới 20 người theo dõi (đăng quảng bá bị chặn) → "cần 20 người theo dõi (đang N): bán tốt để khách khen trên mạng"; bộ việc không đổi. QA cấp 30 thấy "(đang 0)"; save QA đã xóa.
 - GĐ1624: việc "Giao đơn app" khi gian hàng app chưa mở/đang tạm ngưng → "chưa nhận đơn: mở ở 🌱 Mở rộng › 📲 Online" (giữ chỗ, không xáo bộ). Rà chương truyện (không tuần tự, không kẹt) và trại (có luống sẵn) — không cần sửa. QA cấp 30 thấy gợi ý; save QA đã xóa.
 - GĐ1623: rà thành tựu — trạm nấu 9≥8, đồ nhà 5≥4, thú cưng 2, khách quen 28≥10: đều đạt được; thêm test achievementReachable chặn tái phát (không đổi gameplay, không cần QA trình duyệt).
 - GĐ1622: bước "Thuê N nhân viên" nêu cấp đủ chỗ theo trần maxStaff (3 người → cấp 10, 5 → 16, 10 → 31) thay vì chỉ cấp 4; QA cấp 7 thấy "Thuê 3 nhân viên — mở từ cấp 10"; save QA đã xóa.

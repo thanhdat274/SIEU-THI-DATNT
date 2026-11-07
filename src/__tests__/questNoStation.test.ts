@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { newGameData, questContext, useGame } from '../core/store';
-import { dailyQuests, NO_COURIER_DESC, NO_ONLINE_DESC, NO_SERVICE_DESC, NO_STATION_DESC } from '../data/quests';
+import { FEW_FOLLOWERS_DESC, dailyQuests, NO_COURIER_DESC, NO_ONLINE_DESC, NO_SERVICE_DESC, NO_STATION_DESC } from '../data/quests';
 import { COOK_UNLOCK } from '../data/recipes';
 
 // GĐ1612 — việc nấu trong bộ ngày khi tiệm CHƯA có bếp: giữ chỗ (không xáo bộ) nhưng chỉ chỗ mua bếp.
@@ -72,5 +72,19 @@ describe('GĐ1612 — nhiệm vụ nấu khi chưa có bếp', () => {
       return;
     }
     throw new Error('không gặp việc đơn app');
+  });
+  it('GĐ1625: dưới 20 người theo dõi → "Lên mạng xã hội" nêu số cần; đủ thì câu gốc', () => {
+    for (let day = 1; day <= 60; day++) {
+      useGame.setState({ ...newGameData(), level: 30, day });
+      const ctx = questContext(useGame.getState());
+      const few = dailyQuests({ ...ctx, socialFollowers: 5 }).find((x) => x.id === 'daily_social');
+      if (!few) continue;
+      expect(few.description).toBe(FEW_FOLLOWERS_DESC(5));
+      const ok = dailyQuests({ ...ctx, socialFollowers: 50 });
+      expect(ok.find((x) => x.id === 'daily_social')!.description).toContain('Đăng bài quảng bá (hoặc xin lỗi');
+      expect(ok.map((x) => x.id)).toEqual(dailyQuests({ ...ctx, socialFollowers: 5 }).map((x) => x.id));
+      return;
+    }
+    throw new Error('không gặp việc MXH');
   });
 });
