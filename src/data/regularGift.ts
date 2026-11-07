@@ -38,3 +38,8 @@ export function sortForGift(
   const rank = (d: RegularDef) => (birthday(d) ? 0 : 'productId' in regularGiftPlan(d, regulars[d.id], level, day, storage) ? 1 : 2);
   return defs.map((d, i) => ({ d, i, r: rank(d) })).sort((a, b) => a.r - b.r || a.i - b.i).map((x) => x.d);
 }
+
+/** GĐ1586 — dòng báo cáo cuối ngày: số quà đã tặng khách quen (null nếu chưa tặng). */
+export function giftReportLine(gifts: number | undefined): string | null {
+  return gifts && gifts > 0 ? gifts + ' món' : null;
+}

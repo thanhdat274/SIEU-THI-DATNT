@@ -69,3 +69,12 @@ describe('GĐ1574 chưa quen không tặng được', () => {
     expect(regularGiftPlan(def, undefined, 60, 5, { [fav]: 3 })).toEqual({ error: 'Chưa quen — chờ khách ghé lần đầu' });
   });
 });
+
+describe('GĐ1586 giftReportLine', () => {
+  it('null khi chưa tặng, số món khi có', async () => {
+    const { giftReportLine } = await import('../data/regularGift');
+    expect(giftReportLine(undefined)).toBeNull();
+    expect(giftReportLine(0)).toBeNull();
+    expect(giftReportLine(3)).toBe('3 món');
+  });
+});
