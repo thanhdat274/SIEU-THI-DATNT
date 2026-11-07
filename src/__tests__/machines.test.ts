@@ -118,3 +118,12 @@ describe('GĐ1547 — máy đánh giày', () => {
     expect(furnitureDef('shoe_shine').price).toBe(MACHINE_TYPES.shoe_shine.price);
   });
 });
+
+describe('GĐ1548 — máy kẹo bông', () => {
+  it('cấp 46, phí 2.500, hoàn vốn 100 lượt, giá khớp catalog', () => {
+    expect(furnitureDef('cotton_candy').unlock).toBe(46);
+    expect(machineFee('cotton_candy')).toBe(2_500);
+    expect(MACHINE_TYPES.cotton_candy.price / MACHINE_TYPES.cotton_candy.fee).toBe(100);
+    expect(furnitureDef('cotton_candy').price).toBe(MACHINE_TYPES.cotton_candy.price);
+  });
+});

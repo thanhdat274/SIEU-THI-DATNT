@@ -61,7 +61,7 @@ export class FurnitureView {
     else if (type === 'cartStation') this.buildCartStation();
     else if (type === 'dining_table') this.buildDiningTable();
     else if (type === 'chair') this.buildChair();
-    else if (type === 'vending_drink' || type === 'scale_machine' || type === 'claw_machine' || type === 'massage_chair' || type === 'shoe_shine') this.buildMachine();
+    else if (type === 'vending_drink' || type === 'scale_machine' || type === 'claw_machine' || type === 'massage_chair' || type === 'shoe_shine' || type === 'cotton_candy') this.buildMachine();
     else if (type === 'toilet_squat' || type === 'toilet_porcelain' || type === 'toilet_smart') this.buildToilet();
     else if (DECOR_TYPES.has(type)) this.buildDecorProp();
     else if (isCookStation(type)) this.buildCookStation();
@@ -430,7 +430,7 @@ export class FurnitureView {
   /** GĐ1493 — máy tự phục vụ: thân máy + mặt hiển thị/phiếu hướng ra trước, từng loại khác chi tiết. */
   private buildMachine() {
     const [w, d] = furnitureDef(this.type).size;
-    const body = new THREE.MeshStandardMaterial({ color: this.type === 'claw_machine' ? 0xc0392b : this.type === 'massage_chair' ? 0x6c3483 : this.type === 'shoe_shine' ? 0x5d4037 : this.type === 'vending_drink' ? 0x2980b9 : 0xf5f6fa });
+    const body = new THREE.MeshStandardMaterial({ color: this.type === 'claw_machine' ? 0xc0392b : this.type === 'massage_chair' ? 0x6c3483 : this.type === 'shoe_shine' ? 0x5d4037 : this.type === 'cotton_candy' ? 0xff9ff3 : this.type === 'vending_drink' ? 0x2980b9 : 0xf5f6fa });
     const shell = new THREE.Mesh(new THREE.BoxGeometry(w, 1.6, d), body);
     shell.position.y = 0.8;
     this.group.add(shell);
