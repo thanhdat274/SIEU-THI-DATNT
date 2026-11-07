@@ -7,6 +7,10 @@ const RULES: [RegExp, string[]][] = [
   [/(^|\s)sả(\s|$)/i, ['x_sa']],
   [/tỏi/i, ['x_toi', 'x_toi_phi']],
   [/gừng/i, ['x_gung', 'hx_mut_gung', 'mut_tet']],
+  [/cốt dừa/i, ['x_dua_cot_hop']],
+  [/nước dừa/i, ['x_nuoc_dua_hop', 'x_nuoc_dua_tuoi_chai']],
+  [/nước mắm/i, ['nuocmam', 'hx_nuoc_mam']],
+  [/xì dầu/i, ['x_nuoc_tuong']],
   [/mật ong/i, ['x_mat_ong', 'mat_ong_rung']],
 ];
 
