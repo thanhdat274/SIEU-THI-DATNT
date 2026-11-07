@@ -138,16 +138,16 @@ export const FURNITURE: FurnitureDef[] = [
   // GĐ1493 — MÁY TỰ PHỤC VỤ: khách ghé chơi/thử rồi trả phí mỗi lượt (không cần nhân viên)
   // ──────────────────────────────────────────────
   {
-    type: 'vending_drink', name: 'Máy bán nước tự động', price: 120000, unlock: 25, size: [0.8, 0.7], tiers: 0, slots: 0, capacity: 0,
-    categories: [], desc: 'Khách ghé lấy nước trả phí 1.200đ/lượt — giá máy tương đương ~100 lượt',
+    type: 'vending_drink', name: 'Máy bán nước tự động', price: 120000, unlock: 30, size: [0.8, 0.7], tiers: 0, slots: 0, capacity: 0,
+    categories: [], desc: 'Khách ghé lấy nước trả phí 1.200đ/lượt — giá máy tương đương ~100 lượt (đi cùng khu ăn uống)',
   },
   {
     type: 'scale_machine', name: 'Máy cân sức khỏe', price: 100000, unlock: 25, size: [0.6, 0.6], tiers: 0, slots: 0, capacity: 0,
     categories: [], desc: 'Khách lên cân xem kết quả trả phí 1.000đ/lượt — đặc trưng tiệm tạp hóa Việt',
   },
   {
-    type: 'claw_machine', name: 'Máy gắp thú', price: 180000, unlock: 25, size: [0.8, 0.7], tiers: 0, slots: 0, capacity: 0,
-    categories: [], desc: 'Khách gắp thú bông trả phí 1.800đ/lượt, nhỏ con nấn ná không chịu đi',
+    type: 'claw_machine', name: 'Máy gắp thú', price: 180000, unlock: 30, size: [0.8, 0.7], tiers: 0, slots: 0, capacity: 0,
+    categories: [], desc: 'Khách gắp thú bông trả phí 1.800đ/lượt, nhỏ con nấn ná không chịu đi (đi cùng khu ăn uống)',
   },
   // ──────────────────────────────────────────────
   // GĐ1494 — NHÀ VỆ SINH: tiện ích khu ăn tại chỗ, hoàn vốn chậm (~500 lượt); khách ăn xong cần
