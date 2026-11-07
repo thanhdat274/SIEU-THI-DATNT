@@ -177,7 +177,7 @@ export const CROPS: CropDef[] = [
   { id: 'bap', productId: 'bap', name: 'Bắp ngô', icon: '🌽', days: 4, seedCost: 24000, yieldQty: 6, unlock: 1 },
   // Lúa: ra túi gạo (hàng khô giá cao) nên ít món/vụ hơn rau; lợi nhuận/ngày ngang mía–cây ăn trái
   { id: 'lua', productId: 'gao', name: 'Lúa', icon: '🌾', days: 5, seedCost: 90000, yieldQty: 2, unlock: 8 },
-  { id: 'nep', productId: 'nep', name: 'Lúa nếp', icon: '🌾', days: 5, seedCost: 60000, yieldQty: 2, unlock: 14 },
+  { id: 'nep', productId: 'nep', name: 'Lúa nếp', icon: '🍙', days: 5, seedCost: 60000, yieldQty: 2, unlock: 14 },
   { id: 'dau_xanh', productId: 'dau_xanh', name: 'Đậu xanh', icon: '🫛', days: 4, seedCost: 30000, yieldQty: 4, unlock: 16 },
   { id: 'mia', productId: 'mia', name: 'Mía', icon: '🎋', days: 6, seedCost: 48000, yieldQty: 8, unlock: 12 },
   { id: 'traicay', productId: 'traicay', name: 'Cây ăn trái', icon: '🌳', days: 7, seedCost: 75000, yieldQty: 6, unlock: 20 },
@@ -194,7 +194,7 @@ export const CROPS: CropDef[] = [
   { id: 'thom', productId: 'x_thom', name: 'Thơm (dứa)', icon: '🍍', days: 9, seedCost: 30000, yieldQty: 4, unlock: 34 },
   // GĐ1652: Gừng — tự cung quán nước "Trà gừng nóng" và món bếp có gừng (gà kho gừng…); củ ngắn ngày, không tái sinh.
   { id: 'gung', productId: 'x_gung', name: 'Gừng', icon: '🫚', days: 6, seedCost: 20000, yieldQty: 4, unlock: 36 },
-  { id: 'mit', productId: 'x_mit', name: 'Mít', icon: '🍍', days: 14, regrowDays: 5, seedCost: 90000, yieldQty: 3, unlock: 36 },
+  { id: 'mit', productId: 'x_mit', name: 'Mít', icon: '🍈', days: 14, regrowDays: 5, seedCost: 90000, yieldQty: 3, unlock: 36 },
   { id: 'buoi', productId: 'x_buoi', name: 'Bưởi', icon: '🍐', days: 13, regrowDays: 5, seedCost: 80000, yieldQty: 4, unlock: 38, season: [12, 2] },
 ];
 

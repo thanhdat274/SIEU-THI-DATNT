@@ -56,7 +56,7 @@ export const QUAN_RECIPES: QuanRecipe[] = [
   // GĐ1330: Sinh tố mít — món quán nước của mít nông trại (x_mit mở cấp 26 nhưng chưa có lối ra pha), xay sữa đặc,
   // khép chuỗi trồng → pha → bán như trà vải GĐ1090/sinh tố ổi-chuối GĐ1092. Giá vốn/ly = 16k/4 + 22k/10 + 3k/10
   // = 6.5k → bán 26k (lời >2× vốn). Mở 34 > mốc golden 30 → sim không đổi; KHÔNG hot (giữ đếm đồ nóng = 3).
-  { id: 'sinh_to_mit', name: 'Sinh tố mít', icon: '🍍', unlock: 34, price: 26_000, uses: [{ id: 'x_mit', cups: 4 }, { id: 'x_sua_dac', cups: 10 }, { id: 'x_nuoc_da', cups: 10 }] },
+  { id: 'sinh_to_mit', name: 'Sinh tố mít', icon: '🍈', unlock: 34, price: 26_000, uses: [{ id: 'x_mit', cups: 4 }, { id: 'x_sua_dac', cups: 10 }, { id: 'x_nuoc_da', cups: 10 }] },
   // GĐ1334: Bưởi đá — món quán nước của bưởi nông trại (x_buoi mở cấp 24, hiện chỉ có chè bưởi ở BẾP — chưa có lối ra
   // pha), đá ngọt mát, khép chuỗi trồng → pha → bán. Giá vốn/ly = 16k/4 + 17k/30 + 3k/10 = 4.9k → bán 20k (lời >2× vốn).
   // Mở 32 > mốc golden 30 → sim không đổi; KHÔNG hot (giữ đếm đồ nóng = 3).
