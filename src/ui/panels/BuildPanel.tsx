@@ -11,6 +11,7 @@ import { meatCounterPayoff, meatChainCooled } from '../../data/meatCounterPayoff
 import { isMeat } from '../../data/meat';
 import { nearestLife, shelfLife } from '../../data/freshness';
 import { formatMoney } from '../../data/products';
+import { shortLabel } from '../shortLabel';
 import { newUnlockMark, shelfBuyHint, storeMissRevenue } from '../../data/advice';
 import { Callout, Footer, Swatch, styles, Tabs } from './shared';
 
@@ -116,7 +117,7 @@ export function FurnitureTab() {
                     Thử
                   </button>
                   <button style={styles.btn} disabled={money < f.price} onClick={() => setPlacing({ type: f.type, rot: 0 })}>
-                    Chọn
+                    {shortLabel('Chọn', f.price, money)}
                   </button>
                 </>
               )}
@@ -323,7 +324,7 @@ export function ExpandTab() {
               {next && !pendingUpgrade && (
                 level < t.unlock
                   ? <span style={{ fontSize: 12 }}>🔒 Cấp {t.unlock}</span>
-                  : <button style={styles.btn} disabled={money < t.price} onClick={buyUpgrade}>Thuê thợ</button>
+                  : <button style={styles.btn} disabled={money < t.price} onClick={buyUpgrade}>{shortLabel('Thuê thợ', t.price, money)}</button>
               )}
             </div>
           );
