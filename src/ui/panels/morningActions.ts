@@ -55,7 +55,7 @@ export function buildMorningActions(c: MorningActionsCtx): DayAction[] {
   if (biz.loan && biz.loan.dueDay - day <= 3) candidates.push({ icon: '🏦', text: `Nợ ngân hàng sắp hạn (${Math.max(0, biz.loan.dueDay - day)} ngày)`, panel: 'business', danger: true, priority: 0 });
   // GĐ759 — sinh nhật khách quen: khách đã quen ghé chắc chắn, mua là +3 thân thiết → nhắc nhập món họ thích
   for (const e of birthdayEve(day, level, regulars, haveStock, Object.keys(biz.rival?.poached ?? {}))) candidates.push({ icon: '🎂', text: e.text, panel: 'order', danger: false, priority: 3 }); // GĐ781/793
-  for (const d of birthdaysToday(expected, day)) { const h = birthdayHint(d, haveStock); candidates.push({ icon: '🎂', text: h.text, panel: 'regulars', danger: false, priority: h.priority }); }
+  for (const d of birthdaysToday(expected, day)) { const h = birthdayHint(d, haveStock, level); candidates.push({ icon: '🎂', text: h.text, panel: 'regulars', danger: false, priority: h.priority }); }
   // GĐ747 — nợ khách quen sắp bị xoá (Sổ nợ nằm trong panel Khách quen, không ai mở): nhắc lên Sổ đầu ngày
   const debtAct = debtDayAction(debts, day);
   if (debtAct) candidates.push(debtAct);

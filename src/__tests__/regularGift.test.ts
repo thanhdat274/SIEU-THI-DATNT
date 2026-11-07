@@ -39,3 +39,12 @@ describe('GĐ1559 đếm khách tặng được', () => {
     expect(giftableCount([def], {}, 30, 5, { [fav]: 1 })).toBe(0);
   });
 });
+
+import { birthdayHint } from '../data/regulars';
+describe('GĐ1561 Sổ đầu ngày nhắc quà sinh nhật', () => {
+  it('cấp 38 có thêm "tặng quà +6", dưới thì không', () => {
+    const have = (id: string) => id === def.favorites[0];
+    expect(birthdayHint(def, have, 38).text).toContain('tặng quà +6');
+    expect(birthdayHint(def, have, 37).text).not.toContain('tặng quà');
+  });
+});
