@@ -27,3 +27,10 @@ describe('GĐ1671 — mứt gừng bà Tám', () => {
     expect(FESTIVALS.find((e) => e.id === 'tet')!.hot).toContain('hx_mut_gung');
   });
 });
+
+// GĐ1673 — mùa hè hút chè Thái (món mát).
+describe('GĐ1673 — mùa hè hút chè Thái', () => {
+  it('che_thai nằm trong hàng hot mùa hè', () => {
+    expect(FESTIVALS.find((e) => e.id === 'he')!.hot).toContain('che_thai');
+  });
+});
