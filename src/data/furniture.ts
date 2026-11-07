@@ -5,7 +5,7 @@ export type FurnitureType =
   | 'shelf' | 'bigShelf' | 'fridge' | 'freezer' | 'produce' | 'meat_counter'
   | 'checkout' | 'cartStation' | 'plant' | 'wall'
   | 'dining_table' | 'chair'
-  | 'vending_drink' | 'scale_machine' | 'claw_machine' | 'massage_chair'
+  | 'vending_drink' | 'scale_machine' | 'claw_machine' | 'massage_chair' | 'shoe_shine'
   | 'toilet_squat' | 'toilet_porcelain' | 'toilet_smart'
   | 'kho_dao' | 'ke_gia_vi' | 'ke_chen' | 'thung_rac' | 'tham_chan' | 'den_long' | 'tranh_dong_ho' | 'bon_rua'
   | 'bang_hieu_bac' | 'bang_hieu_trung' | 'bang_hieu_nam' | 'bang_hieu_tay_nguyen'
@@ -150,6 +150,10 @@ export const FURNITURE: FurnitureDef[] = [
   {
     type: 'massage_chair', name: 'Ghế mát-xa chân', price: 240000, unlock: 38, size: [0.8, 0.8], tiers: 0, slots: 0, capacity: 0,
     categories: [], desc: 'Khách ngồi mát-xa chân một lượt trả 2.400đ rồi mới đi mua hàng (GĐ1537)',
+  },
+  {
+    type: 'shoe_shine', name: 'Máy đánh giày', price: 200000, unlock: 42, size: [0.7, 0.7], tiers: 0, slots: 0, capacity: 0,
+    categories: [], desc: 'Khách đặt chân vào máy đánh bóng giày, trả 2.000đ/lượt (GĐ1547)',
   },
   {
     type: 'scale_machine', name: 'Máy cân sức khỏe', price: 100000, unlock: 25, size: [0.6, 0.6], tiers: 0, slots: 0, capacity: 0,

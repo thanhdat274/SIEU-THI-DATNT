@@ -109,3 +109,12 @@ describe('GĐ1544 — chơi máy xong mua thêm', () => {
     expect(machineImpulse(39, 0)).toBe(false);
   });
 });
+
+describe('GĐ1547 — máy đánh giày', () => {
+  it('cấp 42, phí 2.000, hoàn vốn 100 lượt, giá khớp catalog', () => {
+    expect(furnitureDef('shoe_shine').unlock).toBe(42);
+    expect(machineFee('shoe_shine')).toBe(2_000);
+    expect(MACHINE_TYPES.shoe_shine.price / MACHINE_TYPES.shoe_shine.fee).toBe(100);
+    expect(furnitureDef('shoe_shine').price).toBe(MACHINE_TYPES.shoe_shine.price);
+  });
+});
