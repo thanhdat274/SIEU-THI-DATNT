@@ -67,7 +67,7 @@ import {
   DINE_UNLOCK, DINE_WAIT_SECONDS, EAT_SECONDS, TOILET_NEED_CHANCE, TOILET_STRICT_UNLOCK, TOILET_USE_SECONDS,
   dineTip, freeSeat, freeToilet, isToilet, toiletFee, wantsDineIn, type SeatInfo, menuTipMul,
 } from '../data/dineIn';
-import { MACHINE_VISIT_CHANCE, MACHINE_USE_SECONDS, MACHINE_TYPES, freeMachine, isMachine, machineFeeAt, type MachineId } from '../data/machines';
+import { MACHINE_VISIT_CHANCE, MACHINE_USE_SECONDS, MACHINE_TYPES, freeMachine, isMachine, machineFeeAt, machineImpulse, MACHINE_IMPULSE_LEVEL, type MachineId } from '../data/machines';
 import {
   Customer, FRANTIC_AT, IMPATIENT_AT, PATIENCE_MINUTES, SIDEWALK_Z, impatienceEmoji, patienceMultiplier, counterQueueScore, leastScore, reviewStars, type Deal,
 } from './customerEntity';
@@ -461,6 +461,7 @@ export class CustomerManager {
         const fee = machineFeeAt(machine.type, s.minutes, s.level, s.day);
         const icon = MACHINE_TYPES[machine.type as MachineId].icon;
         this.machineBusy.add(machineUid);
+        if (s.level >= MACHINE_IMPULSE_LEVEL && machineImpulse(s.level, simRng()())) c.wants.push(...this.chooseWants(1));
         c.plan.push(() => this.walk(c, this.shop.spotFor(machine)));
         c.plan.push(() => {
           c.pause = MACHINE_USE_SECONDS;

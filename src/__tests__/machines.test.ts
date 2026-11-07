@@ -100,3 +100,12 @@ describe('GĐ1542 — sổ thu theo máy', () => {
     expect(machinePopupLine('claw_machine')).not.toContain('đã thu');
   });
 });
+
+describe('GĐ1544 — chơi máy xong mua thêm', () => {
+  it('cấp ≥40 và roll < 0,3 mới thêm món', async () => {
+    const { machineImpulse } = await import('../data/machines');
+    expect(machineImpulse(40, 0.29)).toBe(true);
+    expect(machineImpulse(40, 0.3)).toBe(false);
+    expect(machineImpulse(39, 0)).toBe(false);
+  });
+});

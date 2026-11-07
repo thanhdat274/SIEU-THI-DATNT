@@ -63,3 +63,9 @@ export function machinePopupLine(type: Furniture['type'], earned?: number): stri
   const night = NIGHT_MACHINES.has(type) ? ' · tối ×1,5' : '';
   return `${t.icon} ${t.fee.toLocaleString('vi-VN')}đ/lượt · hoàn vốn ~${Math.round(t.price / t.fee)} lượt${night}${earned ? ` · đã thu ${earned.toLocaleString('vi-VN')}đ` : ''}`;
 }
+
+// GĐ1544 — chơi máy xong khách vui, hay mua thêm một món: cấp ≥40, 30% thêm 1 món muốn mua.
+export const MACHINE_IMPULSE_LEVEL = 40;
+export const MACHINE_IMPULSE_CHANCE = 0.3;
+export const machineImpulse = (level: number, roll: number): boolean =>
+  level >= MACHINE_IMPULSE_LEVEL && roll < MACHINE_IMPULSE_CHANCE;
