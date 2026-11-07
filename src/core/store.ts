@@ -75,6 +75,7 @@ export const questContext = (s: GameState): QuestContext => {
     regularsServedToday,
     regularsComingToday,
     hasCookStation: s.furniture.some((f) => isCookStation(f.type)),
+    hasCourier: s.staff.some((w) => w.role === 'courier'),
   };
 };
 

@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (07/11/2026)
+- **GĐ1614** — "Giao đơn nấu" khi có bếp nhưng chưa có người giao (điện thoại không đổ chuông → không thể có đơn): mô tả đổi thành "… — cần thuê 🛵 Giao hàng để khách gọi điện đặt" (`hasCourier` tính trực tiếp, không lưu). Full suite 575/5184 xanh.
 - **GĐ1613** — QA trình duyệt GĐ1612 (save tạm 127.0.0.1, đã xoá): bảng Nhiệm vụ cấp 26 hiện "Bán 24 món nhà làm — tiệm chưa có bếp: mua ở 🛠️ Xây dựng" gọn 1 dòng (cao 16px).
 - **GĐ1612** — Việc ngày "Bán món nhà làm"/"Giao đơn nấu" hiện từ cấp 21 kể cả khi tiệm chưa có bếp (không làm được). Nay giữ chỗ trong bộ (không xáo danh sách khi mua bếp giữa ngày) nhưng mô tả thêm "— tiệm chưa có bếp: mua ở 🛠️ Xây dựng" (`hasCookStation` tính trực tiếp, không lưu → save cũ an toàn; hẻm online tính trên state đồng bộ). Full suite 575/5183 xanh.
 - **GĐ1611** — QA trọn vòng nhà phê bình trong ván thật (127.0.0.1, save tạm đã xoá): gọi "Bánh tráng trộn" (Bếp nướng, 10 phút) → bày lên kệ → +500.000đ, "🌟 Nhà phê bình khen…", hết lời hẹn.

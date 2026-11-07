@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { newGameData, questContext, useGame } from '../core/store';
-import { dailyQuests, NO_STATION_DESC } from '../data/quests';
+import { dailyQuests, NO_COURIER_DESC, NO_STATION_DESC } from '../data/quests';
 import { COOK_UNLOCK } from '../data/recipes';
 
 // GĐ1612 — việc nấu trong bộ ngày khi tiệm CHƯA có bếp: giữ chỗ (không xáo bộ) nhưng chỉ chỗ mua bếp.
@@ -27,5 +27,19 @@ describe('GĐ1612 — nhiệm vụ nấu khi chưa có bếp', () => {
     expect(withSt.map((x) => x.id)).toEqual(none.ids);
     expect(withSt.find((x) => x.id === none.q.id)!.description).not.toContain('chưa có bếp');
     expect(NO_STATION_DESC('X')).toBe('X — tiệm chưa có bếp: mua ở 🛠️ Xây dựng');
+  });
+
+  it('GĐ1614: có bếp mà chưa có người giao → "Giao đơn nấu" nhắc thuê Giao hàng', () => {
+    for (let day = 1; day <= 40; day++) {
+      useGame.setState({ ...newGameData(), level: COOK_UNLOCK + 5, day });
+      const ctx = { ...questContext(useGame.getState()), hasCookStation: true, hasCourier: false };
+      const q = dailyQuests(ctx).find((x) => x.id === 'daily_cook_orders');
+      if (!q) continue;
+      expect(q.description).toBe(NO_COURIER_DESC.replace('{n}', String(q.target)));
+      const ok = dailyQuests({ ...ctx, hasCourier: true }).find((x) => x.id === 'daily_cook_orders')!;
+      expect(ok.description).not.toContain('Giao hàng để');
+      return;
+    }
+    throw new Error('không gặp việc giao đơn nấu');
   });
 });
