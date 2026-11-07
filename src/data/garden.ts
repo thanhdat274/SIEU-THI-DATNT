@@ -190,6 +190,8 @@ export const CROPS: CropDef[] = [
   { id: 'chanhday', productId: 'x_chanh_day', name: 'Chanh dây', icon: '💛', days: 6, regrowDays: 3, seedCost: 30000, yieldQty: 5, unlock: 32 },
   { id: 'vai', productId: 'x_vai', name: 'Vải thiều', icon: '🍒', days: 10, regrowDays: 3, seedCost: 70000, yieldQty: 6, unlock: 32, season: [5, 7] },
   { id: 'nhan', productId: 'x_nhan', name: 'Nhãn', icon: '🍇', days: 11, regrowDays: 4, seedCost: 72000, yieldQty: 6, unlock: 32, season: [7, 9] },
+  // GĐ1651: Thơm (dứa) — tự cung quán nước "Trà dứa"/"Nước ép thơm" (nông trại → quán nước); vụ dài, không tái sinh.
+  { id: 'thom', productId: 'x_thom', name: 'Thơm (dứa)', icon: '🍍', days: 9, seedCost: 30000, yieldQty: 4, unlock: 34 },
   { id: 'mit', productId: 'x_mit', name: 'Mít', icon: '🍍', days: 14, regrowDays: 5, seedCost: 90000, yieldQty: 3, unlock: 36 },
   { id: 'buoi', productId: 'x_buoi', name: 'Bưởi', icon: '🍐', days: 13, regrowDays: 5, seedCost: 80000, yieldQty: 4, unlock: 38, season: [12, 2] },
 ];

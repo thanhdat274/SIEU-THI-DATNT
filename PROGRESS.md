@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (07/11/2026)
+- GĐ1651: nông trại thêm giống "🍍 Thơm (dứa)" (cấp 34, 9 ngày, 4 trái) tự cung quán nước Trà dứa/Nước ép thơm; test thomCrop; full 587/5222 xanh.
 - GĐ1650: quán nước thêm món mát "🍍 Nước ép thơm" (cấp 35, thơm + đường + đá; giữ nguyên 3 đồ nóng); sửa test nút nhập gấp theo nhãn "Thiếu X" của GĐ1649; test quanEpThom.
 - GĐ1649: nút "⚡ Nhập gấp & giao" (bán sỉ) thiếu tiền ghi "Thiếu X"; đơn nhập ghi "thiếu X" thay vì "không đủ tiền"; test shortLabel.
 - GĐ1648: sổ nợ — nút "Nhắc nợ" đã bấm ghi "✅ Đã nhắc"; test debtRemindLabel.

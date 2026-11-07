@@ -29,6 +29,8 @@ export function createCropBuilder(): (cropId: string, stage: number) => THREE.Gr
     chanhday: { kind: 'tree', canopy: 0x4da94f, fruit: 0x8e6f9f, fruitN: 6 },
     vai: { kind: 'tree', canopy: 0x3a8f42, fruit: 0xd23b3b, fruitSize: 0.045, fruitN: 9 },
     nhan: { kind: 'tree', canopy: 0x4a9950, fruit: 0xd8b64a, fruitSize: 0.045, fruitN: 9 },
+    // GĐ1651 — Thơm: bụi lá thấp
+    thom: { kind: 'leaf', canopy: 0x5a8f3a },
     mit: { kind: 'tree', canopy: 0x3f8f45, fruit: 0x9fb545, fruitSize: 0.1, fruitN: 3 },
     buoi: { kind: 'tree', canopy: 0x3c8c3f, fruit: 0xd9e06a, fruitSize: 0.08, fruitN: 4 },
   };
