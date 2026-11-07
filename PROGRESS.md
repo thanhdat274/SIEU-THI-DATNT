@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (07/11/2026)
+- GĐ1675: Tết Trung thu hút Bưởi (mâm cỗ trông trăng) + Chè bưởi.
 - GĐ1674: mùa mưa hút Chè trôi nước (món ấm có gừng, cấp 38).
 - GĐ1673: mùa hè hút Chè Thái (món mát, cấp 40 — không đụng sim cấp ≤30).
 - GĐ1672: bếp thêm Chè chuối (cấp 44, nồi nước) — chuối nhà trồng + cốt dừa. (Trà mứt gừng giữ dùng mứt Tết: đổi sang mứt gừng bà Tám sẽ làm mứt Tết mất lối ra duy nhất.)

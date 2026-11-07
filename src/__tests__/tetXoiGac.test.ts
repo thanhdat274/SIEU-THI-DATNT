@@ -41,3 +41,12 @@ describe('GĐ1674 — mùa mưa hút chè trôi nước', () => {
     expect(FESTIVALS.find((e) => e.id === 'mua_mua')!.hot).toContain('che_troi_nuoc');
   });
 });
+
+// GĐ1675 — Trung thu hút bưởi (mâm cỗ trông trăng) và chè bưởi.
+describe('GĐ1675 — Trung thu hút bưởi', () => {
+  it('x_buoi và che_buoi nằm trong hàng hot Trung thu', () => {
+    const hot = FESTIVALS.find((e) => e.id === 'trung_thu')!.hot;
+    expect(hot).toContain('x_buoi');
+    expect(hot).toContain('che_buoi');
+  });
+});
