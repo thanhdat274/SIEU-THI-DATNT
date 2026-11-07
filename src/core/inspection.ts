@@ -4,7 +4,7 @@ import { metaRng } from './rand';
 import { formatMoney } from '../data/products';
 import {
   DIRT_FAIL_AT, INSPECTION_CHANCE, INSPECTION_NOTES, INSPECTION_PRAISE, INSPECTION_ROLL_EVERY,
-  INSPECTION_UNLOCK, inspectionFine, inspectionOutcome, pickNote, finePaidXp,
+  INSPECTION_UNLOCK, inspectionFine, inspectionOutcome, pickNote, finePaidXp, praiseXp,
 } from '../data/inspection';
 
 /**
@@ -35,7 +35,9 @@ export function maybeInspection(dtMinutes: number) {
   if (metaRng() > INSPECTION_CHANCE) return;
   firedDay = s.day;
   if (s.dirt < DIRT_FAIL_AT) {
-    s.notify(pickNote(INSPECTION_PRAISE, metaRng));
+    const px = praiseXp(s.level);
+    s.notify(pickNote(INSPECTION_PRAISE, metaRng) + (px ? ` +${px} XP` : ''));
+    if (px) s.addXp(px);
     return;
   }
   const fine = inspectionFine(s.stats.revenue);

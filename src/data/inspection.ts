@@ -87,3 +87,7 @@ export const FINE_XP_LEVEL = 35;
 export const FINE_XP_PCT = 0.002;
 export const finePaidXp = (choice: 0 | 1, fine: number, level: number): number =>
   choice === 0 && level >= FINE_XP_LEVEL ? Math.max(1, Math.round(fine * FINE_XP_PCT)) : 0;
+
+// GĐ1581 — đoàn khen sàn sạch: từ cấp 35 thưởng cố định 50 XP (giữ sàn sạch đáng được ghi nhận).
+export const PRAISE_XP = 50;
+export const praiseXp = (level: number): number => (level >= FINE_XP_LEVEL ? PRAISE_XP : 0);

@@ -8,3 +8,11 @@ describe('GĐ1546 — nộp phạt đàng hoàng có XP', () => {
     expect(finePaidXp(0, 100_000, 34)).toBe(0);
   });
 });
+
+import { praiseXp } from '../data/inspection';
+describe('GĐ1581 XP khi đoàn khen', () => {
+  it('cấp 35 trở lên 50 XP', () => {
+    expect(praiseXp(35)).toBe(50);
+    expect(praiseXp(34)).toBe(0);
+  });
+});
