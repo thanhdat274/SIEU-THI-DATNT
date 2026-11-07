@@ -42,6 +42,21 @@ describe('critic — dữ liệu & chọn món (GĐ1498)', () => {
   });
 });
 
+describe('GĐ1605 — nhà phê bình chỉ gọi món nấu được bằng trạm đang có', () => {
+  it('lọc canCook theo trạm; không có trạm nào khớp thì lùi về mọi món đã mở', () => {
+    const station = RECIPES[0].station;
+    for (let s = 1; s <= 100; s++) {
+      setSimSeed(s);
+      const id = pickCriticDish(RECIPES, 100, true, (r) => r.station === station);
+      expect(RECIPES.some((r) => r.outputId === id && r.station === station)).toBe(true);
+    }
+    setSimSeed(2);
+    const id = pickCriticDish(RECIPES, 100, true, () => false);
+    expect(RECIPES.some((r) => r.outputId === id && r.unlock <= 100)).toBe(true);
+    setSimSeed(1);
+  });
+});
+
 describe('updateCritic — vòng đời nhà phê bình qua CustomerManager (GĐ1498)', () => {
   const manager = new CustomerManager({} as never, {} as never, {} as never) as unknown as {
     updateCritic: (s: ReturnType<typeof useGame.getState>) => void;

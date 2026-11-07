@@ -1177,7 +1177,8 @@ export class CustomerManager {
     // Ghé lần đầu trong ngày: đặt lời gọi món (chỉ khi tiệm đang mở)
     if (this.criticAt == null || !s.shopOpen || s.minutes < this.criticAt) return;
     this.criticHard = s.level >= CRITIC_HARD_UNLOCK;
-    this.criticProduct = pickCriticDish(RECIPES, s.level, this.criticHard);
+    const stations = new Set<string>(s.furniture.filter((f) => isCookStation(f.type)).map((f) => f.type));
+    this.criticProduct = pickCriticDish(RECIPES, s.level, this.criticHard, (r) => stations.has(r.station) && !offSeason(r.outputId, s.day));
     this.criticUntil = s.minutes + CRITIC_WINDOW_MINUTES;
     this.criticAt = null;
     s.notify(`🎩 Nhà phê bình gọi ${productById(this.criticProduct).name} — phục vụ trong ${CRITIC_WINDOW_MINUTES} phút!`);

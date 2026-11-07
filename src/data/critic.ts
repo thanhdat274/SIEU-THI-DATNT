@@ -35,8 +35,13 @@ export const CRITIC_SOFT_LAG = 10;
  *  · nhẹ: món đã mở từ ≥ CRITIC_SOFT_LAG cấp (rỗng thì lùi về mọi món đã mở);
  *  · nghiêm ngặt: BẤT KỲ món nào đã mở, kể cả món mới mở chưa từng nấu (đòn bẩy học món).
  */
-export function pickCriticDish(recipes: readonly { outputId: string; unlock: number }[], level: number, hard: boolean): string {
-  const open = recipes.filter((r) => r.unlock <= level);
+export function pickCriticDish<R extends { outputId: string; unlock: number; station?: string }>(
+  recipes: readonly R[], level: number, hard: boolean,
+  /** GĐ1605 — lọc thêm như đơn điện thoại: chỉ trạm đang có trong tiệm + không trái mùa (bỏ trống = không lọc). */
+  canCook: (r: R) => boolean = () => true,
+): string {
+  const cookable = recipes.filter((r) => r.unlock <= level && canCook(r));
+  const open = cookable.length ? cookable : recipes.filter((r) => r.unlock <= level);
   const soft = open.filter((r) => r.unlock <= level - CRITIC_SOFT_LAG);
   const pool = hard ? open : soft.length ? soft : open;
   const list = pool.length ? pool : recipes;
