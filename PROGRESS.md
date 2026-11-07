@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (07/11/2026)
+- **GĐ1600** — Rà soát + QA save mới: bán đầu tiên ~35s, không lỗi console. Chuỗi GĐ1591–1599 (tặng quà, gắp trúng) đều là đếm/hiển thị, không đổi kinh tế; mọi trường mới tuỳ chọn. Lưu trữ GĐ1565–1572. Save QA đã xoá.
 - **GĐ1599** — QA trình duyệt nút 🎁 (save QA cấp 40): "Kho hết Sữa hộp — nhập thêm để tặng" và "Chưa quen…" hiện đúng. Save QA đã xoá.
 - **GĐ1598** — Nút tặng quà khi kho trống gọi tên món khách thích đã biết ("Kho hết X — nhập thêm để tặng"); món chưa khám phá vẫn giấu.
 - **GĐ1597** — Nhiệm vụ "Tặng quà khách quen" thêm dòng hướng dẫn chỗ bấm 🎁.
@@ -47,14 +48,6 @@
 - **GĐ1575** — Lên bậc thông thạo món (cấp 36) thưởng XP Đồng 20 / Bạc 60 / Vàng 150 (`masteryXp`), báo trong tin chúc mừng. Chỉ XP, không tiền; recordDiscovery vẫn LOCAL_ONLY.
 - **GĐ1574** — Sửa: chỉ tặng quà khách đã ghé ≥1 lần (trước sổ đếm cả khách chưa gặp, lệch với Sổ đầu ngày). Lỗi "Chưa quen — chờ khách ghé lần đầu".
 - **GĐ1573** — Sổ đầu ngày (cấp 38) nhắc "Còn N khách quen có thể tặng quà hôm nay" (chỉ khách đã ghé ≥1 lần; `giftableCount`).
-- **GĐ1572** — Sổ đầu ngày: trời mưa/bão + có máy đánh giày (cấp 42) nhắc "thu ×1,5 hôm nay" (ctx tuỳ chọn `furniture`). Ghi chú: longSessionLeak thỉnh thoảng trượt khi chạy full suite, chạy riêng qua.
-- **GĐ1571** — Máy đánh giày (cấp 42) ×1,5 phí khi trời mưa/bão (`machineFeeAt` thêm tham số weather; popup "trời mưa ×1,5").
-- **GĐ1570** — Rà soát + QA save mới: bán đầu tiên ~41s. Máy thu phí GĐ1564–1568 gom trong `data/machines.ts` (dòng ngày, tổng ngày, máy rảnh, gắp trúng, ảnh ngày lễ); tặng quà khách quen trong `regularGift.ts`. Trình duyệt: tab Dịch vụ hiện "🎰 Máy thu phí hôm nay: 6.000đ (🧸 3.600đ · 🥤 2.400đ)". Lưu ý QA: tiêm đồ giả thiếu `tiers` làm vỡ UI — dùng đồ thật. Save QA đã xoá.
-- **GĐ1569** — Thêm 3 mẹo: máy chưa ai chơi (25), gắp trúng (44), máy chụp ảnh ngày lễ (50).
-- **GĐ1568** — Máy chụp ảnh (cấp 50) ×1,5 phí vào ngày lễ hội (`festivalOn`); popup xây ghi "ngày lễ ×1,5". Cấp 50 > golden.
-- **GĐ1567** — Tab Dịch vụ: từ 14h nêu máy thu phí chưa ai chơi hôm nay, gợi ý dời gần cửa (`idleMachineHint`). Thuần UI.
-- **GĐ1566** — Máy gắp thú (cấp 44) ~1/20 lượt khách "🧸 Gắp trúng!" — chỉ bong bóng, không tiền; băm máy/ngày/phút, không rút RNG nên golden/sim không đổi (`clawWin`).
-- **GĐ1565** — Tổng kết ngày thêm dòng "trong đó 🎰 máy thu phí" dưới Doanh thu (`machineDayTotal`). Thuần UI.
 - GĐ1394–1408 + GĐ1490–1505 (chuỗi khu ăn tại chỗ: bàn ghế, khách ngồi ăn, tip, máy thu phí, toilet, decor × sao, sao món, vắng mặt, nhà phê bình, toast ghế, tour HUD, đồ bếp decor, bảng hiệu đặc sản; khoá 1 tab): docs/progress-archive/PROGRESS-GD1490-1505.md
 - GĐ1382–1393 (món mới từ nguyên liệu có sẵn, gọn PROGRESS, đổi "Ấm nước nóng" → "Bếp nồi nấu" GĐ1394 xem dòng riêng): chi tiết `docs/progress-archive/PROGRESS-GD1382-1391.md`.
 - GĐ960–1005 (tách file thuần + QA trình duyệt, chi tiết): `docs/progress-archive/PROGRESS-GD960-1005.md`
