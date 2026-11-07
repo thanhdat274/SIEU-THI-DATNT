@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { newGameData, questContext, useGame } from '../core/store';
-import { dailyQuests, NO_COURIER_DESC, NO_SERVICE_DESC, NO_STATION_DESC } from '../data/quests';
+import { dailyQuests, NO_COURIER_DESC, NO_ONLINE_DESC, NO_SERVICE_DESC, NO_STATION_DESC } from '../data/quests';
 import { COOK_UNLOCK } from '../data/recipes';
 
 // GĐ1612 — việc nấu trong bộ ngày khi tiệm CHƯA có bếp: giữ chỗ (không xáo bộ) nhưng chỉ chỗ mua bếp.
@@ -56,5 +56,21 @@ describe('GĐ1612 — nhiệm vụ nấu khi chưa có bếp', () => {
       return;
     }
     throw new Error('không gặp việc dịch vụ');
+  });
+  it('GĐ1624: gian hàng app chưa mở → "Giao đơn app" chỉ chỗ mở; bộ việc không đổi', () => {
+    useGame.setState({ ...newGameData(), level: 30 });
+    expect(questContext(useGame.getState()).hasOnlineOpen).toBe(false);
+    for (let day = 1; day <= 60; day++) {
+      useGame.setState({ ...newGameData(), level: 30, day });
+      const ctx = questContext(useGame.getState());
+      const q = dailyQuests(ctx).find((x) => x.id === 'daily_online');
+      if (!q) continue;
+      expect(q.description).toBe(NO_ONLINE_DESC.replace('{n}', q.target.toLocaleString('vi-VN')));
+      const open = dailyQuests({ ...ctx, hasOnlineOpen: true });
+      expect(open.map((x) => x.id)).toEqual(dailyQuests(ctx).map((x) => x.id));
+      expect(open.find((x) => x.id === 'daily_online')!.description).not.toContain('chưa nhận đơn');
+      return;
+    }
+    throw new Error('không gặp việc đơn app');
   });
 });

@@ -155,11 +155,15 @@ export const NO_STATION_DESC = (task: string) => `${task} — tiệm chưa có b
 export const NO_COURIER_DESC = 'Giao {n} đơn nấu — cần thuê 🛵 Giao hàng để khách gọi điện đặt';
 
 /** GĐ1616 — chưa mở dịch vụ nào thì không có lời dịch vụ: chỉ chỗ mở (bộ việc giữ nguyên). */
+/** GĐ1624: việc đơn app khi gian hàng app chưa mở/đang tạm ngưng. */
+export const NO_ONLINE_DESC = 'Giao {n} đơn app — gian hàng app chưa nhận đơn: mở ở 🌱 Mở rộng › 📲 Online';
 export const NO_SERVICE_DESC = 'Lời {n}đ từ dịch vụ — chưa mở dịch vụ nào: mở ở 📈 Kinh doanh';
 
 export interface QuestContext {
   /** GĐ1616 — đã mở ít nhất một dịch vụ (thiếu = không biết, giữ mô tả cũ). */
   hasService?: boolean;
+  /** GĐ1624: gian hàng app đang nhận đơn. */
+  hasOnlineOpen?: boolean;
   /** GĐ1614 — tiệm có nhân viên giao hàng (thiếu = không biết, giữ mô tả cũ). */
   hasCourier?: boolean;
   /** GĐ1612 — tiệm đang có ít nhất một trạm nấu (thiếu = không biết, giữ mô tả cũ). */
@@ -279,7 +283,7 @@ export function dailyQuests(c: QuestContext): Quest[] {
     // Chốt step 0.07 (cũ 0.1 làm cấp 40 phải giao 15/16 đơn — gần như toàn bộ trần):
     //   cấp mở khoá 10 → round(3 × (1 + 0.07×9)) = 5 đơn (~nửa trần lúc mới mở, dải 4–6),
     //   cấp 40         → round(3 × (1 + 0.07×39)) = 11 đơn ≈ 70% trần 16 đơn/ngày (dải 60–75%).
-    { id: 'daily_online', icon: '🛵', title: 'Giao đơn app', unit: 'đơn', target: scale(3, lv, 0.07), current: c.stats.onlineDone ?? 0, money: scale(120000, lv, 0.25), xp: scale(60, lv, 0.1), show: lv >= ONLINE_UNLOCK },
+    { id: 'daily_online', icon: '🛵', title: 'Giao đơn app', unit: 'đơn', target: scale(3, lv, 0.07), current: c.stats.onlineDone ?? 0, money: scale(120000, lv, 0.25), xp: scale(60, lv, 0.1), show: lv >= ONLINE_UNLOCK, ...(c.hasOnlineOpen === false ? { desc: NO_ONLINE_DESC } : {}) },
     { id: 'daily_farm', icon: '🌾', title: 'Thu hoạch trại', unit: 'sản phẩm', target: scale(6, lv, 0.15), current: c.stats.farmHarvest ?? 0, money: scale(90000, lv, 0.25), xp: scale(50, lv, 0.1), show: lv >= GARDEN_UNLOCK },
     // promote() chỉ cho đăng 1 bài/ngày (data/social.ts) nên mục tiêu cố định 1, đo cả bài xin lỗi khi khủng hoảng
     { id: 'daily_social', icon: '📱', title: 'Lên mạng xã hội', unit: 'bài', target: 1, current: c.stats.socialPosts ?? 0, money: scale(70000, lv, 0.25), xp: scale(40, lv, 0.1), show: lv >= SOCIAL_UNLOCK, desc: 'Đăng bài quảng bá (hoặc xin lỗi khi khủng hoảng) hôm nay' },
