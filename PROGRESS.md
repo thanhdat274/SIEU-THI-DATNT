@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (07/11/2026)
+- **GĐ1590** — Rà soát + QA save mới: bán đầu tiên ~38s, không lỗi console; chuỗi tặng quà GĐ1584–1589 gọn trong  (nhiệm vụ, báo cáo, XP sinh nhật). Lưu trữ GĐ1557–1564. Save QA đã xoá.
 - **GĐ1589** — Mẹo cấp 38: quà sinh nhật ×2 thân thiết +30 XP.
 - **GĐ1588** — Tặng quà đúng sinh nhật khách quen +30 XP.
 - **GĐ1587** — Bảng Khách quen hiện thêm "đã tặng N" hôm nay.
@@ -45,14 +46,6 @@
 - **GĐ1567** — Tab Dịch vụ: từ 14h nêu máy thu phí chưa ai chơi hôm nay, gợi ý dời gần cửa (`idleMachineHint`). Thuần UI.
 - **GĐ1566** — Máy gắp thú (cấp 44) ~1/20 lượt khách "🧸 Gắp trúng!" — chỉ bong bóng, không tiền; băm máy/ngày/phút, không rút RNG nên golden/sim không đổi (`clawWin`).
 - **GĐ1565** — Tổng kết ngày thêm dòng "trong đó 🎰 máy thu phí" dưới Doanh thu (`machineDayTotal`). Thuần UI.
-- **GĐ1564** — Tab Dịch vụ thêm dòng "🎰 Máy thu phí hôm nay" tách từ `stats.byService` (máy vốn gộp chung tổng dịch vụ), từng máy xếp nhiều trước (`machineDayLine`). Thuần UI.
-- **GĐ1563** — Sổ khách quen (cấp 38) xếp sinh nhật hôm nay lên đầu, rồi khách còn tặng quà được, đã tặng xuống cuối (`sortForGift`, ổn định trong nhóm). Thuần UI.
-- **GĐ1562** — Dải "Bạn có biết?" thêm 3 mẹo: thông thạo món (36), quà cuối tuần (37), tặng quà khách quen (38). Rà Midnight #5 (máy giữ kiên nhẫn): đã đúng sẵn — kiên nhẫn chỉ trừ khi đứng hàng quầy.
-- **GĐ1561** — Sổ đầu ngày nhắc sinh nhật khách quen (cấp 38) thêm "· tặng quà +6". QA UI GĐ1557–1559 trong trình duyệt: nút 🎁 bấm được → "Hôm nay đã tặng rồi", dòng đếm 21→20; save QA đã xoá.
-- **GĐ1560** — Rà soát + QA save mới: bán đầu tiên ~54s. Tặng quà khách quen GĐ1557–1559 gom trong 1 file `data/regularGift.ts`, 1 action LOCAL_ONLY; QA store thật: tặng trừ 1 món kho, +3 thân thiết, lần 2 cùng ngày bị chặn. Save QA đã xoá.
-- **GĐ1559** — Đầu sổ khách quen (cấp 38) hiện "🎁 Hôm nay còn tặng quà được N khách quen" (`giftableCount`).
-- **GĐ1558** — Tặng quà đúng sinh nhật khách quen: +6 thân thiết thay +3 (`giftFriendship`), nút hiện số thật. Coop: `giftRegular` LOCAL_ONLY như `forgiveDebt`.
-- **GĐ1557** — Tặng quà khách quen (cấp 38): nút 🎁 trong sổ khách quen tặng 1 món khách thích từ kho → +3 thân thiết, mỗi khách 1 lần/ngày (`regularGiftPlan`, `giftRegular` LOCAL_ONLY, trường tuỳ chọn `lastGiftDay`). Test `regularGift.test.ts`.
 - GĐ1394–1408 + GĐ1490–1505 (chuỗi khu ăn tại chỗ: bàn ghế, khách ngồi ăn, tip, máy thu phí, toilet, decor × sao, sao món, vắng mặt, nhà phê bình, toast ghế, tour HUD, đồ bếp decor, bảng hiệu đặc sản; khoá 1 tab): docs/progress-archive/PROGRESS-GD1490-1505.md
 - GĐ1382–1393 (món mới từ nguyên liệu có sẵn, gọn PROGRESS, đổi "Ấm nước nóng" → "Bếp nồi nấu" GĐ1394 xem dòng riêng): chi tiết `docs/progress-archive/PROGRESS-GD1382-1391.md`.
 - GĐ960–1005 (tách file thuần + QA trình duyệt, chi tiết): `docs/progress-archive/PROGRESS-GD960-1005.md`
