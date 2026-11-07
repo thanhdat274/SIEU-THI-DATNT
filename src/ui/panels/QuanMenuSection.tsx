@@ -7,11 +7,12 @@ import {
 import { quanBestAdd, quanBestAddLine } from '../../data/quanMenuSuggest';
 import { quanHandPayoff, quanHandPayoffLine } from '../../data/quanHandPayoff';
 import { styles } from './shared';
+import { shortLabel } from '../shortLabel';
 import { newUnlockMark } from '../../data/advice';
 
 /** Thực đơn pha chế quán nước (GĐ415): chọn tối đa 4 món, mỗi món hiện lời/ly và số ly kho đủ pha. */
 export function QuanMenuSection() {
-  const { biz, level, storage, day, weather, toggleQuanRecipe, brewQuanHand, upgradeQuanTier } = useGame();
+  const { biz, level, money, storage, day, weather, toggleQuanRecipe, brewQuanHand, upgradeQuanTier } = useGame();
   const tier = quanTierOf(biz.quanNuoc);
   const nextTier = QUAN_TIERS[tier + 1];
   const q = biz.quanNuoc;
@@ -33,8 +34,8 @@ export function QuanMenuSection() {
         {QUAN_TIERS[tier].icon} <b>{QUAN_TIERS[tier].name}</b>
         <span style={{ fontSize: 11, opacity: 0.7 }}> (bậc {tier + 1}/{QUAN_TIERS.length}: {QUAN_TIERS.map((t) => t.name).join(' → ')} — cùng một cửa hàng)</span>
         {nextTier && (
-          <button style={styles.btn} disabled={level < nextTier.level} onClick={() => upgradeQuanTier()}>
-            {level < nextTier.level ? `${nextTier.name}: cấp ${nextTier.level}` : `Nâng lên ${nextTier.name} ${formatMoney(nextTier.cost)} (khách ×${fmtMul(nextTier.mul)}${quanMenuSlots({ tier: tier + 1 }) > slots ? ', +1 ô món' : ''})`}
+          <button style={styles.btn} disabled={level < nextTier.level || money < nextTier.cost} onClick={() => upgradeQuanTier()}>
+            {level < nextTier.level ? `${nextTier.name}: cấp ${nextTier.level}` : shortLabel(`Nâng lên ${nextTier.name} ${formatMoney(nextTier.cost)} (khách ×${fmtMul(nextTier.mul)}${quanMenuSlots({ tier: tier + 1 }) > slots ? ', +1 ô món' : ''})`, nextTier.cost, money)}
           </button>
         )}
       </div>
