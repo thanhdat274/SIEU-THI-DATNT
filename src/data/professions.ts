@@ -69,7 +69,7 @@ export const PROFESSIONS: ProfessionDef[] = [
   {
     id: 'farmer', name: 'Người bán chợ', icon: '🧺', archetype: 'farmer',
     hours: [h(4.5, 7), h(12, 13.5)],
-    likes: ['x_tui_rac', 'x_bao_goi', 'nuoc', 'x_tra_da', 'mi', 'x_nhang', 'gao', 'banh_mi_trung_nuong'],
+    likes: ['x_tui_rac', 'x_bao_goi', 'nuoc', 'x_tra_da', 'mi', 'x_nhang', 'gao', 'banh_mi_trung_nuong', 'ga_xao_sa'],
     loyalty: 0.75, extraItems: 1, sensitivity: 1.3, patience: 1.2,
   },
   {
