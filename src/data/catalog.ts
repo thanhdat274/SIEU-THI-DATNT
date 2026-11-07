@@ -87,7 +87,7 @@ export const CATALOG_PRODUCTS: Product[] = [
   p('x_banh_chung', 'Bánh chưng', 'dry', 45000, 65000, 0x3c8d3c, 3),
   p('x_tap_vo', 'Tập vở', 'household', 7000, 10000, 0xcbb04d, 43),
   p('x_but_bi', 'Bút bi', 'household', 3000, 5000, 0x2e86de, 3),
-  p('x_ao_mua', 'Áo mưa', 'household', 12000, 18000, 0xcb4d90, 43),
+  p('x_ao_mua', 'Áo mưa bộ', 'household', 12000, 18000, 0xcb4d90, 43),
   p('x_xuc_xich_nuong_tp', 'Xúc xích nướng', 'household', 15000, 35000, 0x4d92cb, 43),
   p('x_mi_ly_tp', 'Mì ly', 'household', 6500, 14000, 0xcba54d, 43),
   p('x_banh_mi_trung_tp', 'Bánh mì trứng', 'household', 5500, 16000, 0x9d4dcb, 47),

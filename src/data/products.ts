@@ -96,7 +96,7 @@ export const PRODUCTS: Product[] = [
   p('aomua', 'Áo mưa', 'household', 5000, 9000, 0x0984e3, 1),
   p('o', 'Ô dù', 'household', 15000, 25000, 0x6c5ce7, 1),
   // Đợt mở rộng danh mục: đồ cao cấp/hàng biếu cho giai đoạn sau (giá sỉ tạp hóa VN 2026)
-  p('banh_pia', 'Bánh pía', 'dry', 28000, 40000, 0xd9a66c, 40),
+  p('banh_pia', 'Bánh pía (hộp 4 cái)', 'dry', 28000, 40000, 0xd9a66c, 40),
   p('yen_mach', 'Yến mạch hộp', 'dry', 45000, 65000, 0xd8b998, 40),
   p('mi_tuoi', 'Mì tươi vắt', 'fresh', 6000, 9000, 0xe8d8c0, 40),
   p('sua_hat', 'Sữa hạt lốc 4', 'cold', 42000, 58000, 0xe4c9a0, 41),
@@ -106,7 +106,7 @@ export const PRODUCTS: Product[] = [
   p('sua_chua_hop', 'Sữa chua nếp cốc', 'cold', 12000, 18000, 0xd4a76a, 43),
   p('ca_phe_lon', 'Cà phê hòa tan hộp thiếc', 'dry', 85000, 118000, 0x4a2c0a, 44),
   p('tra_atiso', 'Trà atiso túi', 'dry', 38000, 55000, 0x9b59b6, 44),
-  p('lap_xuong', 'Lạp xưởng', 'frozen', 72000, 100000, 0xa93226, 44),
+  p('lap_xuong', 'Lạp xưởng (ký)', 'frozen', 72000, 100000, 0xa93226, 44),
   p('hat_dieu_muoi', 'Hạt điều rang muối hũ', 'dry', 78000, 108000, 0xb5651d, 45),
   p('kem_cay_hop', 'Kem cây hộp 10', 'frozen', 48000, 68000, 0xffb6c1, 45),
   p('ruou_gao', 'Rượu gạo', 'drink', 45000, 65000, 0xc0c0c0, 46),
@@ -149,11 +149,11 @@ export const PRODUCTS: Product[] = [
   p('thit_bo_nhat', 'Thăn bò Nhật (gói)', 'frozen', 450000, 620000, 0x68228b, 69),
   p('nep_cam', 'Gạo nếp cẩm (túi)', 'dry', 55000, 78000, 0x7d3c98, 70),
   p('ot_hien', 'Ớt tươi (rổ)', 'fresh', 20000, 30000, 0xd63031, 71),
-  p('ca_basa', 'Cá basa phi lê', 'frozen', 85000, 120000, 0x74b9ff, 72),
+  p('ca_basa', 'Cá basa phi lê (ký)', 'frozen', 85000, 120000, 0x74b9ff, 72),
   p('sua_yeu', 'Sữa yến mạch (hộp)', 'cold', 45000, 65000, 0xf7dc6f, 73),
   p('hat_sen', 'Hạt sen tươi', 'fresh', 65000, 92000, 0xaed6f1, 74),
   p('bia_nhap', 'Bia nhập khẩu (chai)', 'drink', 35000, 49000, 0xc0392b, 75),
-  p('cha_ca', 'Chả cá thác lác', 'fresh', 120000, 168000, 0x95a5a6, 76),
+  p('cha_ca', 'Chả cá thác lác (ký)', 'fresh', 120000, 168000, 0x95a5a6, 76),
   // GĐ1337: Bún tươi — nguyên liệu mì-quảng/bún của món nấu (Bún bò Huế), biên 1.5 chuẩn, mở 33 sau mốc golden 30
   p('bun', 'Bún tươi (gói)', 'fresh', 12000, 18000, 0xf3e5ab, 33),
   // GĐ1341: Hủ tiếu — nguyên liệu món Hủ tiếu nam vang, biên 1.5 chuẩn, mở 34 sau mốc golden 30

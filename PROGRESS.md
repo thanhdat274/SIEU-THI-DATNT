@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (07/11/2026)
+- GĐ1695: tách tên 5 cặp hàng trùng tên khác hàng (Áo mưa bộ, Cá basa phi lê (ký), Lạp xưởng (ký), Chả cá thác lác (ký), Bánh pía (hộp 4 cái)) — đổi tên hiển thị, giữ mã/giá; danh sách trùng cũ 16→11.
 - GĐ1694: test chặn mặt hàng trùng tên mới (16 cặp cũ khoá trong danh sách chỉ được giảm, phần lớn cố ý *_tp vs món nấu) — productNamesUnique.
 - GĐ1693: test tên món mở rộng (cốt dừa/nước dừa/nước mắm/xì dầu) lộ ra x_nuoc_mam (GĐ1686) trùng nuocmam có sẵn → xoá mã trùng, cá viên chiên nước mắm dùng nuocmam; bản lưu còn mã cũ được đổi tên lúc nạp (PRODUCT_ALIASES/aliasProductIds, save.ts).
 - GĐ1692: test chặn tên món ghi gia vị (sả/tỏi/gừng/mật ong) mà công thức thiếu nguyên liệu đó, công thức mở >30 — recipeNameIngredients.
