@@ -1068,7 +1068,7 @@ export const RECIPES: Recipe[] = [
     outputId: 'bap_cai_xao_ca_rot', outputQty: 4, durationMin: 10, unlock: 49, reputationGain: 1 },
   // GĐ1427: Cá hồi hấp xì dầu ở nồi hấp. Mở 47 (> golden 30, ≥ cấp nguyên liệu).
   { id: 'recipe_ca_hoi_hap_xi_dau', name: 'Cá hồi hấp xì dầu', station: 'steamer',
-    inputs: [{ productId: 'x_ca_hoi_dong_lanh', quantity: 1 }],
+    inputs: [{ productId: 'x_ca_hoi_dong_lanh', quantity: 1 }, { productId: 'x_nuoc_tuong', quantity: 1 }], // GĐ1685: hấp xì dầu cần nước tương
     outputId: 'ca_hoi_hap_xi_dau', outputQty: 6, durationMin: 10, unlock: 47, reputationGain: 2 },
   // GĐ1427: Chả mực chiên ở chảo chiên. Mở 37 (> golden 30, ≥ cấp nguyên liệu).
   { id: 'recipe_cha_muc_chien', name: 'Chả mực chiên', station: 'fryer',
