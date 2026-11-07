@@ -129,6 +129,7 @@ export const QUAN_RECIPES: QuanRecipe[] = [
   { id: 'tra_gung', name: 'Trà gừng nóng', icon: '🫚', unlock: 36, price: 15_000, uses: [{ id: 'tra', cups: 40 }, { id: 'x_gung', cups: 12 }, { id: 'x_duong', cups: 30 }], hot: true },
   // GĐ1663: cam gừng đá — gừng trại có món mát (trước chỉ trà gừng nóng); giữ nguyên 3 đồ nóng.
   { id: 'cam_gung_da', name: 'Cam gừng đá', icon: '🍊', unlock: 37, price: 24_000, uses: [{ id: 'x_cam', cups: 3 }, { id: 'x_gung', cups: 12 }, { id: 'x_duong', cups: 30 }, { id: 'x_nuoc_da', cups: 10 }] },
+  { id: 'tra_sa_da', name: 'Trà sả đá', icon: '🌿', unlock: 40, price: 15_000, uses: [{ id: 'tra', cups: 40 }, { id: 'x_sa', cups: 6 }, { id: 'x_duong', cups: 30 }, { id: 'x_nuoc_da', cups: 10 }] }, // GĐ1703: lối ra quán cho sả
   // GĐ1666: nước ép gấc — gấc trại có lối ra thứ hai (sau xôi gấc).
   { id: 'ep_gac_da', name: 'Nước ép gấc', icon: '🔴', unlock: 43, price: 26_000, uses: [{ id: 'x_gac', cups: 4 }, { id: 'x_duong', cups: 30 }, { id: 'x_nuoc_da', cups: 10 }] },
   { id: 'ca_phe_sua_nong', name: 'Cà phê sữa nóng', icon: '♨️', unlock: 37, price: 20_000, uses: [{ id: 'x_ca_phe_hoa_tan', cups: 15 }, { id: 'x_sua_dac', cups: 10 }], hot: true },
