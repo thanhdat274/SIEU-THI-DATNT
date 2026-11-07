@@ -14,3 +14,16 @@ describe('GĐ1668 — lễ hội làng hút xôi gấc', () => {
     expect(FESTIVALS.find((e) => e.id === 'le_hoi_lang')!.hot).toContain('xoi_gac');
   });
 });
+
+// GĐ1671 — mứt gừng bà Tám: hàng xóm bán, hút dịp Tết.
+describe('GĐ1671 — mứt gừng bà Tám', () => {
+  it('chỉ nhà bà Tám bán, lời, mở sau 30, nằm trong hàng hot Tết', async () => {
+    const { NEIGHBOR2_IDS } = await import('../data/homemade');
+    const { productById } = await import('../data/products');
+    expect(NEIGHBOR2_IDS.has('hx_mut_gung')).toBe(true);
+    const p = productById('hx_mut_gung');
+    expect(p.sell).toBeGreaterThan(p.buy);
+    expect(p.unlock).toBeGreaterThan(30);
+    expect(FESTIVALS.find((e) => e.id === 'tet')!.hot).toContain('hx_mut_gung');
+  });
+});
