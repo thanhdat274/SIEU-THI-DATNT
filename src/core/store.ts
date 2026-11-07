@@ -79,6 +79,7 @@ export const questContext = (s: GameState): QuestContext => {
     hasService: (s.biz.services ?? []).length > 0,
     hasOnlineOpen: !!s.online?.open,
     activeCombos: s.activeCombos?.length ?? 0,
+    plantedPlots: s.garden?.plots?.filter((p) => p.crop).length ?? 0,
     socialFollowers: Math.floor(s.social?.followers ?? 0),
   };
 };

@@ -124,3 +124,26 @@ describe('GĐ1638 — "Bán theo combo" khi chưa bật combo nào', () => {
     throw new Error('không gặp việc combo');
   });
 });
+
+describe('GĐ1640 — "Thu hoạch trại" khi chưa gieo luống nào', () => {
+  it('ván mới chưa gieo → mô tả chỉ chỗ gieo; có cây thì câu gốc; thử thách tuần cũng nêu lý do', async () => {
+    const { NO_CROP_DESC, periodBlocker } = await import('../data/quests');
+    useGame.setState({ ...newGameData(), level: 30 });
+    const base = questContext(useGame.getState());
+    expect(base.plantedPlots).toBe(0);
+    expect(periodBlocker('farmHarvest', base)).toContain('Trang trại');
+    expect(periodBlocker('farmHarvest', { ...base, plantedPlots: 2 })).toBeNull();
+    for (let day = 1; day <= 60; day++) {
+      useGame.setState({ ...newGameData(), level: 30, day });
+      const ctx = questContext(useGame.getState());
+      const q = dailyQuests(ctx).find((x) => x.id === 'daily_farm');
+      if (!q) continue;
+      expect(q.description).toBe(NO_CROP_DESC.replace('{n}', q.target.toLocaleString('vi-VN')));
+      const grown = dailyQuests({ ...ctx, plantedPlots: 3 });
+      expect(grown.map((x) => x.id)).toEqual(dailyQuests(ctx).map((x) => x.id));
+      expect(grown.find((x) => x.id === 'daily_farm')!.description).not.toContain('chưa gieo');
+      return;
+    }
+    throw new Error('không gặp việc trại');
+  });
+});
