@@ -19,6 +19,9 @@ export const CRITIC_REWARD_SOFT = 200_000;
 export const CRITIC_REWARD_HARD = 500_000;
 /** Số đánh giá 1★ khi hụt hẹn ở giai đoạn nghiêm ngặt. */
 export const CRITIC_PENALTY_REVIEWS = 3;
+/** GĐ1545 — phục vụ kịp ở giai đoạn nghiêm ngặt: đoàn phim lên sóng, khán giả để lại mấy đánh giá 5★ (đối xứng với phạt). */
+export const CRITIC_PRAISE_REVIEWS = 3;
+export const criticPraiseReviews = (hard: boolean) => (hard ? CRITIC_PRAISE_REVIEWS : 0);
 
 /** Thưởng khi phục vụ đúng món trong khung: mức nhẹ trước cấp nghiêm ngặt, mức lớn sau đó. */
 export const criticReward = (hard: boolean) => (hard ? CRITIC_REWARD_HARD : CRITIC_REWARD_SOFT);

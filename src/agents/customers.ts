@@ -39,7 +39,7 @@ import {
 } from '../data/staff';
 import {
   CRITIC_CHANCE, CRITIC_HARD_UNLOCK, CRITIC_PENALTY_REVIEWS, CRITIC_UNLOCK, CRITIC_WINDOW_MINUTES,
-  criticReward, pickCriticDish,
+  criticReward, pickCriticDish, criticPraiseReviews,
 } from '../data/critic';
 import { metaRng } from '../core/rand';
 import { theftCatchChance, theftSpawnChance } from '../data/theftRisk';
@@ -1152,6 +1152,7 @@ export class CustomerManager {
         const reward = criticReward(this.criticHard);
         useGame.setState({ money: s.money + reward, totals: { ...s.totals, revenue: s.totals.revenue + reward } });
         s.notify(`🌟 Nhà phê bình khen ${productById(this.criticProduct).name}! +${formatMoney(reward)}`);
+        for (let i = 0; i < criticPraiseReviews(this.criticHard); i++) s.addReview(5, undefined, this.criticProduct);
         playSfx('gift');
         this.criticProduct = null;
         return;
