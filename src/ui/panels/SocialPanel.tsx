@@ -6,6 +6,10 @@ import { crisisStatus, recentAvgRevenue } from '../../data/minorPayoff';
 import { socialValue } from '../../data/socialValue';
 import { Callout, Footer, stars, starColor, styles } from './shared';
 
+/** GĐ1646: nút quảng bá bị khóa thì nói lý do ngay trên nút, không để "Đăng bài" câm. */
+export const promoLabel = (level: number, followers: number) =>
+  level < SOCIAL_UNLOCK ? `🔒 Cấp ${SOCIAL_UNLOCK}` : followers < PROMO_MIN_FOLLOWERS ? `Cần ${PROMO_MIN_FOLLOWERS} theo dõi` : '📣 Đăng bài';
+
 export function SocialPanel() {
   const { social, day, level, money, history, apologize, promoteShop, closePanel } = useGame();
   const buzz = activeBuzz(social, day);
@@ -72,7 +76,7 @@ export function SocialPanel() {
           {social.followers < PROMO_MIN_FOLLOWERS && ` (cần ${PROMO_MIN_FOLLOWERS} người theo dõi)`}
         </span>
         <button style={{ ...styles.btn, background: promoDone ? '#666' : '#f1c40f' }} disabled={promoDone || social.followers < PROMO_MIN_FOLLOWERS || level < SOCIAL_UNLOCK} onClick={promoteShop}>
-          {promoDone ? '✅ Đã đăng' : '📣 Đăng bài'}
+          {promoDone ? '✅ Đã đăng' : promoLabel(level, social.followers)}
         </button>
       </div>
       <div style={{ display: 'grid', gap: 8 }}>
