@@ -24,7 +24,7 @@ import { storageCapacity, storageUsed } from './gameTypes';
 import { useGame, type DayStats, type GameState } from './store';
 import { copyStock, putStock, takeStock } from './stock';
 
-export { maybeSurprise, chooseSurprise, storyOnVisit, closeStory, checkChapters, closeChapter, REGULAR_NAMES } from './bizStory';
+export { maybeSurprise, chooseSurprise, storyOnVisit, closeStory, checkChapters, closeChapter, REGULAR_NAMES, setSurpriseSuppressed } from './bizStory';
 import { REGULAR_NAMES } from './bizStory';
 import { pay, buyPet, feedPet, buyUpgrade, buyHomeItem, buyService, earnService, earnTip } from './bizPurchases';
 export { buyPet, feedPet, buyUpgrade, buyHomeItem, buyService, earnService, earnTip } from './bizPurchases';

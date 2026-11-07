@@ -1,4 +1,5 @@
 import { useGame, questContext } from '../core/store';
+import { setSurpriseSuppressed } from '../core/bizStory';
 import { dailyQuests, betStatus } from '../data/quests';
 import { furnitureDef, FURNITURE } from '../data/furniture';
 import { FEATURES } from '../data/levels';
@@ -184,12 +185,18 @@ export function createAutoplay(
 
   /** Chơi n ngày ĐỒNG BỘ như cũ; trả về bảng nhật ký (thêm cột quest/bet). Gọi: game.autoplay(30). */
   function autoplay(days: number): Record<string, number | string | Record<string, number>>[] {
-    const log: Record<string, number | string | Record<string, number>>[] = [];
-    for (let d = 0; d < days; d++) {
-      log.push(runOneDaySync());
+    // GĐ1507 — tắt bắn sự kiện bất ngờ trong bộ đo kinh tế (gieo vẫn chạy giữ chuỗi rng)
+    setSurpriseSuppressed(true);
+    try {
+      const log: Record<string, number | string | Record<string, number>>[] = [];
+      for (let d = 0; d < days; d++) {
+        log.push(runOneDaySync());
+      }
+      st().closePanel();
+      return log;
+    } finally {
+      setSurpriseSuppressed(false);
     }
-    st().closePanel();
-    return log;
   }
 
   function runOneDaySync(): Record<string, number | string | Record<string, number>> {

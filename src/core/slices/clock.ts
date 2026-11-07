@@ -68,7 +68,9 @@ export const createClockSlice = (set: SetState, get: GetState): Pick<GameState, 
     }
     updatePhones(set, get);
     updateOnline(set, get);
-    maybeSurprise(minutes - s.minutes);
+    // GĐ1507 — truyền đúng phút đã trôi: bug elapsed=0 làm pool sự kiện một-phát chết từ GĐ962
+    // (chỉ arc sống vì không dùng elapsed — GĐ164). Số lần gọi simRng không đổi → chuỗi rng không dịch.
+    maybeSurprise(elapsedMinutes);
     // GĐ1506 — đoàn kiểm tra vệ sinh: gieo metaRng theo phút game (chỉ máy chạy chạy tới đây)
     maybeInspection(elapsedMinutes);
     // Các mẻ nấu đang chạy: hết giờ thì thành phẩm vào kho (bày bán như hàng thường)
