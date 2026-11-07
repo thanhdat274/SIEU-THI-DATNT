@@ -105,7 +105,7 @@ export const PROFESSIONS: ProfessionDef[] = [
   {
     id: 'soldier', name: 'Bộ đội', icon: '🪖', archetype: 'soldier',
     hours: [h(5.5, 7.5), h(17, 20)],
-    likes: ['sua', 'banh', 'gao', 'mi', 'x_sua_dac', 'x_ca_hop', 'nuoc', 'x_khau_trang'],
+    likes: ['sua', 'banh', 'gao', 'mi', 'x_sua_dac', 'x_ca_hop', 'nuoc', 'x_khau_trang', 'ga_xao_sa'],
     loyalty: 0.75, extraItems: 2, sensitivity: 0.85, patience: 1.4,
   },
   {
