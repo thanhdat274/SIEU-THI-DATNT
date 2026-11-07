@@ -6,7 +6,8 @@ describe('GĐ1100 — đơn quán xóm lấy thêm trái cây nhà (chanh dây/n
     const old14 = ['trung', 'trung_vit', 'trung_goos', 'sua_tuoi', 'sua_de', 'rau', 'bap', 'mia', 'traicay', 'x_chuoi', 'x_vai', 'x_buoi', 'x_thit_heo', 'thit_ga_dt'];
     expect(FARM_ORDER_POOL.slice(0, 14)).toEqual(old14);
     expect(FARM_ORDER_POOL.slice(14, 17)).toEqual(['x_chanh_day', 'x_nhan', 'x_mit']);
-    expect(FARM_ORDER_POOL.slice(17)).toEqual(['x_thom', 'x_gung', 'x_gac']); // GĐ1670
+    expect(FARM_ORDER_POOL.slice(17, 20)).toEqual(['x_thom', 'x_gung', 'x_gac']); // GĐ1670
+    expect(FARM_ORDER_POOL.slice(20)).toEqual(['x_sa']); // GĐ1705
     expect(new Set(FARM_ORDER_POOL).size).toBe(FARM_ORDER_POOL.length);
   });
 
