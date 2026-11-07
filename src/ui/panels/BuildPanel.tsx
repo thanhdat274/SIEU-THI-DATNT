@@ -3,6 +3,7 @@ import { useGame } from '../../core/store';
 import { FLOOR_COLORS, PAINT_PRICE, ROOF_COLORS, SHOP_TIERS, WALL_COLORS, rentDelta, rentOf, spaceUsePct, type ShopStyle } from '../../data/shopTiers';
 import { FURNITURE, furnitureDef, type FurnitureType } from '../../data/furniture';
 import { festivalShopName, festivalShopOpen } from '../../data/festivalDeco';
+import { FURNITURE_GROUP_TABS, furnitureGroup, type FurnitureGroup } from '../../data/furnitureGroups';
 import { VIET_SET, VIET_SET_TIERS, vietSetCount, vietSetDecorBonus } from '../../data/decorSets';
 import { departmentsUnlockedAtTier } from '../../data/departments';
 import { bigBasketInsight, BIG_BASKET_TIER } from '../../data/bigBasket';
@@ -38,6 +39,8 @@ export function BuildPanel() {
 export function FurnitureTab() {
   const { level, day, money, furniture, storage, stats, weather, setPlacing, demolishAll } = useGame();
   const furnStash = useGame((s) => s.furnStash);
+  // GĐ1516 — lọc theo nhóm (UI thuần, không lưu)
+  const [group, setGroup] = useState<'all' | FurnitureGroup>('all');
   const stashed = Object.entries(furnStash).filter(([, n]) => n > 0) as [FurnitureType, number][];
   // GĐ1251: soi quyết định MUA KỆ bằng số liệu bỏ lỡ hôm nay (storeMissRevenue GĐ131) —
   // trước giờ dữ liệu này chỉ hiện ở Kho/Báo cáo, còn nơi mua kệ lại chỉ chìa giá.
@@ -90,8 +93,13 @@ export function FurnitureTab() {
           {vietSetDecorBonus(furniture) > 0 && <b> · đang +{vietSetDecorBonus(furniture)}🩷</b>}
         </div>
       )}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+        {FURNITURE_GROUP_TABS.map((t) => (
+          <button key={t.id} style={{ ...styles.btn, opacity: group === t.id ? 1 : 0.55 }} aria-pressed={group === t.id} onClick={() => setGroup(t.id)}>{t.label}</button>
+        ))}
+      </div>
       <div style={{ display: 'grid', gap: 8 }}>
-        {FURNITURE.map((f) => {
+        {FURNITURE.filter((f) => group === 'all' || furnitureGroup(f) === group).map((f) => {
           const offFest = !festivalShopOpen(f, day);
           const locked = f.unlock > level || offFest;
           return (
