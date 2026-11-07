@@ -49,3 +49,8 @@ export function giftPanelLine(left: number, gifts: number | undefined): string {
   const done = gifts ?? 0;
   return '🎁 Hôm nay còn tặng quà được ' + left + ' khách quen' + (done > 0 ? ' · đã tặng ' + done : '');
 }
+
+/** GĐ1588 — tặng quà đúng sinh nhật khách quen được thêm 30 XP (ngày thường 0). */
+export function giftXp(birthday: boolean): number {
+  return birthday ? 30 : 0;
+}

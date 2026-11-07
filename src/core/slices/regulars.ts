@@ -7,7 +7,7 @@ import { copyStock, takeStock } from '../stock';
 import { arcForRegular, arcById, currentArcStep, arcStepFulfilled } from '../../data/regularArc';
 import { satisfiedLine, walkoutLine } from '../../data/regularTrust';
 import { REP_CAP } from '../../data/reputation';
-import { regularGiftPlan, giftFriendship } from '../../data/regularGift';
+import { regularGiftPlan, giftFriendship, giftXp } from '../../data/regularGift';
 import { type GameState, type SetState, type GetState, addHour } from '../gameTypes';
 
 /** Khách: lượt ghé, khách quen, lời hẹn giữ món, sổ nợ, đánh giá. */
@@ -227,7 +227,9 @@ export const createRegularsSlice = (set: SetState, get: GetState): Pick<GameStat
     const after = get().regulars[id];
     if (after) set({ regulars: { ...get().regulars, [id]: { ...after, lastGiftDay: s.day } } });
     set({ stats: { ...get().stats, gifts: (get().stats.gifts ?? 0) + 1 } }); // GĐ1584
-    s.notify(`🎁 Tặng ${def.name} 1 ${productById(plan.productId).name} · +${gain} thân thiết${gain > 3 ? ' (🎂 sinh nhật ×2)' : ''}`);
+    const bxp = giftXp(gain > 3); // GĐ1588
+    if (bxp) get().addXp(bxp);
+    s.notify(`🎁 Tặng ${def.name} 1 ${productById(plan.productId).name} · +${gain} thân thiết${gain > 3 ? ' (🎂 sinh nhật ×2, +' + bxp + ' XP)' : ''}`);
     return true;
   },
   addReview: (stars, reason, productId) => {

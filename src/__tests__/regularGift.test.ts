@@ -86,3 +86,11 @@ describe('GĐ1587 giftPanelLine', () => {
     expect(giftPanelLine(1, 2)).toContain('đã tặng 2');
   });
 });
+
+describe('GĐ1588 giftXp', () => {
+  it('sinh nhật +30 XP', async () => {
+    const { giftXp } = await import('../data/regularGift');
+    expect(giftXp(true)).toBe(30);
+    expect(giftXp(false)).toBe(0);
+  });
+});
