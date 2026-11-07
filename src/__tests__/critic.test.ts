@@ -4,7 +4,7 @@ import { setSimSeed } from '../core/rand';
 import { CustomerManager } from '../agents/customers';
 import {
   CRITIC_CHANCE, CRITIC_HARD_UNLOCK, CRITIC_PENALTY_REVIEWS, CRITIC_REWARD_HARD, CRITIC_REWARD_SOFT,
-  CRITIC_UNLOCK, CRITIC_WINDOW_MINUTES, criticReward, pickCriticDish,
+  CRITIC_SOFT_LAG, CRITIC_UNLOCK, CRITIC_WINDOW_MINUTES, criticReward, pickCriticDish,
 } from '../data/critic';
 import { RECIPES } from '../data/recipes';
 import { productById } from '../data/products';
@@ -20,23 +20,24 @@ describe('critic — dữ liệu & chọn món (GĐ1498)', () => {
     expect(CRITIC_PENALTY_REVIEWS).toBe(3);
   });
 
-  it('giai đoạn nhẹ chỉ gọi món đã mở; nghiêm ngặt gọi BẤT KỲ món nào trong sổ', () => {
-    const level = 30;
-    for (let s = 1; s <= 20; s++) {
+  it('GĐ1604: nhẹ gọi món mở từ ≥10 cấp; nghiêm ngặt gọi mọi món đã mở, KHÔNG BAO GIỜ món khóa', () => {
+    const level = 50;
+    let sawRecent = false;
+    for (let s = 1; s <= 300; s++) {
       setSimSeed(s);
-      const picked = pickCriticDish(RECIPES, level, false);
-      const soft = RECIPES.find((r) => r.outputId === picked)!;
-      if (!soft) throw new Error('picked=' + String(picked) + ' seed=' + s);
-      expect(soft.unlock).toBeLessThanOrEqual(level);
+      // một món có thể có nhiều công thức → lấy công thức mở sớm nhất
+      const minU = (id: string) => Math.min(...RECIPES.filter((r) => r.outputId === id).map((r) => r.unlock));
+      expect(minU(pickCriticDish(RECIPES, level, false))).toBeLessThanOrEqual(level - CRITIC_SOFT_LAG);
+      const hardU = minU(pickCriticDish(RECIPES, level, true));
+      expect(hardU).toBeLessThanOrEqual(level);
+      if (hardU > level - CRITIC_SOFT_LAG) sawRecent = true;
     }
-    // Nghiêm ngặt: quét seed tới khi trúng cả món chưa mở (khóa cao) — đúng nghĩa "bất kỳ"
-    let sawLocked = false;
-    for (let s = 1; s <= 200 && !sawLocked; s++) {
-      setSimSeed(s);
-      const hard = RECIPES.find((r) => r.outputId === pickCriticDish(RECIPES, level, true))!;
-      if (hard.unlock > level) sawLocked = true;
-    }
-    expect(sawLocked).toBe(true);
+    expect(sawRecent).toBe(true); // nghiêm ngặt có gọi cả món mới mở
+    // cấp thấp hơn mọi món đủ lâu → nhẹ lùi về mọi món đã mở
+    const minUnlock = Math.min(...RECIPES.map((r) => r.unlock));
+    setSimSeed(3);
+    const fb = RECIPES.find((r) => r.outputId === pickCriticDish(RECIPES, minUnlock, false))!;
+    expect(fb.unlock).toBeLessThanOrEqual(minUnlock);
     setSimSeed(1);
   });
 });

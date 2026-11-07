@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (07/11/2026)
+- **GĐ1604** — Sửa nhà phê bình (rà lại KE-HOACH I1): từ cấp 45 trước đây có thể gọi món khóa tới cấp 100 → không nấu được, phạt 3★1 chắc chắn. Nay nghiêm ngặt gọi mọi món ĐÃ MỞ (kể cả món mới mở); nhẹ chỉ gọi món mở từ ≥10 cấp. Chạy ở máy chạy sim như cũ → hẻm online không đổi. Đối chiếu xong 6 tài liệu tham khảo: mọi mục còn lại đều chờ siêu thị phase 2/backend.
 - **GĐ1603** — Mẹo cấp 32: mốc sao món nấu 20/100/800 lượt và dòng đếm 3★ ở Sổ nấu.
 - **GĐ1602** — Đầu Sổ nấu hiện "🏆 N món đã đạt 3★" (maxedDishLine). QA trình duyệt nhãn GĐ1601 hiện đúng; save QA đã xoá.
 - **GĐ1601** — Sổ nấu: món đã 3★ hiện "🏆 bậc cao nhất" thay vì để trống mục tiêu (dishMaxLabel). Rà KE-HOACH I4/K1: kiên nhẫn 60%, trần vắng mặt 30+cấp×5, nút Nhập đủ đều đã có.

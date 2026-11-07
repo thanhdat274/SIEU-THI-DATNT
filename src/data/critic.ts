@@ -5,7 +5,7 @@ import { metaRng } from '../core/rand';
 // gọi MỘT món bất kỳ trong sổ món. Phục vụ được trong khung thời gian → thưởng lớn;
 // hụt hẹn → tiếng xấu đồn (mấy đánh giá 1★). "Rủi ro mở sau":
 //   · từ CRITIC_UNLOCK (có khu ăn tại chỗ): ghé nhẹ nhàng — gọi món đã mở, chỉ thưởng;
-//   · từ CRITIC_HARD_UNLOCK (siêu thị lớn): gọi BẤT KỲ món nào trong game + có phạt.
+//   · từ CRITIC_HARD_UNLOCK (siêu thị lớn): gọi BẤT KỲ món đã mở (kể cả món mới) + có phạt.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const CRITIC_UNLOCK = 30;
@@ -26,12 +26,19 @@ export const criticPraiseReviews = (hard: boolean) => (hard ? CRITIC_PRAISE_REVI
 /** Thưởng khi phục vụ đúng món trong khung: mức nhẹ trước cấp nghiêm ngặt, mức lớn sau đó. */
 export const criticReward = (hard: boolean) => (hard ? CRITIC_REWARD_HARD : CRITIC_REWARD_SOFT);
 
+/** GĐ1604 — giai đoạn nhẹ chỉ gọi món đã mở từ ít nhất ngần này cấp (quen tay, dễ có nguyên liệu). */
+export const CRITIC_SOFT_LAG = 10;
+
 /**
- * Chọn món nhà phê bình gọi: giai đoạn nhẹ chỉ gọi món đã mở ở cấp hiện tại;
- * giai đoạn nghiêm ngặt gọi BẤT KỲ món nào trong toàn bộ sổ món (đòn bẩy học món).
+ * Chọn món nhà phê bình gọi. GĐ1604: KHÔNG bao giờ gọi món chưa mở ở cấp hiện tại —
+ * trước đây giai đoạn nghiêm ngặt gọi cả món khóa cấp 100 (không thể nấu ⇒ phạt chắc chắn).
+ *  · nhẹ: món đã mở từ ≥ CRITIC_SOFT_LAG cấp (rỗng thì lùi về mọi món đã mở);
+ *  · nghiêm ngặt: BẤT KỲ món nào đã mở, kể cả món mới mở chưa từng nấu (đòn bẩy học món).
  */
 export function pickCriticDish(recipes: readonly { outputId: string; unlock: number }[], level: number, hard: boolean): string {
-  const pool = recipes.filter((r) => hard || r.unlock <= level);
+  const open = recipes.filter((r) => r.unlock <= level);
+  const soft = open.filter((r) => r.unlock <= level - CRITIC_SOFT_LAG);
+  const pool = hard ? open : soft.length ? soft : open;
   const list = pool.length ? pool : recipes;
   return list[Math.floor(metaRng() * list.length)].outputId;
 }
