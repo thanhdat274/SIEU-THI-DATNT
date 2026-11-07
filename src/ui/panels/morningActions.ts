@@ -1,4 +1,7 @@
 import { cungGoodsAction, sapEventActions, tiemXoiCungAction } from '../../data/dayEventActions';
+import { boostedMachinesToday, MACHINE_TYPES } from '../../data/machines';
+import { giftableCount, REGULAR_GIFT_LEVEL } from '../../data/regularGift';
+import { REGULARS } from '../../data/regulars';
 import type { GameState } from '../../core/store';
 import { caseSize, formatMoney } from '../../data/products';
 import { debtDayAction } from '../../data/debtLedger';
@@ -28,6 +31,8 @@ export interface MorningActionsCtx {
   haveStock: (id: string) => boolean;
   dueContracts: { cs: { dueDay: number }; def: ReturnType<typeof supplyContractById> }[];
   chophien: ReturnType<typeof marketClearValue>; lastSummary: S['lastSummary'];
+  /** GĐ1572 — tuỳ chọn: nội thất để nhắc máy đánh giày ngày mưa. */
+  furniture?: S['furniture'];
 }
 
 /** GĐ76/945: gộp mọi nhắc chuẩn bị ngày thành một danh sách ưu tiên (danger trước, khử trùng, cap 7). Tách nguyên văn khỏi MorningPanel. */
@@ -48,6 +53,10 @@ export function buildMorningActions(c: MorningActionsCtx): DayAction[] {
   // GĐ604: đêm có trận — tiện lợi đông sau 22h (GĐ601)
   candidates.push(...sapEventActions(biz.sapRong, biz.sapKinds, day, weather)); // GĐ625/631 → GĐ632 tách hàm thuần
   if (branch?.open && isQuanMatchDay(day, weather)) candidates.push({ icon: '⚽', text: 'Tối nay có trận — tiện lợi đông 22h–24h ×1,2, xếp đủ kệ', panel: 'branch', danger: false, priority: 3 });
+  // GĐ1573 — cấp ≥38: nhắc số khách quen còn tặng quà được hôm nay
+  if (level >= REGULAR_GIFT_LEVEL) { const n = giftableCount(REGULARS.filter((r) => r.unlock <= level && (regulars[r.id]?.visits ?? 0) > 0), regulars, level, day, storage); if (n > 0) candidates.push({ icon: '🎁', text: `Còn ${n} khách quen có thể tặng quà hôm nay (+3 thân thiết)`, panel: 'regulars', danger: false, priority: 1 }); }
+  // GĐ1572 → GĐ1579 — máy được tăng phí hôm nay (mưa/cuối tuần/lễ): nhắc chung một dòng
+  { const up = c.furniture ? boostedMachinesToday(c.furniture, level, day, weather) : []; if (up.length) candidates.push({ icon: '🎰', text: `Hôm nay ${up.map((t) => MACHINE_TYPES[t].name.toLowerCase()).join(', ')} thu ×1,5`, panel: 'business', danger: false, priority: 1 }); }
   // GĐ589: ngày cúng — tiệm xôi đông; GĐ599: thợ tự nấu ×1,3 nên chỉ nhắc thêm thợ khi còn thiếu
   const xoiCungAct = tiemXoiCungAction(biz.tiemXoi, day); // GĐ599 → GĐ635
   if (xoiCungAct) candidates.push(xoiCungAct);
@@ -55,7 +64,7 @@ export function buildMorningActions(c: MorningActionsCtx): DayAction[] {
   if (biz.loan && biz.loan.dueDay - day <= 3) candidates.push({ icon: '🏦', text: `Nợ ngân hàng sắp hạn (${Math.max(0, biz.loan.dueDay - day)} ngày)`, panel: 'business', danger: true, priority: 0 });
   // GĐ759 — sinh nhật khách quen: khách đã quen ghé chắc chắn, mua là +3 thân thiết → nhắc nhập món họ thích
   for (const e of birthdayEve(day, level, regulars, haveStock, Object.keys(biz.rival?.poached ?? {}))) candidates.push({ icon: '🎂', text: e.text, panel: 'order', danger: false, priority: 3 }); // GĐ781/793
-  for (const d of birthdaysToday(expected, day)) { const h = birthdayHint(d, haveStock); candidates.push({ icon: '🎂', text: h.text, panel: 'regulars', danger: false, priority: h.priority }); }
+  for (const d of birthdaysToday(expected, day)) { const h = birthdayHint(d, haveStock, level); candidates.push({ icon: '🎂', text: h.text, panel: 'regulars', danger: false, priority: h.priority }); }
   // GĐ747 — nợ khách quen sắp bị xoá (Sổ nợ nằm trong panel Khách quen, không ai mở): nhắc lên Sổ đầu ngày
   const debtAct = debtDayAction(debts, day);
   if (debtAct) candidates.push(debtAct);

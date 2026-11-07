@@ -10,10 +10,13 @@ import { isNight, NIGHT_PRICE_MUL } from '../../data/night';
 import { comboById, maxActiveCombos } from '../../data/combos';
 import { paymentById } from '../../data/payments';
 import { COOKED_PRODUCT_IDS } from '../../data/recipes';
+import { dishPriceMul } from '../../data/dishStars';
+import { REGION_IDS } from '../../data/regionSpecialty';
+import { regionPriceMul, stockedProductIds } from '../../data/regionFlags';
 import { type GameState, type SetState, type GetState, addHour } from '../gameTypes';
 import { copyStock, takeStock } from '../stock';
 import { HOMEGROWN_PREMIUM } from '../../data/garden';
-import { marketClearValue } from '../../data/chophien';
+import { marketClearValue, marketTierQuote, marketTierUnlocked, isMarketTier, MARKET_TIERS } from '../../data/chophien';
 import { itemHealthList, shelfCount } from '../../data/analytics';
 import { revenueFactor } from '../prestige';
 
@@ -68,26 +71,42 @@ export const createSalesSlice = (set: SetState, get: GetState): Pick<GameState, 
     premium = Math.round(premium / 100) * 100;
     const salesToday = { ...s.salesToday };
     const byItem = { ...s.stats.byItem };
+    // GĐ1496 — món nấu bán được cộng lượt ("sao món"): thưởng giá theo sao TRƯỚC lượt này
+    // (sao kiếm từ những lượt bán trước), cộng thẳng vào tiền + doanh thu như premium nhà trồng.
+    const servedCounts = { ...s.servedCounts };
+    // GĐ1505 — bảng hiệu đặc sản 4 miền: bày đủ bộ đặc sản miền thì đặc sản miền đó +2%/+5% giá    const servedCounts = { ...s.servedCounts };
+    const stocked = stockedProductIds(s.furniture);    let starPremium = 0;
     for (const it of items) {
       salesToday[it.id] = (salesToday[it.id] ?? 0) + 1;
       const line = byItem[it.id] ?? { qty: 0, revenue: 0, cost: 0 };
-      byItem[it.id] = { qty: line.qty + 1, revenue: line.revenue + it.price, cost: line.cost + productById(it.id).buy };
+      let itemPremium = 0;
+      if (COOKED_PRODUCT_IDS.has(it.id)) {
+        itemPremium = Math.round(it.price * (dishPriceMul(servedCounts[it.id] ?? 0) - 1));
+        servedCounts[it.id] = (servedCounts[it.id] ?? 0) + 1;
+      }
+      if (REGION_IDS.has(it.id)) {
+        itemPremium += Math.round(it.price * (regionPriceMul(it.id, s.furniture, stocked, s.servedCounts ?? {}) - 1));
+      }
+      starPremium += itemPremium;
+      byItem[it.id] = { qty: line.qty + 1, revenue: line.revenue + it.price + itemPremium, cost: line.cost + productById(it.id).buy };
     }
+    starPremium = Math.round(starPremium / 100) * 100;
     const byMethod = { ...s.stats.byMethod };
     const m = byMethod[payment] ?? { revenue: 0, count: 0 };
     byMethod[payment] = { revenue: m.revenue + total, count: m.count + 1 };
     set({
       salesToday,
+      servedCounts,
       garden: { ...s.garden, homegrown },
-      money: s.money + total - fee + premium,
+      money: s.money + total - fee + premium + starPremium,
       stats: {
-        ...s.stats, revenue: s.stats.revenue + total + premium, itemsSold: s.stats.itemsSold + items.length, byItem,
-        byHour: addHour(s.stats.byHour, s.minutes, 0, total + premium), byMethod,
+        ...s.stats, revenue: s.stats.revenue + total + premium + starPremium, itemsSold: s.stats.itemsSold + items.length, byItem,
+        byHour: addHour(s.stats.byHour, s.minutes, 0, total + premium + starPremium), byMethod,
         fees: (s.stats.fees ?? 0) + fee,
         combos: (s.stats.combos ?? 0) + combos, comboDiscount: (s.stats.comboDiscount ?? 0) + discount,
       },
       totals: {
-        ...s.totals, revenue: s.totals.revenue + total + premium, itemsSold: s.totals.itemsSold + items.length,
+        ...s.totals, revenue: s.totals.revenue + total + premium + starPremium, itemsSold: s.totals.itemsSold + items.length,
         cookedSold: s.totals.cookedSold + items.filter((it) => COOKED_PRODUCT_IDS.has(it.id)).length,
       },
     });
@@ -166,15 +185,22 @@ export const createSalesSlice = (set: SetState, get: GetState): Pick<GameState, 
     return true;
   },
   declineWholesale: () => set({ vendorOffer: null }),
-  sellMarketSurplus: () => {
+  sellMarketSurplus: (opts) => {
     const s = get();
+    const tier = isMarketTier(opts?.tier) ? opts.tier : 'xom';
+    if (!marketTierUnlocked(tier, s.level)) return { ok: false, reason: 'locked' };
     if (s.marketClearedDay === s.day) return { ok: false, reason: 'already' };
     const shelved = shelfCount(s.furniture);
-    const val = marketClearValue({
+    const def = MARKET_TIERS[tier];
+    const raw = marketClearValue({
       day: s.day, storage: s.storage, shelved,
       health: itemHealthList(s.analytics, s.level, s.storage, shelved, s.demand),
+      maxItems: def.maxItems, maxUnits: def.maxUnits,
     });
-    if (!val || val.rows.length === 0) return { ok: false, reason: 'no-surplus' };
+    if (!raw || raw.rows.length === 0) return { ok: false, reason: 'no-surplus' };
+    const q = marketTierQuote(raw, tier, opts?.mult ?? 1);
+    if (q.rows.length === 0) return { ok: false, reason: 'no-surplus' };
+    const val = { rows: q.rows, total: q.net };
     const k = copyStock(s);
     for (const r of val.rows) takeStock(k, r.id, r.qty);
     const byItem = { ...s.stats.byItem };
@@ -193,8 +219,8 @@ export const createSalesSlice = (set: SetState, get: GetState): Pick<GameState, 
       totals: { ...s.totals, revenue: s.totals.revenue + pay, itemsSold: s.totals.itemsSold + units },
     });
     get().addXp(10 + Math.floor(units / 4));
-    s.notify(`🧺 Bán chợ phiên: ${units} món dư, +${formatMoney(pay)}`);
-    return { ok: true, units, pay };
+    s.notify(tier === 'xom' ? `🧺 Bán chợ phiên: ${units} món dư, +${formatMoney(pay)}` : `🧺 Bán ${def.name}: ${units} món, +${formatMoney(pay)} (phí sạp ${formatMoney(q.fee)})`);
+    return { ok: true, units, pay, fee: q.fee };
   },
   toggleCombo: (id) => {
     const s = get();

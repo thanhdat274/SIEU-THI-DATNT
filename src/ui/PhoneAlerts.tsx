@@ -3,6 +3,7 @@ import { formatMoney, productById, fmtMul } from '../data/products';
 import { describeItems, houseById, phoneOrderValue } from '../data/phoneOrders';
 import { phoneNetProfit } from '../data/phoneNet';
 import { fastTipLine } from '../data/fastDeliveryTip';
+import { sortPhoneOrders } from '../data/phoneSort';
 
 /** Điện thoại tiệm: cuộc gọi đang đổ chuông (nghe máy để soạn hàng) và đơn đang mang đi giao. */
 export function PhoneAlerts() {
@@ -15,7 +16,7 @@ export function PhoneAlerts() {
   const restock = useGame((s) => s.restockAndAnswerPhone);
   return (
     <>
-      {orders.map((o) => {
+      {sortPhoneOrders(orders, storage).map((o) => {
         const house = houseById(o.houseId)?.name ?? '';
         if (o.status === 'ringing') {
           const shortCost = Object.entries(o.items).reduce((sum, [id, q]) => sum + Math.max(0, q - (storage[id] ?? 0)) * productById(id).buy, 0);

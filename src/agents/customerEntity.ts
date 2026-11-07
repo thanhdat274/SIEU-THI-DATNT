@@ -106,7 +106,11 @@ export function reviewStars(missCount: number, waitedMinutes: number, patience: 
   return Math.max(1, Math.min(5, 5 - missCount - (waitedMinutes > patience / 2 ? 1 : 0)));
 }
 
-export type State = 'walkBy' | 'toShop' | 'shopping' | 'toQueue' | 'queued' | 'leaving';
+export type State =
+  | 'walkBy' | 'toShop' | 'shopping' | 'toQueue' | 'queued'
+  // GĐ1491 — ăn tại chỗ: đi tới ghế ('toSeat') rồi ngồi ăn ('dining') sau khi đã trả tiền
+  | 'toSeat' | 'dining'
+  | 'leaving';
 
 const pick = <T,>(list: T[]) => list[Math.floor(simRng()() * list.length)];
 
@@ -145,6 +149,10 @@ export class Customer extends Walker {
   deal?: Deal | 'waiting';
   /** Khách tới dùng dịch vụ ở quầy (nạp tiền, thu hộ): tiền lời của lượt này. */
   service?: { def: ServiceDef; amount: number; fee: number };
+  /** GĐ1491 — chỗ ngồi ăn tại chỗ đang giữ (null/undefined = không ăn tại chỗ). */
+  seat?: { tableUid: number; chairUid: number };
+  /** GĐ1492 — số giây game đã đứng chờ ghế trống (mất kiên nhẫn → tip nửa, quá mốc thì bỏ về). */
+  diningWait = 0;
 
   constructor(startX: number, regular: RegularDef | null = null, profession: ProfessionDef | null = null) {
     const look = regular?.look;

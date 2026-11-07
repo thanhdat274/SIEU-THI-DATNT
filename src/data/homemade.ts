@@ -20,6 +20,18 @@ export const HOMEMADE_PRODUCTS: { id: string; name: string; category: Category; 
   // GĐ1321: mở rộng nguồn cung hàng xóm (hướng 3) — tương ớt quê tự làm, biên 40%, mở 36 sau mốc golden 30 → sim không đổi.
   // Khớp bất biến GĐ1083: đặc sản mở ≥30 phải sell ≥50k & biên ≥35%.
   { id: 'hx_tuong_ot', name: 'Tương ớt quê (chai)', category: 'dry', buy: 30000, sell: 50000, color: 0xd63031, unlock: 36 },
+  // GĐ1439: chà bông heo nhà làm (hướng 3) — sell ≥50k, biên ~35% (bất biến GĐ1083), mở 46; lối ra: Xôi chà bông.
+  { id: 'hx_cha_bong', name: 'Chà bông heo nhà làm (hũ)', category: 'dry', buy: 55000, sell: 85000, color: 0xc89058, unlock: 46 },
+  // GĐ1445: chanh muối hũ (hướng 3) — sell ≥50k, biên 36%, mở 40; lối ra: Nước chanh muối ở quán nước.
+  { id: 'hx_chanh_muoi', name: 'Chanh muối nhà làm (hũ)', category: 'dry', buy: 32000, sell: 50000, color: 0xd9c94a, unlock: 40 },
+  // GĐ1483: tôm khô nhà phơi (hướng 3) — sell ≥50k, biên ~36% (bất biến GĐ1083), mở 52 > golden 30; lối ra: Cháo tôm khô (nồi nước).
+  { id: 'hx_tom_kho', name: 'Tôm khô nhà phơi (gói)', category: 'dry', buy: 58000, sell: 90000, color: 0xe0703a, unlock: 52 },
+  // GĐ1484: măng khô nhà phơi (hướng 3) — sell ≥50k, biên ~36%, mở 53 > golden 30; lối ra: Măng khô xào lạp xưởng (chảo chiên).
+  { id: 'hx_mang_kho', name: 'Măng khô nhà phơi (gói)', category: 'dry', buy: 45000, sell: 70000, color: 0xb08a4a, unlock: 53 },
+  // GĐ1485: nấm mèo khô nhà phơi (hướng 3) — sell ≥50k, biên ~36%, mở 54 > golden 30; lối ra: Chả giò nấm mèo (chảo chiên).
+  { id: 'hx_nam_meo', name: 'Nấm mèo khô nhà phơi (gói)', category: 'dry', buy: 35000, sell: 55000, color: 0x3a2a22, unlock: 54 },
+  // GĐ1486: mè rang nhà làm (hướng 3) — sell ≥50k, biên ~36%, mở 55 > golden 30; lối ra: Xôi muối mè (bếp xôi cơm).
+  { id: 'hx_me_rang', name: 'Mè rang nhà làm (hũ)', category: 'dry', buy: 32000, sell: 50000, color: 0xe8d6a0, unlock: 55 },
 ];
 
 /**
@@ -34,6 +46,16 @@ export const NEIGHBOR2_PRODUCTS: { id: string; name: string; category: Category;
   { id: 'hx_banh_da', name: 'Bánh đa (bì)', category: 'dry', buy: 14000, sell: 22000, color: 0xd9b36a, unlock: 38 },
   // GĐ1321: mở rộng đặc sản bà Tám (hướng 3) — bánh cuốn tay, biên ~1.65× như chuẩn, mở 40 sau mốc golden 30 → sim không đổi.
   { id: 'hx_banh_cuon', name: 'Bánh cuốn nhà làm (đĩa)', category: 'fresh', buy: 20000, sell: 33000, color: 0xf0e6d2, unlock: 40 },
+  // GĐ1438: lạp xưởng tươi nhà bà Tám (hướng 3) — biên ~1.65×, mở 44 > golden 30; lối ra: Cơm chiên lạp xưởng (chảo chiên).
+  { id: 'hx_lap_xuong', name: 'Lạp xưởng tươi bà Tám', category: 'cold', buy: 48000, sell: 79000, color: 0xb8323a, unlock: 44 },
+  // GĐ1444: giò thủ bà Tám (hướng 3) — biên ~1.6×, mở 48; lối ra: Bánh mì giò thủ ở bếp nướng.
+  { id: 'hx_gio_thu', name: 'Giò thủ bà Tám (khoanh)', category: 'cold', buy: 60000, sell: 96000, color: 0xd8c0a0, unlock: 48 },
+  // GĐ1446: me chua dầm đường bà Tám (hướng 3) — mở 42; lối ra: Đá me ở quán nước.
+  { id: 'hx_me_dam', name: 'Me dầm đường bà Tám (hũ)', category: 'dry', buy: 26000, sell: 42000, color: 0x8a5a2b, unlock: 42 },
+  // GĐ1487: nem nướng bà Tám (hướng 3) — biên ~1.6×, mở 56; lối ra: Nem nướng cuốn (bếp nướng).
+  { id: 'hx_nem_nuong', name: 'Nem nướng bà Tám (xâu)', category: 'cold', buy: 50000, sell: 80000, color: 0xc0603a, unlock: 56 },
+  // GĐ1488: cá cơm khô bà Tám (hướng 3) — biên ~1.6×, mở 57; lối ra: Cơm cá cơm rim (bếp xôi cơm).
+  { id: 'hx_ca_kho', name: 'Cá cơm khô bà Tám (gói)', category: 'dry', buy: 40000, sell: 64000, color: 0xc8a070, unlock: 57 },
 ];
 
 export const HOMEMADE_IDS: ReadonlySet<string> = new Set(HOMEMADE_PRODUCTS.map((h) => h.id));

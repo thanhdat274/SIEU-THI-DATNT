@@ -1,0 +1,493 @@
+{
+ "updated": 1793555108.338937,
+ "modules": {
+  "animals": {
+   "file": "animals.glb",
+   "built_at": 1793555108.334007,
+   "count": 10,
+   "tris": 7996,
+   "errors": 0,
+   "warnings": 0
+  },
+  "ao_ben": {
+   "file": "ao_ben.glb",
+   "built_at": 1793245183.2560582,
+   "count": 3,
+   "tris": 17160,
+   "errors": 0,
+   "warnings": 0
+  },
+  "buildings_misc": {
+   "file": "buildings_misc.glb",
+   "built_at": 1792217634.739006,
+   "count": 12,
+   "tris": 22416,
+   "errors": 0,
+   "warnings": 0
+  },
+  "c1_crops": {
+   "file": "c1_crops.glb",
+   "built_at": 1792477830.572735,
+   "count": 32,
+   "tris": 17612,
+   "errors": 0,
+   "warnings": 0
+  },
+  "c1_trees": {
+   "file": "c1_trees.glb",
+   "built_at": 1792486880.221345,
+   "count": 42,
+   "tris": 21610,
+   "errors": 0,
+   "warnings": 0
+  },
+  "c1_xuong": {
+   "file": "c1_xuong.glb",
+   "built_at": 1792486882.4512281,
+   "count": 1,
+   "tris": 3078,
+   "errors": 0,
+   "warnings": 0
+  },
+  "c2_crops": {
+   "file": "c2_crops.glb",
+   "built_at": 1792494254.9053752,
+   "count": 20,
+   "tris": 10638,
+   "errors": 0,
+   "warnings": 0
+  },
+  "c2_rare": {
+   "file": "c2_rare.glb",
+   "built_at": 1792515242.199553,
+   "count": 26,
+   "tris": 22963,
+   "errors": 0,
+   "warnings": 0
+  },
+  "c2_trees": {
+   "file": "c2_trees.glb",
+   "built_at": 1792491356.4064019,
+   "count": 36,
+   "tris": 17444,
+   "errors": 0,
+   "warnings": 0
+  },
+  "c2_xuong": {
+   "file": "c2_xuong.glb",
+   "built_at": 1792488423.6257362,
+   "count": 1,
+   "tris": 3796,
+   "errors": 0,
+   "warnings": 0
+  },
+  "c3_crops": {
+   "file": "c3_crops.glb",
+   "built_at": 1792487102.395009,
+   "count": 36,
+   "tris": 17411,
+   "errors": 0,
+   "warnings": 0
+  },
+  "c3_rare": {
+   "file": "c3_rare.glb",
+   "built_at": 1792511056.8880694,
+   "count": 6,
+   "tris": 4080,
+   "errors": 0,
+   "warnings": 0
+  },
+  "c3_trees": {
+   "file": "c3_trees.glb",
+   "built_at": 1792506843.5928805,
+   "count": 30,
+   "tris": 14862,
+   "errors": 0,
+   "warnings": 0
+  },
+  "c3_xuong": {
+   "file": "c3_xuong.glb",
+   "built_at": 1792507056.3767097,
+   "count": 1,
+   "tris": 4372,
+   "errors": 0,
+   "warnings": 0
+  },
+  "c4_crops": {
+   "file": "c4_crops.glb",
+   "built_at": 1792529533.9964733,
+   "count": 40,
+   "tris": 28786,
+   "errors": 0,
+   "warnings": 0
+  },
+  "c4_rare": {
+   "file": "c4_rare.glb",
+   "built_at": 1792514355.5098572,
+   "count": 28,
+   "tris": 19138,
+   "errors": 0,
+   "warnings": 0
+  },
+  "c4_trees": {
+   "file": "c4_trees.glb",
+   "built_at": 1792513357.317931,
+   "count": 12,
+   "tris": 12574,
+   "errors": 0,
+   "warnings": 0
+  },
+  "cau_canh": {
+   "file": "cau_canh.glb",
+   "built_at": 1793097734.556407,
+   "count": 7,
+   "tris": 6378,
+   "errors": 0,
+   "warnings": 3
+  },
+  "characters": {
+   "file": "characters.glb",
+   "built_at": 1791364832.5760572,
+   "count": 4,
+   "tris": 9988,
+   "errors": 0,
+   "warnings": 0
+  },
+  "critters": {
+   "file": "critters.glb",
+   "built_at": 1790778430.699393,
+   "count": 9,
+   "tris": 1956,
+   "errors": 0,
+   "warnings": 0
+  },
+  "crops_a": {
+   "file": "crops_a.glb",
+   "built_at": 1792402529.101237,
+   "count": 52,
+   "tris": 18298,
+   "errors": 0,
+   "warnings": 11
+  },
+  "crops_b": {
+   "file": "crops_b.glb",
+   "built_at": 1792402531.916583,
+   "count": 48,
+   "tris": 27460,
+   "errors": 0,
+   "warnings": 2
+  },
+  "crops_c": {
+   "file": "crops_c.glb",
+   "built_at": 1792402534.2497218,
+   "count": 16,
+   "tris": 11874,
+   "errors": 0,
+   "warnings": 0
+  },
+  "decor_a": {
+   "file": "decor_a.glb",
+   "built_at": 1792213252.524519,
+   "count": 16,
+   "tris": 5863,
+   "errors": 0,
+   "warnings": 0
+  },
+  "decor_b": {
+   "file": "decor_b.glb",
+   "built_at": 1791523327.167058,
+   "count": 13,
+   "tris": 6708,
+   "errors": 0,
+   "warnings": 0
+  },
+  "decor_bien": {
+   "file": "decor_bien.glb",
+   "built_at": 1792062796.5756621,
+   "count": 7,
+   "tris": 3056,
+   "errors": 0,
+   "warnings": 0
+  },
+  "decor_chuot_ti": {
+   "file": "decor_chuot_ti.glb",
+   "built_at": 1792061938.345654,
+   "count": 5,
+   "tris": 2531,
+   "errors": 0,
+   "warnings": 0
+  },
+  "decor_hoa_dang": {
+   "file": "decor_hoa_dang.glb",
+   "built_at": 1792062796.7416,
+   "count": 8,
+   "tris": 4109,
+   "errors": 0,
+   "warnings": 0
+  },
+  "decor_moc_cap": {
+   "file": "decor_moc_cap.glb",
+   "built_at": 1792515885.4420753,
+   "count": 8,
+   "tris": 13498,
+   "errors": 0,
+   "warnings": 0
+  },
+  "decor_mua_gat": {
+   "file": "decor_mua_gat.glb",
+   "built_at": 1792061938.1700401,
+   "count": 5,
+   "tris": 2426,
+   "errors": 0,
+   "warnings": 0
+  },
+  "decor_tay_bac": {
+   "file": "decor_tay_bac.glb",
+   "built_at": 1792061937.818156,
+   "count": 6,
+   "tris": 3471,
+   "errors": 0,
+   "warnings": 0
+  },
+  "decor_tet": {
+   "file": "decor_tet.glb",
+   "built_at": 1792061937.9742951,
+   "count": 8,
+   "tris": 4505,
+   "errors": 0,
+   "warnings": 0
+  },
+  "decor_tra_chieu": {
+   "file": "decor_tra_chieu.glb",
+   "built_at": 1792062127.980743,
+   "count": 8,
+   "tris": 4186,
+   "errors": 0,
+   "warnings": 0
+  },
+  "decor_trung_thu": {
+   "file": "decor_trung_thu.glb",
+   "built_at": 1792217636.205051,
+   "count": 8,
+   "tris": 5054,
+   "errors": 0,
+   "warnings": 0
+  },
+  "decor_tuoi_tho": {
+   "file": "decor_tuoi_tho.glb",
+   "built_at": 1792217634.812775,
+   "count": 7,
+   "tris": 2400,
+   "errors": 0,
+   "warnings": 0
+  },
+  "decor_vung": {
+   "file": "decor_vung.glb",
+   "built_at": 1792061937.699112,
+   "count": 4,
+   "tris": 2483,
+   "errors": 0,
+   "warnings": 0
+  },
+  "dog_hats": {
+   "file": "dog_hats.glb",
+   "built_at": 1792032547.40113,
+   "count": 3,
+   "tris": 804,
+   "errors": 0,
+   "warnings": 0
+  },
+  "dogs_canh": {
+   "file": "dogs_canh.glb",
+   "built_at": 1792072902.924534,
+   "count": 10,
+   "tris": 8283,
+   "errors": 0,
+   "warnings": 0
+  },
+  "factories_a": {
+   "file": "factories_a.glb",
+   "built_at": 1792217635.203635,
+   "count": 8,
+   "tris": 16090,
+   "errors": 0,
+   "warnings": 0
+  },
+  "factories_b": {
+   "file": "factories_b.glb",
+   "built_at": 1792217636.094444,
+   "count": 7,
+   "tris": 28658,
+   "errors": 0,
+   "warnings": 0
+  },
+  "fields": {
+   "file": "fields.glb",
+   "built_at": 1792479429.0789092,
+   "count": 25,
+   "tris": 4920,
+   "errors": 0,
+   "warnings": 0
+  },
+  "fishing": {
+   "file": "fishing.glb",
+   "built_at": 1793441920.997479,
+   "count": 24,
+   "tris": 25749,
+   "errors": 0,
+   "warnings": 0
+  },
+  "flora": {
+   "file": "flora.glb",
+   "built_at": 1791481283.5062468,
+   "count": 92,
+   "tris": 11357,
+   "errors": 0,
+   "warnings": 0
+  },
+  "greenhouse": {
+   "file": "greenhouse.glb",
+   "built_at": 1792496488.5330524,
+   "count": 1,
+   "tris": 3576,
+   "errors": 0,
+   "warnings": 0
+  },
+  "house_yard": {
+   "file": "house_yard.glb",
+   "built_at": 1792473565.296936,
+   "count": 5,
+   "tris": 6592,
+   "errors": 0,
+   "warnings": 0
+  },
+  "houses_bac": {
+   "file": "houses_bac.glb",
+   "built_at": 1791484154.0229099,
+   "count": 6,
+   "tris": 16610,
+   "errors": 0,
+   "warnings": 0
+  },
+  "houses_nam": {
+   "file": "houses_nam.glb",
+   "built_at": 1791484396.143147,
+   "count": 8,
+   "tris": 30894,
+   "errors": 0,
+   "warnings": 0
+  },
+  "houses_trung": {
+   "file": "houses_trung.glb",
+   "built_at": 1791484433.795879,
+   "count": 6,
+   "tris": 17550,
+   "errors": 0,
+   "warnings": 0
+  },
+  "houses_v2_bac": {
+   "file": "houses_v2_bac.glb",
+   "built_at": 1792472990.122043,
+   "count": 5,
+   "tris": 11692,
+   "errors": 0,
+   "warnings": 0
+  },
+  "houses_v2_nam": {
+   "file": "houses_v2_nam.glb",
+   "built_at": 1792473046.008377,
+   "count": 5,
+   "tris": 11746,
+   "errors": 0,
+   "warnings": 0
+  },
+  "houses_v2_trung": {
+   "file": "houses_v2_trung.glb",
+   "built_at": 1792473029.300673,
+   "count": 5,
+   "tris": 11896,
+   "errors": 0,
+   "warnings": 0
+  },
+  "obstacles": {
+   "file": "obstacles.glb",
+   "built_at": 1792124974.492539,
+   "count": 17,
+   "tris": 8437,
+   "errors": 0,
+   "warnings": 0
+  },
+  "pen_keeper": {
+   "file": "pen_keeper.glb",
+   "built_at": 1792130466.835204,
+   "count": 2,
+   "tris": 3330,
+   "errors": 0,
+   "warnings": 0
+  },
+  "pens": {
+   "file": "pens.glb",
+   "built_at": 1791482817.835078,
+   "count": 18,
+   "tris": 24164,
+   "errors": 0,
+   "warnings": 0
+  },
+  "plaques": {
+   "file": "plaques.glb",
+   "built_at": 1792064600.4127636,
+   "count": 6,
+   "tris": 3528,
+   "errors": 0,
+   "warnings": 0
+  },
+  "plow_tractor": {
+   "file": "plow_tractor.glb",
+   "built_at": 1792568378.5753827,
+   "count": 1,
+   "tris": 1764,
+   "errors": 0,
+   "warnings": 0
+  },
+  "province_fx": {
+   "file": "province_fx.glb",
+   "built_at": 1792130450.160064,
+   "count": 2,
+   "tris": 478,
+   "errors": 0,
+   "warnings": 0
+  },
+  "storage_gen": {
+   "file": "storage_gen.glb",
+   "built_at": 1792471862.484719,
+   "count": 8,
+   "tris": 14000,
+   "errors": 0,
+   "warnings": 0
+  },
+  "stubble": {
+   "file": "stubble.glb",
+   "built_at": 1790542145.694338,
+   "count": 8,
+   "tris": 1350,
+   "errors": 0,
+   "warnings": 0
+  },
+  "thao_qua": {
+   "file": "thao_qua.glb",
+   "built_at": 1793084848.300614,
+   "count": 1,
+   "tris": 1756,
+   "errors": 0,
+   "warnings": 0
+  },
+  "trees_fruit": {
+   "file": "trees_fruit.glb",
+   "built_at": 1792402539.0670998,
+   "count": 132,
+   "tris": 68036,
+   "errors": 0,
+   "warnings": 0
+  }
+ }
+}

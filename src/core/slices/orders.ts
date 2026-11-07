@@ -1,4 +1,6 @@
+import { starBoostBlock, STAR_BOOST_ITEM, STAR_BOOST_SERVED } from '../../data/dishStars';
 import { furnitureDef, isCookStation } from '../../data/furniture';
+import { masteredDuration, masteryTier, masteryCut, MASTERY_NAMES, MASTERY_UNLOCK } from '../../data/cookMastery';
 import { formatMoney, productById } from '../../data/products';
 import type { Lot } from '../../data/freshness';
 import { regularById, regularFriendship } from '../../data/regulars';
@@ -89,12 +91,27 @@ export const updatePhones = (set: SetState, get: GetState) => {
   }
 };
 
-export const createOrdersSlice = (set: SetState, get: GetState): Pick<GameState, 'acceptOrder' | 'startCook' | 'declineOrder' | 'answerPhone' | 'restockAndAnswerPhone' | 'declinePhone' | 'deliverPhone' | 'deliverOrder' | 'rushDeliverOrder' | 'communitySale' | 'acceptContract' | 'commitContract' | 'releaseContract' | 'deliverContract'> => ({
+export const createOrdersSlice = (set: SetState, get: GetState): Pick<GameState, 'acceptOrder' | 'startCook' | 'boostDishStar' | 'declineOrder' | 'answerPhone' | 'restockAndAnswerPhone' | 'declinePhone' | 'deliverPhone' | 'deliverOrder' | 'rushDeliverOrder' | 'communitySale' | 'acceptContract' | 'commitContract' | 'releaseContract' | 'deliverContract'> => ({
   acceptOrder: () => {
     const s = get();
     if (!s.order) return;
     set({ order: { ...s.order, accepted: true } });
     s.notify(`📋 Đã nhận đơn, giao trước hết ngày ${s.order.dueDay}`);
+  },
+  boostDishStar: (productId) => {
+    const s = get();
+    const served = s.servedCounts[productId] ?? 0;
+    const why = starBoostBlock(s.level, served, s.storage[STAR_BOOST_ITEM] ?? 0);
+    if (why) {
+      if (why === 'no-item') s.notify(`Cần 1 ${productById(STAR_BOOST_ITEM).name} trong kho để nâng sao món`);
+      if (why === 'maxed') s.notify('Món đã 3★ rồi');
+      return false;
+    }
+    const k = copyStock(s);
+    takeStock(k, STAR_BOOST_ITEM, 1);
+    set({ ...k, servedCounts: { ...s.servedCounts, [productId]: served + STAR_BOOST_SERVED } });
+    s.notify(`✨ ${productById(productId).name} +${STAR_BOOST_SERVED} lượt bán về phía sao kế`);
+    return true;
   },
   startCook: (recipeId) => {
     const s = get();
@@ -141,8 +158,12 @@ export const createOrdersSlice = (set: SetState, get: GetState): Pick<GameState,
       }
     }
     const id = Math.max(0, ...s.cookJobs.map((j) => j.id)) + 1;
-    set({ ...k, garden: { ...s.garden, homegrown }, cookJobs: [...s.cookJobs, { id, recipeId, remaining: r.durationMin, total: r.durationMin }] });
-    s.notify(`🍳 Đang nấu ${r.name} (${r.durationMin} phút) — nguyên liệu đã trừ kho, nấu xong tự vào kho`);
+    const done = s.cookMastery?.[recipeId] ?? 0;
+    const dur = masteredDuration(r.durationMin, done, s.level);
+    const tierBefore = masteryTier(done), tierAfter = masteryTier(done + 1);
+    set({ ...k, garden: { ...s.garden, homegrown }, cookMastery: { ...(s.cookMastery ?? {}), [recipeId]: done + 1 }, cookJobs: [...s.cookJobs, { id, recipeId, remaining: dur, total: dur }] });
+    s.notify(`🍳 Đang nấu ${r.name} (${dur} phút) — nguyên liệu đã trừ kho, nấu xong tự vào kho`);
+    if (s.level >= MASTERY_UNLOCK && tierAfter > tierBefore) s.notify(`${MASTERY_NAMES[tierAfter]} món ${r.name}! Mẻ sau nấu nhanh hơn ${Math.round(masteryCut(done + 1, s.level) * 100)}%`);
     return true;
   },
   declineOrder: () => set({ order: null }),

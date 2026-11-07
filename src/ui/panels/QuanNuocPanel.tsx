@@ -1,3 +1,4 @@
+import { trendMark } from '../trendMark';
 import type * as React from 'react';
 import { useGame } from '../../core/store';
 import { formatMoney, fmtMul } from '../../data/products';
@@ -185,7 +186,7 @@ export function QuanNuocPanel() {
               <b>🧾 Hôm qua: {last.served}/{last.wanted} ly · doanh thu {formatMoney(last.revenue)}</b>
               {last.wages !== undefined && last.profit !== undefined && (
                 <div style={{ fontSize: 12, marginTop: 4 }}>
-                  lương −{formatMoney(last.wages)} · lời ròng <b style={{ color: last.profit >= 0 ? '#2ecc71' : '#e74c3c' }}>{formatMoney(last.profit)}</b>
+                  lương −{formatMoney(last.wages)} · lời ròng <b style={{ color: last.profit >= 0 ? '#2ecc71' : '#e74c3c' }}>{trendMark(last.profit)}{formatMoney(last.profit)}</b>
                 </div>
               )}
               {last.event === 'brewer' && (

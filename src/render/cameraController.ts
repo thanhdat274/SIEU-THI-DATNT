@@ -146,6 +146,13 @@ export class CameraController {
     this.target.z = THREE.MathUtils.clamp(this.target.z, -this.bounds, this.bounds);
   }
 
+  /** Playtest P2 T9: dịch chuyển xa (Ra tiệm / Ra trại) — camera nhảy thẳng tới chỗ mới, không lia ngang qua cảnh. */
+  snapTo(v: THREE.Vector3) {
+    this.follow = v;
+    this.target.copy(v);
+    this.inertiaX = this.inertiaZ = 0;
+  }
+
   update(dt: number) {
     if (this.follow) this.target.lerp(this.follow, Math.min(1, dt * 6));
     // Quán tính kéo camera bằng cảm ứng: tiếp đà rồi tắt dần; dừng khi đang kéo/chụm

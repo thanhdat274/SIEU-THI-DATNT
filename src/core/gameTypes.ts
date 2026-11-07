@@ -1,5 +1,6 @@
 /** Kiểu dữ liệu, hằng số và hàm nhỏ của trạng thái game (useGame ghép ở store.ts). */
 import type { FurnitureType } from '../data/furniture';
+import type { MarketTier } from '../data/chophien';
 import { warehouseTier } from '../data/warehouse';
 import type { QuestLog, Totals } from '../data/quests';
 import { casesFor } from '../data/products';
@@ -93,6 +94,8 @@ export interface Furniture {
   wear?: number;
   /** Hỏng: khách không lấy được hàng cho tới khi sửa. */
   broken?: boolean;
+  /** Đang "dùng thử": đặt xem chưa trả tiền; thoát chế độ xây thì tự dỡ (không lưu vào save). */
+  trial?: boolean;
   tiers: Tier[];
 }
 
@@ -112,7 +115,7 @@ export interface CookJob {
 }
 
 export type Panel =
-  | { type: 'order' }
+  | { type: 'order'; autofill?: boolean } // GĐ1512: autofill = mở từ nút 'Nhập đủ' trên toast → tự điền gợi ý
   | { type: 'shelf'; uid: number }
   | { type: 'build' }
   | { type: 'arrange' }
@@ -153,6 +156,8 @@ export interface Placing {
   type: FurnitureType;
   rot: number;
   movingUid?: number;
+  /** 'stash' = lấy từ kho đồ (đặt miễn phí); 'trial' = đặt dùng thử (chưa trả tiền). */
+  source?: 'stash' | 'trial';
 }
 
 export interface GameState {
@@ -181,6 +186,8 @@ export interface GameState {
   /** Các lô trong kho của từng món (khớp `storage`). */
   storageLots: Record<string, Lot[]>;
   furniture: Furniture[];
+  /** Kho đồ nội thất đã cất (loại đồ → số cái). Cất kho không mất tiền như bán. */
+  furnStash: Record<string, number>;
   /** Quầy chính đã dời tới đâu (toạ độ trong tiệm); null = chỗ mặc định. */
   mainCounter: { x: number; z: number; rot: number } | null;
   /** Số món đã bán ra của từng kệ/tủ (khóa là uid) — heatmap vị trí: kệ dễ thấy bán nhiều hơn. */
@@ -189,6 +196,12 @@ export interface GameState {
   shelfProfit: Record<number, { profit: number; since: number }>;
   /** Đã nhắc người chơi về hàng chớp nhoáng cạnh quầy (chỉ nhắc một lần). */
   impulseHinted: boolean;
+  /** GĐ1502 — đã dạy một lần "mua thêm bàn ghế" khi khách bỏ về vì hết chỗ ngồi khu ăn tại chỗ. */
+  dineSeatHinted: boolean;
+  /** GĐ1503 — đã xem tour HUD khoanh vùng (ngày đầu, sau hướng dẫn). */
+  hudTourDone: boolean;
+  /** GĐ1503 — chốt cờ đã xem tour HUD. */
+  markHudTourDone: () => void;
   /** Giá bán người chơi tự đặt; không có thì dùng giá gợi ý. */
   prices: Record<string, number>;
   /** Giờ vàng tự đặt: khung 2 tiếng giảm giá kéo khách về (null = tắt). */
@@ -255,6 +268,8 @@ export interface GameState {
   salesToday: Record<string, number>;
   /** Món đã bán được cả ván (Sổ tay Tiệm GĐ36): id → số món bán ra, để đếm 'đã khám phá X/Y món'. */
   soldEver: Record<string, number>;
+  /** GĐ1496 — số lượt bán mỗi món nấu cả ván: id món nấu → lượt, quyết định sao món + đồ đựng. */
+  servedCounts: Record<string, number>;
   /** Số lần mỗi combo kích hoạt ở quầy cả ván (GĐ44) — để xoay combo hoạt động kém. */
   comboHitCount: Record<string, number>;
   /** Thân thiết với từng khách quen. */
@@ -318,12 +333,18 @@ export interface GameState {
   collectDebtPartial: (regularId: string) => number;
   remindDebt: (regularId: string) => void;
   forgiveDebt: (regularId: string) => void;
+  /** GĐ1557 — tặng 1 món khách thích từ kho, +3 thân thiết, 1 lần/ngày/khách (cấp ≥38). */
+  giftRegular: (regularId: string) => boolean;
   /** Người bán rong đang chờ ở tiệm xin lấy sỉ (null = không có). */
   vendorOffer: VendorOffer | null;
   /** Ngày người bán rong đã ghé gần nhất (mỗi ngày tối đa một lần). */
   vendorDay: number;
   /** Ngày đã bán chợ phiên gần nhất (chặn bán lại cùng một ngày chợ). */
   marketClearedDay: number;
+  /** GĐ1520: ngày lì xì nhân viên gần nhất (0 = chưa). */
+  lixiDay: number;
+  /** GĐ1522: số mẻ đã nấu theo công thức (thông thạo món). */
+  cookMastery: Record<string, number>;
   /** Bản ghi lần bán chợ phiên gần nhất (để tổng kết cuối ngày). */
   marketLast: { day: number; units: number; revenue: number };
   /** Người bán rong vào tới quầy: đưa đề nghị lấy sỉ. */
@@ -331,7 +352,7 @@ export interface GameState {
   acceptWholesale: (rush?: boolean) => boolean;
   declineWholesale: () => void;
   /** Bán chợ phiên: xả hàng DƯ định kỳ, một lần mỗi ngày chợ. */
-  sellMarketSurplus: () => { ok: boolean; reason?: 'already' | 'no-surplus'; units?: number; pay?: number };
+  sellMarketSurplus: (opts?: { tier?: MarketTier; mult?: number }) => { ok: boolean; reason?: 'already' | 'no-surplus' | 'locked'; units?: number; pay?: number; fee?: number };
   /** Đơn khách gọi điện hôm nay (đang đổ chuông hoặc đang mang đi giao). */
   phoneOrders: PhoneOrder[];
   /** Số khung giờ gọi điện hôm nay đã xét (chỉ số tiếp theo trong PHONE_SLOTS). */
@@ -353,6 +374,8 @@ export interface GameState {
   cookJobs: CookJob[];
   /** Bắt đầu một mẻ: trừ nguyên liệu khỏi kho (lô cận hạn trước), trả false nếu chưa đủ điều kiện. */
   startCook: (recipeId: string) => boolean;
+  /** GĐ1526: dùng 1 tổ yến nâng lượt bán của món về phía sao kế. */
+  boostDishStar: (productId: string) => boolean;
   /** Hợp đồng cung cấp đang giữ (khách sỉ / đơn buôn dài hạn). */
   contracts: Record<string, ContractState>;
   acceptContract: (id: string) => void;
@@ -380,6 +403,8 @@ export interface GameState {
   lastSeenAt: number;
   /** Soát thưởng "Chào mừng quay lại" khi nạp bản lưu: đủ 2 ngày thật vắng thì thưởng một lần; luôn làm mới lastSeenAt. */
   checkWelcomeBack: () => number;
+  /** GĐ1497 — tính thu nhập khi vắng mặt (khu ăn tại chỗ chạy chậm): trả kết quả, cộng tiền khi gain > 0. */
+  collectOfflineRevenue: () => { gain: number; customers: number; minutesCounted: number; reason: string | null };
   /** GĐ64 — đóng vĩnh viễn banner "Mới mở: …" (ghi id vào biz.unlockActs). Là thao tác để hẻm online chạy trên máy chạy — không ghi đè cả `biz`. */
   dismissUnlockAct: (id: string) => void;
   /** Điểm danh hôm nay; trả false nếu đã nhận rồi. */
@@ -468,6 +493,16 @@ export interface GameState {
   moveFurniture: (uid: number, x: number, z: number, rot: number) => void;
   moveMainCounter: (x: number, z: number, rot: number) => void;
   sellFurniture: (uid: number) => void;
+  /** Cất món đồ vào kho đồ (hàng trên kệ về kho hàng), đặt lại sau miễn phí. */
+  stashFurniture: (uid: number) => void;
+  /** Lấy một món từ kho đồ ra đặt. */
+  placeFromStash: (type: FurnitureType, x: number, z: number, rot: number) => boolean;
+  /** Đặt dùng thử (chưa trả tiền). */
+  placeTrial: (type: FurnitureType, x: number, z: number, rot: number) => boolean;
+  /** Mua hết các món đang dùng thử (đủ tiền mới mua). */
+  buyTrials: () => boolean;
+  /** Dỡ hết các món đang dùng thử. */
+  dropTrials: () => void;
   /** Bán hết nội thất (đập đi làm lại). */
   demolishAll: () => void;
   buyUpgrade: () => void;
@@ -511,6 +546,7 @@ export interface GameState {
   denyStaffRest: (id: number, bump?: number) => void;
   /** Đào tạo nhân viên: tốn tiền, cộng kinh nghiệm, mỗi người một buổi mỗi ngày. */
   trainStaff: (id: number) => void;
+  giveLixi: () => void;
   /** Thăng chức nhân viên tiệm chính (thu ngân → trưởng quầy → quản lý). */
   promoteStaff: (id: number) => void;
   /** Thăng chức nhân viên chi nhánh. */

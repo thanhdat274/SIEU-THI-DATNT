@@ -1,0 +1,24 @@
+
+Tặng quà, trao đổi & lì xì — Cẩm nang HappyTown
+HappyTown › Cẩm nang người chơi › Tặng quà, trao đổi & lì xì
+Tặng quà, trao đổi & lì xì
+Cập nhật 14/10/2026 · 476 từ
+Ba cách chuyển xu và vật phẩm giữa người chơi với nhau, tất cả đi qua máy chủ chơi chung nên cần tài khoản trực tuyến: tặng quà cho bạn bè, trao đổi đồ khi cả hai cùng online, và bàn lì xì chia xu ngẫu nhiên cho mọi người. Mở bảng Người chơi (nút 👥) để dùng cả ba.
+🎁 Tặng quà
+Chỉ tặng được cho bạn bè. Kết bạn trong tab Đang online hoặc nhập tên đăng nhập ở tab Bạn bè.
+Mỗi lần tặng tối đa 1.000.000 xu, mỗi ngày tối đa 1.000.000 xu (tính chung với lì xì) và 30 lần tặng. Vật phẩm trong kho tặng được không giới hạn giá trị.
+Quà nằm ở máy chủ tới khi người nhận bấm Nhận trong tab Quà; bạn offline vẫn nhận được lần sau.
+Xu bị trừ ngay lúc gửi. Quà chưa nhận không lấy lại được, nên kiểm tra kỹ tên trước khi tặng.
+🔄 Trao đổi đồ
+Cả hai phải cùng online. Bấm Đổi đồ cạnh tên người đó trong tab Đang online hoặc Bạn bè.
+Mỗi bên chọn xu (tối đa 1.000.000) và vật phẩm muốn đưa, rồi bấm Sẵn sàng. Ai sửa lại đồ thì cả hai phải bấm Sẵn sàng lần nữa.
+Đủ hai bên sẵn sàng thì máy chủ chốt và đổi ngay, không bên nào giữ được đồ của bên kia mà không trả.
+Xu và đồ bạn đưa vào phiên đổi được tạm giữ; đóng trang giữa chừng hay mất mạng thì phiên huỷ và đồ trả về kho. Mỗi phiên có phiếu giao dịch ghi lại, xem ở tab Quà › Lịch sử trao đổi.
+🧧 Bàn lì xì lễ hội
+Mở ở tab 🧧 Lì xì hoặc tại công viên Thành phố. Chủ bàn bỏ vào 1.000 – 1.000.000 xu (tính chung hạn mức tặng 1.000.000 xu mỗi ngày) và chọn chia thành 2 – 30 phần ngẫu nhiên.
+Ai đang online bấm Nhận là bốc một phần, mỗi người một lần mỗi bàn. Phần bốc được về như một món quà và tự cộng vào túi.
+Máy chủ giữ xu và chia phần, chủ bàn không chọn được ai nhận bao nhiêu. Sau 30 phút chưa bốc hết thì phần còn lại hoàn cho chủ bàn.
+An toàn
+Không ai trong game, kể cả admin, hỏi mật khẩu của bạn. Admin thật có huy hiệu riêng trong chat.
+Gặp người đòi đổi đồ ngoài phiên trao đổi (ví dụ "đưa trước rồi tôi tặng lại") thì từ chối và bấm 🚩 Báo cáo cạnh tên. Bạn cũng có thể chặn để người đó không nhắn tin, kết bạn hay rủ chơi được nữa.
+Giao dịch chỉ an toàn khi đi qua nút Trao đổi: máy chủ kiểm tra cả hai bên trước khi chốt.

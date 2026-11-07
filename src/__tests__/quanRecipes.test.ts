@@ -388,6 +388,289 @@ describe('GĐ1334: bưởi đá (bưởi nông trại → quán nước)', () =>
   });
 });
 
+describe('GĐ1347: cà phê cốt dừa (thức uống trend Việt Nam → quán nước)', () => {
+  it('mở cấp 38, dùng cà phê hòa tan + cốt dừa, không hot, lời hơn vốn gấp đôi', async () => {
+    const { quanRecipeById, quanRecipesAt, recipeCupCost, QUAN_RECIPES } = await import('../data/quanRecipes');
+    const { productById } = await import('../data/products');
+    const r = quanRecipeById('ca_phe_cot_dua')!;
+    expect(r.unlock).toBeGreaterThan(30); // sau mốc golden 30 → sim không đổi
+    expect(r.unlock).toBe(38);
+    expect(r.uses.map((u) => u.id)).toContain('x_ca_phe_hoa_tan');
+    expect(r.uses.map((u) => u.id)).toContain('x_dua_cot_hop');
+    for (const u of r.uses) expect(productById(u.id).unlock).toBeLessThanOrEqual(r.unlock);
+    expect(quanRecipesAt(37).some((x) => x.id === 'ca_phe_cot_dua')).toBe(false);
+    expect(quanRecipesAt(38).some((x) => x.id === 'ca_phe_cot_dua')).toBe(true);
+    expect(r.price).toBeGreaterThan(recipeCupCost(r) * 2);
+    expect(r.hot).toBeFalsy();
+    expect(QUAN_RECIPES.filter((x) => x.hot).length).toBe(3); // không phình đếm đồ nóng (Luật 9)
+  });
+});
+
+describe('GĐ1348: trà chanh (món hè trứ danh → quán nước)', () => {
+  it('mở cấp 31, dùng trà + chanh không hạt, không hot, lời hơn vốn gấp đôi', async () => {
+    const { quanRecipeById, quanRecipesAt, recipeCupCost, QUAN_RECIPES } = await import('../data/quanRecipes');
+    const { productById } = await import('../data/products');
+    const r = quanRecipeById('tra_chanh')!;
+    expect(r.unlock).toBeGreaterThan(30); // sau mốc golden 30 → sim không đổi
+    expect(r.unlock).toBe(31);
+    expect(r.uses.map((u) => u.id)).toContain('tra');
+    expect(r.uses.map((u) => u.id)).toContain('x_chanh_khong_hat');
+    for (const u of r.uses) expect(productById(u.id).unlock).toBeLessThanOrEqual(r.unlock);
+    expect(quanRecipesAt(30).some((x) => x.id === 'tra_chanh')).toBe(false);
+    expect(quanRecipesAt(31).some((x) => x.id === 'tra_chanh')).toBe(true);
+    expect(r.price).toBeGreaterThan(recipeCupCost(r) * 2);
+    expect(r.hot).toBeFalsy();
+    expect(QUAN_RECIPES.filter((x) => x.hot).length).toBe(3); // không phình đếm đồ nóng (Luật 9)
+  });
+});
+
+describe('GĐ1349: sữa chua đá (món mát Sài Gòn → quán nước)', () => {
+  it('mở cấp 33, dùng sữa chua + sữa tươi, không hot, lời hơn vốn gấp đôi', async () => {
+    const { quanRecipeById, quanRecipesAt, recipeCupCost, QUAN_RECIPES } = await import('../data/quanRecipes');
+    const { productById } = await import('../data/products');
+    const r = quanRecipeById('sua_chua_da')!;
+    expect(r.unlock).toBeGreaterThan(30); // sau mốc golden 30 → sim không đổi
+    expect(r.unlock).toBe(33);
+    expect(r.uses.map((u) => u.id)).toContain('suachua');
+    expect(r.uses.map((u) => u.id)).toContain('sua_tuoi');
+    for (const u of r.uses) expect(productById(u.id).unlock).toBeLessThanOrEqual(r.unlock);
+    expect(quanRecipesAt(32).some((x) => x.id === 'sua_chua_da')).toBe(false);
+    expect(quanRecipesAt(33).some((x) => x.id === 'sua_chua_da')).toBe(true);
+    expect(r.price).toBeGreaterThan(recipeCupCost(r) * 2);
+    expect(r.hot).toBeFalsy();
+    expect(QUAN_RECIPES.filter((x) => x.hot).length).toBe(3); // không phình đếm đồ nóng (Luật 9)
+  });
+});
+
+describe('GĐ1353: sinh tố yến mạch chuối (trend sức khỏe → quán nước)', () => {
+  it('mở cấp 73, dùng sữa yến mạch + chuối nông trại, không hot, lời hơn vốn gấp đôi', async () => {
+    const { quanRecipeById, quanRecipesAt, recipeCupCost, QUAN_RECIPES } = await import('../data/quanRecipes');
+    const { productById } = await import('../data/products');
+    const r = quanRecipeById('sinh_to_yen_mach_chuoi')!;
+    expect(r.unlock).toBeGreaterThan(30); // sau mốc golden 30 → sim không đổi
+    expect(r.unlock).toBe(73);
+    expect(r.uses.map((u) => u.id)).toContain('sua_yeu');
+    expect(r.uses.map((u) => u.id)).toContain('x_chuoi');
+    for (const u of r.uses) expect(productById(u.id).unlock).toBeLessThanOrEqual(r.unlock);
+    expect(quanRecipesAt(72).some((x) => x.id === 'sinh_to_yen_mach_chuoi')).toBe(false);
+    expect(quanRecipesAt(73).some((x) => x.id === 'sinh_to_yen_mach_chuoi')).toBe(true);
+    expect(r.price).toBeGreaterThan(recipeCupCost(r) * 2);
+    expect(r.hot).toBeFalsy();
+    expect(QUAN_RECIPES.filter((x) => x.hot).length).toBe(3); // không phình đếm đồ nóng (Luật 9)
+  });
+});
+
+describe('GĐ1354: nước ép dưa hấu (dưa hấu nông trại → quán nước)', () => {
+  it('mở cấp 31, dùng dưa hấu nông trại, không hot, lời hơn vốn gấp đôi', async () => {
+    const { quanRecipeById, quanRecipesAt, recipeCupCost, QUAN_RECIPES } = await import('../data/quanRecipes');
+    const { productById } = await import('../data/products');
+    const r = quanRecipeById('ep_dua_hau')!;
+    expect(r.unlock).toBeGreaterThan(30); // sau mốc golden 30 → sim không đổi
+    expect(r.unlock).toBe(31);
+    expect(r.uses.map((u) => u.id)).toContain('dua');
+    for (const u of r.uses) expect(productById(u.id).unlock).toBeLessThanOrEqual(r.unlock);
+    expect(quanRecipesAt(30).some((x) => x.id === 'ep_dua_hau')).toBe(false);
+    expect(quanRecipesAt(31).some((x) => x.id === 'ep_dua_hau')).toBe(true);
+    expect(r.price).toBeGreaterThan(recipeCupCost(r) * 2);
+    expect(r.hot).toBeFalsy();
+    expect(QUAN_RECIPES.filter((x) => x.hot).length).toBe(3); // không phình đếm đồ nóng (Luật 9)
+  });
+});
+
+describe('GĐ1356: cà phê phin (pha truyền thống → quán nước)', () => {
+  it('mở cấp 64, dùng cà phê xay nguyên chất, không hot, lời hơn vốn gấp đôi', async () => {
+    const { quanRecipeById, quanRecipesAt, recipeCupCost, QUAN_RECIPES } = await import('../data/quanRecipes');
+    const { productById } = await import('../data/products');
+    const r = quanRecipeById('ca_phe_phin')!;
+    expect(r.unlock).toBeGreaterThan(30); // sau mốc golden 30 → sim không đổi
+    expect(r.unlock).toBe(64);
+    expect(r.uses.map((u) => u.id)).toContain('ca_phe_xay');
+    for (const u of r.uses) expect(productById(u.id).unlock).toBeLessThanOrEqual(r.unlock);
+    expect(quanRecipesAt(63).some((x) => x.id === 'ca_phe_phin')).toBe(false);
+    expect(quanRecipesAt(64).some((x) => x.id === 'ca_phe_phin')).toBe(true);
+    expect(r.price).toBeGreaterThan(recipeCupCost(r) * 2);
+    expect(r.hot).toBeFalsy();
+    expect(QUAN_RECIPES.filter((x) => x.hot).length).toBe(3); // không phình đếm đồ nóng (Luật 9)
+  });
+});
+
+describe('GĐ1357: sinh tố ngũ cốc (bowl sức khỏe → quán nước)', () => {
+  it('mở cấp 68, dùng ngũ cốc granola + sữa tươi, không hot, lời hơn vốn gấp đôi', async () => {
+    const { quanRecipeById, quanRecipesAt, recipeCupCost, QUAN_RECIPES } = await import('../data/quanRecipes');
+    const { productById } = await import('../data/products');
+    const r = quanRecipeById('sinh_to_ngu_coc')!;
+    expect(r.unlock).toBeGreaterThan(30); // sau mốc golden 30 → sim không đổi
+    expect(r.unlock).toBe(68);
+    expect(r.uses.map((u) => u.id)).toContain('ngu_coc');
+    expect(r.uses.map((u) => u.id)).toContain('sua_tuoi');
+    for (const u of r.uses) expect(productById(u.id).unlock).toBeLessThanOrEqual(r.unlock);
+    expect(quanRecipesAt(67).some((x) => x.id === 'sinh_to_ngu_coc')).toBe(false);
+    expect(quanRecipesAt(68).some((x) => x.id === 'sinh_to_ngu_coc')).toBe(true);
+    expect(r.price).toBeGreaterThan(recipeCupCost(r) * 2);
+    expect(r.hot).toBeFalsy();
+    expect(QUAN_RECIPES.filter((x) => x.hot).length).toBe(3); // không phình đếm đồ nóng (Luật 9)
+  });
+});
+
+describe('GĐ1361: trà atiso đá (trà atiso túi → quán nước)', () => {
+  it('mở cấp 44, dùng trà atiso túi, không hot, lời hơn vốn gấp đôi', async () => {
+    const { quanRecipeById, quanRecipesAt, recipeCupCost, QUAN_RECIPES } = await import('../data/quanRecipes');
+    const { productById } = await import('../data/products');
+    const r = quanRecipeById('atiso_da')!;
+    expect(r.unlock).toBeGreaterThan(30); // sau mốc golden 30 → sim không đổi
+    expect(r.unlock).toBe(44);
+    expect(r.uses.map((u) => u.id)).toContain('tra_atiso');
+    for (const u of r.uses) expect(productById(u.id).unlock).toBeLessThanOrEqual(r.unlock);
+    expect(quanRecipesAt(43).some((x) => x.id === 'atiso_da')).toBe(false);
+    expect(quanRecipesAt(44).some((x) => x.id === 'atiso_da')).toBe(true);
+    expect(r.price).toBeGreaterThan(recipeCupCost(r) * 2);
+    expect(r.hot).toBeFalsy();
+    expect(QUAN_RECIPES.filter((x) => x.hot).length).toBe(3); // không phình đếm đồ nóng (Luật 9)
+  });
+});
+
+describe('GĐ1362: trà thảo mộc đá (trà thảo mộc hộp → quán nước)', () => {
+  it('mở cấp 59, dùng trà thảo mộc hộp, không hot, lời hơn vốn gấp đôi', async () => {
+    const { quanRecipeById, quanRecipesAt, recipeCupCost, QUAN_RECIPES } = await import('../data/quanRecipes');
+    const { productById } = await import('../data/products');
+    const r = quanRecipeById('thao_moc_da')!;
+    expect(r.unlock).toBeGreaterThan(30); // sau mốc golden 30 → sim không đổi
+    expect(r.unlock).toBe(59);
+    expect(r.uses.map((u) => u.id)).toContain('tra_thao_moc');
+    for (const u of r.uses) expect(productById(u.id).unlock).toBeLessThanOrEqual(r.unlock);
+    expect(quanRecipesAt(58).some((x) => x.id === 'thao_moc_da')).toBe(false);
+    expect(quanRecipesAt(59).some((x) => x.id === 'thao_moc_da')).toBe(true);
+    expect(r.price).toBeGreaterThan(recipeCupCost(r) * 2);
+    expect(r.hot).toBeFalsy();
+    expect(QUAN_RECIPES.filter((x) => x.hot).length).toBe(3); // không phình đếm đồ nóng (Luật 9)
+  });
+});
+
+describe('GĐ1371: sữa chua yến mạch (đồ uống healthy → quán nước)', () => {
+  it('mở cấp 41, dùng sữa chua + yến mạch hộp, không hot, lời hơn vốn gấp đôi', async () => {
+    const { quanRecipeById, quanRecipesAt, recipeCupCost, QUAN_RECIPES } = await import('../data/quanRecipes');
+    const { productById } = await import('../data/products');
+    const r = quanRecipeById('sua_chua_yen_mach')!;
+    expect(r.unlock).toBeGreaterThan(30); // sau mốc golden 30 → sim không đổi
+    expect(r.unlock).toBe(41);
+    expect(r.uses.map((u) => u.id)).toContain('suachua');
+    expect(r.uses.map((u) => u.id)).toContain('yen_mach');
+    for (const u of r.uses) expect(productById(u.id).unlock).toBeLessThanOrEqual(r.unlock);
+    expect(quanRecipesAt(40).some((x) => x.id === 'sua_chua_yen_mach')).toBe(false);
+    expect(quanRecipesAt(41).some((x) => x.id === 'sua_chua_yen_mach')).toBe(true);
+    expect(r.price).toBeGreaterThan(recipeCupCost(r) * 2);
+    expect(r.hot).toBeFalsy();
+    expect(QUAN_RECIPES.filter((x) => x.hot).length).toBe(3); // không phình đếm đồ nóng (Luật 9)
+  });
+});
+
+describe('GĐ1372: sữa hạt đá (sữa hạt lốc → quán nước)', () => {
+  it('mở cấp 41, dùng sữa hạt lốc, không hot, lời hơn vốn gấp đôi', async () => {
+    const { quanRecipeById, quanRecipesAt, recipeCupCost, QUAN_RECIPES } = await import('../data/quanRecipes');
+    const { productById } = await import('../data/products');
+    const r = quanRecipeById('sua_hat_da')!;
+    expect(r.unlock).toBeGreaterThan(30); // sau mốc golden 30 → sim không đổi
+    expect(r.unlock).toBe(41);
+    expect(r.uses.map((u) => u.id)).toContain('sua_hat');
+    for (const u of r.uses) expect(productById(u.id).unlock).toBeLessThanOrEqual(r.unlock);
+    expect(quanRecipesAt(40).some((x) => x.id === 'sua_hat_da')).toBe(false);
+    expect(quanRecipesAt(41).some((x) => x.id === 'sua_hat_da')).toBe(true);
+    expect(r.price).toBeGreaterThan(recipeCupCost(r) * 2);
+    expect(r.hot).toBeFalsy();
+    expect(QUAN_RECIPES.filter((x) => x.hot).length).toBe(3); // không phình đếm đồ nóng (Luật 9)
+  });
+});
+
+describe('GĐ1373: trà sữa trân châu đường đen (món trà sữa quốc dân → quán nước)', () => {
+  it('mở cấp 38, dùng sữa tươi + trà + bột mì (trân châu), không hot, lời hơn vốn gấp đôi', async () => {
+    const { quanRecipeById, quanRecipesAt, recipeCupCost, QUAN_RECIPES } = await import('../data/quanRecipes');
+    const { productById } = await import('../data/products');
+    const r = quanRecipeById('tra_sua_tran_chau')!;
+    expect(r.unlock).toBeGreaterThan(30); // sau mốc golden 30 → sim không đổi
+    expect(r.unlock).toBe(38);
+    expect(r.uses.map((u) => u.id)).toContain('sua_tuoi');
+    expect(r.uses.map((u) => u.id)).toContain('botmi'); // trân châu nấu từ bột mì
+    for (const u of r.uses) expect(productById(u.id).unlock).toBeLessThanOrEqual(r.unlock);
+    expect(quanRecipesAt(37).some((x) => x.id === 'tra_sua_tran_chau')).toBe(false);
+    expect(quanRecipesAt(38).some((x) => x.id === 'tra_sua_tran_chau')).toBe(true);
+    expect(r.price).toBeGreaterThan(recipeCupCost(r) * 2);
+    expect(r.hot).toBeFalsy();
+    expect(QUAN_RECIPES.filter((x) => x.hot).length).toBe(3); // không phình đếm đồ nóng (Luật 9)
+  });
+});
+
+describe('GĐ1374: nước mía cốt dừa (món hè trend → quán nước)', () => {
+  it('mở cấp 32, dùng mía + nước cốt dừa, không hot, lời hơn vốn gấp đôi', async () => {
+    const { quanRecipeById, quanRecipesAt, recipeCupCost, QUAN_RECIPES } = await import('../data/quanRecipes');
+    const { productById } = await import('../data/products');
+    const r = quanRecipeById('mia_cot_dua')!;
+    expect(r.unlock).toBeGreaterThan(30); // sau mốc golden 30 → sim không đổi
+    expect(r.unlock).toBe(32);
+    expect(r.uses.map((u) => u.id)).toContain('mia');
+    expect(r.uses.map((u) => u.id)).toContain('x_dua_cot_hop');
+    for (const u of r.uses) expect(productById(u.id).unlock).toBeLessThanOrEqual(r.unlock);
+    expect(quanRecipesAt(31).some((x) => x.id === 'mia_cot_dua')).toBe(false);
+    expect(quanRecipesAt(32).some((x) => x.id === 'mia_cot_dua')).toBe(true);
+    expect(r.price).toBeGreaterThan(recipeCupCost(r) * 2);
+    expect(r.hot).toBeFalsy();
+    expect(QUAN_RECIPES.filter((x) => x.hot).length).toBe(3); // không phình đếm đồ nóng (Luật 9)
+  });
+});
+
+describe('GĐ1378: sữa bắp (món ngọt Đà Lạt → quán nước)', () => {
+  it('mở cấp 31, dùng bắp ngô + sữa tươi, không hot, lời hơn vốn gấp đôi', async () => {
+    const { quanRecipeById, quanRecipesAt, recipeCupCost, QUAN_RECIPES } = await import('../data/quanRecipes');
+    const { productById } = await import('../data/products');
+    const r = quanRecipeById('sua_bap_da')!;
+    expect(r.unlock).toBeGreaterThan(30); // sau mốc golden 30 → sim không đổi
+    expect(r.unlock).toBe(31);
+    expect(r.uses.map((u) => u.id)).toContain('bap');
+    expect(r.uses.map((u) => u.id)).toContain('sua_tuoi');
+    for (const u of r.uses) expect(productById(u.id).unlock).toBeLessThanOrEqual(r.unlock);
+    expect(quanRecipesAt(30).some((x) => x.id === 'sua_bap_da')).toBe(false);
+    expect(quanRecipesAt(31).some((x) => x.id === 'sua_bap_da')).toBe(true);
+    expect(r.price).toBeGreaterThan(recipeCupCost(r) * 2);
+    expect(r.hot).toBeFalsy();
+    expect(QUAN_RECIPES.filter((x) => x.hot).length).toBe(3); // không phình đếm đồ nóng (Luật 9)
+  });
+});
+
+describe('GĐ1382: sữa chua cam (món Đà Lạt mát lành → quán nước)', () => {
+  it('mở cấp 34, dùng sữa chua + cam nông trại, không hot, lời hơn vốn gấp đôi', async () => {
+    const { quanRecipeById, quanRecipesAt, recipeCupCost, QUAN_RECIPES } = await import('../data/quanRecipes');
+    const { productById } = await import('../data/products');
+    const r = quanRecipeById('sua_chua_cam')!;
+    expect(r.unlock).toBeGreaterThan(30); // sau mốc golden 30 → sim không đổi
+    expect(r.unlock).toBe(34);
+    expect(r.uses.map((u) => u.id)).toContain('suachua');
+    expect(r.uses.map((u) => u.id)).toContain('x_cam');
+    for (const u of r.uses) expect(productById(u.id).unlock).toBeLessThanOrEqual(r.unlock);
+    expect(quanRecipesAt(33).some((x) => x.id === 'sua_chua_cam')).toBe(false);
+    expect(quanRecipesAt(34).some((x) => x.id === 'sua_chua_cam')).toBe(true);
+    expect(r.price).toBeGreaterThan(recipeCupCost(r) * 2);
+    expect(r.hot).toBeFalsy();
+    expect(QUAN_RECIPES.filter((x) => x.hot).length).toBe(3); // không phình đếm đồ nóng (Luật 9)
+  });
+});
+
+describe('GĐ1388: cà phê mocha (món trend cà phê × cacao → quán nước)', () => {
+  it('mở cấp 36, dùng cà phê hòa tan + bột cacao + sữa đặc, không hot, lời hơn vốn gấp đôi', async () => {
+    const { quanRecipeById, quanRecipesAt, recipeCupCost, QUAN_RECIPES } = await import('../data/quanRecipes');
+    const { productById } = await import('../data/products');
+    const r = quanRecipeById('ca_phe_mocha')!;
+    expect(r.unlock).toBeGreaterThan(30); // sau mốc golden 30 → sim không đổi
+    expect(r.unlock).toBe(36);
+    expect(r.uses.map((u) => u.id)).toContain('x_ca_phe_hoa_tan');
+    expect(r.uses.map((u) => u.id)).toContain('x_bot_cacao');
+    for (const u of r.uses) expect(productById(u.id).unlock).toBeLessThanOrEqual(r.unlock);
+    expect(quanRecipesAt(35).some((x) => x.id === 'ca_phe_mocha')).toBe(false);
+    expect(quanRecipesAt(36).some((x) => x.id === 'ca_phe_mocha')).toBe(true);
+    expect(r.price).toBeGreaterThan(recipeCupCost(r) * 2);
+    expect(r.hot).toBeFalsy();
+    expect(QUAN_RECIPES.filter((x) => x.hot).length).toBe(3); // không phình đếm đồ nóng (Luật 9)
+  });
+});
+
 describe('GĐ482: nhắc đồ nóng tháng rét', () => {
   it('tháng rét trời khô gợi ý ×1.1; tháng hè không nhắc', async () => {
     const { quanHotNote } = await import('../data/quanRecipes');

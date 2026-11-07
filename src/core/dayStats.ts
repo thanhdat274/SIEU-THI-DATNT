@@ -4,6 +4,9 @@ import type { PaymentMethod } from '../data/payments';
 import type { ReviewReason } from '../data/reviews';
 
 export interface DayStats {
+  /** GĐ1584 — số lần tặng quà khách quen trong ngày (tuỳ chọn, save cũ = 0). */
+  gifts?: number;
+  clawWins?: number; // GĐ1592 — số lần gắp trúng thú bông hôm nay (chỉ đếm)
   revenue: number;
   spent: number;
   wages: number;
@@ -25,6 +28,8 @@ export interface DayStats {
   repaid?: number;
   /** Tiền lời dịch vụ ở quầy (nạp tiền, thu hộ) hôm nay. */
   services?: number;
+  /** GĐ1492 — tiền tip của khách ăn tại chỗ hôm nay (đã tính vào doanh thu và két). */
+  tips?: number;
   /** Tiền lời dịch vụ hôm nay theo từng dịch vụ (GĐ66 — để xem dịch vụ nào đáng). */
   byService?: Record<string, number>;
   /** Số combo bán ra và tiền đã giảm cho combo. */
@@ -74,7 +79,7 @@ export interface DayStats {
 
 /** Lãi gộp trong ngày: (tiền thu − vốn) theo sổ bán từng món + lời dịch vụ quầy. */
 export const daySalesProfit = (stats: DayStats) =>
-  Object.values(stats.byItem ?? {}).reduce((n, l) => n + l.revenue - l.cost, 0) + (stats.services ?? 0);
+  Object.values(stats.byItem ?? {}).reduce((n, l) => n + l.revenue - l.cost, 0) + (stats.services ?? 0) + (stats.tips ?? 0);
 
 export interface HourLine { customers: number; revenue: number }
 

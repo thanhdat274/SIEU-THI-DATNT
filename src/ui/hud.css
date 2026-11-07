@@ -286,6 +286,20 @@
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
 }
 
+#ui .hud-toast-btn {
+  display: block;
+  margin: 8px auto 0;
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: 0;
+  background: var(--hud-accent);
+  color: #1d1f2b;
+  font: inherit;
+  font-size: 15px;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
 /* ---------- Dưới: gợi ý + thanh công cụ ---------- */
 #ui .hud-bottom {
   bottom: 14px;
@@ -503,6 +517,8 @@
   letter-spacing: 0.4px;
   opacity: 0.55;
   padding: 2px 2px 0;
+  /* Playtest M5: chừa chỗ cho huy hiệu (top:-6px) của nút hàng dưới, khỏi đè tiêu đề nhóm */
+  margin-bottom: 6px;
   white-space: nowrap;
 }
 #ui .hud-help kbd, #ui .hud-help span { white-space: nowrap; }
@@ -589,6 +605,9 @@
 @media (max-height: 480px) {
   #ui .hud-chip { min-height: 36px; padding: 3px 10px; }
   #ui .hud-place { display: none; }
+  /* Playtest P1 M7: màn ngang 812×375 — ô đồng hồ thu còn 1 dòng (giờ + ngày); dự báo/giờ vàng/lễ ẩn */
+  #ui .hud-time > span > small ~ small { display: none; }
+  #ui .hud-time > span > b, #ui .hud-time > span > small { display: inline; margin-right: 6px; }
   #ui .hud-tool { padding: 4px 6px; }
   #ui .hud-tool-icon { font-size: 17px; }
 }
@@ -779,3 +798,18 @@
   #ui .hud-money { min-width: 0; }
   #ui .hud-meta.coop .hud-room { padding: 2px 6px; gap: 4px; }
 }
+
+/* ── GĐ1503 — Tour HUD khoanh vùng: dim 4 dải + ô sáng + hộp lời dạy ── */
+#ui .hud-tour { position: fixed; inset: 0; z-index: 60; }
+#ui .hud-tour-shade { position: fixed; background: rgba(10, 10, 18, 0.6); }
+#ui .hud-tour-ring { position: fixed; pointer-events: none; border: 3px solid var(--hud-accent); border-radius: 12px; box-shadow: 0 0 0 4px rgba(241, 196, 15, 0.25), 0 0 24px rgba(241, 196, 15, 0.35); }
+#ui .hud-tour-tip { position: fixed; max-width: 320px; background: var(--hud-panel, #3a3a4d); color: #fff; border: 2px solid var(--hud-accent); border-radius: 10px; padding: 10px 12px; pointer-events: none; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4); }
+#ui .hud-tour-tip b { display: block; font-size: 13px; line-height: 1.35; }
+#ui .hud-tour-tip small { display: block; margin-top: 4px; font-size: 11px; opacity: 0.75; }
+#ui .hud-tour-skip { position: fixed; right: 10px; top: 10px; background: rgba(58, 58, 77, 0.9); color: #fff; border: 1px solid rgba(255, 255, 255, 0.25); border-radius: 8px; padding: 6px 10px; font-size: 12px; cursor: pointer; }
+#ui .hud-tour-skip:hover { background: rgba(241, 196, 15, 0.25); }
+
+/* GĐ1521 — theme HUD theo dịp lễ (data-hud-theme gắn trên #ui) */
+#ui[data-hud-theme='tet'] { --hud-accent: #ffcc33; --hud-bg: rgba(120, 18, 18, 0.84); --hud-bg-solid: #6e1414; --hud-line: rgba(255, 204, 51, 0.25); }
+#ui[data-hud-theme='trung_thu'] { --hud-accent: #ffb347; --hud-bg: rgba(28, 26, 64, 0.84); --hud-bg-solid: #1c1a40; --hud-line: rgba(255, 179, 71, 0.22); }
+#ui[data-hud-theme='giang_sinh'] { --hud-accent: #ff5e5e; --hud-bg: rgba(14, 54, 34, 0.84); --hud-bg-solid: #0e3622; --hud-line: rgba(255, 255, 255, 0.16); }

@@ -1,3 +1,4 @@
+import { trendMark } from '../trendMark';
 import { useGame } from '../../core/store';
 import { formatMoney, productById } from '../../data/products';
 import { COMBO_PULL, COMBO_UNLOCK, comboById, comboSuggest, liveWeakCombo, maxActiveCombos, nextComboSlotLevel, unlockedCombos } from '../../data/combos';
@@ -61,7 +62,7 @@ export function ComboPanel() {
                   <b>{c.name}</b>
                   <div style={{ fontSize: 12, opacity: 0.8 }}>
                     {formatMoney(full)} → <b>{formatMoney(full - cut)}</b> (giảm {Math.round(c.discount * 100)}%) · lãi cả cặp{' '}
-                    <span style={{ color: margin > 0 ? '#2ecc71' : '#e74c3c' }}>{formatMoney(margin)}</span>
+                    <span style={{ color: margin > 0 ? '#2ecc71' : '#e74c3c' }}>{trendMark(margin)}{formatMoney(margin)}</span>
                   </div>
                   <div style={{ fontSize: 12, opacity: 0.65 }}>🔥 đã kích hoạt {comboHitCount?.[c.id] ?? 0} lần ở quầy</div>
                   <div style={{ fontSize: 12 }}>

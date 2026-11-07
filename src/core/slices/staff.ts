@@ -1,4 +1,5 @@
 import { maxStaff, ROLES, SHIFTS, type Staff } from '../../data/staff';
+import { lixiBlock, lixiCost, LIXI_EXP } from '../../data/lixi';
 import { nextPromotion, promoted } from '../../data/careers';
 import { gainExp, TRAIN_EXP, trainCost } from '../../data/staffTraits';
 import { formatMoney } from '../../data/products';
@@ -9,7 +10,7 @@ import type { GameState, SetState, GetState } from '../gameTypes';
 
 /** Nhân viên tiệm chính: thuê, cho nghỉ, đổi ca, đào tạo. */
 
-export const createStaffSlice = (set: SetState, get: GetState): Pick<GameState, 'hire' | 'fire' | 'setShift' | 'trainStaff' | 'promoteStaff' | 'promoteBranchStaff' | 'transferStaff' | 'evacuateBranch'> => {
+export const createStaffSlice = (set: SetState, get: GetState): Pick<GameState, 'hire' | 'fire' | 'setShift' | 'trainStaff' | 'giveLixi' | 'promoteStaff' | 'promoteBranchStaff' | 'transferStaff' | 'evacuateBranch'> => {
   /** Kiểm tra điều kiện, trừ tiền thưởng; trả về người sau khi thăng chức hoặc null. */
   const tryPromote = (st: Staff): Staff | null => {
     const s = get();
@@ -67,6 +68,20 @@ export const createStaffSlice = (set: SetState, get: GetState): Pick<GameState, 
     s.notify(leveled
       ? `🎓 ${st.name} học xong lên ${next.skill}★! Lương mới ${formatMoney(next.wage)}/ca`
       : `🎓 Đã cho ${st.name} học thêm (${formatMoney(cost)})`);
+  },
+  giveLixi: () => {
+    const s = get();
+    const block = lixiBlock(s.day, s.lixiDay ?? 0, s.staff.length, s.money);
+    if (block) return s.notify(block === 'not-tet' ? 'Chỉ lì xì được dịp Tết Nguyên Đán' : block === 'given' ? 'Tết này đã lì xì cả đội rồi' : block === 'no-staff' ? 'Chưa có nhân viên nào để lì xì' : 'Không đủ tiền lì xì cả đội!');
+    const cost = lixiCost(s.staff.length);
+    let up = 0;
+    const staff = s.staff.map((st) => { const r = gainExp(st, LIXI_EXP); if (r.leveled) up++; return r.staff; });
+    set({
+      staff, lixiDay: s.day, money: s.money - cost,
+      stats: { ...s.stats, spent: s.stats.spent + cost },
+      totals: { ...s.totals, spent: s.totals.spent + cost },
+    });
+    s.notify(`🧧 Lì xì ${s.staff.length} nhân viên (${formatMoney(cost)}) — cả đội hăng hái${up ? `, ${up} người lên sao` : ''}!`);
   },
   promoteStaff: (id) => {
     const st = get().staff.find((it) => it.id === id);

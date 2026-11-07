@@ -77,3 +77,101 @@ Xóm Nông Trại là game nông trại multiplayer trên web, đồ họa low-p
 ## Bài học chính
 
 Đồ họa "nhìn đẹp" của game web nhỏ không đến từ engine xịn — cùng một stack React+Zustand+Three, nó thắng ở **tính nhất quán của asset tay**: một bộ kit low-poly duy nhất, một bộ atlas màu duy nhất, một font duy nhất, mọi thứ cùng tông. Kỹ thuật render của mình đã đủ và hơn; mảnh ghép còn thiếu để "nhìn cũng đẹp đấy" là **bộ asset đồng bộ cho không gian ngoài trời** + juice phản hồi, chứ không phải đổi công nghệ render.
+
+---
+
+# ĐỢT 2 (07/11/2026): Chơi thật Lv1 + TRÍCH TRỌN BỘ CONFIG v3.8.0 CỦA GAME
+
+> Phương pháp: tạo tài khoản khách, chọn quê Hà Nội (người chơi thứ 1.926 của tỉnh), chơi vòng lặp gieo lúa, mở Cửa hàng/Đơn xe tải/Túi/Chi tiết trang trí; đồng thời trích `xnt.config.cache.v1` từ localStorage (bundle config game đang chạy, có checksum) → **nguồn sự thật số liệu, chính xác 100% những gì game đang chạy**. File trích: `dev/research-xom/` (config-cache.json, xom-extract.json).
+> Ghi chú quan trọng: comment trong config tự nhận "Sinh bởi tools/gen_content_v3.py — mặc định thiết kế" + nhiều hệ nằm sau feature flag. Con số dưới đây là *trạng thái bản v3.8.0 đang chạy*, có thể đổi theo cờ.
+
+## 1. Quy mô nội dung (đo từ config)
+
+| Hạng mục | Số | Ghi chú |
+|---|---|---|
+| Vật phẩm (items) | **544** | cat: crop 64, fruit 50, product 297, animal_product 7, feed 8, material 63, consumable 9, chó 42, rương 4 |
+| Nhóm hàng (group) | 10 | nông sản 64, trái cây 50, **món ăn 90, bánh 46, chè/nước 67, mứt/khô 30**, sơ chế 37, chăn nuôi 57, thủ công 27, vật liệu 76 |
+| Công thức | **304** | 18 nhà máy, từ 8 công thức (Máy xay cám) tới 44 (Quầy nước) |
+| Nhà máy | **18** | mở Lv1→130, xem bảng dưới |
+| Cây trồng (vụ ngắn) | **64** | Lúa 5 phút → Sắn 10 giờ; mỗi luống thu 8 |
+| Cây lâu năm | **50** | Cam Lv10 600v → vải Thanh Hà Lv178 14.200v; chu kỳ 4h+, 4 chu kỳ trước héo, 3 bạn cứu cây |
+| Vật nuôi | **7** | Gà Lv2 (20 phút), Bò sữa Lv6 (1h), Heo Lv9 (1,5h), Vịt Lv11 (45 phút), Cừu Lv13 (3h), Dê Lv16 (2h), Tổ ong Lv20 (4h) |
+| Chuồng | 5 | 250v (gà) → 3.000v (vườn ong) |
+| Đồ trang trí | **48** | 16 bán cửa hàng + 32 thuộc 4 bộ sưu tập vùng |
+| Vật thể đặt được | **138** | luống, 18 nhà máy, 5 chuồng, 50 cây, nhà/hầm/kho/bảng đơn/sạp chợ/bến ghe/chuồng chó, 48 decor, 7 vật cản |
+| Chó cảnh | 13 giống | chuồng Lv6, phối giống, chợ chó, mũ/nón cho chó |
+| Cấp tối đa | **200** | 4 chặng 31–60 / 61–100 / 101–150 / 151–200 |
+
+## 2. Chuỗi nhà máy (cột sống "nấu nướng")
+
+Máy xay cám Lv1 → Nhà xay xát Lv3 → Lò nấu đường Lv5 → Nhà làm sữa Lv7 → Lò bánh Lv8 → **Quầy nước Lv10** → Khung dệt Lv11 → Bếp chè xôi Lv12 → Xưởng mứt Lv14 → Tiệm may Lv15 → Tiệm bánh ngọt Lv16 → Tiệm hoa Lv20 → Lò ép dầu Lv38 → **Quán ăn làng Lv92** → Xưởng hương liệu Lv130, cộng 3 nhà máy đặc sản vùng Lv10 (Bếp cổ truyền - Bắc, Xưởng duyên hải - Trung, Lò kẹo miệt vườn - Nam).
+
+**Quán ăn làng = "bếp món mặn" cuối game** (16 món, toàn món Việt): Bánh xèo (5 nguyên liệu, 1h, +38 EXP), Gỏi mít, Phở chay (6 nguyên liệu, 1,5h, +48), Bánh bèo, Bánh khọt, Cao lầu, Mì Quảng, Rau xào mắc khén, Bún thang, Gỏi ném, Canh chua bông súng, **Mâm cỗ làng (Lv196: 5 món làm sẵn + 4h + 136 EXP)**. Điểm thiết kế đáng lấy: *món cuối cùng của chuỗi là combo các món đã làm ra* — đỉnh của dây chuyền sản xuất, không cần nguyên liệu thô.
+
+## 3. Chợ người chơi 3 cấp (Sạp chợ Lv7)
+
+- 3 cấp chợ: **Làng → Tỉnh → Đầu mối** (3 miền), phí chợ **2% làng / 5% tỉnh / 5% đầu mối**.
+- 4→10 ô bày hàng; mở ô: 1.000v, 3.000v, rồi 10/15/20/30 xu. Mỗi ô 50 món.
+- **Giá tự đặt trong dải 0,3×–3× giá chuẩn**; ngoại lệ `highCap`: 15 vật liệu + thảo quả được trần **20×** (vàng chỉ xoay giữa người chơi, game không sinh thêm).
+- **Cần mua (buy order)**: tối đa 3 lệnh mở, TTL 24h, tối đa 50 món, dải giá 0,67–1,17× (game giữ vàng trước).
+- Tin bán hết hạn 48h; mỗi người mua mua tối đa 5 món/ngày từ một người bán; tài khoản mới <1 ngày không bán được, người <Lv15 bị kẹp giá 0,85–1,15× (chống smash).
+- Chợ phiên: 3 món chung đổi mỗi thứ Hai + phiên đặc sản theo giờ vàng cuối tuần; đơn có món phiên **+25% vàng và EXP**.
+- Quảng báo chợ: 12 tin/trang, cooldown 5 phút.
+
+## 4. Sổ sưu tập trang trí — hệ "decor có chức năng" đỉnh nhất của game
+
+- 4 bộ vùng miền (Bắc Bộ / Trung Bộ / Nam Bộ / Tây Bắc), mỗi bộ **3 Thường + 3 Quý + 1 Hiếm + 1 Báu**.
+- **Điểm vườn theo độ hiếm × số sao (1–5)**: Thường 10→20, Quý 25→50, Hiếm 60→110, Báu 150→250.
+- Nhận món trùng → **mảnh** (1/2/4/10 theo độ hiếm); nâng sao tốn 4/6/10/16 mảnh (4 bậc).
+- Đặt ngoài vườn đủ **2/4/6 món cùng bộ** → buff chạy được, mỗi bộ buff đúng "nhóm việc" của vùng: Bắc Bộ = cây ruộng -2%/-3% chờ; Trung Bộ = chế biến; Nam Bộ = cây ăn quả; Tây Bắc = chuồng trại; mốc 4 = +2% EXP. **Trần hiệu ứng 10%/loại, 15% tổng** (chống stack).
+- Đủ 8/8 → **danh hiệu** (Lão nông Bắc Bộ, Khách quý xứ Huế, Chủ vườn miệt Nam, Già làng Tây Bắc) + vườn bay đom đóm/cánh hoa.
+- Nguồn món Hiếm/Báu: **Vòng quay Lộc** — 4 kỳ × 28 ngày xoay 4 bộ; 1 quay miễn phí/ngày, vé 2 xu (gói 10+1, tối đa 10 vé/ngày), điểm quay đổi món Quý/Hiếm/Báu. Món bộ sưu tập **không được đăng bán ở chợ** (giữ giá trị sưu tầm).
+- Món trùng cấp thưởng (8 mốc lớn Lv25→200 tặng decor độc quyền: Cối đá giã gạo, Guồng nước tre, Chuồng bồ câu, Trâu vàng trăm cấp, Cổng làng nhỏ, Kiệu sơn son, Thuyền rồng mini, Tượng lúa vàng).
+
+## 5. Đơn xe tải + Ghe hàng (generator đơn hàng thông minh nhất mình từng thấy)
+
+- **Xe tải**: 9 đơn thường trực; đơn mới sau 1 phút; bỏ đơn đợi 15 phút.
+- Thuật toán chọn món (đáng học): **độ sâu dây chuyền** (món sâu hơn = tầng chế biến cao hơn) có trọng số đổi theo cấp (cấp cao thiên về món sâu/lâu); `lineTimeBudgetSeconds` — số lượng 1 dòng không vượt quá số cái làm kịp trong khoảng thời gian đó (tính trọn dây chuyền!); món quá rẻ so với cấp bị giảm trọng số; món đang có trong kho được nhân trọng số (`stockWeightMul`); món mới mở được boost; đặc sản quê chiếm tỉ lệ `homeSpecialtyShare` để 3 miền cân; sàn trọng số từng món chống "món mồ côi".
+- **Ghe (Lv17)**: 9 thùng = 3 loại × 3 thùng, hạn 16h, mỗi ghe nhờ bạn 3 thùng, 20 chuyến/ngày; thùng cùng loại thứ 2/3 ×1,2/×1,5; đủ ghe +50% vàng + quà; trọng số chọn loại hàng theo "tự làm được" 1,0 / "cần mua chợ" 0,5 / "khác" 0,15, mỗi ghe tối đa 1 loại khó kiếm.
+- Cản ngày: đơn có món phiên +25%; trọng số quà chuồng ×2 (xe tải) / ×1,5 (ghe).
+
+## 6. Kinh tế EXP — chống farm máy móc
+
+- **EXP theo lượt việc, suy giảm theo độ "cũ" của mở khoá**: khác cấp quá 3 bậc bắt đầu giảm ×0,8^k, khác 15+ cấp = 0 EXP (`noPenaltyGap 3, expDecay 0.8, zeroExpGap 15`); bán cho NPC cũng decay tương tự (×0,85) — *cây mới mở = chơi hết mình, cây cũ = chỉ còn giá trị nguyên liệu*.
+- **Hái cây lâu năm 200 lần đầu/ngày đủ EXP, 201–400 còn nửa, 401+ = 0**; cây thấp hơn cấp quá 20 không EXP.
+- Từ Lv60 EXP đơn xe tải giảm dần còn 1,2× EXP nguyên liệu; từ Lv74 mỗi cấp cần thêm EXP (×(1+0,05·(L−73))).
+- Công thức cấp: `cumExp(L) = 4(L-1)L(L+15)` tới Lv31, sau đó `expToNext = 14520·(L/30)^0.95`.
+- **Thông thạo cây**: gặt nhiều lần 1 giống lên Đồng/Bạc/Vàng (ngưỡng 200/1000/4000 với vụ <1h; 100/400/1500 vụ 1–4h; 40/150/500 vụ dài); Bạc = giống đó **-5% thời gian chờ**; Vàng = khắc hoành phi treo nhà (25.000v).
+- **Luân canh**: trồng khác họ với vụ trước trên cùng luống tới +15% EXP. **Tuổi cây**: cây lâu năm càng nhiều tuổi càng nhiều EXP.
+- Thưởng lên cấp Lv2–200: tổng 2.021.450 vàng + 904 xu + đồng hồ cát/vé quay + 8 decor độc quyền mốc lớn.
+
+## 7. Mở rộng đất, nhà, kho
+
+- Bản đồ 64×64, vùng 16×16; khởi đầu 32×32 (4 vùng), 12 vùng khoá.
+- Mở 1 vùng: **vàng = 1000·k·(k+1)** (k = thứ tự vùng), 3 vật liệu (sơ đồ/cọc mốc/búa) ×k, cần cấp **4+4k**, **phải tiếp giáp** vùng đã có (cùng mô hình CS2 như Midnight Bistro — 2 game cùng xác nhận).
+- **Nhà 5 cấp** (tranh → cấp 4 → truyền thống → ...): lên cấp 2 = 20.000v + 10 ván gỗ + 10 đinh + 10 sơn; cấp 3 = 50.000v + 20×3. Quyền lợi: +60/150/300/500 chỗ (cả Hầm lẫn Kho), 1/2/3/5 vật liệu rút miễn phí mỗi ngày, nhà cấp 5 tặng đồng hồ cát mỗi ngày. **Nhà theo vùng có mô tả kiến trúc riêng** (nhà ba gian / nhà rường / nhà miệt vườn chữ Đinh).
+- Hầm 150 chỗ (đồ ruộng) / Kho 120 chỗ (mọi thứ khác), +30/nâng, tối đa 40 nấc; vật liệu riêng từng loại; 14 vật liệu "không tính chỗ" (không bao giờ bị kẹt kho vì vật liệu nâng cấp).
+
+## 8. Vùng miền + khí hậu (danh tính Việt rất sâu)
+
+- 3 vùng quê, mỗi vùng **60–80 đặc sản** riêng + 1 nhà máy đặc sản + 1 bộ decor + nhà kiểu riêng + đồ Tết riêng (mâm cỗ Tết Bắc/Trung/Nam).
+- **Khí hậu theo tháng thật**: Bắc Bộ tháng 12–2 cây nhiệt đới +20% thời gian nhưng rau vụ đông -20% — lịch nông theo mùa thật.
+- Nhà kính Lv40 trồng đặc sản miền khác (2→4 ô); đổi quê được nhưng chờ 30 ngày + cây/nhà máy khác miền "ngủ đông" (bán được 1/3 giá trị).
+- 34 tỉnh (sau sáp nhập 2025), đua tỉnh theo **Điểm Nông bình quân** (Lv6+ mới tính — chống nick phụ), mùa 1 tháng, Hà Nội 1.925 người chơi.
+
+## 9. Vòng hằng ngày & giữ chân
+
+- Điểm danh 7 ngày xoay vòng, **bỏ 1 ngày KHÔNG reset** (ngày 7: 5 xu + decor Bù nhìn) — khác Midnight Bistro (reset về 1).
+- Rương báu vật (rìa vườn): trọng số 30/20/20/15/10/5 → 500v/1.500v/phân nhanh/phân siêu tốc/2 bộ vật liệu/3.000v + 3 búa.
+- Trần "chống cày" xuyên suốt: ghe 20 chuyến/ngày, hái trộm 10 lần/ngày, quà bạn 5→20 món/ngày theo cấp, tăng tốc ghe 10 lần/ngày, mua vé quay tối đa 10 vé/ngày.
+- Giftcode giới hạn lượt (TANTHU 1.200 lượt, còn 753 lúc test) — khan hiếm tạo FOMO.
+- Top góp ý (xếp hạng người góp ý tưởng cho game), Top nông dân hôm nay / Top Level / Top độ giàu — xoay sidebar liên tục.
+
+## 10. Trải nghiệm chơi thật (Lv1)
+
+- Onboarding: chọn tỉnh trước (bản đồ 3D 63 tỉnh + hạng + "n người đang gom"), modal chào đồng hương 3 bước, tip xoay vòng "Bạn có biết?" là nút bấm được (có nút Ẩn riêng).
+- Juice: bấm luống → **menu quạt** (Gieo hạt/Nâng đất/Di chuyển) hiện ngay quanh ngón; bảng chọn giống 64 cây hiện thời gian + số thu + **"+4 EXP" ngay trên thẻ** (minh bạch phần thưởng); nhãn "Mở đất · Cấp 8" nổi trên đất khoá.
+- Đơn xe tải: badge "+25%" (chợ phiên) trên món, nút ghim sao + huỷ từng đơn, thanh "0/9 đủ hàng".
+- Chi tiết decor: **popup hình 3D xoay được** + footprint "đặt trên 1×1 ô đất" + "+1 kinh nghiệm" khi mua + ổ khoá vàng "Mở ở Lv N".
+- Túi đồ = Sổ sưu tập (tab "Sổ sưu tập" nằm chung bảng) — một bảng duy nhất cho đồ + sưu tập.
+- Chat live 4 kênh (Toàn quốc/Tỉnh/Làng/Xóm) chạy từ giây đầu vào game — cảm giác "xóm làng đông đúc" ngay cả khi vườn còn trống.

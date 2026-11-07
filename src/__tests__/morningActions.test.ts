@@ -60,3 +60,29 @@ describe('GĐ1102 (QA nối) — việc sáng "món menu quán ngừng bán" qua
     expect(a.filter((x) => x.text.includes('ngừng bán')).length).toBe(0);
   });
 });
+
+describe('GĐ1572 — nhắc máy đánh giày ngày mưa', () => {
+  const shoe = [{ uid: 1, type: 'shoe_shine' }] as never;
+  it('mưa + có máy + cấp 42 → có nhắc', () => {
+    expect(buildMorningActions(base({ level: 42, weather: 'rain', furniture: shoe })).some((x) => x.text.includes('đánh giày thu'))).toBe(true);
+  });
+  it('nắng, thiếu máy hoặc dưới cấp → không', () => {
+    expect(buildMorningActions(base({ level: 42, weather: 'sunny', furniture: shoe })).some((x) => x.text.includes('đánh giày thu'))).toBe(false);
+    expect(buildMorningActions(base({ level: 42, weather: 'rain', furniture: [] })).some((x) => x.text.includes('đánh giày thu'))).toBe(false);
+    expect(buildMorningActions(base({ level: 41, weather: 'rain', furniture: shoe })).some((x) => x.text.includes('đánh giày thu'))).toBe(false);
+  });
+});
+
+import { REGULARS } from '../data/regulars';
+describe('GĐ1573 — nhắc tặng quà khách quen', () => {
+  const r = REGULARS[0];
+  const st = Object.fromEntries(r.favorites.map((f) => [f, 5]));
+  const prog = { [r.id]: { friendship: 0, visits: 2, perks: [], discovered: [] } } as never;
+  it('cấp 38 có khách đã quen + hàng thích → có nhắc', () => {
+    expect(buildMorningActions(base({ level: 60, regulars: prog, storage: st })).some((x) => x.text.includes('tặng quà'))).toBe(true);
+  });
+  it('chưa quen ai hoặc dưới cấp → không', () => {
+    expect(buildMorningActions(base({ level: 60, storage: st })).some((x) => x.text.includes('tặng quà'))).toBe(false);
+    expect(buildMorningActions(base({ level: 37, regulars: prog, storage: st })).some((x) => x.text.includes('tặng quà'))).toBe(false);
+  });
+});

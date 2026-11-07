@@ -6,9 +6,10 @@ import { CATEGORIES, formatMoney, unlockedProducts } from '../../data/products';
 import { repairCost, RISK_RULES, wears } from '../../data/risks';
 import { wearRisk } from '../../data/wearRisk';
 import { LifeBadge, Footer, styles } from './shared';
+import { masteryBadge } from '../../data/sellMastery';
 
 export function ShelfPanel({ uid }: { uid: number }) {
-  const { level, storage, storageLots, furniture, stockTier, openPanel, closePanel } = useGame();
+  const { level, storage, storageLots, furniture, stockTier, openPanel, closePanel, soldEver } = useGame();
   const f = furniture.find((it) => it.uid === uid);
   if (!f) return null;
   const def = furnitureDef(f.type);
@@ -37,7 +38,7 @@ export function ShelfPanel({ uid }: { uid: number }) {
               { value: '', label: '(Trống)' },
               ...products.map((p) => {
                 const life = nearestLife(fitLots(storageLots[p.id], storage[p.id] ?? 0, p.id));
-                return { value: p.id, label: p.name, hint: `kho: ${storage[p.id] ?? 0}${life ? ` · ⏳${life}d` : ''}` };
+                return { value: p.id, label: p.name, hint: `kho: ${storage[p.id] ?? 0}${life ? ` · ⏳${life}d` : ''}${masteryBadge(level, soldEver[p.id] ?? 0)}` };
               }),
             ]}
           />

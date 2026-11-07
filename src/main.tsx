@@ -8,6 +8,7 @@ import * as THREE from 'three';
 import { shopLayout, worldActions } from './core/actions';
 import { saveGame, startAutosave } from './core/save';
 import { formatClock, SLEEP_FROM, useGame, type GameState } from './core/store';
+import { bedHint } from './data/bedHint';
 import { lampLevel } from './render/lampLevel';
 import { createTutorialMarker } from './render/tutorialMarker';
 import { effectiveSpeed, newRoutineMarks, planRoutine, stocktakeMessage } from './core/routine';
@@ -167,7 +168,13 @@ useSession.subscribe((s, prev) => {
     controller.follow = player.position;
     // Lúc này save đã nạp xong, tiệm đã bày hàng: nạp trước nốt pipeline cho hàng hóa trong tiệm
     precompile();
-    if (!isGuest()) useGame.getState().notify(`🏪 Ngày ${useGame.getState().day} · chúc buôn may bán đắt!`);
+    // Playtest P0 T1: bản lưu đang mở cửa → đứng lại sau quầy, báo rõ tiệm vẫn mở
+    const g = useGame.getState();
+    if (!isGuest() && g.shopOpen) {
+      const spot = shopSpot();
+      player.teleport(spot.x, spot.z);
+      g.notify(`🏪 Ngày ${g.day} · tiệm vẫn đang mở cửa như lúc bạn rời — vào quầy tiếp khách nhé!`);
+    } else if (!isGuest()) g.notify(`🏪 Ngày ${g.day} · chúc buôn may bán đắt!`);
   }
 });
 
@@ -202,7 +209,7 @@ worldActions.travel = (to) => {
   const spot = to === 'shop' ? shopSpot() : to === 'ranch' ? world.farmSpot.clone() : null;
   if (spot) player.teleport(spot.x, spot.z);
   else wakeUp();
-  controller.follow = player.position;
+  controller.snapTo(player.position);
   // Ở hẻm online đồng hồ là chung: một người đi lại không được tua giờ của cả hẻm
   const travel = to === 'home' ? 0 : inAlley() ? 0 : Math.round(TRAVEL_MINUTES[to] * (vehicleDef(s.biz.vehicle)?.travel ?? 1));
   // Cập nhật location ngay để UI phản hồi đúng vị trí sau khi di chuyển (đặc biệt quan trọng trong online mode)
@@ -388,7 +395,7 @@ function runRoutine() {
 
 /** Quầy, kệ và tủ thay đổi khi xây dựng / mở rộng tiệm, nên tính lại mỗi lần. */
 const fixedInteractables: Interactable[] = [
-  { position: bedPos, radius: 2, hint: () => (player.asleep ? (inAlley() ? '💤 Chờ cả hẻm ngủ... [N] Dậy' : '💤 Đang ngủ...') : '[N] Đi ngủ'), key: 'KeyN', action: goToBed },
+  { position: bedPos, radius: 2, hint: () => bedHint(player.asleep, inAlley(), useGame.getState().minutes), key: 'KeyN', action: goToBed },
   // Trang trại nam đường thứ hai: đứng cạnh cổng bấm V mở bảng trại (trồng, tưới, thu hoạch, cho gà ăn)
   { position: world.farmSpot, radius: 4, hint: () => '[V] Trang trại', key: 'KeyV', action: () => useGame.getState().openPanel({ type: 'garden' }) },
   // Giếng nước trong trại: tưới nhanh tất cả luống không cần mở bảng

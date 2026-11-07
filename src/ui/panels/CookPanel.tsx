@@ -1,3 +1,5 @@
+import { trendMark } from '../trendMark';
+import { masteredDuration, masteryTier, MASTERY_NAMES, MASTERY_UNLOCK } from '../../data/cookMastery';
 import { useGame, useClock } from '../../core/store';
 import { useState } from 'react';
 import { RECIPES, STATIONS, type CookingStation } from '../../data/recipes';
@@ -6,16 +8,19 @@ import { kitchenValue } from '../../data/kitchenValue';
 import { cookAdvice } from '../../data/cookSchedule';
 import { expiringSoon, expiryInputsNote, newUnlockMark } from '../../data/advice';
 import { supplyOutletOf } from '../../data/supplyOutlet';
+import { splitLockedRecipes } from '../../data/cookList';
 import { cookSpeed, bartenderBoost } from '../../core/slices/orders';
 import { FESTIVALS, festivalOn } from '../../data/calendar';
+import { dishStarGoalOf, dishVessel, dishMaxLabel, maxedDishLine, STAR_BOOST_ITEM, STAR_BOOST_UNLOCK } from '../../data/dishStars';
 import { Footer, styles, Tabs } from './shared';
 
 /** Sổ nấu: công thức theo trạm, nguyên liệu lấy từ kho (lô cận hạn trước), mẻ xong về kho chờ bày kệ. */
 export function CookPanel() {
-  const { level, storage, storageLots, furniture, cookJobs, startCook, closePanel, openPanel, setBuildMode } = useGame();
+  const { level, storage, storageLots, furniture, cookJobs, servedCounts, startCook, closePanel, openPanel, setBuildMode } = useGame();
   // GĐ1118 — bản đồ hạn còn lại của hàng sắp hỏng (kho + kệ) để nhắc nấu ngay trên dòng công thức
   const expiringMap = new Map(expiringSoon(storage, storageLots, furniture.flatMap((f) => f.tiers)).map((l) => [l.id, l.life]));
   const day = useGame((s) => s.day);
+  const cookMastery = useGame((s) => s.cookMastery);
   // GĐ161: giờ hiện tại (vẽ lại 1 lần mỗi phút game như Hud) + tốc độ trạm thật
   // (đầu bếp/pha chế trực ca — cùng nguồn cookSpeed/bartenderBoost với tick đồng hồ)
   const minutes = useClock((c) => Math.floor(c.minutes));
@@ -36,6 +41,7 @@ export function CookPanel() {
   return (
     <>
       <h2 style={styles.title}>🍳 Sổ nấu</h2>
+      {maxedDishLine(servedCounts, RECIPES.map((r) => r.outputId)) && <p style={styles.sub}>{maxedDishLine(servedCounts, RECIPES.map((r) => r.outputId))}</p>}
       {/* GĐ99: mô tả đủ 4 câu chiếm ~1/4 màn 390px — giữ 2 dòng chính, giải thích vào thẻ gập */}
       <p style={{ ...styles.sub, marginBottom: 4 }}>
         Món nhà làm không nhập được ở mối nào — nấu từ nguyên liệu trong kho (lô cận hạn dùng trước), nấu xong tự về kho bày như hàng thường.
@@ -67,7 +73,8 @@ export function CookPanel() {
       {STATIONS.filter((st) => station === 'all' || st.id === station).map((st) => {
         const own = stationCount(st.id);
         const busy = busyAt(st.id);
-        const recipes = RECIPES.filter((r) => r.station === st.id).sort((a, b) => a.unlock - b.unlock);
+        // GĐ1433: chỉ hiện món đã mở + 1 món khóa gần nhất; khóa xa gộp thành một dòng
+        const { visible: recipes, hiddenCount, nextHiddenUnlock } = splitLockedRecipes(RECIPES.filter((r) => r.station === st.id), level);
         return (
           <div key={st.id} style={{ marginBottom: 12 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '4px 0' }}>
@@ -108,8 +115,30 @@ export function CookPanel() {
                           const have = storage[i.productId] ?? 0;
                           return `${i.quantity} ${productById(i.productId).name} (${have})`;
                         }).join(' + ')}
-                        {' '}→ <b>{r.outputQty} × {out.name}</b> · {r.durationMin} phút
+                        {' '}→ <b>{r.outputQty} × {out.name}</b> · {masteredDuration(r.durationMin, cookMastery?.[r.id] ?? 0, level)} phút{level >= MASTERY_UNLOCK && masteryTier(cookMastery?.[r.id] ?? 0) > 0 ? ` · ${MASTERY_NAMES[masteryTier(cookMastery?.[r.id] ?? 0)]}` : ''}
                       </div>
+                      {/* GĐ1496 — sao món theo lượt bán: đồ đựng đổi bậc + giá bán tăng, mục tiêu ngắn đếm ngược được */}
+                      {(() => {
+                        const served = servedCounts[r.outputId] ?? 0;
+                        const goal = dishStarGoalOf(r.outputId, served);
+                        return (
+                          <div style={{ fontSize: 12, opacity: 0.85, marginTop: 2 }}>
+                            <span style={{ color: goal.stars > 0 ? '#f1c40f' : undefined }}>
+                              {goal.stars > 0 ? '⭐'.repeat(goal.stars) : '☆'}
+                            </span>{' '}
+                            {dishVessel(r.outputId, served)}
+                            {goal.bonus > 0 && <span style={{ color: '#2ecc71' }}> · +{goal.bonus}% giá</span>}
+                            {goal.nextAt != null && (
+                              <span style={{ opacity: 0.75 }}> · còn {goal.toGo} lượt → {goal.nextVessel}</span>
+                            )}
+                            {dishMaxLabel(goal) && <span style={{ color: '#f1c40f' }}>{dishMaxLabel(goal)}</span>}
+                            <span style={{ opacity: 0.6 }}> · đã bán {served}</span>
+                            {level >= STAR_BOOST_UNLOCK && goal.nextAt != null && (
+                              <button className="mini" style={{ marginLeft: 6 }} disabled={(storage[STAR_BOOST_ITEM] ?? 0) < 1} title="Dùng 1 tổ yến: +10 lượt bán về phía sao kế" onClick={() => useGame.getState().boostDishStar(r.outputId)}>✨ Nâng sao (1 tổ yến)</button>
+                            )}
+                          </div>
+                        );
+                      })()}
                       {/* GĐ1327: món chuỗi sản xuất — nguyên liệu chính là hàng ngoài tạp hóa, nhập riêng ở đâu */}
                       {so && (
                         <div style={{ fontSize: 12, opacity: 0.85, marginTop: 2 }}>
@@ -117,8 +146,8 @@ export function CookPanel() {
                         </div>
                       )}
                       <div style={{ fontSize: 12 }}>
-                        Lãi gộp ~<b style={{ color: gross > 0 ? '#2ecc71' : '#e74c3c' }}>{formatMoney(gross)}</b>/mẻ
-                        {own && (
+                        Lãi gộp ~<b style={{ color: gross > 0 ? '#2ecc71' : '#e74c3c' }}>{trendMark(gross)}{formatMoney(gross)}</b>/mẻ
+                        {own > 0 && (
                           <span style={{ opacity: 0.85 }}> · ⏱ ~{formatMoney(Math.round(kv.perMinute))}/phút</span>
                         )}
                         {missing.length > 0 && !locked && (
@@ -128,7 +157,7 @@ export function CookPanel() {
                           <span style={{ color: '#e67e22' }}>{expiryInputsNote(r.inputs, expiringMap)}</span>
                         )}
                       </div>
-                      {own && kv.verdict === 'sell_raw' && (
+                      {own > 0 && kv.verdict === 'sell_raw' && (
                         <div style={{ fontSize: 12, color: '#e74c3c', marginTop: 2 }}>
                           ⚠️ Nguyên liệu bán rời còn hời hơn nấu ~{formatMoney(kv.delta)}
                         </div>
@@ -147,6 +176,9 @@ export function CookPanel() {
                   </div>
                 );
               })}
+              {hiddenCount > 0 && (
+                <div style={{ fontSize: 12, opacity: 0.6 }}>🔒 +{hiddenCount} món nữa mở dần từ cấp {nextHiddenUnlock}</div>
+              )}
             </div>
           </div>
         );

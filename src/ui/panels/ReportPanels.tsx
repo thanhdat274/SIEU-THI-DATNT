@@ -1,3 +1,6 @@
+import { giftReportLine } from '../../data/regularGift';
+import { trendMark } from '../trendMark';
+import { machineDayTotal } from '../../data/machines';
 import { cungGoodsAction, nextEventLine, sapEventActions, tiemXoiCungAction } from '../../data/dayEventActions';
 import { tiemXoiMorning, TIEM_XOI_WAGE } from '../../data/tiemXoi';
 import { useState } from 'react';
@@ -263,17 +266,27 @@ export function SummaryPanel({ day }: { day: number }) {
               </div>
             </Callout>
           )}
+          {/* Playtest P1 T5: ngày đầu đưa lãi gộp bán hàng lên đầu — tiền nhập kho là vốn nằm trên kệ, không phải lỗ */}
+          {day === 1 && goodsRevenue > 0 && (
+            <p style={{ margin: '0 0 8px', fontSize: 15 }}>
+              🎉 Ngày đầu bán hàng lãi gộp <b style={{ color: '#2ecc71' }}>{trendMark(goodsRevenue - goodsCost)}{formatMoney(goodsRevenue - goodsCost)}</b>
+              <br /><small style={{ opacity: 0.8 }}>Tiền nhập kho là vốn còn nằm trên kệ — bán dần sẽ về lại.</small>
+            </p>
+          )}
           <table style={{ ...styles.table, fontSize: 15 }}>
             <tbody>
               <tr><td style={styles.left}>Doanh thu</td><td>{formatMoney(st.revenue)}</td></tr>
               {!!st.comboDiscount && <tr><td style={styles.left}>  trong đó đã giảm cho {st.combos} combo</td><td style={{ opacity: 0.75 }}>-{formatMoney(st.comboDiscount)}</td></tr>}
+              {machineDayTotal(st.byService) > 0 && <tr><td style={styles.left}>  trong đó 🎰 máy thu phí</td><td style={{ opacity: 0.75 }}>{formatMoney(machineDayTotal(st.byService))}</td></tr>}
+              {giftReportLine(st.gifts) && <tr><td style={styles.left}>🎁 Quà tặng khách quen</td><td style={{ opacity: 0.75 }}>{giftReportLine(st.gifts)}</td></tr>}
+              {!!st.clawWins && <tr><td style={styles.left}>🧸 Khách gắp trúng thú bông</td><td style={{ opacity: 0.75 }}>{st.clawWins} lần</td></tr>}
               <tr><td style={styles.left}>Lãi gộp trên hàng bán (giá bán − giá nhập)</td><td style={{ color: '#2ecc71' }}>{formatMoney(goodsRevenue - goodsCost - (st.comboDiscount ?? 0))}</td></tr>
               <tr><td style={styles.left}>Chi tiêu (nhập hàng, nội thất)</td><td>{st.spent > 0 ? `-${formatMoney(st.spent)}` : '0đ'}</td></tr>
               <tr><td style={styles.left}>Lương nhân viên</td><td>{st.wages > 0 ? `-${formatMoney(st.wages)}` : '0đ'}</td></tr>
               <tr><td style={styles.left}>Tiền nhà (theo bậc tiệm)</td><td>{(st.rent ?? 0) > 0 ? `-${formatMoney(st.rent ?? 0)}` : '0đ'}</td></tr>
               <tr>
                 <td style={styles.left}><b>Tiền vào − tiền ra</b></td>
-                <td style={{ color: profit >= 0 ? '#2ecc71' : '#e74c3c' }}><b>{formatMoney(profit)}</b></td>
+                <td style={{ color: profit >= 0 ? '#2ecc71' : '#e74c3c' }}><b>{trendMark(profit)}{formatMoney(profit)}</b></td>
               </tr>
               {!!st.credited && <tr><td style={styles.left}>  trong đó khách quen ghi sổ (chưa thu)</td><td style={{ color: '#e67e22' }}>{formatMoney(st.credited)}</td></tr>}
               {!!st.repaid && <tr><td style={styles.left}>Thu nợ cũ</td><td style={{ color: '#2ecc71' }}>+{formatMoney(st.repaid)}</td></tr>}

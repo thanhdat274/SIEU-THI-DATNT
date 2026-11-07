@@ -13,6 +13,7 @@ import { runBranch } from './branch';
 import { endDay } from './endDay';
 import { updateOnline } from './online';
 import { updatePhones, cookSpeed, bartenderBoost } from './orders';
+import { maybeInspection } from '../inspection';
 
 /** Đồng hồ và nhịp ngày: tick mỗi khung hình (chi nhánh, điện thoại, mẻ nấu), đi ngủ, thông báo, mở bảng. */
 
@@ -20,7 +21,7 @@ let messageTimer: ReturnType<typeof setTimeout> | undefined;
 /** GĐ571: tin gọi liên tiếp trong cùng một lượt xử lý gộp một toast thay vì đè nhau. */
 let burst: string[] = [];
 
-export const createClockSlice = (set: SetState, get: GetState): Pick<GameState, 'addDirt' | 'setSpeed' | 'tick' | 'sleep' | 'notify' | 'openPanel' | 'closePanel'> => ({
+export const createClockSlice = (set: SetState, get: GetState): Pick<GameState, 'addDirt' | 'setSpeed' | 'tick' | 'sleep' | 'notify' | 'openPanel' | 'closePanel' | 'markHudTourDone'> => ({
   addDirt: (amount) => {
     const before = get().dirt;
     const dirt = Math.max(0, Math.min(DIRT_MAX, before + amount));
@@ -31,6 +32,8 @@ export const createClockSlice = (set: SetState, get: GetState): Pick<GameState, 
   tick: (dt) => {
     const s = get();
     const minutes = s.minutes + dt * MINUTES_PER_SECOND * s.speed;
+    // GĐ1506: phút game đã trôi của nhịp tick này — phải tính TRƯỚC khi ghi thẳng get().minutes
+    // (mutation tại chỗ làm s.minutes === minutes, trừ lại luôn ra 0 — sự kiện theo thời gian sẽ chết).
     // Ăn sáng no bụng thì thức khuya được thêm một chút mới ngất
     if (minutes >= faintMinutes(s.biz.breakfastDay === s.day)) {
       if (faintGuard.spare()) {
@@ -52,6 +55,7 @@ export const createClockSlice = (set: SetState, get: GetState): Pick<GameState, 
     }
     // Đồng hồ chạy mỗi khung hình: ghi thẳng vào state (không set) để cả đống component
     // dùng nguyên `useGame()` không phải vẽ lại 60 lần/giây. UI đọc giờ qua useClock bên dưới.
+    const elapsedMinutes = minutes - s.minutes; // GĐ1506 — chốt trước khi mutation
     get().minutes = minutes;
     useClock.setState({ minutes });
     if (s.branch && minutes - s.branch.simAt >= 10) set(runBranch(get, minutes));
@@ -64,7 +68,11 @@ export const createClockSlice = (set: SetState, get: GetState): Pick<GameState, 
     }
     updatePhones(set, get);
     updateOnline(set, get);
-    maybeSurprise(minutes - s.minutes);
+    // GĐ1507 — truyền đúng phút đã trôi: bug elapsed=0 làm pool sự kiện một-phát chết từ GĐ962
+    // (chỉ arc sống vì không dùng elapsed — GĐ164). Số lần gọi simRng không đổi → chuỗi rng không dịch.
+    maybeSurprise(elapsedMinutes);
+    // GĐ1506 — đoàn kiểm tra vệ sinh: gieo metaRng theo phút game (chỉ máy chạy chạy tới đây)
+    maybeInspection(elapsedMinutes);
     // Các mẻ nấu đang chạy: hết giờ thì thành phẩm vào kho (bày bán như hàng thường)
     const jobs = get().cookJobs;
     if (jobs.length && s.speed > 0) {
@@ -112,5 +120,7 @@ export const createClockSlice = (set: SetState, get: GetState): Pick<GameState, 
     messageTimer = setTimeout(() => set({ message: null }), burst.length > 1 ? 4500 : 3000); // GĐ577: toast gộp cần thêm giờ đọc
   },
   openPanel: (panel) => set({ panel }),
+  // GĐ1503 — chốt cờ đã xem tour HUD (UI thuần, không đụng kinh tế)
+  markHudTourDone: () => set({ hudTourDone: true }),
   closePanel: () => set({ panel: null }),
 });

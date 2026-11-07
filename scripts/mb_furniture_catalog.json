@@ -1,0 +1,2702 @@
+[
+  {
+    "desc": "Carved mahogany slats bolted onto cast-iron scrolls for outdoor relaxation.",
+    "gain": "+6",
+    "id": "bench_park",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Wrought-Iron Park Bench",
+    "price": "💰340"
+  },
+  {
+    "desc": "Classic wooden bistro chair with padded burgundy cushion.",
+    "gain": "",
+    "id": "chair",
+    "isMachine": false,
+    "label": "",
+    "name": "Wooden Chair",
+    "price": "💰50"
+  },
+  {
+    "desc": "Handcrafted natural bamboo chair with woven seat.",
+    "gain": "",
+    "id": "chair_bamboo",
+    "isMachine": false,
+    "label": "",
+    "name": "Bamboo Chair",
+    "price": "💰70"
+  },
+  {
+    "desc": "Gold-leaf frame and backrest with a shimmering gold-leaf seat, matching the gold leaf tile floor.",
+    "gain": "",
+    "id": "chair_gold_leaf",
+    "isMachine": false,
+    "label": "",
+    "name": "Gold Leaf Chair 24K",
+    "price": "💰3.600"
+  },
+  {
+    "desc": "Ornate gilded throne chair fitted with imperial purple velvet and jewel inlays.",
+    "gain": "",
+    "id": "chair_golden_throne",
+    "isMachine": false,
+    "label": "",
+    "name": "Golden Throne Chair",
+    "price": "💰2.400"
+  },
+  {
+    "desc": "Mysterious pointed-arch dining chair with velvet cushion.",
+    "gain": "",
+    "id": "chair_gothic",
+    "isMachine": false,
+    "label": "",
+    "name": "Gothic Chair",
+    "price": "💰960"
+  },
+  {
+    "desc": "Black wrought-metal frame with a comfortable emerald green cushion.",
+    "gain": "",
+    "id": "chair_metal_bistro",
+    "isMachine": false,
+    "label": "",
+    "name": "Parisian Bistro Chair",
+    "price": "💰90"
+  },
+  {
+    "desc": "Minimalist Scandinavian curved-back chair with heather gray fabric cushion.",
+    "gain": "",
+    "id": "chair_nordic",
+    "isMachine": false,
+    "label": "",
+    "name": "Nordic Oak Chair",
+    "price": "💰340"
+  },
+  {
+    "desc": "Cheap low red plastic stool, a street-food classic.",
+    "gain": "",
+    "id": "chair_plastic",
+    "isMachine": false,
+    "label": "",
+    "name": "Low Plastic Stool",
+    "price": "💰10"
+  },
+  {
+    "desc": "Black velvet cushion with orange piping, a bat-wing back with a bat emblem and bone-white legs.",
+    "gain": "+1",
+    "id": "chair_round_bat_wing",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Bat Wing Round Chair Halloween 2026",
+    "price": "💰250.000"
+  },
+  {
+    "desc": "Classic bentwood with a caned seat, a leg ring and an open hoop back with a round center ring.",
+    "gain": "",
+    "id": "chair_round_bentwood",
+    "isMachine": false,
+    "label": "",
+    "name": "Bentwood Café Chair",
+    "price": "💰340"
+  },
+  {
+    "desc": "A half-round open-weave rattan back, a cream cushion with green piping and slim splayed walnut legs.",
+    "gain": "",
+    "id": "chair_round_rattan",
+    "isMachine": false,
+    "label": "",
+    "name": "Bird's Nest Rattan Chair",
+    "price": "💰260"
+  },
+  {
+    "desc": "A thick pleated leather cushion with a center button, brass studs, splayed brass legs and a footrest ring.",
+    "gain": "",
+    "id": "chair_round_stool",
+    "isMachine": false,
+    "label": "",
+    "name": "Cognac Leather Stool",
+    "price": "💰980"
+  },
+  {
+    "desc": "A wraparound velvet tub with gold buttons and nailheads, tassels and ball-footed gold legs.",
+    "gain": "",
+    "id": "chair_round_velvet",
+    "isMachine": false,
+    "label": "",
+    "name": "Teal Velvet Tub Chair",
+    "price": "💰780"
+  },
+  {
+    "desc": "Striped poolside lounger with chrome accents for patio dining.",
+    "gain": "",
+    "id": "chair_sunbed",
+    "isMachine": false,
+    "label": "",
+    "name": "Sunbed Lounge",
+    "price": "💰180"
+  },
+  {
+    "desc": "Tufted crimson velvet with gilded cabriole legs fit for royalty.",
+    "gain": "",
+    "id": "chair_velvet",
+    "isMachine": false,
+    "label": "",
+    "name": "Royal Velvet Armchair",
+    "price": "💰880"
+  },
+  {
+    "desc": "Polished walnut chair upholstered with deep midnight blue button-tufted velvet.",
+    "gain": "",
+    "id": "chair_vintage_arm",
+    "isMachine": false,
+    "label": "",
+    "name": "Vintage Armchair",
+    "price": "💰330"
+  },
+  {
+    "desc": "Masterwork steel plate armor adorned with gold trim, a crimson tabard, a quartered heraldic shield, and a grounded claymore.",
+    "gain": "+35",
+    "id": "decor_armor",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Royal Grand Knight Armor",
+    "price": "💰90.000"
+  },
+  {
+    "desc": "A magnificent navigational armillary sphere on a carved mahogany stand with graduated brass rings and an etched zodiac ecliptic.",
+    "gain": "+25",
+    "id": "decor_art_astrolabe_armillary",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Antique Brass Armillary Sphere",
+    "price": "💰120.000"
+  },
+  {
+    "desc": "An exquisite Renaissance hourglass bound with spiraling brass columns, lapis lazuli caps, and celestial rings streaming golden stardust sand.",
+    "gain": "+25",
+    "id": "decor_art_celestial_hourglass",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Celestial Ornate Hourglass",
+    "price": "💰150.000"
+  },
+  {
+    "desc": "An antique gilded bronze Buddha seated in full lotus meditation upon a double lotus throne with an openwork radiating golden aureole.",
+    "gain": "+50",
+    "id": "decor_art_golden_buddha",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Gilded Antique Serene Buddha",
+    "price": "💰600.000"
+  },
+  {
+    "desc": "An auspicious porcelain Maneki Neko gilded in pure gold with round cheerful cheeks, waving for prosperity while holding a golden Koban on a red silk pillow.",
+    "gain": "+30",
+    "id": "decor_art_maneki_neko",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Gilded Fortune Beckoning Maneki Neko",
+    "price": "💰180.000"
+  },
+  {
+    "desc": "A soaring stainless steel fork entwined with spaghetti marinara, savory meatball, and fresh basil atop an obsidian plinth.",
+    "gain": "+25",
+    "id": "decor_art_spaghetti_fork",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Giant Spaghetti Twirled Fork Sculpture",
+    "price": "💰150.000"
+  },
+  {
+    "desc": "An authentic Tiffany-style floor lamp featuring a vivid mosaic dome of iridescent dragonfly wings and a sculpted bronze tree trunk base.",
+    "gain": "+60",
+    "id": "decor_art_stained_glass_lamp",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Art Nouveau Dragonfly Stained Glass Lamp",
+    "price": "💰200.000"
+  },
+  {
+    "desc": "An authentic scale terracotta general from the Mausoleum of the First Qin Emperor in full fish-scale armor with folded hands upon his sword.",
+    "gain": "+35",
+    "id": "decor_art_terracotta_warrior",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Qin Terracotta General Warrior",
+    "price": "💰260.000"
+  },
+  {
+    "desc": "A legendary timber replica of the Trojan Horse on a four-wheeled towing platform, featuring plank joinery, a secret trapdoor revealing a Greek warrior, and hoplite arms.",
+    "gain": "+60",
+    "id": "decor_art_trojan_horse",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Trojan Horse Miniature Wooden Replica",
+    "price": "💰1.000.000"
+  },
+  {
+    "desc": "An iconic Vietnamese water puppet stage pavilion with curved terracotta tile eaves, bamboo screen, blooming lotuses, Uncle Teu, and a water-spouting dragon.",
+    "gain": "+200",
+    "id": "decor_art_water_puppet_stage",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Water Puppet Stage Pavilion",
+    "price": "💰1.900.000"
+  },
+  {
+    "desc": "An ancient Dong Son - Viet Nam bronze drum with a sun-star face, birds circling the top, carved boats and geometric bands.",
+    "gain": "+120",
+    "id": "decor_bronze_drum",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Dong Son Bronze Drum",
+    "price": "💰1.900.000"
+  },
+  {
+    "desc": "Bright pastel crane game filled with soft colorful plush toys.",
+    "gain": "+💰24",
+    "id": "decor_claw_crane",
+    "isMachine": true,
+    "label": "per use",
+    "name": "Plush Claw Machine",
+    "price": "💰2.400"
+  },
+  {
+    "desc": "Thrilling prize claw machine packed with vibrant ribbon-tied gift boxes, delivering surprise joy with every lucky grab.",
+    "gain": "+💰15",
+    "id": "decor_claw_gift",
+    "isMachine": true,
+    "label": "per use",
+    "name": "Mystery Gift Claw Machine",
+    "price": "💰1.500"
+  },
+  {
+    "desc": "A pink cotton candy cart with a pink-and-cream striped canopy, safety dome, wheels. Guests pay per use.",
+    "gain": "+💰25",
+    "id": "decor_cotton_candy",
+    "isMachine": true,
+    "label": "per use",
+    "name": "Cotton Candy Machine",
+    "price": "💰2.200"
+  },
+  {
+    "desc": "An ancient Egyptian mummy over 5,000 years old, wrapped in linen, wearing a gold death mask and holding a crook, standing on a sandstone plinth.",
+    "gain": "+50",
+    "id": "decor_egyptian_mummy",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Egyptian Mummy, 5000 Years Old",
+    "price": "💰1.000.000"
+  },
+  {
+    "desc": "A grand sandstone pyramid of stepped tiers crowned with a gold capstone, with a dark doorway on the front face.",
+    "gain": "+200",
+    "id": "decor_egyptian_pyramid",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Egyptian Pyramid",
+    "price": "💰1.900.000"
+  },
+  {
+    "desc": "Sunburst electric guitar standing on a tripod stand, ready to jam.",
+    "gain": "+7",
+    "id": "decor_guitar_stand",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Electric Guitar on Stand",
+    "price": "💰1.200"
+  },
+  {
+    "desc": "Brushed stainless steel under-counter dishwasher featuring a stone worktop, smart LED cycle display, and warm-air drying.",
+    "gain": "+5",
+    "id": "decor_kitchen_dishwasher",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Built-in Steam Dishwasher",
+    "price": "💰1.500"
+  },
+  {
+    "desc": "Sleek pearl-white two-door refrigerator featuring a top freezer, digital temperature control, and a built-in chilled water dispenser.",
+    "gain": "+5",
+    "id": "decor_kitchen_fridge",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Frost-Free Inverter Fridge",
+    "price": "💰780"
+  },
+  {
+    "desc": "Compact brushed-silver microwave with a tinted glass door, glowing turntable cavity, LED timer, and rotary dial.",
+    "gain": "+5",
+    "id": "decor_kitchen_microwave",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Digital Grill Microwave",
+    "price": "💰800"
+  },
+  {
+    "desc": "A 1×1 chair with head, back and leg cushions. Guests recline for a gently vibrating massage and pay per use.",
+    "gain": "+💰40",
+    "id": "decor_massage_chair",
+    "isMachine": true,
+    "label": "per use",
+    "name": "Executive Massage Chair",
+    "price": "💰3.600"
+  },
+  {
+    "desc": "Classic red jukebox glowing with bubble tubes, ready to play your favorite tune.",
+    "gain": "+12",
+    "id": "decor_neon_jukebox",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Neon Jukebox",
+    "price": "💰1.760"
+  },
+  {
+    "desc": "A pop-tart cat floating in the air, trailing a long rainbow behind it. One look and you will smile!",
+    "gain": "+60",
+    "id": "decor_nyan_cat",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Nyan Cat",
+    "price": "💰1.000.000"
+  },
+  {
+    "desc": "A grand twin-tower architectural model with gleaming glass and stainless steel, joined by the signature Skybridge as both spires reach for the sky.",
+    "gain": "+120",
+    "id": "decor_petronas_twin_towers",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Petronas Twin Towers",
+    "price": "💰1.900.000"
+  },
+  {
+    "desc": "Retro instant photo booth featuring a plush velvet curtain, glowing marquee, bright flash, and cute four-cut printed photo strips.",
+    "gain": "+💰30",
+    "id": "decor_photobooth",
+    "isMachine": true,
+    "label": "per use",
+    "name": "Vintage Photobooth",
+    "price": "💰3.000"
+  },
+  {
+    "desc": "Lustrous polished black grand piano with ivory keys and velvet bench.",
+    "gain": "+25",
+    "id": "decor_piano",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Ebony Concert Grand",
+    "price": "💰7.600"
+  },
+  {
+    "desc": "Classic tube TV on a wooden cabinet with a flickering blue-green screen.",
+    "gain": "+6",
+    "id": "decor_retro_tv",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Retro CRT Television",
+    "price": "💰760"
+  },
+  {
+    "desc": "A cream and reddish-brown cabinet with brown, cream and black brushes, a footprint tray and a shoe sign. Guests pay per use.",
+    "gain": "+💰20",
+    "id": "decor_shoe_polisher",
+    "isMachine": true,
+    "label": "per use",
+    "name": "Automatic Shoe Polisher",
+    "price": "💰2.000"
+  },
+  {
+    "desc": "Plump white porcelain bowl on a warm wooden vanity, chrome lever tap and a cute soap bottle. A tidy hand-wash corner for guests.",
+    "gain": "+3",
+    "id": "decor_sink_ceramic",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Porcelain Sink on Wood Cabinet",
+    "price": "💰2.000"
+  },
+  {
+    "desc": "Matte black cabinet with gold trim, grey-veined marble top, raised stone bowl and a gold gooseneck tap. Modern luxury.",
+    "gain": "+8",
+    "id": "decor_sink_marble",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Marble Vanity Sink",
+    "price": "💰20.000"
+  },
+  {
+    "desc": "Solid gold pedestal with fluted column, red velvet crest panel, wide gold basin and a swan-neck tap. A masterpiece for your most honoured guests.",
+    "gain": "+15",
+    "id": "decor_sink_royal",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Royal Gold-Plated Sink",
+    "price": "💰75.000"
+  },
+  {
+    "desc": "Traditional Russian copper samovar tea station with a top porcelain teapot and Nordic blue cups.",
+    "gain": "+11",
+    "id": "decor_tea_samovar_station",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Samovar Tea Station",
+    "price": "💰1.300"
+  },
+  {
+    "desc": "Forest green park waste receptacle with dome lid keeping patio clean.",
+    "gain": "+2",
+    "id": "decor_trash_can",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Park Recycling Bin",
+    "price": "💰140"
+  },
+  {
+    "desc": "Compact white plastic bin with a blue swing lid.",
+    "gain": "+1",
+    "id": "decor_trash_can_plastic",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Plastic Trash Can",
+    "price": "💰30"
+  },
+  {
+    "desc": "A silver cup on a deep green pedestal with crossed clubs and a tournament flag, topped by a white golf ball.",
+    "gain": "+50",
+    "id": "decor_trophy_golf",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Golf World Cup Trophy",
+    "price": "💰1.500.000"
+  },
+  {
+    "desc": "A gold cup on a court-blue pedestal with crossed rackets and a lime accent band, topped by a tennis ball.",
+    "gain": "+50",
+    "id": "decor_trophy_tennis",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Tennis World Cup Trophy",
+    "price": "💰1.500.000"
+  },
+  {
+    "desc": "Modern refrigerated vending machine stocked with sparkling sodas and refreshing fruit juices, ready to quench any visitor's thirst.",
+    "gain": "+💰20",
+    "id": "decor_vending_drink",
+    "isMachine": true,
+    "label": "per use",
+    "name": "Chilled Drink Vending Machine",
+    "price": "💰1.800"
+  },
+  {
+    "desc": "Spiral-dispensing vending machine loaded with crispy chips, rich chocolate bars, and savory snacks for instant cravings.",
+    "gain": "+💰20",
+    "id": "decor_vending_snack",
+    "isMachine": true,
+    "label": "per use",
+    "name": "Snack Carousel Vending Machine",
+    "price": "💰1.800"
+  },
+  {
+    "desc": "A two-shelf wooden hutch with plates, jars, and a trailing plant.",
+    "gain": "+4",
+    "id": "decor_wood_dish_hutch",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Wooden Dish Hutch",
+    "price": "💰2.400"
+  },
+  {
+    "desc": "An arched door with a cast bronze frame and art glass in amber and teal, like a stained glass panel.",
+    "gain": "+10",
+    "id": "door_arched_bronze_glass",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Arched Bronze & Cast Glass Door",
+    "price": "💰60.000"
+  },
+  {
+    "desc": "Oxblood double doors with hand-carved gilded diamond panels and oversized bronze rings. Each pair is one of a kind.",
+    "gain": "+10",
+    "id": "door_artisan_statement",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Artisan Statement Double Doors",
+    "price": "💰60.000"
+  },
+  {
+    "desc": "Two red lacquer leaves with golden studs open under a curved tiled roof, with a gilded flame arch, lotus pillars and lotus lamps.",
+    "gain": "+10",
+    "id": "door_buddhist_temple",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Gilded Temple Gate",
+    "price": "💰120.000"
+  },
+  {
+    "desc": "Navy double doors with glass panes, gilded trim and a half-moon fanlight above a cream stone frame.",
+    "gain": "+10",
+    "id": "door_grand_french",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Grand French Double Doors",
+    "price": "💰60.000"
+  },
+  {
+    "desc": "Smooth solid amber glazed ceramic tile with a sleek, tidy finish.",
+    "gain": "+1",
+    "id": "floor_amber",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Amber Tile Floor",
+    "price": "💰280"
+  },
+  {
+    "desc": "Smooth solid amethyst glazed ceramic tile with a sleek, tidy finish.",
+    "gain": "+1",
+    "id": "floor_amethyst",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Amethyst Tile Floor",
+    "price": "💰280"
+  },
+  {
+    "desc": "Smooth solid blush pink glazed ceramic tile with a sleek, tidy finish.",
+    "gain": "+1",
+    "id": "floor_blossom",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Blush pink Tile Floor",
+    "price": "💰280"
+  },
+  {
+    "desc": "Smooth solid bordeaux glazed ceramic tile with a sleek, tidy finish.",
+    "gain": "+1",
+    "id": "floor_bordeaux",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Bordeaux Tile Floor",
+    "price": "💰280"
+  },
+  {
+    "desc": "Smooth solid bronze glazed ceramic tile with a sleek, tidy finish.",
+    "gain": "+1",
+    "id": "floor_bronze",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Bronze Tile Floor",
+    "price": "💰280"
+  },
+  {
+    "desc": "Gilded lapis tiles painted with a four-gate mandala, a ring of red flames and an eight-petal lotus, bright as a thangka.",
+    "gain": "+3",
+    "id": "floor_buddhist_lapis_mandala",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Lapis Mandala Tile Floor",
+    "price": "💰1.300"
+  },
+  {
+    "desc": "Old temple terracotta with a raised lotus in each brick and chrysanthemums at the corners, like a warm temple yard.",
+    "gain": "+3",
+    "id": "floor_buddhist_ly_lotus",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Ancient Lotus Brick Floor",
+    "price": "💰1.300"
+  },
+  {
+    "desc": "Cream stone carved with rings of flame, beads and bodhi leaves around a gilded lotus, like the step of an old stupa.",
+    "gain": "+3",
+    "id": "floor_buddhist_moonstone",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Moonstone Floor",
+    "price": "💰1.300"
+  },
+  {
+    "desc": "Smooth solid celadon green glazed ceramic tile with a sleek, tidy finish.",
+    "gain": "+1",
+    "id": "floor_celadon",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Celadon green Tile Floor",
+    "price": "💰280"
+  },
+  {
+    "desc": "Smooth solid cerise glazed ceramic tile with a sleek, tidy finish.",
+    "gain": "+1",
+    "id": "floor_cerise",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Cerise Tile Floor",
+    "price": "💰280"
+  },
+  {
+    "desc": "Smooth solid cerulean blue glazed ceramic tile with a sleek, tidy finish.",
+    "gain": "+1",
+    "id": "floor_cerulean",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Cerulean blue Tile Floor",
+    "price": "💰280"
+  },
+  {
+    "desc": "Smooth solid charcoal gray glazed ceramic tile with a sleek, tidy finish.",
+    "gain": "+1",
+    "id": "floor_charcoal",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Charcoal gray Tile Floor",
+    "price": "💰280"
+  },
+  {
+    "desc": "Smooth solid cinnamon glazed ceramic tile with a sleek, tidy finish.",
+    "gain": "+1",
+    "id": "floor_cinnamon",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Cinnamon Tile Floor",
+    "price": "💰280"
+  },
+  {
+    "desc": "Smooth solid citron yellow glazed ceramic tile with a sleek, tidy finish.",
+    "gain": "+1",
+    "id": "floor_citron",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Citron yellow Tile Floor",
+    "price": "💰280"
+  },
+  {
+    "desc": "Smooth solid clover green glazed ceramic tile with a sleek, tidy finish.",
+    "gain": "+1",
+    "id": "floor_clover",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Clover green Tile Floor",
+    "price": "💰280"
+  },
+  {
+    "desc": "Smooth solid cobalt blue glazed ceramic tile with a sleek, tidy finish.",
+    "gain": "+1",
+    "id": "floor_cobalt",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Cobalt blue Tile Floor",
+    "price": "💰280"
+  },
+  {
+    "desc": "Smooth solid coral glazed ceramic tile with a sleek, tidy finish.",
+    "gain": "+1",
+    "id": "floor_coral",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Coral Tile Floor",
+    "price": "💰280"
+  },
+  {
+    "desc": "Brown earth covered with golden autumn grass, warm and cozy like an autumn afternoon.",
+    "gain": "+1",
+    "id": "floor_earth_autumn_grass",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Autumn Grass Earth Floor",
+    "price": "💰700"
+  },
+  {
+    "desc": "Crumbly dark soil, deep in color and rich in humus.",
+    "gain": "+1",
+    "id": "floor_earth_dark_loam",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Dark Loam Earth Floor",
+    "price": "💰500"
+  },
+  {
+    "desc": "Brown earth carpeted with fresh green grass, cool and lush like a morning garden.",
+    "gain": "+1",
+    "id": "floor_earth_grass",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Green Grass Earth Floor",
+    "price": "💰700"
+  },
+  {
+    "desc": "Damp earth dotted with green moss and little pebbles, cool like a backyard garden.",
+    "gain": "+1",
+    "id": "floor_earth_mossy",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Mossy Earth Floor",
+    "price": "💰500"
+  },
+  {
+    "desc": "Warm red clay ground with a slightly rough, earthy texture.",
+    "gain": "+1",
+    "id": "floor_earth_red_clay",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Red Clay Earth Floor",
+    "price": "💰500"
+  },
+  {
+    "desc": "Fine white sand covering the floor, clean and cool like a tropical beach.",
+    "gain": "+1",
+    "id": "floor_earth_white_sand",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "White Sand Floor",
+    "price": "💰1.000"
+  },
+  {
+    "desc": "Fine golden sand covering the floor, bright and warm like an afternoon beach.",
+    "gain": "+1",
+    "id": "floor_earth_yellow_sand",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Yellow Sand Floor",
+    "price": "💰1.000"
+  },
+  {
+    "desc": "Smooth solid emerald green glazed ceramic tile with a sleek, tidy finish.",
+    "gain": "+1",
+    "id": "floor_emerald",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Emerald green Tile Floor",
+    "price": "💰280"
+  },
+  {
+    "desc": "Classic encaustic tiles with deep cobalt floral motifs and gold accents.",
+    "gain": "+1",
+    "id": "floor_encaustic_blue",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Royal Encaustic Blue Floor",
+    "price": "💰390"
+  },
+  {
+    "desc": "Smooth solid espresso brown glazed ceramic tile with a sleek, tidy finish.",
+    "gain": "+1",
+    "id": "floor_espresso",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Espresso brown Tile Floor",
+    "price": "💰280"
+  },
+  {
+    "desc": "Smooth solid fuchsia glazed ceramic tile with a sleek, tidy finish.",
+    "gain": "+1",
+    "id": "floor_fuchsia",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Fuchsia Tile Floor",
+    "price": "💰280"
+  },
+  {
+    "desc": "Smooth solid garnet red glazed ceramic tile with a sleek, tidy finish.",
+    "gain": "+1",
+    "id": "floor_garnet",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Garnet red Tile Floor",
+    "price": "💰280"
+  },
+  {
+    "desc": "Warm gold-leaf tiles with a rich, luxurious glow.",
+    "gain": "+3",
+    "id": "floor_gold_leaf",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Gold Leaf Tile Floor 24K",
+    "price": "💰840"
+  },
+  {
+    "desc": "Smooth solid golden glazed ceramic tile with a sleek, tidy finish.",
+    "gain": "+1",
+    "id": "floor_golden",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Golden Tile Floor",
+    "price": "💰280"
+  },
+  {
+    "desc": "Smooth solid greige glazed ceramic tile with a sleek, tidy finish.",
+    "gain": "+1",
+    "id": "floor_greige",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Greige Tile Floor",
+    "price": "💰280"
+  },
+  {
+    "desc": "Smooth solid iris purple glazed ceramic tile with a sleek, tidy finish.",
+    "gain": "+1",
+    "id": "floor_iris",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Iris purple Tile Floor",
+    "price": "💰280"
+  },
+  {
+    "desc": "Smooth solid ivory glazed ceramic tile with a sleek, tidy finish.",
+    "gain": "+1",
+    "id": "floor_ivory",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Ivory Tile Floor",
+    "price": "💰280"
+  },
+  {
+    "desc": "Smooth solid lavender glazed ceramic tile with a sleek, tidy finish.",
+    "gain": "+1",
+    "id": "floor_lavender",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Lavender Tile Floor",
+    "price": "💰280"
+  },
+  {
+    "desc": "Smooth solid marigold glazed ceramic tile with a sleek, tidy finish.",
+    "gain": "+1",
+    "id": "floor_marigold",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Marigold Tile Floor",
+    "price": "💰280"
+  },
+  {
+    "desc": "Smooth solid matcha green glazed ceramic tile with a sleek, tidy finish.",
+    "gain": "+1",
+    "id": "floor_matcha",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Matcha green Tile Floor",
+    "price": "💰280"
+  },
+  {
+    "desc": "Charcoal matte tiles with no shine, understated and cozy.",
+    "gain": "+1",
+    "id": "floor_matte_black",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Matte Black Tile Floor",
+    "price": "💰380"
+  },
+  {
+    "desc": "Smooth solid mocha glazed ceramic tile with a sleek, tidy finish.",
+    "gain": "+1",
+    "id": "floor_mocha",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Mocha Tile Floor",
+    "price": "💰280"
+  },
+  {
+    "desc": "Smooth solid moss green glazed ceramic tile with a sleek, tidy finish.",
+    "gain": "+1",
+    "id": "floor_moss",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Moss green Tile Floor",
+    "price": "💰280"
+  },
+  {
+    "desc": "Smooth solid mulberry glazed ceramic tile with a sleek, tidy finish.",
+    "gain": "+1",
+    "id": "floor_mulberry",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Mulberry Tile Floor",
+    "price": "💰280"
+  },
+  {
+    "desc": "Smooth solid onyx black glazed ceramic tile with a sleek, tidy finish.",
+    "gain": "+1",
+    "id": "floor_onyx",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Onyx black Tile Floor",
+    "price": "💰280"
+  },
+  {
+    "desc": "Smooth solid ocean blue glazed ceramic tile with a sleek, tidy finish.",
+    "gain": "+1",
+    "id": "floor_pacific",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Ocean blue Tile Floor",
+    "price": "💰280"
+  },
+  {
+    "desc": "Smooth solid pistachio green glazed ceramic tile with a sleek, tidy finish.",
+    "gain": "+1",
+    "id": "floor_pistachio",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Pistachio green Tile Floor",
+    "price": "💰280"
+  },
+  {
+    "desc": "Smooth solid rose pink glazed ceramic tile with a sleek, tidy finish.",
+    "gain": "+1",
+    "id": "floor_rose",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Rose pink Tile Floor",
+    "price": "💰280"
+  },
+  {
+    "desc": "Smooth solid sage green glazed ceramic tile with a sleek, tidy finish.",
+    "gain": "+1",
+    "id": "floor_sage",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Sage green Tile Floor",
+    "price": "💰280"
+  },
+  {
+    "desc": "Smooth solid salmon glazed ceramic tile with a sleek, tidy finish.",
+    "gain": "+1",
+    "id": "floor_salmon",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Salmon Tile Floor",
+    "price": "💰280"
+  },
+  {
+    "desc": "Smooth solid scarlet glazed ceramic tile with a sleek, tidy finish.",
+    "gain": "+1",
+    "id": "floor_scarlet",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Scarlet Tile Floor",
+    "price": "💰280"
+  },
+  {
+    "desc": "Smooth solid sienna glazed ceramic tile with a sleek, tidy finish.",
+    "gain": "+1",
+    "id": "floor_sienna",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Sienna Tile Floor",
+    "price": "💰280"
+  },
+  {
+    "desc": "Smooth solid silver gray glazed ceramic tile with a sleek, tidy finish.",
+    "gain": "+1",
+    "id": "floor_silver",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Silver gray Tile Floor",
+    "price": "💰280"
+  },
+  {
+    "desc": "Smooth solid sunset orange glazed ceramic tile with a sleek, tidy finish.",
+    "gain": "+1",
+    "id": "floor_sunset",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Sunset orange Tile Floor",
+    "price": "💰280"
+  },
+  {
+    "desc": "Smooth solid teal glazed ceramic tile with a sleek, tidy finish.",
+    "gain": "+1",
+    "id": "floor_teal",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Teal Tile Floor",
+    "price": "💰280"
+  },
+  {
+    "desc": "Smooth Italian pastel terrazzo embedded with colorful quartz chips.",
+    "gain": "+1",
+    "id": "floor_terrazzo_pastel",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Pastel Terrazzo Floor",
+    "price": "💰330"
+  },
+  {
+    "desc": "Smooth solid vanilla cream glazed ceramic tile with a sleek, tidy finish.",
+    "gain": "+1",
+    "id": "floor_vanilla",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Vanilla cream Tile Floor",
+    "price": "💰280"
+  },
+  {
+    "desc": "Smooth solid vermilion glazed ceramic tile with a sleek, tidy finish.",
+    "gain": "+1",
+    "id": "floor_vermilion",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Vermilion Tile Floor",
+    "price": "💰280"
+  },
+  {
+    "desc": "Three-tiered stone fountain with cascading water and lucky coins.",
+    "gain": "+10",
+    "id": "fountain",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Stone Fountain",
+    "price": "💰3.040"
+  },
+  {
+    "desc": "Tiered brass pedestal with pleated shade casting warm amber glow.",
+    "gain": "+3",
+    "id": "lamp",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Brass Floor Lamp",
+    "price": "💰90"
+  },
+  {
+    "desc": "Sleek hemispherical projector casting mesmerizing undulating waves of northern lights and stardust.",
+    "gain": "+12",
+    "id": "lamp_aurora_projector",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Aurora Sky Projector",
+    "price": "💰2.800"
+  },
+  {
+    "desc": "Cluster of three magical woodland mushrooms glowing with enchanting bioluminescent cyan and violet hues.",
+    "gain": "+9",
+    "id": "lamp_bioluminescent_mushrooms",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Bioluminescent Shrooms",
+    "price": "💰1.950"
+  },
+  {
+    "desc": "Rustic timber festoon post on a cross base supporting swags of warm glowing globe string lights.",
+    "gain": "+10",
+    "id": "lamp_bistro_string_pole",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Bistro Festoon Post",
+    "price": "💰920"
+  },
+  {
+    "desc": "Frosted glass jar with a cream wax candle and a small warm flame.",
+    "gain": "+2",
+    "id": "lamp_candle_jar",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Glass Jar Candle Lamp",
+    "price": "💰420"
+  },
+  {
+    "desc": "Cluster of five vintage Edison bulbs with glowing zigzag filaments hanging from rustic timber and brass.",
+    "gain": "+10",
+    "id": "lamp_edison_filament_cluster",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Edison Bulb Cluster",
+    "price": "💰820"
+  },
+  {
+    "desc": "Compact electric fireplace featuring rustic brick casing, glowing embers, and dancing warm flames.",
+    "gain": "+7",
+    "id": "lamp_electric_fireplace_sim",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Electric Ember Hearth",
+    "price": "💰3.800"
+  },
+  {
+    "desc": "Miniature fairytale castle with three conical turret towers, glowing windows, and fairy dust.",
+    "gain": "+10",
+    "id": "lamp_fairy_castle_tower",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Fairy Castle Lamp",
+    "price": "💰2.200"
+  },
+  {
+    "desc": "Corked vintage glass jar enclosing a flutter of magical fireflies dancing around a weathered twig.",
+    "gain": "+9",
+    "id": "lamp_firefly_jar",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Magical Firefly Jar",
+    "price": "💰720"
+  },
+  {
+    "desc": "Nordic porcelain bowl of still water with three gently glowing pink lotus blossoms.",
+    "gain": "+8",
+    "id": "lamp_floating_lotus_bowl",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Floating Lotus Bowl",
+    "price": "💰1.350"
+  },
+  {
+    "desc": "Cluster of five pastel glass orbs shimmering with ethereal reflections upon a brass stand.",
+    "gain": "+15",
+    "id": "lamp_glass_bubble_cluster",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Glass Bubble Cluster",
+    "price": "💰780"
+  },
+  {
+    "desc": "Raw crystalline Himalayan pink salt block mounted on mahogany base radiating a therapeutic amber glow.",
+    "gain": "+7",
+    "id": "lamp_himalayan_salt_rock",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Himalayan Salt Lamp",
+    "price": "💰480"
+  },
+  {
+    "desc": "Amber-toned layered hexagonal honeycomb lamp with handcrafted bees buzzing gently.",
+    "gain": "+10",
+    "id": "lamp_honeycomb_beehive",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Honeycomb Beehive Lamp",
+    "price": "💰620"
+  },
+  {
+    "desc": "Mesmerizing glowing red wax blobs floating in a sleek chrome rocket.",
+    "gain": "+6",
+    "id": "lamp_lava",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Retro Lava Lamp",
+    "price": "💰510"
+  },
+  {
+    "desc": "Brass stand holding a pierced lantern that casts star-shaped amber light.",
+    "gain": "+11",
+    "id": "lamp_moroccan_floor",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Moroccan Pierced Lantern",
+    "price": "💰760"
+  },
+  {
+    "desc": "Cute red ceramic mushroom lamp with white dots that glows warm from under its cap.",
+    "gain": "+4",
+    "id": "lamp_mushroom_ceramic",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Ceramic Mushroom Lamp",
+    "price": "💰140"
+  },
+  {
+    "desc": "Artistic retro neon tube sculpted into a poised pink flamingo glowing vibrantly on a sleek black stand.",
+    "gain": "+12",
+    "id": "lamp_neon_art_flamingo",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Neon Flamingo",
+    "price": "💰2.100"
+  },
+  {
+    "desc": "Traditional Asian wooden post hanging an auspicious crimson paper lantern with warm light.",
+    "gain": "+3",
+    "id": "lamp_paper_lantern",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Red Paper Lantern Lamp",
+    "price": "💰330"
+  },
+  {
+    "desc": "High-tech glass globe discharging crackling violet and electric-cyan plasma lightning arcs.",
+    "gain": "+15",
+    "id": "lamp_plasma_sphere",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Cyber Plasma Orb",
+    "price": "💰2.160"
+  },
+  {
+    "desc": "Futuristic magnetic levitation orb hovering in mid-air with dual plasma rings and quantum aura.",
+    "gain": "+15",
+    "id": "lamp_quantum_levitating_orb",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Quantum Levitating Orb",
+    "price": "💰12.000"
+  },
+  {
+    "desc": "Amber celestial planet with dual translucent tilted rings floating elegantly on a brass stand.",
+    "gain": "+8",
+    "id": "lamp_saturn_planet_ring",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Saturn Planet Lamp",
+    "price": "💰3.400"
+  },
+  {
+    "desc": "Nautical brass porthole lamp with eight heavy studs radiating a warm maritime beam.",
+    "gain": "+9",
+    "id": "lamp_ship_porthole_brass",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Brass Porthole Lamp",
+    "price": "💰700"
+  },
+  {
+    "desc": "Chubby winter snowman wearing a red scarf, with warm amber light glowing from within.",
+    "gain": "+7",
+    "id": "lamp_snowman_winter",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Snowman Lantern",
+    "price": "💰450"
+  },
+  {
+    "desc": "Ornate cast-iron Victorian gas lantern illuminating grand promenades.",
+    "gain": "+8",
+    "id": "lamp_street",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Gas Street Lantern",
+    "price": "💰630"
+  },
+  {
+    "desc": "Spherical brass-capped glass terrarium enclosing moss, micro ferns, and warm fairy lights.",
+    "gain": "+11",
+    "id": "lamp_terrarium_glowing",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Glowing Terrarium",
+    "price": "💰650"
+  },
+  {
+    "desc": "Woven bamboo outdoor torch burning with vibrant island fire.",
+    "gain": "+4",
+    "id": "lamp_tiki_torch",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Bamboo Tiki Torch",
+    "price": "💰220"
+  },
+  {
+    "desc": "Three slim legs hold up a wide linen drum shade that glows warm yellow.",
+    "gain": "+7",
+    "id": "lamp_tripod_fabric",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Tripod Fabric Floor Lamp",
+    "price": "💰360"
+  },
+  {
+    "desc": "Ornate wrought brass floor candelabra adorned with glistening crystal teardrops.",
+    "gain": "+7",
+    "id": "lamp_vintage_chandelier",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Crystal Floor Chandelier",
+    "price": "💰630"
+  },
+  {
+    "desc": "Luminous water wall aquarium with swimming clownfish, vibrant sea grass, and rising bubbles.",
+    "gain": "+3",
+    "id": "partition_aquarium",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Aquarium Water Wall",
+    "price": "💰960"
+  },
+  {
+    "desc": "Natural bamboo poles tied with jute ropes, bringing peace and tranquility.",
+    "gain": "+3",
+    "id": "partition_bamboo",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Zen Bamboo Divider",
+    "price": "💰750"
+  },
+  {
+    "desc": "Crystal-clear glass that splits the room but keeps the view open.",
+    "gain": "+3",
+    "id": "partition_clear_glass",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Clear Glass Divider",
+    "price": "💰330"
+  },
+  {
+    "desc": "White wooden garden trellis overgrown with verdant ivy vines and fragrant blooming crimson roses.",
+    "gain": "+3",
+    "id": "partition_flower_trellis",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Rose Trellis Divider",
+    "price": "💰650"
+  },
+  {
+    "desc": "Classy frosted glass that gives privacy and keeps the room bright.",
+    "gain": "+3",
+    "id": "partition_frosted_glass",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Frosted Glass Divider",
+    "price": "💰300"
+  },
+  {
+    "desc": "A sturdy low brick wall with a stone cap.",
+    "gain": "+2",
+    "id": "partition_low_brick",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Low Brick Wall",
+    "price": "💰220"
+  },
+  {
+    "desc": "Ornate black cast iron garden barrier featuring antique Victorian scrollwork medallions.",
+    "gain": "+2",
+    "id": "partition_low_cast_iron_vintage",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Victorian Cast Iron Railing",
+    "price": "💰300"
+  },
+  {
+    "desc": "Glazed blue and white Portuguese ceramic tiles capped with polished dark hardwood.",
+    "gain": "+2",
+    "id": "partition_low_ceramic_tiles",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Azulejo Tile Low Wall",
+    "price": "💰800"
+  },
+  {
+    "desc": "A low painted planter brimming with colorful blooms.",
+    "gain": "+2",
+    "id": "partition_low_flower_box",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Blooming Flower Box",
+    "price": "💰420"
+  },
+  {
+    "desc": "A slim wrought-iron railing, low and elegant.",
+    "gain": "+2",
+    "id": "partition_low_iron",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Low Iron Railing",
+    "price": "💰180"
+  },
+  {
+    "desc": "A low wall of bright glazed tiles with a golden cap.",
+    "gain": "+2",
+    "id": "partition_low_mosaic",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Mosaic Tile Wall",
+    "price": "💰830"
+  },
+  {
+    "desc": "A cute low wooden fence that marks out a corner.",
+    "gain": "+2",
+    "id": "partition_low_picket",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Low Picket Fence",
+    "price": "💰100"
+  },
+  {
+    "desc": "Polished brass ball-topped posts draped with swags of luxurious deep crimson velvet rope.",
+    "gain": "+2",
+    "id": "partition_low_rope_stanchion",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "VIP Velvet Rope Stanchion",
+    "price": "💰800"
+  },
+  {
+    "desc": "Intricately carved teak lattice screen featuring geometric Moorish star arches.",
+    "gain": "+3",
+    "id": "partition_moroccan_carved",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Moroccan Mashrabiya Screen",
+    "price": "💰1.300"
+  },
+  {
+    "desc": "A Japanese paper screen in a wooden frame that softly filters the light.",
+    "gain": "+3",
+    "id": "partition_shoji",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Shoji Divider",
+    "price": "💰380"
+  },
+  {
+    "desc": "Jewel-colored stained glass with a golden rose at its heart.",
+    "gain": "+3",
+    "id": "partition_stained_glass",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Stained Glass Divider",
+    "price": "💰890"
+  },
+  {
+    "desc": "Elegant wooden slats that split the room while keeping it airy.",
+    "gain": "+3",
+    "id": "partition_wood_slat",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Wooden Slat Divider",
+    "price": "💰150"
+  },
+  {
+    "desc": "Terracotta masonry pier crowned with carved stone finial and green ivy.",
+    "gain": "+5",
+    "id": "pillar_brick",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Ivy Brick Pier",
+    "price": "💰440"
+  },
+  {
+    "desc": "A polished sandstone column with an inverted lotus bell, where three noble lions raise a golden Dharma wheel.",
+    "gain": "+13",
+    "id": "pillar_buddhist_ashoka_lion",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Ashoka Lion Pillar",
+    "price": "💰25.000"
+  },
+  {
+    "desc": "An eight-sided blue-stone sutra column like those of old Hoa Lu, with gilded engraving, lotus tiers and a small jewel-topped roof.",
+    "gain": "+12",
+    "id": "pillar_buddhist_dharani_sutra",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Octagonal Sutra Pillar",
+    "price": "💰25.000"
+  },
+  {
+    "desc": "A red lacquer pillar with gold ribbons and lucky clouds, on a stone lotus base, topped by three bracket tiers and a golden jewel.",
+    "gain": "+11",
+    "id": "pillar_buddhist_lacquer_lotus",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Gilded Lacquer Temple Pillar",
+    "price": "💰25.000"
+  },
+  {
+    "desc": "Raw basalt rock pillar split open to reveal a glittering hollow cavern of deep purple amethyst crystals.",
+    "gain": "+13",
+    "id": "pillar_crystal_geode",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Amethyst Geode Pillar",
+    "price": "💰9.000"
+  },
+  {
+    "desc": "Futuristic black alloy obelisk channeling a pulsating cyan plasma energy crystal.",
+    "gain": "+6",
+    "id": "pillar_cyber_pylon",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Cyber Energy Pylon",
+    "price": "💰3.300"
+  },
+  {
+    "desc": "Fluted pure white Greek marble column topped with gilded acanthus leaf capital.",
+    "gain": "+10",
+    "id": "pillar_marble_corinthian",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Corinthian Marble Column",
+    "price": "💰800"
+  },
+  {
+    "desc": "Fluted white limestone pillar topped with sculpted classical scrolls.",
+    "gain": "+10",
+    "id": "pillar_roman",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Ionic Roman Column",
+    "price": "💰1.280"
+  },
+  {
+    "desc": "Heavy riveted boiler steel column wound with coiled copper steam pipes, brass pressure gauges, and turning valves.",
+    "gain": "+10",
+    "id": "pillar_steampunk_pipe",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Steampunk Pressure Column",
+    "price": "💰6.000"
+  },
+  {
+    "desc": "Traditional mossy stone lantern pagoda pillar glowing with a serene warm ember flame.",
+    "gain": "+6",
+    "id": "pillar_stone_lantern",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Japanese Stone Toro Lantern",
+    "price": "💰1.600"
+  },
+  {
+    "desc": "Slender Brunswick green cast iron pillar embossed with spiral golden acanthus scrolls and openwork capital.",
+    "gain": "+7",
+    "id": "pillar_victorian_cast_iron",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Victorian Cast Iron Pillar",
+    "price": "💰890"
+  },
+  {
+    "desc": "A tall pseudo-stem with broad green leaves fanning out to the sides.",
+    "gain": "+7",
+    "id": "plant_banana_tree",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Ornamental Banana",
+    "price": "💰360"
+  },
+  {
+    "desc": "Big paddle leaves on long stalks, with an orange and blue bloom.",
+    "gain": "+7",
+    "id": "plant_bird_of_paradise",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Bird of Paradise",
+    "price": "💰420"
+  },
+  {
+    "desc": "Carefully sculpted miniature pine in a glazed ceramic planter.",
+    "gain": "+6",
+    "id": "plant_bonsai",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Bonsai Tree",
+    "price": "💰590"
+  },
+  {
+    "desc": "A terracotta pot of lush green fern fronds fanning outward.",
+    "gain": "+3",
+    "id": "plant_boston_fern",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Leafy Fern Pot",
+    "price": "💰110"
+  },
+  {
+    "desc": "Spiny saguaro with budding pink blossom in terracotta pot.",
+    "gain": "+5",
+    "id": "plant_cactus",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Desert Saguaro Cactus",
+    "price": "💰60"
+  },
+  {
+    "desc": "A green painted pot of fresh white daisies with golden centers.",
+    "gain": "+2",
+    "id": "plant_daisy",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Daisy Pot",
+    "price": "💰100"
+  },
+  {
+    "desc": "A slim brown trunk with big fiddle-shaped leaves in a terracotta pot.",
+    "gain": "+6",
+    "id": "plant_fiddle_fig",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Fiddle Leaf Fig",
+    "price": "💰380"
+  },
+  {
+    "desc": "Auspicious cluster of golden bamboo canes in a black lacquer planter.",
+    "gain": "+12",
+    "id": "plant_golden_bamboo",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Golden Lucky Bamboo",
+    "price": "💰1.040"
+  },
+  {
+    "desc": "A lush, spreading green canopy heavy with ripe red apples, growing from a mossy trunk.",
+    "gain": "+6",
+    "id": "plant_ground_apple",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Apple Tree",
+    "price": "💰450"
+  },
+  {
+    "desc": "Soft pink blossoms covering a wide, spreading crown, rooted in the ground by the path.",
+    "gain": "+8",
+    "id": "plant_ground_cherry",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Cherry Blossom Tree",
+    "price": "💰3.200"
+  },
+  {
+    "desc": "A dense dark-green crown with golden mangoes hanging among the leaves.",
+    "gain": "+7",
+    "id": "plant_ground_mango",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Mango Tree",
+    "price": "💰570"
+  },
+  {
+    "desc": "A broad crown of fiery orange and red leaves, rooted firmly in the ground.",
+    "gain": "+8",
+    "id": "plant_ground_maple",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Red Maple",
+    "price": "💰2.500"
+  },
+  {
+    "desc": "Stacked evergreen tiers of needles, planted straight in the ground for a cozy forest feel.",
+    "gain": "+3",
+    "id": "plant_ground_pine",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Pine Tree",
+    "price": "💰350"
+  },
+  {
+    "desc": "A white ceramic pot with a round cluster of blue hydrangea blooms.",
+    "gain": "+4",
+    "id": "plant_hydrangea",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Blue Hydrangea",
+    "price": "💰150"
+  },
+  {
+    "desc": "A thick trunk with branches of round, plump green leaves in a white pot.",
+    "gain": "+5",
+    "id": "plant_jade_tree",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Jade Plant Tree",
+    "price": "💰260"
+  },
+  {
+    "desc": "Fragrant purple lavender spikes in a glazed blue pot.",
+    "gain": "+4",
+    "id": "plant_lavender",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Lavender Pot",
+    "price": "💰170"
+  },
+  {
+    "desc": "A terracotta pot bursting with bright orange and gold marigolds.",
+    "gain": "+2",
+    "id": "plant_marigold",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Marigold Pot",
+    "price": "💰30"
+  },
+  {
+    "desc": "Lush Swiss cheese plant with broad perforated fenestrated leaves in a woven basket.",
+    "gain": "+6",
+    "id": "plant_monstera",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Monstera Deliciosa",
+    "price": "💰370"
+  },
+  {
+    "desc": "A gnarled trunk with a round crown of narrow silver-green leaves.",
+    "gain": "+8",
+    "id": "plant_olive_tree",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Olive Tree",
+    "price": "💰480"
+  },
+  {
+    "desc": "Feathery arched fronds bringing refreshing coastal breeze indoors.",
+    "gain": "+7",
+    "id": "plant_palm",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Tropical Areca Palm",
+    "price": "💰180"
+  },
+  {
+    "desc": "A low white stone bed of cheerful purple and yellow pansies.",
+    "gain": "+2",
+    "id": "plant_pansy",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Pansy Bed",
+    "price": "💰30"
+  },
+  {
+    "desc": "Blooming red roses in a fluted white marble trough.",
+    "gain": "+3",
+    "id": "plant_rose",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Rose Planter",
+    "price": "💰40"
+  },
+  {
+    "desc": "A tall glossy-leaved plant with a reddish new leaf at the top.",
+    "gain": "+6",
+    "id": "plant_rubber_tree",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Rubber Plant",
+    "price": "💰320"
+  },
+  {
+    "desc": "Elegant potted cherry blossom tree in full pink bloom with scattered petals.",
+    "gain": "+9",
+    "id": "plant_sakura",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Blooming Sakura Bonsai",
+    "price": "💰2.000"
+  },
+  {
+    "desc": "Architectural sansevieria in a white square ceramic pot with golden-edged leaves.",
+    "gain": "+4",
+    "id": "plant_snake",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Variegated Snake Plant",
+    "price": "💰260"
+  },
+  {
+    "desc": "A small ceramic pot with neat rosettes of blue-green succulents.",
+    "gain": "+2",
+    "id": "plant_succulent",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Echeveria Trio",
+    "price": "💰200"
+  },
+  {
+    "desc": "Cheerful potted sunflower with golden petals radiating warm sunny energy.",
+    "gain": "+3",
+    "id": "plant_sunflower",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Sunlit Sunflower",
+    "price": "💰150"
+  },
+  {
+    "desc": "A wooden crate of red, yellow and pink tulips in full bloom.",
+    "gain": "+3",
+    "id": "plant_tulip",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Tulip Crate",
+    "price": "💰70"
+  },
+  {
+    "desc": "Several tall stems, each ending in a round cluster of palm-shaped leaves.",
+    "gain": "+6",
+    "id": "plant_umbrella_tree",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Umbrella Tree",
+    "price": "💰300"
+  },
+  {
+    "desc": "Woven crimson and gold medallion rug with fringed edges.",
+    "gain": "+1",
+    "id": "rug",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Persian Rug",
+    "price": "💰80"
+  },
+  {
+    "desc": "Plush snow-white faux sheepskin fleece rug with soft natural organic contours.",
+    "gain": "+1",
+    "id": "rug_bear_pelt",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Nordic Snow Sheepskin Pelt",
+    "price": "💰620"
+  },
+  {
+    "desc": "Geometric diamond tapestry rug with earthy terracotta and turquoise motifs.",
+    "gain": "+1",
+    "id": "rug_boho_aztec",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Boho Aztec Tribal Rug",
+    "price": "💰340"
+  },
+  {
+    "desc": "Bright candy-stripe rug in pink, yellow, mint, sky, lilac and orange with fluffy white fringe.",
+    "gain": "+1",
+    "id": "rug_candy_stripe",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Candy Rainbow Stripe Rug",
+    "price": "💰680"
+  },
+  {
+    "desc": "Bold black-and-white checkered rug with a high-contrast red racing border.",
+    "gain": "+1",
+    "id": "rug_checkerboard",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Retro Diner Checker Rug",
+    "price": "💰190"
+  },
+  {
+    "desc": "Herringbone natural grey cobblestone patio pavers accented with moss.",
+    "gain": "+1",
+    "id": "rug_cobblestone",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Cobblestone Terrace Mat",
+    "price": "💰60"
+  },
+  {
+    "desc": "Woven rush grass mat bound with black silk brocade borders stamped with gold mon crests.",
+    "gain": "+1",
+    "id": "rug_japanese_tatami",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Japanese Tatami Mat",
+    "price": "💰380"
+  },
+  {
+    "desc": "Ornate circular mandala medallion rug with shimmering turquoise and gold accents.",
+    "gain": "+1",
+    "id": "rug_mandala_teal",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Teal Mandala Rug",
+    "price": "💰500"
+  },
+  {
+    "desc": "Terracotta and stone tesserae mosaic rug with Greek Meander key border and laurel wreath medallion.",
+    "gain": "+1",
+    "id": "rug_mosaic_roman",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Roman Villa Mosaic Rug",
+    "price": "💰950"
+  },
+  {
+    "desc": "Imperial emerald silk brocade carpet featuring golden lotus blossoms and auspicious cloud waves.",
+    "gain": "+1",
+    "id": "rug_oriental_lotus",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Oriental Lotus Silk Rug",
+    "price": "💰890"
+  },
+  {
+    "desc": "Luxurious plush scarlet velvet carpet hand-embroidered with heavy gold threads and tassels.",
+    "gain": "+1",
+    "id": "rug_royal_fleece",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Imperial Crimson Velvet Rug",
+    "price": "💰830"
+  },
+  {
+    "desc": "Glowing yellow and orange sunburst rug with a bright pink border and a sun medallion.",
+    "gain": "+1",
+    "id": "rug_sunburst",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Radiant Sunburst Rug",
+    "price": "💰570"
+  },
+  {
+    "desc": "Commercial restaurant stove where chefs prepare delicious recipes.",
+    "gain": "",
+    "id": "stove",
+    "isMachine": false,
+    "label": "",
+    "name": "Cooking Stove",
+    "price": "💰590"
+  },
+  {
+    "desc": "Clay stove burning charcoal. Grilled dishes come out smoky and rustic.",
+    "gain": "",
+    "id": "stove_charcoal",
+    "isMachine": false,
+    "label": "",
+    "name": "Charcoal Clay Stove",
+    "price": "💰280"
+  },
+  {
+    "desc": "Rustic plastered clay stove with a firewood mouth, two clay pots, a chimney and a tiny kitchen-god shrine.",
+    "gain": "",
+    "id": "stove_clay",
+    "isMachine": false,
+    "label": "",
+    "name": "Clay Firewood Stove",
+    "price": "💰550"
+  },
+  {
+    "desc": "Steel gas stove with two blue-flame burners and a sturdy cast-iron grate for everyday dishes.",
+    "gain": "",
+    "id": "stove_gas",
+    "isMachine": false,
+    "label": "",
+    "name": "Gas Stove",
+    "price": "💰420"
+  },
+  {
+    "desc": "Low walnut table with a built-in steel pot split into spicy and clear broth, with dipping plates and sauce bowls.",
+    "gain": "",
+    "id": "stove_hotpot",
+    "isMachine": false,
+    "label": "",
+    "name": "Built-in Hotpot Cooker",
+    "price": "💰1.500"
+  },
+  {
+    "desc": "Four-zone stainless induction cooker on a low wooden table, with stockpots and saucepans.",
+    "gain": "",
+    "id": "stove_induction",
+    "isMachine": false,
+    "label": "",
+    "name": "Induction Stove",
+    "price": "💰330"
+  },
+  {
+    "desc": "Stainless steel vertical grill with a rotating meat spit, infrared heaters, and a drip tray.",
+    "gain": "",
+    "id": "stove_kebab",
+    "isMachine": false,
+    "label": "",
+    "name": "Kebab Rotisserie",
+    "price": "💰4.200"
+  },
+  {
+    "desc": "Domed brick oven on a stone base with an arched fire mouth and a firewood nook. Bakes crispy pizzas fast.",
+    "gain": "",
+    "id": "stove_pizza",
+    "isMachine": false,
+    "label": "",
+    "name": "Brick Pizza Oven",
+    "price": "💰4.500"
+  },
+  {
+    "desc": "Retro enamel range on iron feet with a glass oven door, four cast-iron rings, a flue pipe, a copper kettle and a red casserole.",
+    "gain": "",
+    "id": "stove_range",
+    "isMachine": false,
+    "label": "",
+    "name": "Vintage Mint Range",
+    "price": "💰1.000"
+  },
+  {
+    "desc": "Steel cabinet with a wide flat griddle, grease trough, spatulas and sauce bottles. Sizzles steak, shrimp and onion volcanoes.",
+    "gain": "",
+    "id": "stove_teppan",
+    "isMachine": false,
+    "label": "",
+    "name": "Teppanyaki Grill",
+    "price": "💰3.500"
+  },
+  {
+    "desc": "Brick stove with a wide flame ring and a deep wok. Stir-fries cook fast and hot.",
+    "gain": "",
+    "id": "stove_wok",
+    "isMachine": false,
+    "label": "",
+    "name": "High-Heat Wok Stove",
+    "price": "💰880"
+  },
+  {
+    "desc": "Sturdy wooden table for dining patrons.",
+    "gain": "",
+    "id": "table",
+    "isMachine": false,
+    "label": "",
+    "name": "Dining Table",
+    "price": "💰150"
+  },
+  {
+    "desc": "Wrought-iron black bistro table with a warm espresso cup.",
+    "gain": "",
+    "id": "table_cafe_metal",
+    "isMachine": false,
+    "label": "",
+    "name": "Paris Cafe Table",
+    "price": "💰180"
+  },
+  {
+    "desc": "Retro chrome table with black and white checkered motif.",
+    "gain": "",
+    "id": "table_checker",
+    "isMachine": false,
+    "label": "",
+    "name": "Diner Checker Table",
+    "price": "💰200"
+  },
+  {
+    "desc": "Futuristic black composite table integrated with neon cyan circuitry and a holo-projector.",
+    "gain": "",
+    "id": "table_cyber_neon",
+    "isMachine": false,
+    "label": "",
+    "name": "Cyber Hologram Table",
+    "price": "💰2.400"
+  },
+  {
+    "desc": "Chrome-trimmed scarlet laminate diner table with ketchup dispenser.",
+    "gain": "",
+    "id": "table_diner_booth",
+    "isMachine": false,
+    "label": "",
+    "name": "Retro Diner Table",
+    "price": "💰310"
+  },
+  {
+    "desc": "Tempered glass tabletop with polished steel legs.",
+    "gain": "",
+    "id": "table_glass",
+    "isMachine": false,
+    "label": "",
+    "name": "Modern Glass Table",
+    "price": "💰280"
+  },
+  {
+    "desc": "Gold-leaf tabletop with a sparkling finish, gold-plated legs and edges, matching the gold leaf tile floor.",
+    "gain": "",
+    "id": "table_gold_leaf",
+    "isMachine": false,
+    "label": "",
+    "name": "Gold Leaf Table 24K",
+    "price": "💰3.600"
+  },
+  {
+    "desc": "Dark walnut plank table on black iron frame with retro oil lamp.",
+    "gain": "",
+    "id": "table_industrial",
+    "isMachine": false,
+    "label": "",
+    "name": "Industrial Loft Table",
+    "price": "💰250"
+  },
+  {
+    "desc": "Calacatta marble tabletop with gilded brass rim and candelabra centerpiece.",
+    "gain": "",
+    "id": "table_marble_gold",
+    "isMachine": false,
+    "label": "",
+    "name": "Marble & Gold Table",
+    "price": "💰780"
+  },
+  {
+    "desc": "Light Scandinavian natural oak table styled with a ceramic eucalyptus vase.",
+    "gain": "",
+    "id": "table_nordic_oak",
+    "isMachine": false,
+    "label": "",
+    "name": "Nordic Oak Table",
+    "price": "💰440"
+  },
+  {
+    "desc": "Cheap bright red molded plastic table.",
+    "gain": "",
+    "id": "table_plastic",
+    "isMachine": false,
+    "label": "",
+    "name": "Plastic Table",
+    "price": "💰20"
+  },
+  {
+    "desc": "Oak barrel body with three steel hoops, a plank top, a cork bung and a brass tap for a cellar mood.",
+    "gain": "",
+    "id": "table_round_barrel",
+    "isMachine": false,
+    "label": "",
+    "name": "Wine Barrel Round Table",
+    "price": "💰2.200"
+  },
+  {
+    "desc": "A sunburst of glazed tiles in four colorful rings on twisting wrought-iron legs, Mediterranean style.",
+    "gain": "",
+    "id": "table_round_mosaic",
+    "isMachine": false,
+    "label": "",
+    "name": "Mosaic Round Table",
+    "price": "💰1.500"
+  },
+  {
+    "desc": "Pumpkin body with a glowing jack-o'-lantern face, a segmented pumpkin top with a stem and vines, and a candy corn rim.",
+    "gain": "+1",
+    "id": "table_round_pumpkin",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Halloween Pumpkin Round Table 2026",
+    "price": "💰250.000"
+  },
+  {
+    "desc": "A thick tree slice with growth rings and cracks on a root-flared trunk, mossy with a tiny mushroom at its foot.",
+    "gain": "",
+    "id": "table_round_stump",
+    "isMachine": false,
+    "label": "",
+    "name": "Tree Stump Round Table",
+    "price": "💰520"
+  },
+  {
+    "desc": "A glossy white flared pedestal with a polished walnut top and chrome edge, mid-century modern style.",
+    "gain": "",
+    "id": "table_round_tulip",
+    "isMachine": false,
+    "label": "",
+    "name": "Mid-Century Tulip Round Table",
+    "price": "💰1.100"
+  },
+  {
+    "desc": "Polished mahogany table decorated with gold leaf inlays and a crystal wine decanter.",
+    "gain": "",
+    "id": "table_royal_mahogany",
+    "isMachine": false,
+    "label": "",
+    "name": "Royal Mahogany Banquet Table",
+    "price": "💰4.000"
+  },
+  {
+    "desc": "Glazed violet tiles with a plum runner embroidered with pale pink flowers.",
+    "gain": "",
+    "id": "table_runner_ceramic",
+    "isMachine": false,
+    "label": "",
+    "name": "Violet Ceramic Table with Flowers",
+    "price": "💰560"
+  },
+  {
+    "desc": "Jade-green glass with a blue runner patterned with white waves.",
+    "gain": "",
+    "id": "table_runner_glass",
+    "isMachine": false,
+    "label": "",
+    "name": "Glass Table with White Waves",
+    "price": "💰490"
+  },
+  {
+    "desc": "White marble with a navy runner embroidered with gold diamonds.",
+    "gain": "",
+    "id": "table_runner_marble",
+    "isMachine": false,
+    "label": "",
+    "name": "Marble Table with Gold Embroidery",
+    "price": "💰780"
+  },
+  {
+    "desc": "Royal gold-plated toilet with lion legs and crest. 50 coin usage fee.",
+    "gain": "+💰50",
+    "id": "toilet_royal",
+    "isMachine": true,
+    "label": "per use",
+    "name": "Toilet Royal Gold-Plated",
+    "price": "💰60.000"
+  },
+  {
+    "desc": "High-tech electronic toilet with LED trim. 20 coin usage fee.",
+    "gain": "+💰20",
+    "id": "toilet_smart",
+    "isMachine": true,
+    "label": "per use",
+    "name": "Toilet Smart Electronic",
+    "price": "💰12.000"
+  },
+  {
+    "desc": "A simple squat toilet. 1 coin usage fee.",
+    "gain": "+💰1",
+    "id": "toilet_squat",
+    "isMachine": true,
+    "label": "per use",
+    "name": "Toilet White Squat",
+    "price": "💰500"
+  },
+  {
+    "desc": "Standard porcelain toilet with tank. 2 coin usage fee.",
+    "gain": "+💰2",
+    "id": "toilet_standard",
+    "isMachine": true,
+    "label": "per use",
+    "name": "Toilet Standard Porcelain",
+    "price": "💰1.500"
+  },
+  {
+    "desc": "Classic wooden-frame toilet. 8 coin usage fee.",
+    "gain": "+💰8",
+    "id": "toilet_vintage",
+    "isMachine": true,
+    "label": "per use",
+    "name": "Toilet Vintage Wood",
+    "price": "💰4.500"
+  },
+  {
+    "desc": "Classic walnut violin with rich varnish and bow mounted on brass wall pegs.",
+    "gain": "+8",
+    "id": "wall_antique_violin",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Antique Violin",
+    "price": "💰1.450"
+  },
+  {
+    "desc": "Mahogany mini cabinet with six glass display cubbies storing assorted dried herbal teas and botanicals.",
+    "gain": "+8",
+    "id": "wall_apothecary_herbal_cabinet",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Mini Apothecary Tea Cabinet",
+    "price": "💰3.200"
+  },
+  {
+    "desc": "Sunset-lit arched window with green louvered shutters and a flower box.",
+    "gain": "+8",
+    "id": "wall_arched_window",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Arched Shutter Window",
+    "price": "💰640"
+  },
+  {
+    "desc": "Ornate oval mirror reflecting light and aristocratic splendor.",
+    "gain": "+11",
+    "id": "wall_baroque_mirror",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Baroque Gilt Mirror",
+    "price": "💰1.120"
+  },
+  {
+    "desc": "A big, fluffy bear head with round ears and a friendly snout, mounted on a wooden shield.",
+    "gain": "+9",
+    "id": "wall_bear_head",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Bear Trophy Head",
+    "price": "💰7.500"
+  },
+  {
+    "desc": "Wood-framed chalkboard showing daily chef specials with charming hand-drawn cutlery and pastries.",
+    "gain": "+6",
+    "id": "wall_blackboard_chalk_menu",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Daily Special Chalkboard",
+    "price": "💰310"
+  },
+  {
+    "desc": "Oak shadowbox presenting five vibrant specimen butterflies pinned over velvet.",
+    "gain": "+5",
+    "id": "wall_butterfly_display_box",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Butterfly Display Box",
+    "price": "💰1.250"
+  },
+  {
+    "desc": "Magnetic stainless steel strip holding four chef knives alongside a hanging round cutting board.",
+    "gain": "+6",
+    "id": "wall_chef_knife_rack",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Magnetic Knife Strip & Board",
+    "price": "💰540"
+  },
+  {
+    "desc": "Charming retro framed cafe advertisement praising fresh morning roast.",
+    "gain": "+3",
+    "id": "wall_coffee_poster",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Vintage Coffee Poster",
+    "price": "💰40"
+  },
+  {
+    "desc": "Rustic alpine chalet clock with carved pinecone weights and singing cuckoo.",
+    "gain": "+6",
+    "id": "wall_cuckoo_clock",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Black Forest Cuckoo Clock",
+    "price": "💰390"
+  },
+  {
+    "desc": "Classic wooden-framed dartboard with red and green rings and a couple of darts.",
+    "gain": "+3",
+    "id": "wall_dartboard",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Dartboard",
+    "price": "💰330"
+  },
+  {
+    "desc": "Cluster of four Nordic ceramic plates featuring cobalt-blue floral motifs arranged artfully on the wall.",
+    "gain": "+8",
+    "id": "wall_decorative_ceramic_plates",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Nordic Blue Wall Plates",
+    "price": "💰720"
+  },
+  {
+    "desc": "A proud deer head with branching antlers, mounted on a polished wooden shield.",
+    "gain": "+8",
+    "id": "wall_deer_head",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Deer Trophy Head",
+    "price": "💰4.000"
+  },
+  {
+    "desc": "Scenic garden view framed by arched casement glass and tied velvet drapes.",
+    "gain": "+9",
+    "id": "wall_french_window",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "French Balcony Window",
+    "price": "💰720"
+  },
+  {
+    "desc": "Wrought-iron wall sconce casting warm amber illumination.",
+    "gain": "+4",
+    "id": "wall_gas_lamp",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Victorian Gas Sconce",
+    "price": "💰140"
+  },
+  {
+    "desc": "Carved mahogany longcase clock with brass pendulum and roman numerals.",
+    "gain": "+9",
+    "id": "wall_grandfather_clock",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Antique Grandfather Clock",
+    "price": "💰1.760"
+  },
+  {
+    "desc": "Sturdy brass bar displaying three nested copper pans ranging from large to small with polished interiors.",
+    "gain": "+6",
+    "id": "wall_hanging_copper_pans",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Hanging Copper Pans",
+    "price": "💰680"
+  },
+  {
+    "desc": "Jute twine hanging bundles of fragrant dried herbs: wild chamomile, sage, and cinnamon sticks.",
+    "gain": "+3",
+    "id": "wall_hanging_dried_herbs",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Dried Herb Hangings",
+    "price": "💰220"
+  },
+  {
+    "desc": "A painting capturing the stunned reaction of the 12 disciples at the moment Jesus declares that one of them will betray Him. – Leonardo da Vinci",
+    "gain": "+200",
+    "id": "wall_last_supper",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "The Last Supper",
+    "price": "💰2.200.000"
+  },
+  {
+    "desc": "Famous enigmatic smile encased in a sculpted museum gold frame.",
+    "gain": "+120",
+    "id": "wall_mona_lisa",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Masterpiece Mona Lisa",
+    "price": "💰1.900.000"
+  },
+  {
+    "desc": "Glowing cyan and red electric neon sign inviting nocturnal patrons.",
+    "gain": "+5",
+    "id": "wall_neon_open",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Neon Open Sign",
+    "price": "💰180"
+  },
+  {
+    "desc": "Modern black-framed window with a starry city skyline and sheer curtains.",
+    "gain": "+9",
+    "id": "wall_night_city_window",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Night City Window",
+    "price": "💰780"
+  },
+  {
+    "desc": "Regal tone-on-tone Damask woven into deep Bordeaux red, as luxurious as a royal palace brocade draped over your restaurant.",
+    "gain": "+1",
+    "id": "wall_paint_bordeaux_velvet",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Bordeaux Damask Royal Wall Paint",
+    "price": "💰730"
+  },
+  {
+    "desc": "A misty lotus pond mural with pink and white blooms, round leaves and soft clouds that flows from wall to wall.",
+    "gain": "+1",
+    "id": "wall_paint_buddhist_lotus_pond",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Lotus Pond Mural Wall Paint",
+    "price": "💰2.000"
+  },
+  {
+    "desc": "The warm saffron of monks' robes, with tone-on-tone mandala lotuses and a lotus frieze under the crown.",
+    "gain": "+1",
+    "id": "wall_paint_buddhist_saffron",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Saffron Robe Wall Paint",
+    "price": "💰2.000"
+  },
+  {
+    "desc": "The vermilion of Vietnamese temples, with a gilded lotus vine, lucky clouds and strings of beads. Solemn yet warm.",
+    "gain": "+1",
+    "id": "wall_paint_buddhist_temple_red",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Gilded Temple Red Wall Paint",
+    "price": "💰2.000"
+  },
+  {
+    "desc": "A seamless obsidian-purple velvet finish with a gentle pearly mist and delicate, understated starry shimmer.",
+    "gain": "+1",
+    "id": "wall_paint_metallic_pearl_purple",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Deep Purple Metallic Pearl Wall Paint",
+    "price": "💰810"
+  },
+  {
+    "desc": "A dreamy gradient melting from misty morning blue into tranquil midnight indigo, capturing the quiet magic of twilight.",
+    "gain": "+1",
+    "id": "wall_paint_midnight_navy",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Starlight Dusk Ombré Wall Paint",
+    "price": "💰420"
+  },
+  {
+    "desc": "A world map picture made by the finest mother-of-pearl inlay artisans of Vietnam.",
+    "gain": "+50",
+    "id": "wall_pearl_mosaic_world_map",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Mother-of-Pearl Inlay World Map",
+    "price": "💰600.000"
+  },
+  {
+    "desc": "Triptych of slender wooden frames arranged in a zigzag holding delicate pressed botanical blooms.",
+    "gain": "+8",
+    "id": "wall_pressed_flower_frames",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Pressed Floral Triptych",
+    "price": "💰490"
+  },
+  {
+    "desc": "Woven scene of a Roman legion marching home in triumph past mountains, red shields and golden eagle standards.",
+    "gain": "+50",
+    "id": "wall_roman_tapestry",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Triumphal Song Tapestry",
+    "price": "💰900.000"
+  },
+  {
+    "desc": "Rustic timber wine rack holding four aged wine bottles and an overhead stemware rack with inverted goblets.",
+    "gain": "+9",
+    "id": "wall_rustic_wine_rack",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Rustic Wine Rack",
+    "price": "💰1.650"
+  },
+  {
+    "desc": "Pine rail with brass hooks holding a baker's rolling pin and rustic wooden spoons.",
+    "gain": "+4",
+    "id": "wall_shelf_rolling_pin",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Rolling Pin & Spoon Rack",
+    "price": "💰260"
+  },
+  {
+    "desc": "Two-tier pine shelf holding assorted colorful spice jars with cork stoppers.",
+    "gain": "+9",
+    "id": "wall_shelf_spice_jars",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Spice Jar Shelf",
+    "price": "💰340"
+  },
+  {
+    "desc": "Prestige black Nero Portoro marble trimmed with polished brass gold.",
+    "gain": "+1",
+    "id": "wall_skirt_black_gold_marble",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Black & Gold Marble Wall Skirt",
+    "price": "💰510"
+  },
+  {
+    "desc": "Dark wood inlaid with bronze Dharma wheels, bodhi leaves and turquoise and coral beads in Tibetan style.",
+    "gain": "+1",
+    "id": "wall_skirt_buddhist_dharma_bronze",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Dharma Wheel Bronze Wall Skirt",
+    "price": "💰1.800"
+  },
+  {
+    "desc": "Red lacquer wood panels carved with gilded lotuses and lucky clouds, like the lower walls of an old temple hall.",
+    "gain": "+1",
+    "id": "wall_skirt_buddhist_lotus_lacquer",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Gilded Lacquer Lotus Wall Skirt",
+    "price": "💰1.800"
+  },
+  {
+    "desc": "Grey-green stone carved with two rows of lotus petals, beads and waves, mossy like the base of an old stupa.",
+    "gain": "+1",
+    "id": "wall_skirt_buddhist_stone_lotus",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Stone Lotus Throne Wall Skirt",
+    "price": "💰1.800"
+  },
+  {
+    "desc": "Handcrafted turquoise ceramic mosaic border catching the ambient light.",
+    "gain": "+1",
+    "id": "wall_skirt_mosaic_mediterranean",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Mediterranean Mosaic Wall Skirt",
+    "price": "💰680"
+  },
+  {
+    "desc": "Gleaming bevelled white subway tiles inspired by Parisian cafés.",
+    "gain": "+1",
+    "id": "wall_skirt_subway_tile",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Bistro Subway Tile Wall Skirt",
+    "price": "💰330"
+  },
+  {
+    "desc": "Cathedral rosette window shimmering with luminous multicolored jewels.",
+    "gain": "+14",
+    "id": "wall_stained_glass",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Stained Glass Rosette",
+    "price": "💰1.440"
+  },
+  {
+    "desc": "A classic icon of Expressionism, depicting a figure clutching their head in utter panic beneath a blazing red sky to convey the existential anxiety of humankind. – Edvard Munch",
+    "gain": "+120",
+    "id": "wall_the_scream",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "The Scream",
+    "price": "💰1.500.000"
+  },
+  {
+    "desc": "A fierce tiger head with bold stripes and yellow eyes, mounted on a wooden shield.",
+    "gain": "+10",
+    "id": "wall_tiger_head",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Tiger Trophy Head",
+    "price": "💰15.000"
+  },
+  {
+    "desc": "Medieval iron bracket torch blazing with lively crackling flames.",
+    "gain": "+4",
+    "id": "wall_torch",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Castle Wall Torch",
+    "price": "💰90"
+  },
+  {
+    "desc": "A steaming bowl drawn in chalk, with three pots on a wooden shelf and vines trailing down both sides.",
+    "gain": "+8",
+    "id": "wall_vine_chalk_menu",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Vine Chalkboard Menu",
+    "price": "💰1.100"
+  },
+  {
+    "desc": "Aged nautical parchment map paired with a polished brass navigational compass.",
+    "gain": "+9",
+    "id": "wall_vintage_map_compass",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Antique Map & Compass",
+    "price": "💰760"
+  },
+  {
+    "desc": "A lotus-carved stone ring holds a golden Dharma wheel over stained glass, with bodhi branches and a lotus base.",
+    "gain": "+10",
+    "id": "wall_window_buddhist_dharma_wheel",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Dharma Wheel Round Window",
+    "price": "💰880"
+  },
+  {
+    "desc": "A red lacquer frame under a small tiled roof, turned gold-knotted bars and carved lotuses, facing bamboo at dusk.",
+    "gain": "+9",
+    "id": "wall_window_buddhist_lotus_lattice",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Temple Lattice Lotus Window",
+    "price": "💰760"
+  },
+  {
+    "desc": "A black trapezoid frame, four-colour timber tiers, a pleated valance and prayer flags, facing the snowy Himalayas.",
+    "gain": "+12",
+    "id": "wall_window_buddhist_tibetan",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Tibetan Monastery Window",
+    "price": "💰1.040"
+  },
+  {
+    "desc": "Trio of handcrafted woven baskets arranged gracefully with dried flowers and cotton.",
+    "gain": "+8",
+    "id": "wall_woven_basket_trio",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Woven Basket Trio",
+    "price": "💰380"
+  },
+  {
+    "desc": "Lush evergreen pine wreath adorned with pinecones, red berries, and a velvet bow.",
+    "gain": "+6",
+    "id": "wall_wreath_pine_ribbon",
+    "isMachine": false,
+    "label": "decor points",
+    "name": "Pine Wreath with Ribbon",
+    "price": "💰480"
+  }
+]

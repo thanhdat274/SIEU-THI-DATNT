@@ -1,0 +1,22 @@
+
+Điều khiển & giao diện — Cẩm nang HappyTown
+HappyTown › Cẩm nang người chơi › Điều khiển & giao diện
+Điều khiển & giao diện
+Cập nhật 14/10/2026 · 235 từ
+🖥️ Máy tính
+WASD đi · giữ Shift chạy · Space nhảy
+E tương tác (gieo, thu, nói chuyện, vào nhà…)
+Kéo chuột xoay camera · lăn chuột phóng to/thu nhỏ · V đổi góc nhìn
+Phím tắt: I Kho · B Cửa hàng · Q Nhiệm vụ · M Bản đồ · F Nông trại · C Xóm nghề · U Nâng cấp · H Nhà · O Người chơi · L Hằng ngày · P Hồ sơ · K Thành tựu · Enter Chat · Esc đóng
+📱 Điện thoại
+Cầm ngang máy
+Cần điều khiển bên trái để đi
+Nút Chạy / Nhảy / Tương tác bên phải
+Chụm 2 ngón để phóng to/thu nhỏ, vuốt để xoay camera
+Máy yếu/nóng: Cài đặt › Đồ họa chọn Thấp và khung hình 30
+Màn hình chơi
+Trên cùng: cấp & XP, việc cần làm tiếp, xu, kim cương, năng lượng, kho (đã dùng/sức chứa), giờ trong game, nút Chat và Cài đặt.
+Cột trái: Nhiệm vụ, Bảng tin, Bản đồ, Vé mùa, Online (người chơi).
+Cột phải: Thư (đơn hàng), Cửa hàng, Thú cưng, Sự kiện, Hằng ngày.
+Thanh dưới: Nông trại, Túi đồ, Giao hàng, Vòng quay, Đổi quà, Xóm nghề, Nhà, Nâng cấp, Kỹ năng, Cư dân.
+Nút 📍 cạnh việc cần làm: bật chỉ đường (mũi tên vàng dẫn tới nơi cần đến).

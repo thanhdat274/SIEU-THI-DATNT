@@ -26,7 +26,7 @@ import { pickProfession, PROFESSIONS, type ProfessionDef } from '../data/profess
 import { DEBT_PARTIAL_CHANCE, DEBT_PARTIAL_MIN, installmentNow, CREDIT_UNLOCK, repaysToday, wantsCredit, creditLeft, creditAskText } from '../data/credit';
 import { askQueuedPatience, ASK_MINUTES, CANDY_ANNOY, CHANGE_CHANCE, CHANGE_UNLOCK, CREDIT_REFUSE_FRIEND_LOSS, changeChoice, defaultCounterPolicy, HAGGLE_CHANCE, HAGGLE_CHANCE_REG, HAGGLE_MIN_TOTAL, HAGGLE_UNLOCK, haggleChoice, haggleCounterOff, haggleOff, haggleSettle, oddChange, pricematchSettle } from '../data/counterDeals';
 import { rollService, SERVICE_BUY_ALONG, type ServiceDef } from '../data/services';
-import { earnService } from '../core/biz';
+import { earnService, earnTip } from '../core/biz';
 import { paymentById, pickPayment } from '../data/payments';
 import { askAtCounter, askPending, clearAsk, expireAsk, answerAsk, askWallElapsed, useCounterAsk } from '../core/counterAsk';
 import { cashierRng } from '../core/rand';
@@ -37,6 +37,11 @@ import { meatDemandFactor } from '../data/meat';
 import {
   bestSkillOnDuty, DIRT_MAX, DIRT_PER_VISIT, dirtVisitFactor,
 } from '../data/staff';
+import {
+  CRITIC_CHANCE, CRITIC_HARD_UNLOCK, CRITIC_PENALTY_REVIEWS, CRITIC_UNLOCK, CRITIC_WINDOW_MINUTES,
+  criticReward, pickCriticDish, criticPraiseReviews, criticCallText,
+} from '../data/critic';
+import { metaRng } from '../core/rand';
 import { theftCatchChance, theftSpawnChance } from '../data/theftRisk';
 import { socialTraffic } from '../data/social';
 import { adTargets, bizTraffic, LOYALTY_UNLOCK, loyaltyRedeemChance, petActive, rivalPriceGap, rivalUndercuts } from '../data/biz';
@@ -44,8 +49,10 @@ import { landmarkCustomerFactor } from '../data/landmark';
 import { redeemLoyalty, storyOnVisit } from '../core/biz';
 import { hasUpgrade } from '../data/upgrades';
 import {
-  impulseChance, impulseOptions, impulseWeight, shelfAttention, stockedAttention, weightedPick, type ShopGeom,
+  impulseChance, impulseOptions, impulseWeight, shelfAttention, stockedAttention, weightedPick, decorScoreOf, decorVisitBoost, type ShopGeom,
 } from '../data/layout';
+import { regionFlagDecorBonus, stockedProductIds } from '../data/regionFlags';
+import { vietSetDecorBonus } from '../data/decorSets';
 import { playSfx } from '../core/audio';
 
 /** Tỉ lệ món khách chọn trong số hàng đang giảm giá (nếu có). */
@@ -56,6 +63,11 @@ import { OPENING_TRAFFIC } from '../data/community';
 import type { Counter, GroceryShop } from '../shop/groceryShop';
 import type { NavGrid } from '../world/navGrid';
 import { CoinPopFX } from '../render/fx/coinPop';
+import {
+  DINE_UNLOCK, DINE_WAIT_SECONDS, EAT_SECONDS, TOILET_NEED_CHANCE, TOILET_STRICT_UNLOCK, TOILET_USE_SECONDS,
+  dineTip, freeSeat, freeToilet, isToilet, toiletFee, wantsDineIn, type SeatInfo, menuTipMul,
+} from '../data/dineIn';
+import { MACHINE_VISIT_CHANCE, MACHINE_USE_SECONDS, MACHINE_TYPES, freeMachine, isMachine, machineFeeAt, machineImpulse, MACHINE_IMPULSE_LEVEL, clawWin, type MachineId } from '../data/machines';
 import {
   Customer, FRANTIC_AT, IMPATIENT_AT, PATIENCE_MINUTES, SIDEWALK_Z, impatienceEmoji, patienceMultiplier, counterQueueScore, leastScore, reviewStars, type Deal,
 } from './customerEntity';
@@ -86,7 +98,21 @@ export class CustomerManager {
   private festivalToday = false;
   /** Phút người bán rong định ghé hôm nay (null = hôm nay không ghé); tính một lần mỗi ngày. */
   private vendorAt: number | null | undefined;
+  // ── GĐ1498 — nhà phê bình ẩm thực: ≤1 lần/ngày, gọi 1 món, phục vụ trong khung thì thưởng ──
+  /** Phút nhà phê bình định ghé hôm nay (null = hôm nay không ghé). */
+  private criticAt: number | null | undefined;
+  private criticRolledDay = -1;
+  /** Món nhà phê bình đang chờ được phục vụ (null = không có lời hẹn nào). */
+  private criticProduct: string | null = null;
+  private criticUntil = 0;
+  private criticHard = false;
   private checkoutProgress = new Map<string, number>();
+  /** GĐ1491 — ghế ăn đang bị khách chiếm (uid ghế); khách trả ghế khi ăn xong hoặc bỏ về. */
+  private seatBusy = new Set<number>();
+  /** GĐ1493 — máy tự phục vụ đang có khách dùng (uid máy); mỗi máy 1 khách/lúc. */
+  private machineBusy = new Set<number>();
+  /** GĐ1494 — bồn vệ sinh đang có khách dùng (uid bồn); mỗi bồn 1 khách/lúc. */
+  private toiletBusy = new Set<number>();
   private cashierSpeed: (counter: Counter) => number = () => 0;
   /** GĐ1253 — sao tay nghề thu ngân đang trực ở quầy (0 = không có); khách gặp thu ngân thì thu ngân tự quyết. */
   private dutyCashierSkill: (counter: Counter) => number = () => 0;
@@ -139,13 +165,15 @@ export class CustomerManager {
         const rush = bandTraffic * dayEffects(s.weatherSeed, s.day, s.level).traffic
           * (hasSkill(s.skills, 'local_legend') ? 1.1 : 1) * festival * eventTraffic * marketTrafficFactor(s.day);
         this.spawnIn = (daytime ? (night ? NIGHT_SPAN : OPEN_UNTIL - OPEN_FROM) / perDay / rush : 60) * (0.5 + simRng()());
-        // Mỗi chậu cây +5% khách ghé, tối đa +25%
-        const plants = s.furniture.filter((f) => f.type === 'plant').length;
+        // GĐ1495 — bỏ trần "+25% chậu cây": điểm trang trí 🩷 cộng dồn mọi đồ decor, kéo khách
+        // theo sao danh tiếng (quán đẹp chỉ phát huy khi phục vụ tốt); không máy trong sim cũ → 0.
+        // GĐ1505 — bảng hiệu đặc sản 4 miền: bày đủ bộ đặc sản miền (mối lái vùng xa) thì +🩷 thêm
+        const decorBoost = decorVisitBoost(decorScoreOf(s.furniture) + vietSetDecorBonus(s.furniture) + regionFlagDecorBonus(s.furniture, stockedProductIds(s.furniture), s.servedCounts ?? {}), reputationOf(s.repLog).overall);
         // Đang mưa thì ít người ra đường, tạnh mưa lại đông như thường
         const traffic = skyAt(s.weatherSeed, s.day, s.weather, s.minutes).traffic * festival * eventTraffic;
       // Bày hàng rẻ hơn giá gợi ý thì tiếng lành đồn xa, thêm người ghé; sàn bẩn thì ngại vào; giờ vàng kéo khách về đúng khung
       const happy = happyHourActive(s.happyHour, s.minutes) ? happyTraffic(s.happyHour!.off) : 1;
-      const visit = (0.5 + Math.min(plants * 0.05, 0.25) + repVisitBonus(reputationOf(s.repLog))) * traffic * this.priceAppeal() * dirtVisitFactor(s.dirt)
+      const visit = (0.5 + decorBoost + repVisitBonus(reputationOf(s.repLog))) * traffic * this.priceAppeal() * dirtVisitFactor(s.dirt)
       * bizTraffic(s.biz, s.day) * happy * socialTraffic(s.social, s.day)
       // Sân chơi đầu hẻm khánh thành rồi thì hẻm đông khách hơn (×1.06; ván mới = 1 nên không đổi nền kinh tế)
       * landmarkCustomerFactor(s.biz.landmark.contributions);
@@ -182,6 +210,9 @@ export class CustomerManager {
       this.spawnVendor();
     }
 
+    // GĐ1498 — nhà phê bình ẩm thực (tiệm đã có khu ăn tại chỗ): gọi 1 món, phục vụ kịp thì thưởng
+    this.updateCritic(s);
+
     for (const c of this.customers) {
       c.step(gameDt);
       // Người bán rong đứng chờ: chủ tiệm đã trả lời (hoặc họ hết kiên nhẫn) thì đi
@@ -189,6 +220,8 @@ export class CustomerManager {
         c.say('👋', 2);
         this.vendorLeave(c);
       }
+      // GĐ1492 — khách chờ ghế ăn tại chỗ: đếm kiên nhẫn, ghế trống thì dẫn đi ngồi, quá mốc bỏ về
+      if (c.state === 'toSeat' && !c.seat) this.updateSeatWaiting(c, gameDt);
       if (c.state === 'queued') {
         c.waitedMinutes += gameMinutes;
         // GĐ119 — dấu hiệu "khách sốt ruột" dẫn dắt (chỉ hiển thị, không đụng state/kinh tế):
@@ -210,13 +243,14 @@ export class CustomerManager {
     // chỉ gộp mảng tại chỗ khi thật sự có người rời khỏi.
     let anyGone = false;
     for (const c of this.customers) {
-      if (c.state !== 'queued' && !(c.wholesale && c.offered) && c.idle) { anyGone = true; break; }
+      // Khách đang chờ ghế ăn tại chỗ ('toSeat' chưa có ghế) phải được giữ lại dù đang đứng yên
+      if (this.isGone(c)) { anyGone = true; break; }
     }
     if (anyGone) {
       let w = 0;
       for (let r = 0; r < this.customers.length; r++) {
         const c = this.customers[r];
-        const gone = c.state !== 'queued' && !(c.wholesale && c.offered) && c.idle;
+        const gone = this.isGone(c);
         if (gone) { this.scene.remove(c.mesh); c.dispose(); }
         else this.customers[w++] = c;
       }
@@ -226,7 +260,7 @@ export class CustomerManager {
     const waiting = [...this.queues.values()].reduce((sum, q) => sum + q.length, 0);
     // Khách còn trong tiệm: đang chọn hàng / đi tới quầy / đang chờ thanh toán — nhân viên tan ca
     // phải chờ hết đám này mới được về
-    const inside = this.customers.filter((c) => c.state === 'shopping' || c.state === 'toQueue' || c.state === 'queued').length;
+    const inside = this.customers.filter((c) => c.state === 'shopping' || c.state === 'toQueue' || c.state === 'queued' || c.state === 'toSeat' || c.state === 'dining').length;
     if (s.waiting !== waiting || s.customersInside !== inside) useGame.setState({ waiting, customersInside: inside });
   }
 
@@ -415,6 +449,38 @@ export class CustomerManager {
       playSfx('door');
       this.walk(c, this.shop.doorInside);
     });
+    // GĐ1493 — tiệm có máy tự phục vụ: 15% khách mới ghé chơi/thử một lượt rồi vẫn vào mua.
+    // Chỉ rút vòng quay khi tiệm CÓ máy — không máy thì chuỗi ngẫu nhiên sim giữ nguyên từng nhịp.
+    // Kẻ trộm lẻn vào việc, người bán rong vào lấy sỉ — không ai ghé máy.
+    if (!c.thief && !c.wholesale && s.furniture.some((f) => isMachine(f.type)) && simRng()() < MACHINE_VISIT_CHANCE) {
+      const machine = freeMachine(s.furniture, this.machineBusy);
+      if (machine) {
+        const machineUid = machine.uid;
+        // GĐ1542 — ghi sổ theo loại máy (biz.serviceLife) để biết máy đã thu được bao nhiêu.
+        const machineType = machine.type;
+        const fee = machineFeeAt(machine.type, s.minutes, s.level, s.day, s.weather);
+        const icon = MACHINE_TYPES[machine.type as MachineId].icon;
+        this.machineBusy.add(machineUid);
+        if (s.level >= MACHINE_IMPULSE_LEVEL && machineImpulse(s.level, simRng()())) c.wants.push(...this.chooseWants(1));
+        c.plan.push(() => this.walk(c, this.shop.spotFor(machine)));
+        c.plan.push(() => {
+          c.pause = MACHINE_USE_SECONDS;
+          c.say(icon, 2.5);
+        });
+        c.plan.push(() => {
+          this.machineBusy.delete(machineUid);
+          if (fee > 0) {
+            earnService(machineType, fee);
+            this.coinFx.spawn(c.mesh.position, fee);
+          }
+          if (clawWin(machineType, s.level, machineUid, s.day, s.minutes)) {
+            c.say('🧸 Gắp trúng!', 2.5);
+            const g = useGame.getState(); // GĐ1592 — đếm cho tab Dịch vụ
+            useGame.setState({ stats: { ...g.stats, clawWins: (g.stats.clawWins ?? 0) + 1 } });
+          }
+        });
+      }
+    }
     if (station && withCart) {
       c.plan.push(() => this.walk(c, this.shop.spotFor(station)));
       c.plan.push(() => {
@@ -634,7 +700,134 @@ export class CustomerManager {
     }
     if (method && method !== 'cash') first.say(paymentById(method).icon, 2);
     first.say(!happy ? '😒' : onCredit ? '📒' : first.regular ? '💛' : first.missing ? '🙂' : '😊');
+    // GĐ1491 — mua món nấu tươi xong có thể ngồi lại ăn tại chỗ (nếu còn ghế) thay vì ra về
+    if (this.maybeDineIn(first, counter)) return;
     this.leave(first, happy, true);
+  }
+
+  /**
+   * GĐ1491 — khách vừa trả tiền mang món nấu tươi: trúng vòng quay "ngồi lại ăn" thì dẫn tới
+   * bàn/ghế trống, ngồi ăn (pause) rồi mới ra về; hết ghế thì đứng chờ gần quầy (GĐ1492 —
+   * chờ được tối đa DINE_WAIT_SECONDS, quá thì bỏ về buồn). Trả true nếu đã tự lo lối ra.
+   */
+  private maybeDineIn(c: Customer, counter: Counter): boolean {
+    const st = useGame.getState();
+    const hasCooked = c.basket.some((it) => COOKED_PRODUCT_IDS.has(it.id));
+    // Chỉ rút vòng quay khi điều kiện sớm thoả — không ăn tại chỗ thì không dịch chuỗi ngẫu nhiên
+    const roll = hasCooked && st.level >= DINE_UNLOCK ? simRng()() : 1;
+    if (!wantsDineIn({ level: st.level, hasCooked, roll })) return false;
+    const seat = freeSeat(st.furniture, this.seatBusy);
+    this.releaseFromQueue(c);
+    if (seat) {
+      this.seatCustomer(c, seat);
+    } else {
+      // GĐ1492 — chưa có ghế: đứng né sang một bên chỗ trả tiền, chờ ghế trống trong kiên nhẫn
+      c.state = 'toSeat';
+      c.say('🪑', 2.5);
+      this.walk(c, counter.pay.clone().add(new THREE.Vector3(0, 0, 0.9)));
+    }
+    return true;
+  }
+
+  /** GĐ1491 — giữ ghế cho khách, dẫn đi ngồi; ăn xong trả ghế, trả tip (GĐ1492) rồi ra về. */
+  private seatCustomer(c: Customer, seat: SeatInfo) {
+    const chair = useGame.getState().furniture.find((f) => f.uid === seat.chairUid);
+    if (!chair) return false;
+    // Tip tính theo số giây đã chờ ghế (GĐ1511: 2 nấc) — khoá ngay lúc ngồi
+    const waitedSec = c.diningWait;
+    this.seatBusy.add(seat.chairUid);
+    c.seat = seat;
+    c.state = 'toSeat';
+    this.walk(c, this.shop.local(chair.x, chair.z));
+    c.plan = [
+      () => {
+        c.pause = EAT_SECONDS;
+        c.state = 'dining';
+        c.say('😋', 3);
+      },
+      () => {
+        if (c.seat) this.seatBusy.delete(c.seat.chairUid);
+        c.seat = undefined;
+        // GĐ1492 — tip = 10% tiền món tươi (chờ ghế lâu thì còn 60%): tiền sạch vào két + sổ ngày
+        const freshTotal = c.basket.filter((it) => COOKED_PRODUCT_IDS.has(it.id)).reduce((n, it) => n + it.price, 0);
+        const lv = useGame.getState().level;
+        const menuN = [...stockedProductIds(useGame.getState().furniture)].filter((id) => COOKED_PRODUCT_IDS.has(id)).length;
+        const tip = Math.round(dineTip(freshTotal, waitedSec) * menuTipMul(lv, menuN)); // GĐ1536
+        if (tip > 0) {
+          earnTip(tip);
+          this.coinFx.spawn(c.mesh.position, tip);
+          c.say(`+ ${formatMoney(tip)} tip`, 2.5);
+        }
+        // GĐ1494 — ăn xong nhường ghế rồi mới nghĩ chuyện vệ sinh (ghế không bị giữ khi đi toilet)
+        const need = this.toiletNeed(c);
+        if (need === 'handled') return;
+        this.leave(c, need === 'happy', true);
+      },
+    ];
+    return true;
+  }
+
+  /**
+   * GĐ1494 — sau bữa ăn ~20% khách có nhu cầu vệ sinh: ghé bồn trống (4 giây, trả phí) rồi ra về.
+   * Không có bồn: dưới mốc nghiêm ngặt thì khách ra về bình thường; siêu thị lớn mà thiếu bồn
+   * thì khách nổi giận (tính mất khách vì chờ). Trả 'handled' nếu đã tự dựng lối ra của riêng mình.
+   */
+  private toiletNeed(c: Customer): 'handled' | 'happy' | 'angry' {
+    const s = useGame.getState();
+    if (simRng()() >= TOILET_NEED_CHANCE) return 'happy';
+    const toilet = freeToilet(s.furniture, this.toiletBusy);
+    if (toilet) {
+      const toiletUid = toilet.uid;
+      const fee = toiletFee(toilet.type);
+      this.toiletBusy.add(toiletUid);
+      c.say('💧', 2.5);
+      this.walk(c, this.shop.spotFor(toilet));
+      c.plan = [
+        () => {
+          c.pause = TOILET_USE_SECONDS;
+          c.state = 'dining';
+        },
+        () => {
+          this.toiletBusy.delete(toiletUid);
+          if (fee > 0) {
+            earnService(undefined, fee);
+            this.coinFx.spawn(c.mesh.position, fee);
+          }
+          this.leave(c, true, true);
+        },
+      ];
+      return 'handled';
+    }
+    if (s.level < TOILET_STRICT_UNLOCK) {
+      c.say('💧', 2);
+      return 'happy';
+    }
+    c.say('😠 Không có nhà vệ sinh!');
+    s.noteMiss('wait');
+    return 'angry';
+  }
+
+  /**
+   * GĐ1492 — khách đang đứng chờ ghế ('toSeat' chưa có ghế): đếm kiên nhẫn, ghế vừa trống
+   * thì dẫn đi ngồi, quá mốc thì bỏ về buồn (ghi mất khách vì chờ, không tip).
+   */
+  private updateSeatWaiting(c: Customer, gameDt: number) {
+    const s = useGame.getState();
+    c.diningWait += gameDt;
+    if (c.diningWait > DINE_WAIT_SECONDS) {
+      c.say('😠 Chờ mãi không có chỗ!');
+      s.noteMiss('wait');
+      // GĐ1502 — chẩn đoán nút thắt ĐÚNG LÚC (một lần mỗi ván): khách bỏ về vì hết chỗ
+      // thì dạy ngay việc cần làm, thay vì để người chơi tự mò số liệu (tham khảo khu eat-in).
+      if (!s.dineSeatHinted) {
+        useGame.setState({ dineSeatHinted: true });
+        s.notify('🪑 Khách chờ mãi không có chỗ ngồi — mua thêm Bàn ăn và Ghế ở 🛠️ Xây dựng!');
+      }
+      this.leave(c, false, true);
+      return;
+    }
+    const seat = freeSeat(s.furniture, this.seatBusy);
+    if (seat) this.seatCustomer(c, seat);
   }
 
   /** Sau lần mua hài lòng: khách quen đủ thân có thể nhờ giữ một món ưa thích đến ngày mai. */
@@ -834,7 +1027,22 @@ export class CustomerManager {
     if (c.profession) st.tallyDemographics(c.profession.id, { visits: 1, walkouts: paid ? 0 : 1 });
     if (c.regular && !happy) useGame.getState().regularVisit(c.regular.id, c.basket, false, c.missed.find((m) => m.why === 'stock' || m.why === 'price'));
     this.review(c, happy);
-    const queue = c.counterKey ? this.queues.get(c.counterKey) : undefined;
+    this.releaseFromQueue(c);
+    // GĐ1491 — rời tiệm giữa chừng (bất kể đường nào) thì nhường ghế ăn lại
+    if (c.seat) {
+      this.seatBusy.delete(c.seat.chairUid);
+      c.seat = undefined;
+    }
+    c.state = 'leaving';
+    c.plan = [() => this.walk(c, this.shop.doorOutside), () => this.walk(c, new THREE.Vector3(c.exitX, 0, SIDEWALK_Z))];
+    this.walk(c, this.shop.doorInside);
+  }
+
+  /**
+   * GĐ1491 — rút khách khỏi hàng chờ quầy (nếu đang xếp) và cho những người phía sau dịch lên.
+   * Tách khỏi leave() để khách đi ăn tại chỗ cũng nhường hàng ngay khi vừa trả tiền xong.
+   */
+  private releaseFromQueue(c: Customer) {    const queue = c.counterKey ? this.queues.get(c.counterKey) : undefined;
     const i = queue ? queue.indexOf(c) : -1;
     if (queue && i >= 0) {
       queue.splice(i, 1);
@@ -850,9 +1058,14 @@ export class CustomerManager {
       }
     }
     c.counterKey = null;
-    c.state = 'leaving';
-    c.plan = [() => this.walk(c, this.shop.doorOutside), () => this.walk(c, new THREE.Vector3(c.exitX, 0, SIDEWALK_Z))];
-    this.walk(c, this.shop.doorInside);
+  }
+
+  /** GĐ1492 — khách đã xong việc trong tiệm (đi ra ngoài được): chờ ghế ăn tại chỗ thì chưa tính. */
+  private isGone(c: Customer) {
+    if (c.state === 'queued') return false;
+    if (c.wholesale && c.offered) return false;
+    if (c.state === 'toSeat' && !c.seat) return false;
+    return c.idle;
   }
 
   /** Khách chấm sao: mỗi món không mua được −1, chờ lâu −1; bỏ về thì chê đúng lý do. */
@@ -925,6 +1138,54 @@ export class CustomerManager {
     this.walk(c, this.shop.doorInside);
   }
 
+  /**
+   * GĐ1498 — nhà phê bình ẩm thực: tối đa 1 lần/ngày (rng dòng RIÊNG metaRng — không dịch
+   * chuỗi kinh tế chính). Giai đoạn nhẹ (cấp 30+): gọi món đã mở, phục vụ kịp thì thưởng,
+   * hụt thì chỉ nhắc. Giai đoạn nghiêm ngặt (cấp 45+): gọi BẤT KỲ món nào trong toàn game,
+   * phục vụ kịp thưởng lớn, hụt hẹn ăn mấy đánh giá 1★ (tiếng xấu đồn trong hẻm).
+   */
+  private updateCritic(s: ReturnType<typeof useGame.getState>) {
+    if (s.level < CRITIC_UNLOCK) return;
+    if (this.criticRolledDay !== s.day) {
+      this.criticRolledDay = s.day;
+      this.criticAt = metaRng() < CRITIC_CHANCE ? 8 * 60 + Math.floor(metaRng() * 12 * 60) : null;
+    }
+    // Đang có lời hẹn phục vụ: món vừa được bày lên kệ thì chiếu đãi ngay, hết khung thì trượt hẹn
+    if (this.criticProduct) {
+      const served = s.furniture.some((f) => !f.broken && f.tiers.some((t) => t.productId === this.criticProduct && t.count > 0));
+      if (served) {
+        const reward = criticReward(this.criticHard);
+        useGame.setState({ money: s.money + reward, totals: { ...s.totals, revenue: s.totals.revenue + reward } });
+        s.notify(`🌟 Nhà phê bình khen ${productById(this.criticProduct).name}! +${formatMoney(reward)}`);
+        for (let i = 0; i < criticPraiseReviews(this.criticHard); i++) s.addReview(5, undefined, this.criticProduct);
+        playSfx('gift');
+        this.criticProduct = null;
+        return;
+      }
+      if (s.minutes > this.criticUntil) {
+        if (this.criticHard) {
+          for (let i = 0; i < CRITIC_PENALTY_REVIEWS; i++) s.addReview(1, 'stock', this.criticProduct);
+          s.notify(`😠 Nhà phê bình hụt hẹn về ${productById(this.criticProduct).name}!`);
+        } else {
+          s.notify(`😅 Nhà phê bình không thấy ${productById(this.criticProduct).name}, bỏ về.`);
+        }
+        this.criticProduct = null;
+        return;
+      }
+      return; // còn trong khung chờ phục vụ
+    }
+    // Ghé lần đầu trong ngày: đặt lời gọi món (chỉ khi tiệm đang mở)
+    if (this.criticAt == null || !s.shopOpen || s.minutes < this.criticAt) return;
+    this.criticHard = s.level >= CRITIC_HARD_UNLOCK;
+    const stations = new Set<string>(s.furniture.filter((f) => isCookStation(f.type)).map((f) => f.type));
+    this.criticProduct = pickCriticDish(RECIPES, s.level, this.criticHard, (r) => stations.has(r.station) && !offSeason(r.outputId, s.day));
+    this.criticUntil = s.minutes + CRITIC_WINDOW_MINUTES;
+    this.criticAt = null;
+    const st = RECIPES.find((r) => r.outputId === this.criticProduct && stations.has(r.station))?.station;
+    s.notify(criticCallText(productById(this.criticProduct).name, st ? furnitureDef(st).name : null, CRITIC_WINDOW_MINUTES));
+    playSfx('door');
+  }
+
   /** Xoá hết khách (sang ngày mới). */
   reset() {
     clearAsk();
@@ -935,6 +1196,12 @@ export class CustomerManager {
     this.customers = [];
     this.queues.clear();
     this.checkoutProgress.clear();
+    this.seatBusy.clear();
+    this.machineBusy.clear();
+    this.toiletBusy.clear();
+    this.criticProduct = null;
+    this.criticAt = undefined;
+    this.criticRolledDay = -1;
     this.regularsToday = [];
     this.friendsBurst = 0;
     this.festivalToday = false;

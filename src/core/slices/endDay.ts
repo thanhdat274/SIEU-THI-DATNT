@@ -40,6 +40,7 @@ import { logAnalyticsDay } from '../../data/analytics';
 import { appRating } from '../../data/online';
 import { onlineDayEnd } from './online';
 import { onlineDayEvent, onlineEventLine } from '../../data/online';
+import { wageRelief } from '../../data/wageRelief';
 import { runBranch, branchNewDay } from './branch';
 import { simRng } from '../rand';
 
@@ -381,8 +382,10 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
     market[p.id] = nextMarketIndex(market[p.id] ?? 1, (k.storage[p.id] ?? 0) + onShelf, 0, demand[p.id] ?? 0);
   }
   // Trả lương và tiền nhà cuối ngày (kèm phí thợ bảo trì sáng nay nếu có); chi nhánh mua đứt nên không cộng tiền thuê
-  const wages = wagesDue(s) + branchWages;
   const rent = rentOf(s.shopTier);
+  const relief = wageRelief(s.money - rent, wagesDue(s), s.staff); // GĐ1525
+  const wages = wagesDue(s) - relief + branchWages;
+  if (relief) say(`🤝 Két không đủ trả lương — người làm lâu nhất thông cảm bỏ qua ${formatMoney(relief)} hôm nay`);
   // Chi phí vận hành theo doanh thu (điện/nước/bảo trì): % doanh thu, nhỏ lúc đầu, đáng kể khi lên siêu thị
   // Tiện lợi chạy tủ mát/đông suốt 24h nên có hóa đơn điện riêng; doanh thu quán nước tự lo chi phí của nó
   const branchPower = br ? branchPowerBill(br) : 0;

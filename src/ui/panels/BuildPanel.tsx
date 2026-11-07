@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useGame } from '../../core/store';
 import { FLOOR_COLORS, PAINT_PRICE, ROOF_COLORS, SHOP_TIERS, WALL_COLORS, rentDelta, rentOf, spaceUsePct, type ShopStyle } from '../../data/shopTiers';
-import { FURNITURE } from '../../data/furniture';
+import { FURNITURE, furnitureDef, type FurnitureType } from '../../data/furniture';
+import { festivalShopName, festivalShopOpen } from '../../data/festivalDeco';
+import { FURNITURE_GROUP_TABS, furnitureGroup, type FurnitureGroup } from '../../data/furnitureGroups';
+import { VIET_SET, VIET_SET_TIERS, vietSetCount, vietSetDecorBonus } from '../../data/decorSets';
 import { departmentsUnlockedAtTier } from '../../data/departments';
 import { bigBasketInsight, BIG_BASKET_TIER } from '../../data/bigBasket';
 import { meatCounterPayoff, meatChainCooled } from '../../data/meatCounterPayoff';
@@ -34,7 +37,11 @@ export function BuildPanel() {
 }
 
 export function FurnitureTab() {
-  const { level, money, furniture, storage, stats, weather, setPlacing, demolishAll } = useGame();
+  const { level, day, money, furniture, storage, stats, weather, setPlacing, demolishAll } = useGame();
+  const furnStash = useGame((s) => s.furnStash);
+  // GĐ1516 — lọc theo nhóm (UI thuần, không lưu)
+  const [group, setGroup] = useState<'all' | FurnitureGroup>('all');
+  const stashed = Object.entries(furnStash).filter(([, n]) => n > 0) as [FurnitureType, number][];
   // GĐ1251: soi quyết định MUA KỆ bằng số liệu bỏ lỡ hôm nay (storeMissRevenue GĐ131) —
   // trước giờ dữ liệu này chỉ hiện ở Kho/Báo cáo, còn nơi mua kệ lại chỉ chìa giá.
   const hint = shelfBuyHint(storeMissRevenue(stats?.missLog, storage));
@@ -53,8 +60,21 @@ export function FurnitureTab() {
   return (
     <>
       <p style={styles.sub}>
-        Chọn món để đặt vào tiệm. Bấm "Di chuyển đồ có sẵn" rồi bấm vào đồ để dời chỗ hoặc bán (nhận lại 50%).
+        Chọn món để đặt vào tiệm. "Thử" để đặt xem trước, ưng mới trả tiền. Bấm "Di chuyển đồ có sẵn" rồi bấm vào đồ để dời, cất kho (giữ nguyên giá trị) hoặc bán (nhận lại 50%).
       </p>
+      {stashed.length > 0 && (
+        <div style={{ marginBottom: 10 }}>
+          <b>📦 Kho đồ</b>
+          <div style={{ display: 'grid', gap: 6, marginTop: 6 }}>
+            {stashed.map(([type, n]) => (
+              <div key={type} style={styles.card}>
+                <div style={{ flex: 1 }}><b>{furnitureDef(type).name}</b> × {n}</div>
+                <button style={styles.btn} onClick={() => setPlacing({ type, rot: 0, source: 'stash' })}>Lấy ra đặt</button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
       {hint && (
         <Callout tone={hint.kind === 'shelf' ? 'ok' : 'info'} style={{ marginBottom: 8 }}
           title={hint.kind === 'shelf' ? '💡 Mua thêm kệ hôm nay đáng' : '💡 Mua thêm kệ hôm nay chưa giúp'}>
@@ -66,9 +86,22 @@ export function FurnitureTab() {
           <div style={{ marginTop: 2, fontSize: 12 }}>{coldLine}</div>
         </Callout>
       )}
+      {level > 30 && (
+        <div style={{ fontSize: 12, opacity: 0.85, margin: '4px 0 8px' }}>
+          🏺 Bộ Đồ Việt: {vietSetCount(furniture)}/{VIET_SET.length} món
+          {' · '}mốc {VIET_SET_TIERS.map(([n, b]) => `${n} món +${b}🩷`).join(', ')}
+          {vietSetDecorBonus(furniture) > 0 && <b> · đang +{vietSetDecorBonus(furniture)}🩷</b>}
+        </div>
+      )}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+        {FURNITURE_GROUP_TABS.map((t) => (
+          <button key={t.id} style={{ ...styles.btn, opacity: group === t.id ? 1 : 0.55 }} aria-pressed={group === t.id} onClick={() => setGroup(t.id)}>{t.label}</button>
+        ))}
+      </div>
       <div style={{ display: 'grid', gap: 8 }}>
-        {FURNITURE.map((f) => {
-          const locked = f.unlock > level;
+        {FURNITURE.filter((f) => group === 'all' || furnitureGroup(f) === group).map((f) => {
+          const offFest = !festivalShopOpen(f, day);
+          const locked = f.unlock > level || offFest;
           return (
             <div key={f.type} style={{ ...styles.card, opacity: locked ? 0.5 : 1 }}>
               <div style={{ flex: 1 }}>
@@ -76,11 +109,16 @@ export function FurnitureTab() {
                 <div style={{ fontSize: 12, opacity: 0.75 }}>{f.desc}</div>
               </div>
               {locked ? (
-                <span style={{ fontSize: 12 }}>🔒 Cấp {f.unlock}</span>
+                <span style={{ fontSize: 12 }}>{f.unlock > level ? `🔒 Cấp ${f.unlock}` : `🗓 Chỉ bán dịp ${festivalShopName(f)}`}</span>
               ) : (
-                <button style={styles.btn} disabled={money < f.price} onClick={() => setPlacing({ type: f.type, rot: 0 })}>
-                  Chọn
-                </button>
+                <>
+                  <button style={styles.btn} title="Đặt xem trước, chưa trả tiền" onClick={() => setPlacing({ type: f.type, rot: 0, source: 'trial' })}>
+                    Thử
+                  </button>
+                  <button style={styles.btn} disabled={money < f.price} onClick={() => setPlacing({ type: f.type, rot: 0 })}>
+                    Chọn
+                  </button>
+                </>
               )}
             </div>
           );

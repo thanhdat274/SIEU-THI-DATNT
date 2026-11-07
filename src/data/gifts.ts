@@ -1,3 +1,5 @@
+import { VIET_SET } from './decorSets';
+import { furnitureDef } from './furniture';
 import { simRng } from '../core/rand';
 /**
  * Giữ chân người chơi: điểm danh mỗi ngày nhận quà tăng dần theo chuỗi 7 ngày,
@@ -33,6 +35,8 @@ export interface WheelPrize {
   xp?: number;
   /** Hôm nay khách ghé đông thêm chừng này phần (0.2 = +20%). */
   boost?: number;
+  /** GĐ1528: giải món báu — đặt thẳng vào kho đồ (furnStash). */
+  furniture?: string;
   weight: number;
 }
 
@@ -131,14 +135,29 @@ export const scaledPrize = (p: WheelPrize, level: number): WheelPrize => {
 };
 
 /** Xoay một lượt: chọn giải theo trọng số. */
-export function spinWheelPrize(): WheelPrize {
-  const total = WHEEL_PRIZES.reduce((n, p) => n + p.weight, 0);
+/** GĐ1528 — Xóm #3 "món báu theo kỳ 28 ngày": từ cấp 33 vòng quay có thêm 1 ô hiếm (~2%) trao món Đồ Việt
+ *  của kỳ này vào kho đồ; món đổi theo kỳ 28 ngày, xoay vòng 5 món. Dưới cấp 33 vòng quay y cũ (golden không đổi). */
+export const RARE_WHEEL_UNLOCK = 33;
+export const RARE_PERIOD_DAYS = 28;
+export const RARE_WHEEL_WEIGHT = 2;
+export const rareWheelPiece = (day: number) => VIET_SET[Math.floor(Math.max(0, day - 1) / RARE_PERIOD_DAYS) % VIET_SET.length];
+export function rareWheelPrize(day: number): WheelPrize {
+  const id = rareWheelPiece(day);
+  const name = furnitureDef(id).name;
+  return { icon: '🏺', label: `Món báu: ${name}`, short: 'Món báu', furniture: id, weight: RARE_WHEEL_WEIGHT };
+}
+export const wheelPrizesFor = (level: number, day: number): WheelPrize[] =>
+  (level >= RARE_WHEEL_UNLOCK ? [...WHEEL_PRIZES, rareWheelPrize(day)] : WHEEL_PRIZES);
+
+export function spinWheelPrize(level = 0, day = 1): WheelPrize {
+  const list = wheelPrizesFor(level, day);
+  const total = list.reduce((n, p) => n + p.weight, 0);
   let roll = simRng()() * total;
-  for (const p of WHEEL_PRIZES) {
+  for (const p of list) {
     roll -= p.weight;
     if (roll <= 0) return p;
   }
-  return WHEEL_PRIZES[WHEEL_PRIZES.length - 1];
+  return list[list.length - 1];
 }
 
 /** Một ô giải đã scale + xác suất trúng (%). */
@@ -168,14 +187,15 @@ export interface WheelOdds {
  * giải nhân hệ số cấp qua `scaledPrize`; moneyEv/xpEv là kỳ vọng tuyến tính (không RNG, không seed).
  * Không đổi state/save/kinh tế — dùng chung chơi đơn/hẻm online (chỉ từ hằng số + cấp).
  */
-export function wheelOdds(level: number): WheelOdds {
-  const prizes = WHEEL_PRIZES.map((p) => scaledPrize(p, level));
-  const total = WHEEL_PRIZES.reduce((n, p) => n + p.weight, 0);
+export function wheelOdds(level: number, day = 1): WheelOdds {
+  const list = wheelPrizesFor(level, day);
+  const prizes = list.map((p) => scaledPrize(p, level));
+  const total = list.reduce((n, p) => n + p.weight, 0);
   const entries: WheelOddsEntry[] = prizes.map((p) => ({ prize: p, pct: (p.weight / total) * 100 }));
   let moneyEv = 0;
   let xpEv = 0;
   let boostPct = 0;
-  WHEEL_PRIZES.forEach((raw, i) => {
+  list.forEach((raw, i) => {
     const pct = raw.weight / total;
     const p = prizes[i];
     if (p.money !== undefined) moneyEv += p.money * pct;

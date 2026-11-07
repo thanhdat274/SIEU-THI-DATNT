@@ -2,6 +2,7 @@
 import { Fragment, lazy, Suspense, useState } from 'react';
 import { GFX_CYCLE, GFX_LABEL, gfxStatus, setGfxChoice } from '../render/graphicsQuality';
 import { ToolButton, type ToolDef } from './HudToolButton';
+import { groupTools } from './groupTools';
 
 const HudKeys = lazy(() => import('./HudKeys').then((m) => ({ default: m.HudKeys })));
 const TOUCH = typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches;
@@ -15,10 +16,10 @@ export function MoreMenuBody({ tools, level, onHelp, keys, setKeys, setOpen }: {
         <Suspense fallback={null}><HudKeys /></Suspense>
       ) : (
         <>
-          {/* Tiêu đề nhóm nhỏ trước từng cụm liên tiếp; thứ tự nút giữ nguyên như cũ */}
-          {tools.map((t, i) => (
+          {/* Tiêu đề nhóm nhỏ trước từng cụm; gom theo nhóm để mỗi tiêu đề chỉ hiện 1 lần (playtest M5) */}
+          {groupTools(tools).map((t, i, arr) => (
             <Fragment key={t.label}>
-              {t.group && t.group !== tools[i - 1]?.group && <div className="hud-more-group">{t.group}</div>}
+              {t.group && t.group !== arr[i - 1]?.group && <div className="hud-more-group">{t.group}</div>}
               <ToolButton tool={t} level={level} onPicked={() => setOpen(false)} />
             </Fragment>
           ))}

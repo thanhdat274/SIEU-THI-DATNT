@@ -10,6 +10,11 @@ import { useGame } from './store';
 const S = () => useGame.getState();
 const patch = (b: Partial<BizState>) => useGame.setState({ biz: { ...S().biz, ...b } });
 
+// GĐ1507 — cờ TẮT BẮN sự kiện cho bộ đo kinh tế (không persist; chỉ autoplay bật): gieo vẫn chạy
+// để chuỗi rng không dịch, nhưng không mở sự kiện/pick.
+let surpriseSuppressed = false;
+export const setSurpriseSuppressed = (v: boolean) => { surpriseSuppressed = v; };
+
 // ───── Sự kiện bất ngờ ─────
 
 /**
@@ -42,8 +47,16 @@ export function maybeSurprise(elapsedMinutes: number) {
     }
     return; // đang có arc → không quay pool hôm nay
   }
-  // Cơ hội tỉ lệ với số phút game vừa trôi: cộng dồn cả khung 9h–20h ra khoảng SURPRISE_CHANCE mỗi ngày
-  if (simRng()() > (SURPRISE_CHANCE * elapsedMinutes) / (11 * 60)) return;
+  // GĐ1507 — KHÔNG bắn sự kiện ngày 1: Luật chống phình (budget toast ngày đầu) + promt_game
+  // (ngày đầu chỉ dạy vòng lõi). Pool một-phát + arc mới đều từ ngày 2; arc đang dở vẫn kể bình thường.
+  // Cơ hội tỉ lệ với số phút game vừa trôi: cộng dồn cả khung 9h–20h ra khoảng SURPRISE_CHANCE mỗi ngày.
+  // GĐ1507 — bộ đo kinh tế (autoplay) tắt BẮN nhưng vẫn tiêu đúng 1 lượt gieo/tick để chuỗi rng GIỐNG HỆT
+  // thời kỳ trước khi sửa bug elapsed (mốc GOLDEN + bot được hiệu chỉnh trên chuỗi đó — L5 bot fragile).
+  const roll = simRng()();
+  if (surpriseSuppressed) return;
+  // GĐ1507 — không BẮN ngày 1 (budget toast ngày đầu) nhưng lượt gieo vẫn tiêu: giữ chuỗi rng
+  if (s.day < 2) return;
+  if (roll > (SURPRISE_CHANCE * elapsedMinutes) / (11 * 60)) return;
   // GĐ164: pool = def một-phát + arc CHƯA kể (arc thay def cũ cùng band mật độ; kể xong/khép sớm
   // đều vào surpriseArcsTold → không lặp). Arc đang chiếm slot cũng đã nằm trong told.
   const told = b.surpriseArcsTold ?? [];

@@ -135,6 +135,11 @@ export const weatherPhoneMul = (weather: Weather) => (weather === 'storm' ? 1.8 
  * Đơn nghiêng về món tiệm đang có trong kho (~70%) cho đỡ ức chế; số còn lại là món lạ để vẫn có thử thách.
  * Có trạm nấu rồi thì một phần cuộc gọi là đơn nấu: món nhà làm, giá hời, phải tự đứng bếp.
  */
+/** GĐ1527 — Xóm B4 "đơn không đòi thứ không làm kịp": từ cấp này, đơn nấu ≤ số phần nấu xong trong hạn (1 trạm). */
+export const FEASIBLE_COOK_LEVEL = 30;
+export const cookableInTime = (durationMin: number, outputQty: number, minutes: number) =>
+  Math.max(1, Math.floor(minutes / Math.max(1, durationMin)) * outputQty);
+
 export function phoneCallFor(
   seed: number, day: number, slot: number, level: number, regulars: Record<string, RegularProgress>, id: number,
   weather: Weather = 'sunny', stocked: Record<string, number> = {},
@@ -159,7 +164,8 @@ export function phoneCallFor(
   const cookable = RECIPES.filter((r) => r.unlock <= level && stations.includes(r.station) && !offSeason(r.outputId, day));
   if (level >= COOK_UNLOCK && cookable.length && roll(seed, day, 1009 + slot) < COOK_ORDER_CHANCE) {
     const r = cookable[Math.floor(roll(seed, day, 1103 + slot) * cookable.length)];
-    const qty = 4 + Math.floor(roll(seed, day, 1201 + slot) * 7);
+    const rawQty = 4 + Math.floor(roll(seed, day, 1201 + slot) * 7);
+    const qty = level > FEASIBLE_COOK_LEVEL ? Math.min(rawQty, cookableInTime(r.durationMin, r.outputQty, COOK_ORDER_MINUTES)) : rawQty;
     const order = head({ [r.outputId]: qty }, COOK_ORDER_MUL, calledAt + COOK_ORDER_MINUTES);
     order.reason = COOK_REASONS[Math.floor(roll(seed, day, 1301 + slot) * COOK_REASONS.length)];
     return order;

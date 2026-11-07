@@ -1,17 +1,18 @@
 import { formatMoney, productById } from '../../data/products';
 import { composeReview, REVIEW_CAP } from '../../data/reviews';
-import { regularById, regularCheckout, BIRTHDAY_BONUS, isBirthday, regularFriendship, regularWalkout, INFLUENCER_ID, RESERVE_BONUS, RESERVE_MISS_LOSS, rescueGiftFor } from '../../data/regulars';
+import { REGULARS, regularById, regularCheckout, BIRTHDAY_BONUS, isBirthday, regularFriendship, regularWalkout, INFLUENCER_ID, RESERVE_BONUS, RESERVE_MISS_LOSS, rescueGiftFor } from '../../data/regulars';
 import { FORGIVE_FRIEND_GAIN, installmentNow, REMIND_FRIEND_LOSS } from '../../data/credit';
 import { counterActive, RESCUE_FEE, RESCUE_FRIENDSHIP } from '../../data/biz';
 import { copyStock, takeStock } from '../stock';
 import { arcForRegular, arcById, currentArcStep, arcStepFulfilled } from '../../data/regularArc';
 import { satisfiedLine, walkoutLine } from '../../data/regularTrust';
 import { REP_CAP } from '../../data/reputation';
+import { regularGiftPlan, giftFriendship, giftXp, giftableCount, giftRemainNote } from '../../data/regularGift';
 import { type GameState, type SetState, type GetState, addHour } from '../gameTypes';
 
 /** Khách: lượt ghé, khách quen, lời hẹn giữ món, sổ nợ, đánh giá. */
 
-export const createRegularsSlice = (set: SetState, get: GetState): Pick<GameState, 'recordVisit' | 'regularVisit' | 'addReservation' | 'cancelReservation' | 'adjustFriendship' | 'rescuePoachedRegular' | 'checkoutOnCredit' | 'collectDebt' | 'collectDebtPartial' | 'remindDebt' | 'forgiveDebt' | 'addReview'> => ({
+export const createRegularsSlice = (set: SetState, get: GetState): Pick<GameState, 'recordVisit' | 'regularVisit' | 'addReservation' | 'cancelReservation' | 'adjustFriendship' | 'rescuePoachedRegular' | 'checkoutOnCredit' | 'collectDebt' | 'collectDebtPartial' | 'remindDebt' | 'forgiveDebt' | 'giftRegular' | 'addReview'> => ({
   recordVisit: (happy, sample) => {
     const s = get();
     set({
@@ -207,6 +208,29 @@ export const createRegularsSlice = (set: SetState, get: GetState): Pick<GameStat
     set({ debts });
     s.adjustFriendship(regularId, FORGIVE_FRIEND_GAIN);
     s.notify(`🤝 Xoá nợ ${formatMoney(debt.amount)} cho ${regularById(regularId)?.name} · +${FORGIVE_FRIEND_GAIN} thân thiết`);
+  },
+  // GĐ1557 — tặng 1 món khách thích từ kho: +3 thân thiết, mỗi khách 1 lần/ngày (cấp ≥38).
+  giftRegular: (id) => {
+    const s = get();
+    const def = regularById(id);
+    if (!def) return false;
+    const plan = regularGiftPlan(def, s.regulars[id], s.level, s.day, s.storage);
+    if ('error' in plan) {
+      s.notify(`🎁 ${plan.error}`);
+      return false;
+    }
+    const stock = copyStock({ storage: s.storage, storageLots: s.storageLots });
+    takeStock(stock, plan.productId, 1);
+    set({ storage: stock.storage, storageLots: stock.storageLots });
+    const gain = giftFriendship(isBirthday(def, s.day));
+    get().adjustFriendship(id, gain);
+    const after = get().regulars[id];
+    if (after) set({ regulars: { ...get().regulars, [id]: { ...after, lastGiftDay: s.day } } });
+    set({ stats: { ...get().stats, gifts: (get().stats.gifts ?? 0) + 1 } }); // GĐ1584
+    const bxp = giftXp(gain > 3); // GĐ1588
+    if (bxp) get().addXp(bxp);
+    s.notify(`🎁 Tặng ${def.name} 1 ${productById(plan.productId).name} · +${gain} thân thiết${gain > 3 ? ' (🎂 sinh nhật ×2, +' + bxp + ' XP)' : ''}${giftRemainNote(giftableCount(REGULARS.filter((r) => r.unlock <= s.level), get().regulars, s.level, s.day, get().storage))}`);
+    return true;
   },
   addReview: (stars, reason, productId) => {
     const s = get();

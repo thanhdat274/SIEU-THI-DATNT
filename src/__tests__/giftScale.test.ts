@@ -119,7 +119,7 @@ describe('claimGift', () => {
 describe('spinWheel', () => {
   it('mỗi ngày một lượt; giải tiền scale theo cấp và label tự ghi đè', () => {
     // Cố tình rơi vào ô cuối 🏆 120.000đ (tổng trọng số 100, roll 0.99 × 100 trôi qua 7 ô đầu)
-    const spy = vi.spyOn(Math, 'random').mockReturnValue(0.99);
+    const spy = vi.spyOn(Math, 'random').mockReturnValue(0.97); // GĐ1528: cấp 60 có thêm ô món báu (tổng 102) ở cuối
     useGame.setState({ ...newGameData(), day: 3, level: 60, money: 100000 });
     const prize = useGame.getState().spinWheel();
     spy.mockRestore();

@@ -119,28 +119,39 @@ describe('farmVsCook', () => {
     expect(f.verdict).toBe('cook');
   });
 
-  it('mía: chỉ 1 món nước mía, verdict cook (lãi mỏng 4600)', () => {
+  it('mía: 2 món nước mía + nước mía chanh (GĐ1359), best là nước mía chanh (+16600), verdict cook', () => {
+    // GĐ1359: thêm Nước mía chanh (10 ly × 13k = 130k − chanh+đường 27k = 103k − sellLot 86.4k = +16.6k
+    // > nước mía +4.6k) → mía bõ nhất ở món mới (đúng ngữ nghĩa "nơi bõ nhất" — đổi CÓ CHỦ Ý theo nội dung mới).
     const f = farmVsCook('mia');
-    expect(f.recipes).toHaveLength(1);
-    expect(f.recipes[0].recipe.id).toBe('recipe_nuoc_mia');
-    expect(f.best!.homegrownNet).toBe(4600);
+    expect(f.recipes).toHaveLength(2);
+    expect(f.recipes.map((d) => d.recipe.id).sort()).toEqual(['recipe_nuoc_mia', 'recipe_nuoc_mia_chanh']);
+    expect(f.best!.recipe.id).toBe('recipe_nuoc_mia_chanh');
+    expect(f.best!.homegrownNet).toBe(16600);
     expect(f.verdict).toBe('cook');
   });
 
-  it('nông sản không vào được bếp (sữa bò): recipes rỗng, verdict sell', () => {
+  it('sữa bò (sua_tuoi): cháo yến mạch + kem dừa + chè Thái (GĐ1381) → 3 món, best kem dừa +87400, verdict cook', () => {
+    // GĐ1369: Cháo yến mạch (+17.4k) · GĐ1376: Kem dừa (160k − 27k = 133k − 45.6k = +87.4k) ·
+    // GĐ1381: Chè Thái (132k − trái cây+đường 42k = 90k − 45.6k = +44.4k) → bõ nhất vẫn kem dừa
+    // (đổi CÓ CHỦ Ý theo nội dung mới).
     const f = farmVsCook('sua_tuoi');
-    expect(f.recipes).toHaveLength(0);
-    expect(f.best).toBeNull();
-    expect(f.verdict).toBe('sell');
+    expect(f.recipes).toHaveLength(3);
+    expect(f.recipes.map((d) => d.recipe.id).sort())
+      .toEqual(['recipe_chao_yen_mach', 'recipe_che_thai', 'recipe_kem_dua']);
+    expect(f.best!.recipe.id).toBe('recipe_kem_dua');
+    expect(f.best!.homegrownNet).toBe(87400);
+    expect(f.verdict).toBe('cook');
   });
 
-  it('trái cây có 5 công thức thường (bỏ giỏ quà 8/3 mùa lễ; GĐ1094 thêm sữa chua dê), best là trà đào cam sả (+35000)', () => {
+  it('trái cây có 7 công thức thường (GĐ1381 thêm Chè Thái), best là Chè Thái (+41400), verdict cook', () => {
+    // GĐ1381: thêm Chè Thái (132k − sữa tươi+đường 45k = 87k − sellLot 45.6k = +41.4k > trà đào +35k)
+    // → trái cây bõ nhất ở món mới (đổi CÓ CHỦ Ý theo nội dung mới).
     const f = farmVsCook('traicay');
-    expect(f.recipes).toHaveLength(5);
+    expect(f.recipes).toHaveLength(7);
     expect(f.recipes.map((d) => d.recipe.id).sort())
-      .toEqual(['recipe_banh_trang', 'recipe_kem', 'recipe_sinh_to', 'recipe_sua_chua_de', 'recipe_tra_dao']);
-    expect(f.best!.recipe.id).toBe('recipe_tra_dao');
-    expect(f.best!.homegrownNet).toBe(35000);
+      .toEqual(['recipe_banh_trang', 'recipe_che_thai', 'recipe_kem', 'recipe_sinh_to', 'recipe_sua_chua_de', 'recipe_sua_chua_trai_cay', 'recipe_tra_dao']);
+    expect(f.best!.recipe.id).toBe('recipe_che_thai');
+    expect(f.best!.homegrownNet).toBe(41400);
     expect(f.verdict).toBe('cook');
   });
 

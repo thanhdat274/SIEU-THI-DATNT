@@ -1,3 +1,6 @@
+import { applyChest } from '../../data/giftChest';
+import { weekendGift } from '../../data/weekendGift';
+import { vietSetCount } from '../../data/decorSets';
 import { dailyQuests, betBonusMoney, betStatus, BET_TIERS, BET_QUEST_ID, betCoreSetProgress, storyQuest } from '../../data/quests';
 import { fitList, levelUpToast } from '../../data/onboarding';
 import { MAX_LEVEL, unlocksAt, xpToNext } from '../../data/levels';
@@ -6,6 +9,11 @@ import { SKILLS, skillPoints, TITLES, PRESTIGE_TITLES, type TitleContext } from 
 import { summarizeReviews } from '../../data/reviews';
 import { costumeById } from '../../data/costumes';
 import { giftOfStreak, giftText, recentAvgProfit, scaledGiftEco, scaledPrize, spinWheelPrize, welcomeBackReward, daysAway } from '../../data/gifts';
+import { offlineRevenue } from '../../data/offlineRevenue';
+import { COOKED_PRODUCT_IDS } from '../../data/recipes';
+import { freeSeat } from '../../data/dineIn';
+import { isCookStation } from '../../data/furniture';
+import { recentAvgSalesProfit } from '../../data/gifts';
 import { feedCost, landmark2Progress, landmarkProgress, LANDMARK_STAGES, LANDMARK2_STAGES, LANDMARK_TARGETS, LANDMARK2_TARGETS } from '../../data/landmark';
 import { ngGoalProgress } from '../../data/ngGoals';
 import { playSfx } from '../audio';
@@ -14,7 +22,7 @@ import { questContext } from '../store';
 
 /** Tiến trình: XP, nhiệm vụ, danh hiệu, kỹ năng, quà điểm danh, vòng quay, trang phục, tên tiệm. */
 
-export const createProgressSlice = (set: SetState, get: GetState): Pick<GameState, 'setCostume' | 'setShopName' | 'claimGift' | 'spinWheel' | 'learnSkill' | 'checkTitles' | 'claimQuest' | 'claimNgGoal' | 'placeBet' | 'addXp' | 'checkWelcomeBack' | 'contributeLandmark' | 'dismissUnlockAct'> => ({
+export const createProgressSlice = (set: SetState, get: GetState): Pick<GameState, 'setCostume' | 'setShopName' | 'claimGift' | 'spinWheel' | 'learnSkill' | 'checkTitles' | 'claimQuest' | 'claimNgGoal' | 'placeBet' | 'addXp' | 'checkWelcomeBack' | 'collectOfflineRevenue' | 'contributeLandmark' | 'dismissUnlockAct'> => ({
   setCostume: (id) => {
     const s = get();
     const def = costumeById(id);
@@ -38,7 +46,7 @@ export const createProgressSlice = (set: SetState, get: GetState): Pick<GameStat
     // Vé tha thứ: bỏ quên đúng 1 ngày, chuỗi đang ≥3 và cách lần tha trước ít nhất 7 ngày thì vẫn giữ chuỗi
     const grace = s.day - s.giftLastDay === 2 && s.giftStreak >= 3 && s.day - s.giftGraceDay >= 7;
     const streak = s.giftLastDay === s.day - 1 || grace ? s.giftStreak + 1 : 1;
-    const gift = scaledGiftEco(giftOfStreak(streak), s.level, recentAvgProfit(s.history));
+    const gift = weekendGift(applyChest(scaledGiftEco(giftOfStreak(streak), s.level, recentAvgProfit(s.history)), streak, s.level, s.day), s.level, s.day); // GĐ1533 + GĐ1555
     set({
       giftStreak: streak,
       giftLastDay: s.day,
@@ -67,6 +75,27 @@ export const createProgressSlice = (set: SetState, get: GetState): Pick<GameStat
       playSfx('gift');
     }
     return reward;
+  },
+  /** GĐ1497 — doanh thu khi vắng mặt: khu ăn tại chỗ chạy ≈5% tốc độ chơi thật (GĐ1531), trần 30 + cấp×5 phút thực,
+   *  đủ điều kiện (bàn ghế + trạm nấu + món nấu bày kệ) mới có thu; chỉ tiền, không XP/không lượt sao. */
+  collectOfflineRevenue: () => {
+    const s = get();
+    const awayMinutes = s.lastSeenAt > 0 ? (Date.now() - s.lastSeenAt) / 60_000 : 0;
+    const furn = s.furniture.filter((f) => !f.trial);
+    const result = offlineRevenue({
+      awayMinutes,
+      level: s.level,
+      recentAvgDailyProfit: recentAvgSalesProfit(s.history),
+      hasDineSeat: freeSeat(furn, new Set()) !== null,
+      hasCookStation: furn.some((f) => isCookStation(f.type) && !f.broken),
+      hasCookedStocked: furn.some((f) => !f.broken && f.tiers.some((t) => t.productId && t.count > 0 && COOKED_PRODUCT_IDS.has(t.productId))),
+    });
+    if (result.gain > 0) {
+      set({ money: s.money + result.gain });
+      s.notify(`🍛 Vắng ${Math.round(awayMinutes)} phút — khu ăn uống thu +${formatMoney(result.gain)} (~${result.customers} khách).`);
+      playSfx('sale');
+    }
+    return result;
   },
   contributeLandmark: () => {
     const s = get();
@@ -119,12 +148,13 @@ export const createProgressSlice = (set: SetState, get: GetState): Pick<GameStat
   spinWheel: () => {
     const s = get();
     if (s.wheelLastDay === s.day) return null;
-    const prize = scaledPrize(spinWheelPrize(), s.level);
+    const prize = scaledPrize(spinWheelPrize(s.level, s.day), s.level);
     set({
       wheelLastDay: s.day,
       wheelLastPrize: { icon: prize.icon, label: prize.label },
       ...(prize.boost ? { wheelBoost: 1 + prize.boost } : {}),
       ...(prize.money ? { money: s.money + prize.money } : {}),
+      ...(prize.furniture ? { furnStash: { ...s.furnStash, [prize.furniture]: (s.furnStash[prize.furniture] ?? 0) + 1 } } : {}),
     });
     if (prize.xp) get().addXp(prize.xp);
     s.notify(`🎡 Vòng quay may mắn: ${prize.icon} ${prize.label}!`);
@@ -165,6 +195,7 @@ export const createProgressSlice = (set: SetState, get: GetState): Pick<GameStat
       closeRegulars: Object.values(s.regulars).filter((r) => r.perks.length).length,
       prestige: s.biz.prestige.level,
       ngGoalsAllDone,
+      vietSetPieces: vietSetCount(s.furniture),
     };
     const fresh = TITLES.filter((t) => !s.titles.includes(t.id) && t.done(ctx));
     // Danh hiệu NG+ độc quyền: cần đủ số lần tái sinh (bộ sưu tập giữ qua vòng) + thỏa điều kiện thường.

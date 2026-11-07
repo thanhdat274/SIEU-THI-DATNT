@@ -1,11 +1,12 @@
 import { useGame, formatClock } from '../../core/store';
 import { productById, formatMoney } from '../../data/products';
-import { nextPerk, birthdayLabel, REGULARS, regularById, rescueGiftFor, type PerkEffect } from '../../data/regulars';
+import { isBirthday, nextPerk, birthdayLabel, REGULARS, regularById, rescueGiftFor, type PerkEffect } from '../../data/regulars';
 import { RESCUE_FEE, atRiskOfPoach } from '../../data/biz';
 import { arcById, currentArcStep } from '../../data/regularArc';
 import { lifetimeRegularVisits, vipTierOf, nextTierOf, monthlyTriAn, regularQuote, EMOTIONAL_FRIENDSHIP } from '../../data/regularTrust';
 import { Callout, Footer, Swatch, styles } from './shared';
 import { DebtBook } from './DebtBook';
+import { regularGiftPlan, REGULAR_GIFT_LEVEL, giftFriendship, giftableCount, sortForGift, giftPanelLine } from '../../data/regularGift';
 
 /** GĐ793 — nút đòi khách quen bị rival lôi kéo (cùng kiểu nút vàng accent của hệ thống). */
 const rescueBtn: React.CSSProperties = {
@@ -25,7 +26,7 @@ export const PERK_ICONS: Record<PerkEffect, string> = {
 
 /** Khách quen: điểm thân thiết, món ưa thích đã biết, perk đã mở. */
 export function RegularsPanel() {
-  const { level, day, regulars, biz, money, storage, closePanel, rescuePoachedRegular } = useGame();
+  const { level, day, regulars, biz, stats, money, storage, closePanel, rescuePoachedRegular, giftRegular } = useGame();
   const arcs = biz.regularArcs ?? {};
   const rival = biz.rival;
   const poached = rival?.poached ?? {};
@@ -41,6 +42,7 @@ export function RegularsPanel() {
   return (
     <>
       <h2 style={styles.title}>💛 Khách quen</h2>
+      {level >= REGULAR_GIFT_LEVEL && <p style={styles.sub}>{giftPanelLine(giftableCount(met, regulars, level, day, storage), stats.gifts)}</p>}
       <DebtBook />
       <p style={styles.sub}>
         Khách quen ghé vào giờ quen. Bán đúng món họ thích thì thân hơn (+2, món khác +1, mỗi ngày một lần);
@@ -107,7 +109,7 @@ export function RegularsPanel() {
         </div>
       )}
       <div style={{ display: 'grid', gap: 6, maxWidth: 560 }}>
-        {met.map((r) => {
+        {sortForGift(met, regulars, level, day, storage, (d) => isBirthday(d, day)).map((r) => {
           const prog = regulars[r.id];
           const next = nextPerk(r, prog);
           const pts = prog?.friendship ?? 0;
@@ -136,6 +138,19 @@ export function RegularsPanel() {
                 <div style={{ fontSize: 12, marginTop: 4 }}>
                   Thích: {r.favorites.map((id) => (prog?.discovered.includes(id) ? productById(id).name : '???')).join(', ')}
                 </div>
+                {level >= REGULAR_GIFT_LEVEL && (() => {
+                  const plan = regularGiftPlan(r, prog, level, day, storage);
+                  const err = 'error' in plan ? plan.error : null;
+                  return (
+                    <button
+                      disabled={!!err}
+                      onClick={() => giftRegular(r.id)}
+                      style={{ marginTop: 4, fontSize: 12, padding: '3px 8px', borderRadius: 6, border: 'none', cursor: err ? 'default' : 'pointer', opacity: err ? 0.55 : 1 }}
+                    >
+                      {'productId' in plan ? `🎁 Tặng 1 ${productById(plan.productId).name} (+${giftFriendship(isBirthday(r, day))} 💛)` : `🎁 ${err}`}
+                    </button>
+                  );
+                })()}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, fontSize: 12 }}>
                   <span>💛 {pts}</span>
                   {next && (

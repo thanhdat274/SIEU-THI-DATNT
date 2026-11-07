@@ -28,7 +28,8 @@ export interface GfxPreset {
 }
 
 export const GFX_PRESETS: Record<GfxLevel, GfxPreset> = {
-  low: { maxPixelRatio: 1, minPixelRatio: 0.75, shadows: false, shadowMapSize: 512, animFarDist: 12, rainDrops: 1200, clouds: 6, stars: 120, lightPool: 3 },
+  // Playtest P0 M1: Thấp được hạ độ nét tới 0.6 (máy 21 FPS ở 0.75) — chỉ chất lượng hình, cảnh vẫn đủ (GĐ1235)
+  low: { maxPixelRatio: 1, minPixelRatio: 0.6, shadows: false, shadowMapSize: 512, animFarDist: 12, rainDrops: 1200, clouds: 6, stars: 120, lightPool: 3 },
   medium: { maxPixelRatio: 1.5, minPixelRatio: 1, shadows: true, shadowMapSize: 1024, animFarDist: 20, rainDrops: 2500, clouds: 10, stars: 200, lightPool: 5 },
   high: { maxPixelRatio: 2, minPixelRatio: 1, shadows: true, shadowMapSize: 2048, animFarDist: 40, rainDrops: 5000, clouds: 14, stars: 280, lightPool: 8 },
 };
@@ -138,7 +139,7 @@ export function buildLadder(start: GfxLevel, nativeDpr: number, auto: boolean): 
   for (const level of levels) {
     const p = GFX_PRESETS[level];
     const top = Math.min(nativeDpr, p.maxPixelRatio);
-    const ratios = [...new Set([top, 1.5, 1.25, 1, 0.75].filter((r) => r <= top + 0.01 && r >= p.minPixelRatio - 0.01))].sort((a, b) => b - a);
+    const ratios = [...new Set([top, 1.5, 1.25, 1, 0.75, 0.6].filter((r) => r <= top + 0.01 && r >= p.minPixelRatio - 0.01))].sort((a, b) => b - a);
     // DPR < min (zoom trang < 100%) lọc hết bậc → thang rỗng, step undefined; giữ ít nhất một bậc.
     if (!ratios.length) ratios.push(top);
     for (const pixelRatio of ratios) steps.push({ level, pixelRatio });

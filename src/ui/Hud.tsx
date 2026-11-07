@@ -1,13 +1,23 @@
+import { wantsRestockButton } from '../core/bizAchieve';
+import { hudThemeOn } from '../data/hudTheme';
 import { faintMinutes } from '../data/biz';
 import { Joystick } from './Joystick';
-import { lazy, Suspense, useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import { useAlertCap } from './alertCap';
 import { formatClock, questContext, useClock, useGame } from '../core/store';
 import { claimableCount, dailyQuests, dailySetProgress, storyQuest, STORY_STEPS } from '../data/quests';
 import { dirtLoss } from '../data/dirtLoss';
+import { dirtInspectionNote } from '../data/inspection';
 import { worldActions } from '../core/actions';
 import { saveGame, resetGame, readBackupSave, restoreBackup } from '../core/save';
 import { FEATURES, xpToNext } from '../data/levels';
+import { xpGainDelta } from '../data/xpGain';
+import { decorPopupLine } from '../data/decorPopup';
+import { machinePopupLine } from '../data/machines';
+import { tipAt } from '../data/tips';
+import { radialPositions } from '../data/radialMenu';
 import { formatMoney, productById } from '../data/products';
+import { trialCost } from '../core/slices/build';
 import { todayLine, todayMissedLine, todayPeakLine, todayExpectSoFar, todayTopSeller } from '../data/todayScore';
 import { hasSkill } from '../data/titles';
 import { summarizeReviews } from '../data/reviews';
@@ -27,6 +37,7 @@ import { logoutGoogle, deleteAccount } from '../net/firebase';
 import { deleteAccountData } from '../net/account';
 import { useSession } from '../net/session';
 import { MoneyChip, MusicToggle, SoundToggle } from './HudChips';
+import { HudTour } from './HudTour';
 import { Panels } from './Panels';
 import { hubFirst, hubOf } from './hubs';
 import { ToolButton, type ToolDef } from './HudToolButton';
@@ -99,8 +110,21 @@ export function Hud() {
   // không phải vẽ lại 60 lần/giây — chỉ vẽ lại khi đồng hồ chạy qua một phút mới.
   const minutes = useClock((c) => Math.floor(c.minutes));
   const reviews = useGame((s) => s.reviews);
+  // GĐ1521: theme HUD theo dịp lễ (chỉ CSS variables)
+  const hudTheme = hudThemeOn(day);
+  useEffect(() => {
+    const root = document.getElementById('ui');
+    if (!root) return;
+    if (hudTheme) root.dataset.hudTheme = hudTheme; else delete root.dataset.hudTheme;
+  }, [hudTheme]);
   const placing = useGame((s) => s.placing);
+  const serviceLife = useGame((s) => s.biz.serviceLife);
   const sellFurniture = useGame((s) => s.sellFurniture);
+  const stashFurniture = useGame((s) => s.stashFurniture);
+  const trialCount = useGame((s) => s.furniture.filter((f) => f.trial).length);
+  const trialTotal = useGame((s) => trialCost(s.furniture));
+  const buyTrials = useGame((s) => s.buyTrials);
+  const dropTrials = useGame((s) => s.dropTrials);
   const weather = useGame((s) => s.weather);
   const autoRoutine = useGame((s) => s.autoRoutine);
   const forecast = useGame((s) => s.forecast);
@@ -121,6 +145,10 @@ export function Hud() {
   const [copiedCode, setCopiedCode] = useState(false);
   // Xem lại hướng dẫn từ menu Thêm: bật thì Tutorial chuyển sang chế độ review
   const [helpTutorial, setHelpTutorial] = useState(false);
+  // Playtest P0 M4: tối đa 2 thẻ thông báo cùng lúc, phần còn lại gom sau nút "+N thông báo"
+  const alertsRef = useRef<HTMLDivElement>(null);
+  const [alertsOpen, setAlertsOpen] = useState(false);
+  const hiddenAlerts = useAlertCap(alertsRef, alertsOpen);
   const copyRoomCode = () => {
     if (!coop) return;
     void navigator.clipboard.writeText(coop.alley).then(() => {
@@ -208,6 +236,8 @@ Bản đang chơi được giữ lại, khôi phục lần nữa là trở lại
   const openType = useGame((s) => s.panel?.type ?? null);
   // Hướng dẫn ngày đầu đang hiện và đang dừng ở bước nào (để nhấp nháy đúng nút dock)
   const tutActive = useGame(tutorialActive);
+  // GĐ1503 — tour HUD hiện một lần cho ván mới (ngày 1, xong hướng dẫn, không mở bảng nào)
+  const hudTourDone = useGame((s) => s.hudTourDone);
   const tutStep = useGame(tutorialStep);
   type Tool = { icon: string; label: string; on: () => void; badge?: string; lock?: number; active?: boolean; more?: boolean; /** Nhóm trong menu Thêm: tiêu đề nhỏ hiện trước cụm nút cùng nhóm */ group?: string; /** Màn hẹp (điện thoại đứng): dời vào menu Thêm cho dock vừa một hàng */ narrowMore?: boolean; /** Bước hướng dẫn ngày đầu đang chỉ tới nút này: viền vàng nhấp nháy */ pulse?: boolean };
   const tools: Tool[] = [
@@ -258,6 +288,9 @@ Bản đang chơi được giữ lại, khôi phục lần nữa là trở lại
   return (
     <>
       <Joystick />
+      {/* GĐ1503 — tour HUD khoanh vùng: ngày đầu, xong hướng dẫn, không mở bảng nào */}
+      {!hudTourDone && !tutActive && openType == null && day === 1 && level <= 3
+        && <HudTour onDone={() => useGame.getState().markHudTourDone()} />}
       {/* Cột trái trên: ngày giờ, tiền, cấp; thông báo xếp ngay bên dưới nên không đè lên cụm bên phải */}
       <div className="hud-left">
       <div className="hud-status">
@@ -309,8 +342,9 @@ ${forecastText}`}>
           </span>
         </div>
         <MoneyChip money={money} />
-        <button className="hud-chip hud-level" title={`${xp}/${xpToNext(level)} XP · xem lộ trình cấp`} onClick={() => openPanel({ type: 'levels' })}>
+        <button className="hud-chip hud-level" style={{ position: 'relative' }} title={`${xp}/${xpToNext(level)} XP · xem lộ trình cấp`} onClick={() => openPanel({ type: 'levels' })}>
           <span className="hud-level-num">{level}</span>
+          <XpGain />
           <span>
             <small>Cấp · {Math.round(progress * 100)}%</small>
             <span className="hud-xp"><span style={{ width: `${progress * 100}%` }} /></span>
@@ -324,12 +358,12 @@ ${forecastText}`}>
       </div>
 
       {/* Thông báo: cột trái, dưới ô trạng thái */}
-      <div className="hud-alerts">
+      <div className="hud-alerts" ref={alertsRef}>
         {late && !message && <div className="hud-alert danger">🌙 Đã khuya! Về nhà ngủ trước {faintMinutes(fedBreakfast) / 60 - 24}:00 sáng kẻo ngất.</div>}
         {wheelBoost > 1 && <div className="hud-alert info">🍀 Vòng quay may mắn: hôm nay khách ghé đông thêm {Math.round((wheelBoost - 1) * 100)}%</div>}
         {dirt >= 30 && (
           <div className={`hud-alert ${dirt >= 60 ? 'warn' : 'info'}`}>
-            🧹 Sàn tiệm bẩn ({Math.round(dirt)}%){dirt >= 60 ? ', khách ngại vào' : ''} · đứng trong tiệm bấm <b>[C]</b> (giữ phím) để tự lau
+            🧹 Sàn tiệm bẩn ({Math.round(dirt)}%){dirt >= 60 ? ', khách ngại vào' : ''}{dirtInspectionNote(level, dirt)} · đứng trong tiệm bấm <b>[C]</b> (giữ phím) để tự lau
             {(() => {
               const s = useGame.getState().stats;
               const dl = dirtLoss({ dirt, level, customers: s.customers, revenue: s.revenue });
@@ -351,6 +385,9 @@ ${forecastText}`}>
         <Suspense fallback={null}><Tutorial review={helpTutorial} onDone={() => setHelpTutorial(false)} /></Suspense>
         <Suspense fallback={null}><SurpriseAlert /></Suspense>
         <Suspense fallback={null}><StoryAlert /></Suspense>
+        {(hiddenAlerts > 0 || alertsOpen) && (
+          <button className="hud-btn hud-alerts-more" onClick={() => setAlertsOpen(!alertsOpen)}>{alertsOpen ? 'Thu gọn thông báo' : `+${hiddenAlerts} thông báo`}</button>
+        )}
         {conflict && (
           <div className="hud-alert info">
             ☁️ Cloud có bản lưu mới hơn từ máy khác (ngày {conflict.day}, cấp {conflict.level}).
@@ -418,22 +455,44 @@ Online: ${coop.peers.map((p) => (p.id === coop.selfId ? 'bạn' : p.name)).join(
         />
       </div>
 
-      {message && <div className="hud-toast" role="status">{message}</div>}
+      {message && (
+        <div className="hud-toast" role="status">
+          {message}
+          {/* GĐ1512 (K1) — 1 chạm từ cảnh báo sắp hết hàng: mở Nhập hàng và tự điền giỏ gợi ý (vẫn phải bấm Đặt) */}
+          {wantsRestockButton(message) && (
+            <button type="button" className="hud-toast-btn" onClick={() => openPanel({ type: 'order', autofill: true })}>📦 Nhập đủ</button>
+          )}
+        </div>
+      )}
+      {TOUCH && buildMode && placing?.movingUid !== undefined && (
+        <RadialMenu items={[
+          { icon: '↻', label: 'Xoay', run: worldActions.rotate },
+          { icon: '📦', label: 'Cất kho', run: () => stashFurniture(placing.movingUid!) },
+          { icon: '💰', label: 'Bán', run: () => sellFurniture(placing.movingUid!) },
+          { icon: '✕', label: 'Huỷ', run: worldActions.cancel },
+        ]} />
+      )}
       <Suspense fallback={null}><ChapterDialogue /></Suspense>
 
       {/* Dưới cùng: dải kế hoạch hôm nay (hoặc gợi ý giờ vắng), gợi ý tương tác, rồi thanh công cụ */}
       <div className="hud-bottom">
         <Suspense fallback={null}><TodayAgendaStrip /></Suspense>
+        {!buildMode && <TipStrip />}
         {buildMode && (
           <div className="hud-alert build">
             {placing ? (
               <>
                 {TOUCH ? 'Chạm để dời, chạm lại để đặt' : 'Bấm để đặt'}
+                {decorPopupLine(placing.type) && <div style={{ fontSize: 12, color: '#f1c40f' }}>{decorPopupLine(placing.type)}</div>}
+                {machinePopupLine(placing.type, serviceLife?.[placing.type]) && <div style={{ fontSize: 12, color: '#81ecec' }}>{machinePopupLine(placing.type, serviceLife?.[placing.type])}</div>}
                 <span className="hud-alert-actions">
                   <button className="hud-btn" onClick={worldActions.rotate}>↻ Xoay</button>
                   {TOUCH && <button className="hud-btn primary" onClick={worldActions.place}>✓ Đặt</button>}
                   {placing.movingUid !== undefined && (
-                    <button className="hud-btn" onClick={() => sellFurniture(placing.movingUid!)}>Bán</button>
+                    <>
+                      <button className="hud-btn" onClick={() => stashFurniture(placing.movingUid!)}>📦 Cất kho</button>
+                      <button className="hud-btn" onClick={() => sellFurniture(placing.movingUid!)}>Bán</button>
+                    </>
                   )}
                   <button className="hud-btn" onClick={worldActions.cancel}>Huỷ</button>
                 </span>
@@ -443,6 +502,13 @@ Online: ${coop.peers.map((p) => (p.id === coop.selfId ? 'bạn' : p.name)).join(
                 🛠️ Chế độ xây dựng · {TOUCH ? 'chạm' : 'bấm'} vào đồ để di chuyển
                 <button className="hud-btn" onClick={() => setBuildMode(false)}>Xong</button>
               </>
+            )}
+            {trialCount > 0 && (
+              <div className="hud-alert-actions" style={{ marginTop: 4 }}>
+                🧪 Đang thử {trialCount} món · {formatMoney(trialTotal)}
+                <button className="hud-btn primary" onClick={buyTrials}>🛒 Mua hết</button>
+                <button className="hud-btn" onClick={dropTrials}>Bỏ thử</button>
+              </div>
             )}
           </div>
         )}
@@ -542,3 +608,47 @@ Bước ${stepNo}/${STORY_STEPS.length} của cốt truyện · bấm xem Nhiệ
 }
 
 /** Khách ở quầy xin ghi sổ / mặc cả / thiếu tiền lẻ: chọn nhanh, thế giới dừng chờ chủ quyết định (GĐ102). */
+
+/** GĐ1529: chip "+N XP" nổi cạnh cấp mỗi lần nhận XP (1,5 giây), thuần hiển thị. */
+function XpGain() {
+  const dayXp = useGame((s) => s.stats.xp);
+  const prev = useRef(dayXp);
+  const [shown, setShown] = useState(0);
+  useEffect(() => {
+    const d = xpGainDelta(prev.current, dayXp);
+    prev.current = dayXp;
+    if (!d) return;
+    setShown(d);
+    const t = setTimeout(() => setShown(0), 1500);
+    return () => clearTimeout(t);
+  }, [dayXp]);
+  return shown ? <span className="hud-xp-gain" style={{ position: 'absolute', top: -14, left: 6, fontSize: 11, fontWeight: 700, color: '#f1c40f', pointerEvents: 'none' }}>+{shown} XP</span> : null;
+}
+
+/** GĐ1535: menu quạt quanh giữa màn hình khi đang dời một món — các nút cũ ở thanh dưới vẫn giữ. */
+function RadialMenu({ items }: { items: { icon: string; label: string; run: () => void }[] }) {
+  const pos = radialPositions(items.length);
+  return (
+    <div className="hud-radial" style={{ position: 'fixed', left: '50%', top: '55%', width: 0, height: 0, pointerEvents: 'none', zIndex: 5 }}>
+      {items.map((it, i) => (
+        <button key={it.label} type="button" className="hud-btn" title={it.label} aria-label={it.label} onClick={it.run}
+          style={{ position: 'absolute', left: pos[i].x - 20, top: pos[i].y - 20, width: 40, height: 40, borderRadius: '50%', padding: 0, pointerEvents: 'auto' }}>{it.icon}</button>
+      ))}
+    </div>
+  );
+}
+
+/** GĐ1552 — dải mẹo "Bạn có biết?" xoay 30 phút game; ✕ ẩn trong phiên (không vào save). */
+function TipStrip() {
+  const level = useGame((s) => s.level);
+  const day = useGame((s) => s.day);
+  const slot = useGame((s) => Math.floor(s.minutes / 30));
+  const [hidden, setHidden] = useState(false);
+  if (hidden) return null;
+  return (
+    <div style={{ fontSize: 12, color: '#dfe6e9', background: 'rgba(0,0,0,0.35)', borderRadius: 8, padding: '3px 8px', display: 'flex', gap: 6, alignItems: 'center', pointerEvents: 'auto' }}>
+      <span>💡 Bạn có biết? {tipAt(level, day, slot * 30)}</span>
+      <button onClick={() => setHidden(true)} style={{ background: 'none', border: 'none', color: '#b2bec3', cursor: 'pointer' }} aria-label="Ẩn mẹo">✕</button>
+    </div>
+  );
+}

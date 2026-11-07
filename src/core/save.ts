@@ -40,7 +40,8 @@ const MIGRATIONS: Record<number, (data: Record<string, unknown>) => Record<strin
 };
 
 /** Các trường được lưu; còn lại (giao diện, khách đang đi) là tạm thời. */
-export type SaveData = ReturnType<typeof newGameData> & { saveVersion?: number };
+/** shopOpen (playtest P0 T1): tùy chọn — save cũ thiếu trường thì coi như đóng cửa. */
+export type SaveData = ReturnType<typeof newGameData> & { saveVersion?: number; shopOpen?: boolean };
 
 function migrate(data: Partial<SaveData>): Partial<SaveData> {
   let d = data as Record<string, unknown>;
@@ -53,19 +54,21 @@ export function snapshot(): SaveData {
   const s = useGame.getState();
   return {
     day: s.day, minutes: s.minutes, money: s.money, level: s.level, xp: s.xp,
-    storage: s.storage, storageLots: s.storageLots, furniture: s.furniture, mainCounter: s.mainCounter, shelfHeat: s.shelfHeat, shelfProfit: s.shelfProfit, impulseHinted: s.impulseHinted, prices: s.prices, happyHour: s.happyHour, stats: s.stats,
+    storage: s.storage, storageLots: s.storageLots, furniture: s.furniture.filter((f) => !f.trial), furnStash: s.furnStash, mainCounter: s.mainCounter, shelfHeat: s.shelfHeat, shelfProfit: s.shelfProfit, impulseHinted: s.impulseHinted, dineSeatHinted: s.dineSeatHinted, hudTourDone: s.hudTourDone, prices: s.prices, happyHour: s.happyHour, stats: s.stats,
     shopTier: s.shopTier, pendingUpgrade: s.pendingUpgrade, style: s.style,
     staff: s.staff, candidates: s.candidates, autoOpen: s.autoOpen, autoOpenAt: s.autoOpenAt, autoRoutine: s.autoRoutine, autoSwap: s.autoSwap, totals: s.totals, questLog: s.questLog, warehouseTier: s.warehouseTier,
     reviews: s.reviews, deliveries: s.deliveries, demand: s.demand, demandToday: s.demandToday,
-    sales: s.sales, salesToday: s.salesToday, soldEver: s.soldEver, comboHitCount: s.comboHitCount, regulars: s.regulars, reservations: s.reservations, market: s.market,
+    sales: s.sales, salesToday: s.salesToday, soldEver: s.soldEver, servedCounts: s.servedCounts, comboHitCount: s.comboHitCount, regulars: s.regulars, reservations: s.reservations, market: s.market,
     contracts: s.contracts, repLog: s.repLog, community: s.community, opening: s.opening, costume: s.costume, event: s.event,
     giftStreak: s.giftStreak, giftLastDay: s.giftLastDay, giftGraceDay: s.giftGraceDay, wheelLastDay: s.wheelLastDay, wheelLastPrize: s.wheelLastPrize, wheelBoost: s.wheelBoost, shopName: s.shopName,
     // Mỗi lần ghi bản lưu đều làm mới mốc "còn chơi" — chơi hằng ngày giữ bản tươi nên không bị tính là vắng.
     lastSeenAt: Date.now(),
-    history: s.history, activeCombos: s.activeCombos, order: s.order, ordersDone: s.ordersDone, cookJobs: s.cookJobs, phoneOrders: s.phoneOrders, phoneSlot: s.phoneSlot, phoneHintDay: s.phoneHintDay, phoneOrdersDone: s.phoneOrdersDone, debts: s.debts, allowCredit: s.allowCredit, counterPolicy: s.counterPolicy, biz: s.biz, vendorDay: s.vendorDay, vendorOffer: s.vendorOffer, marketClearedDay: s.marketClearedDay, marketLast: s.marketLast, skills: s.skills, titles: s.titles, fakeCash: s.fakeCash, branch: s.branch, venueTrend: s.venueTrend, riskToday: s.riskToday, riskTrend: s.riskTrend,
+    history: s.history, activeCombos: s.activeCombos, order: s.order, ordersDone: s.ordersDone, cookJobs: s.cookJobs, phoneOrders: s.phoneOrders, phoneSlot: s.phoneSlot, phoneHintDay: s.phoneHintDay, phoneOrdersDone: s.phoneOrdersDone, debts: s.debts, allowCredit: s.allowCredit, counterPolicy: s.counterPolicy, biz: s.biz, vendorDay: s.vendorDay, vendorOffer: s.vendorOffer, marketClearedDay: s.marketClearedDay, lixiDay: s.lixiDay, cookMastery: s.cookMastery, marketLast: s.marketLast, skills: s.skills, titles: s.titles, fakeCash: s.fakeCash, branch: s.branch, venueTrend: s.venueTrend, riskToday: s.riskToday, riskTrend: s.riskTrend,
     social: s.social, online: s.online, licenses: s.licenses, inspection: s.inspection,
     garden: s.garden, analytics: s.analytics,
     weatherSeed: s.weatherSeed, weather: s.weather, forecast: s.forecast,
+    // Playtest P0 T1: vào lại game giữa ngày thì tiệm vẫn mở như lúc rời
+    shopOpen: s.shopOpen,
     saveVersion: SAVE_VERSION,
   };
 }
@@ -92,14 +95,28 @@ function deepMerge(base: Record<string, unknown>, incoming: Record<string, unkno
  */
 const MERGE_DEEP: readonly (keyof ReturnType<typeof newGameData>)[] = [
   'stats', 'totals', 'biz', 'garden', 'social', 'online', 'licenses', 'inspection', 'analytics', 'branch',
-  'storage', 'storageLots', 'shelfHeat', 'shelfProfit', 'prices', 'style', 'questLog', 'community',
-  'demand', 'demandToday', 'sales', 'salesToday', 'soldEver', 'comboHitCount', 'regulars', 'reservations', 'debts', 'market', 'contracts',
+  'storage', 'storageLots', 'furnStash', 'shelfHeat', 'shelfProfit', 'prices', 'style', 'questLog', 'community',
+  'demand', 'demandToday', 'sales', 'salesToday', 'soldEver', 'servedCounts', 'comboHitCount', 'regulars', 'reservations', 'debts', 'market', 'contracts',
   'riskToday', 'counterPolicy',
 ];
 
+/**
+ * Playtest M3: JSON không có Infinity — lô hàng "không hết hạn" (life: Infinity, vd. Diêm, bật lửa) lưu thành
+ * life: null, nạp lại thành 0 → báo cận hạn và qua đêm bị tính hỏng. Đi khắp bản lưu, trả null về Infinity.
+ */
+export function reviveLots<T>(v: T): T {
+  if (Array.isArray(v)) return v.map(reviveLots) as T;
+  if (!isPlainObject(v)) return v;
+  const o = v as Record<string, unknown>;
+  if ('qty' in o && 'life' in o && o.life === null) return { ...o, life: Infinity } as T;
+  const out: Record<string, unknown> = {};
+  for (const [k, x] of Object.entries(o)) out[k] = reviveLots(x);
+  return out as T;
+}
+
 /** Nạp một bản lưu (có thể là bản cũ thiếu trường mới, hoặc phiên bản cấu trúc cũ). */
 export function applySnapshot(raw: Partial<SaveData>) {
-  const data = migrate(raw);
+  const data = reviveLots(migrate(raw));
   const fresh = newGameData();
   const merged = { ...fresh, ...data };
   // Với các hệ có mặc định là object thường: merge sâu, field mới của hệ tự bù từ mặc định
@@ -114,7 +131,7 @@ export function applySnapshot(raw: Partial<SaveData>) {
   // `branch` mặc định null nên không vào MERGE_DEEP: bản schema cũ thiếu field mới (staff...) phải
   // bù từ newBranch() — thiếu là UI HUD đọc `branch.staff.some` sập cả cây React.
   merged.branch = normalizeBranch(merged.branch);
-  useGame.setState(merged);
+  useGame.setState({ ...merged, shopOpen: data.shopOpen === true });
 }
 
 /**

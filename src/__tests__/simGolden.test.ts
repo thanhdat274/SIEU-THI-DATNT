@@ -44,7 +44,10 @@ const GOLDEN: Record<number, Snap> = {
   // GĐ609: ngày 1 là ngày cúng (mùng 1) — khách hỏi nhang/trái cây (kéo 0,08) → tiền 3 ngày +5,8%.
   // GĐ1253: thu ngân tự quyết mặc cả/tiền lẻ rút DÒNG RIÊNG cashierRng (rand.ts) — chuỗi kinh tế chính
   // giữ nguyên từng nhịp nên mốc KHÔNG đổi (đã đối chiếu: chạy trước/sau GĐ1253 ra số hệt nhau).
-  30: { money: 26_256_961, level: 31, xp: 1221, profit: [-16_605_000, -10_080_000, -2_270_000], quest: [2_145_000, 98_444, 105_687] },
+  // GĐ1507: sửa bug elapsed=0 của maybeSurprise + GĐ1506 kiểm tra vệ sinh sống lại → pool sự kiện
+  // một-phát bắn (thêm lượt gieo pick) + inspect phạt/quét sàn trong sim → chuỗi kinh tế dịch có chủ ý.
+  // Bot không chooseSurprise — mọi lệch là gián tiếp qua chuỗi rng + dirt sạch hơn (kéo khách).
+  30: { money: 27_553_978, level: 31, xp: 1260, profit: [-16_586_000, -8_949_000, -2_020_000], quest: [2_145_000, 98_444, 110_224] },
 };
 
 async function run(level: number, days: number): Promise<Snap> {

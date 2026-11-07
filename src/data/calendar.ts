@@ -56,8 +56,10 @@ export const FESTIVAL_NOTICE_DAYS = 3;
 /** Lễ hội theo ngày tháng thật trong năm (từ = ngày trong năm 0-based, gồm cả hai đầu). */
 export const FESTIVALS: Festival[] = [
   { id: 'tet_duong', icon: '🎆', name: 'Tết dương lịch', blurb: 'Năm mới đầu hẻm, nhà nào cũng có tiệc nhỏ: bia nước bánh kẹo hút hàng.', from: md(1, 1), to: md(1, 2), traffic: 1.2, hot: ['bia', 'ngot', 'banh', 'sua'], cost: 1.03, host: 'bac_tam' },
-  { id: 'tet', icon: '🧧', name: 'Tết Nguyên Đán', blurb: 'Bà con sắm Tết rầm rộ, mua cả giỏ quà; mối nhập tăng giá mạnh, bán giá cao vẫn hết.', from: md(1, 28), to: md(2, 8), traffic: 1.7, goods: ['x_banh_chung', 'x_bao_li_xi', 'x_mut_dua', 'x_hat_dua', 'gio_qua_tet'], hot: ['banh', 'ngot', 'bia', 'gao', 'dauan', 'giavi', 'traicay', 'thit', 'hat', 'quatet', 'nuocmam', 'gio_qua_tet'], cost: 1.2, pull: 0.55, tolerance: 0.5 },
-  { id: 'valentine', icon: '💝', name: 'Lễ Valentine', blurb: 'Cặp đôi đi chơi sắm quà: bánh ngọt, mỹ phẩm, nước ngọt hút hàng.', from: md(2, 13), to: md(2, 14), traffic: 1.15, hot: ['banh', 'ngot', 'mypham', 'sua', 'ruou'], cost: 1.03 },
+  { id: 'tet', icon: '🧧', name: 'Tết Nguyên Đán', blurb: 'Bà con sắm Tết rầm rộ, mua cả giỏ quà; mối nhập tăng giá mạnh, bán giá cao vẫn hết.', from: md(1, 28), to: md(2, 8), traffic: 1.7, goods: ['x_banh_chung', 'x_bao_li_xi', 'x_mut_dua', 'x_hat_dua', 'gio_qua_tet', 'banh_chung_tu'], hot: ['banh', 'ngot', 'bia', 'gao', 'dauan', 'giavi', 'traicay', 'thit', 'hat', 'quatet', 'nuocmam', 'gio_qua_tet', 'banh_chung_tu'], cost: 1.2, pull: 0.55, tolerance: 0.5 },
+  // GĐ1346: thêm Giỏ quà Valentine vào goods + hot của dịp (đổi lịch lễ CÓ CHỦ Ý theo giỏ mới —
+  // khớp bất biến communityIntegrity: món lễ phải bán được đúng mùa).
+  { id: 'valentine', icon: '💝', name: 'Lễ Valentine', blurb: 'Cặp đôi đi chơi sắm quà: bánh ngọt, mỹ phẩm, nước ngọt hút hàng.', from: md(2, 13), to: md(2, 14), traffic: 1.15, goods: ['gio_qua_valentine'], hot: ['banh', 'ngot', 'mypham', 'sua', 'ruou', 'gio_qua_valentine'], cost: 1.03 },
   { id: 'le_hoi_lang', icon: '🏮', name: 'Lễ hội làng', blurb: 'Hội làng đầu xuân, nhà nhà nấu cỗ: gạo, dầu ăn, gia vị, nước mắm bán chạy.', from: md(2, 15), to: md(2, 17), traffic: 1.2, hot: ['gao', 'dauan', 'giavi', 'nuocmam'], cost: 1.03, host: 'bac_doi_hoi' },
   // Ngày hội xóm: ngắn, đẩy mạnh một nhóm hàng
   { id: 'quoc_te_phu_nu', icon: '💐', name: 'Quốc tế Phụ nữ 8/3', blurb: 'Nhà nhà mua hoa, mỹ phẩm, bánh làm quà tặng chị em; khách chịu giá cao.', from: md(3, 7), to: md(3, 9), traffic: 1.25, goods: ['gio_qua_83'], hot: ['mypham', 'banh', 'traicay', 'sua', 'xaphong', 'gio_qua_83'], cost: 1.05, pull: 0.35, tolerance: 0.7 },
@@ -73,7 +75,9 @@ export const FESTIVALS: Festival[] = [
   { id: 'nha_giao', icon: '🌸', name: 'Nhà giáo Việt Nam 20/11', blurb: 'Học sinh mua bánh, trái cây, mỹ phẩm tặng cô; chợ hoa rực rỡ.', from: md(11, 19), to: md(11, 21), traffic: 1.15, goods: ['gio_qua_2011'], hot: ['mypham', 'banh', 'traicay', 'sua', 'tra', 'vo', 'gio_qua_2011'], cost: 1.02 },
   { id: 'hoi_banh', icon: '🧁', name: 'Hội thi làm bánh', blurb: 'Cả xóm thi làm bánh: sữa, trứng, đường hút hàng.', from: md(12, 3), to: md(12, 4), traffic: 1.1, hot: ['sua', 'trung', 'x_duong', 'sua_tuoi'], cost: 1, host: 'co_thao_quen' },
   { id: 'sale_cuoi_nam', icon: '🛒', name: 'Sale cuối năm', blurb: 'Các mối xả hàng trước Tết nên nhập rẻ, cả xóm tranh thủ sắm sớm.', from: md(12, 10), to: md(12, 15), traffic: 1.3, hot: ['mi', 'nuoc', 'banh', 'ngot', 'sua', 'giay', 'xaphong', 'botgiat'], cost: 0.93, pull: 0.3, tolerance: 0.85 },
-  { id: 'giang_sinh', icon: '🎄', name: 'Giáng sinh', blurb: 'Phố đông người đi chơi, bánh kẹo và bia lên ngôi.', from: md(12, 23), to: md(12, 26), traffic: 1.2, hot: ['banh', 'bia', 'ngot'], cost: 1 },
+  // GĐ1345: thêm Giỏ quà Giáng sinh vào goods + hot của dịp (đổi lịch lễ CÓ CHỦ Ý theo giỏ mới —
+  // khớp bất biến communityIntegrity: món lễ phải bán được đúng mùa như 4 giỏ Tết/8-3/20-11/Trung thu).
+  { id: 'giang_sinh', icon: '🎄', name: 'Giáng sinh', blurb: 'Phố đông người đi chơi, bánh kẹo và bia lên ngôi.', from: md(12, 23), to: md(12, 26), traffic: 1.2, goods: ['gio_qua_giang_sinh'], hot: ['banh', 'bia', 'ngot', 'gio_qua_giang_sinh'], cost: 1 },
 ];
 
 /** Mọi món chỉ bán theo dịp (bánh chưng, lồng đèn...). */

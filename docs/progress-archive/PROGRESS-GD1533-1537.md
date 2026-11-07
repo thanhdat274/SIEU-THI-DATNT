@@ -1,0 +1,7 @@
+# Lưu trữ GĐ1533–1537
+
+- **GĐ1537** — Ghế mát-xa chân (máy thu phí thứ 4, cấp 38): 240k, 2.400đ/lượt, hoàn vốn 100 lượt; Midnight #3 (thêm máy thu phí). Test machines.test.ts.
+- **GĐ1536 (Thực đơn tối thiểu theo cấp quán — Midnight #9, áp vào khu ăn tại chỗ)**: mục tiêu số món nấu khác nhau bày kệ = 3 (cấp 31) → 12 (cấp ≥93), +1 mỗi 7 cấp; đủ mục tiêu thì tip ăn tại chỗ ×1,2, dưới nửa ×0,8. Từ cấp 31 nên golden không đổi; tip là thu phụ. Test menuTarget.test.ts.
+- **GĐ1535 (Menu quạt khi dời đồ — Xóm #12 phần cuối, bản gọn)**: trên máy cảm ứng, đang dời một món ở chế độ xây dựng thì 4 nút tròn ↻ Xoay / 📦 Cất kho / 💰 Bán / ✕ Huỷ xếp hình quạt giữa màn hình (radialPositions thuần); máy tính giữ thanh dưới để không chắn chuột đặt đồ. Thuần UI. Xóm #12 coi là xong. Test radialMenu.test.ts.
+- **GĐ1534 (Cập nhật bảng C của 2 file TONG-HOP)**: ghi đúng trạng thái sau GĐ1495–1533. Xóm: 1–6, 8, 10, 11 ✅; #9 ⏸ (chưa có vật liệu nâng cấp); #12 ✅ (GĐ1535); #7 chờ siêu thị phase 2. Midnight: 5, 7, 8, 11, 12 ✅; #6 ⏸, #3/#9/#10 chờ khu ăn siêu thị. Chỉ tài liệu.
+- **GĐ1533 (🎁 Rương trọng số ngày 7 — Xóm #11 việc còn lại)**: từ cấp 34 rương điểm danh ngày 7 mở 1 trong 6 bậc gỗ/tre/đồng/bạc/vàng/ngọc theo 30/20/20/15/10/5%, tiền ×0,6/0,8/1/1,5/2/3 (kỳ vọng ≈×1,12). Băm theo số ngày, không RNG → solo = co-op; dưới cấp 34 y cũ. Rà Xóm C: #6 hàng hot (GĐ1519), #8 kho nhiều cấp, #10 thông thạo (GĐ1522) đã có; trùng Đồ Việt không thưởng thêm (đã có decor gốc). Test giftChest.test.ts.

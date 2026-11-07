@@ -85,6 +85,7 @@ export const newGameData = () => ({
   xp: 0,
   storage: { mi: 10, nuoc: 10, banh: 5 } as Record<string, number>,
   storageLots: {} as Record<string, Lot[]>,
+  furnStash: {} as Record<string, number>,
   furniture: [
     {
       uid: 1, type: 'shelf', x: -1.8, z: -2.0, rot: 0,
@@ -101,6 +102,8 @@ export const newGameData = () => ({
   shelfHeat: {} as Record<number, number>,
   shelfProfit: {} as Record<number, { profit: number; since: number }>,
   impulseHinted: false,
+  dineSeatHinted: false,
+  hudTourDone: false,
   prices: {} as Record<string, number>,
   happyHour: null as HappyHour | null,
   stats: emptyStats(),
@@ -127,6 +130,7 @@ export const newGameData = () => ({
   sales: {} as Record<string, number>,
   salesToday: {} as Record<string, number>,
   soldEver: {} as Record<string, number>,
+  servedCounts: {} as Record<string, number>,
   comboHitCount: {} as Record<string, number>,
   regulars: {} as Record<string, RegularProgress>,
   reservations: {} as Record<string, Reservation>,
@@ -150,6 +154,8 @@ export const newGameData = () => ({
   biz: newBiz(),
   vendorDay: 0,
   marketClearedDay: 0,
+  lixiDay: 0,
+  cookMastery: {},
   marketLast: { day: 0, units: 0, revenue: 0 } as { day: number; units: number; revenue: number },
   contracts: {} as Record<string, ContractState>,
   event: null as RandomEvent | null,

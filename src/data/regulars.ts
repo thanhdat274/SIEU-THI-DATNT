@@ -61,6 +61,8 @@ export interface RegularProgress {
   visits: number;
   lastVisitDay?: number;
   lastFriendshipDay?: number;
+  /** GĐ1557 — ngày gần nhất người chơi tặng quà (mỗi khách 1 lần/ngày). */
+  lastGiftDay?: number;
   perks: string[];
   /** Món ưa thích người chơi đã phát hiện (khách mua được). */
   discovered: string[];
@@ -267,8 +269,9 @@ export function birthdaysToday(expected: RegularDef[], day: number): RegularDef[
 
 /** GĐ773 — dòng Sổ đầu ngày cho sinh nhật: nếu CÓ món họ thích trong hàng thì báo mức +5 (3 sinh nhật + 2 món thích);
  *  nếu hết thì nêu tên món thích đầu tiên cần nhập (việc ưu tiên hơn). Thuần — haveStock do UI truyền. */
-export function birthdayHint(def: RegularDef, haveStock: (id: string) => boolean): { text: string; priority: number } {
-  if (def.favorites.some(haveStock)) return { text: `Sinh nhật ${def.name} hôm nay — mua món họ thích là +${BIRTHDAY_BONUS + 2} thân thiết`, priority: 3 };
+export function birthdayHint(def: RegularDef, haveStock: (id: string) => boolean, level = 0): { text: string; priority: number } {
+  // GĐ1561 — từ cấp 38 nhắc thêm: tặng quà đúng sinh nhật được ×2 thân thiết (+6).
+  if (def.favorites.some(haveStock)) return { text: `Sinh nhật ${def.name} hôm nay — mua món họ thích là +${BIRTHDAY_BONUS + 2} thân thiết${level >= 38 ? " · tặng quà +6" : ""}`, priority: 3 };
   const want = productById(def.favorites[0]).name;
   return { text: `Sinh nhật ${def.name} hôm nay — hết hàng họ thích, nhập ${want} để +${BIRTHDAY_BONUS + 2}`, priority: 2 };
 }

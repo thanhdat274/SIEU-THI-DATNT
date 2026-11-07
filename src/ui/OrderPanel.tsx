@@ -1,11 +1,15 @@
+import { suggestBudget } from '../data/suggestBudget';
 import { ProductIcon } from './ProductIcon';
 import { st } from './orderPanelStyles';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { orderSlowdown } from '../data/orderSlowdown';
+import { useSession } from '../net/session';
 import { Dropdown } from './Dropdown';
 import { lastActionResult } from '../net/coop';
 import { storageCapacity, storageUsed, useClock, useGame, wagesDue } from '../core/store';
 import { caseSize, casesFor, CATEGORIES, describeUnits, formatMoney, productById, unlockedProducts, type Category } from '../data/products';
 import { shelfLife } from '../data/freshness';
+import { visibleSuppliers } from '../data/visibleSuppliers';
 import { bulkDiscount, orderTotal, SUPPLIERS, supplierSells, trending, unitCost } from '../data/suppliers';
 import { goldenShortfall, nextGoldenPrep } from '../data/rhythm';
 import { guideActiveOn, guideInCart, guideIdsOf, guideProducts } from '../data/onboarding';
@@ -41,6 +45,12 @@ import { ASSESS_STYLE, BUY_TONE_COLOR, BUY_TONE_ICON, BUY_TONE_LABEL, DIR_WORD, 
 export function OrderPanel() {
   const { level, day, money, demand, demandToday, deliveries, placeOrder, closePanel, notify, weatherSeed, forecast, storage, weather, warehouseTier, priceOf, furniture, openPanel, analytics } = useGame();
   const unlockedSuppliers = SUPPLIERS.filter((s) => s.unlock <= level);
+  const coop = useSession((x) => x.coop);
+  useEffect(() => {
+    const g = useGame.getState();
+    const next = orderSlowdown(g.speed, !!coop);
+    if (next !== null) { g.setSpeed(next); g.notify('⏱ Đang tua nhanh → hạ về 1× cho bạn chọn hàng thong thả'); }
+  }, [coop]);
   // GĐ57: lớp minh bạch giá mua chỉ bật khi đã mở mối dao động mạnh (Chợ đầu mối, cấp 3) — cấp <3 chưa thấy gì mới.
   const showCost = level >= 3;
   const [supplierId, setSupplierId] = useState(SUPPLIERS[0].id);
@@ -212,16 +222,28 @@ export function OrderPanel() {
   // Bỏ qua món tiệm chưa có chỗ bày.
   const fillSuggest = () => {
     const c: Record<string, number> = {};
-    const wages = wagesDue(useGame.getState());
-    const budget = Math.max(0, money - wages);
+    const g = useGame.getState();
+    const cand = shown.filter((it) => it.suggest > 0 && displayable(it.p.id));
+    const minCase = Math.min(...cand.map((r) => orderTotal(supplier, { [r.p.id]: caseSize(r.p.id) }, day)), Infinity);
+    const budget = suggestBudget(money, wagesDue(g), g.day, Number.isFinite(minCase) ? minCase : 0);
     let cut = false;
-    for (const r of shown.filter((it) => it.suggest > 0 && displayable(it.p.id))) {
+    for (const r of cand) {
       c[r.p.id] = maxFit(c, r.p.id, r.suggest, budget);
       if (c[r.p.id] < r.suggest) cut = true;
     }
     setCart(c);
-    if (cut) notify('💰/📦 Điền tới hết tiền hoặc hết chỗ kho — nâng cấp để nhập thêm');
+    if (cut) notify(useGame.getState().day <= 1 ? '💰 Ngày đầu chỉ điền ~40% tiền mặt — giữ vốn, bán xong nhập thêm' : '💰/📦 Điền tới hết tiền hoặc hết chỗ kho — nâng cấp để nhập thêm');
   };
+  // GĐ1512 (K1) — mở từ nút "📦 Nhập đủ" trên cảnh báo sắp hết hàng: tự điền giỏ gợi ý một lần
+  // (người chơi vẫn xem lại và bấm Đặt). Xoá cờ ngay để mở lại bảng không điền lần nữa.
+  useEffect(() => {
+    const p = useGame.getState().panel;
+    if (p?.type === 'order' && p.autofill) {
+      useGame.setState({ panel: { type: 'order' } });
+      fillSuggest();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   // GĐ205: điền giỏ đúng thứ mà rốn kho chung đang cần cho CHI NHÁNH (phiếu nạp kho GĐ202). Khác
   // fillSuggest (đặt theo nhu cầu tiệm chính): ưu tiên đúng kệ chi nhánh đang trống, quy theo thùng.
   // Chỉ thêm món nhà cung cấp hiện tại bán + còn vừa ngân sách (chừa lương) và chỗ kho.
@@ -372,7 +394,7 @@ export function OrderPanel() {
       })()}
 
       <div style={st.tabs}>
-        {SUPPLIERS.map((s) => {
+        {visibleSuppliers(SUPPLIERS, level).visible.map((s) => {
           const locked = s.unlock > level;
           const relHot = (biz.supplierRel?.[s.id]?.spent ?? 0) >= (PARTNER_TIERS.find((t) => t.level === 3)?.threshold ?? Infinity);
           return (
@@ -398,6 +420,10 @@ export function OrderPanel() {
             </button>
           );
         })}
+        {(() => {
+          const v = visibleSuppliers(SUPPLIERS, level);
+          return v.hiddenCount > 0 ? <span style={{ fontSize: 12, opacity: 0.6, alignSelf: 'center' }}>🔒 +{v.hiddenCount} mối nữa từ cấp {v.nextHiddenUnlock}</span> : null;
+        })()}
       </div>
       <p style={st.sub}>
         {supplier.desc}
