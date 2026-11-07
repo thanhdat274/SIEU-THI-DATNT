@@ -34,3 +34,10 @@ describe('GĐ1673 — mùa hè hút chè Thái', () => {
     expect(FESTIVALS.find((e) => e.id === 'he')!.hot).toContain('che_thai');
   });
 });
+
+// GĐ1674 — mùa mưa hút chè trôi nước gừng (món ấm).
+describe('GĐ1674 — mùa mưa hút chè trôi nước', () => {
+  it('che_troi_nuoc nằm trong hàng hot mùa mưa', () => {
+    expect(FESTIVALS.find((e) => e.id === 'mua_mua')!.hot).toContain('che_troi_nuoc');
+  });
+});
