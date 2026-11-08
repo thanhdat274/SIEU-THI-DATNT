@@ -75,7 +75,7 @@ export const PROFESSIONS: ProfessionDef[] = [
   {
     id: 'athlete', name: 'Dân chạy bộ', icon: '🏃', archetype: 'athlete',
     hours: [h(5, 7), h(17, 19)],
-    likes: ['x_nuoc_dien_giai', 'x_pocari_sweat', 'x_revive_chai', 'nuoc', 'x_chuoi', 'x_yen_mach', 'sua'],
+    likes: ['x_nuoc_dien_giai', 'x_pocari_sweat', 'x_revive_chai', 'nuoc', 'x_chuoi', 'x_yen_mach', 'sua', 'bo_xao_sa'],
     loyalty: 0.8, extraItems: -1, sensitivity: 0.9, patience: 0.6,
   },
   {
