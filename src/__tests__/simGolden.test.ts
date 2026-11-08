@@ -50,7 +50,7 @@ const GOLDEN: Record<number, Snap> = {
   // GĐ1829: cơ chế khách thay món khi hết hàng (OpenSpec khach-thay-mon-het-hang) — doanh thu/XP tăng
   // CÓ CHỦ Ý (thay 12 lượt ngày 1; L30 3 ngày money +8.7%, xp 1260→2379) → chép lại mốc theo quy trình
   // "đổi kinh tế có chủ ý" ghi ở đầu file.
-  30: { money: 29_957_787, level: 31, xp: 2379, profit: [-15_995_000, -9_098_000, -369_000], quest: [2_145_000, 167_108, 199_168] },
+  30: { money: 25_027_255, level: 31, xp: 2215, profit: [-16_935_000, -11_440_000, -2_041_000], quest: [2_145_000, 119_833, 177_692] }, // re-baseline có chủ ý 09/11: giờ bán tạp hóa 6:00–22:00 → 8:00–22:30 (người dùng chốt), money −16,5%
 };
 
 async function run(level: number, days: number): Promise<Snap> {

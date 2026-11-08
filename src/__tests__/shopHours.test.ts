@@ -7,8 +7,8 @@ describe('Giờ mở riêng từng loại tiệm', () => {
     expect(SHOP_HOURS.quanNuoc.from).toBeLessThan(SHOP_HOURS.grocery.from);
     expect(shopHoursLabel('convenience')).toBe('24/7');
   });
-  it('tạp hóa giữ 6:00–22:00 như trước (không đổi cân bằng)', () => {
-    expect(shopHoursLabel('grocery')).toBe('6h–22h');
+  it('tạp hóa, siêu thị, siêu thị lớn mở 8:00–22:30', () => {
+    expect(shopHoursLabel('grocery')).toBe('8h–22h30');
     expect(shopHoursLabel('quanNuoc')).toBe('5h30–22h');
   });
 });

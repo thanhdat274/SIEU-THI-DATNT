@@ -3,6 +3,7 @@ import { wantsRestockButton } from '../core/bizAchieve';
 import { hudThemeOn } from '../data/hudTheme';
 import { faintMinutes } from '../data/biz';
 import { hasUpgrade } from '../data/upgrades';
+import { SHOP_HOURS } from '../data/shopHours';
 import { Joystick } from './Joystick';
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { useAlertCap } from './alertCap';
@@ -356,7 +357,7 @@ ${forecastText}`}>
         <GoalChip ready={questsReady} />
         <div className="hud-place">
           <span>📍 {location}</span>
-          <span className={`hud-open ${shopOpen ? 'on' : ''}`}>{!shopOpen ? 'Tiệm đóng' : minutes >= 22 * 60 && minutes < 30 * 60 && !nightShift ? 'Hết đón khách mới' : 'Đang mở cửa'}</span>
+          <span className={`hud-open ${shopOpen ? 'on' : ''}`}>{!shopOpen ? 'Tiệm đóng' : minutes >= SHOP_HOURS.grocery.to && minutes < 30 * 60 && !nightShift ? 'Hết đón khách mới' : 'Đang mở cửa'}</span>
         </div>
       </div>
 
