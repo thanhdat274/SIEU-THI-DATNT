@@ -20,3 +20,10 @@ describe('giữa buổi & cao điểm tối (GĐ1780)', () => {
     expect(timeBandAt(18 * 60)!.wants).toContain(id);
   });
 });
+
+// GĐ1782 — buổi chiều (13h–17h) ăn vặt ngọt: chè khoai môn, bánh flan.
+describe('buổi chiều ăn vặt ngọt (GĐ1782)', () => {
+  it.each(['che_khoai_mon', 'banh_flan'])('15h thèm %s', (id) => {
+    expect(timeBandAt(15 * 60)!.wants).toContain(id);
+  });
+});
