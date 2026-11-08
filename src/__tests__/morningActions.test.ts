@@ -86,3 +86,13 @@ describe('GĐ1573 — nhắc tặng quà khách quen', () => {
     expect(buildMorningActions(base({ level: 37, regulars: prog, storage: st })).some((x) => x.text.includes('tặng quà'))).toBe(false);
   });
 });
+
+describe('Đợt 3 R8 — nhắc góp Sân chơi không vòi người mới', () => {
+  const withLm = (day: number) => base({ day, biz: { ...newGameData().biz, landmark: { contributions: 0, lastContributeDay: 0 } } as never });
+  it('ngày 1–2 không có việc "Góp vật liệu"', () => {
+    for (const d of [1, 2]) expect(buildMorningActions(withLm(d)).some((x) => x.text.includes('Góp vật liệu'))).toBe(false);
+  });
+  it('từ ngày 3 vẫn nhắc', () => {
+    expect(buildMorningActions(withLm(3)).some((x) => x.text.includes('Góp vật liệu'))).toBe(true);
+  });
+});
