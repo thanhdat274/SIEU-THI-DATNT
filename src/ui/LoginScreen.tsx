@@ -2,7 +2,7 @@ import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { applySnapshot, loadGame, readLocalSave, type SaveData } from '../core/save';
 import { useGame } from '../core/store';
 import { formatMoney } from '../data/products';
-import { fetchCloudSave } from '../net/cloud';
+import { cloudSaveWithin, prefetchCloudSave } from '../net/cloud';
 import { giftOfStreak, giftText, scaledGift } from '../data/gifts';
 import { firebaseReady, loginGoogle, logoutGoogle } from '../net/firebase';
 import { useSession, type SaveSummary } from '../net/session';
@@ -64,6 +64,8 @@ export function LoginScreen() {
 
   // Đổi tài khoản thì bỏ lựa chọn cũ
   useEffect(() => setChoice(null), [account?.uid]);
+  // GĐ1822: biết tài khoản là tải trước bản cloud, bấm "Vào tiệm" khỏi chờ
+  useEffect(() => { if (account?.uid) prefetchCloudSave(account.uid).catch(() => {}); }, [account?.uid]);
 
   // User đã tick đồng ý và đăng nhập xong → ghi bằng chứng đồng ý lên server (một lần/phiên/scope)
   useEffect(() => {
@@ -87,12 +89,21 @@ export function LoginScreen() {
 
   /** Đã đăng nhập: lấy bản cloud, so với bản trong máy rồi vào chơi. */
   const enterWithAccount = () => run(async () => {
-    let cloud: Awaited<ReturnType<typeof fetchCloudSave>> = null;
+    if (!account) return;
+    let got: Awaited<ReturnType<typeof cloudSaveWithin>>;
     try {
-      cloud = await fetchCloudSave();
+      got = await cloudSaveWithin(account.uid, 8000);
     } catch {
       throw new Error('Không kết nối được server lưu cloud. Kiểm tra "npm run server" đang chạy, hoặc chơi bằng bản trong máy.');
     }
+    // GĐ1822: server chậm quá 8s mà máy có bản lưu → vào bằng bản máy luôn, lần lưu sau tự đồng bộ
+    if (got === 'timeout') {
+      if (!localSummary) throw new Error('Server lưu cloud phản hồi chậm — thử lại sau giây lát.');
+      loadGame();
+      startGame();
+      return;
+    }
+    const cloud = got;
     if (cloud && localSummary && cloud.day !== localSummary.day) {
       setChoice({ local: localSummary, cloud });
       return;

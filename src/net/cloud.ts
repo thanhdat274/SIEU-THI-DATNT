@@ -25,6 +25,28 @@ export async function fetchCloudSave(): Promise<(SaveSummary & { data: SaveData 
   return save;
 }
 
+type CloudSave = Awaited<ReturnType<typeof fetchCloudSave>>;
+let prefetched: { uid: string; promise: Promise<CloudSave> } | null = null;
+
+/**
+ * GĐ1822 — Tải trước bản cloud ngay khi màn đăng nhập biết tài khoản (trước khi bấm "Vào tiệm"):
+ * token Firebase + server (có thể đang cold start) + JSON bản lưu chạy song song lúc người chơi
+ * còn đọc màn hình, bấm vào là gần như có ngay. Gọi lại cùng uid thì dùng chung một lượt tải.
+ */
+export function prefetchCloudSave(uid: string): Promise<CloudSave> {
+  if (prefetched?.uid !== uid) {
+    const promise = fetchCloudSave();
+    promise.catch(() => { if (prefetched?.promise === promise) prefetched = null; });
+    prefetched = { uid, promise };
+  }
+  return prefetched.promise;
+}
+
+/** Lấy bản cloud (dùng lượt tải trước nếu có), quá `ms` thì báo 'timeout' để vào bằng bản máy. */
+export function cloudSaveWithin(uid: string, ms: number): Promise<CloudSave | 'timeout'> {
+  return Promise.race([prefetchCloudSave(uid), new Promise<'timeout'>((r) => setTimeout(() => r('timeout'), ms))]);
+}
+
 /**
  * Đẩy bản lưu hiện tại lên cloud. Máy khác đã ghi sau lần cuối máy này thấy → không ghi đè,
  * chuyển sang trạng thái 'conflict' để người chơi chọn. `force` = ghi đè dù có xung đột.

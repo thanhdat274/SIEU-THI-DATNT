@@ -786,6 +786,7 @@ function renderFrame() {
   world.quanNuocWarm.update(lamp, world.quanNuoc.stand.visible);
   // Biển mở/đóng cửa trước tiệm (gđ179): tấm trạng thái đổi màu theo tiệm đang mở/đóng, đung nhẹ khi mở
   world.openSign.update(g.shopOpen, performance.now() / 1000);
+  world.openSign.group.visible = world.shop.building.frontWallShown; // GĐ1822: ẩn theo tường mặt tiền bị cắt
   // Đèn báo "khách đang đợi" cạnh cửa (gđ180): sáng ấm khi có khách chờ quầy và tiệm mở
   // GĐ186: cộng thêm mức KHẨN "sắp mất khách" khi hàng đông lâu — nháy nhanh để chủ ghé về quầy
   let urgAdv = g.minutes - lastUrgMinutes;

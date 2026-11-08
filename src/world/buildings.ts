@@ -333,6 +333,9 @@ export class Building {
   }
 
   /** Mờ mái và tường khi camera ở gần, hoặc khi đang ở cảnh trong nhà (`indoors`). */
+  /** GĐ1822: tường mặt tiền còn hiện đặc (chưa mờ/cắt) — đồ gắn tường phía trước ẩn theo. */
+  frontWallShown = true;
+
   updateView(camera: THREE.Camera, indoors = false) {
     // Tính khoảng cách tới mép tòa nhà, để tiệm to cũng nhìn vào trong được
     const size = Math.max(this.opts.width, this.opts.depth) / 2;
@@ -360,6 +363,8 @@ export class Building {
       // Trong nhà: tường phía trước hạ thấp còn một gờ (như Stardew), chừa khe cửa để biết lối ra
       cutWall(wall, indoors && facing, this.opts.height);
       setOpacity(wall, facing && !indoors ? 1 - inside * 0.85 : 1);
+      // GĐ1822: đồ gắn tường mặt tiền (biển mở/đóng) ẩn theo tường trước khi tường bị cắt/mờ
+      if (front) this.frontWallShown = !indoors && !(facing && inside > 0.3);
     }
   }
 
