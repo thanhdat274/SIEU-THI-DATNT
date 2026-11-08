@@ -5,9 +5,13 @@ import type { GameState } from '../core/store';
 export function tutorialSteps(s: GameState): { label: string; done: boolean }[] {
   return [
     { label: 'Nhập hàng (📦 Nhập hàng)', done: s.deliveries.length > 0 || s.totals.spent > 0 },
-    { label: 'Bày hàng lên kệ (bấm vào kệ)', done: !!s.biz.tutShelved },
+    // GĐ1823 (review R6): kệ không mở bằng click — phải đứng gần (≤1,2 m) bấm B (main.tsx
+    // buildInteractables) hoặc mở Sơ đồ kệ; label cũ "bấm vào kệ" khiến người mới click vô ích.
+    { label: 'Bày hàng lên kệ (đến gần kệ bấm B)', done: !!s.biz.tutShelved },
     { label: 'Mở cửa tiệm', done: s.shopOpen || s.totals.customers > 0 },
-    { label: 'Đứng quầy tính tiền cho khách', done: s.totals.itemsSold > 0 },
+    // GĐ1823 (review R4): bán hàng tại quầy tự chạy — đứng quầy là để chốt kèo/mặc cả/đặt trước,
+    // label phải nói đúng điều đó kẻo người mới chờ "được dạy tính tiền" mà không có gì dạy.
+    { label: 'Đứng quầy chốt đơn (mặc cả, đặt hàng trước)', done: s.totals.itemsSold > 0 },
     { label: 'Tối về nhà đi ngủ', done: s.day > 1 },
   ];
 }

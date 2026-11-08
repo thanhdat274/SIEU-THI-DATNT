@@ -93,7 +93,7 @@ describe('actions qua store thật — mua, tuyển, nghỉ, đổi giá', () =>
     expect(useGame.getState().buyQuanNuoc()).toBe(false);
     expect(allMsgs(msgs).some((m) => m.includes('cấp 29'))).toBe(true);
     const s = useGame.getState();
-    expect(s.money).toBe(300000);
+    expect(s.money).toBe(newGameData().money); // GĐ1823: vốn mới theo store, không khóa cứng
     expect(s.biz.quanNuoc.open).toBe(false);
   });
 

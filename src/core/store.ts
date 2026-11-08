@@ -89,7 +89,10 @@ export const questContext = (s: GameState): QuestContext => {
 export const newGameData = () => ({
   day: 1,
   minutes: DAY_START,
-  money: 300000,
+  // GĐ1823 (review người chơi R1): vốn 300k không đủ mua trọn bộ 3 món hướng dẫn ngày đầu
+  // (mì + nước + bánh kẹo = 316.200đ ngày Tết) → người mới đi đúng hướng dẫn kẹt ngay bước 1.
+  // Nâng lên 360k: đủ bộ 3 + dư ~44k cho việc phát sinh (góp sân chơi 8k...).
+  money: 360000,
   level: 1,
   xp: 0,
   storage: { mi: 10, nuoc: 10, banh: 5 } as Record<string, number>,

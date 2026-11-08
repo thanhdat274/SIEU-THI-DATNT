@@ -40,9 +40,9 @@ describe('save migration v1 → v2', () => {
     expect(s.garden.pens.chicken).toEqual({ count: 5, fedDay: 3, pending: 7, feedKg: 2 });
     // Các phần còn lại của trang trại bù từ mặc định
     expect(Array.isArray(s.garden.plots)).toBe(true);
-    // Kệ kho cũ bị dỡ khỏi tiệm, hoàn đúng 200000 (ván mới có 300000)
+    // Kệ kho cũ bị dỡ khỏi tiệm, hoàn đúng 200000 (ván mới có 360000 — GĐ1823 review R1)
     expect(s.furniture.some((f) => (f.type as string) === 'stockRack')).toBe(false);
-    expect(s.money).toBe(300000 + 200000);
+    expect(s.money).toBe(360000 + 200000);
     // Nhân viên chi nhánh làm "cả ngày" chuyển sang ca sáng
     expect(s.branch?.staff[0]?.shift).toBe('morning');
     // Hạt giống thời tiết gieo mới, dự báo nối tiếp đủ 2 ngày

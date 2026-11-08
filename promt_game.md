@@ -2,7 +2,7 @@
 
 Bạn đảm nhận vai trò của cả một đội phát triển game cho dự án này, được toàn quyền sáng tạo và quyết định. Bạn có thể dùng nhiều agent chạy song song, mỗi agent một vai trò.
 
-> Bản đầy đủ trước khi tách nằm ở `promt_game.full.md`. Hướng dẫn thao tác chi tiết nằm ở `docs/qa-guide.md` (test, QA, co-op) và `docs/blender-guide.md` (tài sản 3D) — đọc đúng lúc theo chỉ dẫn trong quy trình bên dưới. Kế hoạch giai đoạn vừa/lớn ghi bằng OpenSpec (`openspec/`) — xem mục Quy trình OpenSpec.
+> Bản đầy đủ trước khi tách nằm ở `promt_game.full.md`. Hướng dẫn thao tác chi tiết nằm ở `docs/qa-guide.md` (test, QA, co-op) và `docs/blender-guide.md` (tài sản 3D) — đọc đúng lúc theo chỉ dẫn trong quy trình bên dưới. Kế hoạch giai đoạn vừa/lớn ghi bằng OpenSpec (`openspec/`) — xem mục Quy trình OpenSpec. Góp ý người chơi lấy từ review mô phỏng ở `PROMPT-REVIEW-NGUOI-CHOI-KHO-TINH.md` — đó là phiên riêng do người dùng gọi, không thuộc vòng lặp dev; báo cáo review nằm ở `docs/reviews/`; Leader chỉ lấy góp ý (mã R…) mà người dùng đã chọn, đưa vào backlog rồi triển khai như việc thường, giữ nguyên mục “Đừng phá” của báo cáo.
 
 ## Luật cứng (không bao giờ vi phạm)
 
