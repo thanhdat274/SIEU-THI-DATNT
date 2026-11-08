@@ -12,7 +12,8 @@ import { INSPECTION_EVERY, INSPECTION_FINE, INSPECTION_REWARD, INSPECTION_UNLOCK
 import { sceneFor, surpriseArcById } from '../../data/surpriseArcs';
 import { isQuanMatchDay, quanDayNews, quanNuocDay } from '../../data/quanNuoc';
 import { isXoiCungDay, tiemXoiDay, tiemXoiSaved, tiemXoiDinePlan } from '../../data/tiemXoi';
-import { bizEndOfDay, checkAchievements } from '../biz';
+import { bizEndOfDay, checkAchievements, freshAchievements } from '../biz';
+import { type DayStats } from '../dayStats';
 import { PHONE_FRIEND_GAIN } from '../../data/phoneOrders';
 import { nextMarketIndex } from '../../data/market';
 import { hasSkill } from '../../data/titles';
@@ -390,10 +391,16 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
   // Tiện lợi chạy tủ mát/đông suốt 24h nên có hóa đơn điện riêng; doanh thu quán nước tự lo chi phí của nó
   const branchPower = br ? branchPowerBill(br) : 0;
   const opCost = Math.round((s.stats.revenue + onlineDay.money + crew.tips) * OPERATING_REVENUE_RATE) + branchPower;
-  const stats = {
+  // GĐ1832 (review đợt 2 R1 / đợt 3 R2): thưởng thành tựu sẽ được checkAchievements() cộng vào ví
+  // SAU khi tính dòng "Tiền vào − tiền ra" (đêm nay) — đọc trước bằng hàm thuần để tổng kết báo
+  // đúng khoản chênh lệch với ví; phí vận hành thì tách khỏi `spent` thành dòng riêng.
+  const achvReward = freshAchievements(s).reduce((n, a) => n + a.reward, 0);
+  const stats: DayStats = {
     ...s.stats, wages, rent, spent: s.stats.spent + maintCost + opCost, spoiledItems: aged.items, spoiledCost: aged.cost,
     revenue: s.stats.revenue + onlineDay.money + crew.tips + quanRevenue, online: (s.stats.online ?? 0) + onlineDay.money,
     ...(crew.cashLoss || shrinkItems ? { shrinkCash: crew.cashLoss, shrinkItems } : {}),
+    ...(achvReward ? { achvReward } : {}),
+    ...(opCost + maintCost > 0 ? { opCost: opCost + maintCost } : {}),
   };
   if (opCost >= 5000 && s.day > 1) say(`💡 Chi phí vận hành (điện/nước) ${formatMoney(opCost)}${branchPower ? ` — riêng tiện lợi 24/7 ${formatMoney(branchPower)} tiền điện` : ''}`);
   // GĐ300: chốt sẵn việc sáng 🧍 NGAY TẠI MÁY CHẠY. Snapshot staffDay là transient ngoài useGame
@@ -443,6 +450,13 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
   // Thức qua nửa đêm (ca đêm) thì hôm sau dậy trễ, bỏ lỡ buổi sáng đông khách
   const wokeLate = s.minutes >= 24 * 60;
   if (wokeLate) say('😴 Ngủ muộn vì ca đêm: hôm nay dậy trễ, bỏ lỡ buổi sáng đông khách!');
+  // GĐ1833 (review đợt 2 R3 / đợt 3 R3): két âm sau khi trả nhà/lương/vận hành — nói thẳng con số
+  // thiếu trong tổng kết (và kê dòng riêng) để người chơi biết mình đang nợ chứ không mất một cách vô cớ.
+  const moneyAfter = (extra.money ?? s.money) - wages - rent - maintCost - opCost + inspectPay + biz.money + onlineDay.money + crew.tips - crew.cashLoss + quanRevenue - quanWages;
+  if (moneyAfter < 0) {
+    stats.shortfall = -moneyAfter; // stats là DayStats — panel/lastSummary giữ cùng tham chiếu
+    say(`⚠️ Két thiếu ${formatMoney(-moneyAfter)} sau khi trả nhà/lương/vận hành — bán bù sớm kẻo lún sâu`);
+  }
   set({
     candidates: generateCandidates(s.level, nextId),
     day: s.day + 1,
@@ -458,7 +472,7 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
     garden, analytics,
     weather: s.forecast[0], forecast: forecastFrom(s.weatherSeed, s.day + 1, s.forecast[0]),
     ...extra,
-    money: (extra.money ?? s.money) - wages - rent - maintCost - opCost + inspectPay + biz.money + onlineDay.money + crew.tips - crew.cashLoss + quanRevenue - quanWages,
+    money: moneyAfter,
     staff: crew.staff.filter((st) => st.id !== biz.poachedStaffId), social: socialNext, online: onlineDay.online, inspection,
     biz: biz.biz,
     branch: nextBranch ? { ...nextBranch.branch, revenueToday: 0, customersToday: 0, lostToday: 0, missedToday: 0, simAt: wokeLate ? LATE_WAKE_AT : DAY_START, lastTrip: nextBranch.branch.lastTrip - 1440 } : null,

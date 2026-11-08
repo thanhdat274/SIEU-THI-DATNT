@@ -30,8 +30,8 @@ import { pay, buyPet, feedPet, buyUpgrade, buyHomeItem, buyService, earnService,
 export { buyPet, feedPet, buyUpgrade, buyHomeItem, buyService, earnService, earnTip } from './bizPurchases';
 import { takeLoan, repayLoan, joinHui } from './bizLoan';
 export { takeLoan, repayLoan, joinHui } from './bizLoan';
-import { achievementCtx, checkAchievements, stockReminders } from './bizAchieve';
-export { achievementCtx, checkAchievements, stockReminders } from './bizAchieve';
+import { achievementCtx, checkAchievements, freshAchievements, stockReminders } from './bizAchieve';
+export { achievementCtx, checkAchievements, freshAchievements, stockReminders } from './bizAchieve';
 const S = () => useGame.getState();
 const patch = (b: Partial<BizState>) => useGame.setState({ biz: { ...S().biz, ...b } });
 

@@ -33,10 +33,16 @@ export function achievementCtx(s: GameState): AchievementCtx {
   };
 }
 
+/** GĐ1832 — đọc thuần: những thành tựu ĐANG đạt nhưng chưa nhận (không đổi state). endDay dùng để
+ *  báo trước số thưởng sẽ vào ví đêm nay trong tổng kết, còn checkAchievements mới nhận thật. */
+export function freshAchievements(s: GameState) {
+  const ctx = achievementCtx(s);
+  return ACHIEVEMENTS.filter((a) => !s.biz.achievements.includes(a.id) && a.done(ctx));
+}
+
 export function checkAchievements() {
   const s = S();
-  const ctx = achievementCtx(s);
-  const fresh = ACHIEVEMENTS.filter((a) => !s.biz.achievements.includes(a.id) && a.done(ctx));
+  const fresh = freshAchievements(s);
   if (!fresh.length) return;
   const reward = fresh.reduce((n, a) => n + a.reward, 0);
   patch({ achievements: [...s.biz.achievements, ...fresh.map((a) => a.id)] });

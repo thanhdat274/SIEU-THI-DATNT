@@ -285,12 +285,18 @@ export function SummaryPanel({ day }: { day: number }) {
               {!!st.clawWins && <tr><td style={styles.left}>🧸 Khách gắp trúng thú bông</td><td style={{ opacity: 0.75 }}>{st.clawWins} lần</td></tr>}
               <tr><td style={styles.left}>Lãi gộp trên hàng bán (giá bán − giá nhập)</td><td style={{ color: '#2ecc71' }}>{formatMoney(goodsRevenue - goodsCost - (st.comboDiscount ?? 0))}</td></tr>
               <tr><td style={styles.left}>Chi tiêu (nhập hàng, nội thất)</td><td>{st.spent > 0 ? `-${formatMoney(st.spent)}` : '0đ'}</td></tr>
+              {!!st.opCost && <tr><td style={styles.left} title="Điện/nước theo % doanh thu + tiền điện chi nhánh 24/7 + hợp đồng bảo trì — đã tính trong dòng Chi tiêu">  trong đó 💡 phí vận hành</td><td style={{ opacity: 0.75 }}>-{formatMoney(st.opCost)}</td></tr>}
               <tr><td style={styles.left}>Lương nhân viên</td><td>{st.wages > 0 ? `-${formatMoney(st.wages)}` : '0đ'}</td></tr>
               <tr><td style={styles.left}>Tiền nhà (theo bậc tiệm)</td><td>{(st.rent ?? 0) > 0 ? `-${formatMoney(st.rent ?? 0)}` : '0đ'}</td></tr>
               <tr>
                 <td style={styles.left}><b>Tiền vào − tiền ra</b></td>
                 <td style={{ color: profit >= 0 ? '#2ecc71' : '#e74c3c' }}><b>{trendMark(profit)}{formatMoney(profit)}</b></td>
               </tr>
+              {/* GĐ1832 (review đợt 2 R1 / đợt 3 R2): thành tựu mở khóa trong đêm cộng vào ví SAU dòng này —
+                  kê riêng để người soi sổ khớp được số dư với tổng kết */}
+              {!!st.achvReward && <tr><td style={styles.left}>⭐ Thưởng thành tựu (vào ví sau tổng kết)</td><td style={{ color: '#2ecc71' }}>+{formatMoney(st.achvReward)}</td></tr>}
+              {/* GĐ1833 (review đợt 2 R3 / đợt 3 R3): két âm sau khi trả nhà/lương/vận hành — nêu rõ con số */}
+              {!!st.shortfall && <tr><td style={styles.left}>⚠️ Két thiếu tiền sau khi trả nhà/lương/vận hành</td><td style={{ color: '#e74c3c' }}>-{formatMoney(st.shortfall)}</td></tr>}
               {!!st.credited && <tr><td style={styles.left}>  trong đó khách quen ghi sổ (chưa thu)</td><td style={{ color: '#e67e22' }}>{formatMoney(st.credited)}</td></tr>}
               {!!st.repaid && <tr><td style={styles.left}>Thu nợ cũ</td><td style={{ color: '#2ecc71' }}>+{formatMoney(st.repaid)}</td></tr>}
               <tr><td style={styles.left}>Món đã bán</td><td>{st.itemsSold}</td></tr>
