@@ -14,9 +14,19 @@ describe.each([
   ['valentine', 'kem_dua'],
   ['hoi_xom', 'che_bap'],
   ['nha_giao', 'hop_qua_tra_banh_quy'],
+  ['quoc_te_phu_nu', 'sua_chua_trai_cay'],
+  ['hoi_phu_nu', 'sinh_to_dua_hau'],
 ])('lễ %s hot %s (GĐ1774)', (fid, pid) => {
   it('món là món nấu và có trong hot', () => {
     expect(COOKED_PRODUCT_IDS.has(pid)).toBe(true);
     expect(FESTIVALS.find((f) => f.id === fid)!.hot).toContain(pid);
+  });
+});
+
+// GĐ1777 — mọi lễ có ≥1 món nấu hot, trừ Sale cuối năm (dịp xả hàng tạp hóa nhập rẻ).
+describe('mọi lễ có món nấu hot (GĐ1777)', () => {
+  it('trừ sale_cuoi_nam', () => {
+    const none = FESTIVALS.filter((f) => f.id !== 'sale_cuoi_nam' && !(f.hot ?? []).some((i) => COOKED_PRODUCT_IDS.has(i))).map((f) => f.id);
+    expect(none).toEqual([]);
   });
 });
