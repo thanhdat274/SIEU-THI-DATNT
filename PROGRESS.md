@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (07/11/2026)
+- GĐ1743: guard cropOutlets mở rộng sang 7 sản phẩm vật nuôi — mỗi loại ≥2 lối ra chế biến.
 - GĐ1742: guard test cropOutlets — mỗi cây trồng (21 loại) có ≥2 lối ra chế biến (bếp + quán).
 - GĐ1741: món Chè gấc (ấm nấu, mở 44; gấc + đường → 6×14k) — lối ra bếp thứ 2 cho gấc; test trong fruitOutletDishes.
 - GĐ1740: QA trình duyệt đợt GĐ1734–1739 — Gỏi xoài tôm khô/Nhãn đá xay/Vải đá xay + hot Lễ 30/4 & Mùa hè nạp đúng, không lỗi console.
