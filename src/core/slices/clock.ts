@@ -6,7 +6,8 @@ import { DIRT_MAX } from '../../data/staff';
 import { RECIPE_MAP } from '../../data/recipes';
 import { playSfx } from '../audio';
 import { STOCK_WARN_AT, nightNeed, shelfTotal } from '../../data/branches';
-import { type GameState, type SetState, type GetState, SLEEP_FROM, faintGuard, MINUTES_PER_SECOND } from '../gameTypes';
+import { OPERATING_REVENUE_RATE, rentOf } from '../../data/shopTiers';
+import { type GameState, type SetState, type GetState, SLEEP_FROM, faintGuard, MINUTES_PER_SECOND, wagesDue } from '../gameTypes';
 import { copyStock, putStock } from '../stock';
 import { useClock } from '../store';
 import { runBranch } from './branch';
@@ -18,6 +19,8 @@ import { maybeInspection } from '../inspection';
 /** Đồng hồ và nhịp ngày: tick mỗi khung hình (chi nhánh, điện thoại, mẻ nấu), đi ngủ, thông báo, mở bảng. */
 
 let messageTimer: ReturnType<typeof setTimeout> | undefined;
+/** GĐ1833 — đã cảnh báo tiền âm trước khi ngủ trong phiên này chưa (chỉ chặn một lần, không nhớ save). */
+let sleepWarned = false;
 /** GĐ571: tin gọi liên tiếp trong cùng một lượt xử lý gộp một toast thay vì đè nhau. */
 let burst: string[] = [];
 
@@ -107,6 +110,16 @@ export const createClockSlice = (set: SetState, get: GetState): Pick<GameState, 
     const s = get();
     if (s.minutes < SLEEP_FROM) {
       s.notify('Chưa buồn ngủ. Từ 18:00 mới đi ngủ được.');
+      return false;
+    }
+    // GĐ1833 (review đợt 2 R3 / đợt 3 R3): qua ngày khi két không đủ trả tiền nhà + lương + phí vận
+    // hành thì tiền bị ÂM mà không có ai nói trước (hẻm QA thật −7.659đ, âm tiếp nhiều ngày). Cảnh
+    // báo một lần — bấm Ngủ lần nữa vẫn ngủ (người chơi được phép chấp nhận nợ, nhưng phải biết).
+    // Ước lượng nhanh (~): lương có wageRelief gánh nên thực tế có thể đỡ hơn con số này.
+    const dueTonight = rentOf(s.shopTier) + wagesDue(s) + Math.round(s.stats.revenue * OPERATING_REVENUE_RATE);
+    if (s.money < dueTonight && !sleepWarned) {
+      sleepWarned = true;
+      s.notify(`⚠️ Két không đủ trả nhà+lương (~${formatMoney(dueTonight)}) — thiếu ${formatMoney(dueTonight - s.money)}. Bấm Ngủ lần nữa vẫn ngủ.`);
       return false;
     }
     endDay(set, get);
