@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (07/11/2026)
+- GĐ1798: giữa buổi sáng khách muốn bún bò Huế (rhythm giua_sang); test 5474/5474.
 - GĐ1797: đơn tiệc "Đoàn từ thiện" (cấp 42; 12 phở bò + 12 bún bò Huế), 43/45 đơn; test 5473/5473.
 - GĐ1796: đơn tiệc "Họp lớp cấp 3" (bạn cũ anh Tuấn, cấp 44) — 12 gỏi cuốn + 12 bánh xèo; đơn 42/45; test + quét seed.
 - GĐ1795: test trần ≤12 món nấu trong favorites khách quen (bài học GĐ1794 — vượt làm economySimL50 tụt).
