@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (07/11/2026)
+- GĐ1786: bóng đá phường hot thêm mực khô nướng, lễ 30/4 thêm tôm nướng (đi chơi biển); test describe.each mở rộng.
 - GĐ1785: mùa mưa hot thêm cháo gà (mưa dầm ăn cháo nóng); test describe.each mở rộng.
 - GĐ1784: QA trình duyệt GĐ1779–1783 — 6 khung giờ (5–13 món, id hợp lệ), mealFactor phở 7h = cơm cá cơm rim 12h = 2.2, console 0 lỗi.
 - GĐ1783: tiện lợi 24/7 xoay ca — sáng thêm phở bò, bánh cuốn chả lụa; trưa thêm cơm chiên lạp xưởng, cơm cá cơm rim; test mealFactor.
