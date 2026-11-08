@@ -7,3 +7,10 @@ describe('giữa buổi muốn bún bò Huế', () => {
     expect(TIME_BANDS.find((b) => b.id === 'giua_sang')!.wants).toContain('bun_bo_hue');
   });
 });
+
+// GĐ1799 — tối muốn canh chua cá
+describe('tối canh chua', () => {
+  it.each([['toi', 'canh_chua_ca']])('%s có %s', (band, id) => {
+    expect(TIME_BANDS.find((b) => b.id === band)!.wants).toContain(id);
+  });
+});
