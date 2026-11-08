@@ -27,13 +27,13 @@ export const PROFESSIONS: ProfessionDef[] = [
   {
     id: 'construction', name: 'Công nhân xây dựng', icon: '👷', archetype: 'construction_worker',
     hours: [h(5.5, 7.5), h(11, 12.5), h(17, 19)],
-    likes: ['mi', 'tangluc', 'nuoc', 'banhmi', 'x_redbull_lon', 'x_sting_dau', 'x_nuoc_dien_giai', 'x_tra_da', 'banh_mi_trung_nuong', 'nuoc_mia', 'com_chien_trung', 'ga_xao_sa'],
+    likes: ['mi', 'tangluc', 'nuoc', 'banhmi', 'x_redbull_lon', 'x_sting_dau', 'x_nuoc_dien_giai', 'x_tra_da', 'banh_mi_trung_nuong', 'nuoc_mia', 'com_chien_trung', 'ga_xao_sa', 'banh_mi_lap_xuong'],
     loyalty: 0.75, extraItems: 0, sensitivity: 1.2, patience: 0.8,
   },
   {
     id: 'nurse', name: 'Y tá', icon: '🩺', archetype: 'nurse',
     hours: [h(6, 7.5), h(19, 22)],
-    likes: ['caphe', 'x_ca_phe_lon', 'banhmi', 'x_khau_trang', 'x_nuoc_rua_tay', 'suachua', 'sua', 'mi_trung_nong', 'nhan_da_xay'],
+    likes: ['caphe', 'x_ca_phe_lon', 'banhmi', 'x_khau_trang', 'x_nuoc_rua_tay', 'suachua', 'sua', 'mi_trung_nong', 'nhan_da_xay', 'canh_suon_bi_do'],
     loyalty: 0.7, extraItems: 0, sensitivity: 0.9, patience: 0.7,
   },
   {
