@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (07/11/2026)
+- GĐ1800: QA trình duyệt GĐ1797–1799 (43 đơn, Đoàn từ thiện, bún bò giữa buổi, canh chua tối) — không lỗi console.
 - GĐ1799: tối khách muốn canh chua cá (rhythm toi); thử chè bắp buổi chiều làm economySimL50 tụt 21/22 nên bỏ; test 5475/5475.
 - GĐ1798: giữa buổi sáng khách muốn bún bò Huế (rhythm giua_sang); test 5474/5474.
 - GĐ1797: đơn tiệc "Đoàn từ thiện" (cấp 42; 12 phở bò + 12 bún bò Huế), 43/45 đơn; test 5473/5473.
