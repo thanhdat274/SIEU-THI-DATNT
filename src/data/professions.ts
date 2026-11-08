@@ -169,7 +169,7 @@ export const PROFESSIONS: ProfessionDef[] = [
   {
     id: 'traffic_police', name: 'Cảnh sát giao thông', icon: '👮‍♂️', archetype: 'police',
     hours: [h(5, 9), h(16, 20)],
-    likes: ['x_tra_da', 'nuoc', 'banhmi', 'caphe', 'bimbim'],
+    likes: ['x_tra_da', 'nuoc', 'banhmi', 'caphe', 'bimbim', 'banh_mi_thit'],
     loyalty: 0.7, extraItems: 0, sensitivity: 1.0, patience: 1.4,
   },
   {
@@ -193,7 +193,7 @@ export const PROFESSIONS: ProfessionDef[] = [
   {
     id: 'monk', name: 'Sư thầy', icon: '🙏', archetype: 'monk',
     hours: [h(4.5, 7), h(15, 17)],
-    likes: ['tra', 'x_tra_xanh', 'traicay', 'suachua', 'x_yakult'],
+    likes: ['tra', 'x_tra_xanh', 'traicay', 'suachua', 'x_yakult', 'che_hat_sen'],
     loyalty: 0.85, extraItems: 0, sensitivity: 0.5, patience: 2.0,
   },
   {
