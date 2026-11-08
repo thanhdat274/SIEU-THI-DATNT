@@ -63,7 +63,7 @@ export const PROFESSIONS: ProfessionDef[] = [
   {
     id: 'teacher', name: 'Giáo viên', icon: '👩‍🏫', archetype: 'teacher',
     hours: [h(6.5, 7.5), h(11, 12), h(16.5, 18)],
-    likes: ['x_tap_vo', 'x_but_bi', 'nuoc', 'tra', 'x_tra_xanh', 'banh', 'traicay'],
+    likes: ['x_tap_vo', 'x_but_bi', 'nuoc', 'tra', 'x_tra_xanh', 'banh', 'traicay', 'pho_bo'],
     loyalty: 0.7, extraItems: 0, sensitivity: 0.95, patience: 1.1,
   },
   {
@@ -151,7 +151,7 @@ export const PROFESSIONS: ProfessionDef[] = [
   {
     id: 'freelancer', name: 'Freelancer', icon: '💻', archetype: 'coder_guy',
     hours: [h(8, 18)],
-    likes: ['caphe', 'x_ca_phe_lon', 'nuoc', 'tra', 'x_tra_xanh', 'banh', 'suachua'],
+    likes: ['caphe', 'x_ca_phe_lon', 'nuoc', 'tra', 'x_tra_xanh', 'banh', 'suachua', 'mi_y_sot_bo'],
     loyalty: 0.8, extraItems: 0, sensitivity: 0.9, patience: 1.5,
   },
   {
