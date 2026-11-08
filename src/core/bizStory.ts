@@ -3,6 +3,7 @@ import { REGULARS } from '../data/regulars';
 import { simRng } from './rand';
 import { newRival, RIVAL_START, STORIES, SURPRISE_CHANCE, SURPRISES, type BizState } from '../data/biz';
 import { chapterById, nextChapter, STORY_RIVAL_NAME } from '../data/chapters';
+import { inGoldenHour } from '../data/rhythm';
 import { formatMoney, productById } from '../data/products';
 import { arcGoodCount, arcSceneAt, arcReward as surpriseArcReward, findSurprise, sceneFor, surpriseArcById, SURPRISE_ARCS, type SurpriseArcState } from '../data/surpriseArcs';
 import { useGame } from './store';
@@ -172,7 +173,12 @@ export function checkChapters() {
     day: s.day, level: s.level, customers: s.totals.customers, staffCount: s.staff.length, shopTier: s.shopTier,
     hasRival: !!s.biz.rival, rivalsBeaten: s.biz.rivalsBeaten,
   });
-  if (ch) patch({ chapterPending: ch.id });
+  if (!ch) return;
+  // GĐ1838 (review đợt 4 R1): giờ vàng tiệm đang mở thì HOÃN thoại — hội thoại dừng đồng hồ đúng
+  // lúc đông khách (chương cốt truyện ngày 150 bật đầu khung 6h–8h30). Chưa set chapterDay nên
+  // checkChapters gọi lại mỗi khung sẽ mở ngay khi hết giờ vàng; tiệm đóng cửa thì không chặn.
+  if (s.shopOpen && inGoldenHour(s.minutes)) return;
+  patch({ chapterPending: ch.id });
 }
 
 /** Đọc xong hội thoại: ghi đã xem, trao thưởng, chạy hiệu ứng của chương. */
