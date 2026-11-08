@@ -179,7 +179,11 @@ export function checkChapters() {
 export function closeChapter() {
   const s = S();
   const ch = s.biz.chapterPending ? chapterById(s.biz.chapterPending) : undefined;
-  if (!ch) return patch({ chapterPending: null });
+  if (!ch) {
+    patch({ chapterPending: null });
+    S().armMessage();
+    return;
+  }
   const b: Partial<BizState> = { chapterPending: null, chapters: [...s.biz.chapters, ch.id], chapterDay: s.day };
   if (ch.effect === 'openRival' && !s.biz.rival) {
     b.rival = { ...newRival(STORY_RIVAL_NAME, RIVAL_START, s.day), saleUntil: s.day + 2 };
@@ -188,6 +192,9 @@ export function closeChapter() {
   if (ch.reward?.money) useGame.setState({ money: S().money + ch.reward.money });
   if (ch.reward?.xp) S().addXp(ch.reward.xp);
   if (ch.effect === 'openRival') s.notify(`⚔️ ${STORY_RIVAL_NAME} khai trương, giảm giá 2 ngày đầu. Xem sức mạnh của họ ở Kinh doanh`);
+  // GĐ1835 (review đợt 4 R4): tin thông báo phát trong lúc thoại mở bị GIỮ — giờ bấm xong thoại
+  // mới bắt đầu đếm 3 giây để người chơi kịp đọc (ăn sáng, thành tựu... không còn "mất vô cớ").
+  S().armMessage();
 }
 
 /** Tên khách quen theo id (dùng ở HUD, thị trường, báo cáo cuối ngày). */

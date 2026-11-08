@@ -281,6 +281,9 @@
   top: 38%;
   left: 50%;
   transform: translateX(-50%);
+  /* GĐ1835 (review đợt 4 R4): toast là phản hồi thao tác — nổi trên backdrop panel/card thoại
+     (z 20) nhưng dưới tour (60) và hộp xác nhận (1000); tin phát lúc thoại mở thì armMessage giữ.*/
+  z-index: 55;
   max-width: calc(100% - 32px);
   padding: 12px 22px;
   border-radius: var(--hud-radius);
@@ -555,14 +558,16 @@
   #ui .hud-account { padding: 4px; }
   #ui .hud-bottom { bottom: 8px; width: calc(100% - 16px); }
   #ui .hud-dock { width: 100%; justify-content: space-between; gap: 2px; padding: 4px; }
-  #ui .hud-tool { min-width: 40px; padding: 6px 4px; }
-  #ui .hud-tool > span:not(.hud-tool-icon):not(.hud-badge) { font-size: 9px; line-height: 1.1; text-align: center; white-space: normal; word-break: keep-all; }
+  #ui .hud-tool { min-width: 44px; padding: 6px 4px; }
+  /* GĐ1836 (review đợt 2 R10 + đợt 4 R5): nhãn 9px → 11px, nút/vùng chạm ≥44px (chuẩn cảm ứng
+     của chính docs/qa-guide.md). Dock đã wrap 2 hàng từ GĐ? — thêm nút to hơn không vỡ bố cục. */
+  #ui .hud-tool > span:not(.hud-tool-icon):not(.hud-badge) { font-size: 11px; line-height: 1.1; text-align: center; white-space: normal; word-break: keep-all; }
   #ui .hud-badge.muted { display: none; }
   #ui .hud-divider { margin: 6px 1px; }
   #ui .hud-speed { flex: none; }
-  #ui .hud-speed button { min-width: 26px; font-size: 12px; padding: 0 2px; }
-  #ui .hud-dock > .hud-tool, #ui .hud-dock > .hud-pop > .hud-tool { flex: 1 0 34px; min-width: 34px; padding: 6px 2px; }
-  #ui .hud-dock > .hud-pop { display: flex; flex: 1 0 34px; }
+  #ui .hud-speed button { min-width: 44px; min-height: 44px; font-size: 12px; padding: 0 2px; }
+  #ui .hud-dock > .hud-tool, #ui .hud-dock > .hud-pop > .hud-tool { flex: 1 0 44px; min-width: 44px; min-height: 48px; padding: 6px 2px; }
+  #ui .hud-dock > .hud-pop { display: flex; flex: 1 0 44px; }
 }
 
 /* Nút mở/đóng cửa tiệm: xanh khi đang mở để nhìn là biết */
@@ -624,10 +629,11 @@
    và công cụ giả lập không nhận, dock tràn thành 2 hàng). */
 @media (min-width: 701px) and (max-width: 1000px) {
   #ui .hud-dock { justify-content: space-between; }
-  #ui .hud-dock > .hud-tool, #ui .hud-dock > .hud-pop > .hud-tool { flex: 1 0 40px; min-width: 40px; padding: 6px 2px; }
+  /* GĐ1836: nhãn ≥11px + nút ≥44px như màn hẹp (máy tính bảng dọc cũng là cảm ứng) */
+  #ui .hud-dock > .hud-tool, #ui .hud-dock > .hud-pop > .hud-tool { flex: 1 0 44px; min-width: 44px; min-height: 48px; padding: 6px 2px; }
   #ui .hud-dock > .hud-tool > span:not(.hud-tool-icon):not(.hud-badge),
-  #ui .hud-dock > .hud-pop > .hud-tool > span:not(.hud-tool-icon):not(.hud-badge) { font-size: 9px; white-space: normal; text-align: center; }
-  #ui .hud-speed button { min-width: 28px; }
+  #ui .hud-dock > .hud-pop > .hud-tool > span:not(.hud-tool-icon):not(.hud-badge) { font-size: 11px; white-space: normal; text-align: center; }
+  #ui .hud-speed button { min-width: 44px; min-height: 44px; }
   /* GĐ1254 — cụm phải (loa/nhạc/tài khoản) chưa co như màn hẹp → chip tiền trong .hud-left
      đâm vào nút loa (QA 768px: "5.000.000đ" bị loa đè). Co cụm phải y khối ≤700px. */
   #ui .hud-account > span:not(.hud-avatar), #ui .hud-caret, #ui .hud-room small { display: none; }

@@ -647,9 +647,13 @@ function RadialMenu({ items }: { items: { icon: string; label: string; run: () =
 function TipStrip() {
   const level = useGame((s) => s.level);
   const day = useGame((s) => s.day);
+  const seed = useGame((s) => s.weatherSeed);
   const slot = useGame((s) => Math.floor(s.minutes / 30));
   const [hidden, setHidden] = useState(false);
-  if (hidden) return null;
+  // GĐ1835 (review đợt 2 R5 / đợt 3 R6): đang có banner lễ (hàng hút, khách +X%) thì nhường
+  // đỉnh màn cho tin gameplay — mẹo đời thường không gối lên lễ hội nữa.
+  const festival = dayEffects(seed, day, level).festival;
+  if (hidden || (festival && (festival.traffic >= 1.2 || !!festival.pull))) return null;
   return (
     <div style={{ fontSize: 12, color: '#dfe6e9', background: 'rgba(0,0,0,0.35)', borderRadius: 8, padding: '3px 8px', display: 'flex', gap: 6, alignItems: 'center', pointerEvents: 'auto' }}>
       <span>💡 Bạn có biết? {tipAt(level, day, slot * 30)}</span>

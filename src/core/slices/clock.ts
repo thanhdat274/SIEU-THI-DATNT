@@ -24,7 +24,7 @@ let sleepWarned = false;
 /** GĐ571: tin gọi liên tiếp trong cùng một lượt xử lý gộp một toast thay vì đè nhau. */
 let burst: string[] = [];
 
-export const createClockSlice = (set: SetState, get: GetState): Pick<GameState, 'addDirt' | 'setSpeed' | 'tick' | 'sleep' | 'notify' | 'openPanel' | 'closePanel' | 'markHudTourDone'> => ({
+export const createClockSlice = (set: SetState, get: GetState): Pick<GameState, 'addDirt' | 'setSpeed' | 'tick' | 'sleep' | 'notify' | 'armMessage' | 'openPanel' | 'closePanel' | 'markHudTourDone'> => ({
   addDirt: (amount) => {
     const before = get().dirt;
     const dirt = Math.max(0, Math.min(DIRT_MAX, before + amount));
@@ -130,7 +130,16 @@ export const createClockSlice = (set: SetState, get: GetState): Pick<GameState, 
     if (!burst.includes(message)) burst.push(message);
     set({ message: burst.length > 1 ? fitJoin([message, ...burst.filter((m) => m !== message).reverse()]) : message });
     clearTimeout(messageTimer);
+    // GĐ1835 (review đợt 4 R4): card thoại chương đè mất toast — khi thoại đang mở thì GIỮ tin
+    // (không đếm giờ); bấm xong thoại, closeChapter gọi armMessage() mới bắt đầu đếm 3 giây.
+    if (get().biz.chapterPending) return;
     messageTimer = setTimeout(() => set({ message: null }), burst.length > 1 ? 4500 : 3000); // GĐ577: toast gộp cần thêm giờ đọc
+  },
+  armMessage: () => {
+    clearTimeout(messageTimer);
+    const m = get().message;
+    if (!m) return;
+    messageTimer = setTimeout(() => set({ message: null }), m.includes(' · ') ? 4500 : 3000);
   },
   openPanel: (panel) => set({ panel }),
   // GĐ1503 — chốt cờ đã xem tour HUD (UI thuần, không đụng kinh tế)

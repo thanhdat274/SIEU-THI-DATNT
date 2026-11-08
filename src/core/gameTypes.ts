@@ -453,6 +453,9 @@ export interface GameState {
   /** Đi ngủ. Trả về false nếu chưa tới giờ ngủ. */
   sleep: () => boolean;
   notify: (message: string) => void;
+  /** GĐ1835 — bắt đầu (hoặc bắt đầu lại) đếm 3 giây cho ô thông báo đang giữ: gọi khi thoát khỏi
+   *  trạng thái che (vd bấm xong thoại chương) để tin không biến mất trước khi kịp hiện. */
+  armMessage: () => void;
   openPanel: (panel: Panel) => void;
   closePanel: () => void;
 
