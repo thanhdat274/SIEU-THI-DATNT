@@ -39,3 +39,10 @@ describe('học sinh thích mít chiên giòn', () => {
     expect(PROFESSIONS.find((p) => p.id === 'student_highschool')!.likes).toContain('mit_chien_gion');
   });
 });
+
+// GĐ1735: Lễ 30/4 rơi đúng mùa xoài (3–6) → gỏi xoài tôm khô là hàng hot dịp đi chơi lễ.
+describe('Lễ 30/4 hút gỏi xoài tôm khô', () => {
+  it('goi_xoai_tom_kho trong hot le_30_4', () => {
+    expect(FESTIVALS.find((f) => f.id === 'le_30_4')!.hot).toContain('goi_xoai_tom_kho');
+  });
+});
