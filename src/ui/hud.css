@@ -84,8 +84,14 @@
    desktop rộng đủ chỗ nên không đổi hình dáng. */
 @media (min-width: 701px) {
   #ui .hud-chip.hud-time { max-width: min(46vw, 460px); }
-  #ui .hud-chip.hud-time small { overflow: hidden; text-overflow: ellipsis; }
 }
+/* GĐ1830b — chữ trong chip đồng hồ lòi ra khỏi khung: span bọc các dòng <small> là flex item
+   với min-width:auto nên không chịu co theo max-width của chip, dòng nowrap dài chảy xuyên
+   ra ngoài (ellipsis trên <small> vô hiệu vì ông cha không bị chặn). Bắt span co được + cắt
+   tại đúng khung; áp mọi bề rộng vì màn nhỏ cũng tràn y hệt. */
+#ui .hud-chip.hud-time { max-width: min(46vw, 460px); }
+#ui .hud-chip.hud-time > span:not(.hud-weather) { min-width: 0; overflow: hidden; }
+#ui .hud-chip.hud-time small { overflow: hidden; text-overflow: ellipsis; }
 #ui .hud-late { color: #ff7675; }
 #ui .hud-money b { color: var(--hud-accent); font-size: 17px; }
 #ui .hud-money { position: relative; }

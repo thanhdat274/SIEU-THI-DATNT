@@ -3,6 +3,7 @@ import { skyAt } from './data/weather';
 import { isMarketDay } from './data/chophien';
 import { isRoadworks } from './data/roadwork';
 import { isFestivalDeco } from './data/festivalDeco';
+import { dateOfDoy } from './data/calendar';
 import { queueUrgency, accumulateBackup } from './world/storefrontWaitLamp';
 import * as THREE from 'three';
 import { shopLayout, worldActions } from './core/actions';
@@ -347,6 +348,8 @@ let lastMarketDay = isMarketDay(useGame.getState().day);
 // Hôm nay có sửa đường trước hẻm không (gđ184): đổi cảnh rào chắn khi sự kiện market roadworks thay đổi
 let lastRoadwork = isRoadworks(useGame.getState().weatherSeed, useGame.getState().day, useGame.getState().level);
 let lastFestival = isFestivalDeco(useGame.getState().day);
+// Mùa cho cây nature (GĐ1830): phượng đỏ hè, đào/mai nở Tết — chỉ đổi khi sang tháng mới
+let lastNatureMonth = dateOfDoy(useGame.getState().day).month;
 // GĐ186 "sắp mất khách": đếm thời lượng game mà quầy có ~BACKUP_WAITING khách đợi trở lên (0 khi dừng)
 let lastUrgMinutes = useGame.getState().minutes;
 let backedUpGameSec = 0;
@@ -617,6 +620,7 @@ function applyGfx() {
   if (lighting.sun.castShadow) lighting.sun.shadow.intensity = p.shadows ? 1 : 0;
   // Đồ trang trí theo NỘI DUNG (đầy ở mọi mức; tấm chắn khẩn cấp mới tắt khi máy yếu dưới 30 FPS)
   world.kit.setDecor(gfx.content.decor);
+  world.nature.setDecor(gfx.content.decor);
   world.alleyLamps.setDecor(gfx.content.decor);
   reportGfx(gfxChoice, gfx.step.level, gfx.avgFps);
 }
@@ -821,6 +825,12 @@ function renderFrame() {
   if (festival !== lastFestival) {
     lastFestival = festival;
     world.kit.setFestival(festival);
+  }
+  // Cây đổi màu theo mùa (GĐ1830): sang tháng mới mới chạy lại — phượng đỏ hè, đào/mai nở Tết
+  const natureMonth = dateOfDoy(g.day).month;
+  if (natureMonth !== lastNatureMonth) {
+    lastNatureMonth = natureMonth;
+    world.nature.setSeason(natureMonth);
   }
   applyLightBudget(controller.target);
   // Bóng đổ cập nhật 30 hình/giây là đủ (nắng di chuyển chậm): tiết kiệm một nửa vệt vẽ bóng; mức Thấp tắt hẳn

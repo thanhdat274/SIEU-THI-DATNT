@@ -1,0 +1,54 @@
+{
+ "updated": 1794147094.033653,
+ "generator": "3dlabtools.com free picks (2026-11-08), @gltf-transform/cli optimize: simplify + webp 1024 + draco",
+ "modules": {
+  "apricot": {
+   "file": "apricot.glb",
+   "kb": 1603.0
+  },
+  "banana": {
+   "file": "banana.glb",
+   "kb": 754.5
+  },
+  "banyan": {
+   "file": "banyan.glb",
+   "kb": 2228.3
+  },
+  "coconut": {
+   "file": "coconut.glb",
+   "kb": 786.6
+  },
+  "garden_bench": {
+   "file": "garden_bench.glb",
+   "kb": 705.4
+  },
+  "garden_tree": {
+   "file": "garden_tree.glb",
+   "kb": 140.5
+  },
+  "kumquat": {
+   "file": "kumquat.glb",
+   "kb": 1134.3
+  },
+  "lotus": {
+   "file": "lotus.glb",
+   "kb": 738.8
+  },
+  "peach": {
+   "file": "peach.glb",
+   "kb": 1626.3
+  },
+  "poinciana": {
+   "file": "poinciana.glb",
+   "kb": 1232.5
+  },
+  "rice": {
+   "file": "rice.glb",
+   "kb": 1709.1
+  },
+  "timber_fence": {
+   "file": "timber_fence.glb",
+   "kb": 704.4
+  }
+ }
+}
