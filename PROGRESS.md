@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (07/11/2026)
+- GĐ1761: thợ may thích bánh mì pate, hớt tóc vỉa hè thích bánh tráng nướng — nghề 5 món thích có món nấu; test it.each mở rộng.
 - GĐ1760: nghề ít món thích được thêm món nấu — CSGT thích bánh mì thịt, sư thầy thích chè hạt sen; test it.each mở rộng.
 - GĐ1759: chống phình đơn tiệc — test trần ≤45 đơn (hiện 40), id không trùng, không hai đơn một-món trùng món.
 - GĐ1758: QA trình duyệt 4 đơn tiệc mới GĐ1754–1757 — tải từ dev server, tên món khớp sản phẩm, console 0 lỗi.

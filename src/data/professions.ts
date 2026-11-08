@@ -181,13 +181,13 @@ export const PROFESSIONS: ProfessionDef[] = [
   {
     id: 'tailor', name: 'Thợ may', icon: '✂️', archetype: 'tailor',
     hours: [h(8, 12), h(14, 18)],
-    likes: ['caphe', 'nuoc', 'tra', 'banh', 'x_tra_da'],
+    likes: ['caphe', 'nuoc', 'tra', 'banh', 'x_tra_da', 'banh_mi_pate'],
     loyalty: 0.8, extraItems: 0, sensitivity: 1.0, patience: 1.3,
   },
   {
     id: 'street_hairstylist', name: 'Hớt tóc vỉa hè', icon: '✂️', archetype: 'barber',
     hours: [h(6, 10), h(15, 18)],
-    likes: ['nuoc', 'x_tra_da', 'caphe', 'bimbim', 'x_hat_dua'],
+    likes: ['nuoc', 'x_tra_da', 'caphe', 'bimbim', 'x_hat_dua', 'banh_trang_nuong'],
     loyalty: 0.7, extraItems: 0, sensitivity: 1.2, patience: 1.1,
   },
   {
