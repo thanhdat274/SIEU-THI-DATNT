@@ -71,3 +71,10 @@ describe('sinh viên thích vải đá xay', () => {
     expect(PROFESSIONS.find((p) => p.id === 'student_college')!.likes).toContain('vai_da_xay');
   });
 });
+
+// GĐ1751: mẹ mua kem sữa dê cho con.
+describe('bà nội trợ thích kem sữa dê', () => {
+  it('likes của mom có kem_sua_de', () => {
+    expect(PROFESSIONS.find((p) => p.id === 'mom')!.likes).toContain('kem_sua_de');
+  });
+});
