@@ -5,6 +5,8 @@ import { COOKED_PRODUCT_IDS } from '../data/recipes';
 // GĐ1774 — lễ hội có món nấu "hot" đúng không khí: Giáng sinh gà nướng mật ong, giải bóng đá
 // cánh gà chiên mắm (đồ nhắm cổ vũ), hội thi làm bánh bánh flan.
 describe.each([
+  ['hoi_banh', 'banh_bao_cha_bong'],
+  ['cho_dem', 'khoai_tay_tuoi_chien'],
   ['tet_duong', 'banh_bao_kim_sa'],
   ['hoi_phu_nu', 'kem_dua'],
   ['hoi_xom', 'mit_chien_gion'],
