@@ -172,3 +172,12 @@ Ngày 1 chơi được trọn vòng cốt lõi **nhập → bày → mở cửa 
 | R7 | **Tái hiện 1 lần trên local:** sau khi mua 3 thùng (còn 43.800đ), tiền tụt 20.000đ (stats.spent +20.000đ) quanh lúc đóng panel nhập hàng — chưa tìm ra thủ phạm; probe money-subscribe gắn sau đó không bắt thêm lần nào (endDay trừ thuê 20k + tiền thuốc ngất 4.380đ là hợp lệ, có log). | Nghi vấn mở — phiên QA sau chạy lại với probe từ đầu phiên. |
 
 **Kết luận GĐ1826:** R1/R3/R8 đóng; R2 chờ QA save trắng; R7 mở nghi vấn có probe theo dõi.
+
+## Kết quả xử lý tiếp — GĐ1827 (cùng ngày, phiên dev thứ ba): R2 + R7 đóng
+
+| Mã | Kết quả | Đã làm |
+|---|---|---|
+| R2 | **Đo được bằng mô phỏng chuẩn** (test mới `reviewR2Day1.test.ts`, save trắng `newGameData()` + autoplay 1 ngày, seed tất định): vốn 360k → khách 43 · bán 77 món · **lỡ vì hết hàng 17** (kèm 4 khách không hài lòng) — so với vốn 280k cũ: 28 lỡ / 55 lượt. Cải thiện rõ; 17 còn lại một phần là bài học "châm kệ giữa ngày" mà game đang dạy. | Khoá guard trần **≤17** ("chỉ được giảm"); số liệu in ra stdout cho Leader đối chiếu. Nếu muốn giảm nữa phải sửa cầu ngày 1 (chạm economySim — làm riêng có kế hoạch). |
+| R7 | **Giải mã xong — không phải lỗi sổ sách:** `autoBreakfast()` (main.tsx) — nhân vật đứng gần bàn ăn cạnh giường trong nhà (≤1,3 m, trước 11h) là game **tự mua tô phở 20.000đ** (`BREAKFAST.price`, `biz.ts`). Cả 2 lần bắt được (bản web lúc review + bản local GĐ1826) đều xảy ra khi nhân vật đang đứng ở nhà. | Ngày 1 không tự gọi phở (người mới chưa biết cơ chế — tiền lặng lẽ trừ 20k là "mất tiền vô cớ"); từ ngày 2 tự ăn như cũ, toast trở thành lời dạy. Xác minh live: ngày 1 đứng ở nhà 12 giây — tiền giữ nguyên 360.000đ. |
+
+**Kết luận GĐ1827:** toàn bộ góp ý trong review này đã xử lý hoặc khoá guard — R1/R3/R8/R9 đóng (GĐ1823/1826), R2 khoá trần đo được, R7 sửa gốc. Việc còn mở duy nhất: muốn giảm sâu hơn số "lỡ bán ngày 1" dưới 17 phải cân bằng lại cầu ngày 1 (riêng một giai đoạn có kế hoạch economySim).

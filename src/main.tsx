@@ -520,12 +520,15 @@ function goToBed() {
   }, 1500);
 }
 
-// Bàn ăn sáng cạnh tủ đầu giường: bước tới là tự gọi tô phở (trước 11h, chưa ăn hôm nay)
+// Bàn ăn sáng cạnh tủ đầu giường: bước tới là tự gọi tô phở (trước 11h, chưa ăn hôm nay).
+// GĐ1827 (review người chơi R7): ngày 1 KHÔNG tự gọi — người mới chưa biết cơ chế mà tiền lặng
+// lẽ trừ 20.000đ là nguồn "mất tiền vô cớ" (báo cáo review bắt được đúng cảnh này 2 lần).
+// Từ ngày 2 mới tự ăn: lúc đó toast "🍜 Ăn tô phở sáng..." trở thành lời dạy cơ chế.
 let atBreakfast = false;
 function autoBreakfast() {
   const s = useGame.getState();
   const near = player.position.distanceTo(standSpot) < 1.3;
-  if (near && !atBreakfast && s.minutes <= 11 * 60 && s.biz.breakfastDay !== s.day) eatBreakfast();
+  if (near && !atBreakfast && s.day > 1 && s.minutes <= 11 * 60 && s.biz.breakfastDay !== s.day) eatBreakfast();
   atBreakfast = near;
 }
 
