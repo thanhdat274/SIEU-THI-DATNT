@@ -215,3 +215,7 @@ Kết quả đo trên save trắng + autoplay (seed cố định, `substituteFlo
 - Hàng hoá ngoài kệ khách đang đứng, món đắt quá 1,5× giá món muốn, và kệ trống thì vẫn lỡ như cũ — bài học châm kệ được giữ.
 
 **R2 chính thức đóng ở mức cơ chế.**
+
+### QA co-op (GĐ1829 — đóng task cuối)
+
+Chế độ `?dev=a` / `?dev=b` (+ `?lock=off`, không cần Google): tab a máy chạy chơi ngày 2 — cơ chế thay món nổ 7 lượt; tab b máy khách soi **khớp tuyệt đối**: tiền 461.200đ · 41 món bán · substituted 7 · lỡ 5 · ngày 2 · tiệm mở. Luật 4 (đủ 2 chế độ ra kết quả giống nhau) đạt.

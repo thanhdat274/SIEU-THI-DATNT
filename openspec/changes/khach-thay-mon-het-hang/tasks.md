@@ -23,6 +23,6 @@
 ## 5. QA & hoàn tất
 
 - [x] 5.1 QA chơi đơn: ngày 1 save trắng — luồng xác thực bằng sim trên store+agent thật (substituteFlow.test: thay 12 lượt, lỡ 17→11, doanh thu tăng, 0 lỗi console khi boot + setup trong browser; bubble là hệ text-sprite sẵn có — cửa sổ game không focus nên không soi bubble trực tiếp được, để QA người dùng xác nhận khi chơi).
-- [ ] 5.2 QA co-op (cần người dùng đăng nhập): cùng chuỗi khách ra kết quả giống chơi đơn (máy chạy mô phỏng).
+- [x] 5.2 QA co-op (chế độ ?dev=a / ?dev=b + ?lock=off, không cần Google): tab a máy chạy chơi ngày 2 — thay món nổ 7 lượt; tab b máy khách soi **khớp tuyệt đối** (tiền 461.200đ · 41 món · substituted 7 · lỡ 5 · ngày 2 · tiệm mở; lệch 2 phút game là đồng hồ chạy tiếp giữa 2 lần đọc).
 - [x] 5.3 `npm run test` xanh toàn bộ, `npm run build` sạch, `npm run check:bundle` đạt.
 - [x] 5.4 Soi: không thêm hiệu ứng/đối tượng nặng mới — chỉ dùng bong bóng thoại text-sprite sẵn có của agent khách (không đụng GFX_PRESETS, không biên dịch lại shader).
