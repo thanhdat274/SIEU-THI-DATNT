@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { RECIPE_MAP, RECIPES, COOKED_PRODUCTS } from '../data/recipes';
 import { productById } from '../data/products';
 import { mealFactor } from '../data/branches';
+import { timeBandAt } from '../data/rhythm';
 
 // GĐ1706 + GĐ1717 (gộp GĐ1723): món xào sả ở chảo chiên.
 const CASES: [string, string, string][] = [
@@ -30,5 +31,12 @@ describe('món xào sả là đồ ăn trưa', () => {
   it.each(['ga_xao_sa', 'bo_xao_sa'])('%s ×2.2 lúc 12h, ×1 lúc 20h', (id) => {
     expect(mealFactor(id, 12 * 60)).toBe(2.2);
     expect(mealFactor(id, 20 * 60)).toBe(1);
+  });
+});
+
+// GĐ1725: cao điểm trưa muốn món xào sả.
+describe('cao điểm trưa', () => {
+  it.each(['ga_xao_sa', 'bo_xao_sa'])('%s có trong wants lúc 12h', (id) => {
+    expect(timeBandAt(12 * 60)!.wants).toContain(id);
   });
 });
