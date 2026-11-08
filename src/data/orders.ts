@@ -134,6 +134,11 @@ export const PARTY_ORDERS: PartyOrderDef[] = [
     description: 'Lớp 11A thi xong học kỳ, gom quỹ đặt mít chiên giòn ăn liên hoan.',
     items: { mit_chien_gion: 16 }, bonus: 170000, xp: 130,
   },
+  {
+    id: 'nhau_goi_xoai', icon: '🥭', title: 'Cuộc nhậu xóm', from: 'Mấy anh tổ dân phố', unlock: 37, days: 3,
+    description: 'Tổ dân phố họp xong ở lại lai rai, đặt gỏi xoài tôm khô làm mồi.',
+    items: { goi_xoai_tom_kho: 16 }, bonus: 170000, xp: 130,
+  },
   // Đơn riêng theo câu chuyện từng khách quen
   {
     id: 'xoi_dam_gio', icon: '🍙', title: 'Mẻ xôi đám giỗ', from: regularById('ba_nam')!.name, regular: 'ba_nam', unlock: 12, days: 2,
