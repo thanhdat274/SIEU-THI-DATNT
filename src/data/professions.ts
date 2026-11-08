@@ -81,7 +81,7 @@ export const PROFESSIONS: ProfessionDef[] = [
   {
     id: 'barber', name: 'Thợ cắt tóc', icon: '💇', archetype: 'barber',
     hours: [h(7.5, 10), h(13, 15), h(18, 20.5)],
-    likes: ['caphe', 'x_ca_phe_lon', 'nuoc', 'x_tra_da', 'banh', 'traicay', 'daugoi', 'xaphong'],
+    likes: ['caphe', 'x_ca_phe_lon', 'nuoc', 'x_tra_da', 'banh', 'traicay', 'daugoi', 'xaphong', 'banh_bao_kim_sa'],
     loyalty: 0.7, extraItems: 0, sensitivity: 1, patience: 1.2,
   },
   {
@@ -99,7 +99,7 @@ export const PROFESSIONS: ProfessionDef[] = [
   {
     id: 'police', name: 'Công an', icon: '👮', archetype: 'police',
     hours: [h(6.5, 8), h(11, 12.5), h(18.5, 21.5)],
-    likes: ['caphe', 'x_ca_phe_lon', 'nuoc', 'x_tra_da', 'banh', 'x_khan_giay', 'x_khau_trang', 'x_the_cao'],
+    likes: ['caphe', 'x_ca_phe_lon', 'nuoc', 'x_tra_da', 'banh', 'x_khan_giay', 'x_khau_trang', 'x_the_cao', 'com_suon_nuong'],
     loyalty: 0.7, extraItems: 0, sensitivity: 0.9, patience: 1.3,
   },
   {
