@@ -1,3 +1,4 @@
+import { askConfirm, ConfirmHost } from './ConfirmDialog';
 import { wantsRestockButton } from '../core/bizAchieve';
 import { hudThemeOn } from '../data/hudTheme';
 import { faintMinutes } from '../data/biz';
@@ -164,12 +165,12 @@ export function Hud() {
     notify(saveGame() ? '💾 Đã lưu game' : 'Không lưu được (trình duyệt chặn)');
     if (account) pushCloudSave();
   };
-  const restore = () => {
+  const restore = async () => {
     const prev = readBackupSave();
     if (!prev) return notify('Chưa có bản lưu trước để khôi phục');
     const at = new Date(prev.savedAt).toLocaleString('vi-VN');
-    if (!confirm(`Quay về bản lưu trước (ngày ${prev.data.day}, lưu lúc ${at})?
-Bản đang chơi được giữ lại, khôi phục lần nữa là trở lại.`)) return;
+    if (!await askConfirm(`Quay về bản lưu trước (ngày ${prev.data.day}, lưu lúc ${at})?
+Bản đang chơi được giữ lại, khôi phục lần nữa là trở lại.`, { okLabel: 'Khôi phục' })) return;
     restoreBackup();
     notify(`⏪ Đã quay về ngày ${prev.data.day}`);
     if (account) pushCloudSave();
@@ -184,16 +185,16 @@ Bản đang chơi được giữ lại, khôi phục lần nữa là trở lại
     await then?.();
     window.location.reload();
   };
-  const backToMenu = () => {
-    if (online && !confirm('Rời hẻm và về màn hình chính? Tiến trình hẻm đã được lưu trên server.')) return;
+  const backToMenu = async () => {
+    if (online && !await askConfirm('Rời hẻm và về màn hình chính? Tiến trình hẻm đã được lưu trên server.', { okLabel: 'Rời hẻm' })) return;
     leaveGame();
   };
-  const logout = () => confirm('Lưu game rồi đăng xuất?') && leaveGame(logoutGoogle);
+  const logout = () => { void askConfirm('Lưu game rồi đăng xuất?', { okLabel: 'Đăng xuất' }).then((ok) => { if (ok) void leaveGame(logoutGoogle); }); };
   /** Xoá tài khoản & dữ liệu (quyền chủ thể dữ liệu — Luật 91/2025): 2 bước xác nhận, giữ bản lưu máy. */
   const deleteAccountFlow = async () => {
     if (!account) return;
-    if (!confirm('Xoá tài khoản và toàn bộ dữ liệu cloud? Việc này không thể hoàn tác.')) return;
-    if (!confirm('Chắc chắn chưa? Sẽ xoá: bản lưu cloud, các hẻm bạn tham gia, và tài khoản Google liên kết. Bản lưu trong máy này được giữ lại.')) return;
+    if (!await askConfirm('Xoá tài khoản và toàn bộ dữ liệu cloud? Việc này không thể hoàn tác.', { danger: true, okLabel: 'Xoá tài khoản' })) return;
+    if (!await askConfirm('Chắc chắn chưa? Sẽ xoá: bản lưu cloud, các hẻm bạn tham gia, và tài khoản Google liên kết. Bản lưu trong máy này được giữ lại.', { danger: true, okLabel: 'Xoá vĩnh viễn' })) return;
     try {
       await deleteAccountData();   // xoá cloud + hẻm + bằng chứng đồng ý trên server
       await deleteAccount();       // xoá tài khoản Firebase (xác thực lại qua popup Google)
@@ -288,6 +289,7 @@ Bản đang chơi được giữ lại, khôi phục lần nữa là trở lại
   return (
     <>
       <Joystick />
+      <ConfirmHost />
       {/* GĐ1503 — tour HUD khoanh vùng: ngày đầu, xong hướng dẫn, không mở bảng nào */}
       {!hudTourDone && !tutActive && openType == null && day === 1 && level <= 3
         && <HudTour onDone={() => useGame.getState().markHudTourDone()} />}
@@ -448,7 +450,7 @@ Online: ${coop.peers.map((p) => (p.id === coop.selfId ? 'bạn' : p.name)).join(
                 : undefined,
             },
             { label: '🏠 Màn hình chính', on: backToMenu },
-            ...(!online ? [{ label: '🔄 Chơi lại từ đầu', danger: true, on: () => confirm('Xoá bản lưu và chơi lại từ đầu?') && resetGame() }] : []),
+            ...(!online ? [{ label: '🔄 Chơi lại từ đầu', danger: true, on: () => { void askConfirm('Xoá bản lưu và chơi lại từ đầu?', { danger: true, okLabel: 'Chơi lại' }).then((ok) => ok && resetGame()); } }] : []),
             ...(account ? [{ label: '↪ Đăng xuất', on: logout }] : []),
             ...(!online && account ? [{ label: '🗑 Xoá tài khoản & dữ liệu', danger: true, on: () => void deleteAccountFlow() }] : []),
           ]}

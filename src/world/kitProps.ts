@@ -28,20 +28,18 @@ export interface KitPlacement {
  * cây phía tây (z ≤ -10), bồn nước góc sau nhà, ghế nhựa rải vỉa hè, gánh hàng rong trước
  * dãy nhà hàng xóm.
  */
+// GĐ1821: bỏ thùng gỗ, bồn nước, ghế nhựa, băng ghế dưới cột đèn, rào chắn đứng lẻ trên vỉa hè —
+// người dùng chê bày vụng, không có nghĩa trong gameplay. Chỉ giữ chậu cây hai bên cửa và khóm tre.
 export const KIT_PLACEMENTS: KitPlacement[] = [
   { module: 'chau_cay', pos: [-13.5, 0, 1.3], rotY: 0.4, scale: 1.25 },
   { module: 'chau_cay', pos: [-10.5, 0, 1.3], rotY: 2.6, scale: 1.1 },
   { module: 'chau_cay', pos: [1.5, 0, 1.35], rotY: 1.2, scale: 1.2 },
   { module: 'chau_cay', pos: [6.5, 0, 1.35], rotY: 4.4, scale: 1.3 },
-  { module: 'thung_go', pos: [-8.3, 0, 1.1], rotY: 0.5 },
   { module: 'khom_tre', pos: [-40, 0, -16], rotY: 0.8, scale: 1.4 },
   { module: 'khom_tre', pos: [-43.5, 0, -23], rotY: 2.9, scale: 1.15 },
   { module: 'khom_tre', pos: [37, 0, -19], rotY: 1.7, scale: 1.3 },
-  { module: 'bon_nuoc', pos: [-8.8, 0, -7.6], rotY: 0.2 },
-  { module: 'cho_nhua', pos: [-14.8, 0, 2.3], rotY: 2.2 },
   // Băng ghế hẻm (gđ195): chỗ bà con ngồi hóng mát — cạnh nhà phía tây, bên đống chậu cây gần tre,
   // và trên vỉa hè phía đông đối diện dãy quán; vẫn chỉ đồ trang trí, không chặn lưới đi lại.
-  { module: 'bang_ghe', pos: [15.2, 0, 2.1], rotY: -0.4 },
 ];
 
 /**
@@ -67,7 +65,6 @@ export const KIT_MARKET_PLACEMENTS: KitPlacement[] = [
   { module: 'xe_day', pos: [-3.2, 0, 2.6], rotY: 0.5 },
   { module: 'xe_day', pos: [8.4, 0, 2.5], rotY: 4.6 },
   // Chỗ ngồi họp chợ (gđ196): băng ghế + ghế nhựa rải mép vỉa hè (z 1.4..3), theo nhịp isMarketDay
-  { module: 'bang_ghe', pos: [-6.6, 0, 1.9], rotY: -0.2 },
 ];
 
 /**
@@ -78,8 +75,6 @@ export const KIT_MARKET_PLACEMENTS: KitPlacement[] = [
  * giữa lòng đường — "đường phía trước đang sửa" chứ không chắn lối.
  */
 export const KIT_ROADWORK_PLACEMENTS: KitPlacement[] = [
-  { module: 'rao_chan', pos: [-1.8, 0, 2.6], rotY: 0.08, scale: 1.05 },
-  { module: 'rao_chan', pos: [10.5, 0, 2.5], rotY: -0.06, scale: 1.05 },
 ];
 
 /**

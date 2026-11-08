@@ -1,3 +1,4 @@
+import { askConfirm } from './ConfirmDialog';
 import { useEffect, useState } from 'react';
 import { formatMoney } from '../data/products';
 import { createAlley, enterAlley, joinAlley, listAlleys, quitAlley, type AlleySummary } from '../net/coop';
@@ -49,9 +50,9 @@ export function AlleyPanel({ busy, run, onEnter }: {
     await enterAlley(alley.id);
     onEnter();
   });
-  const quit = (a: AlleySummary) => {
+  const quit = async (a: AlleySummary) => {
     const last = a.members.length === 1;
-    if (!confirm(last ? `Bạn là thành viên cuối của "${a.name}". Rời hẻm sẽ xoá luôn hẻm và tiến trình. Tiếp tục?` : `Rời hẻm "${a.name}"? Muốn quay lại phải có mã ${a.id}.`)) return;
+    if (!await askConfirm(last ? `Bạn là thành viên cuối của "${a.name}". Rời hẻm sẽ xoá luôn hẻm và tiến trình. Tiếp tục?` : `Rời hẻm "${a.name}"? Muốn quay lại phải có mã ${a.id}.`, { danger: last, okLabel: 'Rời hẻm' })) return;
     void run(async () => {
       await quitAlley(a.id);
       setAlleys(await listAlleys());

@@ -814,3 +814,23 @@
 #ui[data-hud-theme='tet'] { --hud-accent: #ffcc33; --hud-bg: rgba(120, 18, 18, 0.84); --hud-bg-solid: #6e1414; --hud-line: rgba(255, 204, 51, 0.25); }
 #ui[data-hud-theme='trung_thu'] { --hud-accent: #ffb347; --hud-bg: rgba(28, 26, 64, 0.84); --hud-bg-solid: #1c1a40; --hud-line: rgba(255, 179, 71, 0.22); }
 #ui[data-hud-theme='giang_sinh'] { --hud-accent: #ff5e5e; --hud-bg: rgba(14, 54, 34, 0.84); --hud-bg-solid: #0e3622; --hud-line: rgba(255, 255, 255, 0.16); }
+
+/* GĐ1821 — Hộp xác nhận chung thay window.confirm */
+#ui .hud-confirm-backdrop {
+  position: fixed; inset: 0; z-index: 1000; pointer-events: auto;
+  display: flex; align-items: center; justify-content: center; padding: 16px;
+  background: rgba(0, 0, 0, 0.5);
+}
+#ui .hud-confirm {
+  width: min(420px, 100%); padding: 18px 20px 16px;
+  border: 1px solid var(--hud-line); border-radius: var(--hud-radius);
+  background: var(--hud-bg-solid); color: var(--hud-text);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+}
+#ui .hud-confirm-title { font-size: 17px; font-weight: 700; margin-bottom: 8px; }
+#ui .hud-confirm-msg { font-size: 14px; line-height: 1.5; color: var(--hud-muted); white-space: pre-line; }
+#ui .hud-confirm-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+#ui .hud-confirm-actions button { border: 0; border-radius: 999px; padding: 7px 18px; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
+#ui .hud-confirm-cancel { background: rgba(255, 255, 255, 0.12); color: var(--hud-text); }
+#ui .hud-confirm-ok { background: var(--hud-accent); color: #1d1f2b; }
+#ui .hud-confirm-ok.danger { background: #e74c3c; color: #fff; }

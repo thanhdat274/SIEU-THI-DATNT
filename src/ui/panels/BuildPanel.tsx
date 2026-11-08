@@ -1,3 +1,4 @@
+import { askConfirm } from '../ConfirmDialog';
 import { useEffect, useState } from 'react';
 import { useGame } from '../../core/store';
 import { FLOOR_COLORS, PAINT_PRICE, ROOF_COLORS, SHOP_TIERS, WALL_COLORS, rentDelta, rentOf, spaceUsePct, type ShopStyle } from '../../data/shopTiers';
@@ -129,7 +130,7 @@ export function FurnitureTab() {
         <button
           style={{ ...styles.btn, marginLeft: 0, background: '#e74c3c', color: '#fff' }}
           disabled={!furniture.length}
-          onClick={() => confirm('Đập hết nội thất trong tiệm? Nhận lại 50% tiền, hàng trên kệ về kho.') && demolishAll()}
+          onClick={() => { void askConfirm('Đập hết nội thất trong tiệm? Nhận lại 50% tiền, hàng trên kệ về kho.', { danger: true, okLabel: 'Đập hết' }).then((ok) => ok && demolishAll()); }}
         >
           🔨 Đập hết, xây lại từ đầu
         </button>
