@@ -181,3 +181,19 @@ Ngày 1 chơi được trọn vòng cốt lõi **nhập → bày → mở cửa 
 | R7 | **Giải mã xong — không phải lỗi sổ sách:** `autoBreakfast()` (main.tsx) — nhân vật đứng gần bàn ăn cạnh giường trong nhà (≤1,3 m, trước 11h) là game **tự mua tô phở 20.000đ** (`BREAKFAST.price`, `biz.ts`). Cả 2 lần bắt được (bản web lúc review + bản local GĐ1826) đều xảy ra khi nhân vật đang đứng ở nhà. | Ngày 1 không tự gọi phở (người mới chưa biết cơ chế — tiền lặng lẽ trừ 20k là "mất tiền vô cớ"); từ ngày 2 tự ăn như cũ, toast trở thành lời dạy. Xác minh live: ngày 1 đứng ở nhà 12 giây — tiền giữ nguyên 360.000đ. |
 
 **Kết luận GĐ1827:** toàn bộ góp ý trong review này đã xử lý hoặc khoá guard — R1/R3/R8/R9 đóng (GĐ1823/1826), R2 khoá trần đo được, R7 sửa gốc. Việc còn mở duy nhất: muốn giảm sâu hơn số "lỡ bán ngày 1" dưới 17 phải cân bằng lại cầu ngày 1 (riêng một giai đoạn có kế hoạch economySim).
+
+## Kết quả xử lý tiếp — GĐ1828 (cùng ngày): R2 đóng bằng dữ liệu đo
+
+Đo lỡ-bán ngày 1 ở 5 mức vốn (save trắng + autoplay, seed tất định, test `reviewR2Day1.test.ts`):
+
+| Vốn | Khách | Bán | Lỡ hết hàng |
+|---|---|---|---|
+| 360k (hiện tại) | 37 | 65 | 16 |
+| 400k | 36 | 66 | 17 |
+| 420k | 36 | 61 | 12 |
+| 450k | 39 | 71 | 9 |
+| 480k | 42 | 71 | **25 (tệ hơn)** |
+
+**Kết luận:** lỡ-bán **không giảm đều theo vốn** (phi tuyến — vốn khác → bot/người chơi mua hỗn hợp món khác, món cạn trước khác). "Tăng vốn" không phải đòn bẩy đáng tin; chọn vốn theo một lần chạy nhiễu là tune bề mặt. Giữ **360k**, guard trần **≤17** giữ nguyên.
+
+**R2 → ĐÓNG.** Muốn giảm sâu hơn nữa (dưới ~10) phải làm cơ chế thật: khách **thay món khi món thèm hết hàng** (substitution) hoặc chỉnh cầu-mix ngày đầu — đây là đề xuất thiết kế riêng (chạm economySimL50 đang sát biên), không nằm trong scope sửa review.

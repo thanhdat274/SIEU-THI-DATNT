@@ -1,8 +1,8 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { useGame, newGameData } from '../core/store';
 
-// GĐ1827 — review người chơi R2: ngày 1 với vốn mới (360k — GĐ1823) người mới vẫn mất khách
-// vì hết hàng hay không. Khoá trần theo mức đo: chỉ được giảm, tăng phải kèm lý do trong PROGRESS.md.
+// GĐ1827/1828 — review người chơi R2: ngày 1 với vốn mới người mới vẫn mất khách vì hết hàng
+// hay không. Khoá trần theo mức đo: chỉ được giảm, tăng phải kèm lý do trong PROGRESS.md.
 
 vi.mock('../net/session', () => ({ useSession: { getState: () => ({}) }, subscribe: () => () => {} }));
 vi.mock('../net/cloud', () => ({ pushCloudSave: () => {}, takeCloudSave: () => {} }));
@@ -60,24 +60,39 @@ import { buildEconomyWorld } from '../dev/simEconomy';
 import { createAutoplay } from '../dev/autoplay';
 import { mulberry32 } from '../core/rand';
 
-describe('review R2 — ngày 1 vốn mới (360k) không được để khách rơi rụng vì hết hàng', () => {
-  it('ngày 1 save trắng: đo lỡ bán theo lý do — trần khoá theo mức đo GĐ1827', async () => {
+/** Chạy đúng 1 ngày save trắng với vốn `cap`, trả về số liệu tổng kết ngày (lastSummary). */
+async function day1With(cap: number) {
+  useGame.setState({ ...newGameData(), money: cap, shopOpen: false, panel: null, buildMode: false, placing: null });
+  const world = buildEconomyWorld();
+  const run = createAutoplay(world.shop, world.customers, world.staff, world.player, { betTier: 1.0 }) as ReturnType<typeof createAutoplay> & { async: (days: number) => Promise<Record<string, number | string | Record<string, number>>[]> };
+  await run.async(1);
+  return useGame.getState().lastSummary?.stats;
+}
+
+describe('review R2 — ngày 1 vốn mới không được để khách rơi rụng vì hết hàng', () => {
+  it('ngày 1 save trắng: lỡ vì hết hàng dưới trần khoá — chỉ được giảm', async () => {
     vi.spyOn(Math, 'random').mockImplementation(mulberry32(20261108));
-    // Save trắng ĐÚNG như người chơi mới: newGameData() nguyên vẹn (360k, 2 kệ khai trương, kho 10/10/5)
-    useGame.setState({ ...newGameData(), shopOpen: false, panel: null, buildMode: false, placing: null });
-    const world = buildEconomyWorld();
-    const run = createAutoplay(world.shop, world.customers, world.staff, world.player, { betTier: 1.0 }) as ReturnType<typeof createAutoplay> & { async: (days: number) => Promise<Record<string, number | string | Record<string, number>>[]> };
-    const rows = await run.async(1);
-    const r = rows[0];
-    const missed = (r.missed as Record<string, number>) ?? {};
-    const stock = missed.stock ?? 0;
-    const sum = useGame.getState().lastSummary;
-    const s = sum?.stats;
+    const s = await day1With(newGameData().money);
+    const stock = s?.missed?.stock ?? 0;
     // eslint-disable-next-line no-console
-    console.log(`[R2] ngày 1 vốn 360k (lastSummary): khách=${s?.customers} · bán=${s?.itemsSold} · doanh thu=${s?.revenue} · lỡ: hết hàng=${s?.missed?.stock} chê đắt=${s?.missed?.price} chờ lâu=${s?.missed?.wait} · hàng lô:${JSON.stringify(r).slice(0, 400)}`);
+    console.log(`[R2] ngày 1 vốn ${newGameData().money}: khách=${s?.customers} · bán=${s?.itemsSold} · doanh thu=${s?.revenue} · lỡ: hết hàng=${stock} chờ lâu=${s?.missed?.wait} chê đắt=${s?.missed?.price}`);
     expect(Number.isFinite(stock)).toBe(true);
-    // Trần khoá theo mức đo — sửa thiết kế, không nâng trần (ngân sách chống phình)
     // Trần = mức đo GĐ1827 (vốn 360k, bot châm kệ tối ưu): 17 — trước vốn 280k đo 28/55 lượt. Chỉ được giảm.
+    // GĐ1828: đo 5 mức vốn 360→480k — lỡ-bán KHÔNG giảm đều theo vốn (16/17/12/9/25, phi tuyến do
+    // bot mua hỗn hợp món khác đi) ⇒ tăng vốn không phải đòn bẩy; giữ 360k. Muốn sâu hơn phải làm
+    // cơ chế thay-món khi hết hàng / chỉnh cầu-mix — đề xuất thiết kế riêng, không tune theo 1 lần chạy.
     expect(stock, 'ngày 1 mất quá nhiều khách vì hết hàng — xem lại vốn/cầu ngày đầu (review R2)').toBeLessThanOrEqual(17);
+  }, 600_000);
+
+  it('GĐ1828 — đo nhiều mức vốn để chọn vốn ngày đầu (in bảng, không assert cứng)', async () => {
+    vi.spyOn(Math, 'random').mockImplementation(mulberry32(20261108));
+    const out: string[] = [];
+    for (const cap of [360_000, 400_000, 420_000, 450_000, 480_000]) {
+      const s = await day1With(cap);
+      out.push(`vốn ${cap}: khách=${s?.customers} bán=${s?.itemsSold} doanh thu=${s?.revenue} lỡ_hết_hàng=${s?.missed?.stock ?? 0} chờ_lâu=${s?.missed?.wait ?? 0}`);
+    }
+    // eslint-disable-next-line no-console
+    console.log('[R2-đo]\n' + out.join('\n'));
+    expect(out.length).toBe(5);
   }, 600_000);
 });
