@@ -186,7 +186,7 @@ export function loadKitProps(baseUrl = '/models/kit/'): { group: THREE.Group; do
     decorOn = on;
     for (const c of group.children) if (!isEventGroup(c)) c.visible = on;
   };
-  const result: KitProps = { group, loaded: 0, failed: [], marketGroup, setMarketDay: (on) => { marketGroup.visible = on; }, roadworkGroup, setRoadwork: (on) => { roadworkGroup.visible = on; }, festivalGroup, setFestival: (on) => { festivalGroup.visible = on; }, setDecor };
+  const result: KitProps = { group, loaded: 0, failed: [], marketGroup, setMarketDay: (on) => { marketGroup.visible = on; }, roadworkGroup, setRoadwork: (on) => { roadworkGroup.visible = on; }, festivalGroup, setFestival: () => { festivalGroup.visible = false; /* GĐ1820: người dùng bỏ cột dây cờ trước tiệm */ }, setDecor };
   const done = new Promise<KitProps>((resolve) => {
     const finish = () => resolve(result);
     if (KIT_PLACEMENTS.length === 0) return finish();

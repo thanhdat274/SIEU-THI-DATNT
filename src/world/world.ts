@@ -219,6 +219,7 @@ export function createWorld(scene: THREE.Scene, grid: NavGrid): World {
   // Đèn lồng cột trước cửa tiệm (gđ177): "đầu ngõ lên đèn" chập tối — chỉ hình ảnh, không chặn lưới;
   // GLB Blender tải lười, có cái xác thủ tục dự phòng nên đèn luôn có hình.
   const storefront = createStorefrontLantern();
+  storefront.group.visible = false; // GĐ1820: bỏ cột đèn lồng (giữ vũng sáng ấm)
   scene.add(storefront.group);
   // GĐ737 — đèn hẻm dọc lối đi: payoff thị giác của dự án "Đèn Đường Ngõ 1" (ẩn cho tới khi thắp sáng)
   const alleyLamps = createAlleyLamps();
@@ -230,6 +231,7 @@ export function createWorld(scene: THREE.Scene, grid: NavGrid): World {
   const openSign = createOpenSign();
   scene.add(openSign.group);
   const waitLamp = createWaitLamp();
+  waitLamp.group.visible = false; // GĐ1820: bỏ đèn báo khách chờ
   scene.add(waitLamp.group);
   const maxTier = SHOP_TIERS[SHOP_TIERS.length - 1];
 

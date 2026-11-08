@@ -11,7 +11,8 @@ import { fallbackLantern } from './storefrontLantern';
  */
 
 /** Vị trí 2 cột dọc lối đi trước dãy cửa (cùng vỉa hè với đèn lồng cửa tiệm ở x=5,9; tránh cửa tiệm x=4). */
-export const ALLEY_LAMP_POS: [number, number, number][] = [[2.6, 0, 2.2], [7.4, 0, 2.2]];
+// GĐ1820: dời ra ngoài hai mép mặt tiền (tiệm x 0..8) để không đứng chắn trước cửa.
+export const ALLEY_LAMP_POS: [number, number, number][] = [[-0.9, 0, 2.2], [8.9, 0, 2.2]];
 
 /** Rà vị trí đặt: ngoài thế giới / giữa lòng đường / đè mặt tiền / chắn trước cửa là bug — soi bằng test. */
 export function alleyLampProblems(): string[] {
