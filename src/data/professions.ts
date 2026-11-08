@@ -123,7 +123,7 @@ export const PROFESSIONS: ProfessionDef[] = [
   {
     id: 'banker', name: 'Nhân viên ngân hàng', icon: '🏦', archetype: 'banker',
     hours: [h(7, 9), h(11.5, 13.5), h(17, 19)],
-    likes: ['caphe', 'x_ca_phe_lon', 'nuoc', 'x_tra_xanh', 'banh', 'traicay', 'x_khan_giay', 'x_the_cao'],
+    likes: ['caphe', 'x_ca_phe_lon', 'nuoc', 'x_tra_xanh', 'banh', 'traicay', 'x_khan_giay', 'x_the_cao', 'banh_mi_jambon'],
     loyalty: 0.75, extraItems: 0, sensitivity: 0.85, patience: 1.2,
   },
   // ──────────────────────────────────────────────
@@ -157,7 +157,7 @@ export const PROFESSIONS: ProfessionDef[] = [
   {
     id: 'bus_driver', name: 'Tài xế xe bus', icon: '🚌', archetype: 'bus_driver',
     hours: [h(5, 8), h(17, 20)],
-    likes: ['nuoc', 'banhmi', 'caphe', 'x_tra_da', 'mi', 'x_redbull_lon', 'banh_mi_trung_nuong', 'ca_phe_den_da'],
+    likes: ['nuoc', 'banhmi', 'caphe', 'x_tra_da', 'mi', 'x_redbull_lon', 'banh_mi_trung_nuong', 'ca_phe_den_da', 'com_ca_com_rim'],
     loyalty: 0.75, extraItems: 0, sensitivity: 1.1, patience: 1.0,
   },
   {
