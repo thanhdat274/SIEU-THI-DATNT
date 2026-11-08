@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (07/11/2026)
+- GĐ1811: hot list cấp >50 — 30/4 + gỏi cá phao giò thủ, Lễ hội làng + xôi lạp xưởng trứng; test 5490/5490.
 - GĐ1810: hot list cấp >50 — Mùa hè + nước ép táo, Tựu trường + bánh mì lạp xưởng; test 5488/5488.
 - GĐ1809: hot list cấp >50 — 8/3 + sinh tố thanh long, Bóng đá phường + cá viên chiên mắm; test 5486/5486.
 - GĐ1808: hot list cấp >50 — Mùa mưa + canh sườn bí đỏ, Valentine + nước ép nho tím; test 5484/5484.
