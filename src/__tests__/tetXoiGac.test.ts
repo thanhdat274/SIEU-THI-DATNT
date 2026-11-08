@@ -62,4 +62,7 @@ describe('GĐ1708 — lễ hội làng nấu cỗ hút gà xào sả', () => {
   it('ga_xao_sa nằm trong hàng hot lễ hội làng', () => {
     expect(FESTIVALS.find((e) => e.id === 'le_hoi_lang')!.hot).toContain('ga_xao_sa');
   });
+  it('GĐ1721: bo_xao_sa cũng hot lễ hội làng', () => {
+    expect(FESTIVALS.find((e) => e.id === 'le_hoi_lang')!.hot).toContain('bo_xao_sa');
+  });
 });
