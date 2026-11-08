@@ -386,6 +386,7 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'goi_xoai_tom_kho', name: 'Gỏi xoài tôm khô', category: 'fresh', buy: 7500, sell: 15000, color: 0xc9d65a, unlock: 37 },
   { id: 'nhan_da_xay', name: 'Nhãn đá xay', category: 'fresh', buy: 7500, sell: 15000, color: 0xe9e2b0, unlock: 41 },
   { id: 'vai_da_xay', name: 'Vải đá xay', category: 'fresh', buy: 7500, sell: 15000, color: 0xf3c6cf, unlock: 43 },
+  { id: 'che_gac', name: 'Chè gấc', category: 'fresh', buy: 7000, sell: 14000, color: 0xe2452d, unlock: 44 },
   // GĐ1429: Trứng xào cà chua — lối ra ĐẦU TIÊN của cà chua.
   { id: 'trung_xao_ca_chua', name: 'Trứng xào cà chua', category: 'fresh', buy: 4000, sell: 8000, color: 0xe85a3a, unlock: 45 },
   // GĐ1429: Rau cải xào tỏi — lối ra ĐẦU TIÊN của rau cải.
@@ -1146,6 +1147,10 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_vai_da_xay', name: 'Vải đá xay', station: 'blender',
     inputs: [{ productId: 'x_vai', quantity: 2 }, { productId: 'x_duong', quantity: 1 }, { productId: 'x_nuoc_da', quantity: 1 }],
     outputId: 'vai_da_xay', outputQty: 8, durationMin: 6, unlock: 43, reputationGain: 2 },
+  // GĐ1741: Chè gấc — lối ra bếp thứ 2 cho gấc trại (sau xôi gấc): gấc + đường ≈ 59k → 6 × 14k = 84k.
+  { id: 'recipe_che_gac', name: 'Chè gấc', station: 'hot_kettle',
+    inputs: [{ productId: 'x_gac', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
+    outputId: 'che_gac', outputQty: 6, durationMin: 18, unlock: 44, reputationGain: 2 },
   // GĐ1429: Trứng xào cà chua ở chảo chiên. Mở 35 (> golden 30, ≥ cấp nguyên liệu).
   { id: 'recipe_trung_xao_ca_chua', name: 'Trứng xào cà chua', station: 'fryer',
     inputs: [{ productId: 'x_ca_chua', quantity: 1 }, { productId: 'x_trung_ga', quantity: 4 }],
