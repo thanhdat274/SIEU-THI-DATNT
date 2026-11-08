@@ -292,6 +292,9 @@ export function resetGame() {
   queue(() => db.saves.clear());
   clearLocalStorage();
   useGame.setState({ ...newGameData(), shopOpen: false, panel: null, buildMode: false, placing: null });
+  // GĐ1839 (review đợt 4 R3): khách cũ còn trong cảnh 3D đi ra cửa và addDirt sau khi state đã
+  // reset — ngày 1 mở màn sàn bẩn 72%. Bỏ qua các lần bẩn kế tiếp (xem clock.addDirt).
+  useGame.getState().freezeDirt();
 }
 
 /**

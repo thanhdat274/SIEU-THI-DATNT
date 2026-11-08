@@ -215,6 +215,8 @@ export interface GameState {
   /** Độ bẩn sàn tiệm 0–100: tăng theo lượt khách, lao công lau, mỗi đêm dọn sạch. */
   dirt: number;
   addDirt: (amount: number) => void;
+  /** GĐ1839 — bỏ qua các lần bẩn kế tiếp (sau resetGame: khách cũ ra cửa không bẩn sàn ngày 1). */
+  freezeDirt: () => void;
   stats: DayStats;
   /** Chỉ số trong SHOP_TIERS. */
   shopTier: number;

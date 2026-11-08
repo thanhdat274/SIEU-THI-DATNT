@@ -21,11 +21,21 @@ import { maybeInspection } from '../inspection';
 let messageTimer: ReturnType<typeof setTimeout> | undefined;
 /** GĐ1833 — đã cảnh báo tiền âm trước khi ngủ trong phiên này chưa (chỉ chặn một lần, không nhớ save). */
 let sleepWarned = false;
+/** GĐ1839 — số lần addDirt còn được bỏ qua sau resetGame (đếm lượt, không phải thời gian → tất định). */
+let dirtFreeze = 0;
 /** GĐ571: tin gọi liên tiếp trong cùng một lượt xử lý gộp một toast thay vì đè nhau. */
 let burst: string[] = [];
 
-export const createClockSlice = (set: SetState, get: GetState): Pick<GameState, 'addDirt' | 'setSpeed' | 'tick' | 'sleep' | 'notify' | 'armMessage' | 'openPanel' | 'closePanel' | 'markHudTourDone'> => ({
+export const createClockSlice = (set: SetState, get: GetState): Pick<GameState, 'addDirt' | 'freezeDirt' | 'setSpeed' | 'tick' | 'sleep' | 'notify' | 'armMessage' | 'openPanel' | 'closePanel' | 'markHudTourDone'> => ({
+  freezeDirt: () => { dirtFreeze = 200; },
   addDirt: (amount) => {
+    // GĐ1839 (review đợt 4 R3): sau resetGame, khách cũ còn trong cảnh vẫn đi ra cửa và addDirt —
+    // ngày 1 mở màn với sàn bẩn 72% và bị dạy "lau nhà" thứ mình không gây. freezeDirt() bỏ qua
+    // một số lần bẩn đầu tiên (khách cũ tối đa vài chục lượt), trò chơi thường thì chạy lại bình thường.
+    if (dirtFreeze > 0) {
+      dirtFreeze -= 1;
+      return;
+    }
     const before = get().dirt;
     const dirt = Math.max(0, Math.min(DIRT_MAX, before + amount));
     set({ dirt });
