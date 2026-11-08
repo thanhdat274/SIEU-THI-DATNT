@@ -6,6 +6,8 @@ import { REGULARS, unlockedFavorites } from '../data/regulars';
 describe.each([
   ['ba_nam', 'ca_phe_trung'],
   ['anh_tuan', 'mi_y_sot_bo'],
+  ['be_na', 'banh_flan'],
+  ['chi_lan', 'sua_chua_trai_cay'],
 ])('%s thích %s (GĐ1789)', (rid, pid) => {
   const def = REGULARS.find((r) => r.id === rid)!;
   it('cấp 30 chưa có, cấp 60 có', () => {
