@@ -447,7 +447,7 @@ const BREAKFAST_ITEMS = new Set([
 ]);
 /** Đồ ăn nhanh trưa (11h–15h): cơm hộp, cơm phần, mì nấu sẵn, bánh tráng trộn. */
 const LUNCH_ITEMS = new Set([
-  'com_hop_ga', 'com_suon_nuong', 'com_chien_trung', 'mi_trung_nong', 'banh_trang_tron', 'x_com_nam',
+  'com_hop_ga', 'com_suon_nuong', 'com_chien_trung', 'mi_trung_nong', 'banh_trang_tron', 'x_com_nam', 'ga_xao_sa', 'bo_xao_sa',
 ]);
 /** Nhân thêm theo bữa ăn trong ngày — tiện lợi 24/7 xoay thực đơn theo ca. */
 export function mealFactor(id: string, minute: number): number {
