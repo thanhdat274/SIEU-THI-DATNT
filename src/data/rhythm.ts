@@ -18,7 +18,7 @@ export const TIME_BANDS: TimeBand[] = [
   { id: 'trua', name: 'Cao điểm trưa', from: 11 * 60, to: 13 * 60, traffic: 1.35, wants: ['nuoc', 'ngot', 'mi', 'dochin', 'suachua', 'com_hop_ga', 'com_chien_trung', 'mi_trung_nong', 'ca_vien_chien', 'nuoc_mia', 'sinh_to_trai_cay', 'ga_xao_sa', 'bo_xao_sa'] },
   { id: 'chieu', name: 'Buổi chiều', from: 13 * 60, to: 17 * 60, traffic: 0.6, wants: ['kem', 'banh', 'snack', 'che_dau_xanh', 'banh_trang_tron', 'kem_trai_cay', 'tra_sua', 'tra_dao_cam_sa', 'bap_xao', 'ca_phe_den_da'] },
   { id: 'toi', name: 'Cao điểm tối', from: 17 * 60, to: 20 * 60, traffic: 1.7, wants: ['rau', 'thit', 'ca', 'gao', 'dauan', 'giavi', 'trung', 'com_suon_nuong', 'canh_rau_thit', 'xoi_thap_cam'] },
-  { id: 'khuya', name: 'Tối muộn', from: 20 * 60, to: 22 * 60, traffic: 0.8, wants: ['mi', 'bia', 'snack', 'tangluc', 'mi_trung_nong', 'xuc_xich_nuong', 'ca_vien_chien'] },
+  { id: 'khuya', name: 'Tối muộn', from: 20 * 60, to: 22 * 60, traffic: 0.8, wants: ['mi', 'bia', 'snack', 'tangluc', 'mi_trung_nong', 'xuc_xich_nuong', 'ca_vien_chien', 'muc_kho_nuong', 'canh_ga_chien_mam'] },
 ];
 
 /** Bình quân `traffic` cả ngày ≈ 1, nên tổng khách/ngày gần như không đổi, chỉ dồn vào giờ cao điểm. */
