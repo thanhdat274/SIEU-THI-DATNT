@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (07/11/2026)
+- GĐ1737: món Vải đá xay (máy xay, mở 43; vải 2 + đường + đá → 8×15k) — lối ra bếp thứ 2 cho vải; tránh trùng id sinh_to_vai của quán; test trong fruitOutletDishes.
 - GĐ1736: món Nhãn đá xay (máy xay, mở 41; nhãn 2 + đường + đá → 8×15k) — lối ra bếp thứ 2 cho nhãn; test trong fruitOutletDishes.
 - GĐ1735: Lễ 30/4 hút Gỏi xoài tôm khô (đúng mùa xoài 3–6) — test trong fruitOutletDishes.
 - GĐ1734: món Gỏi xoài tôm khô (nồi hấp, mở 37; xoài 2 + tôm khô + nước mắm → 8×15k) — lối ra bếp thứ 2 cho xoài; test trong fruitOutletDishes.

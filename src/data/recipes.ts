@@ -385,6 +385,7 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'mit_chien_gion', name: 'Mít chiên giòn', category: 'fresh', buy: 7500, sell: 15000, color: 0xe8b34a, unlock: 39 },
   { id: 'goi_xoai_tom_kho', name: 'Gỏi xoài tôm khô', category: 'fresh', buy: 7500, sell: 15000, color: 0xc9d65a, unlock: 37 },
   { id: 'nhan_da_xay', name: 'Nhãn đá xay', category: 'fresh', buy: 7500, sell: 15000, color: 0xe9e2b0, unlock: 41 },
+  { id: 'vai_da_xay', name: 'Vải đá xay', category: 'fresh', buy: 7500, sell: 15000, color: 0xf3c6cf, unlock: 43 },
   // GĐ1429: Trứng xào cà chua — lối ra ĐẦU TIÊN của cà chua.
   { id: 'trung_xao_ca_chua', name: 'Trứng xào cà chua', category: 'fresh', buy: 4000, sell: 8000, color: 0xe85a3a, unlock: 45 },
   // GĐ1429: Rau cải xào tỏi — lối ra ĐẦU TIÊN của rau cải.
@@ -1141,6 +1142,10 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_nhan_da_xay', name: 'Nhãn đá xay', station: 'blender',
     inputs: [{ productId: 'x_nhan', quantity: 2 }, { productId: 'x_duong', quantity: 1 }, { productId: 'x_nuoc_da', quantity: 1 }],
     outputId: 'nhan_da_xay', outputQty: 8, durationMin: 6, unlock: 41, reputationGain: 2 },
+  // GĐ1737: Vải đá xay — lối ra bếp thứ 2 cho vải trại: vải 2 + đường + đá ≈ 90k → 8 × 15k = 120k.
+  { id: 'recipe_vai_da_xay', name: 'Vải đá xay', station: 'blender',
+    inputs: [{ productId: 'x_vai', quantity: 2 }, { productId: 'x_duong', quantity: 1 }, { productId: 'x_nuoc_da', quantity: 1 }],
+    outputId: 'vai_da_xay', outputQty: 8, durationMin: 6, unlock: 43, reputationGain: 2 },
   // GĐ1429: Trứng xào cà chua ở chảo chiên. Mở 35 (> golden 30, ≥ cấp nguyên liệu).
   { id: 'recipe_trung_xao_ca_chua', name: 'Trứng xào cà chua', station: 'fryer',
     inputs: [{ productId: 'x_ca_chua', quantity: 1 }, { productId: 'x_trung_ga', quantity: 4 }],
