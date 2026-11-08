@@ -77,14 +77,13 @@ describe('review R2 — ngày 1 vốn mới không được để khách rơi r�
     // eslint-disable-next-line no-console
     console.log(`[R2] ngày 1 vốn ${newGameData().money}: khách=${s?.customers} · bán=${s?.itemsSold} · doanh thu=${s?.revenue} · lỡ: hết hàng=${stock} chờ lâu=${s?.missed?.wait} chê đắt=${s?.missed?.price}`);
     expect(Number.isFinite(stock)).toBe(true);
-    // Trần = mức đo GĐ1827 (vốn 360k, bot châm kệ tối ưu): 17 — trước vốn 280k đo 28/55 lượt. Chỉ được giảm.
-    // GĐ1828: đo 5 mức vốn 360→480k — lỡ-bán KHÔNG giảm đều theo vốn (16/17/12/9/25, phi tuyến do
-    // bot mua hỗn hợp món khác đi) ⇒ tăng vốn không phải đòn bẩy; giữ 360k. Muốn sâu hơn phải làm
-    // cơ chế thay-món khi hết hàng / chỉnh cầu-mix — đề xuất thiết kế riêng, không tune theo 1 lần chạy.
-    expect(stock, 'ngày 1 mất quá nhiều khách vì hết hàng — xem lại vốn/cầu ngày đầu (review R2)').toBeLessThanOrEqual(17);
+    // Trần = mức đo: GĐ1827 vốn 360k không có thay-món → 17; GĐ1829 có cơ chế thay-món
+    // (OpenSpec khach-thay-mon-het-hang) → đo lặp 11–12 (jitter async như ghi ở economySimL50).
+    // Trước vốn 280k đo 28/55 lượt. Chỉ được giảm.
+    expect(stock, 'ngày 1 mất quá nhiều khách vì hết hàng — cơ chế thay món bị hỏng? (review R2)').toBeLessThanOrEqual(12);
   }, 600_000);
 
-  it('GĐ1828 — đo nhiều mức vốn để chọn vốn ngày đầu (in bảng, không assert cứng)', async () => {
+  it('GĐ1828/1829 — đo nhiều mức vốn (đã có cơ chế thay-món; in bảng, không assert cứng)', async () => {
     vi.spyOn(Math, 'random').mockImplementation(mulberry32(20261108));
     const out: string[] = [];
     for (const cap of [360_000, 400_000, 420_000, 450_000, 480_000]) {

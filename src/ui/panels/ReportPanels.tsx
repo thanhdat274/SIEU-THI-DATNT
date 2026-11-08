@@ -622,6 +622,11 @@ export function SummaryPanel({ day }: { day: number }) {
               {more ? '🔺 Ẩn phần nâng cao' : '🔎 Xem phần nâng cao (kỷ lục, ca đêm, thanh toán, giờ bán...)'}
             </button>
           )}
+          {(st.substituted ?? 0) > 0 && (
+            <p style={{ margin: '6px 0 0', fontSize: 12, opacity: 0.85 }}>
+              🔄 Đã cứu {st.substituted} lượt nhờ khách nhận món thay — vẫn nên châm kệ đủ.
+            </p>
+          )}
           {expiryTips.length > 0 && (
             <AdviceCard title={`🥀 Hàng sắp hỏng (${expiring.reduce((n, l) => n + l.qty, 0)} món)`} items={expiryTips} onAct={act} />
           )}

@@ -11,6 +11,7 @@ import { tierMarkdown, fitLots, nearestLife, nearExpiryRefuseChance } from '../d
 import { demandPriceFactor, keepChance } from '../data/pricing';
 import { CUNG_GOODS, CUNG_PULL, isXoiCungDay } from '../data/tiemXoi';
 import { dayEffects, isWeekend, OFF_SEASON_CLEARANCE, OFF_SEASON_HUNT, offSeason } from '../data/calendar';
+import { chooseSubstitute } from '../data/substitute';
 import { COOKED_PRODUCT_IDS, RECIPES } from '../data/recipes';
 import { NEIGHBOR_ONLY_IDS } from '../data/homemade';
 import { REGION_IDS } from '../data/regionSpecialty';
@@ -526,10 +527,25 @@ export class CustomerManager {
           c.basket.push({ id: want, price });
           this.pullCombo(c, want);
         } else {
-          c.missing++;
-          c.missed.push({ id: want, why: 'stock' });
-          st.noteMiss('stock', want);
-          c.say(`❓ Hết ${shortName}!`);
+          // GĐ1829 — OpenSpec khach-thay-mon-het-hang: hết món muốn thì khách nhìn trên CÙNG KỆ
+          // lấy món khác giá không vượt dung sai (SUBSTITUTE_CHANCE ~60%, tất định simRng).
+          // Phải đứng trước một kệ thật (shelfUid hợp lệ) mới "nhìn thấy" hàng để thay.
+          const shelfF2 = shelfUid !== undefined ? st.furniture.find((x) => x.uid === shelfUid) : undefined;
+          const hotIds = new Set([...trending(st.day, st.level), ...dayEffects(st.weatherSeed, st.day, st.level).hot]);
+          const sub = chooseSubstitute(want, shelfF2, st.priceOf, hotIds, simRng());
+          const subPrice = sub !== null ? st.takeFromShelf(sub, shelfUid) : null;
+          if (sub !== null && subPrice !== null) {
+            c.basket.push({ id: sub, price: subPrice });
+            this.pullCombo(c, sub);
+            c.say('🔄 Lấy món này thay!');
+            const g2 = useGame.getState();
+            useGame.setState({ stats: { ...g2.stats, substituted: (g2.stats.substituted ?? 0) + 1 } });
+          } else {
+            c.missing++;
+            c.missed.push({ id: want, why: 'stock' });
+            st.noteMiss('stock', want);
+            c.say(`❓ Hết ${shortName}!`);
+          }
         }
       });
     }

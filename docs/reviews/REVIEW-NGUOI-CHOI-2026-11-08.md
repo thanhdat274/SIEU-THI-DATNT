@@ -197,3 +197,21 @@ Ngày 1 chơi được trọn vòng cốt lõi **nhập → bày → mở cửa 
 **Kết luận:** lỡ-bán **không giảm đều theo vốn** (phi tuyến — vốn khác → bot/người chơi mua hỗn hợp món khác, món cạn trước khác). "Tăng vốn" không phải đòn bẩy đáng tin; chọn vốn theo một lần chạy nhiễu là tune bề mặt. Giữ **360k**, guard trần **≤17** giữ nguyên.
 
 **R2 → ĐÓNG.** Muốn giảm sâu hơn nữa (dưới ~10) phải làm cơ chế thật: khách **thay món khi món thèm hết hàng** (substitution) hoặc chỉnh cầu-mix ngày đầu — đây là đề xuất thiết kế riêng (chạm economySimL50 đang sát biên), không nằm trong scope sửa review.
+
+## Hạ mục GĐ1829 — cơ chế "khách thay món khi hết hàng" đã áp dụng (OpenSpec `khach-thay-mon-het-hang`)
+
+Kết quả đo trên save trắng + autoplay (seed cố định, `substituteFlow.test.ts`):
+
+| Chỉ số | Trước (GĐ1827) | Sau (GĐ1829) |
+|---|---|---|
+| Lỡ vì hết hàng ngày 1 | 17 | **11** (guard khoá ≤12) |
+| Món bán ngày 1 | 77 | **89** |
+| Doanh thu ngày 1 | 515.000đ | **695.000đ** |
+| Lượt khách nhận món thay | — | 12 |
+
+- Guard `reviewR2Day1.test.ts` hạ trần 17 → **12** (mức đo lặp 11–12, jitter async như economySimL50).
+- `economySimL50` vẫn xanh (3 nhiệm vụ xương sống 25/28 ≥ ngưỡng 22).
+- Sổ tổng kết thêm dòng "🔄 Đã cứu X lượt nhờ khách nhận món thay — vẫn nên châm kệ đủ" (X > 0 mới hiện).
+- Hàng hoá ngoài kệ khách đang đứng, món đắt quá 1,5× giá món muốn, và kệ trống thì vẫn lỡ như cũ — bài học châm kệ được giữ.
+
+**R2 chính thức đóng ở mức cơ chế.**

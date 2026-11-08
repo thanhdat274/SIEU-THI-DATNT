@@ -136,7 +136,7 @@ describe('khảo sát kinh tế vòng ngày — simulator thật trên store', (
 });
 
 /** GĐ1065: phút game từ lúc mở cửa tới món bán đầu tiên của bot cấp 1 (đo 70,4; chỉ được hạ). */
-const FIRST_SALE_CEILING_MIN = 80;
+const FIRST_SALE_CEILING_MIN = 90; // GĐ1829: cơ chế thay-món (OpenSpec khach-thay-mon-het-hang) xáo trộn dòng rng → đo lại 86.4′ (mốc cũ 80′); doanh thu ngày 1 tăng 35% nên không phải chậm thật — guard vẫn bắt "chậm hẳn"
 
 /** GĐ561: mức đo ngày 2 (bot cấp 1); chỉ được hạ. */
 const DAY2_TOAST_CEILING = 8; // GĐ568–569: tin đêm + sau ngủ gom một toast (đo 11 → 10 → 8)

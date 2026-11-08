@@ -5,8 +5,10 @@ import type { ReviewReason } from '../data/reviews';
 
 export interface DayStats {
   /** GĐ1584 — số lần tặng quà khách quen trong ngày (tuỳ chọn, save cũ = 0). */
-  gifts?: number;
+  gifts?: number;
   clawWins?: number; // GĐ1592 — số lần gắp trúng thú bông hôm nay (chỉ đếm)
+  /** GĐ1829 — OpenSpec khach-thay-mon-het-hang: số lượt khách nhận món thay trên cùng kệ (chỉ đếm). */
+  substituted?: number;
   revenue: number;
   spent: number;
   wages: number;

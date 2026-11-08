@@ -3,7 +3,7 @@ import { setSurpriseSuppressed } from '../core/bizStory';
 import { dailyQuests, betStatus } from '../data/quests';
 import { furnitureDef, FURNITURE } from '../data/furniture';
 import { FEATURES } from '../data/levels';
-import { unlockedProducts } from '../data/products';
+import { unlockedProducts, productById } from '../data/products';
 import { takeLoan } from '../core/biz';
 import { LOAN_OPTIONS_MIN } from '../data/biz';
 import { SHOP_TIERS } from '../data/shopTiers';
@@ -64,7 +64,14 @@ export function createAutoplay(
       f.tiers.forEach((tier, i) => {
         const id = tier.productId ?? ok[kk++ % ok.length].id;
         const need = def.capacity * 2 - tier.count - (st().storage[id] ?? 0);
-        if (need > 0 && st().money > 200000) st().buy(id, Math.min(need, 50));
+        if (need > 0 && st().money > 200000) {
+          // GĐ1829: mua lượng VỪA tiền (chừa 100k dự phòng thuê/nhà) — bot cẩn thận như người chơi
+          // thật, hết spam "Không đủ tiền!" khi doanh thu thay-món (OpenSpec khach-thay-mon-het-hang)
+          // làm bot thử mua nhiều hơn sức tiền.
+          const unit = productById(id).buy;
+          const qty = Math.min(need, 50, Math.floor((st().money - 50_000) / Math.max(1, unit)));
+          if (qty > 0) st().buy(id, qty);
+        }
         // Tầng đã đầy đúng món: bỏ qua — stockTier không đổi gì nhưng vẫn kích dựng lại 3D cả kệ (~40% thời gian sim)
         if (tier.productId === id && tier.count >= def.capacity) return;
         st().stockTier(f.uid, i, id);

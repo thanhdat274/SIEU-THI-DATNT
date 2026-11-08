@@ -47,7 +47,10 @@ const GOLDEN: Record<number, Snap> = {
   // GĐ1507: sửa bug elapsed=0 của maybeSurprise + GĐ1506 kiểm tra vệ sinh sống lại → pool sự kiện
   // một-phát bắn (thêm lượt gieo pick) + inspect phạt/quét sàn trong sim → chuỗi kinh tế dịch có chủ ý.
   // Bot không chooseSurprise — mọi lệch là gián tiếp qua chuỗi rng + dirt sạch hơn (kéo khách).
-  30: { money: 27_553_978, level: 31, xp: 1260, profit: [-16_586_000, -8_949_000, -2_020_000], quest: [2_145_000, 98_444, 110_224] },
+  // GĐ1829: cơ chế khách thay món khi hết hàng (OpenSpec khach-thay-mon-het-hang) — doanh thu/XP tăng
+  // CÓ CHỦ Ý (thay 12 lượt ngày 1; L30 3 ngày money +8.7%, xp 1260→2379) → chép lại mốc theo quy trình
+  // "đổi kinh tế có chủ ý" ghi ở đầu file.
+  30: { money: 29_957_787, level: 31, xp: 2379, profit: [-15_995_000, -9_098_000, -369_000], quest: [2_145_000, 167_108, 199_168] },
 };
 
 async function run(level: number, days: number): Promise<Snap> {
