@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (07/11/2026)
+- GĐ1745: QA trình duyệt Chè gấc (44, 6×14k) + Kem sữa dê (45, 8×13k) — nạp đúng, không lỗi console.
 - GĐ1744: món Kem sữa dê (máy xay, mở 45; sữa dê + đường → 8×13k) — lối ra bếp thứ 2 cho sữa dê (sau sữa chua dê); test trong fruitOutletDishes.
 - GĐ1743: guard cropOutlets mở rộng sang 7 sản phẩm vật nuôi — mỗi loại ≥2 lối ra chế biến.
 - GĐ1742: guard test cropOutlets — mỗi cây trồng (21 loại) có ≥2 lối ra chế biến (bếp + quán).
