@@ -119,6 +119,11 @@ export const PARTY_ORDERS: PartyOrderDef[] = [
     description: 'Nhà cô Sáu làm đám hỏi cho con gái, đặt bò xào sả đãi nhà trai — nấu đủ phần trước ngày rước.',
     items: { bo_xao_sa: 16 }, bonus: 380000, xp: 190,
   },
+  {
+    id: 'tan_gia_goi_buoi', icon: '🏠', title: 'Tiệc tân gia', from: 'Anh Hai mới dọn về hẻm', unlock: 42, days: 3,
+    description: 'Anh Hai mới dọn nhà về hẻm, mở tiệc tân gia ra mắt hàng xóm — đặt gỏi bưởi tôm làm món khai vị.',
+    items: { goi_buoi_tom: 16 }, bonus: 200000, xp: 150,
+  },
   // Đơn riêng theo câu chuyện từng khách quen
   {
     id: 'xoi_dam_gio', icon: '🍙', title: 'Mẻ xôi đám giỗ', from: regularById('ba_nam')!.name, regular: 'ba_nam', unlock: 12, days: 2,
