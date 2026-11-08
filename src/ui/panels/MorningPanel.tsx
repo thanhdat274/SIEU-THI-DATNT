@@ -11,6 +11,7 @@ import { TIEM_XOI_WAGE } from '../../data/tiemXoi';
 import { quanNuocHealth } from '../../data/quanNuocInsights';
 import { expiringSoon, expiryAdvice } from '../../data/advice';
 import { dateOfDoy, dayEffects, dayOfYear, upcomingFestival, weekdayOf } from '../../data/calendar';
+import { Footer, IS_MOBILE, styles } from './shared';
 import { festivalValue } from '../../data/festivalValue';
 import { itemHealthList, shelfAttention, shelfCount } from '../../data/analytics';
 import { comboDaySnapshot, resetComboDay } from '../../core/slices/comboDay';
@@ -57,7 +58,7 @@ import { SickShelvesCard, YesterCombosCard } from './MorningWarnCards';
 import { SolvencyCard, LoanBurdenCard, DailyBurnCard } from './MorningFinanceCards';
 import { ButcherCard, HuiCard } from './MorningMeatHuiCards';
 import { BranchChoresCard, HiepLucCard } from './MorningBranchCards';
-import { Footer, styles } from './shared';
+
 
 
 
@@ -188,7 +189,11 @@ export function MorningPanel() {
   });
   return (
     <>
-      <h2 style={styles.title}>☀️ {shopName} · Sổ đầu ngày {day} ({today.day}/{today.month}) · {weekdayOf(day)}</h2>
+      {/* GĐ1836 (review đợt 4 R5, tái xuất Đ1): mobile 375px tiêu đề đầy đủ bọc 3 dòng — bản mobile
+          chỉ còn phần thay đổi theo ngày, tên tiệm/thứ để cho khung desktop */}
+      <h2 style={styles.title}>{IS_MOBILE
+        ? <>☀️ Sổ đầu ngày {day} ({today.day}/{today.month})</>
+        : <>☀️ {shopName} · Sổ đầu ngày {day} ({today.day}/{today.month}) · {weekdayOf(day)}</>}</h2>
       <MorningSubtitle weatherSeed={weatherSeed} day={day} weather={weather} tomorrow={forecast[0]} level={level} rent={rentOf(shopTier)}
         autoNote={autoOpenNote(autoOpenAt, autoRoutine, cashierOpensMorning(staff))} />
       {/* GĐ565: tin sáng đầy đủ — toast chỉ hiện 3 giây và gộp '+N tin' */}
