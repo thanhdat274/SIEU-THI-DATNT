@@ -5,7 +5,8 @@ import { furnitureDef, type FurnitureType } from '../data/furniture';
 import { fitLots, nearestLife, tierMarkdown } from '../data/freshness';
 import { describeUnits, productById, unlockedProducts } from '../data/products';
 import { topSellerCandidate } from '../data/todayScore';
-import { allowedForType, pickForShelf } from '../data/planogram';
+import { allowedForType, fillPlanForShelf, pickForShelf } from '../data/planogram';
+import { dayEffects, festivalStock } from '../data/calendar';
 import { nextGoldenPrep } from '../data/rhythm';
 import { Footer } from './panels/shared';
 
@@ -20,20 +21,16 @@ const allowed = (f: Furniture, cache: ReadonlyMap<string, import('../data/produc
   return cache.get(def.name) ?? [];
 };
 
-/** Bày đầy một kệ: ô đã gán món thì châm thêm, ô chưa gán thì tự chọn món từ kho (pickForShelf, GĐ1236).
- *  Chỉ tìm kệ 1 lần (không `find` từng ô → tránh O(tiers×kệ) khi nhiều kệ), tính danh sách món 1 lần/tầng.
- *  `hot` = tập món đang bán chạy hôm nay (GĐ1237) để châm đúng đồ khách đang cần. */
+/** Bày đầy một kệ: ô đã gán món thì châm thêm, ô trống lấy kế hoạch từ fillPlanForShelf (GĐ1837 —
+ *  từng ô một quyết định, đa dạng theo kho ảo, không còn dồn một món hết mọi ô trống).
+ *  `hot` = món đang bán chạy hôm nay (GĐ1237) + hàng hút theo lễ hội (GĐ1837). */
 function fillFixture(uid: number, furniture: Furniture[], storage: Record<string, number>, stockTier: (uid: number, i: number, id: string | null) => void, cache: ReadonlyMap<string, import('../data/products').Product[]>, hot: ReadonlySet<string>) {
   const fixture = furniture.find((f) => f.uid === uid);
   if (!fixture) return;
-  const allowedList = allowed(fixture, cache);
-  // Các ô trống của MỘT kệ có chung quyết định "chọn món nào" (caption/ưu tiên kho/độ hot không đổi trong lượt bày này)
-  // → tính 1 lần thay vì `pickForShelf` (lọc+sắp mảng) cho từng ô, tránh O(tiers×món) khi nhiều kệ. GĐ1236.
-  const pick = pickForShelf(fixture, storage, allowedList, hot);
+  const plan = fillPlanForShelf(fixture, storage, allowed(fixture, cache), hot);
   const cap = furnitureDef(fixture.type).capacity;
-  fixture.tiers.forEach((_, i) => {
-    const t = fixture.tiers[i];
-    const id = t.productId ?? pick;
+  fixture.tiers.forEach((t, i) => {
+    const id = plan[i];
     if (id && (storage[id] ?? 0) > 0 && t.count < cap) stockTier(uid, i, id);
   });
 }
@@ -58,6 +55,7 @@ export function PlanogramPanel() {
 
   // Cache unlocked products và allowed per type — chỉ tính 1 lần mỗi level thay đổi
   const level = useGame((s) => s.level);
+  const day = useGame((s) => s.day); // GĐ1837: hot set gồm cả hàng hút lễ hội (theo ngày)
   const unlocked = useMemo(() => unlockedProducts(level), [level]);
   const typeProducts = useMemo(() => {
     const map = new Map<string, import('../data/products').Product[]>();
@@ -78,15 +76,22 @@ export function PlanogramPanel() {
   // GĐ1237 — món đang BÁN CHẠY hôm nay: `stats.byItem` cập nhật mỗi lượt bán (cùng nguồn todayTopSeller GĐ1232).
   // Lấy top-5 món bán nhiều nhất còn tồn kho → tự chọn/bày đầy ưu tiên châm đúng đồ khách đang cần.
   const byItem = useGame((s) => s.stats?.byItem);
+  const weatherSeed = useGame((s) => s.weatherSeed);
   const hotIds = useMemo(() => {
-    if (!byItem) return new Set<string>();
-    return new Set(
-      Object.keys(byItem)
-        .filter((id) => (byItem[id]?.qty ?? 0) > 0)
-        .sort((a, b) => (byItem[b]?.qty ?? 0) - (byItem[a]?.qty ?? 0))
-        .slice(0, 5),
+    const base = new Set<string>(
+      byItem
+        ? Object.keys(byItem)
+            .filter((id) => (byItem[id]?.qty ?? 0) > 0)
+            .sort((a, b) => (byItem[b]?.qty ?? 0) - (byItem[a]?.qty ?? 0))
+            .slice(0, 5)
+        : [],
     );
-  }, [byItem]);
+    // GĐ1837 (review đợt 2 R6/Đ3-R5): hàng hút theo lễ hội (dự báo) cũng là "hot" — bánh kẹo Tết
+    // phải được bày ngay cả khi hôm nay chưa bán được món nào (chưa có số liệu top-5).
+    const f = dayEffects(weatherSeed, day, level).festival;
+    if (f) for (const id of festivalStock(f, level)) base.add(id);
+    return base;
+  }, [byItem, weatherSeed, day, level]);
   const canFill = (f: Furniture, i: number) => {
     const t = f.tiers[i];
     if (t.count >= furnitureDef(f.type).capacity) return false;
