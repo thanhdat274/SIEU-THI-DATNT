@@ -26,3 +26,13 @@ describe.each([
     expect(def.favorites[0]).not.toBe(pid);
   });
 });
+
+// GĐ1795 — trần: tổng món nấu trong favorites khách quen ≤ 12. GĐ1794 thêm tới 15 làm
+// economySimL50 tụt dưới ngưỡng (21/22) — muốn thêm phải kiểm lại sim cấp 50.
+import { COOKED_PRODUCT_IDS } from '../data/recipes';
+describe('trần món nấu trong favorites khách quen (GĐ1795)', () => {
+  it('≤ 12', () => {
+    const n = REGULARS.reduce((s, r) => s + r.favorites.filter((i) => COOKED_PRODUCT_IDS.has(i)).length, 0);
+    expect(n).toBeLessThanOrEqual(12);
+  });
+});
