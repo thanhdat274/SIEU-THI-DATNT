@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { RECIPE_MAP, RECIPES, COOKED_PRODUCTS } from '../data/recipes';
 import { productById } from '../data/products';
 import { FESTIVALS } from '../data/calendar';
+import { PROFESSIONS } from '../data/professions';
 
 // GĐ1728 + GĐ1730 (gộp GĐ1731): lối ra bếp thứ hai cho trái cây trồng.
 const CASES: [string, string, string[]][] = [
@@ -28,5 +29,12 @@ describe.each(CASES)('%s', (rid, out, ings) => {
 describe('Tết hút gỏi bưởi tôm', () => {
   it('goi_buoi_tom trong hot Tết Nguyên Đán', () => {
     expect(FESTIVALS.find((f) => f.id === 'tet')!.hot).toContain('goi_buoi_tom');
+  });
+});
+
+// GĐ1732: học sinh mua mít chiên giòn ăn vặt sau giờ học.
+describe('học sinh thích mít chiên giòn', () => {
+  it('likes của student_highschool có mit_chien_gion', () => {
+    expect(PROFESSIONS.find((p) => p.id === 'student_highschool')!.likes).toContain('mit_chien_gion');
   });
 });

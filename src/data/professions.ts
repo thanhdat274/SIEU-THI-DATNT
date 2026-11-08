@@ -133,7 +133,7 @@ export const PROFESSIONS: ProfessionDef[] = [
   {
     id: 'student_highschool', name: 'Học sinh cấp 3', icon: '🎒', archetype: 'student_boy',
     hours: [h(11, 11.5), h(15, 17.5)],
-    likes: ['banh', 'bimbim', 'ngot', 'nuoc', 'x_chuoi', 'che_dau_xanh', 'banh_trang_tron', 'tra_sua', 'ca_vien_chien'],
+    likes: ['banh', 'bimbim', 'ngot', 'nuoc', 'x_chuoi', 'che_dau_xanh', 'banh_trang_tron', 'tra_sua', 'ca_vien_chien', 'mit_chien_gion'],
     loyalty: 0.8, extraItems: 0, sensitivity: 1.4, patience: 1.0,
   },
   {
