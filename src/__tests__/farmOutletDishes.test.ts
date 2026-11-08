@@ -57,3 +57,10 @@ describe('Mùa hè hút vải/nhãn đá xay', () => {
     expect(FESTIVALS.find((f) => f.id === 'he')!.hot).toContain(id);
   });
 });
+
+// GĐ1748: gấc đỏ là màu Tết → chè gấc hot Tết Nguyên Đán.
+describe('Tết hút chè gấc', () => {
+  it('che_gac trong hot tet', () => {
+    expect(FESTIVALS.find((f) => f.id === 'tet')!.hot).toContain('che_gac');
+  });
+});
