@@ -77,11 +77,12 @@ export { FRANTIC_AT, IMPATIENT_AT, impatienceEmoji };
 
 const pick = <T,>(list: T[]) => list[Math.floor(simRng()() * list.length)];
 
+import { SHOP_HOURS } from '../data/shopHours';
 const EDGE_X = 38;
-const OPEN_FROM = 6 * 60;
+const OPEN_FROM = SHOP_HOURS.grocery.from;
 /** Trần khoảng chờ khách kế tiếp (phút game) khi vừa sang giờ mở — khách đầu ngày không đợi phần dư của đêm. */
 const DAYTIME_FIRST_GAP_CAP = 20;
-const OPEN_UNTIL = 22 * 60;
+const OPEN_UNTIL = SHOP_HOURS.grocery.to;
 /** Tỉ lệ khách muốn mua món đang có trên kệ (còn lại là món ngẫu nhiên, có thể tiệm không bán). */
 const WANTS_STOCKED = 0.8;
 
