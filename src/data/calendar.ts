@@ -55,7 +55,7 @@ export const FESTIVAL_NOTICE_DAYS = 3;
 
 /** Lễ hội theo ngày tháng thật trong năm (từ = ngày trong năm 0-based, gồm cả hai đầu). */
 export const FESTIVALS: Festival[] = [
-  { id: 'tet_duong', icon: '🎆', name: 'Tết dương lịch', blurb: 'Năm mới đầu hẻm, nhà nào cũng có tiệc nhỏ: bia nước bánh kẹo hút hàng.', from: md(1, 1), to: md(1, 2), traffic: 1.2, hot: ['bia', 'ngot', 'banh', 'sua', 'lau_vien_thap_cam', 'banh_bao_kim_sa'], cost: 1.03, host: 'bac_tam' },
+  { id: 'tet_duong', icon: '🎆', name: 'Tết dương lịch', blurb: 'Năm mới đầu hẻm, nhà nào cũng có tiệc nhỏ: bia nước bánh kẹo hút hàng.', from: md(1, 1), to: md(1, 2), traffic: 1.2, hot: ['bia', 'ngot', 'banh', 'sua', 'lau_vien_thap_cam', 'banh_bao_kim_sa', 'bo_nhat_nuong_muoi'], cost: 1.03, host: 'bac_tam' },
   { id: 'tet', icon: '🧧', name: 'Tết Nguyên Đán', blurb: 'Bà con sắm Tết rầm rộ, mua cả giỏ quà; mối nhập tăng giá mạnh, bán giá cao vẫn hết.', from: md(1, 28), to: md(2, 8), traffic: 1.7, goods: ['x_banh_chung', 'x_bao_li_xi', 'x_mut_dua', 'x_hat_dua', 'gio_qua_tet', 'banh_chung_tu'], hot: ['banh', 'ngot', 'bia', 'gao', 'dauan', 'giavi', 'traicay', 'thit', 'hat', 'quatet', 'nuocmam', 'gio_qua_tet', 'banh_chung_tu', 'xoi_gac', 'hx_mut_gung', 'goi_buoi_tom', 'che_gac'], cost: 1.2, pull: 0.55, tolerance: 0.5 },
   // GĐ1346: thêm Giỏ quà Valentine vào goods + hot của dịp (đổi lịch lễ CÓ CHỦ Ý theo giỏ mới —
   // khớp bất biến communityIntegrity: món lễ phải bán được đúng mùa).
@@ -73,7 +73,7 @@ export const FESTIVALS: Festival[] = [
   { id: 'mua_mua', icon: '🌧️', name: 'Mùa mưa', blurb: 'Mưa dầm cả tháng: áo mưa, ô, mì gói và trà nóng bán đều tay.', from: md(10, 1), to: md(10, 31), traffic: 1, hot: ['aomua', 'o', 'mi', 'trung', 'sua', 'caphe', 'che_troi_nuoc', 'chao_ga', 'canh_suon_bi_do'], cost: 1.03 },
   { id: 'hoi_phu_nu', icon: '🎀', name: 'Ngày hội phụ nữ', blurb: 'Chị em sắm trái cây, bánh, trà, sữa chua làm quà.', from: md(11, 14), to: md(11, 15), traffic: 1.15, hot: ['traicay', 'banh', 'tra', 'suachua', 'sinh_to_dua_hau', 'kem_dua', 'sinh_to_du_du'], cost: 1, host: 'co_nga_hoi' },
   { id: 'nha_giao', icon: '🌸', name: 'Nhà giáo Việt Nam 20/11', blurb: 'Học sinh mua bánh, trái cây, mỹ phẩm tặng cô; chợ hoa rực rỡ.', from: md(11, 19), to: md(11, 21), traffic: 1.15, goods: ['gio_qua_2011'], hot: ['mypham', 'banh', 'traicay', 'sua', 'tra', 'vo', 'gio_qua_2011', 'hop_qua_tra_banh_quy', 'o_mai_chanh_me'], cost: 1.02 },
-  { id: 'hoi_banh', icon: '🧁', name: 'Hội thi làm bánh', blurb: 'Cả xóm thi làm bánh: sữa, trứng, đường hút hàng.', from: md(12, 3), to: md(12, 4), traffic: 1.1, hot: ['sua', 'trung', 'x_duong', 'sua_tuoi', 'trung_goos', 'banh_flan', 'banh_bao_cha_bong'], cost: 1, host: 'co_thao_quen' },
+  { id: 'hoi_banh', icon: '🧁', name: 'Hội thi làm bánh', blurb: 'Cả xóm thi làm bánh: sữa, trứng, đường hút hàng.', from: md(12, 3), to: md(12, 4), traffic: 1.1, hot: ['sua', 'trung', 'x_duong', 'sua_tuoi', 'trung_goos', 'banh_flan', 'banh_bao_cha_bong', 'banh_mi_bo_toi'], cost: 1, host: 'co_thao_quen' },
   { id: 'sale_cuoi_nam', icon: '🛒', name: 'Sale cuối năm', blurb: 'Các mối xả hàng trước Tết nên nhập rẻ, cả xóm tranh thủ sắm sớm.', from: md(12, 10), to: md(12, 15), traffic: 1.3, hot: ['mi', 'nuoc', 'banh', 'ngot', 'sua', 'giay', 'xaphong', 'botgiat'], cost: 0.93, pull: 0.3, tolerance: 0.85 },
   // GĐ1345: thêm Giỏ quà Giáng sinh vào goods + hot của dịp (đổi lịch lễ CÓ CHỦ Ý theo giỏ mới —
   // khớp bất biến communityIntegrity: món lễ phải bán được đúng mùa như 4 giỏ Tết/8-3/20-11/Trung thu).
