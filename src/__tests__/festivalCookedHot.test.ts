@@ -8,6 +8,9 @@ describe.each([
   ['giang_sinh', 'ga_nuong_mat_ong'],
   ['bong_da_phuong', 'canh_ga_chien_mam'],
   ['hoi_banh', 'banh_flan'],
+  ['cho_dem', 'banh_trang_nuong'],
+  ['tet_duong', 'lau_vien_thap_cam'],
+  ['khai_giang', 'banh_mi_que'],
 ])('lễ %s hot %s (GĐ1774)', (fid, pid) => {
   it('món là món nấu và có trong hot', () => {
     expect(COOKED_PRODUCT_IDS.has(pid)).toBe(true);
