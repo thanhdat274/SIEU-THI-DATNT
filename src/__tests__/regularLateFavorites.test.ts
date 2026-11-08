@@ -11,11 +11,15 @@ describe.each([
   ['bac_tam', 'tra_atiso_nau'],
   ['bac_hung_me', 'hut_tieu_nam_vang'],
   ['chu_tu_ho', 'ga_xao_sa'],
+  ['thang_barber', 'banh_bao_kim_sa'],
+  ['co_mai_bar', 'ca_phe_phin_sua'],
+  ['bac_si_hai', 'chao_ga'],
+  ['anh_giao_ngan', 'banh_mi_jambon'],
 ])('%s thích %s (GĐ1789)', (rid, pid) => {
   const def = REGULARS.find((r) => r.id === rid)!;
-  it('cấp 30 chưa có, cấp 60 có', () => {
+  it('cấp 30 chưa có, cấp 90 có', () => {
     expect(unlockedFavorites(def, 30)).not.toContain(pid);
-    expect(unlockedFavorites(def, 60)).toContain(pid);
+    expect(unlockedFavorites(def, 90)).toContain(pid);
   });
   it('món đầu (gợi ý sinh nhật) giữ nguyên món cơ bản', () => {
     expect(def.favorites[0]).not.toBe(pid);
