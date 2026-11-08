@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (07/11/2026)
+- GĐ1803: Ngày hội xóm có mít chiên giòn trong hot list; test 5478/5478.
 - GĐ1802: Giáng sinh trời lạnh có cà phê trứng trong hot list; test 5477/5477.
 - GĐ1801: Lễ hội làng nấu cỗ có thịt kho trứng trong hot list; test 5476/5476.
 - GĐ1800: QA trình duyệt GĐ1797–1799 (43 đơn, Đoàn từ thiện, bún bò giữa buổi, canh chua tối) — không lỗi console.
