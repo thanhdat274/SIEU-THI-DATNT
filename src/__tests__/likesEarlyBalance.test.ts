@@ -18,3 +18,13 @@ describe('like món nấu không chạm cân bằng đầu game (GĐ1765)', () =
     expect(bad).toEqual([]);
   });
 });
+
+// GĐ1773 — sau đợt GĐ1760–1771, mọi nghề (trừ đầu bếp: chỉ mua nguyên liệu) có ≥1 món nấu
+// trong likes → bếp có cầu rõ từ mọi nhóm khách.
+import { COOKED_PRODUCT_IDS } from '../data/recipes';
+describe('mọi nghề có cầu món nấu (GĐ1773)', () => {
+  it('trừ chef, nghề nào cũng thích ≥1 món nấu', () => {
+    const none = PROFESSIONS.filter((p) => p.id !== 'chef' && !p.likes.some((i) => COOKED_PRODUCT_IDS.has(i))).map((p) => p.id);
+    expect(none).toEqual([]);
+  });
+});
