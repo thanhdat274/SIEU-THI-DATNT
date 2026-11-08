@@ -10,3 +10,14 @@ describe('GĐ1669 — hàng hot lễ hội hợp lệ', () => {
     expect(bad).toEqual([]);
   });
 });
+
+// GĐ1749 — chống phình: hot list lễ hội có trần (Tết lớn nhất, 17 mục), không lặp id.
+describe('GĐ1749 — hot list có trần', () => {
+  it('Tết ≤ 18 mục, lễ khác ≤ 10 mục; không lặp id trong cùng lễ', () => {
+    for (const f of FESTIVALS) {
+      const hot = f.hot ?? [];
+      expect(hot.length, f.id).toBeLessThanOrEqual(f.id === 'tet' ? 18 : 10);
+      expect(new Set(hot).size, f.id).toBe(hot.length);
+    }
+  });
+});
