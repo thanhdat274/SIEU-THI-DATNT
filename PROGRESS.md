@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (07/11/2026)
+- GĐ1781: chống phình wants khung giờ — test ≤20 món/khung, không trùng, id có thật (6 khung đạt).
 - GĐ1780: giữa buổi thèm phở bò, bánh cuốn chả lụa; cao điểm tối thèm cá kho tộ, thịt kho trứng (mang về ăn cơm nhà); test timeBandAt.
 - GĐ1779: khung tối muộn (20–22h) khách thèm đồ nhắm — mực khô nướng, cánh gà chiên mắm; test timeBandAt.
 - GĐ1778: QA trình duyệt món nấu hot GĐ1774–1777 — 17/18 lễ có món nấu, tên tra đúng (vd bóng đá → Cánh gà chiên nước mắm), console 0 lỗi.
