@@ -175,7 +175,7 @@ export const PROFESSIONS: ProfessionDef[] = [
   {
     id: 'reporter', name: 'Phóng viên địa phương', icon: '📝', archetype: 'gentleman',
     hours: [h(7, 10), h(14, 17)],
-    likes: ['caphe', 'x_ca_phe_lon', 'tra', 'banh', 'nuoc', 'x_khan_giay'],
+    likes: ['caphe', 'x_ca_phe_lon', 'tra', 'banh', 'nuoc', 'x_khan_giay', 'ca_phe_trung'],
     loyalty: 0.7, extraItems: 0, sensitivity: 0.9, patience: 1.2,
   },
   {
@@ -199,7 +199,7 @@ export const PROFESSIONS: ProfessionDef[] = [
   {
     id: 'fisherman', name: 'Ngư dân', icon: '🎣', archetype: 'fisherman',
     hours: [h(3.5, 7), h(16, 18)],
-    likes: ['nuoc', 'mi', 'tangluc', 'banhmi', 'x_tra_da', 'x_redbull_lon'],
+    likes: ['nuoc', 'mi', 'tangluc', 'banhmi', 'x_tra_da', 'x_redbull_lon', 'ca_kho_to'],
     loyalty: 0.75, extraItems: 1, sensitivity: 1.3, patience: 0.9,
   },
   {

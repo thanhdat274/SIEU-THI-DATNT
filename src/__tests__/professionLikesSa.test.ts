@@ -5,7 +5,7 @@ import { productById } from '../data/products';
 // GĐ1710–1714 (gộp GĐ1715): chuỗi sả có cầu hằng ngày qua sở thích nghề.
 const CASES: [string, string][] = [
   ['construction', 'ga_xao_sa'], ['farmer', 'ga_xao_sa'], ['soldier', 'ga_xao_sa'],
-  ['mom', 'x_sa'], ['chef', 'x_sa'], ['athlete', 'bo_xao_sa'], ['traffic_police', 'banh_mi_thit'], ['monk', 'che_hat_sen'], ['tailor', 'banh_mi_pate'], ['street_hairstylist', 'banh_trang_nuong'],
+  ['mom', 'x_sa'], ['chef', 'x_sa'], ['athlete', 'bo_xao_sa'], ['traffic_police', 'banh_mi_thit'], ['monk', 'che_hat_sen'], ['tailor', 'banh_mi_pate'], ['street_hairstylist', 'banh_trang_nuong'], ['reporter', 'ca_phe_trung'], ['fisherman', 'ca_kho_to'],
 ];
 
 describe('nghề thích món chuỗi sả', () => {
