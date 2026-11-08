@@ -77,7 +77,7 @@ export const FESTIVALS: Festival[] = [
   { id: 'sale_cuoi_nam', icon: '🛒', name: 'Sale cuối năm', blurb: 'Các mối xả hàng trước Tết nên nhập rẻ, cả xóm tranh thủ sắm sớm.', from: md(12, 10), to: md(12, 15), traffic: 1.3, hot: ['mi', 'nuoc', 'banh', 'ngot', 'sua', 'giay', 'xaphong', 'botgiat'], cost: 0.93, pull: 0.3, tolerance: 0.85 },
   // GĐ1345: thêm Giỏ quà Giáng sinh vào goods + hot của dịp (đổi lịch lễ CÓ CHỦ Ý theo giỏ mới —
   // khớp bất biến communityIntegrity: món lễ phải bán được đúng mùa như 4 giỏ Tết/8-3/20-11/Trung thu).
-  { id: 'giang_sinh', icon: '🎄', name: 'Giáng sinh', blurb: 'Phố đông người đi chơi, bánh kẹo và bia lên ngôi.', from: md(12, 23), to: md(12, 26), traffic: 1.2, goods: ['gio_qua_giang_sinh'], hot: ['banh', 'bia', 'ngot', 'gio_qua_giang_sinh', 'ga_nuong_mat_ong'], cost: 1 },
+  { id: 'giang_sinh', icon: '🎄', name: 'Giáng sinh', blurb: 'Phố đông người đi chơi, bánh kẹo và bia lên ngôi.', from: md(12, 23), to: md(12, 26), traffic: 1.2, goods: ['gio_qua_giang_sinh'], hot: ['banh', 'bia', 'ngot', 'gio_qua_giang_sinh', 'ga_nuong_mat_ong', 'ca_phe_trung'], cost: 1 },
 ];
 
 /** Mọi món chỉ bán theo dịp (bánh chưng, lồng đèn...). */
