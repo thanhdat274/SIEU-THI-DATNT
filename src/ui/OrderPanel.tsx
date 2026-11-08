@@ -464,6 +464,8 @@ export function OrderPanel() {
         {supplier.bulk && ` Mua nhiều: ${supplier.bulk.map((b) => `từ ${b.minCases} thùng một món bớt ${b.discount * 100}%`).join(', ')}.`}
         {' '}Hàng nhập theo thùng, về kho rồi khui ra bày lẻ.
       </p>
+      {day > 1 && <details className="restock-extras" style={{ margin: '4px 0' }}>
+        <summary style={{ cursor: 'pointer', fontSize: 13, padding: '8px 0', minHeight: 44, display: 'flex', alignItems: 'center' }}>ℹ️ Mối quen · giá hôm nay · dự báo · hàng hot (bấm để xem)</summary>
       <div style={{ ...st.banner, ...(showRestockExtras(day) ? null : { display: 'none' }) }}>{/* GĐ319: ngày đầu chỉ dạy nhập-bày-bán */}
         <SupplierRelLine life={biz.supplierRel?.[supplier.id]?.spent ?? 0} monthSpent={biz.supplierRelMonth?.[supplier.id] ?? 0} />
       </div>
@@ -501,6 +503,7 @@ export function OrderPanel() {
       {prodSugg.length > 0 && <ProdSuggCard items={prodSugg} onOpen={(panel) => openPanel({ type: panel })} />}
 
       {hot.length > 0 && day > 1 && <HotWeekBanner hot={hot} hotNextWeek={hotNextWeek} nextSupplierUnlock={unlockedSuppliers.length < SUPPLIERS.length ? SUPPLIERS.find((s) => s.unlock > level)!.unlock : undefined} />}
+      </details>} {/* Đ2-R4: khối phụ gấp mặc định để bảng hàng lên sát đầu */}
 
       {filter === 'suggest' && urgent.length > 0 && showRestockExtras(day) && <UrgentCard rows={urgent.map((r) => ({ id: r.p.id, reason: urgentReason(r), suggest: r.suggest }))} />}
 
