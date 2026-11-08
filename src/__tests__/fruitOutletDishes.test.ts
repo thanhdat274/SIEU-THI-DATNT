@@ -4,7 +4,7 @@ import { productById } from '../data/products';
 import { FESTIVALS } from '../data/calendar';
 import { PROFESSIONS } from '../data/professions';
 
-// GĐ1728 + GĐ1730 (gộp GĐ1731) + GĐ1734 + GĐ1736 + GĐ1737 + GĐ1741: lối ra bếp thứ hai cho trái cây trồng.
+// GĐ1728 + GĐ1730 (gộp GĐ1731) + GĐ1734 + GĐ1736 + GĐ1737 + GĐ1741 + GĐ1744: lối ra bếp thứ hai cho trái cây trồng.
 const CASES: [string, string, string[]][] = [
   ['recipe_goi_buoi_tom', 'goi_buoi_tom', ['x_buoi', 'x_tom_tuoi']],
   ['recipe_mit_chien_gion', 'mit_chien_gion', ['x_mit', 'dauan']],
@@ -12,6 +12,7 @@ const CASES: [string, string, string[]][] = [
   ['recipe_nhan_da_xay', 'nhan_da_xay', ['x_nhan']],
   ['recipe_vai_da_xay', 'vai_da_xay', ['x_vai']],
   ['recipe_che_gac', 'che_gac', ['x_gac']],
+  ['recipe_kem_sua_de', 'kem_sua_de', ['sua_de']],
 ];
 
 describe.each(CASES)('%s', (rid, out, ings) => {

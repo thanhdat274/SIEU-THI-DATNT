@@ -387,6 +387,7 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'nhan_da_xay', name: 'Nhãn đá xay', category: 'fresh', buy: 7500, sell: 15000, color: 0xe9e2b0, unlock: 41 },
   { id: 'vai_da_xay', name: 'Vải đá xay', category: 'fresh', buy: 7500, sell: 15000, color: 0xf3c6cf, unlock: 43 },
   { id: 'che_gac', name: 'Chè gấc', category: 'fresh', buy: 7000, sell: 14000, color: 0xe2452d, unlock: 44 },
+  { id: 'kem_sua_de', name: 'Kem sữa dê', category: 'fresh', buy: 6500, sell: 13000, color: 0xf7f1e3, unlock: 45 },
   // GĐ1429: Trứng xào cà chua — lối ra ĐẦU TIÊN của cà chua.
   { id: 'trung_xao_ca_chua', name: 'Trứng xào cà chua', category: 'fresh', buy: 4000, sell: 8000, color: 0xe85a3a, unlock: 45 },
   // GĐ1429: Rau cải xào tỏi — lối ra ĐẦU TIÊN của rau cải.
@@ -1151,6 +1152,10 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_che_gac', name: 'Chè gấc', station: 'hot_kettle',
     inputs: [{ productId: 'x_gac', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
     outputId: 'che_gac', outputQty: 6, durationMin: 18, unlock: 44, reputationGain: 2 },
+  // GĐ1744: Kem sữa dê — lối ra bếp thứ 2 cho sữa dê trại (sau sữa chua dê): sữa dê + đường ≈ 81k → 8 × 13k = 104k.
+  { id: 'recipe_kem_sua_de', name: 'Kem sữa dê', station: 'blender',
+    inputs: [{ productId: 'sua_de', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
+    outputId: 'kem_sua_de', outputQty: 8, durationMin: 12, unlock: 45, reputationGain: 2 },
   // GĐ1429: Trứng xào cà chua ở chảo chiên. Mở 35 (> golden 30, ≥ cấp nguyên liệu).
   { id: 'recipe_trung_xao_ca_chua', name: 'Trứng xào cà chua', station: 'fryer',
     inputs: [{ productId: 'x_ca_chua', quantity: 1 }, { productId: 'x_trung_ga', quantity: 4 }],
