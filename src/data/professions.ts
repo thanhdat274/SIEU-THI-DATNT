@@ -217,7 +217,7 @@ export const PROFESSIONS: ProfessionDef[] = [
   {
     id: 'online_seller', name: 'Bán hàng online', icon: '📦', archetype: 'online_seller',
     hours: [h(8, 18)],
-    likes: ['x_ta_giay', 'x_bao_goi', 'x_khan_giay', 'x_tui_rac', 'x_tra_da', 'x_khan_uot'],
+    likes: ['x_ta_giay', 'x_bao_goi', 'x_khan_giay', 'x_tui_rac', 'x_tra_da', 'x_khan_uot', 'com_chien_lap_xuong'],
     loyalty: 0.7, extraItems: 2, sensitivity: 1.1, patience: 1.0,
   },
   {
@@ -229,7 +229,7 @@ export const PROFESSIONS: ProfessionDef[] = [
   {
     id: 'pho_vendor', name: 'Chủ quán phở', icon: '🍜', archetype: 'elder_woman',
     hours: [h(4, 8), h(11, 14)],
-    likes: ['mi', 'giavi', 'x_toi', 'x_hanh_kho', 'thit', 'nuocmam', 'caphe'],
+    likes: ['mi', 'giavi', 'x_toi', 'x_hanh_kho', 'thit', 'nuocmam', 'caphe', 'bun_bo_hue'],
     loyalty: 0.8, extraItems: 2, sensitivity: 1.1, patience: 1.2,
   },
   {
