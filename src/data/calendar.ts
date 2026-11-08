@@ -60,7 +60,7 @@ export const FESTIVALS: Festival[] = [
   // GĐ1346: thêm Giỏ quà Valentine vào goods + hot của dịp (đổi lịch lễ CÓ CHỦ Ý theo giỏ mới —
   // khớp bất biến communityIntegrity: món lễ phải bán được đúng mùa).
   { id: 'valentine', icon: '💝', name: 'Lễ Valentine', blurb: 'Cặp đôi đi chơi sắm quà: bánh ngọt, mỹ phẩm, nước ngọt hút hàng.', from: md(2, 13), to: md(2, 14), traffic: 1.15, goods: ['gio_qua_valentine'], hot: ['banh', 'ngot', 'mypham', 'sua', 'ruou', 'gio_qua_valentine', 'kem_dua'], cost: 1.03 },
-  { id: 'le_hoi_lang', icon: '🏮', name: 'Lễ hội làng', blurb: 'Hội làng đầu xuân, nhà nhà nấu cỗ: gạo, dầu ăn, gia vị, nước mắm bán chạy.', from: md(2, 15), to: md(2, 17), traffic: 1.2, hot: ['gao', 'dauan', 'giavi', 'nuocmam', 'xoi_gac', 'ga_xao_sa', 'bo_xao_sa'], cost: 1.03, host: 'bac_doi_hoi' },
+  { id: 'le_hoi_lang', icon: '🏮', name: 'Lễ hội làng', blurb: 'Hội làng đầu xuân, nhà nhà nấu cỗ: gạo, dầu ăn, gia vị, nước mắm bán chạy.', from: md(2, 15), to: md(2, 17), traffic: 1.2, hot: ['gao', 'dauan', 'giavi', 'nuocmam', 'xoi_gac', 'ga_xao_sa', 'bo_xao_sa', 'thit_kho_trung'], cost: 1.03, host: 'bac_doi_hoi' },
   // Ngày hội xóm: ngắn, đẩy mạnh một nhóm hàng
   { id: 'quoc_te_phu_nu', icon: '💐', name: 'Quốc tế Phụ nữ 8/3', blurb: 'Nhà nhà mua hoa, mỹ phẩm, bánh làm quà tặng chị em; khách chịu giá cao.', from: md(3, 7), to: md(3, 9), traffic: 1.25, goods: ['gio_qua_83'], hot: ['mypham', 'banh', 'traicay', 'sua', 'xaphong', 'gio_qua_83', 'sua_chua_trai_cay'], cost: 1.05, pull: 0.35, tolerance: 0.7 },
   { id: 'hoi_xom', icon: '🎪', name: 'Ngày hội xóm', blurb: 'Cả hẻm ra sân chơi, nước và bánh kẹo bán chạy.', from: md(3, 21), to: md(3, 22), traffic: 1.15, hot: ['nuoc', 'ngot', 'banh', 'keomut', 'che_bap'], cost: 1, host: 'bac_tam' },
