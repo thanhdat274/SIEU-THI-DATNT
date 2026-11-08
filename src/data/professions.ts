@@ -117,7 +117,7 @@ export const PROFESSIONS: ProfessionDef[] = [
   {
     id: 'doctor', name: 'Bác sĩ', icon: '🧑‍⚕️', archetype: 'doctor',
     hours: [h(7, 9), h(11.5, 13), h(17.5, 20)],
-    likes: ['caphe', 'x_ca_phe_lon', 'banhmi', 'x_khau_trang', 'x_nuoc_rua_tay', 'sua', 'traicay', 'x_nuoc_dien_giai'],
+    likes: ['caphe', 'x_ca_phe_lon', 'banhmi', 'x_khau_trang', 'x_nuoc_rua_tay', 'sua', 'traicay', 'x_nuoc_dien_giai', 'chao_ga'],
     loyalty: 0.7, extraItems: 0, sensitivity: 0.9, patience: 1.1,
   },
   {
@@ -205,7 +205,7 @@ export const PROFESSIONS: ProfessionDef[] = [
   {
     id: 'fitness_trainer', name: 'Huấn luyện viên gym', icon: '💪', archetype: 'athlete',
     hours: [h(6, 9), h(15, 21)],
-    likes: ['x_nuoc_dien_giai', 'x_pocari_sweat', 'sua', 'x_revive_chai', 'traicay', 'x_yen_mach', 'sinh_to_trai_cay', 'com_hop_ga'],
+    likes: ['x_nuoc_dien_giai', 'x_pocari_sweat', 'sua', 'x_revive_chai', 'traicay', 'x_yen_mach', 'sinh_to_trai_cay', 'com_hop_ga', 'uc_ga_nuong'],
     loyalty: 0.8, extraItems: 0, sensitivity: 0.8, patience: 0.7,
   },
   {
