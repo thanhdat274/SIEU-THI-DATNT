@@ -111,7 +111,7 @@ export const PROFESSIONS: ProfessionDef[] = [
   {
     id: 'barista', name: 'Pha chế quán nước', icon: '☕', archetype: 'barista',
     hours: [h(6, 9), h(13, 15.5), h(19, 22)],
-    likes: ['sua', 'x_sua_dac', 'caphe', 'x_ca_phe_lon', 'x_tra_xanh', 'x_duong', 'sinhto'],
+    likes: ['sua', 'x_sua_dac', 'caphe', 'x_ca_phe_lon', 'x_tra_xanh', 'x_duong', 'sinhto', 'ca_phe_phin_sua'],
     loyalty: 0.7, extraItems: 0, sensitivity: 1, patience: 1,
   },
   {
@@ -145,7 +145,7 @@ export const PROFESSIONS: ProfessionDef[] = [
   {
     id: 'influencer', name: 'Influencer', icon: '📱', archetype: 'influencer',
     hours: [h(9, 12), h(15, 18)],
-    likes: ['x_tra_xanh', 'traicay', 'sinhto', 'banh', 'tra_dao_cam_sa', 'kem_trai_cay', 'tra_sua'],
+    likes: ['x_tra_xanh', 'traicay', 'sinhto', 'banh', 'tra_dao_cam_sa', 'kem_trai_cay', 'tra_sua', 'banh_flan'],
     loyalty: 0.6, extraItems: 1, sensitivity: 0.5, patience: 1.5,
   },
   {
