@@ -144,6 +144,11 @@ export const PARTY_ORDERS: PartyOrderDef[] = [
     description: 'Nhà bác Năm làm giỗ ông, đặt mâm cơm nhà: thịt kho trứng với canh chua cá cho cả họ.',
     items: { thit_kho_trung: 10, canh_chua_ca: 10 }, bonus: 260000, xp: 170,
   },
+  {
+    id: 'hop_lop_cap3', icon: '🎓', title: 'Họp lớp cấp 3', from: 'Nhóm bạn cũ của anh Tuấn', unlock: 44, days: 3,
+    description: 'Mười năm ra trường, nhóm bạn cũ hẹn họp lớp ở nhà anh Tuấn — đặt gỏi cuốn với bánh xèo cuốn ăn chung.',
+    items: { goi_cuon: 12, banh_xeo: 12 }, bonus: 280000, xp: 170,
+  },
   // Đơn riêng theo câu chuyện từng khách quen
   {
     id: 'xoi_dam_gio', icon: '🍙', title: 'Mẻ xôi đám giỗ', from: regularById('ba_nam')!.name, regular: 'ba_nam', unlock: 12, days: 2,
