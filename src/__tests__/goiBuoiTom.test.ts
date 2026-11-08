@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { RECIPE_MAP, RECIPES, COOKED_PRODUCTS } from '../data/recipes';
 import { productById } from '../data/products';
+import { FESTIVALS } from '../data/calendar';
 
 // GĐ1728 — Gỏi bưởi tôm: lối ra bếp thứ hai cho bưởi trồng.
 describe('Gỏi bưởi tôm (GĐ1728)', () => {
@@ -15,5 +16,12 @@ describe('Gỏi bưởi tôm (GĐ1728)', () => {
   it('mẻ lãi hơn bán thẳng nguyên liệu', () => {
     const raw = r.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
     expect(r.outputQty * productById(r.outputId).sell).toBeGreaterThan(raw);
+  });
+});
+
+// GĐ1729: Tết rơi đúng mùa bưởi (12–2) → gỏi bưởi tôm là hàng hot Tết.
+describe('Tết hút gỏi bưởi tôm (GĐ1729)', () => {
+  it('goi_buoi_tom trong hot Tết Nguyên Đán', () => {
+    expect(FESTIVALS.find((f) => f.id === 'tet')!.hot).toContain('goi_buoi_tom');
   });
 });
