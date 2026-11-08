@@ -139,6 +139,11 @@ export const PARTY_ORDERS: PartyOrderDef[] = [
     description: 'Tổ dân phố họp xong ở lại lai rai, đặt gỏi xoài tôm khô làm mồi.',
     items: { goi_xoai_tom_kho: 16 }, bonus: 170000, xp: 130,
   },
+  {
+    id: 'dam_gio_ong', icon: '🕯️', title: 'Đám giỗ ông', from: 'Nhà bác Năm giữa hẻm', unlock: 42, days: 3,
+    description: 'Nhà bác Năm làm giỗ ông, đặt mâm cơm nhà: thịt kho trứng với canh chua cá cho cả họ.',
+    items: { thit_kho_trung: 10, canh_chua_ca: 10 }, bonus: 260000, xp: 170,
+  },
   // Đơn riêng theo câu chuyện từng khách quen
   {
     id: 'xoi_dam_gio', icon: '🍙', title: 'Mẻ xôi đám giỗ', from: regularById('ba_nam')!.name, regular: 'ba_nam', unlock: 12, days: 2,
