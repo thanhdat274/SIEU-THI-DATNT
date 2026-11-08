@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (07/11/2026)
+- GĐ1776: thêm món nấu hot — Valentine kem dừa, ngày hội xóm chè bắp, 20/11 hộp quà trà bánh quy; test describe.each mở rộng.
 - GĐ1775: thêm món nấu hot — chợ đêm bánh tráng nướng, Tết dương lẩu viên thập cẩm, tựu trường bánh mì que; test describe.each mở rộng.
 - GĐ1774: lễ hội có món nấu hot — Giáng sinh gà nướng mật ong, giải bóng đá phường cánh gà chiên mắm, hội thi làm bánh bánh flan; test describe.each.
 - GĐ1773: test bảo đảm mọi nghề (trừ đầu bếp — chỉ mua nguyên liệu) thích ≥1 món nấu; hiện 37/37 đạt.
