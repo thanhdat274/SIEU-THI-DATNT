@@ -28,6 +28,20 @@ export const xpToNext = (level: number) => Math.round(35 * Math.pow(level, 1.25)
 /** Số khách ghé tiệm mỗi ngày (trung bình). */
 export const customersPerDay = (level: number) => 20 + level * 4;
 
+/** Danh hiệu mốc cấp cuối game (100–200): hiện trong lộ trình cấp, khớp thành tựu level_N ở bizAchievements. */
+export const LEVEL_TITLES: Record<number, string> = {
+  110: '🥇 Ông trùm chợ phường',
+  120: '🏯 Vua tạp hóa quận',
+  130: '🚀 Đế chế bán lẻ',
+  140: '🌏 Thương hiệu toàn thành',
+  150: '💎 Huyền thoại kim cương',
+  160: '🗺️ Chuỗi cửa hàng liên tỉnh',
+  170: '🏛️ Tượng đài thương nghiệp',
+  180: '🌠 Ngôi sao Bắc Nam',
+  190: '🔱 Bất tử phố thị',
+  200: '👑 Thánh tạp hóa',
+};
+
 /** Danh sách thứ mở khóa ở một cấp, để báo cho người chơi. */
 export function unlocksAt(level: number): string[] {
   return [
@@ -40,6 +54,7 @@ export function unlocksAt(level: number): string[] {
     ...(level === GARDEN_UNLOCK ? ['🚜 Trang trại đầu ngõ: trồng rau, nuôi gà lấy trứng'] : []),
     ...LAND_TIERS.filter((t, i) => i > 0 && t.unlock === level).map((t) => `Mở rộng trang trại: ${t.name}`),
     ...PAYMENTS.filter((p) => p.unlock === level && level > 1).map((p) => `${p.icon} Thanh toán ${p.name}`),
+    ...(LEVEL_TITLES[level] ? [`Danh hiệu ${LEVEL_TITLES[level]}`] : []),
     ...(level === QUAN_NUOC_UNLOCK ? ['🧋 Quán Nước Đầu Ngõ: xây quán nước ở đầu hẻm, nguyên liệu lấy từ kho'] : []),
   ];
 }
