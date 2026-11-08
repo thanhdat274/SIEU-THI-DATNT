@@ -161,7 +161,7 @@ export const REGULARS: RegularDef[] = [
     id: 'anh_minh_nhau', name: 'Anh Minh quán nhậu', role: 'Chủ quán nhậu cuối hẻm',
     bio: 'Mở quán nhậu bình dân. Tối nào cũng cần bia, nước ngọt với đá; quen mặt nên giới thiệu bạn bè sang.',
     color: 0x2980b9, hatColor: 0x1b2631,
-    look: { archetype: 'gentleman', hairStyle: 'spiky', hair: 0x222222, props: ['beer_crate'], glasses: false }, favorites: ['bia', 'ngot', 'x_nuoc_da', 'snack'],
+    look: { archetype: 'gentleman', hairStyle: 'spiky', hair: 0x222222, props: ['beer_crate'], glasses: false }, favorites: ['bia', 'ngot', 'x_nuoc_da', 'snack', 'muc_kho_nuong'],
     priceSensitivity: 1.15, patienceMinutes: 30, visitFrom: 15 * 60, visitUntil: 19 * 60, unlock: 18,
     lines: { greeting: 'Anh lấy mấy thùng bia với nước ngọt! Tối quán đông khách lắm.', satisfied: 'Quán có bia mát, khách ngồi tới khuya luôn.', walkout: 'Hết bia rồi à? Tối nay quán anh đóng cửa sớm mất.' },
     perks: [

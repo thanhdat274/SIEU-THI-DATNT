@@ -15,6 +15,7 @@ describe.each([
   ['co_mai_bar', 'ca_phe_phin_sua'],
   ['bac_si_hai', 'chao_ga'],
   ['anh_giao_ngan', 'banh_mi_jambon'],
+  ['anh_minh_nhau', 'muc_kho_nuong'],
 ])('%s thích %s (GĐ1789)', (rid, pid) => {
   const def = REGULARS.find((r) => r.id === rid)!;
   it('cấp 30 chưa có, cấp 90 có', () => {
