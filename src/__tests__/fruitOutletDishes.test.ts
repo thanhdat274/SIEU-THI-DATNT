@@ -53,7 +53,7 @@ describe('Lễ 30/4 hút gỏi xoài tôm khô', () => {
 
 // GĐ1739: Mùa hè (6/1–15/8) trùng mùa vải (5–7) và nhãn (7–9) → hai món đá xay hot hè.
 describe('Mùa hè hút vải/nhãn đá xay', () => {
-  it.each(['vai_da_xay', 'nhan_da_xay'])('%s trong hot he', (id) => {
+  it.each(['vai_da_xay', 'nhan_da_xay', 'kem_sua_de'])('%s trong hot he', (id) => {
     expect(FESTIVALS.find((f) => f.id === 'he')!.hot).toContain(id);
   });
 });
