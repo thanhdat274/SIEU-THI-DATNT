@@ -64,3 +64,10 @@ describe('Tết hút chè gấc', () => {
     expect(FESTIVALS.find((f) => f.id === 'tet')!.hot).toContain('che_gac');
   });
 });
+
+// GĐ1750: sinh viên mua vải đá xay giải khát giữa giờ.
+describe('sinh viên thích vải đá xay', () => {
+  it('likes của student_college có vai_da_xay', () => {
+    expect(PROFESSIONS.find((p) => p.id === 'student_college')!.likes).toContain('vai_da_xay');
+  });
+});

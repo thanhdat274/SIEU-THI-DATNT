@@ -139,7 +139,7 @@ export const PROFESSIONS: ProfessionDef[] = [
   {
     id: 'student_college', name: 'Sinh viên', icon: '📚', archetype: 'coder_guy',
     hours: [h(18, 22), h(13, 15)],
-    likes: ['caphe', 'x_ca_phe_lon', 'mi', 'nuoc', 'bimbim', 'x_revive_chai', 'tra_sua', 'mi_trung_nong', 'ca_phe_sua_da', 'ca_vien_chien'],
+    likes: ['caphe', 'x_ca_phe_lon', 'mi', 'nuoc', 'bimbim', 'x_revive_chai', 'tra_sua', 'mi_trung_nong', 'ca_phe_sua_da', 'ca_vien_chien', 'vai_da_xay'],
     loyalty: 0.75, extraItems: 0, sensitivity: 1.2, patience: 1.3,
   },
   {
