@@ -39,7 +39,7 @@ export const PROFESSIONS: ProfessionDef[] = [
   {
     id: 'shipper', name: 'Shipper', icon: '🛵', archetype: 'shipper',
     hours: [h(10.5, 14), h(17, 21)],
-    likes: ['nuoc', 'x_aquafina_chai', 'x_revive_chai', 'x_pocari_sweat', 'x_ao_mua', 'x_sim_dt', 'x_the_cao', 'banhmi', 'nuoc_mia', 'banh_mi_trung_nuong'],
+    likes: ['nuoc', 'x_aquafina_chai', 'x_revive_chai', 'x_pocari_sweat', 'x_ao_mua', 'x_sim_dt', 'x_the_cao', 'banhmi', 'nuoc_mia', 'banh_mi_trung_nuong', 'xoi_lap_xuong_trung'],
     loyalty: 0.8, extraItems: -1, sensitivity: 1, patience: 0.5,
   },
   {
@@ -211,7 +211,7 @@ export const PROFESSIONS: ProfessionDef[] = [
   {
     id: 'office_worker', name: 'Nhân viên văn phòng', icon: '👩‍💼', archetype: 'office_lady',
     hours: [h(7, 9), h(11.5, 13), h(17.5, 19.5)],
-    likes: ['caphe', 'x_ca_phe_lon', 'suachua', 'banhmi', 'nuoc', 'x_tra_xanh', 'traicay', 'com_hop_ga', 'ca_phe_sua_da', 'sinh_to_trai_cay'],
+    likes: ['caphe', 'x_ca_phe_lon', 'suachua', 'banhmi', 'nuoc', 'x_tra_xanh', 'traicay', 'com_hop_ga', 'ca_phe_sua_da', 'sinh_to_trai_cay', 'nuoc_ep_tao'],
     loyalty: 0.75, extraItems: 0, sensitivity: 0.85, patience: 1.1,
   },
   {
