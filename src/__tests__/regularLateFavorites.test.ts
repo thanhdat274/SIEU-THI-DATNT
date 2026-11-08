@@ -1,0 +1,18 @@
+import { describe, expect, it } from 'vitest';
+import { REGULARS, unlockedFavorites } from '../data/regulars';
+
+// GĐ1789 — khách quen có món thích "mở sau" (món nấu cấp >30): đầu game không đổi, cuối game
+// có lý do mới để chiều khách quen.
+describe.each([
+  ['ba_nam', 'ca_phe_trung'],
+  ['anh_tuan', 'mi_y_sot_bo'],
+])('%s thích %s (GĐ1789)', (rid, pid) => {
+  const def = REGULARS.find((r) => r.id === rid)!;
+  it('cấp 30 chưa có, cấp 60 có', () => {
+    expect(unlockedFavorites(def, 30)).not.toContain(pid);
+    expect(unlockedFavorites(def, 60)).toContain(pid);
+  });
+  it('món đầu (gợi ý sinh nhật) giữ nguyên món cơ bản', () => {
+    expect(def.favorites[0]).not.toBe(pid);
+  });
+});

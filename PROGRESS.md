@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (07/11/2026)
+- GĐ1789: khách quen có món thích mở muộn — Bà Năm thích cà phê trứng, anh Tuấn thích mì Ý sốt bò (cấp 36; cấp 30 không đổi); test unlockedFavorites.
 - GĐ1788: đơn tiệc "Đám giỗ ông" (bác Năm, cấp 42) — mâm cơm nhà 10 thịt kho trứng + 10 canh chua cá; đơn thứ 41/45; test riêng + quét seed.
 - GĐ1787: chợ đêm hot thêm bắp ngọt nướng, Trung thu thêm bánh pía nướng; test describe.each mở rộng.
 - GĐ1786: bóng đá phường hot thêm mực khô nướng, lễ 30/4 thêm tôm nướng (đi chơi biển); test describe.each mở rộng.
