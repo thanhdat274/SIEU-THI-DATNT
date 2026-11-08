@@ -33,7 +33,7 @@ export const PROFESSIONS: ProfessionDef[] = [
   {
     id: 'nurse', name: 'Y tá', icon: '🩺', archetype: 'nurse',
     hours: [h(6, 7.5), h(19, 22)],
-    likes: ['caphe', 'x_ca_phe_lon', 'banhmi', 'x_khau_trang', 'x_nuoc_rua_tay', 'suachua', 'sua', 'mi_trung_nong'],
+    likes: ['caphe', 'x_ca_phe_lon', 'banhmi', 'x_khau_trang', 'x_nuoc_rua_tay', 'suachua', 'sua', 'mi_trung_nong', 'nhan_da_xay'],
     loyalty: 0.7, extraItems: 0, sensitivity: 0.9, patience: 0.7,
   },
   {

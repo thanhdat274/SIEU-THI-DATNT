@@ -78,3 +78,10 @@ describe('bà nội trợ thích kem sữa dê', () => {
     expect(PROFESSIONS.find((p) => p.id === 'mom')!.likes).toContain('kem_sua_de');
   });
 });
+
+// GĐ1752: y tá giải khát bằng nhãn đá xay sau ca trực.
+describe('y tá thích nhãn đá xay', () => {
+  it('likes của nurse có nhan_da_xay', () => {
+    expect(PROFESSIONS.find((p) => p.id === 'nurse')!.likes).toContain('nhan_da_xay');
+  });
+});
