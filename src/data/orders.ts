@@ -129,6 +129,11 @@ export const PARTY_ORDERS: PartyOrderDef[] = [
     description: 'Bé nhà chị Tư tròn tháng, chị đặt chè gấc đỏ cho may mắn để mời họ hàng.',
     items: { che_gac: 16 }, bonus: 180000, xp: 140,
   },
+  {
+    id: 'lop_hoc_mit_chien', icon: '🎒', title: 'Liên hoan cuối kỳ', from: 'Lớp 11A trường gần chợ', unlock: 39, days: 3,
+    description: 'Lớp 11A thi xong học kỳ, gom quỹ đặt mít chiên giòn ăn liên hoan.',
+    items: { mit_chien_gion: 16 }, bonus: 170000, xp: 130,
+  },
   // Đơn riêng theo câu chuyện từng khách quen
   {
     id: 'xoi_dam_gio', icon: '🍙', title: 'Mẻ xôi đám giỗ', from: regularById('ba_nam')!.name, regular: 'ba_nam', unlock: 12, days: 2,
