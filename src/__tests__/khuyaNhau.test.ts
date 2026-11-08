@@ -10,3 +10,13 @@ describe('khung tối muộn thèm đồ nhắm (GĐ1779)', () => {
     expect(timeBandAt(12 * 60)!.wants).not.toContain('muc_kho_nuong');
   });
 });
+
+// GĐ1780 — giữa buổi (8h30–11h) có món ăn sáng muộn; cao điểm tối có món kho mang về ăn cơm nhà.
+describe('giữa buổi & cao điểm tối (GĐ1780)', () => {
+  it.each(['pho_bo', 'banh_cuon_cha_lua'])('9h30 thèm %s', (id) => {
+    expect(timeBandAt(9 * 60 + 30)!.wants).toContain(id);
+  });
+  it.each(['ca_kho_to', 'thit_kho_trung'])('18h thèm %s', (id) => {
+    expect(timeBandAt(18 * 60)!.wants).toContain(id);
+  });
+});
