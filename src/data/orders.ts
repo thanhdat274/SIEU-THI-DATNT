@@ -124,6 +124,11 @@ export const PARTY_ORDERS: PartyOrderDef[] = [
     description: 'Anh Hai mới dọn nhà về hẻm, mở tiệc tân gia ra mắt hàng xóm — đặt gỏi bưởi tôm làm món khai vị.',
     items: { goi_buoi_tom: 16 }, bonus: 200000, xp: 150,
   },
+  {
+    id: 'day_thang_che_gac', icon: '👶', title: 'Tiệc đầy tháng', from: 'Nhà chị Tư cuối hẻm', unlock: 44, days: 3,
+    description: 'Bé nhà chị Tư tròn tháng, chị đặt chè gấc đỏ cho may mắn để mời họ hàng.',
+    items: { che_gac: 16 }, bonus: 180000, xp: 140,
+  },
   // Đơn riêng theo câu chuyện từng khách quen
   {
     id: 'xoi_dam_gio', icon: '🍙', title: 'Mẻ xôi đám giỗ', from: regularById('ba_nam')!.name, regular: 'ba_nam', unlock: 12, days: 2,
