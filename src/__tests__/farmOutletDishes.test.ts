@@ -4,7 +4,7 @@ import { productById } from '../data/products';
 import { FESTIVALS } from '../data/calendar';
 import { PROFESSIONS } from '../data/professions';
 
-// GĐ1728 + GĐ1730 (gộp GĐ1731) + GĐ1734 + GĐ1736 + GĐ1737 + GĐ1741 + GĐ1744: lối ra bếp thứ hai cho trái cây trồng.
+// GĐ1728 + GĐ1730 (gộp GĐ1731) + GĐ1734 + GĐ1736 + GĐ1737 + GĐ1741 + GĐ1744: lối ra bếp thứ hai cho nông sản trại (trái cây + sữa dê).
 const CASES: [string, string, string[]][] = [
   ['recipe_goi_buoi_tom', 'goi_buoi_tom', ['x_buoi', 'x_tom_tuoi']],
   ['recipe_mit_chien_gion', 'mit_chien_gion', ['x_mit', 'dauan']],
