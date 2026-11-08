@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (07/11/2026)
+- GĐ1792: QA trình duyệt GĐ1789–1791 — 7 khách quen: cấp 30 giữ số món cũ, cấp 60 thêm món mới đúng tên (mi_y_sot_bo hiển thị "Mì ý sốt thịt bằm"), console 0 lỗi.
 - GĐ1791: Bác Tám thích trà atiso nấu, bác Hùng thợ máy thích hủ tiếu Nam Vang, chú Tư công nhân thích gà xào sả (món mở muộn); test mở rộng.
 - GĐ1790: Bé Na thích bánh flan, chị Lan thích sữa chua trái cây (món mở muộn); test describe.each mở rộng.
 - GĐ1789: khách quen có món thích mở muộn — Bà Năm thích cà phê trứng, anh Tuấn thích mì Ý sốt bò (cấp 36; cấp 30 không đổi); test unlockedFavorites.
