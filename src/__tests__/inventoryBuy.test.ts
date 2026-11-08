@@ -85,6 +85,25 @@ describe('placeOrder', () => {
     expect(g().placeOrder(daily.id, { [P.id]: 10 })).toBe(false);
     expect(g().money).toBe(999_999_999);
   });
+
+  it('GĐ1831 (review đợt 2 R11): số lẻ/chuỗi bị chặn — không trừ tiền, kho không thành chuỗi', () => {
+    useGame.setState({ money: 999_999_999 });
+    // số lẻ → lọc hết → đơn rỗng → false
+    expect(g().placeOrder(daily.id, { [P.id]: 0.5 })).toBe(false);
+    expect(g().placeOrder(daily.id, { [P.id]: 1.5 })).toBe(false);
+    // chuỗi → Number.isInteger('3') là false → đơn rỗng → false (kho không thành "03")
+    expect(g().placeOrder(daily.id, { [P.id]: '3' as never })).toBe(false);
+    // trộn lẻ với nguyên: phần lẻ bị bỏ, phần nguyên được nhận, tiền khớp hàng
+    const ok = { [P.id]: 2 };
+    const cost = orderTotal(daily, ok, g().day);
+    expect(g().placeOrder(daily.id, { [P.id]: 2, banh_keo_le: 0.5 } as never)).toBe(true);
+    expect(g().money).toBe(999_999_999 - cost);
+    expect(g().storage[P.id]).toBe(2);
+    // buy: chuỗi/số lẻ bị chặn tương tự
+    expect(g().buy(P.id, '3' as never)).toBe(false);
+    expect(g().buy(P.id, 0.5)).toBe(false);
+    expect(g().storage[P.id]).toBe(2);
+  });
 });
 
 describe('upgradeWarehouse', () => {

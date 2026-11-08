@@ -1,4 +1,4 @@
-import { askConfirm, ConfirmHost } from './ConfirmDialog';
+import { askConfirm } from './ConfirmDialog';
 import { wantsRestockButton } from '../core/bizAchieve';
 import { hudThemeOn } from '../data/hudTheme';
 import { faintMinutes } from '../data/biz';
@@ -289,8 +289,7 @@ Bản đang chơi được giữ lại, khôi phục lần nữa là trở lại
   return (
     <>
       <Joystick />
-      <ConfirmHost />
-      {/* GĐ1503 — tour HUD khoanh vùng: ngày đầu, xong hướng dẫn, không mở bảng nào */}
+      {/* GĐ1831: ConfirmHost dời về boot.tsx (gốc ứng dụng) — hộp xác nhận cần hiện cả ở màn đăng nhập */}
       {!hudTourDone && !tutActive && openType == null && day === 1 && level <= 3
         && <HudTour onDone={() => useGame.getState().markHudTourDone()} />}
       {/* Cột trái trên: ngày giờ, tiền, cấp; thông báo xếp ngay bên dưới nên không đè lên cụm bên phải */}
