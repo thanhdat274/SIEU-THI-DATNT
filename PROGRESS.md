@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (07/11/2026)
+- GĐ1806: Tết dương có bánh bao kim sa (cấp 52, ngoài tầm sim L50) trong hot list; test 5480/5480.
 - GĐ1805: thử mực khô nướng vào hot Tết dương → economySimL50 tụt 21/22, đã hoàn tác. Ghi chú: biên economySimL50 đang sát 22; thêm cầu món nấu cấp 36–50 dễ làm vỡ — đợt sau ưu tiên nội dung ngoài cầu (lời thoại, mô tả) hoặc cấp >50.
 - GĐ1804: Ngày hội phụ nữ có kem dừa trong hot list; test 5479/5479.
 - GĐ1803: Ngày hội xóm có mít chiên giòn trong hot list; test 5478/5478.

@@ -55,7 +55,7 @@ export const FESTIVAL_NOTICE_DAYS = 3;
 
 /** Lễ hội theo ngày tháng thật trong năm (từ = ngày trong năm 0-based, gồm cả hai đầu). */
 export const FESTIVALS: Festival[] = [
-  { id: 'tet_duong', icon: '🎆', name: 'Tết dương lịch', blurb: 'Năm mới đầu hẻm, nhà nào cũng có tiệc nhỏ: bia nước bánh kẹo hút hàng.', from: md(1, 1), to: md(1, 2), traffic: 1.2, hot: ['bia', 'ngot', 'banh', 'sua', 'lau_vien_thap_cam'], cost: 1.03, host: 'bac_tam' },
+  { id: 'tet_duong', icon: '🎆', name: 'Tết dương lịch', blurb: 'Năm mới đầu hẻm, nhà nào cũng có tiệc nhỏ: bia nước bánh kẹo hút hàng.', from: md(1, 1), to: md(1, 2), traffic: 1.2, hot: ['bia', 'ngot', 'banh', 'sua', 'lau_vien_thap_cam', 'banh_bao_kim_sa'], cost: 1.03, host: 'bac_tam' },
   { id: 'tet', icon: '🧧', name: 'Tết Nguyên Đán', blurb: 'Bà con sắm Tết rầm rộ, mua cả giỏ quà; mối nhập tăng giá mạnh, bán giá cao vẫn hết.', from: md(1, 28), to: md(2, 8), traffic: 1.7, goods: ['x_banh_chung', 'x_bao_li_xi', 'x_mut_dua', 'x_hat_dua', 'gio_qua_tet', 'banh_chung_tu'], hot: ['banh', 'ngot', 'bia', 'gao', 'dauan', 'giavi', 'traicay', 'thit', 'hat', 'quatet', 'nuocmam', 'gio_qua_tet', 'banh_chung_tu', 'xoi_gac', 'hx_mut_gung', 'goi_buoi_tom', 'che_gac'], cost: 1.2, pull: 0.55, tolerance: 0.5 },
   // GĐ1346: thêm Giỏ quà Valentine vào goods + hot của dịp (đổi lịch lễ CÓ CHỦ Ý theo giỏ mới —
   // khớp bất biến communityIntegrity: món lễ phải bán được đúng mùa).
