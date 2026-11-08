@@ -2,6 +2,7 @@ import { askConfirm } from './ConfirmDialog';
 import { wantsRestockButton } from '../core/bizAchieve';
 import { hudThemeOn } from '../data/hudTheme';
 import { faintMinutes } from '../data/biz';
+import { hasUpgrade } from '../data/upgrades';
 import { Joystick } from './Joystick';
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { useAlertCap } from './alertCap';
@@ -120,6 +121,7 @@ export function Hud() {
   }, [hudTheme]);
   const placing = useGame((s) => s.placing);
   const serviceLife = useGame((s) => s.biz.serviceLife);
+  const nightShift = useGame((s) => hasUpgrade(s.biz, 'night'));
   const sellFurniture = useGame((s) => s.sellFurniture);
   const stashFurniture = useGame((s) => s.stashFurniture);
   const trialCount = useGame((s) => s.furniture.filter((f) => f.trial).length);
@@ -354,7 +356,7 @@ ${forecastText}`}>
         <GoalChip ready={questsReady} />
         <div className="hud-place">
           <span>📍 {location}</span>
-          <span className={`hud-open ${shopOpen ? 'on' : ''}`}>{shopOpen ? 'Đang mở cửa' : 'Tiệm đóng'}</span>
+          <span className={`hud-open ${shopOpen ? 'on' : ''}`}>{!shopOpen ? 'Tiệm đóng' : minutes >= 22 * 60 && minutes < 30 * 60 && !nightShift ? 'Hết đón khách mới' : 'Đang mở cửa'}</span>
         </div>
       </div>
 
