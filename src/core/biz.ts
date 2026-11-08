@@ -347,7 +347,7 @@ export function bizEndOfDay(s: GameState, stats: DayStats, hiepLucRevenue = 0): 
     fiveStars: (b.week.fiveStars ?? 0) + (stats.fiveStars ?? 0),
   };
   if (day - b.week.startDay + 1 >= WEEK_DAYS) {
-    const report = closeWeek(b.week, day, s.level, b.weekStreak ?? 0);
+    const report = closeWeek(b.week, day, s.level, b.weekStreak ?? 0, b.services);
     if (report.reward) money += report.reward;
     news.push(report.goalMet
       ? `📊 Tuần ${report.week}: đạt mục tiêu doanh thu! Thưởng ${formatMoney(report.reward)}`
@@ -381,7 +381,7 @@ export function bizEndOfDay(s: GameState, stats: DayStats, hiepLucRevenue = 0): 
   }
   if (m !== b.month.month) {
     const closedMonth = b.month.month;
-    const report = closeMonth(b.month, day - 1, s.level, b.monthStreak ?? 0);
+    const report = closeMonth(b.month, day - 1, s.level, b.monthStreak ?? 0, b.services);
     if (report.reward) money += report.reward;
     news.push(report.goalMet
       ? `📅 Hết tháng ${report.month}: đạt mục tiêu doanh thu! Thưởng ${formatMoney(report.reward)}`

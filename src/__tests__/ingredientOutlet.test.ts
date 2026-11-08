@@ -8,7 +8,9 @@ import { QUAN_RECIPES } from '../data/quanRecipes';
  * lối ra (công thức bếp hoặc món quán), trừ danh sách hàng bán lẻ thuần mà Leader đã quyết giữ nguyên.
  * Thêm hàng tươi mới mà quên lối ra → test đỏ, buộc chọn: thêm công thức hoặc ghi vào danh sách dưới.
  */
+import { LATE_GAME_PRODUCTS } from '../data/lateGameProducts';
 const RETAIL_ONLY = new Set([
+  ...LATE_GAME_PRODUCTS.map((p) => p.id), // hàng cao cấp cuối game (cấp 87–200): bán lẻ nguyên hộp
   'dochin', 'sinhto', 'banhkem', // đồ ăn/uống làm sẵn
   'x_kem_oc_que', 'x_banh_bao', // hàng đông lạnh ăn liền (bánh bao đã có lối ra qua 'banhbao')
   'x_hanh_kho', 'x_rau_mui', 'x_dua_gia', // rau thơm/gia vị/dưa chua: bán lẻ

@@ -5,6 +5,7 @@ import {
   orderAssessment, orderGap, orderRateTone, ratingImpact,
 } from '../../data/online';
 import { formatMoney } from '../../data/products';
+import { shortLabel } from '../shortLabel';
 import { onlineNet } from '../../data/onlineNet';
 import { onlineRatingValue, RATING_FLOOR, RATING_TARGET } from '../../data/onlineRatingValue';
 import { Footer, styles, Callout } from './shared';
@@ -31,7 +32,7 @@ export function OnlinePanel() {
       {!registered ? (
         <div style={styles.card}>
           <span style={{ flex: 1, fontSize: 13 }}>Mở gian hàng trên app: {formatMoney(ONLINE_OPEN_COST)} (trả một lần){level < ONLINE_UNLOCK && ` · cần cấp ${ONLINE_UNLOCK}`}</span>
-          <button style={{ ...styles.btn, background: '#f1c40f' }} disabled={level < ONLINE_UNLOCK || money < ONLINE_OPEN_COST} onClick={openOnline}>Mở gian hàng</button>
+          <button style={{ ...styles.btn, background: '#f1c40f' }} disabled={level < ONLINE_UNLOCK || money < ONLINE_OPEN_COST} onClick={openOnline}>{level < ONLINE_UNLOCK ? 'Mở gian hàng' : shortLabel('Mở gian hàng', ONLINE_OPEN_COST, money)}</button>
         </div>
       ) : (
         <>
@@ -143,7 +144,7 @@ export function OnlinePanel() {
                       {/* Grab */}
                       <div style={{ marginTop: 5 }}>
                         <button style={{ ...btn, background: '#2ecc71' }} disabled={!enough || money < grabFee(o.km, evGrab)} onClick={() => acceptOnline(o.id, 'grab')}>
-                          🟢 Grab {formatMoney(grabFee(o.km, evGrab))} (~{a.grabTravelT}′)
+                          🟢 {enough ? shortLabel(`Grab ${formatMoney(grabFee(o.km, evGrab))}`, grabFee(o.km, evGrab), money) : `Grab ${formatMoney(grabFee(o.km, evGrab))}`} (~{a.grabTravelT}′)
                         </button>
                         <small style={{ display: 'block', fontSize: 11, opacity: 0.8, marginTop: 1 }}>
                           Grab ~{a.grabTravelT}′ · phí {formatMoney(grabFee(o.km, evGrab))} → {grabStars}★ (điểm về {grabNext.toFixed(1)})

@@ -13,7 +13,7 @@ describe('nội dung cuối run (cấp 79–100): hàng cao cấp + mốc danh h
       expect(PRODUCTS.filter((p) => p.unlock === lv).length).toBeGreaterThan(0);
     }
     // Cấp cao nhất chạm đúng đỉnh run
-    expect(Math.max(...PRODUCTS.map((p) => p.unlock))).toBe(100);
+    expect(Math.max(...PRODUCTS.map((p) => p.unlock))).toBe(200);
   });
 
   it('lấp khoảng trống mở khóa giữa 79 và 100 (không còn hố trắng dài)', () => {

@@ -8,6 +8,7 @@ import { Dropdown } from './Dropdown';
 import { lastActionResult } from '../net/coop';
 import { storageCapacity, storageUsed, useClock, useGame, wagesDue } from '../core/store';
 import { caseSize, casesFor, CATEGORIES, describeUnits, formatMoney, productById, unlockedProducts, type Category } from '../data/products';
+import { shortLabel } from './shortLabel';
 import { shelfLife } from '../data/freshness';
 import { visibleSuppliers } from '../data/visibleSuppliers';
 import { bulkDiscount, orderTotal, SUPPLIERS, supplierSells, trending, unitCost } from '../data/suppliers';
@@ -385,7 +386,7 @@ export function OrderPanel() {
                   disabled={money < offer.dealPrice}
                   style={{ ...st.btn, flexShrink: 0, background: money < offer.dealPrice ? 'rgba(255,255,255,0.08)' : 'rgba(155,89,182,0.5)' }}
                 >
-                  {money < offer.dealPrice ? 'Thiếu tiền' : 'Nhận lô'}
+                  {shortLabel('Nhận lô', offer.dealPrice, money)}
                 </button>
               )}
             </div>
@@ -615,7 +616,7 @@ export function OrderPanel() {
           {cases} thùng ({count} món) · <b style={{ fontSize: 17 }}>{formatMoney(total)}</b>
           {before - total > 0 && <span style={{ color: '#55efc4' }}> (bớt {formatMoney(before - total)})</span>}
           {tooSmall && <span style={{ color: '#ff7675' }}> · cần thêm {formatMoney(supplier.minOrder - total)} cho đủ đơn tối thiểu</span>}
-          {total > money && <span style={{ color: '#ff7675' }}> · không đủ tiền</span>}
+          {total > money && <span style={{ color: '#ff7675' }}> · thiếu {formatMoney(total - money)}</span>}
           {wageShort && <span style={{ color: '#f1c40f' }}> · còn lại không đủ {formatMoney(wages)} lương cuối ngày</span>}
           {tooBig && <span style={{ color: '#ff7675' }}> · nhà kho không đủ chỗ (còn trống {Math.max(0, capacity - usedNow)} thùng), nâng cấp nhà kho</span>}
         </span>

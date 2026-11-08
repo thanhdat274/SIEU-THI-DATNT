@@ -99,3 +99,28 @@ export function rollService(owned: string[], day: number, roll: number): Service
   }
   return undefined;
 }
+
+/** GĐ1653: lời kỳ vọng một lượt của từng dịch vụ (trung bình đúng theo bảng fee ở trên). */
+export const SERVICE_AVG_FEE: Record<ServiceId, number> = {
+  topup: 1929, // trung bình 3% của [10k,20k,20k,50k,50k,100k,200k], làm tròn trăm
+  bills: 3000,
+  lottery: 985, // 3.000đ × 99,5% − 400.000đ × 0,5%
+  parking: 3000,
+  parcel: 4000,
+};
+
+/**
+ * GĐ1653: lời dịch vụ kỳ vọng/ngày với các dịch vụ đang có — người đi đường/ngày (= 2 × khách/ngày)
+ * × tổng (phần ghé × lời/lượt). Thu hộ đông ×4 trong 5/30 ngày đầu tháng → bình quân ×1,5.
+ * Dùng để mục tiêu "Lời từ dịch vụ" không vượt sức kiếm thật của tiệm.
+ */
+export function expectedServiceIncomePerDay(owned: string[], passersPerDay: number): number {
+  let perPasser = 0;
+  for (const id of owned) {
+    const def = serviceById(id);
+    if (!def) continue;
+    const draw = def.id === 'bills' ? def.draw * (1 + 3 * BILL_RUSH_DAYS / MONTH_DAYS) : def.draw;
+    perPasser += draw * SERVICE_AVG_FEE[def.id];
+  }
+  return passersPerDay * perPasser;
+}

@@ -1,13 +1,22 @@
 import type { DayStats } from '../core/store';
 import { COOKED_PRODUCT_IDS, COOK_UNLOCK } from './recipes';
 import { unlockedCombos, COMBO_UNLOCK } from './combos';
-import { SERVICES } from './services';
-import { ONLINE_UNLOCK } from './online';
-import { GARDEN_UNLOCK } from './garden';
-import { SOCIAL_UNLOCK } from './social';
+import { expectedServiceIncomePerDay, SERVICES } from './services';
+import { customersPerDay } from './levels';
+import { ONLINE_UNLOCK, onlineOrderCap } from './online';
+import { expectedCookOrdersPerDay } from './phoneOrders';
+import { farmDailyCap, GARDEN_UNLOCK } from './garden';
+import { PROMO_MIN_FOLLOWERS, SOCIAL_UNLOCK } from './social';
 import type { Weather } from './weather';
 import { isWeekend } from './calendar';
 import { WEEKEND_SNACKS } from './products';
+import { SUPPLY_CONTRACTS } from './contracts';
+import { SHOP_TIERS } from './shopTiers';
+import { WAREHOUSE_TIERS } from './warehouse';
+import { maxStaff } from './staff';
+
+/** GĐ1618: cấp sớm nhất có hợp đồng cung cấp — bước cốt truyện hợp đồng ghi rõ khi chưa tới cấp. */
+export const FIRST_CONTRACT_LEVEL = Math.min(...SUPPLY_CONTRACTS.map((d) => d.unlock));
 
 /** Số liệu cộng dồn cả ván, để đo nhiệm vụ cốt truyện. */
 export interface Totals {
@@ -141,7 +150,40 @@ export interface Quest {
 }
 
 /** Những gì nhiệm vụ cần đọc từ trạng thái game. */
+/** GĐ1612 — tiệm chưa có bếp: việc nấu vẫn giữ chỗ trong bộ (không xáo danh sách giữa ngày) nhưng chỉ chỗ mua bếp. */
+export const NO_STATION_DESC = (task: string) => `${task} — tiệm chưa có bếp: mua ở 🛠️ Xây dựng`;
+
+/** GĐ1614 — đơn nấu chỉ tới qua điện thoại, mà điện thoại chỉ đổ chuông khi có người giao hàng. */
+export const NO_COURIER_DESC = 'Giao {n} đơn nấu — cần thuê 🛵 Giao hàng để khách gọi điện đặt';
+
+/** GĐ1616 — chưa mở dịch vụ nào thì không có lời dịch vụ: chỉ chỗ mở (bộ việc giữ nguyên). */
+/** GĐ1624: việc đơn app khi gian hàng app chưa mở/đang tạm ngưng. */
+export const NO_COMBO_DESC = 'Bán {n} combo — chưa bật combo nào: bật ở ⋯ Thêm › 🎁 Combo';
+export const NO_CROP_DESC = 'Thu {n} sản phẩm — trại chưa gieo luống nào: gieo ở 🌱 Mở rộng › 🚜 Trang trại';
+/** GĐ1641: đơn app/ngày có trần thật (onlineOrderCap ở 5★) — mục tiêu không vượt 70% trần, kẻo cấp cao bất khả thi. */
+export const onlineQuestTarget = (lv: number) => Math.min(scale(3, lv, 0.07), Math.max(1, Math.floor(onlineOrderCap(5, lv) * 0.7)));
+export const NO_ONLINE_DESC = 'Giao {n} đơn app — gian hàng app chưa nhận đơn: mở ở 🌱 Mở rộng › 📲 Online';
+/** GĐ1625: chưa đủ người theo dõi để đăng quảng bá. */
+export const FEW_FOLLOWERS_DESC = (have: number) => `Đăng bài quảng bá — cần ${PROMO_MIN_FOLLOWERS} người theo dõi (đang ${have}): bán tốt để khách khen trên mạng`;
+export const NO_SERVICE_DESC = 'Lời {n}đ từ dịch vụ — chưa mở dịch vụ nào: mở ở 📈 Kinh doanh';
+
 export interface QuestContext {
+  /** GĐ1616 — đã mở ít nhất một dịch vụ (thiếu = không biết, giữ mô tả cũ). */
+  hasService?: boolean;
+  /** GĐ1653: các dịch vụ đang có — để mục tiêu lời dịch vụ theo sức kiếm thật. */
+  serviceIds?: string[];
+  /** GĐ1624: gian hàng app đang nhận đơn. */
+  hasOnlineOpen?: boolean;
+  /** GĐ1640: số luống đang có cây (undefined = không rõ). */
+  plantedPlots?: number;
+  /** GĐ1638: số combo đang bật (undefined = không rõ, không gợi ý). */
+  activeCombos?: number;
+  /** GĐ1625: số người theo dõi trang MXH. */
+  socialFollowers?: number;
+  /** GĐ1614 — tiệm có nhân viên giao hàng (thiếu = không biết, giữ mô tả cũ). */
+  hasCourier?: boolean;
+  /** GĐ1612 — tiệm đang có ít nhất một trạm nấu (thiếu = không biết, giữ mô tả cũ). */
+  hasCookStation?: boolean;
   day: number;
   level: number;
   stats: DayStats;
@@ -168,6 +210,13 @@ export interface QuestContext {
 }
 
 const scale = (base: number, level: number, step: number) => Math.round(base * (1 + step * (level - 1)));
+/** GĐ1653: mục tiêu "Lời từ dịch vụ" ≤ 70% lời kỳ vọng của các dịch vụ đang có (tròn nghìn, tối thiểu 1.000đ). */
+export const serviceQuestTarget = (lv: number, owned?: string[]) => {
+  const base = scale(20000, lv, 0.15);
+  if (!owned?.length) return base;
+  const cap = Math.max(1000, Math.floor((expectedServiceIncomePerDay(owned, customersPerDay(lv) * 2) * 0.7) / 1000) * 1000);
+  return Math.min(base, cap);
+};
 
 /** Món nhà làm bán được trong ngày (đọc từ sổ bán theo món). */
 const cookedSoldToday = (c: QuestContext) =>
@@ -248,20 +297,20 @@ export function dailyQuests(c: QuestContext): Quest[] {
   const optional: DailyDef[] = [
     // GĐ1584 — tặng quà khách quen (cấp ≥38, sau golden nên vòng xoay cấp thấp không đổi)
     { id: 'daily_gift', icon: '🎁', title: 'Tặng quà khách quen', unit: 'lần', target: 2, current: c.stats.gifts ?? 0, money: scale(40000, lv, 0.25), xp: scale(40, lv, 0.1), show: lv >= 38, desc: 'Mở bảng Khách quen, bấm 🎁 tặng {n} món khách thích' },
-    { id: 'daily_services', icon: '🏦', title: 'Lời từ dịch vụ', unit: 'đ', target: scale(20000, lv, 0.15), current: c.stats.services ?? 0, money: scale(50000, lv, 0.25), xp: scale(35, lv, 0.1), show: lv >= (SERVICES[0]?.unlock ?? 99) },
-    { id: 'daily_combo', icon: '🎁', title: 'Bán theo combo', unit: 'combo', target: scale(3, lv, 0.1), current: c.stats.combos ?? 0, money: scale(90000, lv, 0.25), xp: scale(55, lv, 0.1), show: lv >= COMBO_UNLOCK && unlockedCombos(lv).length > 0 },
-    { id: 'daily_cooked', icon: '🍳', title: 'Bán món nhà làm', unit: 'món', target: scale(5, lv, 0.15), current: cookedSoldToday(c), money: scale(100000, lv, 0.25), xp: scale(60, lv, 0.1), show: lv >= COOK_UNLOCK },
+    { id: 'daily_services', icon: '🏦', title: 'Lời từ dịch vụ', unit: 'đ', target: serviceQuestTarget(lv, c.serviceIds), current: c.stats.services ?? 0, money: scale(50000, lv, 0.25), xp: scale(35, lv, 0.1), show: lv >= (SERVICES[0]?.unlock ?? 99), ...(c.hasService === false ? { desc: NO_SERVICE_DESC } : {}) },
+    { id: 'daily_combo', icon: '🎁', title: 'Bán theo combo', unit: 'combo', target: scale(3, lv, 0.1), current: c.stats.combos ?? 0, money: scale(90000, lv, 0.25), xp: scale(55, lv, 0.1), show: lv >= COMBO_UNLOCK && unlockedCombos(lv).length > 0, ...(c.activeCombos === 0 ? { desc: NO_COMBO_DESC } : {}) },
+    { id: 'daily_cooked', icon: '🍳', title: 'Bán món nhà làm', unit: 'món', target: scale(5, lv, 0.15), current: cookedSoldToday(c), money: scale(100000, lv, 0.25), xp: scale(60, lv, 0.1), show: lv >= COOK_UNLOCK, ...(c.hasCookStation === false ? { desc: NO_STATION_DESC('Bán {n} món nhà làm') } : {}) },
     // Trần đơn app/ngày (data/online.ts): đơn chỉ đổ về trong ONLINE_HOURS (870 phút), cách nhau
     // orderGap(5★, cấp) × hệ số ngẫu nhiên trung bình 1.0 ⇒ tối đa ~870/max(35, 95−cấp) đơn:
     // cấp 10 ≈ 10 đơn, cấp 40 ≈ 16 đơn, từ cấp ≥ 60 chạm sàn 35 phút ⇒ trần ~25 đơn/ngày.
     // Chốt step 0.07 (cũ 0.1 làm cấp 40 phải giao 15/16 đơn — gần như toàn bộ trần):
     //   cấp mở khoá 10 → round(3 × (1 + 0.07×9)) = 5 đơn (~nửa trần lúc mới mở, dải 4–6),
     //   cấp 40         → round(3 × (1 + 0.07×39)) = 11 đơn ≈ 70% trần 16 đơn/ngày (dải 60–75%).
-    { id: 'daily_online', icon: '🛵', title: 'Giao đơn app', unit: 'đơn', target: scale(3, lv, 0.07), current: c.stats.onlineDone ?? 0, money: scale(120000, lv, 0.25), xp: scale(60, lv, 0.1), show: lv >= ONLINE_UNLOCK },
-    { id: 'daily_farm', icon: '🌾', title: 'Thu hoạch trại', unit: 'sản phẩm', target: scale(6, lv, 0.15), current: c.stats.farmHarvest ?? 0, money: scale(90000, lv, 0.25), xp: scale(50, lv, 0.1), show: lv >= GARDEN_UNLOCK },
+    { id: 'daily_online', icon: '🛵', title: 'Giao đơn app', unit: 'đơn', target: onlineQuestTarget(lv), current: c.stats.onlineDone ?? 0, money: scale(120000, lv, 0.25), xp: scale(60, lv, 0.1), show: lv >= ONLINE_UNLOCK, ...(c.hasOnlineOpen === false ? { desc: NO_ONLINE_DESC } : {}) },
+    { id: 'daily_farm', icon: '🌾', title: 'Thu hoạch trại', unit: 'sản phẩm', target: Math.max(1, Math.min(scale(6, lv, 0.15), Math.floor(farmDailyCap(lv) * 0.7))), current: c.stats.farmHarvest ?? 0, money: scale(90000, lv, 0.25), xp: scale(50, lv, 0.1), show: lv >= GARDEN_UNLOCK, ...(c.plantedPlots === 0 ? { desc: NO_CROP_DESC } : {}) },
     // promote() chỉ cho đăng 1 bài/ngày (data/social.ts) nên mục tiêu cố định 1, đo cả bài xin lỗi khi khủng hoảng
-    { id: 'daily_social', icon: '📱', title: 'Lên mạng xã hội', unit: 'bài', target: 1, current: c.stats.socialPosts ?? 0, money: scale(70000, lv, 0.25), xp: scale(40, lv, 0.1), show: lv >= SOCIAL_UNLOCK, desc: 'Đăng bài quảng bá (hoặc xin lỗi khi khủng hoảng) hôm nay' },
-    { id: 'daily_cook_orders', icon: '🥡', title: 'Giao đơn nấu', unit: 'đơn', target: scale(2, lv, 0.1), current: c.stats.cookOrders ?? 0, money: scale(110000, lv, 0.25), xp: scale(55, lv, 0.1), show: lv >= COOK_UNLOCK },
+    { id: 'daily_social', icon: '📱', title: 'Lên mạng xã hội', unit: 'bài', target: 1, current: c.stats.socialPosts ?? 0, money: scale(70000, lv, 0.25), xp: scale(40, lv, 0.1), show: lv >= SOCIAL_UNLOCK, desc: c.socialFollowers !== undefined && c.socialFollowers < PROMO_MIN_FOLLOWERS ? FEW_FOLLOWERS_DESC(c.socialFollowers) : 'Đăng bài quảng bá (hoặc xin lỗi khi khủng hoảng) hôm nay' },
+    { id: 'daily_cook_orders', icon: '🥡', title: 'Giao đơn nấu', unit: 'đơn', target: Math.max(1, Math.min(scale(2, lv, 0.1), Math.floor(expectedCookOrdersPerDay(lv)))), current: c.stats.cookOrders ?? 0, money: scale(110000, lv, 0.25), xp: scale(55, lv, 0.1), show: lv >= COOK_UNLOCK, ...(c.hasCookStation === false ? { desc: NO_STATION_DESC('Giao {n} đơn nấu') } : c.hasCourier === false ? { desc: NO_COURIER_DESC } : {}) },
     // ── GĐ160 — việc tuỳ chọn mở TỪ CẤP 1 + biến thể theo hoàn cảnh ──
     // "Sớm hôm đón khách": đo doanh thu khung sáng sớm 6h–9h (sổ theo giờ) — khuyến khích mở cửa sớm
     // đón nửa giờ vàng đầu ngày (6h–8h30) mà lịch tự động 8h đang bỏ lỡ (cùng nhịp với cảnh báo lịch).
@@ -411,17 +460,48 @@ export const STORY_STEPS: readonly StoryStep[] = [
   { id: 'story_treasure', icon: '👑', title: 'Đầu tư lớn', description: 'Chi tổng cộng 1.000.000đ (nhập hàng, nội thất, nâng cấp)', target: 1000000, money: 5000000, xp: 2000, measure: (c) => c.totals.spent },
   // ── Nội dung cuối game (cấp 51–100) ──
   { id: 'story_level_60', icon: '🚀', title: 'Thương hiệu phố phường', description: 'Đạt cấp 60', target: 60, money: 12000000, xp: 3200, measure: (c) => c.level },
-  { id: 'story_shop_tier_6', icon: '🏗️', title: 'Siêu thị khang trang', description: 'Mở rộng tiệm lên bậc 6', target: 6, money: 15000000, xp: 3000, measure: (c) => c.shopTier },
+  { id: 'story_shop_tier_6', icon: '🏗️', title: 'Siêu thị khang trang', description: 'Mở rộng tiệm lên Siêu thị khang trang', target: 5, money: 15000000, xp: 3000, measure: (c) => c.shopTier },
   { id: 'story_revenue_500m', icon: '🏆', title: 'Nửa tỷ doanh thu', description: 'Đạt tổng doanh thu 500.000.000đ', target: 500000000, money: 20000000, xp: 4000, measure: (c) => c.totals.revenue },
   { id: 'story_hire_10', icon: '👥', title: 'Cơ ngơi lớn', description: 'Thuê 10 nhân viên', target: 10, money: 8000000, xp: 2400, measure: (c) => c.staffCount },
-  { id: 'story_warehouse_7', icon: '🏭', title: 'Tổng kho logistics', description: 'Nâng nhà kho lên cấp 7', target: 7, money: 12000000, xp: 2800, measure: (c) => c.warehouseTier },
+  { id: 'story_warehouse_7', icon: '🏭', title: 'Tổng kho logistics', description: 'Nâng nhà kho lên Tổng kho logistics (bậc cao nhất)', target: 6, money: 12000000, xp: 2800, measure: (c) => c.warehouseTier },
   { id: 'story_items_20000', icon: '📦', title: 'Hai vạn món bán chạy', description: 'Bán tổng cộng 20.000 món', target: 20000, money: 15000000, xp: 4000, measure: (c) => c.totals.itemsSold },
   { id: 'story_level_75', icon: '⭐', title: 'Biểu tượng thành phố', description: 'Đạt cấp 75', target: 75, money: 20000000, xp: 5000, measure: (c) => c.level },
-  { id: 'story_shop_tier_7', icon: '🏗️', title: 'Đại siêu thị', description: 'Mở rộng tiệm lên bậc 7 (mặt bằng tối đa)', target: 7, money: 25000000, xp: 5000, measure: (c) => c.shopTier },
+  { id: 'story_shop_tier_7', icon: '🏗️', title: 'Đại siêu thị', description: 'Mở rộng tiệm lên Đại siêu thị (mặt bằng tối đa)', target: 6, money: 25000000, xp: 5000, measure: (c) => c.shopTier },
   { id: 'story_revenue_1b', icon: '👑', title: 'Tỷ đồng doanh thu', description: 'Đạt tổng doanh thu 1.000.000.000đ', target: 1000000000, money: 50000000, xp: 9000, measure: (c) => c.totals.revenue },
   { id: 'story_level_90', icon: '🎖️', title: 'Huyền thoại sống', description: 'Đạt cấp 90', target: 90, money: 30000000, xp: 7000, measure: (c) => c.level },
-  { id: 'story_level_100', icon: '🎆', title: 'Đỉnh cao tạp hóa', description: 'Đạt cấp 100 — mốc cuối game', target: 100, money: 100000000, xp: 20000, measure: (c) => c.level },
+  { id: 'story_level_100', icon: '🎆', title: 'Đỉnh cao tạp hóa', description: 'Đạt cấp 100 — đủ tái sinh, đường lên cấp 200 còn dài', target: 100, money: 100000000, xp: 20000, measure: (c) => c.level },
 ];
+
+/** GĐ1620: cấp tối thiểu để làm được bước cốt truyện (kho/mặt bằng/thuê người/hợp đồng); 0 = không chặn. */
+export function storyGateLevel(step: StoryStep): number {
+  // GĐ1621: nhận dạng theo id (bền khi build), không đọc mã hàm measure.
+  const id = step.id;
+  if (id.startsWith('story_warehouse')) return WAREHOUSE_TIERS[step.target]?.unlock ?? 0;
+  if (id.startsWith('story_expand') || id.startsWith('story_shop_tier')) return SHOP_TIERS[step.target]?.unlock ?? 0;
+  // GĐ1622: số người thuê bị trần maxStaff(cấp) → cấp nhỏ nhất đủ chỗ cho target người.
+  if (id.startsWith('story_hire')) { for (let l = 1; l <= 100; l++) if (maxStaff(l) >= step.target) return l; return 0; }
+  if (id === 'story_first_contract') return FIRST_CONTRACT_LEVEL;
+  return 0;
+}
+
+/** GĐ1626: lý do thử thách tuần/tháng chưa làm được (cùng điều kiện gợi ý việc ngày); null = làm được. */
+export function periodBlocker(measure: string, c: Pick<QuestContext, 'hasCookStation' | 'hasCourier' | 'hasService' | 'hasOnlineOpen' | 'socialFollowers' | 'activeCombos' | 'plantedPlots'>): string | null {
+  if ((measure === 'cookedSold' || measure === 'cookOrders') && c.hasCookStation === false) return 'Tiệm chưa có bếp: mua ở 🛠️ Xây dựng';
+  if (measure === 'cookOrders' && c.hasCourier === false) return 'Cần thuê 🛵 Giao hàng để khách gọi điện đặt';
+  if (measure === 'services' && c.hasService === false) return 'Chưa mở dịch vụ nào: mở ở 📈 Kinh doanh › 🧾 Dịch vụ';
+  if (measure === 'onlineDone' && c.hasOnlineOpen === false) return 'Gian hàng app chưa nhận đơn: mở ở 🌱 Mở rộng › 📲 Online';
+  if (measure === 'farmHarvest' && c.plantedPlots === 0) return 'Trại chưa gieo luống nào: gieo ở 🌱 Mở rộng › 🚜 Trang trại';
+  if (measure === 'combos' && c.activeCombos === 0) return 'Chưa bật combo nào: bật ở ⋯ Thêm › 🎁 Combo';
+  if (measure === 'socialPosts' && c.socialFollowers !== undefined && c.socialFollowers < PROMO_MIN_FOLLOWERS) return `Cần ${PROMO_MIN_FOLLOWERS} người theo dõi mới đăng được (đang ${c.socialFollowers})`;
+  return null;
+}
+
+/** GĐ1628: cấp cần đạt để làm bước cốt truyện id này (0 = làm được ngay ở cấp hiện tại). */
+export function storyLockLevel(id: string, level: number): number {
+  const step = STORY_STEPS.find((x) => x.id === id);
+  const gate = step ? storyGateLevel(step) : 0;
+  return gate > level ? gate : 0;
+}
 
 /** Bước cốt truyện đang làm (bước đầu tiên chưa nhận thưởng); null khi đã xong hết. */
 export function storyQuest(c: QuestContext): Quest | null {
@@ -429,8 +509,10 @@ export function storyQuest(c: QuestContext): Quest | null {
   const step = STORY_STEPS.find((s) => !claimed.has(s.id));
   if (!step) return null;
   const v = step.measure(c);
+  const gate = storyGateLevel(step);
+  const description = gate > c.level ? `${step.description} — mở từ cấp ${gate}` : step.description;
   return {
-    id: step.id, icon: step.icon, title: step.title, description: step.description,
+    id: step.id, icon: step.icon, title: step.title, description,
     current: Math.min(v, step.target), target: step.target, money: step.money, xp: step.xp,
     done: v >= step.target, claimed: false,
   };

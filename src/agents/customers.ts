@@ -39,7 +39,7 @@ import {
 } from '../data/staff';
 import {
   CRITIC_CHANCE, CRITIC_HARD_UNLOCK, CRITIC_PENALTY_REVIEWS, CRITIC_UNLOCK, CRITIC_WINDOW_MINUTES,
-  criticReward, pickCriticDish, criticPraiseReviews, criticCallText,
+  criticReward, pickCriticDish, criticPraiseReviews, criticCallText, criticCookFits,
 } from '../data/critic';
 import { metaRng } from '../core/rand';
 import { theftCatchChance, theftSpawnChance } from '../data/theftRisk';
@@ -1178,7 +1178,7 @@ export class CustomerManager {
     if (this.criticAt == null || !s.shopOpen || s.minutes < this.criticAt) return;
     this.criticHard = s.level >= CRITIC_HARD_UNLOCK;
     const stations = new Set<string>(s.furniture.filter((f) => isCookStation(f.type)).map((f) => f.type));
-    this.criticProduct = pickCriticDish(RECIPES, s.level, this.criticHard, (r) => stations.has(r.station) && !offSeason(r.outputId, s.day));
+    this.criticProduct = pickCriticDish(RECIPES, s.level, this.criticHard, (r) => stations.has(r.station) && criticCookFits(r.durationMin) && !offSeason(r.outputId, s.day));
     this.criticUntil = s.minutes + CRITIC_WINDOW_MINUTES;
     this.criticAt = null;
     const st = RECIPES.find((r) => r.outputId === this.criticProduct && stations.has(r.station))?.station;

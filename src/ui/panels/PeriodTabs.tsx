@@ -1,5 +1,6 @@
 import { trendMark } from '../trendMark';
-import { useGame } from '../../core/store';
+import { questContext, useGame } from '../../core/store';
+import { periodBlocker } from '../../data/quests';
 import { HistoryChart } from './HistoryPanel';
 import { WEEK_DAYS, weeklyChallenge, weekPace, monthlyChallenge, emptyMonth, monthPace, STREAK_XP_FROM, STREAK_XP_RATE_WEEK, STREAK_XP_RATE_MONTH } from '../../data/biz';
 import { monthOf, weekdayOf, daysRemainingInMonth, MONTH_LENGTHS } from '../../data/calendar';
@@ -19,7 +20,8 @@ export function Week() {
   const r = biz.lastWeek;
   // Thử thách tuần hiện tại; save cũ thiếu counter trong tally thì tiến độ coi như 0.
   const ch = weeklyChallenge(Math.ceil(day / 7), level);
-  const chTarget = ch.target(level);
+  const blocker = useGame((s) => periodBlocker(ch.measure, questContext(s)));
+  const chTarget = ch.target(level, biz.services);
   const chCurrent = ch.measure === 'revenue' ? w.revenue : (w[ch.measure] ?? 0);
   const chMet = chTarget > 0 && chCurrent >= chTarget;
   // GĐ121: nhịp chạy tuần — có theo kịp không? có nguy cơ mất chuỗi không? (thuần đọc tally+streak)
@@ -55,7 +57,8 @@ export function Week() {
           <div style={iconTile}>{ch.icon}</div>
           <div style={{ flex: 1, minWidth: 160 }}>
             <b>🎯 {ch.title}</b>
-            <div style={sub}>{ch.desc(level)}</div>
+            <div style={sub}>{ch.desc(level, biz.services)}</div>
+            {blocker && <div style={{ ...sub, color: '#f39c12' }}>⚠️ {blocker}</div>}
           </div>
         </div>
         <div style={{ height: 8, background: '#555', borderRadius: 4, marginTop: 6 }}>
@@ -191,7 +194,8 @@ export function Month() {
   const r = biz.lastMonth;
   const m = monthOf(day);
   const ch = monthlyChallenge(mo.month, level);
-  const chTarget = ch.target(level);
+  const blocker = useGame((s) => periodBlocker(ch.measure, questContext(s)));
+  const chTarget = ch.target(level, biz.services);
   const chCurrent = ch.measure === 'revenue' ? mo.revenue : (mo[ch.measure] ?? 0);
   const chMet = chTarget > 0 && chCurrent >= chTarget;
   const remainingDays = daysRemainingInMonth(day);
@@ -217,7 +221,8 @@ export function Month() {
           <div style={iconTile}>{ch.icon}</div>
           <div style={{ flex: 1, minWidth: 160 }}>
             <b>🎯 {ch.title}</b>
-            <div style={sub}>{ch.desc(level)}</div>
+            <div style={sub}>{ch.desc(level, biz.services)}</div>
+            {blocker && <div style={{ ...sub, color: '#f39c12' }}>⚠️ {blocker}</div>}
           </div>
         </div>
         <div style={{ height: 8, background: '#555', borderRadius: 4, marginTop: 6 }}>

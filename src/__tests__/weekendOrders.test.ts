@@ -44,7 +44,8 @@ describe('đơn weekendOnly (GĐ267)', () => {
         if (offer) counts[offer.id] = (counts[offer.id] || 0) + 1;
       }
     }
-    const skipped = PARTY_ORDERS.filter((o) => !o.festival && !o.weekendOnly).map((o) => o.id);
+    // GĐ1678: chỉ đơn đã mở ở cấp sweep 40
+    const skipped = PARTY_ORDERS.filter((o) => !o.festival && !o.weekendOnly && o.unlock <= 40).map((o) => o.id);
     const never = skipped.filter((id) => !(counts[id] > 0));
     expect(never).toEqual([]);
   });

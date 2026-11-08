@@ -121,5 +121,7 @@ export const SKILLS: SkillDef[] = [
 
 /** Cứ 5 cấp được một điểm kỹ năng. */
 export const skillPoints = (level: number) => Math.floor(level / 5);
+/** GĐ1647: cấp gần nhất cho thêm 1 điểm kỹ năng (để nút "Học" hết điểm nói lý do). */
+export const nextSkillPointLevel = (level: number) => (Math.floor(level / 5) + 1) * 5;
 
 export const hasSkill = (skills: readonly string[], id: SkillId) => skills.includes(id);

@@ -93,6 +93,10 @@ describe('professions — khách theo nghề', () => {
       expect(p.loyalty).toBeGreaterThan(0);
       expect(p.loyalty).toBeLessThanOrEqual(1);
       for (const id of p.likes) expect(productById(id)).toBeTruthy();
+      // GĐ1716: không lặp món trong cùng danh sách thích
+      expect(new Set(p.likes).size, p.id).toBe(p.likes.length);
+      // GĐ1753: chống phình — tối đa 15 món thích mỗi nghề (giữ khẩu vị nghề rõ nét)
+      expect(p.likes.length, p.id).toBeLessThanOrEqual(15);
     }
   });
 

@@ -56,7 +56,7 @@ export const QUAN_RECIPES: QuanRecipe[] = [
   // GĐ1330: Sinh tố mít — món quán nước của mít nông trại (x_mit mở cấp 26 nhưng chưa có lối ra pha), xay sữa đặc,
   // khép chuỗi trồng → pha → bán như trà vải GĐ1090/sinh tố ổi-chuối GĐ1092. Giá vốn/ly = 16k/4 + 22k/10 + 3k/10
   // = 6.5k → bán 26k (lời >2× vốn). Mở 34 > mốc golden 30 → sim không đổi; KHÔNG hot (giữ đếm đồ nóng = 3).
-  { id: 'sinh_to_mit', name: 'Sinh tố mít', icon: '🍍', unlock: 34, price: 26_000, uses: [{ id: 'x_mit', cups: 4 }, { id: 'x_sua_dac', cups: 10 }, { id: 'x_nuoc_da', cups: 10 }] },
+  { id: 'sinh_to_mit', name: 'Sinh tố mít', icon: '🍈', unlock: 34, price: 26_000, uses: [{ id: 'x_mit', cups: 4 }, { id: 'x_sua_dac', cups: 10 }, { id: 'x_nuoc_da', cups: 10 }] },
   // GĐ1334: Bưởi đá — món quán nước của bưởi nông trại (x_buoi mở cấp 24, hiện chỉ có chè bưởi ở BẾP — chưa có lối ra
   // pha), đá ngọt mát, khép chuỗi trồng → pha → bán. Giá vốn/ly = 16k/4 + 17k/30 + 3k/10 = 4.9k → bán 20k (lời >2× vốn).
   // Mở 32 > mốc golden 30 → sim không đổi; KHÔNG hot (giữ đếm đồ nóng = 3).
@@ -127,7 +127,17 @@ export const QUAN_RECIPES: QuanRecipe[] = [
   { id: 'sua_chua_cam', name: 'Sữa chua cam', icon: '🍊', unlock: 34, price: 24_000, uses: [{ id: 'suachua', cups: 3 }, { id: 'x_cam', cups: 5 }, { id: 'x_duong', cups: 30 }, { id: 'x_nuoc_da', cups: 10 }] },
   { id: 'ca_phe_muoi', name: 'Cà phê muối', icon: '🧂', unlock: 40, price: 28_000, uses: [{ id: 'x_ca_phe_hoa_tan', cups: 15 }, { id: 'x_sua_dac', cups: 10 }, { id: 'x_muoi', cups: 60 }, { id: 'x_nuoc_da', cups: 10 }] },
   { id: 'tra_gung', name: 'Trà gừng nóng', icon: '🫚', unlock: 36, price: 15_000, uses: [{ id: 'tra', cups: 40 }, { id: 'x_gung', cups: 12 }, { id: 'x_duong', cups: 30 }], hot: true },
+  // GĐ1663: cam gừng đá — gừng trại có món mát (trước chỉ trà gừng nóng); giữ nguyên 3 đồ nóng.
+  { id: 'cam_gung_da', name: 'Cam gừng đá', icon: '🍊', unlock: 37, price: 24_000, uses: [{ id: 'x_cam', cups: 3 }, { id: 'x_gung', cups: 12 }, { id: 'x_duong', cups: 30 }, { id: 'x_nuoc_da', cups: 10 }] },
+  { id: 'tra_sa_da', name: 'Trà sả đá', icon: '🌿', unlock: 40, price: 15_000, uses: [{ id: 'tra', cups: 40 }, { id: 'x_sa', cups: 6 }, { id: 'x_duong', cups: 30 }, { id: 'x_nuoc_da', cups: 10 }] }, // GĐ1703: lối ra quán cho sả
+  { id: 'sa_chanh_da', name: 'Sả chanh đá', icon: '🍋', unlock: 41, price: 16_000, uses: [{ id: 'x_chanh_khong_hat', cups: 8 }, { id: 'x_sa', cups: 6 }, { id: 'x_duong', cups: 30 }, { id: 'x_nuoc_da', cups: 10 }] }, // GĐ1726
+  // GĐ1666: nước ép gấc — gấc trại có lối ra thứ hai (sau xôi gấc).
+  { id: 'ep_gac_da', name: 'Nước ép gấc', icon: '🔴', unlock: 43, price: 26_000, uses: [{ id: 'x_gac', cups: 4 }, { id: 'x_duong', cups: 30 }, { id: 'x_nuoc_da', cups: 10 }] },
   { id: 'ca_phe_sua_nong', name: 'Cà phê sữa nóng', icon: '♨️', unlock: 37, price: 20_000, uses: [{ id: 'x_ca_phe_hoa_tan', cups: 15 }, { id: 'x_sua_dac', cups: 10 }], hot: true },
+  // GĐ1650: nước ép thơm — thêm món mát dùng thơm có sẵn (chiều sâu quán nước; giữ nguyên 3 đồ nóng).
+  { id: 'ep_thom_da', name: 'Nước ép thơm', icon: '🍍', unlock: 35, price: 22_000, uses: [{ id: 'x_thom', cups: 4 }, { id: 'x_duong', cups: 30 }, { id: 'x_nuoc_da', cups: 10 }] },
+  // GĐ1658: sữa dê đá — sữa dê trại (trước chỉ 1 lối ra bếp) vào quán nước.
+  { id: 'sua_de_da', name: 'Sữa dê đá', icon: '🐐', unlock: 36, price: 24_000, uses: [{ id: 'sua_de', cups: 6 }, { id: 'x_duong', cups: 30 }, { id: 'x_nuoc_da', cups: 10 }] },
   { id: 'ca_cao_nong', name: 'Ca cao nóng', icon: '☕', unlock: 38, price: 22_000, uses: [{ id: 'x_bot_cacao', cups: 10 }, { id: 'sua_tuoi', cups: 6 }], hot: true },
   // GĐ1436: món quán từ trái cây catalog (trước chỉ có lối ra bếp) — mở > 30 nên sim golden không đổi.
   { id: 'tra_dua_da', name: 'Trà dứa', icon: '🍍', unlock: 34, price: 22_000, uses: [{ id: 'tra', cups: 40 }, { id: 'x_thom', cups: 6 }, { id: 'x_duong', cups: 30 }, { id: 'x_nuoc_da', cups: 10 }] },

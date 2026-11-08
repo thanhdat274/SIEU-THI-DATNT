@@ -1,5 +1,6 @@
 import { useGame } from '../../core/store';
 import { formatMoney } from '../../data/products';
+import { shortLabel } from '../shortLabel';
 import {
   TIEM_XOI_COST_MUL, TIEM_XOI_HIRE_FEE, TIEM_XOI_MAX_STAFF, TIEM_XOI_PRICE, TIEM_XOI_TARGET, TIEM_XOI_UNLOCK,
   TIEM_XOI_WAGE, tiemXoiCapacity, tiemXoiHandQty, tiemXoiTarget, TIEM_XOI_BIG_COST, TIEM_XOI_BIG_LEVEL, tiemXoiDineCap, tiemXoiRainMul, tiemXoiWeekendMul, tiemXoiLastLine, isXoiCungDay, tiemXoiCungMul, tiemXoiStaffValues, tiemXoiExpandPayback,
@@ -28,7 +29,7 @@ export function TiemXoiSection() {
             <li>Giá {formatMoney(TIEM_XOI_PRICE)} · thợ {formatMoney(TIEM_XOI_WAGE)}/ngày, tối đa {TIEM_XOI_MAX_STAFF}</li>
           </ul>
           <button style={{ ...styles.btn, marginLeft: 0, marginTop: 6 }} disabled={money < TIEM_XOI_PRICE} onClick={buyTiemXoi}>
-            Mở tiệm xôi ({formatMoney(TIEM_XOI_PRICE)})
+            {shortLabel(`Mở tiệm xôi (${formatMoney(TIEM_XOI_PRICE)})`, TIEM_XOI_PRICE, money)}
           </button>
         </>
       ) : (
@@ -70,7 +71,7 @@ export function TiemXoiSection() {
           )}
           <div style={{ marginTop: 6 }}>
             <button style={{ ...styles.btn, marginLeft: 0 }} disabled={t.staff >= TIEM_XOI_MAX_STAFF || money < TIEM_XOI_HIRE_FEE} onClick={hireTiemXoi}>
-              Tuyển thợ ({formatMoney(TIEM_XOI_HIRE_FEE)})
+              {t.staff >= TIEM_XOI_MAX_STAFF ? `Tuyển thợ (${formatMoney(TIEM_XOI_HIRE_FEE)})` : shortLabel(`Tuyển thợ (${formatMoney(TIEM_XOI_HIRE_FEE)})`, TIEM_XOI_HIRE_FEE, money)}
             </button>
             <button style={styles.btn} disabled={t.staff <= 0} onClick={fireTiemXoi}>Cho nghỉ 1 thợ</button>
             <button style={styles.btn} disabled={t.handDay === day} onClick={() => steamXoiHand()} title="Phím J ở sạp xôi cũng được">
@@ -90,7 +91,7 @@ export function TiemXoiSection() {
               }
               seg.push(
                 <button key="b" style={styles.btn} disabled={level < TIEM_XOI_BIG_LEVEL || money < TIEM_XOI_BIG_COST} onClick={() => expandTiemXoi()}>
-                  {level < TIEM_XOI_BIG_LEVEL ? `Mở rộng bếp: cấp ${TIEM_XOI_BIG_LEVEL}` : `Mở rộng bếp ${formatMoney(TIEM_XOI_BIG_COST)} (120 phần, nấu ×1,5)`}
+                  {level < TIEM_XOI_BIG_LEVEL ? `Mở rộng bếp: cấp ${TIEM_XOI_BIG_LEVEL}` : shortLabel(`Mở rộng bếp ${formatMoney(TIEM_XOI_BIG_COST)} (120 phần, nấu ×1,5)`, TIEM_XOI_BIG_COST, money)}
                 </button>
               );
               return seg;

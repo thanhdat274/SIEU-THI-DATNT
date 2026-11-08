@@ -2,6 +2,7 @@ import { isQuanMatchDay } from '../../data/quanNuoc';
 import { playerPos } from '../../core/playerPos';
 import { useGame } from '../../core/store';
 import { formatMoney, fmtMul } from '../../data/products';
+import { shortLabel } from '../shortLabel';
 import { SAP_HOME_XOI_MUL, SAP_LOTS, SAP_TIERS, bestSapKind, sapKindOf, sapLotIncome, sapTierOf } from '../../data/sapRong';
 import { sapPayoff } from '../../data/sapPayoff';
 import { isXoiCungDay } from '../../data/tiemXoi';
@@ -71,7 +72,7 @@ export function ZoneMapSection() {
                 </button>
                 {up && (
                   <button style={styles.btn} disabled={money < up.cost} title={`Nâng lên ${up.name}: thu ×${fmtMul(up.mul)}`} onClick={() => upgradeSapLot(i)}>
-                    ⬆ {up.icon} {formatMoney(up.cost)}
+                    ⬆ {up.icon} {shortLabel(formatMoney(up.cost), up.cost, money)}
                   </button>
                 )}
               </span>

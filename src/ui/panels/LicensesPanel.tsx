@@ -4,6 +4,7 @@ import { isCookStation } from '../../data/furniture';
 import { LICENSE_FINE, LICENSE_GRACE, LICENSES, licenseStatus, requiredLicenses, SUSPEND_AFTER } from '../../data/licenses';
 import { licenseHealth } from '../../data/licenseHealth';
 import { formatMoney } from '../../data/products';
+import { shortLabel } from '../shortLabel';
 import { Callout, Footer, styles } from './shared';
 
 const STATUS = {
@@ -76,7 +77,7 @@ export function LicensesPanel() {
                 </div>
               </div>
               <button style={{ ...styles.btn, background: '#f1c40f' }} disabled={money < l.cost} onClick={() => buyLicense(l.id)}>
-                {status === 'none' ? 'Xin cấp' : 'Gia hạn'} {formatMoney(l.cost)}
+                {shortLabel(`${status === 'none' ? 'Xin cấp' : 'Gia hạn'} ${formatMoney(l.cost)}`, l.cost, money)}
               </button>
             </div>
           );

@@ -127,6 +127,9 @@ function roll(seed: number, day: number, salt: number) {
 }
 
 /** Mưa ai cũng lười ra đường: ngày mưa gọi nhiều hơn, giông thì hơn nữa. */
+/** GĐ1642: kỳ vọng đơn nấu/ngày trời nắng (9 khung × xác suất có cuộc gọi × 30% là đơn nấu) — làm trần mục tiêu. */
+export const expectedCookOrdersPerDay = (level: number) =>
+  level < COOK_UNLOCK ? 0 : PHONE_SLOTS.length * Math.min(0.65, 0.3 + level * 0.01) * COOK_ORDER_CHANCE;
 export const weatherPhoneMul = (weather: Weather) => (weather === 'storm' ? 1.8 : weather === 'rain' ? 1.5 : 1);
 
 /**

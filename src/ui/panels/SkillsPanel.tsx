@@ -1,5 +1,5 @@
 import { useGame } from '../../core/store';
-import { ALL_TITLES, PRESTIGE_TITLES, SKILLS, skillPoints, TITLES, type SkillId } from '../../data/titles';
+import { ALL_TITLES, PRESTIGE_TITLES, SKILLS, nextSkillPointLevel, skillPoints, TITLES, type SkillId } from '../../data/titles';
 import { counterfeitRisk, COINFAKE_UNLOCK, COINFAKE_LEAK_HIGH, COINFAKE_LEAK_MODERATE } from '../../data/counterfeitRisk';
 import { formatMoney } from '../../data/products';
 import { dailyWage } from '../../data/staff';
@@ -64,7 +64,7 @@ export function SkillsPanel() {
                 })()}
               </div>
               {learned ? <span style={{ color: '#2ecc71' }}>✔ Đã học</span> : level < k.unlock ? <span style={{ opacity: 0.7 }}>🔒 Cấp {k.unlock}</span> : (
-                <button style={styles.btn} disabled={!can} onClick={() => learnSkill(k.id)}>Học</button>
+                <button style={styles.btn} disabled={!can} onClick={() => learnSkill(k.id)}>{left > 0 ? 'Học' : `Hết điểm — cấp ${nextSkillPointLevel(level)}`}</button>
               )}
             </div>
           );

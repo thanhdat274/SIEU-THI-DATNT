@@ -1,3 +1,4 @@
+import { isCookStation } from '../data/furniture';
 import { create } from 'zustand';
 import { emptyQuestLog, emptyTotals, type QuestContext } from '../data/quests';
 import { recentAvgSalesProfit } from '../data/gifts';
@@ -73,6 +74,14 @@ export const questContext = (s: GameState): QuestContext => {
     weather: s.weather,
     regularsServedToday,
     regularsComingToday,
+    hasCookStation: s.furniture.some((f) => isCookStation(f.type)),
+    hasCourier: s.staff.some((w) => w.role === 'courier'),
+    hasService: (s.biz.services ?? []).length > 0,
+    serviceIds: s.biz.services ?? [],
+    hasOnlineOpen: !!s.online?.open,
+    activeCombos: s.activeCombos?.length ?? 0,
+    plantedPlots: s.garden?.plots?.filter((p) => p.crop).length ?? 0,
+    socialFollowers: Math.floor(s.social?.followers ?? 0),
   };
 };
 

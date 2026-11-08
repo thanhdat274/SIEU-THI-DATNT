@@ -39,7 +39,7 @@ export const loanBadgeOf = (s: S) => {
 };
 export const challengeBadgeOf = (s: S) => {
   const ch = weeklyChallenge(Math.ceil(s.day / 7), s.level);
-  const target = ch.target(s.level);
+  const target = ch.target(s.level, s.biz.services);
   // Save cũ thiếu counter trong tally thì tiến độ coi như 0 (giống tab Lãi lỗ)
   const current = ch.measure === 'revenue' ? s.biz.week.revenue : (s.biz.week[ch.measure] ?? 0);
   if (current >= target) return '🎯 xong';

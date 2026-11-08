@@ -5,7 +5,7 @@ import { Joystick } from './Joystick';
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { useAlertCap } from './alertCap';
 import { formatClock, questContext, useClock, useGame } from '../core/store';
-import { claimableCount, dailyQuests, dailySetProgress, storyQuest, STORY_STEPS } from '../data/quests';
+import { claimableCount, dailyQuests, dailySetProgress, storyLockLevel, storyQuest, STORY_STEPS } from '../data/quests';
 import { dirtLoss } from '../data/dirtLoss';
 import { dirtInspectionNote } from '../data/inspection';
 import { worldActions } from '../core/actions';
@@ -561,7 +561,9 @@ function GoalChip({ ready }: { ready: number }) {
   // (quy tắc chung của dự án — như Tutorial bên dưới)
   const story = useGame((s) => {
     const q = storyQuest(questContext(s));
-    return q ? [q.icon, q.title, q.description, String(q.current), String(q.target)].join('|') : null;
+    if (!q) return null;
+    // GĐ1628: bước bị chặn cấp → chip hiện 🔒 cấp N thay vì 0/1 đứng im
+    return [q.icon, q.title, q.description, String(q.current), String(q.target), String(storyLockLevel(q.id, s.level))].join('|');
   });
   const todo = useGame((s) => dailyQuests(questContext(s)).filter((q) => !q.claimed).length);
   // Cả bộ nhiệm vụ ngày (đã xong/đã nhận/tổng) gói thành chuỗi nguyên thuỷ để selector so sánh được
@@ -588,7 +590,7 @@ function GoalChip({ ready }: { ready: number }) {
       </button>
     );
   }
-  const [icon, title, desc, current, target] = story.split('|');
+  const [icon, title, desc, current, target, lockAt] = story.split('|');
   return (
     <button
       className="hud-chip hud-goal"
@@ -599,7 +601,7 @@ Bước ${stepNo}/${STORY_STEPS.length} của cốt truyện · bấm xem Nhiệ
       <span className="hud-goal-icon" aria-hidden="true">{icon}</span>
       <span>
         <b>{title}</b>
-        <small>{`${current}/${target}`}</small>
+        <small>{lockAt !== '0' ? `🔒 cấp ${lockAt}` : `${current}/${target}`}</small>
       </span>
       {ready > 0 && <span className="hud-badge">{`🎯 ${ready} xong`}</span>}
       {ready === 0 && todo > 0 && <span className="hud-badge muted">{`☀️ ${todo} việc`}</span>}

@@ -20,6 +20,217 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (07/11/2026)
+- GĐ1817: thích món cấp >50 — nhân viên văn phòng + nước ép táo, shipper + xôi lạp xưởng trứng; test 5500/5500. Người dùng yêu cầu dừng vòng lặp sau GĐ này.
+- GĐ1816: thích món cấp >50 — công nhân xây dựng + bánh mì lạp xưởng, y tá + canh sườn bí đỏ; test 5498/5498.
+- GĐ1815: QA trình duyệt hot list GĐ1806–1814 — mọi lễ ≤10 (Tết 17/18), món mới đều là công thức thật, không lỗi console. Dừng đợt hot list lễ hội.
+- GĐ1814: hot list cấp >50 — Tết dương + bò Nhật nướng muối, Hội bánh + bánh mì bơ tỏi; test 5496/5496.
+- GĐ1813: hot list cấp >50 — Hội xóm + bánh tráng nướng chà bông, Hội phụ nữ + sinh tố đu đủ; test 5494/5494.
+- GĐ1812: hot list cấp >50 — 20/11 + ô mai chanh me, Giáng sinh + sò điệp nướng mỡ hành; test 5492/5492.
+- GĐ1811: hot list cấp >50 — 30/4 + gỏi cá phao giò thủ, Lễ hội làng + xôi lạp xưởng trứng; test 5490/5490.
+- GĐ1810: hot list cấp >50 — Mùa hè + nước ép táo, Tựu trường + bánh mì lạp xưởng; test 5488/5488.
+- GĐ1809: hot list cấp >50 — 8/3 + sinh tố thanh long, Bóng đá phường + cá viên chiên mắm; test 5486/5486.
+- GĐ1808: hot list cấp >50 — Mùa mưa + canh sườn bí đỏ, Valentine + nước ép nho tím; test 5484/5484.
+- GĐ1807: hot list cấp >50 — Hội thi làm bánh + bánh bao chà bông, Chợ đêm + khoai tây tươi chiên; test 5482/5482.
+- GĐ1806: Tết dương có bánh bao kim sa (cấp 52, ngoài tầm sim L50) trong hot list; test 5480/5480.
+- GĐ1805: thử mực khô nướng vào hot Tết dương → economySimL50 tụt 21/22, đã hoàn tác. Ghi chú: biên economySimL50 đang sát 22; thêm cầu món nấu cấp 36–50 dễ làm vỡ — đợt sau ưu tiên nội dung ngoài cầu (lời thoại, mô tả) hoặc cấp >50.
+- GĐ1804: Ngày hội phụ nữ có kem dừa trong hot list; test 5479/5479.
+- GĐ1803: Ngày hội xóm có mít chiên giòn trong hot list; test 5478/5478.
+- GĐ1802: Giáng sinh trời lạnh có cà phê trứng trong hot list; test 5477/5477.
+- GĐ1801: Lễ hội làng nấu cỗ có thịt kho trứng trong hot list; test 5476/5476.
+- GĐ1800: QA trình duyệt GĐ1797–1799 (43 đơn, Đoàn từ thiện, bún bò giữa buổi, canh chua tối) — không lỗi console.
+- GĐ1799: tối khách muốn canh chua cá (rhythm toi); thử chè bắp buổi chiều làm economySimL50 tụt 21/22 nên bỏ; test 5475/5475.
+- GĐ1798: giữa buổi sáng khách muốn bún bò Huế (rhythm giua_sang); test 5474/5474.
+- GĐ1797: đơn tiệc "Đoàn từ thiện" (cấp 42; 12 phở bò + 12 bún bò Huế), 43/45 đơn; test 5473/5473.
+- GĐ1796: đơn tiệc "Họp lớp cấp 3" (bạn cũ anh Tuấn, cấp 44) — 12 gỏi cuốn + 12 bánh xèo; đơn 42/45; test + quét seed.
+- GĐ1795: test trần ≤12 món nấu trong favorites khách quen (bài học GĐ1794 — vượt làm economySimL50 tụt).
+- GĐ1794: anh Minh quán nhậu thích mực khô nướng. Thử thêm 3 món thích nữa (cô Nga, bác Đôi, cô Thảo) làm economySimL50 tụt 21/22 → bỏ; đợt khách quen thích món muộn dừng ở 12 người để giữ cân bằng cấp 50.
+- GĐ1793: chú Thắng thích bánh bao kim sa, cô Mai thích cà phê phin sữa, bác sĩ Hải thích cháo gà, anh Giao thích bánh mì jambon (món mở muộn); test mốc cấp 90.
+- GĐ1792: QA trình duyệt GĐ1789–1791 — 7 khách quen: cấp 30 giữ số món cũ, cấp 60 thêm món mới đúng tên (mi_y_sot_bo hiển thị "Mì ý sốt thịt bằm"), console 0 lỗi.
+- GĐ1791: Bác Tám thích trà atiso nấu, bác Hùng thợ máy thích hủ tiếu Nam Vang, chú Tư công nhân thích gà xào sả (món mở muộn); test mở rộng.
+- GĐ1790: Bé Na thích bánh flan, chị Lan thích sữa chua trái cây (món mở muộn); test describe.each mở rộng.
+- GĐ1789: khách quen có món thích mở muộn — Bà Năm thích cà phê trứng, anh Tuấn thích mì Ý sốt bò (cấp 36; cấp 30 không đổi); test unlockedFavorites.
+- GĐ1788: đơn tiệc "Đám giỗ ông" (bác Năm, cấp 42) — mâm cơm nhà 10 thịt kho trứng + 10 canh chua cá; đơn thứ 41/45; test riêng + quét seed.
+- GĐ1787: chợ đêm hot thêm bắp ngọt nướng, Trung thu thêm bánh pía nướng; test describe.each mở rộng.
+- GĐ1786: bóng đá phường hot thêm mực khô nướng, lễ 30/4 thêm tôm nướng (đi chơi biển); test describe.each mở rộng.
+- GĐ1785: mùa mưa hot thêm cháo gà (mưa dầm ăn cháo nóng); test describe.each mở rộng.
+- GĐ1784: QA trình duyệt GĐ1779–1783 — 6 khung giờ (5–13 món, id hợp lệ), mealFactor phở 7h = cơm cá cơm rim 12h = 2.2, console 0 lỗi.
+- GĐ1783: tiện lợi 24/7 xoay ca — sáng thêm phở bò, bánh cuốn chả lụa; trưa thêm cơm chiên lạp xưởng, cơm cá cơm rim; test mealFactor.
+- GĐ1782: buổi chiều thèm chè khoai môn, bánh flan (ăn vặt ngọt); test timeBandAt.
+- GĐ1781: chống phình wants khung giờ — test ≤20 món/khung, không trùng, id có thật (6 khung đạt).
+- GĐ1780: giữa buổi thèm phở bò, bánh cuốn chả lụa; cao điểm tối thèm cá kho tộ, thịt kho trứng (mang về ăn cơm nhà); test timeBandAt.
+- GĐ1779: khung tối muộn (20–22h) khách thèm đồ nhắm — mực khô nướng, cánh gà chiên mắm; test timeBandAt.
+- GĐ1778: QA trình duyệt món nấu hot GĐ1774–1777 — 17/18 lễ có món nấu, tên tra đúng (vd bóng đá → Cánh gà chiên nước mắm), console 0 lỗi.
+- GĐ1777: 8/3 sữa chua trái cây, ngày hội phụ nữ sinh tố dưa hấu; test mọi lễ có ≥1 món nấu hot (trừ Sale cuối năm — dịp xả hàng tạp hóa).
+- GĐ1776: thêm món nấu hot — Valentine kem dừa, ngày hội xóm chè bắp, 20/11 hộp quà trà bánh quy; test describe.each mở rộng.
+- GĐ1775: thêm món nấu hot — chợ đêm bánh tráng nướng, Tết dương lẩu viên thập cẩm, tựu trường bánh mì que; test describe.each mở rộng.
+- GĐ1774: lễ hội có món nấu hot — Giáng sinh gà nướng mật ong, giải bóng đá phường cánh gà chiên mắm, hội thi làm bánh bánh flan; test describe.each.
+- GĐ1773: test bảo đảm mọi nghề (trừ đầu bếp — chỉ mua nguyên liệu) thích ≥1 món nấu; hiện 37/37 đạt.
+- GĐ1772: QA trình duyệt like GĐ1760–1771 — 38 nghề, mọi id like tra ra sản phẩm có tên (vd sư thầy → Chè hạt sen), console 0 lỗi.
+- GĐ1771: bác sĩ về hưu thích cháo yến mạch, vệ sĩ quán bar thích mực khô nướng; test it.each mở rộng.
+- GĐ1770: nhân viên ngân hàng thích bánh mì jambon, tài xế bus thích cơm cá cơm rim; test it.each mở rộng.
+- GĐ1769: bác sĩ thích cháo gà, HLV gym thích ức gà nướng; test it.each mở rộng.
+- GĐ1768: thợ cắt tóc thích bánh bao kim sa, công an thích cơm sườn nướng (id like đã được test productById canh); test it.each mở rộng.
+- GĐ1767: thợ sửa xe thích hủ tiếu Nam Vang, thợ điện thích bánh mì que; test it.each mở rộng.
+- GĐ1766: bán hàng online thích cơm chiên lạp xưởng, chủ quán phở thích bún bò Huế; test it.each mở rộng.
+- GĐ1765: test chặn like món nấu cấp ≤30 mới (12 món cũ đóng băng LEGACY) — giữ simGolden cấp 30 không lệch như GĐ1764.
+- GĐ1764: pha chế thích cà phê phin sữa (cấp 64; bạc xỉu cấp 26 làm lệch simGolden cấp 30 nên bỏ), influencer thích bánh flan; test it.each mở rộng.
+- GĐ1763: giáo viên thích phở bò, freelancer thích mì Ý sốt bò — nghề 7 món thích có món nấu; test it.each mở rộng.
+- GĐ1762: phóng viên thích cà phê trứng, ngư dân thích cá kho tộ — nghề 6 món thích có món nấu; test it.each mở rộng.
+- GĐ1761: thợ may thích bánh mì pate, hớt tóc vỉa hè thích bánh tráng nướng — nghề 5 món thích có món nấu; test it.each mở rộng.
+- GĐ1760: nghề ít món thích được thêm món nấu — CSGT thích bánh mì thịt, sư thầy thích chè hạt sen; test it.each mở rộng.
+- GĐ1759: chống phình đơn tiệc — test trần ≤45 đơn (hiện 40), id không trùng, không hai đơn một-món trùng món.
+- GĐ1758: QA trình duyệt 4 đơn tiệc mới GĐ1754–1757 — tải từ dev server, tên món khớp sản phẩm, console 0 lỗi.
+- GĐ1757: đơn tiệc "Cuộc nhậu xóm" (tổ dân phố, cấp 37) đặt 16 gỏi xoài tôm khô — gỏi xoài có đầu ra đơn đặt; test describe.each mở rộng.
+- GĐ1756: đơn tiệc "Liên hoan cuối kỳ" (lớp 11A, cấp 39) đặt 16 mít chiên giòn — món mít có đầu ra đơn đặt; test describe.each mở rộng.
+- GĐ1755: đơn tiệc "Tiệc đầy tháng" (nhà chị Tư, cấp 44) đặt 16 chè gấc — chè gấc có đầu ra đơn đặt; test describe.each mở rộng.
+- GĐ1754: đơn tiệc "Tiệc tân gia" (anh Hai mới dọn về hẻm, cấp 42) đặt 16 gỏi bưởi tôm — gỏi bưởi có đầu ra đơn đặt; test describe.each mở rộng.
+- GĐ1753: guard chống phình — mỗi nghề tối đa 15 món thích (dài nhất hiện 14).
+- GĐ1752: y tá thích Nhãn đá xay (sau ca trực) — test trong farmOutletDishes.
+- GĐ1751: bà nội trợ thích Kem sữa dê (mua cho con) — test trong farmOutletDishes.
+- GĐ1750: sinh viên thích Vải đá xay — test trong farmOutletDishes.
+- GĐ1749: guard chống phình — hot list lễ hội có trần (Tết ≤18, lễ khác ≤10), không lặp id.
+- GĐ1748: Tết Nguyên Đán hút Chè gấc (gấc đỏ màu Tết) — test trong farmOutletDishes.
+- GĐ1747: đổi tên test fruitOutletDishes → farmOutletDishes (đã gồm cả sữa dê).
+- GĐ1746: Mùa hè hút Kem sữa dê — test trong fruitOutletDishes.
+- GĐ1745: QA trình duyệt Chè gấc (44, 6×14k) + Kem sữa dê (45, 8×13k) — nạp đúng, không lỗi console.
+- GĐ1744: món Kem sữa dê (máy xay, mở 45; sữa dê + đường → 8×13k) — lối ra bếp thứ 2 cho sữa dê (sau sữa chua dê); test trong fruitOutletDishes.
+- GĐ1743: guard cropOutlets mở rộng sang 7 sản phẩm vật nuôi — mỗi loại ≥2 lối ra chế biến.
+- GĐ1742: guard test cropOutlets — mỗi cây trồng (21 loại) có ≥2 lối ra chế biến (bếp + quán).
+- GĐ1741: món Chè gấc (ấm nấu, mở 44; gấc + đường → 6×14k) — lối ra bếp thứ 2 cho gấc; test trong fruitOutletDishes.
+- GĐ1740: QA trình duyệt đợt GĐ1734–1739 — Gỏi xoài tôm khô/Nhãn đá xay/Vải đá xay + hot Lễ 30/4 & Mùa hè nạp đúng, không lỗi console.
+- GĐ1739: Mùa hè hút Vải đá xay + Nhãn đá xay (trùng mùa vải 5–7, nhãn 7–9) — test trong fruitOutletDishes.
+- GĐ1738: guard test — id đồ uống quán không trùng id hàng/món (cho phép 2 trùng cũ nuoc_mia, bac_xiu; kiểm cả danh sách cũ không thừa).
+- GĐ1737: món Vải đá xay (máy xay, mở 43; vải 2 + đường + đá → 8×15k) — lối ra bếp thứ 2 cho vải; tránh trùng id sinh_to_vai của quán; test trong fruitOutletDishes.
+- GĐ1736: món Nhãn đá xay (máy xay, mở 41; nhãn 2 + đường + đá → 8×15k) — lối ra bếp thứ 2 cho nhãn; test trong fruitOutletDishes.
+- GĐ1735: Lễ 30/4 hút Gỏi xoài tôm khô (đúng mùa xoài 3–6) — test trong fruitOutletDishes.
+- GĐ1734: món Gỏi xoài tôm khô (nồi hấp, mở 37; xoài 2 + tôm khô + nước mắm → 8×15k) — lối ra bếp thứ 2 cho xoài; test trong fruitOutletDishes.
+- GĐ1733: QA trình duyệt Gỏi bưởi tôm (42, 8×22k) + Mít chiên giòn (39, 10×15k) — nạp đúng, không lỗi console.
+- GĐ1732: học sinh thích Mít chiên giòn (ăn vặt) — test trong fruitOutletDishes.
+- GĐ1731: gộp test Gỏi bưởi tôm + Mít chiên giòn thành fruitOutletDishes (describe.each).
+- GĐ1730: món Mít chiên giòn (chảo chiên, mở 39 — cấp 40 đã đủ 13 công thức; mít 3 + dầu ăn → 10×15k) — lối ra bếp thứ 2 cho mít; test mitChienGion.
+- GĐ1729: Tết Nguyên Đán hút Gỏi bưởi tôm (đúng mùa bưởi 12–2) — test trong goiBuoiTom.
+- GĐ1728: món Gỏi bưởi tôm (nồi hấp, mở 42; bưởi 2 + tôm tươi + nước mắm → 8×22k) — lối ra bếp thứ 2 cho bưởi trại; test goiBuoiTom.
+- GĐ1727: QA trình duyệt đợt sả GĐ1719–1726 — Sả chanh đá, thực đơn trưa ×2.2, cao điểm trưa, đơn Đám hỏi đều nạp đúng; không lỗi console.
+- GĐ1726: quán nước thêm Sả chanh đá (mở 41, 16k, chanh + sả) — test trong quanTraSa.
+- GĐ1725: cao điểm trưa (rhythm) muốn Gà/Bò xào sả — test trong saDishes.
+- GĐ1724: Gà/Bò xào sả vào thực đơn trưa tiện lợi 24/7 (mealFactor ×2.2 lúc 11h–15h) — test trong saDishes.
+- GĐ1723: gộp test món xào sả thành saDishes (describe.each); Bò xào sả nay cũng được kiểm công thức duy nhất + có trong COOKED_PRODUCTS.
+- GĐ1722: gộp test đơn tiệc chuỗi sả thành saPartyOrders (describe.each) + quét seed chứng minh đơn đám hỏi thật sự được mời.
+- GĐ1721: lễ hội làng hút thêm Bò xào sả (hot list) — test trong tetXoiGac.
+- GĐ1720: đơn tiệc Đám hỏi nhà cô Sáu — 16 Bò xào sả, mở 54, thưởng 380k — test boXaoSaOrder.
+- GĐ1719: dân chạy bộ thích Bò xào sả (bữa đạm) — thêm dòng vào professionLikesSa.
+- GĐ1718: QA trình duyệt Bò xào sả — công thức + món nạp đúng trong game (8 phần, 45k), không lỗi console.
+- GĐ1717: món Bò xào sả (chảo chiên, mở 54; bò tươi + sả + nước mắm → 8×45k) — test boXaoSa.
+- GĐ1716: guard test — danh sách thích của mỗi nghề không lặp món.
+- GĐ1715: chống phình test — gộp 5 test sở thích sả thành professionLikesSa (it.each).
+- GĐ1714: bộ đội thích gà xào sả (bữa no khi về phép) — test soldierGaXaoSa.
+- GĐ1713: nông dân thích gà xào sả (bữa trưa ngoài đồng) — test farmerGaXaoSa.
+- GĐ1712: đầu bếp thích sả (gia vị cạnh tỏi/hành khô) — test chefSa.
+- GĐ1711: bà nội trợ thích sả tươi — x_sa có cầu lẻ hằng ngày (test momSa).
+- GĐ1710: thợ xây thích gà xào sả — món mới có cầu hằng ngày (test constructionGaXaoSa).
+- GĐ1709: đơn tiệc mới "Mâm cỗ giỗ ông" 🕯️ (cấp 52, 16 gà xào sả, thưởng 260k/170 XP) — test gaXaoSaOrder (có quét cấp 60 thấy được mời).
+- GĐ1708: lễ hội làng (nấu cỗ) thêm ga_xao_sa vào hàng hot — test tetXoiGac.
+- GĐ1707: QA trình duyệt 127.0.0.1:5173 — bản chạy có cây sả (5 ngày/6k/thu 6, có dáng), Trà sả đá, Gà xào sả, không còn x_nuoc_mam, hàng _tp ghi "(làm sẵn)"; console không lỗi. Không đổi code.
+- GĐ1706: món mới Gà xào sả (chảo chiên, cấp 52: gà nguyên con + sả 2 + nước mắm → 8 phần × 32k) — test gaXaoSa.
+- GĐ1705: FARM_ORDER_POOL nối thêm x_sa ở cuối — đơn nông trại có thể xin sả; test farmOrderPool.
+- GĐ1704: nông trại trồng được Sả 🌿 (cấp 40, 5 ngày, hạt 6k, thu 6) — dáng bụi lá dài; cấp cho đậu hũ/cá basa chiên sả, trà sả đá. Test cropSa.
+- GĐ1703: quán nước thêm món mát "Trà sả đá" 🌿 (cấp 40, 15k: trà + sả + đường + đá) — lối ra quán cho sả; test quanTraSa.
+- GĐ1702: test tên-nguyên liệu (bếp + quán) tự kiểm mỗi luật bắt được tên mẫu và không khớp nhầm — chống regex câm với chữ Việt.
+- GĐ1701: test khoá tên món quán nước khớp nguyên liệu (gừng/dừa/chanh/cam/sữa/tắc/mật ong/bạc hà) — hiện đã sạch, quanNameIngredients.
+- GĐ1700: công thức recipe_kem đổi tên "Kem trái cây tự làm" khớp món nấu ra; test khoá mọi công thức bếp trùng tên món đầu ra.
+- GĐ1699: test khoá tên/id công thức bếp và món quán nước duy nhất (hiện đã sạch) — recipeNamesUnique.
+- GĐ1698: "Bánh tráng nướng trứng" (món nấu) và "Bánh tráng (xấp lớn)" (x_banh_trang) — hết hẳn mặt hàng trùng tên, test productNamesUnique không còn ngoại lệ.
+- GĐ1697: 13 hàng làm sẵn *_tp thêm hậu tố "(làm sẵn)" để khỏi trùng tên món tự nấu; danh sách trùng cũ 10→2 (bánh tráng, bánh tráng nướng).
+- GĐ1696: món nấu hot_vit_lon đổi tên "Hột vịt lộn rau răm" (tách khỏi hàng sống hotvit); danh sách trùng cũ 11→10.
+- GĐ1695: tách tên 5 cặp hàng trùng tên khác hàng (Áo mưa bộ, Cá basa phi lê (ký), Lạp xưởng (ký), Chả cá thác lác (ký), Bánh pía (hộp 4 cái)) — đổi tên hiển thị, giữ mã/giá; danh sách trùng cũ 16→11.
+- GĐ1694: test chặn mặt hàng trùng tên mới (16 cặp cũ khoá trong danh sách chỉ được giảm, phần lớn cố ý *_tp vs món nấu) — productNamesUnique.
+- GĐ1693: test tên món mở rộng (cốt dừa/nước dừa/nước mắm/xì dầu) lộ ra x_nuoc_mam (GĐ1686) trùng nuocmam có sẵn → xoá mã trùng, cá viên chiên nước mắm dùng nuocmam; bản lưu còn mã cũ được đổi tên lúc nạp (PRODUCT_ALIASES/aliasProductIds, save.ts).
+- GĐ1692: test chặn tên món ghi gia vị (sả/tỏi/gừng/mật ong) mà công thức thiếu nguyên liệu đó, công thức mở >30 — recipeNameIngredients.
+- GĐ1691: bánh mì bơ tỏi nay dùng tỏi — test banhMiBoToi.
+- GĐ1690: cá basa chiên sả dùng sả thay gừng — test caBasaSa.
+- GĐ1689: mực khoanh chiên giòn nay dùng bột chiên giòn — test mucKhoanhBot.
+- GĐ1688: cá rô phi chiên xù nay dùng bột chiên giòn, mẻ 5→6 — test caRoPhiXu.
+- GĐ1687: cánh gà nướng → "Cánh gà nướng mật ong", dùng mật ong, mẻ 8→10 — test canhGaMatOng.
+- GĐ1686: thêm Nước mắm chai (x_nuoc_mam, cấp 40); cá viên chiên nước mắm dùng nó, mẻ 6→9 — test caVienMam.
+- GĐ1685: cá hồi hấp xì dầu nay dùng nước tương — test caHoiXiDau.
+- GĐ1684: tôm hấp nước dừa nay dùng nước dừa hộp, mẻ 6→7 để vẫn lãi — test tomHapDua.
+- GĐ1683: thêm Sả (x_sa, cấp 40) vào danh mục; đậu hũ chiên sả nay dùng sả — test dauHuSa.
+- GĐ1682: mực hấp gừng nay dùng gừng (lối ra thêm cho gừng nông trại) — test mucHapGung.
+- GĐ1681: chè khoai môn nấu thêm nước cốt dừa, mẻ 6→8 chén để vẫn lãi — test cheKhoaiMonDua.
+- GĐ1680: bắp ngọt nướng mỡ hành nay dùng thêm hành lá (trước chỉ có bắp) — test bapMoHanh.
+- GĐ1679: đơn xôi gấc đám cưới nâng thưởng 240k/160 XP — ngang các đơn món nấu khác (180–260k).
+- GĐ1678: đơn tiệc mới 💒 Mâm xôi gấc đám cưới (cấp 43, 30 phần xôi gấc, thưởng 240k) — lối bán lớn cho gấc nhà trồng; test sweep GĐ267 chỉ xét đơn đã mở ở cấp 40.
+- GĐ1677: Hội thi làm bánh hút Trứng ngỗng (nguyên liệu bánh flan, trại có ngỗng bán được giá).
+- GĐ1676: test mọi giống (kể cả gấc/thơm/gừng mới) dựng được mô hình 3D ở cả 4 giai đoạn, giai đoạn chín đủ cỡ.
+- GĐ1675: Tết Trung thu hút Bưởi (mâm cỗ trông trăng) + Chè bưởi.
+- GĐ1674: mùa mưa hút Chè trôi nước (món ấm có gừng, cấp 38).
+- GĐ1673: mùa hè hút Chè Thái (món mát, cấp 40 — không đụng sim cấp ≤30).
+- GĐ1672: bếp thêm Chè chuối (cấp 44, nồi nước) — chuối nhà trồng + cốt dừa. (Trà mứt gừng giữ dùng mứt Tết: đổi sang mứt gừng bà Tám sẽ làm mứt Tết mất lối ra duy nhất.)
+- GĐ1671: nhà bà Tám bán thêm Mứt gừng (cấp 45, chỉ hàng xóm) — hút hàng dịp Tết.
+- GĐ1670: đơn quán xóm lấy thêm thơm/gừng/gấc nhà trồng (nối cuối pool, giữ thứ tự cũ).
+- GĐ1669: test khóa mọi id hàng hot/goods của lễ hội là món có thật (gõ sai id sẽ âm thầm vô tác dụng) — hiện 0 id lỗi.
+- GĐ1668: Lễ hội làng (nấu cỗ) cũng hút Xôi gấc.
+- GĐ1667: Tết Nguyên Đán hút Xôi gấc (thêm vào hàng hot dịp Tết).
+- GĐ1666: quán nước thêm 🔴 Nước ép gấc (cấp 43) — gấc trại có lối ra thứ hai.
+- GĐ1665: nông trại thêm giống 🔴 Gấc (cấp 43, giàn trái đỏ) → tiệm xôi thêm Xôi gấc (cấp 43); mở 43 để mốc kinh tế tiệm xôi cấp 42 không đổi.
+- GĐ1664: Chè trôi nước thêm gừng vào công thức (đúng món thật, gừng trại thêm lối ra) — vẫn lời.
+- GĐ1663: quán nước thêm 🍊 Cam gừng đá (cấp 37) — gừng trại có món mát (trước chỉ trà gừng nóng).
+- GĐ1662: bếp thêm Canh chua cá (cấp 42, nồi nước: cá + thơm trại + cà chua + nước mắm).
+- GĐ1661: bếp thêm Trứng ngỗng luộc (cấp 45) — trứng ngỗng trại có lối ra thứ hai; giá giữ lời khuyên "bán lẻ hời hơn".
+- GĐ1660: bếp thêm Hột vịt muối (cấp 44, nồi nước) — trứng vịt trại có lối ra thứ hai.
+- GĐ1659: bếp thêm Gà Đông Tảo hấp gừng (cấp 43, nồi nước) — gà quý + gừng trại; giá giữ dưới gà nướng để lời khuyên "bán lẻ hời hơn" không đổi.
+- GĐ1658: quán nước thêm 🐐 Sữa dê đá (cấp 36) — sữa dê trại có lối ra thứ hai (trước chỉ 1 công thức bếp).
+- GĐ1657: mít 🍈 (trước trùng 🍍 với thơm), nếp 🍙 (trước trùng 🌾 với lúa) — test mỗi giống một icon.
+- GĐ1656: lúa nếp/đậu xanh có dáng riêng trên luống (trước rơi về dáng cây ăn trái) + test mọi giống đều có dáng.
+- GĐ1655: bếp thêm món "Cá kho thơm" (bếp nồi nấu, cấp 41: cá + thơm + nước mắm hàng xóm → 8 phần) — thơm nay trồng được ở trại; test caKhoThom; full xanh (longSessionLeak đỏ lẻ do tải, chạy lại xanh).
+- GĐ1654: thử thách tuần "Lời từ dịch vụ"/tháng "Dịch vụ đều tay" ≤ 70% sức kiếm cả kỳ của dịch vụ đang có (truyền biz.services vào target/desc, closeWeek/closeMonth, chip HUD, PeriodTabs); test serviceQuestCap; full 589/5230 xanh.
+- GĐ1653: việc ngày "Lời từ dịch vụ" ≤ 70% lời kỳ vọng của dịch vụ đang có (cấp 10 chỉ nạp tiền: 47k → ≤19k vì sức kiếm ~27k); thử thách tuần/tháng dịch vụ chưa đổi (chỉ theo cấp); test serviceQuestCap; full 589/5229 xanh.
+- GĐ1652: nông trại thêm giống "🫚 Gừng" (cấp 36, 6 ngày, 4 củ) tự cung Trà gừng nóng + món bếp có gừng; test gungCrop; full 588/5225 xanh.
+- GĐ1651: nông trại thêm giống "🍍 Thơm (dứa)" (cấp 34, 9 ngày, 4 trái) tự cung quán nước Trà dứa/Nước ép thơm; test thomCrop; full 587/5222 xanh.
+- GĐ1650: quán nước thêm món mát "🍍 Nước ép thơm" (cấp 35, thơm + đường + đá; giữ nguyên 3 đồ nóng); sửa test nút nhập gấp theo nhãn "Thiếu X" của GĐ1649; test quanEpThom.
+- GĐ1649: nút "⚡ Nhập gấp & giao" (bán sỉ) thiếu tiền ghi "Thiếu X"; đơn nhập ghi "thiếu X" thay vì "không đủ tiền"; test shortLabel.
+- GĐ1648: sổ nợ — nút "Nhắc nợ" đã bấm ghi "✅ Đã nhắc"; test debtRemindLabel.
+- GĐ1647: nút "Học" kỹ năng khi hết điểm ghi "Hết điểm — cấp N" (cấp có điểm kế tiếp); test skillNextPoint.
+- GĐ1646: nút "📣 Đăng bài" (MXH) khi khóa nêu lý do trên nút (🔒 cấp / cần N theo dõi); test socialPromoLabel.
+- GĐ1645: bước cốt truyện cấp 100 không còn gọi là "mốc cuối game" (trần cấp 200); test storyLevel100Text.
+- GĐ1644: rà mục tiêu khách ở cấp 200 — khách cơ sở 20+4×cấp = 820/ngày, việc "Đón khách" 204/"Khách vui vẻ" 247 vẫn khả thi → không sửa, thêm test khóa ≤50% customersPerDay mọi cấp. Xong đợt rà mục tiêu theo cấp sau khi nâng trần 200 (GĐ1641–1644).
+- GĐ1643: mục tiêu thu hoạch trại vượt sức trại (cấp 8 đòi 12 khi 4 luống chỉ ra ~10,7/ngày; cấp 200 đòi 185/ngày, 620/tuần, 3150/tháng khi trần ~32/ngày) → cắt ở 70% farmDailyCap (luống bậc đất đã mở được × cây sai nhất). 5210 test xanh.
+- GĐ1642: đơn nấu qua điện thoại chỉ ~1,4–1,75 đơn/ngày (9 khung × xác suất gọi × 30%) mà việc ngày đòi 6 (cấp 21) → 12 (cấp 50), tuần đòi 4+cấp → cắt theo expectedCookOrdersPerDay (ngày ≥1, tuần 70% × 7 ngày). 5209 test xanh.
+- GĐ1641: cấp tối đa 200 làm mục tiêu đơn app vượt trần đơn thật (việc ngày 45 đơn vs trần ~25; tuần 210 vs ~175) → cắt ở 70% onlineOrderCap 5★ cho việc ngày, thử thách tuần, tháng; cấp thấp giữ nguyên. QA trình duyệt GĐ1638/1640: gợi ý combo/gieo hiện trong bảng Nhiệm vụ. 581 tệp/5208 test xanh.
+- GĐ1640: việc ngày "Thu hoạch trại" và thử thách tuần/tháng thu hoạch nêu "trại chưa gieo luống nào: gieo ở 🌱 Mở rộng › 🚜 Trang trại" (QuestContext.plantedPlots, không vào save).
+- GĐ1639: thử thách tuần/tháng đo combo hiện "⚠️ Chưa bật combo nào: bật ở ⋯ Thêm › 🎁 Combo" khi chưa bật (periodBlocker).
+- GĐ1638: việc ngày "Bán theo combo" khi chưa bật combo nào ghi chỗ bật (⋯ Thêm › 🎁 Combo); giữ chỗ, bộ việc không xáo (QuestContext.activeCombos, không vào save).
+- GĐ1637: nút gieo hạt ở vườn khi thiếu tiền ghi "(Thiếu X₫)" thay cho giá. Cả bộ: 3 test hàng cuối run đỏ do việc dở dang chưa commit của phiên khác (lateGameProducts), không đụng.
+- GĐ1636: nút lắp máy bán hàng tự động ở chi nhánh khóa và ghi "Thiếu X₫" khi thiếu tiền. Rà xong bảng việc còn lại của 2 tài liệu tham khảo: phần chưa làm đều chờ siêu thị nhiều khu.
+- GĐ1635: nút nâng bậc quán nước khóa khi thiếu tiền và ghi "Thiếu X₫" (trước bấm mới báo); QA trình duyệt GĐ1631: bảng Xây dựng hiện "Thiếu 149.000đ". saveStore/longSessionLeak đỏ khi cả bộ chạy song song với phiên khác, chạy riêng xanh.
+- GĐ1634: nhãn "Thiếu X₫" phủ nốt chi nhánh (mặt bằng, lắp nâng cấp đêm), cam kết hợp đồng, nhận lô chợ phiên, nâng kho, tiệm xôi (mở/tuyển/mở rộng), nâng sạp. 5204 test xanh.
+- GĐ1633: Đào tạo/Thăng chức nhân viên, gọi Grab đơn app, mua quảng cáo cũng ghi "Thiếu X₫" khi thiếu tiền — hết nút mua xám câm trong panels. 5203 test xanh.
+- GĐ1632: nút Xin cấp/Gia hạn giấy phép, Mở gian hàng online, Xin lỗi MXH, Mua nâng cấp tiệm cũng ghi "Thiếu X₫" khi thiếu tiền (shortLabel). 5202 test xanh.
+- GĐ1631: bảng Xây dựng — nút "Chọn" đồ và "Thuê thợ" mở rộng khi thiếu tiền ghi "Thiếu X₫" thay vì nút xám câm (helper shortLabel + test). 580 tệp/5202 test xanh.
+- GĐ1630: rà nốt playtest đợt 2 — M3 (đồ gia dụng vốn không hết hạn; tên đã gộp) và M5 (groupTools gom nhóm) đã xong từ trước, M7 màn ngang 812×375 không cuộn/không tràn → không sửa; thêm test khóa đồ gia dụng hạn vô tận.
+- GĐ1629: playtest persona đợt 3 (khung 440 px, autoplay 5 ngày, 127.0.0.1) → PHAN-TICH-PLAYTEST-PERSONA-DOT3-2026-11-07.md: ngày 1 rõ, tổng kết đã nêu khách bỏ về vì hết hàng; việc tiếp: rà bảng quán nước/tiệm xôi tìm nút bị chặn câm. Save QA đã xóa.
+- GĐ1628: chip la bàn HUD hiện "🔒 cấp N" thay cho "0/1" khi bước cốt truyện bị chặn cấp (storyLockLevel; không thêm nút/thông báo). Rà đơn nông sản: đã lọc theo trại làm được. QA cấp 3 chip "Kho rộng hơn 🔒 cấp 8"; save QA đã xóa.
+- GĐ1627: test chặn việc ngày có mục tiêu ≤0 (tự xong) — quét 10 mốc cấp × 28 ngày × 3 thời tiết: sạch. Full suite 578 file xanh sau chỉnh câu dịch vụ GĐ1626.
+- GĐ1626: thử thách tuần/tháng (tab 📊 Lãi lỗ / 📆 Tháng) thêm dòng ⚠️ lý do chưa làm được — chưa mở dịch vụ, gian hàng app chưa nhận đơn, dưới 20 người theo dõi, chưa có bếp/người giao — qua periodBlocker dùng chung điều kiện việc ngày. QA cấp 30 tuần 2 thấy "⚠️ Chưa mở dịch vụ nào"; save QA đã xóa.
+- GĐ1625: việc "Lên mạng xã hội" khi dưới 20 người theo dõi (đăng quảng bá bị chặn) → "cần 20 người theo dõi (đang N): bán tốt để khách khen trên mạng"; bộ việc không đổi. QA cấp 30 thấy "(đang 0)"; save QA đã xóa.
+- GĐ1624: việc "Giao đơn app" khi gian hàng app chưa mở/đang tạm ngưng → "chưa nhận đơn: mở ở 🌱 Mở rộng › 📲 Online" (giữ chỗ, không xáo bộ). Rà chương truyện (không tuần tự, không kẹt) và trại (có luống sẵn) — không cần sửa. QA cấp 30 thấy gợi ý; save QA đã xóa.
+- GĐ1623: rà thành tựu — trạm nấu 9≥8, đồ nhà 5≥4, thú cưng 2, khách quen 28≥10: đều đạt được; thêm test achievementReachable chặn tái phát (không đổi gameplay, không cần QA trình duyệt).
+- GĐ1622: bước "Thuê N nhân viên" nêu cấp đủ chỗ theo trần maxStaff (3 người → cấp 10, 5 → 16, 10 → 31) thay vì chỉ cấp 4; QA cấp 7 thấy "Thuê 3 nhân viên — mở từ cấp 10"; save QA đã xóa.
+- GĐ1621: SỬA KẸT CỐT TRUYỆN — story_warehouse_7 đòi bậc kho 7 và story_shop_tier_7 đòi bậc mặt bằng 7 (tối đa là 6) nên không bao giờ xong, chặn mọi bước sau; sửa target thành 6, shop_tier_6 trỏ đúng Siêu thị khang trang (5). storyGateLevel nhận dạng theo id thay vì mã hàm. Test chặn bậc vượt trần; QA thấy 6/6.
+- GĐ1620: mọi bước cốt truyện bị chặn cấp (kho cấp 8, mở rộng cấp 6, thuê người cấp 4, hợp đồng cấp 14…) tự ghi "— mở từ cấp N" qua storyGateLevel; QA cấp 3 thấy "Nâng cấp nhà kho 1 lần — mở từ cấp 8"; save QA đã xóa.
+- GĐ1619: QA trình duyệt GĐ1618 — cấp 10, bảng nhiệm vụ hiện "Đối tác đầu tiên … hợp đồng mở từ cấp 14"; story_orders_5/20 là đơn tiệc (không cần người giao) nên không cần gợi ý; save QA đã xóa (0 DB).
+- GĐ1618: bước cốt truyện "Đối tác đầu tiên" khi dưới cấp 14 ghi "hợp đồng mở từ cấp 14" (không kẹt câm); test storyContractHint.
+- **GĐ1617** — QA trình duyệt GĐ1616 (cấp 10, ván mới): "Lời 47.000đ từ dịch vụ — chưa mở dịch vụ nào: mở ở 📈 Kinh doanh". Save tạm đã xoá từ trang không mở game (0 IndexedDB).
+- **GĐ1616** — "Lời từ dịch vụ" hiện từ cấp 3 dù chưa mở dịch vụ nào: mô tả thêm "— chưa mở dịch vụ nào: mở ở 📈 Kinh doanh" (`hasService` tính trực tiếp từ biz.services). Đã rà hết 15 việc ngày: các việc còn lại đều làm được với tiệm ván mới. Full suite 575/5185 xanh.
+- **GĐ1615** — QA trình duyệt GĐ1614: có Bếp nướng, không nhân viên → "Giao 7 đơn nấu — cần thuê 🛵 Giao hàng để khách gọi điện đặt". Bài học QA: xoá save tạm phải chạy từ trang KHÔNG mở game (vd. `/src/data/critic.ts`), nếu không game lưu lại ngay — save tạm GĐ1613 đã sót và nay đã xoá sạch (0 IndexedDB trên 127.0.0.1).
+- **GĐ1614** — "Giao đơn nấu" khi có bếp nhưng chưa có người giao (điện thoại không đổ chuông → không thể có đơn): mô tả đổi thành "… — cần thuê 🛵 Giao hàng để khách gọi điện đặt" (`hasCourier` tính trực tiếp, không lưu). Full suite 575/5184 xanh.
+- **GĐ1613** — QA trình duyệt GĐ1612 (save tạm 127.0.0.1, đã xoá): bảng Nhiệm vụ cấp 26 hiện "Bán 24 món nhà làm — tiệm chưa có bếp: mua ở 🛠️ Xây dựng" gọn 1 dòng (cao 16px).
+- **GĐ1612** — Việc ngày "Bán món nhà làm"/"Giao đơn nấu" hiện từ cấp 21 kể cả khi tiệm chưa có bếp (không làm được). Nay giữ chỗ trong bộ (không xáo danh sách khi mua bếp giữa ngày) nhưng mô tả thêm "— tiệm chưa có bếp: mua ở 🛠️ Xây dựng" (`hasCookStation` tính trực tiếp, không lưu → save cũ an toàn; hẻm online tính trên state đồng bộ). Full suite 575/5183 xanh.
+- **GĐ1611** — QA trọn vòng nhà phê bình trong ván thật (127.0.0.1, save tạm đã xoá): gọi "Bánh tráng trộn" (Bếp nướng, 10 phút) → bày lên kệ → +500.000đ, "🌟 Nhà phê bình khen…", hết lời hẹn.
+- **GĐ1610** — QA nhà phê bình trong ván thật (save khách tạm trên 127.0.0.1, origin riêng — không đụng save ngày 37 ở localhost): cấp 50 + chỉ Bếp nướng → gọi "Bánh mì kẹp xà lách (Bếp nướng)" (8 phút, mở cấp 47) rồi "Bánh pía nướng nóng (Bếp nướng)"; thông báo hiện trên HUD. Save QA đã xoá.
+- **GĐ1609** — Rà K2/K3 (chợ đồ cũ, tủ trao đổi): hẻm online là MỘT tiệm chung (kho/tiền dùng chung, server chỉ chuyển state/act/lock) → trao đổi trong hẻm vô nghĩa; giữa các hẻm cần kho lưu mới trên server → giữ chờ backend. Full suite 574/5181 xanh sau GĐ1608.
+- **GĐ1608** — Nhà phê bình chỉ gọi món nấu xong trong 25 phút (khung 30 − 5 phút bày kệ); món 30 phút trước đây xong đúng lúc hết hẹn → phạt dù nấu ngay. Rà "trang trí nhiều lớp": sơn tường/nền cả tiệm đã có (`style`); nền riêng từng khu cần đổi tìm đường (đồ hiện chắn lối) → giữ chờ siêu thị nhiều khu.
+- **GĐ1607** — QA trình duyệt GĐ1604–1606 (nạp module qua Vite, không đụng save thật ngày 37): tiệm chỉ có Bếp nướng ở cấp 50 → 5/5 lần gọi đều món nướng, câu "… (Bếp nướng) — phục vụ trong 30 phút!" gọn 1 dòng. Full suite 574/5180 xanh.
 - **GĐ1606** — Thông báo nhà phê bình gọi món ghi kèm bếp đang có để nấu ("… gọi Xôi gấc (Bếp xôi) — …"); không thêm thông báo mới (`criticCallText`).
 - **GĐ1605** — Nhà phê bình lọc như đơn điện thoại: chỉ gọi món nấu được bằng trạm ĐANG có trong tiệm và không trái mùa (không khớp gì thì lùi về mọi món đã mở). Rà HappyTown P0/P1: ngoại hình riêng khách quen + nhờ vả nhiều ngày đã có.
 - **GĐ1604** — Sửa nhà phê bình (rà lại KE-HOACH I1): từ cấp 45 trước đây có thể gọi món khóa tới cấp 100 → không nấu được, phạt 3★1 chắc chắn. Nay nghiêm ngặt gọi mọi món ĐÃ MỞ (kể cả món mới mở); nhẹ chỉ gọi món mở từ ≥10 cấp. Chạy ở máy chạy sim như cũ → hẻm online không đổi. Đối chiếu xong 6 tài liệu tham khảo: mọi mục còn lại đều chờ siêu thị phase 2/backend.

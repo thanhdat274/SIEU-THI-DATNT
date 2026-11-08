@@ -1,5 +1,4 @@
 import { relTier, PARTNER_TIERS } from './supplierRel';
-import { MAX_LEVEL } from './levels';
 
 /**
  * Mục tiêu vòng tái sinh (GĐ140) — trục NG+ khác lối chơi đầu (audit deleg_7cea64c0, Slice 2).
@@ -140,7 +139,7 @@ export const NG_GOALS: NgGoal[] = [
     desc: 'Đạt cấp {target} trong vòng mới',
     reward: 1_500_000,
     baseTarget: 40,
-    targetCap: MAX_LEVEL, // vòng 5+ target 40×3=120 vượt cấp tối đa 100 — bó về 100
+    targetCap: 100, // vòng 5+ target 40×3=120 — bó về 100 (giữ nhịp vòng mới dù cấp tối đa đã là 200)
     done: (c, t) => c.level >= t,
   },
   {

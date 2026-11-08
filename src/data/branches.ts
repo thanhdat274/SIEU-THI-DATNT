@@ -443,11 +443,11 @@ export function branchPowerBill(b: BranchState): number {
 /** Đồ điểm tâm sáng (5h–11h): bánh mì, xôi, cà phê, cơm nắm, bánh bao. */
 const BREAKFAST_ITEMS = new Set([
   'banh_mi_trung_nuong', 'ca_phe_sua_da', 'bac_xiu', 'ca_phe_trung',
-  'banh_bao_hap', 'xoi_dau_xanh', 'xoi_man', 'xoi_trung', 'xoi_bap', 'x_com_nam',
+  'banh_bao_hap', 'xoi_dau_xanh', 'xoi_man', 'xoi_trung', 'xoi_bap', 'x_com_nam', 'pho_bo', 'banh_cuon_cha_lua',
 ]);
 /** Đồ ăn nhanh trưa (11h–15h): cơm hộp, cơm phần, mì nấu sẵn, bánh tráng trộn. */
 const LUNCH_ITEMS = new Set([
-  'com_hop_ga', 'com_suon_nuong', 'com_chien_trung', 'mi_trung_nong', 'banh_trang_tron', 'x_com_nam',
+  'com_hop_ga', 'com_suon_nuong', 'com_chien_trung', 'mi_trung_nong', 'banh_trang_tron', 'x_com_nam', 'ga_xao_sa', 'bo_xao_sa', 'com_chien_lap_xuong', 'com_ca_com_rim',
 ]);
 /** Nhân thêm theo bữa ăn trong ngày — tiện lợi 24/7 xoay thực đơn theo ca. */
 export function mealFactor(id: string, minute: number): number {

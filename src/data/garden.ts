@@ -132,6 +132,13 @@ export const LAND_TIERS: LandTier[] = [
   { name: 'Trang trại đầu ngõ', plots: 12, caps: { chicken: 16, duck: 8, goose: 8, pig: 4, cow: 3, goat: 3, dong_tao: 3 }, cost: 40_000_000, unlock: 24 },
 ];
 
+/** GĐ1643: trần thu hoạch/ngày khả thi ở cấp này (luống của bậc đất đã mở được × cây sai nhất đã mở, chưa tính đúng vụ/may). */
+export function farmDailyCap(level: number): number {
+  const plots = Math.max(...LAND_TIERS.filter((t) => t.unlock <= level).map((t) => t.plots));
+  const rate = Math.max(...CROPS.filter((c) => c.unlock <= level).map((c) => c.yieldQty / (c.regrowDays || c.days)));
+  return plots * rate;
+}
+
 export const cropById = (id: string) => CROPS.find((c) => c.id === id)!;
 
 /** Số luống đất ở bậc đất đang mở (bậc 0 là mảnh trại ban đầu). */
@@ -170,7 +177,7 @@ export const CROPS: CropDef[] = [
   { id: 'bap', productId: 'bap', name: 'Bắp ngô', icon: '🌽', days: 4, seedCost: 24000, yieldQty: 6, unlock: 1 },
   // Lúa: ra túi gạo (hàng khô giá cao) nên ít món/vụ hơn rau; lợi nhuận/ngày ngang mía–cây ăn trái
   { id: 'lua', productId: 'gao', name: 'Lúa', icon: '🌾', days: 5, seedCost: 90000, yieldQty: 2, unlock: 8 },
-  { id: 'nep', productId: 'nep', name: 'Lúa nếp', icon: '🌾', days: 5, seedCost: 60000, yieldQty: 2, unlock: 14 },
+  { id: 'nep', productId: 'nep', name: 'Lúa nếp', icon: '🍙', days: 5, seedCost: 60000, yieldQty: 2, unlock: 14 },
   { id: 'dau_xanh', productId: 'dau_xanh', name: 'Đậu xanh', icon: '🫛', days: 4, seedCost: 30000, yieldQty: 4, unlock: 16 },
   { id: 'mia', productId: 'mia', name: 'Mía', icon: '🎋', days: 6, seedCost: 48000, yieldQty: 8, unlock: 12 },
   { id: 'traicay', productId: 'traicay', name: 'Cây ăn trái', icon: '🌳', days: 7, seedCost: 75000, yieldQty: 6, unlock: 20 },
@@ -183,8 +190,14 @@ export const CROPS: CropDef[] = [
   { id: 'chanhday', productId: 'x_chanh_day', name: 'Chanh dây', icon: '💛', days: 6, regrowDays: 3, seedCost: 30000, yieldQty: 5, unlock: 32 },
   { id: 'vai', productId: 'x_vai', name: 'Vải thiều', icon: '🍒', days: 10, regrowDays: 3, seedCost: 70000, yieldQty: 6, unlock: 32, season: [5, 7] },
   { id: 'nhan', productId: 'x_nhan', name: 'Nhãn', icon: '🍇', days: 11, regrowDays: 4, seedCost: 72000, yieldQty: 6, unlock: 32, season: [7, 9] },
-  { id: 'mit', productId: 'x_mit', name: 'Mít', icon: '🍍', days: 14, regrowDays: 5, seedCost: 90000, yieldQty: 3, unlock: 36 },
+  // GĐ1651: Thơm (dứa) — tự cung quán nước "Trà dứa"/"Nước ép thơm" (nông trại → quán nước); vụ dài, không tái sinh.
+  { id: 'gac', productId: 'x_gac', name: 'Gấc', icon: '🔴', days: 12, seedCost: 60000, yieldQty: 3, unlock: 43 }, // GĐ1665
+  { id: 'thom', productId: 'x_thom', name: 'Thơm (dứa)', icon: '🍍', days: 9, seedCost: 30000, yieldQty: 4, unlock: 34 },
+  // GĐ1652: Gừng — tự cung quán nước "Trà gừng nóng" và món bếp có gừng (gà kho gừng…); củ ngắn ngày, không tái sinh.
+  { id: 'gung', productId: 'x_gung', name: 'Gừng', icon: '🫚', days: 6, seedCost: 20000, yieldQty: 4, unlock: 36 },
+  { id: 'mit', productId: 'x_mit', name: 'Mít', icon: '🍈', days: 14, regrowDays: 5, seedCost: 90000, yieldQty: 3, unlock: 36 },
   { id: 'buoi', productId: 'x_buoi', name: 'Bưởi', icon: '🍐', days: 13, regrowDays: 5, seedCost: 80000, yieldQty: 4, unlock: 38, season: [12, 2] },
+  { id: 'sa', productId: 'x_sa', name: 'Sả', icon: '🌿', days: 5, seedCost: 6000, yieldQty: 6, unlock: 40 }, // GĐ1704: trồng sả cho đậu hũ/cá basa chiên sả, trà sả đá
 ];
 
 /** Tháng thật (1–12) của ngày game: ngày 1 của ván là 1/1 theo data/calendar. */
@@ -332,7 +345,7 @@ export const FARM_BUYERS = ['Quán Cơm Bà Ba', 'Lò Bánh Chị Hoa', 'Quán N
 /** Món quán đặt (nông sản nhà trồng/nhà nuôi). GĐ1100: nối cuối pool 3 trái cây mới GĐ1088–1092
  *  (chanh dây/nhãn/mít, mở >30) — quán chè/quán nước trong xóm cũng lấy trái cây nhà; nối cuối để
  *  giữ nguyên thứ tự RNG của pool cũ, đơn vẫn chỉ rơi vào món trại kịp làm (farmOrderProduce). */
-export const FARM_ORDER_POOL = ['trung', 'trung_vit', 'trung_goos', 'sua_tuoi', 'sua_de', 'rau', 'bap', 'mia', 'traicay', 'x_chuoi', 'x_vai', 'x_buoi', 'x_thit_heo', 'thit_ga_dt', 'x_chanh_day', 'x_nhan', 'x_mit'];
+export const FARM_ORDER_POOL = ['trung', 'trung_vit', 'trung_goos', 'sua_tuoi', 'sua_de', 'rau', 'bap', 'mia', 'traicay', 'x_chuoi', 'x_vai', 'x_buoi', 'x_thit_heo', 'thit_ga_dt', 'x_chanh_day', 'x_nhan', 'x_mit', 'x_thom', 'x_gung', 'x_gac', 'x_sa']; // GĐ1670: + thơm/gừng/gấc; GĐ1705: + sả — nối cuối
 
 /** Tin sáng khi quán xóm đặt đơn; đơn cuối tuần báo luôn giá hời (GĐ549). */
 export const farmOrderNews = (o: FarmOrder) =>

@@ -1,9 +1,14 @@
 import { useGame } from '../../core/store';
 import { formatMoney, fmtMul } from '../../data/products';
+import { shortLabel } from '../shortLabel';
 import { activeBuzz, APOLOGY_COST, promoBoost, PROMO_MIN_FOLLOWERS, SOCIAL_UNLOCK } from '../../data/social';
 import { crisisStatus, recentAvgRevenue } from '../../data/minorPayoff';
 import { socialValue } from '../../data/socialValue';
 import { Callout, Footer, stars, starColor, styles } from './shared';
+
+/** GĐ1646: nút quảng bá bị khóa thì nói lý do ngay trên nút, không để "Đăng bài" câm. */
+export const promoLabel = (level: number, followers: number) =>
+  level < SOCIAL_UNLOCK ? `🔒 Cấp ${SOCIAL_UNLOCK}` : followers < PROMO_MIN_FOLLOWERS ? `Cần ${PROMO_MIN_FOLLOWERS} theo dõi` : '📣 Đăng bài';
 
 export function SocialPanel() {
   const { social, day, level, money, history, apologize, promoteShop, closePanel } = useGame();
@@ -54,7 +59,7 @@ export function SocialPanel() {
         return (
           <div style={{ ...styles.card, background: '#5a2d2d', marginBottom: 10, flexWrap: 'wrap' }}>
             <span style={{ flex: 1, minWidth: 160, fontSize: 13 }}>Một bài chê tiệm đang lan truyền. Đăng bài xin lỗi kèm phiếu giảm giá để khách quay lại.</span>
-            <button style={{ ...styles.btn, background: '#f1c40f' }} disabled={money < APOLOGY_COST} onClick={apologize}>🙏 Xin lỗi ({formatMoney(APOLOGY_COST)})</button>
+            <button style={{ ...styles.btn, background: '#f1c40f' }} disabled={money < APOLOGY_COST} onClick={apologize}>{shortLabel(`🙏 Xin lỗi (${formatMoney(APOLOGY_COST)})`, APOLOGY_COST, money)}</button>
             {cs.daysLeft > 0 && (
               <div style={{ flexBasis: '100%', fontSize: 12, opacity: 0.85 }}>
                 Còn {cs.daysLeft} ngày khủng hoảng (hết hạn ngày {cs.until}) — xin lỗi đưa khách từ ×{fmtMul(cs.crisisMul)} lên ×{fmtMul(cs.apologyMul)}:
@@ -71,7 +76,7 @@ export function SocialPanel() {
           {social.followers < PROMO_MIN_FOLLOWERS && ` (cần ${PROMO_MIN_FOLLOWERS} người theo dõi)`}
         </span>
         <button style={{ ...styles.btn, background: promoDone ? '#666' : '#f1c40f' }} disabled={promoDone || social.followers < PROMO_MIN_FOLLOWERS || level < SOCIAL_UNLOCK} onClick={promoteShop}>
-          {promoDone ? '✅ Đã đăng' : '📣 Đăng bài'}
+          {promoDone ? '✅ Đã đăng' : promoLabel(level, social.followers)}
         </button>
       </div>
       <div style={{ display: 'grid', gap: 8 }}>

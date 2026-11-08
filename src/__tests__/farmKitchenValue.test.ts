@@ -170,7 +170,7 @@ describe('farmVsCook verdict sell — best có homegrownNet < 0 (nấu lỗ, nh�
 
   it('thit_ga_dt (gà Đông Tảo): bán lẻ hời hơn nấu gà nướng (best -15000) → verdict sell', () => {
     const f = farmVsCook('thit_ga_dt');
-    expect(f.recipes).toHaveLength(1);
+    expect(f.recipes).toHaveLength(2); // GĐ1659: + gà Đông Tảo hấp gừng (vẫn lỗ hơn gà nướng)
     expect(f.best!.recipe.id).toBe('recipe_ga_dt_nuong');
     expect(f.best!.homegrownNet).toBeLessThan(0); // -15000 (cơ hội phí bán lẻ nhà trồng vượt doanh thu món)
     expect(f.best!.verdict).toBe('sell');

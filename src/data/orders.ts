@@ -102,6 +102,58 @@ export const PARTY_ORDERS: PartyOrderDef[] = [
     description: 'Cả lớp gom tiền đặt giỏ quà tặng cô nhân 20/11 — bé nhờ tiệm gói giùm cho đẹp.',
     items: { gio_qua_2011: 3 }, bonus: 130000, xp: 120,
   },
+  // GĐ1665+1678: đơn mâm xôi gấc đám cưới — lối bán lớn cho xôi gấc tự nấu từ gấc nhà trồng.
+  {
+    id: 'xoi_gac_cuoi', icon: '💒', title: 'Mâm xôi gấc đám cưới', from: 'Nhà cô dâu đầu hẻm', unlock: 43, days: 3,
+    description: 'Nhà có đám cưới, cần xôi gấc đỏ thắm bày mâm cỗ — đặt trước để tiệm kịp nấu.',
+    items: { xoi_gac: 30 }, bonus: 240000, xp: 160,
+  },
+  // GĐ1709: đơn món nấu thứ 2 của chuỗi sả (trồng GĐ1704 → gà xào sả GĐ1706).
+  {
+    id: 'gio_ga_xao_sa', icon: '🕯️', title: 'Mâm cỗ giỗ ông', from: 'Nhà chú Tư cuối hẻm', unlock: 52, days: 3,
+    description: 'Nhà làm giỗ ông, đặt gà xào sả bày mâm cúng và đãi bà con — cần nấu đủ phần trước ngày giỗ.',
+    items: { ga_xao_sa: 16 }, bonus: 260000, xp: 170,
+  },
+  {
+    id: 'cuoi_bo_xao_sa', icon: '💍', title: 'Tiệc đám hỏi', from: 'Nhà cô Sáu đầu ngõ', unlock: 54, days: 3,
+    description: 'Nhà cô Sáu làm đám hỏi cho con gái, đặt bò xào sả đãi nhà trai — nấu đủ phần trước ngày rước.',
+    items: { bo_xao_sa: 16 }, bonus: 380000, xp: 190,
+  },
+  {
+    id: 'tan_gia_goi_buoi', icon: '🏠', title: 'Tiệc tân gia', from: 'Anh Hai mới dọn về hẻm', unlock: 42, days: 3,
+    description: 'Anh Hai mới dọn nhà về hẻm, mở tiệc tân gia ra mắt hàng xóm — đặt gỏi bưởi tôm làm món khai vị.',
+    items: { goi_buoi_tom: 16 }, bonus: 200000, xp: 150,
+  },
+  {
+    id: 'day_thang_che_gac', icon: '👶', title: 'Tiệc đầy tháng', from: 'Nhà chị Tư cuối hẻm', unlock: 44, days: 3,
+    description: 'Bé nhà chị Tư tròn tháng, chị đặt chè gấc đỏ cho may mắn để mời họ hàng.',
+    items: { che_gac: 16 }, bonus: 180000, xp: 140,
+  },
+  {
+    id: 'lop_hoc_mit_chien', icon: '🎒', title: 'Liên hoan cuối kỳ', from: 'Lớp 11A trường gần chợ', unlock: 39, days: 3,
+    description: 'Lớp 11A thi xong học kỳ, gom quỹ đặt mít chiên giòn ăn liên hoan.',
+    items: { mit_chien_gion: 16 }, bonus: 170000, xp: 130,
+  },
+  {
+    id: 'nhau_goi_xoai', icon: '🥭', title: 'Cuộc nhậu xóm', from: 'Mấy anh tổ dân phố', unlock: 37, days: 3,
+    description: 'Tổ dân phố họp xong ở lại lai rai, đặt gỏi xoài tôm khô làm mồi.',
+    items: { goi_xoai_tom_kho: 16 }, bonus: 170000, xp: 130,
+  },
+  {
+    id: 'dam_gio_ong', icon: '🕯️', title: 'Đám giỗ ông', from: 'Nhà bác Năm giữa hẻm', unlock: 42, days: 3,
+    description: 'Nhà bác Năm làm giỗ ông, đặt mâm cơm nhà: thịt kho trứng với canh chua cá cho cả họ.',
+    items: { thit_kho_trung: 10, canh_chua_ca: 10 }, bonus: 260000, xp: 170,
+  },
+  {
+    id: 'hop_lop_cap3', icon: '🎓', title: 'Họp lớp cấp 3', from: 'Nhóm bạn cũ của anh Tuấn', unlock: 44, days: 3,
+    description: 'Mười năm ra trường, nhóm bạn cũ hẹn họp lớp ở nhà anh Tuấn — đặt gỏi cuốn với bánh xèo cuốn ăn chung.',
+    items: { goi_cuon: 12, banh_xeo: 12 }, bonus: 280000, xp: 170,
+  },
+  {
+    id: 'doan_tu_thien_pho', icon: '🍜', title: 'Đoàn từ thiện', from: 'Nhóm thiện nguyện phường', unlock: 42, days: 2,
+    description: 'Nhóm thiện nguyện đi phát quà vùng xa, cần phở bò với bún bò Huế cho cả đoàn ăn sáng trước khi lên xe.',
+    items: { pho_bo: 12, bun_bo_hue: 12 }, bonus: 260000, xp: 160,
+  },
   // Đơn riêng theo câu chuyện từng khách quen
   {
     id: 'xoi_dam_gio', icon: '🍙', title: 'Mẻ xôi đám giỗ', from: regularById('ba_nam')!.name, regular: 'ba_nam', unlock: 12, days: 2,

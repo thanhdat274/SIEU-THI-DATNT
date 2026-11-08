@@ -1,6 +1,7 @@
 import { useClock, useGame } from '../core/store';
 import { describeItems } from '../data/phoneOrders';
 import { formatMoney } from '../data/products';
+import { shortLabel } from './shortLabel';
 import { canRush, vendorById, wholesaleRush, wholesaleTotal } from '../data/wholesale';
 import { wholesaleAdvice } from '../data/wholesaleValue';
 
@@ -49,7 +50,7 @@ export function VendorAlertView({ offer, minutes, storage, storageLots, priceOf,
       )}
       <span className="hud-alert-actions">
         {short
-          ? <button className="hud-btn primary" disabled={!canRush(rush, money)} onClick={() => accept(true)}>⚡ Nhập gấp & giao ({formatMoney(rush?.cost ?? 0)})</button>
+          ? <button className="hud-btn primary" disabled={!canRush(rush, money)} onClick={() => accept(true)}>{shortLabel(`⚡ Nhập gấp & giao (${formatMoney(rush?.cost ?? 0)})`, rush?.cost ?? 0, money)}</button>
           : <button className="hud-btn primary" onClick={() => accept()}>🤝 Bán sỉ từ kho</button>}
         <button className="hud-btn" onClick={decline}>Không bán</button>
       </span>

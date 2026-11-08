@@ -115,8 +115,20 @@ export function reviveLots<T>(v: T): T {
 }
 
 /** Nạp một bản lưu (có thể là bản cũ thiếu trường mới, hoặc phiên bản cấu trúc cũ). */
+/**
+ * GĐ1693: mã hàng đã gộp — bản lưu còn mã cũ thì đổi sang mã đang dùng (lặp lại vô hại, không cần tăng phiên bản).
+ * x_nuoc_mam (GĐ1686, trùng 'Nước mắm') → nuocmam.
+ */
+export const PRODUCT_ALIASES: Record<string, string> = { x_nuoc_mam: 'nuocmam' };
+export function aliasProductIds<T>(v: T): T {
+  let json = JSON.stringify(v);
+  if (json === undefined) return v;
+  for (const [from, to] of Object.entries(PRODUCT_ALIASES)) json = json.split(`"${from}"`).join(`"${to}"`);
+  return JSON.parse(json) as T;
+}
+
 export function applySnapshot(raw: Partial<SaveData>) {
-  const data = reviveLots(migrate(raw));
+  const data = reviveLots(aliasProductIds(migrate(raw)));
   const fresh = newGameData();
   const merged = { ...fresh, ...data };
   // Với các hệ có mặc định là object thường: merge sâu, field mới của hệ tự bù từ mặc định
