@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (07/11/2026)
+- GĐ1765: test chặn like món nấu cấp ≤30 mới (12 món cũ đóng băng LEGACY) — giữ simGolden cấp 30 không lệch như GĐ1764.
 - GĐ1764: pha chế thích cà phê phin sữa (cấp 64; bạc xỉu cấp 26 làm lệch simGolden cấp 30 nên bỏ), influencer thích bánh flan; test it.each mở rộng.
 - GĐ1763: giáo viên thích phở bò, freelancer thích mì Ý sốt bò — nghề 7 món thích có món nấu; test it.each mở rộng.
 - GĐ1762: phóng viên thích cà phê trứng, ngư dân thích cá kho tộ — nghề 6 món thích có món nấu; test it.each mở rộng.
