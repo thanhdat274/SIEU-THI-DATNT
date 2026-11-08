@@ -382,6 +382,7 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'ga_xao_sa', name: 'Gà xào sả', category: 'fresh', buy: 16000, sell: 32000, color: 0xd9a441, unlock: 52 },
   { id: 'bo_xao_sa', name: 'Bò xào sả', category: 'fresh', buy: 22000, sell: 45000, color: 0x9c4a2f, unlock: 54 },
   { id: 'goi_buoi_tom', name: 'Gỏi bưởi tôm', category: 'fresh', buy: 11000, sell: 22000, color: 0xf2a7a0, unlock: 42 },
+  { id: 'mit_chien_gion', name: 'Mít chiên giòn', category: 'fresh', buy: 7500, sell: 15000, color: 0xe8b34a, unlock: 39 },
   // GĐ1429: Trứng xào cà chua — lối ra ĐẦU TIÊN của cà chua.
   { id: 'trung_xao_ca_chua', name: 'Trứng xào cà chua', category: 'fresh', buy: 4000, sell: 8000, color: 0xe85a3a, unlock: 45 },
   // GĐ1429: Rau cải xào tỏi — lối ra ĐẦU TIÊN của rau cải.
@@ -1126,6 +1127,10 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_goi_buoi_tom', name: 'Gỏi bưởi tôm', station: 'steamer',
     inputs: [{ productId: 'x_buoi', quantity: 2 }, { productId: 'x_tom_tuoi', quantity: 1 }, { productId: 'nuocmam', quantity: 1 }],
     outputId: 'goi_buoi_tom', outputQty: 8, durationMin: 12, unlock: 42, reputationGain: 2 },
+  // GĐ1730: Mít chiên giòn — lối ra bếp thứ 2 cho mít trại: mít 3 + dầu ăn ≈ 124k → 10 × 15k = 150k.
+  { id: 'recipe_mit_chien_gion', name: 'Mít chiên giòn', station: 'fryer',
+    inputs: [{ productId: 'x_mit', quantity: 3 }, { productId: 'dauan', quantity: 1 }],
+    outputId: 'mit_chien_gion', outputQty: 10, durationMin: 10, unlock: 39, reputationGain: 2 },
   // GĐ1429: Trứng xào cà chua ở chảo chiên. Mở 35 (> golden 30, ≥ cấp nguyên liệu).
   { id: 'recipe_trung_xao_ca_chua', name: 'Trứng xào cà chua', station: 'fryer',
     inputs: [{ productId: 'x_ca_chua', quantity: 1 }, { productId: 'x_trung_ga', quantity: 4 }],
