@@ -149,6 +149,11 @@ export const PARTY_ORDERS: PartyOrderDef[] = [
     description: 'Mười năm ra trường, nhóm bạn cũ hẹn họp lớp ở nhà anh Tuấn — đặt gỏi cuốn với bánh xèo cuốn ăn chung.',
     items: { goi_cuon: 12, banh_xeo: 12 }, bonus: 280000, xp: 170,
   },
+  {
+    id: 'doan_tu_thien_pho', icon: '🍜', title: 'Đoàn từ thiện', from: 'Nhóm thiện nguyện phường', unlock: 42, days: 2,
+    description: 'Nhóm thiện nguyện đi phát quà vùng xa, cần phở bò với bún bò Huế cho cả đoàn ăn sáng trước khi lên xe.',
+    items: { pho_bo: 12, bun_bo_hue: 12 }, bonus: 260000, xp: 160,
+  },
   // Đơn riêng theo câu chuyện từng khách quen
   {
     id: 'xoi_dam_gio', icon: '🍙', title: 'Mẻ xôi đám giỗ', from: regularById('ba_nam')!.name, regular: 'ba_nam', unlock: 12, days: 2,
