@@ -591,6 +591,8 @@ function GoalChip({ ready }: { ready: number }) {
     );
   }
   const [icon, title, desc, current, target, lockAt] = story.split('|');
+  // GĐ1818: số lớn (doanh thu 16665800/50000000) phải có dấu chấm ngăn nghìn.
+  const fmtGoalNum = (s: string) => { const n = Number(s); return Number.isFinite(n) ? Math.round(n).toLocaleString('vi-VN') : s; };
   return (
     <button
       className="hud-chip hud-goal"
@@ -601,7 +603,7 @@ Bước ${stepNo}/${STORY_STEPS.length} của cốt truyện · bấm xem Nhiệ
       <span className="hud-goal-icon" aria-hidden="true">{icon}</span>
       <span>
         <b>{title}</b>
-        <small>{lockAt !== '0' ? `🔒 cấp ${lockAt}` : `${current}/${target}`}</small>
+        <small>{lockAt !== '0' ? `🔒 cấp ${lockAt}` : `${fmtGoalNum(current)}/${fmtGoalNum(target)}`}</small>
       </span>
       {ready > 0 && <span className="hud-badge">{`🎯 ${ready} xong`}</span>}
       {ready === 0 && todo > 0 && <span className="hud-badge muted">{`☀️ ${todo} việc`}</span>}

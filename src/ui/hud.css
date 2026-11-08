@@ -234,6 +234,7 @@
   max-width: 100%;
   min-height: 0;
   overflow-y: auto;
+  overflow-x: hidden; /* GĐ1818: không hiện thanh cuộn ngang dưới cụm thông báo */
   overscroll-behavior: contain;
   scrollbar-width: thin;
 }
