@@ -224,19 +224,30 @@ export function OrderPanel() {
   const fillSuggest = () => {
     const c: Record<string, number> = {};
     const g = useGame.getState();
-    const cand = shown.filter((it) => it.suggest > 0 && displayable(it.p.id));
+    // GĐ1823 (review R1/R3): ngày đầu, bộ 3 món hướng dẫn luôn vào giỏ đề xuất dù kho khai trương
+    // còn mì/nước (suggest=0 với món đã có hàng) — banner bảo "nhập 3 món trước" thì nút gợi ý
+    // phải ra đúng bộ đó, mỗi món 1 thùng; vốn đầu 360k đã đủ, trần 40% chỉ còn là sàn.
+    const guideRows = g.day <= 1
+      ? guideItems
+          .filter((gp) => displayable(gp.id))
+          .map((gp) => rows.find((r) => r.p.id === gp.id))
+          .filter((r): r is (typeof rows)[number] => !!r)
+      : [];
+    const cand = [
+      ...guideRows,
+      ...shown.filter((it) => it.suggest > 0 && displayable(it.p.id) && !guideRows.some((gr) => gr.p.id === it.p.id)),
+    ];
     const minCase = Math.min(...cand.map((r) => orderTotal(supplier, { [r.p.id]: caseSize(r.p.id) }, day)), Infinity);
-    // GĐ1823 (review R1/R3): ngày đầu, nút gợi ý phải điền được trọn bộ 3 món hướng dẫn (mỗi món 1 thùng)
-    // — banner bảo "nhập 3 món trước" thì nút không được chặn bởi trần 40% nữa; vốn đầu 360k đã đủ.
-    const guideCand = guideItems.filter((gp) => cand.some((r) => r.p.id === gp.id));
-    const minTotal = g.day <= 1 && Number.isFinite(minCase) && guideCand.length > 0
-      ? guideCand.reduce((sum, gp) => sum + orderTotal(supplier, { [gp.id]: caseSize(gp.id) }, day), 0)
+    const minTotal = g.day <= 1 && Number.isFinite(minCase) && guideRows.length > 0
+      ? guideRows.reduce((sum, r) => sum + orderTotal(supplier, { [r.p.id]: caseSize(r.p.id) }, day), 0)
       : 0;
     const budget = suggestBudget(money, wagesDue(g), g.day, Number.isFinite(minCase) ? minCase : 0, minTotal);
+    const guideIds = new Set(guideRows.map((r) => r.p.id));
     let cut = false;
     for (const r of cand) {
-      c[r.p.id] = maxFit(c, r.p.id, r.suggest, budget);
-      if (c[r.p.id] < r.suggest) cut = true;
+      const want = guideIds.has(r.p.id) ? Math.max(r.suggest, 1) : r.suggest;
+      c[r.p.id] = maxFit(c, r.p.id, want, budget);
+      if (c[r.p.id] < want) cut = true;
     }
     setCart(c);
     if (cut) notify(useGame.getState().day <= 1 ? '💰 Ngày đầu điền đủ bộ 3 món hướng dẫn — bán xong nhập thêm' : '💰/📦 Điền tới hết tiền hoặc hết chỗ kho — nâng cấp để nhập thêm');

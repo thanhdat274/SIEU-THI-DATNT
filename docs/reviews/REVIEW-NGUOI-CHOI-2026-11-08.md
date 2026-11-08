@@ -161,3 +161,14 @@ Ngày 1 chơi được trọn vòng cốt lõi **nhập → bày → mở cửa 
 | R8 | Chưa xử lý (để sau — gập phần nâng cao ngày 1–2). | — |
 
 **Đã sửa thêm:** test `suggestBudget` có 4 case mới khóa hành vi `minTotal`; thông báo ngày 1 đổi thành "Ngày đầu điền đủ bộ 3 món hướng dẫn".
+
+## Kết quả xử lý tiếp — GĐ1826 (cùng ngày, phiên dev thứ hai)
+
+| Mã | Kết quả | Đã làm |
+|---|---|---|
+| R1/R3 | **Xác minh live trên bản local (code GĐ1823):** vốn 360k → nút "✨ Điền theo gợi ý" điền **đủ 3 món** (mì + nước + bánh kẹo = 316.200đ), "Nhập ngay" bật, mua xong còn 43.800đ. Sửa thêm 1 lỗi phát hiện khi QA: bộ 3 món ngày đầu phải tra trên **danh sách đầy đủ của mối** (`rows`) chứ không phải danh sách đang lọc "✨ Nên nhập" (`shown`) — mì/nước có sẵn hàng khai trương nên suggest=0, chỉ tra `shown` thì giỏ thiếu 2/3 món. | `OrderPanel.tsx` (guideRows từ `rows`) |
+| R8 | **Xong.** Ngày 1–2 tổng kết gập khối nâng cao (kỷ lục, ca đêm, thanh toán, giờ bán) sau nút "🔎 Xem phần nâng cao"; "Vì sao khách không mua · nên làm gì" và lõi tiền/lãi giữ nguyên hiển thị. Xác minh live: ngày 1 hiện đúng nút, khối nâng cao ẩn; từ ngày 3 mở mặc định. Test mới `day1SummaryCompact.test.ts` (3 case). | `ReportPanels.tsx` |
+| R2 | **Chưa đo được trong trình duyệt:** lượt QA ngày 1 trên local bị nhiễu kịch bản điều khiển (hội thoại chương 1 chặn đồng hồ, nhân vật chưa đứng quầy → khách vào 32 lượt mà không chốt đơn nào) — là hạn chế của cách chạy QA, không kết luận được cầu ngày 1. `economySim` trong test vẫn chứng minh bot ngày 1 đạt mục tiêu doanh thu người mới. | Giao QA save trắng chuẩn (`docs/qa-guide.md`) cho phiên sau để đo lại số khách "không mua vì hết hàng" với vốn 360k. |
+| R7 | **Tái hiện 1 lần trên local:** sau khi mua 3 thùng (còn 43.800đ), tiền tụt 20.000đ (stats.spent +20.000đ) quanh lúc đóng panel nhập hàng — chưa tìm ra thủ phạm; probe money-subscribe gắn sau đó không bắt thêm lần nào (endDay trừ thuê 20k + tiền thuốc ngất 4.380đ là hợp lệ, có log). | Nghi vấn mở — phiên QA sau chạy lại với probe từ đầu phiên. |
+
+**Kết luận GĐ1826:** R1/R3/R8 đóng; R2 chờ QA save trắng; R7 mở nghi vấn có probe theo dõi.
