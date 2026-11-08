@@ -380,6 +380,7 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'dau_hu_chien_sa', name: 'Đậu hũ chiên sả', category: 'fresh', buy: 3000, sell: 6000, color: 0xe8c870, unlock: 43 },
   // GĐ1706: Gà xào sả — món mặn thứ 3 của sả (trồng được GĐ1704). Mở 52 = cấp gà nguyên con.
   { id: 'ga_xao_sa', name: 'Gà xào sả', category: 'fresh', buy: 16000, sell: 32000, color: 0xd9a441, unlock: 52 },
+  { id: 'bo_xao_sa', name: 'Bò xào sả', category: 'fresh', buy: 22000, sell: 45000, color: 0x9c4a2f, unlock: 54 },
   // GĐ1429: Trứng xào cà chua — lối ra ĐẦU TIÊN của cà chua.
   { id: 'trung_xao_ca_chua', name: 'Trứng xào cà chua', category: 'fresh', buy: 4000, sell: 8000, color: 0xe85a3a, unlock: 45 },
   // GĐ1429: Rau cải xào tỏi — lối ra ĐẦU TIÊN của rau cải.
@@ -1116,6 +1117,10 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_ga_xao_sa', name: 'Gà xào sả', station: 'fryer',
     inputs: [{ productId: 'thit_ga', quantity: 1 }, { productId: 'x_sa', quantity: 2 }, { productId: 'nuocmam', quantity: 1 }],
     outputId: 'ga_xao_sa', outputQty: 8, durationMin: 15, unlock: 52, reputationGain: 2 },
+  // GĐ1717: Bò xào sả — bò tươi 285k + sả 2 + nước mắm ≈ 309k bán thẳng → 8 × 45k = 360k.
+  { id: 'recipe_bo_xao_sa', name: 'Bò xào sả', station: 'fryer',
+    inputs: [{ productId: 'thit_bo_tuoi', quantity: 1 }, { productId: 'x_sa', quantity: 2 }, { productId: 'nuocmam', quantity: 1 }],
+    outputId: 'bo_xao_sa', outputQty: 8, durationMin: 15, unlock: 54, reputationGain: 2 },
   // GĐ1429: Trứng xào cà chua ở chảo chiên. Mở 35 (> golden 30, ≥ cấp nguyên liệu).
   { id: 'recipe_trung_xao_ca_chua', name: 'Trứng xào cà chua', station: 'fryer',
     inputs: [{ productId: 'x_ca_chua', quantity: 1 }, { productId: 'x_trung_ga', quantity: 4 }],
