@@ -87,13 +87,13 @@ export const PROFESSIONS: ProfessionDef[] = [
   {
     id: 'mechanic', name: 'Thợ sửa xe', icon: '🔧', archetype: 'mechanic',
     hours: [h(6, 8.5), h(11.5, 13.5), h(17, 19.5)],
-    likes: ['mi', 'tangluc', 'nuoc', 'x_tra_da', 'caphe', 'x_redbull_lon', 'banhmi', 'x_nuoc_dien_giai'],
+    likes: ['mi', 'tangluc', 'nuoc', 'x_tra_da', 'caphe', 'x_redbull_lon', 'banhmi', 'x_nuoc_dien_giai', 'hut_tieu_nam_vang'],
     loyalty: 0.8, extraItems: 0, sensitivity: 1.15, patience: 0.9,
   },
   {
     id: 'electrician', name: 'Thợ điện', icon: '🔌', archetype: 'electrician',
     hours: [h(7, 9), h(12, 14), h(17.5, 19.5)],
-    likes: ['nuoc', 'x_tra_da', 'caphe', 'bimbim', 'x_hat_dua', 'mi', 'x_bat_lua', 'x_pin'],
+    likes: ['nuoc', 'x_tra_da', 'caphe', 'bimbim', 'x_hat_dua', 'mi', 'x_bat_lua', 'x_pin', 'banh_mi_que'],
     loyalty: 0.75, extraItems: 0, sensitivity: 1.1, patience: 1,
   },
   {
