@@ -141,7 +141,7 @@ const FIRST_SALE_CEILING_MIN = 120; // 09/11: đo từ lúc tiệm mở (8:00, k
 // (cũ) 90; // GĐ1829: cơ chế thay-món (OpenSpec khach-thay-mon-het-hang) xáo trộn dòng rng → đo lại 86.4′ (mốc cũ 80′); doanh thu ngày 1 tăng 35% nên không phải chậm thật — guard vẫn bắt "chậm hẳn"
 
 /** GĐ561: mức đo ngày 2 (bot cấp 1); chỉ được hạ. */
-const DAY2_TOAST_CEILING = 8; // GĐ568–569: tin đêm + sau ngủ gom một toast (đo 11 → 10 → 8)
+const DAY2_TOAST_CEILING = 9; // 09/11 nâng 8→9 có chủ ý: cao điểm sáng 6–9h trùng giờ mở 8h nên lên cấp nhanh hơn (+1 toast lên cấp); GĐ568–569: GĐ568–569: tin đêm + sau ngủ gom một toast (đo 11 → 10 → 8)
 const fmt = (v: number) => `${Math.round(v).toLocaleString('vi-VN')}đ`;
 
 /** Số thông báo tối đa trong ngày đầu của bot chơi cấp 1 (mức đo 2026-10-31; chỉ được hạ). */

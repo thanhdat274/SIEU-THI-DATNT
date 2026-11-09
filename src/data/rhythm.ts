@@ -13,8 +13,8 @@ export interface TimeBand {
 }
 
 export const TIME_BANDS: TimeBand[] = [
-  { id: 'sang', name: 'Cao điểm sáng', from: 6 * 60, to: 8 * 60 + 30, traffic: 1.6, wants: ['sua', 'banhmi', 'caphe', 'trung', 'nuoc', 'banh_mi_trung_nuong', 'xoi_man', 'xoi_trung', 'xoi_dau_xanh', 'ca_phe_sua_da', 'bac_xiu', 'banh_bao_hap', 'tra_gung_nong'] },
-  { id: 'giua_sang', name: 'Giữa buổi', from: 8 * 60 + 30, to: 11 * 60, traffic: 0.6, wants: ['ca_phe_sua_da', 'banh_bao_hap', 'bap_xao', 'pho_bo', 'banh_cuon_cha_lua', 'bun_bo_hue'] },
+  { id: 'sang', name: 'Cao điểm sáng', from: 6 * 60, to: 9 * 60, traffic: 1.6, wants: ['sua', 'banhmi', 'caphe', 'trung', 'nuoc', 'banh_mi_trung_nuong', 'xoi_man', 'xoi_trung', 'xoi_dau_xanh', 'ca_phe_sua_da', 'bac_xiu', 'banh_bao_hap', 'tra_gung_nong'] },
+  { id: 'giua_sang', name: 'Giữa buổi', from: 9 * 60, to: 11 * 60, traffic: 0.6, wants: ['ca_phe_sua_da', 'banh_bao_hap', 'bap_xao', 'pho_bo', 'banh_cuon_cha_lua', 'bun_bo_hue'] },
   { id: 'trua', name: 'Cao điểm trưa', from: 11 * 60, to: 13 * 60, traffic: 1.35, wants: ['nuoc', 'ngot', 'mi', 'dochin', 'suachua', 'com_hop_ga', 'com_chien_trung', 'mi_trung_nong', 'ca_vien_chien', 'nuoc_mia', 'sinh_to_trai_cay', 'ga_xao_sa', 'bo_xao_sa'] },
   { id: 'chieu', name: 'Buổi chiều', from: 13 * 60, to: 17 * 60, traffic: 0.6, wants: ['kem', 'banh', 'snack', 'che_dau_xanh', 'banh_trang_tron', 'kem_trai_cay', 'tra_sua', 'tra_dao_cam_sa', 'bap_xao', 'ca_phe_den_da', 'che_khoai_mon', 'banh_flan'] },
   { id: 'toi', name: 'Cao điểm tối', from: 17 * 60, to: 20 * 60, traffic: 1.7, wants: ['rau', 'thit', 'ca', 'gao', 'dauan', 'giavi', 'trung', 'com_suon_nuong', 'canh_rau_thit', 'xoi_thap_cam', 'ca_kho_to', 'thit_kho_trung', 'canh_chua_ca'] },

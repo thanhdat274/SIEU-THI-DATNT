@@ -19,9 +19,9 @@ const shelf = (uid: number, tiers: Tier[]): Furniture => ({ uid, type: 'shelf', 
 const FULL_STORAGE = { mi: 150 };
 
 describe('isSlowHour — biên khung giờ vắng', () => {
-  it('giữa buổi 8:30–11:00 (phút 510–659, traffic 0.6) là giờ vắng', () => {
-    expect(isSlowHour(509)).toBe(false); // 8:29 vẫn còn cao điểm sáng
-    expect(isSlowHour(510)).toBe(true); // 8:30 vào giữa buổi
+  it('giữa buổi 9:00–11:00 (phút 540–659, traffic 0.6) là giờ vắng', () => {
+    expect(isSlowHour(539)).toBe(false); // 8:59 vẫn còn cao điểm sáng
+    expect(isSlowHour(540)).toBe(true); // 9:00 vào giữa buổi
     expect(isSlowHour(659)).toBe(true);
     expect(isSlowHour(660)).toBe(false); // 11:00 sang cao điểm trưa
   });
