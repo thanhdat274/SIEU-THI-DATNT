@@ -760,6 +760,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'pho_xao', name: 'Phở xào', category: 'fresh', buy: 14000, sell: 24000, color: 0xd8a860, unlock: 161 },
   { id: 'bun_bo_nam_bo', name: 'Bún bò Nam Bộ', category: 'fresh', buy: 15000, sell: 26000, color: 0xa86a3a, unlock: 162 },
   { id: 'banh_canh_cua', name: 'Bánh canh cua', category: 'fresh', buy: 32000, sell: 55000, color: 0xe87a3a, unlock: 163 },
+  { id: 'bun_ca', name: 'Bún cá', category: 'fresh', buy: 12000, sell: 21000, color: 0xe8b878, unlock: 164 },
+  { id: 'sup_cua', name: 'Súp cua', category: 'fresh', buy: 25000, sell: 42000, color: 0xe8c890, unlock: 165 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2451,6 +2453,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_banh_canh_cua', name: 'Bánh canh cua', station: 'hot_kettle',
     inputs: [{ productId: 'cua_bien_tuoi', quantity: 1 }, { productId: 'x_bot_gao', quantity: 1 }, { productId: 'x_hanh_la', quantity: 1 }],
     outputId: 'banh_canh_cua', outputQty: 10, durationMin: 30, unlock: 163, reputationGain: 1 },
+  // GĐ2076: Bún cá — Hà Nội: cá lóc chiên/rán sơ thả nồi nước dùng cà chua, chan bún (hot_kettle); bỏ thì là, cần do game chưa có.
+  { id: 'recipe_bun_ca', name: 'Bún cá', station: 'hot_kettle',
+    inputs: [{ productId: 'x_bun_tuoi', quantity: 1 }, { productId: 'ca_loc_tuoi', quantity: 1 }, { productId: 'x_ca_chua', quantity: 1 }],
+    outputId: 'bun_ca', outputQty: 10, durationMin: 30, unlock: 164, reputationGain: 1 },
+  // GĐ2077: Súp cua — Sài Gòn: thịt cua nấu nước dùng, sánh bột năng, đánh trứng (hot_kettle).
+  { id: 'recipe_sup_cua', name: 'Súp cua', station: 'hot_kettle',
+    inputs: [{ productId: 'cua_bien_tuoi', quantity: 1 }, { productId: 'x_trung_ga', quantity: 2 }, { productId: 'x_bot_nang', quantity: 1 }],
+    outputId: 'sup_cua', outputQty: 12, durationMin: 25, unlock: 165, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────
