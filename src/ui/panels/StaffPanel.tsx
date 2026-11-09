@@ -6,7 +6,7 @@ import { Dropdown } from '../Dropdown';
 import { useGame } from '../../core/store';
 import { dailyWage, maxStaff, ROLES, SHIFTS, type Shift, type Staff } from '../../data/staff';
 import { formatMoney, fmtMul } from '../../data/products';
-import { shortLabel } from '../shortLabel';
+import { blockedLabel, shortLabel } from '../shortLabel';
 import { hasUpgrade } from '../../data/upgrades';
 import { branchStaffWish } from '../../data/branches';
 import { BranchShiftStrip, BranchValueLine, NightStaffLine, NightStrip, ShiftValueStrip, StaffIdleLine, StaffValueLine, CourierValueLine, StaffPoachWarn } from './StaffLines';
@@ -187,7 +187,7 @@ export function StaffPanel() {
                         title={st.trainedDay === day ? 'Hôm nay đã học rồi' : 'Cộng kinh nghiệm, đủ thì lên sao (lương tăng theo)'}
                         onClick={() => trainStaff(st.id)}
                       >
-                        {st.trainedDay === day ? `🎓 Đào tạo ${formatMoney(trainCost(st.skill))}` : shortLabel(`🎓 Đào tạo ${formatMoney(trainCost(st.skill))}`, trainCost(st.skill), money)}
+                        {blockedLabel(st.trainedDay === day ? '🎓 Mai học tiếp' : null, `🎓 Đào tạo ${formatMoney(trainCost(st.skill))}`, trainCost(st.skill), money)}
                       </button>
                       {tv.paybackDays !== null && (
                         <span style={{ fontSize: 12, color: tv.worth ? '#2ecc71' : '#e67e22' }} title="Ước theo giá trị hôm nay của ca này">
