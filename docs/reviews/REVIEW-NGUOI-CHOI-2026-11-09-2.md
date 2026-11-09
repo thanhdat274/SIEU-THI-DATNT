@@ -10,6 +10,12 @@
 - R4 (P3, suy luận): cao điểm sáng đặt 6h–9h nhưng tiệm mở 8h nên thực tế chỉ còn 1 giờ cao điểm (8–9h). Đúng yêu cầu người dùng nhưng khung này gần như mất ý nghĩa; cân nhắc cao điểm 8h–10h nếu muốn khách đông thật.
 - Console: lỗi đỏ duy nhất là `shopHoursLabel is not defined` do HMR bắt file lúc sửa dở (trước khi thêm import); tải lại thì hết.
 
+## Bổ sung (đi sâu hơn, cùng kho ?thu=1)
+- Đã chơi: mở Nhập hàng → +1 thùng ×3 → Nhập ngay (360k → 63.8k) → đóng bảng. F5 giữa buổi sáng: tiền 63.800đ giữ nguyên, giờ lùi 4 phút (07:23→07:19, do lưu định kỳ) — chấp nhận được.
+- R5 (P2, quan sát): bảng "Đang mở…" mất ~4s trong pane dev, và UI phản hồi bấm chậm hàng chục giây (đồng hồ game chạy 06:00→07:05 trong lúc thao tác). Người mới mất gần 2 giờ chuẩn bị trước giờ mở 8h. Cần xác minh trên máy thật/bản build; nếu thật, cân nhắc tạm dừng đồng hồ khi mở bảng Nhập hàng trong ngày đầu.
+- R6 (P3): dòng dự báo trên HUD bị cắt "…" ở khung 800×600 ("châm kệ trước c…").
+- Vẫn chưa: ra tiệm bán hàng, ngủ, 1920×1080/1366×768, co-op a/b.
+
 ## Chưa xác minh (kế thừa)
 - Cảnh đen + tiền âm ngày 3 (đợt 5 R1), FPS máy thật, WebGL warn loop.
 
