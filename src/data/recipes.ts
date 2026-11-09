@@ -559,6 +559,7 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'chao_toi_ot', name: 'Cháo tỏi ớt', category: 'fresh', buy: 12500, sell: 20500, color: 0xe8c0a0, unlock: 113 },
   { id: 'com_la_dua', name: 'Cơm lá dứa', category: 'fresh', buy: 14000, sell: 22500, color: 0xb8d8a0, unlock: 114 },
   { id: 'chao_hat_dieu', name: 'Cháo hạt điều', category: 'fresh', buy: 13500, sell: 22000, color: 0xeed8b0, unlock: 115 },
+  { id: 'com_mam_nem', name: 'Cơm mắm nêm', category: 'fresh', buy: 14000, sell: 22500, color: 0xd8b08a, unlock: 116 },
   { id: 'mam_co_ngo', name: 'Mâm cỗ đầu ngõ', category: 'fresh', buy: 100000, sell: 140000, color: 0xc0392b, unlock: 85 },
   // GĐ1409: Sữa chua granola — lối ra ĐẦU TIÊN của ngũ cốc granola: mẻ (granola 130k + sữa chua) → 14 cốc × 18k = 252k.
   { id: 'sua_chua_granola', name: 'Sữa chua granola', category: 'fresh', buy: 11000, sell: 18000, color: 0xe9d8b4, unlock: 68 },
@@ -1574,6 +1575,10 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_chao_hat_dieu', name: 'Cháo hạt điều', station: 'hot_kettle',
     inputs: [{ productId: 'gao', quantity: 2 }, { productId: 'hx_hat_dieu', quantity: 1 }],
     outputId: 'chao_hat_dieu', outputQty: 14, durationMin: 30, unlock: 115, reputationGain: 3 },
+  // GĐ1872: Cơm mắm nêm ở bếp xôi cơm. Mở 116 (> golden 30, ≥ nguyên liệu 87).
+  { id: 'recipe_com_mam_nem', name: 'Cơm mắm nêm', station: 'rice_station',
+    inputs: [{ productId: 'gao', quantity: 2 }, { productId: 'hx_mam_nem', quantity: 1 }],
+    outputId: 'com_mam_nem', outputQty: 12, durationMin: 30, unlock: 116, reputationGain: 3 },
   // GĐ1523: Mâm cỗ đầu ngõ — món CUỐI CHUỖI (mục C#4 TONG-HOP Xóm "mâm cỗ = 5 món làm sẵn"): bày 5 món tự nấu
   // (cháo, măng xào, xôi, nem cuốn, cơm cá cơm ≈ 105k giá lẻ) thành 1 mâm 140k + uy tín cao. Mở 85 (> golden 30,
   // tránh mốc soát biên 82/86/91/96/100), biên nhập 100k → 1,4.
