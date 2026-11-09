@@ -6,7 +6,8 @@ import { GroceryShop } from '../shop/groceryShop';
 import { Building, setMergeWindowFrames } from './buildings';
 import { Warehouse, WAREHOUSE_DEPTH } from './warehouse';
 import type { NavGrid } from './navGrid';
-import { SHOP_CENTER_X, SHOP_FRONT_Z, SHOP_TIERS } from '../data/shopTiers';
+import { SHOP_CENTER_X, SHOP_FRONT_Z } from '../data/shopTiers';
+import { maxShopFootprint } from '../data/expansionTiles';
 import { HOUSE_SIZE, houseDoor, NEIGHBOR_HOUSES } from '../data/phoneOrders';
 import { BRANCH_LAYOUT, CONVENIENCE, LANE_X, ROAD2_Z } from '../data/branches';
 import { FurnitureView } from '../shop/furnitureView';
@@ -241,7 +242,8 @@ export function createWorld(scene: THREE.Scene, grid: NavGrid): World {
   const waitLamp = createWaitLamp();
   waitLamp.group.visible = false; // GĐ1820: bỏ đèn báo khách chờ
   scene.add(waitLamp.group);
-  const maxTier = SHOP_TIERS[SHOP_TIERS.length - 1];
+  // GĐ1944 — chừa cả các ô mở rộng sau Đại siêu thị
+  const maxTier = maxShopFootprint();
 
   // Vài cái cây cho sinh động
   const treeBoxes: THREE.Box3[] = [];

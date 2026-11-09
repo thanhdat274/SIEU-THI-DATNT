@@ -7,8 +7,9 @@ import type { NavGrid } from '../world/navGrid';
 import { FurnitureView } from './furnitureView';
 import { ShelfInstancer } from './shelfInstancer';
 
-import { SHOP_CENTER_X, SHOP_FRONT_Z, SHOP_TIERS } from '../data/shopTiers';
+import { SHOP_CENTER_X, SHOP_FRONT_Z } from '../data/shopTiers';
 import { activeDepartments, departmentBounds } from '../data/departments';
+import { shopFootprint } from '../data/expansionTiles';
 
 interface LocalCounter {
   key: string;
@@ -49,22 +50,24 @@ export class GroceryShop {
   private shelfGoods: ShelfInstancer | undefined;
   private grid: NavGrid | null = null;
   private tier = -1;
+  /** GĐ1944 — số ô mở rộng đã dựng (khuôn = bậc + ô). */
+  private tiles = 0;
 
   constructor(private scene: THREE.Scene, private warehouse: Warehouse, sharedGoods = false) {
     if (sharedGoods) this.shelfGoods = new ShelfInstancer();
     this.rebuildShell();
     this.sync();
     useGame.subscribe((s, prev) => {
-      if (s.shopTier !== prev.shopTier) this.rebuildShell();
+      if (s.shopTier !== prev.shopTier || s.extraTiles !== prev.extraTiles) this.rebuildShell();
       else if (s.mainCounter !== prev.mainCounter) this.placeCounter();
       else if (s.style !== prev.style || s.stylePreview !== prev.stylePreview) this.applyStyle();
-      if (s.furniture !== prev.furniture || s.shopTier !== prev.shopTier) this.sync();
+      if (s.furniture !== prev.furniture || s.shopTier !== prev.shopTier || s.extraTiles !== prev.extraTiles) this.sync();
       else if (s.zonePaint !== prev.zonePaint) this.applyZonePaint();
     });
   }
 
-  get width() { return SHOP_TIERS[this.tier].width; }
-  get depth() { return SHOP_TIERS[this.tier].depth; }
+  get width() { return shopFootprint(this.tier, this.tiles).width; }
+  get depth() { return shopFootprint(this.tier, this.tiles).depth; }
   /** Quầy chính: người chơi dời được, chưa dời thì ở góc phải phía trước, chừa lối sau quầy cho thu ngân đứng. */
   private get counterPos(): MainCounter {
     return useGame.getState().mainCounter ?? { x: this.width / 2 - 1.7, z: this.depth / 2 - 1.9, rot: DEFAULT_COUNTER_ROT };
@@ -86,7 +89,8 @@ export class GroceryShop {
       this.building.dispose();
     }
     this.tier = s.shopTier;
-    const { width, depth } = SHOP_TIERS[this.tier];
+    this.tiles = s.extraTiles ?? 0;
+    const { width, depth } = shopFootprint(this.tier, this.tiles);
     this.building = new Building({
       name: 'Tạp hóa', width, depth, height: 3,
       wallColor: s.style.wall, roofColor: s.style.roof, floorColor: s.style.floor, backDoorX: this.backDoorX, sideWindows: false,

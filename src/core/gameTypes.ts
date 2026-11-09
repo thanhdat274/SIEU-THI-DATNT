@@ -225,6 +225,9 @@ export interface GameState {
   shopTier: number;
   /** Đã trả tiền mở rộng, thợ làm xong vào sáng mai. */
   pendingUpgrade: boolean;
+  /** GĐ1944 — số ô mở rộng tiếp giáp đã mua sau bậc Đại siêu thị. */
+  extraTiles: number;
+  buyExpansionTile: () => boolean;
   style: ShopStyle;
   /** GĐ1943 — sơn nền/vách theo khu siêu thị (id khu trong DEPARTMENTS → màu). */
   zonePaint: Record<string, ZonePaint>;

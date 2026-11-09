@@ -4,6 +4,7 @@ import { formatMoney } from '../../data/products';
 import { PAINT_PRICE, SHOP_TIERS } from '../../data/shopTiers';
 import { repairCost } from '../../data/risks';
 import { activeDepartments } from '../../data/departments';
+import { EXPANSION_TILE_DEPTH, expansionBlock, expansionTilePrice, isContiguous } from '../../data/expansionTiles';
 import { type GameState, type Furniture, type SetState, type GetState, SELL_BACK } from '../gameTypes';
 import { copyStock, returnTier, emptyTiers } from '../stock';
 
@@ -18,7 +19,7 @@ export const trialCost = (list: Furniture[]) =>
 export const updateFurniture = (set: SetState, get: GetState, uid: number, fn: (f: Furniture) => Furniture) =>
   set({ furniture: get().furniture.map((f) => (f.uid === uid ? fn(f) : f)) });
 
-export const createBuildSlice = (set: SetState, get: GetState): Pick<GameState, 'setBuildMode' | 'setPlacing' | 'placeFurniture' | 'moveFurniture' | 'moveMainCounter' | 'sellFurniture' | 'stashFurniture' | 'placeFromStash' | 'placeTrial' | 'buyTrials' | 'dropTrials' | 'demolishAll' | 'buyUpgrade' | 'repairFurniture' | 'paint' | 'paintZone'> => ({
+export const createBuildSlice = (set: SetState, get: GetState): Pick<GameState, 'setBuildMode' | 'setPlacing' | 'placeFurniture' | 'moveFurniture' | 'moveMainCounter' | 'sellFurniture' | 'stashFurniture' | 'placeFromStash' | 'placeTrial' | 'buyTrials' | 'dropTrials' | 'demolishAll' | 'buyUpgrade' | 'repairFurniture' | 'paint' | 'paintZone' | 'buyExpansionTile'> => ({
   setBuildMode: (on) => {
     // Thoát chế độ xây mà chưa mua đồ dùng thử thì dỡ đi
     if (!on && get().furniture.some((f) => f.trial)) get().dropTrials();
@@ -169,6 +170,26 @@ export const createBuildSlice = (set: SetState, get: GetState): Pick<GameState, 
       stats: { ...s.stats, spent: s.stats.spent + PAINT_PRICE },
       totals: { ...s.totals, spent: s.totals.spent + PAINT_PRICE },
     });
+  },
+  buyExpansionTile: () => {
+    const s = get();
+    const n = s.extraTiles ?? 0;
+    const block = expansionBlock(s.shopTier, n);
+    if (block) { s.notify(block); return false; }
+    const k = n + 1;
+    if (!isContiguous(k)) return false;
+    const price = expansionTilePrice(k);
+    if (s.money < price) { s.notify('Không đủ tiền!'); return false; }
+    // Mặt tiền giữ nguyên, tiệm nới ra sau như nâng bậc: dời đồ để đứng đúng chỗ cũ
+    const shift = EXPANSION_TILE_DEPTH / 2;
+    set({
+      money: s.money - price, extraTiles: k,
+      furniture: s.furniture.map((f) => ({ ...f, z: f.z + shift })),
+      mainCounter: s.mainCounter && { ...s.mainCounter, z: s.mainCounter.z + shift },
+      stats: { ...s.stats, spent: s.stats.spent + price }, totals: { ...s.totals, spent: s.totals.spent + price },
+    });
+    s.notify(`🧱 Đã mở ô mở rộng thứ ${k}: tiệm sâu thêm ${EXPANSION_TILE_DEPTH} m (${formatMoney(price)})`);
+    return true;
   },
   paintZone: (departmentId, part, color) => {
     const s = get();

@@ -7,6 +7,7 @@ import { festivalShopName, festivalShopOpen } from '../../data/festivalDeco';
 import { FURNITURE_GROUP_TABS, furnitureGroup, type FurnitureGroup } from '../../data/furnitureGroups';
 import { VIET_SET, VIET_SET_TIERS, vietSetCount, vietSetDecorBonus } from '../../data/decorSets';
 import { activeDepartments, departmentWalled, DEPT_ECON_FROM_TIER, departmentsUnlockedAtTier } from '../../data/departments';
+import { EXPANSION_TILE_CAP, MAX_SHOP_TIER, expansionBlock, expansionTilePrice, shopFootprint } from '../../data/expansionTiles';
 import { bigBasketInsight, BIG_BASKET_TIER } from '../../data/bigBasket';
 import { meatCounterPayoff, meatChainCooled } from '../../data/meatCounterPayoff';
 import { isMeat } from '../../data/meat';
@@ -379,6 +380,30 @@ export function ExpandTab() {
           );
         })}
       </div>
+      <ExpansionTiles />
     </>
   );
 }
+
+/** GĐ1944 — ô mở rộng tiếp giáp phía sau, chỉ mở ở bậc Đại siêu thị. */
+function ExpansionTiles() {
+  const shopTier = useGame((s) => s.shopTier);
+  const extraTiles = useGame((s) => s.extraTiles) ?? 0;
+  const money = useGame((s) => s.money);
+  const buy = useGame((s) => s.buyExpansionTile);
+  if (shopTier < MAX_SHOP_TIER) return null;
+  const k = extraTiles + 1;
+  const block = expansionBlock(shopTier, extraTiles);
+  const fp = shopFootprint(shopTier, extraTiles);
+  return (
+    <div style={{ ...styles.card, marginTop: 8 }}>
+      <div style={{ flex: 1 }}>
+        <b>🧱 Ô mở rộng</b> · {extraTiles}/{EXPANSION_TILE_CAP} ô · khuôn {fp.width}×{fp.depth}m
+        <div style={{ fontSize: 12, opacity: 0.75 }}>Mỗi ô nới tiệm sâu thêm 1 m về phía sau, nối liền tường sau.</div>
+      </div>
+      {block ? <span style={{ fontSize: 12 }}>{block}</span>
+        : <button style={styles.btn} disabled={money < expansionTilePrice(k)} onClick={buy}>{shortLabel(`Mở ô ${k}`, expansionTilePrice(k), money)}</button>}
+    </div>
+  );
+}
+

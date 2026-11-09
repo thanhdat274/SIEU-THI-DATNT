@@ -121,6 +121,8 @@ export const newGameData = () => ({
   stats: emptyStats(),
   shopTier: 0,
   pendingUpgrade: false,
+  /** GĐ1944 — số ô mở rộng tiếp giáp đã mua (chỉ có ở bậc Đại siêu thị); bản lưu cũ = 0. */
+  extraTiles: 0,
   style: { wall: 0xfff3b0, floor: 0xd8cfc0, roof: 0x1e8449 } as ShopStyle,
   /** GĐ1943 — sơn nền/vách theo khu siêu thị (id khu → màu); bản lưu cũ thiếu = {} (không sơn). */
   zonePaint: {} as Record<string, ZonePaint>,
