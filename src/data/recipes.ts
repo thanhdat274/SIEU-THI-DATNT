@@ -717,6 +717,10 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'com_chien_hai_san', name: 'Cơm chiên hải sản', category: 'fresh', buy: 8000, sell: 14000, color: 0xf0c860, unlock: 118 },
   { id: 'mi_xao_bo', name: 'Mì xào bò', category: 'fresh', buy: 12000, sell: 21000, color: 0xd8a050, unlock: 119 },
   { id: 'tom_chien_xu', name: 'Tôm chiên xù', category: 'fresh', buy: 14000, sell: 24000, color: 0xe8a840, unlock: 120 },
+  { id: 'mi_xao_hai_san', name: 'Mì xào hải sản', category: 'fresh', buy: 14000, sell: 24000, color: 0xe0b050, unlock: 121 },
+  { id: 'com_chien_bo', name: 'Cơm chiên bò', category: 'fresh', buy: 8000, sell: 14000, color: 0xd8a860, unlock: 122 },
+  { id: 'ga_xao_nam', name: 'Gà xào nấm', category: 'fresh', buy: 14000, sell: 24000, color: 0xa87850, unlock: 123 },
+  { id: 'chao_tom', name: 'Cháo tôm', category: 'fresh', buy: 6000, sell: 11000, color: 0xf0d0b0, unlock: 124 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2236,6 +2240,22 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_tom_chien_xu', name: 'Tôm chiên xù', station: 'fryer',
     inputs: [{ productId: 'x_tom_tuoi', quantity: 1 }, { productId: 'x_bot_chien', quantity: 1 }, { productId: 'x_trung_ga', quantity: 1 }],
     outputId: 'tom_chien_xu', outputQty: 6, durationMin: 20, unlock: 120, reputationGain: 1 },
+  // GĐ2031: Mì xào hải sản — quán cả nước: mì trứng trụng xào lửa lớn với tôm, mực (fryer).
+  { id: 'recipe_mi_xao_hai_san', name: 'Mì xào hải sản', station: 'fryer',
+    inputs: [{ productId: 'x_mi_trung_kho', quantity: 1 }, { productId: 'x_tom_tuoi', quantity: 1 }, { productId: 'x_muc_tuoi', quantity: 1 }],
+    outputId: 'mi_xao_hai_san', outputQty: 8, durationMin: 20, unlock: 121, reputationGain: 1 },
+  // GĐ2032: Cơm chiên bò — quán cả nước: cơm chiên trứng lửa lớn với bò thái mỏng (fryer).
+  { id: 'recipe_com_chien_bo', name: 'Cơm chiên bò', station: 'fryer',
+    inputs: [{ productId: 'gao', quantity: 1 }, { productId: 'x_thit_bo', quantity: 1 }, { productId: 'x_trung_ga', quantity: 2 }],
+    outputId: 'com_chien_bo', outputQty: 20, durationMin: 25, unlock: 122, reputationGain: 1 },
+  // GĐ2033: Gà xào nấm — cơm nhà cả nước: gà thái miếng xào với nấm, hành (fryer); dùng nấm hương khô ngâm nở.
+  { id: 'recipe_ga_xao_nam', name: 'Gà xào nấm', station: 'fryer',
+    inputs: [{ productId: 'x_thit_ga', quantity: 1 }, { productId: 'x_nam_huong_kho', quantity: 1 }, { productId: 'x_hanh_la', quantity: 1 }],
+    outputId: 'ga_xao_nam', outputQty: 6, durationMin: 20, unlock: 123, reputationGain: 1 },
+  // GĐ2034: Cháo tôm — cả nước: gạo ninh nhừ, tôm băm xào thơm cho vào, rắc hành (hot_kettle).
+  { id: 'recipe_chao_tom', name: 'Cháo tôm', station: 'hot_kettle',
+    inputs: [{ productId: 'gao', quantity: 1 }, { productId: 'x_tom_tuoi', quantity: 1 }, { productId: 'x_hanh_la', quantity: 1 }],
+    outputId: 'chao_tom', outputQty: 30, durationMin: 30, unlock: 124, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────
