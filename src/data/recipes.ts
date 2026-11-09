@@ -114,9 +114,6 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'tra_o_mai_dao', name: 'Trà ô mai đào', category: 'drink', buy: 12000, sell: 21000, color: 0xf0a090, unlock: 172 },
   { id: 'tra_o_mai_cam', name: 'Trà ô mai cam', category: 'drink', buy: 12000, sell: 21000, color: 0xf0a030, unlock: 173 },
   { id: 'tra_o_mai_xoai', name: 'Trà ô mai xoài', category: 'drink', buy: 12000, sell: 21000, color: 0xf0c040, unlock: 174 },
-  { id: 'tra_o_mai_dua', name: 'Trà ô mai dứa', category: 'drink', buy: 12000, sell: 21000, color: 0xf0d050, unlock: 175 },
-  { id: 'tra_o_mai_mit', name: 'Trà ô mai mít', category: 'drink', buy: 12000, sell: 21000, color: 0xe8c860, unlock: 176 },
-  { id: 'tra_o_mai_nho', name: 'Trà ô mai nho', category: 'drink', buy: 12000, sell: 21000, color: 0xa08ab8, unlock: 177 },
   { id: 'tra_o_mai_man', name: 'Trà ô mai mận', category: 'drink', buy: 12000, sell: 21000, color: 0xc06070, unlock: 178 },
   { id: 'sua_dau_nanh_xay', name: 'Sữa đậu nành tự xay', category: 'drink', buy: 6000, sell: 10000, color: 0xf0e8c8, unlock: 34 },
   { id: 'ca_phe_den_da', name: 'Cà phê đen đá', category: 'drink', buy: 7800, sell: 14900, color: 0x2c3e50, unlock: 34 },
@@ -511,7 +508,7 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   // GĐ1477: Bánh tráng trộn me — lối ra ĐẦU TIÊN của bánh tráng phơi sương.
   { id: 'banh_trang_tron_me', name: 'Bánh tráng trộn me', category: 'fresh', buy: 6000, sell: 10000, color: 0xd89850, unlock: 73 },
   // GĐ1478: Bún xào lạp xưởng — lối ra ĐẦU TIÊN của lạp xưởng bà Tám.
-  { id: 'mi_xao_lap_xuong', name: 'Bún xào lạp xưởng', category: 'fresh', buy: 9000, sell: 15000, color: 0xe0a050, unlock: 74 },
+  { id: 'mi_xao_lap_xuong', name: 'Mì xào lạp xưởng', category: 'fresh', buy: 9000, sell: 15000, color: 0xe0a050, unlock: 74 },
   // GĐ1479: Canh chua dưa muối cá basa — lối ra ĐẦU TIÊN của dưa muối hàng xóm.
   // GĐ1655: Cá kho thơm — món kho Nam Bộ, dùng thơm (nay trồng được ở trại) + cá + nước mắm hàng xóm.
   { id: 'ca_kho_thom', name: 'Cá kho thơm', category: 'fresh', buy: 13000, sell: 21000, color: 0xb8742a, unlock: 41 },
@@ -1426,9 +1423,10 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_banh_trang_tron_me', name: 'Bánh tráng trộn me', station: 'hot_kettle',
     inputs: [{ productId: 'hx_banh_trang', quantity: 2 }, { productId: 'hx_me_dam', quantity: 1 }, { productId: 'x_trung_ga', quantity: 2 }],
     outputId: 'banh_trang_tron_me', outputQty: 12, durationMin: 10, unlock: 73, reputationGain: 3 },
-  // GĐ1478: Bún xào lạp xưởng ở chảo chiên. Mở 74 (> golden 30, ≥ cấp nguyên liệu).
-  { id: 'recipe_mi_xao_lap_xuong', name: 'Bún xào lạp xưởng', station: 'fryer',
-    inputs: [{ productId: 'bun', quantity: 2 }, { productId: 'hx_lap_xuong', quantity: 1 }, { productId: 'x_trung_ga', quantity: 4 }],
+  // GĐ1478: Mì xào lạp xưởng ở chảo chiên (sửa từ bún→mì cho đúng món Mì xào: lạp xưởng xào mì gói phổ biến,
+  // xào bún tươi dễ rã/bết). Mở 74 (> golden 30, ≥ cấp nguyên liệu).
+  { id: 'recipe_mi_xao_lap_xuong', name: 'Mì xào lạp xưởng', station: 'fryer',
+    inputs: [{ productId: 'mi', quantity: 2 }, { productId: 'hx_lap_xuong', quantity: 1 }, { productId: 'x_trung_ga', quantity: 4 }],
     outputId: 'mi_xao_lap_xuong', outputQty: 10, durationMin: 20, unlock: 74, reputationGain: 3 },
   // GĐ1479: Canh chua dưa muối cá basa ở bếp nồi. Mở 75 (> golden 30, ≥ cấp nguyên liệu).
   // GĐ1655: Cá kho thơm ở bếp nồi nấu. Mở 41 (> golden 30, ≥ cấp nguyên liệu).
@@ -1545,9 +1543,9 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_chao_gao_lut', name: 'Cháo gạo lứt', station: 'hot_kettle',
     inputs: [{ productId: 'gao', quantity: 2 }, { productId: 'hx_gao_lut_rang', quantity: 1 }],
     outputId: 'chao_gao_lut', outputQty: 14, durationMin: 30, unlock: 117, reputationGain: 3 },
-  // GĐ1874: Xôi xoài ở bếp xôi cơm. Mở 118 (> golden 30, ≥ nguyên liệu 89).
+  // GĐ1874: Xôi xoài ở bếp xôi cơm (sửa input gạo tẻ→gạo nếp `nep` cho đúng bản chất xôi). Mở 118 (> golden 30, ≥ nguyên liệu 89).
   { id: 'recipe_xoi_xoai_say', name: 'Xôi xoài sấy', station: 'rice_station',
-    inputs: [{ productId: 'gao', quantity: 2 }, { productId: 'hx_xoai_say', quantity: 1 }],
+    inputs: [{ productId: 'nep', quantity: 2 }, { productId: 'hx_xoai_say', quantity: 1 }],
     outputId: 'xoi_xoai_say', outputQty: 12, durationMin: 30, unlock: 118, reputationGain: 3 },
   { id: 'recipe_com_gac_bep', name: 'Cơm thịt gác bếp', station: 'rice_station',
     inputs: [{ productId: 'gao', quantity: 2 }, { productId: 'hx_gac_bep', quantity: 1 }],
@@ -1773,15 +1771,6 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_tra_o_mai_xoai', name: 'Trà ô mai xoài', station: 'drink_counter',
     inputs: [{ productId: 'tra', quantity: 1 }, { productId: 'hx_o_mai_xoai', quantity: 1 }],
     outputId: 'tra_o_mai_xoai', outputQty: 6, durationMin: 10, unlock: 174, reputationGain: 3 },
-  { id: 'recipe_tra_o_mai_dua', name: 'Trà ô mai dứa', station: 'drink_counter',
-    inputs: [{ productId: 'tra', quantity: 1 }, { productId: 'hx_o_mai_dua', quantity: 1 }],
-    outputId: 'tra_o_mai_dua', outputQty: 6, durationMin: 10, unlock: 175, reputationGain: 3 },
-  { id: 'recipe_tra_o_mai_mit', name: 'Trà ô mai mít', station: 'drink_counter',
-    inputs: [{ productId: 'tra', quantity: 1 }, { productId: 'hx_o_mai_mit', quantity: 1 }],
-    outputId: 'tra_o_mai_mit', outputQty: 6, durationMin: 10, unlock: 176, reputationGain: 3 },
-  { id: 'recipe_tra_o_mai_nho', name: 'Trà ô mai nho', station: 'drink_counter',
-    inputs: [{ productId: 'tra', quantity: 1 }, { productId: 'hx_o_mai_nho', quantity: 1 }],
-    outputId: 'tra_o_mai_nho', outputQty: 6, durationMin: 10, unlock: 177, reputationGain: 3 },
   { id: 'recipe_tra_o_mai_man', name: 'Trà ô mai mận', station: 'drink_counter',
     inputs: [{ productId: 'tra', quantity: 1 }, { productId: 'hx_o_mai_man', quantity: 1 }],
     outputId: 'tra_o_mai_man', outputQty: 6, durationMin: 10, unlock: 178, reputationGain: 3 },

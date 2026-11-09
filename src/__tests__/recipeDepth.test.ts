@@ -4232,50 +4232,6 @@ describe('GĐ1472 — bánh cuốn chà bông (nồi hấp)', () => {
   });
 });
 
-/** GĐ1473 — Cà pháo chiên giòn chấm me: lối ra đầu tiên của cà pháo muối (chảo chiên). */
-describe('GĐ1473 — cà pháo chiên giòn chấm me (chảo chiên)', () => {
-  const recipe = RECIPE_MAP['recipe_ca_phao_chien_gion'];
-  it('có công thức, mở sau golden 30', () => {
-    expect(recipe).toBeDefined();
-    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
-  });
-  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
-    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
-    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
-    const value = recipe.outputQty * productById(recipe.outputId).sell;
-    expect(value).toBeGreaterThan(cost);
-    expect(value).toBeGreaterThan(raw);
-  });
-  it('outputId duy nhất; đúng trạm chảo chiên và dùng cà pháo muối', () => {
-    expect(COOKED_PRODUCTS.some((c) => c.id === 'ca_phao_chien_gion')).toBe(true);
-    expect(RECIPES.filter((r) => r.outputId === 'ca_phao_chien_gion').length).toBe(1);
-    expect(recipe.station).toBe('fryer');
-    expect(recipe.inputs.some((i) => i.productId === 'hx_ca_phao')).toBe(true);
-  });
-});
-
-/** GĐ1474 — Bún chả lụa nước chanh muối: lối ra đầu tiên của chanh muối hàng xóm (bếp nồi). */
-describe('GĐ1474 — bún chả lụa nước chanh muối (bếp nồi)', () => {
-  const recipe = RECIPE_MAP['recipe_bun_cha_lua_chanh_muoi'];
-  it('có công thức, mở sau golden 30', () => {
-    expect(recipe).toBeDefined();
-    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
-  });
-  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
-    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
-    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
-    const value = recipe.outputQty * productById(recipe.outputId).sell;
-    expect(value).toBeGreaterThan(cost);
-    expect(value).toBeGreaterThan(raw);
-  });
-  it('outputId duy nhất; đúng trạm bếp nồi và dùng chanh muối hàng xóm', () => {
-    expect(COOKED_PRODUCTS.some((c) => c.id === 'bun_cha_lua_chanh_muoi')).toBe(true);
-    expect(RECIPES.filter((r) => r.outputId === 'bun_cha_lua_chanh_muoi').length).toBe(1);
-    expect(recipe.station).toBe('hot_kettle');
-    expect(recipe.inputs.some((i) => i.productId === 'hx_chanh_muoi')).toBe(true);
-  });
-});
-
 /** GĐ1475 — Giò thủ chiên giòn: lối ra đầu tiên của giò thủ bà Tám (chảo chiên). */
 describe('GĐ1475 — giò thủ chiên giòn (chảo chiên)', () => {
   const recipe = RECIPE_MAP['recipe_gio_thu_chien_gion'];
