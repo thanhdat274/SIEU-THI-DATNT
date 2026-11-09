@@ -1,3 +1,4 @@
+import { blockedLabel } from '../shortLabel';
 import { fitLots, nearestLife, tierMarkdown } from '../../data/freshness';
 import { Dropdown } from '../Dropdown';
 import { useGame } from '../../core/store';
@@ -52,7 +53,7 @@ export function ShelfPanel({ uid }: { uid: number }) {
             disabled={!tier.productId || tier.count >= def.capacity || !(storage[tier.productId] > 0)}
             onClick={() => stockTier(uid, i, tier.productId)}
           >
-            Bày đầy
+            {blockedLabel(!tier.productId ? null : tier.count >= def.capacity ? 'Đã đầy' : !(storage[tier.productId] > 0) ? 'Kho hết' : null, 'Bày đầy', 0, 0)}
           </button>
         </div>
       ))}
