@@ -401,6 +401,7 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'dau_hu_sot_ca_chua', name: 'Đậu hũ sốt cà chua', category: 'fresh', buy: 3500, sell: 7000, color: 0xd9603b, unlock: 54 },
   // GĐ1429: Rau cải xào tỏi — lối ra ĐẦU TIÊN của rau cải.
   { id: 'rau_cai_xao_toi', name: 'Rau cải xào tỏi', category: 'fresh', buy: 4000, sell: 7000, color: 0x5aa04a, unlock: 47 },
+  { id: 'rau_muong_xao_toi', name: 'Rau muống xào tỏi', category: 'fresh', buy: 4000, sell: 7000, color: 0x3f8f3a, unlock: 55 },
   // GĐ1429: Bò xào giá — lối ra ĐẦU TIÊN của giá đỗ.
   { id: 'bo_xao_gia', name: 'Bò xào giá', category: 'fresh', buy: 8000, sell: 14000, color: 0x9a6a4a, unlock: 49 },
   // GĐ1429: Nước ép dưa leo cà rốt — lối ra ĐẦU TIÊN của dưa leo.
@@ -1238,6 +1239,10 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_rau_cai_xao_toi', name: 'Rau cải xào tỏi', station: 'fryer',
     inputs: [{ productId: 'x_rau_cai', quantity: 1 }, { productId: 'x_toi', quantity: 1 }],
     outputId: 'rau_cai_xao_toi', outputQty: 4, durationMin: 8, unlock: 47, reputationGain: 1 },
+  // GĐ1967: Rau muống xào tỏi — món rau quốc dân cả nước: rau muống xào lửa lớn với tỏi phi (chảo, fryer).
+  { id: 'recipe_rau_muong_xao_toi', name: 'Rau muống xào tỏi', station: 'fryer',
+    inputs: [{ productId: 'x_rau_muong', quantity: 1 }, { productId: 'x_toi', quantity: 1 }],
+    outputId: 'rau_muong_xao_toi', outputQty: 4, durationMin: 6, unlock: 55, reputationGain: 1 },
   // GĐ1429: Bò xào giá ở chảo chiên. Mở 35 (> golden 30, ≥ cấp nguyên liệu).
   { id: 'recipe_bo_xao_gia', name: 'Bò xào giá', station: 'fryer',
     inputs: [{ productId: 'x_thit_bo', quantity: 1 }, { productId: 'x_gia_do', quantity: 1 }],
