@@ -721,6 +721,9 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'com_chien_bo', name: 'Cơm chiên bò', category: 'fresh', buy: 8000, sell: 14000, color: 0xd8a860, unlock: 122 },
   { id: 'ga_xao_nam', name: 'Gà xào nấm', category: 'fresh', buy: 14000, sell: 24000, color: 0xa87850, unlock: 123 },
   { id: 'chao_tom', name: 'Cháo tôm', category: 'fresh', buy: 6000, sell: 11000, color: 0xf0d0b0, unlock: 124 },
+  { id: 'chao_bo', name: 'Cháo bò', category: 'fresh', buy: 6500, sell: 12000, color: 0xe8c8a8, unlock: 125 },
+  { id: 'ca_thu_nuong', name: 'Cá thu nướng', category: 'fresh', buy: 15000, sell: 26000, color: 0x8a6a4a, unlock: 126 },
+  { id: 'trung_kho', name: 'Trứng kho', category: 'fresh', buy: 6000, sell: 11000, color: 0xa0602a, unlock: 127 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2256,6 +2259,18 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_chao_tom', name: 'Cháo tôm', station: 'hot_kettle',
     inputs: [{ productId: 'gao', quantity: 1 }, { productId: 'x_tom_tuoi', quantity: 1 }, { productId: 'x_hanh_la', quantity: 1 }],
     outputId: 'chao_tom', outputQty: 30, durationMin: 30, unlock: 124, reputationGain: 1 },
+  // GĐ2035: Cháo bò — Sài Gòn: gạo ninh nhừ, thả bò băm chín tới, rắc hành tiêu (hot_kettle).
+  { id: 'recipe_chao_bo', name: 'Cháo bò', station: 'hot_kettle',
+    inputs: [{ productId: 'gao', quantity: 1 }, { productId: 'x_thit_bo', quantity: 1 }, { productId: 'x_hanh_la', quantity: 1 }],
+    outputId: 'chao_bo', outputQty: 30, durationMin: 30, unlock: 125, reputationGain: 1 },
+  // GĐ2036: Cá thu nướng — miền Trung: cá thu cắt khúc ướp sả, nước mắm, nướng than (food_grill).
+  { id: 'recipe_ca_thu_nuong', name: 'Cá thu nướng', station: 'food_grill',
+    inputs: [{ productId: 'x_ca_thu_tuoi', quantity: 1 }, { productId: 'x_sa', quantity: 1 }],
+    outputId: 'ca_thu_nuong', outputQty: 5, durationMin: 25, unlock: 126, reputationGain: 1 },
+  // GĐ2037: Trứng kho — cơm nhà cả nước: trứng luộc bóc vỏ kho nước mắm đường tới thấm màu (hot_kettle).
+  { id: 'recipe_trung_kho', name: 'Trứng kho', station: 'hot_kettle',
+    inputs: [{ productId: 'x_trung_ga', quantity: 4 }, { productId: 'hx_nuoc_mam', quantity: 1 }],
+    outputId: 'trung_kho', outputQty: 8, durationMin: 25, unlock: 127, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────
