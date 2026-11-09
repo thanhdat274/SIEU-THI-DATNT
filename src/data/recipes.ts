@@ -763,6 +763,7 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'bun_ca', name: 'Bún cá', category: 'fresh', buy: 12000, sell: 21000, color: 0xe8b878, unlock: 164 },
   { id: 'sup_cua', name: 'Súp cua', category: 'fresh', buy: 25000, sell: 42000, color: 0xe8c890, unlock: 165 },
   { id: 'banh_mi_op_la', name: 'Bánh mì ốp la', category: 'fresh', buy: 7000, sell: 14000, color: 0xf0c860, unlock: 166 },
+  { id: 'banh_mi_chao', name: 'Bánh mì chảo', category: 'fresh', buy: 12000, sell: 22000, color: 0xd8903a, unlock: 167 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2466,6 +2467,10 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_banh_mi_op_la', name: 'Bánh mì ốp la', station: 'fryer',
     inputs: [{ productId: 'x_banh_mi', quantity: 2 }, { productId: 'x_trung_ga', quantity: 2 }],
     outputId: 'banh_mi_op_la', outputQty: 2, durationMin: 8, unlock: 166, reputationGain: 1 },
+  // GĐ2079: Bánh mì chảo — quán sáng Sài Gòn: chảo gang trứng ốp la, pate, ăn chấm bánh mì (fryer); bỏ xúc xích/thịt nguội do game chưa có hàng sống.
+  { id: 'recipe_banh_mi_chao', name: 'Bánh mì chảo', station: 'fryer',
+    inputs: [{ productId: 'x_banh_mi', quantity: 2 }, { productId: 'x_trung_ga', quantity: 2 }, { productId: 'x_pate_hop', quantity: 1 }],
+    outputId: 'banh_mi_chao', outputQty: 4, durationMin: 12, unlock: 167, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────

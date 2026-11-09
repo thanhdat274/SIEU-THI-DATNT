@@ -122,6 +122,7 @@ const MON_THAT: Record<string, { name: string; station: string; cachNau: string 
   recipe_bun_ca: { name: 'Bún cá', station: 'hot_kettle', cachNau: 'cá thả nước dùng cà chua, chan bún (Hà Nội)' },
   recipe_sup_cua: { name: 'Súp cua', station: 'hot_kettle', cachNau: 'thịt cua nấu sánh bột năng, đánh trứng (Sài Gòn)' },
   recipe_banh_mi_op_la: { name: 'Bánh mì ốp la', station: 'fryer', cachNau: 'trứng ốp la chảo nóng ăn kèm bánh mì (quán sáng Sài Gòn)' },
+  recipe_banh_mi_chao: { name: 'Bánh mì chảo', station: 'fryer', cachNau: 'chảo gang trứng ốp la + pate, chấm bánh mì (Sài Gòn)' },
 };
 
 /** Chữ mô tả tự chế không ai dùng làm tên món ngoài chợ. */
