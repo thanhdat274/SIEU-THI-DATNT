@@ -749,6 +749,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'tom_hap_bia', name: 'Tôm hấp bia', category: 'fresh', buy: 28000, sell: 48000, color: 0xe8603a, unlock: 150 },
   { id: 'ca_ro_phi_hap_xi_dau', name: 'Cá rô phi hấp xì dầu', category: 'fresh', buy: 14000, sell: 24000, color: 0x9a7a5a, unlock: 151 },
   { id: 'ga_xe_phay', name: 'Gà xé phay', category: 'fresh', buy: 15000, sell: 26000, color: 0xf0d8a0, unlock: 152 },
+  { id: 'trung_op_la', name: 'Trứng ốp la', category: 'fresh', buy: 4000, sell: 8000, color: 0xf8e070, unlock: 153 },
+  { id: 'mi_xao_gion', name: 'Mì xào giòn', category: 'fresh', buy: 15000, sell: 26000, color: 0xe8b040, unlock: 154 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2396,6 +2398,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_ga_xe_phay', name: 'Gà xé phay', station: 'hot_kettle',
     inputs: [{ productId: 'x_thit_ga', quantity: 1 }, { productId: 'x_hanh_tay', quantity: 1 }, { productId: 'x_rau_mui', quantity: 1 }],
     outputId: 'ga_xe_phay', outputQty: 6, durationMin: 30, unlock: 152, reputationGain: 1 },
+  // GĐ2065: Trứng ốp la — quán sáng cả nước: trứng gà đập chảo dầu nóng chiên lòng đào, ăn kèm bánh mì (fryer).
+  { id: 'recipe_trung_op_la', name: 'Trứng ốp la', station: 'fryer',
+    inputs: [{ productId: 'x_trung_ga', quantity: 4 }],
+    outputId: 'trung_op_la', outputQty: 4, durationMin: 8, unlock: 153, reputationGain: 1 },
+  // GĐ2066: Mì xào giòn — quán Hoa Sài Gòn: mì trứng chiên giòn thành vắt, rưới hải sản xào rau cải sốt sệt (fryer).
+  { id: 'recipe_mi_xao_gion', name: 'Mì xào giòn', station: 'fryer',
+    inputs: [{ productId: 'x_mi_trung_kho', quantity: 1 }, { productId: 'x_tom_tuoi', quantity: 1 }, { productId: 'x_muc_tuoi', quantity: 1 }, { productId: 'x_rau_cai', quantity: 1 }],
+    outputId: 'mi_xao_gion', outputQty: 8, durationMin: 25, unlock: 154, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────
