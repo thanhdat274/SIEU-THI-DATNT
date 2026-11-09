@@ -110,6 +110,8 @@ const MON_THAT: Record<string, { name: string; station: string; cachNau: string 
   recipe_ga_xe_phay: { name: 'Gà xé phay', station: 'hot_kettle', cachNau: 'gà luộc xé sợi trộn hành tây, rau thơm (miền Bắc/Trung)' },
   recipe_trung_op_la: { name: 'Trứng ốp la', station: 'fryer', cachNau: 'trứng đập chảo dầu chiên lòng đào (quán sáng cả nước)' },
   recipe_mi_xao_gion: { name: 'Mì xào giòn', station: 'fryer', cachNau: 'mì chiên giòn rưới hải sản xào rau cải (quán Hoa Sài Gòn)' },
+  recipe_chuoi_nuong: { name: 'Chuối nướng', station: 'food_grill', cachNau: 'chuối bọc nếp nướng than, rưới cốt dừa (Nam Bộ)' },
+  recipe_trung_nuong: { name: 'Trứng nướng', station: 'food_grill', cachNau: 'trứng nêm hành nướng than nguyên vỏ (quà vặt vỉa hè)' },
 };
 
 /** Chữ mô tả tự chế không ai dùng làm tên món ngoài chợ. */

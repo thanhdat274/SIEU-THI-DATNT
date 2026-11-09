@@ -751,6 +751,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'ga_xe_phay', name: 'Gà xé phay', category: 'fresh', buy: 15000, sell: 26000, color: 0xf0d8a0, unlock: 152 },
   { id: 'trung_op_la', name: 'Trứng ốp la', category: 'fresh', buy: 4000, sell: 8000, color: 0xf8e070, unlock: 153 },
   { id: 'mi_xao_gion', name: 'Mì xào giòn', category: 'fresh', buy: 15000, sell: 26000, color: 0xe8b040, unlock: 154 },
+  { id: 'chuoi_nuong', name: 'Chuối nướng', category: 'fresh', buy: 5000, sell: 10000, color: 0xe8c070, unlock: 155 },
+  { id: 'trung_nuong', name: 'Trứng nướng', category: 'fresh', buy: 4500, sell: 9000, color: 0xc89050, unlock: 156 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2406,6 +2408,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_mi_xao_gion', name: 'Mì xào giòn', station: 'fryer',
     inputs: [{ productId: 'x_mi_trung_kho', quantity: 1 }, { productId: 'x_tom_tuoi', quantity: 1 }, { productId: 'x_muc_tuoi', quantity: 1 }, { productId: 'x_rau_cai', quantity: 1 }],
     outputId: 'mi_xao_gion', outputQty: 8, durationMin: 25, unlock: 154, reputationGain: 1 },
+  // GĐ2067: Chuối nướng — Nam Bộ: chuối bọc nếp, gói lá nướng than, rưới nước cốt dừa (food_grill); cốt dừa hộp thay dừa tươi.
+  { id: 'recipe_chuoi_nuong', name: 'Chuối nướng', station: 'food_grill',
+    inputs: [{ productId: 'x_chuoi', quantity: 1 }, { productId: 'x_nep', quantity: 1 }, { productId: 'x_dua_cot_hop', quantity: 1 }],
+    outputId: 'chuoi_nuong', outputQty: 8, durationMin: 20, unlock: 155, reputationGain: 1 },
+  // GĐ2068: Trứng nướng — quà vặt vỉa hè: trứng đục lỗ nêm hành, nước mắm, nướng than nguyên vỏ (food_grill).
+  { id: 'recipe_trung_nuong', name: 'Trứng nướng', station: 'food_grill',
+    inputs: [{ productId: 'x_trung_ga', quantity: 4 }, { productId: 'x_hanh_la', quantity: 1 }],
+    outputId: 'trung_nuong', outputQty: 4, durationMin: 15, unlock: 156, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────
