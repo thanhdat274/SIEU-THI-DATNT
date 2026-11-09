@@ -39,14 +39,16 @@ export const rentDelta = (fromTier: number, toTier: number) => rentOf(toTier) - 
  * % diện tích sàn bậc `tier` bị nội thất chiếm: tổng rộng×sâu của từng món đã đặt / (rộng×sâu của tiệm), làm tròn.
  * Thuần đọc để soi sáng thẻ "Mở rộng tiệm" — không dùng trong tính kinh tế. Bậc không tồn tại → 0.
  */
-export function spaceUsePct(furniture: readonly { type: FurnitureType }[], tier: number): number {
+export function spaceUsePct(furniture: readonly { type: FurnitureType }[], tier: number, extraDepth = 0): number {
   const t = SHOP_TIERS[tier];
   if (!t || t.width <= 0 || t.depth <= 0) return 0;
+  // GĐ1949 — ô mở rộng (GĐ1944) nới chiều sâu bậc cuối: tính cả vào mặt bằng, không thì % sàn báo đầy giả
+  const depth = t.depth + Math.max(0, extraDepth);
   const used = furniture.reduce((sum, f) => {
     const def = FURNITURE.find((d) => d.type === f.type);
     return sum + (def ? def.size[0] * def.size[1] : 0);
   }, 0);
-  return Math.round((used / (t.width * t.depth)) * 100);
+  return Math.round((used / (t.width * depth)) * 100);
 }
 
 /**

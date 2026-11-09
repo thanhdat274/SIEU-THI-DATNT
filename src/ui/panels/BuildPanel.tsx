@@ -300,6 +300,7 @@ export function ShopPreview({ style }: { style: ShopStyle }) {
 }
 
 export function ExpandTab() {
+  const extraTilesAll = useGame((s) => s.extraTiles) ?? 0;
   const { shopTier, pendingUpgrade, level, money, buyUpgrade, furniture, history } = useGame();
   const rentNow = rentOf(shopTier);
   // Doanh thu bình quân 7 ngày gần nhất — chỉ đáng tin khi có ≥ 3 ngày thật sự bán được hàng.
@@ -334,7 +335,7 @@ export function ExpandTab() {
           const ahead = i > shopTier;
           const rentThen = rentOf(i);
           const rentUp = rentDelta(shopTier, i);
-          const usePct = spaceUsePct(furniture, i);
+          const usePct = spaceUsePct(furniture, i, shopFootprint(i, extraTilesAll).depth - t.depth);
           return (
             <div key={t.name} style={{ ...styles.card, opacity: done || next ? 1 : 0.5 }}>
               <div style={{ flex: 1 }}>

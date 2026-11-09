@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (09/11/2026)
+- GĐ1949: thẻ bậc tiệm "% sàn đã dùng" tính cả ô mở rộng GĐ1944 (trước báo đầy giả sau khi mua ô); `spaceUsePct(…, extraDepth)` thuần, không đổi kinh tế. Test shopTiersRent. Coverage định kỳ: dòng 64,8%, nhánh 90%; phần thiếu chủ yếu 3D/net (QA mắt), logic core ổn.
 - GĐ1948: khung "Tối muộn" kéo tới 22:30 khớp giờ đón khách tạp hóa (GĐ1843) — trước đó 22:00–22:30 khách mất món thèm theo giờ, Nhu cầu quầy nhãn "20h–22h30". Lượng khách không đổi (giờ này vẫn tính traffic đầu đêm). Test khuyaBand + sửa 2 test cấu trúc; sim/golden không lệch. Đóng mục "lệch 22:00/22:30".
 - GĐ1947: nút vật liệu kho mua ĐÚNG phần thiếu theo đơn giá (gạch 10k/xi măng 30k/thép 50k — cùng mặt bằng bộ 400k cũ), hết mua thừa thép; đủ rồi hiện "✅ Đủ vật liệu". Không thêm nút, cùng thao tác co-op. Test wareMaterials; full 5621 xanh. QA live bỏ qua để không sửa save ngày 3 của người dùng.
 - GĐ1946: dọn PROGRESS (51→~27KB) — dồn GĐ1829–1939 sang `docs/progress-archive/PROGRESS-GD1829-1939.md`.
