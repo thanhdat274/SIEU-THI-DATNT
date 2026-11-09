@@ -757,6 +757,9 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'mien_ga', name: 'Miến gà', category: 'fresh', buy: 12000, sell: 21000, color: 0xf0e0b0, unlock: 158 },
   { id: 'pho_ga', name: 'Phở gà', category: 'fresh', buy: 13000, sell: 23000, color: 0xf0e8c0, unlock: 159 },
   { id: 'banh_canh_ca_loc', name: 'Bánh canh cá lóc', category: 'fresh', buy: 12000, sell: 21000, color: 0xe8d8b0, unlock: 160 },
+  { id: 'pho_xao', name: 'Phở xào', category: 'fresh', buy: 14000, sell: 24000, color: 0xd8a860, unlock: 161 },
+  { id: 'bun_bo_nam_bo', name: 'Bún bò Nam Bộ', category: 'fresh', buy: 15000, sell: 26000, color: 0xa86a3a, unlock: 162 },
+  { id: 'banh_canh_cua', name: 'Bánh canh cua', category: 'fresh', buy: 32000, sell: 55000, color: 0xe87a3a, unlock: 163 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2436,6 +2439,18 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_banh_canh_ca_loc', name: 'Bánh canh cá lóc', station: 'hot_kettle',
     inputs: [{ productId: 'ca_loc_tuoi', quantity: 1 }, { productId: 'x_bot_gao', quantity: 1 }, { productId: 'x_hanh_la', quantity: 1 }],
     outputId: 'banh_canh_ca_loc', outputQty: 10, durationMin: 30, unlock: 160, reputationGain: 1 },
+  // GĐ2073: Phở xào — Hà Nội: bánh phở xào lửa lớn với bò, rau cải (fryer).
+  { id: 'recipe_pho_xao', name: 'Phở xào', station: 'fryer',
+    inputs: [{ productId: 'pho', quantity: 1 }, { productId: 'x_thit_bo', quantity: 1 }, { productId: 'x_rau_cai', quantity: 1 }],
+    outputId: 'pho_xao', outputQty: 8, durationMin: 20, unlock: 161, reputationGain: 1 },
+  // GĐ2074: Bún bò Nam Bộ — Hà Nội (gọi theo gốc Nam): bò xào sả trộn bún tươi, rau thơm, đậu phộng rang, nước mắm chua ngọt (fryer xào bò).
+  { id: 'recipe_bun_bo_nam_bo', name: 'Bún bò Nam Bộ', station: 'fryer',
+    inputs: [{ productId: 'x_bun_tuoi', quantity: 1 }, { productId: 'x_thit_bo', quantity: 1 }, { productId: 'x_sa', quantity: 1 }, { productId: 'x_dau_phong', quantity: 1 }],
+    outputId: 'bun_bo_nam_bo', outputQty: 8, durationMin: 20, unlock: 162, reputationGain: 1 },
+  // GĐ2075: Bánh canh cua — Sài Gòn: sợi bánh canh bột gạo, nước dùng sệt nấu cua biển, hành (hot_kettle).
+  { id: 'recipe_banh_canh_cua', name: 'Bánh canh cua', station: 'hot_kettle',
+    inputs: [{ productId: 'cua_bien_tuoi', quantity: 1 }, { productId: 'x_bot_gao', quantity: 1 }, { productId: 'x_hanh_la', quantity: 1 }],
+    outputId: 'banh_canh_cua', outputQty: 10, durationMin: 30, unlock: 163, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────
