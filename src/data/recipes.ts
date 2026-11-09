@@ -690,6 +690,9 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'bo_luc_lac', name: 'Bò lúc lắc', category: 'fresh', buy: 10000, sell: 14000, color: 0x7a3a2a, unlock: 88 },
   { id: 'ca_ro_phi_kho', name: 'Cá rô phi kho', category: 'fresh', buy: 6000, sell: 9000, color: 0x7a5030, unlock: 89 },
   { id: 'canh_rau_muong', name: 'Canh rau muống', category: 'fresh', buy: 3000, sell: 4000, color: 0x5a9a4a, unlock: 90 },
+  { id: 'cha_trung', name: 'Chả trứng', category: 'fresh', buy: 5000, sell: 7000, color: 0xe8b040, unlock: 92 },
+  { id: 'nui_xao_bo', name: 'Nui xào bò', category: 'fresh', buy: 7000, sell: 10000, color: 0xd8803a, unlock: 93 },
+  { id: 'mien_xao', name: 'Miến xào', category: 'fresh', buy: 6000, sell: 9000, color: 0xc8a070, unlock: 94 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2101,6 +2104,18 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_canh_rau_muong', name: 'Canh rau muống', station: 'hot_kettle',
     inputs: [{ productId: 'x_rau_muong', quantity: 1 }, { productId: 'x_ca_chua', quantity: 1 }],
     outputId: 'canh_rau_muong', outputQty: 6, durationMin: 8, unlock: 90, reputationGain: 1 },
+  // GĐ2002: Chả trứng — Sài Gòn (ăn kèm cơm tấm): trứng đánh với thịt xay hấp chín rồi phết lòng đỏ (steamer); miến/mộc nhĩ thêm tùy nơi, không bắt buộc.
+  { id: 'recipe_cha_trung', name: 'Chả trứng', station: 'steamer',
+    inputs: [{ productId: 'x_trung_ga', quantity: 4 }, { productId: 'x_thit_xay', quantity: 1 }],
+    outputId: 'cha_trung', outputQty: 10, durationMin: 25, unlock: 92, reputationGain: 1 },
+  // GĐ2003: Nui xào bò — Sài Gòn: nui luộc rồi xào với thịt bò, cà chua trong chảo (fryer).
+  { id: 'recipe_nui_xao_bo', name: 'Nui xào bò', station: 'fryer',
+    inputs: [{ productId: 'x_nui_kho', quantity: 1 }, { productId: 'x_thit_bo', quantity: 1 }, { productId: 'x_ca_chua', quantity: 1 }],
+    outputId: 'nui_xao_bo', outputQty: 10, durationMin: 15, unlock: 93, reputationGain: 1 },
+  // GĐ2004: Miến xào — cả nước (cỗ/cơm nhà): miến dong ngâm mềm xào với thịt, cà rốt (chảo, fryer); mộc nhĩ thêm tùy nơi.
+  { id: 'recipe_mien_xao', name: 'Miến xào', station: 'fryer',
+    inputs: [{ productId: 'x_mien_dong', quantity: 1 }, { productId: 'x_thit_xay', quantity: 1 }, { productId: 'x_ca_rot', quantity: 1 }],
+    outputId: 'mien_xao', outputQty: 10, durationMin: 12, unlock: 94, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────
