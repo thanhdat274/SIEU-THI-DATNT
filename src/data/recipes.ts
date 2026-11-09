@@ -118,6 +118,7 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'tra_o_mai_mit', name: 'Trà ô mai mít', category: 'drink', buy: 12000, sell: 21000, color: 0xe8c860, unlock: 176 },
   { id: 'tra_o_mai_nho', name: 'Trà ô mai nho', category: 'drink', buy: 12000, sell: 21000, color: 0xa08ab8, unlock: 177 },
   { id: 'tra_o_mai_man', name: 'Trà ô mai mận', category: 'drink', buy: 12000, sell: 21000, color: 0xc06070, unlock: 178 },
+  { id: 'sua_dau_nanh_xay', name: 'Sữa đậu nành tự xay', category: 'drink', buy: 6000, sell: 10000, color: 0xf0e8c8, unlock: 34 },
   { id: 'ca_phe_den_da', name: 'Cà phê đen đá', category: 'drink', buy: 7800, sell: 14900, color: 0x2c3e50, unlock: 34 },
   { id: 'ca_phe_trung', name: 'Cà phê trứng', category: 'drink', buy: 21500, sell: 40900, color: 0xe17055, unlock: 36 },
 
@@ -503,10 +504,6 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'banh_da_cuon_cha_lua', name: 'Bánh đa cuốn chả lụa', category: 'fresh', buy: 8000, sell: 13000, color: 0xd8b878, unlock: 67 },
   // GĐ1472: Bánh cuốn chà bông — lối ra ĐẦU TIÊN của bánh cuốn nhà làm.
   { id: 'banh_cuon_cha_bong', name: 'Bánh cuốn chà bông', category: 'fresh', buy: 12000, sell: 20000, color: 0xf0dcb8, unlock: 68 },
-  // GĐ1473: Cà pháo chiên giòn chấm me — lối ra ĐẦU TIÊN của cà pháo muối.
-  { id: 'ca_phao_chien_gion', name: 'Cà pháo chiên giòn chấm me', category: 'fresh', buy: 5000, sell: 9000, color: 0xa0b050, unlock: 69 },
-  // GĐ1474: Bún chả lụa nước chanh muối — lối ra ĐẦU TIÊN của chanh muối hàng xóm.
-  { id: 'bun_cha_lua_chanh_muoi', name: 'Bún chả lụa nước chanh muối', category: 'fresh', buy: 11000, sell: 18000, color: 0xf0e0a0, unlock: 70 },
   // GĐ1475: Giò thủ chiên giòn — lối ra ĐẦU TIÊN của giò thủ bà Tám.
   { id: 'gio_thu_chien_gion', name: 'Giò thủ chiên giòn', category: 'fresh', buy: 11000, sell: 18000, color: 0xc89060, unlock: 71 },
   // GĐ1476: Xôi chiên chà bông — lối ra ĐẦU TIÊN của chà bông nhà làm.
@@ -552,7 +549,6 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'com_mam_ca_linh', name: 'Cơm mắm cá linh', category: 'fresh', buy: 14500, sell: 23500, color: 0xd9b69a, unlock: 95 },
   { id: 'chao_nam_rom', name: 'Cháo nấm rơm', category: 'fresh', buy: 13000, sell: 21500, color: 0xe0d0b0, unlock: 101 },
   { id: 'chao_hat_sen', name: 'Cháo hạt sen', category: 'fresh', buy: 13500, sell: 22000, color: 0xeee6c0, unlock: 103 },
-  { id: 'com_dau_den', name: 'Cơm đậu đen', category: 'fresh', buy: 14000, sell: 22500, color: 0xc8b8a8, unlock: 104 },
   { id: 'chao_dau_xanh', name: 'Cháo đậu xanh', category: 'fresh', buy: 12500, sell: 20500, color: 0xe0dca0, unlock: 105 },
   { id: 'chao_khoai_lang', name: 'Cháo khoai lang', category: 'fresh', buy: 12500, sell: 20500, color: 0xe8c890, unlock: 107 },
   { id: 'com_bap_bo', name: 'Cơm bắp bơ', category: 'fresh', buy: 14000, sell: 22500, color: 0xf0d8a0, unlock: 108 },
@@ -803,6 +799,10 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_sinh_to', name: 'Sinh tố trái cây', station: 'blender',
     inputs: [{ productId: 'traicay', quantity: 1 }, { productId: 'suachua', quantity: 1 }],
     outputId: 'sinh_to_trai_cay', outputQty: 4, durationMin: 8, unlock: 28, reputationGain: 2 },
+  // GĐ1938: Sữa đậu nành tự xay (có thật): đậu nành hạt xay + đường, máy xay. Mở 34.
+  { id: 'recipe_sua_dau_nanh_xay', name: 'Sữa đậu nành tự xay', station: 'blender',
+    inputs: [{ productId: 'x_dau_nanh_hat', quantity: 2 }, { productId: 'x_duong', quantity: 1 }],
+    outputId: 'sua_dau_nanh_xay', outputQty: 10, durationMin: 10, unlock: 34, reputationGain: 2 },
   { id: 'recipe_kem', name: 'Kem trái cây tự làm', station: 'blender',
     inputs: [{ productId: 'traicay', quantity: 1 }, { productId: 'suachua', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
     outputId: 'kem_trai_cay', outputQty: 5, durationMin: 12, unlock: 28, reputationGain: 3 },
@@ -1414,14 +1414,6 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_banh_cuon_cha_bong', name: 'Bánh cuốn chà bông', station: 'steamer',
     inputs: [{ productId: 'hx_banh_cuon', quantity: 2 }, { productId: 'hx_cha_bong', quantity: 1 }],
     outputId: 'banh_cuon_cha_bong', outputQty: 10, durationMin: 12, unlock: 68, reputationGain: 3 },
-  // GĐ1473: Cà pháo chiên giòn chấm me ở chảo chiên. Mở 69 (> golden 30, ≥ cấp nguyên liệu).
-  { id: 'recipe_ca_phao_chien_gion', name: 'Cà pháo chiên giòn chấm me', station: 'fryer',
-    inputs: [{ productId: 'hx_ca_phao', quantity: 3 }, { productId: 'hx_me_dam', quantity: 1 }, { productId: 'botmi', quantity: 1 }],
-    outputId: 'ca_phao_chien_gion', outputQty: 12, durationMin: 12, unlock: 69, reputationGain: 3 },
-  // GĐ1474: Bún chả lụa nước chanh muối ở bếp nồi. Mở 70 (> golden 30, ≥ cấp nguyên liệu).
-  { id: 'recipe_bun_cha_lua_chanh_muoi', name: 'Bún chả lụa nước chanh muối', station: 'hot_kettle',
-    inputs: [{ productId: 'bun', quantity: 2 }, { productId: 'hx_cha_lua', quantity: 1 }, { productId: 'hx_chanh_muoi', quantity: 1 }],
-    outputId: 'bun_cha_lua_chanh_muoi', outputQty: 10, durationMin: 15, unlock: 70, reputationGain: 3 },
   // GĐ1475: Giò thủ chiên giòn ở chảo chiên. Mở 71 (> golden 30, ≥ cấp nguyên liệu).
   { id: 'recipe_gio_thu_chien_gion', name: 'Giò thủ chiên giòn', station: 'fryer',
     inputs: [{ productId: 'hx_gio_thu', quantity: 1 }, { productId: 'botmi', quantity: 1 }, { productId: 'x_trung_ga', quantity: 2 }],
@@ -1521,10 +1513,6 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_chao_hat_sen', name: 'Cháo hạt sen', station: 'hot_kettle',
     inputs: [{ productId: 'gao', quantity: 2 }, { productId: 'hx_hat_sen', quantity: 1 }],
     outputId: 'chao_hat_sen', outputQty: 14, durationMin: 30, unlock: 103, reputationGain: 3 },
-  // GĐ1860: Cơm đậu đen ở bếp xôi cơm. Mở 104 (> golden 30, ≥ nguyên liệu 73).
-  { id: 'recipe_com_dau_den', name: 'Cơm đậu đen', station: 'rice_station',
-    inputs: [{ productId: 'gao', quantity: 2 }, { productId: 'hx_dau_den', quantity: 1 }],
-    outputId: 'com_dau_den', outputQty: 12, durationMin: 30, unlock: 104, reputationGain: 3 },
   // GĐ1861: Cháo đậu xanh ở nồi nước. Mở 105 (> golden 30, ≥ nguyên liệu 74).
   { id: 'recipe_chao_dau_xanh', name: 'Cháo đậu xanh', station: 'hot_kettle',
     inputs: [{ productId: 'gao', quantity: 2 }, { productId: 'hx_dau_xanh_ca', quantity: 1 }],
