@@ -747,6 +747,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'ga_ro_ti', name: 'Gà rô ti', category: 'fresh', buy: 15000, sell: 26000, color: 0xb8602a, unlock: 148 },
   { id: 'chao_hai_san', name: 'Cháo hải sản', category: 'fresh', buy: 7000, sell: 13000, color: 0xf0d8c0, unlock: 149 },
   { id: 'tom_hap_bia', name: 'Tôm hấp bia', category: 'fresh', buy: 28000, sell: 48000, color: 0xe8603a, unlock: 150 },
+  { id: 'ca_ro_phi_hap_xi_dau', name: 'Cá rô phi hấp xì dầu', category: 'fresh', buy: 14000, sell: 24000, color: 0x9a7a5a, unlock: 151 },
+  { id: 'ga_xe_phay', name: 'Gà xé phay', category: 'fresh', buy: 15000, sell: 26000, color: 0xf0d8a0, unlock: 152 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2386,6 +2388,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_tom_hap_bia', name: 'Tôm hấp bia', station: 'steamer',
     inputs: [{ productId: 'tom_su_tuoi', quantity: 1 }, { productId: 'bia_chai', quantity: 1 }, { productId: 'x_sa', quantity: 1 }],
     outputId: 'tom_hap_bia', outputQty: 6, durationMin: 15, unlock: 150, reputationGain: 1 },
+  // GĐ2063: Cá rô phi hấp xì dầu — cơm nhà/quán cả nước: cá hấp với gừng, rưới xì dầu và hành dầu (steamer); nước tương thay xì dầu.
+  { id: 'recipe_ca_ro_phi_hap_xi_dau', name: 'Cá rô phi hấp xì dầu', station: 'steamer',
+    inputs: [{ productId: 'ca_ro_phi_tuoi', quantity: 1 }, { productId: 'x_nuoc_tuong', quantity: 1 }, { productId: 'x_gung', quantity: 1 }],
+    outputId: 'ca_ro_phi_hap_xi_dau', outputQty: 6, durationMin: 25, unlock: 151, reputationGain: 1 },
+  // GĐ2064: Gà xé phay — miền Bắc/Trung: gà luộc chín xé sợi trộn hành tây, rau thơm, chanh (hot_kettle); rau mùi thay rau răm.
+  { id: 'recipe_ga_xe_phay', name: 'Gà xé phay', station: 'hot_kettle',
+    inputs: [{ productId: 'x_thit_ga', quantity: 1 }, { productId: 'x_hanh_tay', quantity: 1 }, { productId: 'x_rau_mui', quantity: 1 }],
+    outputId: 'ga_xe_phay', outputQty: 6, durationMin: 30, unlock: 152, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────

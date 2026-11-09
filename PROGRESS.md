@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (10/11/2026)
+- GĐ2062–2064: dồn GĐ2002–2030 sang archive; Cá rô phi hấp xì dầu (steamer, L151), Gà xé phay (L152; rau mùi có lối ra bếp).
 - GĐ2059–2061: Gà rô ti (fryer, L148), Cháo hải sản (L149), Tôm hấp bia (steamer, L150).
 - GĐ2056–2058: Cua rang muối (L145), Tôm rang muối (L146), Mực rang muối (L147) — fryer, hải sản tươi sẵn có.
 - GĐ2053–2055: Cá lóc kho (L142), Canh chua cá lóc (L143), Cá lóc chiên (fryer, L144) — dùng cá lóc tươi sẵn có.
@@ -30,14 +31,7 @@
 - GĐ2038–2040: Gà hấp hành (steamer, L128), Dưa leo xào trứng (L129), Bông cải luộc (L130).
 - GĐ2035–2037: Cháo bò (L125), Cá thu nướng (food_grill, L126), Trứng kho (L127).
 - GĐ2031–2034: Mì xào hải sản (L121), Cơm chiên bò (L122), Gà xào nấm (L123), Cháo tôm (hot_kettle, L124).
-- GĐ2026–2030: dồn GĐ1983–2001 sang archive; Mực nhồi thịt (L117), Cơm chiên hải sản (L118), Mì xào bò (L119), Tôm chiên xù (L120).
-- GĐ2021–2025: Tôm rang (L112), Mực xào chua ngọt (L113), Sườn nướng (food_grill, L114), Bò xào cà chua (L115), Gà chiên giòn (L116).
-- GĐ2018–2020: Cà chua nhồi thịt (L109), Trứng đúc thịt (L110), Gà rang gừng (L111) — đều fryer.
-- GĐ2014–2017: dồn GĐ1966–1982 sang archive; Canh bắp cải (L106), Gà kho sả (L107), Cánh gà chiên (fryer, L108).
-- GĐ2011–2013: Canh trứng cà chua (hot_kettle, L103), Thịt kho tiêu (hot_kettle, L104), Gà xào gừng (fryer, L105).
-- GĐ2008–2010: Bún thịt nướng (bếp nướng, mở 99), Bún chả (bếp nướng, mở 101), Cháo sườn (bếp nồi, mở 102); MON_THAT + test; full 5780 xanh.
-- GĐ2005–2007: Cháo thịt bằm (bếp nồi, mở 95), Cháo cá (bếp nồi, mở 97; cá lóc → cá basa thay), Cơm chiên Dương Châu (chảo, mở 98); MON_THAT + test; full 5771 xanh.
-- GĐ2002–2004: Chả trứng (nồi hấp, mở 92), Nui xào bò (chảo, mở 93), Miến xào (chảo, mở 94); MON_THAT + test; full 5762 xanh.
+- GĐ2002–2030 (món cơm nhà/quán đợt 3, L92–120) — chi tiết ở docs/progress-archive/PROGRESS-GD2002-2030.md.
 - GĐ1983–2001 (món cơm nhà đợt 2, L71–90) — chi tiết ở docs/progress-archive/PROGRESS-GD1983-2001.md.
 - GĐ1966–1982 (món cơm nhà đợt 1: xào/luộc/canh L54–70) — chi tiết ở docs/progress-archive/PROGRESS-GD1966-1982.md.
 - GĐ1940–1965 (nâng kho vật liệu, khung giờ, món có thật, nút khóa ghi lý do): `docs/progress-archive/PROGRESS-GD1940-1965.md`.
