@@ -727,6 +727,9 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'ga_hap_hanh', name: 'Gà hấp hành', category: 'fresh', buy: 15000, sell: 26000, color: 0xf0e0a0, unlock: 128 },
   { id: 'dua_leo_xao_trung', name: 'Dưa leo xào trứng', category: 'fresh', buy: 6000, sell: 11000, color: 0xb8d870, unlock: 129 },
   { id: 'bong_cai_luoc', name: 'Bông cải luộc', category: 'fresh', buy: 7000, sell: 12000, color: 0x4a9a4a, unlock: 130 },
+  { id: 'bo_xao_kho_qua', name: 'Bò xào khổ qua', category: 'fresh', buy: 14000, sell: 24000, color: 0x6a9a4a, unlock: 131 },
+  { id: 'bo_xao_rau_muong', name: 'Bò xào rau muống', category: 'fresh', buy: 14000, sell: 24000, color: 0x4a8a3a, unlock: 132 },
+  { id: 'khoai_lang_chien', name: 'Khoai lang chiên', category: 'fresh', buy: 6000, sell: 11000, color: 0xe89a30, unlock: 133 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2286,6 +2289,18 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_bong_cai_luoc', name: 'Bông cải luộc', station: 'hot_kettle',
     inputs: [{ productId: 'x_bong_cai_xanh', quantity: 1 }],
     outputId: 'bong_cai_luoc', outputQty: 4, durationMin: 10, unlock: 130, reputationGain: 1 },
+  // GĐ2041: Bò xào khổ qua — cơm nhà cả nước: khổ qua thái lát xào tỏi, đảo bò thái mỏng (fryer).
+  { id: 'recipe_bo_xao_kho_qua', name: 'Bò xào khổ qua', station: 'fryer',
+    inputs: [{ productId: 'x_thit_bo', quantity: 1 }, { productId: 'x_kho_qua', quantity: 1 }, { productId: 'x_toi', quantity: 1 }],
+    outputId: 'bo_xao_kho_qua', outputQty: 6, durationMin: 20, unlock: 131, reputationGain: 1 },
+  // GĐ2042: Bò xào rau muống — cơm nhà cả nước: rau muống xào tỏi lửa lớn với bò thái mỏng (fryer).
+  { id: 'recipe_bo_xao_rau_muong', name: 'Bò xào rau muống', station: 'fryer',
+    inputs: [{ productId: 'x_thit_bo', quantity: 1 }, { productId: 'x_rau_muong', quantity: 1 }, { productId: 'x_toi', quantity: 1 }],
+    outputId: 'bo_xao_rau_muong', outputQty: 6, durationMin: 15, unlock: 132, reputationGain: 1 },
+  // GĐ2043: Khoai lang chiên — quà vặt cả nước: khoai lang thái lăn bột chiên giòn ngập dầu (fryer).
+  { id: 'recipe_khoai_lang_chien', name: 'Khoai lang chiên', station: 'fryer',
+    inputs: [{ productId: 'x_khoai_lang_tuoi', quantity: 1 }, { productId: 'x_bot_chien', quantity: 1 }],
+    outputId: 'khoai_lang_chien', outputQty: 5, durationMin: 15, unlock: 133, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────
