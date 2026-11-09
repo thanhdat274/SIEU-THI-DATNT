@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (10/11/2026)
+- GĐ1983: dọn PROGRESS (>33KB) — dồn GĐ1940–1965 sang `docs/progress-archive/PROGRESS-GD1940-1965.md`.
 - GĐ1980–1982: Gà luộc (bếp nồi, mở 68, 5×8k), Tôm rim (chảo, mở 69, 6×11k), Mực xào hành tây (chảo, mở 70, 6×13k); MON_THAT + test; full 5699 xanh.
 - GĐ1977–1979: Bí đỏ xào tỏi (chảo, mở 65, 5×6k), Canh bí đỏ (bếp nồi, mở 66, bí đỏ + thịt xay → 8×8k), Sườn ram (chảo, mở 67, 5×11k); MON_THAT + test; full 5690 xanh.
 - GĐ1974–1976: Bắp luộc (bếp nồi, mở 62, 3×4k), Khoai lang luộc (bếp nồi, mở 63, 4×4k), Bông cải xào tỏi (chảo, mở 64, 5×8k); MON_THAT + test bapLuoc/khoaiLangLuoc/bongCaiXaoToi; full 5681 xanh.
@@ -31,30 +32,7 @@
 - GĐ1968: Khổ qua xào trứng (chảo chiên, mở 56) — khổ qua 1 + trứng 3 → 4 đĩa ×9k; MON_THAT + test khoQuaXaoTrung; full 5657 xanh.
 - GĐ1967: Rau muống xào tỏi (chảo chiên, mở 55) — rau muống + tỏi → 4 đĩa ×7k; MON_THAT + test rauMuongXaoToi; full 5654 xanh.
 - GĐ1966: Đậu hũ sốt cà chua (chảo chiên, mở 54) — cơm nhà có thật: đậu hũ 4 + cà chua 1 → 6 phần ×7k; MON_THAT + test dauHuSotCaChua; full 5651 xanh.
-- GĐ1965: đăng ký Bún đậu mắm tôm (chảo chiên) vào sổ MON_THAT; full 5647 xanh trước đó.
-- GĐ1964: nút thăng chức chưa đủ điều kiện ghi "Chưa đủ điều kiện"; test GĐ1632 nhận cả blockedLabel (bọc shortLabel). Full: chỉ test đó đỏ trước khi sửa, còn lại xanh.
-- GĐ1963: đòn đối đầu đối thủ (tab Thị trường) thiếu tiền ghi " · thiếu X₫" — trước chỉ mờ không lý do.
-- GĐ1962: đơn online thiếu hàng → nút Grab ghi "Thiếu hàng" thay vì giá xám; test online+blockedLabel 99 xanh.
-- GĐ1961: nút "Bày đầy" từng tầng kệ khóa thì ghi "Đã đầy" / "Kho hết"; full 5647/5647 xanh (longSessionLeak chạy lại 4 lần xanh).
-- GĐ1960: thực đơn quán đầy ô → nút "Đủ N ô"; dồn NV chi nhánh khi đang mở → "🏬 Đóng chi nhánh để dồn"; full 5646/5647 (longSessionLeak chập chờn khi chạy chung, chạy riêng xanh).
-- GĐ1959: quán nước thực đơn trống → nút tự pha ghi "🍹 Chọn món vào thực đơn trước" (không còn xám câm); full 5646 xanh (gồm GĐ1958).
-- GĐ1958: nút khóa vì lý do khác tiền ghi lý do (`blockedLabel`): Đào tạo đã học hôm nay → "🎓 Mai học tiếp", tiệm xôi đủ thợ → "Đủ N thợ"; test blockedLabel.
-- GĐ1957: nút nâng kho thiếu vật liệu ghi "Thiếu 6 xi măng, 5 thép" thay vì nút xám câm (`materialBlockLabel`); test wareMaterials.
-- GĐ1956: Bún đậu mắm tôm (chảo chiên, mở 53) — món Hà Nội có thật: bún tươi + đậu hũ + mắm tôm → 8 phần ×15k; bún tươi rời danh sách chỉ-bán-lẻ (ingredientOutlet). Test bunDau.
-- GĐ1955: Bánh bò hấp (nồi hấp, mở 52) — bánh quê có thật: bột gạo + đường + nước cốt dừa → 12 cái ×7k; test banhBo; full 5634 xanh.
-- GĐ1954: Bánh chuối hấp (nồi hấp, mở 51) — món Nam Bộ có thật: chuối + bột năng + nước cốt dừa + đường → 10 miếng ×9k; test banhChuoiHap; full 5632 xanh.
-- GĐ1953: Bột chiên trứng (chảo chiên, mở 50) — quà vặt Sài Gòn có thật: bột gạo + bột năng + trứng + hành lá → 8 đĩa ×13k; test botChienTrung; full 5630 xanh.
-- GĐ1952: Bánh bèo chén (nồi hấp, mở 49) — món Huế có thật: bột gạo + bột năng + tôm + hành phi → 12 chén ×10k; test banhBeo; full 5628 xanh.
-- GĐ1951: Bánh căn (chảo chiên, mở 48) — món Phan Rang/Nha Trang có thật: bột gạo + trứng + hành lá → 10 cái ×11k; test banhCan; full 5626 xanh.
-- GĐ1950: rà định kỳ 10 GĐ — tải đầu 400/597 KB gzip, chunk lớn 107/255; thông báo dài nhất 88 ≤ 90; nút HUD/featureBudget xanh; full suite 5623 xanh. Không tính năng nào cần gộp/bỏ trong GĐ1941–1949 (đều sửa trong bảng có sẵn, 0 nút mới). Lưu ý headroom bundle: tăng 356→400 từ GĐ515, còn dư ~197 KB.
-- GĐ1949: thẻ bậc tiệm "% sàn đã dùng" tính cả ô mở rộng GĐ1944 (trước báo đầy giả sau khi mua ô); `spaceUsePct(…, extraDepth)` thuần, không đổi kinh tế. Test shopTiersRent. Coverage định kỳ: dòng 64,8%, nhánh 90%; phần thiếu chủ yếu 3D/net (QA mắt), logic core ổn.
-- GĐ1948: khung "Tối muộn" kéo tới 22:30 khớp giờ đón khách tạp hóa (GĐ1843) — trước đó 22:00–22:30 khách mất món thèm theo giờ, Nhu cầu quầy nhãn "20h–22h30". Lượng khách không đổi (giờ này vẫn tính traffic đầu đêm). Test khuyaBand + sửa 2 test cấu trúc; sim/golden không lệch. Đóng mục "lệch 22:00/22:30".
-- GĐ1947: nút vật liệu kho mua ĐÚNG phần thiếu theo đơn giá (gạch 10k/xi măng 30k/thép 50k — cùng mặt bằng bộ 400k cũ), hết mua thừa thép; đủ rồi hiện "✅ Đủ vật liệu". Không thêm nút, cùng thao tác co-op. Test wareMaterials; full 5621 xanh. QA live bỏ qua để không sửa save ngày 3 của người dùng.
-- GĐ1946: dọn PROGRESS (51→~27KB) — dồn GĐ1829–1939 sang `docs/progress-archive/PROGRESS-GD1829-1939.md`.
-- GĐ1945: vật liệu nâng kho (gạch/xi măng/thép, `wareMaterials`) cho kho cấp 5+, mua theo bộ ở bảng Kho, không chiếm thùng; test wareMaterials.
-- GĐ1944: ô mở rộng tiếp giáp sau bậc Đại siêu thị (tối đa 6 ô, giá đơn vị·k·(k+1)); test expansionTiles.
-- GĐ1943: khu siêu thị nối kinh tế (🩷 + 2% giá từ bậc Siêu thị tạp hóa) + sơn nền/vách theo khu; test supermarketZones.
-- GĐ1940–1941: rà ẩm thực gỡ 19 món gượng; gắn lối ra nấu món chính có thật cho nguyên liệu nhà làm hàng chết.
+- GĐ1940–1965 (nâng kho vật liệu, khung giờ, món có thật, nút khóa ghi lý do): `docs/progress-archive/PROGRESS-GD1940-1965.md`.
 - (cũ: PROGRESS-GD840-854.md) GĐ1829–1939 (review đợt 2–4, giờ mở cửa, catalog nhà làm/ô mai, rà ẩm thực): `docs/progress-archive/PROGRESS-GD1829-1939.md`.
 - GĐ1394–1408 + GĐ1490–1505 (chuỗi khu ăn tại chỗ: bàn ghế, khách ngồi ăn, tip, máy thu phí, toilet, decor × sao, sao món, vắng mặt, nhà phê bình, toast ghế, tour HUD, đồ bếp decor, bảng hiệu đặc sản; khoá 1 tab): docs/progress-archive/PROGRESS-GD1490-1505.md
 - GĐ1382–1393 (món mới từ nguyên liệu có sẵn, gọn PROGRESS, đổi "Ấm nước nóng" → "Bếp nồi nấu" GĐ1394 xem dòng riêng): chi tiết `docs/progress-archive/PROGRESS-GD1382-1391.md`.
