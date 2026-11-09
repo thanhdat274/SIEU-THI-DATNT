@@ -155,7 +155,7 @@ export function Market() {
                     >
                       <b>{c.icon} {c.name}</b>
                       {c.cost > 0 ? ` · ${formatMoney(c.cost)}` : ' · miễn phí (lãi mỏng)'}
-                      {runningNow ? ' · ✅ đang chạy' : usedToday ? ' · hôm nay đã chạy đợt khác' : !ready ? ` · hồi từ ngày ${biz.counterReady[c.id]}` : ''}
+                      {runningNow ? ' · ✅ đang chạy' : usedToday ? ' · hôm nay đã chạy đợt khác' : !ready ? ` · hồi từ ngày ${biz.counterReady[c.id]}` : !affordable ? ` · thiếu ${formatMoney(c.cost - money)}` : ''}
                       <div style={sub}>{c.desc}</div>
                       {/* GĐ159: quy "bớt N sức mạnh" ra khách & tiền — rivalTrafficFactor tuyến tính theo sức mạnh
                           (1 sức mạnh ≈ 0,25% khách, ×2 khi rival xả hàng) nên quy được sạch. Số là ƯỚC: hit thật có
