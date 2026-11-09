@@ -753,6 +753,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'mi_xao_gion', name: 'Mì xào giòn', category: 'fresh', buy: 15000, sell: 26000, color: 0xe8b040, unlock: 154 },
   { id: 'chuoi_nuong', name: 'Chuối nướng', category: 'fresh', buy: 5000, sell: 10000, color: 0xe8c070, unlock: 155 },
   { id: 'trung_nuong', name: 'Trứng nướng', category: 'fresh', buy: 4500, sell: 9000, color: 0xc89050, unlock: 156 },
+  { id: 'thit_xien_nuong', name: 'Thịt xiên nướng', category: 'fresh', buy: 8000, sell: 14000, color: 0xa04a2a, unlock: 157 },
+  { id: 'mien_ga', name: 'Miến gà', category: 'fresh', buy: 12000, sell: 21000, color: 0xf0e0b0, unlock: 158 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2416,6 +2418,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_trung_nuong', name: 'Trứng nướng', station: 'food_grill',
     inputs: [{ productId: 'x_trung_ga', quantity: 4 }, { productId: 'x_hanh_la', quantity: 1 }],
     outputId: 'trung_nuong', outputQty: 4, durationMin: 15, unlock: 156, reputationGain: 1 },
+  // GĐ2069: Thịt xiên nướng — quà vặt vỉa hè cả nước: thịt heo ướp sả tỏi, xiên que nướng than (food_grill).
+  { id: 'recipe_thit_xien_nuong', name: 'Thịt xiên nướng', station: 'food_grill',
+    inputs: [{ productId: 'x_thit_heo', quantity: 1 }, { productId: 'x_sa', quantity: 1 }, { productId: 'x_toi', quantity: 1 }],
+    outputId: 'thit_xien_nuong', outputQty: 6, durationMin: 15, unlock: 157, reputationGain: 1 },
+  // GĐ2070: Miến gà — Hà Nội: nước dùng ninh gà, miến dong trụng, gà xé, hành (hot_kettle).
+  { id: 'recipe_mien_ga', name: 'Miến gà', station: 'hot_kettle',
+    inputs: [{ productId: 'x_mien_dong', quantity: 1 }, { productId: 'x_thit_ga', quantity: 1 }, { productId: 'x_hanh_la', quantity: 1 }],
+    outputId: 'mien_ga', outputQty: 8, durationMin: 30, unlock: 158, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────
