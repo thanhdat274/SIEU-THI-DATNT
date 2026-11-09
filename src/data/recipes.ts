@@ -543,6 +543,7 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'com_mam_ca_linh', name: 'Cơm mắm cá linh', category: 'fresh', buy: 14500, sell: 23500, color: 0xd9b69a, unlock: 95 },
   { id: 'com_tom_chua', name: 'Cơm tôm chua', category: 'fresh', buy: 14500, sell: 23500, color: 0xe8b89a, unlock: 97 },
   { id: 'chao_cu_kieu', name: 'Cháo củ kiệu', category: 'fresh', buy: 12500, sell: 20500, color: 0xeee2c0, unlock: 98 },
+  { id: 'com_tuong_gung', name: 'Cơm tương gừng', category: 'fresh', buy: 14000, sell: 23000, color: 0xe0c090, unlock: 99 },
   { id: 'mam_co_ngo', name: 'Mâm cỗ đầu ngõ', category: 'fresh', buy: 100000, sell: 140000, color: 0xc0392b, unlock: 85 },
   // GĐ1409: Sữa chua granola — lối ra ĐẦU TIÊN của ngũ cốc granola: mẻ (granola 130k + sữa chua) → 14 cốc × 18k = 252k.
   { id: 'sua_chua_granola', name: 'Sữa chua granola', category: 'fresh', buy: 11000, sell: 18000, color: 0xe9d8b4, unlock: 68 },
@@ -1494,6 +1495,10 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_chao_cu_kieu', name: 'Cháo củ kiệu', station: 'hot_kettle',
     inputs: [{ productId: 'gao', quantity: 2 }, { productId: 'hx_cu_kieu', quantity: 1 }],
     outputId: 'chao_cu_kieu', outputQty: 14, durationMin: 30, unlock: 98, reputationGain: 3 },
+  // GĐ1856: Cơm tương gừng ở bếp xôi cơm (có gừng → kèm x_gung). Mở 99 (> golden 30, ≥ nguyên liệu 69).
+  { id: 'recipe_com_tuong_gung', name: 'Cơm tương gừng', station: 'rice_station',
+    inputs: [{ productId: 'gao', quantity: 2 }, { productId: 'hx_tuong_gung', quantity: 1 }, { productId: 'x_gung', quantity: 1 }],
+    outputId: 'com_tuong_gung', outputQty: 12, durationMin: 30, unlock: 99, reputationGain: 3 },
   // GĐ1523: Mâm cỗ đầu ngõ — món CUỐI CHUỖI (mục C#4 TONG-HOP Xóm "mâm cỗ = 5 món làm sẵn"): bày 5 món tự nấu
   // (cháo, măng xào, xôi, nem cuốn, cơm cá cơm ≈ 105k giá lẻ) thành 1 mâm 140k + uy tín cao. Mở 85 (> golden 30,
   // tránh mốc soát biên 82/86/91/96/100), biên nhập 100k → 1,4.
