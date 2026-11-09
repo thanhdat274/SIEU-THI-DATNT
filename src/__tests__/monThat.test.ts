@@ -13,6 +13,7 @@ const MON_THAT: Record<string, { name: string; station: string; cachNau: string 
   recipe_bot_chien_trung: { name: 'Bột chiên', station: 'fryer', cachNau: 'bột gạo hấp cắt miếng chiên với trứng (Sài Gòn)' },
   recipe_banh_chuoi_hap: { name: 'Bánh chuối hấp', station: 'steamer', cachNau: 'chuối + bột năng hấp, nước cốt dừa (Nam Bộ)' },
   recipe_banh_bo: { name: 'Bánh bò', station: 'steamer', cachNau: 'bột gạo ủ hấp nở rỗ (Nam Bộ)' },
+  recipe_bun_dau_mam_tom: { name: 'Bún đậu mắm tôm', station: 'fryer', cachNau: 'đậu hũ chiên vàng + bún lá, chấm mắm tôm (Hà Nội)' },
 };
 
 /** Chữ mô tả tự chế không ai dùng làm tên món ngoài chợ. */
