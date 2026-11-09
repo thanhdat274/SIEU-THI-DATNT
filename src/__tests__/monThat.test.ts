@@ -64,6 +64,9 @@ const MON_THAT: Record<string, { name: string; station: string; cachNau: string 
   recipe_canh_bap_cai: { name: 'Canh bắp cải', station: 'hot_kettle', cachNau: 'bắp cải nấu thịt bằm (cơm nhà cả nước)' },
   recipe_ga_kho_sa: { name: 'Gà kho sả', station: 'hot_kettle', cachNau: 'gà kho nước mắm với sả băm tới săn (Nam Bộ)' },
   recipe_canh_ga_chien: { name: 'Cánh gà chiên', station: 'fryer', cachNau: 'cánh gà ướp tỏi chiên ngập dầu (quán cả nước)' },
+  recipe_ca_chua_nhoi_thit: { name: 'Cà chua nhồi thịt', station: 'fryer', cachNau: 'cà chua nhồi thịt băm áp chảo, rim sốt (cơm nhà miền Bắc)' },
+  recipe_trung_duc_thit: { name: 'Trứng đúc thịt', station: 'fryer', cachNau: 'trứng trộn thịt băm chiên dày hai mặt (cơm nhà miền Bắc)' },
+  recipe_ga_rang_gung: { name: 'Gà rang gừng', station: 'fryer', cachNau: 'gà rang săn với gừng, nước mắm tới khô (miền Bắc)' },
 };
 
 /** Chữ mô tả tự chế không ai dùng làm tên món ngoài chợ. */

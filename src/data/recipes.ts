@@ -705,6 +705,9 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'canh_bap_cai', name: 'Canh bắp cải', category: 'fresh', buy: 10000, sell: 17000, color: 0xa8d08d, unlock: 106 },
   { id: 'ga_kho_sa', name: 'Gà kho sả', category: 'fresh', buy: 12000, sell: 21000, color: 0xc58a3a, unlock: 107 },
   { id: 'canh_ga_chien', name: 'Cánh gà chiên', category: 'fresh', buy: 12000, sell: 20000, color: 0xd98a2b, unlock: 108 },
+  { id: 'ca_chua_nhoi_thit', name: 'Cà chua nhồi thịt', category: 'fresh', buy: 10000, sell: 18000, color: 0xd94a3a, unlock: 109 },
+  { id: 'trung_duc_thit', name: 'Trứng đúc thịt', category: 'fresh', buy: 9000, sell: 16000, color: 0xe8c040, unlock: 110 },
+  { id: 'ga_rang_gung', name: 'Gà rang gừng', category: 'fresh', buy: 12000, sell: 21000, color: 0xb8782f, unlock: 111 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2176,6 +2179,18 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_canh_ga_chien', name: 'Cánh gà chiên', station: 'fryer',
     inputs: [{ productId: 'x_canh_ga', quantity: 1 }, { productId: 'x_toi', quantity: 1 }],
     outputId: 'canh_ga_chien', outputQty: 5, durationMin: 20, unlock: 108, reputationGain: 1 },
+  // GĐ2018: Cà chua nhồi thịt — cơm nhà miền Bắc: cà chua khoét ruột nhồi thịt băm, áp chảo rồi rim sốt cà (fryer).
+  { id: 'recipe_ca_chua_nhoi_thit', name: 'Cà chua nhồi thịt', station: 'fryer',
+    inputs: [{ productId: 'x_ca_chua', quantity: 2 }, { productId: 'x_thit_heo', quantity: 1 }, { productId: 'x_hanh_la', quantity: 1 }],
+    outputId: 'ca_chua_nhoi_thit', outputQty: 6, durationMin: 25, unlock: 109, reputationGain: 1 },
+  // GĐ2019: Trứng đúc thịt — cơm nhà miền Bắc: trứng đánh trộn thịt băm, hành, chiên dày hai mặt (fryer).
+  { id: 'recipe_trung_duc_thit', name: 'Trứng đúc thịt', station: 'fryer',
+    inputs: [{ productId: 'x_trung_ga', quantity: 3 }, { productId: 'x_thit_heo', quantity: 1 }, { productId: 'x_hanh_la', quantity: 1 }],
+    outputId: 'trung_duc_thit', outputQty: 6, durationMin: 15, unlock: 110, reputationGain: 1 },
+  // GĐ2020: Gà rang gừng — cơm nhà miền Bắc: gà chặt rang săn với gừng và nước mắm tới cạn khô (fryer).
+  { id: 'recipe_ga_rang_gung', name: 'Gà rang gừng', station: 'fryer',
+    inputs: [{ productId: 'x_thit_ga', quantity: 1 }, { productId: 'x_gung', quantity: 2 }, { productId: 'hx_nuoc_mam', quantity: 1 }],
+    outputId: 'ga_rang_gung', outputQty: 6, durationMin: 25, unlock: 111, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────

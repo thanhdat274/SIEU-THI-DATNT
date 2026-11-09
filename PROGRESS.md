@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (10/11/2026)
+- GĐ2018–2020: Cà chua nhồi thịt (L109), Trứng đúc thịt (L110), Gà rang gừng (L111) — đều fryer.
 - GĐ2014–2017: dồn GĐ1966–1982 sang archive; Canh bắp cải (L106), Gà kho sả (L107), Cánh gà chiên (fryer, L108).
 - GĐ2011–2013: Canh trứng cà chua (hot_kettle, L103), Thịt kho tiêu (hot_kettle, L104), Gà xào gừng (fryer, L105).
 - GĐ2008–2010: Bún thịt nướng (bếp nướng, mở 99), Bún chả (bếp nướng, mở 101), Cháo sườn (bếp nồi, mở 102); MON_THAT + test; full 5780 xanh.
