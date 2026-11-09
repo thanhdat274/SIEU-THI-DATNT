@@ -741,6 +741,9 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'ca_loc_kho', name: 'Cá lóc kho', category: 'fresh', buy: 14000, sell: 24000, color: 0x5a3a20, unlock: 142 },
   { id: 'canh_chua_ca_loc', name: 'Canh chua cá lóc', category: 'fresh', buy: 12000, sell: 20000, color: 0xe8904a, unlock: 143 },
   { id: 'ca_loc_chien', name: 'Cá lóc chiên', category: 'fresh', buy: 14000, sell: 24000, color: 0xb88a4a, unlock: 144 },
+  { id: 'cua_rang_muoi', name: 'Cua rang muối', category: 'fresh', buy: 40000, sell: 70000, color: 0xd8602a, unlock: 145 },
+  { id: 'tom_rang_muoi', name: 'Tôm rang muối', category: 'fresh', buy: 28000, sell: 48000, color: 0xe8703a, unlock: 146 },
+  { id: 'muc_rang_muoi', name: 'Mực rang muối', category: 'fresh', buy: 24000, sell: 42000, color: 0xe8c890, unlock: 147 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2356,6 +2359,18 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_ca_loc_chien', name: 'Cá lóc chiên', station: 'fryer',
     inputs: [{ productId: 'ca_loc_tuoi', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }],
     outputId: 'ca_loc_chien', outputQty: 8, durationMin: 25, unlock: 144, reputationGain: 1 },
+  // GĐ2056: Cua rang muối — quán hải sản cả nước: cua chặt chiên sơ rồi rang với muối, tỏi phi tới khô (fryer).
+  { id: 'recipe_cua_rang_muoi', name: 'Cua rang muối', station: 'fryer',
+    inputs: [{ productId: 'cua_bien_tuoi', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }, { productId: 'x_toi', quantity: 1 }],
+    outputId: 'cua_rang_muoi', outputQty: 6, durationMin: 30, unlock: 145, reputationGain: 1 },
+  // GĐ2057: Tôm rang muối — quán hải sản cả nước: tôm sú chiên sơ rồi rang muối, tỏi phi (fryer).
+  { id: 'recipe_tom_rang_muoi', name: 'Tôm rang muối', station: 'fryer',
+    inputs: [{ productId: 'tom_su_tuoi', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }, { productId: 'x_toi', quantity: 1 }],
+    outputId: 'tom_rang_muoi', outputQty: 6, durationMin: 20, unlock: 146, reputationGain: 1 },
+  // GĐ2058: Mực rang muối — quán hải sản cả nước: mực ống lăn bột chiên sơ rồi rang muối, tỏi phi (fryer).
+  { id: 'recipe_muc_rang_muoi', name: 'Mực rang muối', station: 'fryer',
+    inputs: [{ productId: 'muc_ong_tuoi', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }, { productId: 'x_toi', quantity: 1 }],
+    outputId: 'muc_rang_muoi', outputQty: 6, durationMin: 20, unlock: 147, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────
