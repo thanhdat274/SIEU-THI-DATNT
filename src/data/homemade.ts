@@ -60,6 +60,8 @@ export const NEIGHBOR2_PRODUCTS: { id: string; name: string; category: Category;
   { id: 'hx_toi_den', name: 'Tỏi đen nhà ủ (hũ)', category: 'dry', buy: 55000, sell: 88000, color: 0x2b2420, unlock: 58 },
   // GĐ1846: sa tế tôm nhà làm — biên 1,6×, mở 59; lối ra: Cơm sa tế tôm (bếp xôi cơm).
   { id: 'hx_sate_tom', name: 'Sa tế tôm nhà làm (hũ)', category: 'dry', buy: 36000, sell: 58000, color: 0xb8401f, unlock: 59 },
+  // GĐ1847: tép rim nhà làm — biên 1,6×, mở 60; lối ra: Cơm tép rim (bếp xôi cơm).
+  { id: 'hx_tep_rim', name: 'Tép rim nhà làm (hũ)', category: 'dry', buy: 34000, sell: 54000, color: 0x9a5a6a, unlock: 60 },
   // GĐ1671: mứt gừng bà Tám (hướng 3) — mứt Tết nhà làm, biên 1.6×, mở 45 > golden 30; hút hàng dịp Tết.
   { id: 'hx_mut_gung', name: 'Mứt gừng bà Tám (hộp)', category: 'dry', buy: 40000, sell: 64000, color: 0xe8c860, unlock: 45 },
 ];

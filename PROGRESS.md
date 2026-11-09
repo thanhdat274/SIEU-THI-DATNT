@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (09/11/2026)
+- GĐ1847: Tép rim nhà làm (hàng xóm bà Tám, cấp 60, 34k→54k) + Cơm tép rim (cấp 88, bếp xôi cơm: 2 gạo + 1 mắm ruốc → 12, bán 23k).
 - GĐ1846: Sa tế tôm nhà làm (hàng xóm bà Tám, cấp 59, 36k→58k) + Cơm sa tế tôm (cấp 87, bếp xôi cơm: 2 gạo + 1 sa tế → 12, bán 24k). Full suite 5553/5553 xanh, tsc sạch.
 - GĐ1845: Tỏi đen nhà ủ (hàng xóm bà Tám, cấp 58, 55k→88k) + Cơm chiên tỏi đen (cấp 85, bếp xôi cơm: 2 gạo + 1 tỏi đen + 2 tỏi → 12, bán 26k). Rà tài liệu Midnight Bistro/Xóm Nông Trại/HappyTown: mục còn lại đều chờ siêu thị phase 2 (mở ô tiếp giáp, vật liệu nâng cấp) nên làm nội dung chiều sâu theo GĐ1076. Test 5551 xanh, tsc sạch.
 - GĐ1844: cao điểm sáng dời 6h–8h30 → 6h–9h (rhythm.ts; giữa buổi từ 9h, cửa sổ nhờ Bà Năm 9h–10h) để khớp tạp hóa mở 8h (người dùng chốt). Re-baseline CÓ CHỦ Ý: simGolden L30 money −2,7%; trần toast ngày 2 8→9; trần Luật 10 cấp 20 (nhiệm vụ+kèo)/lãi bán 0,67→0,85 (đo 0,58→0,83, kèo thắng dễ hơn) — người dùng duyệt. Cần theo dõi: nếu kèo quá dễ thì chỉnh kèo thay vì nới trần tiếp.

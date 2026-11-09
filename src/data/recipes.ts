@@ -532,6 +532,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'com_chien_toi_den', name: 'Cơm chiên tỏi đen', category: 'fresh', buy: 16000, sell: 26000, color: 0x6b5a48, unlock: 85 },
   // GĐ1846: Cơm sa tế tôm — lối ra ĐẦU TIÊN của sa tế tôm nhà làm.
   { id: 'com_sate_tom', name: 'Cơm sa tế tôm', category: 'fresh', buy: 15000, sell: 24000, color: 0xc86a3a, unlock: 87 },
+  // GĐ1847: Cơm tép rim — lối ra ĐẦU TIÊN của tép rim nhà làm.
+  { id: 'com_tep_rim', name: 'Cơm tép rim', category: 'fresh', buy: 14500, sell: 23000, color: 0xb88a8a, unlock: 88 },
   { id: 'mam_co_ngo', name: 'Mâm cỗ đầu ngõ', category: 'fresh', buy: 100000, sell: 140000, color: 0xc0392b, unlock: 85 },
   // GĐ1409: Sữa chua granola — lối ra ĐẦU TIÊN của ngũ cốc granola: mẻ (granola 130k + sữa chua) → 14 cốc × 18k = 252k.
   { id: 'sua_chua_granola', name: 'Sữa chua granola', category: 'fresh', buy: 11000, sell: 18000, color: 0xe9d8b4, unlock: 68 },
@@ -1447,6 +1449,10 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_com_sate_tom', name: 'Cơm sa tế tôm', station: 'rice_station',
     inputs: [{ productId: 'gao', quantity: 2 }, { productId: 'hx_sate_tom', quantity: 1 }],
     outputId: 'com_sate_tom', outputQty: 12, durationMin: 30, unlock: 87, reputationGain: 3 },
+  // GĐ1847: Cơm tép rim ở bếp xôi cơm. Mở 88 (> golden 30, ≥ cấp tép rim 60).
+  { id: 'recipe_com_tep_rim', name: 'Cơm tép rim', station: 'rice_station',
+    inputs: [{ productId: 'gao', quantity: 2 }, { productId: 'hx_tep_rim', quantity: 1 }],
+    outputId: 'com_tep_rim', outputQty: 12, durationMin: 30, unlock: 88, reputationGain: 3 },
   // GĐ1523: Mâm cỗ đầu ngõ — món CUỐI CHUỖI (mục C#4 TONG-HOP Xóm "mâm cỗ = 5 món làm sẵn"): bày 5 món tự nấu
   // (cháo, măng xào, xôi, nem cuốn, cơm cá cơm ≈ 105k giá lẻ) thành 1 mâm 140k + uy tín cao. Mở 85 (> golden 30,
   // tránh mốc soát biên 82/86/91/96/100), biên nhập 100k → 1,4.
