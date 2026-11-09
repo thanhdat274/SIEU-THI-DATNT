@@ -595,6 +595,7 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'chao_o_mai_xoai', name: 'Cháo ô mai xoài', category: 'fresh', buy: 12000, sell: 19500, color: 0xf0d070, unlock: 149 },
   { id: 'xoi_o_mai_dua', name: 'Xôi ô mai dứa', category: 'fresh', buy: 14000, sell: 22500, color: 0xf4dc70, unlock: 150 },
   { id: 'chao_o_mai_mit', name: 'Cháo ô mai mít', category: 'fresh', buy: 12000, sell: 19500, color: 0xf0d060, unlock: 151 },
+  { id: 'xoi_o_mai_nho', name: 'Xôi ô mai nho', category: 'fresh', buy: 14000, sell: 22500, color: 0xa890c0, unlock: 152 },
   { id: 'mam_co_ngo', name: 'Mâm cỗ đầu ngõ', category: 'fresh', buy: 100000, sell: 140000, color: 0xc0392b, unlock: 85 },
   // GĐ1409: Sữa chua granola — lối ra ĐẦU TIÊN của ngũ cốc granola: mẻ (granola 130k + sữa chua) → 14 cốc × 18k = 252k.
   { id: 'sua_chua_granola', name: 'Sữa chua granola', category: 'fresh', buy: 11000, sell: 18000, color: 0xe9d8b4, unlock: 68 },
@@ -1721,6 +1722,9 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_chao_o_mai_mit', name: 'Cháo ô mai mít', station: 'hot_kettle',
     inputs: [{ productId: 'gao', quantity: 2 }, { productId: 'hx_o_mai_mit', quantity: 1 }],
     outputId: 'chao_o_mai_mit', outputQty: 14, durationMin: 30, unlock: 151, reputationGain: 3 },
+  { id: 'recipe_xoi_o_mai_nho', name: 'Xôi ô mai nho', station: 'rice_station',
+    inputs: [{ productId: 'gao', quantity: 2 }, { productId: 'hx_o_mai_nho', quantity: 1 }],
+    outputId: 'xoi_o_mai_nho', outputQty: 12, durationMin: 30, unlock: 152, reputationGain: 3 },
   // GĐ1523: Mâm cỗ đầu ngõ — món CUỐI CHUỖI (mục C#4 TONG-HOP Xóm "mâm cỗ = 5 món làm sẵn"): bày 5 món tự nấu
   // (cháo, măng xào, xôi, nem cuốn, cơm cá cơm ≈ 105k giá lẻ) thành 1 mâm 140k + uy tín cao. Mở 85 (> golden 30,
   // tránh mốc soát biên 82/86/91/96/100), biên nhập 100k → 1,4.
