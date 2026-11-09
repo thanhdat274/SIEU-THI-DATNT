@@ -662,6 +662,7 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   // Xoài lắc muối tôm (hx_muoi_tom 71, máy xay): xoài 12k + muối tôm 31k = 43k → 8×9k = 72k, > bán thẳng 68k.
   { id: 'xoai_lac_muoi_tom', name: 'Xoài lắc muối tôm', category: 'fresh', buy: 4700, sell: 9000, color: 0xf2c14e, unlock: 71 },
   { id: 'ca_tim_nuong_mo_hanh', name: 'Cà tím nướng mỡ hành', category: 'fresh', buy: 4000, sell: 6000, color: 0x6a3a7a, unlock: 60 },
+  { id: 'rau_muong_luoc', name: 'Rau muống luộc', category: 'fresh', buy: 3000, sell: 4000, color: 0x4f9f3a, unlock: 61 },
 ];
 
 // ──────────────────────────────────────────────
@@ -1961,6 +1962,10 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_ca_tim_nuong_mo_hanh', name: 'Cà tím nướng mỡ hành', station: 'food_grill',
     inputs: [{ productId: 'x_ca_tim', quantity: 1 }, { productId: 'x_hanh_la', quantity: 1 }],
     outputId: 'ca_tim_nuong_mo_hanh', outputQty: 4, durationMin: 12, unlock: 60, reputationGain: 1 },
+  // GĐ1973: Rau muống luộc — cơm nhà miền Bắc: luộc nồi nước, chấm nước mắm/tương, nước luộc vắt chanh (hot_kettle).
+  { id: 'recipe_rau_muong_luoc', name: 'Rau muống luộc', station: 'hot_kettle',
+    inputs: [{ productId: 'x_rau_muong', quantity: 1 }],
+    outputId: 'rau_muong_luoc', outputQty: 3, durationMin: 6, unlock: 61, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────
