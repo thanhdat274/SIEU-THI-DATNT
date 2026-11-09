@@ -696,6 +696,9 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'chao_thit_bam', name: 'Cháo thịt bằm', category: 'fresh', buy: 5000, sell: 10000, color: 0xf0e8d8, unlock: 95 },
   { id: 'chao_ca', name: 'Cháo cá', category: 'fresh', buy: 6000, sell: 12000, color: 0xf0e8c8, unlock: 97 },
   { id: 'com_chien_duong_chau', name: 'Cơm chiên Dương Châu', category: 'fresh', buy: 5000, sell: 9000, color: 0xe8b860, unlock: 98 },
+  { id: 'bun_thit_nuong', name: 'Bún thịt nướng', category: 'fresh', buy: 12000, sell: 18000, color: 0xc8783a, unlock: 99 },
+  { id: 'bun_cha', name: 'Bún chả', category: 'fresh', buy: 14000, sell: 20000, color: 0xa8603a, unlock: 101 },
+  { id: 'chao_suon', name: 'Cháo sườn', category: 'fresh', buy: 6000, sell: 11000, color: 0xf0e0c8, unlock: 102 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2131,6 +2134,18 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_com_chien_duong_chau', name: 'Cơm chiên Dương Châu', station: 'fryer',
     inputs: [{ productId: 'gao', quantity: 1 }, { productId: 'x_trung_ga', quantity: 5 }, { productId: 'x_lap_xuong', quantity: 2 }, { productId: 'x_ca_rot', quantity: 1 }],
     outputId: 'com_chien_duong_chau', outputQty: 40, durationMin: 20, unlock: 98, reputationGain: 1 },
+  // GĐ2008: Bún thịt nướng — Sài Gòn: thịt heo ướp nướng than, ăn với bún tươi, rau sống, nước mắm chua ngọt (food_grill).
+  { id: 'recipe_bun_thit_nuong', name: 'Bún thịt nướng', station: 'food_grill',
+    inputs: [{ productId: 'x_bun_tuoi', quantity: 2 }, { productId: 'x_thit_heo', quantity: 1 }, { productId: 'x_xa_lach', quantity: 1 }],
+    outputId: 'bun_thit_nuong', outputQty: 8, durationMin: 20, unlock: 99, reputationGain: 1 },
+  // GĐ2009: Bún chả — Hà Nội: chả viên (thịt xay) + chả miếng (ba chỉ) nướng than hoa, ăn với bún và nước chấm (food_grill).
+  { id: 'recipe_bun_cha', name: 'Bún chả', station: 'food_grill',
+    inputs: [{ productId: 'x_bun_tuoi', quantity: 2 }, { productId: 'x_thit_xay', quantity: 1 }, { productId: 'x_thit_heo', quantity: 1 }],
+    outputId: 'bun_cha', outputQty: 10, durationMin: 25, unlock: 101, reputationGain: 1 },
+  // GĐ2010: Cháo sườn — Hà Nội (cháo sáng): gạo ninh nhừ với sườn heo, rắc hành (hot_kettle); quẩy ăn kèm tùy nơi.
+  { id: 'recipe_chao_suon', name: 'Cháo sườn', station: 'hot_kettle',
+    inputs: [{ productId: 'gao', quantity: 1 }, { productId: 'x_suon_heo', quantity: 1 }, { productId: 'x_hanh_la', quantity: 1 }],
+    outputId: 'chao_suon', outputQty: 30, durationMin: 30, unlock: 102, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────
