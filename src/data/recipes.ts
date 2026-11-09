@@ -687,6 +687,9 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'muc_chien_nuoc_mam', name: 'Mực chiên nước mắm', category: 'fresh', buy: 9000, sell: 14000, color: 0xd8a050, unlock: 84 },
   { id: 'ca_thu_kho', name: 'Cá thu kho', category: 'fresh', buy: 7000, sell: 10000, color: 0x8a5a3a, unlock: 85 },
   { id: 'canh_chua_tom', name: 'Canh chua tôm', category: 'fresh', buy: 8000, sell: 10000, color: 0xe87a3a, unlock: 87 },
+  { id: 'bo_luc_lac', name: 'Bò lúc lắc', category: 'fresh', buy: 10000, sell: 14000, color: 0x7a3a2a, unlock: 88 },
+  { id: 'ca_ro_phi_kho', name: 'Cá rô phi kho', category: 'fresh', buy: 6000, sell: 9000, color: 0x7a5030, unlock: 89 },
+  { id: 'canh_rau_muong', name: 'Canh rau muống', category: 'fresh', buy: 3000, sell: 4000, color: 0x5a9a4a, unlock: 90 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2086,6 +2089,18 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_canh_chua_tom', name: 'Canh chua tôm', station: 'hot_kettle',
     inputs: [{ productId: 'x_tom_tuoi', quantity: 1 }, { productId: 'x_thom', quantity: 1 }, { productId: 'x_ca_chua', quantity: 1 }],
     outputId: 'canh_chua_tom', outputQty: 10, durationMin: 15, unlock: 87, reputationGain: 1 },
+  // GĐ1999: Bò lúc lắc — Sài Gòn: thịt bò cắt hạt lựu xào lửa lớn lắc chảo với ớt chuông, hành tây (fryer).
+  { id: 'recipe_bo_luc_lac', name: 'Bò lúc lắc', station: 'fryer',
+    inputs: [{ productId: 'x_thit_bo', quantity: 1 }, { productId: 'x_ot_chuong', quantity: 1 }, { productId: 'x_hanh_tay', quantity: 1 }],
+    outputId: 'bo_luc_lac', outputQty: 8, durationMin: 10, unlock: 88, reputationGain: 1 },
+  // GĐ2000: Cá rô phi kho — cơm nhà cả nước: cá rô phi kho nước mắm đường tới keo (hot_kettle = kho); gia vị bếp không tính.
+  { id: 'recipe_ca_ro_phi_kho', name: 'Cá rô phi kho', station: 'hot_kettle',
+    inputs: [{ productId: 'x_ca_ro_phi', quantity: 1 }],
+    outputId: 'ca_ro_phi_kho', outputQty: 5, durationMin: 30, unlock: 89, reputationGain: 1 },
+  // GĐ2001: Canh rau muống — cơm nhà miền Bắc: rau muống nấu canh với cà chua (sấu → cà chua thay, game chưa có sấu).
+  { id: 'recipe_canh_rau_muong', name: 'Canh rau muống', station: 'hot_kettle',
+    inputs: [{ productId: 'x_rau_muong', quantity: 1 }, { productId: 'x_ca_chua', quantity: 1 }],
+    outputId: 'canh_rau_muong', outputQty: 6, durationMin: 8, unlock: 90, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────
