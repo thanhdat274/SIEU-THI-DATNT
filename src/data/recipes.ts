@@ -402,6 +402,7 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   // GĐ1429: Rau cải xào tỏi — lối ra ĐẦU TIÊN của rau cải.
   { id: 'rau_cai_xao_toi', name: 'Rau cải xào tỏi', category: 'fresh', buy: 4000, sell: 7000, color: 0x5aa04a, unlock: 47 },
   { id: 'rau_muong_xao_toi', name: 'Rau muống xào tỏi', category: 'fresh', buy: 4000, sell: 7000, color: 0x3f8f3a, unlock: 55 },
+  { id: 'kho_qua_xao_trung', name: 'Khổ qua xào trứng', category: 'fresh', buy: 5000, sell: 9000, color: 0x9fbf4a, unlock: 56 },
   // GĐ1429: Bò xào giá — lối ra ĐẦU TIÊN của giá đỗ.
   { id: 'bo_xao_gia', name: 'Bò xào giá', category: 'fresh', buy: 8000, sell: 14000, color: 0x9a6a4a, unlock: 49 },
   // GĐ1429: Nước ép dưa leo cà rốt — lối ra ĐẦU TIÊN của dưa leo.
@@ -1243,6 +1244,10 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_rau_muong_xao_toi', name: 'Rau muống xào tỏi', station: 'fryer',
     inputs: [{ productId: 'x_rau_muong', quantity: 1 }, { productId: 'x_toi', quantity: 1 }],
     outputId: 'rau_muong_xao_toi', outputQty: 4, durationMin: 6, unlock: 55, reputationGain: 1 },
+  // GĐ1968: Khổ qua xào trứng — cơm nhà cả nước: khổ qua thái lát xào chín rồi đập trứng đảo (chảo, fryer).
+  { id: 'recipe_kho_qua_xao_trung', name: 'Khổ qua xào trứng', station: 'fryer',
+    inputs: [{ productId: 'x_kho_qua', quantity: 1 }, { productId: 'x_trung_ga', quantity: 3 }],
+    outputId: 'kho_qua_xao_trung', outputQty: 4, durationMin: 8, unlock: 56, reputationGain: 1 },
   // GĐ1429: Bò xào giá ở chảo chiên. Mở 35 (> golden 30, ≥ cấp nguyên liệu).
   { id: 'recipe_bo_xao_gia', name: 'Bò xào giá', station: 'fryer',
     inputs: [{ productId: 'x_thit_bo', quantity: 1 }, { productId: 'x_gia_do', quantity: 1 }],
