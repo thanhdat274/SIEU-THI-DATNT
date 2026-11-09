@@ -764,6 +764,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'sup_cua', name: 'Súp cua', category: 'fresh', buy: 25000, sell: 42000, color: 0xe8c890, unlock: 165 },
   { id: 'banh_mi_op_la', name: 'Bánh mì ốp la', category: 'fresh', buy: 7000, sell: 14000, color: 0xf0c860, unlock: 166 },
   { id: 'banh_mi_chao', name: 'Bánh mì chảo', category: 'fresh', buy: 12000, sell: 22000, color: 0xd8903a, unlock: 167 },
+  { id: 'cua_rang_me', name: 'Cua rang me', category: 'fresh', buy: 42000, sell: 72000, color: 0xc8502a, unlock: 168 },
+  { id: 'goi_ga', name: 'Gỏi gà', category: 'fresh', buy: 15000, sell: 26000, color: 0xe8e0a0, unlock: 169 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2471,6 +2473,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_banh_mi_chao', name: 'Bánh mì chảo', station: 'fryer',
     inputs: [{ productId: 'x_banh_mi', quantity: 2 }, { productId: 'x_trung_ga', quantity: 2 }, { productId: 'x_pate_hop', quantity: 1 }],
     outputId: 'banh_mi_chao', outputQty: 4, durationMin: 12, unlock: 167, reputationGain: 1 },
+  // GĐ2081: Cua rang me — Sài Gòn: cua chặt chiên sơ, đảo sốt me chua ngọt với tỏi tới sệt (fryer).
+  { id: 'recipe_cua_rang_me', name: 'Cua rang me', station: 'fryer',
+    inputs: [{ productId: 'cua_bien_tuoi', quantity: 1 }, { productId: 'x_me', quantity: 1 }, { productId: 'x_toi', quantity: 1 }],
+    outputId: 'cua_rang_me', outputQty: 6, durationMin: 30, unlock: 168, reputationGain: 1 },
+  // GĐ2082: Gỏi gà — Nam Bộ: gà luộc xé trộn bắp cải bào, rau răm, nước mắm chua ngọt (hot_kettle luộc gà).
+  { id: 'recipe_goi_ga', name: 'Gỏi gà', station: 'hot_kettle',
+    inputs: [{ productId: 'x_thit_ga', quantity: 1 }, { productId: 'x_bap_cai', quantity: 1 }, { productId: 'x_rau_ram', quantity: 1 }],
+    outputId: 'goi_ga', outputQty: 6, durationMin: 30, unlock: 169, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────
