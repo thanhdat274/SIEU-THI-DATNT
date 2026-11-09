@@ -661,6 +661,7 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'ca_kho_tuong', name: 'Cá kho tương hột', category: 'fresh', buy: 4200, sell: 8000, color: 0x7a4a22, unlock: 78 },
   // Xoài lắc muối tôm (hx_muoi_tom 71, máy xay): xoài 12k + muối tôm 31k = 43k → 8×9k = 72k, > bán thẳng 68k.
   { id: 'xoai_lac_muoi_tom', name: 'Xoài lắc muối tôm', category: 'fresh', buy: 4700, sell: 9000, color: 0xf2c14e, unlock: 71 },
+  { id: 'ca_tim_nuong_mo_hanh', name: 'Cà tím nướng mỡ hành', category: 'fresh', buy: 4000, sell: 6000, color: 0x6a3a7a, unlock: 60 },
 ];
 
 // ──────────────────────────────────────────────
@@ -1956,6 +1957,10 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_xoai_lac_muoi_tom', name: 'Xoài lắc muối tôm', station: 'blender',
     inputs: [{ productId: 'x_xoai', quantity: 1 }, { productId: 'hx_muoi_tom', quantity: 1 }],
     outputId: 'xoai_lac_muoi_tom', outputQty: 8, durationMin: 8, unlock: 71, reputationGain: 2 },
+  // GĐ1972: Cà tím nướng mỡ hành — Nam Bộ: cà tím nướng than cháy vỏ, xé, rưới mỡ hành (mỡ hành → hành lá phi thay, không có mỡ heo riêng).
+  { id: 'recipe_ca_tim_nuong_mo_hanh', name: 'Cà tím nướng mỡ hành', station: 'food_grill',
+    inputs: [{ productId: 'x_ca_tim', quantity: 1 }, { productId: 'x_hanh_la', quantity: 1 }],
+    outputId: 'ca_tim_nuong_mo_hanh', outputQty: 4, durationMin: 12, unlock: 60, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────

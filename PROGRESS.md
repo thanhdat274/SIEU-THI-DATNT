@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (10/11/2026)
+- GĐ1972: Cà tím nướng mỡ hành (bếp nướng, mở 60) — cà tím 1 + hành lá 1 → 4 phần ×6k; MON_THAT + test caTimNuong; full 5669 xanh.
 - GĐ1971: Bắp cải luộc (bếp nồi, mở 59) — bắp cải 1 → 4 đĩa ×5k; MON_THAT + test bapCaiLuoc; full 5666 xanh.
 - GĐ1970: Thịt luộc (bếp nồi, mở 58) — thịt heo 1 → 6 phần ×8k; MON_THAT + test thitLuoc; full 5663 xanh.
 - GĐ1969: Đậu hũ nhồi thịt (chảo chiên, mở 57) — đậu hũ 4 + thịt xay 1 → 8 miếng ×11k; MON_THAT + test dauHuNhoiThit; full 5660 xanh.
