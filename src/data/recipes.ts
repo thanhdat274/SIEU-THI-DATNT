@@ -708,6 +708,11 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'ca_chua_nhoi_thit', name: 'Cà chua nhồi thịt', category: 'fresh', buy: 10000, sell: 18000, color: 0xd94a3a, unlock: 109 },
   { id: 'trung_duc_thit', name: 'Trứng đúc thịt', category: 'fresh', buy: 9000, sell: 16000, color: 0xe8c040, unlock: 110 },
   { id: 'ga_rang_gung', name: 'Gà rang gừng', category: 'fresh', buy: 12000, sell: 21000, color: 0xb8782f, unlock: 111 },
+  { id: 'tom_rang', name: 'Tôm rang', category: 'fresh', buy: 14000, sell: 24000, color: 0xe0602a, unlock: 112 },
+  { id: 'muc_xao_chua_ngot', name: 'Mực xào chua ngọt', category: 'fresh', buy: 14000, sell: 24000, color: 0xe88a5a, unlock: 113 },
+  { id: 'suon_nuong', name: 'Sườn nướng', category: 'fresh', buy: 14000, sell: 24000, color: 0xa0522d, unlock: 114 },
+  { id: 'bo_xao_ca_chua', name: 'Bò xào cà chua', category: 'fresh', buy: 14000, sell: 24000, color: 0xc8402a, unlock: 115 },
+  { id: 'ga_chien_gion', name: 'Gà chiên giòn', category: 'fresh', buy: 14000, sell: 24000, color: 0xd9952b, unlock: 116 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2191,6 +2196,26 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_ga_rang_gung', name: 'Gà rang gừng', station: 'fryer',
     inputs: [{ productId: 'x_thit_ga', quantity: 1 }, { productId: 'x_gung', quantity: 2 }, { productId: 'hx_nuoc_mam', quantity: 1 }],
     outputId: 'ga_rang_gung', outputQty: 6, durationMin: 25, unlock: 111, reputationGain: 1 },
+  // GĐ2021: Tôm rang — cơm nhà miền Bắc: tôm để vỏ rang săn với nước mắm đường tới đỏ, hành (fryer).
+  { id: 'recipe_tom_rang', name: 'Tôm rang', station: 'fryer',
+    inputs: [{ productId: 'x_tom_tuoi', quantity: 1 }, { productId: 'hx_nuoc_mam', quantity: 1 }, { productId: 'x_hanh_la', quantity: 1 }],
+    outputId: 'tom_rang', outputQty: 6, durationMin: 20, unlock: 112, reputationGain: 1 },
+  // GĐ2022: Mực xào chua ngọt — cơm nhà cả nước: mực xào lửa lớn với cà chua, thơm (fryer).
+  { id: 'recipe_muc_xao_chua_ngot', name: 'Mực xào chua ngọt', station: 'fryer',
+    inputs: [{ productId: 'x_muc_tuoi', quantity: 1 }, { productId: 'x_ca_chua', quantity: 1 }, { productId: 'x_thom', quantity: 1 }],
+    outputId: 'muc_xao_chua_ngot', outputQty: 6, durationMin: 20, unlock: 113, reputationGain: 1 },
+  // GĐ2023: Sườn nướng — Sài Gòn (cơm tấm): sườn ướp tỏi sả nước mắm đường, nướng than (food_grill).
+  { id: 'recipe_suon_nuong', name: 'Sườn nướng', station: 'food_grill',
+    inputs: [{ productId: 'x_suon_heo', quantity: 1 }, { productId: 'x_toi', quantity: 1 }, { productId: 'x_sa', quantity: 1 }],
+    outputId: 'suon_nuong', outputQty: 5, durationMin: 25, unlock: 114, reputationGain: 1 },
+  // GĐ2024: Bò xào cà chua — cơm nhà cả nước: bò thái mỏng xào nhanh, đảo cà chua chín mềm (fryer).
+  { id: 'recipe_bo_xao_ca_chua', name: 'Bò xào cà chua', station: 'fryer',
+    inputs: [{ productId: 'x_thit_bo', quantity: 1 }, { productId: 'x_ca_chua', quantity: 2 }, { productId: 'x_hanh_la', quantity: 1 }],
+    outputId: 'bo_xao_ca_chua', outputQty: 6, durationMin: 20, unlock: 115, reputationGain: 1 },
+  // GĐ2025: Gà chiên giòn — quán cả nước: gà lăn bột chiên giòn, chiên ngập dầu (fryer).
+  { id: 'recipe_ga_chien_gion', name: 'Gà chiên giòn', station: 'fryer',
+    inputs: [{ productId: 'x_thit_ga', quantity: 1 }, { productId: 'x_bot_chien', quantity: 1 }],
+    outputId: 'ga_chien_gion', outputQty: 5, durationMin: 20, unlock: 116, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────
