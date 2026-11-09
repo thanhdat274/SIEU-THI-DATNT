@@ -684,6 +684,9 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'che_dau_do', name: 'Chè đậu đỏ', category: 'fresh', buy: 3000, sell: 5000, color: 0x8a2a3a, unlock: 80 },
   { id: 'suon_xao_chua_ngot', name: 'Sườn xào chua ngọt', category: 'fresh', buy: 9000, sell: 13000, color: 0xb84a2a, unlock: 81 },
   { id: 'khoai_tay_xao', name: 'Khoai tây xào', category: 'fresh', buy: 4000, sell: 6000, color: 0xe8c860, unlock: 83 },
+  { id: 'muc_chien_nuoc_mam', name: 'Mực chiên nước mắm', category: 'fresh', buy: 9000, sell: 14000, color: 0xd8a050, unlock: 84 },
+  { id: 'ca_thu_kho', name: 'Cá thu kho', category: 'fresh', buy: 7000, sell: 10000, color: 0x8a5a3a, unlock: 85 },
+  { id: 'canh_chua_tom', name: 'Canh chua tôm', category: 'fresh', buy: 8000, sell: 10000, color: 0xe87a3a, unlock: 87 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2071,6 +2074,18 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_khoai_tay_xao', name: 'Khoai tây xào', station: 'fryer',
     inputs: [{ productId: 'x_khoai_tay', quantity: 1 }, { productId: 'x_hanh_tay', quantity: 1 }],
     outputId: 'khoai_tay_xao', outputQty: 5, durationMin: 10, unlock: 83, reputationGain: 1 },
+  // GĐ1996: Mực chiên nước mắm — cơm nhà/quán nhậu cả nước: mực chiên săn rồi đảo nước mắm tỏi trong chảo (fryer); nước mắm = nước mắm nhà ủ.
+  { id: 'recipe_muc_chien_nuoc_mam', name: 'Mực chiên nước mắm', station: 'fryer',
+    inputs: [{ productId: 'x_muc_tuoi', quantity: 1 }, { productId: 'x_toi', quantity: 1 }, { productId: 'hx_nuoc_mam', quantity: 1 }],
+    outputId: 'muc_chien_nuoc_mam', outputQty: 10, durationMin: 12, unlock: 84, reputationGain: 1 },
+  // GĐ1997: Cá thu kho — cơm nhà miền Trung/Nam: cá thu kho nước mắm đường tới keo (hot_kettle = kho); gia vị bếp không tính.
+  { id: 'recipe_ca_thu_kho', name: 'Cá thu kho', station: 'hot_kettle',
+    inputs: [{ productId: 'x_ca_thu_tuoi', quantity: 1 }],
+    outputId: 'ca_thu_kho', outputQty: 5, durationMin: 30, unlock: 85, reputationGain: 1 },
+  // GĐ1998: Canh chua tôm — Nam Bộ: tôm nấu canh chua với thơm, cà chua (me chua → bỏ, game chưa có me tươi; vị chua từ thơm + cà).
+  { id: 'recipe_canh_chua_tom', name: 'Canh chua tôm', station: 'hot_kettle',
+    inputs: [{ productId: 'x_tom_tuoi', quantity: 1 }, { productId: 'x_thom', quantity: 1 }, { productId: 'x_ca_chua', quantity: 1 }],
+    outputId: 'canh_chua_tom', outputQty: 10, durationMin: 15, unlock: 87, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────
