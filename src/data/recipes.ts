@@ -738,6 +738,9 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'dau_que_xao_toi', name: 'Đậu que xào tỏi', category: 'fresh', buy: 6000, sell: 11000, color: 0x5aa83a, unlock: 139 },
   { id: 'canh_muop', name: 'Canh mướp', category: 'fresh', buy: 10000, sell: 17000, color: 0x9ac85a, unlock: 140 },
   { id: 'dau_que_xao_bo', name: 'Đậu que xào bò', category: 'fresh', buy: 14000, sell: 24000, color: 0x6a8a3a, unlock: 141 },
+  { id: 'ca_loc_kho', name: 'Cá lóc kho', category: 'fresh', buy: 14000, sell: 24000, color: 0x5a3a20, unlock: 142 },
+  { id: 'canh_chua_ca_loc', name: 'Canh chua cá lóc', category: 'fresh', buy: 12000, sell: 20000, color: 0xe8904a, unlock: 143 },
+  { id: 'ca_loc_chien', name: 'Cá lóc chiên', category: 'fresh', buy: 14000, sell: 24000, color: 0xb88a4a, unlock: 144 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2341,6 +2344,18 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_dau_que_xao_bo', name: 'Đậu que xào bò', station: 'fryer',
     inputs: [{ productId: 'x_dau_que', quantity: 1 }, { productId: 'x_thit_bo', quantity: 1 }, { productId: 'x_toi', quantity: 1 }],
     outputId: 'dau_que_xao_bo', outputQty: 6, durationMin: 20, unlock: 141, reputationGain: 1 },
+  // GĐ2053: Cá lóc kho — Nam Bộ: cá lóc cắt khúc kho nước mắm đường tới keo, rắc tiêu (hot_kettle).
+  { id: 'recipe_ca_loc_kho', name: 'Cá lóc kho', station: 'hot_kettle',
+    inputs: [{ productId: 'ca_loc_tuoi', quantity: 1 }, { productId: 'hx_nuoc_mam', quantity: 1 }, { productId: 'x_tieu_hat', quantity: 1 }],
+    outputId: 'ca_loc_kho', outputQty: 8, durationMin: 35, unlock: 142, reputationGain: 1 },
+  // GĐ2054: Canh chua cá lóc — Nam Bộ: cá lóc nấu chua với thơm, cà chua (hot_kettle); bỏ me, bạc hà, đậu bắp do game chưa có.
+  { id: 'recipe_canh_chua_ca_loc', name: 'Canh chua cá lóc', station: 'hot_kettle',
+    inputs: [{ productId: 'ca_loc_tuoi', quantity: 1 }, { productId: 'x_thom', quantity: 1 }, { productId: 'x_ca_chua', quantity: 1 }],
+    outputId: 'canh_chua_ca_loc', outputQty: 10, durationMin: 25, unlock: 143, reputationGain: 1 },
+  // GĐ2055: Cá lóc chiên — Nam Bộ: cá lóc cắt khúc ướp muối chiên vàng giòn, chấm nước mắm (fryer).
+  { id: 'recipe_ca_loc_chien', name: 'Cá lóc chiên', station: 'fryer',
+    inputs: [{ productId: 'ca_loc_tuoi', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }],
+    outputId: 'ca_loc_chien', outputQty: 8, durationMin: 25, unlock: 144, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────
