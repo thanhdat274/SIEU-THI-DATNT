@@ -62,7 +62,7 @@ export function QuanMenuSection() {
               disabled={locked || (!on && menu.length >= slots)}
               onClick={() => toggleQuanRecipe(r.id)}
             >
-              {locked ? `Cấp ${r.unlock}` : on ? '✓ Bán' : 'Thêm'}
+              {locked ? `Cấp ${r.unlock}` : on ? '✓ Bán' : blockedLabel(menu.length >= slots ? `Đủ ${slots} ô` : null, 'Thêm', 0, money)}
             </button>
             <div style={{ fontSize: 13, lineHeight: 1.4 }}>
               {r.icon} <b>{r.name}</b>{newUnlockMark(r.unlock, level)} · {formatMoney(Math.round(r.price * mul))} · lời ~{formatMoney(profit)}/ly{r.hot ? " · ♨ đồ nóng (mưa/rét đông khách)" : ""}

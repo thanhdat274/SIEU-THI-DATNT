@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (10/11/2026)
+- GĐ1960: thực đơn quán đầy ô → nút "Đủ N ô"; dồn NV chi nhánh khi đang mở → "🏬 Đóng chi nhánh để dồn"; full 5646/5647 (longSessionLeak chập chờn khi chạy chung, chạy riêng xanh).
 - GĐ1959: quán nước thực đơn trống → nút tự pha ghi "🍹 Chọn món vào thực đơn trước" (không còn xám câm); full 5646 xanh (gồm GĐ1958).
 - GĐ1958: nút khóa vì lý do khác tiền ghi lý do (`blockedLabel`): Đào tạo đã học hôm nay → "🎓 Mai học tiếp", tiệm xôi đủ thợ → "Đủ N thợ"; test blockedLabel.
 - GĐ1957: nút nâng kho thiếu vật liệu ghi "Thiếu 6 xi măng, 5 thép" thay vì nút xám câm (`materialBlockLabel`); test wareMaterials.

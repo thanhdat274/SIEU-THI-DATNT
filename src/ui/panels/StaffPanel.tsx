@@ -387,7 +387,7 @@ export function DeployBoard() {
         title={branch.open ? 'Đóng cửa chi nhánh trước' : 'Chuyển cả đội chi nhánh về tiệm chính (tới khi đủ chỗ)'}
         onClick={() => { void askConfirm('Dồn hết nhân viên chi nhánh về tiệm chính?', { okLabel: 'Dồn về' }).then((ok) => ok && evacuateBranch()); }}
       >
-        🏬 Dồn hết sang tiệm chính
+        {blockedLabel(branch.open ? '🏬 Đóng chi nhánh để dồn' : null, '🏬 Dồn hết sang tiệm chính', 0, 0)}
       </button>
     </div>
   );
