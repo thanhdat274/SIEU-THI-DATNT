@@ -724,6 +724,9 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'chao_bo', name: 'Cháo bò', category: 'fresh', buy: 6500, sell: 12000, color: 0xe8c8a8, unlock: 125 },
   { id: 'ca_thu_nuong', name: 'Cá thu nướng', category: 'fresh', buy: 15000, sell: 26000, color: 0x8a6a4a, unlock: 126 },
   { id: 'trung_kho', name: 'Trứng kho', category: 'fresh', buy: 6000, sell: 11000, color: 0xa0602a, unlock: 127 },
+  { id: 'ga_hap_hanh', name: 'Gà hấp hành', category: 'fresh', buy: 15000, sell: 26000, color: 0xf0e0a0, unlock: 128 },
+  { id: 'dua_leo_xao_trung', name: 'Dưa leo xào trứng', category: 'fresh', buy: 6000, sell: 11000, color: 0xb8d870, unlock: 129 },
+  { id: 'bong_cai_luoc', name: 'Bông cải luộc', category: 'fresh', buy: 7000, sell: 12000, color: 0x4a9a4a, unlock: 130 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2271,6 +2274,18 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_trung_kho', name: 'Trứng kho', station: 'hot_kettle',
     inputs: [{ productId: 'x_trung_ga', quantity: 4 }, { productId: 'hx_nuoc_mam', quantity: 1 }],
     outputId: 'trung_kho', outputQty: 8, durationMin: 25, unlock: 127, reputationGain: 1 },
+  // GĐ2038: Gà hấp hành — cả nước: gà ướp gừng hấp chín, rưới hành lá chần dầu nóng (steamer).
+  { id: 'recipe_ga_hap_hanh', name: 'Gà hấp hành', station: 'steamer',
+    inputs: [{ productId: 'x_thit_ga', quantity: 1 }, { productId: 'x_hanh_la', quantity: 2 }, { productId: 'x_gung', quantity: 1 }],
+    outputId: 'ga_hap_hanh', outputQty: 5, durationMin: 30, unlock: 128, reputationGain: 1 },
+  // GĐ2039: Dưa leo xào trứng — cơm nhà cả nước: dưa leo thái lát xào nhanh rồi đảo trứng (fryer).
+  { id: 'recipe_dua_leo_xao_trung', name: 'Dưa leo xào trứng', station: 'fryer',
+    inputs: [{ productId: 'x_dua_leo', quantity: 1 }, { productId: 'x_trung_ga', quantity: 2 }],
+    outputId: 'dua_leo_xao_trung', outputQty: 6, durationMin: 15, unlock: 129, reputationGain: 1 },
+  // GĐ2040: Bông cải luộc — cơm nhà cả nước: bông cải xanh luộc nồi nước, chấm nước mắm/kho quẹt (hot_kettle).
+  { id: 'recipe_bong_cai_luoc', name: 'Bông cải luộc', station: 'hot_kettle',
+    inputs: [{ productId: 'x_bong_cai_xanh', quantity: 1 }],
+    outputId: 'bong_cai_luoc', outputQty: 4, durationMin: 10, unlock: 130, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────

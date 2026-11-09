@@ -83,6 +83,9 @@ const MON_THAT: Record<string, { name: string; station: string; cachNau: string 
   recipe_chao_bo: { name: 'Cháo bò', station: 'hot_kettle', cachNau: 'gạo ninh nhừ, thả bò băm, rắc hành (Sài Gòn)' },
   recipe_ca_thu_nuong: { name: 'Cá thu nướng', station: 'food_grill', cachNau: 'cá thu ướp sả nướng than (miền Trung)' },
   recipe_trung_kho: { name: 'Trứng kho', station: 'hot_kettle', cachNau: 'trứng luộc kho nước mắm đường (cơm nhà cả nước)' },
+  recipe_ga_hap_hanh: { name: 'Gà hấp hành', station: 'steamer', cachNau: 'gà ướp gừng hấp chín, rưới hành dầu (cả nước)' },
+  recipe_dua_leo_xao_trung: { name: 'Dưa leo xào trứng', station: 'fryer', cachNau: 'dưa leo xào nhanh rồi đảo trứng (cơm nhà)' },
+  recipe_bong_cai_luoc: { name: 'Bông cải luộc', station: 'hot_kettle', cachNau: 'luộc nồi nước, chấm nước mắm (cơm nhà)' },
 };
 
 /** Chữ mô tả tự chế không ai dùng làm tên món ngoài chợ. */
