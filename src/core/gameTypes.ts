@@ -2,6 +2,7 @@
 import type { FurnitureType } from '../data/furniture';
 import type { MarketTier } from '../data/chophien';
 import { warehouseTier } from '../data/warehouse';
+import type { WareMaterials } from '../data/wareMaterials';
 import type { QuestLog, Totals } from '../data/quests';
 import { casesFor } from '../data/products';
 import { type ShopStyle } from '../data/shopTiers';
@@ -241,6 +242,9 @@ export interface GameState {
   /** Cấp nhà kho (chỉ số trong WAREHOUSE_TIERS). */
   warehouseTier: number;
   upgradeWarehouse: () => boolean;
+  /** GĐ1945 — vật liệu nâng kho (không tính vào storageCapacity). */
+  wareMaterials: WareMaterials;
+  buyMaterialPack: () => boolean;
   /** Hàng mới về: ô kệ hết hàng mà kho cũng hết món đó thì tự gỡ, bày món khác đang có trong kho. */
   autoSwap: boolean;
   /** Cộng dồn cả ván (khách, món, doanh thu) để đo nhiệm vụ cốt truyện. */

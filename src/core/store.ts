@@ -3,6 +3,7 @@ import { create } from 'zustand';
 import { emptyQuestLog, emptyTotals, type QuestContext } from '../data/quests';
 import { recentAvgSalesProfit } from '../data/gifts';
 import { rentOf, type ShopStyle } from '../data/shopTiers';
+import { emptyWareMaterials } from '../data/wareMaterials';
 import type { Review } from '../data/reviews';
 import { forecastFrom, newWeatherSeed, type Weather } from '../data/weather';
 import type { Lot } from '../data/freshness';
@@ -136,6 +137,8 @@ export const newGameData = () => ({
   totals: emptyTotals(),
   questLog: emptyQuestLog(),
   warehouseTier: 0,
+  /** GĐ1945 — gạch/xi măng/thép để nâng kho cấp cao; để ở bãi, không chiếm thùng kho. */
+  wareMaterials: emptyWareMaterials(),
   reviews: [] as Review[],
   repLog: [] as RepSample[],
   community: {} as Record<string, CommunityProgress>,

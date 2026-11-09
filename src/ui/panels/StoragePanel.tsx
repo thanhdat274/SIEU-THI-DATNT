@@ -1,6 +1,7 @@
 import { fitLots, nearestLife } from '../../data/freshness';
 import { storageCapacity, storageUsed, useGame } from '../../core/store';
 import { warehouseTier, WAREHOUSE_TIERS } from '../../data/warehouse';
+import { MATERIAL_FROM_TIER, MATERIAL_KEYS, MATERIAL_LABEL, MATERIAL_PACK, MATERIAL_PACK_PRICE, hasMaterials, materialsFor, missingMaterials } from '../../data/wareMaterials';
 import { caseSize, describeUnits, formatMoney, productById } from '../../data/products';
 import { shortLabel } from '../shortLabel';
 import { storeMissRevenue, coldOverflow } from '../../data/advice';
@@ -13,7 +14,7 @@ import { Callout, LifeBadge, Footer, styles } from './shared';
 
 /** Kho hàng: thùng nguyên + hàng lẻ đã khui, hạn gần nhất, chỗ trống. */
 export function StoragePanel() {
-  const { storage, storageLots, deliveries, warehouseTier: tierIndex, level, money, priceOf, autoSwap, upgradeWarehouse, openPanel, closePanel, stats, weather, analytics, furniture, demand } = useGame();
+  const { storage, storageLots, deliveries, warehouseTier: tierIndex, level, money, priceOf, autoSwap, upgradeWarehouse, buyMaterialPack, wareMaterials, openPanel, closePanel, stats, weather, analytics, furniture, demand } = useGame();
   const tier = warehouseTier(tierIndex);
   const next = WAREHOUSE_TIERS[tierIndex + 1];
   const capacity = storageCapacity(tierIndex);
@@ -113,11 +114,31 @@ export function StoragePanel() {
           <span style={{ flex: 1, fontSize: 13 }}>
             <b>Nâng lên {next.name}</b>: chứa {next.cases} thùng, giữ lạnh {next.cold} món, {next.racks} kệ, {next.fridges} tủ lạnh.
           </span>
-          <button style={styles.btn} disabled={level < next.unlock || money < next.price} onClick={upgradeWarehouse}>
+          <button style={styles.btn} disabled={level < next.unlock || money < next.price || !hasMaterials(wareMaterials, tierIndex + 1)} onClick={upgradeWarehouse}>
             {level < next.unlock ? `🔒 Cấp ${next.unlock}` : shortLabel(formatMoney(next.price), next.price, money)}
           </button>
         </div>
       )}
+      {next && tierIndex + 1 >= MATERIAL_FROM_TIER && (() => {
+        // GĐ1945 — vật liệu nâng kho: để ở bãi, không chiếm thùng
+        const need = materialsFor(tierIndex + 1);
+        const miss = missingMaterials(wareMaterials, tierIndex + 1);
+        return (
+          <div style={{ ...styles.card, marginTop: 8 }}>
+            <span style={{ flex: 1, fontSize: 13 }}>
+              <b>🏗️ Vật liệu nâng kho</b> (không chiếm thùng):{' '}
+              {MATERIAL_KEYS.map((k) => (
+                <span key={k} style={{ marginRight: 8, color: miss[k] > 0 ? '#ff7675' : '#55efc4' }}>
+                  {MATERIAL_LABEL[k]} {wareMaterials?.[k] ?? 0}/{need[k]}
+                </span>
+              ))}
+            </span>
+            <button style={styles.btn} disabled={money < MATERIAL_PACK_PRICE} onClick={buyMaterialPack}>
+              {shortLabel(`Mua bộ (+${MATERIAL_PACK.gach}/${MATERIAL_PACK.ximang}/${MATERIAL_PACK.thep})`, MATERIAL_PACK_PRICE, money)}
+            </button>
+          </div>
+        );
+      })()}
       {next && (() => {
         const wu = warehouseUpgradeValue(tierIndex, storage, priceOf, money);
         const tone = wu.verdict === 'upgrade' ? (wu.affordable ? 'warn' : 'danger') : wu.verdict === 'soon' ? 'accent' : 'ok';
