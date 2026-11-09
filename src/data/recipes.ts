@@ -663,6 +663,9 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'xoai_lac_muoi_tom', name: 'Xoài lắc muối tôm', category: 'fresh', buy: 4700, sell: 9000, color: 0xf2c14e, unlock: 71 },
   { id: 'ca_tim_nuong_mo_hanh', name: 'Cà tím nướng mỡ hành', category: 'fresh', buy: 4000, sell: 6000, color: 0x6a3a7a, unlock: 60 },
   { id: 'rau_muong_luoc', name: 'Rau muống luộc', category: 'fresh', buy: 3000, sell: 4000, color: 0x4f9f3a, unlock: 61 },
+  { id: 'bap_luoc', name: 'Bắp luộc', category: 'fresh', buy: 3000, sell: 4000, color: 0xe8d050, unlock: 62 },
+  { id: 'khoai_lang_luoc', name: 'Khoai lang luộc', category: 'fresh', buy: 3000, sell: 4000, color: 0xb0603a, unlock: 63 },
+  { id: 'bong_cai_xao_toi', name: 'Bông cải xào tỏi', category: 'fresh', buy: 5000, sell: 8000, color: 0x3f8f4a, unlock: 64 },
 ];
 
 // ──────────────────────────────────────────────
@@ -1966,6 +1969,18 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_rau_muong_luoc', name: 'Rau muống luộc', station: 'hot_kettle',
     inputs: [{ productId: 'x_rau_muong', quantity: 1 }],
     outputId: 'rau_muong_luoc', outputQty: 3, durationMin: 6, unlock: 61, reputationGain: 1 },
+  // GĐ1974: Bắp luộc — quà vặt cả nước: bắp ngọt luộc nguyên trái trong nồi nước (hot_kettle).
+  { id: 'recipe_bap_luoc', name: 'Bắp luộc', station: 'hot_kettle',
+    inputs: [{ productId: 'x_bap', quantity: 1 }],
+    outputId: 'bap_luoc', outputQty: 3, durationMin: 20, unlock: 62, reputationGain: 1 },
+  // GĐ1975: Khoai lang luộc — quà sáng cả nước: khoai lang luộc nguyên củ trong nồi nước (hot_kettle).
+  { id: 'recipe_khoai_lang_luoc', name: 'Khoai lang luộc', station: 'hot_kettle',
+    inputs: [{ productId: 'x_khoai_lang_tuoi', quantity: 1 }],
+    outputId: 'khoai_lang_luoc', outputQty: 4, durationMin: 20, unlock: 63, reputationGain: 1 },
+  // GĐ1976: Bông cải xào tỏi — cơm nhà cả nước: bông cải xanh xào lửa lớn với tỏi phi (chảo, fryer).
+  { id: 'recipe_bong_cai_xao_toi', name: 'Bông cải xào tỏi', station: 'fryer',
+    inputs: [{ productId: 'x_bong_cai_xanh', quantity: 1 }, { productId: 'x_toi', quantity: 1 }],
+    outputId: 'bong_cai_xao_toi', outputQty: 5, durationMin: 8, unlock: 64, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────
