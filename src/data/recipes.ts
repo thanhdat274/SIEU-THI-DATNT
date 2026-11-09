@@ -699,6 +699,9 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'bun_thit_nuong', name: 'Bún thịt nướng', category: 'fresh', buy: 12000, sell: 18000, color: 0xc8783a, unlock: 99 },
   { id: 'bun_cha', name: 'Bún chả', category: 'fresh', buy: 14000, sell: 20000, color: 0xa8603a, unlock: 101 },
   { id: 'chao_suon', name: 'Cháo sườn', category: 'fresh', buy: 6000, sell: 11000, color: 0xf0e0c8, unlock: 102 },
+  { id: 'canh_trung_ca_chua', name: 'Canh trứng cà chua', category: 'fresh', buy: 5000, sell: 9000, color: 0xe8703a, unlock: 103 },
+  { id: 'thit_kho_tieu', name: 'Thịt kho tiêu', category: 'fresh', buy: 12000, sell: 20000, color: 0x8b4a2b, unlock: 104 },
+  { id: 'ga_xao_gung', name: 'Gà xào gừng', category: 'fresh', buy: 12000, sell: 20000, color: 0xd9a441, unlock: 105 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2146,6 +2149,18 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_chao_suon', name: 'Cháo sườn', station: 'hot_kettle',
     inputs: [{ productId: 'gao', quantity: 1 }, { productId: 'x_suon_heo', quantity: 1 }, { productId: 'x_hanh_la', quantity: 1 }],
     outputId: 'chao_suon', outputQty: 30, durationMin: 30, unlock: 102, reputationGain: 1 },
+  // GĐ2011: Canh trứng cà chua — cơm nhà cả nước: cà chua xào mềm, đổ nước sôi, đánh trứng thả vào, rắc hành (hot_kettle).
+  { id: 'recipe_canh_trung_ca_chua', name: 'Canh trứng cà chua', station: 'hot_kettle',
+    inputs: [{ productId: 'x_trung_ga', quantity: 2 }, { productId: 'x_ca_chua', quantity: 1 }, { productId: 'x_hanh_la', quantity: 1 }],
+    outputId: 'canh_trung_ca_chua', outputQty: 6, durationMin: 15, unlock: 103, reputationGain: 1 },
+  // GĐ2012: Thịt kho tiêu — Nam Bộ: ba chỉ kho nước mắm đường tới keo, rắc nhiều tiêu hạt (hot_kettle); thịt heo thường thay ba chỉ.
+  { id: 'recipe_thit_kho_tieu', name: 'Thịt kho tiêu', station: 'hot_kettle',
+    inputs: [{ productId: 'x_thit_heo', quantity: 1 }, { productId: 'x_tieu_hat', quantity: 1 }, { productId: 'hx_nuoc_mam', quantity: 1 }],
+    outputId: 'thit_kho_tieu', outputQty: 6, durationMin: 35, unlock: 104, reputationGain: 1 },
+  // GĐ2013: Gà xào gừng — cơm nhà cả nước: gà chặt miếng xào lửa lớn với gừng thái sợi, hành (fryer).
+  { id: 'recipe_ga_xao_gung', name: 'Gà xào gừng', station: 'fryer',
+    inputs: [{ productId: 'x_thit_ga', quantity: 1 }, { productId: 'x_gung', quantity: 1 }, { productId: 'x_hanh_la', quantity: 1 }],
+    outputId: 'ga_xao_gung', outputQty: 6, durationMin: 20, unlock: 105, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────

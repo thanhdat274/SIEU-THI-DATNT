@@ -58,6 +58,9 @@ const MON_THAT: Record<string, { name: string; station: string; cachNau: string 
   recipe_bun_thit_nuong: { name: 'Bún thịt nướng', station: 'food_grill', cachNau: 'thịt heo nướng than, ăn với bún và rau sống (Sài Gòn)' },
   recipe_bun_cha: { name: 'Bún chả', station: 'food_grill', cachNau: 'chả viên + chả miếng nướng than hoa, ăn với bún (Hà Nội)' },
   recipe_chao_suon: { name: 'Cháo sườn', station: 'hot_kettle', cachNau: 'gạo ninh nhừ với sườn heo (cháo sáng Hà Nội)' },
+  recipe_canh_trung_ca_chua: { name: 'Canh trứng cà chua', station: 'hot_kettle', cachNau: 'cà chua nấu nước, đánh trứng thả vào (cơm nhà cả nước)' },
+  recipe_thit_kho_tieu: { name: 'Thịt kho tiêu', station: 'hot_kettle', cachNau: 'thịt kho nước mắm tới keo, nhiều tiêu (Nam Bộ)' },
+  recipe_ga_xao_gung: { name: 'Gà xào gừng', station: 'fryer', cachNau: 'gà xào lửa lớn với gừng thái sợi (cơm nhà)' },
 };
 
 /** Chữ mô tả tự chế không ai dùng làm tên món ngoài chợ. */
