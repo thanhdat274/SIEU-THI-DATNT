@@ -1,0 +1,114 @@
+# PROGRESS archive — GĐ1829–1939 (dồn từ PROGRESS.md ở GĐ1946)
+
+- GĐ1939: RÀ ẨM THỰC (người dùng phản hồi) — gỡ 3 món không thực tế: Cơm đậu đen (đậu đen nấu cơm sượng/chát, nên chỉ làm chè/xôi), Cà pháo chiên giòn chấm me (cà pháo nhiều nước chiên nổ văng dầu), Bún chả lụa nước chanh muối (chanh muối nấu nước lèo đắng chát). Đồng thời gỡ 3 trà ô mai biến tấu gượng: dứa/mít/nho (giữ hũ ô mai làm đồ ăn vặt). Sửa chuẩn ẩm thực: **Mì xào lạp xưởng** (đổi tên từ Bún xào + đổi nguyên liệu bún→mì); **Xôi xoài sấy** (đổi input gạo tẻ→gạo nếp `nep` cho đúng bản chất xôi). Test xoá kèm (dauDen, caPhaoGion...).
+- GĐ1938: Sữa đậu nành tự xay (máy xay, mở 34) — đậu nành hạt + đường; test suaDauNanhXay.
+- GĐ1937: Bánh khọt (chảo chiên, mở 47) — món Vũng Tàu có thật: bột gạo + tôm + hành lá; test banhKhot.
+- GĐ1936: Bánh bột lọc (nồi hấp, mở 46) — món Huế có thật: bột năng + tôm + hành lá; test banhBotLoc.
+- GĐ1936: KHÔI PHỤC 4 món thực tế bị GĐ1932 gỡ nhầm — Cơm đậu đen (bếp xôi cơm, mở 104), Cơm bắp bơ (mở 108), Cháo hạt điều (mở 115), Cơm mắm nêm (mở 116); người dùng xác nhận đều là món thật ngoài đời; khôi phục lối ra nấu cho hx_dau_den/hx_bap_rang/hx_hat_dieu/hx_mam_nem; test dauDen/bapRang/hatDieu/mamNem. Đồng thời dọn 15 comment mồ côi trong recipes.ts còn nhắc món gỡ.
+- GĐ1935: Bánh giò (nồi hấp, mở 45) — món điểm tâm có thật: bột gạo + thịt heo + mộc nhĩ; test banhGio.
+- GĐ1934: Trà ô mai mận (quầy pha, mở 178) — lối ra THỨ HAI của ô mai mận nhà làm; test traOMaiMan.
+- GĐ1933: Trà ô mai nho (quầy pha, mở 177) — lối ra THỨ HAI của ô mai nho nhà làm; test traOMaiNho.
+- GĐ1932: DỌN món vô lý — gỡ 62 công thức cháo/xôi/cơm không có ngoài đời (cháo/xôi ô mai ×25 + mứt ×5, cháo tỏi ớt, cháo củ kiệu, cháo cà ri, cơm muối ớt…) cùng sản phẩm đầu ra + test; hũ ô mai/mứt giữ làm đồ ăn vặt, trà ô mai giữ ở quầy pha.
+- GĐ1931: Trà ô mai mít (quầy pha, mở 176) — lối ra THỨ HAI của ô mai mít nhà làm; test traOMaiMit.
+- GĐ1930: Trà ô mai dứa (quầy pha, mở 175) — lối ra THỨ HAI của ô mai dứa nhà làm; test traOMaiDua.
+- GĐ1929: Trà ô mai xoài (quầy pha, mở 174) — lối ra THỨ HAI của ô mai xoài nhà làm; test traOMaiXoai.
+- GĐ1928: Trà ô mai cam (quầy pha, mở 173) — lối ra THỨ HAI của ô mai cam nhà làm; test traOMaiCam.
+- GĐ1927: Trà ô mai đào (quầy pha, mở 172) — lối ra THỨ HAI của ô mai đào nhà làm; test traOMaiDao.
+- GĐ1926: Trà ô mai quất (quầy pha, mở 171) — lối ra THỨ HAI của ô mai quất nhà làm; test traOMaiQuat.
+- GĐ1925: Trà ô mai sấu (quầy pha, mở 170) — lối ra THỨ HAI của ô mai sấu nhà làm; test traOMaiSau.
+- GĐ1924: Trà ô mai me (quầy pha, mở 169) — lối ra THỨ HAI của ô mai me nhà làm; test traOMaiMe.
+- GĐ1923: Trà ô mai mơ (quầy pha, mở 168) — lối ra THỨ HAI của ô mai mơ nhà làm, đổi trạm thay vì thêm biến thể ô mai; test traOMaiMo.
+- GĐ1922: Ô mai sen nhà làm (hx_o_mai_sen, mở 140, 31k→50k, chỉ bà Tám) + Xôi ô mai sen (bếp xôi cơm, mở 166); test oMaiSen.
+- GĐ1921: Ô mai sơri nhà làm (hx_o_mai_sori, mở 139, 31k→50k, chỉ bà Tám) + Cháo ô mai sơri (ấm nấu cháo, mở 165); test oMaiSori.
+- GĐ1920: Ô mai cóc nhà làm (hx_o_mai_coc, mở 138, 31k→50k, chỉ bà Tám) + Xôi ô mai cóc (bếp xôi cơm, mở 164); test oMaiCoc.
+- GĐ1919: Ô mai chuối nhà làm (hx_o_mai_chuoi, mở 137, 31k→50k, chỉ bà Tám) + Cháo ô mai chuối (ấm nấu cháo, mở 163); test oMaiChuoi.
+- GĐ1918: Ô mai táo nhà làm (hx_o_mai_tao, mở 136, 31k→50k, chỉ bà Tám) + Xôi ô mai táo (bếp xôi cơm, mở 162); test oMaiTao.
+- GĐ1917: Ô mai thơm nhà làm (hx_o_mai_thom, mở 135, 31k→50k, chỉ bà Tám) + Cháo ô mai thơm (ấm nấu cháo, mở 161); test oMaiThom.
+- GĐ1916: Ô mai lựu nhà làm (hx_o_mai_luu, mở 134, 31k→50k, chỉ bà Tám) + Xôi ô mai lựu (bếp xôi cơm, mở 160); test oMaiLuu.
+- GĐ1915: Ô mai nhãn nhà làm (hx_o_mai_nhan, mở 133, 31k→50k, chỉ bà Tám) + Cháo ô mai nhãn (ấm nấu cháo, mở 159); test oMaiNhan.
+- GĐ1914: Ô mai vải nhà làm (hx_o_mai_vai, mở 132, 31k→50k, chỉ bà Tám) + Xôi ô mai vải (bếp xôi cơm, mở 158); test oMaiVai.
+- GĐ1913: Ô mai hồng nhà làm (hx_o_mai_hong, mở 131, 31k→50k, chỉ bà Tám) + Cháo ô mai hồng (ấm nấu cháo, mở 157); test oMaiHong.
+- GĐ1912: Ô mai kiwi nhà làm (hx_o_mai_kiwi, mở 130, 31k→50k, chỉ bà Tám) + Xôi ô mai kiwi (bếp xôi cơm, mở 156); test oMaiKiwi.
+- GĐ1911: Ô mai lê nhà làm (hx_o_mai_le, mở 129, 31k→50k, chỉ bà Tám) + Cháo ô mai lê (ấm nấu cháo, mở 155); test oMaiLe.
+- GĐ1910: Ô mai dâu nhà làm (hx_o_mai_dau, mở 128, 31k→50k, chỉ bà Tám) + Xôi ô mai dâu (bếp xôi cơm, mở 154); test oMaiDau.
+- GĐ1909: Ô mai mận nhà làm (hx_o_mai_man, mở 127, 31k→50k, chỉ bà Tám) + Cháo ô mai mận (ấm nấu cháo, mở 153); test oMaiMan.
+- GĐ1908: Ô mai nho nhà làm (hx_o_mai_nho, mở 126, 31k→50k, chỉ bà Tám) + Xôi ô mai nho (bếp xôi cơm, mở 152); test oMaiNho.
+- GĐ1907: Ô mai mít nhà làm (hx_o_mai_mit, mở 125, 31k→50k, chỉ bà Tám) + Cháo ô mai mít (ấm nấu cháo, mở 151); test oMaiMit.
+- GĐ1906: Ô mai dứa nhà làm (hx_o_mai_dua, mở 124, 31k→50k, chỉ bà Tám) + Xôi ô mai dứa (bếp xôi cơm, mở 150); test oMaiDua.
+- GĐ1905: Ô mai xoài nhà làm (hx_o_mai_xoai, mở 123, 31k→50k, chỉ bà Tám) + Cháo ô mai xoài (ấm nấu cháo, mở 149); test oMaiXoai.
+- GĐ1904: Ô mai bưởi nhà làm (hx_o_mai_buoi, mở 122, 31k→50k, chỉ bà Tám) + Xôi ô mai bưởi (bếp xôi cơm, mở 148); test oMaiBuoi.
+- GĐ1903: Ô mai ổi nhà làm (hx_o_mai_oi, mở 121, 31k→50k, chỉ bà Tám) + Cháo ô mai ổi (ấm nấu cháo, mở 147); test oMaiOi.
+- GĐ1902: Ô mai cam nhà làm (hx_o_mai_cam, mở 120, 31k→50k, chỉ bà Tám) + Xôi ô mai cam (bếp xôi cơm, mở 146); test oMaiCam.
+- GĐ1901: Ô mai roi nhà làm (hx_o_mai_roi, mở 119, 31k→50k, chỉ bà Tám) + Cháo ô mai roi (ấm nấu cháo, mở 145); test oMaiRoi.
+- GĐ1900: Ô mai quất nhà làm (hx_o_mai_quat, mở 118, 31k→50k, chỉ bà Tám) + Xôi ô mai quất (bếp xôi cơm, mở 144); test oMaiQuat.
+- GĐ1899: Ô mai khế nhà làm (hx_o_mai_khe, mở 117, 31k→50k, chỉ bà Tám) + Cháo ô mai khế (ấm nấu cháo, mở 143); test oMaiGung.
+- GĐ1898: Ô mai đào nhà làm (hx_o_mai_dao, mở 116, 31k→50k, chỉ bà Tám) + Xôi ô mai đào (bếp xôi cơm, mở 142); test oMaiDao.
+- GĐ1897: Ô mai sấu nhà làm (hx_o_mai_sau, mở 115, 31k→50k, chỉ bà Tám) + Cháo ô mai sấu (ấm cháo, mở 141); test oMaiSau.
+- GĐ1896: Ô mai me nhà làm (hx_o_mai_me, mở 114, 31k→50k, chỉ bà Tám) + Xôi ô mai me (bếp xôi cơm, mở 140); test oMaiMe.
+- GĐ1895: Ô mai mơ nhà làm (hx_mut_mo, mở 113, 31k→50k, chỉ bà Tám) + Cháo ô mai mơ (ấm cháo, mở 139); test mutMo.
+- GĐ1894: Mứt sen nhà làm (hx_mut_sen, mở 112, 31k→50k, chỉ bà Tám) + Xôi mứt sen (bếp xôi cơm, mở 138); test mutSen.
+- GĐ1893: Mứt chuối dẻo nhà làm (hx_mut_chuoi, mở 111, 31k→50k, chỉ bà Tám) + Cháo mứt chuối (ấm cháo, mở 137); test mutChuoi.
+- GĐ1892: Mứt khoai lang nhà làm (hx_mut_khoai, mở 110, 31k→50k, chỉ bà Tám) + Xôi mứt khoai lang (bếp xôi cơm, mở 136); test mutKhoai.
+- GĐ1891: Mứt cà rốt nhà làm (hx_mut_ca_rot, mở 109, 31k→50k, chỉ bà Tám) + Cháo mứt cà rốt (ấm cháo, mở 135); test mutCaRot.
+- GĐ1890: Mứt bí sên nhà làm (hx_mut_bi, mở 108, 31k→50k, chỉ bà Tám) + Xôi mứt bí (bếp xôi cơm, mở 134); test mutBi.
+- GĐ1889: Tương đậu nành nhà ủ (hx_tuong_dau, mở 107, 31k→50k, chỉ bà Tám) + Cháo tương đậu nành (ấm cháo, mở 133); test tuongDau.
+- GĐ1888: Cá thu muối nhà ướp (hx_ca_muoi, mở 106, 31k→50k, chỉ bà Tám) + Cơm cá thu muối (bếp xôi cơm, mở 132); test caMuoi.
+- GĐ1887: Dưa cải chua nhà làm (hx_dua_cai, mở 105, 31k→50k, chỉ bà Tám) + Cháo dưa cải chua (ấm cháo, mở 131); test duaCai.
+- GĐ1886: Măng chua ngâm nhà làm (hx_mang_chua, mở 104, 31k→50k, chỉ bà Tám) + Cơm măng chua (bếp xôi cơm, mở 130); test mangChua.
+- GĐ1885: Củ cải muối nhà phơi (hx_cu_cai_muoi, mở 103, 31k→50k, chỉ bà Tám) + Cháo củ cải muối (ấm cháo, mở 129); test cuCaiMuoi.
+- GĐ1884: Dưa hành muối nhà làm (hx_dua_hanh, mở 102, 31k→50k, chỉ bà Tám) + Cơm dưa hành (bếp xôi cơm, mở 128); test duaHanh.
+- GĐ1883: Khô cá dứa nhà phơi (hx_ca_dua_kho, mở 101, 31k→50k, chỉ bà Tám) + Cháo khô cá dứa (ấm cháo, mở 127); test caDuaKho.
+- GĐ1882: Thịt gác bếp nhà hun (hx_gac_bep, mở 99, 31k→50k, chỉ bà Tám) + Cơm thịt gác bếp (bếp xôi cơm, mở 126); test gacBep.
+- GĐ1881: Mực một nắng nhà phơi (hx_muc_mot_nang, mở 98, 31k→50k, chỉ bà Tám) + Cháo mực một nắng (ấm cháo, mở 125); test mucMotNang.
+- GĐ1880: Nấm hương sấy nhà làm (hx_nam_huong_say, mở 97, 31k→50k, chỉ bà Tám) + Cơm nấm hương sấy (bếp xôi cơm, mở 124); test namHuongSay.
+- GĐ1879: Cà pháo ngâm mắm nhà làm (hx_ca_phao_ngam, mở 95, 31k→50k, chỉ bà Tám) + Cháo cà pháo ngâm (ấm cháo, mở 123); test caPhao.
+- GĐ1878: Cải muối nhà làm (hx_cai_muoi, mở 94, 31k→50k, chỉ bà Tám) + Cơm cải muối (bếp xôi cơm, mở 122); test caiMuoi.
+- GĐ1877: Khoai môn sấy nhà làm (hx_mon_say, mở 93, 31k→50k, chỉ bà Tám) + Cháo khoai môn sấy (ấm cháo, mở 121); test monSay.
+- GĐ1876: Dừa sấy giòn nhà làm (hx_dua_say, mở 92, 31k→50k, chỉ bà Tám) + Cơm dừa sấy (bếp xôi cơm, mở 120); test duaSay.
+- GĐ1875: Chuối sấy giòn nhà làm (hx_chuoi_say, mở 90, 31k→50k, chỉ bà Tám) + Cháo chuối sấy (ấm cháo, mở 119); test chuoiSay.
+- GĐ1874: Xoài sấy dẻo nhà làm (hx_xoai_say, mở 89, 35k→56k, chỉ bà Tám) + Xôi xoài sấy (bếp xôi cơm, mở 118); test xoaiSay.
+- GĐ1873: Gạo lứt rang nhà làm (hx_gao_lut_rang, mở 88, 31k→50k, chỉ bà Tám) + Cháo gạo lứt (nồi nước, mở 117); test gaoLutRang.
+- GĐ1872: Mắm nêm nhà pha (hx_mam_nem, mở 87, 31k→50k, chỉ bà Tám) + Cơm mắm nêm (bếp xôi cơm, mở 116); test mamNem.
+- GĐ1871: Hạt điều rang muối nhà làm (hx_hat_dieu, mở 85, 48k→77k, chỉ bà Tám) + Cháo hạt điều (nồi nước, mở 115); test hatDieu.
+- GĐ1870: Lá dứa sấy nhà làm (hx_la_dua, mở 84, 31k→50k, chỉ bà Tám) + Cơm lá dứa (bếp xôi cơm, mở 114); test laDua.
+- GĐ1869: Tỏi ớt ngâm nhà làm (hx_toi_ot, mở 83, 31k→50k, chỉ bà Tám) + Cháo tỏi ớt (nồi nước, mở 113, kèm tỏi); test toiOt.
+- GĐ1868: Muối sả nhà làm (hx_muoi_sa, mở 81, 31k→50k, chỉ bà Tám) + Cơm muối sả (bếp xôi cơm, mở 112, kèm sả); test muoiSa.
+- GĐ1867: Bột cà ri nhà rang (hx_bot_ca_ri, mở 80, 32k→51k, chỉ bà Tám) + Cháo cà ri (nồi nước, mở 111); test botCaRi.
+- GĐ1866: Bột nghệ nhà xay (hx_bot_nghe, mở 79, 31k→50k, chỉ bà Tám) + Cơm nghệ (bếp xôi cơm, mở 110); test botNghe.
+- GĐ1865: Tương hột nhà ủ (hx_tuong_hot, mở 78, 31k→50k, chỉ bà Tám) + Cháo tương hột (nồi nước, mở 109); test tuongHot.
+- GĐ1864: Bắp rang bơ nhà làm (hx_bap_rang, mở 77, 31k→50k, chỉ bà Tám) + Cơm bắp bơ (bếp xôi cơm, mở 108); test bapRang.
+- GĐ1863: Khoai lang sấy dẻo nhà làm (hx_khoai_say, mở 76, 31k→50k, chỉ bà Tám) + Cháo khoai lang (nồi nước, mở 107); test khoaiSay.
+- GĐ1862: Mè đen xay nhà làm (hx_me_den, mở 75, 32k→51k, chỉ bà Tám) + Cơm mè đen (bếp xôi cơm, mở 106); test meDen.
+- GĐ1861: Đậu xanh cà vỏ nhà làm (hx_dau_xanh_ca, mở 74, 31k→50k, chỉ bà Tám) + Cháo đậu xanh (nồi nước, mở 105); test dauXanhCa.
+- GĐ1860: Đậu đen rang nhà làm (hx_dau_den, mở 73, 31k→50k, chỉ bà Tám) + Cơm đậu đen (bếp xôi cơm, mở 104); test dauDen.
+- GĐ1859: Hạt sen sấy nhà làm (hx_hat_sen, mở 72, 42k→67k, chỉ bà Tám) + Cháo hạt sen (nồi nước, mở 103); test hatSen.
+- GĐ1858: Muối tôm nhà rang (hx_muoi_tom, mở 71, 31k→50k, chỉ bà Tám) + Cơm muối tôm (bếp xôi cơm, mở 102); test muoiTom.
+- GĐ1857: Nấm rơm khô nhà phơi (hx_nam_rom, mở 70, 40k→64k, chỉ bà Tám) + Cháo nấm rơm (nồi nước, mở 101); test namRom.
+- GĐ1856: Tương gừng nhà làm (hx_tuong_gung, mở 69, 30k→50k, chỉ bà Tám) + Cơm tương gừng (bếp xôi cơm, mở 99); test tuongGung.
+- GĐ1855: Củ kiệu muối nhà làm (hx_cu_kieu, mở 68, 31k→50k, chỉ bà Tám) + Cháo củ kiệu (nồi nước, mở 98); test cuKieu.
+- GĐ1854: Tôm chua Huế nhà ủ (hx_tom_chua, mở 67, 33k→53k, chỉ bà Tám) + Cơm tôm chua (bếp xôi cơm, mở 97); test tomChua.
+- GĐ1853: Mắm cá linh nhà ủ (hx_mam_ca_linh, mở 66, 34k→54k, chỉ bà Tám) + Cơm mắm cá linh (bếp xôi cơm, mở 95); test mamCaLinh.
+- GĐ1852: Hành phi nhà làm (hx_hanh_phi, mở 65, 31k→50k, chỉ bà Tám) + Cháo hành phi (nồi nước, mở 94); test hanhPhi.
+- GĐ1851: Khô cá sặc nhà phơi (hx_kho_ca_sac, mở 64, 38k→61k, chỉ bà Tám) + Cơm khô cá sặc (bếp xôi cơm, mở 93); test khoCaSac.
+- GĐ1850: Đậu phộng rang nhà làm (hx_dau_phong_rang, mở 63, 31k→50k, chỉ bà Tám) + Cháo đậu phộng (nồi nước, mở 92); test dauPhongRang.
+- GĐ1849: Muối ớt Tây Ninh nhà làm (hx_muoi_ot, mở 62, 32k→51k, chỉ bà Tám) + Cơm muối ớt (bếp xôi cơm, mở 90); test muoiOt.
+- GĐ1848: Ruốc cá lóc nhà làm (hx_ruoc_ca_loc, mở 61, 45k→72k, chỉ bà Tám) + Cháo ruốc cá lóc (nồi nước, mở 89); test ruocCaLoc.
+- GĐ1847: Tép rim nhà làm (hàng xóm bà Tám, cấp 60, 34k→54k) + Cơm tép rim (cấp 88, bếp xôi cơm: 2 gạo + 1 mắm ruốc → 12, bán 23k).
+- GĐ1846: Sa tế tôm nhà làm (hàng xóm bà Tám, cấp 59, 36k→58k) + Cơm sa tế tôm (cấp 87, bếp xôi cơm: 2 gạo + 1 sa tế → 12, bán 24k). Full suite 5553/5553 xanh, tsc sạch.
+- GĐ1845: Tỏi đen nhà ủ (hàng xóm bà Tám, cấp 58, 55k→88k) + Cơm chiên tỏi đen (cấp 85, bếp xôi cơm: 2 gạo + 1 tỏi đen + 2 tỏi → 12, bán 26k). Rà tài liệu Midnight Bistro/Xóm Nông Trại/HappyTown: mục còn lại đều chờ siêu thị phase 2 (mở ô tiếp giáp, vật liệu nâng cấp) nên làm nội dung chiều sâu theo GĐ1076. Test 5551 xanh, tsc sạch.
+- GĐ1844: cao điểm sáng dời 6h–8h30 → 6h–9h (rhythm.ts; giữa buổi từ 9h, cửa sổ nhờ Bà Năm 9h–10h) để khớp tạp hóa mở 8h (người dùng chốt). Re-baseline CÓ CHỦ Ý: simGolden L30 money −2,7%; trần toast ngày 2 8→9; trần Luật 10 cấp 20 (nhiệm vụ+kèo)/lãi bán 0,67→0,85 (đo 0,58→0,83, kèo thắng dễ hơn) — người dùng duyệt. Cần theo dõi: nếu kèo quá dễ thì chỉnh kèo thay vì nới trần tiếp.
+- GĐ1843: bảng giờ mở theo loại tiệm `SHOP_HOURS` (src/data/shopHours.ts): tạp hóa → siêu thị → siêu thị lớn 8:00–22:30 (trước 6:00–22:00; hết 22:30 không đón khách mới, khách trong tiệm thanh toán nốt), tiệm xôi 5h–11h, quán nước 5h30–22h, tiện lợi 24/7. Chỉ tạp hóa chính có mô hình khách theo giờ nên xôi/quán nước hiện CHỈ hiển thị trên panel (chạy theo ngày). Re-baseline CÓ CHỦ Ý simGolden L30: money −16,5% (29,96M→25,03M) do tiệm mở muộn 2h/đóng muộn 30′; economySim đo bán đầu từ giờ mở (trần 120′); firstGapCap dời sang 8:01; Hud 'Hết đón khách mới' dùng SHOP_HOURS.grocery.to. Ca nhân viên 6h giữ nguyên (dùng chung chi nhánh).
+- GĐ1842: theo review đợt 2 R12 — tiệm VỐN đã ngừng đón khách mới lúc 22:00 (OPEN_UNTIL; khách trong tiệm thanh toán nốt), chỉ nhãn HUD sai: vẫn ghi "Đang mở cửa" tới nửa đêm. Nay 22:00–6:00 (không ca đêm) nhãn là "Hết đón khách mới". Không đổi logic/kinh tế. Giờ đóng 22:00 vs ca nhân viên 22:30 chưa thống nhất — chờ chốt.
+- GĐ1841: theo review đợt 2 R4 — panel Nhập hàng từ ngày 2: các khối phụ (Mối quen, giá hôm nay, so giá, dự báo, gợi ý sản xuất, hàng hot tuần) gói vào một `<details>` gấp mặc định (dòng tóm tắt ≥44px) để bảng hàng lên sát đầu; ngày 1 giữ nguyên. Chỉ đổi bố cục, không đổi nút/số liệu. Test 5547/5547 xanh, tsc sạch.
+- GĐ1840: theo review đợt 3 R8 — Sổ đầu ngày không nhắc "Góp vật liệu Sân chơi" ở ngày 1–2 (người mới eo hẹp, 8.000đ ≈ 18% số dư; từ ngày 3 nhắc như cũ; panel Sân chơi vẫn góp được). Test morningActions. Đã đánh giá nhưng CHƯA làm: Đ2-R4 (gấp khối phụ panel Nhập hàng — việc UI lớn, cần OpenSpec riêng) và tiệm tự đóng sau 22:00 (đổi thiết kế, chờ chốt).
+- GĐ1839: theo review đợt 4 R3 — resetGame gọi `freezeDirt()` (clock.addDirt bỏ qua 200 lần bẩn kế tiếp, đếm lượt không phải thời gian nên tất định): khách cũ còn trong cảnh 3D đi ra cửa sau reset không còn bẩn sàn ngày 1 (trước đây 15 khách × 4,8 = 72%). Test resetDirtFreeze + LOCAL_ONLY co-op.
+- GĐ1838: theo review đợt 4 R1b — checkChapters HOÃN thoại chương khi đang giờ vàng (`inGoldenHour`) và tiệm đang mở (hội thoại dừng đồng hồ đúng lúc đông khách); chưa set chapterDay nên hết giờ vàng mở ngay, tiệm đóng thì không chặn. Lệch thứ tự 3→2 của đợt 4 xác định là save cũ (tên chương reviewer thấy không tồn tại trong code hiện tại) — nextChapter vốn đã chọn chương sớm nhất chưa xem đủ điều kiện. Test chaptersGolden.
+- GĐ1837: theo review đợt 2 R6/đợt 3 R5 — "Bày đầy cả tiệm" dùng `fillPlanForShelf` (thuần, planogram.ts): mô phỏng từng ô qua kho ảo — món vừa gán bị coi "đã bày ở kệ này" + trừ kho ảo nên ô kế tự đa dạng, hết cảnh 10/12 ô một món Mì; kho cạn thì ô để trống đúng sự thật. Hot set của Sơ đồ kệ thêm hàng hút lễ hội (`festivalStock` theo ngày) — bánh kẹo Tết lên kệ cả khi chưa bán được gì hôm nay. Nút không đổi ("Đừng phá").
+- GĐ1836: theo review đợt 2 R10/đợt 4 R5 — mobile/tablet: nhãn dock 9→11px, nút dock/tốc độ ≥44px (min-height 48/44), tiêu đề Sổ đầu ngày bản mobile rút "☀️ Sổ đầu ngày N (d/m)"; IS_MOBILE export từ shared làm một nguồn chung. QA 375×812: dock 47×50–58px, nhãn 11px, layoutAudit clipped [], 0 tràn.
+- GĐ1835: theo review Đ2-R5/Đ3-R6/Đ4-R4 — dải mẹo "Bạn có biết" tự ẩn khi có banner lễ hội (nhường đỉnh màn cho tin gameplay); toast phát lúc thoại chương mở được GIỮ (`notify` không đếm giờ khi `chapterPending`, `armMessage()` gọi khi closeChapter) — hết cảnh "ăn sáng trừ 20k không thấy tin"; .hud-toast z-index 55 nổi trên panel/thoại, dưới tour/confirm.
+- GĐ1834: theo review Đ3-R4/Đ4-R2 — Nhập hàng: nút "+1 thùng" ngày đầu và nút đặt ghi "Thiếu X₫" (shortLabel chuẩn), dòng hàng có chip "Thiếu X₫/Hết chỗ" cạnh ô số thùng khi bấm + không thêm được; "✨ Điền theo gợi ý" điền NÚT THẮT quán nước trước (teahouseFillPlan, ngân sách chừa lương) rồi mới chia gợi ý thường — ngày đầu giữ nguyên bộ 3 món (case minTotal).
+- GĐ1833: theo review Đ2-R3/Đ3-R3 — sleep(): két không đủ trả tiền nhà+lương+phí vận hành (ước lượng % doanh thu) thì lần ngủ đầu bị chặn kèm cảnh báo ≤90 ký tự ("Bấm Ngủ lần nữa vẫn ngủ"), lần hai vẫn ngủ (được chấp nhận nợ nhưng phải biết); endDay ghi `stats.shortfall` + dòng "⚠️ Két thiếu tiền..." trong tổng kết. QA live: 5.000đ → chặn → ngủ → −15.000đ, shortfall 15.000.
+- GĐ1832: theo review Đ2-R1/Đ3-R2 — tổng kết ngày minh bạch: dòng "⭐ Thưởng thành tựu (vào ví sau tổng kết)" (endDay đọc trước qua `freshAchievements` thuần, checkAchievements vẫn nhận thưởng sau) + dòng "trong đó 💡 phí vận hành" tách khỏi Chi tiêu (điện/nước % doanh thu + điện chi nhánh + bảo trì). Field tuỳ chọn `achvReward`/`opCost`, không bump save; economySim/simGolden không đổi.
+- GĐ1831: theo review Đ2-R14/Đ4-R7 — `<ConfirmHost/>` dời từ Hud lên boot.tsx (gốc ứng dụng): hộp xác nhận hiện được ngay ở màn đăng nhập (nút "Rời hẻm" không còn câm, hộp không còn chờ tới khi vào game mới bật). Kèm Đ2-R11: `placeOrder`/`buy` chỉ nhận số nguyên dương (`Number.isInteger`) — chặn cả lệnh từ máy khách co-op (kho không thành chuỗi "03"). Backlog góp ý đợt 2–4 vào PROGRESS. Test 5545/5545 xanh, QA trình duyệt 375px đạt.
+- GĐ1830: ghép 14 model 3D free người dùng chọn từ 3dlabtools.com vào thế giới — bộ "cây xanh & đồ vườn": đa, dừa ×3, phượng, đào, mai, quất chậu ×2 (hai mép mặt tiền), chuối ×2, sen, luống lúa ×2, cây vườn nhỏ ×3, ghế vườn (dưới gốc đa), rào gỗ dọc 10 đoạn mép bắc đường thứ hai. Model gốc 10–30 MB qua `@gltf-transform/cli optimize` (simplify + webp 1024 + draco) còn 0,01–2,3 MB vào `public/models/nature/` (manifest kiểm kê); module mới `src/world/natureProps.ts` theo pattern kitProps — auto-fit chiều cao theo placement, chỉ trang trí không chặn lưới, tải lười, gắn setDecor mức đồ họa. GĐ1830b theo góp ý: bỏ kệ treo + thùng sau nhà (bày vụng, to bất hợp lý); dàn lại cây thoáng theo cụm một-ý (gốc đa + ghế làm mốc tây, vườn Tết tây nam, dừa ven đường, lúa cạnh trại), cây to cách nhau ≥ 8 m; thêm mùa theo lịch thật `dateOfDoy` — phượng rực đỏ tháng 5–7, đào/mai nở Tết tháng 1–2, ngoài mùa tán nhân màu trầm `setSeason` (main.tsx gọi khi sang tháng mới). Soi live: đủ prop, đào nở hồng đúng Tết, phượng đỏ đúng hè. Kèm fix HUD: dòng tổng-kết-hôm-nay trong chip đồng hồ lòi ra ngoài khung — span bọc `<small>` là flex item min-width:auto không chịu co nên ellipsis vô hiệu (hud.css GĐ1254 chặn max-width chip nhưng quên ông cha); bắt span co được + cắt đúng khung ở mọi bề rộng. Lưu ý license: nhóm 3DLabTools được dùng thương mại trong game nhưng KHÔNG phát hành lại file thô (xem public/models/nature/NGUON.md).
+- GĐ1829: áp dụng OpenSpec `khach-thay-mon-het-hang` (đề xuất từ review R2) — khách hết món muốn thì nhìn trên CÙNG KỆ lấy món khác giá ≤1,5× (`chooseSubstitute` + `SUBSTITUTE_CHANCE` 0.6, tất định simRng, ưu tiên cùng phân loại → hot → tầng kệ); `stats.substituted` (field tuỳ chọn, không bump save); Sổ tổng kết dòng "🔄 Đã cứu X lượt". Đo: lỡ-bán ngày 1 **17→11** (guard khoá ≤12), bán 77→89 món, doanh thu 515k→695k, economySimL50 vẫn 25/28 ≥ 22. Co-op: agent khách chạy trên máy chủ đò, không thao tác mới; QA co-op ?dev=a/?dev=b xác minh parity — máy khách soi máy chạy khớp tuyệt đối (tiền 461.200đ · 41 món · thay món 7 · lỡ 5). Kèm theo: bot autoplay mua VỪA tiền (chừa 50k dự phòng) hết spam "Không đủ tiền!"; trần món-đầu-bán 80→90 phút (rng xáo trộn, doanh thu +35% không phải chậm thật); simGolden L30 re-baseline theo quy trình "đổi kinh tế có chủ ý" (money 27.55M→29.96M, xp 1260→2379). Test 5517/5517.
