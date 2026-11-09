@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (09/11/2026)
+- GĐ1952: Bánh bèo chén (nồi hấp, mở 49) — món Huế có thật: bột gạo + bột năng + tôm + hành phi → 12 chén ×10k; test banhBeo; full 5628 xanh.
 - GĐ1951: Bánh căn (chảo chiên, mở 48) — món Phan Rang/Nha Trang có thật: bột gạo + trứng + hành lá → 10 cái ×11k; test banhCan; full 5626 xanh.
 - GĐ1950: rà định kỳ 10 GĐ — tải đầu 400/597 KB gzip, chunk lớn 107/255; thông báo dài nhất 88 ≤ 90; nút HUD/featureBudget xanh; full suite 5623 xanh. Không tính năng nào cần gộp/bỏ trong GĐ1941–1949 (đều sửa trong bảng có sẵn, 0 nút mới). Lưu ý headroom bundle: tăng 356→400 từ GĐ515, còn dư ~197 KB.
 - GĐ1949: thẻ bậc tiệm "% sàn đã dùng" tính cả ô mở rộng GĐ1944 (trước báo đầy giả sau khi mua ô); `spaceUsePct(…, extraDepth)` thuần, không đổi kinh tế. Test shopTiersRent. Coverage định kỳ: dòng 64,8%, nhánh 90%; phần thiếu chủ yếu 3D/net (QA mắt), logic core ổn.
