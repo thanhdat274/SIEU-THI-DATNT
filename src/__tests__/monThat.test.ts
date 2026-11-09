@@ -103,6 +103,9 @@ const MON_THAT: Record<string, { name: string; station: string; cachNau: string 
   recipe_cua_rang_muoi: { name: 'Cua rang muối', station: 'fryer', cachNau: 'cua chiên sơ rồi rang muối tỏi tới khô (quán hải sản)' },
   recipe_tom_rang_muoi: { name: 'Tôm rang muối', station: 'fryer', cachNau: 'tôm chiên sơ rồi rang muối tỏi (quán hải sản)' },
   recipe_muc_rang_muoi: { name: 'Mực rang muối', station: 'fryer', cachNau: 'mực chiên sơ rồi rang muối tỏi (quán hải sản)' },
+  recipe_ga_ro_ti: { name: 'Gà rô ti', station: 'fryer', cachNau: 'gà chiên vàng rồi rim nước dừa tới sệt (Sài Gòn)' },
+  recipe_chao_hai_san: { name: 'Cháo hải sản', station: 'hot_kettle', cachNau: 'gạo ninh nhừ với tôm, mực (quán cả nước)' },
+  recipe_tom_hap_bia: { name: 'Tôm hấp bia', station: 'steamer', cachNau: 'tôm sú hấp bia với sả (quán nhậu)' },
 };
 
 /** Chữ mô tả tự chế không ai dùng làm tên món ngoài chợ. */

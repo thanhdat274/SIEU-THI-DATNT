@@ -744,6 +744,9 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'cua_rang_muoi', name: 'Cua rang muối', category: 'fresh', buy: 40000, sell: 70000, color: 0xd8602a, unlock: 145 },
   { id: 'tom_rang_muoi', name: 'Tôm rang muối', category: 'fresh', buy: 28000, sell: 48000, color: 0xe8703a, unlock: 146 },
   { id: 'muc_rang_muoi', name: 'Mực rang muối', category: 'fresh', buy: 24000, sell: 42000, color: 0xe8c890, unlock: 147 },
+  { id: 'ga_ro_ti', name: 'Gà rô ti', category: 'fresh', buy: 15000, sell: 26000, color: 0xb8602a, unlock: 148 },
+  { id: 'chao_hai_san', name: 'Cháo hải sản', category: 'fresh', buy: 7000, sell: 13000, color: 0xf0d8c0, unlock: 149 },
+  { id: 'tom_hap_bia', name: 'Tôm hấp bia', category: 'fresh', buy: 28000, sell: 48000, color: 0xe8603a, unlock: 150 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2371,6 +2374,18 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_muc_rang_muoi', name: 'Mực rang muối', station: 'fryer',
     inputs: [{ productId: 'muc_ong_tuoi', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }, { productId: 'x_toi', quantity: 1 }],
     outputId: 'muc_rang_muoi', outputQty: 6, durationMin: 20, unlock: 147, reputationGain: 1 },
+  // GĐ2059: Gà rô ti — Sài Gòn: gà ướp tỏi chiên vàng rồi rim nước dừa tới sệt bóng (fryer); nước dừa hộp thay dừa tươi.
+  { id: 'recipe_ga_ro_ti', name: 'Gà rô ti', station: 'fryer',
+    inputs: [{ productId: 'x_thit_ga', quantity: 1 }, { productId: 'x_nuoc_dua_hop', quantity: 1 }, { productId: 'x_toi', quantity: 1 }],
+    outputId: 'ga_ro_ti', outputQty: 6, durationMin: 30, unlock: 148, reputationGain: 1 },
+  // GĐ2060: Cháo hải sản — quán cả nước: gạo ninh nhừ với tôm, mực, rắc hành tiêu (hot_kettle).
+  { id: 'recipe_chao_hai_san', name: 'Cháo hải sản', station: 'hot_kettle',
+    inputs: [{ productId: 'gao', quantity: 1 }, { productId: 'x_tom_tuoi', quantity: 1 }, { productId: 'x_muc_tuoi', quantity: 1 }],
+    outputId: 'chao_hai_san', outputQty: 30, durationMin: 30, unlock: 149, reputationGain: 1 },
+  // GĐ2061: Tôm hấp bia — quán nhậu cả nước: tôm sú hấp với bia và sả tới đỏ (steamer).
+  { id: 'recipe_tom_hap_bia', name: 'Tôm hấp bia', station: 'steamer',
+    inputs: [{ productId: 'tom_su_tuoi', quantity: 1 }, { productId: 'bia_chai', quantity: 1 }, { productId: 'x_sa', quantity: 1 }],
+    outputId: 'tom_hap_bia', outputQty: 6, durationMin: 15, unlock: 150, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────
