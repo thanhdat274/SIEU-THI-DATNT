@@ -405,6 +405,7 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'kho_qua_xao_trung', name: 'Khổ qua xào trứng', category: 'fresh', buy: 5000, sell: 9000, color: 0x9fbf4a, unlock: 56 },
   { id: 'dau_hu_nhoi_thit', name: 'Đậu hũ nhồi thịt', category: 'fresh', buy: 6000, sell: 11000, color: 0xc8703a, unlock: 57 },
   { id: 'thit_luoc', name: 'Thịt luộc', category: 'fresh', buy: 5000, sell: 8000, color: 0xe8c8b8, unlock: 58 },
+  { id: 'bap_cai_luoc', name: 'Bắp cải luộc', category: 'fresh', buy: 3000, sell: 5000, color: 0xb8d89a, unlock: 59 },
   // GĐ1429: Bò xào giá — lối ra ĐẦU TIÊN của giá đỗ.
   { id: 'bo_xao_gia', name: 'Bò xào giá', category: 'fresh', buy: 8000, sell: 14000, color: 0x9a6a4a, unlock: 49 },
   // GĐ1429: Nước ép dưa leo cà rốt — lối ra ĐẦU TIÊN của dưa leo.
@@ -1259,6 +1260,10 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_thit_luoc', name: 'Thịt luộc', station: 'hot_kettle',
     inputs: [{ productId: 'x_thit_heo', quantity: 1 }],
     outputId: 'thit_luoc', outputQty: 6, durationMin: 20, unlock: 58, reputationGain: 1 },
+  // GĐ1971: Bắp cải luộc — rau luộc cơm nhà cả nước (chấm trứng/nước mắm), luộc nồi nước (hot_kettle).
+  { id: 'recipe_bap_cai_luoc', name: 'Bắp cải luộc', station: 'hot_kettle',
+    inputs: [{ productId: 'x_bap_cai', quantity: 1 }],
+    outputId: 'bap_cai_luoc', outputQty: 4, durationMin: 8, unlock: 59, reputationGain: 1 },
   // GĐ1429: Bò xào giá ở chảo chiên. Mở 35 (> golden 30, ≥ cấp nguyên liệu).
   { id: 'recipe_bo_xao_gia', name: 'Bò xào giá', station: 'fryer',
     inputs: [{ productId: 'x_thit_bo', quantity: 1 }, { productId: 'x_gia_do', quantity: 1 }],
