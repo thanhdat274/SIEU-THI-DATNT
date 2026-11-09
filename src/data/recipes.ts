@@ -780,6 +780,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'ngheu_hap_sa', name: 'Nghêu hấp sả', category: 'fresh', buy: 16000, sell: 28000, color: 0xe8d8b0, unlock: 181 },
   { id: 'canh_ngheu', name: 'Canh nghêu', category: 'fresh', buy: 12000, sell: 20000, color: 0xe8c8a0, unlock: 182 },
   { id: 'oc_luoc', name: 'Ốc luộc', category: 'fresh', buy: 20000, sell: 34000, color: 0x7a6a4a, unlock: 183 },
+  { id: 'oc_buou_nhoi_thit', name: 'Ốc bươu nhồi thịt', category: 'fresh', buy: 24000, sell: 40000, color: 0x8a6a4a, unlock: 184 },
+  { id: 'ngheu_nuong_mo_hanh', name: 'Nghêu nướng mỡ hành', category: 'fresh', buy: 18000, sell: 30000, color: 0xd8c890, unlock: 185 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2551,6 +2553,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_oc_luoc', name: 'Ốc luộc', station: 'hot_kettle',
     inputs: [{ productId: 'x_oc', quantity: 1 }, { productId: 'x_sa', quantity: 1 }, { productId: 'x_gung', quantity: 1 }],
     outputId: 'oc_luoc', outputQty: 4, durationMin: 15, unlock: 183, reputationGain: 1 },
+  // GĐ2103: Ốc bươu nhồi thịt — miền Bắc: thịt ốc băm trộn thịt heo, gừng, nhồi lại vỏ hấp chín (steamer); bỏ lá gừng/nấm mèo.
+  { id: 'recipe_oc_buou_nhoi_thit', name: 'Ốc bươu nhồi thịt', station: 'steamer',
+    inputs: [{ productId: 'x_oc', quantity: 1 }, { productId: 'x_thit_heo', quantity: 1 }, { productId: 'x_gung', quantity: 1 }],
+    outputId: 'oc_buou_nhoi_thit', outputQty: 4, durationMin: 25, unlock: 184, reputationGain: 1 },
+  // GĐ2104: Nghêu nướng mỡ hành — quán ốc Nam Bộ: nghêu nướng than tới há, rưới mỡ hành, rắc đậu phộng (food_grill); hành phi dầu thay mỡ hành.
+  { id: 'recipe_ngheu_nuong_mo_hanh', name: 'Nghêu nướng mỡ hành', station: 'food_grill',
+    inputs: [{ productId: 'ngheu', quantity: 1 }, { productId: 'x_hanh_la', quantity: 2 }, { productId: 'x_dau_phong', quantity: 1 }],
+    outputId: 'ngheu_nuong_mo_hanh', outputQty: 5, durationMin: 15, unlock: 185, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────

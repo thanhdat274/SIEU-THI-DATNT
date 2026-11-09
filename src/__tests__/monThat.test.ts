@@ -139,6 +139,8 @@ const MON_THAT: Record<string, { name: string; station: string; cachNau: string 
   recipe_ngheu_hap_sa: { name: 'Nghêu hấp sả', station: 'steamer', cachNau: 'nghêu hấp sả tới há miệng (quán nhậu)' },
   recipe_canh_ngheu: { name: 'Canh nghêu', station: 'hot_kettle', cachNau: 'nghêu nấu với cà chua, hành (cơm nhà)' },
   recipe_oc_luoc: { name: 'Ốc luộc', station: 'hot_kettle', cachNau: 'ốc luộc sả gừng, chấm nước mắm gừng (quán ốc)' },
+  recipe_oc_buou_nhoi_thit: { name: 'Ốc bươu nhồi thịt', station: 'steamer', cachNau: 'ốc băm trộn thịt nhồi vỏ hấp chín (miền Bắc)' },
+  recipe_ngheu_nuong_mo_hanh: { name: 'Nghêu nướng mỡ hành', station: 'food_grill', cachNau: 'nghêu nướng than, rưới mỡ hành đậu phộng (quán ốc)' },
 };
 
 /** Chữ mô tả tự chế không ai dùng làm tên món ngoài chợ. */
