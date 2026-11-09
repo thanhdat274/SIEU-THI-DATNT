@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (09/11/2026)
+- GĐ1909: Ô mai mận nhà làm (hx_o_mai_man, mở 127, 31k→50k, chỉ bà Tám) + Cháo ô mai mận (ấm nấu cháo, mở 153); test oMaiMan.
 - GĐ1908: Ô mai nho nhà làm (hx_o_mai_nho, mở 126, 31k→50k, chỉ bà Tám) + Xôi ô mai nho (bếp xôi cơm, mở 152); test oMaiNho.
 - GĐ1907: Ô mai mít nhà làm (hx_o_mai_mit, mở 125, 31k→50k, chỉ bà Tám) + Cháo ô mai mít (ấm nấu cháo, mở 151); test oMaiMit.
 - GĐ1906: Ô mai dứa nhà làm (hx_o_mai_dua, mở 124, 31k→50k, chỉ bà Tám) + Xôi ô mai dứa (bếp xôi cơm, mở 150); test oMaiDua.
