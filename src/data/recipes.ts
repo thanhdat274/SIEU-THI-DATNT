@@ -730,6 +730,9 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'bo_xao_kho_qua', name: 'Bò xào khổ qua', category: 'fresh', buy: 14000, sell: 24000, color: 0x6a9a4a, unlock: 131 },
   { id: 'bo_xao_rau_muong', name: 'Bò xào rau muống', category: 'fresh', buy: 14000, sell: 24000, color: 0x4a8a3a, unlock: 132 },
   { id: 'khoai_lang_chien', name: 'Khoai lang chiên', category: 'fresh', buy: 6000, sell: 11000, color: 0xe89a30, unlock: 133 },
+  { id: 'ca_kho_tieu', name: 'Cá kho tiêu', category: 'fresh', buy: 15000, sell: 26000, color: 0x6a4020, unlock: 134 },
+  { id: 'suon_kho', name: 'Sườn kho', category: 'fresh', buy: 14000, sell: 24000, color: 0x8a4a2a, unlock: 135 },
+  { id: 'ga_chien_nuoc_mam', name: 'Gà chiên nước mắm', category: 'fresh', buy: 15000, sell: 26000, color: 0xc8782a, unlock: 136 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2301,6 +2304,18 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_khoai_lang_chien', name: 'Khoai lang chiên', station: 'fryer',
     inputs: [{ productId: 'x_khoai_lang_tuoi', quantity: 1 }, { productId: 'x_bot_chien', quantity: 1 }],
     outputId: 'khoai_lang_chien', outputQty: 5, durationMin: 15, unlock: 133, reputationGain: 1 },
+  // GĐ2044: Cá kho tiêu — Nam Bộ: cá cắt khúc kho nước mắm đường tới keo, nhiều tiêu (hot_kettle); cá basa thay cá lóc/cá bông lau.
+  { id: 'recipe_ca_kho_tieu', name: 'Cá kho tiêu', station: 'hot_kettle',
+    inputs: [{ productId: 'x_ca_basa', quantity: 1 }, { productId: 'x_tieu_hat', quantity: 1 }, { productId: 'hx_nuoc_mam', quantity: 1 }],
+    outputId: 'ca_kho_tieu', outputQty: 6, durationMin: 30, unlock: 134, reputationGain: 1 },
+  // GĐ2045: Sườn kho — cơm nhà cả nước: sườn heo chặt khúc kho nước mắm đường với hành khô tới săn (hot_kettle).
+  { id: 'recipe_suon_kho', name: 'Sườn kho', station: 'hot_kettle',
+    inputs: [{ productId: 'x_suon_heo', quantity: 1 }, { productId: 'hx_nuoc_mam', quantity: 1 }, { productId: 'x_hanh_kho', quantity: 1 }],
+    outputId: 'suon_kho', outputQty: 6, durationMin: 35, unlock: 135, reputationGain: 1 },
+  // GĐ2046: Gà chiên nước mắm — quán cả nước: gà chặt chiên giòn rồi đảo nước mắm tỏi đường (fryer).
+  { id: 'recipe_ga_chien_nuoc_mam', name: 'Gà chiên nước mắm', station: 'fryer',
+    inputs: [{ productId: 'x_thit_ga', quantity: 1 }, { productId: 'hx_nuoc_mam', quantity: 1 }, { productId: 'x_toi', quantity: 1 }],
+    outputId: 'ga_chien_nuoc_mam', outputQty: 6, durationMin: 20, unlock: 136, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────

@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (10/11/2026)
+- GĐ2044–2046: Cá kho tiêu (L134), Sườn kho (L135), Gà chiên nước mắm (fryer, L136).
 - GĐ2041–2043: Bò xào khổ qua (L131), Bò xào rau muống (L132), Khoai lang chiên (L133) — đều fryer.
 - GĐ2038–2040: Gà hấp hành (steamer, L128), Dưa leo xào trứng (L129), Bông cải luộc (L130).
 - GĐ2035–2037: Cháo bò (L125), Cá thu nướng (food_grill, L126), Trứng kho (L127).
