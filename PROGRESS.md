@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (09/11/2026)
+- GĐ1955: Bánh bò hấp (nồi hấp, mở 52) — bánh quê có thật: bột gạo + đường + nước cốt dừa → 12 cái ×7k; test banhBo; full 5634 xanh.
 - GĐ1954: Bánh chuối hấp (nồi hấp, mở 51) — món Nam Bộ có thật: chuối + bột năng + nước cốt dừa + đường → 10 miếng ×9k; test banhChuoiHap; full 5632 xanh.
 - GĐ1953: Bột chiên trứng (chảo chiên, mở 50) — quà vặt Sài Gòn có thật: bột gạo + bột năng + trứng + hành lá → 8 đĩa ×13k; test botChienTrung; full 5630 xanh.
 - GĐ1952: Bánh bèo chén (nồi hấp, mở 49) — món Huế có thật: bột gạo + bột năng + tôm + hành phi → 12 chén ×10k; test banhBeo; full 5628 xanh.
