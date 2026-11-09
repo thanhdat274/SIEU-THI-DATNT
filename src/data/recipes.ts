@@ -735,6 +735,9 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'ga_chien_nuoc_mam', name: 'Gà chiên nước mắm', category: 'fresh', buy: 15000, sell: 26000, color: 0xc8782a, unlock: 136 },
   { id: 'bo_nuong_sa', name: 'Bò nướng sả', category: 'fresh', buy: 16000, sell: 27000, color: 0x8a3a2a, unlock: 137 },
   { id: 'trung_chung', name: 'Trứng chưng', category: 'fresh', buy: 9000, sell: 16000, color: 0xe8c050, unlock: 138 },
+  { id: 'dau_que_xao_toi', name: 'Đậu que xào tỏi', category: 'fresh', buy: 6000, sell: 11000, color: 0x5aa83a, unlock: 139 },
+  { id: 'canh_muop', name: 'Canh mướp', category: 'fresh', buy: 10000, sell: 17000, color: 0x9ac85a, unlock: 140 },
+  { id: 'dau_que_xao_bo', name: 'Đậu que xào bò', category: 'fresh', buy: 14000, sell: 24000, color: 0x6a8a3a, unlock: 141 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2326,6 +2329,18 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_trung_chung', name: 'Trứng chưng', station: 'steamer',
     inputs: [{ productId: 'x_trung_ga', quantity: 3 }, { productId: 'x_thit_heo', quantity: 1 }, { productId: 'x_hanh_la', quantity: 1 }],
     outputId: 'trung_chung', outputQty: 6, durationMin: 25, unlock: 138, reputationGain: 1 },
+  // GĐ2050: Đậu que xào tỏi — cơm nhà cả nước: đậu que cắt khúc xào lửa lớn với tỏi phi (fryer).
+  { id: 'recipe_dau_que_xao_toi', name: 'Đậu que xào tỏi', station: 'fryer',
+    inputs: [{ productId: 'x_dau_que', quantity: 1 }, { productId: 'x_toi', quantity: 1 }],
+    outputId: 'dau_que_xao_toi', outputQty: 5, durationMin: 15, unlock: 139, reputationGain: 1 },
+  // GĐ2051: Canh mướp — cơm nhà cả nước: mướp gọt vỏ nấu với tôm, hành (hot_kettle).
+  { id: 'recipe_canh_muop', name: 'Canh mướp', station: 'hot_kettle',
+    inputs: [{ productId: 'x_muop', quantity: 1 }, { productId: 'x_tom_tuoi', quantity: 1 }, { productId: 'x_hanh_la', quantity: 1 }],
+    outputId: 'canh_muop', outputQty: 6, durationMin: 15, unlock: 140, reputationGain: 1 },
+  // GĐ2052: Đậu que xào bò — cơm nhà cả nước: đậu que xào tỏi, đảo bò thái mỏng (fryer).
+  { id: 'recipe_dau_que_xao_bo', name: 'Đậu que xào bò', station: 'fryer',
+    inputs: [{ productId: 'x_dau_que', quantity: 1 }, { productId: 'x_thit_bo', quantity: 1 }, { productId: 'x_toi', quantity: 1 }],
+    outputId: 'dau_que_xao_bo', outputQty: 6, durationMin: 20, unlock: 141, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────

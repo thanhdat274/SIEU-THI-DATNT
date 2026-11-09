@@ -94,6 +94,9 @@ const MON_THAT: Record<string, { name: string; station: string; cachNau: string 
   recipe_ga_chien_nuoc_mam: { name: 'Gà chiên nước mắm', station: 'fryer', cachNau: 'gà chiên giòn đảo nước mắm tỏi (quán cả nước)' },
   recipe_bo_nuong_sa: { name: 'Bò nướng sả', station: 'food_grill', cachNau: 'bò ướp sả băm xiên nướng than (Nam Bộ)' },
   recipe_trung_chung: { name: 'Trứng chưng', station: 'steamer', cachNau: 'trứng đánh thịt băm chưng cách thủy (Nam Bộ)' },
+  recipe_dau_que_xao_toi: { name: 'Đậu que xào tỏi', station: 'fryer', cachNau: 'đậu que xào lửa lớn với tỏi phi (cơm nhà)' },
+  recipe_canh_muop: { name: 'Canh mướp', station: 'hot_kettle', cachNau: 'mướp nấu với tôm (cơm nhà cả nước)' },
+  recipe_dau_que_xao_bo: { name: 'Đậu que xào bò', station: 'fryer', cachNau: 'đậu que xào tỏi với bò thái mỏng (cơm nhà)' },
 };
 
 /** Chữ mô tả tự chế không ai dùng làm tên món ngoài chợ. */

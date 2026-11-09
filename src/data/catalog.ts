@@ -324,4 +324,6 @@ export const CATALOG_PRODUCTS: Product[] = [
   p('x_nuoc_cam_hop', 'Nước cam hộp', 'drink', 8000, 12000, 0xcb4d81, 26),
   p('x_ca_phe_sua_lon', 'Cà phê sữa lon', 'drink', 9000, 13000, 0x774dcb, 30),
   p('x_nuoc_sam', 'Nước sâm đóng chai', 'drink', 7000, 10000, 0xcb664d, 28),
+  p('x_dau_que', 'Đậu que', 'fresh', 8000, 12000, 0x5aa83a, 135), // GĐ2049: cho đậu que xào (cuối danh sách, mở muộn để không xáo kinh tế sớm)
+  p('x_muop', 'Mướp', 'fresh', 7000, 10000, 0x8ab84a, 135), // GĐ2049: cho canh mướp
 ];
