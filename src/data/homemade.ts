@@ -66,6 +66,8 @@ export const NEIGHBOR2_PRODUCTS: { id: string; name: string; category: Category;
   { id: 'hx_ruoc_ca_loc', name: 'Ruốc cá lóc nhà làm (hũ)', category: 'dry', buy: 45000, sell: 72000, color: 0xb89a6a, unlock: 61 },
   // GĐ1849: muối ớt Tây Ninh nhà làm — biên 1,6×, mở 62; lối ra: Cơm muối ớt (bếp xôi cơm).
   { id: 'hx_muoi_ot', name: 'Muối ớt Tây Ninh nhà làm (hũ)', category: 'dry', buy: 32000, sell: 51000, color: 0xd9452b, unlock: 62 },
+  // GĐ1850: đậu phộng muối nhà rang — biên 1,6×, mở 63; lối ra: Cháo đậu phộng (nồi nước).
+  { id: 'hx_dau_phong_rang', name: 'Đậu phộng rang nhà làm (hũ)', category: 'dry', buy: 31000, sell: 50000, color: 0xc89a5a, unlock: 63 },
   // GĐ1671: mứt gừng bà Tám (hướng 3) — mứt Tết nhà làm, biên 1.6×, mở 45 > golden 30; hút hàng dịp Tết.
   { id: 'hx_mut_gung', name: 'Mứt gừng bà Tám (hộp)', category: 'dry', buy: 40000, sell: 64000, color: 0xe8c860, unlock: 45 },
 ];
