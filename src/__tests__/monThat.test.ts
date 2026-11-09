@@ -141,6 +141,8 @@ const MON_THAT: Record<string, { name: string; station: string; cachNau: string 
   recipe_oc_luoc: { name: 'Ốc luộc', station: 'hot_kettle', cachNau: 'ốc luộc sả gừng, chấm nước mắm gừng (quán ốc)' },
   recipe_oc_buou_nhoi_thit: { name: 'Ốc bươu nhồi thịt', station: 'steamer', cachNau: 'ốc băm trộn thịt nhồi vỏ hấp chín (miền Bắc)' },
   recipe_ngheu_nuong_mo_hanh: { name: 'Nghêu nướng mỡ hành', station: 'food_grill', cachNau: 'nghêu nướng than, rưới mỡ hành đậu phộng (quán ốc)' },
+  recipe_oc_xao_sa_ot: { name: 'Ốc xào sả ớt', station: 'fryer', cachNau: 'ốc luộc sơ xào lửa lớn sả ớt (quán ốc Nam Bộ)' },
+  recipe_bo_ne: { name: 'Bò né', station: 'fryer', cachNau: 'bò trứng pate áp chảo gang (Sài Gòn)' },
 };
 
 /** Chữ mô tả tự chế không ai dùng làm tên món ngoài chợ. */

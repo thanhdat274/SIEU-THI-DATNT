@@ -782,6 +782,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'oc_luoc', name: 'Ốc luộc', category: 'fresh', buy: 20000, sell: 34000, color: 0x7a6a4a, unlock: 183 },
   { id: 'oc_buou_nhoi_thit', name: 'Ốc bươu nhồi thịt', category: 'fresh', buy: 24000, sell: 40000, color: 0x8a6a4a, unlock: 184 },
   { id: 'ngheu_nuong_mo_hanh', name: 'Nghêu nướng mỡ hành', category: 'fresh', buy: 18000, sell: 30000, color: 0xd8c890, unlock: 185 },
+  { id: 'oc_xao_sa_ot', name: 'Ốc xào sả ớt', category: 'fresh', buy: 22000, sell: 36000, color: 0x8a5a3a, unlock: 186 },
+  { id: 'bo_ne', name: 'Bò né', category: 'fresh', buy: 24000, sell: 38000, color: 0x8a4a2a, unlock: 187 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2561,6 +2563,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_ngheu_nuong_mo_hanh', name: 'Nghêu nướng mỡ hành', station: 'food_grill',
     inputs: [{ productId: 'ngheu', quantity: 1 }, { productId: 'x_hanh_la', quantity: 2 }, { productId: 'x_dau_phong', quantity: 1 }],
     outputId: 'ngheu_nuong_mo_hanh', outputQty: 5, durationMin: 15, unlock: 185, reputationGain: 1 },
+  // GĐ2105: Ốc xào sả ớt — món nhậu Nam Bộ: ốc bươu luộc sơ rồi xào lửa lớn với sả băm, ớt tươi; không thay thế.
+  { id: 'recipe_oc_xao_sa_ot', name: 'Ốc xào sả ớt', station: 'fryer',
+    inputs: [{ productId: 'x_oc', quantity: 1 }, { productId: 'x_sa', quantity: 1 }, { productId: 'ot_hien', quantity: 1 }],
+    outputId: 'oc_xao_sa_ot', outputQty: 3, durationMin: 20, unlock: 186, reputationGain: 1 },
+  // GĐ2106: Bò né — điểm tâm Sài Gòn: bò, trứng ốp, pate áp chảo gang nóng, ăn kèm bánh mì; chảo gang → fryer (áp chảo dầu).
+  { id: 'recipe_bo_ne', name: 'Bò né', station: 'fryer',
+    inputs: [{ productId: 'x_thit_bo', quantity: 1 }, { productId: 'trung', quantity: 1 }, { productId: 'x_banh_mi', quantity: 1 }, { productId: 'x_pate_hop', quantity: 1 }],
+    outputId: 'bo_ne', outputQty: 4, durationMin: 15, unlock: 187, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────
