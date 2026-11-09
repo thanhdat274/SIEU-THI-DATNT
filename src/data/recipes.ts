@@ -669,6 +669,9 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'bi_do_xao_toi', name: 'Bí đỏ xào tỏi', category: 'fresh', buy: 4000, sell: 6000, color: 0xe8902a, unlock: 65 },
   { id: 'canh_bi_do', name: 'Canh bí đỏ', category: 'fresh', buy: 5000, sell: 8000, color: 0xe8a040, unlock: 66 },
   { id: 'suon_ram', name: 'Sườn ram', category: 'fresh', buy: 7000, sell: 11000, color: 0xa0502a, unlock: 67 },
+  { id: 'ga_luoc', name: 'Gà luộc', category: 'fresh', buy: 5000, sell: 8000, color: 0xf0d890, unlock: 68 },
+  { id: 'tom_rim', name: 'Tôm rim', category: 'fresh', buy: 7000, sell: 11000, color: 0xd8502a, unlock: 69 },
+  { id: 'muc_xao_hanh_tay', name: 'Mực xào hành tây', category: 'fresh', buy: 8000, sell: 13000, color: 0xe8d8c8, unlock: 70 },
 ];
 
 // ──────────────────────────────────────────────
@@ -1996,6 +1999,18 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_suon_ram', name: 'Sườn ram', station: 'fryer',
     inputs: [{ productId: 'x_suon_heo', quantity: 1 }],
     outputId: 'suon_ram', outputQty: 5, durationMin: 20, unlock: 67, reputationGain: 1 },
+  // GĐ1980: Gà luộc — cơm nhà/cúng cả nước: gà luộc trong nồi nước, chặt miếng chấm muối tiêu chanh (hot_kettle).
+  { id: 'recipe_ga_luoc', name: 'Gà luộc', station: 'hot_kettle',
+    inputs: [{ productId: 'x_thit_ga', quantity: 1 }],
+    outputId: 'ga_luoc', outputQty: 5, durationMin: 25, unlock: 68, reputationGain: 1 },
+  // GĐ1981: Tôm rim — cơm nhà cả nước: tôm rim nước mắm đường trong chảo tới săn đỏ (fryer); gia vị bếp không tính.
+  { id: 'recipe_tom_rim', name: 'Tôm rim', station: 'fryer',
+    inputs: [{ productId: 'x_tom_tuoi', quantity: 1 }],
+    outputId: 'tom_rim', outputQty: 6, durationMin: 15, unlock: 69, reputationGain: 1 },
+  // GĐ1982: Mực xào hành tây — cơm nhà/quán nhậu cả nước: mực khoanh xào lửa lớn với hành tây (chảo, fryer).
+  { id: 'recipe_muc_xao_hanh_tay', name: 'Mực xào hành tây', station: 'fryer',
+    inputs: [{ productId: 'x_muc_tuoi', quantity: 1 }, { productId: 'x_hanh_tay', quantity: 1 }],
+    outputId: 'muc_xao_hanh_tay', outputQty: 6, durationMin: 10, unlock: 70, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────
