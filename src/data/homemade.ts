@@ -122,6 +122,7 @@ export const NEIGHBOR2_PRODUCTS: { id: string; name: string; category: Category;
   { id: 'hx_cai_muoi', name: 'Cải muối nhà làm (hũ)', category: 'dry', buy: 31000, sell: 50000, color: 0x9ab860, unlock: 94 },
   { id: 'hx_ca_phao_ngam', name: 'Cà pháo ngâm mắm nhà làm (hũ)', category: 'dry', buy: 31000, sell: 50000, color: 0xc8d890, unlock: 95 },
   { id: 'hx_nam_huong_say', name: 'Nấm hương sấy nhà làm (gói)', category: 'dry', buy: 31000, sell: 50000, color: 0x8a6a4a, unlock: 97 },
+  { id: 'hx_muc_mot_nang', name: 'Mực một nắng nhà phơi (gói)', category: 'dry', buy: 31000, sell: 50000, color: 0xd8a890, unlock: 98 },
   // GĐ1671: mứt gừng bà Tám (hướng 3) — mứt Tết nhà làm, biên 1.6×, mở 45 > golden 30; hút hàng dịp Tết.
   { id: 'hx_mut_gung', name: 'Mứt gừng bà Tám (hộp)', category: 'dry', buy: 40000, sell: 64000, color: 0xe8c860, unlock: 45 },
 ];
