@@ -774,6 +774,9 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'canh_rau_den', name: 'Canh rau dền', category: 'fresh', buy: 9000, sell: 16000, color: 0x8a3a5a, unlock: 175 },
   { id: 'canh_bi_dao', name: 'Canh bí đao', category: 'fresh', buy: 10000, sell: 17000, color: 0xc8e0b8, unlock: 176 },
   { id: 'su_su_xao_toi', name: 'Su su xào tỏi', category: 'fresh', buy: 6000, sell: 11000, color: 0xa8d88a, unlock: 177 },
+  { id: 'su_su_luoc', name: 'Su su luộc', category: 'fresh', buy: 5000, sell: 9000, color: 0xb8e09a, unlock: 178 },
+  { id: 'canh_rau_ngot', name: 'Canh rau ngót', category: 'fresh', buy: 9000, sell: 16000, color: 0x2a6a2a, unlock: 179 },
+  { id: 'mong_toi_xao_toi', name: 'Mồng tơi xào tỏi', category: 'fresh', buy: 5000, sell: 9000, color: 0x3a7a2a, unlock: 180 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2521,6 +2524,18 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_su_su_xao_toi', name: 'Su su xào tỏi', station: 'fryer',
     inputs: [{ productId: 'x_su_su', quantity: 1 }, { productId: 'x_toi', quantity: 1 }],
     outputId: 'su_su_xao_toi', outputQty: 5, durationMin: 12, unlock: 177, reputationGain: 1 },
+  // GĐ2096: Su su luộc — cơm nhà cả nước: su su bổ miếng luộc nồi nước, chấm muối mè/nước mắm (hot_kettle).
+  { id: 'recipe_su_su_luoc', name: 'Su su luộc', station: 'hot_kettle',
+    inputs: [{ productId: 'x_su_su', quantity: 1 }],
+    outputId: 'su_su_luoc', outputQty: 4, durationMin: 10, unlock: 178, reputationGain: 1 },
+  // GĐ2097: Canh rau ngót — cơm nhà cả nước: rau ngót vò nấu với thịt bằm (hot_kettle).
+  { id: 'recipe_canh_rau_ngot', name: 'Canh rau ngót', station: 'hot_kettle',
+    inputs: [{ productId: 'x_rau_ngot', quantity: 1 }, { productId: 'x_thit_heo', quantity: 1 }],
+    outputId: 'canh_rau_ngot', outputQty: 6, durationMin: 15, unlock: 179, reputationGain: 1 },
+  // GĐ2098: Mồng tơi xào tỏi — cơm nhà cả nước: mồng tơi xào nhanh lửa lớn với tỏi phi (fryer).
+  { id: 'recipe_mong_toi_xao_toi', name: 'Mồng tơi xào tỏi', station: 'fryer',
+    inputs: [{ productId: 'x_mong_toi', quantity: 1 }, { productId: 'x_toi', quantity: 1 }],
+    outputId: 'mong_toi_xao_toi', outputQty: 5, durationMin: 10, unlock: 180, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────

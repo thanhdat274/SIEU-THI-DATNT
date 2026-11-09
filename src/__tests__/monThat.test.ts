@@ -133,6 +133,9 @@ const MON_THAT: Record<string, { name: string; station: string; cachNau: string 
   recipe_canh_rau_den: { name: 'Canh rau dền', station: 'hot_kettle', cachNau: 'rau dền nấu với tôm băm (cơm nhà cả nước)' },
   recipe_canh_bi_dao: { name: 'Canh bí đao', station: 'hot_kettle', cachNau: 'bí đao nấu với thịt bằm (cơm nhà cả nước)' },
   recipe_su_su_xao_toi: { name: 'Su su xào tỏi', station: 'fryer', cachNau: 'su su xào lửa lớn với tỏi phi (cơm nhà)' },
+  recipe_su_su_luoc: { name: 'Su su luộc', station: 'hot_kettle', cachNau: 'luộc nồi nước, chấm muối mè hay nước mắm (cơm nhà)' },
+  recipe_canh_rau_ngot: { name: 'Canh rau ngót', station: 'hot_kettle', cachNau: 'rau ngót vò nấu với thịt bằm (cơm nhà cả nước)' },
+  recipe_mong_toi_xao_toi: { name: 'Mồng tơi xào tỏi', station: 'fryer', cachNau: 'mồng tơi xào nhanh với tỏi phi (cơm nhà)' },
 };
 
 /** Chữ mô tả tự chế không ai dùng làm tên món ngoài chợ. */
