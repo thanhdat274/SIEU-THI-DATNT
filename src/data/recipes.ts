@@ -540,6 +540,7 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'chao_dau_phong', name: 'Cháo đậu phộng', category: 'fresh', buy: 12500, sell: 20500, color: 0xe6d2b0, unlock: 92 },
   { id: 'com_kho_ca_sac', name: 'Cơm khô cá sặc', category: 'fresh', buy: 14500, sell: 23500, color: 0xd9b88a, unlock: 93 },
   { id: 'chao_hanh_phi', name: 'Cháo hành phi', category: 'fresh', buy: 12500, sell: 20500, color: 0xe8d6b0, unlock: 94 },
+  { id: 'com_mam_ca_linh', name: 'Cơm mắm cá linh', category: 'fresh', buy: 14500, sell: 23500, color: 0xd9b69a, unlock: 95 },
   { id: 'mam_co_ngo', name: 'Mâm cỗ đầu ngõ', category: 'fresh', buy: 100000, sell: 140000, color: 0xc0392b, unlock: 85 },
   // GĐ1409: Sữa chua granola — lối ra ĐẦU TIÊN của ngũ cốc granola: mẻ (granola 130k + sữa chua) → 14 cốc × 18k = 252k.
   { id: 'sua_chua_granola', name: 'Sữa chua granola', category: 'fresh', buy: 11000, sell: 18000, color: 0xe9d8b4, unlock: 68 },
@@ -1479,6 +1480,10 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_chao_hanh_phi', name: 'Cháo hành phi', station: 'hot_kettle',
     inputs: [{ productId: 'gao', quantity: 2 }, { productId: 'hx_hanh_phi', quantity: 1 }],
     outputId: 'chao_hanh_phi', outputQty: 14, durationMin: 30, unlock: 94, reputationGain: 3 },
+  // GĐ1853: Cơm mắm cá linh ở bếp xôi cơm. Mở 95 (> golden 30, ≥ nguyên liệu 66).
+  { id: 'recipe_com_mam_ca_linh', name: 'Cơm mắm cá linh', station: 'rice_station',
+    inputs: [{ productId: 'gao', quantity: 2 }, { productId: 'hx_mam_ca_linh', quantity: 1 }],
+    outputId: 'com_mam_ca_linh', outputQty: 12, durationMin: 30, unlock: 95, reputationGain: 3 },
   // GĐ1523: Mâm cỗ đầu ngõ — món CUỐI CHUỖI (mục C#4 TONG-HOP Xóm "mâm cỗ = 5 món làm sẵn"): bày 5 món tự nấu
   // (cháo, măng xào, xôi, nem cuốn, cơm cá cơm ≈ 105k giá lẻ) thành 1 mâm 140k + uy tín cao. Mở 85 (> golden 30,
   // tránh mốc soát biên 82/86/91/96/100), biên nhập 100k → 1,4.
