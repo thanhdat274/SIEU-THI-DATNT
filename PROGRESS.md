@@ -20,6 +20,8 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (09/11/2026)
+- GĐ1936: KHÔI PHỤC Cơm đậu đen (bếp xôi cơm, mở 104) — người dùng xác nhận món thật ngoài đời (GĐ1860 bị GĐ1932 gỡ nhầm); lối ra của đậu đen rang nhà làm `hx_dau_den`; test dauDen. Đồng thời dọn 15 comment mồ côi trong recipes.ts còn nhắc món gỡ.
+- GĐ1935: Bánh giò (nồi hấp, mở 45) — món điểm tâm có thật: bột gạo + thịt heo + mộc nhĩ; test banhGio.
 - GĐ1934: Trà ô mai mận (quầy pha, mở 178) — lối ra THỨ HAI của ô mai mận nhà làm; test traOMaiMan.
 - GĐ1933: Trà ô mai nho (quầy pha, mở 177) — lối ra THỨ HAI của ô mai nho nhà làm; test traOMaiNho.
 - GĐ1932: DỌN món vô lý — gỡ 62 công thức cháo/xôi/cơm không có ngoài đời (cháo/xôi ô mai ×25 + mứt ×5, cháo tỏi ớt, cháo củ kiệu, cháo cà ri, cơm muối ớt…) cùng sản phẩm đầu ra + test; hũ ô mai/mứt giữ làm đồ ăn vặt, trà ô mai giữ ở quầy pha.

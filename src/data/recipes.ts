@@ -552,6 +552,7 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'com_mam_ca_linh', name: 'Cơm mắm cá linh', category: 'fresh', buy: 14500, sell: 23500, color: 0xd9b69a, unlock: 95 },
   { id: 'chao_nam_rom', name: 'Cháo nấm rơm', category: 'fresh', buy: 13000, sell: 21500, color: 0xe0d0b0, unlock: 101 },
   { id: 'chao_hat_sen', name: 'Cháo hạt sen', category: 'fresh', buy: 13500, sell: 22000, color: 0xeee6c0, unlock: 103 },
+  { id: 'com_dau_den', name: 'Cơm đậu đen', category: 'fresh', buy: 14000, sell: 22500, color: 0xc8b8a8, unlock: 104 },
   { id: 'chao_dau_xanh', name: 'Cháo đậu xanh', category: 'fresh', buy: 12500, sell: 20500, color: 0xe0dca0, unlock: 105 },
   { id: 'chao_khoai_lang', name: 'Cháo khoai lang', category: 'fresh', buy: 12500, sell: 20500, color: 0xe8c890, unlock: 107 },
   { id: 'com_nghe', name: 'Cơm nghệ', category: 'fresh', buy: 14000, sell: 22500, color: 0xe8c860, unlock: 110 },
@@ -604,6 +605,7 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   // mẻ (bánh cuốn 20k + chả lụa 27k + rau 10k) = 57k → 10 suất × 11k = 110k, lãi 53k/mẻ, nấu hời hơn
   // bán thẳng nguyên liệu (91k < 110k). Khép chuỗi hàng xóm → bếp, mở 40 = đúng cấp bánh cuốn (> golden 30 → sim không đổi).
   { id: 'banh_cuon_cha_lua', name: 'Bánh cuốn chả lụa (suất)', category: 'fresh', buy: 6000, sell: 11000, color: 0xf0e6d2, unlock: 40 },
+  { id: 'banh_gio', name: 'Bánh giò', category: 'fresh', buy: 5500, sell: 9000, color: 0xe8e0c0, unlock: 45 },
   // GĐ1326: Mắm ruốc chưng thịt — món chưng trứ danh Huế của mắm ruốc hàng xóm + thịt heo chưng mặn béo ăn kèm cơm:
   // mẻ (thịt heo 30k×2 + mắm ruốc 36k + đường 17k) = 113k → 10 phần × 22k = 220k, lãi 107k/mẻ, nấu hời hơn
   // bán thẳng nguyên liệu (153k < 220k). Khép chuỗi hàng xóm → nồi hấp, mở 40 (sau mốc golden 30 → sim không đổi).
@@ -975,6 +977,10 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_banh_bao_dong_lanh_hap', name: 'Bánh bao hấp từ đông lạnh', station: 'steamer',
     inputs: [{ productId: 'banhbao', quantity: 10 }],
     outputId: 'banh_bao_dong_lanh_hap', outputQty: 10, durationMin: 12, unlock: 35, reputationGain: 1 },
+  // GĐ1935: Bánh giò (món điểm tâm Hà Nội có thật): bột gạo + thịt heo + mộc nhĩ gói lá, hấp. Mở 45.
+  { id: 'recipe_banh_gio', name: 'Bánh giò', station: 'steamer',
+    inputs: [{ productId: 'x_bot_gao', quantity: 2 }, { productId: 'x_thit_heo', quantity: 1 }, { productId: 'x_nam_meo_kho', quantity: 1 }],
+    outputId: 'banh_gio', outputQty: 10, durationMin: 20, unlock: 45, reputationGain: 2 },
   // GĐ1417: Sinh tố sữa chua nếp ở máy xay. Mở 43 (> golden 30, ≥ cấp nguyên liệu).
   { id: 'recipe_sinh_to_sua_chua_nep', name: 'Sinh tố sữa chua nếp', station: 'blender',
     inputs: [{ productId: 'sua_chua_hop', quantity: 2 }, { productId: 'x_duong', quantity: 1 }],
@@ -1502,6 +1508,10 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_chao_hat_sen', name: 'Cháo hạt sen', station: 'hot_kettle',
     inputs: [{ productId: 'gao', quantity: 2 }, { productId: 'hx_hat_sen', quantity: 1 }],
     outputId: 'chao_hat_sen', outputQty: 14, durationMin: 30, unlock: 103, reputationGain: 3 },
+  // GĐ1860: Cơm đậu đen ở bếp xôi cơm. Mở 104 (> golden 30, ≥ nguyên liệu 73).
+  { id: 'recipe_com_dau_den', name: 'Cơm đậu đen', station: 'rice_station',
+    inputs: [{ productId: 'gao', quantity: 2 }, { productId: 'hx_dau_den', quantity: 1 }],
+    outputId: 'com_dau_den', outputQty: 12, durationMin: 30, unlock: 104, reputationGain: 3 },
   // GĐ1861: Cháo đậu xanh ở nồi nước. Mở 105 (> golden 30, ≥ nguyên liệu 74).
   { id: 'recipe_chao_dau_xanh', name: 'Cháo đậu xanh', station: 'hot_kettle',
     inputs: [{ productId: 'gao', quantity: 2 }, { productId: 'hx_dau_xanh_ca', quantity: 1 }],
@@ -1514,15 +1524,10 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_com_nghe', name: 'Cơm nghệ', station: 'rice_station',
     inputs: [{ productId: 'gao', quantity: 2 }, { productId: 'hx_bot_nghe', quantity: 1 }],
     outputId: 'com_nghe', outputQty: 12, durationMin: 30, unlock: 110, reputationGain: 3 },
-  // GĐ1867: Cháo cà ri ở nồi nước. Mở 111 (> golden 30, ≥ nguyên liệu 80).
-  // GĐ1868: Cơm muối sả ở bếp xôi cơm (có sả → kèm x_sa). Mở 112 (> golden 30, ≥ nguyên liệu 81).
-  // GĐ1869: Cháo tỏi ớt ở nồi nước (có tỏi → kèm x_toi). Mở 113 (> golden 30, ≥ nguyên liệu 83).
   // GĐ1870: Cơm lá dứa ở bếp xôi cơm. Mở 114 (> golden 30, ≥ nguyên liệu 84).
   { id: 'recipe_com_la_dua', name: 'Cơm lá dứa', station: 'rice_station',
     inputs: [{ productId: 'gao', quantity: 2 }, { productId: 'hx_la_dua', quantity: 1 }],
     outputId: 'com_la_dua', outputQty: 12, durationMin: 30, unlock: 114, reputationGain: 3 },
-  // GĐ1871: Cháo hạt điều ở nồi nước. Mở 115 (> golden 30, ≥ nguyên liệu 85).
-  // GĐ1872: Cơm mắm nêm ở bếp xôi cơm. Mở 116 (> golden 30, ≥ nguyên liệu 87).
   // GĐ1873: Cháo gạo lứt ở nồi nước. Mở 117 (> golden 30, ≥ nguyên liệu 88).
   { id: 'recipe_chao_gao_lut', name: 'Cháo gạo lứt', station: 'hot_kettle',
     inputs: [{ productId: 'gao', quantity: 2 }, { productId: 'hx_gao_lut_rang', quantity: 1 }],
