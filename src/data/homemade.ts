@@ -70,6 +70,8 @@ export const NEIGHBOR2_PRODUCTS: { id: string; name: string; category: Category;
   { id: 'hx_dau_phong_rang', name: 'Đậu phộng rang nhà làm (hũ)', category: 'dry', buy: 31000, sell: 50000, color: 0xc89a5a, unlock: 63 },
   // GĐ1851: khô cá sặc nhà phơi — biên 1,6×, mở 64; lối ra: Cơm khô cá sặc (bếp xôi cơm).
   { id: 'hx_kho_ca_sac', name: 'Khô cá sặc nhà phơi (gói)', category: 'dry', buy: 38000, sell: 61000, color: 0xb8864a, unlock: 64 },
+  // GĐ1852: hành phi nhà làm — biên 1,6×, mở 65; lối ra: Cháo hành phi (nồi nước).
+  { id: 'hx_hanh_phi', name: 'Hành phi nhà làm (hũ)', category: 'dry', buy: 31000, sell: 50000, color: 0xc8943a, unlock: 65 },
   // GĐ1671: mứt gừng bà Tám (hướng 3) — mứt Tết nhà làm, biên 1.6×, mở 45 > golden 30; hút hàng dịp Tết.
   { id: 'hx_mut_gung', name: 'Mứt gừng bà Tám (hộp)', category: 'dry', buy: 40000, sell: 64000, color: 0xe8c860, unlock: 45 },
 ];
