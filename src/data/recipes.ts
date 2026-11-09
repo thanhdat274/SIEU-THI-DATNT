@@ -398,6 +398,7 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'kem_sua_de', name: 'Kem sữa dê', category: 'fresh', buy: 6500, sell: 13000, color: 0xf7f1e3, unlock: 45 },
   // GĐ1429: Trứng xào cà chua — lối ra ĐẦU TIÊN của cà chua.
   { id: 'trung_xao_ca_chua', name: 'Trứng xào cà chua', category: 'fresh', buy: 4000, sell: 8000, color: 0xe85a3a, unlock: 45 },
+  { id: 'dau_hu_sot_ca_chua', name: 'Đậu hũ sốt cà chua', category: 'fresh', buy: 3500, sell: 7000, color: 0xd9603b, unlock: 54 },
   // GĐ1429: Rau cải xào tỏi — lối ra ĐẦU TIÊN của rau cải.
   { id: 'rau_cai_xao_toi', name: 'Rau cải xào tỏi', category: 'fresh', buy: 4000, sell: 7000, color: 0x5aa04a, unlock: 47 },
   // GĐ1429: Bò xào giá — lối ra ĐẦU TIÊN của giá đỗ.
@@ -1228,6 +1229,11 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_trung_xao_ca_chua', name: 'Trứng xào cà chua', station: 'fryer',
     inputs: [{ productId: 'x_ca_chua', quantity: 1 }, { productId: 'x_trung_ga', quantity: 4 }],
     outputId: 'trung_xao_ca_chua', outputQty: 4, durationMin: 8, unlock: 45, reputationGain: 1 },
+  // GĐ1966: Đậu hũ sốt cà chua — món cơm nhà/cơm bình dân cả nước: đậu hũ chiên vàng rồi rim sốt cà chua
+  // trong chảo (fryer). Hành lá rắc trên chưa bắt buộc (bỏ qua, không thay thế).
+  { id: 'recipe_dau_hu_sot_ca_chua', name: 'Đậu hũ sốt cà chua', station: 'fryer',
+    inputs: [{ productId: 'x_dau_hu', quantity: 4 }, { productId: 'x_ca_chua', quantity: 1 }],
+    outputId: 'dau_hu_sot_ca_chua', outputQty: 6, durationMin: 10, unlock: 54, reputationGain: 1 },
   // GĐ1429: Rau cải xào tỏi ở chảo chiên. Mở 35 (> golden 30, ≥ cấp nguyên liệu).
   { id: 'recipe_rau_cai_xao_toi', name: 'Rau cải xào tỏi', station: 'fryer',
     inputs: [{ productId: 'x_rau_cai', quantity: 1 }, { productId: 'x_toi', quantity: 1 }],
