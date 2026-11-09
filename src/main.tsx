@@ -175,7 +175,7 @@ useSession.subscribe((s, prev) => {
       const spot = shopSpot();
       player.teleport(spot.x, spot.z);
       g.notify(`🏪 Ngày ${g.day} · tiệm vẫn đang mở cửa như lúc bạn rời — vào quầy tiếp khách nhé!`);
-    } else if (!isGuest()) g.notify(`🏪 Ngày ${g.day} · chúc buôn may bán đắt!`);
+    } else if (!isGuest() && g.day > 1) g.notify(`🏪 Ngày ${g.day} · chúc buôn may bán đắt!`); // ngày 1 đã có hộp thoại Bà Năm — khỏi chồng toast (review 11-09 R3)
   }
 });
 

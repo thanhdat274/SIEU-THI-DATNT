@@ -319,7 +319,7 @@ ${forecastText}`}>
                 const prep = next ? goldenPrepWants(minutes, level, 5).join(', ') : '';
                 return `⏰ Giờ vàng trong ngày: ${describeHours(goldenHourBands())} — đông khách, nhớ châm kệ trước giờ này.\n${next ? `Sắp tới (${next.name}): nên châm ${prep || 'món bán chạy trong khung'}.` : 'Hôm nay hết giờ vàng rồi.'}`;
               })()}>
-                ⏰ {minutes < SHOP_HOURS.grocery.from ? `Chưa tới giờ mở cửa (${shopHoursLabel('grocery').split('–')[0]}) — châm kệ trước cao điểm sáng`
+                ⏰ {minutes < SHOP_HOURS.grocery.from ? `Chưa mở cửa (${shopHoursLabel('grocery').split('–')[0]}) — châm kệ trước`
                   : inGoldenHour(minutes) ? 'Đang giờ vàng — sẵn sàng đón khách!'
                   : (() => {
                       const mt = minutesToGolden(minutes);

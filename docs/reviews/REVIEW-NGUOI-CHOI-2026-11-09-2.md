@@ -23,3 +23,9 @@
 1. Làm đợt review đầy đủ thật sự (≥8 persona, đủ cỡ màn, co-op).
 2. Xếp hàng toast chồng hộp thoại ở màn dọc (R3).
 3. Quyết khung cao điểm sáng (R4).
+
+## Xử lý (GĐ sau review)
+- R3 ĐÃ SỬA: ngày 1 không còn toast "chúc buôn may" đè hộp thoại Bà Năm (từ ngày 2 vẫn hiện).
+- R6 ĐÃ SỬA: dòng dự báo trước giờ mở rút còn "Chưa mở cửa (8h) — châm kệ trước".
+- R5 KHÔNG ĐỔI: bảng Nhập hàng cố ý không dừng giờ (có test `effectiveSpeed` khóa); độ trễ nhiều khả năng do pane dev. Cần đo trên bản build/máy thật.
+- R4 KHÔNG ĐỔI: cao điểm 6h–9h là quyết định của người dùng; dời sang 8h–10h cần re-baseline và chờ người dùng chốt.
