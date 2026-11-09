@@ -1,3 +1,4 @@
+import { shopHoursLabel } from '../data/shopHours';
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { applySnapshot, loadGame, readLocalSave, type SaveData } from '../core/save';
 import { useGame } from '../core/store';
@@ -125,7 +126,7 @@ export function LoginScreen() {
         <header className="login-sign">
           <h1>Tạp Hóa<br />Đầu Ngõ</h1>
           <p>Mở tiệm nhỏ đầu ngõ, bán từng gói mì, nuôi lớn thành siêu thị.</p>
-          <span className="login-addr">Mở cửa 6h – 22h</span>
+          <span className="login-addr">Mở cửa {shopHoursLabel('grocery').replace('–', ' – ')}</span>
         </header>
 
         <section className="login-card" aria-live="polite">

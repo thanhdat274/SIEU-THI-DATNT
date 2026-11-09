@@ -3,7 +3,7 @@ import { wantsRestockButton } from '../core/bizAchieve';
 import { hudThemeOn } from '../data/hudTheme';
 import { faintMinutes } from '../data/biz';
 import { hasUpgrade } from '../data/upgrades';
-import { SHOP_HOURS } from '../data/shopHours';
+import { SHOP_HOURS, shopHoursLabel } from '../data/shopHours';
 import { Joystick } from './Joystick';
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { useAlertCap } from './alertCap';
@@ -319,7 +319,8 @@ ${forecastText}`}>
                 const prep = next ? goldenPrepWants(minutes, level, 5).join(', ') : '';
                 return `⏰ Giờ vàng trong ngày: ${describeHours(goldenHourBands())} — đông khách, nhớ châm kệ trước giờ này.\n${next ? `Sắp tới (${next.name}): nên châm ${prep || 'món bán chạy trong khung'}.` : 'Hôm nay hết giờ vàng rồi.'}`;
               })()}>
-                ⏰ {inGoldenHour(minutes) ? 'Đang giờ vàng — sẵn sàng đón khách!'
+                ⏰ {minutes < SHOP_HOURS.grocery.from ? `Chưa tới giờ mở cửa (${shopHoursLabel('grocery').split('–')[0]}) — châm kệ trước cao điểm sáng`
+                  : inGoldenHour(minutes) ? 'Đang giờ vàng — sẵn sàng đón khách!'
                   : (() => {
                       const mt = minutesToGolden(minutes);
                       if (mt >= 0 && mt <= 120) {
