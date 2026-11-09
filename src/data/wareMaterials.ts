@@ -4,7 +4,7 @@
  * Từ cấp kho thứ 5 trở lên ("Kho lạnh công nghiệp", mở cấp 50 — sau mốc vàng 30) nâng kho cần thêm
  * gạch / xi măng / thép ngoài tiền. Vật liệu để riêng ở bãi (field `wareMaterials`), KHÔNG chiếm thùng
  * kho (`storageCapacity` không đổi) và không phải món hàng bày bán (không vào catalog/PRODUCTS — giữ
- * nguyên dòng ngẫu nhiên của sim kinh tế). Mua theo bộ ở bảng Kho.
+ * nguyên dòng ngẫu nhiên của sim kinh tế). Mua đúng phần thiếu ở bảng Kho (GĐ1947).
  */
 export interface WareMaterials { gach: number; ximang: number; thep: number }
 
@@ -13,9 +13,10 @@ export const MATERIAL_LABEL: Record<keyof WareMaterials, string> = { gach: '🧱
 
 export const emptyWareMaterials = (): WareMaterials => ({ gach: 0, ximang: 0, thep: 0 });
 
-/** Một bộ vật liệu mua ở bảng Kho. */
-export const MATERIAL_PACK: WareMaterials = { gach: 10, ximang: 5, thep: 3 };
-export const MATERIAL_PACK_PRICE = 400_000;
+/** GĐ1947 — đơn giá từng vật liệu (thay bộ cố định 10/5/3 = 400k của GĐ1945: cùng mặt bằng giá). */
+export const MATERIAL_UNIT_PRICE: WareMaterials = { gach: 10_000, ximang: 30_000, thep: 50_000 };
+/** Tiền mua đúng phần còn thiếu (không mua thừa thép như bộ cố định). */
+export const costOfMaterials = (m: WareMaterials) => MATERIAL_KEYS.reduce((t, k) => t + m[k] * MATERIAL_UNIT_PRICE[k], 0);
 /** Bộ vật liệu chỉ bán khi kho đã tới cấp cần vật liệu kế tiếp (tránh tiêu tiền vô ích đầu game). */
 export const MATERIAL_FROM_TIER = 4;
 

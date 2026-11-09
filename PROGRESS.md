@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (09/11/2026)
+- GĐ1947: nút vật liệu kho mua ĐÚNG phần thiếu theo đơn giá (gạch 10k/xi măng 30k/thép 50k — cùng mặt bằng bộ 400k cũ), hết mua thừa thép; đủ rồi hiện "✅ Đủ vật liệu". Không thêm nút, cùng thao tác co-op. Test wareMaterials; full 5621 xanh. QA live bỏ qua để không sửa save ngày 3 của người dùng.
 - GĐ1946: dọn PROGRESS (51→~27KB) — dồn GĐ1829–1939 sang `docs/progress-archive/PROGRESS-GD1829-1939.md`.
 - GĐ1945: vật liệu nâng kho (gạch/xi măng/thép, `wareMaterials`) cho kho cấp 5+, mua theo bộ ở bảng Kho, không chiếm thùng; test wareMaterials.
 - GĐ1944: ô mở rộng tiếp giáp sau bậc Đại siêu thị (tối đa 6 ô, giá đơn vị·k·(k+1)); test expansionTiles.
