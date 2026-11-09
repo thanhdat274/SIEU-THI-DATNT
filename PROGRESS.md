@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (10/11/2026)
+- GĐ2014–2017: dồn GĐ1966–1982 sang archive; Canh bắp cải (L106), Gà kho sả (L107), Cánh gà chiên (fryer, L108).
 - GĐ2011–2013: Canh trứng cà chua (hot_kettle, L103), Thịt kho tiêu (hot_kettle, L104), Gà xào gừng (fryer, L105).
 - GĐ2008–2010: Bún thịt nướng (bếp nướng, mở 99), Bún chả (bếp nướng, mở 101), Cháo sườn (bếp nồi, mở 102); MON_THAT + test; full 5780 xanh.
 - GĐ2005–2007: Cháo thịt bằm (bếp nồi, mở 95), Cháo cá (bếp nồi, mở 97; cá lóc → cá basa thay), Cơm chiên Dương Châu (chảo, mở 98); MON_THAT + test; full 5771 xanh.
@@ -31,17 +32,7 @@
 - GĐ1987–1989: Rau cải luộc (bếp nồi, mở 74), Đậu hũ chiên (chảo, mở 75), Canh cải (bếp nồi, mở 76); MON_THAT + test; full 5717 xanh.
 - GĐ1984–1986: Thịt rang cháy cạnh (chảo, mở 71; hành khô có lối ra bếp đầu tiên), Cá thu sốt cà (chảo, mở 72), Trứng luộc (bếp nồi, mở 73); MON_THAT + test; full 5708 xanh.
 - GĐ1983: dọn PROGRESS (>33KB) — dồn GĐ1940–1965 sang `docs/progress-archive/PROGRESS-GD1940-1965.md`.
-- GĐ1980–1982: Gà luộc (bếp nồi, mở 68, 5×8k), Tôm rim (chảo, mở 69, 6×11k), Mực xào hành tây (chảo, mở 70, 6×13k); MON_THAT + test; full 5699 xanh.
-- GĐ1977–1979: Bí đỏ xào tỏi (chảo, mở 65, 5×6k), Canh bí đỏ (bếp nồi, mở 66, bí đỏ + thịt xay → 8×8k), Sườn ram (chảo, mở 67, 5×11k); MON_THAT + test; full 5690 xanh.
-- GĐ1974–1976: Bắp luộc (bếp nồi, mở 62, 3×4k), Khoai lang luộc (bếp nồi, mở 63, 4×4k), Bông cải xào tỏi (chảo, mở 64, 5×8k); MON_THAT + test bapLuoc/khoaiLangLuoc/bongCaiXaoToi; full 5681 xanh.
-- GĐ1973: Rau muống luộc (bếp nồi, mở 61) — rau muống 1 → 3 đĩa ×4k; MON_THAT + test rauMuongLuoc; full 5672 xanh.
-- GĐ1972: Cà tím nướng mỡ hành (bếp nướng, mở 60) — cà tím 1 + hành lá 1 → 4 phần ×6k; MON_THAT + test caTimNuong; full 5669 xanh.
-- GĐ1971: Bắp cải luộc (bếp nồi, mở 59) — bắp cải 1 → 4 đĩa ×5k; MON_THAT + test bapCaiLuoc; full 5666 xanh.
-- GĐ1970: Thịt luộc (bếp nồi, mở 58) — thịt heo 1 → 6 phần ×8k; MON_THAT + test thitLuoc; full 5663 xanh.
-- GĐ1969: Đậu hũ nhồi thịt (chảo chiên, mở 57) — đậu hũ 4 + thịt xay 1 → 8 miếng ×11k; MON_THAT + test dauHuNhoiThit; full 5660 xanh.
-- GĐ1968: Khổ qua xào trứng (chảo chiên, mở 56) — khổ qua 1 + trứng 3 → 4 đĩa ×9k; MON_THAT + test khoQuaXaoTrung; full 5657 xanh.
-- GĐ1967: Rau muống xào tỏi (chảo chiên, mở 55) — rau muống + tỏi → 4 đĩa ×7k; MON_THAT + test rauMuongXaoToi; full 5654 xanh.
-- GĐ1966: Đậu hũ sốt cà chua (chảo chiên, mở 54) — cơm nhà có thật: đậu hũ 4 + cà chua 1 → 6 phần ×7k; MON_THAT + test dauHuSotCaChua; full 5651 xanh.
+- GĐ1966–1982 (món cơm nhà đợt 1: xào/luộc/canh L54–70) — chi tiết ở docs/progress-archive/PROGRESS-GD1966-1982.md.
 - GĐ1940–1965 (nâng kho vật liệu, khung giờ, món có thật, nút khóa ghi lý do): `docs/progress-archive/PROGRESS-GD1940-1965.md`.
 - (cũ: PROGRESS-GD840-854.md) GĐ1829–1939 (review đợt 2–4, giờ mở cửa, catalog nhà làm/ô mai, rà ẩm thực): `docs/progress-archive/PROGRESS-GD1829-1939.md`.
 - GĐ1394–1408 + GĐ1490–1505 (chuỗi khu ăn tại chỗ: bàn ghế, khách ngồi ăn, tip, máy thu phí, toilet, decor × sao, sao món, vắng mặt, nhà phê bình, toast ghế, tour HUD, đồ bếp decor, bảng hiệu đặc sản; khoá 1 tab): docs/progress-archive/PROGRESS-GD1490-1505.md

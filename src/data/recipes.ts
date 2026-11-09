@@ -702,6 +702,9 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'canh_trung_ca_chua', name: 'Canh trứng cà chua', category: 'fresh', buy: 5000, sell: 9000, color: 0xe8703a, unlock: 103 },
   { id: 'thit_kho_tieu', name: 'Thịt kho tiêu', category: 'fresh', buy: 12000, sell: 20000, color: 0x8b4a2b, unlock: 104 },
   { id: 'ga_xao_gung', name: 'Gà xào gừng', category: 'fresh', buy: 12000, sell: 20000, color: 0xd9a441, unlock: 105 },
+  { id: 'canh_bap_cai', name: 'Canh bắp cải', category: 'fresh', buy: 10000, sell: 17000, color: 0xa8d08d, unlock: 106 },
+  { id: 'ga_kho_sa', name: 'Gà kho sả', category: 'fresh', buy: 12000, sell: 21000, color: 0xc58a3a, unlock: 107 },
+  { id: 'canh_ga_chien', name: 'Cánh gà chiên', category: 'fresh', buy: 12000, sell: 20000, color: 0xd98a2b, unlock: 108 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2161,6 +2164,18 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_ga_xao_gung', name: 'Gà xào gừng', station: 'fryer',
     inputs: [{ productId: 'x_thit_ga', quantity: 1 }, { productId: 'x_gung', quantity: 1 }, { productId: 'x_hanh_la', quantity: 1 }],
     outputId: 'ga_xao_gung', outputQty: 6, durationMin: 20, unlock: 105, reputationGain: 1 },
+  // GĐ2015: Canh bắp cải — cơm nhà cả nước: bắp cải thái nấu với thịt heo bằm, nêm hành (hot_kettle).
+  { id: 'recipe_canh_bap_cai', name: 'Canh bắp cải', station: 'hot_kettle',
+    inputs: [{ productId: 'x_bap_cai', quantity: 1 }, { productId: 'x_thit_heo', quantity: 1 }, { productId: 'x_hanh_la', quantity: 1 }],
+    outputId: 'canh_bap_cai', outputQty: 6, durationMin: 20, unlock: 106, reputationGain: 1 },
+  // GĐ2016: Gà kho sả — Nam Bộ: gà chặt ướp sả băm, kho nước mắm đường tới săn (hot_kettle).
+  { id: 'recipe_ga_kho_sa', name: 'Gà kho sả', station: 'hot_kettle',
+    inputs: [{ productId: 'x_thit_ga', quantity: 1 }, { productId: 'x_sa', quantity: 2 }, { productId: 'hx_nuoc_mam', quantity: 1 }],
+    outputId: 'ga_kho_sa', outputQty: 6, durationMin: 30, unlock: 107, reputationGain: 1 },
+  // GĐ2017: Cánh gà chiên — quán ăn cả nước: cánh gà ướp tỏi chiên ngập dầu tới giòn (fryer); dùng cánh gà đông lạnh.
+  { id: 'recipe_canh_ga_chien', name: 'Cánh gà chiên', station: 'fryer',
+    inputs: [{ productId: 'x_canh_ga', quantity: 1 }, { productId: 'x_toi', quantity: 1 }],
+    outputId: 'canh_ga_chien', outputQty: 5, durationMin: 20, unlock: 108, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────
