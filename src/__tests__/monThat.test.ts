@@ -114,6 +114,8 @@ const MON_THAT: Record<string, { name: string; station: string; cachNau: string 
   recipe_trung_nuong: { name: 'Trứng nướng', station: 'food_grill', cachNau: 'trứng nêm hành nướng than nguyên vỏ (quà vặt vỉa hè)' },
   recipe_thit_xien_nuong: { name: 'Thịt xiên nướng', station: 'food_grill', cachNau: 'thịt ướp sả tỏi xiên que nướng than (vỉa hè cả nước)' },
   recipe_mien_ga: { name: 'Miến gà', station: 'hot_kettle', cachNau: 'miến dong chan nước dùng gà, gà xé (Hà Nội)' },
+  recipe_pho_ga: { name: 'Phở gà', station: 'hot_kettle', cachNau: 'bánh phở chan nước dùng gà, gà xé (Hà Nội)' },
+  recipe_banh_canh_ca_loc: { name: 'Bánh canh cá lóc', station: 'hot_kettle', cachNau: 'sợi bột gạo nấu nước dùng cá lóc (miền Trung)' },
 };
 
 /** Chữ mô tả tự chế không ai dùng làm tên món ngoài chợ. */

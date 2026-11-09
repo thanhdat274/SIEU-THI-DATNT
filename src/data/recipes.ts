@@ -755,6 +755,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'trung_nuong', name: 'Trứng nướng', category: 'fresh', buy: 4500, sell: 9000, color: 0xc89050, unlock: 156 },
   { id: 'thit_xien_nuong', name: 'Thịt xiên nướng', category: 'fresh', buy: 8000, sell: 14000, color: 0xa04a2a, unlock: 157 },
   { id: 'mien_ga', name: 'Miến gà', category: 'fresh', buy: 12000, sell: 21000, color: 0xf0e0b0, unlock: 158 },
+  { id: 'pho_ga', name: 'Phở gà', category: 'fresh', buy: 13000, sell: 23000, color: 0xf0e8c0, unlock: 159 },
+  { id: 'banh_canh_ca_loc', name: 'Bánh canh cá lóc', category: 'fresh', buy: 12000, sell: 21000, color: 0xe8d8b0, unlock: 160 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2426,6 +2428,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_mien_ga', name: 'Miến gà', station: 'hot_kettle',
     inputs: [{ productId: 'x_mien_dong', quantity: 1 }, { productId: 'x_thit_ga', quantity: 1 }, { productId: 'x_hanh_la', quantity: 1 }],
     outputId: 'mien_ga', outputQty: 8, durationMin: 30, unlock: 158, reputationGain: 1 },
+  // GĐ2071: Phở gà — Hà Nội: bánh phở chan nước dùng ninh gà, gà xé, hành (hot_kettle).
+  { id: 'recipe_pho_ga', name: 'Phở gà', station: 'hot_kettle',
+    inputs: [{ productId: 'pho', quantity: 1 }, { productId: 'x_thit_ga', quantity: 1 }, { productId: 'x_hanh_la', quantity: 1 }],
+    outputId: 'pho_ga', outputQty: 8, durationMin: 30, unlock: 159, reputationGain: 1 },
+  // GĐ2072: Bánh canh cá lóc — miền Trung: sợi bánh canh bột gạo nấu với cá lóc, hành (hot_kettle).
+  { id: 'recipe_banh_canh_ca_loc', name: 'Bánh canh cá lóc', station: 'hot_kettle',
+    inputs: [{ productId: 'ca_loc_tuoi', quantity: 1 }, { productId: 'x_bot_gao', quantity: 1 }, { productId: 'x_hanh_la', quantity: 1 }],
+    outputId: 'banh_canh_ca_loc', outputQty: 10, durationMin: 30, unlock: 160, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────
