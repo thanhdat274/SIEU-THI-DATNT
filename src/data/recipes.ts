@@ -404,6 +404,7 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'rau_muong_xao_toi', name: 'Rau muống xào tỏi', category: 'fresh', buy: 4000, sell: 7000, color: 0x3f8f3a, unlock: 55 },
   { id: 'kho_qua_xao_trung', name: 'Khổ qua xào trứng', category: 'fresh', buy: 5000, sell: 9000, color: 0x9fbf4a, unlock: 56 },
   { id: 'dau_hu_nhoi_thit', name: 'Đậu hũ nhồi thịt', category: 'fresh', buy: 6000, sell: 11000, color: 0xc8703a, unlock: 57 },
+  { id: 'thit_luoc', name: 'Thịt luộc', category: 'fresh', buy: 5000, sell: 8000, color: 0xe8c8b8, unlock: 58 },
   // GĐ1429: Bò xào giá — lối ra ĐẦU TIÊN của giá đỗ.
   { id: 'bo_xao_gia', name: 'Bò xào giá', category: 'fresh', buy: 8000, sell: 14000, color: 0x9a6a4a, unlock: 49 },
   // GĐ1429: Nước ép dưa leo cà rốt — lối ra ĐẦU TIÊN của dưa leo.
@@ -1254,6 +1255,10 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_dau_hu_nhoi_thit', name: 'Đậu hũ nhồi thịt', station: 'fryer',
     inputs: [{ productId: 'x_dau_hu', quantity: 4 }, { productId: 'x_thit_xay', quantity: 1 }],
     outputId: 'dau_hu_nhoi_thit', outputQty: 8, durationMin: 14, unlock: 57, reputationGain: 2 },
+  // GĐ1970: Thịt luộc — cơm nhà cả nước: thịt heo (ba chỉ/nạc vai) luộc nồi nước, thái lát chấm mắm (hot_kettle).
+  { id: 'recipe_thit_luoc', name: 'Thịt luộc', station: 'hot_kettle',
+    inputs: [{ productId: 'x_thit_heo', quantity: 1 }],
+    outputId: 'thit_luoc', outputQty: 6, durationMin: 20, unlock: 58, reputationGain: 1 },
   // GĐ1429: Bò xào giá ở chảo chiên. Mở 35 (> golden 30, ≥ cấp nguyên liệu).
   { id: 'recipe_bo_xao_gia', name: 'Bò xào giá', station: 'fryer',
     inputs: [{ productId: 'x_thit_bo', quantity: 1 }, { productId: 'x_gia_do', quantity: 1 }],
