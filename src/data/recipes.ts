@@ -573,6 +573,7 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'banh_khot', name: 'Bánh khọt', category: 'fresh', buy: 7000, sell: 12000, color: 0xe8c060, unlock: 47 },
   { id: 'banh_can', name: 'Bánh căn', category: 'fresh', buy: 6500, sell: 11000, color: 0xf2e2b0, unlock: 48 },
   { id: 'banh_beo', name: 'Bánh bèo chén', category: 'fresh', buy: 6000, sell: 10000, color: 0xf5f0e0, unlock: 49 },
+  { id: 'bot_chien_trung', name: 'Bột chiên trứng', category: 'fresh', buy: 7000, sell: 13000, color: 0xe0b050, unlock: 50 },
   // GĐ1326: Mắm ruốc chưng thịt — món chưng trứ danh Huế của mắm ruốc hàng xóm + thịt heo chưng mặn béo ăn kèm cơm:
   // mẻ (thịt heo 30k×2 + mắm ruốc 36k + đường 17k) = 113k → 10 phần × 22k = 220k, lãi 107k/mẻ, nấu hời hơn
   // bán thẳng nguyên liệu (153k < 220k). Khép chuỗi hàng xóm → nồi hấp, mở 40 (sau mốc golden 30 → sim không đổi).
@@ -992,6 +993,10 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_banh_beo', name: 'Bánh bèo chén', station: 'steamer',
     inputs: [{ productId: 'x_bot_gao', quantity: 2 }, { productId: 'x_bot_nang', quantity: 1 }, { productId: 'x_tom_tuoi', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 1 }],
     outputId: 'banh_beo', outputQty: 12, durationMin: 20, unlock: 49, reputationGain: 2 },
+  // GĐ1953: Bột chiên trứng (quà vặt Sài Gòn có thật): bột gạo + bột năng hấp cắt miếng, chiên với trứng + hành lá. Mở 50.
+  { id: 'recipe_bot_chien_trung', name: 'Bột chiên trứng', station: 'fryer',
+    inputs: [{ productId: 'x_bot_gao', quantity: 2 }, { productId: 'x_bot_nang', quantity: 1 }, { productId: 'trung', quantity: 1 }, { productId: 'x_hanh_la', quantity: 1 }],
+    outputId: 'bot_chien_trung', outputQty: 8, durationMin: 15, unlock: 50, reputationGain: 2 },
   // GĐ1417: Sinh tố sữa chua nếp ở máy xay. Mở 43 (> golden 30, ≥ cấp nguyên liệu).
   { id: 'recipe_sinh_to_sua_chua_nep', name: 'Sinh tố sữa chua nếp', station: 'blender',
     inputs: [{ productId: 'sua_chua_hop', quantity: 2 }, { productId: 'x_duong', quantity: 1 }],
