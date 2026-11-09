@@ -53,3 +53,13 @@ describe('vật liệu nâng kho', () => {
     expect(g().buyMaterialPack()).toBe(false);
   });
 });
+
+import { materialBlockLabel } from '../data/wareMaterials';
+describe('GĐ1957 nhãn nút nâng kho khi thiếu vật liệu', () => {
+  it('nói rõ phần thiếu, đủ thì null, cấp thấp không vướng', () => {
+    expect(materialBlockLabel({ gach: 20, ximang: 4, thep: 0 }, 4)).toBe('Thiếu 6 xi măng, 5 thép');
+    expect(materialBlockLabel({ gach: 20, ximang: 10, thep: 5 }, 4)).toBeNull();
+    expect(materialBlockLabel(undefined, 2)).toBeNull();
+    expect(materialBlockLabel(undefined, 4)!.length).toBeLessThanOrEqual(40);
+  });
+});

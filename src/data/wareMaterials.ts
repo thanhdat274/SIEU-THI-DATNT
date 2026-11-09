@@ -36,3 +36,10 @@ export function missingMaterials(have: WareMaterials | undefined, toTier: number
 }
 export const hasMaterials = (have: WareMaterials | undefined, toTier: number) =>
   MATERIAL_KEYS.every((k) => missingMaterials(have, toTier)[k] === 0);
+
+/** GĐ1957 — nhãn nút nâng kho: thiếu vật liệu thì nói rõ thay vì nút xám câm (null = không vướng vật liệu). */
+export function materialBlockLabel(have: WareMaterials | undefined, toTier: number): string | null {
+  const miss = missingMaterials(have, toTier);
+  const parts = MATERIAL_KEYS.filter((k) => miss[k] > 0).map((k) => `${miss[k]} ${MATERIAL_LABEL[k].split(' ').slice(1).join(' ').toLowerCase()}`);
+  return parts.length ? `Thiếu ${parts.join(', ')}` : null;
+}
