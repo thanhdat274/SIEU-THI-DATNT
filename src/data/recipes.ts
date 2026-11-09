@@ -675,6 +675,9 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'thit_rang_chay_canh', name: 'Thịt rang cháy cạnh', category: 'fresh', buy: 6000, sell: 9000, color: 0xa8602a, unlock: 71 },
   { id: 'ca_thu_sot_ca', name: 'Cá thu sốt cà', category: 'fresh', buy: 7000, sell: 10000, color: 0xc8502a, unlock: 72 },
   { id: 'trung_luoc', name: 'Trứng luộc', category: 'fresh', buy: 3000, sell: 4000, color: 0xf4ecd8, unlock: 73 },
+  { id: 'rau_cai_luoc', name: 'Rau cải luộc', category: 'fresh', buy: 3000, sell: 4000, color: 0x5aa04a, unlock: 74 },
+  { id: 'dau_hu_chien', name: 'Đậu hũ chiên', category: 'fresh', buy: 3000, sell: 5000, color: 0xe8c060, unlock: 75 },
+  { id: 'canh_cai', name: 'Canh cải', category: 'fresh', buy: 5000, sell: 8000, color: 0x6ab05a, unlock: 76 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2026,6 +2029,18 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_trung_luoc', name: 'Trứng luộc', station: 'hot_kettle',
     inputs: [{ productId: 'x_trung_ga', quantity: 4 }],
     outputId: 'trung_luoc', outputQty: 4, durationMin: 10, unlock: 73, reputationGain: 1 },
+  // GĐ1987: Rau cải luộc — cơm nhà cả nước: rau cải luộc nồi nước, chấm nước mắm (hot_kettle).
+  { id: 'recipe_rau_cai_luoc', name: 'Rau cải luộc', station: 'hot_kettle',
+    inputs: [{ productId: 'x_rau_cai', quantity: 1 }],
+    outputId: 'rau_cai_luoc', outputQty: 3, durationMin: 6, unlock: 74, reputationGain: 1 },
+  // GĐ1988: Đậu hũ chiên — cơm nhà cả nước (miền Bắc gọi đậu rán): đậu hũ chiên vàng trong chảo nhiều dầu (fryer), chấm nước mắm.
+  { id: 'recipe_dau_hu_chien', name: 'Đậu hũ chiên', station: 'fryer',
+    inputs: [{ productId: 'x_dau_hu', quantity: 4 }],
+    outputId: 'dau_hu_chien', outputQty: 6, durationMin: 8, unlock: 75, reputationGain: 1 },
+  // GĐ1989: Canh cải — cơm nhà cả nước: rau cải nấu thịt bằm trong nồi nước (hot_kettle).
+  { id: 'recipe_canh_cai', name: 'Canh cải', station: 'hot_kettle',
+    inputs: [{ productId: 'x_rau_cai', quantity: 1 }, { productId: 'x_thit_xay', quantity: 1 }],
+    outputId: 'canh_cai', outputQty: 8, durationMin: 12, unlock: 76, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────

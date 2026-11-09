@@ -34,6 +34,9 @@ const MON_THAT: Record<string, { name: string; station: string; cachNau: string 
   recipe_thit_rang_chay_canh: { name: 'Thịt rang cháy cạnh', station: 'fryer', cachNau: 'ba chỉ rang cháy cạnh với hành khô (cơm nhà miền Bắc)' },
   recipe_ca_thu_sot_ca: { name: 'Cá thu sốt cà', station: 'fryer', cachNau: 'cá thu chiên vàng rồi rim sốt cà chua (cơm nhà)' },
   recipe_trung_luoc: { name: 'Trứng luộc', station: 'hot_kettle', cachNau: 'trứng gà luộc nồi nước (cơm nhà cả nước)' },
+  recipe_rau_cai_luoc: { name: 'Rau cải luộc', station: 'hot_kettle', cachNau: 'luộc nồi nước, chấm nước mắm (cơm nhà cả nước)' },
+  recipe_dau_hu_chien: { name: 'Đậu hũ chiên', station: 'fryer', cachNau: 'chiên vàng nhiều dầu, chấm nước mắm (cả nước)' },
+  recipe_canh_cai: { name: 'Canh cải', station: 'hot_kettle', cachNau: 'rau cải nấu thịt bằm (cơm nhà cả nước)' },
 };
 
 /** Chữ mô tả tự chế không ai dùng làm tên món ngoài chợ. */
