@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (09/11/2026)
+- GĐ1890: Mứt bí sên nhà làm (hx_mut_bi, mở 108, 31k→50k, chỉ bà Tám) + Xôi mứt bí (bếp xôi cơm, mở 134); test mutBi.
 - GĐ1889: Tương đậu nành nhà ủ (hx_tuong_dau, mở 107, 31k→50k, chỉ bà Tám) + Cháo tương đậu nành (ấm cháo, mở 133); test tuongDau.
 - GĐ1888: Cá thu muối nhà ướp (hx_ca_muoi, mở 106, 31k→50k, chỉ bà Tám) + Cơm cá thu muối (bếp xôi cơm, mở 132); test caMuoi.
 - GĐ1887: Dưa cải chua nhà làm (hx_dua_cai, mở 105, 31k→50k, chỉ bà Tám) + Cháo dưa cải chua (ấm cháo, mở 131); test duaCai.
