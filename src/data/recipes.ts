@@ -678,6 +678,9 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'rau_cai_luoc', name: 'Rau cải luộc', category: 'fresh', buy: 3000, sell: 4000, color: 0x5aa04a, unlock: 74 },
   { id: 'dau_hu_chien', name: 'Đậu hũ chiên', category: 'fresh', buy: 3000, sell: 5000, color: 0xe8c060, unlock: 75 },
   { id: 'canh_cai', name: 'Canh cải', category: 'fresh', buy: 5000, sell: 8000, color: 0x6ab05a, unlock: 76 },
+  { id: 'tom_luoc', name: 'Tôm luộc', category: 'fresh', buy: 8000, sell: 12000, color: 0xf07050, unlock: 77 },
+  { id: 'bo_xao_hanh_tay', name: 'Bò xào hành tây', category: 'fresh', buy: 10000, sell: 16000, color: 0x8a4a2a, unlock: 78 },
+  { id: 'gia_xao', name: 'Giá xào', category: 'fresh', buy: 3000, sell: 5000, color: 0xd8e8a0, unlock: 79 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2041,6 +2044,18 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_canh_cai', name: 'Canh cải', station: 'hot_kettle',
     inputs: [{ productId: 'x_rau_cai', quantity: 1 }, { productId: 'x_thit_xay', quantity: 1 }],
     outputId: 'canh_cai', outputQty: 8, durationMin: 12, unlock: 76, reputationGain: 1 },
+  // GĐ1990: Tôm luộc — cơm nhà cả nước: tôm luộc nồi nước tới đỏ, chấm muối tiêu chanh (hot_kettle).
+  { id: 'recipe_tom_luoc', name: 'Tôm luộc', station: 'hot_kettle',
+    inputs: [{ productId: 'x_tom_tuoi', quantity: 1 }],
+    outputId: 'tom_luoc', outputQty: 6, durationMin: 8, unlock: 77, reputationGain: 1 },
+  // GĐ1991: Bò xào hành tây — cơm nhà cả nước: thịt bò thái mỏng xào lửa lớn với hành tây (chảo, fryer).
+  { id: 'recipe_bo_xao_hanh_tay', name: 'Bò xào hành tây', station: 'fryer',
+    inputs: [{ productId: 'x_thit_bo', quantity: 1 }, { productId: 'x_hanh_tay', quantity: 1 }],
+    outputId: 'bo_xao_hanh_tay', outputQty: 6, durationMin: 8, unlock: 78, reputationGain: 1 },
+  // GĐ1992: Giá xào — cơm nhà cả nước: giá đỗ xào nhanh lửa lớn với hành lá (chảo, fryer).
+  { id: 'recipe_gia_xao', name: 'Giá xào', station: 'fryer',
+    inputs: [{ productId: 'x_gia_do', quantity: 2 }, { productId: 'x_hanh_la', quantity: 1 }],
+    outputId: 'gia_xao', outputQty: 4, durationMin: 5, unlock: 79, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────
