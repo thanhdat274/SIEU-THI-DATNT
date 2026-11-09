@@ -2,9 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { NEIGHBOR2_IDS, NEIGHBOR_ONLY_IDS } from '../data/homemade';
 import { productById } from '../data/products';
 import { SUPPLIERS, supplierSells } from '../data/suppliers';
-import { RECIPES } from '../data/recipes';
 
-describe('GĐ1848 — ruốc cá lóc nhà làm + cháo ruốc cá lóc', () => {
+describe('GĐ1848 — ruốc cá lóc nhà làm', () => {
   const p = productById('hx_ruoc_ca_loc');
   it('chỉ nhà hàng xóm bán, mở sau golden 30, đặc sản ≥50k biên ≥35%', () => {
     expect(NEIGHBOR2_IDS.has('hx_ruoc_ca_loc')).toBe(true);
@@ -15,17 +14,5 @@ describe('GĐ1848 — ruốc cá lóc nhà làm + cháo ruốc cá lóc', () => 
     const sellers = SUPPLIERS.filter((s) => supplierSells(s, 'hx_ruoc_ca_loc')).map((s) => s.id);
     expect(sellers).toContain('hangxom2');
     expect(sellers.length).toBe(1);
-  });
-  const r = RECIPES.find((x) => x.id === 'recipe_chao_ruoc_ca_loc')!;
-  it('đúng trạm, mở sau golden 30 và sau nguyên liệu, mẻ lãi hơn bán thẳng', () => {
-    expect(r.station).toBe('hot_kettle');
-    expect(r.unlock).toBeGreaterThan(30);
-    expect(r.unlock).toBeGreaterThanOrEqual(p.unlock);
-    const cost = r.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
-    const raw = r.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
-    const value = r.outputQty * productById(r.outputId).sell;
-    expect(value).toBeGreaterThan(cost);
-    expect(value).toBeGreaterThan(raw);
-    expect(RECIPES.filter((x) => x.outputId === r.outputId).length).toBe(1);
   });
 });
