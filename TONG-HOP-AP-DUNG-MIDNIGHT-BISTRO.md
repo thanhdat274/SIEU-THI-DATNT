@@ -88,11 +88,11 @@ Paywall tủ nguyên liệu 290.000×200 cấp (bồn tiêu tiền), Côn trùng
 | 3 | Máy thu phí mỗi lượt (giá = thu/lượt × 90) | ✅ GĐ1493 | thêm máy khi mở khu ăn của siêu thị |
 | 4 | Điểm trang trí × sao, bỏ trần | ✅ GĐ1495 | — |
 | 5 | Sao món + đồ đựng 4 bậc kiểu Việt | ✅ GĐ1496 + GĐ1526 | — |
-| 6 | **Trang trí nhiều lớp**: sơn nền/tường theo ô + vách ngăn chia khu | ⏸ chờ siêu thị nhiều khu | — |
+| 6 | **Trang trí nhiều lớp**: sơn nền/tường theo ô + vách ngăn chia khu | ✅ GĐ1943 (khu siêu thị +🩷/+2% giá, vách quanh khu +2🩷, sơn nền/vách theo khu) | — |
 | 7 | **Đồ dùng bếp = decor khu bếp** | ✅ đã có đồ bếp | — |
 | 8 | **Cờ vinh danh đặc sản vùng miền** (bản Việt hoá của B4) | ✅ regionFlags | — |
 | 9 | Thực đơn tối thiểu theo cấp quán | ✅ GĐ1536 (tip theo độ đủ thực đơn) | — |
-| 10 | Mở rộng từng ô tiếp giáp | có nền tảng warehouse | khi siêu thị mở phase 2 |
+| 10 | Mở rộng từng ô tiếp giáp | ✅ GĐ1944 (ô sau bậc Đại siêu thị) | — |
 | 11 | Thu nhập khi vắng mặt | ✅ GĐ1497 + GĐ1531 (≈5%) | — |
 | 12 | Sự kiện theo lịch (Tết/Trung thu) | ✅ GĐ1513 | — |
 

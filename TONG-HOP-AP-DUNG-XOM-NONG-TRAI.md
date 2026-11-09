@@ -94,9 +94,9 @@ Gieo → thu → chế biến qua 18 nhà máy (chuỗi tới 4 tầng sâu) →
 | 4 | **Món combo cuối chuỗi bếp** ("Mâm cỗ" = 5 món làm sẵn) | ✅ GĐ1523 | — |
 | 5 | **Generator đơn/contract theo độ sâu + thời gian dây chuyền** | ✅ GĐ1527 | — |
 | 6 | **"Hàng hot tuần này" +25%** (chợ phiên) | ✅ GĐ1519 (+15%) | — |
-| 7 | **Mở rộng tiếp giáp từng vùng** `giá = 1000·k·(k+1)` | có nền tảng warehouse | khi siêu thị phase 2 — 2 game xác nhận cùng mô hình |
+| 7 | **Mở rộng tiếp giáp từng vùng** `giá = 1000·k·(k+1)` | ✅ GĐ1944 (6 ô phía sau, giá 1tr·k·(k+1)) | — |
 | 8 | **Kho = nhà 5 cấp** (+60/150/300/500 chỗ, quà vật liệu hằng ngày) | ✅ kho 7 cấp | — |
-| 9 | **Vật liệu nâng cấp không tính chỗ kho** (14 loại miễn) | ⏸ chưa áp dụng | game chưa có vật liệu nâng cấp — làm khi thêm |
+| 9 | **Vật liệu nâng cấp không tính chỗ kho** (14 loại miễn) | ✅ GĐ1945 (gạch/xi măng/thép cho kho cấp 5+) | — |
 | 10 | **Trần EXP theo độ cũ** (×0,8^k sau 3 bậc, 0 sau 15) + thông thạo -5% chờ | ✅ GĐ1522 | — |
 | 11 | **Điểm danh không reset** + rương trọng số | ✅ ân hạn + GĐ1533 | — |
 | 12 | **Menu quạt trên vật thể + "+N EXP" minh bạch + popup 3D decor** | ✅ GĐ1529 +XP, GĐ1532 decor, GĐ1535 menu quạt (cảm ứng) | — |
