@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (10/11/2026)
+- GĐ2107–2108: Bông cải xào bò (L188), Bông cải xào tôm (L189), fryer.
 - GĐ2105–2106: Ốc xào sả ớt (fryer, L186), Bò né (fryer, L187).
 - GĐ2103–2104: Ốc bươu nhồi thịt (steamer, L184), Nghêu nướng mỡ hành (food_grill, L185). Nhắc: thêm nguyên liệu phải soi cả products.ts (nghêu đã có sẵn).
 - GĐ2099–2102: nguyên liệu Ốc bươu (cuối catalog, mở 170); Nghêu hấp sả (steamer, L181), Canh nghêu (L182) dùng nghêu sẵn có, Ốc luộc (L183).

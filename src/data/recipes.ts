@@ -784,6 +784,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'ngheu_nuong_mo_hanh', name: 'Nghêu nướng mỡ hành', category: 'fresh', buy: 18000, sell: 30000, color: 0xd8c890, unlock: 185 },
   { id: 'oc_xao_sa_ot', name: 'Ốc xào sả ớt', category: 'fresh', buy: 22000, sell: 36000, color: 0x8a5a3a, unlock: 186 },
   { id: 'bo_ne', name: 'Bò né', category: 'fresh', buy: 24000, sell: 38000, color: 0x8a4a2a, unlock: 187 },
+  { id: 'bong_cai_xao_bo', name: 'Bông cải xào bò', category: 'fresh', buy: 14000, sell: 26000, color: 0x4a7a3a, unlock: 188 },
+  { id: 'bong_cai_xao_tom', name: 'Bông cải xào tôm', category: 'fresh', buy: 15000, sell: 27000, color: 0x5a8a4a, unlock: 189 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2571,6 +2573,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_bo_ne', name: 'Bò né', station: 'fryer',
     inputs: [{ productId: 'x_thit_bo', quantity: 1 }, { productId: 'trung', quantity: 1 }, { productId: 'x_banh_mi', quantity: 1 }, { productId: 'x_pate_hop', quantity: 1 }],
     outputId: 'bo_ne', outputQty: 4, durationMin: 15, unlock: 187, reputationGain: 1 },
+  // GĐ2107: Bông cải xào bò — món cơm nhà cả nước: bò thái mỏng xào tái, bông cải xanh chần rồi xào tỏi; không thay thế.
+  { id: 'recipe_bong_cai_xao_bo', name: 'Bông cải xào bò', station: 'fryer',
+    inputs: [{ productId: 'x_bong_cai_xanh', quantity: 1 }, { productId: 'x_thit_bo', quantity: 1 }, { productId: 'x_toi', quantity: 1 }],
+    outputId: 'bong_cai_xao_bo', outputQty: 4, durationMin: 15, unlock: 188, reputationGain: 1 },
+  // GĐ2108: Bông cải xào tôm — món cơm nhà: tôm bóc vỏ xào tỏi rồi cho bông cải xanh chần vào đảo; không thay thế.
+  { id: 'recipe_bong_cai_xao_tom', name: 'Bông cải xào tôm', station: 'fryer',
+    inputs: [{ productId: 'x_bong_cai_xanh', quantity: 1 }, { productId: 'x_tom_tuoi', quantity: 1 }, { productId: 'x_toi', quantity: 1 }],
+    outputId: 'bong_cai_xao_tom', outputQty: 4, durationMin: 15, unlock: 189, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────
