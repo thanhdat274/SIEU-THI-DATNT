@@ -733,6 +733,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'ca_kho_tieu', name: 'Cá kho tiêu', category: 'fresh', buy: 15000, sell: 26000, color: 0x6a4020, unlock: 134 },
   { id: 'suon_kho', name: 'Sườn kho', category: 'fresh', buy: 14000, sell: 24000, color: 0x8a4a2a, unlock: 135 },
   { id: 'ga_chien_nuoc_mam', name: 'Gà chiên nước mắm', category: 'fresh', buy: 15000, sell: 26000, color: 0xc8782a, unlock: 136 },
+  { id: 'bo_nuong_sa', name: 'Bò nướng sả', category: 'fresh', buy: 16000, sell: 27000, color: 0x8a3a2a, unlock: 137 },
+  { id: 'trung_chung', name: 'Trứng chưng', category: 'fresh', buy: 9000, sell: 16000, color: 0xe8c050, unlock: 138 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2316,6 +2318,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_ga_chien_nuoc_mam', name: 'Gà chiên nước mắm', station: 'fryer',
     inputs: [{ productId: 'x_thit_ga', quantity: 1 }, { productId: 'hx_nuoc_mam', quantity: 1 }, { productId: 'x_toi', quantity: 1 }],
     outputId: 'ga_chien_nuoc_mam', outputQty: 6, durationMin: 20, unlock: 136, reputationGain: 1 },
+  // GĐ2047: Bò nướng sả — Nam Bộ: bò thái miếng ướp sả băm, xiên nướng than (food_grill).
+  { id: 'recipe_bo_nuong_sa', name: 'Bò nướng sả', station: 'food_grill',
+    inputs: [{ productId: 'x_thit_bo', quantity: 1 }, { productId: 'x_sa', quantity: 2 }],
+    outputId: 'bo_nuong_sa', outputQty: 5, durationMin: 20, unlock: 137, reputationGain: 1 },
+  // GĐ2048: Trứng chưng — cơm nhà Nam Bộ: trứng đánh với thịt băm, hành, chưng cách thủy tới chín (steamer).
+  { id: 'recipe_trung_chung', name: 'Trứng chưng', station: 'steamer',
+    inputs: [{ productId: 'x_trung_ga', quantity: 3 }, { productId: 'x_thit_heo', quantity: 1 }, { productId: 'x_hanh_la', quantity: 1 }],
+    outputId: 'trung_chung', outputQty: 6, durationMin: 25, unlock: 138, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────
