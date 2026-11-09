@@ -102,6 +102,8 @@ export const NEIGHBOR2_PRODUCTS: { id: string; name: string; category: Category;
   { id: 'hx_bot_nghe', name: 'Bột nghệ nhà xay (hũ)', category: 'dry', buy: 31000, sell: 50000, color: 0xd8a020, unlock: 79 },
   // GĐ1867: bột cà ri nhà rang — biên 1,6×, mở 80; lối ra: Cháo cà ri (nồi nước).
   { id: 'hx_bot_ca_ri', name: 'Bột cà ri nhà rang (hũ)', category: 'dry', buy: 32000, sell: 51000, color: 0xd89a20, unlock: 80 },
+  // GĐ1868: muối sả nhà làm — biên 1,6×, mở 81; lối ra: Cơm muối sả (bếp xôi cơm).
+  { id: 'hx_muoi_sa', name: 'Muối sả nhà làm (hũ)', category: 'dry', buy: 31000, sell: 50000, color: 0xb8c880, unlock: 81 },
   // GĐ1671: mứt gừng bà Tám (hướng 3) — mứt Tết nhà làm, biên 1.6×, mở 45 > golden 30; hút hàng dịp Tết.
   { id: 'hx_mut_gung', name: 'Mứt gừng bà Tám (hộp)', category: 'dry', buy: 40000, sell: 64000, color: 0xe8c860, unlock: 45 },
 ];
