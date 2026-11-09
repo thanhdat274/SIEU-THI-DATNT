@@ -11,3 +11,6 @@ coverage/
 *.tsbuildinfo
 bash.exe.stackdump
 yarn-error.log_downloads/
+.review-scratch/
+browser-screenshots/
+.agent-browser-tools/

@@ -6,7 +6,7 @@ Dùng file này như một phiên review riêng. Mục tiêu là tìm ra điều
 
 Bạn là một hội đồng người chơi mô phỏng có nhiều tính cách, nhu cầu và mức kiên nhẫn khác nhau. Mỗi persona chơi như một người thật, có thể thích hoặc ghét những thứ khác nhau; không persona nào có nghĩa vụ khen game. Hãy khó tính, cụ thể và trung thực, nhưng không cố tình chê mọi thứ. Có người thích tối ưu, người chơi thư giãn, người ít thời gian, người mới, người chơi lâu năm, người dùng điện thoại/máy yếu, người chơi cùng bạn bè, người ghét quảng cáo/thông báo, người nhạy với grind hoặc mất tiến độ. Tạo khoảng 20–30 persona đa dạng cho một vòng đánh giá; nếu cần nhanh, chọn 8–12 persona tiêu biểu và nói rõ quy mô.
 
-Mỗi persona ghi rõ 3 thông số trước khi chơi: **mục tiêu** (vì sao mở game), **ngưỡng kiên nhẫn** (bỏ game sau bao nhiêu phút bối rối/nhàm), **thiết bị** (desktop, điện thoại 375×812, máy yếu). Các persona phải phản ứng khác nhau theo thông số này; tránh để mọi persona nói cùng một ý.
+Mỗi persona ghi rõ 3 thông số trước khi chơi: **mục tiêu** (vì sao mở game), **ngưỡng kiên nhẫn** (bỏ game sau bao nhiêu phút bối rối/nhàm), **thiết bị** (desktop, laptop nhỏ, điện thoại dọc/ngang, máy tính bảng, máy yếu). Các persona phải phản ứng khác nhau theo thông số này; tránh để mọi persona nói cùng một ý.
 
 Luôn có ít nhất hai persona bắt buộc:
 - **Người phá game:** cố tình bấm liên tục, mua tới hết tiền, thử bán âm/số lượng lạ, đi ra mép bản đồ, mở game ở nhiều tab cùng lúc — để tìm lỗi người chơi bình thường ít gặp (vẫn chỉ trên save review, không đụng save thật).
@@ -23,7 +23,20 @@ Dựng persona theo bộ archetype chuẩn trong `.agents/skills/feedback-panel/
 5. Nếu không thể truy cập game hoặc một trạng thái chưa mở được, ghi rõ điều đó và đưa ra giả thuyết có nhãn; không trình bày giả thuyết như lỗi đã xác nhận. Không thu thập dữ liệu ngoài game hoặc gửi thông tin ra dịch vụ bên ngoài.
 6. **Chơi thật, không đoán qua ảnh.** Dùng công cụ trình duyệt để bấm, di chuyển, mua/bán thật. Mỗi persona (hoặc ít nhất mỗi nhóm persona) phải đi trọn ít nhất một vòng cốt lõi: nhà → mở tiệm → bán hàng → đi ngủ sang ngày mới. Phần nào chưa chơi tới phải ghi “chưa chơi tới”, không nhận xét như đã trải nghiệm.
 7. **Bảo vệ save thật.** Không ghi đè, xóa hay reset save/localStorage hiện có của người dùng. Dùng tab/ngữ cảnh riêng hoặc save mới; nếu buộc phải đụng tới save, dừng lại và hỏi trước.
-8. **Kiểm tra cả điện thoại.** Ngoài desktop, chơi lại ít nhất một vòng ở kích thước 375×812 để bắt lỗi chạm khó, chữ nhỏ, UI che màn hình.
+8. **Kiểm tra nhiều loại màn hình, cả dọc lẫn ngang.** Mỗi đợt review phải chơi qua các kích thước dưới đây (đổi bằng resize cửa sổ/giả lập thiết bị của browser, tải lại trang sau khi đổi để game nhận đúng thiết bị):
+
+   | Nhóm | Kích thước | Bắt buộc? | Soát gì |
+   |---|---|---|---|
+   | Desktop chuẩn | 1920×1080 | Bắt buộc | Bố cục đầy đủ, chữ không quá nhỏ trên màn rộng |
+   | Laptop nhỏ | 1366×768 | Bắt buộc | Panel/HUD không tràn, không phải cuộn mới thấy nút |
+   | Điện thoại dọc | 375×812 | Bắt buộc | Chạm khó, chữ nhỏ, nút quá sát nhau, UI che nhân vật/quầy |
+   | Điện thoại ngang | 812×375 | Bắt buộc | Chiều cao thấp: HUD, joystick, panel có che hết khung chơi không; panel dài có cuộn được không |
+   | Máy tính bảng dọc / ngang | 768×1024 / 1024×768 | Nên có | Bố cục ở cỡ trung gian có bị vỡ hay lệch không |
+
+   - Ít nhất một vòng cốt lõi (nhà → tiệm → bán → ngủ) ở **điện thoại dọc** và một vòng ở **điện thoại ngang**; các cỡ còn lại ít nhất mở game, mở các panel chính và bán vài khách.
+   - **Xoay màn hình giữa lúc chơi:** đang mở panel/đang bán hàng thì đổi dọc ↔ ngang (và ngược lại). Soát UI có kẹt, lệch, mất nút, camera có giãn lại đúng, thao tác dở có mất không.
+   - Ghi kích thước vào từng góp ý liên quan (vd “812×375 ngang”). Lỗi chỉ xảy ra ở một hướng vẫn là lỗi thật.
+   - Giới hạn cần ghi trong báo cáo: giả lập trình duyệt chỉ đổi kích thước/cảm ứng, không thay được điện thoại thật (tai thỏ, thanh địa chỉ co giãn, cảm giác chạm, nhiệt/pin). Điểm nào cần máy thật thì đưa vào “câu hỏi cần playtest người thật”.
 9. **Ghi phiên bản.** Ghi commit hiện tại của bản local (`git log -1 --oneline`) và ngày giờ review. Người triển khai cần biết góp ý dựa trên code nào.
 10. **Tránh trùng việc đã có.** Trước khi đề xuất, tìm trong `PROGRESS.md`/backlog. Nếu ý đã có hoặc đã làm, ghi “đã có trong backlog/GĐ…” thay vì đề xuất lại như mới.
 11. **Theo dõi lỗi kỹ thuật.** Đọc console trình duyệt trong suốt lúc chơi. Lỗi đỏ, cảnh báo lặp liên tục, FPS tụt hoặc giật lag rõ phải ghi thành góp ý (thường P0/P1), kèm nguyên văn lỗi và thao tác ngay trước đó.
