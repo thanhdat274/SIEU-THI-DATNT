@@ -110,6 +110,7 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'tra_o_mai_mo', name: 'Trà ô mai mơ', category: 'drink', buy: 12000, sell: 21000, color: 0xe8a878, unlock: 168 },
   { id: 'tra_o_mai_me', name: 'Trà ô mai me', category: 'drink', buy: 12000, sell: 21000, color: 0xb87848, unlock: 169 },
   { id: 'tra_o_mai_sau', name: 'Trà ô mai sấu', category: 'drink', buy: 12000, sell: 21000, color: 0xc0d080, unlock: 170 },
+  { id: 'tra_o_mai_quat', name: 'Trà ô mai quất', category: 'drink', buy: 12000, sell: 21000, color: 0xf0b040, unlock: 171 },
   { id: 'ca_phe_den_da', name: 'Cà phê đen đá', category: 'drink', buy: 7800, sell: 14900, color: 0x2c3e50, unlock: 34 },
   { id: 'ca_phe_trung', name: 'Cà phê trứng', category: 'drink', buy: 21500, sell: 40900, color: 0xe17055, unlock: 36 },
 
@@ -1993,6 +1994,9 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_tra_o_mai_sau', name: 'Trà ô mai sấu', station: 'drink_counter',
     inputs: [{ productId: 'tra', quantity: 1 }, { productId: 'hx_o_mai_sau', quantity: 1 }],
     outputId: 'tra_o_mai_sau', outputQty: 6, durationMin: 10, unlock: 170, reputationGain: 3 },
+  { id: 'recipe_tra_o_mai_quat', name: 'Trà ô mai quất', station: 'drink_counter',
+    inputs: [{ productId: 'tra', quantity: 1 }, { productId: 'hx_o_mai_quat', quantity: 1 }],
+    outputId: 'tra_o_mai_quat', outputQty: 6, durationMin: 10, unlock: 171, reputationGain: 3 },
   { id: 'recipe_ca_phe_den', name: 'Cà phê đen đá', station: 'drink_counter',
     inputs: [{ productId: 'caphe', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
     outputId: 'ca_phe_den_da', outputQty: 6, durationMin: 5, unlock: 34, reputationGain: 2 },
