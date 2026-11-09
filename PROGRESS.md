@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (10/11/2026)
+- GĐ1993–1995: Chè đậu đỏ (bếp nồi, mở 80), Sườn xào chua ngọt (chảo, mở 81), Khoai tây xào (chảo, mở 83 — né cấp hàng cao cấp 82/86/91/96/100 của latePremium); MON_THAT + test; full 5735 xanh.
 - GĐ1990–1992: Tôm luộc (bếp nồi, mở 77), Bò xào hành tây (chảo, mở 78), Giá xào (chảo, mở 79); MON_THAT + test; full 5726 xanh.
 - GĐ1987–1989: Rau cải luộc (bếp nồi, mở 74), Đậu hũ chiên (chảo, mở 75), Canh cải (bếp nồi, mở 76); MON_THAT + test; full 5717 xanh.
 - GĐ1984–1986: Thịt rang cháy cạnh (chảo, mở 71; hành khô có lối ra bếp đầu tiên), Cá thu sốt cà (chảo, mở 72), Trứng luộc (bếp nồi, mở 73); MON_THAT + test; full 5708 xanh.

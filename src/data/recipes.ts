@@ -681,6 +681,9 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'tom_luoc', name: 'Tôm luộc', category: 'fresh', buy: 8000, sell: 12000, color: 0xf07050, unlock: 77 },
   { id: 'bo_xao_hanh_tay', name: 'Bò xào hành tây', category: 'fresh', buy: 10000, sell: 16000, color: 0x8a4a2a, unlock: 78 },
   { id: 'gia_xao', name: 'Giá xào', category: 'fresh', buy: 3000, sell: 5000, color: 0xd8e8a0, unlock: 79 },
+  { id: 'che_dau_do', name: 'Chè đậu đỏ', category: 'fresh', buy: 3000, sell: 5000, color: 0x8a2a3a, unlock: 80 },
+  { id: 'suon_xao_chua_ngot', name: 'Sườn xào chua ngọt', category: 'fresh', buy: 9000, sell: 13000, color: 0xb84a2a, unlock: 81 },
+  { id: 'khoai_tay_xao', name: 'Khoai tây xào', category: 'fresh', buy: 4000, sell: 6000, color: 0xe8c860, unlock: 83 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2056,6 +2059,18 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_gia_xao', name: 'Giá xào', station: 'fryer',
     inputs: [{ productId: 'x_gia_do', quantity: 2 }, { productId: 'x_hanh_la', quantity: 1 }],
     outputId: 'gia_xao', outputQty: 4, durationMin: 5, unlock: 79, reputationGain: 1 },
+  // GĐ1993: Chè đậu đỏ — chè cả nước: đậu đỏ ninh nhừ với đường trong nồi (hot_kettle); nước cốt dừa rưới tùy nơi, không bắt buộc.
+  { id: 'recipe_che_dau_do', name: 'Chè đậu đỏ', station: 'hot_kettle',
+    inputs: [{ productId: 'x_dau_do', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
+    outputId: 'che_dau_do', outputQty: 10, durationMin: 40, unlock: 80, reputationGain: 1 },
+  // GĐ1994: Sườn xào chua ngọt — cơm nhà cả nước: sườn chiên săn rồi đảo sốt chua ngọt (tương cà, giấm, đường) trong chảo (fryer).
+  { id: 'recipe_suon_xao_chua_ngot', name: 'Sườn xào chua ngọt', station: 'fryer',
+    inputs: [{ productId: 'x_suon_heo', quantity: 1 }, { productId: 'x_tuong_ca', quantity: 1 }, { productId: 'x_giam', quantity: 1 }],
+    outputId: 'suon_xao_chua_ngot', outputQty: 6, durationMin: 20, unlock: 81, reputationGain: 1 },
+  // GĐ1995: Khoai tây xào — cơm nhà cả nước: khoai tây thái sợi/lát xào với hành tây (chảo, fryer).
+  { id: 'recipe_khoai_tay_xao', name: 'Khoai tây xào', station: 'fryer',
+    inputs: [{ productId: 'x_khoai_tay', quantity: 1 }, { productId: 'x_hanh_tay', quantity: 1 }],
+    outputId: 'khoai_tay_xao', outputQty: 5, durationMin: 10, unlock: 83, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────
