@@ -56,6 +56,8 @@ export const NEIGHBOR2_PRODUCTS: { id: string; name: string; category: Category;
   { id: 'hx_nem_nuong', name: 'Nem nướng bà Tám (xâu)', category: 'cold', buy: 50000, sell: 80000, color: 0xc0603a, unlock: 56 },
   // GĐ1488: cá cơm khô bà Tám (hướng 3) — biên ~1.6×, mở 57; lối ra: Cơm cá cơm rim (bếp xôi cơm).
   { id: 'hx_ca_kho', name: 'Cá cơm khô bà Tám (gói)', category: 'dry', buy: 40000, sell: 64000, color: 0xc8a070, unlock: 57 },
+  // GĐ1845: tỏi đen nhà ủ (hướng 3) — biên 1,6×, mở 58; lối ra: Cơm chiên tỏi đen (bếp xôi cơm).
+  { id: 'hx_toi_den', name: 'Tỏi đen nhà ủ (hũ)', category: 'dry', buy: 55000, sell: 88000, color: 0x2b2420, unlock: 58 },
   // GĐ1671: mứt gừng bà Tám (hướng 3) — mứt Tết nhà làm, biên 1.6×, mở 45 > golden 30; hút hàng dịp Tết.
   { id: 'hx_mut_gung', name: 'Mứt gừng bà Tám (hộp)', category: 'dry', buy: 40000, sell: 64000, color: 0xe8c860, unlock: 45 },
 ];
