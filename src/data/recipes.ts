@@ -769,6 +769,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'tom_rim_me', name: 'Tôm rim me', category: 'fresh', buy: 15000, sell: 26000, color: 0xc8602a, unlock: 170 },
   { id: 'dau_bap_luoc', name: 'Đậu bắp luộc', category: 'fresh', buy: 5000, sell: 9000, color: 0x6aa84a, unlock: 171 },
   { id: 'dau_bap_xao_toi', name: 'Đậu bắp xào tỏi', category: 'fresh', buy: 6000, sell: 11000, color: 0x5a983a, unlock: 172 },
+  { id: 'canh_mong_toi', name: 'Canh mồng tơi', category: 'fresh', buy: 9000, sell: 16000, color: 0x3a7a2a, unlock: 173 },
+  { id: 'canh_bau', name: 'Canh bầu', category: 'fresh', buy: 10000, sell: 17000, color: 0xb8d89a, unlock: 174 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2496,6 +2498,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_dau_bap_xao_toi', name: 'Đậu bắp xào tỏi', station: 'fryer',
     inputs: [{ productId: 'x_dau_bap', quantity: 1 }, { productId: 'x_toi', quantity: 1 }],
     outputId: 'dau_bap_xao_toi', outputQty: 5, durationMin: 12, unlock: 172, reputationGain: 1 },
+  // GĐ2088: Canh mồng tơi — cơm nhà cả nước: mồng tơi nấu với tôm băm (hot_kettle); bỏ mướp/rau đay đi kèm tùy nhà.
+  { id: 'recipe_canh_mong_toi', name: 'Canh mồng tơi', station: 'hot_kettle',
+    inputs: [{ productId: 'x_mong_toi', quantity: 1 }, { productId: 'x_tom_tuoi', quantity: 1 }],
+    outputId: 'canh_mong_toi', outputQty: 6, durationMin: 15, unlock: 173, reputationGain: 1 },
+  // GĐ2089: Canh bầu — cơm nhà cả nước: bầu gọt vỏ thái miếng nấu với tôm, hành (hot_kettle).
+  { id: 'recipe_canh_bau', name: 'Canh bầu', station: 'hot_kettle',
+    inputs: [{ productId: 'x_bau', quantity: 1 }, { productId: 'x_tom_tuoi', quantity: 1 }, { productId: 'x_hanh_la', quantity: 1 }],
+    outputId: 'canh_bau', outputQty: 6, durationMin: 15, unlock: 174, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────
