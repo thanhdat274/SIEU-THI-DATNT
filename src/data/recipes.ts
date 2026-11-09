@@ -573,9 +573,9 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'banh_khot', name: 'Bánh khọt', category: 'fresh', buy: 7000, sell: 12000, color: 0xe8c060, unlock: 47 },
   { id: 'banh_can', name: 'Bánh căn', category: 'fresh', buy: 6500, sell: 11000, color: 0xf2e2b0, unlock: 48 },
   { id: 'banh_beo', name: 'Bánh bèo chén', category: 'fresh', buy: 6000, sell: 10000, color: 0xf5f0e0, unlock: 49 },
-  { id: 'bot_chien_trung', name: 'Bột chiên trứng', category: 'fresh', buy: 7000, sell: 13000, color: 0xe0b050, unlock: 50 },
+  { id: 'bot_chien_trung', name: 'Bột chiên', category: 'fresh', buy: 7000, sell: 13000, color: 0xe0b050, unlock: 50 },
   { id: 'banh_chuoi_hap', name: 'Bánh chuối hấp', category: 'fresh', buy: 5500, sell: 9000, color: 0xf0d8a0, unlock: 51 },
-  { id: 'banh_bo', name: 'Bánh bò hấp', category: 'fresh', buy: 4500, sell: 7000, color: 0xfaf3e0, unlock: 52 },
+  { id: 'banh_bo', name: 'Bánh bò', category: 'fresh', buy: 4500, sell: 7000, color: 0xfaf3e0, unlock: 52 },
   { id: 'bun_dau_mam_tom', name: 'Bún đậu mắm tôm', category: 'fresh', buy: 5000, sell: 15000, color: 0xe8c878, unlock: 53 },
   // GĐ1326: Mắm ruốc chưng thịt — món chưng trứ danh Huế của mắm ruốc hàng xóm + thịt heo chưng mặn béo ăn kèm cơm:
   // mẻ (thịt heo 30k×2 + mắm ruốc 36k + đường 17k) = 113k → 10 phần × 22k = 220k, lãi 107k/mẻ, nấu hời hơn
@@ -988,24 +988,24 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_banh_khot', name: 'Bánh khọt', station: 'fryer',
     inputs: [{ productId: 'x_bot_gao', quantity: 2 }, { productId: 'x_tom_tuoi', quantity: 1 }, { productId: 'x_hanh_la', quantity: 1 }],
     outputId: 'banh_khot', outputQty: 10, durationMin: 15, unlock: 47, reputationGain: 2 },
-  // GĐ1951: Bánh căn (món Phan Rang/Nha Trang có thật): bột gạo + trứng + hành lá, đổ khuôn đất. Mở 48.
-  { id: 'recipe_banh_can', name: 'Bánh căn', station: 'fryer',
+  // GĐ1951 (sửa GĐ chuẩn hóa): Bánh căn Phan Rang/Nha Trang — đổ bột gạo + trứng vào khuôn đất nung đậy nắp trên than (KHÔNG chiên ngập dầu) → bếp nướng. Mở 48.
+  { id: 'recipe_banh_can', name: 'Bánh căn', station: 'food_grill',
     inputs: [{ productId: 'x_bot_gao', quantity: 2 }, { productId: 'trung', quantity: 1 }, { productId: 'x_hanh_la', quantity: 1 }],
     outputId: 'banh_can', outputQty: 10, durationMin: 15, unlock: 48, reputationGain: 2 },
-  // GĐ1952: Bánh bèo chén (món Huế có thật): bột gạo + bột năng hấp chén, rắc tôm chấy + hành phi. Mở 49.
+  // GĐ1952: Bánh bèo chén (món Huế có thật): bột gạo + bột năng hấp chén, rắc tôm chấy (tôm tươi giã rang) + mỡ hành (hành phi nhà làm thay), chan nước mắm. Mở 49.
   { id: 'recipe_banh_beo', name: 'Bánh bèo chén', station: 'steamer',
     inputs: [{ productId: 'x_bot_gao', quantity: 2 }, { productId: 'x_bot_nang', quantity: 1 }, { productId: 'x_tom_tuoi', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 1 }],
     outputId: 'banh_beo', outputQty: 12, durationMin: 20, unlock: 49, reputationGain: 2 },
-  // GĐ1953: Bột chiên trứng (quà vặt Sài Gòn có thật): bột gạo + bột năng hấp cắt miếng, chiên với trứng + hành lá. Mở 50.
-  { id: 'recipe_bot_chien_trung', name: 'Bột chiên trứng', station: 'fryer',
+  // GĐ1953: Bột chiên (Sài Gòn gọi tắt; quà vặt Sài Gòn có thật): bột gạo + bột năng hấp cắt miếng, chiên với trứng + hành lá. Mở 50.
+  { id: 'recipe_bot_chien_trung', name: 'Bột chiên', station: 'fryer',
     inputs: [{ productId: 'x_bot_gao', quantity: 2 }, { productId: 'x_bot_nang', quantity: 1 }, { productId: 'trung', quantity: 1 }, { productId: 'x_hanh_la', quantity: 1 }],
     outputId: 'bot_chien_trung', outputQty: 8, durationMin: 15, unlock: 50, reputationGain: 2 },
   // GĐ1954: Bánh chuối hấp (món Nam Bộ có thật): chuối + bột năng hấp, rưới nước cốt dừa đường. Mở 51.
   { id: 'recipe_banh_chuoi_hap', name: 'Bánh chuối hấp', station: 'steamer',
     inputs: [{ productId: 'x_chuoi', quantity: 2 }, { productId: 'x_bot_nang', quantity: 1 }, { productId: 'x_dua_cot_hop', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
     outputId: 'banh_chuoi_hap', outputQty: 10, durationMin: 25, unlock: 51, reputationGain: 2 },
-  // GĐ1955: Bánh bò hấp (bánh quê có thật): bột gạo ủ + đường + nước cốt dừa, hấp nở rỗ tổ ong. Mở 52.
-  { id: 'recipe_banh_bo', name: 'Bánh bò hấp', station: 'steamer',
+  // GĐ1955: Bánh bò (ngoài chợ gọi tắt, vốn là bánh hấp; bánh quê có thật): bột gạo ủ + đường + nước cốt dừa, hấp nở rỗ tổ ong. Mở 52.
+  { id: 'recipe_banh_bo', name: 'Bánh bò', station: 'steamer',
     inputs: [{ productId: 'x_bot_gao', quantity: 2 }, { productId: 'x_duong', quantity: 1 }, { productId: 'x_dua_cot_hop', quantity: 1 }],
     outputId: 'banh_bo', outputQty: 12, durationMin: 25, unlock: 52, reputationGain: 2 },
   // GĐ1956: Bún đậu mắm tôm (món Hà Nội có thật): bún tươi + đậu hũ chiên vàng + chén mắm tôm. Mở 53.

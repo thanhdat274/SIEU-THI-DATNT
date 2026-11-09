@@ -4,8 +4,8 @@ import { RECIPES } from '../data/recipes';
 
 describe('GĐ1951 — Bánh căn (món có thật)', () => {
   const r = RECIPES.find((x) => x.id === 'recipe_banh_can')!;
-  it('đổ khuôn ở chảo chiên, mở sau golden 30 và sau mọi nguyên liệu', () => {
-    expect(r.station).toBe('fryer');
+  it('đổ khuôn đất ở bếp nướng, mở sau golden 30 và sau mọi nguyên liệu', () => {
+    expect(r.station).toBe('food_grill');
     expect(r.unlock).toBeGreaterThan(30);
     for (const i of r.inputs) expect(r.unlock).toBeGreaterThanOrEqual(productById(i.productId).unlock);
   });

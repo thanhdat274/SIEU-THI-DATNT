@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { productById } from '../data/products';
 import { RECIPES } from '../data/recipes';
 
-describe('GĐ1955 — Bánh bò hấp (món có thật)', () => {
+describe('GĐ1955 — Bánh bò (món có thật)', () => {
   const r = RECIPES.find((x) => x.id === 'recipe_banh_bo')!;
   it('hấp ở nồi hấp, mở sau golden 30 và sau mọi nguyên liệu', () => {
     expect(r.station).toBe('steamer');

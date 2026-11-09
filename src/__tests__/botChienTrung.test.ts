@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { productById } from '../data/products';
 import { RECIPES } from '../data/recipes';
 
-describe('GĐ1953 — Bột chiên trứng (món có thật)', () => {
+describe('GĐ1953 — Bột chiên (món có thật)', () => {
   const r = RECIPES.find((x) => x.id === 'recipe_bot_chien_trung')!;
   it('đổ khuôn ở chảo chiên, mở sau golden 30 và sau mọi nguyên liệu', () => {
     expect(r.station).toBe('fryer');
