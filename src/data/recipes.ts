@@ -771,6 +771,9 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'dau_bap_xao_toi', name: 'Đậu bắp xào tỏi', category: 'fresh', buy: 6000, sell: 11000, color: 0x5a983a, unlock: 172 },
   { id: 'canh_mong_toi', name: 'Canh mồng tơi', category: 'fresh', buy: 9000, sell: 16000, color: 0x3a7a2a, unlock: 173 },
   { id: 'canh_bau', name: 'Canh bầu', category: 'fresh', buy: 10000, sell: 17000, color: 0xb8d89a, unlock: 174 },
+  { id: 'canh_rau_den', name: 'Canh rau dền', category: 'fresh', buy: 9000, sell: 16000, color: 0x8a3a5a, unlock: 175 },
+  { id: 'canh_bi_dao', name: 'Canh bí đao', category: 'fresh', buy: 10000, sell: 17000, color: 0xc8e0b8, unlock: 176 },
+  { id: 'su_su_xao_toi', name: 'Su su xào tỏi', category: 'fresh', buy: 6000, sell: 11000, color: 0xa8d88a, unlock: 177 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2506,6 +2509,18 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_canh_bau', name: 'Canh bầu', station: 'hot_kettle',
     inputs: [{ productId: 'x_bau', quantity: 1 }, { productId: 'x_tom_tuoi', quantity: 1 }, { productId: 'x_hanh_la', quantity: 1 }],
     outputId: 'canh_bau', outputQty: 6, durationMin: 15, unlock: 174, reputationGain: 1 },
+  // GĐ2092: Canh rau dền — cơm nhà cả nước: rau dền nấu với tôm băm, nước canh đỏ hồng (hot_kettle).
+  { id: 'recipe_canh_rau_den', name: 'Canh rau dền', station: 'hot_kettle',
+    inputs: [{ productId: 'x_rau_den', quantity: 1 }, { productId: 'x_tom_tuoi', quantity: 1 }],
+    outputId: 'canh_rau_den', outputQty: 6, durationMin: 15, unlock: 175, reputationGain: 1 },
+  // GĐ2093: Canh bí đao — cơm nhà cả nước: bí đao thái miếng nấu với thịt bằm, hành (hot_kettle).
+  { id: 'recipe_canh_bi_dao', name: 'Canh bí đao', station: 'hot_kettle',
+    inputs: [{ productId: 'x_bi_dao', quantity: 1 }, { productId: 'x_thit_heo', quantity: 1 }, { productId: 'x_hanh_la', quantity: 1 }],
+    outputId: 'canh_bi_dao', outputQty: 6, durationMin: 20, unlock: 176, reputationGain: 1 },
+  // GĐ2094: Su su xào tỏi — cơm nhà cả nước: su su thái sợi xào lửa lớn với tỏi phi (fryer).
+  { id: 'recipe_su_su_xao_toi', name: 'Su su xào tỏi', station: 'fryer',
+    inputs: [{ productId: 'x_su_su', quantity: 1 }, { productId: 'x_toi', quantity: 1 }],
+    outputId: 'su_su_xao_toi', outputQty: 5, durationMin: 12, unlock: 177, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────
