@@ -126,6 +126,8 @@ const MON_THAT: Record<string, { name: string; station: string; cachNau: string 
   recipe_cua_rang_me: { name: 'Cua rang me', station: 'fryer', cachNau: 'cua chiên sơ đảo sốt me tỏi tới sệt (Sài Gòn)' },
   recipe_goi_ga: { name: 'Gỏi gà', station: 'hot_kettle', cachNau: 'gà luộc xé trộn bắp cải, rau răm (Nam Bộ)' },
   recipe_tom_rim_me: { name: 'Tôm rim me', station: 'fryer', cachNau: 'tôm chiên sơ rim nước me chua ngọt (Nam Bộ)' },
+  recipe_dau_bap_luoc: { name: 'Đậu bắp luộc', station: 'hot_kettle', cachNau: 'luộc nồi nước, chấm chao hay nước mắm (cơm nhà)' },
+  recipe_dau_bap_xao_toi: { name: 'Đậu bắp xào tỏi', station: 'fryer', cachNau: 'đậu bắp xào lửa lớn với tỏi phi (cơm nhà)' },
 };
 
 /** Chữ mô tả tự chế không ai dùng làm tên món ngoài chợ. */

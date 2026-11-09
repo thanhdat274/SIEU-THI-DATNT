@@ -767,6 +767,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'cua_rang_me', name: 'Cua rang me', category: 'fresh', buy: 42000, sell: 72000, color: 0xc8502a, unlock: 168 },
   { id: 'goi_ga', name: 'Gỏi gà', category: 'fresh', buy: 15000, sell: 26000, color: 0xe8e0a0, unlock: 169 },
   { id: 'tom_rim_me', name: 'Tôm rim me', category: 'fresh', buy: 15000, sell: 26000, color: 0xc8602a, unlock: 170 },
+  { id: 'dau_bap_luoc', name: 'Đậu bắp luộc', category: 'fresh', buy: 5000, sell: 9000, color: 0x6aa84a, unlock: 171 },
+  { id: 'dau_bap_xao_toi', name: 'Đậu bắp xào tỏi', category: 'fresh', buy: 6000, sell: 11000, color: 0x5a983a, unlock: 172 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2486,6 +2488,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_tom_rim_me', name: 'Tôm rim me', station: 'fryer',
     inputs: [{ productId: 'x_tom_tuoi', quantity: 1 }, { productId: 'x_me', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
     outputId: 'tom_rim_me', outputQty: 6, durationMin: 20, unlock: 170, reputationGain: 1 },
+  // GĐ2085: Đậu bắp luộc — cơm nhà cả nước: đậu bắp luộc nồi nước, chấm chao/nước mắm (hot_kettle).
+  { id: 'recipe_dau_bap_luoc', name: 'Đậu bắp luộc', station: 'hot_kettle',
+    inputs: [{ productId: 'x_dau_bap', quantity: 1 }],
+    outputId: 'dau_bap_luoc', outputQty: 4, durationMin: 10, unlock: 171, reputationGain: 1 },
+  // GĐ2086: Đậu bắp xào tỏi — cơm nhà cả nước: đậu bắp xắt xéo xào lửa lớn với tỏi phi (fryer).
+  { id: 'recipe_dau_bap_xao_toi', name: 'Đậu bắp xào tỏi', station: 'fryer',
+    inputs: [{ productId: 'x_dau_bap', quantity: 1 }, { productId: 'x_toi', quantity: 1 }],
+    outputId: 'dau_bap_xao_toi', outputQty: 5, durationMin: 12, unlock: 172, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────
