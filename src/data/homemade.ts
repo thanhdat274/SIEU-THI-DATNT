@@ -117,7 +117,7 @@ export const NEIGHBOR2_PRODUCTS: { id: string; name: string; category: Category;
   // GĐ1874: xoài sấy dẻo nhà làm — biên 1,6×, mở 89; lối ra: Xôi xoài sấy (bếp xôi cơm).
   { id: 'hx_xoai_say', name: 'Xoài sấy dẻo nhà làm (gói)', category: 'dry', buy: 35000, sell: 56000, color: 0xe8a830, unlock: 89 },
   { id: 'hx_chuoi_say', name: 'Chuối sấy giòn nhà làm (gói)', category: 'dry', buy: 31000, sell: 50000, color: 0xd8b840, unlock: 90 },
-  { id: 'hx_dua_say', name: 'Dừa sấy giòn nhà làm (gói)', category: 'dry', buy: 31000, sell: 50000, color: 0xe8e0c0, unlock: 91 },
+  { id: 'hx_dua_say', name: 'Dừa sấy giòn nhà làm (gói)', category: 'dry', buy: 31000, sell: 50000, color: 0xe8e0c0, unlock: 92 },
   // GĐ1671: mứt gừng bà Tám (hướng 3) — mứt Tết nhà làm, biên 1.6×, mở 45 > golden 30; hút hàng dịp Tết.
   { id: 'hx_mut_gung', name: 'Mứt gừng bà Tám (hộp)', category: 'dry', buy: 40000, sell: 64000, color: 0xe8c860, unlock: 45 },
 ];
