@@ -766,6 +766,7 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'banh_mi_chao', name: 'Bánh mì chảo', category: 'fresh', buy: 12000, sell: 22000, color: 0xd8903a, unlock: 167 },
   { id: 'cua_rang_me', name: 'Cua rang me', category: 'fresh', buy: 42000, sell: 72000, color: 0xc8502a, unlock: 168 },
   { id: 'goi_ga', name: 'Gỏi gà', category: 'fresh', buy: 15000, sell: 26000, color: 0xe8e0a0, unlock: 169 },
+  { id: 'tom_rim_me', name: 'Tôm rim me', category: 'fresh', buy: 15000, sell: 26000, color: 0xc8602a, unlock: 170 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2481,6 +2482,10 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_goi_ga', name: 'Gỏi gà', station: 'hot_kettle',
     inputs: [{ productId: 'x_thit_ga', quantity: 1 }, { productId: 'x_bap_cai', quantity: 1 }, { productId: 'x_rau_ram', quantity: 1 }],
     outputId: 'goi_ga', outputQty: 6, durationMin: 30, unlock: 169, reputationGain: 1 },
+  // GĐ2083: Tôm rim me — Nam Bộ: tôm chiên sơ rồi rim nước me chua ngọt tới sệt (fryer).
+  { id: 'recipe_tom_rim_me', name: 'Tôm rim me', station: 'fryer',
+    inputs: [{ productId: 'x_tom_tuoi', quantity: 1 }, { productId: 'x_me', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
+    outputId: 'tom_rim_me', outputQty: 6, durationMin: 20, unlock: 170, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────
