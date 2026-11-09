@@ -693,6 +693,9 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'cha_trung', name: 'Chả trứng', category: 'fresh', buy: 5000, sell: 7000, color: 0xe8b040, unlock: 92 },
   { id: 'nui_xao_bo', name: 'Nui xào bò', category: 'fresh', buy: 7000, sell: 10000, color: 0xd8803a, unlock: 93 },
   { id: 'mien_xao', name: 'Miến xào', category: 'fresh', buy: 6000, sell: 9000, color: 0xc8a070, unlock: 94 },
+  { id: 'chao_thit_bam', name: 'Cháo thịt bằm', category: 'fresh', buy: 5000, sell: 10000, color: 0xf0e8d8, unlock: 95 },
+  { id: 'chao_ca', name: 'Cháo cá', category: 'fresh', buy: 6000, sell: 12000, color: 0xf0e8c8, unlock: 97 },
+  { id: 'com_chien_duong_chau', name: 'Cơm chiên Dương Châu', category: 'fresh', buy: 5000, sell: 9000, color: 0xe8b860, unlock: 98 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2116,6 +2119,18 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_mien_xao', name: 'Miến xào', station: 'fryer',
     inputs: [{ productId: 'x_mien_dong', quantity: 1 }, { productId: 'x_thit_xay', quantity: 1 }, { productId: 'x_ca_rot', quantity: 1 }],
     outputId: 'mien_xao', outputQty: 10, durationMin: 12, unlock: 94, reputationGain: 1 },
+  // GĐ2005: Cháo thịt bằm — cả nước (cháo sáng/cháo ốm): gạo ninh nhừ với thịt heo bằm, rắc hành lá (hot_kettle).
+  { id: 'recipe_chao_thit_bam', name: 'Cháo thịt bằm', station: 'hot_kettle',
+    inputs: [{ productId: 'gao', quantity: 1 }, { productId: 'x_thit_xay', quantity: 1 }, { productId: 'x_hanh_la', quantity: 1 }],
+    outputId: 'chao_thit_bam', outputQty: 30, durationMin: 25, unlock: 95, reputationGain: 1 },
+  // GĐ2006: Cháo cá — cả nước: gạo ninh nhừ với cá (cá lóc/cá chép → cá basa phi lê thay, game chưa có cá lóc tươi), rắc hành (hot_kettle).
+  { id: 'recipe_chao_ca', name: 'Cháo cá', station: 'hot_kettle',
+    inputs: [{ productId: 'gao', quantity: 1 }, { productId: 'x_ca_basa', quantity: 1 }, { productId: 'x_hanh_la', quantity: 1 }],
+    outputId: 'chao_ca', outputQty: 30, durationMin: 25, unlock: 97, reputationGain: 1 },
+  // GĐ2007: Cơm chiên Dương Châu — quán cơm chiên cả nước: cơm chiên với trứng, lạp xưởng, cà rốt (đậu Hà Lan/tôm thêm tùy quán) trong chảo (fryer).
+  { id: 'recipe_com_chien_duong_chau', name: 'Cơm chiên Dương Châu', station: 'fryer',
+    inputs: [{ productId: 'gao', quantity: 1 }, { productId: 'x_trung_ga', quantity: 5 }, { productId: 'x_lap_xuong', quantity: 2 }, { productId: 'x_ca_rot', quantity: 1 }],
+    outputId: 'com_chien_duong_chau', outputQty: 40, durationMin: 20, unlock: 98, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────
