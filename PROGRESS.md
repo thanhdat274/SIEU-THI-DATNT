@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (10/11/2026)
+- GĐ1984–1986: Thịt rang cháy cạnh (chảo, mở 71; hành khô có lối ra bếp đầu tiên), Cá thu sốt cà (chảo, mở 72), Trứng luộc (bếp nồi, mở 73); MON_THAT + test; full 5708 xanh.
 - GĐ1983: dọn PROGRESS (>33KB) — dồn GĐ1940–1965 sang `docs/progress-archive/PROGRESS-GD1940-1965.md`.
 - GĐ1980–1982: Gà luộc (bếp nồi, mở 68, 5×8k), Tôm rim (chảo, mở 69, 6×11k), Mực xào hành tây (chảo, mở 70, 6×13k); MON_THAT + test; full 5699 xanh.
 - GĐ1977–1979: Bí đỏ xào tỏi (chảo, mở 65, 5×6k), Canh bí đỏ (bếp nồi, mở 66, bí đỏ + thịt xay → 8×8k), Sườn ram (chảo, mở 67, 5×11k); MON_THAT + test; full 5690 xanh.

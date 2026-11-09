@@ -13,7 +13,7 @@ const RETAIL_ONLY = new Set([
   ...LATE_GAME_PRODUCTS.map((p) => p.id), // hàng cao cấp cuối game (cấp 87–200): bán lẻ nguyên hộp
   'dochin', 'sinhto', 'banhkem', // đồ ăn/uống làm sẵn
   'x_kem_oc_que', 'x_banh_bao', // hàng đông lạnh ăn liền (bánh bao đã có lối ra qua 'banhbao')
-  'x_hanh_kho', 'x_rau_mui', 'x_dua_gia', // rau thơm/gia vị/dưa chua: bán lẻ (bún tươi có lối ra Bún đậu GĐ1956)
+  'x_rau_mui', 'x_dua_gia', // rau thơm/gia vị/dưa chua: bán lẻ (bún tươi có lối ra Bún đậu GĐ1956; hành khô có lối ra Thịt rang cháy cạnh GĐ1984)
 ]);
 
 describe('GĐ1432 — mọi nguyên liệu tươi có lối ra bếp/quán', () => {

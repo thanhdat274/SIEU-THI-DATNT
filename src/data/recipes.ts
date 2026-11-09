@@ -672,6 +672,9 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'ga_luoc', name: 'Gà luộc', category: 'fresh', buy: 5000, sell: 8000, color: 0xf0d890, unlock: 68 },
   { id: 'tom_rim', name: 'Tôm rim', category: 'fresh', buy: 7000, sell: 11000, color: 0xd8502a, unlock: 69 },
   { id: 'muc_xao_hanh_tay', name: 'Mực xào hành tây', category: 'fresh', buy: 8000, sell: 13000, color: 0xe8d8c8, unlock: 70 },
+  { id: 'thit_rang_chay_canh', name: 'Thịt rang cháy cạnh', category: 'fresh', buy: 6000, sell: 9000, color: 0xa8602a, unlock: 71 },
+  { id: 'ca_thu_sot_ca', name: 'Cá thu sốt cà', category: 'fresh', buy: 7000, sell: 10000, color: 0xc8502a, unlock: 72 },
+  { id: 'trung_luoc', name: 'Trứng luộc', category: 'fresh', buy: 3000, sell: 4000, color: 0xf4ecd8, unlock: 73 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2011,6 +2014,18 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_muc_xao_hanh_tay', name: 'Mực xào hành tây', station: 'fryer',
     inputs: [{ productId: 'x_muc_tuoi', quantity: 1 }, { productId: 'x_hanh_tay', quantity: 1 }],
     outputId: 'muc_xao_hanh_tay', outputQty: 6, durationMin: 10, unlock: 70, reputationGain: 1 },
+  // GĐ1984: Thịt rang cháy cạnh — cơm nhà miền Bắc: ba chỉ thái mỏng rang tới cháy cạnh với hành khô, nước mắm (chảo, fryer).
+  { id: 'recipe_thit_rang_chay_canh', name: 'Thịt rang cháy cạnh', station: 'fryer',
+    inputs: [{ productId: 'x_thit_heo', quantity: 1 }, { productId: 'x_hanh_kho', quantity: 1 }],
+    outputId: 'thit_rang_chay_canh', outputQty: 6, durationMin: 15, unlock: 71, reputationGain: 1 },
+  // GĐ1985: Cá thu sốt cà — cơm nhà cả nước: cá thu chiên vàng rồi rim sốt cà chua (chảo, fryer).
+  { id: 'recipe_ca_thu_sot_ca', name: 'Cá thu sốt cà', station: 'fryer',
+    inputs: [{ productId: 'x_ca_thu_tuoi', quantity: 1 }, { productId: 'x_ca_chua', quantity: 1 }],
+    outputId: 'ca_thu_sot_ca', outputQty: 6, durationMin: 15, unlock: 72, reputationGain: 1 },
+  // GĐ1986: Trứng luộc — cơm nhà cả nước: trứng gà luộc nồi nước, ăn kèm rau luộc chấm nước mắm (hot_kettle).
+  { id: 'recipe_trung_luoc', name: 'Trứng luộc', station: 'hot_kettle',
+    inputs: [{ productId: 'x_trung_ga', quantity: 4 }],
+    outputId: 'trung_luoc', outputQty: 4, durationMin: 10, unlock: 73, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────
