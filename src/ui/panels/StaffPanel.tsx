@@ -406,7 +406,7 @@ export function PromoteRow({ st, level, money, onPromote }: { st: Staff; level: 
         {chk.ok ? ` — đủ điều kiện (lương ×${fmtMul(chk.def.raise)})` : ` — cần ${chk.missing.join(', ')}`}
       </span>
       <button style={styles.btn} disabled={!chk.ok || money < chk.def.cost} onClick={() => onPromote(st.id)}>
-        {chk.ok ? shortLabel(`Thăng chức · ${formatMoney(chk.def.cost)}`, chk.def.cost, money) : `Thăng chức · ${formatMoney(chk.def.cost)}`}
+        {blockedLabel(chk.ok ? null : 'Chưa đủ điều kiện', `Thăng chức · ${formatMoney(chk.def.cost)}`, chk.def.cost, money)}
       </button>
       {chk.ok && (() => {
         const w = promotionWorth(st, chk.to);
