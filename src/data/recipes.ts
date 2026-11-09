@@ -666,6 +666,9 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'bap_luoc', name: 'Bắp luộc', category: 'fresh', buy: 3000, sell: 4000, color: 0xe8d050, unlock: 62 },
   { id: 'khoai_lang_luoc', name: 'Khoai lang luộc', category: 'fresh', buy: 3000, sell: 4000, color: 0xb0603a, unlock: 63 },
   { id: 'bong_cai_xao_toi', name: 'Bông cải xào tỏi', category: 'fresh', buy: 5000, sell: 8000, color: 0x3f8f4a, unlock: 64 },
+  { id: 'bi_do_xao_toi', name: 'Bí đỏ xào tỏi', category: 'fresh', buy: 4000, sell: 6000, color: 0xe8902a, unlock: 65 },
+  { id: 'canh_bi_do', name: 'Canh bí đỏ', category: 'fresh', buy: 5000, sell: 8000, color: 0xe8a040, unlock: 66 },
+  { id: 'suon_ram', name: 'Sườn ram', category: 'fresh', buy: 7000, sell: 11000, color: 0xa0502a, unlock: 67 },
 ];
 
 // ──────────────────────────────────────────────
@@ -1981,6 +1984,18 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_bong_cai_xao_toi', name: 'Bông cải xào tỏi', station: 'fryer',
     inputs: [{ productId: 'x_bong_cai_xanh', quantity: 1 }, { productId: 'x_toi', quantity: 1 }],
     outputId: 'bong_cai_xao_toi', outputQty: 5, durationMin: 8, unlock: 64, reputationGain: 1 },
+  // GĐ1977: Bí đỏ xào tỏi — cơm nhà cả nước: bí đỏ thái miếng xào với tỏi phi (chảo, fryer).
+  { id: 'recipe_bi_do_xao_toi', name: 'Bí đỏ xào tỏi', station: 'fryer',
+    inputs: [{ productId: 'x_bi_do', quantity: 1 }, { productId: 'x_toi', quantity: 1 }],
+    outputId: 'bi_do_xao_toi', outputQty: 5, durationMin: 8, unlock: 65, reputationGain: 1 },
+  // GĐ1978: Canh bí đỏ — cơm nhà cả nước: bí đỏ nấu với thịt bằm trong nồi nước (hot_kettle).
+  { id: 'recipe_canh_bi_do', name: 'Canh bí đỏ', station: 'hot_kettle',
+    inputs: [{ productId: 'x_bi_do', quantity: 1 }, { productId: 'x_thit_xay', quantity: 1 }],
+    outputId: 'canh_bi_do', outputQty: 8, durationMin: 15, unlock: 66, reputationGain: 1 },
+  // GĐ1979: Sườn ram — cơm nhà Nam/Trung: sườn chặt miếng chiên săn rồi ram nước mắm đường trong chảo (fryer); nước mắm/đường là gia vị bếp, không tính.
+  { id: 'recipe_suon_ram', name: 'Sườn ram', station: 'fryer',
+    inputs: [{ productId: 'x_suon_heo', quantity: 1 }],
+    outputId: 'suon_ram', outputQty: 5, durationMin: 20, unlock: 67, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────
