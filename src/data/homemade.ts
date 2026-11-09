@@ -76,6 +76,8 @@ export const NEIGHBOR2_PRODUCTS: { id: string; name: string; category: Category;
   { id: 'hx_mam_ca_linh', name: 'Mắm cá linh nhà ủ (hũ)', category: 'dry', buy: 34000, sell: 54000, color: 0x8a5a4a, unlock: 66 },
   // GĐ1854: tôm chua Huế nhà ủ — biên 1,6×, mở 67; lối ra: Cơm tôm chua (bếp xôi cơm).
   { id: 'hx_tom_chua', name: 'Tôm chua Huế nhà ủ (hũ)', category: 'dry', buy: 33000, sell: 53000, color: 0xd9704a, unlock: 67 },
+  // GĐ1855: củ kiệu muối nhà làm — biên 1,6×, mở 68; lối ra: Cháo củ kiệu (nồi nước).
+  { id: 'hx_cu_kieu', name: 'Củ kiệu muối nhà làm (hũ)', category: 'dry', buy: 31000, sell: 50000, color: 0xe8dcb0, unlock: 68 },
   // GĐ1671: mứt gừng bà Tám (hướng 3) — mứt Tết nhà làm, biên 1.6×, mở 45 > golden 30; hút hàng dịp Tết.
   { id: 'hx_mut_gung', name: 'Mứt gừng bà Tám (hộp)', category: 'dry', buy: 40000, sell: 64000, color: 0xe8c860, unlock: 45 },
 ];
