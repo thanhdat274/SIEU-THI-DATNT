@@ -32,7 +32,7 @@ import { newOnline } from '../data/online';
 import { newGarden } from '../data/garden';
 import { newAnalytics } from '../data/analytics';
 import { newInspection, type LicenseId } from '../data/licenses';
-import { type GameState, type Furniture, type ContractState, type Delivery, type DayRecord, type DayStats, DAY_START, emptyStats, type CookJob , ROUTINE } from './gameTypes';
+import { type GameState, type Furniture, type ZonePaint, type ContractState, type Delivery, type DayRecord, type DayStats, DAY_START, emptyStats, type CookJob , ROUTINE } from './gameTypes';
 import { emptyTiers } from './stock';
 import { createBranchSlice } from './slices/branch';
 import { createOrdersSlice } from './slices/orders';
@@ -122,6 +122,8 @@ export const newGameData = () => ({
   shopTier: 0,
   pendingUpgrade: false,
   style: { wall: 0xfff3b0, floor: 0xd8cfc0, roof: 0x1e8449 } as ShopStyle,
+  /** GĐ1943 — sơn nền/vách theo khu siêu thị (id khu → màu); bản lưu cũ thiếu = {} (không sơn). */
+  zonePaint: {} as Record<string, ZonePaint>,
   staff: [] as Staff[],
   candidates: generateCandidates(1, 1),
   autoOpen: true,

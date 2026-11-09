@@ -8,6 +8,7 @@ import { FurnitureView } from './furnitureView';
 import { ShelfInstancer } from './shelfInstancer';
 
 import { SHOP_CENTER_X, SHOP_FRONT_Z, SHOP_TIERS } from '../data/shopTiers';
+import { activeDepartments, departmentBounds } from '../data/departments';
 
 interface LocalCounter {
   key: string;
@@ -42,6 +43,8 @@ export class GroceryShop {
   counter!: THREE.Group;
   views = new Map<number, FurnitureView>();
   private furnitureGroup = new THREE.Group();
+  /** GĐ1943 — mảnh nền sơn theo khu siêu thị (chỉ trang trí, không chạm va chạm/NavGrid). */
+  private zoneGroup = new THREE.Group();
   /** GĐ886: hàng mọi kệ gộp theo món (ít draw call). Chỉ bật ở bản trình duyệt: sim headless seed Math.random mà three sinh UUID bằng Math.random, đổi số mesh sẽ lệch dòng ngẫu nhiên của sim kinh tế. */
   private shelfGoods: ShelfInstancer | undefined;
   private grid: NavGrid | null = null;
@@ -56,6 +59,7 @@ export class GroceryShop {
       else if (s.mainCounter !== prev.mainCounter) this.placeCounter();
       else if (s.style !== prev.style || s.stylePreview !== prev.stylePreview) this.applyStyle();
       if (s.furniture !== prev.furniture || s.shopTier !== prev.shopTier) this.sync();
+      else if (s.zonePaint !== prev.zonePaint) this.applyZonePaint();
     });
   }
 
@@ -92,6 +96,7 @@ export class GroceryShop {
     // Nhà kho nối ngay sau tiệm, cửa trước của kho thông với cửa sau của tiệm
     this.warehouse.place(SHOP_CENTER_X + this.backDoorX, SHOP_FRONT_Z - depth);
     this.building.group.add(this.furnitureGroup);
+    this.building.group.add(this.zoneGroup);
 
     this.counter = createCounter();
     this.placeCounter();
@@ -118,6 +123,40 @@ export class GroceryShop {
     const { wall, floor, roof } = { ...s.style, ...s.stylePreview };
     this.building.setColors(wall, floor, roof);
     for (const view of this.views.values()) view.setWallColor(wall);
+    this.applyZonePaint();
+  }
+
+  /** GĐ1943 — vẽ nền màu cho từng khu có sơn riêng (hộp bao đồ chủ chốt + phụ trợ), tô vách ngăn quanh khu.
+   *  Không có sơn khu (mọi ván dưới Siêu thị tạp hóa, sim headless) thì không tạo mesh nào. */
+  private applyZonePaint() {
+    for (const m of [...this.zoneGroup.children]) {
+      this.zoneGroup.remove(m);
+      if (m instanceof THREE.Mesh) { m.geometry.dispose(); (m.material as THREE.Material).dispose(); }
+    }
+    const s = useGame.getState();
+    const paint = s.zonePaint ?? {};
+    if (!Object.keys(paint).length) return;
+    for (const d of activeDepartments(s.furniture, s.shopTier)) {
+      const zp = paint[d.id];
+      const b = zp && departmentBounds(d, s.furniture);
+      if (!zp || !b) continue;
+      const pad = 1.2;
+      const x0 = Math.max(-this.width / 2 + 0.05, b.x0 - pad), x1 = Math.min(this.width / 2 - 0.05, b.x1 + pad);
+      const z0 = Math.max(-this.depth / 2 + 0.05, b.z0 - pad), z1 = Math.min(this.depth / 2 - 0.05, b.z1 + pad);
+      if (zp.floor !== undefined && x1 > x0 && z1 > z0) {
+        const mesh = new THREE.Mesh(new THREE.PlaneGeometry(x1 - x0, z1 - z0), new THREE.MeshStandardMaterial({ color: zp.floor }));
+        mesh.rotation.x = -Math.PI / 2;
+        mesh.position.set((x0 + x1) / 2, 0.012, (z0 + z1) / 2);
+        mesh.receiveShadow = true;
+        this.zoneGroup.add(mesh);
+      }
+      if (zp.wall !== undefined) {
+        for (const f of s.furniture) {
+          if (f.type !== 'wall' || f.x < b.x0 - 1.5 || f.x > b.x1 + 1.5 || f.z < b.z0 - 1.5 || f.z > b.z1 + 1.5) continue;
+          this.views.get(f.uid)?.setWallColor(zp.wall);
+        }
+      }
+    }
   }
 
   /** Gắn lưới đi lại; gọi sau khi các lớp vật cản khác (nhà, cây) đã setStatic. */
@@ -160,6 +199,7 @@ export class GroceryShop {
       view.setWallColor(useGame.getState().style.wall);
     }
     this.shelfGoods?.flush();
+    this.applyZonePaint();
     if (this.grid) this.applyToGrid(list);
   }
 

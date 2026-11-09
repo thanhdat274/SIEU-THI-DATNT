@@ -6,7 +6,7 @@ import { FURNITURE, furnitureDef, type FurnitureType } from '../../data/furnitur
 import { festivalShopName, festivalShopOpen } from '../../data/festivalDeco';
 import { FURNITURE_GROUP_TABS, furnitureGroup, type FurnitureGroup } from '../../data/furnitureGroups';
 import { VIET_SET, VIET_SET_TIERS, vietSetCount, vietSetDecorBonus } from '../../data/decorSets';
-import { departmentsUnlockedAtTier } from '../../data/departments';
+import { activeDepartments, departmentWalled, DEPT_ECON_FROM_TIER, departmentsUnlockedAtTier } from '../../data/departments';
 import { bigBasketInsight, BIG_BASKET_TIER } from '../../data/bigBasket';
 import { meatCounterPayoff, meatChainCooled } from '../../data/meatCounterPayoff';
 import { isMeat } from '../../data/meat';
@@ -229,7 +229,55 @@ export function PaintTab() {
           ✓ Xác nhận sơn
         </button>
       </div>
+      <ZonePaintSection />
     </>
+  );
+}
+
+/** GĐ1943 — sơn nền/vách riêng cho từng khu siêu thị đang hoạt động (từ bậc Siêu thị tạp hóa). */
+function ZonePaintSection() {
+  const shopTier = useGame((s) => s.shopTier);
+  const furniture = useGame((s) => s.furniture);
+  const zonePaint = useGame((s) => s.zonePaint) ?? {};
+  const money = useGame((s) => s.money);
+  const paintZone = useGame((s) => s.paintZone);
+  const [dep, setDep] = useState<string | null>(null);
+  if (shopTier < DEPT_ECON_FROM_TIER) return null;
+  const list = activeDepartments(furniture, shopTier);
+  if (!list.length) return <p style={styles.sub}>🏬 Sơn theo khu: đặt nội thất chủ chốt để mở khu siêu thị.</p>;
+  const cur = list.find((d) => d.id === dep) ?? list[0];
+  const zp = zonePaint[cur.id] ?? {};
+  const rows = [
+    { part: 'floor', label: 'Nền khu', swatches: FLOOR_COLORS },
+    { part: 'wall', label: 'Vách ngăn khu', swatches: WALL_COLORS },
+  ] as const;
+  return (
+    <div style={{ marginTop: 14 }}>
+      <b>🏬 Sơn theo khu</b>
+      <p style={styles.sub}>Mỗi khu sơn riêng nền & vách ngăn ({formatMoney(PAINT_PRICE)}/lần). Đặt vách ngăn quanh khu thì khu thêm 🩷.</p>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+        {list.map((d) => (
+          <button key={d.id} aria-pressed={d.id === cur.id} onClick={() => setDep(d.id)}
+            style={{ ...styles.btn, marginLeft: 0, outline: d.id === cur.id ? '3px solid #f1c40f' : 'none' }}>
+            {d.icon} {d.name}{departmentWalled(d, furniture) ? ' 🧱' : ''}
+          </button>
+        ))}
+      </div>
+      {rows.map((row) => (
+        <div key={row.part} style={{ margin: '8px 0' }}>
+          <b>{row.label}</b>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
+            {row.swatches.map((sw) => (
+              <button key={sw.color} disabled={zp[row.part] === sw.color || money < PAINT_PRICE}
+                onClick={() => paintZone(cur.id, row.part, sw.color)}
+                style={{ ...styles.btn, marginLeft: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Swatch color={sw.color} /> {sw.name}{zp[row.part] === sw.color ? ' ✓' : ''}
+              </button>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
   );
 }
 

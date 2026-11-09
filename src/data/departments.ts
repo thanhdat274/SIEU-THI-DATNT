@@ -88,3 +88,66 @@ export function departmentStatus(placedFurniture: readonly { type: FurnitureType
   }
   return out;
 }
+
+/**
+ * GĐ1943 — Nối NGÀNH HÀNG vào kinh tế (siêu thị phase 2, mẫu regionFlags: helper thuần, nối 2 điểm —
+ * kéo khách qua 🩷 và % giá). Chỉ chạy từ bậc "Siêu thị tạp hóa" (SHOP_TIERS[4], mở cấp 45 — sau mốc
+ * vàng 30) nên đường sim mốc 30 không đổi.
+ */
+export const DEPT_ECON_FROM_TIER = 4;
+export const KHU_DECOR_BASE = 2;
+export const KHU_DECOR_PER_SUPPORT = 1;
+export const KHU_SUPPORT_CAP = 3;
+/** Khu có ≥1 vách ngăn đứng sát quanh (đã "chia vách") thì +2 🩷. */
+export const KHU_WALL_BONUS = 2;
+export const KHU_PRICE_MUL = 1.02;
+/** Khoảng nới quanh hộp bao nội thất của khu để tính vách ngăn "quanh khu" (m). */
+const KHU_WALL_REACH = 1.5;
+
+type PlacedFurn = { type: FurnitureType; x: number; z: number; broken?: boolean; trial?: boolean };
+
+/** Hộp bao (toạ độ trong tiệm) của nội thất chủ chốt + phụ trợ của một khu; null nếu khu chưa có đồ. */
+export function departmentBounds(dep: DepartmentDef, list: readonly PlacedFurn[]): { x0: number; z0: number; x1: number; z1: number } | null {
+  const own = new Set<FurnitureType>([...dep.keyFurniture, ...dep.supportFurniture]);
+  let b: { x0: number; z0: number; x1: number; z1: number } | null = null;
+  for (const f of list) {
+    if (f.trial || !own.has(f.type)) continue;
+    if (!b) b = { x0: f.x, z0: f.z, x1: f.x, z1: f.z };
+    else b = { x0: Math.min(b.x0, f.x), z0: Math.min(b.z0, f.z), x1: Math.max(b.x1, f.x), z1: Math.max(b.z1, f.z) };
+  }
+  return b;
+}
+
+/** Khu đã có vách ngăn đứng quanh (trong hộp bao nới KHU_WALL_REACH). */
+export function departmentWalled(dep: DepartmentDef, list: readonly PlacedFurn[]): boolean {
+  const b = departmentBounds(dep, list);
+  if (!b) return false;
+  const r = KHU_WALL_REACH;
+  return list.some((f) => f.type === 'wall' && !f.trial && f.x >= b.x0 - r && f.x <= b.x1 + r && f.z >= b.z0 - r && f.z <= b.z1 + r);
+}
+
+/** Các khu đang chạy cơ chế kinh tế ở bậc tiệm này (đã mở theo bậc + đã kích hoạt). */
+export function activeDepartments(list: readonly PlacedFurn[], shopTier: number): DepartmentDef[] {
+  if (shopTier < DEPT_ECON_FROM_TIER) return [];
+  const live = list.filter((f) => !f.broken && !f.trial);
+  const st = departmentStatus(live);
+  return DEPARTMENTS.filter((d) => d.fromTier <= shopTier && st[d.id].activated);
+}
+
+/** 🩷 thưởng của các khu siêu thị (cộng vào decorScoreOf ở công thức kéo khách). */
+export function departmentDecorBonus(list: readonly PlacedFurn[], shopTier: number): number {
+  const live = list.filter((f) => !f.broken && !f.trial);
+  const st = departmentStatus(live);
+  let bonus = 0;
+  for (const d of activeDepartments(live, shopTier)) {
+    bonus += KHU_DECOR_BASE + KHU_DECOR_PER_SUPPORT * Math.min(KHU_SUPPORT_CAP, st[d.id].supportCount);
+    if (departmentWalled(d, live)) bonus += KHU_WALL_BONUS;
+  }
+  return bonus;
+}
+
+/** Hệ số giá của 1 món theo khu siêu thị chứa nhóm hàng của nó (1 = không thưởng). */
+export function departmentPriceMul(category: Category | undefined, list: readonly PlacedFurn[], shopTier: number): number {
+  if (!category) return 1;
+  return activeDepartments(list, shopTier).some((d) => d.categories.includes(category)) ? KHU_PRICE_MUL : 1;
+}

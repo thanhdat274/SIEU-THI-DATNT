@@ -83,6 +83,9 @@ export interface Tier {
 }
 
 /** Một món nội thất đặt trong tiệm; toạ độ tính trong tiệm (tâm tiệm là 0,0). */
+/** GĐ1943 — màu sơn riêng của một khu siêu thị. */
+export interface ZonePaint { floor?: number; wall?: number }
+
 export interface Furniture {
   uid: number;
   type: FurnitureType;
@@ -223,6 +226,9 @@ export interface GameState {
   /** Đã trả tiền mở rộng, thợ làm xong vào sáng mai. */
   pendingUpgrade: boolean;
   style: ShopStyle;
+  /** GĐ1943 — sơn nền/vách theo khu siêu thị (id khu trong DEPARTMENTS → màu). */
+  zonePaint: Record<string, ZonePaint>;
+  paintZone: (departmentId: string, part: 'floor' | 'wall', color: number) => void;
   /** Màu đang xem thử ở bảng Sơn sửa (chưa trả tiền, không lưu); null = không xem thử. */
   stylePreview: Partial<ShopStyle> | null;
   staff: Staff[];

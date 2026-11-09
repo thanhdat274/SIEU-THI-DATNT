@@ -3,6 +3,7 @@ import { festivalShopName, festivalShopOpen } from '../../data/festivalDeco';
 import { formatMoney } from '../../data/products';
 import { PAINT_PRICE, SHOP_TIERS } from '../../data/shopTiers';
 import { repairCost } from '../../data/risks';
+import { activeDepartments } from '../../data/departments';
 import { type GameState, type Furniture, type SetState, type GetState, SELL_BACK } from '../gameTypes';
 import { copyStock, returnTier, emptyTiers } from '../stock';
 
@@ -17,7 +18,7 @@ export const trialCost = (list: Furniture[]) =>
 export const updateFurniture = (set: SetState, get: GetState, uid: number, fn: (f: Furniture) => Furniture) =>
   set({ furniture: get().furniture.map((f) => (f.uid === uid ? fn(f) : f)) });
 
-export const createBuildSlice = (set: SetState, get: GetState): Pick<GameState, 'setBuildMode' | 'setPlacing' | 'placeFurniture' | 'moveFurniture' | 'moveMainCounter' | 'sellFurniture' | 'stashFurniture' | 'placeFromStash' | 'placeTrial' | 'buyTrials' | 'dropTrials' | 'demolishAll' | 'buyUpgrade' | 'repairFurniture' | 'paint'> => ({
+export const createBuildSlice = (set: SetState, get: GetState): Pick<GameState, 'setBuildMode' | 'setPlacing' | 'placeFurniture' | 'moveFurniture' | 'moveMainCounter' | 'sellFurniture' | 'stashFurniture' | 'placeFromStash' | 'placeTrial' | 'buyTrials' | 'dropTrials' | 'demolishAll' | 'buyUpgrade' | 'repairFurniture' | 'paint' | 'paintZone'> => ({
   setBuildMode: (on) => {
     // Thoát chế độ xây mà chưa mua đồ dùng thử thì dỡ đi
     if (!on && get().furniture.some((f) => f.trial)) get().dropTrials();
@@ -165,6 +166,19 @@ export const createBuildSlice = (set: SetState, get: GetState): Pick<GameState, 
     set({
       money: s.money - PAINT_PRICE,
       style: { ...s.style, [part]: color },
+      stats: { ...s.stats, spent: s.stats.spent + PAINT_PRICE },
+      totals: { ...s.totals, spent: s.totals.spent + PAINT_PRICE },
+    });
+  },
+  paintZone: (departmentId, part, color) => {
+    const s = get();
+    if (!activeDepartments(s.furniture, s.shopTier).some((d) => d.id === departmentId)) return s.notify('Khu này chưa hoạt động');
+    const cur = s.zonePaint?.[departmentId] ?? {};
+    if (cur[part] === color) return;
+    if (s.money < PAINT_PRICE) return s.notify('Không đủ tiền!');
+    set({
+      money: s.money - PAINT_PRICE,
+      zonePaint: { ...s.zonePaint, [departmentId]: { ...cur, [part]: color } },
       stats: { ...s.stats, spent: s.stats.spent + PAINT_PRICE },
       totals: { ...s.totals, spent: s.totals.spent + PAINT_PRICE },
     });
