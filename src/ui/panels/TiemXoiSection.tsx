@@ -1,4 +1,5 @@
 import { useGame } from '../../core/store';
+import { shopHoursLabel } from '../../data/shopHours';
 import { formatMoney } from '../../data/products';
 import { shortLabel } from '../shortLabel';
 import {
@@ -20,7 +21,7 @@ export function TiemXoiSection() {
   const off = Math.round((1 - TIEM_XOI_COST_MUL) * 100);
   return (
     <div style={{ ...styles.card, display: 'block', marginTop: 10 }}>
-      <b>🍚 Tiệm xôi</b>
+      <b>🍚 Tiệm xôi</b> <span style={{ fontSize: 12, opacity: 0.75 }}>· bán sớm {shopHoursLabel('tiemXoi')}</span>
       {!t.open ? (
         <>
           <ul style={{ fontSize: 13, margin: '6px 0 0', paddingLeft: 18, lineHeight: 1.7 }}>

@@ -224,16 +224,48 @@ export function OrderPanel() {
   const fillSuggest = () => {
     const c: Record<string, number> = {};
     const g = useGame.getState();
-    const cand = shown.filter((it) => it.suggest > 0 && displayable(it.p.id));
+    // GĐ1834 (review đợt 4 R2): panel đang nêu "Nút thắt: X — mua đúng thứ đó mới pha thêm ly"
+    // thì nút gợi ý nổi bật nhất phải điền đúng nút thắt TRƯỚC (nạp đồ uống quán nước), ngân sách
+    // dư mới chia cho gợi ý thường — lời khuyên và nút hành động không đi hai đường. Ngày đầu giữ
+    // nguyên bộ 3 món hướng dẫn (case minTotal — "Đừng phá" đợt 1).
+    let bottle = 0;
+    const drinkBudget = Math.max(0, money - wagesDue(g));
+    if (g.day > 1 && restockTip && restockTip.shortfall > 0 && biz.quanNuoc) {
+      const drinkUnits = quanNuocDrinkIds(level).reduce((n, id) => n + (storage[id] ?? 0), 0);
+      const plan = teahouseFillPlan(biz.quanNuoc, level, drinkUnits, (id) => (rows.some((r) => r.p.id === id) ? caseSize(id) : 0), day);
+      for (const ln of plan.lines) {
+        c[ln.id] = maxFit(c, ln.id, ln.cases, drinkBudget);
+        bottle += c[ln.id] * caseSize(ln.id);
+      }
+    }
+    // GĐ1823 (review R1/R3): ngày đầu, bộ 3 món hướng dẫn luôn vào giỏ đề xuất dù kho khai trương
+    // còn mì/nước (suggest=0 với món đã có hàng) — banner bảo "nhập 3 món trước" thì nút gợi ý
+    // phải ra đúng bộ đó, mỗi món 1 thùng; vốn đầu 360k đã đủ, trần 40% chỉ còn là sàn.
+    const guideRows = g.day <= 1
+      ? guideItems
+          .filter((gp) => displayable(gp.id))
+          .map((gp) => rows.find((r) => r.p.id === gp.id))
+          .filter((r): r is (typeof rows)[number] => !!r)
+      : [];
+    const cand = [
+      ...guideRows,
+      ...shown.filter((it) => it.suggest > 0 && displayable(it.p.id) && !guideRows.some((gr) => gr.p.id === it.p.id)),
+    ];
     const minCase = Math.min(...cand.map((r) => orderTotal(supplier, { [r.p.id]: caseSize(r.p.id) }, day)), Infinity);
-    const budget = suggestBudget(money, wagesDue(g), g.day, Number.isFinite(minCase) ? minCase : 0);
+    const minTotal = g.day <= 1 && Number.isFinite(minCase) && guideRows.length > 0
+      ? guideRows.reduce((sum, r) => sum + orderTotal(supplier, { [r.p.id]: caseSize(r.p.id) }, day), 0)
+      : 0;
+    const budget = suggestBudget(money, wagesDue(g), g.day, Number.isFinite(minCase) ? minCase : 0, minTotal);
+    const guideIds = new Set(guideRows.map((r) => r.p.id));
     let cut = false;
     for (const r of cand) {
-      c[r.p.id] = maxFit(c, r.p.id, r.suggest, budget);
-      if (c[r.p.id] < r.suggest) cut = true;
+      const want = guideIds.has(r.p.id) ? Math.max(r.suggest, 1) : r.suggest;
+      c[r.p.id] = maxFit(c, r.p.id, want, budget);
+      if (c[r.p.id] < want) cut = true;
     }
     setCart(c);
-    if (cut) notify(useGame.getState().day <= 1 ? '💰 Ngày đầu chỉ điền ~40% tiền mặt — giữ vốn, bán xong nhập thêm' : '💰/📦 Điền tới hết tiền hoặc hết chỗ kho — nâng cấp để nhập thêm');
+    if (cut) notify(useGame.getState().day <= 1 ? '💰 Ngày đầu điền đủ bộ 3 món hướng dẫn — bán xong nhập thêm' : '💰/📦 Điền tới hết tiền hoặc hết chỗ kho — nâng cấp để nhập thêm');
+    else if (bottle > 0 && restockTip) notify(`🧾 Đã điền nút thắt quán nước (${bottle}/${restockTip.shortfall} ly thiếu) + gợi ý thường`);
   };
   // GĐ1512 (K1) — mở từ nút "📦 Nhập đủ" trên cảnh báo sắp hết hàng: tự điền giỏ gợi ý một lần
   // (người chơi vẫn xem lại và bấm Đặt). Xoá cờ ngay để mở lại bảng không điền lần nữa.
@@ -432,6 +464,8 @@ export function OrderPanel() {
         {supplier.bulk && ` Mua nhiều: ${supplier.bulk.map((b) => `từ ${b.minCases} thùng một món bớt ${b.discount * 100}%`).join(', ')}.`}
         {' '}Hàng nhập theo thùng, về kho rồi khui ra bày lẻ.
       </p>
+      {day > 1 && <details className="restock-extras" style={{ margin: '4px 0' }}>
+        <summary style={{ cursor: 'pointer', fontSize: 13, padding: '8px 0', minHeight: 44, display: 'flex', alignItems: 'center' }}>ℹ️ Mối quen · giá hôm nay · dự báo · hàng hot (bấm để xem)</summary>
       <div style={{ ...st.banner, ...(showRestockExtras(day) ? null : { display: 'none' }) }}>{/* GĐ319: ngày đầu chỉ dạy nhập-bày-bán */}
         <SupplierRelLine life={biz.supplierRel?.[supplier.id]?.spent ?? 0} monthSpent={biz.supplierRelMonth?.[supplier.id] ?? 0} />
       </div>
@@ -469,6 +503,7 @@ export function OrderPanel() {
       {prodSugg.length > 0 && <ProdSuggCard items={prodSugg} onOpen={(panel) => openPanel({ type: panel })} />}
 
       {hot.length > 0 && day > 1 && <HotWeekBanner hot={hot} hotNextWeek={hotNextWeek} nextSupplierUnlock={unlockedSuppliers.length < SUPPLIERS.length ? SUPPLIERS.find((s) => s.unlock > level)!.unlock : undefined} />}
+      </details>} {/* Đ2-R4: khối phụ gấp mặc định để bảng hàng lên sát đầu */}
 
       {filter === 'suggest' && urgent.length > 0 && showRestockExtras(day) && <UrgentCard rows={urgent.map((r) => ({ id: r.p.id, reason: urgentReason(r), suggest: r.suggest }))} />}
 
@@ -522,7 +557,10 @@ export function OrderPanel() {
                 </span>
                 <span style={{ fontSize: 12, opacity: 0.8 }}>{formatMoney(caseCost)}/thùng</span>
                 <span style={{ whiteSpace: 'nowrap' }}>
-                  <button style={st.btn} onClick={() => setQty(g.id, (cart[g.id] ?? 0) + 1)}>+1 thùng</button>
+                  {/* GĐ1834 (review đợt 3 R4): hết tiền thì nút phải nói thiếu bao nhiêu, không câm lặng */}
+                  <button style={st.btn} disabled={caseCost > moneyLeft} onClick={() => setQty(g.id, (cart[g.id] ?? 0) + 1)}>
+                    {caseCost > moneyLeft ? `Thiếu ${formatMoney(caseCost - moneyLeft)}` : '+1 thùng'}
+                  </button>
                   {(cart[g.id] ?? 0) > 0 && <span style={{ marginLeft: 8, fontSize: 12 }}>{cart[g.id]} thùng</span>}
                 </span>
               </div>
@@ -593,6 +631,10 @@ export function OrderPanel() {
                   onChange={(e) => setQty(r.p.id, Number(e.target.value))} aria-label={`Số thùng ${r.p.name}`} />
                 <button style={st.step} disabled={!fits({ ...cart, [r.p.id]: qty + 1 })} onClick={() => setQty(r.p.id, qty + 1)}
                   title={fits({ ...cart, [r.p.id]: qty + 1 }) ? undefined : 'Hết tiền hoặc hết chỗ kho'} aria-label={`Thêm một thùng ${r.p.name}`}>+</button>
+                {/* GĐ1834 (review đợt 3 R4): bấm + mà không thêm được thì nói ngay thiếu bao nhiêu / hết chỗ */}
+                {!fits({ ...cart, [r.p.id]: qty + 1 }) && (r.cost * r.size - moneyLeft > 0
+                  ? <span style={{ color: '#ff7675', fontSize: 11, whiteSpace: 'nowrap' }}>Thiếu {formatMoney(r.cost * r.size - moneyLeft)}</span>
+                  : <span style={{ color: '#ff7675', fontSize: 11 }}>Hết chỗ</span>)}
                 {r.suggest > 0 && qty !== r.suggest && (
                   <button style={{ ...st.step, width: 'auto', padding: '0 6px' }} onClick={() => setQty(r.p.id, r.suggest)} title="Lấy số gợi ý">✨{r.suggest}</button>
                 )}
@@ -623,7 +665,12 @@ export function OrderPanel() {
         <span style={{ display: 'flex', gap: 8 }}>
           <button style={st.btn} onClick={closePanel}>Đóng</button>
           <button style={{ ...st.btn, background: '#f1c40f', fontWeight: 700 }} disabled={!count || tooSmall || tooBig || total > money} onClick={order}>
-            {wageShort && !needConfirm ? '⚠️ Vẫn nhập' : !deliversInstantly(supplier, biz.supplierRel?.[supplier.id]?.spent ?? 0) ? '🚚 Đặt giao sáng mai' : '📦 Nhập ngay'}
+            {/* GĐ1834 (review đợt 3 R4): nút đặt khi không đủ tiền ghi "Thiếu X₫" — chuẩn shortLabel đã dùng khắp panels */}
+            {wageShort && !needConfirm
+              ? '⚠️ Vẫn nhập'
+              : !deliversInstantly(supplier, biz.supplierRel?.[supplier.id]?.spent ?? 0)
+                ? shortLabel('🚚 Đặt giao sáng mai', total, money)
+                : shortLabel('📦 Nhập ngay', total, money)}
           </button>
         </span>
       </div>

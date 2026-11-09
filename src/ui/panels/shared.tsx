@@ -73,7 +73,8 @@ export const Swatch = ({ color }: { color: number }) => (
  * chừa lề đều các cạnh. Kiểm tra theo chiều rộng thực tế (max-width: 1000px) thay vì chỉ (pointer: coarse)
  * để đảm bảo mọi thiết bị (kể cả máy tính cửa sổ thu nhỏ hay môi trường WebView/IAB) đều nhận layout chuẩn.
  */
-const IS_MOBILE =
+/** GĐ1836: mở public để panel nào cần rút gọn văn bản trên màn nhỏ cũng dùng đúng một nguồn chân lý. */
+export const IS_MOBILE =
   typeof matchMedia !== 'undefined' &&
   (matchMedia('(max-width: 1000px)').matches || matchMedia('(pointer: coarse) and (max-width: 1000px)').matches);
 

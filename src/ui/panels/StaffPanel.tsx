@@ -1,3 +1,4 @@
+import { askConfirm } from '../ConfirmDialog';
 import type * as React from 'react';
 import { lixiBlock, lixiCost, LIXI_PER_STAFF } from '../../data/lixi';
 import { useState } from 'react';
@@ -197,7 +198,7 @@ export function StaffPanel() {
                   );
                 })()}
                 <TransferButton id={st.id} from="main" />
-                <button style={staffSt.fire} onClick={() => confirm(`Cho ${st.name} nghỉ việc?`) && fire(st.id)}>Cho nghỉ</button>
+                <button style={staffSt.fire} onClick={() => { void askConfirm(`Cho ${st.name} nghỉ việc?`, { danger: true, okLabel: 'Cho nghỉ' }).then((ok) => ok && fire(st.id)); }}>Cho nghỉ</button>
               </div>
             </div>
           ))}
@@ -325,7 +326,7 @@ function BranchRoster() {
                 )}
                 <button style={staffSt.train} disabled={branch.restDay?.[x.id] === day + 1} title="Nghỉ ngày mai không lương, hồi hết mệt" onClick={() => restBranchStaff(x.id)}>🛌 Nghỉ mai</button>
                 <TransferButton id={x.id} from="branch" />
-                <button style={staffSt.fire} onClick={() => confirm(`Cho ${x.name} nghỉ việc?`) && fireFromBranch(x.id)}>Cho nghỉ</button>
+                <button style={staffSt.fire} onClick={() => { void askConfirm(`Cho ${x.name} nghỉ việc?`, { danger: true, okLabel: 'Cho nghỉ' }).then((ok) => ok && fireFromBranch(x.id)); }}>Cho nghỉ</button>
               </div>
             </div>
           ))}
@@ -384,7 +385,7 @@ export function DeployBoard() {
         style={{ ...staffSt.train, justifySelf: 'start' }}
         disabled={branch.open || !branch.staff.length}
         title={branch.open ? 'Đóng cửa chi nhánh trước' : 'Chuyển cả đội chi nhánh về tiệm chính (tới khi đủ chỗ)'}
-        onClick={() => confirm('Dồn hết nhân viên chi nhánh về tiệm chính?') && evacuateBranch()}
+        onClick={() => { void askConfirm('Dồn hết nhân viên chi nhánh về tiệm chính?', { okLabel: 'Dồn về' }).then((ok) => ok && evacuateBranch()); }}
       >
         🏬 Dồn hết sang tiệm chính
       </button>

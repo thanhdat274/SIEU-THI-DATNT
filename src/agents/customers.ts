@@ -11,6 +11,7 @@ import { tierMarkdown, fitLots, nearestLife, nearExpiryRefuseChance } from '../d
 import { demandPriceFactor, keepChance } from '../data/pricing';
 import { CUNG_GOODS, CUNG_PULL, isXoiCungDay } from '../data/tiemXoi';
 import { dayEffects, isWeekend, OFF_SEASON_CLEARANCE, OFF_SEASON_HUNT, offSeason } from '../data/calendar';
+import { chooseSubstitute } from '../data/substitute';
 import { COOKED_PRODUCT_IDS, RECIPES } from '../data/recipes';
 import { NEIGHBOR_ONLY_IDS } from '../data/homemade';
 import { REGION_IDS } from '../data/regionSpecialty';
@@ -52,6 +53,7 @@ import {
   impulseChance, impulseOptions, impulseWeight, shelfAttention, stockedAttention, weightedPick, decorScoreOf, decorVisitBoost, type ShopGeom,
 } from '../data/layout';
 import { regionFlagDecorBonus, stockedProductIds } from '../data/regionFlags';
+import { departmentDecorBonus } from '../data/departments';
 import { vietSetDecorBonus } from '../data/decorSets';
 import { playSfx } from '../core/audio';
 
@@ -76,11 +78,12 @@ export { FRANTIC_AT, IMPATIENT_AT, impatienceEmoji };
 
 const pick = <T,>(list: T[]) => list[Math.floor(simRng()() * list.length)];
 
+import { SHOP_HOURS } from '../data/shopHours';
 const EDGE_X = 38;
-const OPEN_FROM = 6 * 60;
+const OPEN_FROM = SHOP_HOURS.grocery.from;
 /** Trần khoảng chờ khách kế tiếp (phút game) khi vừa sang giờ mở — khách đầu ngày không đợi phần dư của đêm. */
 const DAYTIME_FIRST_GAP_CAP = 20;
-const OPEN_UNTIL = 22 * 60;
+const OPEN_UNTIL = SHOP_HOURS.grocery.to;
 /** Tỉ lệ khách muốn mua món đang có trên kệ (còn lại là món ngẫu nhiên, có thể tiệm không bán). */
 const WANTS_STOCKED = 0.8;
 
@@ -168,7 +171,7 @@ export class CustomerManager {
         // GĐ1495 — bỏ trần "+25% chậu cây": điểm trang trí 🩷 cộng dồn mọi đồ decor, kéo khách
         // theo sao danh tiếng (quán đẹp chỉ phát huy khi phục vụ tốt); không máy trong sim cũ → 0.
         // GĐ1505 — bảng hiệu đặc sản 4 miền: bày đủ bộ đặc sản miền (mối lái vùng xa) thì +🩷 thêm
-        const decorBoost = decorVisitBoost(decorScoreOf(s.furniture) + vietSetDecorBonus(s.furniture) + regionFlagDecorBonus(s.furniture, stockedProductIds(s.furniture), s.servedCounts ?? {}), reputationOf(s.repLog).overall);
+        const decorBoost = decorVisitBoost(decorScoreOf(s.furniture) + vietSetDecorBonus(s.furniture) + regionFlagDecorBonus(s.furniture, stockedProductIds(s.furniture), s.servedCounts ?? {}) + departmentDecorBonus(s.furniture, s.shopTier), reputationOf(s.repLog).overall);
         // Đang mưa thì ít người ra đường, tạnh mưa lại đông như thường
         const traffic = skyAt(s.weatherSeed, s.day, s.weather, s.minutes).traffic * festival * eventTraffic;
       // Bày hàng rẻ hơn giá gợi ý thì tiếng lành đồn xa, thêm người ghé; sàn bẩn thì ngại vào; giờ vàng kéo khách về đúng khung
@@ -526,10 +529,25 @@ export class CustomerManager {
           c.basket.push({ id: want, price });
           this.pullCombo(c, want);
         } else {
-          c.missing++;
-          c.missed.push({ id: want, why: 'stock' });
-          st.noteMiss('stock', want);
-          c.say(`❓ Hết ${shortName}!`);
+          // GĐ1829 — OpenSpec khach-thay-mon-het-hang: hết món muốn thì khách nhìn trên CÙNG KỆ
+          // lấy món khác giá không vượt dung sai (SUBSTITUTE_CHANCE ~60%, tất định simRng).
+          // Phải đứng trước một kệ thật (shelfUid hợp lệ) mới "nhìn thấy" hàng để thay.
+          const shelfF2 = shelfUid !== undefined ? st.furniture.find((x) => x.uid === shelfUid) : undefined;
+          const hotIds = new Set([...trending(st.day, st.level), ...dayEffects(st.weatherSeed, st.day, st.level).hot]);
+          const sub = chooseSubstitute(want, shelfF2, st.priceOf, hotIds, simRng());
+          const subPrice = sub !== null ? st.takeFromShelf(sub, shelfUid) : null;
+          if (sub !== null && subPrice !== null) {
+            c.basket.push({ id: sub, price: subPrice });
+            this.pullCombo(c, sub);
+            c.say('🔄 Lấy món này thay!');
+            const g2 = useGame.getState();
+            useGame.setState({ stats: { ...g2.stats, substituted: (g2.stats.substituted ?? 0) + 1 } });
+          } else {
+            c.missing++;
+            c.missed.push({ id: want, why: 'stock' });
+            st.noteMiss('stock', want);
+            c.say(`❓ Hết ${shortName}!`);
+          }
         }
       });
     }

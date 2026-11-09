@@ -23,16 +23,16 @@ describe('goldenHourBands — dự báo giờ vàng từ nhịp traffic', () => 
     expect(ids).toEqual(['sang', 'toi', 'trua'].sort());
   });
 
-  it('describeHours gộp thành chuỗi "6h–8h30 · 11h–13h · 17h–20h"', () => {
-    expect(describeHours(goldenHourBands())).toBe('6h–8h30 · 11h–13h · 17h–20h');
+  it('describeHours gộp thành chuỗi "6h–9h · 11h–13h · 17h–20h"', () => {
+    expect(describeHours(goldenHourBands())).toBe('6h–9h · 11h–13h · 17h–20h');
   });
 
   it('timeBandAt và inGoldenHour khớp ranh giới', () => {
     expect(timeBandAt(6 * 60 + 1)?.id).toBe('sang');
-    expect(timeBandAt(8 * 60 + 30)?.id).toBe('giua_sang'); // hết khung sáng đúng 8h30
+    expect(timeBandAt(9 * 60)?.id).toBe('giua_sang'); // hết khung sáng đúng 9h
     expect(inGoldenHour(6 * 60)).toBe(true);
-    expect(inGoldenHour(8 * 60 + 29)).toBe(true);
-    expect(inGoldenHour(8 * 60 + 30)).toBe(false); // sang khung giữa buổi (không vàng)
+    expect(inGoldenHour(8 * 60 + 59)).toBe(true);
+    expect(inGoldenHour(9 * 60)).toBe(false); // sang khung giữa buổi (không vàng)
     expect(inGoldenHour(17 * 60)).toBe(true);
     expect(inGoldenHour(12 * 60)).toBe(true); // cao điểm trưa
     expect(inGoldenHour(15 * 60)).toBe(false); // buổi chiều vắng

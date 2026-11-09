@@ -22,7 +22,7 @@ beforeEach(() => { useGame.setState(newGameData()); });
 
 describe('khoảng chờ khách đầu ngày', () => {
   it('sang giờ mở mà spawnIn còn dư 80 phút → bị kéo về trần ≤ 20 phút', () => {
-    useGame.setState({ minutes: 6 * 60 + 1, shopOpen: true });
+    useGame.setState({ minutes: 8 * 60 + 1, shopOpen: true });
     const m = manager();
     m.spawnIn = 80;
     m.update(0.0001, () => 1);

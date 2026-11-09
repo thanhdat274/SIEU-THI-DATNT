@@ -1,6 +1,7 @@
 import { furnitureDef } from '../../data/furniture';
 import { fitList } from '../../data/onboarding';
 import { WAREHOUSE_TIERS } from '../../data/warehouse';
+import { MATERIAL_FROM_TIER, MATERIAL_KEYS, MATERIAL_LABEL, MATERIAL_PACK, MATERIAL_PACK_PRICE, emptyWareMaterials, hasMaterials, materialsFor, missingMaterials } from '../../data/wareMaterials';
 import { customersPerDay } from '../../data/levels';
 import { formatMoney, productById, unlockedProducts } from '../../data/products';
 import { orderTotal, supplierById } from '../../data/suppliers';
@@ -13,7 +14,7 @@ import { updateFurniture } from './build';
 
 /** Kho và kệ: nhập hàng, đặt nhà cung cấp, nâng kho, bày/rút hàng, khách lấy hàng khỏi kệ. */
 
-export const createInventorySlice = (set: SetState, get: GetState): Pick<GameState, 'toggleShop' | 'buy' | 'placeOrder' | 'noteDemand' | 'upgradeWarehouse' | 'replaceEmptySlots' | 'unstockTier' | 'stockTier' | 'takeFromShelf' | 'consumeStock'> => ({
+export const createInventorySlice = (set: SetState, get: GetState): Pick<GameState, 'toggleShop' | 'buy' | 'placeOrder' | 'noteDemand' | 'upgradeWarehouse' | 'buyMaterialPack' | 'replaceEmptySlots' | 'unstockTier' | 'stockTier' | 'takeFromShelf' | 'consumeStock'> => ({
   toggleShop: () => {
     const s = get();
     if (!s.shopOpen && s.inspection?.suspendedDay === s.day) return s.notify('⛔ Tiệm bị đình chỉ hôm nay vì trượt thanh tra — mai mở lại.');
@@ -22,6 +23,9 @@ export const createInventorySlice = (set: SetState, get: GetState): Pick<GameSta
   },
   buy: (productId, qty) => {
     const s = get();
+    // GĐ1831 (review đợt 2 R11): chặn số lẻ/chuỗi như placeOrder — `price * '3'` được JS chấp nhận
+    // nhưng putStock sẽ nối chuỗi vào kho. Co-op gửi lệnh qua cùng action nên chặn một chỗ là đủ.
+    if (!Number.isInteger(qty) || qty <= 0) return false;
     // Món nhà làm không nhập được ở đâu: phải tự nấu ở trạm (vì vậy đơn nấu mới có ý nghĩa)
     if (COOKED_PRODUCT_IDS.has(productId)) {
       s.notify(`🍳 ${productById(productId).name} là món nhà làm — vào trạm nấu để chế biến nhé`);
@@ -52,7 +56,10 @@ export const createInventorySlice = (set: SetState, get: GetState): Pick<GameSta
   placeOrder: (supplierId, items) => {
     const s = get();
     const sup = supplierById(supplierId);
-    const lines = Object.fromEntries(Object.entries(items).filter(([, q]) => q > 0));
+    // GĐ1831 (review đợt 2 R11): chỉ nhận SỐ NGUYÊN dương — số lẻ (0.5) hoặc chuỗi ('3') lọt qua
+    // `q > 0` sẽ nối chuỗi vào kho ("03") và trừ tiền không khớp hàng. Co-op nhận lệnh từ máy
+    // khách qua cùng action này nên chặn ở đây là chặn cả hai chế độ.
+    const lines = Object.fromEntries(Object.entries(items).filter(([, q]) => Number.isInteger(q) && q > 0));
     const cost = orderTotal(sup, lines, s.day);
     if (!Object.keys(lines).length) return false;
     if (cost < sup.minOrder) {
@@ -107,8 +114,31 @@ export const createInventorySlice = (set: SetState, get: GetState): Pick<GameSta
       s.notify('Không đủ tiền!');
       return false;
     }
+    // GĐ1945 — kho cấp cao cần thêm gạch/xi măng/thép (mua bộ vật liệu ở bảng Kho), xây xong thì tiêu hao
+    const toTier = s.warehouseTier + 1;
+    const have = s.wareMaterials ?? emptyWareMaterials();
+    if (!hasMaterials(have, toTier)) {
+      const miss = missingMaterials(have, toTier);
+      s.notify(`Thiếu vật liệu: ${MATERIAL_KEYS.filter((k) => miss[k] > 0).map((k) => `${MATERIAL_LABEL[k]} ${miss[k]}`).join(', ')}`);
+      return false;
+    }
+    const need = materialsFor(toTier);
+    set({ wareMaterials: { gach: have.gach - need.gach, ximang: have.ximang - need.ximang, thep: have.thep - need.thep } });
     set({ money: s.money - next.price, warehouseTier: s.warehouseTier + 1, stats: { ...s.stats, spent: s.stats.spent + next.price }, totals: { ...s.totals, spent: s.totals.spent + next.price } });
     s.notify(`🏭 Đã nâng cấp ${next.name}: chứa ${next.cases} thùng, giữ lạnh ${next.cold} món`);
+    return true;
+  },
+  buyMaterialPack: () => {
+    const s = get();
+    if (s.warehouseTier + 1 < MATERIAL_FROM_TIER) { s.notify('Chưa cần vật liệu: kho cấp này nâng bằng tiền'); return false; }
+    if (s.money < MATERIAL_PACK_PRICE) { s.notify('Không đủ tiền!'); return false; }
+    const have = s.wareMaterials ?? emptyWareMaterials();
+    set({
+      money: s.money - MATERIAL_PACK_PRICE,
+      wareMaterials: { gach: have.gach + MATERIAL_PACK.gach, ximang: have.ximang + MATERIAL_PACK.ximang, thep: have.thep + MATERIAL_PACK.thep },
+      stats: { ...s.stats, spent: s.stats.spent + MATERIAL_PACK_PRICE }, totals: { ...s.totals, spent: s.totals.spent + MATERIAL_PACK_PRICE },
+    });
+    s.notify(`🧱 Đã mua bộ vật liệu (${formatMoney(MATERIAL_PACK_PRICE)}), để ở bãi sau kho`);
     return true;
   },
   replaceEmptySlots: (announce = false) => {

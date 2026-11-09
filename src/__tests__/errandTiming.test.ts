@@ -64,8 +64,8 @@ describe('errandWindow — cửa sổ nhờ rơi vào khung vắng (phân bố)'
 });
 
 describe('errandWindow — cửa sổ cụ thể từng khách có đợt nhờ', () => {
-  it('Bà Năm (ghé 6h–10h): cửa sổ 8h30–10h — phần ghé chạm giữa buổi', () => {
-    expect(errandWindow(regularById('ba_nam')!)).toEqual({ from: 8 * 60 + 30, to: 10 * 60, inSlow: true });
+  it('Bà Năm (ghé 6h–10h): cửa sổ 9h–10h — phần ghé chạm giữa buổi', () => {
+    expect(errandWindow(regularById('ba_nam')!)).toEqual({ from: 9 * 60, to: 10 * 60, inSlow: true });
   });
 
   it('Chú Ba xe ôm (ghé 10h–17h): lấy khung CHỒNG DÀI NHẤT 13h–17h, không phải 10h–11h', () => {
@@ -107,10 +107,10 @@ describe('errandAgenda — chip "Việc {khách} nhờ" trên dải Kế hoạch
     const items = errandAgenda({ day: 10, arcs: { ba_nam: step0('arc_xoi') } });
     expect(items).toEqual([{
       key: 'errand-ba_nam',
-      atMinutes: 8 * 60 + 30,
+      atMinutes: 9 * 60,
       untilMinutes: 10 * 60,
       icon: '🤝',
-      label: '8h30 Việc Bà Năm bán xôi nhờ',
+      label: '9h Việc Bà Năm bán xôi nhờ',
       panel: 'regulars',
     }]);
   });
@@ -121,7 +121,7 @@ describe('errandAgenda — chip "Việc {khách} nhờ" trên dải Kế hoạch
       arcs: { ba_nam: step0('arc_xoi'), chu_ba: step0('arc_xe_om'), be_na: step0('arc_keo') },
     });
     expect(items.map((i) => [i.key, i.atMinutes, i.untilMinutes])).toEqual([
-      ['errand-ba_nam', 510, 600],
+      ['errand-ba_nam', 540, 600],
       ['errand-chu_ba', 780, 1020],
       ['errand-be_na', 960, 1020],
     ]);
@@ -143,7 +143,7 @@ describe('errandAgenda — chip "Việc {khách} nhờ" trên dải Kế hoạch
       hasCourier: false,
     });
     const errand = items.find((i) => i.key === 'errand-ba_nam');
-    expect(errand).toBeTruthy();      // 9h đang trong cửa sổ 8h30–10h → chip còn hiệu lực
+    expect(errand).toBeTruthy();      // 9h đang trong cửa sổ 9h–10h → chip còn hiệu lực
     expect(items.find((i) => i.key === 'errand-chu_ba')).toBeTruthy(); // cửa sổ 13h–17h chưa tới → vẫn hiện trước
     for (let i = 1; i < items.length; i++) expect(items[i].atMinutes).toBeGreaterThanOrEqual(items[i - 1].atMinutes);
     for (const it of items) expect(it.untilMinutes).toBeGreaterThan(9 * 60);
@@ -182,13 +182,13 @@ describe('idleTip — mức 0: việc nhờ trong cửa sổ "tiện làm" thắ
   };
   const tip = () => idleTip(useGame.getState());
 
-  it('9h (trong cửa sổ 8h30–10h của Bà Năm) + bước nhờ đang chờ → gợi ý 🤝 mở bảng Khách quen', () => {
+  it('9h (trong cửa sổ 9h–10h của Bà Năm) + bước nhờ đang chờ → gợi ý 🤝 mở bảng Khách quen', () => {
     const g = newGameData();
     seed({ minutes: 9 * 60, biz: { ...g.biz, regularArcs: { ba_nam: step0('arc_xoi') } } });
     const t = tip();
     expect(t?.icon).toBe('🤝');
     expect(t?.act).toBe('regulars');
-    expect(t?.text).toBe('Bà Năm bán xôi nhờ giữ 2 hộp sữa — 8h30–10h tiện làm');
+    expect(t?.text).toBe('Bà Năm bán xôi nhờ giữ 2 hộp sữa — 9h–10h tiện làm');
   });
 
   it('Chú Ba: 13h20 trong cửa sổ 13h–17h → gợi ý đúng khách; xác định khi gọi lại', () => {

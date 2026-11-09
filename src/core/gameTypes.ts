@@ -2,6 +2,7 @@
 import type { FurnitureType } from '../data/furniture';
 import type { MarketTier } from '../data/chophien';
 import { warehouseTier } from '../data/warehouse';
+import type { WareMaterials } from '../data/wareMaterials';
 import type { QuestLog, Totals } from '../data/quests';
 import { casesFor } from '../data/products';
 import { type ShopStyle } from '../data/shopTiers';
@@ -83,6 +84,9 @@ export interface Tier {
 }
 
 /** Một món nội thất đặt trong tiệm; toạ độ tính trong tiệm (tâm tiệm là 0,0). */
+/** GĐ1943 — màu sơn riêng của một khu siêu thị. */
+export interface ZonePaint { floor?: number; wall?: number }
+
 export interface Furniture {
   uid: number;
   type: FurnitureType;
@@ -215,12 +219,20 @@ export interface GameState {
   /** Độ bẩn sàn tiệm 0–100: tăng theo lượt khách, lao công lau, mỗi đêm dọn sạch. */
   dirt: number;
   addDirt: (amount: number) => void;
+  /** GĐ1839 — bỏ qua các lần bẩn kế tiếp (sau resetGame: khách cũ ra cửa không bẩn sàn ngày 1). */
+  freezeDirt: () => void;
   stats: DayStats;
   /** Chỉ số trong SHOP_TIERS. */
   shopTier: number;
   /** Đã trả tiền mở rộng, thợ làm xong vào sáng mai. */
   pendingUpgrade: boolean;
+  /** GĐ1944 — số ô mở rộng tiếp giáp đã mua sau bậc Đại siêu thị. */
+  extraTiles: number;
+  buyExpansionTile: () => boolean;
   style: ShopStyle;
+  /** GĐ1943 — sơn nền/vách theo khu siêu thị (id khu trong DEPARTMENTS → màu). */
+  zonePaint: Record<string, ZonePaint>;
+  paintZone: (departmentId: string, part: 'floor' | 'wall', color: number) => void;
   /** Màu đang xem thử ở bảng Sơn sửa (chưa trả tiền, không lưu); null = không xem thử. */
   stylePreview: Partial<ShopStyle> | null;
   staff: Staff[];
@@ -230,6 +242,9 @@ export interface GameState {
   /** Cấp nhà kho (chỉ số trong WAREHOUSE_TIERS). */
   warehouseTier: number;
   upgradeWarehouse: () => boolean;
+  /** GĐ1945 — vật liệu nâng kho (không tính vào storageCapacity). */
+  wareMaterials: WareMaterials;
+  buyMaterialPack: () => boolean;
   /** Hàng mới về: ô kệ hết hàng mà kho cũng hết món đó thì tự gỡ, bày món khác đang có trong kho. */
   autoSwap: boolean;
   /** Cộng dồn cả ván (khách, món, doanh thu) để đo nhiệm vụ cốt truyện. */
@@ -453,6 +468,9 @@ export interface GameState {
   /** Đi ngủ. Trả về false nếu chưa tới giờ ngủ. */
   sleep: () => boolean;
   notify: (message: string) => void;
+  /** GĐ1835 — bắt đầu (hoặc bắt đầu lại) đếm 3 giây cho ô thông báo đang giữ: gọi khi thoát khỏi
+   *  trạng thái che (vd bấm xong thoại chương) để tin không biến mất trước khi kịp hiện. */
+  armMessage: () => void;
   openPanel: (panel: Panel) => void;
   closePanel: () => void;
 

@@ -1,4 +1,5 @@
 import { trendMark } from '../trendMark';
+import { shopHoursLabel } from '../../data/shopHours';
 import type * as React from 'react';
 import { useGame } from '../../core/store';
 import { formatMoney, fmtMul } from '../../data/products';
@@ -51,7 +52,7 @@ export function QuanNuocPanel() {
   return (
     <div style={{ width: '100%', maxWidth: 560 }}>
       <h2 style={styles.title}>🧋 Quán Nước Đầu Ngõ</h2>
-      <p style={styles.sub}>Quán chuyên nước ở đầu hẻm — nguyên liệu lấy thẳng từ kho của mình.</p>
+      <p style={styles.sub}>Quán chuyên nước ở đầu hẻm, mở sớm {shopHoursLabel('quanNuoc')} — nguyên liệu lấy thẳng từ kho của mình.</p>
       {quan.open && QUAN_WEATHER_MUL[weather] !== 1 && (
         <p style={{ fontSize: 12, margin: '0 0 6px' }}>
           {WEATHER[weather].icon} {WEATHER[weather].name}: khách quán {QUAN_WEATHER_MUL[weather] > 1 ? 'đông' : 'vắng'} hơn ×{fmtMul(QUAN_WEATHER_MUL[weather])} — {QUAN_WEATHER_MUL[weather] > 1 ? 'nạp thêm đồ uống' : 'bớt nhập cho đỡ tồn'}

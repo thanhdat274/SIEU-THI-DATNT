@@ -56,6 +56,114 @@ export const NEIGHBOR2_PRODUCTS: { id: string; name: string; category: Category;
   { id: 'hx_nem_nuong', name: 'Nem nướng bà Tám (xâu)', category: 'cold', buy: 50000, sell: 80000, color: 0xc0603a, unlock: 56 },
   // GĐ1488: cá cơm khô bà Tám (hướng 3) — biên ~1.6×, mở 57; lối ra: Cơm cá cơm rim (bếp xôi cơm).
   { id: 'hx_ca_kho', name: 'Cá cơm khô bà Tám (gói)', category: 'dry', buy: 40000, sell: 64000, color: 0xc8a070, unlock: 57 },
+  // GĐ1845: tỏi đen nhà ủ (hướng 3) — biên 1,6×, mở 58; hiện bán thẳng làm đồ khô (món gỡ GĐ1940: Cơm chiên tỏi đen).
+  { id: 'hx_toi_den', name: 'Tỏi đen nhà ủ (hũ)', category: 'dry', buy: 55000, sell: 88000, color: 0x2b2420, unlock: 58 },
+  // GĐ1846: sa tế tôm nhà làm — biên 1,6×, mở 59; lối ra: Hủ tiếu sa tế (nồi nước, GĐ1941).
+  { id: 'hx_sate_tom', name: 'Sa tế tôm nhà làm (hũ)', category: 'dry', buy: 36000, sell: 58000, color: 0xb8401f, unlock: 59 },
+  // GĐ1847: tép rim nhà làm — biên 1,6×, mở 60; lối ra: Cơm tép rim (bếp xôi cơm).
+  { id: 'hx_tep_rim', name: 'Tép rim nhà làm (hũ)', category: 'dry', buy: 34000, sell: 54000, color: 0x9a5a6a, unlock: 60 },
+  // GĐ1848: ruốc cá lóc nhà làm — biên 1,6×, mở 61; lối ra: Bánh mì ruốc (bếp nướng, GĐ1941).
+  { id: 'hx_ruoc_ca_loc', name: 'Ruốc cá lóc nhà làm (hũ)', category: 'dry', buy: 45000, sell: 72000, color: 0xb89a6a, unlock: 61 },
+  // GĐ1849: muối ớt Tây Ninh nhà làm — biên 1,6×, mở 62; hiện bán thẳng làm đồ khô (món gỡ GĐ1932/1940: Cơm muối ớt).
+  { id: 'hx_muoi_ot', name: 'Muối ớt Tây Ninh nhà làm (hũ)', category: 'dry', buy: 32000, sell: 51000, color: 0xd9452b, unlock: 62 },
+  // GĐ1850: đậu phộng muối nhà rang — biên 1,6×, mở 63; lối ra: Cháo đậu phộng (nồi nước).
+  { id: 'hx_dau_phong_rang', name: 'Đậu phộng rang nhà làm (hũ)', category: 'dry', buy: 31000, sell: 50000, color: 0xc89a5a, unlock: 63 },
+  // GĐ1851: khô cá sặc nhà phơi — biên 1,6×, mở 64; lối ra: Cơm khô cá sặc (bếp xôi cơm).
+  { id: 'hx_kho_ca_sac', name: 'Khô cá sặc nhà phơi (gói)', category: 'dry', buy: 38000, sell: 61000, color: 0xb8864a, unlock: 64 },
+  // GĐ1852: hành phi nhà làm — biên 1,6×, mở 65; hiện bán thẳng làm gia vị nguyên liệu (món gỡ GĐ1932: Cháo hành phi).
+  { id: 'hx_hanh_phi', name: 'Hành phi nhà làm (hũ)', category: 'dry', buy: 31000, sell: 50000, color: 0xc8943a, unlock: 65 },
+  // GĐ1853: mắm cá linh nhà ủ — biên 1,6×, mở 66; lối ra: Cơm mắm cá linh (bếp xôi cơm).
+  { id: 'hx_mam_ca_linh', name: 'Mắm cá linh nhà ủ (hũ)', category: 'dry', buy: 34000, sell: 54000, color: 0x8a5a4a, unlock: 66 },
+  // GĐ1854: tôm chua Huế nhà ủ — biên 1,6×, mở 67; lối ra: Bánh cuốn tôm chua Huế (nồi hấp, GĐ1941).
+  { id: 'hx_tom_chua', name: 'Tôm chua Huế nhà ủ (hũ)', category: 'dry', buy: 33000, sell: 53000, color: 0xd9704a, unlock: 67 },
+  // GĐ1855: củ kiệu muối nhà làm — biên 1,6×, mở 68; hiện bán thẳng làm đồ khô (món gỡ GĐ1932: Cháo củ kiệu).
+  { id: 'hx_cu_kieu', name: 'Củ kiệu muối nhà làm (hũ)', category: 'dry', buy: 31000, sell: 50000, color: 0xe8dcb0, unlock: 68 },
+  // GĐ1856: tương gừng nhà làm — biên 1,6×, mở 69; hiện bán thẳng làm gia vị nguyên liệu (món gỡ GĐ1932: Cơm tương gừng).
+  { id: 'hx_tuong_gung', name: 'Tương gừng nhà làm (hũ)', category: 'dry', buy: 30000, sell: 50000, color: 0xc8a050, unlock: 69 },
+  // GĐ1857: nấm rơm khô nhà phơi — biên 1,6×, mở 70; lối ra: Cháo nấm rơm (nồi nước).
+  { id: 'hx_nam_rom', name: 'Nấm rơm khô nhà phơi (gói)', category: 'dry', buy: 40000, sell: 64000, color: 0x6a4a3a, unlock: 70 },
+  // GĐ1858: muối tôm Tây Ninh nhà rang — biên 1,6×, mở 71; lối ra: Xoài lắc muối tôm (máy xay, GĐ1941).
+  { id: 'hx_muoi_tom', name: 'Muối tôm nhà rang (hũ)', category: 'dry', buy: 31000, sell: 50000, color: 0xd98a6a, unlock: 71 },
+  // GĐ1859: hạt sen sấy nhà làm — biên 1,6×, mở 72; lối ra: Cháo hạt sen (nồi nước).
+  { id: 'hx_hat_sen', name: 'Hạt sen sấy nhà làm (gói)', category: 'dry', buy: 42000, sell: 67000, color: 0xe8e0b0, unlock: 72 },
+  // GĐ1860: đậu đen rang nhà làm — biên 1,6×, mở 73; lối ra: Chè đậu đen (nồi nước, GĐ1941 — đậu đen nấu cơm sượng/chát nên làm chè/xôi).
+  { id: 'hx_dau_den', name: 'Đậu đen rang nhà làm (gói)', category: 'dry', buy: 31000, sell: 50000, color: 0x2a2a30, unlock: 73 },
+  // GĐ1861: đậu xanh cà vỏ nhà làm — biên 1,6×, mở 74; lối ra: Cháo đậu xanh (nồi nước).
+  { id: 'hx_dau_xanh_ca', name: 'Đậu xanh cà vỏ nhà làm (gói)', category: 'dry', buy: 31000, sell: 50000, color: 0xd8c860, unlock: 74 },
+  // GĐ1862: mè đen xay nhà làm — biên 1,6×, mở 75; lối ra: Chè mè đen (nồi nước, GĐ1941).
+  { id: 'hx_me_den', name: 'Mè đen xay nhà làm (hũ)', category: 'dry', buy: 32000, sell: 51000, color: 0x30282a, unlock: 75 },
+  // GĐ1863: khoai lang sấy dẻo nhà làm — biên 1,6×, mở 76; lối ra: Cháo khoai lang (nồi nước).
+  { id: 'hx_khoai_say', name: 'Khoai lang sấy dẻo nhà làm (gói)', category: 'dry', buy: 31000, sell: 50000, color: 0xd88a4a, unlock: 76 },
+  // GĐ1864: bắp rang bơ nhà làm — biên 1,6×, mở 77; hiện bán thẳng làm đồ ăn vặt (món gỡ GĐ1940: Cơm bắp).
+  { id: 'hx_bap_rang', name: 'Bắp rang bơ nhà làm (hũ)', category: 'dry', buy: 31000, sell: 50000, color: 0xf0d870, unlock: 77 },
+  // GĐ1865: tương hột Bến Tre nhà ủ — biên 1,6×, mở 78; lối ra: Cá kho tương hột (nồi nước, GĐ1941).
+  { id: 'hx_tuong_hot', name: 'Tương hột nhà ủ (hũ)', category: 'dry', buy: 31000, sell: 50000, color: 0x7a4a22, unlock: 78 },
+  // GĐ1866: bột nghệ nhà xay — biên 1,6×, mở 79; lối ra: Cơm nghệ (bếp xôi cơm).
+  { id: 'hx_bot_nghe', name: 'Bột nghệ nhà xay (hũ)', category: 'dry', buy: 31000, sell: 50000, color: 0xd8a020, unlock: 79 },
+  // GĐ1867: bột cà ri nhà rang — biên 1,6×, mở 80; lối ra: Cà ri gà (nồi nước, GĐ1941).
+  { id: 'hx_bot_ca_ri', name: 'Bột cà ri nhà rang (hũ)', category: 'dry', buy: 32000, sell: 51000, color: 0xd89a20, unlock: 80 },
+  // GĐ1868: muối sả nhà làm — biên 1,6×, mở 81; lối ra: Gà nướng muối sả (bếp nướng, GĐ1941).
+  { id: 'hx_muoi_sa', name: 'Muối sả nhà làm (hũ)', category: 'dry', buy: 31000, sell: 50000, color: 0xb8c880, unlock: 81 },
+  // GĐ1869: tỏi ớt ngâm nhà làm — biên 1,6×, mở 83; hiện bán thẳng làm gia vị ngâm (món gỡ GĐ1932: Cháo tỏi ớt).
+  { id: 'hx_toi_ot', name: 'Tỏi ớt ngâm nhà làm (hũ)', category: 'dry', buy: 31000, sell: 50000, color: 0xd85a3a, unlock: 83 },
+  // GĐ1870: lá dứa sấy nhà làm — biên 1,6×, mở 84; lối ra: Cơm lá dứa (bếp xôi cơm).
+  { id: 'hx_la_dua', name: 'Lá dứa sấy nhà làm (gói)', category: 'dry', buy: 31000, sell: 50000, color: 0x5a9a4a, unlock: 84 },
+  // GĐ1871: hạt điều rang muối nhà làm — biên 1,6×, mở 85; hiện bán thẳng làm đồ ăn vặt (món gỡ GĐ1940: Cháo hạt điều).
+  { id: 'hx_hat_dieu', name: 'Hạt điều rang muối nhà làm (hũ)', category: 'dry', buy: 48000, sell: 77000, color: 0xe0b878, unlock: 85 },
+  // GĐ1872: mắm nêm Đà Nẵng nhà pha — biên 1,6×, mở 87; lối ra: Bún mắm nêm (nồi nước, GĐ1941).
+  { id: 'hx_mam_nem', name: 'Mắm nêm nhà pha (chai)', category: 'dry', buy: 31000, sell: 50000, color: 0xa0683a, unlock: 87 },
+  // GĐ1873: bột gạo lứt rang nhà làm — biên 1,6×, mở 88; lối ra: Cháo gạo lứt (nồi nước).
+  { id: 'hx_gao_lut_rang', name: 'Gạo lứt rang nhà làm (gói)', category: 'dry', buy: 31000, sell: 50000, color: 0xb89868, unlock: 88 },
+  // GĐ1874: xoài sấy dẻo nhà làm — biên 1,6×, mở 89; hiện bán thẳng làm đồ ăn vặt (món gỡ GĐ1939: Xôi xoài sấy, xôi xoài nay dùng xoài tươi).
+  { id: 'hx_xoai_say', name: 'Xoài sấy dẻo nhà làm (gói)', category: 'dry', buy: 35000, sell: 56000, color: 0xe8a830, unlock: 89 },
+  { id: 'hx_chuoi_say', name: 'Chuối sấy giòn nhà làm (gói)', category: 'dry', buy: 31000, sell: 50000, color: 0xd8b840, unlock: 90 },
+  { id: 'hx_dua_say', name: 'Dừa sấy giòn nhà làm (gói)', category: 'dry', buy: 31000, sell: 50000, color: 0xe8e0c0, unlock: 92 },
+  { id: 'hx_mon_say', name: 'Khoai môn sấy nhà làm (gói)', category: 'dry', buy: 31000, sell: 50000, color: 0xb89ac8, unlock: 93 },
+  { id: 'hx_cai_muoi', name: 'Cải muối nhà làm (hũ)', category: 'dry', buy: 31000, sell: 50000, color: 0x9ab860, unlock: 94 },
+  { id: 'hx_ca_phao_ngam', name: 'Cà pháo ngâm mắm nhà làm (hũ)', category: 'dry', buy: 31000, sell: 50000, color: 0xc8d890, unlock: 95 },
+  { id: 'hx_nam_huong_say', name: 'Nấm hương sấy nhà làm (gói)', category: 'dry', buy: 31000, sell: 50000, color: 0x8a6a4a, unlock: 97 },
+  { id: 'hx_muc_mot_nang', name: 'Mực một nắng nhà phơi (gói)', category: 'dry', buy: 31000, sell: 50000, color: 0xd8a890, unlock: 98 },
+  { id: 'hx_gac_bep', name: 'Thịt gác bếp nhà hun (gói)', category: 'dry', buy: 31000, sell: 50000, color: 0x7a4a3a, unlock: 99 },
+  { id: 'hx_ca_dua_kho', name: 'Khô cá dứa nhà phơi (gói)', category: 'dry', buy: 31000, sell: 50000, color: 0xc8b078, unlock: 101 },
+  { id: 'hx_dua_hanh', name: 'Dưa hành muối nhà làm (hũ)', category: 'dry', buy: 31000, sell: 50000, color: 0xd8e4a0, unlock: 102 },
+  { id: 'hx_cu_cai_muoi', name: 'Củ cải muối nhà phơi (hũ)', category: 'dry', buy: 31000, sell: 50000, color: 0xe4d8b0, unlock: 103 },
+  { id: 'hx_mang_chua', name: 'Măng chua ngâm nhà làm (hũ)', category: 'dry', buy: 31000, sell: 50000, color: 0xe0d890, unlock: 104 },
+  { id: 'hx_dua_cai', name: 'Dưa cải chua nhà làm (hũ)', category: 'dry', buy: 31000, sell: 50000, color: 0xb8cc70, unlock: 105 },
+  { id: 'hx_ca_muoi', name: 'Cá thu muối nhà ướp (gói)', category: 'dry', buy: 31000, sell: 50000, color: 0xa8b0b8, unlock: 106 },
+  { id: 'hx_tuong_dau', name: 'Tương đậu nành nhà ủ (hũ)', category: 'dry', buy: 31000, sell: 50000, color: 0xb88a48, unlock: 107 },
+  { id: 'hx_mut_bi', name: 'Mứt bí sên nhà làm (hũ)', category: 'dry', buy: 31000, sell: 50000, color: 0xe8c860, unlock: 108 },
+  { id: 'hx_mut_ca_rot', name: 'Mứt cà rốt nhà làm (hũ)', category: 'dry', buy: 31000, sell: 50000, color: 0xe89040, unlock: 109 },
+  { id: 'hx_mut_khoai', name: 'Mứt khoai lang nhà làm (hũ)', category: 'dry', buy: 31000, sell: 50000, color: 0xd8904a, unlock: 110 },
+  { id: 'hx_mut_chuoi', name: 'Mứt chuối dẻo nhà làm (hũ)', category: 'dry', buy: 31000, sell: 50000, color: 0xd8b058, unlock: 111 },
+  { id: 'hx_mut_sen', name: 'Mứt sen nhà làm (hũ)', category: 'dry', buy: 31000, sell: 50000, color: 0xe8d8d0, unlock: 112 },
+  { id: 'hx_mut_mo', name: 'Ô mai mơ nhà làm (hũ)', category: 'dry', buy: 31000, sell: 50000, color: 0xe0a070, unlock: 113 },
+  { id: 'hx_o_mai_me', name: 'Ô mai me nhà làm (hũ)', category: 'dry', buy: 31000, sell: 50000, color: 0xb87a48, unlock: 114 },
+  { id: 'hx_o_mai_sau', name: 'Ô mai sấu nhà làm (hũ)', category: 'dry', buy: 31000, sell: 50000, color: 0xa8c070, unlock: 115 },
+  { id: 'hx_o_mai_dao', name: 'Ô mai đào nhà làm (hũ)', category: 'dry', buy: 31000, sell: 50000, color: 0xe8a090, unlock: 116 },
+  { id: 'hx_o_mai_khe', name: 'Ô mai khế nhà làm (hũ)', category: 'dry', buy: 31000, sell: 50000, color: 0xd8b060, unlock: 117 },
+  { id: 'hx_o_mai_quat', name: 'Ô mai quất nhà làm (hũ)', category: 'dry', buy: 31000, sell: 50000, color: 0xe8a838, unlock: 118 },
+  { id: 'hx_o_mai_roi', name: 'Ô mai roi nhà làm (hũ)', category: 'dry', buy: 31000, sell: 50000, color: 0xd87888, unlock: 119 },
+  { id: 'hx_o_mai_cam', name: 'Ô mai cam nhà làm (hũ)', category: 'dry', buy: 31000, sell: 50000, color: 0xe89830, unlock: 120 },
+  { id: 'hx_o_mai_oi', name: 'Ô mai ổi nhà làm (hũ)', category: 'dry', buy: 31000, sell: 50000, color: 0xb8c868, unlock: 121 },
+  { id: 'hx_o_mai_buoi', name: 'Ô mai bưởi nhà làm (hũ)', category: 'dry', buy: 31000, sell: 50000, color: 0xd8d078, unlock: 122 },
+  { id: 'hx_o_mai_xoai', name: 'Ô mai xoài nhà làm (hũ)', category: 'dry', buy: 31000, sell: 50000, color: 0xe8b838, unlock: 123 },
+  { id: 'hx_o_mai_dua', name: 'Ô mai dứa nhà làm (hũ)', category: 'dry', buy: 31000, sell: 50000, color: 0xecc848, unlock: 124 },
+  { id: 'hx_o_mai_mit', name: 'Ô mai mít nhà làm (hũ)', category: 'dry', buy: 31000, sell: 50000, color: 0xe8c040, unlock: 125 },
+  { id: 'hx_o_mai_nho', name: 'Ô mai nho nhà làm (hũ)', category: 'dry', buy: 31000, sell: 50000, color: 0x9070a8, unlock: 126 },
+  { id: 'hx_o_mai_man', name: 'Ô mai mận nhà làm (hũ)', category: 'dry', buy: 31000, sell: 50000, color: 0xb86080, unlock: 127 },
+  { id: 'hx_o_mai_dau', name: 'Ô mai dâu nhà làm (hũ)', category: 'dry', buy: 31000, sell: 50000, color: 0xd04860, unlock: 128 },
+  { id: 'hx_o_mai_le', name: 'Ô mai lê nhà làm (hũ)', category: 'dry', buy: 31000, sell: 50000, color: 0xd8d088, unlock: 129 },
+  { id: 'hx_o_mai_kiwi', name: 'Ô mai kiwi nhà làm (hũ)', category: 'dry', buy: 31000, sell: 50000, color: 0x88b848, unlock: 130 },
+  { id: 'hx_o_mai_hong', name: 'Ô mai hồng nhà làm (hũ)', category: 'dry', buy: 31000, sell: 50000, color: 0xe88830, unlock: 131 },
+  { id: 'hx_o_mai_vai', name: 'Ô mai vải nhà làm (hũ)', category: 'dry', buy: 31000, sell: 50000, color: 0xe0b8a0, unlock: 132 },
+  { id: 'hx_o_mai_nhan', name: 'Ô mai nhãn nhà làm (hũ)', category: 'dry', buy: 31000, sell: 50000, color: 0xc8a870, unlock: 133 },
+  { id: 'hx_o_mai_luu', name: 'Ô mai lựu nhà làm (hũ)', category: 'dry', buy: 31000, sell: 50000, color: 0xc84058, unlock: 134 },
+  { id: 'hx_o_mai_thom', name: 'Ô mai thơm nhà làm (hũ)', category: 'dry', buy: 31000, sell: 50000, color: 0xe8c848, unlock: 135 },
+  { id: 'hx_o_mai_tao', name: 'Ô mai táo nhà làm (hũ)', category: 'dry', buy: 31000, sell: 50000, color: 0xa8c050, unlock: 136 },
+  { id: 'hx_o_mai_chuoi', name: 'Ô mai chuối nhà làm (hũ)', category: 'dry', buy: 31000, sell: 50000, color: 0xe8d058, unlock: 137 },
+  { id: 'hx_o_mai_coc', name: 'Ô mai cóc nhà làm (hũ)', category: 'dry', buy: 31000, sell: 50000, color: 0xa8c068, unlock: 138 },
+  { id: 'hx_o_mai_sori', name: 'Ô mai sơri nhà làm (hũ)', category: 'dry', buy: 31000, sell: 50000, color: 0xc83850, unlock: 139 },
+  { id: 'hx_o_mai_sen', name: 'Ô mai sen nhà làm (hũ)', category: 'dry', buy: 31000, sell: 50000, color: 0xe0c8b0, unlock: 140 },
   // GĐ1671: mứt gừng bà Tám (hướng 3) — mứt Tết nhà làm, biên 1.6×, mở 45 > golden 30; hút hàng dịp Tết.
   { id: 'hx_mut_gung', name: 'Mứt gừng bà Tám (hộp)', category: 'dry', buy: 40000, sell: 64000, color: 0xe8c860, unlock: 45 },
 ];

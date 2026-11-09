@@ -177,10 +177,10 @@ describe('prestigeRestart (hàm thuần) — giữ bộ sưu tập', () => {
     expect(r.totals).toEqual(rich.totals);
   });
 
-  it('reset ván: money 300000, level 1, day 1, kho/tiệm/sân/vườn/quán nước/khách quen về mặc định', () => {
+  it('reset ván: money về vốn mới (360k — GĐ1823), level 1, day 1, kho/tiệm/sân/vườn/quán nước/khách quen về mặc định', () => {
     const fresh = newGameData();
     const r = prestigeRestart(richState());
-    expect(r.money).toBe(300000);
+    expect(r.money).toBe(fresh.money);
     expect(r.level).toBe(1);
     expect(r.day).toBe(1);
     expect(r.furniture.length).toBe(fresh.furniture.length); // kệ mặc định, không còn đồ đạc phát triển
@@ -211,7 +211,7 @@ describe('prestige tăng sau restart', () => {
 describe('doPrestige qua store — đủ điều kiện', () => {
   beforeEach(() => useGame.setState({ ...newGameData() }));
 
-  it('level 60 + doanh thu 100M: tái sinh → level 1, money 300000, prestige 1/0.08, báo ★', () => {
+  it('level 60 + doanh thu 100M: tái sinh → level 1, money về vốn mới (GĐ1823), prestige 1/0.08, báo ★', () => {
     const msgs: string[] = [];
     const s0 = useGame.getState();
     useGame.setState({
@@ -223,7 +223,7 @@ describe('doPrestige qua store — đủ điều kiện', () => {
     useGame.getState().doPrestige();
     const s = useGame.getState();
     expect(s.level).toBe(1);
-    expect(s.money).toBe(300000);
+    expect(s.money).toBe(newGameData().money);
     expect(s.biz.prestige).toEqual({ level: 1, bonus: 0.08, goalsClaimed: [] });
     expect(msgs.some((m) => m.includes('Tái sinh') || m.includes('🌟'))).toBe(true);
   });

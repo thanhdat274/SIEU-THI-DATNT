@@ -2,7 +2,7 @@
 
 Game quản lý **cửa hàng tạp hóa 3D**: chạy một tiệm tạp hóa, phục vụ khách vãng lai và khách quen, thuê nhân viên, mở rộng chi nhánh, ký hợp đồng, lập nghiệp đoàn (co-op)… Được xây dựng bằng **React + Three.js** và chạy trên web (mobile-first, có PWA).
 
-> 📚 Tài liệu tham khảo: [`NGHIEN-CUU-TAP-HOA-2026-10-24.md`](NGHIEN-CUU-TAP-HOA-2026-10-24.md) là bản đồ hiện trạng chuẩn nhất của game. Các file `ANALYSIS_AND_FEATURES.md`, `PHAN-TICH-VA-DE-XUAT.md`, `PHAN-TICH-THAM-KHAO-HAPPYTOWN.md` là tài liệu lịch sử (số liệu đã cũ).
+> 📚 Nhật ký phát triển theo giai đoạn (GĐ) và tham chiếu hiện trạng được lưu trong [`PROGRESS.md`](PROGRESS.md) cùng kho `docs/progress-archive/`.
 
 ## ✨ Tính năng chính
 

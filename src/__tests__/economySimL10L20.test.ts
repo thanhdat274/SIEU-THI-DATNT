@@ -145,4 +145,4 @@ describe('khảo sát kinh tế vòng ngày — simulator thật trên store', (
 
 const fmt = (v: number) => `${Math.round(v).toLocaleString('vi-VN')}đ`;
 
-const BONUS_TO_SALES_CEILING: Record<number, number> = { 5: 1.0, 10: 0.92, 20: 0.67 };
+const BONUS_TO_SALES_CEILING: Record<number, number> = { 5: 1.0, 10: 0.92, 20: 0.85 }; // 09/11 nâng trần cấp 20 0.67→0.85 có chủ ý (người dùng chốt): cao điểm sáng dời 6–9h trùng giờ mở 8h, kèo thắng dễ hơn (đo 0.58→0.83)

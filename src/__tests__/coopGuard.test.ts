@@ -91,6 +91,8 @@ const LOCAL_ONLY: Record<string, string> = {
   checkWelcomeBack: 'thưởng "Chào mừng quay lại" khi nạp bản lưu chơi đơn — theo lastSeenAt lưu trong máy, không dùng ở hẻm online, chạy cục bộ',
   collectOfflineRevenue: 'GĐ1497 — doanh thu vắng mặt tính theo lastSeenAt lưu trong máy (chỉ gọi ở màn đăng nhập chơi đơn, không chạy ở hẻm online), cộng tiền cục bộ',
   markHudTourDone: 'GĐ1503 — chốt cờ đã xem tour HUD trên chính máy đó, thuần giao diện',
+  armMessage: 'GĐ1835 — bắt đầu lại đếm 3 giây cho ô thông báo đang giữ (thuần hiển thị trên chính máy)',
+  freezeDirt: 'GĐ1839 — sau resetGame bỏ qua bẩn của khách cũ còn trong cảnh (thuần hiển thị trên chính máy)',
   dismissUnlockAct: 'đóng banner "Mới mở" — thêm một id vào danh sách chung, làm lại nhiều lần không đổi gì nên không cần khoá chỗ',
   learnSkill: 'học một kỹ năng theo id (thêm vào danh sách, không đè)',
   buyLicense: 'mua giấy phép theo id tờ',

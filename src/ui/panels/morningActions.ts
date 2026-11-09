@@ -70,7 +70,7 @@ export function buildMorningActions(c: MorningActionsCtx): DayAction[] {
   if (debtAct) candidates.push(debtAct);
   // GĐ741 — góp vật liệu công trình vào việc sáng: lượt góp hàng ngày nằm sâu trong panel, đưa lên Sổ đầu
   // ngày để góp đều (càng sớm hưởng lâu). Cả hai công trình xong thì không còn việc này.
-  if (biz.landmark && biz.landmark.lastContributeDay < day) {
+  if (day >= 3 && biz.landmark && biz.landmark.lastContributeDay < day) { // Đ3-R8: ngày 1–2 người mới eo hẹp, chưa nhắc góp
     const p1 = landmarkProgress(biz.landmark.contributions);
     const p2 = landmark2Progress(biz.landmark.contributions);
     const isP2 = p1.done;

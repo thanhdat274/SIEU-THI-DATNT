@@ -1,3 +1,4 @@
+import { askConfirm } from './ConfirmDialog';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { shopLayout } from '../core/actions';
 import { SELL_BACK, useGame, type Furniture } from '../core/store';
@@ -130,8 +131,8 @@ export function ArrangePanel() {
     closePanel();
   };
 
-  const close = () => {
-    if (changes && !confirm('Bỏ các thay đổi chưa áp dụng?')) return;
+  const close = async () => {
+    if (changes && !await askConfirm('Bỏ các thay đổi chưa áp dụng?', { danger: true, okLabel: 'Bỏ thay đổi' })) return;
     closePanel();
   };
 

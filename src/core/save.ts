@@ -55,8 +55,8 @@ export function snapshot(): SaveData {
   return {
     day: s.day, minutes: s.minutes, money: s.money, level: s.level, xp: s.xp,
     storage: s.storage, storageLots: s.storageLots, furniture: s.furniture.filter((f) => !f.trial), furnStash: s.furnStash, mainCounter: s.mainCounter, shelfHeat: s.shelfHeat, shelfProfit: s.shelfProfit, impulseHinted: s.impulseHinted, dineSeatHinted: s.dineSeatHinted, hudTourDone: s.hudTourDone, prices: s.prices, happyHour: s.happyHour, stats: s.stats,
-    shopTier: s.shopTier, pendingUpgrade: s.pendingUpgrade, style: s.style,
-    staff: s.staff, candidates: s.candidates, autoOpen: s.autoOpen, autoOpenAt: s.autoOpenAt, autoRoutine: s.autoRoutine, autoSwap: s.autoSwap, totals: s.totals, questLog: s.questLog, warehouseTier: s.warehouseTier,
+    shopTier: s.shopTier, pendingUpgrade: s.pendingUpgrade, extraTiles: s.extraTiles, style: s.style, zonePaint: s.zonePaint,
+    staff: s.staff, candidates: s.candidates, autoOpen: s.autoOpen, autoOpenAt: s.autoOpenAt, autoRoutine: s.autoRoutine, autoSwap: s.autoSwap, totals: s.totals, questLog: s.questLog, warehouseTier: s.warehouseTier, wareMaterials: s.wareMaterials,
     reviews: s.reviews, deliveries: s.deliveries, demand: s.demand, demandToday: s.demandToday,
     sales: s.sales, salesToday: s.salesToday, soldEver: s.soldEver, servedCounts: s.servedCounts, comboHitCount: s.comboHitCount, regulars: s.regulars, reservations: s.reservations, market: s.market,
     contracts: s.contracts, repLog: s.repLog, community: s.community, opening: s.opening, costume: s.costume, event: s.event,
@@ -95,7 +95,7 @@ function deepMerge(base: Record<string, unknown>, incoming: Record<string, unkno
  */
 const MERGE_DEEP: readonly (keyof ReturnType<typeof newGameData>)[] = [
   'stats', 'totals', 'biz', 'garden', 'social', 'online', 'licenses', 'inspection', 'analytics', 'branch',
-  'storage', 'storageLots', 'furnStash', 'shelfHeat', 'shelfProfit', 'prices', 'style', 'questLog', 'community',
+  'storage', 'storageLots', 'furnStash', 'shelfHeat', 'shelfProfit', 'prices', 'style', 'zonePaint', 'wareMaterials', 'questLog', 'community',
   'demand', 'demandToday', 'sales', 'salesToday', 'soldEver', 'servedCounts', 'comboHitCount', 'regulars', 'reservations', 'debts', 'market', 'contracts',
   'riskToday', 'counterPolicy',
 ];
@@ -292,6 +292,9 @@ export function resetGame() {
   queue(() => db.saves.clear());
   clearLocalStorage();
   useGame.setState({ ...newGameData(), shopOpen: false, panel: null, buildMode: false, placing: null });
+  // GĐ1839 (review đợt 4 R3): khách cũ còn trong cảnh 3D đi ra cửa và addDirt sau khi state đã
+  // reset — ngày 1 mở màn sàn bẩn 72%. Bỏ qua các lần bẩn kế tiếp (xem clock.addDirt).
+  useGame.getState().freezeDirt();
 }
 
 /**

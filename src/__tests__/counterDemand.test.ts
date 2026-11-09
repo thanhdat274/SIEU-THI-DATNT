@@ -66,7 +66,7 @@ describe('demandForecast — Nhu cầu quầy (GĐ78)', () => {
   it('nhãn giờ đúng định dạng', () => {
     const f = demandForecast(base());
     const labels = f.bands.map((b) => b.label);
-    expect(labels[0]).toBe('6h–8h30');
+    expect(labels[0]).toBe('6h–9h');
     expect(labels[2]).toBe('11h–13h');
     expect(labels[5]).toBe('20h–22h');
   });

@@ -64,6 +64,8 @@ export const SYSTEM_UNLOCKS: SystemUnlock[] = [
   { id: 'prestige_tai_sinh', icon: '🌟', name: 'Tái sinh (NG+)', desc: 'Làm lại từ cấp 1 giữ bộ sưu tập, doanh thu cả đời +8%/lần — cần cả doanh thu cả đời ≥ 100.000.000đ.', atLevel: 60, panel: () => ({ type: 'business' }) },
   { id: 'ch12_ngo_nho_thanh_danh', icon: '📖', name: 'Chương 12 · Ngõ nhỏ thành danh', desc: 'Chương cuối cốt truyện, tự mở khi đủ cấp — thưởng 20.000.000đ.', atLevel: 75 },
   { id: 'tier_dai_sieu_thi', icon: '🏪', name: shopTier('Đại siêu thị').name, desc: `Bậc mở rộng cuối cùng: ${shopTier('Đại siêu thị').width}×${shopTier('Đại siêu thị').depth} — ${vnd(shopTier('Đại siêu thị').price)}.`, atLevel: shopTier('Đại siêu thị').unlock, panel: () => ({ type: 'build' }) },
+  // GĐ1944 — sau bậc cuối: mua từng ô mở rộng tiếp giáp phía sau (expansionTiles.ts)
+  { id: 'o_mo_rong', icon: '🧱', name: 'Ô mở rộng tiếp giáp', desc: 'Ở Đại siêu thị, mua từng ô nới tiệm sâu thêm 1 m (tối đa 6 ô), giá tăng dần theo ô.', atLevel: shopTier('Đại siêu thị').unlock, panel: () => ({ type: 'build' }) },
 ];
 
 export interface RoadmapItem {

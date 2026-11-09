@@ -1,122 +1,96 @@
-import { lazyGltfLoader } from './gltfLoader';
 import * as THREE from 'three';
 
 /**
- * Biển treo "mở/đóng cửa" trước cửa tiệm (gđ179 "Biển nói ra trạng thái tiệm").
- * Một cột gỗ nhỏ + biển treo dựng Blender (`scripts/blender_sign.py` → GLB Draco, lazy) đặt trên
- * vỉa hè ngay cạnh cửa. Mặt trước biển có tấm trạng thái phát sáng cha: xanh (#2ecc71) = tiệm
- * đang mở, đỏ (#e74c3c) dìm = tiệm đóng — tín hiệu không lời cho nhịp mở/đóng cửa (routine GĐ-ngày).
- * Chỉ hình ảnh; **không chặn lưới đi lại** (boxes rỗng — convention kit prop GĐ172/177).
+ * Biển "mở/đóng cửa" của tiệm (gđ179, làm lại GĐ1819).
+ * GĐ1819: bỏ cột gỗ đứng giữa vỉa hè (người dùng chê xấu, che cửa). Thay bằng tấm biển nhỏ
+ * treo dây trên tường ngay bên phải cửa — giống biển "OPEN/CLOSED" các tiệm thật. Hai mặt chữ
+ * vẽ canvas: "MỞ CỬA" nền xanh khi tiệm mở, "ĐÃ ĐÓNG" nền đỏ khi đóng.
+ * Chỉ hình ảnh; **không chặn lưới đi lại** (gắn sát tường, cao trên đầu người).
  */
 
-/** Vị trí đặt: vỉa hè sát cửa tiệm (cửa ở x=4, mặt tiền z=1), giữa cửa và cột đèn lồng (5.9,2.1). */
-export const OPEN_SIGN_POS: [number, number, number] = [5.05, 0, 1.45];
-/** Tên node trạng thái trong GLB — code đổi màu/độ sáng theo shopOpen. */
-export const STATE_NODE = 'bien_mo_cua_state';
-/** Ghé sát tường tiệm để cửa ra vào không vướng, và né không đè cửa (4,1). */
+/** Vị trí: tường mặt tiền (z=1) bên phải cửa (cửa x=4, rộng 1.4 → mép phải 4.7), sát mặt tường. */
+export const OPEN_SIGN_POS: [number, number, number] = [5.25, 1.75, 1.12];
+/** Đáy biển cao hơn đầu người để không vướng. */
 export const OPEN_SIGN_HEAD_CLEARANCE = 1.6;
+export const OPEN_SIGN_SIZE = { w: 0.56, h: 0.3 };
 
-/** Màu trạng thái: mở = xanh lời, đóng = đỏ dìm (nhị hàng ngày, soi rõ từ xa vẫn đọc được). */
 export const OPEN_COLOR = 0x2ecc71;
 export const CLOSED_COLOR = 0xe74c3c;
 
-/** Rà vị trí đặt: ngoài thế giới / giữa lòng đường / đè mặt tiền / chắn cửa / đè cột đèn là bug — soi bằng test. */
+/** Rà vị trí: phải nằm sát tường mặt tiền, không đè khung cửa, không lọt xuống tầm đầu người. */
 export function openSignProblems(): string[] {
   const problems: string[] = [];
-  const [x, , z] = OPEN_SIGN_POS;
-  if (Math.abs(x) > 80 || Math.abs(z) > 80) problems.push(`biển mở/đóng @${x},${z}: ngoài thế giới ±80`);
-  if (z > 3 && z < 9) problems.push(`biển mở/đóng @${x},${z}: giữa lòng đường`);
-  if (x >= 0 && x <= 8 && z >= -22 && z <= 1) problems.push(`biển mở/đóng @${x},${z}: đè mặt tiền tiệm`);
-  if (Math.hypot(x - 4, z - 1) < 0.8) problems.push(`biển mở/đóng @${x},${z}: chắn trước cửa tiệm (x=4,z=1)`);
-  if (x === 5.9 && z === 2.1) problems.push(`biển mở/đóng @${x},${z}: đè đúng cột đèn lồng`);
+  const [x, y, z] = OPEN_SIGN_POS;
+  if (Math.abs(z - 1) > 0.2) problems.push(`biển mở/đóng @${x},${z}: không sát tường mặt tiền`);
+  if (Math.abs(x - 4) < 0.7 + OPEN_SIGN_SIZE.w / 2) problems.push(`biển mở/đóng @${x}: đè khung cửa`);
+  if (y - OPEN_SIGN_SIZE.h / 2 < OPEN_SIGN_HEAD_CLEARANCE) problems.push(`biển mở/đóng: thấp hơn đầu người`);
   return problems;
 }
 
 export interface OpenSign {
   group: THREE.Group;
-  /** Bật theo trạng thái tiệm: true = mở (xanh), false = đóng (đỏ dìm). */
+  /** true = mở (xanh "MỞ CỬA"), false = đóng (đỏ "ĐÃ ĐÓNG"). */
   update(open: boolean, time: number): void;
-  /** GLB đã về chưa (fallback thủ tục hiện nếu chưa/không về được). */
   loaded: boolean;
 }
 
-/** Biển treo thủ tục làm "cái xác" dự phòng — GLB về thì thay phần mình, không về vẫn có biển. */
-function fallbackSign(stateMat: THREE.MeshStandardMaterial): THREE.Group {
-  const g = new THREE.Group();
-  const wood = new THREE.MeshStandardMaterial({ color: 0x6b4a26 });
-  const metal = new THREE.MeshStandardMaterial({ color: 0x455a64 });
-  const post = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.055, 2.4, 8), wood);
-  post.position.y = 1.2;
-  const board = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.12, 0.12), wood);
-  board.position.y = 2.02;
-  const l = new THREE.Mesh(new THREE.CylinderGeometry(0.013, 0.013, 0.46, 5), metal);
-  l.position.set(-0.27, 2.36, 0);
-  const r = l.clone();
-  r.position.x = 0.27;
-  const state = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.04, 0.28), stateMat);
-  state.position.set(0, 2.07, 0.09);
-  for (const m of [post, board, l, r, state]) { m.castShadow = true; m.receiveShadow = false; }
-  g.add(post, l, r, board, state);
-  return g;
+function faceTexture(open: boolean): THREE.Texture {
+  const c = document.createElement('canvas');
+  c.width = 256; c.height = 136;
+  const g = c.getContext('2d');
+  if (g) {
+    g.fillStyle = '#f5ead2';
+    g.fillRect(0, 0, c.width, c.height);
+    g.fillStyle = open ? '#27ae60' : '#c0392b';
+    g.fillRect(10, 10, c.width - 20, c.height - 20);
+    g.fillStyle = '#fff';
+    g.font = 'bold 50px sans-serif';
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    g.fillText(open ? 'MỞ CỬA' : 'ĐÃ ĐÓNG', c.width / 2, c.height / 2 + 2);
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
 }
 
-export function createOpenSign(baseUrl = '/models/facade/'): OpenSign {
+export function createOpenSign(): OpenSign {
   const group = new THREE.Group();
   group.name = 'openSign';
-  const [x, , z] = OPEN_SIGN_POS;
-  group.position.set(x, 0, z);
+  const [x, y, z] = OPEN_SIGN_POS;
+  group.position.set(x, y, z);
 
-  const stateMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0x000000, emissiveIntensity: 0 });
-  // Vật liệu trạng thái của chính GLB — phải điều khiển chung với fallback (QA gđ177 bắt kiểu lỗi
-  // này: emissive mặc định cháy sáng cố định nếu không bật/tắt theo state).
-  let glbState: THREE.MeshStandardMaterial | null = null;
+  const { w, h } = OPEN_SIGN_SIZE;
+  const hasDom = typeof document !== 'undefined';
+  const openMat = new THREE.MeshStandardMaterial(hasDom ? { map: faceTexture(true), emissive: 0xffffff, emissiveIntensity: 0.15 } : { color: OPEN_COLOR });
+  const closedMat = new THREE.MeshStandardMaterial(hasDom ? { map: faceTexture(false), emissive: 0xffffff, emissiveIntensity: 0.1 } : { color: CLOSED_COLOR });
+  if (hasDom) { openMat.emissiveMap = openMat.map; closedMat.emissiveMap = closedMat.map; }
 
-  const fallback = fallbackSign(stateMat);
-  group.add(fallback);
+  // Tấm biển treo dưới một cái đinh, hai sợi dây chữ V — xoay nhẹ quanh đinh.
+  const pivot = new THREE.Group();
+  pivot.position.y = 0.2;
+  group.add(pivot);
+  const face = new THREE.Mesh(new THREE.PlaneGeometry(w, h), openMat);
+  face.position.set(0, -0.2, 0.012);
+  const back = new THREE.Mesh(new THREE.BoxGeometry(w + 0.03, h + 0.03, 0.02), new THREE.MeshStandardMaterial({ color: 0x6b4a26 }));
+  back.position.y = -0.2;
+  const cordMat = new THREE.MeshStandardMaterial({ color: 0x3b2a1a });
+  for (const s of [-1, 1]) {
+    const cord = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.006, 0.2, 4), cordMat);
+    cord.position.set(s * w * 0.22, -0.02, 0);
+    cord.rotation.z = s * 0.95;
+    pivot.add(cord);
+  }
+  const nail = new THREE.Mesh(new THREE.SphereGeometry(0.018, 6, 4), cordMat);
+  pivot.add(face, back, nail);
+  back.castShadow = true;
 
-  // Đung đưa nhẹ khi mở — biển treo mang hơi gió, nhưng chỉ đung khi tiệm còn "sống" (đang mở)
-  fallback.position.z = 0;
-
-  const api: OpenSign = { group, loaded: false, update: (open, time) => {
-    const on = open ? 1 : 0;
-    const color = open ? OPEN_COLOR : CLOSED_COLOR;
-    // Mở: xanh rạng, đóng: đỏ dìm (0.45) để tối không còn chói
-    const intensity = open ? 1.15 : 0.45;
-    stateMat.emissive.setHex(color);
-    stateMat.emissiveIntensity = intensity;
-    if (glbState) { glbState.emissive.setHex(color); glbState.emissiveIntensity = intensity; }
-    // Đung đưa nhẹ quanh trục dọc khi đang mở (biển treo "sống"), đứng yên khi đóng
-    const target = on * Math.sin(time * 1.6) * 0.06;
-    group.rotation.z += (target - group.rotation.z) * 0.12;
+  let lastOpen: boolean | null = null;
+  const api: OpenSign = { group, loaded: true, update: (open, time) => {
+    if (open !== lastOpen) { face.material = open ? openMat : closedMat; lastOpen = open; }
+    const target = open ? Math.sin(time * 1.3) * 0.025 : 0;
+    pivot.rotation.z += (target - pivot.rotation.z) * 0.1;
   } };
-
-  const loader = lazyGltfLoader();
-  fetch(`${baseUrl}facade-manifest.json`)
-    .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`manifest ${r.status}`))))
-    .then(() => loader.load(
-      `${baseUrl}bien_mo_cua.glb`,
-      (gltf) => {
-        const root = gltf.scene;
-        root.traverse((o) => {
-          if ((o as THREE.Mesh).isMesh) {
-            o.castShadow = true; o.receiveShadow = false;
-            if (o.name === STATE_NODE || o.userData.name === STATE_NODE) {
-              const m = (o as THREE.Mesh).material;
-              if (m && !Array.isArray(m)) glbState = m as THREE.MeshStandardMaterial;
-            }
-          }
-        });
-        if (glbState) { glbState.emissive.setHex(CLOSED_COLOR); glbState.emissiveIntensity = 0.45; }
-        group.add(root);
-        fallback.visible = false;
-        api.loaded = true;
-      },
-      undefined,
-      () => { /* giữ fallback — biển vẫn hiện */ },
-    ))
-    .catch(() => { /* offline: chỉ cái xác thủ tục */ });
-
-  // Khởi điểm đóng cửa để không nhấp nháy xanh khi chưa có state
   api.update(false, 0);
   return api;
 }

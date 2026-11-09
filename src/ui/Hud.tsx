@@ -1,6 +1,9 @@
+import { askConfirm } from './ConfirmDialog';
 import { wantsRestockButton } from '../core/bizAchieve';
 import { hudThemeOn } from '../data/hudTheme';
 import { faintMinutes } from '../data/biz';
+import { hasUpgrade } from '../data/upgrades';
+import { SHOP_HOURS, shopHoursLabel } from '../data/shopHours';
 import { Joystick } from './Joystick';
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { useAlertCap } from './alertCap';
@@ -119,6 +122,7 @@ export function Hud() {
   }, [hudTheme]);
   const placing = useGame((s) => s.placing);
   const serviceLife = useGame((s) => s.biz.serviceLife);
+  const nightShift = useGame((s) => hasUpgrade(s.biz, 'night'));
   const sellFurniture = useGame((s) => s.sellFurniture);
   const stashFurniture = useGame((s) => s.stashFurniture);
   const trialCount = useGame((s) => s.furniture.filter((f) => f.trial).length);
@@ -164,12 +168,12 @@ export function Hud() {
     notify(saveGame() ? '💾 Đã lưu game' : 'Không lưu được (trình duyệt chặn)');
     if (account) pushCloudSave();
   };
-  const restore = () => {
+  const restore = async () => {
     const prev = readBackupSave();
     if (!prev) return notify('Chưa có bản lưu trước để khôi phục');
     const at = new Date(prev.savedAt).toLocaleString('vi-VN');
-    if (!confirm(`Quay về bản lưu trước (ngày ${prev.data.day}, lưu lúc ${at})?
-Bản đang chơi được giữ lại, khôi phục lần nữa là trở lại.`)) return;
+    if (!await askConfirm(`Quay về bản lưu trước (ngày ${prev.data.day}, lưu lúc ${at})?
+Bản đang chơi được giữ lại, khôi phục lần nữa là trở lại.`, { okLabel: 'Khôi phục' })) return;
     restoreBackup();
     notify(`⏪ Đã quay về ngày ${prev.data.day}`);
     if (account) pushCloudSave();
@@ -184,16 +188,16 @@ Bản đang chơi được giữ lại, khôi phục lần nữa là trở lại
     await then?.();
     window.location.reload();
   };
-  const backToMenu = () => {
-    if (online && !confirm('Rời hẻm và về màn hình chính? Tiến trình hẻm đã được lưu trên server.')) return;
+  const backToMenu = async () => {
+    if (online && !await askConfirm('Rời hẻm và về màn hình chính? Tiến trình hẻm đã được lưu trên server.', { okLabel: 'Rời hẻm' })) return;
     leaveGame();
   };
-  const logout = () => confirm('Lưu game rồi đăng xuất?') && leaveGame(logoutGoogle);
+  const logout = () => { void askConfirm('Lưu game rồi đăng xuất?', { okLabel: 'Đăng xuất' }).then((ok) => { if (ok) void leaveGame(logoutGoogle); }); };
   /** Xoá tài khoản & dữ liệu (quyền chủ thể dữ liệu — Luật 91/2025): 2 bước xác nhận, giữ bản lưu máy. */
   const deleteAccountFlow = async () => {
     if (!account) return;
-    if (!confirm('Xoá tài khoản và toàn bộ dữ liệu cloud? Việc này không thể hoàn tác.')) return;
-    if (!confirm('Chắc chắn chưa? Sẽ xoá: bản lưu cloud, các hẻm bạn tham gia, và tài khoản Google liên kết. Bản lưu trong máy này được giữ lại.')) return;
+    if (!await askConfirm('Xoá tài khoản và toàn bộ dữ liệu cloud? Việc này không thể hoàn tác.', { danger: true, okLabel: 'Xoá tài khoản' })) return;
+    if (!await askConfirm('Chắc chắn chưa? Sẽ xoá: bản lưu cloud, các hẻm bạn tham gia, và tài khoản Google liên kết. Bản lưu trong máy này được giữ lại.', { danger: true, okLabel: 'Xoá vĩnh viễn' })) return;
     try {
       await deleteAccountData();   // xoá cloud + hẻm + bằng chứng đồng ý trên server
       await deleteAccount();       // xoá tài khoản Firebase (xác thực lại qua popup Google)
@@ -288,7 +292,7 @@ Bản đang chơi được giữ lại, khôi phục lần nữa là trở lại
   return (
     <>
       <Joystick />
-      {/* GĐ1503 — tour HUD khoanh vùng: ngày đầu, xong hướng dẫn, không mở bảng nào */}
+      {/* GĐ1831: ConfirmHost dời về boot.tsx (gốc ứng dụng) — hộp xác nhận cần hiện cả ở màn đăng nhập */}
       {!hudTourDone && !tutActive && openType == null && day === 1 && level <= 3
         && <HudTour onDone={() => useGame.getState().markHudTourDone()} />}
       {/* Cột trái trên: ngày giờ, tiền, cấp; thông báo xếp ngay bên dưới nên không đè lên cụm bên phải */}
@@ -315,7 +319,8 @@ ${forecastText}`}>
                 const prep = next ? goldenPrepWants(minutes, level, 5).join(', ') : '';
                 return `⏰ Giờ vàng trong ngày: ${describeHours(goldenHourBands())} — đông khách, nhớ châm kệ trước giờ này.\n${next ? `Sắp tới (${next.name}): nên châm ${prep || 'món bán chạy trong khung'}.` : 'Hôm nay hết giờ vàng rồi.'}`;
               })()}>
-                ⏰ {inGoldenHour(minutes) ? 'Đang giờ vàng — sẵn sàng đón khách!'
+                ⏰ {minutes < SHOP_HOURS.grocery.from ? `Chưa mở cửa (${shopHoursLabel('grocery').split('–')[0]}) — châm kệ trước`
+                  : inGoldenHour(minutes) ? 'Đang giờ vàng — sẵn sàng đón khách!'
                   : (() => {
                       const mt = minutesToGolden(minutes);
                       if (mt >= 0 && mt <= 120) {
@@ -353,7 +358,7 @@ ${forecastText}`}>
         <GoalChip ready={questsReady} />
         <div className="hud-place">
           <span>📍 {location}</span>
-          <span className={`hud-open ${shopOpen ? 'on' : ''}`}>{shopOpen ? 'Đang mở cửa' : 'Tiệm đóng'}</span>
+          <span className={`hud-open ${shopOpen ? 'on' : ''}`}>{!shopOpen ? 'Tiệm đóng' : minutes >= SHOP_HOURS.grocery.to && minutes < 30 * 60 && !nightShift ? 'Hết đón khách mới' : 'Đang mở cửa'}</span>
         </div>
       </div>
 
@@ -448,7 +453,7 @@ Online: ${coop.peers.map((p) => (p.id === coop.selfId ? 'bạn' : p.name)).join(
                 : undefined,
             },
             { label: '🏠 Màn hình chính', on: backToMenu },
-            ...(!online ? [{ label: '🔄 Chơi lại từ đầu', danger: true, on: () => confirm('Xoá bản lưu và chơi lại từ đầu?') && resetGame() }] : []),
+            ...(!online ? [{ label: '🔄 Chơi lại từ đầu', danger: true, on: () => { void askConfirm('Xoá bản lưu và chơi lại từ đầu?', { danger: true, okLabel: 'Chơi lại' }).then((ok) => ok && resetGame()); } }] : []),
             ...(account ? [{ label: '↪ Đăng xuất', on: logout }] : []),
             ...(!online && account ? [{ label: '🗑 Xoá tài khoản & dữ liệu', danger: true, on: () => void deleteAccountFlow() }] : []),
           ]}
@@ -591,6 +596,8 @@ function GoalChip({ ready }: { ready: number }) {
     );
   }
   const [icon, title, desc, current, target, lockAt] = story.split('|');
+  // GĐ1818: số lớn (doanh thu 16665800/50000000) phải có dấu chấm ngăn nghìn.
+  const fmtGoalNum = (s: string) => { const n = Number(s); return Number.isFinite(n) ? Math.round(n).toLocaleString('vi-VN') : s; };
   return (
     <button
       className="hud-chip hud-goal"
@@ -601,7 +608,7 @@ Bước ${stepNo}/${STORY_STEPS.length} của cốt truyện · bấm xem Nhiệ
       <span className="hud-goal-icon" aria-hidden="true">{icon}</span>
       <span>
         <b>{title}</b>
-        <small>{lockAt !== '0' ? `🔒 cấp ${lockAt}` : `${current}/${target}`}</small>
+        <small>{lockAt !== '0' ? `🔒 cấp ${lockAt}` : `${fmtGoalNum(current)}/${fmtGoalNum(target)}`}</small>
       </span>
       {ready > 0 && <span className="hud-badge">{`🎯 ${ready} xong`}</span>}
       {ready === 0 && todo > 0 && <span className="hud-badge muted">{`☀️ ${todo} việc`}</span>}
@@ -644,9 +651,13 @@ function RadialMenu({ items }: { items: { icon: string; label: string; run: () =
 function TipStrip() {
   const level = useGame((s) => s.level);
   const day = useGame((s) => s.day);
+  const seed = useGame((s) => s.weatherSeed);
   const slot = useGame((s) => Math.floor(s.minutes / 30));
   const [hidden, setHidden] = useState(false);
-  if (hidden) return null;
+  // GĐ1835 (review đợt 2 R5 / đợt 3 R6): đang có banner lễ (hàng hút, khách +X%) thì nhường
+  // đỉnh màn cho tin gameplay — mẹo đời thường không gối lên lễ hội nữa.
+  const festival = dayEffects(seed, day, level).festival;
+  if (hidden || (festival && (festival.traffic >= 1.2 || !!festival.pull))) return null;
   return (
     <div style={{ fontSize: 12, color: '#dfe6e9', background: 'rgba(0,0,0,0.35)', borderRadius: 8, padding: '3px 8px', display: 'flex', gap: 6, alignItems: 'center', pointerEvents: 'auto' }}>
       <span>💡 Bạn có biết? {tipAt(level, day, slot * 30)}</span>

@@ -3,6 +3,7 @@ import { create } from 'zustand';
 import { emptyQuestLog, emptyTotals, type QuestContext } from '../data/quests';
 import { recentAvgSalesProfit } from '../data/gifts';
 import { rentOf, type ShopStyle } from '../data/shopTiers';
+import { emptyWareMaterials } from '../data/wareMaterials';
 import type { Review } from '../data/reviews';
 import { forecastFrom, newWeatherSeed, type Weather } from '../data/weather';
 import type { Lot } from '../data/freshness';
@@ -32,7 +33,7 @@ import { newOnline } from '../data/online';
 import { newGarden } from '../data/garden';
 import { newAnalytics } from '../data/analytics';
 import { newInspection, type LicenseId } from '../data/licenses';
-import { type GameState, type Furniture, type ContractState, type Delivery, type DayRecord, type DayStats, DAY_START, emptyStats, type CookJob , ROUTINE } from './gameTypes';
+import { type GameState, type Furniture, type ZonePaint, type ContractState, type Delivery, type DayRecord, type DayStats, DAY_START, emptyStats, type CookJob , ROUTINE } from './gameTypes';
 import { emptyTiers } from './stock';
 import { createBranchSlice } from './slices/branch';
 import { createOrdersSlice } from './slices/orders';
@@ -89,7 +90,10 @@ export const questContext = (s: GameState): QuestContext => {
 export const newGameData = () => ({
   day: 1,
   minutes: DAY_START,
-  money: 300000,
+  // GĐ1823 (review người chơi R1): vốn 300k không đủ mua trọn bộ 3 món hướng dẫn ngày đầu
+  // (mì + nước + bánh kẹo = 316.200đ ngày Tết) → người mới đi đúng hướng dẫn kẹt ngay bước 1.
+  // Nâng lên 360k: đủ bộ 3 + dư ~44k cho việc phát sinh (góp sân chơi 8k...).
+  money: 360000,
   level: 1,
   xp: 0,
   storage: { mi: 10, nuoc: 10, banh: 5 } as Record<string, number>,
@@ -118,7 +122,11 @@ export const newGameData = () => ({
   stats: emptyStats(),
   shopTier: 0,
   pendingUpgrade: false,
+  /** GĐ1944 — số ô mở rộng tiếp giáp đã mua (chỉ có ở bậc Đại siêu thị); bản lưu cũ = 0. */
+  extraTiles: 0,
   style: { wall: 0xfff3b0, floor: 0xd8cfc0, roof: 0x1e8449 } as ShopStyle,
+  /** GĐ1943 — sơn nền/vách theo khu siêu thị (id khu → màu); bản lưu cũ thiếu = {} (không sơn). */
+  zonePaint: {} as Record<string, ZonePaint>,
   staff: [] as Staff[],
   candidates: generateCandidates(1, 1),
   autoOpen: true,
@@ -129,6 +137,8 @@ export const newGameData = () => ({
   totals: emptyTotals(),
   questLog: emptyQuestLog(),
   warehouseTier: 0,
+  /** GĐ1945 — gạch/xi măng/thép để nâng kho cấp cao; để ở bãi, không chiếm thùng kho. */
+  wareMaterials: emptyWareMaterials(),
   reviews: [] as Review[],
   repLog: [] as RepSample[],
   community: {} as Record<string, CommunityProgress>,

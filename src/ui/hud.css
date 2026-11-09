@@ -84,8 +84,14 @@
    desktop rộng đủ chỗ nên không đổi hình dáng. */
 @media (min-width: 701px) {
   #ui .hud-chip.hud-time { max-width: min(46vw, 460px); }
-  #ui .hud-chip.hud-time small { overflow: hidden; text-overflow: ellipsis; }
 }
+/* GĐ1830b — chữ trong chip đồng hồ lòi ra khỏi khung: span bọc các dòng <small> là flex item
+   với min-width:auto nên không chịu co theo max-width của chip, dòng nowrap dài chảy xuyên
+   ra ngoài (ellipsis trên <small> vô hiệu vì ông cha không bị chặn). Bắt span co được + cắt
+   tại đúng khung; áp mọi bề rộng vì màn nhỏ cũng tràn y hệt. */
+#ui .hud-chip.hud-time { max-width: min(46vw, 460px); }
+#ui .hud-chip.hud-time > span:not(.hud-weather) { min-width: 0; overflow: hidden; }
+#ui .hud-chip.hud-time small { overflow: hidden; text-overflow: ellipsis; }
 #ui .hud-late { color: #ff7675; }
 #ui .hud-money b { color: var(--hud-accent); font-size: 17px; }
 #ui .hud-money { position: relative; }
@@ -234,6 +240,7 @@
   max-width: 100%;
   min-height: 0;
   overflow-y: auto;
+  overflow-x: hidden; /* GĐ1818: không hiện thanh cuộn ngang dưới cụm thông báo */
   overscroll-behavior: contain;
   scrollbar-width: thin;
 }
@@ -274,6 +281,9 @@
   top: 38%;
   left: 50%;
   transform: translateX(-50%);
+  /* GĐ1835 (review đợt 4 R4): toast là phản hồi thao tác — nổi trên backdrop panel/card thoại
+     (z 20) nhưng dưới tour (60) và hộp xác nhận (1000); tin phát lúc thoại mở thì armMessage giữ.*/
+  z-index: 55;
   max-width: calc(100% - 32px);
   padding: 12px 22px;
   border-radius: var(--hud-radius);
@@ -548,14 +558,16 @@
   #ui .hud-account { padding: 4px; }
   #ui .hud-bottom { bottom: 8px; width: calc(100% - 16px); }
   #ui .hud-dock { width: 100%; justify-content: space-between; gap: 2px; padding: 4px; }
-  #ui .hud-tool { min-width: 40px; padding: 6px 4px; }
-  #ui .hud-tool > span:not(.hud-tool-icon):not(.hud-badge) { font-size: 9px; line-height: 1.1; text-align: center; white-space: normal; word-break: keep-all; }
+  #ui .hud-tool { min-width: 44px; padding: 6px 4px; }
+  /* GĐ1836 (review đợt 2 R10 + đợt 4 R5): nhãn 9px → 11px, nút/vùng chạm ≥44px (chuẩn cảm ứng
+     của chính docs/qa-guide.md). Dock đã wrap 2 hàng từ GĐ? — thêm nút to hơn không vỡ bố cục. */
+  #ui .hud-tool > span:not(.hud-tool-icon):not(.hud-badge) { font-size: 11px; line-height: 1.1; text-align: center; white-space: normal; word-break: keep-all; }
   #ui .hud-badge.muted { display: none; }
   #ui .hud-divider { margin: 6px 1px; }
   #ui .hud-speed { flex: none; }
-  #ui .hud-speed button { min-width: 26px; font-size: 12px; padding: 0 2px; }
-  #ui .hud-dock > .hud-tool, #ui .hud-dock > .hud-pop > .hud-tool { flex: 1 0 34px; min-width: 34px; padding: 6px 2px; }
-  #ui .hud-dock > .hud-pop { display: flex; flex: 1 0 34px; }
+  #ui .hud-speed button { min-width: 44px; min-height: 44px; font-size: 12px; padding: 0 2px; }
+  #ui .hud-dock > .hud-tool, #ui .hud-dock > .hud-pop > .hud-tool { flex: 1 0 44px; min-width: 44px; min-height: 48px; padding: 6px 2px; }
+  #ui .hud-dock > .hud-pop { display: flex; flex: 1 0 44px; }
 }
 
 /* Nút mở/đóng cửa tiệm: xanh khi đang mở để nhìn là biết */
@@ -617,10 +629,11 @@
    và công cụ giả lập không nhận, dock tràn thành 2 hàng). */
 @media (min-width: 701px) and (max-width: 1000px) {
   #ui .hud-dock { justify-content: space-between; }
-  #ui .hud-dock > .hud-tool, #ui .hud-dock > .hud-pop > .hud-tool { flex: 1 0 40px; min-width: 40px; padding: 6px 2px; }
+  /* GĐ1836: nhãn ≥11px + nút ≥44px như màn hẹp (máy tính bảng dọc cũng là cảm ứng) */
+  #ui .hud-dock > .hud-tool, #ui .hud-dock > .hud-pop > .hud-tool { flex: 1 0 44px; min-width: 44px; min-height: 48px; padding: 6px 2px; }
   #ui .hud-dock > .hud-tool > span:not(.hud-tool-icon):not(.hud-badge),
-  #ui .hud-dock > .hud-pop > .hud-tool > span:not(.hud-tool-icon):not(.hud-badge) { font-size: 9px; white-space: normal; text-align: center; }
-  #ui .hud-speed button { min-width: 28px; }
+  #ui .hud-dock > .hud-pop > .hud-tool > span:not(.hud-tool-icon):not(.hud-badge) { font-size: 11px; white-space: normal; text-align: center; }
+  #ui .hud-speed button { min-width: 44px; min-height: 44px; }
   /* GĐ1254 — cụm phải (loa/nhạc/tài khoản) chưa co như màn hẹp → chip tiền trong .hud-left
      đâm vào nút loa (QA 768px: "5.000.000đ" bị loa đè). Co cụm phải y khối ≤700px. */
   #ui .hud-account > span:not(.hud-avatar), #ui .hud-caret, #ui .hud-room small { display: none; }
@@ -801,15 +814,35 @@
 
 /* ── GĐ1503 — Tour HUD khoanh vùng: dim 4 dải + ô sáng + hộp lời dạy ── */
 #ui .hud-tour { position: fixed; inset: 0; z-index: 60; }
-#ui .hud-tour-shade { position: fixed; background: rgba(10, 10, 18, 0.6); }
+#ui .hud-tour-shade { position: fixed; pointer-events: auto; background: rgba(10, 10, 18, 0.6); }
 #ui .hud-tour-ring { position: fixed; pointer-events: none; border: 3px solid var(--hud-accent); border-radius: 12px; box-shadow: 0 0 0 4px rgba(241, 196, 15, 0.25), 0 0 24px rgba(241, 196, 15, 0.35); }
 #ui .hud-tour-tip { position: fixed; max-width: 320px; background: var(--hud-panel, #3a3a4d); color: #fff; border: 2px solid var(--hud-accent); border-radius: 10px; padding: 10px 12px; pointer-events: none; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4); }
 #ui .hud-tour-tip b { display: block; font-size: 13px; line-height: 1.35; }
 #ui .hud-tour-tip small { display: block; margin-top: 4px; font-size: 11px; opacity: 0.75; }
-#ui .hud-tour-skip { position: fixed; right: 10px; top: 10px; background: rgba(58, 58, 77, 0.9); color: #fff; border: 1px solid rgba(255, 255, 255, 0.25); border-radius: 8px; padding: 6px 10px; font-size: 12px; cursor: pointer; }
+#ui .hud-tour-skip { position: fixed; pointer-events: auto; z-index: 1; right: 10px; top: 10px; background: rgba(58, 58, 77, 0.9); color: #fff; border: 1px solid rgba(255, 255, 255, 0.25); border-radius: 8px; padding: 6px 10px; font-size: 12px; cursor: pointer; }
 #ui .hud-tour-skip:hover { background: rgba(241, 196, 15, 0.25); }
 
 /* GĐ1521 — theme HUD theo dịp lễ (data-hud-theme gắn trên #ui) */
 #ui[data-hud-theme='tet'] { --hud-accent: #ffcc33; --hud-bg: rgba(120, 18, 18, 0.84); --hud-bg-solid: #6e1414; --hud-line: rgba(255, 204, 51, 0.25); }
 #ui[data-hud-theme='trung_thu'] { --hud-accent: #ffb347; --hud-bg: rgba(28, 26, 64, 0.84); --hud-bg-solid: #1c1a40; --hud-line: rgba(255, 179, 71, 0.22); }
 #ui[data-hud-theme='giang_sinh'] { --hud-accent: #ff5e5e; --hud-bg: rgba(14, 54, 34, 0.84); --hud-bg-solid: #0e3622; --hud-line: rgba(255, 255, 255, 0.16); }
+
+/* GĐ1821 — Hộp xác nhận chung thay window.confirm */
+#ui .hud-confirm-backdrop {
+  position: fixed; inset: 0; z-index: 1000; pointer-events: auto;
+  display: flex; align-items: center; justify-content: center; padding: 16px;
+  background: rgba(0, 0, 0, 0.5);
+}
+#ui .hud-confirm {
+  width: min(420px, 100%); padding: 18px 20px 16px;
+  border: 1px solid var(--hud-line); border-radius: var(--hud-radius);
+  background: var(--hud-bg-solid); color: var(--hud-text);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+}
+#ui .hud-confirm-title { font-size: 17px; font-weight: 700; margin-bottom: 8px; }
+#ui .hud-confirm-msg { font-size: 14px; line-height: 1.5; color: var(--hud-muted); white-space: pre-line; }
+#ui .hud-confirm-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+#ui .hud-confirm-actions button { border: 0; border-radius: 999px; padding: 7px 18px; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
+#ui .hud-confirm-cancel { background: rgba(255, 255, 255, 0.12); color: var(--hud-text); }
+#ui .hud-confirm-ok { background: var(--hud-accent); color: #1d1f2b; }
+#ui .hud-confirm-ok.danger { background: #e74c3c; color: #fff; }

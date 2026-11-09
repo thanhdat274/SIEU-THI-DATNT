@@ -29,8 +29,10 @@ describe('GĐ172 — kit prop GLB', () => {
   });
 
   it('đủ module của kit đều được dùng ít nhất một chỗ (tính cả chợ phiên + sửa đường)', () => {
-    const used = new Set([...KIT_PLACEMENTS, ...KIT_MARKET_PLACEMENTS, ...KIT_ROADWORK_PLACEMENTS, ...KIT_FESTIVAL_PLACEMENTS].map((p) => p.module));
-    for (const m of KIT_MODULES) expect(used.has(m)).toBe(true);
+    // GĐ1821: người dùng bỏ thùng gỗ/bồn nước/ghế nhựa/băng ghế/rào chắn lẻ — giờ ngược lại: không còn bày.
+    const used = new Set([...KIT_PLACEMENTS, ...KIT_MARKET_PLACEMENTS, ...KIT_ROADWORK_PLACEMENTS].map((p) => p.module));
+    for (const m of ['thung_go', 'bon_nuoc', 'cho_nhua', 'bang_ghe', 'rao_chan']) expect(used.has(m as never)).toBe(false);
+    expect(used.has('chau_cay')).toBe(true);
   });
 
   it('mỗi module gắn tỉ lệ hợp lý (không âm, không phóng to vô lý)', () => {
@@ -67,7 +69,7 @@ describe('GĐ181 — gánh hàng chợ phiên', () => {
     }
     // GĐ196: phiên chợ giờ là xe đẩy + chỗ ngồi (băng ghế/ghế nhựa) — vẫn ít nhất 2 xe đẩy chính
     expect(carts.length).toBeGreaterThanOrEqual(2);
-    expect(new Set(seats.map((s) => s.module)).size).toBeGreaterThanOrEqual(1);
+    expect(seats).toEqual([]); // GĐ1821: bỏ chỗ ngồi chợ
   });
 
   it('không chèn sát món nào trong bảng hay chính nó (<0.55 m)', () => {
@@ -150,7 +152,7 @@ describe('GĐ195 — băng ghế hẻm', () => {
 
   it('mỗi băng ghế đặt ở chỗ sinh hoạt mà không chen món nào (<0.55 m) trong toàn bảng', () => {
     const bench = KIT_PLACEMENTS.filter((p) => p.module === 'bang_ghe');
-    expect(bench.length).toBeGreaterThanOrEqual(1);
+    expect(bench).toEqual([]); // GĐ1821: bỏ băng ghế đặt dưới cột đèn
     const all = [...KIT_PLACEMENTS, ...KIT_MARKET_PLACEMENTS, ...KIT_ROADWORK_PLACEMENTS];
     for (const b of bench) {
       for (const o of all) {

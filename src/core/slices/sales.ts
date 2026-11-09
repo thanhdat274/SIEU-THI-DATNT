@@ -13,6 +13,7 @@ import { COOKED_PRODUCT_IDS } from '../../data/recipes';
 import { dishPriceMul } from '../../data/dishStars';
 import { REGION_IDS } from '../../data/regionSpecialty';
 import { regionPriceMul, stockedProductIds } from '../../data/regionFlags';
+import { departmentPriceMul } from '../../data/departments';
 import { type GameState, type SetState, type GetState, addHour } from '../gameTypes';
 import { copyStock, takeStock } from '../stock';
 import { HOMEGROWN_PREMIUM } from '../../data/garden';
@@ -87,6 +88,9 @@ export const createSalesSlice = (set: SetState, get: GetState): Pick<GameState, 
       if (REGION_IDS.has(it.id)) {
         itemPremium += Math.round(it.price * (regionPriceMul(it.id, s.furniture, stocked, s.servedCounts ?? {}) - 1));
       }
+      // GĐ1943 — khu siêu thị đã kích hoạt (bậc Siêu thị tạp hóa trở lên): hàng thuộc khu +2% giá
+      const deptMul = departmentPriceMul(productById(it.id)?.category, s.furniture, s.shopTier);
+      if (deptMul !== 1) itemPremium += Math.round(it.price * (deptMul - 1));
       starPremium += itemPremium;
       byItem[it.id] = { qty: line.qty + 1, revenue: line.revenue + it.price + itemPremium, cost: line.cost + productById(it.id).buy };
     }

@@ -1155,7 +1155,7 @@ describe('GĐ1368 — lối ra bếp của hạt điều (gà xào hạt điều
  * cả hai ở ấm nước — khép lối ra của 2 nguồn khô còn 0 lối ra. Cùng bất biến GĐ1321/1332-1368
  * (lãi dương TÍNH TỪ GIÁ THẬT · unlock > 30 · outputId duy nhất).
  */
-const NEW_IDS_1369 = ['recipe_bun_xao_tom_kho', 'recipe_chao_yen_mach'] as const;
+const NEW_IDS_1369 = ['recipe_chao_yen_mach'] as const;
 
 describe('GĐ1369 — bún xào tôm khô + cháo yến mạch (khép lối ra tôm khô/yến mạch)', () => {
   for (const rid of NEW_IDS_1369) {
@@ -1184,8 +1184,6 @@ describe('GĐ1369 — bún xào tôm khô + cháo yến mạch (khép lối ra t
   }
 
   it('2 món hiện diện ở ấm nước và dùng tôm khô / yến mạch', () => {
-    expect(RECIPES.some((r) => r.station === 'hot_kettle' && r.id === 'recipe_bun_xao_tom_kho')).toBe(true);
-    expect(RECIPES.some((r) => r.id === 'recipe_bun_xao_tom_kho' && r.inputs.some((i) => i.productId === 'tom_kho'))).toBe(true);
     expect(RECIPES.some((r) => r.station === 'hot_kettle' && r.id === 'recipe_chao_yen_mach')).toBe(true);
     expect(RECIPES.some((r) => r.id === 'recipe_chao_yen_mach' && r.inputs.some((i) => i.productId === 'yen_mach'))).toBe(true);
   });
@@ -3242,28 +3240,6 @@ describe('GĐ1430 — khoai tây tươi chiên (chảo chiên)', () => {
   });
 });
 
-/** GĐ1430 — Bún chả lụa: lối ra đầu tiên của chả lụa (bếp nồi nấu). */
-describe('GĐ1430 — bún chả lụa (bếp nồi nấu)', () => {
-  const recipe = RECIPE_MAP['recipe_bun_cha_lua'];
-  it('có công thức, mở sau golden 30', () => {
-    expect(recipe).toBeDefined();
-    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
-  });
-  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
-    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
-    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
-    const value = recipe.outputQty * productById(recipe.outputId).sell;
-    expect(value).toBeGreaterThan(cost);
-    expect(value).toBeGreaterThan(raw);
-  });
-  it('outputId duy nhất; đúng trạm bếp nồi nấu và dùng chả lụa', () => {
-    expect(COOKED_PRODUCTS.some((c) => c.id === 'bun_cha_lua')).toBe(true);
-    expect(RECIPES.filter((r) => r.outputId === 'bun_cha_lua').length).toBe(1);
-    expect(recipe.station).toBe('hot_kettle');
-    expect(recipe.inputs.some((i) => i.productId === 'x_cha_lua')).toBe(true);
-  });
-});
-
 /** GĐ1430 — Trứng vịt luộc: lối ra đầu tiên của trứng vịt (bếp nồi nấu). */
 describe('GĐ1430 — trứng vịt luộc (bếp nồi nấu)', () => {
   const recipe = RECIPE_MAP['recipe_trung_vit_luoc'];
@@ -3682,50 +3658,6 @@ describe('GĐ1444 — bánh mì giò thủ (bếp nướng)', () => {
   });
 });
 
-/** GĐ1447 — Xôi giò thủ: lối ra đầu tiên của giò thủ bà Tám (quây xôi). */
-describe('GĐ1447 — xôi giò thủ (quây xôi)', () => {
-  const recipe = RECIPE_MAP['recipe_xoi_gio_thu'];
-  it('có công thức, mở sau golden 30', () => {
-    expect(recipe).toBeDefined();
-    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
-  });
-  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
-    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
-    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
-    const value = recipe.outputQty * productById(recipe.outputId).sell;
-    expect(value).toBeGreaterThan(cost);
-    expect(value).toBeGreaterThan(raw);
-  });
-  it('outputId duy nhất; đúng trạm quây xôi và dùng giò thủ bà Tám', () => {
-    expect(COOKED_PRODUCTS.some((c) => c.id === 'xoi_gio_thu')).toBe(true);
-    expect(RECIPES.filter((r) => r.outputId === 'xoi_gio_thu').length).toBe(1);
-    expect(recipe.station).toBe('rice_station');
-    expect(recipe.inputs.some((i) => i.productId === 'hx_gio_thu')).toBe(true);
-  });
-});
-
-/** GĐ1448 — Bún giò thủ: lối ra đầu tiên của giò thủ bà Tám (bếp nồi). */
-describe('GĐ1448 — bún giò thủ (bếp nồi)', () => {
-  const recipe = RECIPE_MAP['recipe_bun_gio_thu'];
-  it('có công thức, mở sau golden 30', () => {
-    expect(recipe).toBeDefined();
-    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
-  });
-  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
-    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
-    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
-    const value = recipe.outputQty * productById(recipe.outputId).sell;
-    expect(value).toBeGreaterThan(cost);
-    expect(value).toBeGreaterThan(raw);
-  });
-  it('outputId duy nhất; đúng trạm bếp nồi và dùng giò thủ bà Tám', () => {
-    expect(COOKED_PRODUCTS.some((c) => c.id === 'bun_gio_thu')).toBe(true);
-    expect(RECIPES.filter((r) => r.outputId === 'bun_gio_thu').length).toBe(1);
-    expect(recipe.station).toBe('hot_kettle');
-    expect(recipe.inputs.some((i) => i.productId === 'hx_gio_thu')).toBe(true);
-  });
-});
-
 /** GĐ1449 — Cá basa hấp chanh muối: lối ra đầu tiên của chanh muối hàng xóm (nồi hấp). */
 describe('GĐ1449 — cá basa hấp chanh muối (nồi hấp)', () => {
   const recipe = RECIPE_MAP['recipe_ca_hap_chanh_muoi'];
@@ -3880,50 +3812,6 @@ describe('GĐ1456 — cánh gà chiên chanh muối (chảo chiên)', () => {
   });
 });
 
-/** GĐ1457 — Bánh bao chà bông: lối ra đầu tiên của chà bông nhà làm (nồi hấp). */
-describe('GĐ1457 — bánh bao chà bông (nồi hấp)', () => {
-  const recipe = RECIPE_MAP['recipe_banh_bao_cha_bong'];
-  it('có công thức, mở sau golden 30', () => {
-    expect(recipe).toBeDefined();
-    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
-  });
-  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
-    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
-    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
-    const value = recipe.outputQty * productById(recipe.outputId).sell;
-    expect(value).toBeGreaterThan(cost);
-    expect(value).toBeGreaterThan(raw);
-  });
-  it('outputId duy nhất; đúng trạm nồi hấp và dùng chà bông nhà làm', () => {
-    expect(COOKED_PRODUCTS.some((c) => c.id === 'banh_bao_cha_bong')).toBe(true);
-    expect(RECIPES.filter((r) => r.outputId === 'banh_bao_cha_bong').length).toBe(1);
-    expect(recipe.station).toBe('steamer');
-    expect(recipe.inputs.some((i) => i.productId === 'hx_cha_bong')).toBe(true);
-  });
-});
-
-/** GĐ1458 — Bánh tráng cuốn giò thủ: lối ra đầu tiên của giò thủ bà Tám (bếp nướng). */
-describe('GĐ1458 — bánh tráng cuốn giò thủ (bếp nướng)', () => {
-  const recipe = RECIPE_MAP['recipe_banh_trang_cuon_gio_thu'];
-  it('có công thức, mở sau golden 30', () => {
-    expect(recipe).toBeDefined();
-    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
-  });
-  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
-    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
-    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
-    const value = recipe.outputQty * productById(recipe.outputId).sell;
-    expect(value).toBeGreaterThan(cost);
-    expect(value).toBeGreaterThan(raw);
-  });
-  it('outputId duy nhất; đúng trạm bếp nướng và dùng giò thủ bà Tám', () => {
-    expect(COOKED_PRODUCTS.some((c) => c.id === 'banh_trang_cuon_gio_thu')).toBe(true);
-    expect(RECIPES.filter((r) => r.outputId === 'banh_trang_cuon_gio_thu').length).toBe(1);
-    expect(recipe.station).toBe('food_grill');
-    expect(recipe.inputs.some((i) => i.productId === 'hx_gio_thu')).toBe(true);
-  });
-});
-
 /** GĐ1459 — Cá basa chiên sốt me: lối ra đầu tiên của me dầm bà Tám (chảo chiên). */
 describe('GĐ1459 — cá basa chiên sốt me (chảo chiên)', () => {
   const recipe = RECIPE_MAP['recipe_ca_basa_sot_me'];
@@ -3990,28 +3878,6 @@ describe('GĐ1461 — xôi lạp xưởng trứng (quây xôi)', () => {
   });
 });
 
-/** GĐ1462 — Bánh đa trộn giò thủ: lối ra đầu tiên của bánh đa hàng xóm (bếp nồi). */
-describe('GĐ1462 — bánh đa trộn giò thủ (bếp nồi)', () => {
-  const recipe = RECIPE_MAP['recipe_banh_da_tron_gio_thu'];
-  it('có công thức, mở sau golden 30', () => {
-    expect(recipe).toBeDefined();
-    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
-  });
-  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
-    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
-    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
-    const value = recipe.outputQty * productById(recipe.outputId).sell;
-    expect(value).toBeGreaterThan(cost);
-    expect(value).toBeGreaterThan(raw);
-  });
-  it('outputId duy nhất; đúng trạm bếp nồi và dùng bánh đa hàng xóm', () => {
-    expect(COOKED_PRODUCTS.some((c) => c.id === 'banh_da_tron_gio_thu')).toBe(true);
-    expect(RECIPES.filter((r) => r.outputId === 'banh_da_tron_gio_thu').length).toBe(1);
-    expect(recipe.station).toBe('hot_kettle');
-    expect(recipe.inputs.some((i) => i.productId === 'hx_banh_da')).toBe(true);
-  });
-});
-
 /** GĐ1463 — Bánh cuốn lạp xưởng: lối ra đầu tiên của bánh cuốn nhà làm (nồi hấp). */
 describe('GĐ1463 — bánh cuốn lạp xưởng (nồi hấp)', () => {
   const recipe = RECIPE_MAP['recipe_banh_cuon_lap_xuong'];
@@ -4031,28 +3897,6 @@ describe('GĐ1463 — bánh cuốn lạp xưởng (nồi hấp)', () => {
     expect(RECIPES.filter((r) => r.outputId === 'banh_cuon_lap_xuong').length).toBe(1);
     expect(recipe.station).toBe('steamer');
     expect(recipe.inputs.some((i) => i.productId === 'hx_banh_cuon')).toBe(true);
-  });
-});
-
-/** GĐ1464 — Gỏi giò thủ cà pháo: lối ra đầu tiên của cà pháo muối (bếp nồi). */
-describe('GĐ1464 — gỏi giò thủ cà pháo (bếp nồi)', () => {
-  const recipe = RECIPE_MAP['recipe_goi_ca_phao_gio_thu'];
-  it('có công thức, mở sau golden 30', () => {
-    expect(recipe).toBeDefined();
-    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
-  });
-  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
-    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
-    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
-    const value = recipe.outputQty * productById(recipe.outputId).sell;
-    expect(value).toBeGreaterThan(cost);
-    expect(value).toBeGreaterThan(raw);
-  });
-  it('outputId duy nhất; đúng trạm bếp nồi và dùng cà pháo muối', () => {
-    expect(COOKED_PRODUCTS.some((c) => c.id === 'goi_ca_phao_gio_thu')).toBe(true);
-    expect(RECIPES.filter((r) => r.outputId === 'goi_ca_phao_gio_thu').length).toBe(1);
-    expect(recipe.station).toBe('hot_kettle');
-    expect(recipe.inputs.some((i) => i.productId === 'hx_ca_phao')).toBe(true);
   });
 });
 
@@ -4166,28 +4010,6 @@ describe('GĐ1469 — chả lụa chiên sốt me (chảo chiên)', () => {
   });
 });
 
-/** GĐ1470 — Xôi chả lụa dưa muối: lối ra đầu tiên của chả lụa bà Tám (quây xôi). */
-describe('GĐ1470 — xôi chả lụa dưa muối (quây xôi)', () => {
-  const recipe = RECIPE_MAP['recipe_xoi_cha_lua_dua_muoi'];
-  it('có công thức, mở sau golden 30', () => {
-    expect(recipe).toBeDefined();
-    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
-  });
-  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
-    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
-    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
-    const value = recipe.outputQty * productById(recipe.outputId).sell;
-    expect(value).toBeGreaterThan(cost);
-    expect(value).toBeGreaterThan(raw);
-  });
-  it('outputId duy nhất; đúng trạm quây xôi và dùng chả lụa bà Tám', () => {
-    expect(COOKED_PRODUCTS.some((c) => c.id === 'xoi_cha_lua_dua_muoi')).toBe(true);
-    expect(RECIPES.filter((r) => r.outputId === 'xoi_cha_lua_dua_muoi').length).toBe(1);
-    expect(recipe.station).toBe('rice_station');
-    expect(recipe.inputs.some((i) => i.productId === 'hx_cha_lua')).toBe(true);
-  });
-});
-
 /** GĐ1471 — Bánh đa cuốn chả lụa: lối ra đầu tiên của bánh đa hàng xóm (bếp nướng). */
 describe('GĐ1471 — bánh đa cuốn chả lụa (bếp nướng)', () => {
   const recipe = RECIPE_MAP['recipe_banh_da_cuon_cha_lua'];
@@ -4229,50 +4051,6 @@ describe('GĐ1472 — bánh cuốn chà bông (nồi hấp)', () => {
     expect(RECIPES.filter((r) => r.outputId === 'banh_cuon_cha_bong').length).toBe(1);
     expect(recipe.station).toBe('steamer');
     expect(recipe.inputs.some((i) => i.productId === 'hx_banh_cuon')).toBe(true);
-  });
-});
-
-/** GĐ1473 — Cà pháo chiên giòn chấm me: lối ra đầu tiên của cà pháo muối (chảo chiên). */
-describe('GĐ1473 — cà pháo chiên giòn chấm me (chảo chiên)', () => {
-  const recipe = RECIPE_MAP['recipe_ca_phao_chien_gion'];
-  it('có công thức, mở sau golden 30', () => {
-    expect(recipe).toBeDefined();
-    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
-  });
-  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
-    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
-    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
-    const value = recipe.outputQty * productById(recipe.outputId).sell;
-    expect(value).toBeGreaterThan(cost);
-    expect(value).toBeGreaterThan(raw);
-  });
-  it('outputId duy nhất; đúng trạm chảo chiên và dùng cà pháo muối', () => {
-    expect(COOKED_PRODUCTS.some((c) => c.id === 'ca_phao_chien_gion')).toBe(true);
-    expect(RECIPES.filter((r) => r.outputId === 'ca_phao_chien_gion').length).toBe(1);
-    expect(recipe.station).toBe('fryer');
-    expect(recipe.inputs.some((i) => i.productId === 'hx_ca_phao')).toBe(true);
-  });
-});
-
-/** GĐ1474 — Bún chả lụa nước chanh muối: lối ra đầu tiên của chanh muối hàng xóm (bếp nồi). */
-describe('GĐ1474 — bún chả lụa nước chanh muối (bếp nồi)', () => {
-  const recipe = RECIPE_MAP['recipe_bun_cha_lua_chanh_muoi'];
-  it('có công thức, mở sau golden 30', () => {
-    expect(recipe).toBeDefined();
-    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
-  });
-  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
-    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
-    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
-    const value = recipe.outputQty * productById(recipe.outputId).sell;
-    expect(value).toBeGreaterThan(cost);
-    expect(value).toBeGreaterThan(raw);
-  });
-  it('outputId duy nhất; đúng trạm bếp nồi và dùng chanh muối hàng xóm', () => {
-    expect(COOKED_PRODUCTS.some((c) => c.id === 'bun_cha_lua_chanh_muoi')).toBe(true);
-    expect(RECIPES.filter((r) => r.outputId === 'bun_cha_lua_chanh_muoi').length).toBe(1);
-    expect(recipe.station).toBe('hot_kettle');
-    expect(recipe.inputs.some((i) => i.productId === 'hx_chanh_muoi')).toBe(true);
   });
 });
 
@@ -4383,72 +4161,6 @@ describe('GĐ1479 — canh chua dưa muối cá basa (bếp nồi)', () => {
     expect(RECIPES.filter((r) => r.outputId === 'canh_chua_dua_muoi_ca').length).toBe(1);
     expect(recipe.station).toBe('hot_kettle');
     expect(recipe.inputs.some((i) => i.productId === 'hx_dua_muoi')).toBe(true);
-  });
-});
-
-/** GĐ1480 — Bánh bao giò thủ: lối ra đầu tiên của giò thủ bà Tám (nồi hấp). */
-describe('GĐ1480 — bánh bao giò thủ (nồi hấp)', () => {
-  const recipe = RECIPE_MAP['recipe_banh_bao_gio_thu'];
-  it('có công thức, mở sau golden 30', () => {
-    expect(recipe).toBeDefined();
-    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
-  });
-  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
-    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
-    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
-    const value = recipe.outputQty * productById(recipe.outputId).sell;
-    expect(value).toBeGreaterThan(cost);
-    expect(value).toBeGreaterThan(raw);
-  });
-  it('outputId duy nhất; đúng trạm nồi hấp và dùng giò thủ bà Tám', () => {
-    expect(COOKED_PRODUCTS.some((c) => c.id === 'banh_bao_gio_thu')).toBe(true);
-    expect(RECIPES.filter((r) => r.outputId === 'banh_bao_gio_thu').length).toBe(1);
-    expect(recipe.station).toBe('steamer');
-    expect(recipe.inputs.some((i) => i.productId === 'hx_gio_thu')).toBe(true);
-  });
-});
-
-/** GĐ1481 — Cháo giò thủ: lối ra đầu tiên của giò thủ bà Tám (nồi nước). */
-describe('GĐ1481 — cháo giò thủ (nồi nước)', () => {
-  const recipe = RECIPE_MAP['recipe_chao_gio_thu'];
-  it('có công thức, mở sau golden 30', () => {
-    expect(recipe).toBeDefined();
-    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
-  });
-  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
-    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
-    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
-    const value = recipe.outputQty * productById(recipe.outputId).sell;
-    expect(value).toBeGreaterThan(cost);
-    expect(value).toBeGreaterThan(raw);
-  });
-  it('outputId duy nhất; đúng trạm nồi nước và dùng giò thủ bà Tám', () => {
-    expect(COOKED_PRODUCTS.some((c) => c.id === 'chao_gio_thu')).toBe(true);
-    expect(RECIPES.filter((r) => r.outputId === 'chao_gio_thu').length).toBe(1);
-    expect(recipe.station).toBe('hot_kettle');
-    expect(recipe.inputs.some((i) => i.productId === 'hx_gio_thu')).toBe(true);
-  });
-});
-
-/** GĐ1482 — Cháo lạp xưởng: lối ra đầu tiên của lạp xưởng (nồi nước). */
-describe('GĐ1482 — cháo lạp xưởng (nồi nước)', () => {
-  const recipe = RECIPE_MAP['recipe_chao_lap_xuong'];
-  it('có công thức, mở sau golden 30', () => {
-    expect(recipe).toBeDefined();
-    expect(recipe.unlock).toBeGreaterThan(GOLDEN_SMOOTH);
-  });
-  it('mẻ lãi dương từ giá thật và hời hơn bán thẳng nguyên liệu', () => {
-    const cost = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).buy, 0);
-    const raw = recipe.inputs.reduce((s, i) => s + i.quantity * productById(i.productId).sell, 0);
-    const value = recipe.outputQty * productById(recipe.outputId).sell;
-    expect(value).toBeGreaterThan(cost);
-    expect(value).toBeGreaterThan(raw);
-  });
-  it('outputId duy nhất; đúng trạm nồi nước và dùng lạp xưởng', () => {
-    expect(COOKED_PRODUCTS.some((c) => c.id === 'chao_lap_xuong')).toBe(true);
-    expect(RECIPES.filter((r) => r.outputId === 'chao_lap_xuong').length).toBe(1);
-    expect(recipe.station).toBe('hot_kettle');
-    expect(recipe.inputs.some((i) => i.productId === 'hx_lap_xuong')).toBe(true);
   });
 });
 

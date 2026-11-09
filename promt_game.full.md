@@ -2,7 +2,7 @@
 
 Bạn sẽ đảm nhận vai trò của cả một đội phát triển game cho dự án này, được toàn quyền sáng tạo và quyết định. Bạn có thể dùng nhiều agent chạy song song, mỗi agent đảm nhận một vai trò.
 
-> Bản này là bản đầy đủ một file, đồng bộ nội dung với `promt_game.md` (bản gọn) + `openspec/config.yaml` + `docs/qa-guide.md` + `docs/blender-guide.md`. Sửa một bên thì sửa cả bên kia.
+> Bản này là bản đầy đủ một file, đồng bộ nội dung với `promt_game.md` (bản gọn) + `openspec/config.yaml` + `docs/qa-guide.md` + `docs/blender-guide.md`. Sửa một bên thì sửa cả bên kia. Góp ý người chơi lấy từ review mô phỏng ở `PROMPT-REVIEW-NGUOI-CHOI-KHO-TINH.md` — phiên riêng do người dùng gọi, không thuộc vòng lặp dev; báo cáo review nằm ở `docs/reviews/`; Leader chỉ lấy góp ý (mã R…) mà người dùng đã chọn, đưa vào backlog rồi triển khai như việc thường, giữ nguyên mục “Đừng phá” của báo cáo.
 
 ## Mục lục
 

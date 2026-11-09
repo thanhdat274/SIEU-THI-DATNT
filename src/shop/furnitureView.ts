@@ -65,7 +65,7 @@ export class FurnitureView {
     else if (type === 'toilet_squat' || type === 'toilet_porcelain' || type === 'toilet_smart') this.buildToilet();
     else if (DECOR_TYPES.has(type)) this.buildDecorProp();
     else if (isCookStation(type)) this.buildCookStation();
-    else if (type === 'freezer') this.buildChest(0xf4f6f7, 0.85, true);
+    else if (type === 'freezer') this.buildFreezer();
     else if (type === 'produce') this.buildChest(0x8b5a2b, 0.75, false);
     else if (type === 'meat_counter') this.buildChest(0xf3e9e9, 0.9, true);
     else this.buildShelf(type === 'fridge' ? 0xdfe6e9 : type === 'bigShelf' ? 0x95a5a6 : 0x8b5a2b, type === 'fridge');
@@ -337,6 +337,92 @@ export class FurnitureView {
           const box = new THREE.Group();
           box.userData.size = [spacing * 0.9, 0.16, rowDepth * 0.85];
           box.position.set(-w / 2 + 0.1 + slotW * s + spacing * (i + 0.5), y, z);
+          box.visible = false;
+          this.group.add(box);
+          slot.push(box);
+        }
+        this.boxes.push(slot);
+      }
+    }
+  }
+
+  /**
+   * GĐ1823 — Tủ đông nằm kiểu tiệm tạp hóa VN (theo ảnh mẫu người dùng): thân trắng trên 4 bánh xe,
+   * lòng tủ ÂM xuống (hàng nằm bên trong, nhìn qua kính), nắp 2 cánh kính lùa trong khung nhôm xám
+   * ôm mép trên, bảng nhiệt độ + 2 đèn ở góc phải mặt trước, tấm tên hãng góc trái.
+   */
+  private buildFreezer() {
+    const def = furnitureDef(this.type);
+    const [w, d] = def.size;
+    const H = 0.86; // mép trên
+    const caster = 0.08;
+    this.baseColor = 0xf4f6f7;
+    this.topY = H + 0.45;
+    const white = new THREE.MeshStandardMaterial({ color: 0xf4f6f7, roughness: 0.55 });
+    const grey = new THREE.MeshStandardMaterial({ color: 0x9aa1a7, metalness: 0.35, roughness: 0.45 });
+    const liner = new THREE.MeshStandardMaterial({ color: 0xdfe8ee, roughness: 0.7 });
+    const dark = new THREE.MeshStandardMaterial({ color: 0x2d3436, roughness: 0.8 });
+    const add = (geo: THREE.BufferGeometry, mat: THREE.Material, x: number, y: number, z: number) => {
+      const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.castShadow = true; m.receiveShadow = true; this.group.add(m); return m;
+    };
+    const wall = 0.06;
+    const wellBottom = 0.36;
+    // Đế đặc phía dưới lòng tủ (máy nén) + 4 vách thân bao quanh lòng tủ
+    add(new THREE.BoxGeometry(w, wellBottom - caster, d), white, 0, caster + (wellBottom - caster) / 2, 0);
+    const wallH = H - wellBottom;
+    const wy = wellBottom + wallH / 2;
+    add(new THREE.BoxGeometry(w, wallH, wall), white, 0, wy, d / 2 - wall / 2);
+    add(new THREE.BoxGeometry(w, wallH, wall), white, 0, wy, -d / 2 + wall / 2);
+    add(new THREE.BoxGeometry(wall, wallH, d - 2 * wall), white, w / 2 - wall / 2, wy, 0);
+    add(new THREE.BoxGeometry(wall, wallH, d - 2 * wall), white, -w / 2 + wall / 2, wy, 0);
+    // Lòng tủ sáng màu lạnh
+    add(new THREE.BoxGeometry(w - 2 * wall, 0.01, d - 2 * wall), liner, 0, wellBottom + 0.005, 0);
+    // Khung nhôm xám ôm mép trên (hơi nhô ra như ảnh mẫu)
+    const fh = 0.07, fw = 0.07;
+    add(new THREE.BoxGeometry(w + 0.03, fh, fw), grey, 0, H + fh / 2, d / 2 - fw / 2 + 0.015);
+    add(new THREE.BoxGeometry(w + 0.03, fh, fw), grey, 0, H + fh / 2, -d / 2 + fw / 2 - 0.015);
+    add(new THREE.BoxGeometry(fw, fh, d), grey, w / 2 - fw / 2 + 0.015, H + fh / 2, 0);
+    add(new THREE.BoxGeometry(fw, fh, d), grey, -w / 2 + fw / 2 - 0.015, H + fh / 2, 0);
+    add(new THREE.BoxGeometry(0.04, fh * 0.8, d - 2 * fw), grey, 0, H + fh * 0.4, 0); // thanh giữa 2 cánh
+    // Hai cánh kính lùa (lệch cao một chút như ray đôi), mỗi cánh có tay kéo
+    const glass = new THREE.MeshStandardMaterial({ color: 0xcfeefe, transparent: true, opacity: 0.28, roughness: 0.05, metalness: 0.1, depthWrite: false });
+    const paneW = (w - 2 * fw) / 2 + 0.02;
+    for (const s of [-1, 1]) {
+      const pane = add(new THREE.BoxGeometry(paneW, 0.012, d - 2 * fw + 0.02), glass, s * (paneW / 2 - 0.01), H + (s < 0 ? 0.03 : 0.045), 0);
+      pane.castShadow = false;
+      add(new THREE.BoxGeometry(0.16, 0.015, 0.03), grey, s * (paneW - 0.14), H + (s < 0 ? 0.045 : 0.06), d / 2 - fw - 0.03);
+    }
+    // Chân đế tối + 4 bánh xe
+    add(new THREE.BoxGeometry(w - 0.04, 0.03, d - 0.04), dark, 0, caster + 0.015, 0);
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
+      const wheel = add(new THREE.CylinderGeometry(0.035, 0.035, 0.03, 10), dark, sx * (w / 2 - 0.1), 0.035, sz * (d / 2 - 0.1));
+      wheel.rotation.z = Math.PI / 2;
+      add(new THREE.BoxGeometry(0.03, 0.04, 0.03), grey, sx * (w / 2 - 0.1), 0.065, sz * (d / 2 - 0.1));
+    }
+    // Bảng điều khiển góc phải mặt trước: núm vặn + đèn đỏ/xanh; tấm tên hãng góc trái
+    const fz = d / 2 + 0.006;
+    add(new THREE.BoxGeometry(0.3, 0.1, 0.01), new THREE.MeshStandardMaterial({ color: 0xffffff }), w / 2 - 0.28, 0.3, fz);
+    const knob = add(new THREE.CylinderGeometry(0.03, 0.03, 0.015, 14), grey, w / 2 - 0.37, 0.3, fz + 0.008);
+    knob.rotation.x = Math.PI / 2;
+    add(new THREE.BoxGeometry(0.025, 0.025, 0.01), new THREE.MeshStandardMaterial({ color: 0xe74c3c, emissive: 0xe74c3c, emissiveIntensity: 0.6 }), w / 2 - 0.25, 0.3, fz + 0.006);
+    add(new THREE.BoxGeometry(0.025, 0.025, 0.01), new THREE.MeshStandardMaterial({ color: 0x2ecc71, emissive: 0x2ecc71, emissiveIntensity: 0.6 }), w / 2 - 0.19, 0.3, fz + 0.006);
+    add(new THREE.BoxGeometry(0.26, 0.05, 0.008), new THREE.MeshStandardMaterial({ color: 0x34495e }), -w / 2 + 0.22, H - 0.09, fz);
+
+    // Hàng xếp TRONG lòng tủ: tầng 1 phía trước, tầng sau kê cao hơn chút cho thấy qua kính
+    const innerW = w - 2 * wall - 0.04;
+    const innerD = d - 2 * wall - 0.04;
+    const slotW = innerW / def.slots;
+    const spacing = (slotW - 0.03) / def.capacity;
+    const rowDepth = innerD / def.tiers;
+    for (let t = 0; t < def.tiers; t++) {
+      const z = innerD / 2 - rowDepth * (t + 0.5);
+      const y = wellBottom + 0.02 + t * 0.1;
+      for (let s = 0; s < def.slots; s++) {
+        const slot: THREE.Group[] = [];
+        for (let i = 0; i < def.capacity; i++) {
+          const box = new THREE.Group();
+          box.userData.size = [spacing * 0.9, 0.16, rowDepth * 0.8];
+          box.position.set(-innerW / 2 + slotW * s + 0.015 + spacing * (i + 0.5), y, z);
           box.visible = false;
           this.group.add(box);
           slot.push(box);

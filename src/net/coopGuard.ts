@@ -13,6 +13,9 @@ export const GUARDED: Record<string, (args: unknown[]) => string> = {
   stashFurniture: (a) => `furn:${a[0]}`,
   repairFurniture: (a) => `furn:${a[0]}`,
   paint: (a) => `style:${a[0]}`,
+  buyExpansionTile: () => 'shop:tile',
+  buyMaterialPack: () => 'ware:materials',
+  paintZone: (a) => `zone:${a[0]}:${a[1]}`,
   setPrice: (a) => `price:${a[0]}`,
   // GĐ793 — đòi khách quen bị rival lôi kéo: cả hẻm dùng chung danh sách bị lôi kéo, hai người bấm cùng lúc
   // thì người sau được báo "đợi một chút" thay vì đòi trùng một người.

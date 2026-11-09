@@ -3,6 +3,7 @@ import { skyAt } from './data/weather';
 import { isMarketDay } from './data/chophien';
 import { isRoadworks } from './data/roadwork';
 import { isFestivalDeco } from './data/festivalDeco';
+import { dateOfDoy } from './data/calendar';
 import { queueUrgency, accumulateBackup } from './world/storefrontWaitLamp';
 import * as THREE from 'three';
 import { shopLayout, worldActions } from './core/actions';
@@ -174,7 +175,7 @@ useSession.subscribe((s, prev) => {
       const spot = shopSpot();
       player.teleport(spot.x, spot.z);
       g.notify(`🏪 Ngày ${g.day} · tiệm vẫn đang mở cửa như lúc bạn rời — vào quầy tiếp khách nhé!`);
-    } else if (!isGuest()) g.notify(`🏪 Ngày ${g.day} · chúc buôn may bán đắt!`);
+    } else if (!isGuest() && g.day > 1) g.notify(`🏪 Ngày ${g.day} · chúc buôn may bán đắt!`); // ngày 1 đã có hộp thoại Bà Năm — khỏi chồng toast (review 11-09 R3)
   }
 });
 
@@ -347,6 +348,8 @@ let lastMarketDay = isMarketDay(useGame.getState().day);
 // Hôm nay có sửa đường trước hẻm không (gđ184): đổi cảnh rào chắn khi sự kiện market roadworks thay đổi
 let lastRoadwork = isRoadworks(useGame.getState().weatherSeed, useGame.getState().day, useGame.getState().level);
 let lastFestival = isFestivalDeco(useGame.getState().day);
+// Mùa cho cây nature (GĐ1830): phượng đỏ hè, đào/mai nở Tết — chỉ đổi khi sang tháng mới
+let lastNatureMonth = dateOfDoy(useGame.getState().day).month;
 // GĐ186 "sắp mất khách": đếm thời lượng game mà quầy có ~BACKUP_WAITING khách đợi trở lên (0 khi dừng)
 let lastUrgMinutes = useGame.getState().minutes;
 let backedUpGameSec = 0;
@@ -520,12 +523,15 @@ function goToBed() {
   }, 1500);
 }
 
-// Bàn ăn sáng cạnh tủ đầu giường: bước tới là tự gọi tô phở (trước 11h, chưa ăn hôm nay)
+// Bàn ăn sáng cạnh tủ đầu giường: bước tới là tự gọi tô phở (trước 11h, chưa ăn hôm nay).
+// GĐ1827 (review người chơi R7): ngày 1 KHÔNG tự gọi — người mới chưa biết cơ chế mà tiền lặng
+// lẽ trừ 20.000đ là nguồn "mất tiền vô cớ" (báo cáo review bắt được đúng cảnh này 2 lần).
+// Từ ngày 2 mới tự ăn: lúc đó toast "🍜 Ăn tô phở sáng..." trở thành lời dạy cơ chế.
 let atBreakfast = false;
 function autoBreakfast() {
   const s = useGame.getState();
   const near = player.position.distanceTo(standSpot) < 1.3;
-  if (near && !atBreakfast && s.minutes <= 11 * 60 && s.biz.breakfastDay !== s.day) eatBreakfast();
+  if (near && !atBreakfast && s.day > 1 && s.minutes <= 11 * 60 && s.biz.breakfastDay !== s.day) eatBreakfast();
   atBreakfast = near;
 }
 
@@ -614,6 +620,7 @@ function applyGfx() {
   if (lighting.sun.castShadow) lighting.sun.shadow.intensity = p.shadows ? 1 : 0;
   // Đồ trang trí theo NỘI DUNG (đầy ở mọi mức; tấm chắn khẩn cấp mới tắt khi máy yếu dưới 30 FPS)
   world.kit.setDecor(gfx.content.decor);
+  world.nature.setDecor(gfx.content.decor);
   world.alleyLamps.setDecor(gfx.content.decor);
   reportGfx(gfxChoice, gfx.step.level, gfx.avgFps);
 }
@@ -786,6 +793,7 @@ function renderFrame() {
   world.quanNuocWarm.update(lamp, world.quanNuoc.stand.visible);
   // Biển mở/đóng cửa trước tiệm (gđ179): tấm trạng thái đổi màu theo tiệm đang mở/đóng, đung nhẹ khi mở
   world.openSign.update(g.shopOpen, performance.now() / 1000);
+  world.openSign.group.visible = world.shop.building.frontWallShown; // GĐ1822: ẩn theo tường mặt tiền bị cắt
   // Đèn báo "khách đang đợi" cạnh cửa (gđ180): sáng ấm khi có khách chờ quầy và tiệm mở
   // GĐ186: cộng thêm mức KHẨN "sắp mất khách" khi hàng đông lâu — nháy nhanh để chủ ghé về quầy
   let urgAdv = g.minutes - lastUrgMinutes;
@@ -817,6 +825,12 @@ function renderFrame() {
   if (festival !== lastFestival) {
     lastFestival = festival;
     world.kit.setFestival(festival);
+  }
+  // Cây đổi màu theo mùa (GĐ1830): sang tháng mới mới chạy lại — phượng đỏ hè, đào/mai nở Tết
+  const natureMonth = dateOfDoy(g.day).month;
+  if (natureMonth !== lastNatureMonth) {
+    lastNatureMonth = natureMonth;
+    world.nature.setSeason(natureMonth);
   }
   applyLightBudget(controller.target);
   // Bóng đổ cập nhật 30 hình/giây là đủ (nắng di chuyển chậm): tiết kiệm một nửa vệt vẽ bóng; mức Thấp tắt hẳn

@@ -84,6 +84,9 @@ export function SummaryPanel({ day }: { day: number }) {
   const panel = useGame((s) => s.panel);
   const { level, xp, history, openPanel, setShift, notify, storage, storageLots, furniture, priceOf, riskTrend, staff, skills, soldEver, comboHitCount, biz, weatherSeed, weather, regulars, totals, repLog, giftStreak, giftLastDay, giftGraceDay, happyHour, analytics, demand: stateDemand, marketLast, debts, questLog } = useGame();
   const [tab, setTab] = useState<'overview' | 'items'>('overview');
+  // GĐ1826 (review người chơi R8): ngày 1–2 gập các khối "nâng cao" (kỷ lục, ca đêm, thanh toán,
+  // giờ bán...) sau nút "Xem chi tiết" — tổng kết ngày đầu chỉ giữ lõi: tiền, lãi bán thật, việc cần làm.
+  const [more, setMore] = useState(day > 2);
   if (panel?.type !== 'summary') return null;
   // GĐ126: `day` prop = ngày VỪA KẾT THÚC (N), nhưng endDay đã sang ngày mới trong cùng set().
   // Store `useGame(s => s.day)` = N+1 = MAI; weather/weatherSeed cũng là của mai. Luôn dùng MAI.
@@ -282,12 +285,18 @@ export function SummaryPanel({ day }: { day: number }) {
               {!!st.clawWins && <tr><td style={styles.left}>🧸 Khách gắp trúng thú bông</td><td style={{ opacity: 0.75 }}>{st.clawWins} lần</td></tr>}
               <tr><td style={styles.left}>Lãi gộp trên hàng bán (giá bán − giá nhập)</td><td style={{ color: '#2ecc71' }}>{formatMoney(goodsRevenue - goodsCost - (st.comboDiscount ?? 0))}</td></tr>
               <tr><td style={styles.left}>Chi tiêu (nhập hàng, nội thất)</td><td>{st.spent > 0 ? `-${formatMoney(st.spent)}` : '0đ'}</td></tr>
+              {!!st.opCost && <tr><td style={styles.left} title="Điện/nước theo % doanh thu + tiền điện chi nhánh 24/7 + hợp đồng bảo trì — đã tính trong dòng Chi tiêu">  trong đó 💡 phí vận hành</td><td style={{ opacity: 0.75 }}>-{formatMoney(st.opCost)}</td></tr>}
               <tr><td style={styles.left}>Lương nhân viên</td><td>{st.wages > 0 ? `-${formatMoney(st.wages)}` : '0đ'}</td></tr>
               <tr><td style={styles.left}>Tiền nhà (theo bậc tiệm)</td><td>{(st.rent ?? 0) > 0 ? `-${formatMoney(st.rent ?? 0)}` : '0đ'}</td></tr>
               <tr>
                 <td style={styles.left}><b>Tiền vào − tiền ra</b></td>
                 <td style={{ color: profit >= 0 ? '#2ecc71' : '#e74c3c' }}><b>{trendMark(profit)}{formatMoney(profit)}</b></td>
               </tr>
+              {/* GĐ1832 (review đợt 2 R1 / đợt 3 R2): thành tựu mở khóa trong đêm cộng vào ví SAU dòng này —
+                  kê riêng để người soi sổ khớp được số dư với tổng kết */}
+              {!!st.achvReward && <tr><td style={styles.left}>⭐ Thưởng thành tựu (vào ví sau tổng kết)</td><td style={{ color: '#2ecc71' }}>+{formatMoney(st.achvReward)}</td></tr>}
+              {/* GĐ1833 (review đợt 2 R3 / đợt 3 R3): két âm sau khi trả nhà/lương/vận hành — nêu rõ con số */}
+              {!!st.shortfall && <tr><td style={styles.left}>⚠️ Két thiếu tiền sau khi trả nhà/lương/vận hành</td><td style={{ color: '#e74c3c' }}>-{formatMoney(st.shortfall)}</td></tr>}
               {!!st.credited && <tr><td style={styles.left}>  trong đó khách quen ghi sổ (chưa thu)</td><td style={{ color: '#e67e22' }}>{formatMoney(st.credited)}</td></tr>}
               {!!st.repaid && <tr><td style={styles.left}>Thu nợ cũ</td><td style={{ color: '#2ecc71' }}>+{formatMoney(st.repaid)}</td></tr>}
               <tr><td style={styles.left}>Món đã bán</td><td>{st.itemsSold}</td></tr>
@@ -443,7 +452,7 @@ export function SummaryPanel({ day }: { day: number }) {
           {/* GĐ123: Thẻ "phá kỷ lục" trong tổng kết ngày — mồi quay lại mỗi ngày cho người chơi cấp cao
               (nơi mọi việc đã auto) bằng mục tiêu tự phá kỷ lục của chính mình. Chỉ hiện khi có kỷ lục
               để so (best !== null); đọc state có sẵn (history/soldEver/comboHitCount), không đổi save. */}
-          {feedActive.length > 0 && (
+          {more && feedActive.length > 0 && (
             <div style={{ ...styles.card, marginTop: 8 }}>
               <b style={styles.cardTitle}>🏆 Đang đua phá kỷ lục</b>
               <div style={{ marginTop: 4, display: 'grid', gap: 3 }}>
@@ -466,7 +475,7 @@ export function SummaryPanel({ day }: { day: number }) {
           )}
           {/* Báo cáo ca đêm tiệm chính (GĐ65): lời/lỗ của khoản đầu tư 15 triệu "Mở ca đêm 24h".
               Thuần đọc từ byHour (giờ ≥22) + nhân viên ca đêm (pay ×1,5) — không thêm state/save. */}
-          {(() => {
+          {more && (() => {
             const np = nightPnl(st.byHour, staff, skills);
             if (np.verdict === 'idle') return null; // chưa mở ca đêm / chưa thuê ai, không bày thẻ tránh nhiễu
             const color = np.verdict === 'ok' ? '#2ecc71' : '#e74c3c';
@@ -569,8 +578,8 @@ export function SummaryPanel({ day }: { day: number }) {
               </Callout>
             );
           })()}
-          <SummaryMoneyCards loyaltyPay={loyaltyPay} happyPay={happyPay} missRev={missRev} spoilNite={spoilNite} openPanel={openPanel} />
-          {methods.length > 0 && (
+          {more && <SummaryMoneyCards loyaltyPay={loyaltyPay} happyPay={happyPay} missRev={missRev} spoilNite={spoilNite} openPanel={openPanel} />}
+          {more && methods.length > 0 && (
             <>
               <h3 style={{ margin: '12px 0 4px', fontSize: 14 }}>💳 Tiền vào theo hình thức thanh toán</h3>
               <table style={{ ...styles.table, fontSize: 13 }}>
@@ -612,7 +621,18 @@ export function SummaryPanel({ day }: { day: number }) {
               );
             })()}
           </div>
-          {hours.length > 0 && <HourChart hours={hours} peak={peak?.hour} quiet={quiet?.hour} />}
+          {more && hours.length > 0 && <HourChart hours={hours} peak={peak?.hour} quiet={quiet?.hour} />}
+          {/* GĐ1826 (review R8): nút mở/gập khối nâng cao — chỉ hiện ngày 1–2, từ ngày 3 mở mặc định. */}
+          {day <= 2 && (
+            <button onClick={() => setMore((v) => !v)} style={{ ...styles.btn, marginTop: 10 }}>
+              {more ? '🔺 Ẩn phần nâng cao' : '🔎 Xem phần nâng cao (kỷ lục, ca đêm, thanh toán, giờ bán...)'}
+            </button>
+          )}
+          {(st.substituted ?? 0) > 0 && (
+            <p style={{ margin: '6px 0 0', fontSize: 12, opacity: 0.85 }}>
+              🔄 Đã cứu {st.substituted} lượt nhờ khách nhận món thay — vẫn nên châm kệ đủ.
+            </p>
+          )}
           {expiryTips.length > 0 && (
             <AdviceCard title={`🥀 Hàng sắp hỏng (${expiring.reduce((n, l) => n + l.qty, 0)} món)`} items={expiryTips} onAct={act} />
           )}

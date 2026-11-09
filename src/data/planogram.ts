@@ -39,3 +39,35 @@ export function allowedForType<T extends { id: string; category: unknown }>(type
   const def = furnitureDef(type);
   return unlocked.filter((p) => def.categories.includes(p.category as never));
 }
+
+/** GĐ1837 (review đợt 2 R6 + đợt 3 R5) — kế hoạch bày MỘT kệ: trả về id nên bày cho TỪNG tầng
+ *  (null = không bày được). Mô phỏng tuần tự từng ô: món vừa gán được coi là "đã bày ở kệ này"
+ *  và trừ vào KHO ẢO nên ô kế tiếp tự đa dạng — hết cảnh "10/12 ô một món Mì" dù kho còn bánh
+ *  kẹo (hàng hot lễ) nằm dưới. Ô đã có món vẫn châm thêm nếu kho còn. THUẦN — test chạy được. */
+export function fillPlanForShelf(
+  f: ShelfLike,
+  storage: Record<string, number>,
+  allowed: ReadonlyArray<{ id: string }>,
+  hot: ReadonlySet<string> = new Set(),
+): (string | null)[] {
+  const cap = furnitureDef(f.type).capacity;
+  const virtual = { ...storage };
+  const assigned: (string | null)[] = f.tiers.map((t) => t.productId);
+  // Ô đã có món: kho ảo trừ đúng lượng cần châm thêm (kho cạn thì thôi, không gán ô khác)
+  assigned.forEach((id) => {
+    if (id) virtual[id] = Math.max(0, (virtual[id] ?? 0) - cap);
+  });
+  return assigned.map((id, i) => {
+    if (id) return (storage[id] ?? 0) > 0 ? id : null;
+    const pick = pickForShelf(
+      { tiers: assigned.map((pid) => ({ productId: pid })), type: f.type },
+      virtual,
+      allowed,
+      hot,
+    );
+    if (!pick) return null;
+    assigned[i] = pick;
+    virtual[pick] = Math.max(0, (virtual[pick] ?? 0) - cap);
+    return pick;
+  });
+}

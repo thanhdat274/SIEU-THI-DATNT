@@ -6,7 +6,8 @@ import { GroceryShop } from '../shop/groceryShop';
 import { Building, setMergeWindowFrames } from './buildings';
 import { Warehouse, WAREHOUSE_DEPTH } from './warehouse';
 import type { NavGrid } from './navGrid';
-import { SHOP_CENTER_X, SHOP_FRONT_Z, SHOP_TIERS } from '../data/shopTiers';
+import { SHOP_CENTER_X, SHOP_FRONT_Z } from '../data/shopTiers';
+import { maxShopFootprint } from '../data/expansionTiles';
 import { HOUSE_SIZE, houseDoor, NEIGHBOR_HOUSES } from '../data/phoneOrders';
 import { BRANCH_LAYOUT, CONVENIENCE, LANE_X, ROAD2_Z } from '../data/branches';
 import { FurnitureView } from '../shop/furnitureView';
@@ -15,6 +16,7 @@ import { registerLight } from '../render/lightBudget';
 import { createQuanNuocStand } from './quanNuocStand';
 import { createBranchStand } from './branchStand';
 import { loadKitProps } from './kitProps';
+import { loadNatureProps } from './natureProps';
 import { createStorefrontLantern } from './storefrontLantern';
 import { createAlleyLamps } from './alleyLamps';
 import { createOpenSign } from './storefrontSign';
@@ -60,6 +62,8 @@ export interface World {
   quanNuoc: ReturnType<typeof createQuanNuocStand>;
   /** Kit prop GLB trang trí (tải lười): group đã vào scene, `done` biết khi nào đủ prop. */
   kit: ReturnType<typeof loadKitProps>;
+  /** Cây xanh & đồ vườn GLB (đa, dừa, phượng, đào/mai/quất, lúa...) tải từ 3DLabTools (tải lười). */
+  nature: ReturnType<typeof loadNatureProps>;
   /** Cửa hàng tiện lợi theo trạng thái sở hữu: mảnh đất RAO BÁN + biển MỞ/ĐÓNG CỬA — chỉ hình ảnh. */
   branchStand: ReturnType<typeof createBranchStand>;
   /** Đèn lồng cột trước cửa tiệm (gđ177): chỉ hình ảnh + nguồn sáng ấm chập tối — không chặn lưới. */
@@ -216,9 +220,15 @@ export function createWorld(scene: THREE.Scene, grid: NavGrid): World {
   const kit = loadKitProps();
   scene.add(kit.group);
 
+  // Cây xanh & đồ vườn GLB tải từ 3DLabTools (gốc đa, dừa, phượng, đào/mai/quất, lúa...):
+  // cùng convention kit — chỉ trang trí, không chặn lưới; tải lười, prop vừa về vừa chen vào.
+  const nature = loadNatureProps();
+  scene.add(nature.group);
+
   // Đèn lồng cột trước cửa tiệm (gđ177): "đầu ngõ lên đèn" chập tối — chỉ hình ảnh, không chặn lưới;
   // GLB Blender tải lười, có cái xác thủ tục dự phòng nên đèn luôn có hình.
   const storefront = createStorefrontLantern();
+  storefront.group.visible = false; // GĐ1820: bỏ cột đèn lồng (giữ vũng sáng ấm)
   scene.add(storefront.group);
   // GĐ737 — đèn hẻm dọc lối đi: payoff thị giác của dự án "Đèn Đường Ngõ 1" (ẩn cho tới khi thắp sáng)
   const alleyLamps = createAlleyLamps();
@@ -230,8 +240,10 @@ export function createWorld(scene: THREE.Scene, grid: NavGrid): World {
   const openSign = createOpenSign();
   scene.add(openSign.group);
   const waitLamp = createWaitLamp();
+  waitLamp.group.visible = false; // GĐ1820: bỏ đèn báo khách chờ
   scene.add(waitLamp.group);
-  const maxTier = SHOP_TIERS[SHOP_TIERS.length - 1];
+  // GĐ1944 — chừa cả các ô mở rộng sau Đại siêu thị
+  const maxTier = maxShopFootprint();
 
   // Vài cái cây cho sinh động
   const treeBoxes: THREE.Box3[] = [];
@@ -328,6 +340,7 @@ export function createWorld(scene: THREE.Scene, grid: NavGrid): World {
     alleyLamps,
     quanNuoc,
     kit,
+    nature,
     branchStand,
     storefront,
     openSign,

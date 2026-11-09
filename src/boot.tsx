@@ -5,6 +5,7 @@ import { acquireTabLock } from './core/tabLock';
 import { useGame } from './core/store';
 import { watchUser } from './net/firebase';
 import { useSession } from './net/session';
+import { ConfirmHost } from './ui/ConfirmDialog';
 import { Hud } from './ui/Hud';
 import { LoginScreen } from './ui/LoginScreen';
 import { TabLockScreen } from './ui/TabLockScreen';
@@ -125,7 +126,10 @@ export async function bootAfterLock() {
   }
 }
 const uiEl = document.getElementById('ui') as HTMLElement & { __root?: ReturnType<typeof createRoot> };
-bootAfterLock().finally(() => (uiEl.__root ??= createRoot(uiEl)).render(<UiBoundary><App /></UiBoundary>));
+// GĐ1831 (review đợt 2 R14 / đợt 4 R7): ConfirmHost gắn ở GỐC ứng dụng (trước đây chỉ trong HUD) —
+// hộp xác nhận gọi từ màn đăng nhập (vd nút "Rời hẻm" ở AlleyPanel) phải hiện được ngay,
+// không chờ tới khi vào game mới bật giữa màn chơi.
+bootAfterLock().finally(() => (uiEl.__root ??= createRoot(uiEl)).render(<UiBoundary><><App /><ConfirmHost /></></UiBoundary>));
 
 // PWA: đăng ký service worker để game cài ra màn hình chính iPhone/iOS
 // (chỉ ở bản build/run thật; dev thì tắt để không gây nhiễu khi sửa code)

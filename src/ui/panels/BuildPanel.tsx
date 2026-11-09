@@ -1,3 +1,4 @@
+import { askConfirm } from '../ConfirmDialog';
 import { useEffect, useState } from 'react';
 import { useGame } from '../../core/store';
 import { FLOOR_COLORS, PAINT_PRICE, ROOF_COLORS, SHOP_TIERS, WALL_COLORS, rentDelta, rentOf, spaceUsePct, type ShopStyle } from '../../data/shopTiers';
@@ -5,7 +6,8 @@ import { FURNITURE, furnitureDef, type FurnitureType } from '../../data/furnitur
 import { festivalShopName, festivalShopOpen } from '../../data/festivalDeco';
 import { FURNITURE_GROUP_TABS, furnitureGroup, type FurnitureGroup } from '../../data/furnitureGroups';
 import { VIET_SET, VIET_SET_TIERS, vietSetCount, vietSetDecorBonus } from '../../data/decorSets';
-import { departmentsUnlockedAtTier } from '../../data/departments';
+import { activeDepartments, departmentWalled, DEPT_ECON_FROM_TIER, departmentsUnlockedAtTier } from '../../data/departments';
+import { EXPANSION_TILE_CAP, MAX_SHOP_TIER, expansionBlock, expansionTilePrice, shopFootprint } from '../../data/expansionTiles';
 import { bigBasketInsight, BIG_BASKET_TIER } from '../../data/bigBasket';
 import { meatCounterPayoff, meatChainCooled } from '../../data/meatCounterPayoff';
 import { isMeat } from '../../data/meat';
@@ -129,7 +131,7 @@ export function FurnitureTab() {
         <button
           style={{ ...styles.btn, marginLeft: 0, background: '#e74c3c', color: '#fff' }}
           disabled={!furniture.length}
-          onClick={() => confirm('Đập hết nội thất trong tiệm? Nhận lại 50% tiền, hàng trên kệ về kho.') && demolishAll()}
+          onClick={() => { void askConfirm('Đập hết nội thất trong tiệm? Nhận lại 50% tiền, hàng trên kệ về kho.', { danger: true, okLabel: 'Đập hết' }).then((ok) => ok && demolishAll()); }}
         >
           🔨 Đập hết, xây lại từ đầu
         </button>
@@ -228,7 +230,55 @@ export function PaintTab() {
           ✓ Xác nhận sơn
         </button>
       </div>
+      <ZonePaintSection />
     </>
+  );
+}
+
+/** GĐ1943 — sơn nền/vách riêng cho từng khu siêu thị đang hoạt động (từ bậc Siêu thị tạp hóa). */
+function ZonePaintSection() {
+  const shopTier = useGame((s) => s.shopTier);
+  const furniture = useGame((s) => s.furniture);
+  const zonePaint = useGame((s) => s.zonePaint) ?? {};
+  const money = useGame((s) => s.money);
+  const paintZone = useGame((s) => s.paintZone);
+  const [dep, setDep] = useState<string | null>(null);
+  if (shopTier < DEPT_ECON_FROM_TIER) return null;
+  const list = activeDepartments(furniture, shopTier);
+  if (!list.length) return <p style={styles.sub}>🏬 Sơn theo khu: đặt nội thất chủ chốt để mở khu siêu thị.</p>;
+  const cur = list.find((d) => d.id === dep) ?? list[0];
+  const zp = zonePaint[cur.id] ?? {};
+  const rows = [
+    { part: 'floor', label: 'Nền khu', swatches: FLOOR_COLORS },
+    { part: 'wall', label: 'Vách ngăn khu', swatches: WALL_COLORS },
+  ] as const;
+  return (
+    <div style={{ marginTop: 14 }}>
+      <b>🏬 Sơn theo khu</b>
+      <p style={styles.sub}>Mỗi khu sơn riêng nền & vách ngăn ({formatMoney(PAINT_PRICE)}/lần). Đặt vách ngăn quanh khu thì khu thêm 🩷.</p>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+        {list.map((d) => (
+          <button key={d.id} aria-pressed={d.id === cur.id} onClick={() => setDep(d.id)}
+            style={{ ...styles.btn, marginLeft: 0, outline: d.id === cur.id ? '3px solid #f1c40f' : 'none' }}>
+            {d.icon} {d.name}{departmentWalled(d, furniture) ? ' 🧱' : ''}
+          </button>
+        ))}
+      </div>
+      {rows.map((row) => (
+        <div key={row.part} style={{ margin: '8px 0' }}>
+          <b>{row.label}</b>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
+            {row.swatches.map((sw) => (
+              <button key={sw.color} disabled={zp[row.part] === sw.color || money < PAINT_PRICE}
+                onClick={() => paintZone(cur.id, row.part, sw.color)}
+                style={{ ...styles.btn, marginLeft: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Swatch color={sw.color} /> {sw.name}{zp[row.part] === sw.color ? ' ✓' : ''}
+              </button>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -330,6 +380,30 @@ export function ExpandTab() {
           );
         })}
       </div>
+      <ExpansionTiles />
     </>
   );
 }
+
+/** GĐ1944 — ô mở rộng tiếp giáp phía sau, chỉ mở ở bậc Đại siêu thị. */
+function ExpansionTiles() {
+  const shopTier = useGame((s) => s.shopTier);
+  const extraTiles = useGame((s) => s.extraTiles) ?? 0;
+  const money = useGame((s) => s.money);
+  const buy = useGame((s) => s.buyExpansionTile);
+  if (shopTier < MAX_SHOP_TIER) return null;
+  const k = extraTiles + 1;
+  const block = expansionBlock(shopTier, extraTiles);
+  const fp = shopFootprint(shopTier, extraTiles);
+  return (
+    <div style={{ ...styles.card, marginTop: 8 }}>
+      <div style={{ flex: 1 }}>
+        <b>🧱 Ô mở rộng</b> · {extraTiles}/{EXPANSION_TILE_CAP} ô · khuôn {fp.width}×{fp.depth}m
+        <div style={{ fontSize: 12, opacity: 0.75 }}>Mỗi ô nới tiệm sâu thêm 1 m về phía sau, nối liền tường sau.</div>
+      </div>
+      {block ? <span style={{ fontSize: 12 }}>{block}</span>
+        : <button style={styles.btn} disabled={money < expansionTilePrice(k)} onClick={buy}>{shortLabel(`Mở ô ${k}`, expansionTilePrice(k), money)}</button>}
+    </div>
+  );
+}
+

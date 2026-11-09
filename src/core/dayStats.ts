@@ -5,8 +5,10 @@ import type { ReviewReason } from '../data/reviews';
 
 export interface DayStats {
   /** GĐ1584 — số lần tặng quà khách quen trong ngày (tuỳ chọn, save cũ = 0). */
-  gifts?: number;
+  gifts?: number;
   clawWins?: number; // GĐ1592 — số lần gắp trúng thú bông hôm nay (chỉ đếm)
+  /** GĐ1829 — OpenSpec khach-thay-mon-het-hang: số lượt khách nhận món thay trên cùng kệ (chỉ đếm). */
+  substituted?: number;
   revenue: number;
   spent: number;
   wages: number;
@@ -75,6 +77,15 @@ export interface DayStats {
    *  GĐ1178 "soi sáng": giúp tổng kết so "lãi bán hàng thật" với thưởng nhiệm vụ + kèo (Luật 10).
    *  Field tuỳ chọn — bản save cũ tự bù undefined qua `?? 0`, không lên SAVE_VERSION. */
   questIncome?: number;
+  /** GĐ1832 (review đợt 2 R1 / đợt 3 R2) — thưởng thành tựu mở khóa trong ĐÊM tổng kết: tiền cộng vào
+   *  két sau khi tính dòng "Tiền vào − tiền ra" nên dòng này là giải thích khoản chênh lệch với ví.
+   *  Field tuỳ chọn — save cũ tự bù undefined, không lên SAVE_VERSION. */
+  achvReward?: number;
+  /** GĐ1832 (review đợt 2 R1) — phí vận hành (điện/nước % doanh thu + tiền điện chi nhánh 24/7 + hợp
+   *  đồng bảo trì) đã gộp trong `spent`; tách dòng riêng để người soi sổ khớp được số với ví. */
+  opCost?: number;
+  /** GĐ1833 (review đợt 2 R3 / đợt 3 R3) — két âm sau khi trả nhà/lương/vận hành: số tiền thiếu. */
+  shortfall?: number;
 }
 
 /** Lãi gộp trong ngày: (tiền thu − vốn) theo sổ bán từng món + lời dịch vụ quầy. */

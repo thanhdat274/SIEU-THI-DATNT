@@ -1,3 +1,4 @@
+import { askConfirm } from '../ConfirmDialog';
 import { useGame } from '../../core/store';
 import { Callout } from './shared';
 import { ACHIEVEMENTS } from '../../data/biz';
@@ -98,8 +99,8 @@ function PrestigeSection() {
           {!online && (
             <button
               style={{ ...btn, marginLeft: 0, marginTop: 6 }}
-              onClick={() => {
-                if (!confirm('🌟 Tái sinh: bắt đầu lại tiệm từ cấp 1, KHÔNG THỂ HOÀN TÁC!\n\nThành tựu, danh hiệu, cốt truyện, nhà, xe, thú cưng, bộ sưu tập và doanh thu cả đời giữ nguyên; tiền, cấp, ngày, nội thất, kho, nhân viên, trang trại... đều làm lại từ đầu.')) return;
+              onClick={async () => {
+                if (!await askConfirm('🌟 Tái sinh: bắt đầu lại tiệm từ cấp 1, KHÔNG THỂ HOÀN TÁC!\n\nThành tựu, danh hiệu, cốt truyện, nhà, xe, thú cưng, bộ sưu tập và doanh thu cả đời giữ nguyên; tiền, cấp, ngày, nội thất, kho, nhân viên, trang trại... đều làm lại từ đầu.', { danger: true, title: '🌟 Tái sinh', okLabel: 'Tái sinh' })) return;
                 useGame.getState().doPrestige();
               }}
             >🌟 Tái sinh</button>
