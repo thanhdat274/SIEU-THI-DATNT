@@ -17,6 +17,7 @@ const MON_THAT: Record<string, { name: string; station: string; cachNau: string 
   recipe_dau_hu_sot_ca_chua: { name: 'Đậu hũ sốt cà chua', station: 'fryer', cachNau: 'đậu hũ chiên vàng rồi rim sốt cà chua (cơm nhà cả nước)' },
   recipe_rau_muong_xao_toi: { name: 'Rau muống xào tỏi', station: 'fryer', cachNau: 'xào lửa lớn với tỏi phi (cơm nhà cả nước)' },
   recipe_kho_qua_xao_trung: { name: 'Khổ qua xào trứng', station: 'fryer', cachNau: 'khổ qua xào chín rồi đảo trứng (cơm nhà cả nước)' },
+  recipe_dau_hu_nhoi_thit: { name: 'Đậu hũ nhồi thịt', station: 'fryer', cachNau: 'đậu hũ nhồi thịt xay chiên vàng, rim sốt (cơm nhà)' },
 };
 
 /** Chữ mô tả tự chế không ai dùng làm tên món ngoài chợ. */
