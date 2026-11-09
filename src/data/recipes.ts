@@ -777,6 +777,9 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'su_su_luoc', name: 'Su su luộc', category: 'fresh', buy: 5000, sell: 9000, color: 0xb8e09a, unlock: 178 },
   { id: 'canh_rau_ngot', name: 'Canh rau ngót', category: 'fresh', buy: 9000, sell: 16000, color: 0x2a6a2a, unlock: 179 },
   { id: 'mong_toi_xao_toi', name: 'Mồng tơi xào tỏi', category: 'fresh', buy: 5000, sell: 9000, color: 0x3a7a2a, unlock: 180 },
+  { id: 'ngheu_hap_sa', name: 'Nghêu hấp sả', category: 'fresh', buy: 16000, sell: 28000, color: 0xe8d8b0, unlock: 181 },
+  { id: 'canh_ngheu', name: 'Canh nghêu', category: 'fresh', buy: 12000, sell: 20000, color: 0xe8c8a0, unlock: 182 },
+  { id: 'oc_luoc', name: 'Ốc luộc', category: 'fresh', buy: 20000, sell: 34000, color: 0x7a6a4a, unlock: 183 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2536,6 +2539,18 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_mong_toi_xao_toi', name: 'Mồng tơi xào tỏi', station: 'fryer',
     inputs: [{ productId: 'x_mong_toi', quantity: 1 }, { productId: 'x_toi', quantity: 1 }],
     outputId: 'mong_toi_xao_toi', outputQty: 5, durationMin: 10, unlock: 180, reputationGain: 1 },
+  // GĐ2100: Nghêu hấp sả — quán nhậu cả nước: nghêu hấp với sả đập dập tới há miệng, chấm muối tiêu chanh (steamer).
+  { id: 'recipe_ngheu_hap_sa', name: 'Nghêu hấp sả', station: 'steamer',
+    inputs: [{ productId: 'ngheu', quantity: 1 }, { productId: 'x_sa', quantity: 2 }],
+    outputId: 'ngheu_hap_sa', outputQty: 4, durationMin: 15, unlock: 181, reputationGain: 1 },
+  // GĐ2101: Canh nghêu — cơm nhà cả nước: nghêu luộc lấy nước, nấu với cà chua, hành (hot_kettle); bỏ thì là/gừng tùy nhà.
+  { id: 'recipe_canh_ngheu', name: 'Canh nghêu', station: 'hot_kettle',
+    inputs: [{ productId: 'ngheu', quantity: 1 }, { productId: 'x_ca_chua', quantity: 1 }, { productId: 'x_hanh_la', quantity: 1 }],
+    outputId: 'canh_ngheu', outputQty: 6, durationMin: 15, unlock: 182, reputationGain: 1 },
+  // GĐ2102: Ốc luộc — quán ốc cả nước: ốc bươu luộc với sả, gừng, chấm nước mắm gừng (hot_kettle).
+  { id: 'recipe_oc_luoc', name: 'Ốc luộc', station: 'hot_kettle',
+    inputs: [{ productId: 'x_oc', quantity: 1 }, { productId: 'x_sa', quantity: 1 }, { productId: 'x_gung', quantity: 1 }],
+    outputId: 'oc_luoc', outputQty: 4, durationMin: 15, unlock: 183, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────

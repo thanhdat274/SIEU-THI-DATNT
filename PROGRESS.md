@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (10/11/2026)
+- GĐ2099–2102: nguyên liệu Ốc bươu (cuối catalog, mở 170); Nghêu hấp sả (steamer, L181), Canh nghêu (L182) dùng nghêu sẵn có, Ốc luộc (L183).
 - GĐ2095–2098: nguyên liệu Rau ngót (cuối catalog, mở 165); Su su luộc (L178), Canh rau ngót (L179), Mồng tơi xào tỏi (L180).
 - GĐ2091–2094: nguyên liệu Rau dền, Bí đao, Su su (cuối catalog, mở 165); Canh rau dền (L175), Canh bí đao (L176), Su su xào tỏi (L177).
 - GĐ2087–2089: nguyên liệu Mồng tơi, Bầu (cuối catalog, mở 165); Canh mồng tơi (L173), Canh bầu (L174).
