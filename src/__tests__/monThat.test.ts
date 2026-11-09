@@ -72,6 +72,10 @@ const MON_THAT: Record<string, { name: string; station: string; cachNau: string 
   recipe_suon_nuong: { name: 'Sườn nướng', station: 'food_grill', cachNau: 'sườn ướp tỏi sả nướng than (Sài Gòn)' },
   recipe_bo_xao_ca_chua: { name: 'Bò xào cà chua', station: 'fryer', cachNau: 'bò xào nhanh với cà chua (cơm nhà cả nước)' },
   recipe_ga_chien_gion: { name: 'Gà chiên giòn', station: 'fryer', cachNau: 'gà lăn bột chiên ngập dầu (quán cả nước)' },
+  recipe_muc_nhoi_thit: { name: 'Mực nhồi thịt', station: 'fryer', cachNau: 'ống mực nhồi thịt băm chiên vàng, rim sốt (cả nước)' },
+  recipe_com_chien_hai_san: { name: 'Cơm chiên hải sản', station: 'fryer', cachNau: 'cơm chiên lửa lớn với tôm, mực, trứng (quán cả nước)' },
+  recipe_mi_xao_bo: { name: 'Mì xào bò', station: 'fryer', cachNau: 'mì trứng trụng xào bò, hành tây (quán cả nước)' },
+  recipe_tom_chien_xu: { name: 'Tôm chiên xù', station: 'fryer', cachNau: 'tôm lăn trứng + bột chiên ngập dầu (quán cả nước)' },
 };
 
 /** Chữ mô tả tự chế không ai dùng làm tên món ngoài chợ. */
