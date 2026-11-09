@@ -10,7 +10,8 @@ scan_tmp.cjs
 coverage/
 *.tsbuildinfo
 bash.exe.stackdump
-yarn-error.log_downloads/
+yarn-error.log
+_downloads/
 .review-scratch/
 browser-screenshots/
 .agent-browser-tools/
