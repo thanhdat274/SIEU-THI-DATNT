@@ -90,6 +90,8 @@ export const NEIGHBOR2_PRODUCTS: { id: string; name: string; category: Category;
   { id: 'hx_dau_den', name: 'Đậu đen rang nhà làm (gói)', category: 'dry', buy: 31000, sell: 50000, color: 0x2a2a30, unlock: 73 },
   // GĐ1861: đậu xanh cà vỏ nhà làm — biên 1,6×, mở 74; lối ra: Cháo đậu xanh (nồi nước).
   { id: 'hx_dau_xanh_ca', name: 'Đậu xanh cà vỏ nhà làm (gói)', category: 'dry', buy: 31000, sell: 50000, color: 0xd8c860, unlock: 74 },
+  // GĐ1862: mè đen xay nhà làm — biên 1,6×, mở 75; lối ra: Cơm mè đen (bếp xôi cơm).
+  { id: 'hx_me_den', name: 'Mè đen xay nhà làm (hũ)', category: 'dry', buy: 32000, sell: 51000, color: 0x30282a, unlock: 75 },
   // GĐ1671: mứt gừng bà Tám (hướng 3) — mứt Tết nhà làm, biên 1.6×, mở 45 > golden 30; hút hàng dịp Tết.
   { id: 'hx_mut_gung', name: 'Mứt gừng bà Tám (hộp)', category: 'dry', buy: 40000, sell: 64000, color: 0xe8c860, unlock: 45 },
 ];
