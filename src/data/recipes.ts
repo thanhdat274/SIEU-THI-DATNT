@@ -812,6 +812,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'ech_chien_nuoc_mam', name: 'Ếch chiên nước mắm', category: 'fresh', buy: 24000, sell: 40000, color: 0xb8803a, unlock: 197 },
   { id: 'bun_mang_vit', name: 'Bún măng vịt', category: 'fresh', buy: 16000, sell: 28000, color: 0xd8c080, unlock: 198 },
   { id: 'chao_luon', name: 'Cháo lươn', category: 'fresh', buy: 12000, sell: 20000, color: 0xd8b070, unlock: 199 },
+  { id: 'ca_tre_chien_gion', name: 'Cá trê chiên giòn', category: 'fresh', buy: 22000, sell: 38000, color: 0xb88a4a, unlock: 198 },
+  { id: 'ca_tre_nuong_trui', name: 'Cá trê nướng trui', category: 'fresh', buy: 22000, sell: 38000, color: 0x6a5a3a, unlock: 199 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2711,6 +2713,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_chao_luon', name: 'Cháo lươn', station: 'hot_kettle',
     inputs: [{ productId: 'x_luon', quantity: 1 }, { productId: 'gao', quantity: 1 }, { productId: 'x_hanh_kho', quantity: 1 }],
     outputId: 'chao_luon', outputQty: 14, durationMin: 40, unlock: 199, reputationGain: 1 },
+  // GĐ2135: Cá trê chiên giòn — Sài Gòn/Nam Bộ: cá trê làm sạch ướp muối, chiên vàng giòn nguyên con, chấm nước mắm gừng; không thay thế.
+  { id: 'recipe_ca_tre_chien_gion', name: 'Cá trê chiên giòn', station: 'fryer',
+    inputs: [{ productId: 'x_ca_tre', quantity: 1 }, { productId: 'x_gung', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }],
+    outputId: 'ca_tre_chien_gion', outputQty: 4, durationMin: 25, unlock: 198, reputationGain: 1 },
+  // GĐ2136: Cá trê nướng trui — miền Tây: cá trê làm sạch nướng trui trên lửa rơm, cuốn bánh tráng rau sống chấm nước mắm me; nướng rơm → bếp nướng than, mắm me → me chua thay.
+  { id: 'recipe_ca_tre_nuong_trui', name: 'Cá trê nướng trui', station: 'food_grill',
+    inputs: [{ productId: 'x_ca_tre', quantity: 1 }, { productId: 'x_me', quantity: 1 }, { productId: 'x_banh_trang', quantity: 1 }],
+    outputId: 'ca_tre_nuong_trui', outputQty: 4, durationMin: 25, unlock: 199, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────
