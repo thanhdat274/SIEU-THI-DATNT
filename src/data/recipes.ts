@@ -796,6 +796,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'chao_muc', name: 'Cháo mực', category: 'fresh', buy: 10000, sell: 18000, color: 0xf0e8d0, unlock: 197 },
   { id: 'canh_khoai_mon', name: 'Canh khoai môn', category: 'fresh', buy: 10000, sell: 18000, color: 0xb8a8c8, unlock: 198 },
   { id: 'canh_khoai_tay', name: 'Canh khoai tây', category: 'fresh', buy: 12000, sell: 20000, color: 0xe8c070, unlock: 199 },
+  { id: 'thit_rim', name: 'Thịt rim', category: 'fresh', buy: 14000, sell: 24000, color: 0xa85a2a, unlock: 200 },
+  { id: 'bun_moc', name: 'Bún mọc', category: 'fresh', buy: 13000, sell: 24000, color: 0xf0e0c8, unlock: 199 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2631,6 +2633,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_canh_khoai_tay', name: 'Canh khoai tây', station: 'hot_kettle',
     inputs: [{ productId: 'x_khoai_tay', quantity: 1 }, { productId: 'x_ca_rot', quantity: 1 }, { productId: 'x_suon_heo', quantity: 1 }],
     outputId: 'canh_khoai_tay', outputQty: 5, durationMin: 30, unlock: 199, reputationGain: 1 },
+  // GĐ2119: Thịt rim — cơm nhà miền Bắc: ba chỉ thái miếng rim lửa nhỏ với nước mắm, đường, hành khô tới khi cạn sánh; không thay thế.
+  { id: 'recipe_thit_rim', name: 'Thịt rim', station: 'hot_kettle',
+    inputs: [{ productId: 'x_thit_heo', quantity: 1 }, { productId: 'x_hanh_kho', quantity: 1 }],
+    outputId: 'thit_rim', outputQty: 4, durationMin: 30, unlock: 200, reputationGain: 1 },
+  // GĐ2120: Bún mọc — Hà Nội: nước dùng xương, viên mọc giò sống trộn nấm hương; mọc → thịt heo xay viên thay giò sống.
+  { id: 'recipe_bun_moc', name: 'Bún mọc', station: 'hot_kettle',
+    inputs: [{ productId: 'bun', quantity: 1 }, { productId: 'x_thit_heo', quantity: 1 }, { productId: 'x_nam_huong_kho', quantity: 1 }],
+    outputId: 'bun_moc', outputQty: 6, durationMin: 30, unlock: 199, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────
