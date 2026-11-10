@@ -806,6 +806,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'canh_cua_mong_toi', name: 'Canh cua mồng tơi', category: 'fresh', buy: 12000, sell: 20000, color: 0x6a8a3a, unlock: 191 },
   { id: 'mien_luon', name: 'Miến lươn', category: 'fresh', buy: 16000, sell: 28000, color: 0xb8904a, unlock: 192 },
   { id: 'luon_xao_sa_ot', name: 'Lươn xào sả ớt', category: 'fresh', buy: 22000, sell: 38000, color: 0x8a5a2a, unlock: 193 },
+  { id: 'chao_vit', name: 'Cháo vịt', category: 'fresh', buy: 12000, sell: 20000, color: 0xf0e0c0, unlock: 194 },
+  { id: 'vit_kho_gung', name: 'Vịt kho gừng', category: 'fresh', buy: 18000, sell: 30000, color: 0x8a5a2a, unlock: 195 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2681,6 +2683,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_luon_xao_sa_ot', name: 'Lươn xào sả ớt', station: 'fryer',
     inputs: [{ productId: 'x_luon', quantity: 1 }, { productId: 'x_sa', quantity: 1 }, { productId: 'ot_hien', quantity: 1 }],
     outputId: 'luon_xao_sa_ot', outputQty: 4, durationMin: 20, unlock: 193, reputationGain: 1 },
+  // GĐ2129: Cháo vịt — cả nước: luộc vịt với gừng lấy nước nấu cháo gạo, ăn kèm thịt vịt chấm mắm gừng; không thay thế.
+  { id: 'recipe_chao_vit', name: 'Cháo vịt', station: 'hot_kettle',
+    inputs: [{ productId: 'x_vit', quantity: 1 }, { productId: 'gao', quantity: 1 }, { productId: 'x_gung', quantity: 1 }],
+    outputId: 'chao_vit', outputQty: 14, durationMin: 40, unlock: 194, reputationGain: 1 },
+  // GĐ2130: Vịt kho gừng — cơm nhà Nam Bộ: vịt chặt miếng kho lửa nhỏ với gừng, nước mắm, đường tới sánh; không thay thế.
+  { id: 'recipe_vit_kho_gung', name: 'Vịt kho gừng', station: 'hot_kettle',
+    inputs: [{ productId: 'x_vit', quantity: 1 }, { productId: 'x_gung', quantity: 1 }],
+    outputId: 'vit_kho_gung', outputQty: 6, durationMin: 40, unlock: 195, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────
