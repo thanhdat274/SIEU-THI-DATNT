@@ -1,7 +1,9 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, beforeEach } from 'vitest';
 import { REGULARS } from '../data/regularsList';
+import { newGameData, useGame } from '../core/store';
 import {
-  REGULAR_TIES, TIE_WEIGHT, tieKey, tieIsHostile, alleyBond, type RegularTie,
+  REGULAR_TIES, TIE_WEIGHT, tieKey, tieIsHostile, alleyBond, rippleFriendship,
+  FORGIVE_HO_HANG_GAIN, TIES_UNLOCK, type RegularTie,
 } from '../data/regularTies';
 
 /**
@@ -117,5 +119,87 @@ describe('alleyBond — chỉ số "Tình làng" (SPEC §2.8)', () => {
     const snapshot = JSON.stringify(friends);
     alleyBond(friends, []);
     expect(JSON.stringify(friends)).toBe(snapshot);
+  });
+});
+
+describe('rippleFriendship — lan theo cạnh (SPEC §2.4)', () => {
+  const by = (r: { id: string; delta: number }[]) => Object.fromEntries(r.map((x) => [x.id, x.delta]));
+
+  it('đơn riêng đúng hẹn +8 lan theo trọng số toàn bộ cạnh (kể cả khắc khẩu âm)', () => {
+    const r = by(rippleFriendship('ba_nam', 8));
+    // ba_nam: bac_tam (lang_gieng 0.25) + be_na (ho_hang 0.5)
+    expect(r['bac_tam']).toBe(Math.round(8 * TIE_WEIGHT.lang_gieng)); // 2
+    expect(r['be_na']).toBe(Math.round(8 * TIE_WEIGHT.ho_hang));      // 4
+  });
+
+  it('cạnh khắc khẩu: lo chu đáo A thì B dỗi (delta âm)', () => {
+    const r = by(rippleFriendship('chu_ba', 8));
+    // chu_ba: bac_ba_xe_om (khac_khau −0.3) + bac_hung_me (ban_be 0.3)
+    expect(r['bac_ba_xe_om']).toBe(Math.round(8 * TIE_WEIGHT.khac_khau)); // −2
+    expect(r['bac_hung_me']).toBe(Math.round(8 * TIE_WEIGHT.ban_be));     // 2
+  });
+
+  it('xoá nợ: only ho_hang + flat (không nhân trọng số), người loại khác không nhận', () => {
+    const r = by(rippleFriendship('ba_nam', FORGIVE_HO_HANG_GAIN, { only: 'ho_hang', weighted: false }));
+    expect(r['be_na']).toBe(2);       // ho_hang +2
+    expect(r['bac_tam']).toBeUndefined(); // lang_gieng không nhận
+  });
+
+  it('ripple thuần: không thay đổi dữ liệu cạnh', () => {
+    const snap = JSON.stringify(REGULAR_TIES);
+    rippleFriendship('ba_nam', 8);
+    expect(JSON.stringify(REGULAR_TIES)).toBe(snap);
+  });
+});
+
+describe('applyRipple — trần ±3/ngày + cổng cấp (GĐ Hệ2-L2)', () => {
+  const g = () => useGame.getState();
+  const fr = (friendship: number) =>
+    Object.fromEntries(REGULARS.map((r) => [r.id, { friendship, visits: 0, perks: [], discovered: [] }]));
+
+  beforeEach(() => {
+    const d = newGameData();
+    useGame.setState({ ...d, level: TIES_UNLOCK, day: 40, regulars: fr(0), notify: () => {} });
+  });
+
+  it('cấp < TIES_UNLOCK: không lan (golden L30 an toàn)', () => {
+    useGame.setState({ level: 30 });
+    g().applyRipple('ba_nam', 8);
+    expect(g().regulars['be_na']?.friendship).toBe(0);
+    expect(g().regulars['bac_tam']?.friendship).toBe(0);
+  });
+
+  it('lan đúng người có cạnh theo trọng số; người không cạnh không đổi', () => {
+    g().applyRipple('ba_nam', 4); // nhỏ để không chạm trần, kiểm tra trọng số tinh
+    expect(g().regulars['be_na']?.friendship).toBe(Math.round(4 * TIE_WEIGHT.ho_hang)); // 2
+    expect(g().regulars['bac_tam']?.friendship).toBe(Math.round(4 * TIE_WEIGHT.lang_gieng)); // 1
+    expect(g().regulars['chu_ba']?.friendship).toBe(0); // không cạnh với ba_nam
+  });
+
+  it('trần ±3/ngày cho mỗi người nhận: lan thứ 2 cùng ngày bị chặn phần vượt', () => {
+    g().applyRipple('ba_nam', 8); // be_na muốn +4 → cắt còn +3
+    g().applyRipple('ba_nam', 8); // +4 nữa, sum đã 3 → +0
+    expect(g().regulars['be_na']?.friendship).toBe(3);
+  });
+
+  it('sang ngày mới: trần reset (rippleDay theo day)', () => {
+    g().applyRipple('ba_nam', 8); // be_na +4 → +3
+    useGame.setState({ day: 41 });
+    g().applyRipple('ba_nam', 8); // cap reset → +3 nữa
+    expect(g().regulars['be_na']?.friendship).toBe(6);
+  });
+
+  it('xoá nợ: họ hàng +2, 30 ngày sau mới lan lần nữa cho con nợ đó', () => {
+    useGame.setState({ day: 40, debts: { ba_nam: { amount: 100, since: 30 } } });
+    g().forgiveDebt('ba_nam');
+    expect(g().regulars['be_na']?.friendship).toBe(2); // họ hàng +2 ("nhớ ơn")
+    // cho nợ lại rồi xoá trong vòng 30 ngày (day 50): không lan thêm (1 lần/30 ngày)
+    useGame.setState({ day: 50, debts: { ba_nam: { amount: 50, since: 45 } } });
+    g().forgiveDebt('ba_nam');
+    expect(g().regulars['be_na']?.friendship).toBe(2);
+    // ngày 70 (≥30 sau lần 40): lan lại
+    useGame.setState({ day: 70, debts: { ba_nam: { amount: 50, since: 60 } } });
+    g().forgiveDebt('ba_nam');
+    expect(g().regulars['be_na']?.friendship).toBe(4);
   });
 });

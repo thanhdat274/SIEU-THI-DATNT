@@ -268,6 +268,8 @@ export const createOrdersSlice = (set: SetState, get: GetState): Pick<GameState,
     get().addXp(def.xp);
     get().addReview(5, undefined, Object.keys(def.items)[0]);
     if (def.regular) get().adjustFriendship(def.regular, STORY_ORDER_FRIEND_GAIN);
+    // GĐ Hệ2-L2: tiếng lành lan theo cạnh — người có cạnh với khách vừa giao đúng hẹn thân hơn theo trọng số.
+    if (def.regular) get().applyRipple(def.regular, STORY_ORDER_FRIEND_GAIN);
     get().recordDiscovery(Object.keys(def.items)); // Sổ tay Tiệm (GĐ36)
     s.notify(`🎉 Giao xong "${def.title}": +${formatMoney(pay)} · +${def.xp} XP${def.regular ? ` · 💛 +${STORY_ORDER_FRIEND_GAIN} thân thiết với ${def.from}` : ''}`);
     get().checkTitles();

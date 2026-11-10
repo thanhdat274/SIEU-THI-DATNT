@@ -71,6 +71,32 @@ export function tieKey(a: string, b: string): string {
   return a < b ? `${a}|${b}` : `${b}|${a}`;
 }
 
+/** Cấp mở Hệ 2 — lan thân thiết theo cạnh (R1: ≥32 nên golden L30 không đổi). */
+export const TIES_UNLOCK = 32;
+
+/** Xoá nợ cho một người → họ hàng của họ +2 ("nhớ ơn"), flat (SPEC §2.4). */
+export const FORGIVE_HO_HANG_GAIN = 2;
+
+/** Mỗi người nhận lan tối đa ±3 điểm trong một ngày (SPEC §2.4, chống lạm phát thân thiết). */
+export const RIPPLE_DAILY_CAP = 3;
+
+/**
+ * Cơ chế 1 — "Tiếng lành, tiếng dữ" lan theo cạnh (SPEC §2.4).
+ * Với `delta` của sự kiện gốc ở `sourceId`, trả danh sách `{ id, delta }` cho các người có cạnh:
+ *  - `weighted` (mặc định, cho đơn riêng): delta × TIE_WEIGHT theo loại cạnh (khắc khẩu âm → lo A thì B dỗi).
+ *  - `only` (cho xoá nợ/quỵt nợ): chỉ lan tới đúng loại quan hệ đó, `weighted:false` dùng delta thẳng (flat).
+ * THUẦN — slice áp qua `adjustFriendship` + trần riêng.
+ */
+export function rippleFriendship(
+  sourceId: string,
+  delta: number,
+  opts: { only?: TieKind; weighted?: boolean } = {},
+): { id: string; delta: number }[] {
+  return tiesOf(sourceId)
+    .filter((t) => !opts.only || t.kind === opts.only)
+    .map((t) => ({ id: otherOf(t, sourceId), delta: opts.weighted === false ? delta : Math.round(delta * TIE_WEIGHT[t.kind]) }));
+}
+
 /** Một cạnh có được xem là "khắc khẩu" không (tính cả cạnh đã hoà giải: đã mended thì không còn). */
 export function tieIsHostile(t: RegularTie, tiesMended: string[] = []): boolean {
   if (t.kind !== 'khac_khau') return false;

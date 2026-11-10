@@ -9,10 +9,11 @@ import { satisfiedLine, walkoutLine } from '../../data/regularTrust';
 import { REP_CAP } from '../../data/reputation';
 import { regularGiftPlan, giftFriendship, giftXp, giftableCount, giftRemainNote } from '../../data/regularGift';
 import { type GameState, type SetState, type GetState, addHour } from '../gameTypes';
+import { rippleFriendship, FORGIVE_HO_HANG_GAIN, TIES_UNLOCK, RIPPLE_DAILY_CAP } from '../../data/regularTies';
 
 /** Khách: lượt ghé, khách quen, lời hẹn giữ món, sổ nợ, đánh giá. */
 
-export const createRegularsSlice = (set: SetState, get: GetState): Pick<GameState, 'recordVisit' | 'regularVisit' | 'addReservation' | 'cancelReservation' | 'adjustFriendship' | 'rescuePoachedRegular' | 'checkoutOnCredit' | 'collectDebt' | 'collectDebtPartial' | 'remindDebt' | 'forgiveDebt' | 'giftRegular' | 'addReview'> => ({
+export const createRegularsSlice = (set: SetState, get: GetState): Pick<GameState, 'recordVisit' | 'regularVisit' | 'addReservation' | 'cancelReservation' | 'adjustFriendship' | 'applyRipple' | 'rescuePoachedRegular' | 'checkoutOnCredit' | 'collectDebt' | 'collectDebtPartial' | 'remindDebt' | 'forgiveDebt' | 'giftRegular' | 'addReview'> => ({
   recordVisit: (happy, sample) => {
     const s = get();
     set({
@@ -118,6 +119,26 @@ export const createRegularsSlice = (set: SetState, get: GetState): Pick<GameStat
     set({ regulars: { ...s.regulars, [id]: r.progress } });
     if (r.newPerks.length) s.notify(`💛 ${def.name} thân thiết hơn: ${r.newPerks.map((p) => p.description).join(' ')}`);
   },
+  // GĐ Hệ2-L2 (SPEC §2.4) — lan thân thiết từ SỰ KIỆN LỚN sang người có cạnh với nguồn, qua `rippleFriendship`.
+  // Trần ±RIPPLE_DAILY_CAP/ngày cho mỗi người nhận (rippleDay); cổng cấp ≥ TIES_UNLOCK (golden L30 an toàn).
+  applyRipple: (sourceId, delta, opts = {}) => {
+    const s = get();
+    if (s.level < TIES_UNLOCK) return;
+    const rippleDay = { ...(s.biz.rippleDay ?? {}) };
+    let touched = false;
+    for (const { id, delta: d } of rippleFriendship(sourceId, delta, opts)) {
+      if (d === 0) continue;
+      const rec = rippleDay[id];
+      const sum = rec && rec.day === s.day ? rec.sum : 0;
+      const capped = Math.max(-RIPPLE_DAILY_CAP, Math.min(RIPPLE_DAILY_CAP, sum + d));
+      const applied = capped - sum;
+      if (applied === 0) continue;
+      rippleDay[id] = { day: s.day, sum: capped };
+      touched = true;
+      get().adjustFriendship(id, applied);
+    }
+    if (touched) set({ biz: { ...get().biz, rippleDay } });
+  },
   // GĐ793 — đòi lại khách quen bị rival lôi kéo: tặng 1 món họ thích trong kho + tiền quà, mỗi ngày 1 người.
   // Chạy ở máy chạy (GUARDED 'rival:poach') nên chơi đơn và hẻm online ra cùng kết quả.
   rescuePoachedRegular: (id) => {
@@ -207,6 +228,12 @@ export const createRegularsSlice = (set: SetState, get: GetState): Pick<GameStat
     delete debts[regularId];
     set({ debts });
     s.adjustFriendship(regularId, FORGIVE_FRIEND_GAIN);
+    // GĐ Hệ2-L2: họ hàng của con nợ cũng +2 ("nhớ ơn"), nhưng chỉ lan 1 lần/30 ngày cho mỗi con nợ (chống farm).
+    const fri = s.biz.forgiveRipple ?? {};
+    if ((fri[regularId] ?? -Infinity) + 30 <= s.day) {
+      s.applyRipple(regularId, FORGIVE_HO_HANG_GAIN, { only: 'ho_hang', weighted: false });
+      set({ biz: { ...get().biz, forgiveRipple: { ...fri, [regularId]: s.day } } });
+    }
     s.notify(`🤝 Xoá nợ ${formatMoney(debt.amount)} cho ${regularById(regularId)?.name} · +${FORGIVE_FRIEND_GAIN} thân thiết`);
   },
   // GĐ1557 — tặng 1 món khách thích từ kho: +3 thân thiết, mỗi khách 1 lần/ngày (cấp ≥38).

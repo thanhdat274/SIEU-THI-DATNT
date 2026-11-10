@@ -271,6 +271,8 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
     if (order.accepted && def) {
       s.addReview(1, 'stock');
       if (def.regular) s.adjustFriendship(def.regular, -STORY_ORDER_FRIEND_LOSS);
+      // GĐ Hệ2-L2: tiếng dữ lan theo cạnh — người có cạnh với khách lỡ hẹn hụt thân theo trọng số.
+      if (def.regular) s.applyRipple(def.regular, -STORY_ORDER_FRIEND_LOSS);
       say(`😠 Lỡ hẹn đơn "${def.title}" của ${def.from}${def.regular ? ` · -${STORY_ORDER_FRIEND_LOSS} thân thiết` : ''}`);
     }
     order = null;
@@ -452,7 +454,7 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
   if (crisisN.news.length) say(crisisN.news.join(' · '));
   biz.biz = {
     ...biz.biz,
-    crisis: crisisN.crisis, crisesSeen: crisisN.crisesSeen, roadBoon: crisisN.roadBoon, lastCrisis: crisisN.lastCrisis,
+    crisis: crisisN.crisis, crisesSeen: crisisN.crisesSeen, crisisBadges: crisisN.crisisBadges, roadBoon: crisisN.roadBoon, lastCrisis: crisisN.lastCrisis,
   };
   // Kết quả quán nước hôm nay ghi vào biz để UI hiển thị (xem lại "hôm qua bán được bao nhiêu ly")
   if (quanNuocLast) biz.biz = { ...biz.biz, quanNuocLast };

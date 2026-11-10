@@ -206,6 +206,13 @@ export interface BizState {
   /** Các cạnh khắc khẩu đã hoà giải (GĐ Hệ2-L1, SPEC-CHIEU-SAU §2.6): khóa `a|b` chuẩn hoá.
    *  Bản lưu cũ thiếu → undefined (chưa hoà giải cạnh nào, không cần SAVE_VERSION). */
   tiesMended?: string[];
+  /** Bộ đếm lan thân thiết trong ngày (GĐ Hệ2-L2, SPEC §2.4): mỗi người nhận tối đa ±3/ngày.
+   *  `rippleDay[id] = { day, sum }` với `sum` = tổng lan đã áp hôm đó (reset khi đổi ngày).
+   *  Bản lưu cũ thiếu → undefined (không cần SAVE_VERSION). */
+  rippleDay?: Record<string, { day: number; sum: number }>;
+  /** Lần cuối xoá nợ mới lan tới họ hàng (GĐ Hệ2-L2): chống farm "cho vay nhỏ rồi xoá liên tục",
+   *  chỉ lan 1 lần/30 ngày cho mỗi con nợ. Map regularId → lastDay. Bản lưu cũ thiếu → undefined. */
+  forgiveRipple?: Record<string, number>;
   /** Ngày game đã nhận thưởng đón lễ (GĐ70): 1 dịp lễ 1 lần. Bản lưu cũ thiếu →
    *  undefined (chưa nhận dịp nào, không cần SAVE_VERSION). */
   prepClaimed?: number;
@@ -236,6 +243,8 @@ export interface BizState {
   crisis?: import('./crisis').CrisisState;
   /** Các biến cố dài đã từng xảy ra trong ván (ngăn lặp lại nhiều lần cùng loại). Bản lưu cũ thiếu → []. */
   crisesSeen?: string[];
+  /** Huy hiệu "vượt khó" đã nhận khi hoàn tất từng loại đợt (để hiện trong hồ sơ tiệm — lát L4). Bản lưu cũ thiếu → []. */
+  crisisBadges?: string[];
   /** Tuỳ chọn "Năm yên ả" (đã tắt biến cố dài) — không nhận huy hiệu vượt khó. Bản lưu cũ thiếu → false. */
   calmYears?: boolean;
   /** Lợi đường mới (đào đường): nhân khách vĩnh viễn — đã nhận chưa (cho cả ván). Bản lưu cũ thiếu → false. */
@@ -283,7 +292,7 @@ export const newBiz = (): BizState => ({
   cleanStreak: 0, cleanBest: 0, cleanClaimed: 0, regularArcs: {},
   seasonAlmanac: {}, almanacClaimed: [],
   // Hệ 8 — Biến cố dài (SPEC-CHIEU-RONG §8): mặc định không đợt nào, chưa đổi gì
-  crisis: undefined, crisesSeen: [], calmYears: false, roadBoon: false, lastCrisis: undefined,
+  crisis: undefined, crisesSeen: [], crisisBadges: [], calmYears: false, roadBoon: false, lastCrisis: undefined,
 });
 
 /** Hệ số đi bộ của chủ tiệm hôm nay: nhà đẹp ngủ ngon, ăn sáng, xe (chỉ khi ở ngoài đường). */

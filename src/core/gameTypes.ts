@@ -598,6 +598,14 @@ export interface GameState {
   /** Hệ 8 — Biến cố dài: chọn một lựa chọn trong cảnh (ghi choices + đếm kind theo chiều hướng ấm). */
   chooseCrisisScene: (dayIndex: number, option: number, warm: boolean) => void;
 
+  /** Hệ 2 — Tình làng (GĐ Hệ2-L2, SPEC §2.4): lan thân thiết từ sự kiện lớn sang người có cạnh
+   *  với nguồn (trần ±3/ngày/người). Cổng cấp ≥ TIES_UNLOCK. */
+  applyRipple: (
+    sourceId: string,
+    delta: number,
+    opts?: { only?: 'ho_hang' | 'ban_be' | 'lang_gieng' | 'dong_nghe' | 'khac_khau'; weighted?: boolean },
+  ) => void;
+
   /** Trang trại (trồng, bón phân, nuôi gà/vịt/ngỗng/bò/heo/dê/gà Đông Tảo, đơn quán xóm). */
   garden: GardenState;
   plantCrop: (plotIndex: number, cropId: string) => void;
