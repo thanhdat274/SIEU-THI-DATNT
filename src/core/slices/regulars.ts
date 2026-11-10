@@ -2,7 +2,7 @@ import { formatMoney, productById } from '../../data/products';
 import { composeReview, REVIEW_CAP } from '../../data/reviews';
 import { REGULARS, regularById, regularCheckout, BIRTHDAY_BONUS, isBirthday, regularFriendship, regularWalkout, INFLUENCER_ID, RESERVE_BONUS, RESERVE_MISS_LOSS, rescueGiftFor } from '../../data/regulars';
 import { FORGIVE_FRIEND_GAIN, installmentNow, REMIND_FRIEND_LOSS } from '../../data/credit';
-import { counterActive, RESCUE_FEE, RESCUE_FRIENDSHIP } from '../../data/biz';
+import { counterActive, RESCUE_FEE, RESCUE_FRIENDSHIP, POACH_CLUSTER_UNLOCK, POACH_IMMUNE_DAYS, poachClusterNeighbors } from '../../data/biz';
 import { copyStock, takeStock } from '../stock';
 import { arcForRegular, arcById, currentArcStep, arcStepFulfilled } from '../../data/regularArc';
 import { satisfiedLine, walkoutLine } from '../../data/regularTrust';
@@ -227,12 +227,22 @@ export const createRegularsSlice = (set: SetState, get: GetState): Pick<GameStat
     takeStock(stock, gift, 1);
     const poached = { ...(rival.poached ?? {}) };
     delete poached[id];
+    const nextRival = { ...rival, poached };
+    // "Đòi về → cả cụm miễn 7 ngày" (SPEC 2.7): họ hàng/bạn bè của người vừa đòi + chính họ
+    // được miễn bị kéo tới day + POACH_IMMUNE_DAYS (cổng ≥ POACH_CLUSTER_UNLOCK để golden L30 không đổi).
+    if (s.level >= POACH_CLUSTER_UNLOCK) {
+      const immune = { ...(rival.poachImmune ?? {}) };
+      const until = s.day + POACH_IMMUNE_DAYS;
+      for (const n of poachClusterNeighbors(id)) immune[n] = until;
+      immune[id] = until;
+      nextRival.poachImmune = immune;
+    }
     set({
       storage: stock.storage,
       storageLots: stock.storageLots,
       money: s.money - RESCUE_FEE,
       stats: { ...s.stats, spent: s.stats.spent + RESCUE_FEE },
-      biz: { ...s.biz, rival: { ...rival, poached }, rescueDay: s.day },
+      biz: { ...s.biz, rival: nextRival, rescueDay: s.day },
     });
     get().adjustFriendship(id, RESCUE_FRIENDSHIP);
     get().notify(`💛 Tặng ${productById(gift).name}, ${def.name} quay lại tiệm — +${RESCUE_FRIENDSHIP} thân thiết`);

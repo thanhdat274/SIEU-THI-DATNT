@@ -229,6 +229,7 @@ export function bizEndOfDay(s: GameState, stats: DayStats, hiepLucRevenue = 0): 
       friendships: Object.fromEntries(Object.entries(s.regulars).map(([id, r]) => [id, r.friendship])),
       giftCounter: counter?.tactic === 'gift',
       staff: s.staff.map((st) => ({ id: st.id, name: st.name, skill: st.skill })),
+      level: s.level,
     });
     news.push(...ai.news);
     for (const rid of ai.returned) s.adjustFriendship(rid, 5);

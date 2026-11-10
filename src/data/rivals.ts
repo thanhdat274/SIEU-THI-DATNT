@@ -1,6 +1,8 @@
 /** Tiệm đối thủ (GĐ959): tách nguyên văn khỏi biz.ts; biz.ts vẫn re-export nên import cũ không đổi. */
 import { productById } from './products';
 import { regularById } from './regulars';
+import { EMOTIONAL_FRIENDSHIP } from './regularTrust';
+import { tiesOf, otherOf } from './regularTies';
 import { simRng } from '../core/rand';
 
 // ───────────────────────── Tiệm đối thủ ─────────────────────────
@@ -22,6 +24,10 @@ export interface Rival {
   stock?: Record<string, number>;
   /** Khách quen bị lôi kéo sang rival: id → ngày bị lôi kéo. */
   poached?: Record<string, number>;
+  /** "Lung lay" (GĐ Hệ2-L6): họ hàng/bạn bè của người vừa bị kéo — id → đêm hết hạn (3 đêm xác suất bị kéo ×2). */
+  poachLungLay?: Record<string, number>;
+  /** "Miễn dịch cụm" (GĐ Hệ2-L6): đòi về một người → cả cụm id → đêm hết hạn (7 ngày không bị kéo). */
+  poachImmune?: Record<string, number>;
 }
 
 export type RivalPersonality = 'cutter' | 'quality' | 'aggressive';
@@ -76,6 +82,15 @@ export const RIVAL_UNDERCUT = { cutter: 0.88, quality: 0.97, aggressive: 0.92 };
 export const POACH_FRIENDSHIP = 25;
 /** Xác suất cơ bản mỗi đêm một khách quen bị lôi kéo (nhân theo sức mạnh rival). */
 export const POACH_CHANCE = 0.05;
+/** Cổng mở cơ chế "lôi kéo theo cụm" (SPEC 2.7, R1: ≥32 nên golden L30 không đổi). */
+export const POACH_CLUSTER_UNLOCK = 32;
+/** "Lung lay" kéo dài 3 đêm; trong lúc lung lay xác suất bị kéo nhân đôi. */
+export const POACH_LUNG_LAY_NIGHTS = 3;
+export const POACH_LUNG_LAY_MULT = 2;
+/** Đòi về một người → cả cụm miễn bị kéo 7 ngày. */
+export const POACH_IMMUNE_DAYS = 7;
+/** Mỗi "mỏ neo" (thân thiết ≥ EMOTIONAL_FRIENDSHIP) giảm 25% xác suất bị kéo của người có cạnh với họ. */
+export const POACH_ANCHOR_REDUCE = 0.25;
 /** GĐ794 — khách quen đang "dễ bị kéo": rival đủ mạnh, còn chỗ (<3 người), khách mới quen (thân thiết < mốc) và chưa bị kéo.
  *  Cùng điều kiện với rivalNightAI nên cảnh báo không hứa hão; thuần, dùng chung chơi đơn/hẻm online. */
 export function atRiskOfPoach(rival: Rival | null | undefined, friendships: Record<string, number | undefined>): string[] {
@@ -84,6 +99,29 @@ export function atRiskOfPoach(rival: Rival | null | undefined, friendships: Reco
   if (Object.keys(poached).length >= 3) return [];
   return Object.entries(friendships)
     .filter(([id, f]) => f !== undefined && f < POACH_FRIENDSHIP && !poached[id])
+    .map(([id]) => id);
+}
+/** "Cụm" của một người: họ hàng/bạn bè (các cạnh KHÔNG khắc khẩu) — SPEC 2.7 "cả cụm". THUẦN. */
+export function poachClusterNeighbors(regularId: string): string[] {
+  return tiesOf(regularId).filter((t) => t.kind !== 'khac_khau').map((t) => otherOf(t, regularId));
+}
+/** Số "mỏ neo" (thân thiết ≥ EMOTIONAL_FRIENDSHIP) nối cạnh với người này — mỗi mỏ neo giảm 25%
+ *  xác suất bị kéo của người có cạnh với họ (SPEC 2.7). THUẦN. */
+export function anchorCountFor(regularId: string, friendships: Record<string, number>): number {
+  return tiesOf(regularId).filter((t) => (friendships[otherOf(t, regularId)] ?? 0) >= EMOTIONAL_FRIENDSHIP).length;
+}
+/** Ai đang "lung lay" (SPEC 2.7) — CẢNH BÁO HUD: họ hàng/bạn bè của người vừa bị kéo (còn trong vòng
+ *  3 đêm), thân < POACH_FRIENDSHIP, chưa bị kéo. Điều kiện trùng rivalNightAI nên không hứa hão. THUẦN. */
+export function poachLungLayOf(
+  rival: Rival | null | undefined,
+  friendships: Record<string, number>,
+  level = 0,
+  day = 0,
+): string[] {
+  if (!rival || level < POACH_CLUSTER_UNLOCK) return [];
+  const poached = rival.poached ?? {};
+  return Object.entries(rival.poachLungLay ?? {})
+    .filter(([id, until]) => until > day && !poached[id] && (friendships[id] ?? 0) < POACH_FRIENDSHIP)
     .map(([id]) => id);
 }
 /** Rival mạnh quá mốc này mới dám giựt nhân viên (chỉ rival máu liều). */
@@ -283,6 +321,8 @@ export interface RivalNightCtx {
   /** Nhân viên đang làm (chỉ rival máu liều mới giựt). */
   staff: { id: number; name: string; skill: number }[];
   rng?: () => number;
+  /** Cấp người chơi — cổng mở cơ chế "lôi kéo theo cụm" (SPEC 2.7, R1: < POACH_CLUSTER_UNLOCK thì tắt). */
+  level?: number;
 }
 
 export interface RivalNightResult {
@@ -340,14 +380,35 @@ export function rivalNightAI(r: Rival, ctx: RivalNightCtx): RivalNightResult {
     }
   }
   if (r.strength >= 35 && Object.keys(poached).length < 3) {
+    // "Lôi kéo theo cụm" (SPEC 2.7): cụm vừa đòi về được miễn trong 7 ngày — loại khỏi đối tượng.
+    const cluster = (ctx.level ?? 0) >= POACH_CLUSTER_UNLOCK;
+    const immune = next.poachImmune ?? {};
     const candidates = Object.entries(ctx.friendships)
-      .filter(([id, f]) => f < POACH_FRIENDSHIP && !poached[id] && f !== undefined)
+      .filter(([id, f]) => f < POACH_FRIENDSHIP && !poached[id] && f !== undefined && (cluster ? !(immune[id] != null && immune[id] > ctx.day) : true))
       .sort((a, b) => a[1] - b[1]);
     const victim = candidates[0];
-    if (victim && rng() < POACH_CHANCE * (r.strength / 100) * (pers === 'aggressive' ? 1.6 : pers === 'quality' ? 0.5 : 1)) {
-      poached[victim[0]] = ctx.day;
-      const def = regularById(victim[0]);
-      news.push(`😠 ${r.name} lôi kéo ${def?.name ?? 'một khách quen'} — mở Khách quen để đòi về`);
+    if (victim) {
+      // Xác suất kéo: cơ bản × (sức/100) × tính cách, nhân theo cụm khi đã mở (lung lay ×2, mỏ neo ×0.75 mỗi neo)
+      let chance = POACH_CHANCE * (r.strength / 100) * (pers === 'aggressive' ? 1.6 : pers === 'quality' ? 0.5 : 1);
+      if (cluster) {
+        const lungLay = next.poachLungLay ?? {};
+        if ((lungLay[victim[0]] ?? 0) > ctx.day) chance *= POACH_LUNG_LAY_MULT;
+        chance *= Math.pow(1 - POACH_ANCHOR_REDUCE, anchorCountFor(victim[0], ctx.friendships));
+      }
+      if (rng() < chance) {
+        poached[victim[0]] = ctx.day;
+        const def = regularById(victim[0]);
+        // Lôi kéo theo cụm: họ hàng/bạn bè còn xa lạ của người vừa bị kéo thành "lung lay" 3 đêm
+        if (cluster) {
+          const ll = { ...(next.poachLungLay ?? {}) };
+          const until = ctx.day + POACH_LUNG_LAY_NIGHTS;
+          for (const nb of poachClusterNeighbors(victim[0])) {
+            if ((ctx.friendships[nb] ?? 0) < POACH_FRIENDSHIP && !poached[nb]) ll[nb] = until;
+          }
+          if (Object.keys(ll).length) next.poachLungLay = ll;
+        }
+        news.push(`😠 ${r.name} lôi kéo ${def?.name ?? 'một khách quen'} — mở Khách quen để đòi về`);
+      }
     }
   }
 

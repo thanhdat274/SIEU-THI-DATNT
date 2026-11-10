@@ -2,7 +2,7 @@ import { useGame, formatClock } from '../../core/store';
 import { useState } from 'react';
 import { productById, formatMoney } from '../../data/products';
 import { isBirthday, nextPerk, birthdayLabel, REGULARS, regularById, rescueGiftFor, type PerkEffect } from '../../data/regulars';
-import { RESCUE_FEE, atRiskOfPoach } from '../../data/biz';
+import { RESCUE_FEE, atRiskOfPoach, poachLungLayOf } from '../../data/biz';
 import { arcById, currentArcStep } from '../../data/regularArc';
 import { lifetimeRegularVisits, vipTierOf, nextTierOf, monthlyTriAn, regularQuote, EMOTIONAL_FRIENDSHIP } from '../../data/regularTrust';
 import { Callout, Footer, Swatch, styles, Tabs } from './shared';
@@ -36,6 +36,7 @@ export function RegularsPanel() {
   const poached = rival?.poached ?? {};
   const poachedList = Object.entries(poached);
   const atRisk = atRiskOfPoach(rival, Object.fromEntries(Object.entries(regulars).map(([id, p]) => [id, p.friendship])));
+  const lungLay = poachLungLayOf(rival, Object.fromEntries(Object.entries(regulars).map(([id, p]) => [id, p.friendship])), level, day);
   const met = REGULARS.filter((r) => r.unlock <= level);
   const [tab, setTab] = useState<'list' | 'ties'>('list');
   const bond = alleyBond(regulars, biz.tiesMended ?? []);
@@ -132,7 +133,7 @@ export function RegularsPanel() {
               <summary style={{ display: 'flex', justifyContent: 'space-between', gap: 8, cursor: 'pointer', listStyle: 'none', fontWeight: 700 }}>
                 <span><Swatch color={r.color} /> {r.name}</span>
                 <span style={{ opacity: 0.75, fontSize: 12, fontWeight: 400 }}>
-                  {poached[r.id] ? '😠 ' : atRisk.includes(r.id) ? <span title={`Thân thiết thấp, ${rival?.name} có thể lôi kéo — tặng quà hoặc bán đúng món họ thích`}>⚠️ </span> : ''}{arcSt && !arcSt.done ? '📖 ' : ''}💛 {pts} · {prog?.visits ?? 0} lần ghé
+                  {poached[r.id] ? '😠 ' : lungLay.includes(r.id) ? <span title={`Người nhà/bạn của người vừa bị kéo — mấy đêm nay dễ lung lay gấp đôi, ưu tiên chăm`}>💢 </span> : atRisk.includes(r.id) ? <span title={`Thân thiết thấp, ${rival?.name} có thể lôi kéo — tặng quà hoặc bán đúng món họ thích`}>⚠️ </span> : ''}{arcSt && !arcSt.done ? '📖 ' : ''}💛 {pts} · {prog?.visits ?? 0} lần ghé
                 </span>
               </summary>
               <div style={{ marginTop: 6 }}>
