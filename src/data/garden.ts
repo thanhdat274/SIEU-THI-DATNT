@@ -340,6 +340,9 @@ export interface GardenState {
   rackLog: { day: number; out: [number, number][] };
   /** Hệ 1 — đã mua Bạt kéo cho sân phơi (mưa to không ướt, vẫn nhận 0,4 nắng). */
   rackTarp: boolean;
+  /** Hệ 4 — số mẻ phơi/muối/ủ ĐÃ LÀM theo sản phẩm (outputId → mẻ), cho điều kiện vào nhãn
+   *  (SPEC §4.3: thông thạo ≥ 100 mẻ). Bản lưu cũ thiếu → {} (không cần SAVE_VERSION). */
+  preserveMade: Record<string, number>;
 }
 
 /** Đơn quán xóm đặt nông sản: giao đủ đúng hạn thì được giá hời hơn giá bán thường. */
@@ -427,6 +430,7 @@ export const newGarden = (): GardenState => ({
   preserveJobs: [],
   rackLog: { day: 0, out: [] },
   rackTarp: false,
+  preserveMade: {},
 });
 
 /** Khách trả thêm bấy nhiêu phần giá cho món nhà trồng (nêu ở gợi ý giá). */

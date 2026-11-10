@@ -373,7 +373,9 @@ export const createGardenSlice = (set: SetState, get: GetState): Pick<GameState,
       const lab = st === 'ngon' || job.allHomegrown;
       if (lab) homegrown[def.outputId] = (homegrown[def.outputId] ?? 0) + yieldQ;
       const jobs = s.garden.preserveJobs.filter((j) => j.id !== jobId);
-      set({ ...k, garden: { ...s.garden, preserveJobs: jobs, homegrown } });
+      const preserveMade = { ...s.garden.preserveMade };
+      preserveMade[def.outputId] = (preserveMade[def.outputId] ?? 0) + 1; // đếm mẻ đã làm (cổng vào nhãn, SPEC §4.3)
+      set({ ...k, garden: { ...s.garden, preserveJobs: jobs, homegrown, preserveMade } });
       const tag = st === 'ngon' ? ' NGON' : st === 'kem' ? ' (khú, kém)' : '';
       s.notify(`🫙 Vớt ${yieldQ} ${productById(def.outputId).name}${tag}${lab ? ' — toàn nhà trồng, giá hơn' : ''}`);
       s.addXp(st === 'ngon' ? 12 : 6);
@@ -394,7 +396,9 @@ export const createGardenSlice = (set: SetState, get: GetState): Pick<GameState,
       const lab = aged || job.allHomegrown; // ủ lâu → CẢ lô mang nhãn nhà làm (+20%)
       if (lab) homegrown[def.outputId] = (homegrown[def.outputId] ?? 0) + yieldQ;
       const jobs = s.garden.preserveJobs.filter((j) => j.id !== jobId);
-      set({ ...k, garden: { ...s.garden, preserveJobs: jobs, homegrown } });
+      const preserveMade = { ...s.garden.preserveMade };
+      preserveMade[def.outputId] = (preserveMade[def.outputId] ?? 0) + 1;
+      set({ ...k, garden: { ...s.garden, preserveJobs: jobs, homegrown, preserveMade } });
       s.notify(`🫛 Rút ${yieldQ} ${productById(def.outputId).name}${aged ? ' (ủ LÂU, ra nhiều hơn)' : ''}${lab ? ' — nhà làm, giá hơn' : ''}`);
       s.addXp(aged ? 15 : 8);
       return;
@@ -408,7 +412,9 @@ export const createGardenSlice = (set: SetState, get: GetState): Pick<GameState,
     const homegrown = { ...s.garden.homegrown };
     if (job.allHomegrown) homegrown[def.outputId] = (homegrown[def.outputId] ?? 0) + yieldQ;
     const jobs = s.garden.preserveJobs.filter((j) => j.id !== jobId);
-    set({ ...k, garden: { ...s.garden, preserveJobs: jobs, homegrown } });
+    const preserveMade = { ...s.garden.preserveMade };
+    preserveMade[def.outputId] = (preserveMade[def.outputId] ?? 0) + 1;
+    set({ ...k, garden: { ...s.garden, preserveJobs: jobs, homegrown, preserveMade } });
     const xp = Math.min(40, 4 * (s.day - job.startDay));
     s.notify(`🧺 Gỡ ${yieldQ} ${productById(def.outputId).name} khỏi giàn${job.allHomegrown ? ' (toàn nhà trồng, giá hơn)' : ''} — khách thích hàng tự phơi`);
     s.addXp(xp);
