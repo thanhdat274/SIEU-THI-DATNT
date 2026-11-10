@@ -641,6 +641,8 @@ window.game = {
   ...(window.game ?? {}),
   report: () => console.log(exportReportsJson()),
   perf: (on?: boolean) => { const v = on ?? !perfOn(); setPerf(v); return v; },
+  // SPEC-TOI-UU §T2-L2: 4 cảnh đo cố định (nạp động, không vào bundle đầu). game.bench() hoặc game.bench(10, ['B2'])
+  bench: (seconds?: number, only?: ('B1' | 'B2' | 'B3' | 'B4')[]) => import('./dev/bench').then((m) => m.runBench(controller, seconds, only)),
 };
 onGfxChoice((c) => {
   gfxChoice = c;
@@ -965,7 +967,7 @@ void (renderer.init ? renderer.init() : Promise.resolve()).then(() => {
 
 // Để debug trong console khi chạy dev (GĐ714: khôi phục bị mất nhầm khi tách vỏ ở GĐ704)
 if (import.meta.env.DEV) {
-  Object.assign(window, { game: { player, world, controller, grid, useGame, customers, buildMode, staff, renderer, scene, lighting, perf: () => ({ ...gfxStatus(), log: readPerfLog() }) } });
+  Object.assign(window, { game: { player, world, controller, grid, useGame, customers, buildMode, staff, renderer, scene, lighting, perf: () => ({ ...gfxStatus(), log: readPerfLog() }), bench: (seconds?: number, only?: ('B1' | 'B2' | 'B3' | 'B4')[]) => import('./dev/bench').then((m) => m.runBench(controller, seconds, only)) } });
   import('./dev/autoplay').then(({ createAutoplay }) =>
     Object.assign((window as unknown as { game: object }).game, { autoplay: createAutoplay(shop, customers, staff, player) }),
   );
