@@ -2,9 +2,9 @@ import { useMemo, useState } from 'react';
 import { useGame } from '../../core/store';
 import { productById } from '../../data/products';
 import {
-  BRAND_DEALER_UNLOCK, BRAND_DEAL_CUT_AFTER, BRAND_DEALERS, BRAND_LINE_SLOTS, BRAND_UNLOCK,
-  brandDealerById, brandDealersAvail, brandLineEligible, brandLineSlots, brandRepTier, brandStockUnits,
-  brandDealValue, brandWorkshopCapacity, type BrandState,
+  BRAND_DEALER_UNLOCK, BRAND_DEAL_CUT_AFTER, BRAND_DEALERS, BRAND_LINE_SLOTS, BRAND_RIVAL_STRENGTH_GAIN,
+  BRAND_UNLOCK, brandDealerById, brandDealersAvail, brandLineEligible, brandLineSlots, brandRepTier,
+  brandStockUnits, brandDealValue, brandRivalValue, brandWorkshopCapacity, type BrandState,
 } from '../../data/brand';
 import { Footer, styles, Tabs } from './shared';
 
@@ -25,7 +25,7 @@ const pname = (id: string) => (productById(id)?.name ?? id).replace(/\s*\([^)]*\
  * Xưởng/Bỏ mối/Nhượng quyền sẽ mở ở các lát sau.
  */
 export function BrandPanel() {
-  const { level, money, biz, garden, soldEver, foundBrand, addBrandLine, dropBrandLine, buyBrandWorkshop, hireBrandWorker, fireBrandWorker, acceptBrandDeal, commitBrandDeal, releaseBrandDeal, deliverBrandDeal, closePanel, day } = useGame();
+  const { level, money, biz, garden, soldEver, foundBrand, addBrandLine, dropBrandLine, buyBrandWorkshop, hireBrandWorker, fireBrandWorker, acceptBrandDeal, commitBrandDeal, releaseBrandDeal, deliverBrandDeal, acceptRivalSupply, closePanel, day } = useGame();
   const [tab, setTab] = useState<Tab>('lines');
   const [name, setName] = useState('');
   const b = biz.brand;
@@ -83,7 +83,9 @@ export function BrandPanel() {
           )}
 
           {tab === 'dealers' && (
-            <DealersTab b={b} level={level} rep={b.rep} day={day} onAccept={acceptBrandDeal} onCommit={commitBrandDeal} onRelease={releaseBrandDeal} onDeliver={deliverBrandDeal} />
+            <DealersTab b={b} level={level} rep={b.rep} day={day} rival={biz.rival ?? null}
+              onAccept={acceptBrandDeal} onCommit={commitBrandDeal} onRelease={releaseBrandDeal}
+              onDeliver={deliverBrandDeal} onRivalSupply={acceptRivalSupply} />
           )}
 
           {tab === 'franchise' && (
@@ -216,11 +218,12 @@ function LinesTab(props: {
 }
 
 function DealersTab(props: {
-  b: BrandState; level: number; rep: number; day: number;
+  b: BrandState; level: number; rep: number; day: number; rival: { name: string; strength: number } | null;
   onAccept: (dealerId: string, productId: string) => void;
   onCommit: (id: string) => void; onRelease: (id: string) => void; onDeliver: (id: string) => boolean;
+  onRivalSupply: () => void;
 }) {
-  const { b, level, rep, day, onAccept, onCommit, onRelease, onDeliver } = props;
+  const { b, level, rep, day, rival, onAccept, onCommit, onRelease, onDeliver, onRivalSupply } = props;
   const avail = brandDealersAvail(level, rep);
   const reSign = (id: string) => {
     const r = b.reopenDays?.[id];
@@ -233,6 +236,21 @@ function DealersTab(props: {
         và đều. Giao đúng hẹn +2 uy tín, trễ −4, bỏ kỳ −8; <b>{BRAND_DEAL_CUT_AFTER} kỳ hỏng liên tiếp thì bị cắt
         hợp đồng</b> (30 ngày sau mới ký lại). Mở từ cấp {BRAND_DEALER_UNLOCK}.
       </p>
+
+      {rival && rival.strength > 0 && (
+        <div style={{ ...styles.card, background: '#4a2c2c' }}>
+          <span style={{ flex: 1 }}>
+            <b>😈 {rival.name} — đối thủ ghé mua</b>
+            <div style={{ fontSize: 12, opacity: 0.85 }}>
+              {b.rivalOffer
+                ? `${pname(b.rivalOffer.productId)} × ${b.rivalOffer.units} đơn vị, trả ${brandRivalValue(b.rivalOffer).toLocaleString('vi-VN')}đ (95%) — giành tiền nhưng ${rival.name} +${BRAND_RIVAL_STRENGTH_GAIN} sức mạnh, hàng mình lên kệ họ.`
+                : `Đối thủ ${rival.strength} sức mạnh — thỉnh thoảng họ ngỏ ý mua hàng nhãn giá cao để trưng trên kệ.`}
+              {b.rivalSold ? ` Đã bán ${b.rivalSold} đơn vị cho rival.` : ''}
+            </div>
+          </span>
+          {b.rivalOffer && <button style={styles.btn} onClick={onRivalSupply}>🤝 Giành tiền đợt này</button>}
+        </div>
+      )}
 
       {Object.entries(b.deals).map(([id, deal]) => {
         const def = brandDealerById(id)!;

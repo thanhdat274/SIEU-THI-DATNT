@@ -39,7 +39,7 @@ import { staffDayEnd } from '../../data/staffTraits';
 import { BUZZ_DAYS, CRISIS_MUL, POST_CAP, SOCIAL_UNLOCK, socialDayEnd, type SocialPost } from '../../data/social';
 import { ANIMAL_ORDER, farmCritChance, farmhandChores, FARM_ORDER_UNLOCK, farmOrderCapacity, farmOrderNews, farmOrderProduce, gardenNight, makeFarmOrder, type AnimalKind } from '../../data/garden';
 import { preserveNight, farmhandPreserve, preserveDefById } from '../../data/preserve';
-import { brandDealNight, brandRepDaily, brandWorkshopDay } from '../../data/brand';
+import { brandDealNight, brandRivalOffer, brandRepDaily, brandWorkshopDay } from '../../data/brand';
 import { crisisNight } from '../../data/crisis';
 import { lifeEventFor, lifeEventById, gioLabel } from '../../data/lifeEvent';
 import { stanceActive, stanceFitByDirection, applyStanceDay, stanceTier, STANCE_UNLOCK, STANCE_META, hasStanceSeal, isStanceSealable, type StanceState } from '../../data/stance';
@@ -600,6 +600,14 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
       const dd = brandDealNight(rd.brand, s.day);
       biz.biz = { ...biz.biz, brand: dd.brand };
       for (const n of dd.news) say(n);
+      // Rival (§4.5d): ghé hỏi mua hàng nhãn định kỳ (tất định theo ngày) — lời chào hiện ở tab Bỏ mối.
+      const rivalOffer = brandRivalOffer(dd.brand, biz.biz.rival, s.day);
+      if (rivalOffer) biz.biz = { ...biz.biz, brand: { ...dd.brand, rivalOffer } };
+      else if (dd.brand.rivalSold !== undefined || dd.brand.rivalOffer) {
+        // hết hạn chào → xoá lời chào đã cũ (giữ rivalSold)
+        const nb = { ...dd.brand, rivalOffer: undefined };
+        biz.biz = { ...biz.biz, brand: nb };
+      }
     }
   }
   // SPEC-TOI-UU §T1 (L1): gom bản ghi ẩn danh ngày vừa chốt — lưu CỤC BỘ, không gửi đi đâu.

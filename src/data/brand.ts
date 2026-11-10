@@ -79,6 +79,10 @@ export interface BrandState {
   franchises: FranchiseState[];
   /** Ngày game tới hạn nhập hàng cho từng điểm nhượng quyền (tuần). */
   franchiseDue: Record<string, number>;
+  /** Lời chào mua hàng nhãn của rival hiện tại (§4.5d) — { productId, units } lẫn ngày chào. */
+  rivalOffer?: { productId: string; units: number; day: number };
+  /** Tổng đơn vị đã bán cho rival (thống kê "hàng nằm trên kệ họ"). */
+  rivalSold?: number;
 }
 
 // ───── Cấp mở & trần ─────
@@ -281,6 +285,40 @@ export function brandDealNight(b: BrandState, day: number): { brand: BrandState;
     }
   }
   return { brand: cur, news };
+}
+
+// ───────────────────────── Bỏ mối cho đối thủ (§4.5d) ─────────────────────────
+
+/** Giá rival trả khi mua hàng nhãn của mình (95% — cao hơn mọi đại lý). */
+export const BRAND_RIVAL_PRICE = 0.95;
+/** Mỗi kỳ bán cho rival: nhận tiền nhưng rival +1 sức mạnh, hàng nằm trên kệ họ. */
+export const BRAND_RIVAL_STRENGTH_GAIN = 1;
+/** Rival ghé hỏi mua mỗi ~bao nhiêu ngày (tất định theo ngày, không RNG — R4). */
+export const BRAND_RIVAL_EVERY_DAYS = 8;
+/** Số ngày lời chào còn hiệu lực trước khi rival thôi không mua. */
+export const BRAND_RIVAL_OFFER_DAYS = 3;
+
+/**
+ * Lời chào mua hàng nhãn của rival hiện tại (§4.5d): tất định theo ngày (mỗi BRAND_RIVAL_EVERY_DAYS, pha cố
+ * định), chỉ khi có rival đang sống, có dòng nhãn còn hàng, và chưa chào đợt này. Chọn dòng có nhiều hàng
+ * nhãn trong kho nhất. THUẦN (không RNG).
+ */
+export function brandRivalOffer(b: BrandState, rival: { strength: number } | null | undefined, day: number): { productId: string; units: number; day: number } | null {
+  if (!rival || rival.strength <= 0) return null;
+  if (day % BRAND_RIVAL_EVERY_DAYS !== 3) return null;
+  if (b.rivalOffer?.day === day) return b.rivalOffer;
+  const candidates = b.lines
+    .map((l) => ({ id: l.productId, have: b.stock[l.productId] ?? 0 }))
+    .filter((c) => c.have > 0)
+    .sort((a, z) => z.have - a.have);
+  if (candidates.length === 0) return null;
+  const pick = candidates[0];
+  return { productId: pick.id, units: Math.min(30, pick.have), day };
+}
+
+/** Giá tiền rival trả cho một lời chào (units × giá bán lẻ × 95%, tròn nghìn). */
+export function brandRivalValue(offer: { productId: string; units: number }): number {
+  return Math.round(productById(offer.productId).sell * offer.units * BRAND_RIVAL_PRICE / 1000) * 1000;
 }
 
 // ───── Nhượng quyền (§4.5e) ─────

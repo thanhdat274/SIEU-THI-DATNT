@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useGame } from '../core/store';
-import { BRAND_UNLOCK, BRAND_WORKSHOP_MAX_STAFF, brandDealNight, brandWorkshopDay, type BrandState } from '../data/brand';
+import { BRAND_UNLOCK, BRAND_WORKSHOP_MAX_STAFF, brandDealNight, brandRivalOffer, brandRivalValue, brandWorkshopDay, type BrandState } from '../data/brand';
 import { productById } from '../data/products';
 
 vi.mock('../net/session', () => ({ useSession: { getState: () => ({}) }, subscribe: () => () => {} }));
@@ -327,3 +327,58 @@ function brandDealValueForSap() {
   // 40 đơn vị nước mắm bán lẻ × 0.82
   return Math.round(productById('hx_nuoc_mam').sell * 40 * 0.82);
 }
+
+describe('Hệ4-L6 — bỏ mối cho đối thủ (SPEC §4.5d): lời chào tất định + giành tiền vs nuôi rival', () => {
+  const rivalBrand = (over: Partial<BrandState> = {}): BrandState => ({
+    name: 'Nhà Năm',
+    workshop: null, lastPackDay: 0,
+    lines: [{ productId: 'hx_nuoc_mam', since: 100, made: 200, sold: 0 }],
+    stock: { hx_nuoc_mam: 100 },
+    rep: 50, maxRep: 50, repLog: [],
+    deals: {}, franchises: [], franchiseDue: {},
+    ...over,
+  });
+  const setRivalCtx = (level: number, b: BrandState, rival: { strength: number } | null, day: number) => {
+    const s = useGame.getState();
+    useGame.setState({ level, day, soldEver: { hx_nuoc_mam: 600 }, biz: { ...s.biz, brand: b, rival } } as never);
+  };
+
+  it('no rival / not offer day → no offer; offer day with stock → offer picks line with most stock', () => {
+    // day % 8 === 3 mới có chào
+    setRivalCtx(120, rivalBrand(), { strength: 40 }, 11); // 11%8=3
+    const b = useGame.getState().biz.brand!;
+    const off = brandRivalOffer(b, { strength: 40 }, 11);
+    expect(off).toEqual({ productId: 'hx_nuoc_mam', units: 30, day: 11 }); // min(30,100)
+    // không đúng pha ngày
+    expect(brandRivalOffer(b, { strength: 40 }, 12)).toBeNull();
+    // rival đã đóng cửa
+    expect(brandRivalOffer(b, null, 11)).toBeNull();
+    // hết hàng thì không chào
+    expect(brandRivalOffer(rivalBrand({ stock: {} }), { strength: 40 }, 11)).toBeNull();
+  });
+
+  it('acceptRivalSupply: +tiền 95%, rival +1 sức mạnh, trừ kho, đếm rivalSold', () => {
+    setRivalCtx(120, rivalBrand(), { strength: 40 }, 11);
+    const b0 = useGame.getState().biz.brand!;
+    useGame.setState({ day: 11, biz: { ...useGame.getState().biz, brand: { ...b0, rivalOffer: { productId: 'hx_nuoc_mam', units: 30, day: 11 } } } } as never);
+    const before = useGame.getState().money;
+    useGame.getState().acceptRivalSupply();
+    const st = useGame.getState();
+    expect(st.money - before).toBe(brandRivalValue({ productId: 'hx_nuoc_mam', units: 30 }));
+    expect(st.biz.rival!.strength).toBe(41); // +1
+    expect(st.biz.brand!.stock.hx_nuoc_mam).toBe(100 - 30);
+    expect(st.biz.brand!.rivalSold).toBe(30);
+    expect(st.biz.brand!.rivalOffer).toBeUndefined();
+  });
+
+  it('lời chào hết hạn (quá 3 ngày) thì từ chối, không trừ hàng', () => {
+    setRivalCtx(120, rivalBrand(), { strength: 40 }, 15); // offer hôm 11, giờ 15 → quá 3 ngày
+    const b0 = useGame.getState().biz.brand!;
+    useGame.setState({ day: 15, biz: { ...useGame.getState().biz, brand: { ...b0, rivalOffer: { productId: 'hx_nuoc_mam', units: 30, day: 11 } } } } as never);
+    const before = useGame.getState().money;
+    useGame.getState().acceptRivalSupply();
+    expect(useGame.getState().money).toBe(before);
+    expect(useGame.getState().biz.brand!.stock.hx_nuoc_mam).toBe(100);
+    expect(useGame.getState().biz.brand!.rivalOffer).toBeUndefined();
+  });
+});

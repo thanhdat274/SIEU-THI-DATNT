@@ -1,8 +1,8 @@
 import {
   BRAND_DEAL_CUT_AFTER, BRAND_DEAL_REOPEN_DAYS, BRAND_DEALER_UNLOCK, BRAND_LINE_SLOTS,
-  BRAND_REP_LATE, BRAND_REP_ONTIME,
+  BRAND_REP_LATE, BRAND_REP_ONTIME, BRAND_RIVAL_OFFER_DAYS, BRAND_RIVAL_STRENGTH_GAIN,
   BRAND_UNLOCK, BRAND_WORKSHOP_COST, BRAND_WORKSHOP_MAX_STAFF, BRAND_WORKSHOP_UNLOCK,
-  brandDealValue, brandDealerById, brandLineEligible, brandLineSlots,
+  brandDealValue, brandDealerById, brandLineEligible, brandLineSlots, brandRivalValue,
   applyBrandRep, type BrandState,
 } from '../../data/brand';
 import { productById } from '../../data/products';
@@ -18,7 +18,7 @@ import type { GameState, GetState, SetState } from '../gameTypes';
 export const createBrandSlice = (set: SetState, get: GetState): Pick<
   GameState,
   'foundBrand' | 'addBrandLine' | 'dropBrandLine' | 'buyBrandWorkshop' | 'hireBrandWorker' | 'fireBrandWorker'
-  | 'acceptBrandDeal' | 'commitBrandDeal' | 'releaseBrandDeal' | 'deliverBrandDeal'
+  | 'acceptBrandDeal' | 'commitBrandDeal' | 'releaseBrandDeal' | 'deliverBrandDeal' | 'acceptRivalSupply'
 > => ({
   foundBrand: (name) => {
     const s = get();
@@ -174,6 +174,32 @@ export const createBrandSlice = (set: SetState, get: GetState): Pick<
     s.notify(`🚚 Giao xong "${def.title}": +${pay.toLocaleString('vi-VN')}đ` + (onTime ? ` · uy tín +${BRAND_REP_ONTIME}` : ` · giao muộn, uy tín ${BRAND_REP_LATE}`)
       + (cut ? ` · bị cắt hợp đồng (${BRAND_DEAL_CUT_AFTER} kỳ hỏng)` : ` · chuỗi đúng hẹn ${cut ? 0 : newStreak}`));
     return true;
+  },
+
+  // ───── Bỏ mối cho đối thủ (SPEC §4.5d, tuỳ chọn) ─────
+  acceptRivalSupply: () => {
+    const s = get();
+    const b = s.biz.brand;
+    const rival = s.biz.rival;
+    if (!b) return s.notify(`🏷️ Hãy lập nhãn trước.`);
+    const offer = b.rivalOffer;
+    if (!rival || rival.strength <= 0) return s.notify(`🚛 Không có đối thủ nào để bỏ mối.`);
+    if (!offer) return s.notify(`🚛 Rival chưa ngỏ ý mua hàng nhãn đợt này.`);
+    if (s.day - offer.day > BRAND_RIVAL_OFFER_DAYS) {
+      set({ biz: { ...s.biz, brand: { ...b, rivalOffer: undefined } } });
+      return s.notify(`🚛 Lời chào của rival đã hết hạn — họ thôi không mua đợt này.`);
+    }
+    const have = b.stock[offer.productId] ?? 0;
+    if (have < offer.units) return s.notify(`🚛 Kho nhãn ${pname(offer.productId)} không đủ ${offer.units} đơn vị để bán cho rival.`);
+    const val = brandRivalValue(offer);
+    const stock = { ...b.stock, [offer.productId]: have - offer.units };
+    const lines = b.lines.map((l) => l.productId === offer.productId ? { ...l, sold: l.sold + offer.units } : l);
+    const rivalB = { ...rival, strength: rival.strength + BRAND_RIVAL_STRENGTH_GAIN };
+    set({
+      biz: { ...s.biz, brand: { ...b, stock, lines, rivalOffer: undefined, rivalSold: (b.rivalSold ?? 0) + offer.units }, rival: rivalB },
+      money: s.money + val,
+    });
+    s.notify(`🤝 Bán ${offer.units} đơn vị ${pname(offer.productId)} cho đối thủ: +${val.toLocaleString('vi-VN')}đ · nhưng đối thủ +${BRAND_RIVAL_STRENGTH_GAIN} sức mạnh, hàng mình nằm trên kệ họ (tiền nhanh nhưng nuôi đối thủ).`);
   },
 });
 

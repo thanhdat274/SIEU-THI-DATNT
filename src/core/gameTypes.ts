@@ -638,6 +638,8 @@ export interface GameState {
   commitBrandDeal: (dealerId: string) => void;
   releaseBrandDeal: (dealerId: string) => void;
   deliverBrandDeal: (dealerId: string) => boolean;
+  /** Hệ 4 — Bỏ mối cho đối thủ (§4.5d): nhận lời chào mua hàng nhãn 95%, rival +1 sức mạnh. GUARDED 'brand'. */
+  acceptRivalSupply: () => void;
 
   /** Trang trại (trồng, bón phân, nuôi gà/vịt/ngỗng/bò/heo/dê/gà Đông Tảo, đơn quán xóm). */
   garden: GardenState;
