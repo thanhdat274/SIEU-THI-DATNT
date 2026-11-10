@@ -203,6 +203,9 @@ export interface BizState {
   /** Tháng đã trả quà tri ân cuối tháng (GĐ69): tránh trả 2 lần cho cùng một tháng.
    *  Bản lưu cũ thiếu → undefined (chưa trả tháng nào, không cần SAVE_VERSION). */
   triAnPaidMonth?: number;
+  /** Các cạnh khắc khẩu đã hoà giải (GĐ Hệ2-L1, SPEC-CHIEU-SAU §2.6): khóa `a|b` chuẩn hoá.
+   *  Bản lưu cũ thiếu → undefined (chưa hoà giải cạnh nào, không cần SAVE_VERSION). */
+  tiesMended?: string[];
   /** Ngày game đã nhận thưởng đón lễ (GĐ70): 1 dịp lễ 1 lần. Bản lưu cũ thiếu →
    *  undefined (chưa nhận dịp nào, không cần SAVE_VERSION). */
   prepClaimed?: number;

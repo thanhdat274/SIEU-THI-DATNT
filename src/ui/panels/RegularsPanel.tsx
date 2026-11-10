@@ -1,12 +1,16 @@
 import { useGame, formatClock } from '../../core/store';
+import { useState } from 'react';
 import { productById, formatMoney } from '../../data/products';
 import { isBirthday, nextPerk, birthdayLabel, REGULARS, regularById, rescueGiftFor, type PerkEffect } from '../../data/regulars';
 import { RESCUE_FEE, atRiskOfPoach } from '../../data/biz';
 import { arcById, currentArcStep } from '../../data/regularArc';
 import { lifetimeRegularVisits, vipTierOf, nextTierOf, monthlyTriAn, regularQuote, EMOTIONAL_FRIENDSHIP } from '../../data/regularTrust';
-import { Callout, Footer, Swatch, styles } from './shared';
+import { Callout, Footer, Swatch, styles, Tabs } from './shared';
 import { DebtBook } from './DebtBook';
 import { regularGiftPlan, REGULAR_GIFT_LEVEL, giftFriendship, giftableCount, sortForGift, giftPanelLine } from '../../data/regularGift';
+import {
+  REGULAR_TIES, TIE_LABEL, TIE_ICON, alleyBond, tieIsHostile, tieKey,
+} from '../../data/regularTies';
 
 /** GĐ793 — nút đòi khách quen bị rival lôi kéo (cùng kiểu nút vàng accent của hệ thống). */
 const rescueBtn: React.CSSProperties = {
@@ -33,6 +37,8 @@ export function RegularsPanel() {
   const poachedList = Object.entries(poached);
   const atRisk = atRiskOfPoach(rival, Object.fromEntries(Object.entries(regulars).map(([id, p]) => [id, p.friendship])));
   const met = REGULARS.filter((r) => r.unlock <= level);
+  const [tab, setTab] = useState<'list' | 'ties'>('list');
+  const bond = alleyBond(regulars, biz.tiesMended ?? []);
   const triVisits = lifetimeRegularVisits(regulars);
   const triTier = vipTierOf(triVisits);
   const triNext = nextTierOf(triVisits);
@@ -42,7 +48,10 @@ export function RegularsPanel() {
   return (
     <>
       <h2 style={styles.title}>💛 Khách quen</h2>
-      {level >= REGULAR_GIFT_LEVEL && <p style={styles.sub}>{giftPanelLine(giftableCount(met, regulars, level, day, storage), stats.gifts)}</p>}
+      <Tabs tabs={[['list', '👥 Khách quen'], ['ties', '🕸️ Quan hệ']]} value={tab} onChange={setTab} />
+      {tab === 'list' && (
+        <>
+          {level >= REGULAR_GIFT_LEVEL && <p style={styles.sub}>{giftPanelLine(giftableCount(met, regulars, level, day, storage), stats.gifts)}</p>}
       <DebtBook />
       <p style={styles.sub}>
         Khách quen ghé vào giờ quen. Bán đúng món họ thích thì thân hơn (+2, món khác +1, mỗi ngày một lần);
@@ -188,7 +197,73 @@ export function RegularsPanel() {
         })}
         {REGULARS.length > met.length && <p style={styles.sub}>Lên cấp để gặp thêm {REGULARS.length - met.length} khách quen nữa.</p>}
       </div>
+        </>
+      )}
+      {tab === 'ties' && (
+        <TiesView bond={bond} regulars={regulars} tiesMended={biz.tiesMended ?? []} met={met} />
+      )}
       <Footer onClose={closePanel} />
+    </>
+  );
+}
+
+/** GĐ Hệ2-L1 — tab "Quan hệ" chỉ đọc: chỉ số Tình làng + danh sách 22 mối quan hệ giữa khách quen. */
+function TiesView({ bond, regulars, tiesMended, met }: {
+  bond: number;
+  regulars: Record<string, { friendship: number }>;
+  tiesMended: string[];
+  met: { id: string; name: string; color: number }[];
+}) {
+  const friendly = REGULAR_TIES.filter((t) => !tieIsHostile(t, tiesMended));
+  const hostile = REGULAR_TIES.filter((t) => tieIsHostile(t, tiesMended));
+  const metIds = new Set(met.map((r) => r.id));
+  const name = (id: string): string => {
+    const def = regularById(id);
+    return def ? (metIds.has(id) ? def.name : `${def?.name ?? id} (chưa gặp)`) : id;
+  };
+  return (
+    <>
+      <div style={{ ...styles.card, maxWidth: 560, marginBottom: 8, border: '1px solid rgba(46,204,113,0.4)', background: 'rgba(46,204,113,0.06)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+          <b>🏮 Tình làng nghĩa xóm</b>
+          <span style={{ fontWeight: 700, color: '#2ecc71' }}>{bond}%</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, fontSize: 12 }}>
+          <div style={{ flex: 1, height: 8, background: '#555', borderRadius: 4 }}>
+            <div style={{ width: `${bond}%`, height: '100%', borderRadius: 4, background: '#2ecc71' }} />
+          </div>
+          <span style={{ opacity: 0.8 }}>min thân thiết đủ 40 là kín 1 mối ({friendly.length} mối thân)</span>
+        </div>
+        <div style={{ fontSize: 11, opacity: 0.75, marginTop: 4 }}>
+          Họ hàng · bạn bè · láng giềng trong hẻm. Chăm sâu vài người then chốt giữ được cả cụm; mối khắc khẩu thì lo A là B hơi dỗi.
+        </div>
+      </div>
+      <div style={{ display: 'grid', gap: 4, maxWidth: 560 }}>
+        {friendly.map((t) => {
+          const m = Math.min(regulars[t.a]?.friendship ?? 0, regulars[t.b]?.friendship ?? 0);
+          const pct = Math.min(100, Math.round((m / 40) * 100));
+          return (
+            <div key={tieKey(t.a, t.b)} style={{ background: '#3a3a4d', borderRadius: 8, padding: '6px 12px', fontSize: 12 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+                <span><span style={{ opacity: 0.8 }}>{TIE_ICON[t.kind]} {TIE_LABEL[t.kind]}</span><br />{name(t.a)} · {name(t.b)}</span>
+                <span style={{ color: '#f1c40f', fontWeight: 600, whiteSpace: 'nowrap' }}>💛 {m}</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
+                <div style={{ flex: 1, height: 5, background: '#555', borderRadius: 3 }}>
+                  <div style={{ width: `${pct}%`, height: '100%', borderRadius: 3, background: '#f1c40f' }} />
+                </div>
+                <span style={{ opacity: 0.7, fontSize: 11 }}>{t.note}</span>
+              </div>
+            </div>
+          );
+        })}
+        {hostile.length > 0 && (
+          <div style={{ fontSize: 12, opacity: 0.9, background: 'rgba(231,76,60,0.08)', borderRadius: 8, padding: '6px 12px', maxWidth: 560 }}>
+            ⚡ <b>Người khắc khẩu</b> — lo chu đáo một người thì người kia hơi dỗi:
+            {hostile.map((t) => <div key={tieKey(t.a, t.b)}>💢 {name(t.a)} · {name(t.b)}</div>)}
+          </div>
+        )}
+      </div>
     </>
   );
 }
