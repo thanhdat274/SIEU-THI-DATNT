@@ -364,3 +364,36 @@ describe('Hệ8-L5 — Bão giá: giá nhập tăng dần rồi dịu (costRamp/
     expect(costOf(bao(), 424)).toBe(1);
   });
 });
+
+describe('Hệ8-L6/L7 — Mùa lũ + Dịch tả heo khung dữ liệu', () => {
+  const lu = () => ({ defId: 'mua_lu', startDay: 500, preps: [], choices: {}, kind: 0 });
+  const dich = () => ({ defId: 'dich_ta', startDay: 600, preps: [], choices: {}, kind: 0 });
+
+  it('cấp mở tăng dần đúng spec: đào 36 · bão 40 · lũ 44 · dịch 48', () => {
+    const ic = Object.fromEntries(CRISIS_DEFS.map((d) => [d.id, d.unlock]));
+    expect(ic.dao_duong).toBe(36);
+    expect(ic.bao_gia).toBe(40);
+    expect(ic.mua_lu).toBe(44);
+    expect(ic.dich_ta).toBe(48);
+  });
+
+  it('Mùa lũ — Cao điểm: khách ×0,75, farm flood, cầu tăng món giàu id thật', () => {
+    const e = crisisEffects(lu(), 503); // 500-502 báo trước, 503 = cao điểm ngày 0
+    expect(e.traffic).toBe(0.75);
+    expect(e.farm).toBe('flood');
+    expect(e.demand?.up).toContain('x_ao_mua');
+    expect(e.demand?.up).toContain('x_pin');
+  });
+
+  it('Mùa lũ — chỉ tháng 9–10 (không đặt được ngoài mùa)', () => {
+    expect(crisisDefById('mua_lu')?.months).toEqual([9, 10]);
+  });
+
+  it('Dịch tả heo — Cao điểm: khách ×0,85, farm swine, giá thịt ×1,15', () => {
+    const e = crisisEffects(dich(), 603); // 600-602 báo trước, 603 = cao điểm ngày 0
+    expect(e.traffic).toBe(0.85);
+    expect(e.farm).toBe('swine');
+    expect(e.cost('x_thit_heo', 'meat')).toBeCloseTo(1.15, 5);
+    expect(e.demand?.down).toContain('x_thit_heo');
+  });
+});

@@ -195,7 +195,77 @@ const BAO_GIA: CrisisDef = {
   ],
 };
 
-export const CRISIS_DEFS: CrisisDef[] = [DAO_DUONG, BAO_GIA];
+/**
+ * ③ Mùa lũ — chỉ tháng 9–10, cấp 44 (SPEC §8.4). Các món "cầu tăng" dùng id THẬT trong game,
+ * thay thế gần nhất theo món trong spec (CLAUDE.md §4): mì gói→hủ tiếu gói/cháo gói, nến→pin
+ * (mất điện), nước đóng chai→nước điện giải. Ghi đè thời tiết ép mưa/giông + sân phơi hệ 1 gần
+ * như không dùng được để lát sau (cần nối nextWeather/preserve). */
+const MUA_LU: CrisisDef = {
+  id: 'mua_lu',
+  name: 'Mùa lũ',
+  icon: '🌊',
+  unlock: 44,
+  months: [9, 10],
+  phases: [
+    { label: 'Báo trước', days: 3, traffic: 1 },
+    { label: 'Cao điểm', days: 8, traffic: 0.75, farm: 'flood',
+      demand: { up: ['x_hu_tieu_goi', 'x_chao_goi', 'x_ao_mua', 'x_nuoc_dien_giai', 'x_pin', 'x_mi_trung_kho'], down: ['x_nuoc_lau_san'] } },
+    { label: 'Dịu dần', days: 5, traffic: 0.9 },
+  ],
+  preps: [
+    { id: 'sandbag', label: 'Bao cát + kê cao hàng', cost: 320_000, effect: 'Hàng khô để tầng thấp hết bị hỏng ×2 khi ngập.' },
+    { id: 'flood_stock', label: 'Trữ mì, nước, pin trước khi lũ', cost: 240_000, effect: 'Có hàng bán đúng lúc người ta cần nhất.' },
+    { id: 'rack_up', label: 'Cất hết giàn phơi của sân', cost: 0, effect: 'Tránh để giàn phơi bị lũ cuốn.' },
+  ],
+  scenes: [
+    {
+      atDay: 3,
+      text: 'Nhà cuối hẻm ngập, bà con sang hỏi mua chịu mì và nước.',
+      options: [
+        'Cho ghi sổ không tính lãi (dùng sổ nợ, lựa chọn ấm, lan thân thiết cả cụm + bài khen MXH)',
+        'Bán giá thường',
+        'Phát miễn phí (tốn hàng, lựa chọn ấm, lan thân thiết cả cụm + bài khen MXH)',
+      ],
+    },
+    {
+      atDay: 6,
+      text: 'Có người gợi ý tăng giá nến và mì lên gấp đôi vì người ta đang cần.',
+      options: ['Từ chối — giữ giá (danh tiếng giữ nguyên)', 'Tăng giá (lời lớn 2 ngày, sau đó danh tiếng tụt + một bài chê lan truyền)'],
+    },
+  ],
+};
+
+/** ④ Dịch tả heo — bất kỳ mùa, cấp 48 (SPEC §8.4). Cầu thịt heo giảm, giá nhập thịt tăng. */
+const DICH_TA: CrisisDef = {
+  id: 'dich_ta',
+  name: 'Dịch tả heo',
+  icon: '🐷',
+  unlock: 48,
+  phases: [
+    { label: 'Báo trước', days: 3, traffic: 1 },
+    { label: 'Cao điểm', days: 10, traffic: 0.85, farm: 'swine', cost: { meat: 1.15 },
+      demand: { up: ['x_hu_tieu_goi', 'x_chao_goi'], down: ['x_thit_heo'] } },
+    { label: 'Dịu dần', days: 4, traffic: 0.9 },
+  ],
+  preps: [
+    { id: 'vet', label: 'Xét nghiệm + tiêu độc chuồng', cost: 400_000, costMul: 0.85, effect: 'Chuồng không dính dịch — giá thịt nhập đỡ tăng (×0,85).' },
+    { id: 'quarantine', label: 'Cô lập heo mới nhập', cost: 250_000, costMul: 0.9, effect: 'Ngăn heo bệnh lây vào chuồng — giá thịt nhập đỡ tăng (×0,9).' },
+  ],
+  scenes: [
+    {
+      atDay: 4,
+      text: 'Hàng xóm chuồng heo bị dịch, sang xin tiêm vắc-xin và hỏi mua chịu cám.',
+      options: ['Giúp tiêm + bán chịu cám (tốn tiền, lựa chọn ấm, +thân thiết cụm láng giềng)', 'Giữ khoảng cách, chỉ bán cho tiền mặt'],
+    },
+    {
+      atDay: 8,
+      text: 'Có người mách bán heo bệnh giá rẻ để "bán chạy" mà không ai biết.',
+      options: ['Từ chối — bán heo sạch đúng giá (danh tiếng giữ nguyên)', 'Lặng lẽ bán chạy heo bệnh (lời nhanh, lựa chọn XẤU — sớm bị phát hiện, danh tiếng tụt mạnh + thanh tra)'],
+    },
+  ],
+};
+
+export const CRISIS_DEFS: CrisisDef[] = [DAO_DUONG, BAO_GIA, MUA_LU, DICH_TA];
 
 export const crisisDefById = (id: string) => CRISIS_DEFS.find((c) => c.id === id);
 
