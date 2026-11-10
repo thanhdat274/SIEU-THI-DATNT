@@ -216,6 +216,9 @@ export interface BizState {
   /** Việc nhà trong hẻm đang mời/đã nhận (GĐ Hệ2-L3, SPEC §2.5): giỗ hằng năm mở cấp ≥ 32.
    *  Tối đa 1 việc một lúc. Bản lưu cũ thiếu → undefined (chưa có việc nào, không cần SAVE_VERSION). */
   lifeEvent?: import('./lifeEvent').LifeEventState;
+  /** Các việc lớn một lần (cưới/đầy tháng/tân gia/mừng thọ) đã làm HOẶC đã từ chối (GĐ Hệ2-L4,
+   *  SPEC §2.5): 1 việc/ván (R7). Giỗ hằng năm KHÔNG ghi vào đây. Bản lưu cũ thiếu → undefined. */
+  lifeEventsDone?: string[];
   /** Ngày game đã nhận thưởng đón lễ (GĐ70): 1 dịp lễ 1 lần. Bản lưu cũ thiếu →
    *  undefined (chưa nhận dịp nào, không cần SAVE_VERSION). */
   prepClaimed?: number;

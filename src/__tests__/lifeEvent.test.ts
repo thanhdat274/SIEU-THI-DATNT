@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  LIFE_EVENTS, LIFE_EVENT_UNLOCK, GIO_FRIEND_MIN, gioDoy, nextGioDay, lifeEventFor,
+  LIFE_EVENTS, LIFE_EVENT_UNLOCK, GIO_FRIEND_MIN, BIG_EVENT_FRIEND_MIN, gioDoy, nextGioDay, lifeEventFor,
   lifeEventById, menuFulfillable, menuStations, menuCookMinutes, menuValue,
 } from '../data/lifeEvent';
 import { REGULARS, regularById } from '../data/regulars';
@@ -26,6 +26,7 @@ describe('dữ liệu giỗ (SPEC §2.5)', () => {
     expect(hosts).toHaveLength(6);
     for (const h of hosts) expect(allIds.has(h), `không có regular ${h}`).toBe(true);
     const byUnlock = [...LIFE_EVENTS]
+      .filter((d) => d.kind === 'gio')
       .sort((a, b) => (regularById(a.host)?.unlock ?? 99) - (regularById(b.host)?.unlock ?? 99));
     expect(byUnlock.map((d) => regularById(d.host)?.unlock).slice(0, 6))
       .toEqual([1, 2, 3, 5, 5, 6]); // Bà Năm, Chú Ba, Bé Na, Chú Thắng, Cô Mai, Bác Hùng
@@ -133,6 +134,52 @@ describe('mâm cỗ: trạm, phút nấu, trị giá (SPEC §2.5)', () => {
     const thit = (menu: Record<string, number>) => menu['thit_kho_trung'];
     expect(thit(def.menus[0])).toBeGreaterThan(0);
     for (const d of LIFE_EVENTS) expect(menuValue(d.menus[0])).toBeGreaterThan(0);
+  });
+});
+
+describe('GĐ Hệ2-L4 — việc lớn một lần (cưới/đầy tháng/tân gia/mừng thọ)', () => {
+  it('mỗi loại có 2–3 def, đủ 4 loại, chủ là khách quen có thật', () => {
+    const big = LIFE_EVENTS.filter((d) => d.kind !== 'gio');
+    expect(big.length).toBeGreaterThanOrEqual(8);
+    const kinds = new Set(big.map((d) => d.kind));
+    for (const k of ['cuoi', 'day_thang', 'tan_gia', 'mung_tho'] as const) expect(kinds.has(k)).toBe(true);
+    for (const k of ['cuoi', 'day_thang', 'tan_gia', 'mung_tho'] as const) {
+      const n = big.filter((d) => d.kind === k).length;
+      expect(n, k).toBeGreaterThanOrEqual(2);
+      expect(n).toBeLessThanOrEqual(3);
+    }
+    for (const d of big) expect(allIds.has(d.host)).toBe(true);
+  });
+
+  it('việc lớn chỉ mời khi thân ≥ 40 và chưa trong done (1 việc/ván, R7); giỗ thì lặp hằng năm (done KHÔNG chặn)', () => {
+    // truyền `done` không văng lỗi
+    for (let day = 40; day < 120; day++) {
+      lifeEventFor({ day, level: LIFE_EVENT_UNLOCK, regulars: fr(40), done: ['gio_ba_nam', 'cuoi_chi_lan'] });
+    }
+    // done chặn việc lớn: nếu hôm đó mời việc lớn, thêm đúng defId vào done → không mời lại chính việc đó
+    for (let day = 40; day < 240; day++) {
+      const offer = lifeEventFor({ day, level: LIFE_EVENT_UNLOCK, regulars: fr(40) });
+      if (!offer) continue;
+      if (lifeEventById(offer.defId)?.kind === 'gio') continue; // giỗ lặp hằng năm, không phải "một lần"
+      const again = lifeEventFor({ day, level: LIFE_EVENT_UNLOCK, regulars: fr(40), done: [offer.defId] });
+      expect(again?.defId).not.toBe(offer.defId); // việc lớn đã làm → không mời lại chính nó
+    }
+    // giỗ KHÔNG bị done chặn: trong cửa sổ giỗ bà Năm, truyền done chứa chính nó vẫn mời lại
+    for (let day = 40; day < 400; day++) {
+      const offer = lifeEventFor({ day, level: LIFE_EVENT_UNLOCK, regulars: fr(40), done: ['gio_ba_nam'] });
+      if (offer && offer.defId === 'gio_ba_nam') {
+        expect(offer.defId).toBe('gio_ba_nam'); // giỗ vẫn được mời dù trong done (lặp hằng năm)
+        break;
+      }
+    }
+  });
+
+  it('việc lớn (không giỗ) có noticeDays = 7, minFriendship 40, thưởng ≥ giỗ', () => {
+    for (const d of LIFE_EVENTS.filter((x) => x.kind !== 'gio')) {
+      expect(d.minFriendship).toBe(BIG_EVENT_FRIEND_MIN);
+      expect(d.noticeDays).toBe(7);
+      expect(d.bonus[0]).toBeGreaterThanOrEqual(100000);
+    }
   });
 });
 

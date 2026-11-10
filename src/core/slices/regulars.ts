@@ -10,7 +10,7 @@ import { REP_CAP } from '../../data/reputation';
 import { regularGiftPlan, giftFriendship, giftXp, giftableCount, giftRemainNote } from '../../data/regularGift';
 import { type GameState, type SetState, type GetState, addHour } from '../gameTypes';
 import { rippleFriendship, friendlyRipple, FORGIVE_HO_HANG_GAIN, TIES_UNLOCK, RIPPLE_DAILY_CAP } from '../../data/regularTies';
-import { lifeEventById, menuValue, menuSize, LIFE_EVENT_UNLOCK } from '../../data/lifeEvent';
+import { lifeEventById, menuValue, menuSize, LIFE_EVENT_UNLOCK, LIFE_EVENT_KIND_LABEL } from '../../data/lifeEvent';
 
 /** Khách: lượt ghé, khách quen, lời hẹn giữ món, sổ nợ, đánh giá. */
 
@@ -154,14 +154,17 @@ export const createRegularsSlice = (set: SetState, get: GetState): Pick<GameStat
     set({ biz: { ...s.biz, lifeEvent: { ...le, tier, accepted: true } } });
     const def = lifeEventById(le.defId);
     const tname = ['gọn', 'đủ', 'linh đình'][tier];
-    s.notify(def ? `🏮 ${def.region === 'nam' ? 'Cỗ miền Nam' : 'Cỗ miền Bắc'} mức ${tname} — còn ${le.eventDay - s.day} ngày chuẩn bị` : `🏮 Đã nhận lo cỗ mức ${tname}`);
+    s.notify(def ? `🏮 ${LIFE_EVENT_KIND_LABEL[def.kind]} ${def.region === 'nam' ? '· cỗ miền Nam' : '· cỗ miền Bắc'} mức ${tname} — còn ${le.eventDay - s.day} ngày chuẩn bị` : `🏮 Đã nhận lo cỗ mức ${tname}`);
   },
   declineLifeEvent: () => {
     const s = get();
     const le = s.biz.lifeEvent;
     if (!le || le.accepted) return;
     // Từ chối ngay từ đầu không mất gì; giữ record đến hết cửa sổ để không mời việc khác đè (tối đa 1 việc).
-    set({ biz: { ...s.biz, lifeEvent: { ...le, tier: 0, accepted: false } } });
+    // Việc lớn một lần (không phải giỗ) → đánh dấu đã xử lý để không nhắc lại (1 việc/ván, R7).
+    const def = lifeEventById(le.defId);
+    const done = def && def.kind !== 'gio' ? [...(s.biz.lifeEventsDone ?? []), def.id] : s.biz.lifeEventsDone ?? [];
+    set({ biz: { ...s.biz, lifeEvent: { ...le, tier: 0, accepted: false }, lifeEventsDone: done } });
     s.notify('🏮 Đã từ chối giúp cỗ (không mất gì)');
   },
   deliverLifeEvent: () => {
@@ -181,9 +184,11 @@ export const createRegularsSlice = (set: SetState, get: GetState): Pick<GameStat
     const pay = menuValue(menu) + def.bonus[le.tier];
     const hostGain = def.friendship[le.tier];
     const sold = menuSize(menu);
+    // Việc lớn một lần (không phải giỗ) → ghi vào lifeEventsDone sau khi giao xong (1 việc/ván, R7).
+    const done = def.kind !== 'gio' ? [...(s.biz.lifeEventsDone ?? []), def.id] : s.biz.lifeEventsDone ?? [];
     set({
       ...k,
-      biz: { ...s.biz, lifeEvent: undefined },
+      biz: { ...s.biz, lifeEvent: undefined, lifeEventsDone: done },
       money: s.money + pay,
       stats: { ...s.stats, revenue: s.stats.revenue + pay, itemsSold: s.stats.itemsSold + sold },
       totals: { ...s.totals, revenue: s.totals.revenue + pay, itemsSold: s.totals.itemsSold + sold },
@@ -194,7 +199,7 @@ export const createRegularsSlice = (set: SetState, get: GetState): Pick<GameStat
     get().applyRipple(def.host, hostGain, { friendlyOnly: true });
     get().recordDiscovery(Object.keys(menu)); // Sổ tay Tiệm (GĐ36)
     get().addReview(5, undefined, Object.keys(menu)[0]);
-    s.notify(`🏮 Giao xong cỗ giỗ (${def.region === 'nam' ? 'miền Nam' : 'miền Bắc'}): +${formatMoney(pay)} · 💛 +${hostGain} thân thiết`);
+    s.notify(`🏮 Giao xong ${LIFE_EVENT_KIND_LABEL[def.kind]} (${def.region === 'nam' ? 'miền Nam' : 'miền Bắc'}): +${formatMoney(pay)} · 💛 +${hostGain} thân thiết`);
     get().checkTitles();
     return true;
   },

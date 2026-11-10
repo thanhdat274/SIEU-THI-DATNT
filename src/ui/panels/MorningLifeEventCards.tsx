@@ -1,7 +1,7 @@
 import { useGame } from '../../core/store';
 import { formatMoney, productById } from '../../data/products';
 import { regularById } from '../../data/regulars';
-import { menuFulfillable, menuCookMinutes, menuValue, lifeEventById, gioLabel, type LifeEventState } from '../../data/lifeEvent';
+import { menuFulfillable, menuCookMinutes, menuValue, lifeEventById, gioLabel, LIFE_EVENT_KIND_LABEL, type LifeEventState } from '../../data/lifeEvent';
 import type { CookingStation } from '../../data/recipes';
 import { styles } from './shared';
 
@@ -31,14 +31,16 @@ export function LifeEventCard({
   const host = regularById(def.host);
   const hostName = host?.name ?? def.host;
   const daysLeft = st.eventDay - day;
+  const kindLabel = LIFE_EVENT_KIND_LABEL[def.kind];
+  const whenLabel = def.kind === 'gio' ? ` · ${gioLabel(def)} hằng năm` : '';
 
   if (!st.accepted) {
     // Đang MỜI — bấm chọn mức cỗ.
     return (
       <div style={{ ...styles.card, display: 'block', fontSize: 12, lineHeight: 1.6, marginBottom: 8, borderColor: '#a0522d' }}>
-        <b style={{ ...styles.cardTitle, color: '#a0522d' }}>🏮 Việc nhà trong hẻm · Đám giỗ {hostName} ({gioLabel(def)})</b>
+        <b style={{ ...styles.cardTitle, color: '#a0522d' }}>🏮 Việc nhà trong hẻm · {kindLabel} {hostName}{whenLabel}</b>
         <div style={{ marginTop: 2, color: '#7f5539' }}>
-          Nhà {hostName} giỗ, nhờ tiệm lo cỗ. Còn <b>{daysLeft}</b> ngày {daysLeft > 1 ? 'nữa' : ''}. Chọn mức cỗ:
+          Nhà {hostName} có việc, nhờ tiệm lo cỗ. Còn <b>{daysLeft}</b> ngày {daysLeft > 1 ? 'nữa' : ''}. Chọn mức cỗ:
         </div>
         <div style={{ marginTop: 6 }}>
           {def.menus.map((menu, tier) => {
@@ -80,7 +82,7 @@ export function LifeEventCard({
   const ready = daysLeft <= 0 && missing.length === 0;
   return (
     <div style={{ ...styles.card, display: 'block', fontSize: 12, lineHeight: 1.6, marginBottom: 8, borderColor: '#8b4513' }}>
-      <b style={{ ...styles.cardTitle, color: '#8b4513' }}>🏮 Đã nhận cỗ giỗ {hostName} ({gioLabel(def)}) · mức {TIER[st.tier]}</b>
+      <b style={{ ...styles.cardTitle, color: '#8b4513' }}>🏮 Đã nhận {kindLabel} {hostName}{whenLabel} · mức {TIER[st.tier]}</b>
       {daysLeft > 0
         ? <div style={{ marginTop: 2, color: '#7f5539' }}>Còn <b>{daysLeft}</b> ngày để chuẩn bị. Cần: {Object.entries(menu).map(([id, q]) => `${q} ${productById(id)?.name ?? id}`).join(' · ')}.</div>
         : <div style={{ marginTop: 2, color: '#7f5539' }}>Đến ngày cỗ — hãy giao.</div>}

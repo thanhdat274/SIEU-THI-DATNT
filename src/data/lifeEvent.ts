@@ -73,39 +73,58 @@ export function nextGioDay(def: LifeEventDef, day: number): number {
   return day + (diff <= 0 ? 365 + diff : diff);
 }
 
-/** Một lời mời giỗ hợp lệ (chưa là LifeEventState đầy đủ — slice sẽ thêm tier/accepted). */
+/** Một lời mời việc nhà hợp lệ (giỗ hằng năm HOẶC việc lớn một lần) — slice sẽ thêm tier/accepted. */
 export interface LifeEventOffer {
   defId: string;
   eventDay: number;
 }
 
+/** Nhãn tiếng Việt cho loại việc (thẻ Sổ đầu ngày + agenda). */
+export const LIFE_EVENT_KIND_LABEL: Record<LifeEventKind, string> = {
+  gio: 'Đám giỗ', cuoi: 'Đám cưới', day_thang: 'Đầy tháng', tan_gia: 'Tân gia', mung_tho: 'Mừng thọ',
+};
+
+/** Quãng báo trước cho việc lớn một lần (cưới/đầy tháng/tân gia/mừng thọ). */
+export const BIG_EVENT_NOTICE_DAYS = 7;
+/** Việc lớn một lần chỉ nhờ khi đã RẤT thân (spec §2.5: minFriendship việc lớn = 40). */
+export const BIG_EVENT_FRIEND_MIN = 40;
+
 /**
- * Sinh lời mời giỗ hằng năm cho `day` (thuần, R4 — không lưu).
- * Cổng: cấp ≥ LIFE_EVENT_UNLOCK · chủ đã mở · thân thiết ≥ def.minFriendship ·
- * giỗ sắp tới trong cửa sổ báo trước (1..noticeDays). Nhiều giỗ trùng cửa sổ →
- * chọn sớm nhất (việc sau lùi 3 ngày do slice chỉ giữ 1 việc). `seed` dành cho
- * L4 (việc lớn một lần) — giỗ không dùng.
+ * Sinh lời mời việc nhà cho `day` (thuần, R4 — giỗ không lưu; việc lớn theo dõi bằng `done`).
+ * - GIỖ hằng năm: ngày băm từ id, chỉ mời khi trong cửa sổ báo trước (1..noticeDays). Cổng: cấp
+ *   ≥ LIFE_EVENT_UNLOCK · chủ mở · thân ≥ minFriendship.
+ * - VIỆC LỚN một lần (cưới/đầy tháng/tân gia/mừng thọ): kích khi thân ≥ minFriendship (40) và chưa
+ *   nằm trong `done` (đã làm/từ chối) — 1 việc/ván (R7). eventDay = day + noticeDays.
+ * Nhiều mời trùng → ưu tiên GIỖ (ngày thật trên lịch) trước, rồi việc nhỏ sớm nhất (slice chỉ giữ 1).
+ * `seed` dành cho lịch tất định — giỗ không dùng, việc lớn không cần.
  */
 export function lifeEventFor(args: {
   day: number;
   seed?: number;
   level: number;
   regulars: Record<string, RegularProgress>;
+  /** Các việc lớn một lần đã làm/từ chối (biz.lifeEventsDone). */
+  done?: string[];
 }): LifeEventOffer | null {
   if (args.level < LIFE_EVENT_UNLOCK) return null;
-  let best: LifeEventOffer | null = null;
+  let gio: LifeEventOffer | null = null;
+  let big: LifeEventOffer | null = null;
   for (const def of LIFE_EVENTS) {
     const host = regularById(def.host);
     if (!host || args.level < host.unlock) continue;
     if ((args.regulars[def.host]?.friendship ?? 0) < def.minFriendship) continue;
-    const eventDay = nextGioDay(def, args.day);
-    const daysUntil = eventDay - args.day;
-    if (daysUntil < 1 || daysUntil > def.noticeDays) continue;
-    if (!best || eventDay < best.eventDay || (eventDay === best.eventDay && def.id < best.defId)) {
-      best = { defId: def.id, eventDay };
+    if (def.kind === 'gio') {
+      const eventDay = nextGioDay(def, args.day);
+      const daysUntil = eventDay - args.day;
+      if (daysUntil < 1 || daysUntil > def.noticeDays) continue;
+      if (!gio || eventDay < gio.eventDay || (eventDay === gio.eventDay && def.id < gio.defId)) gio = { defId: def.id, eventDay };
+    } else {
+      if ((args.done ?? []).includes(def.id)) continue;
+      const eventDay = args.day + def.noticeDays;
+      if (!big || def.id < big.defId) big = { defId: def.id, eventDay };
     }
   }
-  return best;
+  return gio ?? big;
 }
 
 /** Trạm nấu liệt kê trong mâm — dùng chung `STATION_BY_OUTPUT` như `orderFulfillable`. */
@@ -149,68 +168,55 @@ export function menuCookMinutes(menu: Record<string, number>): number {
 
 export const lifeEventById = (id: string): LifeEventDef | undefined => LIFE_EVENT_FALLBACK[id];
 
-/** 6 giỗ cho 6 khách quen MỞ SỚM NHẤT (unlock 1–6): Bà Năm, Chú Ba, Bé Na, Chú Thắng,
- *  Cô Mai, Bác Hùng. Thực đơn theo vùng Bắc/Nam từ món có thật (CLAUDE.md §3/§4). */
-const LIFE_EVENTS_GIO: LifeEventDef[] = [
-  {
-    id: 'gio_ba_nam', kind: 'gio', host: 'ba_nam', minFriendship: GIO_FRIEND_MIN, noticeDays: GIO_NOTICE_DAYS, region: 'bac',
-    menus: [
-      { thit_kho_trung: 4, xoi_man: 5 },                                        // gọn
-      { thit_kho_trung: 8, cha_lua: 4, xoi_man: 8 },                            // đủ
-      { thit_kho_trung: 12, cha_lua: 6, xoi_ga: 8, canh_rau_thit: 8, ga_luoc: 4 }, // linh đình
-    ],
-    bonus: [100000, 200000, 320000], friendship: [6, 10, 14],
-  },
-  {
-    id: 'gio_chu_ba', kind: 'gio', host: 'chu_ba', minFriendship: GIO_FRIEND_MIN, noticeDays: GIO_NOTICE_DAYS, region: 'bac',
-    menus: [
-      { thit_kho_trung: 4, xoi_man: 5 },
-      { thit_kho_trung: 8, cha_lua: 4, xoi_man: 8 },
-      { thit_kho_trung: 12, cha_lua: 6, xoi_ga: 8, canh_rau_thit: 8, ga_luoc: 4 },
-    ],
-    bonus: [100000, 200000, 320000], friendship: [6, 10, 14],
-  },
-  {
-    id: 'gio_be_na', kind: 'gio', host: 'be_na', minFriendship: GIO_FRIEND_MIN, noticeDays: GIO_NOTICE_DAYS, region: 'nam',
-    menus: [
-      { thit_kho_trung: 4, xoi_dua: 5 },
-      { thit_kho_trung: 8, cha_gio_chien: 5, xoi_dua: 8 },
-      { thit_kho_trung: 12, cha_gio_chien: 8, xoi_dua: 8, canh_rau_thit: 8, ga_luoc: 4 },
-    ],
-    bonus: [100000, 200000, 320000], friendship: [6, 10, 14],
-  },
-  {
-    id: 'gio_thang_barber', kind: 'gio', host: 'thang_barber', minFriendship: GIO_FRIEND_MIN, noticeDays: GIO_NOTICE_DAYS, region: 'bac',
-    menus: [
-      { thit_kho_trung: 4, xoi_man: 5 },
-      { thit_kho_trung: 8, cha_lua: 4, xoi_man: 8 },
-      { thit_kho_trung: 12, cha_lua: 6, xoi_ga: 8, canh_rau_thit: 8, ga_luoc: 4 },
-    ],
-    bonus: [100000, 200000, 320000], friendship: [6, 10, 14],
-  },
-  {
-    id: 'gio_co_mai', kind: 'gio', host: 'co_mai_bar', minFriendship: GIO_FRIEND_MIN, noticeDays: GIO_NOTICE_DAYS, region: 'nam',
-    menus: [
-      { thit_kho_trung: 4, xoi_dua: 5 },
-      { thit_kho_trung: 8, cha_gio_chien: 5, xoi_dua: 8 },
-      { thit_kho_trung: 12, cha_gio_chien: 8, xoi_dua: 8, canh_rau_thit: 8, ga_luoc: 4 },
-    ],
-    bonus: [100000, 200000, 320000], friendship: [6, 10, 14],
-  },
-  {
-    id: 'gio_bac_hung', kind: 'gio', host: 'bac_hung_me', minFriendship: GIO_FRIEND_MIN, noticeDays: GIO_NOTICE_DAYS, region: 'bac',
-    menus: [
-      { thit_kho_trung: 4, xoi_man: 5 },
-      { thit_kho_trung: 8, cha_lua: 4, xoi_man: 8 },
-      { thit_kho_trung: 12, cha_lua: 6, xoi_ga: 8, canh_rau_thit: 8, ga_luoc: 4 },
-    ],
-    bonus: [100000, 200000, 320000], friendship: [6, 10, 14],
-  },
+// ───────────────────────── Thực đơn mẫu theo vùng (§2.11: 28 việc dùng chung 4–5 mẫu) ─────────────────────────
+// Món NẤU CÓ THẬT (CLAUDE.md §3/§4). Hàng Hệ 1 (dưa hành/củ kiệu muối-ủ) sẽ bổ sung vào mâm khi hệ 1 L5/L7 có sản phẩm.
+const M_BAC: [Record<string, number>, Record<string, number>, Record<string, number>] = [
+  { thit_kho_trung: 4, xoi_man: 5 },
+  { thit_kho_trung: 8, cha_lua: 4, xoi_man: 8 },
+  { thit_kho_trung: 12, cha_lua: 6, xoi_ga: 8, canh_rau_thit: 8, ga_luoc: 4 },
+];
+const M_NAM: [Record<string, number>, Record<string, number>, Record<string, number>] = [
+  { thit_kho_trung: 4, xoi_dua: 5 },
+  { thit_kho_trung: 8, cha_gio_chien: 5, xoi_dua: 8 },
+  { thit_kho_trung: 12, cha_gio_chien: 8, xoi_dua: 8, canh_rau_thit: 8, ga_luoc: 4 },
 ];
 
+/** 6 giỗ cho 6 khách quen MỞ SỚM NHẤT (unlock 1–6): Bà Năm, Chú Ba, Bé Na, Chú Thắng, Cô Mai, Bác Hùng. */
+const LIFE_EVENTS_GIO: LifeEventDef[] = [
+  { id: 'gio_ba_nam', kind: 'gio', host: 'ba_nam', minFriendship: GIO_FRIEND_MIN, noticeDays: GIO_NOTICE_DAYS, region: 'bac', menus: M_BAC, bonus: [100000, 200000, 320000], friendship: [6, 10, 14] },
+  { id: 'gio_chu_ba', kind: 'gio', host: 'chu_ba', minFriendship: GIO_FRIEND_MIN, noticeDays: GIO_NOTICE_DAYS, region: 'bac', menus: M_BAC, bonus: [100000, 200000, 320000], friendship: [6, 10, 14] },
+  { id: 'gio_be_na', kind: 'gio', host: 'be_na', minFriendship: GIO_FRIEND_MIN, noticeDays: GIO_NOTICE_DAYS, region: 'nam', menus: M_NAM, bonus: [100000, 200000, 320000], friendship: [6, 10, 14] },
+  { id: 'gio_thang_barber', kind: 'gio', host: 'thang_barber', minFriendship: GIO_FRIEND_MIN, noticeDays: GIO_NOTICE_DAYS, region: 'bac', menus: M_BAC, bonus: [100000, 200000, 320000], friendship: [6, 10, 14] },
+  { id: 'gio_co_mai', kind: 'gio', host: 'co_mai_bar', minFriendship: GIO_FRIEND_MIN, noticeDays: GIO_NOTICE_DAYS, region: 'nam', menus: M_NAM, bonus: [100000, 200000, 320000], friendship: [6, 10, 14] },
+  { id: 'gio_bac_hung', kind: 'gio', host: 'bac_hung_me', minFriendship: GIO_FRIEND_MIN, noticeDays: GIO_NOTICE_DAYS, region: 'bac', menus: M_BAC, bonus: [100000, 200000, 320000], friendship: [6, 10, 14] },
+];
+
+/**
+ * GĐ Hệ2-L4 — Việc lớn MỘT LẦN mỗi ván (SPEC §2.5/§2.10): cưới / đầy tháng / tân gia / mừng thọ.
+ * Kích khi thân ≥ BIG_EVENT_FRIEND_MIN (40) — chủ rất thân mới nhờ; 1 việc/ván (R7, theo dõi `done`).
+ * Thưởng và lan mạnh hơn giỗ (việc quyết định đời nhà người).
+ */
+const LIFE_EVENTS_BIG: LifeEventDef[] = [
+  // ── 💒 Đám cưới ──
+  { id: 'cuoi_chi_lan', kind: 'cuoi', host: 'chi_lan', minFriendship: BIG_EVENT_FRIEND_MIN, noticeDays: BIG_EVENT_NOTICE_DAYS, region: 'bac', menus: M_BAC, bonus: [160000, 320000, 520000], friendship: [8, 12, 16] },
+  { id: 'cuoi_co_mai', kind: 'cuoi', host: 'co_mai_bar', minFriendship: BIG_EVENT_FRIEND_MIN, noticeDays: BIG_EVENT_NOTICE_DAYS, region: 'nam', menus: M_NAM, bonus: [160000, 320000, 520000], friendship: [8, 12, 16] },
+  { id: 'cuoi_anh_minh', kind: 'cuoi', host: 'anh_minh_nhau', minFriendship: BIG_EVENT_FRIEND_MIN, noticeDays: BIG_EVENT_NOTICE_DAYS, region: 'nam', menus: M_NAM, bonus: [160000, 320000, 520000], friendship: [8, 12, 16] },
+  // ── 👶 Đầy tháng ──
+  { id: 'day_thang_co_xuan', kind: 'day_thang', host: 'co_xuan_cho', minFriendship: BIG_EVENT_FRIEND_MIN, noticeDays: BIG_EVENT_NOTICE_DAYS, region: 'nam', menus: M_NAM, bonus: [140000, 280000, 460000], friendship: [7, 11, 15] },
+  { id: 'day_thang_chi_hanh', kind: 'day_thang', host: 'chi_hanh_online', minFriendship: BIG_EVENT_FRIEND_MIN, noticeDays: BIG_EVENT_NOTICE_DAYS, region: 'bac', menus: M_BAC, bonus: [140000, 280000, 460000], friendship: [7, 11, 15] },
+  // ── 🏠 Tân gia ──
+  { id: 'tan_gia_chu_cuong', kind: 'tan_gia', host: 'chu_cuong_xuong', minFriendship: BIG_EVENT_FRIEND_MIN, noticeDays: BIG_EVENT_NOTICE_DAYS, region: 'bac', menus: M_BAC, bonus: [150000, 300000, 480000], friendship: [7, 11, 15] },
+  { id: 'tan_gia_anh_tuan', kind: 'tan_gia', host: 'anh_tuan', minFriendship: BIG_EVENT_FRIEND_MIN, noticeDays: BIG_EVENT_NOTICE_DAYS, region: 'bac', menus: M_BAC, bonus: [150000, 300000, 480000], friendship: [7, 11, 15] },
+  // ── 🧧 Mừng thọ ──
+  { id: 'mung_tho_bac_tam', kind: 'mung_tho', host: 'bac_tam', minFriendship: BIG_EVENT_FRIEND_MIN, noticeDays: BIG_EVENT_NOTICE_DAYS, region: 'bac', menus: M_BAC, bonus: [150000, 300000, 480000], friendship: [7, 11, 15] },
+  { id: 'mung_tho_su_cu', kind: 'mung_tho', host: 'suc_khanh_long', minFriendship: BIG_EVENT_FRIEND_MIN, noticeDays: BIG_EVENT_NOTICE_DAYS, region: 'nam', menus: M_NAM, bonus: [150000, 300000, 480000], friendship: [7, 11, 15] },
+];
+
+const LIFE_EVENTS_ALL: LifeEventDef[] = [...LIFE_EVENTS_GIO, ...LIFE_EVENTS_BIG];
+
 const LIFE_EVENT_FALLBACK: Record<string, LifeEventDef> = Object.fromEntries(
-  LIFE_EVENTS_GIO.map((d) => [d.id, d]),
+  LIFE_EVENTS_ALL.map((d) => [d.id, d]),
 );
 
-/** Toàn bộ def việc nhà (hiện: 6 giỗ; L4 thêm cưới/đầy tháng/tân gia/mừng thọ). */
-export const LIFE_EVENTS: LifeEventDef[] = LIFE_EVENTS_GIO;
+/** Toàn bộ def việc nhà (6 giỗ hằng năm + việc lớn một lần). */
+export const LIFE_EVENTS: LifeEventDef[] = LIFE_EVENTS_ALL;

@@ -473,7 +473,7 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
     }
     biz.biz = { ...biz.biz, lifeEvent: undefined };
   } else if (!curLife || curLife.eventDay < s.day) {
-    const offer = lifeEventFor({ day: s.day, seed: s.weatherSeed, level: s.level, regulars: s.regulars });
+    const offer = lifeEventFor({ day: s.day, seed: s.weatherSeed, level: s.level, regulars: s.regulars, done: biz.biz.lifeEventsDone });
     if (offer) {
       const ldef = lifeEventById(offer.defId);
       biz.biz = { ...biz.biz, lifeEvent: { defId: offer.defId, eventDay: offer.eventDay, tier: 0, accepted: false } };
