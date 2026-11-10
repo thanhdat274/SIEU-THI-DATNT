@@ -7,6 +7,7 @@ import { watchUser } from './net/firebase';
 import { useSession } from './net/session';
 import { ConfirmHost } from './ui/ConfirmDialog';
 import { Hud } from './ui/Hud';
+import { PerfOverlay } from './ui/PerfOverlay';
 import { LoginScreen } from './ui/LoginScreen';
 import { TabLockScreen } from './ui/TabLockScreen';
 
@@ -73,7 +74,16 @@ function App() {
       </div>
     );
   }
-  return <Hud />;
+  return (
+    <>
+      <Hud />
+      {/*
+        SPEC-TOI-UU §T2 (L1): lớp phủ đo hiệu năng — bật bằng ?perf=1 hoặc game.perf(true).
+        Nằm NGOÀI Hud để không tính vào số "Hud vẽ lại/giây" mà chính nó đang đo.
+      */}
+      <PerfOverlay />
+    </>
+  );
 }
 
 /** Ranh giới lỗi React: một component sập (vd save schema cũ thiếu field) không được phép trắng

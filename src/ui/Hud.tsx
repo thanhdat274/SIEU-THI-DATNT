@@ -1,3 +1,4 @@
+import { bumpHudRender } from '../core/perf';
 import { askConfirm } from './ConfirmDialog';
 import { wantsRestockButton } from '../core/bizAchieve';
 import { hudThemeOn } from '../data/hudTheme';
@@ -105,6 +106,8 @@ function useBottomBarHeight() {
 }
 
 export function Hud() {
+  // SPEC-TOI-UU §T2 (L1): đếm số lần React vẽ lại HUD/giây (chỉ đếm khi bật ?perf=1).
+  bumpHudRender();
   useBottomBarHeight();
   const narrow = useNarrowScreen();
   const {

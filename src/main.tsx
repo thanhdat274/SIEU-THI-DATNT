@@ -41,6 +41,7 @@ import { InteriorView } from './render/interiorView';
 import { createRenderer, GFX_CHOICE, INITIAL_GFX, installRenderGuard, Lighting, LOW_POWER, type GameRenderer } from './render/scene';
 import { GFX_LABEL, GFX_PRESETS, QualityGovernor, detectLevel, gfxStatus, onGfxChoice, readDeviceHints, readPerfLog, recordPerf, reportGfx, type GfxChoice } from './render/graphicsQuality';
 import { exportReportsJson, noteLiveFps, noteLiveGfx, noteRealSec, openSession, setMode } from './core/dayReport';
+import { frameTimes, perfOn, sampleFrame, setPerf, setSnapshot, takeHudRedraws } from './core/perf';
 import { applyCrowdLod } from './agents/walker';
 import { createTiltShift } from './render/fx/tiltShift';
 import { applyLightBudget, initLightPool } from './render/lightBudget';
@@ -636,7 +637,11 @@ applyGfx();
 // dùng trong console (xuất 30 bản ghi cục bộ) — dùng được ngay khi chưa có server.
 openSession(useGame.getState().day, gfx.avgFps, gfx.step.level);
 setMode(inAlley() ? 'alley' : 'solo');
-window.game = { ...(window.game ?? {}), report: () => console.log(exportReportsJson()) };
+window.game = {
+  ...(window.game ?? {}),
+  report: () => console.log(exportReportsJson()),
+  perf: (on?: boolean) => { const v = on ?? !perfOn(); setPerf(v); return v; },
+};
 onGfxChoice((c) => {
   gfxChoice = c;
   const level = c === 'auto' ? detectLevel(readDeviceHints()) : c;
@@ -646,6 +651,7 @@ onGfxChoice((c) => {
 });
 renderer.shadowMap.autoUpdate = false;
 let frameNo = 0;
+let perfTick = 0;
 // Mảng người dùng lại mỗi khung cho updateDoor (không cấp phát mảng mới mỗi khung)
 const peopleScratch: THREE.Vector3[] = [];
 // Cờ giao hàng: chỉ tính lại khi danh sách đơn thay đổi
@@ -664,6 +670,9 @@ function renderFrame() {
   if (document.visibilityState === 'visible') noteRealSec(dt);
   noteLiveFps(gfx.avgFps);
   noteLiveGfx(gfx.step.level);
+  // SPEC-TOI-UU §T2 (L1): lấy mẫu thời gian khung khi bật ?perf=1 (rẻ, chỉ đẩy vào mảng 180 phần tử).
+  sampleFrame(dt * 1000);
+  if (++perfTick >= 60) { perfTick = 0; capturePerfSnapshot(); }
   // GĐ488: tương tự cho nhà quán nước
   world.quanNuoc.setRoofHidden(insideQuanHouse(world.quanNuoc.group.position.x, world.quanNuoc.group.position.z, player.position.x, player.position.z));
   // GĐ487: chủ đứng trong nhà tiệm xôi thì ẩn mái để nhìn thấy quầy, nồi và khách ngồi ăn
@@ -880,6 +889,32 @@ function renderFrame() {
 
   if (tiltShift) tiltShift.render();
   else renderer.render(scene, camera);
+}
+
+/** Chụp snapshot hiệu năng mỗi giây (SPEC-TOI-UU §T2/L1): renderer.info + đếm đối tượng + HUD. */
+function capturePerfSnapshot() {
+  const info = renderer.info as unknown as {
+    render?: { calls?: number; triangles?: number }; memory?: { geometries?: number; textures?: number };
+  } & { calls?: number; triangles?: number; geometries?: number; textures?: number };
+  const r = info.render ?? info;
+  const mem = info.memory ?? info;
+  let instanced = 0;
+  scene.traverse((o) => { if ((o as THREE.InstancedMesh).isInstancedMesh) instanced++; });
+  const ft = frameTimes();
+  setSnapshot({
+    fps: ft.p50 > 0 ? 1000 / ft.p50 : 0,
+    frameMs: ft,
+    drawCalls: r.calls ?? 0,
+    triangles: r.triangles ?? 0,
+    geometries: mem.geometries ?? 0,
+    textures: mem.textures ?? 0,
+    npc: customers.customers.length,
+    instancedMeshes: instanced,
+    jsMemory: ((performance as unknown as { memory?: { usedJSHeapSize?: number } }).memory?.usedJSHeapSize ?? 0) / 1048576,
+    hudRedraws: takeHudRedraws(),
+    gfx: gfx.step.level,
+    pixelRatio: gfx.step.pixelRatio,
+  });
 }
 
 // WebGPU khởi tạo bất đồng bộ (xin device từ GPU): xong xuôi mới bắt đầu vẽ khung đầu tiên
