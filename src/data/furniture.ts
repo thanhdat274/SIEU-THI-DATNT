@@ -10,7 +10,7 @@ export type FurnitureType =
   | 'kho_dao' | 'ke_gia_vi' | 'ke_chen' | 'thung_rac' | 'tham_chan' | 'den_long' | 'tranh_dong_ho' | 'bon_rua'
   | 'bang_hieu_bac' | 'bang_hieu_trung' | 'bang_hieu_nam' | 'bang_hieu_tay_nguyen'
   | 'binh_bat_trang' | 'trong_dong' | 'chua_mot_cot'
-  | 'mam_ngu_qua' | 'den_ong_sao'
+  | 'mam_ngu_qua' | 'den_ong_sao' | 'cong_chao'
   | CookingStation;
 
 /** Trạm nấu: id trùng tên trạm trong recipes.ts; đặt trong tiệm mới nấu được món của trạm đó. */
@@ -269,6 +269,12 @@ export const FURNITURE: FurnitureDef[] = [
   {
     type: 'den_ong_sao', name: 'Đèn ông sao Trung thu', price: 500000, unlock: 32, size: [0.5, 0.5], tiers: 0, slots: 0, capacity: 0,
     categories: [], decor: 8, festival: 'trung_thu', desc: 'Chỉ bán dịp Tết Trung thu — đèn ông sao năm cánh treo cột (+8 🩷)',
+  },
+  {
+    // GĐ Hệ2-L7 — món thưởng mốc Tình làng 100% (SPEC §2.8). unlock 100 nên KHÔNG mua được trong tiệm;
+    // chỉ nhận qua `furnStash` (Kho đồ → đặt trong tiệm). Đèn lồng treo hai đầu cột, cây nêu giữa.
+    type: 'cong_chao', name: 'Cổng chào hẻm văn hoá', price: 0, unlock: 100, size: [2.4, 0.5], tiers: 0, slots: 0, capacity: 0,
+    categories: [], decor: 20, desc: 'Phần thưởng "Tình làng 100%" — cổng chào đỏ rực treo đèn lồng, cả hẻm như mái nhà chung (+20 🩷). Không bán, chỉ tặng qua sổ sưu tập.',
   },
 ];
 

@@ -14,6 +14,7 @@ DECOR_TYPES.add('bang_hieu_bac');
 DECOR_TYPES.add('bang_hieu_trung');
 DECOR_TYPES.add('bang_hieu_nam');
 DECOR_TYPES.add('bang_hieu_tay_nguyen');
+DECOR_TYPES.add('cong_chao');
 import { createCounter } from '../world/buildings';
 import { productParts } from '../render/productModels';
 import type { ShelfInstancer } from './shelfInstancer';
@@ -756,6 +757,31 @@ export class FurnitureView {
           lotus.position.set(x, 0.16, z);
           this.group.add(lotus);
         }
+        break;
+      }
+      case 'cong_chao': {
+        // GĐ Hệ2-L7 — cổng chào hẻm văn hoá (thưởng mốc Tình làng 100%): hai cột + xà ngang đỏ,
+        // đèn lồng treo dưới xà, nêu nhỏ giữa đỉnh.
+        const pillar = new THREE.MeshStandardMaterial({ color: 0x8e3b2f });
+        for (const x of [-w / 2 + 0.18, w / 2 - 0.18]) {
+          const p = new THREE.Mesh(new THREE.BoxGeometry(0.16, 2.0, 0.16), pillar);
+          p.position.set(x, 1.0, 0);
+          this.group.add(p);
+        }
+        const beam = new THREE.Mesh(new THREE.BoxGeometry(w - 0.36, 0.18, 0.14), red);
+        beam.position.y = 2.05;
+        this.group.add(beam);
+        const lanMat = new THREE.MeshStandardMaterial({ color: 0xe74c3c, emissive: 0xe74c3c, emissiveIntensity: 0.45 });
+        for (const x of [-w / 2 + 0.34, 0, w / 2 - 0.34]) {
+          const lan = new THREE.Mesh(new THREE.SphereGeometry(0.1, 10, 8), lanMat);
+          lan.position.set(x, 1.88, 0);
+          lan.scale.y = 1.2;
+          this.group.add(lan);
+        }
+        const stake = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.025, 0.24, 8), wood);
+        stake.position.set(0, 2.2, 0);
+        this.group.add(stake);
+        this.topY = 2.25;
         break;
       }
     }

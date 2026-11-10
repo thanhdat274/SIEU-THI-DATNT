@@ -21,9 +21,11 @@ const fr = (friendship: number): Record<string, { friendship: number; visits: nu
   Object.fromEntries(REGULARS.map((r) => [r.id, { friendship, visits: 0, perks: [], discovered: [] }]));
 
 describe('dữ liệu giỗ (SPEC §2.5)', () => {
-  it('đúng 6 giỗ cho 6 người mở sớm nhất (unlock 1–6), chủ là khách quen có thật', () => {
+  it('đủ 28 giỗ cho cả 28 khách quen, 6 người mở sớm nhất vẫn từ unlock 1–6', () => {
     const hosts = LIFE_EVENTS.filter((d) => d.kind === 'gio').map((d) => d.host);
-    expect(hosts).toHaveLength(6);
+    expect(hosts).toHaveLength(REGULARS.length); // L7: giỗ đủ 28 người (SPEC §2.8)
+    const uniq = new Set(hosts);
+    expect(uniq.size).toBe(REGULARS.length); // mỗi người đúng một giỗ
     for (const h of hosts) expect(allIds.has(h), `không có regular ${h}`).toBe(true);
     const byUnlock = [...LIFE_EVENTS]
       .filter((d) => d.kind === 'gio')

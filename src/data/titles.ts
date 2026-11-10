@@ -19,6 +19,8 @@ export interface TitleContext {
   ngGoalsAllDone?: boolean;
   /** GĐ1517: số loại món bộ "Đồ Việt" đang đặt (decorSets.vietSetCount). */
   vietSetPieces?: number;
+  /** GĐ Hệ2-L7 (SPEC §2.8): chỉ số "Tình làng" 0–100% (regularTies.alleyBond) — mốc 25/50/75/100%. */
+  alleyBond?: number;
 }
 
 export interface TitleDef {
@@ -57,6 +59,11 @@ export const TITLES: TitleDef[] = [
   // đích cuối hướng danh hiệu cho cuốn mục tiêu vòng thay vì chỉ tiền.
   // GĐ1517 — đủ trọn bộ sưu tập decor → danh hiệu (Việt hoá mốc "đủ 8/8 nhận danh hiệu" của sổ sưu tập tham khảo)
   { id: 'giu_hon_viet', icon: '🏺', name: 'Giữ hồn đất Việt', description: 'Bày đủ trọn bộ 5 món "Đồ Việt" trong tiệm.', done: (c) => (c.vietSetPieces ?? 0) >= 5 },
+  // GĐ Hệ2-L7 — mốc "Tình làng" (SPEC §2.8): tiền + danh hiệu một lần mỗi ván; mốc 100% tặng cả decor.
+  { id: 'xom_hoa_thuan', icon: '🌿', name: 'Xóm giềng hoà thuận', description: 'Chỉ số Tình làng đạt 25%.', done: (c) => (c.alleyBond ?? 0) >= 25 },
+  { id: 'ban_lang_than', icon: '🏘️', name: 'Bạn làng thân thiết', description: 'Chỉ số Tình làng đạt 50%.', done: (c) => (c.alleyBond ?? 0) >= 50 },
+  { id: 'xom_vui_ve', icon: '🎊', name: 'Xóm vui vẻ', description: 'Chỉ số Tình làng đạt 75%.', done: (c) => (c.alleyBond ?? 0) >= 75 },
+  { id: 'hem_van_hoa', icon: '🏮', name: 'Hẻm văn hoá', description: 'Chỉ số Tình làng đạt 100% — cả hẻm như mái nhà chung.', done: (c) => (c.alleyBond ?? 0) >= 100 },
   { id: 'chu_hem_lao_lang', icon: '🧭', name: 'Chủ hẻm lão làng', description: 'Hoàn thành trọn bộ mục tiêu của một vòng tái sinh (NG+).', done: (c) => c.ngGoalsAllDone === true },
 ];
 

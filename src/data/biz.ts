@@ -206,6 +206,9 @@ export interface BizState {
   /** Các cạnh khắc khẩu đã hoà giải (GĐ Hệ2-L1, SPEC-CHIEU-SAU §2.6): khóa `a|b` chuẩn hoá.
    *  Bản lưu cũ thiếu → undefined (chưa hoà giải cạnh nào, không cần SAVE_VERSION). */
   tiesMended?: string[];
+  /** Các mốc "Tình làng" 25/50/75/100% đã nhận thưởng (GĐ Hệ2-L7, SPEC §2.8): mỗi mốc 1 lần/ván
+   *  (tiền + mốc 100% tặng decor). Bản lưu cũ thiếu → undefined (chưa nhận mốc nào, không cần SAVE_VERSION). */
+  tiesMilestones?: number[];
   /** Bộ đếm lan thân thiết trong ngày (GĐ Hệ2-L2, SPEC §2.4): mỗi người nhận tối đa ±3/ngày.
    *  `rippleDay[id] = { day, sum }` với `sum` = tổng lan đã áp hôm đó (reset khi đổi ngày).
    *  Bản lưu cũ thiếu → undefined (không cần SAVE_VERSION). */

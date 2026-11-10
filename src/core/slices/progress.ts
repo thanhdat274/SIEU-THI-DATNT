@@ -19,6 +19,8 @@ import { ngGoalProgress } from '../../data/ngGoals';
 import { playSfx } from '../audio';
 import type { GameState, SetState, GetState } from '../gameTypes';
 import { questContext } from '../store';
+import { alleyBond, tiesMilestonesReached } from '../../data/regularTies';
+import { LIFE_EVENT_UNLOCK } from '../../data/lifeEvent';
 
 /** Tiến trình: XP, nhiệm vụ, danh hiệu, kỹ năng, quà điểm danh, vòng quay, trang phục, tên tiệm. */
 
@@ -189,6 +191,7 @@ export const createProgressSlice = (set: SetState, get: GetState): Pick<GameStat
         marketClearedDay: s.marketClearedDay,
         rivalsBeaten: s.biz.rivalsBeaten,
       }).every((g) => g.done);
+    const bond = alleyBond(s.regulars, s.biz.tiesMended ?? []);
     const ctx: TitleContext = {
       level: s.level, day: s.day, customers: s.totals.customers, itemsSold: s.totals.itemsSold, revenue: s.totals.revenue,
       rating: rating.average, reviewCount: rating.count, ordersDone: s.ordersDone, staffCount: s.staff.length,
@@ -196,7 +199,34 @@ export const createProgressSlice = (set: SetState, get: GetState): Pick<GameStat
       prestige: s.biz.prestige.level,
       ngGoalsAllDone,
       vietSetPieces: vietSetCount(s.furniture),
+      alleyBond: bond,
     };
+    // ── Mốc "Tình làng" (SPEC §2.8): 25/50/75/100% — tiền + mốc 100% tặng decor, MỘT LẦN MỖI VÁN ──
+    // Cổng cấp ≥ LIFE_EVENT_UNLOCK (32) cùng mọi hệ 2 → golden L30 giữ byte (R1). checkTitles chạy
+    // khi thân thiết đổi (giftRegular/deliver/giao đơn…) nên mốc tự nhận đúng lúc vượt.
+    if (s.level >= LIFE_EVENT_UNLOCK) {
+      const claimed = s.biz.tiesMilestones ?? [];
+      const reached = tiesMilestonesReached(bond, claimed);
+      if (reached.length) {
+        let money = 0;
+        let stash = s.furnStash;
+        for (const m of reached) {
+          money += m.money;
+          if (m.decor) stash = { ...stash, [m.decor]: (stash[m.decor] ?? 0) + 1 };
+        }
+        const biz = { ...s.biz, tiesMilestones: [...claimed, ...reached.map((m) => m.pct)] };
+        const stashChanged = reached.some((m) => m.decor);
+        set({
+          money: s.money + money,
+          biz,
+          ...(stashChanged ? { furnStash: stash } : {}),
+          stats: { ...s.stats, questIncome: (s.stats.questIncome ?? 0) + money },
+        });
+        const names = reached.map((m) => `${m.pct}%`).join(', ');
+        s.notify(`🏮 Tình làng đạt ${names}: +${formatMoney(money)}${stashChanged ? ' · 🎁 nhận "Cổng chào hẻm văn hoá" (Kho đồ → đặt trong tiệm)' : ''}`);
+        playSfx('achieve');
+      }
+    }
     const fresh = TITLES.filter((t) => !s.titles.includes(t.id) && t.done(ctx));
     // Danh hiệu NG+ độc quyền: cần đủ số lần tái sinh (bộ sưu tập giữ qua vòng) + thỏa điều kiện thường.
     const freshPrestige = PRESTIGE_TITLES.filter(

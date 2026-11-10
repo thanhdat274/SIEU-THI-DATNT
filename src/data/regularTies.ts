@@ -6,7 +6,6 @@
  */
 
 export type TieKind = 'ho_hang' | 'ban_be' | 'lang_gieng' | 'dong_nghe' | 'khac_khau';
-
 export interface RegularTie {
   a: string;
   b: string;
@@ -153,4 +152,30 @@ export function alleyBond(
     sum += Math.min(1, mins / FRIENDLY_AT);
   }
   return Math.round((sum / friendly.length) * 100);
+}
+
+// ───────────────────── Mốc "Tình làng" (SPEC §2.8) ─────────────────────
+// Khi `alleyBond` đạt mốc 25/50/75/100%, nhận thưởng MỘT LẦN MỖI VÁN (theo dõi `biz.tiesMilestones`):
+// tiền + danh hiệu (titles.ts, qua `alleyBond` trong TitleContext); mốc 100% tặng thêm một món decor
+// "Cổng chào hẻm văn hoá" (`cong_chao`, đặt vào `furnStash`). THUẦN — slice gây thưởng qua checkTitles.
+
+/** Một mốc Tình làng: phần trăm đạt + phần thưởng. */
+export interface TieMilestone {
+  pct: number;
+  /** Tiền thưởng một lần. */
+  money: number;
+  /** Món decor tặng kèm (loại nội thất, đặt vào Kho đồ → chủ tiệm tự đặt). */
+  decor?: import('./furniture').FurnitureType;
+}
+
+export const TIES_MILESTONES: TieMilestone[] = [
+  { pct: 25, money: 200000 },
+  { pct: 50, money: 350000 },
+  { pct: 75, money: 500000 },
+  { pct: 100, money: 1000000, decor: 'cong_chao' },
+];
+
+/** Các mốc đạt được với chỉ số `bond` mà chưa nằm trong `claimed` (đã nhận). THUẦN. */
+export function tiesMilestonesReached(bond: number, claimed: number[] = []): TieMilestone[] {
+  return TIES_MILESTONES.filter((m) => m.pct <= bond && !claimed.includes(m.pct));
 }

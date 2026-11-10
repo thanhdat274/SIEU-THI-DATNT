@@ -191,6 +191,22 @@ const LIFE_EVENTS_GIO: LifeEventDef[] = [
   { id: 'gio_bac_hung', kind: 'gio', host: 'bac_hung_me', minFriendship: GIO_FRIEND_MIN, noticeDays: GIO_NOTICE_DAYS, region: 'bac', menus: M_BAC, bonus: [100000, 200000, 320000], friendship: [6, 10, 14] },
 ];
 
+/** Vùng miền (thực đơn mẫu §2.11) cho giỗ của 22 khách quen còn lại — GĐ Hệ2-L7 mở giỗ đủ 28 người (§2.8). */
+const GIO_REGION_EXTRA: Record<string, 'bac' | 'nam'> = {
+  bac_tam: 'bac', chi_lan: 'bac', anh_tuan: 'bac', bac_si_hai: 'bac', anh_giao_ngan: 'bac',
+  chu_tu_ho: 'nam', co_mua_hoa: 'nam', chuong_tho_dien: 'bac', ba_ba_thit: 'nam', anh_minh_nhau: 'nam',
+  co_nga_hoi: 'bac', chu_cuong_xuong: 'bac', bac_doi_hoi: 'bac', co_thao_quen: 'nam', suc_khanh_long: 'nam',
+  chu_sau_ca: 'nam', chi_be_live: 'nam', chi_hanh_online: 'bac', bac_ba_xe_om: 'nam', co_xuan_cho: 'nam',
+  dung_gym: 'bac', vy_live: 'nam',
+};
+
+/** Giỗ cho đủ 28 khách quen (SPEC §2.8): 22 người còn lại, cùng ngày băm từ id (`gioDoy`) + mẫu mâm theo vùng. */
+const LIFE_EVENTS_GIO_EXTRA: LifeEventDef[] = Object.entries(GIO_REGION_EXTRA).map(([host, region]) => ({
+  id: `gio_${host}`, kind: 'gio', host,
+  minFriendship: GIO_FRIEND_MIN, noticeDays: GIO_NOTICE_DAYS, region,
+  menus: region === 'nam' ? M_NAM : M_BAC, bonus: [100000, 200000, 320000], friendship: [6, 10, 14],
+}));
+
 /**
  * GĐ Hệ2-L4 — Việc lớn MỘT LẦN mỗi ván (SPEC §2.5/§2.10): cưới / đầy tháng / tân gia / mừng thọ.
  * Kích khi thân ≥ BIG_EVENT_FRIEND_MIN (40) — chủ rất thân mới nhờ; 1 việc/ván (R7, theo dõi `done`).
@@ -212,7 +228,7 @@ const LIFE_EVENTS_BIG: LifeEventDef[] = [
   { id: 'mung_tho_su_cu', kind: 'mung_tho', host: 'suc_khanh_long', minFriendship: BIG_EVENT_FRIEND_MIN, noticeDays: BIG_EVENT_NOTICE_DAYS, region: 'nam', menus: M_NAM, bonus: [150000, 300000, 480000], friendship: [7, 11, 15] },
 ];
 
-const LIFE_EVENTS_ALL: LifeEventDef[] = [...LIFE_EVENTS_GIO, ...LIFE_EVENTS_BIG];
+const LIFE_EVENTS_ALL: LifeEventDef[] = [...LIFE_EVENTS_GIO, ...LIFE_EVENTS_GIO_EXTRA, ...LIFE_EVENTS_BIG];
 
 const LIFE_EVENT_FALLBACK: Record<string, LifeEventDef> = Object.fromEntries(
   LIFE_EVENTS_ALL.map((d) => [d.id, d]),
