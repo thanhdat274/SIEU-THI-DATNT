@@ -34,7 +34,12 @@ export const GUARDED: Record<string, (args: unknown[]) => string> = {
   cleanupFarm: () => 'farm:cleanup',
   buyFarmBuilding: (a) => `farm:building:${a[0]}`,
   upgradeFarmBuilding: (a) => `farm:building:${a[0]}`,
-  // Quán nước đầu ngõ: cả cụm mua/tuyển/nghỉ/đổi giá là một chỗ chung "quan"
+  // Hệ 1 · Phơi · Muối · Ủ (SPEC §1.9): giàn phơi là một chỗ chung — mẻ mới/Gỡ/Đổi giàn/Mua bạt
+  // cùng sửa giàn nên khoá chung "preserve:*" để hai người không đè nhau trong 3 giây.
+  startPreserve: () => 'preserve:start',
+  collectPreserve: (a) => `preserve:${a[0]}`,
+  setRackCovered: () => 'preserve:rack',
+  buyRackTarp: () => 'preserve:tarp',  // Quán nước đầu ngõ: cả cụm mua/tuyển/nghỉ/đổi giá là một chỗ chung "quan"
   buyQuanNuoc: () => 'quan',
   hireQuanNuoc: () => 'quan',
   buyTiemXoi: () => 'xoi', hireTiemXoi: () => 'xoi', fireTiemXoi: () => 'xoi', steamXoiHand: () => 'xoi', expandTiemXoi: () => 'xoi', openZone: (a) => `zone:${a[0]}`, rentSapLot: () => 'sap', cycleSapKind: () => 'sap', upgradeSapLot: () => 'sap', tendSapHand: () => 'sap',

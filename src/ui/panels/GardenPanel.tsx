@@ -1,9 +1,11 @@
 import { useGame } from '../../core/store';
+import { useState } from 'react';
 import { productById, formatMoney, fmtMul } from '../../data/products';
 import { shortLabel } from '../shortLabel';
 import {
   ANIMALS, ANIMAL_ORDER, animalMode, CROPS, EGG_PER_TRAY, FARM_BUILDING_MAX_STAR, FARM_BUILDINGS, FARM_BUILDING_ORDER, FARM_ORDER_UNLOCK,
   FERTILIZER_PRODUCT, GARDEN_UNLOCK, cropById, inSeason, LAND_TIERS, monthOf, penCap, fattenReady, plotLabel, plotReady,
+  type FarmBuildingId, type GardenState,
 } from '../../data/garden';
 import { animalBuyPayback, animalPerDay, bestAnimal, bestCrop, cropPerDay, farmBuildingValue, farmExpandPayback } from '../../data/farmValue';
 import { farmVsCook } from '../../data/farmKitchenValue';
@@ -11,11 +13,14 @@ import { bestCropForMenu, bestAnimalForMenu, farmVsDrinks, homegrownImpact, orde
 import { isWeekend } from '../../data/calendar';
 import { expiringSoon, expiryNoteFor, newUnlockMark } from '../../data/advice';
 import { isXoiCungDay } from '../../data/tiemXoi';
-import { Callout, Footer, styles } from './shared';
+import { preserveDefsOf, preserveDefById, phoiReady, rackCap, PHOI_UNLOCK } from '../../data/preserve';
+import { describeDay, type Weather } from '../../data/weather';
+import { Callout, Footer, styles, Tabs } from './shared';
 
 /** Trang trại đầu ngõ: trồng theo mùa vụ, nuôi 7 loài, công trình + dọn trại lấy gỗ đá nâng sao, đơn quán xóm. */
 export function GardenPanel() {
-  const { garden, level, money, day, weather, storage, storageLots, furniture, biz, plantCrop, waterGarden, waterPlot, fertilizePlot, harvestPlot, buyAnimal, feedPen, collectPen, sellFattened, expandFarm, deliverFarmOrder, buyFarmBuilding, upgradeFarmBuilding, cleanupFarm, closePanel } = useGame();
+  const [tab, setTab] = useState<'farm' | 'phoi'>('farm');
+  const { garden, level, money, day, weather, weatherSeed, forecast, storage, storageLots, furniture, biz, plantCrop, waterGarden, waterPlot, fertilizePlot, harvestPlot, buyAnimal, feedPen, collectPen, sellFattened, expandFarm, deliverFarmOrder, buyFarmBuilding, upgradeFarmBuilding, cleanupFarm, startPreserve, collectPreserve, setRackCovered, buyRackTarp, closePanel } = useGame();
   const homegrown = Object.entries(garden.homegrown).filter(([, q]) => q > 0);
   const quanMenu = biz.quanNuoc?.open ? (biz.quanNuoc.menu ?? []) : []; // GĐ1141: quán đóng → mảng rỗng (không gợi pha), không phải undefined (xét tất cả)
   const stationOpen = (st: import('../../data/recipes').CookingStation) => furniture.some((f2) => f2.type === st); // GĐ1140
@@ -32,7 +37,13 @@ export function GardenPanel() {
         Mảnh trại cuối đường thứ hai (bấm nút 🚜 Ra trại để qua). Hiện là "{tier.name}" với {garden.plots.length} luống đất,
         chuồng {ANIMAL_ORDER.map((k) => ANIMALS[k].name.toLowerCase()).join('/')}. Hàng nhà trồng/nhà nuôi vào kho — khách trả thêm 20%, chi nhánh 24/7 bán được luôn.
       </p>
-      {level < GARDEN_UNLOCK ? (
+      <Tabs tabs={[['farm', '🚜 Trang trại'], ['phoi', '🏺 Phơi · Muối · Ủ']]} value={tab} onChange={setTab} />
+      {tab === 'phoi' && (
+        <PhoiTab level={level} money={money} day={day} weather={weather} weatherSeed={weatherSeed} tomorrow={forecast[0] ?? weather}
+          garden={garden} storage={storage} buyFarmBuilding={buyFarmBuilding} upgradeFarmBuilding={upgradeFarmBuilding}
+          startPreserve={startPreserve} collectPreserve={collectPreserve} setRackCovered={setRackCovered} buyRackTarp={buyRackTarp} />
+      )}
+      {tab === 'farm' && (level < GARDEN_UNLOCK ? (
         <p style={styles.sub}>🔒 Trang trại mở ở cấp {GARDEN_UNLOCK}: dọn lại mảnh đất ven đường đã.</p>
       ) : (
         <div style={{ display: 'grid', gap: 6, maxWidth: 560 }}>
@@ -377,8 +388,120 @@ export function GardenPanel() {
             </div>
           </div>
         </div>
-      )}
+      ))}
       <Footer onClose={closePanel} />
     </>
+  );
+}
+
+/** Hệ 1 (§1.10) — tab "🏺 Phơi · Muối · Ủ" trong Sân phơi: dự báo 2 ngày kèm giờ mưa, giàn, các nong đang phơi, mẻ mới. */
+function PhoiTab(props: {
+  level: number; money: number; day: number; weather: Weather; weatherSeed: number; tomorrow: Weather;
+  garden: GardenState; storage: Record<string, number>;
+  buyFarmBuilding: (id: FarmBuildingId) => void; upgradeFarmBuilding: (id: FarmBuildingId) => void;
+  startPreserve: (defId: string) => void; collectPreserve: (jobId: number) => void;
+  setRackCovered: (on: boolean) => void; buyRackTarp: () => void;
+}) {
+  const { level, money, day, weather, weatherSeed, tomorrow, garden, storage, buyFarmBuilding, upgradeFarmBuilding, startPreserve, collectPreserve, setRackCovered, buyRackTarp } = props;
+  const star = garden.buildings.gian_phoi ?? 0;
+  const rackCovered = garden.rackLog.day === day && !!garden.rackLog.out && garden.rackLog.out.length === 0;
+  const phoiDefs = preserveDefsOf('phoi').filter((d) => d.unlock <= level);
+  const phoiJobs = garden.preserveJobs.filter((j) => preserveDefById(j.defId).kind === 'phoi');
+  const gd = FARM_BUILDINGS.gian_phoi;
+  return (
+    <div style={{ display: 'grid', gap: 6, maxWidth: 560 }}>
+      {level < PHOI_UNLOCK ? (
+        <div style={styles.card}>🔒 Hệ Phơi · Muối · Ủ mở ở cấp {PHOI_UNLOCK}: tráng bánh tráng, phơi tôm khô, mực một nắng… trước nhất cần Sân phơi trong <b>Công trình</b> (tab Trang trại → dọn trại lấy gỗ đá để xây/nâng).</div>
+      ) : (
+        <>
+          <Callout tone="info" title="🌤️ Dự báo 2 ngày — giàn phơi">
+            <div style={{ fontSize: 12, marginTop: 4 }}>
+              Hôm nay: <b>{describeDay(weatherSeed, day, weather)}</b> · Mai: <b>{describeDay(weatherSeed, day + 1, tomorrow)}</b>. Cất giàn trước cơn mưa / giông bão là mẻ an toàn.
+            </div>
+          </Callout>
+
+          <div style={{ ...styles.card, display: 'block' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center' }}>
+              <b>{gd.icon} {gd.name} {star > 0 ? `${'★'.repeat(star)}${'☆'.repeat(FARM_BUILDING_MAX_STAR - star)}` : ''}</b>
+              <span style={{ display: 'flex', gap: 4 }}>
+                {star === 0 ? (
+                  <button style={{ ...styles.btn, background: money >= gd.cost ? '#f1c40f' : '#555', color: money >= gd.cost ? '#222' : '#fff' }} onClick={() => buyFarmBuilding('gian_phoi')}>
+                    Xây Sân phơi ({formatMoney(gd.cost)})
+                  </button>
+                ) : (
+                  <>
+                    <button style={{ ...styles.btn, background: rackCovered ? '#3498db' : '#e67e22', color: '#fff' }} onClick={() => setRackCovered(!rackCovered)}>
+                      {rackCovered ? '☀️ Mang giàn ra phơi' : '🌙 Cất giàn'}
+                    </button>
+                    {!garden.rackTarp && money >= 2_500_000 && (
+                      <button style={{ ...styles.btn, background: '#8e44ad', color: '#fff' }} onClick={buyRackTarp} title="Mưa to để ngoài cũng không ướt, vẫn nhận 0,4 nắng">
+                        🪂 Bạt kéo ({formatMoney(2_500_000)})
+                      </button>
+                    )}
+                  </>
+                )}
+              </span>
+            </div>
+            <div style={{ fontSize: 12, opacity: 0.75, marginTop: 4 }}>
+              {star === 0 ? `${gd.note}. Mở ở cấp ${PHOI_UNLOCK}.` : `${star} sao: sân có ${rackCap(star)} nong${garden.rackTarp ? ' · đã có bạt kéo' : ''}. Gỗ/đá nâng sao ở Dọn trại.`}
+            </div>
+            {star > 0 && star < FARM_BUILDING_MAX_STAR && (
+              <button style={{ ...styles.btn, background: '#f1c40f', color: '#222', marginTop: 6 }} onClick={() => upgradeFarmBuilding('gian_phoi')}
+                title={`Cần gỗ + đá + tiền, thêm 2 nong`}>
+                ⬆️ Lên sao {star + 1} ({formatMoney(gd.upgrades[star - 1].money)} + 🪵{gd.upgrades[star - 1].wood} 🪨{gd.upgrades[star - 1].stone})
+              </button>
+            )}
+          </div>
+
+          {phoiJobs.length === 0 ? (
+            <div style={{ ...styles.card, fontSize: 12, opacity: 0.75 }}>Giàn đang trống — chọn một mẻ dưới đây để bắt đầu phơi.</div>
+          ) : (
+            phoiJobs.map((j) => {
+              const def = preserveDefById(j.defId);
+              const ready = phoiReady(j, def);
+              const out = productById(def.outputId);
+              const pct = Math.min(100, Math.round((j.sun / def.need) * 100));
+              return (
+                <div key={j.id} style={{ ...styles.card, display: 'block' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center' }}>
+                    <b>{out.name}</b>
+                    <button style={{ ...styles.btn, background: ready ? '#2ecc71' : '#555', color: '#fff' }} onClick={() => collectPreserve(j.id)}>
+                      {ready ? `🧺 Gỡ xuống (${def.outputQty})` : `⏳ ${j.sun.toFixed(1)}/${def.need} nắng`}
+                    </button>
+                  </div>
+                  <div style={{ height: 6, background: '#333', borderRadius: 3, marginTop: 6, overflow: 'hidden' }}>
+                    <div style={{ height: 6, width: `${pct}%`, background: ready ? '#2ecc71' : '#f1c40f' }} />
+                  </div>
+                  <div style={{ fontSize: 12, opacity: 0.75, marginTop: 4 }}>
+                    Bắt đầu ngày {j.startDay} · {j.wet > 0 ? `dính mưa ${j.wet} lần` : 'chưa dính mưa'}{j.allHomegrown ? ' · toàn nhà trồng (giá hơn)' : ''} · {def.note}
+                  </div>
+                </div>
+              );
+            })
+          )}
+
+          <div style={{ ...styles.card, display: 'block' }}>
+            <b>☀️ Bắt đầu một mẻ phơi</b>
+            <div style={{ fontSize: 12, marginTop: 4, display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+              {phoiDefs.map((d) => {
+                const out = productById(d.outputId);
+                const lack = d.inputs.find((i) => (storage[i.productId] ?? 0) < i.quantity);
+                const can = star > 0 && !lack && phoiJobs.length < rackCap(star);
+                const label = `${out.name}${d.inputs.map((i) => ` (${productById(i.productId).name} ${i.quantity})`).join('')}`;
+                return (
+                  <button key={d.id} style={{ ...styles.btn, background: can ? '#2ecc71' : '#555', color: '#fff' }} onClick={() => startPreserve(d.id)}
+                    title={lack ? `Thiếu ${productById(lack.productId).name} — nhập trước rồi phơi` : `${out.name}: ${d.note}`}>
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+            <div style={{ fontSize: 12, opacity: 0.75, marginTop: 4 }}>
+              {phoiDefs.length === 0 ? `Chưa có mẻ phơi nào ở cấp này${star ? '' : ' — còn cần xây Sân phơi trước'}.` : 'Mẹo: bánh tráng phơi sương mù cũng đủ nắng (fogBonus); mực một nắng chỉ ăn ngày nắng đẹp.'}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
   );
 }

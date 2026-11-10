@@ -619,6 +619,14 @@ export interface GameState {
   upgradeFarmBuilding: (id: FarmBuildingId) => void;
   /** Dọn cỏ dại cành rụng trong trại: nhặt gỗ và đá để nâng sao công trình. */
   cleanupFarm: () => void;
+  /** Hệ 1 — bắt đầu một mẻ phơi/muối/ủ lên giàn (đổi nguyên liệu thành mẻ chờ nắng/ngày). */
+  startPreserve: (defId: string) => void;
+  /** Hệ 1 — gỡ một mẻ đã đủ nắng xuống: thành phẩm vào kho (+XP theo ngày, trần 40). */
+  collectPreserve: (jobId: number) => void;
+  /** Hệ 1 — cất/mang giàn phơi ra trời: cất thì an toàn mưa bão nhưng không nhận nắng. */
+  setRackCovered: (on: boolean) => void;
+  /** Hệ 1 — mua Bạt kéo cho sân phơi (một lần): mưa to không ướt mẻ. */
+  buyRackTarp: () => void;
   /** Sổ phân tích 30 ngày theo món (sức khoẻ món, ABC, gợi ý). */
   analytics: AnalyticsState;
   /** Ghi món vừa bán vào 'Sổ tay Tiệm' và tự thưởng mốc thu thập khi vượt ngưỡng (GĐ36). */

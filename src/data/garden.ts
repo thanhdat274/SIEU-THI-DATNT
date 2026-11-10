@@ -213,7 +213,7 @@ export const harvestYield = (def: CropDef, day: number, ripenDay?: number) =>
   Math.round(def.yieldQty * (def.season && inSeason(def, ripenDay ?? day) ? SEASON_YIELD : 1));
 
 /** Công trình trại: mua bằng tiền, nâng sao bằng tiền + gỗ + đá nhặt từ dọn trại (kiểu HappyTown). */
-export type FarmBuildingId = 'tuoi_tu_dong' | 'nha_luoi' | 'bai_tha' | 'bu_nhin';
+export type FarmBuildingId = 'tuoi_tu_dong' | 'nha_luoi' | 'bai_tha' | 'bu_nhin' | 'gian_phoi';
 
 export interface FarmBuildingDef {
   id: FarmBuildingId;
@@ -249,9 +249,14 @@ export const FARM_BUILDINGS: Record<FarmBuildingId, FarmBuildingDef> = {
     upgrades: [{ money: 20_000_000, wood: 10, stone: 6 }, { money: 30_000_000, wood: 16, stone: 10 }],
     note: 'Lưới chắn côn trùng, sâu bệnh và giông bão: mỗi sao cây lớn thêm nửa ngày mỗi đêm, bão không còn sập luống',
   },
+  gian_phoi: {
+    id: 'gian_phoi', name: 'Sân phơi', icon: '🌞', cost: 5_000_000, unlock: 34,
+    upgrades: [{ money: 3_500_000, wood: 6, stone: 4 }, { money: 5_000_000, wood: 10, stone: 6 }],
+    note: 'Không gian thoáng đãng cho dăm nong phơi & sau này là vại muối, chum ủ: mỗi sao thêm 2 nong (2/4/6); nắng mưa tính theo giàn',
+  },
 };
 
-export const FARM_BUILDING_ORDER: FarmBuildingId[] = ['bu_nhin', 'tuoi_tu_dong', 'bai_tha', 'nha_luoi'];
+export const FARM_BUILDING_ORDER: FarmBuildingId[] = ['bu_nhin', 'tuoi_tu_dong', 'bai_tha', 'nha_luoi', 'gian_phoi'];
 /** Sao tối đa của công trình. */
 export const FARM_BUILDING_MAX_STAR = 3;
 
@@ -323,6 +328,8 @@ export interface GardenState {
   preserveJobs: PreserveJob[];
   /** Hệ 1 — các khoảng phút hôm nay giàn phơi để NGOÀI trời (bản lưu cũ thiếu → rỗng). */
   rackLog: { day: number; out: [number, number][] };
+  /** Hệ 1 — đã mua Bạt kéo cho sân phơi (mưa to không ướt, vẫn nhận 0,4 nắng). */
+  rackTarp: boolean;
 }
 
 /** Đơn quán xóm đặt nông sản: giao đủ đúng hạn thì được giá hời hơn giá bán thường. */
@@ -409,6 +416,7 @@ export const newGarden = (): GardenState => ({
   debris: 0,
   preserveJobs: [],
   rackLog: { day: 0, out: [] },
+  rackTarp: false,
 });
 
 /** Khách trả thêm bấy nhiêu phần giá cho món nhà trồng (nêu ở gợi ý giá). */

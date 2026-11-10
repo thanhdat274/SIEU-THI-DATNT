@@ -37,6 +37,7 @@ import { COMPLAINTS_FOR_SURPRISE, isAlcohol, LICENSE_FINE, LICENSE_GRACE, licens
 import { staffDayEnd } from '../../data/staffTraits';
 import { BUZZ_DAYS, CRISIS_MUL, POST_CAP, SOCIAL_UNLOCK, socialDayEnd, type SocialPost } from '../../data/social';
 import { ANIMAL_ORDER, farmCritChance, farmhandChores, FARM_ORDER_UNLOCK, farmOrderCapacity, farmOrderNews, farmOrderProduce, gardenNight, makeFarmOrder, type AnimalKind } from '../../data/garden';
+import { preserveNight } from '../../data/preserve';
 import { logAnalyticsDay } from '../../data/analytics';
 import { appRating } from '../../data/online';
 import { onlineDayEnd } from './online';
@@ -123,6 +124,16 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
   }
   const gardenNightResult = gardenNight(garden, { day: s.day, weather: s.weather, fed });
   garden = gardenNightResult.garden;
+  // Hệ 1 (§1.5) — mẻ phơi qua đêm nhận nắng theo thời tiết hôm nay + trạng thái giàn (TẤT ĐỊNH từ
+  // rainSpell trên weatherSeed+day — KHÔNG gọi simRng, golden cấp 30 vẫn nguyên). Giàn để ngoài là
+  // mặc định mỗi ngày; game không có đồng hồ nên "cất kịp mưa + 0,4" là mốc lát L3 (Sổ đầu ngày).
+  const phoiOut: [number, number][] = garden.rackLog?.day === s.day ? garden.rackLog.out : [[0, 1440]];
+  const phoiNight = preserveNight(garden.preserveJobs, phoiOut, {
+    day: s.day, weather: s.weather, seed: s.weatherSeed,
+    tarp: !!garden.rackTarp,
+    stormSafe: (garden.buildings?.nha_luoi ?? 0) >= 3, // SPEC §1.8: nhà lưới 3★ che sân phơi khỏi bão
+  });
+  garden = { ...garden, preserveJobs: phoiNight.jobs, rackLog: { day: s.day + 1, out: [[0, 1440]] } };
   // Sổ phân tích 30 ngày: bán/hỏng/lỡ bán theo từng món + cờ combo & giờ vàng của hôm nay
   const lostPerItem: Record<string, number> = {};
   for (const [key, n] of Object.entries(s.stats.missLog ?? {})) {
@@ -191,7 +202,7 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
     garden = { ...garden, homegrown };
   }
   // Đơn quán xóm đặt nông sản: quá hạn thì quán xin lỗi bỏ, trống thì có đơn mới chờ
-  const gardenNews = [...gardenNightResult.news, ...farmhandNews];
+  const gardenNews = [...gardenNightResult.news, ...farmhandNews, ...phoiNight.news];
   if (garden.farmOrder && s.day >= garden.farmOrder.dueDay) {
     gardenNews.push(`📦 ${garden.farmOrder.from} huỷ đơn nông sản quá hạn — đơn khác sẽ ghé sau`);
     garden = { ...garden, farmOrder: null };
