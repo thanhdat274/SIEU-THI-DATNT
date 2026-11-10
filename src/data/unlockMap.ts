@@ -11,6 +11,7 @@ import { COOK_UNLOCK } from './recipes';
 import { QUAN_NUOC_UNLOCK } from './quanNuoc';
 import { SHOP_TIERS } from './shopTiers';
 import { PHOI_UNLOCK } from './preserve';
+import { BRAND_UNLOCK } from './brand';
 
 /** GĐ81 — "🗺️ Phía trước": bản đồ toàn ván các HỆ + MỐC LỚN mở khóa theo cấp.
  *  `unlocksAt` (levels.ts) chỉ liệt kê món/kệ/tier/thuộc tính theo cấp và bỏ sót hầu hết hệ lớn
@@ -69,6 +70,10 @@ export const SYSTEM_UNLOCKS: SystemUnlock[] = [
   { id: 'tier_dai_sieu_thi', icon: '🏪', name: shopTier('Đại siêu thị').name, desc: `Bậc mở rộng cuối cùng: ${shopTier('Đại siêu thị').width}×${shopTier('Đại siêu thị').depth} — ${vnd(shopTier('Đại siêu thị').price)}.`, atLevel: shopTier('Đại siêu thị').unlock, panel: () => ({ type: 'build' }) },
   // GĐ1944 — sau bậc cuối: mua từng ô mở rộng tiếp giáp phía sau (expansionTiles.ts)
   { id: 'o_mo_rong', icon: '🧱', name: 'Ô mở rộng tiếp giáp', desc: 'Ở Đại siêu thị, mua từng ô nới tiệm sâu thêm 1 m (tối đa 6 ô), giá tăng dần theo ô.', atLevel: shopTier('Đại siêu thị').unlock, panel: () => ({ type: 'build' }) },
+  // Hệ 4 (SPEC-CHIEU-SAU §4) — Nhãn hàng riêng: kéo dài bản đồ lên tới cấp 180+ (dòng nhãn mở 100→180).
+  { id: 'brand_nhan_rieng', icon: '🏷️', name: 'Nhãn hàng riêng', desc: 'Lập nhãn mang tên tiệm, dán nhãn món nhà làm thành thạo, mở xưởng đóng gói — hàng nhãn bán giá cao theo uy tín.', atLevel: BRAND_UNLOCK, panel: () => ({ type: 'brand' }) },
+  { id: 'brand_dai_ly', icon: '🚛', name: 'Bỏ mối đại lý', desc: 'Ký hợp đồng giao hàng nhãn theo định kỳ cho các đại lý (chợ huyện → Đại lý xuất tỉnh xa).', atLevel: 110, panel: () => ({ type: 'brand' }) },
+  { id: 'brand_nhuong_quyen', icon: '🏮', name: 'Nhượng quyền', desc: 'Mở điểm nhượng quyền bán hàng nhãn — tiếng lan xa, thêm nghĩa vụ cung hàng tuần.', atLevel: 150, panel: () => ({ type: 'brand' }) },
 ];
 
 export interface RoadmapItem {

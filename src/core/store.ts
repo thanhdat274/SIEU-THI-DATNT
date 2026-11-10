@@ -57,6 +57,8 @@ import { createPrestigeSlice } from './slices/prestige';
 import { createDiscoverySlice } from './slices/discovery';
 import { createCrisisSlice } from './slices/crisis';
 import { createStanceSlice } from './slices/stance';
+import { createBrandSlice } from './slices/brand';
+import { createMiniSlice } from './slices/minigame';
 
 export * from './gameTypes';
 export { migrateTiers } from './stock';
@@ -265,6 +267,8 @@ export const useGame = create<GameState>((set, get) => {
     ...createDiscoverySlice(set, get),
     ...createCrisisSlice(set, get),
     ...createStanceSlice(set, get),
+    ...createBrandSlice(set, get),
+    ...createMiniSlice(set, get),
   };
 });
 

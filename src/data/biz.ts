@@ -8,6 +8,7 @@ import { newQuanNuoc, type QuanNuocState } from './quanNuoc';
 import { newTiemXoi, type TiemXoiState } from './tiemXoi';
 import type { HiepLucState } from './hiepLuc';
 import type { StanceId, StanceState } from './stance';
+import type { BrandState } from './brand';
 import { monthOf } from './calendar';
 import { emptyYear } from './yearReport';
 import { xpToNext } from './levels';
@@ -161,6 +162,15 @@ export interface BizState {
   stance?: StanceState;
   /** Hệ3-L8 — biển THỨ HAI (mở khi đủ 3 ấn định vị); treo hai biển, hiệu ứng mỗi biển 60%. THIẾU = một biển. */
   stance2?: StanceState;
+  /** Hệ 4 — Nhãn hàng riêng (SPEC-CHIEU-SAU §4): nhãn + dòng hàng + xưởng + đại lý + nhượng quyền.
+   *  Bản lưu cũ thiếu → undefined (chưa lập nhãn, không cần SAVE_VERSION). */
+  brand?: BrandState;
+  /** Hệ 7 — Trò khéo tay dịp lễ (SPEC-CHIEU-RONG §7): id trò → ngày game đã nhận thưởng (1 lần/ngày lễ, R7). */
+  miniPlayed?: Record<string, number>;
+  /** Hệ 7 — phần thưởng SỐ LƯỢNG cho mẻ KẾ TIẾP của công thức (recipeId → số thêm); startCook/clock đọc và xoá. */
+  miniBonus?: Record<string, number>;
+  /** Hệ 7 — điểm trang trí cộng tạm tới hết dịp ({furniture, bonus, until} = ngày game hết hạn) — lát L4. */
+  festivalFlair?: { furniture: string; bonus: number; until: number }[];
   /** Quán nước đầu ngõ (GĐ7, bán đồ uống rút từ kho); thiếu ở save cũ — nạp bản cũ tự bù mặc định. */
   quanNuoc: QuanNuocState;
   /** Tiệm xôi (GĐ410): xưởng nấu xôi số lượng lớn đổ vào kho chung mỗi đêm. */
@@ -307,6 +317,8 @@ export const newBiz = (): BizState => ({
   seasonAlmanac: {}, almanacClaimed: [],
   // Hệ 8 — Biến cố dài (SPEC-CHIEU-RONG §8): mặc định không đợt nào, chưa đổi gì
   crisis: undefined, crisesSeen: [], crisisBadges: [], calmYears: false, roadBoon: false, lastCrisis: undefined,
+  // Hệ 7 — Trò khéo tay lễ (SPEC-CHIEU-RONG §7): chưa chơi/không thưởng, không có flair
+  miniPlayed: {}, miniBonus: {}, festivalFlair: undefined,
 });
 
 /** Hệ số đi bộ của chủ tiệm hôm nay: nhà đẹp ngủ ngon, ăn sáng, xe (chỉ khi ở ngoài đường). */

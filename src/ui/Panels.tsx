@@ -39,6 +39,7 @@ const DiscoveryPanel = lazy(() => import('./panels/DiscoveryPanel').then((m) => 
 const LandmarkPanel = lazy(() => import('./panels/LandmarkPanel').then((m) => ({ default: m.LandmarkPanel })));
 const DossierPanel = lazy(() => import('./panels/DossierPanel').then((m) => ({ default: m.DossierPanel })));
 const RoadmapPanel = lazy(() => import('./panels/RoadmapPanel').then((m) => ({ default: m.RoadmapPanel })));
+const BrandPanel = lazy(() => import('./panels/BrandPanel').then((m) => ({ default: m.BrandPanel })));
 
 export function Panels() {
   const panel = useGame((s) => s.panel);
@@ -97,6 +98,7 @@ export function Panels() {
         {panel.type === 'records' && <RecordsPanel />}
         {panel.type === 'dossier' && <DossierPanel closePanel={closePanel} />}
         {panel.type === 'roadmap' && <RoadmapPanel />}
+        {panel.type === 'brand' && <BrandPanel />}
         </Suspense>
       </div>
     </div>

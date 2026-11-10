@@ -24,9 +24,10 @@ describe('earlyUnlockTeaser — mồi mở khóa tuần đầu', () => {
   });
 
   it('cấp rất cao (đã mở hết hệ sắp tới) → null ngay cả trong tuần đầu', () => {
-    expect(earlyUnlockTeaser({ level: 80, xp: 0, day: 2 })).toBeNull();
-    // tương đương roadmapAhead rỗng
-    expect(roadmapAhead({ level: 80, xp: 0 })).toEqual([]);
+    expect(earlyUnlockTeaser({ level: 200, xp: 0, day: 2 })).toBeNull();
+    // tương đương roadmapAhead rỗng (Hệ 4 kéo dài bản đồ tới cấp 150)
+    expect(roadmapAhead({ level: 150, xp: 0 })).toEqual([]);
+    expect(roadmapAhead({ level: 200, xp: 0 })).toEqual([]);
   });
 
   it('cấp 0/1 luôn lấy đúng cấp mở thực từ SYSTEM_UNLOCKS (không đổi hằng số)', () => {

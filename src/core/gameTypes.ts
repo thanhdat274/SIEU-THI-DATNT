@@ -146,6 +146,7 @@ export type Panel =
   | { type: 'online' }
   | { type: 'licenses' }
   | { type: 'garden' }
+  | { type: 'brand' }
   | { type: 'analytics' }
   | { type: 'quannuoc' }
   | { type: 'discovery' }
@@ -606,6 +607,10 @@ export interface GameState {
    *  đổi lại không nhận huy hiệu vượt khó. Toggle chỉ luật lịch, mở đợt mới không còn. */
   setCalmYears: (on: boolean) => void;
 
+  /** Hệ 7 — Trò khéo tay lễ (SPEC-CHIEU-RONG §7.7): ghi điểm xong một trò — thưởng 1 lần/ngày lễ,
+   *  điểm kẹp 0–100, cộng bonusQty vào mẻ kế tiếp / flair vào điểm trang trí. */
+  scoreFestivalMini: (id: string, score: number, mode: 'fast' | 'calm') => void;
+
   /** Hệ 2 — Tình làng (GĐ Hệ2-L2, SPEC §2.4): lan thân thiết từ sự kiện lớn sang người có cạnh
    *  với nguồn (trần ±3/ngày/người). Cổng cấp ≥ TIES_UNLOCK. */
   applyRipple: (
@@ -619,6 +624,11 @@ export interface GameState {
   acceptLifeEvent: (tier: 0 | 1 | 2) => void;
   declineLifeEvent: () => void;
   deliverLifeEvent: () => boolean;
+
+  /** Hệ 4 — Nhãn hàng riêng (SPEC §4.10): lập nhãn / thêm-bỏ dòng hàng. GUARDED 'brand'. */
+  foundBrand: (name: string) => void;
+  addBrandLine: (productId: string) => void;
+  dropBrandLine: (productId: string) => void;
 
   /** Trang trại (trồng, bón phân, nuôi gà/vịt/ngỗng/bò/heo/dê/gà Đông Tảo, đơn quán xóm). */
   garden: GardenState;

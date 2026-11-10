@@ -83,8 +83,8 @@ describe('roadmapAhead — chưa mở khóa, xếp trước→sau', () => {
     expect(roadmapAhead({ level: 1, xp: 0 }).length).toBe(SYSTEM_UNLOCKS.length);
   });
 
-  it('level 80 → roadmap rỗng (đã mở hết)', () => {
-    expect(roadmapAhead({ level: 80, xp: 0 })).toEqual([]);
+  it('level 200 → roadmap rỗng (đã mở hết, kể cả các mốc Hệ 4)', () => {
+    expect(roadmapAhead({ level: 200, xp: 0 })).toEqual([]);
   });
 
   it('level 10, xp=0 → các hệ 12/21/29 với xpAway khớp tổng xpToNext', () => {
@@ -119,13 +119,13 @@ describe('GĐ168 — mốc lớn nạp lại bản đồ cấp 30+', () => {
     day: 999, level, customers: 9999, staffCount: 99, shopTier, hasRival: true, rivalsBeaten: 99,
   });
 
-  it('snapshot: 22 mục, mảng xếp tăng dần theo cấp, mốc cuối = 75', () => {
-    expect(SYSTEM_UNLOCKS.length).toBe(22);
+  it('snapshot: 25 mục, mảng xếp tăng dần theo cấp, mốc cuối = 150 (Hệ 4 kéo dài bản đồ)', () => {
+    expect(SYSTEM_UNLOCKS.length).toBe(25);
     for (let i = 1; i < SYSTEM_UNLOCKS.length; i++) {
       expect(SYSTEM_UNLOCKS[i].atLevel).toBeGreaterThanOrEqual(SYSTEM_UNLOCKS[i - 1].atLevel);
     }
-    expect(Math.max(...SYSTEM_UNLOCKS.map((s) => s.atLevel))).toBe(75);
-    // mốc cuối là bộ đôi cấp 75: chương cuối + Đại siêu thị
+    expect(Math.max(...SYSTEM_UNLOCKS.map((s) => s.atLevel))).toBe(150); // brand_nhuong_quyen (mốc Hệ 4 cao nhất hiện bày)
+    // mốc cuối của phần cũ là bộ đôi cấp 75: chương cuối + Đại siêu thị
     expect(at('ch12_ngo_nho_thanh_danh').atLevel).toBe(75);
     expect(at('tier_dai_sieu_thi').atLevel).toBe(shopTierByName('Đại siêu thị').unlock);
   });
@@ -198,15 +198,19 @@ describe('GĐ168 — mốc lớn nạp lại bản đồ cấp 30+', () => {
     expect(road.map((r) => r.id)).toEqual([
       'ch10_mat_tien', 'tier_sieu_thi', 'ch11_dem_den_sang', 'tier_khang_trang',
       'prestige_tai_sinh', 'ch12_ngo_nho_thanh_danh', 'tier_dai_sieu_thi', 'o_mo_rong',
+      'brand_nhan_rieng', 'brand_dai_ly', 'brand_nhuong_quyen',
     ]);
     for (const r of road) expect(r.xpAway).toBeGreaterThan(0);
   });
 
-  it('level 74 → còn bộ đôi 75; level 75+ → rỗng, không crash', () => {
-    expect(roadmapAhead({ level: 74, xp: 0 }).map((r) => r.id)).toEqual(['ch12_ngo_nho_thanh_danh', 'tier_dai_sieu_thi', 'o_mo_rong']);
-    expect(roadmapAhead({ level: 75, xp: 0 })).toEqual([]);
-    expect(roadmapAhead({ level: 80, xp: 0 })).toEqual([]);
-    expect(roadmapAhead({ level: 100, xp: 0 })).toEqual([]);
+  it('level 74 → còn bộ đôi 75 + các mốc Hệ 4; level 100+/200 → rỗng đúng mốc', () => {
+    expect(roadmapAhead({ level: 74, xp: 0 }).map((r) => r.id)).toEqual([
+      'ch12_ngo_nho_thanh_danh', 'tier_dai_sieu_thi', 'o_mo_rong', 'brand_nhan_rieng', 'brand_dai_ly', 'brand_nhuong_quyen',
+    ]);
+    expect(roadmapAhead({ level: 75, xp: 0 }).map((r) => r.id)).toEqual(['brand_nhan_rieng', 'brand_dai_ly', 'brand_nhuong_quyen']);
+    expect(roadmapAhead({ level: 80, xp: 0 }).map((r) => r.id)).toEqual(['brand_nhan_rieng', 'brand_dai_ly', 'brand_nhuong_quyen']);
+    expect(roadmapAhead({ level: 100, xp: 0 }).map((r) => r.id)).toEqual(['brand_dai_ly', 'brand_nhuong_quyen']);
+    expect(roadmapAhead({ level: 150, xp: 0 })).toEqual([]);
   });
 
   it('không trùng id sau khi thêm mốc (quét lại toàn catalog)', () => {

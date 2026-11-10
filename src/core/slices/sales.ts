@@ -18,6 +18,7 @@ import { departmentPriceMul } from '../../data/departments';
 import { type GameState, type SetState, type GetState, addHour } from '../gameTypes';
 import { copyStock, takeStock } from '../stock';
 import { HOMEGROWN_PREMIUM } from '../../data/garden';
+import { brandPremium } from '../../data/brand';
 import { marketClearValue, marketTierQuote, marketTierUnlocked, isMarketTier, MARKET_TIERS } from '../../data/chophien';
 import { itemHealthList, shelfCount } from '../../data/analytics';
 import { revenueFactor } from '../prestige';
@@ -65,8 +66,17 @@ export const createSalesSlice = (set: SetState, get: GetState): Pick<GameState, 
     const homegrown = { ...s.garden.homegrown };
     let premium = 0;
     const hgMul = stanceHomegrownMul(s.biz);
+    // Hệ 4 (SPEC §4.5b) — hàng mang NHÃN RIÊNG bán cao hơn theo bậc uy tín; không cộng dồn với +20%
+    // nhà trồng: lấy mức CAO HƠN (đơn vị đã chuyển sang brand.stock khi đóng gói nên không trùng nhà trồng).
+    const brandB = s.biz?.brand;
+    const brandStock = { ...(brandB?.stock ?? {}) };
+    const brandPremiumRate = brandB ? Math.max(brandPremium(brandB.rep), HOMEGROWN_PREMIUM * hgMul) : 0;
     for (const it of items) {
-      if ((homegrown[it.id] ?? 0) > 0) {
+      if ((brandStock[it.id] ?? 0) > 0) {
+        brandStock[it.id]!--;
+        if (!brandStock[it.id]) delete brandStock[it.id];
+        premium += it.price * brandPremiumRate;
+      } else if ((homegrown[it.id] ?? 0) > 0) {
         homegrown[it.id]!--;
         if (!homegrown[it.id]) delete homegrown[it.id];
         premium += it.price * HOMEGROWN_PREMIUM * hgMul;
@@ -106,6 +116,7 @@ export const createSalesSlice = (set: SetState, get: GetState): Pick<GameState, 
       salesToday,
       servedCounts,
       garden: { ...s.garden, homegrown },
+      biz: brandB ? { ...s.biz, brand: { ...brandB, stock: brandStock } } : s.biz,
       money: s.money + total - fee + premium + starPremium,
       stats: {
         ...s.stats, revenue: s.stats.revenue + total + premium + starPremium, itemsSold: s.stats.itemsSold + items.length, byItem,

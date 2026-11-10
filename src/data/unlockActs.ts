@@ -1,5 +1,6 @@
 import type { Panel } from '../core/gameTypes';
 import { PHOI_UNLOCK } from './preserve';
+import { BRAND_UNLOCK } from './brand';
 
 /** GĐ64 — mồi "Thử ngay" khi một hệ CHÍNH mở khóa sau ngày 1 (onboarding mid-game).
  *  Mỗi hệ mở khóa ở một cấp; người chơi thấy banner CTA một lần, đánh dấu `biz.unlockActs` khi xem/đóng.
@@ -23,6 +24,7 @@ export const UNLOCK_ACTS: UnlockActDef[] = [
   { id: 'cook', level: 21, icon: '🍳', title: 'Nấu món nhà làm', hint: 'Chế biến món nóng từ nguyên liệu — món nhà làm hút khách.', panel: () => ({ type: 'cook' }) },
   { id: 'quannuoc', level: 29, icon: '🧋', title: 'Quán nước đầu ngõ', hint: 'Mở quán nước chuyên đồ uống lấy nguyên liệu từ kho.', panel: () => ({ type: 'quannuoc' }) },
   { id: 'phoi', level: PHOI_UNLOCK, icon: '🏺', title: 'Sân phơi · Muối · Ủ', hint: 'Xây sân phơi để tự phơi khô, muối chua, ủ chín món quê — lo mưa sắp tới kẻo ướt giàn.', panel: () => ({ type: 'garden' }) },
+  { id: 'brand', level: BRAND_UNLOCK, icon: '🏷️', title: 'Nhãn hàng riêng', hint: 'Lập nhãn mang tên tiệm, đưa món nhà làm thành thạo vào dòng hàng, mở xưởng đóng gói — hàng nhãn bán giá cao theo uy tín.', panel: () => ({ type: 'brand' }) },
 ];
 
 /** Act mở khóa (≤ level hiện tại) đầu tiên mà người chơi chưa xem — mồi tuần tự thấp→cao. Null khi chưa đạt/hết. */

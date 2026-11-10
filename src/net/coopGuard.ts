@@ -64,4 +64,10 @@ export const GUARDED: Record<string, (args: unknown[]) => string> = {
   // Hệ 3 — Biển định vị (SPEC §3.9): biển là của cả tiệm, treo/gỡ cùng sửa biz.stance chung → khoá 'stance'.
   chooseStance: () => 'stance',
   dropStance: () => 'stance',
+  // Hệ 4 — Nhãn hàng riêng (SPEC §4.10): nhãn/xưởng dùng chung cả hẻm → khoá 'brand'.
+  foundBrand: () => 'brand',
+  addBrandLine: () => 'brand',
+  dropBrandLine: () => 'brand',
+  // Hệ 7 — Trò khéo tay lễ (SPEC-CHIEU-RONG §7.7): mỗi trò là một chỗ thưởng chung trong ngày → khoá 'mini:<id>'.
+  scoreFestivalMini: (a) => `mini:${a[0]}`,
 };
