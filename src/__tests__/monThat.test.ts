@@ -203,6 +203,8 @@ const MON_THAT: Record<string, { name: string; station: string; cachNau: string 
   recipe_ca_bong_chien_gion: { name: 'Cá bống chiên giòn', station: 'fryer', cachNau: 'cá bống ướp muối chiên vàng giòn, chấm nước mắm gừng (quán nhậu cả nước)' },
   recipe_ca_mu_hap_xi_dau: { name: 'Cá mú hấp xì dầu', station: 'steamer', cachNau: 'cá mú hấp gừng rưới xì dầu, ăn kèm hành (quán nhậu hải sản cả nước)' },
   recipe_ca_mu_nuong_muoi_ot: { name: 'Cá mú nướng muối ớt', station: 'food_grill', cachNau: 'cá mú ướp muối ớt, nướng than cho thơm (quán nhậu hải sản cả nước)' },
+  recipe_mong_tay_nuong_mo_hanh: { name: 'Móng tay nướng mỡ hành', station: 'food_grill', cachNau: 'sò móng tay nướng vỏ, rưới mỡ hành phi thơm (quán nhậu hải sản cả nước)' },
+  recipe_mong_tay_xao_sa_ot: { name: 'Móng tay xào sả ớt', station: 'fryer', cachNau: 'sò móng tay luộc sơ xào lửa lớn sả ớt (quán nhậu hải sản cả nước)' },
 };
 
 /** Chữ mô tả tự chế không ai dùng làm tên món ngoài chợ. */

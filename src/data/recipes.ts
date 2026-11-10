@@ -844,6 +844,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'ca_bong_chien_gion', name: 'Cá bống chiên giòn', category: 'fresh', buy: 26000, sell: 45000, color: 0xc8a878, unlock: 199 },
   { id: 'ca_mu_hap_xi_dau', name: 'Cá mú hấp xì dầu', category: 'fresh', buy: 26000, sell: 45000, color: 0xb8a8c8, unlock: 198 },
   { id: 'ca_mu_nuong_muoi_ot', name: 'Cá mú nướng muối ớt', category: 'fresh', buy: 26000, sell: 45000, color: 0xc8a8a8, unlock: 199 },
+  { id: 'mong_tay_nuong_mo_hanh', name: 'Móng tay nướng mỡ hành', category: 'fresh', buy: 26000, sell: 45000, color: 0xd8c8b8, unlock: 198 },
+  { id: 'mong_tay_xao_sa_ot', name: 'Móng tay xào sả ớt', category: 'fresh', buy: 26000, sell: 45000, color: 0xc8c0b0, unlock: 199 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2871,6 +2873,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_ca_mu_nuong_muoi_ot', name: 'Cá mú nướng muối ớt', station: 'food_grill',
     inputs: [{ productId: 'x_ca_mu', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }, { productId: 'x_ot_bot', quantity: 1 }],
     outputId: 'ca_mu_nuong_muoi_ot', outputQty: 4, durationMin: 30, unlock: 199, reputationGain: 1 },
+  // GĐ2167: Móng tay nướng mỡ hành — quán nhậu hải sản cả nước: sò móng tay nướng vỏ, rưới mỡ hành phi thơm; không thay thế.
+  { id: 'recipe_mong_tay_nuong_mo_hanh', name: 'Móng tay nướng mỡ hành', station: 'food_grill',
+    inputs: [{ productId: 'x_mong_tay', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }],
+    outputId: 'mong_tay_nuong_mo_hanh', outputQty: 4, durationMin: 25, unlock: 198, reputationGain: 1 },
+  // GĐ2168: Móng tay xào sả ớt — quán nhậu hải sản cả nước: sò móng tay luộc sơ xào lửa lớn sả ớt; không thay thế.
+  { id: 'recipe_mong_tay_xao_sa_ot', name: 'Móng tay xào sả ớt', station: 'fryer',
+    inputs: [{ productId: 'x_mong_tay', quantity: 1 }, { productId: 'x_sa', quantity: 1 }, { productId: 'x_ot_bot', quantity: 1 }],
+    outputId: 'mong_tay_xao_sa_ot', outputQty: 4, durationMin: 20, unlock: 199, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────
