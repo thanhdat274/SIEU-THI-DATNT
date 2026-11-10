@@ -798,6 +798,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'canh_khoai_tay', name: 'Canh khoai tây', category: 'fresh', buy: 12000, sell: 20000, color: 0xe8c070, unlock: 199 },
   { id: 'thit_rim', name: 'Thịt rim', category: 'fresh', buy: 14000, sell: 24000, color: 0xa85a2a, unlock: 200 },
   { id: 'bun_moc', name: 'Bún mọc', category: 'fresh', buy: 13000, sell: 24000, color: 0xf0e0c8, unlock: 199 },
+  { id: 'hot_vit_lon_xao_me', name: 'Hột vịt lộn xào me', category: 'fresh', buy: 9000, sell: 16000, color: 0x9a6a3a, unlock: 186 },
+  { id: 'muc_xao_sa_ot', name: 'Mực xào sả ớt', category: 'fresh', buy: 20000, sell: 34000, color: 0xd8a070, unlock: 187 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2641,6 +2643,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_bun_moc', name: 'Bún mọc', station: 'hot_kettle',
     inputs: [{ productId: 'bun', quantity: 1 }, { productId: 'x_thit_heo', quantity: 1 }, { productId: 'x_nam_huong_kho', quantity: 1 }],
     outputId: 'bun_moc', outputQty: 6, durationMin: 30, unlock: 199, reputationGain: 1 },
+  // GĐ2121: Hột vịt lộn xào me — ăn vặt Sài Gòn: trứng vịt lộn luộc bóc vỏ, đảo chảo với sốt me chua ngọt, rau răm; không thay thế.
+  { id: 'recipe_hot_vit_lon_xao_me', name: 'Hột vịt lộn xào me', station: 'fryer',
+    inputs: [{ productId: 'hotvit', quantity: 4 }, { productId: 'x_me', quantity: 1 }],
+    outputId: 'hot_vit_lon_xao_me', outputQty: 4, durationMin: 15, unlock: 186, reputationGain: 1 },
+  // GĐ2122: Mực xào sả ớt — cơm nhà/quán nhậu cả nước: mực ống xào lửa lớn với sả băm, ớt tươi; không thay thế.
+  { id: 'recipe_muc_xao_sa_ot', name: 'Mực xào sả ớt', station: 'fryer',
+    inputs: [{ productId: 'x_muc_tuoi', quantity: 1 }, { productId: 'x_sa', quantity: 1 }, { productId: 'ot_hien', quantity: 1 }],
+    outputId: 'muc_xao_sa_ot', outputQty: 4, durationMin: 15, unlock: 187, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────

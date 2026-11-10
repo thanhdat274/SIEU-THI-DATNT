@@ -157,6 +157,8 @@ const MON_THAT: Record<string, { name: string; station: string; cachNau: string 
   recipe_canh_khoai_tay: { name: 'Canh khoai tây', station: 'hot_kettle', cachNau: 'sườn hầm nấu khoai tây cà rốt (cơm nhà)' },
   recipe_thit_rim: { name: 'Thịt rim', station: 'hot_kettle', cachNau: 'ba chỉ rim lửa nhỏ nước mắm đường hành khô (miền Bắc)' },
   recipe_bun_moc: { name: 'Bún mọc', station: 'hot_kettle', cachNau: 'nước dùng xương thả viên mọc nấm hương (Hà Nội)' },
+  recipe_hot_vit_lon_xao_me: { name: 'Hột vịt lộn xào me', station: 'fryer', cachNau: 'hột vịt lộn luộc bóc vỏ đảo sốt me (ăn vặt Sài Gòn)' },
+  recipe_muc_xao_sa_ot: { name: 'Mực xào sả ớt', station: 'fryer', cachNau: 'mực xào lửa lớn sả băm ớt (cơm nhà/quán nhậu)' },
 };
 
 /** Chữ mô tả tự chế không ai dùng làm tên món ngoài chợ. */
