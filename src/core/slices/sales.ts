@@ -11,7 +11,7 @@ import { comboById, maxActiveCombos } from '../../data/combos';
 import { paymentById } from '../../data/payments';
 import { COOKED_PRODUCT_IDS } from '../../data/recipes';
 import { dishPriceMul } from '../../data/dishStars';
-import { stanceDishMul } from '../../data/stance';
+import { stanceDishMul, stanceHomegrownMul } from '../../data/stance';
 import { REGION_IDS } from '../../data/regionSpecialty';
 import { regionPriceMul, stockedProductIds } from '../../data/regionFlags';
 import { departmentPriceMul } from '../../data/departments';
@@ -60,14 +60,16 @@ export const createSalesSlice = (set: SetState, get: GetState): Pick<GameState, 
     // Ví điện tử / máy POS lấy ít % phí, tiền mặt và chuyển khoản không mất gì
     const pay = paymentById(payment);
     const fee = Math.round(total * pay.fee);
-    // Món "nhà trồng/nhà nuôi" còn trong kho: khách thích hàng nhà làm, trả thêm 20%
+    // Món "nhà trồng/nhà nuôi" còn trong kho: khách thích hàng nhà làm, trả thêm 20% (biển Đặc sản
+    // "ngon có tiếng": hàng nhà trồng/nhà làm bán +30% thay vì +20% — ×1.5 bậc 5; không treo = 1 giữ +20%)
     const homegrown = { ...s.garden.homegrown };
     let premium = 0;
+    const hgMul = stanceHomegrownMul(s.biz);
     for (const it of items) {
       if ((homegrown[it.id] ?? 0) > 0) {
         homegrown[it.id]!--;
         if (!homegrown[it.id]) delete homegrown[it.id];
-        premium += it.price * HOMEGROWN_PREMIUM;
+        premium += it.price * HOMEGROWN_PREMIUM * hgMul;
       }
     }
     premium = Math.round(premium / 100) * 100;

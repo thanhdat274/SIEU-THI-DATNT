@@ -7,9 +7,9 @@ import { isSpecialtyProduct, STANCE_TIER_DAYS } from '../data/stance';
 
 // Hệ 3 L2 (SPEC-CHIEU-SAU §3.8) — dựng khung ĐO cân bằng hướng biển. Chạy sim cấp 65 (≥ STANCE_UNLOCK 60),
 // 10 ngày, cùng seed 7257, BỐN kịch bản ĐỘC LẬP (mỗi kịch bản gieo lại seed): không biển (mốc) + ba chính
-// sách bot (Bình dân / Đặc sản / Tiện lợi). L3 mới bật hiệu ứng Bình dân; Đặc sản (L4) và Tiện lợi (L5)
+// sách bot (Bình dân / Đặc sản / Tiện lợi). L3 bật hiệu ứng Bình dân, L4 bật Đặc sản; Tiện lợi (L5)
 // chưa có → dải ±5-20% "mỗi hướng lãi HƠN không biển" (§3.8) chỉ chốt được SAU L5 khi ba hướng cùng hiệu ứng
-// và được tinh chỉnh chung (spread ≤15%). L2/L3 khoá: khung chạy được, mốc GOLDEN[65] ổn định, biển giữ bậc
+// và được tinh chỉnh chung (spread ≤15%). L2/L4 khoá: khung chạy được, mốc GOLDEN[65] ổn định, biển giữ bậc
 // 3, ba chính sách tạo hành vi khác biệt (Bình dân hạ giá / Đặc sản ưu tiên hàng đặc sản / Tiện lợi ca đêm).
 
 vi.mock('../net/session', () => ({ useSession: { getState: () => ({}) }, subscribe: () => () => {} }));
@@ -81,7 +81,7 @@ function displayedPriceRatios(): number[] {
   return ratios;
 }
 
-describe('Hệ3-L2/L3 — stanceBalance: khung đo chính sách bot theo hướng biển', () => {
+describe('Hệ3-L2/L4 — stanceBalance: khung đo chính sách bot theo hướng biển', () => {
   it('bốn kịch bản chạy được 10 ngày cấp 65 cùng seed; ba chính sách tạo hành vi khác biệt', { timeout: 900_000 }, async () => {
     setSimSeed(7257); // seed tất định cho cả sim và RNG ngẫu nhiên khác
     try {

@@ -6,6 +6,7 @@ import {
   binhDanCheapRatio, type StanceCtx,
   STANCE_TIER_DAYS, stanceTier, applyStanceDay, stanceActive,
   stanceTraffic, stanceLowCap, stanceOverSensitivity, stanceDishMul, stancePullSlope,
+  stanceSensitivity, stanceNearExpiry, stanceHomegrownMul, stanceCriticChance, stanceBasketAdd,
 } from '../data/stance';
 import { PRICE_RULES } from '../data/pricing';
 import { referenceSell } from '../data/pricing';import { COOKED_PRODUCT_IDS } from '../data/recipes';
@@ -144,6 +145,48 @@ describe('Hệ3-L3 — bậc biển & tích lũy ngày khớp (SPEC §3.5)', () 
   });
 });
 
+describe('Hệ3-L4 — hiệu ứng Đặc sản (SPEC §3.4), neutral khi không treo biển', () => {
+  const dac5 = { stance: { id: 'dac_san' as const, since: 1, fitDays: 50, missStreak: 0 } }; // bậc 5
+  const dac3 = { stance: { id: 'dac_san' as const, since: 1, fitDays: 21, missStreak: 0 } }; // bậc 3
+  const binh5 = { stance: { id: 'binh_dan' as const, since: 1, fitDays: 50, missStreak: 0 } };
+  it('traffic: Đặc sản −15% (bậc 5), tuyến tính; Bình dân vẫn +20%', () => {
+    expect(stanceTraffic(dac5)).toBeCloseTo(0.85);
+    expect(stanceTraffic(dac3)).toBeCloseTo(1 - 0.15 * 0.6);
+    expect(stanceTraffic(binh5)).toBeCloseTo(1.2);
+    expect(stanceTraffic({})).toBe(1);
+  });
+  it('sensitivity: hàng đặc sản chịu giá hơn (×0.7 bậc 5), hàng thường/hướng khác/không treo = 1', () => {
+    expect(stanceSensitivity(dac5, 'hx_ca_kho')).toBeCloseTo(0.7); // cá kho nhà làm = đặc sản
+    expect(stanceSensitivity(dac3, 'hx_ca_kho')).toBeCloseTo(1 - 0.3 * 0.6);
+    expect(stanceSensitivity(dac5, 'mi')).toBe(1); // mì gói = hàng công nghiệp thường
+    expect(stanceSensitivity(binh5, 'hx_ca_kho')).toBe(1);
+    expect(stanceSensitivity({}, 'hx_ca_kho')).toBe(1);
+  });
+  it('nearExpiry: Đặc sản chê hàng cận hạn ×2 (bậc 5); còn lại = 1', () => {
+    expect(stanceNearExpiry(dac5)).toBeCloseTo(2);
+    expect(stanceNearExpiry(dac3)).toBeCloseTo(1 + 0.6);
+    expect(stanceNearExpiry({})).toBe(1);
+    expect(stanceNearExpiry(binh5)).toBe(1);
+  });
+  it('homegrownMul: hàng nhà trồng/nhà làm +30% thay vì +20% (bậc 5 ×1.5); còn lại = 1', () => {
+    expect(stanceHomegrownMul(dac5)).toBeCloseTo(1.5);
+    expect(stanceHomegrownMul(dac3)).toBeCloseTo(1 + 0.5 * 0.6);
+    expect(stanceHomegrownMul({})).toBe(1);
+    expect(stanceHomegrownMul(binh5)).toBe(1);
+  });
+  it('criticChance: nhà phê bình ghé ×2 (bậc 5); còn lại = 1', () => {
+    expect(stanceCriticChance(dac5)).toBeCloseTo(2);
+    expect(stanceCriticChance({})).toBe(1);
+    expect(stanceCriticChance(binh5)).toBe(1);
+  });
+  it('basketAdd: giỏ thêm 1 món khi đạt bậc 5 Đặc sản, còn lại 0', () => {
+    expect(stanceBasketAdd(dac5)).toBe(1);
+    expect(stanceBasketAdd(dac3)).toBe(0);
+    expect(stanceBasketAdd({})).toBe(0);
+    expect(stanceBasketAdd(binh5)).toBe(0);
+  });
+});
+
 describe('Hệ3-L3 — hiệu ứng kinh tế Bình dân (SPEC §3.4), neutral khi không treo biển', () => {
   const binh5 = { stance: { id: 'binh_dan' as const, since: 1, fitDays: 50, missStreak: 0 } }; // bậc 5
   const binh3 = { stance: { id: 'binh_dan' as const, since: 1, fitDays: 21, missStreak: 0 } }; // bậc 3
@@ -164,8 +207,8 @@ describe('Hệ3-L3 — hiệu ứng kinh tế Bình dân (SPEC §3.4), neutral k
     expect(stanceOverSensitivity({}, 'mi', 99999)).toBe(1);
     expect(stanceDishMul({})).toBe(1);
   });
-  it('hướng khác (Đặc sản) chưa có hiệu ứng ở L3 → neutral', () => {
-    expect(stanceTraffic(dac1)).toBe(1);
+  it('hiệu ứng riêng của Bình dân không chạy khi treo Đặc sản → neutral (nhưng traffic Đặc sản –9% bậc 3)', () => {
+    expect(stanceTraffic(dac1)).toBeCloseTo(0.91);
     expect(stancePullSlope(dac1)).toBe(1);
     expect(stanceOverSensitivity(dac1, 'mi', 99999)).toBe(1);
     expect(stanceDishMul(dac1)).toBe(1);

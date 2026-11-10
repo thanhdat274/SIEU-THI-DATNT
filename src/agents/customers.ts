@@ -9,7 +9,7 @@ import { skyAt } from '../data/weather';
 import { marketTrafficFactor } from '../data/chophien';
 import { tierMarkdown, fitLots, nearestLife, nearExpiryRefuseChance } from '../data/freshness';
 import { demandPriceFactor, keepChance, PRICE_RULES } from '../data/pricing';
-import { stanceTraffic, stanceLowCap, stanceOverSensitivity, stancePullSlope } from '../data/stance';
+import { stanceTraffic, stanceLowCap, stanceOverSensitivity, stancePullSlope, stanceSensitivity, stanceNearExpiry, stanceCriticChance, stanceBasketAdd, isSpecialtyProduct } from '../data/stance';
 import { CUNG_GOODS, CUNG_PULL, isXoiCungDay } from '../data/tiemXoi';
 import { dayEffects, isWeekend, OFF_SEASON_CLEARANCE, OFF_SEASON_HUNT, offSeason } from '../data/calendar';
 import { crisisEffects } from '../data/crisis';
@@ -440,6 +440,11 @@ export class CustomerManager {
       : c.profession
         ? this.professionWants(c.profession, Math.max(1, count + c.profession.extraItems))
         : this.chooseWants(count);
+    // Hệ 3 (SPEC §3.4) — biển Đặc sản: giỏ có hàng đặc sản thì mua thêm 1 món (giỏ lớn hơn). Không treo = 0.
+    if (stanceBasketAdd(s.biz) && c.wants.some((w) => isSpecialtyProduct(w, s.garden?.homegrown))) {
+      const extra = this.chooseWants(1)[0];
+      if (extra) c.wants.push(extra);
+    }
     // Khách quen có lời hẹn giữ món hôm nay: đi lấy đúng món đó trước (kệ trống thì thành mất hẹn)
     if (regular) {
       const res = s.reservations[regular.id];
@@ -520,8 +525,9 @@ export class CustomerManager {
           * (crisisEffects(st.biz.crisis, st.day).sensitivity ?? 1); // Hệ 8: khách nhạy giá hơn trong biến cố; trống = 1
         // Rival đang bán rẻ đúng món này thì khách soi giá kỹ hơn hẳn
         const rivalPress = rivalUndercuts(st.biz.rival, (id) => st.priceOf(id), st.day).has(want) ? 1.35 : 1;
-        // Hệ 3 (SPEC §3.4) — biển Bình dân: món bán TRÊN thị trường bị chê nặng hơn (×1.5 bậc 5); không treo = 1
-        const stancePress = stanceOverSensitivity(st.biz, want, st.priceOf(want));
+        // Hệ 3 (SPEC §3.4) — biển Bình dân: món bán TRÊN thị trường bị chê nặng hơn (×1.5 bậc 5); biển
+        // Đặc sản: hàng đặc sản khách chịu giá hơn (sensitivity ×0.7 bậc 5). Không treo biển = cả hai = 1.
+        const stancePress = stanceOverSensitivity(st.biz, want, st.priceOf(want)) * stanceSensitivity(st.biz, want);
         if (simRng()() > keepChance(want, st.priceOf(want), c.sensitivity * rivalPress * tolerance * stancePress)) {
           c.missing++;
           c.missed.push({ id: want, why: 'price' });
@@ -533,7 +539,7 @@ export class CustomerManager {
         const shelfF = shelfUid !== undefined ? st.furniture.find((x) => x.uid === shelfUid) : undefined;
         const shelfTier = shelfF?.tiers.find((x) => x.productId === want && x.count > 0);
         const shelfLife = shelfTier ? nearestLife(fitLots(shelfTier.lots, shelfTier.count, want)) : null;
-        if (shelfLife !== null && simRng()() < nearExpiryRefuseChance(shelfLife, productById(want).category)) {
+        if (shelfLife !== null && simRng()() < nearExpiryRefuseChance(shelfLife, productById(want).category) * stanceNearExpiry(st.biz)) {
           c.say('⏳ Hàng cận hạn!');
           st.noteMiss('expired', want);
           return;
@@ -1180,7 +1186,8 @@ export class CustomerManager {
     if (s.level < CRITIC_UNLOCK) return;
     if (this.criticRolledDay !== s.day) {
       this.criticRolledDay = s.day;
-      this.criticAt = metaRng() < CRITIC_CHANCE ? 8 * 60 + Math.floor(metaRng() * 12 * 60) : null;
+      // Hệ 3 (SPEC §3.4) — biển Đặc sản: nhà phê bình ghé thường hơn (×2 bậc 5); không treo = 1
+      this.criticAt = metaRng() < CRITIC_CHANCE * stanceCriticChance(s.biz) ? 8 * 60 + Math.floor(metaRng() * 12 * 60) : null;
     }
     // Đang có lời hẹn phục vụ: món vừa được bày lên kệ thì chiếu đãi ngay, hết khung thì trượt hẹn
     if (this.criticProduct) {

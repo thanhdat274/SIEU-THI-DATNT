@@ -216,11 +216,67 @@ export const stanceTierOf = (e: StanceStateRef) => (e.stance ? stanceTier(e.stan
 // Đặc sản / Tiện lợi chưa có (L4/L5) → neutral.
 const binhDanStep = (tier: number) => tier / 5; // hệ số tuyến tính 0..1 theo bậc
 
-/** Lợi Bình dân — khách ghé +20% (bậc 5). Không treo biển / hướng khác = 1. */
+/** Thừa số lưu lượng khách theo hướng biển. Bình dân +20% (bậc 5); Đặc sản −15% (bậc 5, giá phải trả —
+ *  "ngon có tiếng" nên ít khách đường phố hơn). Tiện lợi chưa có (L5). Không treo biển / hướng khác = 1. */
 export function stanceTraffic(e: StanceStateRef): number {
   const t = stanceTierOf(e);
-  if (!t || !stanceActive(e.stance, 0) || e.stance!.id !== 'binh_dan') return 1;
-  return 1 + 0.2 * binhDanStep(t);
+  if (!t || !stanceActive(e.stance, 0)) return 1;
+  if (e.stance!.id === 'binh_dan') return 1 + 0.2 * binhDanStep(t);
+  if (e.stance!.id === 'dac_san') return 1 - 0.15 * binhDanStep(t);
+  return 1;
+}
+
+/**
+ * Lợi Đặc sản — hàng ĐẶC SẢN (món nấu, nhà làm/hàng xóm, đặc sản vùng, nhà trồng): khách chịu giá HƠN,
+ * sensitivity ×0,7 (bậc 5) → nhân vào `keepChance`. Hàng công nghiệp không được lợi gì (trả 1). Dùng bậc
+ * tuyến tính chung (để cân bằng 3 hướng so sánh được cùng thang). Không treo / hướng khác / hàng thường = 1.
+ */
+export function stanceSensitivity(e: StanceStateRef, productId: string, step: number = binhDanStep(stanceTierOf(e))): number {
+  const t = stanceTierOf(e);
+  if (!t || !stanceActive(e.stance, 0) || e.stance!.id !== 'dac_san') return 1;
+  if (!isSpecialtyProduct(productId)) return 1;
+  return 1 - 0.3 * step;
+}
+
+/**
+ * Giá phải trả Đặc sản — khách "ngon có tiếng" soi kỹ hạn dùng: tỉ lệ chê hàng cận hạn
+ * (`nearExpiryRefuseChance`) ×2 (bậc 5). Không treo / hướng khác = 1.
+ */
+export function stanceNearExpiry(e: StanceStateRef): number {
+  const t = stanceTierOf(e);
+  if (!t || !stanceActive(e.stance, 0) || e.stance!.id !== 'dac_san') return 1;
+  return 1 + 1 * binhDanStep(t);
+}
+
+/**
+ * Lợi Đặc sản — hàng mang nhãn nhà trồng/nhà làm bán +30% thay vì +20% (bậc 5). Trả hệ số nhân lên
+ * `HOMEGROWN_PREMIUM` (0.2): bậc 5 → 1.5 (0.3/0.2 = +30%). Không treo / hướng khác = 1 (giữ +20%).
+ */
+export function stanceHomegrownMul(e: StanceStateRef): number {
+  const t = stanceTierOf(e);
+  if (!t || !stanceActive(e.stance, 0) || e.stance!.id !== 'dac_san') return 1;
+  return 1 + 0.5 * binhDanStep(t);
+}
+
+/**
+ * Lợi Đặc sản — nhà phê bình ghé thường hơn: xác suất có lời mời trong ngày ×2 (bậc 5). Trả hệ số nhân
+ * lên `CRITIC_CHANCE`. Không treo / hướng khác = 1.
+ */
+export function stanceCriticChance(e: StanceStateRef): number {
+  const t = stanceTierOf(e);
+  if (!t || !stanceActive(e.stance, 0) || e.stance!.id !== 'dac_san') return 1;
+  return 1 + 1 * binhDanStep(t);
+}
+
+/**
+ * Lợi Đặc sản — giỏ có hàng đặc sản (đồ đã mua, không tính lời hẹn giữ món) thì mua THÊM 1 món (bậc 5).
+ * Trả số món thêm (int 0..1). Không treo / hướng khác = 0. Gọi ở nơi chốt `c.wants`; món thêm do bot/chủ
+ * chọn như món thường nên không tạo chuỗi RNG riêng (an toàn khi không treo biển).
+ */
+export function stanceBasketAdd(e: StanceStateRef): number {
+  const t = stanceTierOf(e);
+  if (!t || !stanceActive(e.stance, 0) || e.stance!.id !== 'dac_san') return 0;
+  return binhDanStep(t) >= 1 ? 1 : 0;
 }
 
 /** Lợi Bình dân — trần "rẻ kéo khách" (lowPriceDemandCap) 1.15 → 1.25 (bậc 5). Không treo = cap cũ. */
