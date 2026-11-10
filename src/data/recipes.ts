@@ -800,6 +800,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'bun_moc', name: 'Bún mọc', category: 'fresh', buy: 13000, sell: 24000, color: 0xf0e0c8, unlock: 199 },
   { id: 'hot_vit_lon_xao_me', name: 'Hột vịt lộn xào me', category: 'fresh', buy: 9000, sell: 16000, color: 0x9a6a3a, unlock: 186 },
   { id: 'muc_xao_sa_ot', name: 'Mực xào sả ớt', category: 'fresh', buy: 20000, sell: 34000, color: 0xd8a070, unlock: 187 },
+  { id: 'bo_la_lot', name: 'Bò lá lốt', category: 'fresh', buy: 16000, sell: 28000, color: 0x4a6a2a, unlock: 188 },
+  { id: 'cha_la_lot', name: 'Chả lá lốt', category: 'fresh', buy: 12000, sell: 22000, color: 0x3a5a2a, unlock: 189 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2651,6 +2653,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_muc_xao_sa_ot', name: 'Mực xào sả ớt', station: 'fryer',
     inputs: [{ productId: 'x_muc_tuoi', quantity: 1 }, { productId: 'x_sa', quantity: 1 }, { productId: 'ot_hien', quantity: 1 }],
     outputId: 'muc_xao_sa_ot', outputQty: 4, durationMin: 15, unlock: 187, reputationGain: 1 },
+  // GĐ2123: Bò lá lốt — Nam Bộ: thịt bò băm ướp sả tỏi cuốn lá lốt, nướng than; không thay thế.
+  { id: 'recipe_bo_la_lot', name: 'Bò lá lốt', station: 'food_grill',
+    inputs: [{ productId: 'x_thit_bo', quantity: 1 }, { productId: 'x_la_lot', quantity: 1 }],
+    outputId: 'bo_la_lot', outputQty: 4, durationMin: 20, unlock: 188, reputationGain: 1 },
+  // GĐ2124: Chả lá lốt — miền Bắc: thịt heo băm cuốn lá lốt, rán chảo ít dầu tới thơm; không thay thế.
+  { id: 'recipe_cha_la_lot', name: 'Chả lá lốt', station: 'fryer',
+    inputs: [{ productId: 'x_thit_heo', quantity: 1 }, { productId: 'x_la_lot', quantity: 1 }],
+    outputId: 'cha_la_lot', outputQty: 4, durationMin: 20, unlock: 189, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────

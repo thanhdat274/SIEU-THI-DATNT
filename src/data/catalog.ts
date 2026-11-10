@@ -336,4 +336,5 @@ export const CATALOG_PRODUCTS: Product[] = [
   p('x_su_su', 'Su su', 'fresh', 7000, 10000, 0xa8d88a, 165), // GĐ2091: cho su su xào tỏi
   p('x_rau_ngot', 'Rau ngót', 'fresh', 5000, 8000, 0x2a6a2a, 165), // GĐ2095: cho canh rau ngót (cuối danh sách, mở muộn)
   p('x_oc', 'Ốc bươu', 'fresh', 30000, 42000, 0x6a5a3a, 170), // GĐ2099: cho ốc luộc (nghêu dùng 'ngheu' sẵn có)
+  p('x_la_lot', 'Lá lốt', 'fresh', 4000, 6000, 0x3a7a3a, 170), // GĐ2123: cho bò lá lốt, chả lá lốt
 ];
