@@ -629,6 +629,10 @@ export interface GameState {
   foundBrand: (name: string) => void;
   addBrandLine: (productId: string) => void;
   dropBrandLine: (productId: string) => void;
+  /** Hệ 4 — Xưởng đóng gói (SPEC §4.5a): mua xưởng / thuê-cho nghỉ thợ. GUARDED 'brand'. */
+  buyBrandWorkshop: () => void;
+  hireBrandWorker: () => void;
+  fireBrandWorker: () => void;
 
   /** Trang trại (trồng, bón phân, nuôi gà/vịt/ngỗng/bò/heo/dê/gà Đông Tảo, đơn quán xóm). */
   garden: GardenState;

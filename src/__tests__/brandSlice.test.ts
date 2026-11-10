@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useGame } from '../core/store';
-import { BRAND_UNLOCK, type BrandState } from '../data/brand';
+import { BRAND_UNLOCK, BRAND_WORKSHOP_MAX_STAFF, brandWorkshopDay, type BrandState } from '../data/brand';
+import { productById } from '../data/products';
 
 vi.mock('../net/session', () => ({ useSession: { getState: () => ({}) }, subscribe: () => () => {} }));
 vi.mock('../net/cloud', () => ({ pushCloudSave: () => {}, takeCloudSave: () => {} }));
@@ -130,5 +131,90 @@ describe('Hệ4-L2 — bán lẻ hàng nhãn: premium theo bậc uy tín, không
     const before = useGame.getState().money;
     useGame.getState().checkout([{ id: 'hx_nuoc_mam', price: 47000 }]);
     expect(useGame.getState().money - before).toBe(47000);
+  });
+});
+
+describe('Hệ4-L3 — xưởng đóng gói: mua/thuê/cho nghỉ, cổng tiền & cấp', () => {
+  it('cấp < 100 không mua được xưởng; thiếu tiền thì từ chối giữ tiền', () => {
+    setUp(60, brand());
+    useGame.getState().buyBrandWorkshop();
+    expect(useGame.getState().biz.brand!.workshop).toBeNull();
+    setUp(100, brand());
+    const before = useGame.getState().money;
+    useGame.getState().buyBrandWorkshop(); // còn dư ít hơn 60tr => từ chối
+    const st = useGame.getState();
+    expect(st.money).toBe(before); // không bị trừ tiền
+    expect(st.biz.brand!.workshop).toBeNull();
+  });
+
+  it('mua xưởng trừ 60tr, mở được; thuê/cho nghỉ thợ trong giới hạn 3', () => {
+    setUp(100, brand());
+    useGame.setState({ money: 100_000_000 } as never);
+    useGame.getState().buyBrandWorkshop();
+    let st = useGame.getState();
+    expect(st.money).toBe(100_000_000 - 60_000_000);
+    expect(st.biz.brand!.workshop?.open).toBe(true);
+    expect(st.biz.brand!.workshop?.staff).toBe(0);
+    for (let i = 0; i < 5; i++) useGame.getState().hireBrandWorker();
+    expect(useGame.getState().biz.brand!.workshop!.staff).toBe(BRAND_WORKSHOP_MAX_STAFF); // 3, không quá
+    useGame.getState().fireBrandWorker();
+    expect(useGame.getState().biz.brand!.workshop!.staff).toBe(2);
+  });
+
+  it('chưa lập nhãn thì không mua xưởng', () => {
+    setUp(100); // không có brand
+    useGame.setState({ money: 100_000_000 } as never);
+    useGame.getState().buyBrandWorkshop();
+    expect(useGame.getState().biz.brand).toBeUndefined();
+  });
+});
+
+describe('Hệ4-L3 — brandWorkshopDay: đóng hàng chưa nhãn thành hàng nhãn, đúng công suất + phí/lương', () => {
+  const wsBrand = (staff: number, stock = {}): BrandState => brand({
+    workshop: { open: true, staff, tier: 0 },
+    lines: [{ productId: 'hx_nuoc_mam', since: 100, made: 0, sold: 0 }],
+    stock,
+  });
+
+  it('không xưởng/thợ → không đóng gì, trung tính', () => {
+    const r0 = brandWorkshopDay(brand(), { hx_nuoc_mam: 10 }, {}, 100);
+    expect(r0.packed).toBe(0);
+    expect(r0.storage.hx_nuoc_mam).toBe(10);
+  });
+
+  it('đóng đúng công suất (2 thợ × 20 = 40), chuyển storage→stock, trừ phí bao bì + lương', () => {
+    const sell = productById('hx_nuoc_mam').sell;
+    const r = brandWorkshopDay(wsBrand(2), { hx_nuoc_mam: 100 }, {}, 120);
+    expect(r.packed).toBe(40);
+    expect(r.storage.hx_nuoc_mam).toBe(60);
+    expect(r.brand.stock.hx_nuoc_mam).toBe(40);
+    expect(r.brand.lines[0].made).toBe(40);
+    expect(r.fee).toBe(Math.round(Math.round(40 * sell * 0.08) / 100) * 100);
+    expect(r.wage).toBe(2 * 150000);
+    expect(r.brand.lastPackDay).toBe(120);
+  });
+
+  it('lấy hàng nhà trồng đóng nhãn → bỏ dấu nhà trồng (bán nhãn lấy premium cao hơn)', () => {
+    const r = brandWorkshopDay(wsBrand(1), { hx_nuoc_mam: 10 }, { hx_nuoc_mam: 10 }, 120);
+    expect(r.packed).toBe(10);
+    expect(r.homegrown.hx_nuoc_mam).toBeUndefined();
+    expect(r.brand.stock.hx_nuoc_mam).toBe(10);
+  });
+
+  it('hết nguyên liệu → packed 0, lastPackDay không đổi (bắt đầu tính nhãn nguội)', () => {
+    const r = brandWorkshopDay(wsBrand(1, { hx_nuoc_mam: 3 }), {}, {}, 120);
+    expect(r.packed).toBe(0);
+    expect(r.brand.lastPackDay).toBe(0);
+  });
+
+  it('công suất chỉ đóng tối đa có sẵn; nhiều dòng chia đúng công suất', () => {
+    const b = brand({
+      workshop: { open: true, staff: 3, tier: 0 }, // 60/đêm
+      lines: [{ productId: 'hx_nuoc_mam', since: 100, made: 0, sold: 0 }, { productId: 'hx_mam_tep', since: 100, made: 0, sold: 0 }],
+    });
+    const r = brandWorkshopDay(b, { hx_nuoc_mam: 40, hx_mam_tep: 40 }, {}, 130);
+    expect(r.packed).toBe(60);
+    expect(r.brand.stock.hx_nuoc_mam).toBe(40);
+    expect(r.brand.stock.hx_mam_tep).toBe(20);
   });
 });

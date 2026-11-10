@@ -139,6 +139,61 @@ export const BRAND_WORKSHOP_WAGE = 150_000;
 export const brandWorkshopCapacity = (w: { staff: number; tier: 0 | 1 | 2 }) =>
   w.staff * BRAND_WORKSHOP_CAPACITY[w.tier];
 
+/** Kết quả một đêm chạy xưởng đóng gói (thuần, không đụng store). */
+export interface BrandWorkshopResult {
+  brand: BrandState;
+  storage: Record<string, number>;
+  homegrown: Record<string, number>;
+  /** Tổng đơn vị đã đóng gói (0 nếu chưa mở xưởng / không thợ / hết hàng). */
+  packed: number;
+  /** Phí bao bì phải trả (8% giá bán gợi ý × số đơn vị, tròn trăm). */
+  fee: number;
+  /** Lương thợ đêm (staff × BRAND_WORKSHOP_WAGE). */
+  wage: number;
+  news: string[];
+}
+
+/**
+ * Hệ 4 (SPEC §4.5a) — MỖI ĐÊM xưởng lấy hàng CHƯA NHÃN trong kho của các dòng (công suất = thợ × bậc),
+ * đóng thành hàng MANG NHÃN (chuyển số đếm sang `brand.stock`), tốn phí bao bì + lương thợ.
+ * Hàng nhà trồng/nhà làm khi đóng nhãn sẽ bỏ dấu nhà trồng (vì bán nhãn đã lấy premium cao hơn — §4.5b).
+ */
+export function brandWorkshopDay(b: BrandState, storage: Record<string, number>, homegrown: Record<string, number>, day: number): BrandWorkshopResult {
+  const news: string[] = [];
+  const w = b.workshop;
+  if (!w?.open || w.staff <= 0) {
+    return { brand: b, storage, homegrown, packed: 0, fee: 0, wage: w?.staff ? w.staff * BRAND_WORKSHOP_WAGE : 0, news };
+  }
+  let capacity = brandWorkshopCapacity(w);
+  const lines = b.lines.map((l) => ({ ...l }));
+  const stock = { ...b.stock };
+  const newStorage = { ...storage };
+  const newHome = { ...homegrown };
+  let packedTotal = 0;
+  let fee = 0;
+  for (const line of lines) {
+    if (capacity <= 0) break;
+    const avail = newStorage[line.productId] ?? 0;
+    const n = Math.min(avail, capacity);
+    if (n <= 0) continue;
+    const after = avail - n;
+    if (after > 0) newStorage[line.productId] = after; else delete newStorage[line.productId];
+    stock[line.productId] = (stock[line.productId] ?? 0) + n;
+    // đơn vị đã thành hàng nhãn → thôi mang dấu nhà trồng (bán nhãn lấy premium cao hơn — §4.5b)
+    const hg = newHome[line.productId] ?? 0;
+    if (hg > 0) { const drop = Math.min(hg, n); const left = hg - drop; if (left > 0) newHome[line.productId] = left; else delete newHome[line.productId]; }
+    line.made += n;
+    capacity -= n;
+    packedTotal += n;
+    fee += n * productById(line.productId).sell * BRAND_PACK_FEE;
+  }
+  fee = Math.round(fee / 100) * 100;
+  const wage = w.staff * BRAND_WORKSHOP_WAGE;
+  const brand = { ...b, lines, stock, lastPackDay: packedTotal > 0 ? day : b.lastPackDay };
+  if (packedTotal > 0) news.push(`🏭 Xưởng đóng gói ${packedTotal} đơn vị hàng nhãn (thợ ${w.staff}, phí bao bì ${fee.toLocaleString('vi-VN')}đ)`);
+  return { brand, storage: newStorage, homegrown: newHome, packed: packedTotal, fee, wage, news };
+}
+
 // ───── Bỏ mối đại lý (§4.5c) ─────
 
 export interface BrandDealerDef {

@@ -3,6 +3,7 @@ import { useGame } from '../../core/store';
 import { productById } from '../../data/products';
 import {
   BRAND_LINE_SLOTS, BRAND_UNLOCK, brandLineEligible, brandLineSlots, brandRepTier, brandStockUnits,
+  brandWorkshopCapacity, type BrandState,
 } from '../../data/brand';
 import { Footer, styles, Tabs } from './shared';
 
@@ -23,7 +24,7 @@ const pname = (id: string) => (productById(id)?.name ?? id).replace(/\s*\([^)]*\
  * Xưởng/Bỏ mối/Nhượng quyền sẽ mở ở các lát sau.
  */
 export function BrandPanel() {
-  const { level, biz, garden, soldEver, foundBrand, addBrandLine, dropBrandLine, closePanel } = useGame();
+  const { level, money, biz, garden, soldEver, foundBrand, addBrandLine, dropBrandLine, buyBrandWorkshop, hireBrandWorker, fireBrandWorker, closePanel } = useGame();
   const [tab, setTab] = useState<Tab>('lines');
   const [name, setName] = useState('');
   const b = biz.brand;
@@ -77,10 +78,7 @@ export function BrandPanel() {
           {tab === 'lines' && <LinesTab lines={b.lines} candidates={candidates} slots={brandLineSlots(level)} onAdd={addBrandLine} onDrop={dropBrandLine} stock={brandStockUnits(b)} />}
 
           {tab === 'workshop' && (
-            <div style={styles.card}>
-              <b>🏭 Xưởng đóng gói</b>
-              <span style={{ fontSize: 12, opacity: 0.75, flex: 1 }}>Mỗi đêm xưởng lấy hàng chưa nhãn trong kho đóng thành hàng mang nhãn (sẽ mở ở lát sau).</span>
-            </div>
+            <WorkshopTab b={b} level={level} money={money} onBuy={buyBrandWorkshop} onHire={hireBrandWorker} onFire={fireBrandWorker} />
           )}
 
           {tab === 'dealers' && (
@@ -115,6 +113,50 @@ function RepBar({ rep, name }: { rep: number; name: string }) {
           <div style={{ height: '100%', width: `${rep}%`, background: '#f39c12', borderRadius: 4 }} />
         </div>
       </div>
+    </div>
+  );
+}
+
+function WorkshopTab(props: { b: BrandState; level: number; money: number; onBuy: () => void; onHire: () => void; onFire: () => void }) {
+  const { b, level, money, onBuy, onHire, onFire } = props;
+  const w = b.workshop;
+  const vnd = (n: number) => `${(n ?? 0).toLocaleString('vi-VN')}đ`;
+  return (
+    <div>
+      <p style={{ ...styles.sub, maxWidth: 620 }}>
+        Mỗi đêm xưởng lấy hàng chưa nhãn trong kho của các dòng, đóng thành hàng <b>mang nhãn</b> (bán theo bậc
+        uy tín). Công suất = thợ × bậc xưởng, phí bao bì 8% giá bán + lương thợ. Mở từ cấp 100.
+      </p>
+
+      {!w?.open && (
+        <div style={styles.card}>
+          <div style={{ flex: 1 }}>
+            <b>Mua xưởng đóng gói</b>
+            <div style={{ fontSize: 12, opacity: 0.8 }}>{vnd(60000000)} · mở mặt bằng để đóng hàng mang nhãn theo lô.</div>
+          </div>
+          <button style={styles.btn} disabled={level < 100 || money < 60000000} onClick={onBuy}>Mua xưởng</button>
+        </div>
+      )}
+
+      {w?.open && (
+        <>
+          <div style={styles.card}>
+            <div style={{ flex: 1 }}>
+              <b>🏭 Xưởng đóng gói</b>
+              <div style={{ fontSize: 12, opacity: 0.8 }}>
+                Thợ {w.staff}/3 · công suất/đêm ≈ <b>{brandWorkshopCapacity(w)}</b> đơn vị · lương thợ/đêm {vnd(w.staff * 150000)} · phí bao bì 8% giá bán.
+                {' '}Hàng nhãn trong kho: {brandStockUnits(b)} đơn vị.
+              </div>
+            </div>
+            <button style={styles.btn} disabled={w.staff >= 3} onClick={onHire}>+ Thuê thợ</button>
+            <button style={styles.btn} disabled={w.staff <= 0} onClick={onFire}>− Cho nghỉ</button>
+          </div>
+          <p style={{ ...styles.sub, marginTop: 8 }}>
+            Hệ 1 — món nào trong dòng hàng còn nguyên liệu thô ở kho, xưởng sẽ tự đóng qua đêm. Sau vài đêm mở lại
+            tab này để thấy hàng nhãn tích trong kho, rồi bán lẻ (hoặc lát sau bỏ mối đại lý).
+          </p>
+        </>
+      )}
     </div>
   );
 }

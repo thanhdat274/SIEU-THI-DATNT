@@ -1,4 +1,4 @@
-import { BRAND_LINE_SLOTS, BRAND_UNLOCK, brandLineEligible, brandLineSlots, type BrandState } from '../../data/brand';
+import { BRAND_LINE_SLOTS, BRAND_UNLOCK, BRAND_WORKSHOP_COST, BRAND_WORKSHOP_MAX_STAFF, BRAND_WORKSHOP_UNLOCK, brandLineEligible, brandLineSlots, type BrandState } from '../../data/brand';
 import { productById } from '../../data/products';
 import type { GameState, GetState, SetState } from '../gameTypes';
 
@@ -11,7 +11,7 @@ import type { GameState, GetState, SetState } from '../gameTypes';
  */
 export const createBrandSlice = (set: SetState, get: GetState): Pick<
   GameState,
-  'foundBrand' | 'addBrandLine' | 'dropBrandLine'
+  'foundBrand' | 'addBrandLine' | 'dropBrandLine' | 'buyBrandWorkshop' | 'hireBrandWorker' | 'fireBrandWorker'
 > => ({
   foundBrand: (name) => {
     const s = get();
@@ -52,6 +52,34 @@ export const createBrandSlice = (set: SetState, get: GetState): Pick<
     delete stock[productId];
     set({ biz: { ...s.biz, brand: { ...b, lines, stock } } });
     s.notify(`🏷️ Bỏ dòng nhãn "${pname(productId)}".`);
+  },
+
+  // ───── XƯỞNG ĐÓNG GÓI (SPEC §4.5a) ─────
+  buyBrandWorkshop: () => {
+    const s = get();
+    const b = s.biz.brand;
+    if (!b) return s.notify(`🏷️ Hãy lập nhãn trước (mục Nhãn riêng, cấp ${BRAND_UNLOCK}).`);
+    if (s.level < BRAND_WORKSHOP_UNLOCK) return s.notify(`🏭 Xưởng đóng gói mở từ cấp ${BRAND_WORKSHOP_UNLOCK}.`);
+    if (b.workshop?.open) return s.notify(`🏭 Xưởng đóng gói đã mở.`);
+    if (s.money < BRAND_WORKSHOP_COST) return s.notify(`🏭 Mua xưởng đóng gói cần ${BRAND_WORKSHOP_COST.toLocaleString('vi-VN')}đ — còn thiếu ${(BRAND_WORKSHOP_COST - s.money).toLocaleString('vi-VN')}đ.`);
+    set({ money: s.money - BRAND_WORKSHOP_COST, biz: { ...s.biz, brand: { ...b, workshop: { open: true, staff: 0, tier: 0 } } } });
+    s.notify(`🏭 Mở xưởng đóng gói! Thuê thợ để mỗi đêm tự đóng hàng mang nhãn (tối đa ${BRAND_WORKSHOP_MAX_STAFF} thợ).`);
+  },
+  hireBrandWorker: () => {
+    const s = get();
+    const b = s.biz.brand;
+    if (!b?.workshop?.open) return s.notify(`🏭 Chưa có xưởng đóng gói.`);
+    if (b.workshop.staff >= BRAND_WORKSHOP_MAX_STAFF) return s.notify(`🏭 Đã đủ ${BRAND_WORKSHOP_MAX_STAFF} thợ (tối đa).`);
+    set({ biz: { ...s.biz, brand: { ...b, workshop: { ...b.workshop, staff: b.workshop.staff + 1 } } } });
+    s.notify(`🏭 Thuê thêm 1 thợ đóng gói (${b.workshop.staff + 1}/${BRAND_WORKSHOP_MAX_STAFF}). Lương trả mỗi đêm.`);
+  },
+  fireBrandWorker: () => {
+    const s = get();
+    const b = s.biz.brand;
+    if (!b?.workshop?.open) return;
+    if (b.workshop.staff <= 0) return;
+    set({ biz: { ...s.biz, brand: { ...b, workshop: { ...b.workshop, staff: b.workshop.staff - 1 } } } });
+    s.notify(`🏭 Cho 1 thợ nghỉ (còn ${b.workshop.staff - 1}/${BRAND_WORKSHOP_MAX_STAFF}).`);
   },
 });
 

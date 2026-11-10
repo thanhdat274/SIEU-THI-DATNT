@@ -39,6 +39,7 @@ import { staffDayEnd } from '../../data/staffTraits';
 import { BUZZ_DAYS, CRISIS_MUL, POST_CAP, SOCIAL_UNLOCK, socialDayEnd, type SocialPost } from '../../data/social';
 import { ANIMAL_ORDER, farmCritChance, farmhandChores, FARM_ORDER_UNLOCK, farmOrderCapacity, farmOrderNews, farmOrderProduce, gardenNight, makeFarmOrder, type AnimalKind } from '../../data/garden';
 import { preserveNight, farmhandPreserve, preserveDefById } from '../../data/preserve';
+import { brandWorkshopDay } from '../../data/brand';
 import { crisisNight } from '../../data/crisis';
 import { lifeEventFor, lifeEventById, gioLabel } from '../../data/lifeEvent';
 import { stanceActive, stanceFitByDirection, applyStanceDay, stanceTier, STANCE_UNLOCK, STANCE_META, hasStanceSeal, isStanceSealable, type StanceState } from '../../data/stance';
@@ -568,10 +569,24 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
   if (wokeLate) say('😴 Ngủ muộn vì ca đêm: hôm nay dậy trễ, bỏ lỡ buổi sáng đông khách!');
   // GĐ1833 (review đợt 2 R3 / đợt 3 R3): két âm sau khi trả nhà/lương/vận hành — nói thẳng con số
   // thiếu trong tổng kết (và kê dòng riêng) để người chơi biết mình đang nợ chứ không mất một cách vô cớ.
-  const moneyAfter = (extra.money ?? s.money) - wages - rent - maintCost - opCost + inspectPay + biz.money + onlineDay.money + crew.tips - crew.cashLoss + quanRevenue - quanWages;
+  let moneyAfter = (extra.money ?? s.money) - wages - rent - maintCost - opCost + inspectPay + biz.money + onlineDay.money + crew.tips - crew.cashLoss + quanRevenue - quanWages;
   if (moneyAfter < 0) {
     stats.shortfall = -moneyAfter; // stats là DayStats — panel/lastSummary giữ cùng tham chiếu
     say(`⚠️ Két thiếu ${formatMoney(-moneyAfter)} sau khi trả nhà/lương/vận hành — bán bù sớm kẻo lún sâu`);
+  }
+  // Hệ 4 (SPEC §4.5a) — XƯỞNG ĐÓNG GÓI chạy QUA ĐÊM: lấy hàng chưa nhãn trong kho `k`, đóng thành hàng
+  // nhãn (brand.stock + lastPackDay), trừ phí bao bì + lương thợ. Cổng cấp ≥ 100 (R1 golden giữ nguyên);
+  // không nhãn/xưởng/thợ → không chạy, trung tính.
+  {
+    const brandB0 = biz.biz.brand;
+    if (brandB0 && brandB0.workshop?.open && brandB0.workshop.staff > 0) {
+      const wk = brandWorkshopDay(brandB0, k.storage, garden.homegrown, s.day);
+      biz.biz = { ...biz.biz, brand: wk.brand };
+      k.storage = wk.storage;
+      garden = { ...garden, homegrown: wk.homegrown };
+      moneyAfter -= wk.fee + wk.wage;
+      for (const n of wk.news) say(n);
+    }
   }
   // SPEC-TOI-UU §T1 (L1): gom bản ghi ẩn danh ngày vừa chốt — lưu CỤC BỘ, không gửi đi đâu.
   collectReport(s, stats);

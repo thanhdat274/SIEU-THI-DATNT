@@ -68,6 +68,9 @@ export const GUARDED: Record<string, (args: unknown[]) => string> = {
   foundBrand: () => 'brand',
   addBrandLine: () => 'brand',
   dropBrandLine: () => 'brand',
+  buyBrandWorkshop: () => 'brand',
+  hireBrandWorker: () => 'brand',
+  fireBrandWorker: () => 'brand',
   // Hệ 7 — Trò khéo tay lễ (SPEC-CHIEU-RONG §7.7): mỗi trò là một chỗ thưởng chung trong ngày → khoá 'mini:<id>'.
   scoreFestivalMini: (a) => `mini:${a[0]}`,
 };
