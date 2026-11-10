@@ -298,3 +298,31 @@ describe('Hệ8-L3 — doCrisisPrep (slice trên store)', () => {
     expect(g().biz.crisis?.preps.filter((x) => x === 'banner')).toHaveLength(1);
   });
 });
+
+describe('Hệ8-L3 — chooseCrisisScene (slice)', () => {
+  beforeEach(() => {
+    useGame.setState({ ...newGameData(), level: 50, money: 10_000_000, day: 400 });
+    useGame.setState({
+      biz: { ...useGame.getState().biz, crisis: { defId: 'dao_duong', startDay: 400, preps: [], choices: {}, kind: 0 } },
+    });
+  });
+  const g = () => useGame.getState();
+
+  it('chọn cảnh đúng ngày: ghi choices + kind tăng khi ấm', () => {
+    g().chooseCrisisScene(3, 0, true);
+    expect(g().biz.crisis?.choices[3]).toBe(0);
+    expect(g().biz.crisis?.kind).toBe(1);
+  });
+
+  it('chọn lặp cảnh → không ghi đè lần hai', () => {
+    g().chooseCrisisScene(3, 0, true);
+    g().chooseCrisisScene(3, 1, false);
+    expect(g().biz.crisis?.choices[3]).toBe(0);
+    expect(g().biz.crisis?.kind).toBe(1);
+  });
+
+  it('ngày không có cảnh → bỏ qua', () => {
+    g().chooseCrisisScene(6, 0, true);
+    expect(g().biz.crisis?.choices[6]).toBeUndefined();
+  });
+});

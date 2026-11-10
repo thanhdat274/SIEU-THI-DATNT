@@ -8,7 +8,7 @@ import type { GameState, GetState, SetState } from '../gameTypes';
  * `crisisNight` (data/crisis.ts, THUẦN) gọi từ endDay; slice này chỉ ghi tiêu tiền + preps/choices.
  * Cấp mở ≥ 36, autoplay không tự bấm → golden L30 không đổi (R1).
  */
-export const createCrisisSlice = (set: SetState, get: GetState): Pick<GameState, 'doCrisisPrep'> => ({
+export const createCrisisSlice = (set: SetState, get: GetState): Pick<GameState, 'doCrisisPrep' | 'chooseCrisisScene'> => ({
   doCrisisPrep: (prepId: string) => {
     const s = get();
     const st = s.biz.crisis;
@@ -29,5 +29,18 @@ export const createCrisisSlice = (set: SetState, get: GetState): Pick<GameState,
       totals: { ...s.totals, spent: s.totals.spent + prep.cost },
     });
     s.notify(`${def.icon} Đã chuẩn bị: ${prep.label} (${formatMoney(prep.cost)}) — ${prep.effect}`);
+  },
+  chooseCrisisScene: (dayIndex: number, option: number, warm: boolean) => {
+    const s = get();
+    const st = s.biz.crisis;
+    const def = st ? crisisDefById(st.defId) : undefined;
+    if (!st || !def) return;
+    const scene = def.scenes.find((c) => c.atDay === dayIndex);
+    if (!scene) return;
+    if (st.choices[dayIndex] !== undefined) return; // đã chọn cảnh này
+    set({
+      biz: { ...s.biz, crisis: { ...st, choices: { ...st.choices, [dayIndex]: option }, kind: st.kind + (warm ? 1 : 0) } },
+    });
+    s.notify(`${def.icon} ${scene.options[option] ?? 'Đã chọn.'}`);
   },
 });
