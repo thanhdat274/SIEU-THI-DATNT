@@ -12,10 +12,24 @@ import { maxStaff } from '../data/staff';
 import { referenceSell } from '../data/pricing';
 import { isSpecialtyProduct, STANCE_TIER_DAYS } from '../data/stance';
 import { SERVICES } from '../data/services';
+import { brandDealerById, brandDealersAvail, brandDealValue } from '../data/brand';
 import type { CustomerManager } from '../agents/customers';
 import type { StaffManager } from '../agents/staff';
 import type { Player } from '../agents/player';
 import type { GroceryShop } from '../shop/groceryShop';
+
+/**
+ * Hệ 4 L7 (SPEC §4.8) — bộ gom thu-chi của NHÃN RIÊNG trong một lần sim (bot cộng dồn khi ký/giao/nhận
+ *  rival/bỏ xưởng chạy đêm). Reset đầu mỗi runEconomySim có `brand`. Test brandBalance đọc để tính
+ *  "lãi ròng từ nhãn" làm tỉ số với tổng lãi ngày (§4.8).
+ */
+export const brandSim = {
+  /** Thu nhập thật từ nhãn: tiền kỳ đại lý + rival (chưa trừ chi). */
+  income: 0,
+  /** Chi phí vận hành nhãn: lương thợ + phí bao bì (đã trừ khỏi két trong endDay). */
+  cost: 0,
+  reset() { this.income = 0; this.cost = 0; },
+};
 
 /**
  * Hệ 3 L2 (SPEC §3.8) — bot Đặc sản "ưu tiên bày hàng đặc sản": xếp các ứng viên bày kệ theo thứ tự
@@ -43,6 +57,11 @@ export interface AutoplayOptions {
    *  dac_san ưu tiên bày hàng đặc sản, tien_loi mở ca đêm + đủ dịch vụ. Ở L2 hiệu ứng = 0 (chỉ lệch
    *  do hành vi bot), framework đo để lát sau bật hiệu ứng so sánh. */
   stance?: 'binh_dan' | 'dac_san' | 'tien_loi';
+  /** Hệ 4 L7 (SPEC §4.8) — bật bot NHÃN RIÊNG: ký đại lý khả dụng, giao các kỳ đủ hàng, nhận chào rival.
+   *  Dùng cho brandBalance.test. (Cần mẻ Hệ-1 làm sẵn → test seed brand trực tiếp vào sim.) */
+  brand?: boolean;
+  /** Chạy sau khi seedLevel xong, trước khi autoplay — để test gieo trạng thái (nhãn, rival). */
+  inject?: () => void;
 }
 
 /**
@@ -222,6 +241,44 @@ export function createAutoplay(
     for (const p of def.preps) s.doCrisisPrep(p.id); // doCrisisPrep tự lo tiền/đã làm
   }
 
+  /** Hệ 4 L7 (SPEC §4.8) — bot NHÃN RIÊNG (bật qua opts.brand): mỗi sáng ký đại lý khả dụng, giao kỳ
+   *  đủ hàng, nhận chào rival. Cộng dồn thu-chi vào brandSim để test cân bằng đo. */
+  function brandMorning() {
+    if (!opts.brand) return;
+    const s = st();
+    const b = s.biz.brand;
+    if (!b) return;
+    // Xưởng chạy qua đêm đã trừ phí+lương vào endDay; gom chi để so với thu.
+    // (Thu/chi đêm của brand nằm trong endDay — không đụng được ở đây, đo qua income đầy đủ bên dưới.)
+    // Ký các đại lý đã mở mà còn thiếu dòng có đủ hàng.
+    for (const def of brandDealersAvail(s.level, b.rep)) {
+      if (b.deals[def.id]) continue;
+      if (b.reopenDays?.[def.id] && s.day < b.reopenDays[def.id]) continue;
+      const line = b.lines.find((l) => (b.stock[l.productId] ?? 0) >= def.qty);
+      if (line && s.acceptBrandDeal) s.acceptBrandDeal(def.id, line.productId);
+    }
+    // Giao các kỳ đã tới hạn hoặc đủ hàng (bot giao đúng chu kỳ).
+    for (const id of Object.keys(b.deals ?? {})) {
+      const deal = b.deals[id];
+      const def = brandDealerById(id);
+      if (!def || !deal || !deal.pending) continue;
+      if (s.day >= deal.dueDay || (b.stock[deal.productId] ?? 0) >= def.qty) {
+        const ok = s.deliverBrandDeal(id);
+        if (ok) brandSim.income += brandDealValue(def, deal.productId);
+      }
+    }
+    // Nhận chào rival (95% — đo hiệu ứng tiền nhanh + sức mạnh rival).
+    const b2 = st().biz.brand;
+    if (b2?.rivalOffer && b2.rivalSold !== undefined) {
+      const offer = b2.rivalOffer;
+      const val = Math.round(productById(offer.productId).sell * offer.units * 0.95 / 1000) * 1000;
+      if ((b2.stock[offer.productId] ?? 0) >= offer.units && st().acceptRivalSupply) {
+        st().acceptRivalSupply();
+        brandSim.income += val;
+      }
+    }
+  }
+
   /** Chơi ĐÚNG 1 ngày. `yieldHook` (nếu có) chạy sau mỗi batch tick để nhả main thread cho worker. */
   async function playOneDay(yieldHook: (() => Promise<void>) | null): Promise<Record<string, number | string | Record<string, number>>> {
     const step = yieldEvery > 0 ? yieldEvery : 40;
@@ -232,6 +289,7 @@ export function createAutoplay(
     ensureStance(); // Hệ 3 — treo biển ở bậc 3 (SPEC §3.8)
     ensureTienLoi(); // Hệ 3 L2 — bot Tiện lợi: ca đêm + dịch vụ
     priceBinhDan();  // Hệ 3 L2 — bot Bình dân: hạ giá toàn bộ bày kệ
+    brandMorning();  // Hệ 4 L7 — bot Nhãn riêng (SPEC §4.8)
     // Người chơi đứng quầy chính cả ngày
     const main = shop.counters()[0];
     player.teleport(main.center.x - 0.6, main.center.z - 0.9);
@@ -309,6 +367,7 @@ export function createAutoplay(
     ensureStance(); // Hệ 3 — treo biển ở bậc 3 (SPEC §3.8)
     ensureTienLoi(); // Hệ 3 L2 — bot Tiện lợi: ca đêm + dịch vụ
     priceBinhDan();  // Hệ 3 L2 — bot Bình dân: hạ giá toàn bộ bày kệ
+    brandMorning();  // Hệ 4 L7 — bot Nhãn riêng (SPEC §4.8)
     const main = shop.counters()[0];
     player.teleport(main.center.x - 0.6, main.center.z - 0.9);
     if (!st().shopOpen) st().toggleShop();
