@@ -7,6 +7,7 @@ import {
   STANCE_TIER_DAYS, stanceTier, applyStanceDay, stanceActive,
   stanceTraffic, stanceLowCap, stanceOverSensitivity, stanceDishMul, stancePullSlope,
   stanceSensitivity, stanceNearExpiry, stanceHomegrownMul, stanceCriticChance, stanceBasketAdd,
+  stanceServiceMul, stanceNightMul, stanceSlowMul, stancePatience, stanceBasketCut,
 } from '../data/stance';
 import { PRICE_RULES } from '../data/pricing';
 import { referenceSell } from '../data/pricing';import { COOKED_PRODUCT_IDS } from '../data/recipes';
@@ -142,6 +143,35 @@ describe('Hệ3-L3 — bậc biển & tích lũy ngày khớp (SPEC §3.5)', () 
     expect(stanceActive(st, 100)).toBe(false);
     expect(applyStanceDay(st, false, 100)).toEqual({ id: 'binh_dan', since: 100, fitDays: 21, missStreak: 0, switchUntil: 110 });
     expect(stanceActive({ ...st, switchUntil: 105 } as never, 110)).toBe(true);
+  });
+});
+
+describe('Hệ3-L5 — hiệu ứng Tiện lợi (SPEC §3.4), neutral khi không treo biển', () => {
+  const tl5 = { stance: { id: 'tien_loi' as const, since: 1, fitDays: 50, missStreak: 0 } }; // bậc 5
+  const tl3 = { stance: { id: 'tien_loi' as const, since: 1, fitDays: 21, missStreak: 0 } }; // bậc 3
+  const binh5 = { stance: { id: 'binh_dan' as const, since: 1, fitDays: 50, missStreak: 0 } };
+  it('serviceMul: dịch vụ + máy thu +25% (bậc 5), tuyến tính; còn lại = 1', () => {
+    expect(stanceServiceMul(tl5)).toBeCloseTo(1.25);
+    expect(stanceServiceMul(tl3)).toBeCloseTo(1 + 0.25 * 0.6);
+    expect(stanceServiceMul({})).toBe(1);
+    expect(stanceServiceMul(binh5)).toBe(1);
+  });
+  it('nightMul: khách đêm +50% (bậc 5); slowMul: khung vắng +15% (bậc 5); còn lại = 1', () => {
+    expect(stanceNightMul(tl5)).toBeCloseTo(1.5);
+    expect(stanceNightMul(tl3)).toBeCloseTo(1 + 0.5 * 0.6);
+    expect(stanceNightMul({})).toBe(1);
+    expect(stanceSlowMul(tl5)).toBeCloseTo(1.15);
+    expect(stanceSlowMul({})).toBe(1);
+    expect(stanceSlowMul(binh5)).toBe(1);
+  });
+  it('patience: khách vội −20% (bậc 5); basketCut: giỏ nhỏ 1 món (bậc 5); còn lại = 1/0', () => {
+    expect(stancePatience(tl5)).toBeCloseTo(0.8);
+    expect(stancePatience(tl3)).toBeCloseTo(1 - 0.2 * 0.6);
+    expect(stancePatience({})).toBe(1);
+    expect(stanceBasketCut(tl5)).toBe(1);
+    expect(stanceBasketCut(tl3)).toBe(0);
+    expect(stanceBasketCut({})).toBe(0);
+    expect(stanceBasketCut(binh5)).toBe(0);
   });
 });
 

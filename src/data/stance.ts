@@ -279,6 +279,49 @@ export function stanceBasketAdd(e: StanceStateRef): number {
   return binhDanStep(t) >= 1 ? 1 : 0;
 }
 
+// ── Hiệu ứng Tiện lợi (L5) ────────────────────────────────────────────────
+
+/** Lợi Tiện lợi — dịch vụ quầy & máy tự phục vụ thu THÊM +25% (bậc 5). Nhân vào phí trước khi ghi doanh
+ *  thu (`earnService`). Không treo / hướng khác = 1. */
+export function stanceServiceMul(e: StanceStateRef): number {
+  const t = stanceTierOf(e);
+  if (!t || !stanceActive(e.stance, 0) || e.stance!.id !== 'tien_loi') return 1;
+  return 1 + 0.25 * binhDanStep(t);
+}
+
+/** Lợi Tiện lợi — khách đêm +50% (bậc 5). Nhân vào nhịp `bandTraffic` khi đang là ca đêm (`isNight`).
+ *  Không treo / hướng khác = 1. */
+export function stanceNightMul(e: StanceStateRef): number {
+  const t = stanceTierOf(e);
+  if (!t || !stanceActive(e.stance, 0) || e.stance!.id !== 'tien_loi') return 1;
+  return 1 + 0.5 * binhDanStep(t);
+}
+
+/** Lợi Tiện lợi — khung vắng (`slowBands`) được thêm +15% khách (bậc 5). Nhân vào nhịp `bandTraffic`
+ *  khi đang trong khung giờ vắng. Không treo / hướng khác = 1. */
+export function stanceSlowMul(e: StanceStateRef): number {
+  const t = stanceTierOf(e);
+  if (!t || !stanceActive(e.stance, 0) || e.stance!.id !== 'tien_loi') return 1;
+  return 1 + 0.15 * binhDanStep(t);
+}
+
+/** Giá phải trả Tiện lợi — khách vội: kiên nhẫn xếp hàng −20% (bậc 5). Nhân vào `patience`
+ *  (càng thấp càng dễ bỏ về khi chờ). Không treo / hướng khác = 1. (GĐ2256 đo: mức −20% bậc5 làm bot sim
+ *  mất lượng khách lớn vì khách bỏ hàng chờ; dải ±5-20% §3.8 chưa đạt — L5 để mức này rồi chốt khi cân
+ *  bằng chung 3 hướng.) */
+export function stancePatience(e: StanceStateRef): number {
+  const t = stanceTierOf(e);
+  if (!t || !stanceActive(e.stance, 0) || e.stance!.id !== 'tien_loi') return 1;
+  return 1 - 0.2 * binhDanStep(t);
+}
+
+/** Giá phải trả Tiện lợi — giỏ nhỏ hơn 1 món (bậc 5). Trả số món trừ (int 0..1) để khách vội mua ít. */
+export function stanceBasketCut(e: StanceStateRef): number {
+  const t = stanceTierOf(e);
+  if (!t || !stanceActive(e.stance, 0) || e.stance!.id !== 'tien_loi') return 0;
+  return binhDanStep(t) >= 1 ? 1 : 0;
+}
+
 /** Lợi Bình dân — trần "rẻ kéo khách" (lowPriceDemandCap) 1.15 → 1.25 (bậc 5). Không treo = cap cũ. */
 export function stanceLowCap(e: StanceStateRef): number {
   const t = stanceTierOf(e);

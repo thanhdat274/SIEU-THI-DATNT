@@ -9,7 +9,7 @@ import { skyAt } from '../data/weather';
 import { marketTrafficFactor } from '../data/chophien';
 import { tierMarkdown, fitLots, nearestLife, nearExpiryRefuseChance } from '../data/freshness';
 import { demandPriceFactor, keepChance, PRICE_RULES } from '../data/pricing';
-import { stanceTraffic, stanceLowCap, stanceOverSensitivity, stancePullSlope, stanceSensitivity, stanceNearExpiry, stanceCriticChance, stanceBasketAdd, isSpecialtyProduct } from '../data/stance';
+import { stanceTraffic, stanceLowCap, stanceOverSensitivity, stancePullSlope, stanceSensitivity, stanceNearExpiry, stanceCriticChance, stanceBasketAdd, isSpecialtyProduct, stanceNightMul, stanceSlowMul, stanceServiceMul, stancePatience, stanceBasketCut } from '../data/stance';
 import { CUNG_GOODS, CUNG_PULL, isXoiCungDay } from '../data/tiemXoi';
 import { dayEffects, isWeekend, OFF_SEASON_CLEARANCE, OFF_SEASON_HUNT, offSeason } from '../data/calendar';
 import { crisisEffects } from '../data/crisis';
@@ -167,7 +167,11 @@ export class CustomerManager {
         const eventTraffic = (s.event?.traffic ?? 1) * (s.opening?.day === s.day ? OPENING_TRAFFIC : 1) * s.wheelBoost;
         // Ban đêm sinh khách theo khung ca đêm (22h–6h): thưa nhưng đều, giờ nào cũng có người ghé
         const night = nightTrafficAt(s.minutes);
-        const bandTraffic = night ?? timeBandAt(s.minutes)?.traffic ?? 1;
+        const dayBand = timeBandAt(s.minutes);
+        const slowNow = dayBand ? dayBand.traffic < 0.8 : false;
+        const bandTraffic = (night ?? dayBand?.traffic ?? 1)
+          // Hệ 3 (SPEC §3.4) — biển Tiện lợi: khách đêm +50% (bậc 5); khung vắng (traffic<0.8, `slowBands`) thêm +15%.
+          * (night !== null ? stanceNightMul(s.biz) : slowNow ? stanceSlowMul(s.biz) : 1);
         const rush = bandTraffic * dayEffects(s.weatherSeed, s.day, s.level).traffic
           * crisisEffects(s.biz.crisis, s.day).traffic // Hệ 8 (SPEC §8.3): biến cố dài nhân khách; trống = 1
           * (s.biz.roadBoon ? 1.03 : 1) // Hệ 8 lợi "đường mới" (aftermath Đào đường); chưa có = 1
@@ -421,7 +425,8 @@ export class CustomerManager {
     const withCart = hasCart && (c.bigBasket || simRng()() < 0.5);
     const maxItems = s.level >= FEATURES.basket ? 4 : 3;
     const count = (c.bigBasket ? bigBasketCount(simRng()) : withCart ? 3 + Math.floor(simRng()() * 5) : 1 + Math.floor(simRng()() * maxItems))
-      + (hasSkill(s.skills, 'big_basket') && simRng()() < 0.5 ? 1 : 0);
+      + (hasSkill(s.skills, 'big_basket') && simRng()() < 0.5 ? 1 : 0)
+      - stanceBasketCut(s.biz); // Hệ 3 (SPEC §3.4) — biển Tiện lợi: khách vội, giỏ nhỏ hơn 1 món (bậc 5). Không treo = 0.
     if (hasSkill(s.skills, 'charm')) c.sensitivity *= 0.85;
     // GĐ1212 — P sinh trộm thành helper THUẦN theftSpawnChance (chance × đêm×2 × chó×0.45 × camera×0.7): hành vi GIỮ NGUYÊN.
     c.thief = !regular && !service && s.level >= RISK_RULES.theft.unlock && simRng()() < theftSpawnChance({
@@ -435,6 +440,8 @@ export class CustomerManager {
     // thức/hằng) để logic này test được; hành vi giữ nguyên (chỉ đổi chỗ nhân nội tuyến → một lần gọi).
     const care = bestSkillOnDuty(s.staff, 'customer_care', s.minutes);
     c.patience *= patienceMultiplier({ petCat: petActive(s.biz.pets.cat, s.day), professionId: c.profession?.id ?? null, care });
+    // Hệ 3 (SPEC §3.4) — biển Tiện lợi: khách vội, kiên nhẫn xếp hàng −20% (bậc 5). Không treo = 1.
+    c.patience *= stancePatience(s.biz);
     c.wants = regular
       ? this.regularWants(regular)
       : c.profession
@@ -477,7 +484,7 @@ export class CustomerManager {
         const machineUid = machine.uid;
         // GĐ1542 — ghi sổ theo loại máy (biz.serviceLife) để biết máy đã thu được bao nhiêu.
         const machineType = machine.type;
-        const fee = machineFeeAt(machine.type, s.minutes, s.level, s.day, s.weather);
+        const fee = Math.round(machineFeeAt(machine.type, s.minutes, s.level, s.day, s.weather) * stanceServiceMul(s.biz));
         const icon = MACHINE_TYPES[machine.type as MachineId].icon;
         this.machineBusy.add(machineUid);
         if (s.level >= MACHINE_IMPULSE_LEVEL && machineImpulse(s.level, simRng()())) c.wants.push(...this.chooseWants(1));
@@ -720,7 +727,7 @@ export class CustomerManager {
       this.coinFx.spawn(counter.center, total);
     }
     if (first.service) {
-      earnService(first.service.def.id, first.service.fee);
+      earnService(first.service.def.id, Math.round(first.service.fee * stanceServiceMul(st.biz)));
       first.say(first.service.def.icon, 2);
     }
     if (first.regular) {
@@ -816,7 +823,7 @@ export class CustomerManager {
     const toilet = freeToilet(s.furniture, this.toiletBusy);
     if (toilet) {
       const toiletUid = toilet.uid;
-      const fee = toiletFee(toilet.type);
+      const fee = Math.round(toiletFee(toilet.type) * stanceServiceMul(s.biz));
       this.toiletBusy.add(toiletUid);
       c.say('💧', 2.5);
       this.walk(c, this.shop.spotFor(toilet));
