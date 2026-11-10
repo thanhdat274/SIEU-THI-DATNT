@@ -1,0 +1,81 @@
+/* Hệ 7 — Trò khéo tay dịp lễ (SPEC-CHIEU-RONG §7.4): vẽ bằng DOM/CSS + canvas 2D, chạy mượt trên máy yếu. */
+
+.mini-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  background: rgba(20, 16, 8, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+}
+
+.mini-card {
+  background: #fffaf0;
+  border: 2px solid #e8d9b8;
+  border-radius: 16px;
+  width: min(420px, 96vw);
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+}
+
+.mini-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: #f4e7c8;
+  border-bottom: 1px solid #e8d9b8;
+}
+.mini-title { font-weight: 700; font-size: 15px; color: #5d3a1a; }
+.mini-timer { font-weight: 800; font-size: 18px; color: #1e8449; }
+.mini-timer.danger { color: #c0392b; animation: miniBlink 0.5s step-start infinite; }
+@keyframes miniBlink { 50% { opacity: 0.25; } }
+
+.mini-body {
+  flex: 1;
+  padding: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 180px;
+}
+.mini-loading { opacity: 0.7; text-align: center; }
+
+.mini-foot { display: flex; justify-content: center; gap: 10px; padding: 10px 14px; border-top: 1px solid #eee0c0; }
+.mini-btn {
+  border: none;
+  border-radius: 10px;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  background: #eee0c0;
+  color: #5d3a1a;
+  cursor: pointer;
+}
+.mini-btn.primary { background: #1e8449; color: #fff; }
+.mini-btn:active { transform: translateY(1px); }
+
+.mini-result { flex: 1; padding: 20px 16px; text-align: center; display: flex; flex-direction: column; gap: 12px; align-items: center; justify-content: center; }
+.mini-result-score { font-size: 18px; margin: 0; }
+.mini-result-reward { color: #1e8449; font-weight: 600; margin: 0; }
+
+/* Trò giả L1 — Kiểm tay */
+.minitap { text-align: center; width: 100%; }
+.minitap-hint { margin: 0 0 10px; font-size: 14px; color: #5d3a1a; }
+.minitap-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; width: 100%; max-width: 260px; margin: 0 auto; touch-action: manipulation; }
+.minitap-cell {
+  aspect-ratio: 1;
+  border: 2px solid #cfb689;
+  border-radius: 10px;
+  background: #fff;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.minitap-cell.target { background: #e67e22; border-color: #d35400; }
+.minitap-cell:active { opacity: 0.6; }
+.minitap-count { font-size: 15px; color: #5d3a1a; font-weight: 600; }
