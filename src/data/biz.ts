@@ -152,8 +152,10 @@ export interface BizState {
   /** Playtest P0 T2: người chơi đã tự bày hàng lên kệ ít nhất một lần (hàng khai trương có sẵn không tính). Tùy chọn — save cũ thiếu = chưa. */
   tutShelved?: boolean;
   /** Tái sinh (NG+): số lần đã tái sinh (0 = lần chơi đầu) và hệ số doanh thu đang hưởng (0 → không đổi).
-   *  `goalsClaimed` (GĐ140): mục tiêu vòng tái sinh đã nhận thưởng trong vòng hiện tại — reset mỗi vòng. */
-  prestige: { level: number; bonus: number; goalsClaimed?: string[]; seals?: StanceId[] };
+   *  `goalsClaimed` (GĐ140): mục tiêu vòng tái sinh đã nhận thưởng trong vòng hiện tại — reset mỗi vòng.
+   *  `brandLegacy` (Hệ4-L9): nhãn riêng của vòng trước giữ lại CHỈ ĐỂ HIỂN THỊ trong hồ sơ tiệm (tên + uy tín
+   *  cao nhất), không có hiệu ứng gameplay trong vòng mới. */
+  prestige: { level: number; bonus: number; goalsClaimed?: string[]; seals?: StanceId[]; brandLegacy?: { name: string; maxRep: number } };
   /** Dịch vụ ở quầy đã mở (nạp tiền, thu hộ); thiếu ở save cũ. */
   services?: string[];
   /** Thiết bị đã mua (camera, máy POS); thiếu ở save cũ. */

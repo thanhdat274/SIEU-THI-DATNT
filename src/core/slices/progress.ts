@@ -201,6 +201,8 @@ export const createProgressSlice = (set: SetState, get: GetState): Pick<GameStat
     const ctx: TitleContext = {
       level: s.level, day: s.day, customers: s.totals.customers, itemsSold: s.totals.itemsSold, revenue: s.totals.revenue,
       rating: rating.average, reviewCount: rating.count, ordersDone: s.ordersDone, staffCount: s.staff.length,
+      brandRep: s.biz.brand?.rep ?? 0, // Hệ4-L9 — danh hiệu nhãn riêng
+      brandFranchiseStreak: s.biz.brand?.franchiseHealthyStreak ?? 0,
       closeRegulars: Object.values(s.regulars).filter((r) => r.perks.length).length,
       prestige: s.biz.prestige.level,
       ngGoalsAllDone,

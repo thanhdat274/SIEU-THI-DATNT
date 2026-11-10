@@ -288,3 +288,22 @@ describe('save round-trip prestige', () => {
     expect(s.biz.achievements).toEqual(['ach_a', 'ach_b']);
   });
 });
+
+describe('Hệ4-L9 — prestigeRestart giữ hồ sơ nhãn (brandLegacy) và reset nhãn hiện tại', () => {
+  it('có nhãn đang chạy → giữ brandLegacy (tên + uy tín cao nhất) CHỈ để hiển thị, nhãn mới reset (brand null)', () => {
+    const s = richState();
+    s.biz.brand = {
+      name: 'Nhà Năm', lines: [], stock: {}, rep: 55, maxRep: 88, repLog: [],
+      workshop: null, lastPackDay: 1, deals: {}, franchises: [], franchiseDue: {},
+    };
+    const r = prestigeRestart(s);
+    expect(r.biz.prestige.brandLegacy).toEqual({ name: 'Nhà Năm', maxRep: 88 });
+    expect(r.biz.brand).toBeUndefined(); // vòng mới chưa lập nhãn
+  });
+  it('không có nhãn → giữ nguyên brandLegacy của vòng trước (nếu có)', () => {
+    const s = richState();
+    s.biz.prestige = { level: 2, bonus: 0.24, brandLegacy: { name: 'Nhà Cũ', maxRep: 60 } };
+    const r = prestigeRestart(s);
+    expect(r.biz.prestige.brandLegacy).toEqual({ name: 'Nhà Cũ', maxRep: 60 });
+  });
+});

@@ -23,6 +23,10 @@ export interface TitleContext {
   alleyBond?: number;
   /** Hệ3-L8: số ấn định vị đang giữ (0..3) — đủ 3 → danh hiệu + treo hai biển. */
   seals?: number;
+  /** Hệ4-L9: uy tín nhãn riêng hiện hành (0..100) — mốc 40/60/80 → danh hiệu. */
+  brandRep?: number;
+  /** Hệ4-L9: số ngày liên tiếp đủ 3 điểm nhượng quyền đang khoẻ (đủ 30 → danh hiệu). */
+  brandFranchiseStreak?: number;
 }
 
 export interface TitleDef {
@@ -69,6 +73,11 @@ export const TITLES: TitleDef[] = [
   { id: 'chu_hem_lao_lang', icon: '🧭', name: 'Chủ hẻm lão làng', description: 'Hoàn thành trọn bộ mục tiêu của một vòng tái sinh (NG+).', done: (c) => c.ngGoalsAllDone === true },
   // Hệ3-L8 (SPEC §3.7): đủ ba ấn định vị → danh hiệu + mở treo hai biển cùng lúc.
   { id: 'tam_an_dinh_vi', icon: '🔰', name: 'Tam ấn định vị', description: 'Thu thập đủ ba ấn định vị (Bình dân, Đặc sản, Tiện lợi) qua các vòng.', done: (c) => (c.seals ?? 0) >= 3 },
+  // ── Hệ4-L9 (SPEC §4.9): danh hiệu nhãn riêng — uy tín 40/60/80 + chuỗi 3 nhượng quyền khỏe 30 ngày ──
+  { id: 'nhan_lang_nghe', icon: '🏷️', name: 'Nhãn làng nghề', description: 'Nhãn riêng đạt uy tín 40 — có tiếng trong huyện.', done: (c) => (c.brandRep ?? 0) >= 40 },
+  { id: 'dac_san_tinh', icon: '🏷️', name: 'Chủ hãng đặc sản tỉnh', description: 'Nhãn riêng đạt uy tín 60 — đặc sản tỉnh.', done: (c) => (c.brandRep ?? 0) >= 60 },
+  { id: 'thuong_hieu_quoc_dan', icon: '🏅', name: 'Thương hiệu quốc dân', description: 'Nhãn riêng đạt uy tín 80 — vang danh khắp nước.', done: (c) => (c.brandRep ?? 0) >= 80 },
+  { id: 'nhan_hieu_tinh', icon: '🌟', name: 'Nhãn hiệu tinh hoa', description: 'Ba điểm nhượng quyền khoẻ suốt 30 ngày — tiếng lan xa bền vững.', done: (c) => (c.brandFranchiseStreak ?? 0) >= 30 },
 ];
 
 /**

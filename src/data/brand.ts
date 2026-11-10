@@ -79,6 +79,8 @@ export interface BrandState {
   franchises: FranchiseState[];
   /** Ngày game tới hạn nhập hàng cho từng điểm nhượng quyền (tuần). */
   franchiseDue: Record<string, number>;
+  /** Số ngày liên tiếp MỌI điểm nhượng quyền đang khoẻ (đủ 30 → danh hiệu, SPEC §4.9). */
+  franchiseHealthyStreak?: number;
   /** Lời chào mua hàng nhãn của rival hiện tại (§4.5d) — { productId, units } lẫn ngày chào. */
   rivalOffer?: { productId: string; units: number; day: number };
   /** Tổng đơn vị đã bán cho rival (thống kê "hàng nằm trên kệ họ"). */
@@ -429,7 +431,11 @@ export function brandFranchiseNight(b: BrandState, day: number): { brand: BrandS
     }
   }
   const brand = { ...cur, franchises: remain, franchiseDue: due };
-  return { brand, income, news };
+  // Chuỗi ngày khỏe: mọi điểm đang mở đều "khỏe" (health > 0) thì +1, thiếu một điểm yếu/đóng thì về 0.
+  const streak = remain.length > 0 && remain.every((f) => f.health > 0)
+    ? (b.franchiseHealthyStreak ?? 0) + 1
+    : 0;
+  return { brand: { ...brand, franchiseHealthyStreak: streak }, income, news };
 }
 
 // ───── Cổng & helper thuần chung ─────

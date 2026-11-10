@@ -56,6 +56,8 @@ function PrestigeSection() {
     marketClearedDay,
     currentDay: day,
     analyticsDays: Math.max(0, Object.keys(analytics?.flags ?? {}).length),
+    brandLegacy: p.brandLegacy ?? null, // Hệ4-L9 — nhãn vòng trước
+    brand: biz.brand ?? null,           // Hệ4-L9 — nhãn đang có ở vòng này
   });
   const goals = ngGoalProgress({
     prestigeLevel: p.level,
@@ -70,6 +72,11 @@ function PrestigeSection() {
   return (
     <div style={{ ...card, marginTop: 8, border: '1px solid rgba(241,196,15,0.4)' }}>
       <div style={title}>🌟 Tái sinh (NG+)</div>
+      {p.brandLegacy && (
+        <div style={{ ...sub, opacity: 0.85 }}>
+          🏷️ Hồ sơ nhãn: <b>{p.brandLegacy.name}</b> (uy tín cao nhất {p.brandLegacy.maxRep}/100).
+        </div>
+      )}
       {capped ? (
         <div style={sub}>
           Đã tái sinh tối đa {PRESTIGE_MAX_LEVEL} lần — doanh thu đang +{Math.round(p.bonus * 100)}%.
@@ -93,6 +100,7 @@ function PrestigeSection() {
                 {' · '}
                 {preview.analyticsDays > 0 ? <b>{preview.analyticsDays} ngày</b> : '0 ngày'} dữ liệu phân tích
                 {preview.unsoldMarketDay && <span style={{ color: '#f1c40f' }}> · 🧺 phiên chợ hôm nay chưa kịp gánh!</span>}
+                {preview.lostBrand && <span style={{ color: '#f1c40f' }}> · 🏷️ nhãn <b>{preview.lostBrand.name}</b> (uy tín {preview.lostBrand.maxRep})</span>}
               </div>
             </Callout>
           )}
