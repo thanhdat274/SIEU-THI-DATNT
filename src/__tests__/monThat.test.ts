@@ -195,6 +195,8 @@ const MON_THAT: Record<string, { name: string; station: string; cachNau: string 
   recipe_hau_chien_gion: { name: 'Hàu chiên giòn', station: 'fryer', cachNau: 'hàu tẩm bột chiên giòn vàng ruộm (quán nhậu)' },
   recipe_ca_chim_nuong_giay_bac: { name: 'Cá chim nướng giấy bạc', station: 'food_grill', cachNau: 'cá chim ướp sả ớt bọc giấy bạc nướng than (bếp gia đình/quán nhậu)' },
   recipe_ca_chim_sot_ca_chua: { name: 'Cá chim sốt cà chua', station: 'hot_kettle', cachNau: 'cá chim chiên vàng rồi sốt cà chua đậm đà (bữa cơm gia đình Nam Bộ)' },
+  recipe_tom_tit_rang_muoi: { name: 'Tôm tít rang muối', station: 'fryer', cachNau: 'tôm tít rang tro muối nóng hổi, chấm muối tiêu chanh (quán nhậu hải sản cả nước)' },
+  recipe_tom_tit_hap_sa: { name: 'Tôm tít hấp sả', station: 'steamer', cachNau: 'tôm tít hấp sả gừng tới chín, chấm muối tiêu chanh (quán nhậu hải sản cả nước)' },
 };
 
 /** Chữ mô tả tự chế không ai dùng làm tên món ngoài chợ. */

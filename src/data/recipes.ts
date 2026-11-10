@@ -836,6 +836,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'hau_chien_gion', name: 'Hàu chiên giòn', category: 'fresh', buy: 26000, sell: 45000, color: 0xd8c890, unlock: 199 },
   { id: 'ca_chim_nuong_giay_bac', name: 'Cá chim nướng giấy bạc', category: 'fresh', buy: 26000, sell: 45000, color: 0xd8d0a0, unlock: 198 },
   { id: 'ca_chim_sot_ca_chua', name: 'Cá chim sốt cà chua', category: 'fresh', buy: 26000, sell: 45000, color: 0xc89080, unlock: 197 },
+  { id: 'tom_tit_rang_muoi', name: 'Tôm tít rang muối', category: 'fresh', buy: 26000, sell: 45000, color: 0xd8b898, unlock: 198 },
+  { id: 'tom_tit_hap_sa', name: 'Tôm tít hấp sả', category: 'fresh', buy: 26000, sell: 45000, color: 0xc8d8b0, unlock: 199 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2831,6 +2833,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_ca_chim_sot_ca_chua', name: 'Cá chim sốt cà chua', station: 'hot_kettle',
     inputs: [{ productId: 'x_ca_chim', quantity: 1 }, { productId: 'x_ca_chua', quantity: 2 }, { productId: 'x_duong', quantity: 1 }],
     outputId: 'ca_chim_sot_ca_chua', outputQty: 4, durationMin: 20, unlock: 197, reputationGain: 1 },
+  // GĐ2159: Tôm tít rang muối — quán nhậu hải sản cả nước: tôm tít rang tro muối nóng hổi, chấm muối tiêu chanh; không thay thế.
+  { id: 'recipe_tom_tit_rang_muoi', name: 'Tôm tít rang muối', station: 'fryer',
+    inputs: [{ productId: 'x_tom_tit', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }, { productId: 'x_hanh_la', quantity: 1 }],
+    outputId: 'tom_tit_rang_muoi', outputQty: 4, durationMin: 20, unlock: 198, reputationGain: 1 },
+  // GĐ2160: Tôm tít hấp sả — quán nhậu hải sản cả nước: tôm tít hấp sả gừng tới chín, chấm muối tiêu chanh; không thay thế.
+  { id: 'recipe_tom_tit_hap_sa', name: 'Tôm tít hấp sả', station: 'steamer',
+    inputs: [{ productId: 'x_tom_tit', quantity: 1 }, { productId: 'x_sa', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }],
+    outputId: 'tom_tit_hap_sa', outputQty: 4, durationMin: 25, unlock: 199, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────

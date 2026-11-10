@@ -20,6 +20,12 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (10/11/2026)
+- GĐ2159–2160: Tôm tít làm sẵn (x_tom_tit, cuối catalog L170); Tôm tít rang muối (fryer, L198), Tôm tít hấp sả (steamer, L199).
+- GĐ2157–2158: Cá chim làm sẵn (x_ca_chim, cuối catalog L170); Cá chim nướng giấy bạc (food_grill, L198), Cá chim sốt cà chua (hot_kettle, L197).
+- GĐ2155–2156: Hàu làm sẵn (x_hau, cuối catalog L170); Hàu nướng mỡ hành (food_grill, L198), Hàu chiên giòn (fryer, L199).
+- GĐ2153–2154: Ghẹ làm sẵn (x_ghe, cuối catalog L170); Ghẹ rang muối (fryer, L198), Ghẹ nướng sa tế (food_grill, L199).
+- GĐ2151–2152: Bạch tuộc làm sẵn (x_bach_tuoc, cuối catalog L170); Bạch tuộc nướng (food_grill, L198), Bạch tuộc xào sa tế (fryer, L199).
+- GĐ2149–2150: Sò điệp làm sẵn (x_so_diep, cuối catalog L170); Sò điệp hấp sả (steamer, L198), Sò điệp xào nấm (fryer, L199).
 - GĐ2147–2148: Thịt dê làm sẵn (x_de, cuối catalog L170); Dê xào lăn (fryer, L198), Dê nướng sa tế (food_grill, L199).
 - GĐ2145–2146: Cá kèo làm sẵn (x_ca_keo, cuối catalog L170); Cá kèo nướng ống tre (food_grill, L198), Cá kèo kho tộ (hot_kettle, L199).
 - GĐ2143–2144: Chim cút làm sẵn (x_chim_cut, cuối catalog L170); Chim cút quay (food_grill, L198), Chim cút chiên giòn (fryer, L199).
