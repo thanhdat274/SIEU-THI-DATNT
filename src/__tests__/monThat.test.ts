@@ -153,6 +153,8 @@ const MON_THAT: Record<string, { name: string; station: string; cachNau: string 
   recipe_chao_ngheu: { name: 'Cháo nghêu', station: 'hot_kettle', cachNau: 'nước luộc nghêu nấu cháo gạo (Gò Công)' },
   recipe_hu_tieu_xao_bo: { name: 'Hủ tiếu xào bò', station: 'fryer', cachNau: 'hủ tiếu trụng xào bò tái, rau cải (Nam Bộ)' },
   recipe_chao_muc: { name: 'Cháo mực', station: 'hot_kettle', cachNau: 'cháo gạo ninh, thả mực tươi khoanh (miền Bắc/Trung)' },
+  recipe_canh_khoai_mon: { name: 'Canh khoai môn', station: 'hot_kettle', cachNau: 'khoai môn nấu nhừ với thịt bằm (cơm nhà Nam Bộ)' },
+  recipe_canh_khoai_tay: { name: 'Canh khoai tây', station: 'hot_kettle', cachNau: 'sườn hầm nấu khoai tây cà rốt (cơm nhà)' },
 };
 
 /** Chữ mô tả tự chế không ai dùng làm tên món ngoài chợ. */

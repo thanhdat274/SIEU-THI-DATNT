@@ -1,0 +1,21 @@
+# PROGRESS GĐ2071–2116 (món đợt 5, L159–197)
+
+- GĐ2115–2116: Hủ tiếu xào bò (fryer, L196), Cháo mực (hot_kettle, L197).
+- GĐ2113–2114: Nghêu xào sả ớt (fryer, L194), Cháo nghêu (hot_kettle, L195).
+- GĐ2111–2112: Bò cuộn nấm kim châm (food_grill, L192), Ốc xào me (fryer, L193).
+- GĐ2109–2110: Ốc hấp sả (steamer, L190), Mực chiên giòn (fryer, L191).
+- GĐ2107–2108: Mực xào thơm (L188, thay món trùng Bò xào bông cải), Bông cải xào tôm (L189), fryer.
+- GĐ2105–2106: Ốc xào sả ớt (fryer, L186), Bò né (fryer, L187).
+- GĐ2103–2104: Ốc bươu nhồi thịt (steamer, L184), Nghêu nướng mỡ hành (food_grill, L185). Nhắc: thêm nguyên liệu phải soi cả products.ts (nghêu đã có sẵn).
+- GĐ2099–2102: nguyên liệu Ốc bươu (cuối catalog, mở 170); Nghêu hấp sả (steamer, L181), Canh nghêu (L182) dùng nghêu sẵn có, Ốc luộc (L183).
+- GĐ2095–2098: nguyên liệu Rau ngót (cuối catalog, mở 165); Su su luộc (L178), Canh rau ngót (L179), Mồng tơi xào tỏi (L180).
+- GĐ2091–2094: nguyên liệu Rau dền, Bí đao, Su su (cuối catalog, mở 165); Canh rau dền (L175), Canh bí đao (L176), Su su xào tỏi (L177).
+- GĐ2087–2089: nguyên liệu Mồng tơi, Bầu (cuối catalog, mở 165); Canh mồng tơi (L173), Canh bầu (L174).
+- GĐ2084–2086: nguyên liệu Đậu bắp (cuối catalog, mở 165); Đậu bắp luộc (L171), Đậu bắp xào tỏi (L172).
+- GĐ2083: Tôm rim me (fryer, L170).
+- GĐ2080–2082: nguyên liệu mới Me chua, Rau răm (cuối catalog, mở cấp 165); Cua rang me (fryer, L168), Gỏi gà (L169).
+- GĐ2079: Bánh mì chảo (fryer, L167).
+- GĐ2078: Bánh mì ốp la (fryer, L166). Bỏ sinh tố xoài/ổi: đã có trong thực đơn quán (quanRecipes) — trước khi thêm đồ uống phải soi quanRecipes.
+- GĐ2076–2077: Bún cá (L164), Súp cua (L165) — hot_kettle.
+- GĐ2073–2075: Phở xào (fryer, L161), Bún bò Nam Bộ (fryer, L162), Bánh canh cua (hot_kettle, L163).
+- GĐ2071–2072: Phở gà (L159), Bánh canh cá lóc (L160) — hot_kettle.

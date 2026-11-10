@@ -794,6 +794,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'chao_ngheu', name: 'Cháo nghêu', category: 'fresh', buy: 9000, sell: 16000, color: 0xf0e0c0, unlock: 195 },
   { id: 'hu_tieu_xao_bo', name: 'Hủ tiếu xào bò', category: 'fresh', buy: 14000, sell: 24000, color: 0xc8904a, unlock: 196 },
   { id: 'chao_muc', name: 'Cháo mực', category: 'fresh', buy: 10000, sell: 18000, color: 0xf0e8d0, unlock: 197 },
+  { id: 'canh_khoai_mon', name: 'Canh khoai môn', category: 'fresh', buy: 10000, sell: 18000, color: 0xb8a8c8, unlock: 198 },
+  { id: 'canh_khoai_tay', name: 'Canh khoai tây', category: 'fresh', buy: 12000, sell: 20000, color: 0xe8c070, unlock: 199 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2621,6 +2623,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_chao_muc', name: 'Cháo mực', station: 'hot_kettle',
     inputs: [{ productId: 'x_muc_tuoi', quantity: 1 }, { productId: 'gao', quantity: 1 }],
     outputId: 'chao_muc', outputQty: 12, durationMin: 30, unlock: 197, reputationGain: 1 },
+  // GĐ2117: Canh khoai môn — canh cơm nhà Nam Bộ: khoai môn cắt khúc nấu nhừ với thịt heo băm, nước sệt nhẹ; không thay thế.
+  { id: 'recipe_canh_khoai_mon', name: 'Canh khoai môn', station: 'hot_kettle',
+    inputs: [{ productId: 'x_khoai_mon', quantity: 1 }, { productId: 'x_thit_heo', quantity: 1 }],
+    outputId: 'canh_khoai_mon', outputQty: 5, durationMin: 25, unlock: 198, reputationGain: 1 },
+  // GĐ2118: Canh khoai tây — canh cơm nhà cả nước: sườn heo hầm lấy nước, nấu với khoai tây, cà rốt; không thay thế.
+  { id: 'recipe_canh_khoai_tay', name: 'Canh khoai tây', station: 'hot_kettle',
+    inputs: [{ productId: 'x_khoai_tay', quantity: 1 }, { productId: 'x_ca_rot', quantity: 1 }, { productId: 'x_suon_heo', quantity: 1 }],
+    outputId: 'canh_khoai_tay', outputQty: 5, durationMin: 30, unlock: 199, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────

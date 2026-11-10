@@ -20,25 +20,8 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (10/11/2026)
-- GĐ2115–2116: Hủ tiếu xào bò (fryer, L196), Cháo mực (hot_kettle, L197).
-- GĐ2113–2114: Nghêu xào sả ớt (fryer, L194), Cháo nghêu (hot_kettle, L195).
-- GĐ2111–2112: Bò cuộn nấm kim châm (food_grill, L192), Ốc xào me (fryer, L193).
-- GĐ2109–2110: Ốc hấp sả (steamer, L190), Mực chiên giòn (fryer, L191).
-- GĐ2107–2108: Mực xào thơm (L188, thay món trùng Bò xào bông cải), Bông cải xào tôm (L189), fryer.
-- GĐ2105–2106: Ốc xào sả ớt (fryer, L186), Bò né (fryer, L187).
-- GĐ2103–2104: Ốc bươu nhồi thịt (steamer, L184), Nghêu nướng mỡ hành (food_grill, L185). Nhắc: thêm nguyên liệu phải soi cả products.ts (nghêu đã có sẵn).
-- GĐ2099–2102: nguyên liệu Ốc bươu (cuối catalog, mở 170); Nghêu hấp sả (steamer, L181), Canh nghêu (L182) dùng nghêu sẵn có, Ốc luộc (L183).
-- GĐ2095–2098: nguyên liệu Rau ngót (cuối catalog, mở 165); Su su luộc (L178), Canh rau ngót (L179), Mồng tơi xào tỏi (L180).
-- GĐ2091–2094: nguyên liệu Rau dền, Bí đao, Su su (cuối catalog, mở 165); Canh rau dền (L175), Canh bí đao (L176), Su su xào tỏi (L177).
-- GĐ2087–2089: nguyên liệu Mồng tơi, Bầu (cuối catalog, mở 165); Canh mồng tơi (L173), Canh bầu (L174).
-- GĐ2084–2086: nguyên liệu Đậu bắp (cuối catalog, mở 165); Đậu bắp luộc (L171), Đậu bắp xào tỏi (L172).
-- GĐ2083: Tôm rim me (fryer, L170).
-- GĐ2080–2082: nguyên liệu mới Me chua, Rau răm (cuối catalog, mở cấp 165); Cua rang me (fryer, L168), Gỏi gà (L169).
-- GĐ2079: Bánh mì chảo (fryer, L167).
-- GĐ2078: Bánh mì ốp la (fryer, L166). Bỏ sinh tố xoài/ổi: đã có trong thực đơn quán (quanRecipes) — trước khi thêm đồ uống phải soi quanRecipes.
-- GĐ2076–2077: Bún cá (L164), Súp cua (L165) — hot_kettle.
-- GĐ2073–2075: Phở xào (fryer, L161), Bún bò Nam Bộ (fryer, L162), Bánh canh cua (hot_kettle, L163).
-- GĐ2071–2072: Phở gà (L159), Bánh canh cá lóc (L160) — hot_kettle.
+- GĐ2117–2118: Canh khoai môn (L198), Canh khoai tây (L199) — hot_kettle. Dồn GĐ2071–2116 sang archive.
+- GĐ2071–2116 (món đợt 5 L159–197: phở/bún/canh rau, ốc/nghêu cuối catalog; GĐ2107 thay món trùng) — chi tiết ở docs/progress-archive/PROGRESS-GD2071-2116.md.
 - GĐ2031–2070 (món đợt 4 L121–158; đậu que/mướp vào cuối catalog để không lệch sim) — chi tiết ở docs/progress-archive/PROGRESS-GD2031-2070.md.
 - GĐ2002–2030 (món cơm nhà/quán đợt 3, L92–120) — chi tiết ở docs/progress-archive/PROGRESS-GD2002-2030.md.
 - GĐ1983–2001 (món cơm nhà đợt 2, L71–90) — chi tiết ở docs/progress-archive/PROGRESS-GD1983-2001.md.
