@@ -876,6 +876,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'ca_chem_nuong_giay_bac', name: 'Cá chẽm nướng giấy bạc', category: 'fresh', buy: 26000, sell: 45000, color: 0xc8d0d0, unlock: 199 },
   { id: 'ca_ngu_kho_to', name: 'Cá ngừ kho tộ', category: 'fresh', buy: 26000, sell: 45000, color: 0xb86868, unlock: 198 },
   { id: 'ca_ngu_nuong_giay_bac', name: 'Cá ngừ nướng giấy bạc', category: 'fresh', buy: 26000, sell: 45000, color: 0xc87870, unlock: 199 },
+  { id: 'ca_bop_hap_xi_dau', name: 'Cá bớp hấp xì dầu', category: 'fresh', buy: 26000, sell: 45000, color: 0xe0c8b8, unlock: 198 },
+  { id: 'ca_bop_nuong_giay_bac', name: 'Cá bớp nướng giấy bạc', category: 'fresh', buy: 26000, sell: 45000, color: 0xe0d0c0, unlock: 199 },
 ];
 
 // ──────────────────────────────────────────────
@@ -3031,6 +3033,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_ca_ngu_nuong_giay_bac', name: 'Cá ngừ nướng giấy bạc', station: 'food_grill',
     inputs: [{ productId: 'x_ca_ngu', quantity: 1 }, { productId: 'x_sa', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }],
     outputId: 'ca_ngu_nuong_giay_bac', outputQty: 4, durationMin: 30, unlock: 199, reputationGain: 1 },
+  // GĐ2199: Cá bớp hấp xì dầu — nhà hàng hải sản cả nước: cá bớp hấp chín với xì dầu gừng, ăn nguyên con; không thay thế.
+  { id: 'recipe_ca_bop_hap_xi_dau', name: 'Cá bớp hấp xì dầu', station: 'steamer',
+    inputs: [{ productId: 'x_ca_bop', quantity: 1 }, { productId: 'x_nuoc_tuong', quantity: 1 }, { productId: 'x_gung', quantity: 1 }],
+    outputId: 'ca_bop_hap_xi_dau', outputQty: 4, durationMin: 25, unlock: 198, reputationGain: 1 },
+  // GĐ2200: Cá bớp nướng giấy bạc — quán nhậu cả nước: cá bớp ướp sả ớt, bọc giấy bạc nướng than cho thơm; không thay thế.
+  { id: 'recipe_ca_bop_nuong_giay_bac', name: 'Cá bớp nướng giấy bạc', station: 'food_grill',
+    inputs: [{ productId: 'x_ca_bop', quantity: 1 }, { productId: 'x_sa', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }],
+    outputId: 'ca_bop_nuong_giay_bac', outputQty: 4, durationMin: 30, unlock: 199, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────
