@@ -326,3 +326,41 @@ describe('Hệ8-L3 — chooseCrisisScene (slice)', () => {
     expect(g().biz.crisis?.choices[6]).toBeUndefined();
   });
 });
+
+describe('Hệ8-L5 — Bão giá: giá nhập tăng dần rồi dịu (costRamp/costEase + prep costMul)', () => {
+  const bao = () => ({ defId: 'bao_gia', startDay: 400, preps: [], choices: {}, kind: 0 });
+  const costOf = (st: unknown, day: number) => crisisEffects(st as never, day).cost('rau', 'fresh');
+
+  it('Báo trước (400–404): giá = 1', () => {
+    expect(costOf(bao(), 400)).toBe(1);
+    expect(costOf(bao(), 404)).toBe(1);
+  });
+
+  it('Cao điểm: +3% mỗi 3 ngày lên tới +14%', () => {
+    expect(costOf(bao(), 405)).toBeCloseTo(1.00, 5); // ngày 0
+    expect(costOf(bao(), 408)).toBeCloseTo(1.03, 5); // ngày 3
+    expect(costOf(bao(), 411)).toBeCloseTo(1.06, 5); // ngày 6
+    expect(costOf(bao(), 414)).toBeCloseTo(1.09, 5); // ngày 9
+    expect(costOf(bao(), 417)).toBeCloseTo(1.12, 5); // ngày 12
+    expect(costOf(bao(), 418)).toBeCloseTo(1.12, 5); // ngày 13 (cap 14%, chưa tới)
+  });
+
+  it('Cao điểm: khách nhạy giá ×1,2', () => {
+    expect(crisisEffects(bao(), 405).sensitivity).toBe(1.2);
+  });
+
+  it('prep stock_up làm giảm đòn tăng giá (×0,9)', () => {
+    const st = { defId: 'bao_gia', startDay: 400, preps: ['stock_up'], choices: {}, kind: 0 };
+    expect(crisisEffects(st, 411).cost('rau', 'fresh')).toBeCloseTo(1.06 * 0.9, 5);
+  });
+
+  it('Dịu dần: từ +5% về 0 đều trong 5 ngày', () => {
+    expect(costOf(bao(), 419)).toBeCloseTo(1.05, 5); // ngày 0
+    expect(costOf(bao(), 421)).toBeCloseTo(1.03, 5); // ngày 2
+    expect(costOf(bao(), 423)).toBeCloseTo(1.01, 5); // ngày 4
+  });
+
+  it('hết đợt (424): giá về 1', () => {
+    expect(costOf(bao(), 424)).toBe(1);
+  });
+});

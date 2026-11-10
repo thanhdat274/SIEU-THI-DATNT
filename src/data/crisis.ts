@@ -30,6 +30,10 @@ export interface CrisisPhaseDef {
   cost?: Partial<Record<Category, number>>;
   /** Nhân giá nhập theo từng món. */
   costIds?: Record<string, number>;
+  /** Giá nhập tăng dần theo ngày trong giai đoạn (bão giá): mỗi `everyDays` ngày +`stepPct`%, tối đa `capPct`. */
+  costRamp?: { capPct: number; stepPct: number; everyDays: number };
+  /** Giá nhập từ `fromPct` xuống 0 đều trong `days` ngày (Dịu dần của bão giá). */
+  costEase?: { fromPct: number; days: number };
   /** Cầu theo món: tăng + giảm. */
   demand?: { up: string[]; down: string[]; downMul?: number };
   /** Nhân số đơn kênh xa. */
@@ -54,6 +58,8 @@ export interface CrisisPrep {
   traffic?: number;
   /** Làm thì thay hệ số kênh (giữ đơn online/điện thoại ổn định hơn). */
   channel?: { online?: number; phone?: number };
+  /** Làm thì giá nhập nhân thêm (bão giá: trữ hàng / ký giá cố định giảm đòn tăng giá). */
+  costMul?: number;
 }
 
 export interface CrisisBoon {
@@ -153,7 +159,43 @@ const DAO_DUONG: CrisisDef = {
   aftermath: { kind: 'road', traffic: 1.03, label: 'Đường mới khang trang: khách ghé thêm' },
 };
 
-export const CRISIS_DEFS: CrisisDef[] = [DAO_DUONG];
+/** ② Bão giá — bất kỳ mùa, cấp 40 (SPEC §8.4). Giá nhập tăng dần tới +14%, khách nhạy giá.
+ *  Con số là ĐIỂM KHỞI ĐẦU — cân bằng thật qua crisisBalance (L4) + simEconomy. */
+const BAO_GIA: CrisisDef = {
+  id: 'bao_gia',
+  name: 'Bão giá',
+  icon: '📈',
+  unlock: 40,
+  phases: [
+    { label: 'Báo trước', days: 5, traffic: 1 },
+    { label: 'Cao điểm', days: 14, costRamp: { capPct: 14, stepPct: 3, everyDays: 3 }, sensitivity: 1.2 },
+    { label: 'Dịu dần', days: 5, costEase: { fromPct: 5, days: 5 } },
+  ],
+  preps: [
+    {
+      id: 'stock_up', label: 'Mua trữ trước khi giá lên', cost: 0, costMul: 0.9,
+      effect: 'Hàng đã trữ bên trong tính theo giá cũ — giá hiệu lực ×0,9.',
+    },
+    {
+      id: 'fixed_price', label: 'Ký giá cố định 3 tuần với một mối', cost: 300_000, costMul: 0.85,
+      effect: 'Giá nhập món từ đúng mối đó được khoá — thêm ×0,85 cho giảm đòn tăng giá.',
+    },
+  ],
+  scenes: [
+    {
+      atDay: 5,
+      text: 'Hàng xóm xì xào chê hàng tăng giá. Có người gợi ý treo biển "Bình ổn giá", cam kết 14 ngày không bán món nào trên giá gợi ý cũ.',
+      options: ['Treo biển Bình ổn giá (biên mỏng đi rõ, danh tiếng +, khách quen +thân, khách ghé ×1,1)', 'Không hứa hẹn'],
+    },
+    {
+      atDay: 10,
+      text: 'Một người bán rong hỏi mua lại hàng bạn trữ được với giá cao hơn nhập.',
+      options: ['Bán (lời nhanh lần này)', 'Giữ cho khách xóm mua giá cũ'],
+    },
+  ],
+};
+
+export const CRISIS_DEFS: CrisisDef[] = [DAO_DUONG, BAO_GIA];
 
 export const crisisDefById = (id: string) => CRISIS_DEFS.find((c) => c.id === id);
 
@@ -295,11 +337,21 @@ export function crisisEffects(st: CrisisState | undefined, day: number): CrisisE
   const baseChannel = phase.channel;
   const chanOn = prepsDone.find((p) => p.channel?.online !== undefined)?.channel?.online;
   const chanPh = prepsDone.find((p) => p.channel?.phone !== undefined)?.channel?.phone;
+  const prepCostMul = prepsDone.reduce((m, p) => m * (p.costMul ?? 1), 1);
   return {
     traffic,
     cost: (productId, category) => {
-      if (phase.costIds?.[productId] !== undefined) return phase.costIds[productId];
-      return phase.cost?.[category] ?? 1;
+      // ① Giá ngành/món theo giai đoạn.
+      let base = phase.costIds?.[productId] ?? phase.cost?.[category] ?? 1;
+      // ② Bão giá tăng dần theo ngày trong giai đoạn (off = ngày thứ 0-based).
+      if (phase.costRamp) {
+        base *= 1 + Math.min(phase.costRamp.capPct, Math.floor(off / phase.costRamp.everyDays) * phase.costRamp.stepPct) / 100;
+      }
+      if (phase.costEase) {
+        base *= 1 + Math.max(0, phase.costEase.fromPct * (1 - off / phase.costEase.days)) / 100;
+      }
+      // ③ Việc chuẩn bị (trữ hàng/ký giá cố định) làm giảm đòn tăng giá.
+      return base * prepCostMul;
     },
     ...(phase.demand ? { demand: phase.demand } : {}),
     channel: baseChannel
