@@ -9,10 +9,22 @@ import { takeLoan } from '../core/biz';
 import { LOAN_OPTIONS_MIN } from '../data/biz';
 import { SHOP_TIERS } from '../data/shopTiers';
 import { maxStaff } from '../data/staff';
+import { referenceSell } from '../data/pricing';
+import { isSpecialtyProduct } from '../data/stance';
+import { SERVICES } from '../data/services';
 import type { CustomerManager } from '../agents/customers';
 import type { StaffManager } from '../agents/staff';
 import type { Player } from '../agents/player';
 import type { GroceryShop } from '../shop/groceryShop';
+
+/**
+ * Hệ 3 L2 (SPEC §3.8) — bot Đặc sản "ưu tiên bày hàng đặc sản": xếp các ứng viên bày kệ theo thứ tự
+ * đặc sản đứng đầu. Ở L2 hiệu ứng = 0 nên chỉ ĐO ưu tiên này; lát L4 sẽ nối đặc sản (món nấu/hàng xóm/
+ * vùng) vào kênh nhập thật để so sánh doanh thu.
+ */
+export function orderDacSanCandidates<T extends { id: string }>(cands: T[]): T[] {
+  return [...cands].sort((a, b) => (isSpecialtyProduct(b.id) ? 1 : 0) - (isSpecialtyProduct(a.id) ? 1 : 0));
+}
 
 export interface AutoplayOptions {
   /** Mức kèo chốt mỗi sáng (xem BET_TIERS); 0 = không chốt kèo. Mặc định tier 2 "Kèo vừa ×1.5". */
@@ -27,6 +39,10 @@ export interface AutoplayOptions {
   startDay?: number;
   /** Bật "Năm yên ả" (tắt biến cố dài) — dùng làm mốc đối chứng trong crisisBalance. */
   calm?: boolean;
+  /** Hệ 3 L2 (SPEC §3.8) — chính sách bot theo hướng biển: binh_dan hạ giá ~95% thị trường,
+   *  dac_san ưu tiên bày hàng đặc sản, tien_loi mở ca đêm + đủ dịch vụ. Ở L2 hiệu ứng = 0 (chỉ lệch
+   *  do hành vi bot), framework đo để lát sau bật hiệu ứng so sánh. */
+  stance?: 'binh_dan' | 'dac_san' | 'tien_loi';
 }
 
 /**
@@ -52,18 +68,49 @@ export function createAutoplay(
   const crisisPrepOpt = opts.crisisPrep ?? false;
   const yieldEvery = opts.yieldEvery ?? 0;
   const speed = opts.speed ?? 4;
+  const stance = opts.stance ?? null;
   const st = () => useGame.getState();
   /** Đổi đ thành 'k' như các cột tiền cũ của autoplay. */
   const k = (v: number) => `${Math.round(v / 1000)}k`;
   /** Tổng lãi gộp cộng dồn của mọi kệ (giá bán − giá vốn) — chênh trong ngày = lãi gộp bán hàng hôm nay. */
   const shelfMarginTotal = () => Object.values(st().shelfProfit ?? {}).reduce((n, p) => n + p.profit, 0);
 
+  // ───── Hệ 3 L2 (SPEC §3.8): ba chính sách bot theo hướng biển (hiệu ứng = 0, chỉ lệch do hành vi) ─────
+  const cheapPrice = (id: string) => Math.round((referenceSell(id) * 0.95) / 100) * 100; // Bình dân: ~95% thị trường
+  /** Bot Bình dân — hạ giá mọi món đang bày kệ về 95% giá thị trường. */
+  function priceBinhDan() {
+    if (stance !== 'binh_dan') return;
+    const s = st();
+    for (const f of s.furniture) {
+      if (f.type !== 'shelf') continue;
+      for (const t of f.tiers) if (t.productId) s.setPrice(t.productId, cheapPrice(t.productId));
+    }
+  }
+  /** Bot Tiện lợi — bật ca đêm + đủ dịch vụ (mở cửa 24h, dịch vụ đầy đủ). */
+  function ensureTienLoi() {
+    if (stance !== 'tien_loi') return;
+    const s = st();
+    const up = s.biz.upgrades ?? [];
+    const wantSv = SERVICES.map((sv) => sv.id);
+    const haveSv = s.biz.services ?? [];
+    if (!up.includes('night') || haveSv.length < wantSv.length) {
+      useGame.setState({
+        biz: {
+          ...s.biz,
+          upgrades: up.includes('night') ? up : [...up, 'night'],
+          services: wantSv,
+        },
+      });
+    }
+  }
+
   /** Bày hàng: mỗi tầng một mặt hàng hợp ngành, nhập đủ để bày đầy rồi để dư một ít. */
   function restock() {
     // GĐ847: người chơi thật vay gấp khi quỹ âm để nhập hàng — bot làm như vậy thay vì kẹt xoáy nợ
     if (st().money < 0) takeLoan(LOAN_OPTIONS_MIN, true);
     const s = st();
-    const unlocked = unlockedProducts(s.level);
+    // Hệ 3 L2 — bot Đặc sản ưu tiên bày hàng đặc sản: xếp ứng viên để đặc sản lên đầu (về sau nối kênh nhập thật).
+    const unlocked = stance === 'dac_san' ? orderDacSanCandidates(unlockedProducts(s.level)) : unlockedProducts(s.level);
     let kk = 0;
     for (const f of s.furniture) {
       const def = furnitureDef(f.type);
@@ -83,6 +130,8 @@ export function createAutoplay(
         // Tầng đã đầy đúng món: bỏ qua — stockTier không đổi gì nhưng vẫn kích dựng lại 3D cả kệ (~40% thời gian sim)
         if (tier.productId === id && tier.count >= def.capacity) return;
         st().stockTier(f.uid, i, id);
+        // Hệ 3 L2 — bot Bình dân hạ giá món vừa bày về 95% thị trường
+        if (stance === 'binh_dan') st().setPrice(id, cheapPrice(id));
       });
     }
   }
@@ -157,6 +206,8 @@ export function createAutoplay(
     hire();
     invest();
     restock();
+    ensureTienLoi(); // Hệ 3 L2 — bot Tiện lợi: ca đêm + dịch vụ
+    priceBinhDan();  // Hệ 3 L2 — bot Bình dân: hạ giá toàn bộ bày kệ
     // Người chơi đứng quầy chính cả ngày
     const main = shop.counters()[0];
     player.teleport(main.center.x - 0.6, main.center.z - 0.9);
@@ -231,6 +282,8 @@ export function createAutoplay(
     hire();
     invest();
     restock();
+    ensureTienLoi(); // Hệ 3 L2 — bot Tiện lợi: ca đêm + dịch vụ
+    priceBinhDan();  // Hệ 3 L2 — bot Bình dân: hạ giá toàn bộ bày kệ
     const main = shop.counters()[0];
     player.teleport(main.center.x - 0.6, main.center.z - 0.9);
     if (!st().shopOpen) st().toggleShop();
