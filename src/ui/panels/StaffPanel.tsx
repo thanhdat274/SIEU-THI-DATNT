@@ -18,6 +18,7 @@ import { trainValue } from '../../data/trainValue';
 import { staffEff } from '../../data/staffEff';
 import { serveCoverage, SERVE_TOP_HOURS } from '../../data/serveCoverage';
 import { hirePayoff } from '../../data/hirePayoff';
+import { managerAutoPayoff } from '../../data/managerAutoPayoff';
 import { petActive } from '../../data/bizAchievements';
 import { storeMissRevenue } from '../../data/advice';
 import { staffValueToday, staffShiftSummary, courierPhoneValue } from '../../data/staffValue';
@@ -33,7 +34,7 @@ import { gapsOf, SITE_NAME, type Site } from '../../data/transfer';
 
 export function StaffPanel() {
   const [tab, setTab] = useState<'team' | 'hire'>('team');
-  const { staff, candidates, level, day, money, autoOpen, hire, fire, setShift, trainStaff, promoteStaff, closePanel, biz, branch, hireForBranch, stats, skills, dirt, storage } = useGame();
+  const { staff, candidates, level, day, money, autoOpen, hire, fire, setShift, trainStaff, promoteStaff, closePanel, biz, branch, hireForBranch, stats, skills, dirt, storage, deliveries, furniture, sales, salesToday } = useGame();
   const [pick, setPick] = useState<Record<number, Shift>>({});
   const max = maxStaff(level);
   const bStaff = branch?.staff ?? [];
@@ -55,6 +56,14 @@ export function StaffPanel() {
     hasCamera: (biz.upgrades ?? []).includes('camera'),
     hasSharpEye: skills.includes('sharp_eye'),
   };
+  // GĐ2220 — quản lý tự nhập hàng: đọc đúng luật managerNeedToRestock (pending từ deliveries, shelved
+  // từ furniture tiers) để nói "thuê quản lý nó tự nhập N món sắp cạn / hôm nay lỡ ~Xđ vì hết hàng".
+  const pending = (deliveries ?? []).reduce<Record<string, number>>((acc, d) => {
+    for (const [id, q] of Object.entries(d.items)) acc[id] = (acc[id] ?? 0) + q;
+    return acc;
+  }, {});
+  const shelved = [...new Set((furniture ?? []).flatMap((f) => f.tiers.map((t) => t.productId).filter((id): id is string => !!id)))];
+  const managerPayoff = managerAutoPayoff({ shelved, storage, pending, sales: sales ?? {}, salesToday: salesToday ?? {}, missLog: stats?.missLog });
   const total = [...staff, ...bStaff].reduce((sum, st) => sum + dailyWage(st), 0);
   // GĐ141: giá trị hôm nay của từng nhân viên ca ngày tiệm chính so với lương (thuần đọc stats.byHour)
   const staffValues = staffValueToday(stats?.byHour, staff);
@@ -238,6 +247,9 @@ export function StaffPanel() {
                   <div style={{ fontSize: 11, marginTop: 2, color: '#2ecc71' }}>{p.line}</div>
                 ) : null;
               })()}
+              {c.role === 'manager' && managerPayoff.ok && (
+                <div style={{ fontSize: 11, marginTop: 2, color: '#3498db' }} title="Quản lý tự nhập hàng khi kho sắp cạn (theo luật sẵn có).">{managerPayoff.line}</div>
+              )}
               {branch && BRANCH_ROLES.includes(c.role) && (
                 <div style={staffSt.actions}>
                   <span style={staffSt.label}>🏪 Hoặc thuê vào tiện lợi 24/7</span>
