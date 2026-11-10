@@ -6,6 +6,9 @@ import { FURNITURE, furnitureDef, type FurnitureType } from '../../data/furnitur
 import { festivalShopName, festivalShopOpen } from '../../data/festivalDeco';
 import { FURNITURE_GROUP_TABS, furnitureGroup, type FurnitureGroup } from '../../data/furnitureGroups';
 import { VIET_SET, VIET_SET_TIERS, vietSetCount, vietSetDecorBonus } from '../../data/decorSets';
+import { decorPayoff, decorPayoffLine } from '../../data/decorPayoff';
+import { decorScoreOf } from '../../data/layout';
+import { reputationOf } from '../../data/reputation';
 import { activeDepartments, departmentWalled, DEPT_ECON_FROM_TIER, departmentsUnlockedAtTier } from '../../data/departments';
 import { EXPANSION_TILE_CAP, MAX_SHOP_TIER, expansionBlock, expansionTilePrice, shopFootprint } from '../../data/expansionTiles';
 import { bigBasketInsight, BIG_BASKET_TIER } from '../../data/bigBasket';
@@ -40,8 +43,15 @@ export function BuildPanel() {
 }
 
 export function FurnitureTab() {
-  const { level, day, money, furniture, storage, stats, weather, setPlacing, demolishAll } = useGame();
+  const { level, day, money, furniture, storage, stats, weather, setPlacing, demolishAll, repLog } = useGame();
   const furnStash = useGame((s) => s.furnStash);
+  // GĐ2214 — tổng điểm 🩷 decor đang kéo bao nhiêu khách/tiền mỗi ngày (soi lợi ích trang trí).
+  const decorInfo = decorPayoff(
+    decorScoreOf(furniture),
+    reputationOf(repLog).overall,
+    level,
+    stats && stats.customers > 0 ? stats.revenue / stats.customers : 0,
+  );
   // GĐ1516 — lọc theo nhóm (UI thuần, không lưu)
   const [group, setGroup] = useState<'all' | FurnitureGroup>('all');
   const stashed = Object.entries(furnStash).filter(([, n]) => n > 0) as [FurnitureType, number][];
@@ -95,6 +105,9 @@ export function FurnitureTab() {
           {' · '}mốc {VIET_SET_TIERS.map(([n, b]) => `${n} món +${b}🩷`).join(', ')}
           {vietSetDecorBonus(furniture) > 0 && <b> · đang +{vietSetDecorBonus(furniture)}🩷</b>}
         </div>
+      )}
+      {level > 30 && decorInfo.decorScore > 0 && (
+        <div style={{ fontSize: 12, color: '#9ecbff', opacity: 0.9, margin: '2px 0 8px' }}>{decorPayoffLine(decorInfo)}</div>
       )}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
         {FURNITURE_GROUP_TABS.map((t) => (
