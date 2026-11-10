@@ -169,6 +169,7 @@ export class CustomerManager {
         const bandTraffic = night ?? timeBandAt(s.minutes)?.traffic ?? 1;
         const rush = bandTraffic * dayEffects(s.weatherSeed, s.day, s.level).traffic
           * crisisEffects(s.biz.crisis, s.day).traffic // Hệ 8 (SPEC §8.3): biến cố dài nhân khách; trống = 1
+          * (s.biz.roadBoon ? 1.03 : 1) // Hệ 8 lợi "đường mới" (aftermath Đào đường); chưa có = 1
           * (hasSkill(s.skills, 'local_legend') ? 1.1 : 1) * festival * eventTraffic * marketTrafficFactor(s.day);
         this.spawnIn = (daytime ? (night ? NIGHT_SPAN : OPEN_UNTIL - OPEN_FROM) / perDay / rush : 60) * (0.5 + simRng()());
         // GĐ1495 — bỏ trần "+25% chậu cây": điểm trang trí 🩷 cộng dồn mọi đồ decor, kéo khách
