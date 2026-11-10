@@ -61,6 +61,8 @@ export function TodayAgendaStrip() {
     hasCourier: s.staff.some((w) => w.role === 'courier'),
     contracts: s.contracts,
     order: s.order,
+    weather: s.weather,
+    preserveJobs: s.garden.preserveJobs, // Hệ 1 (SPEC-CHIEU-SAU): nhắc cất giàn khi sắp mưa
   });
   // Không có hẹn nào (hoặc đang hướng dẫn ngày đầu — như IdleChip, tránh chồng lớp) → trả slot IdleChip.
   if (!items.length || tutorialActive(s)) return <IdleChip />;

@@ -21,6 +21,8 @@ import type { Reputation } from './reputation';
 import { productById } from './products';
 import { goldenHourBands } from './rhythm';
 import { fmtHour, pickEveningPrep } from './cookSchedule';
+import { rainSpell, type Weather } from './weather';
+import { rackInTheOpen, type PreserveJob } from './preserve';
 import { ANSWER_MINUTES, PHONE_SLOTS, PHONE_UNLOCK } from './phoneOrders';
 import { RECIPE_MAP } from './recipes';
 import { kitchenValue } from './kitchenValue';
@@ -32,7 +34,7 @@ import { arcScenePending, surpriseArcById, type SurpriseArcState } from './surpr
 import type { ContractState, CookJob } from '../core/gameTypes';
 
 /** Bảng mở được khi bấm chip — tập con các Panel['type'] có thật (gameTypes.ts). */
-export type AgendaPanel = 'regulars' | 'morning' | 'cook' | 'contracts' | 'quests';
+export type AgendaPanel = 'regulars' | 'morning' | 'cook' | 'contracts' | 'quests' | 'garden';
 
 /** Một "chip hẹn" trên dải Kế hoạch hôm nay. */
 export interface AgendaItem {
@@ -259,6 +261,35 @@ export function arcAgenda(args: { day: number; arc?: SurpriseArcState }): Agenda
   }];
 }
 
+// ───── 9. Phơi · Muối · Ủ: sắp mưa mà giàn đang phơi (SPEC-CHIEU-SAU Hệ1-L3) ─────
+
+/** Chip "☔ HH:MM mưa — sân còn N nong đang phơi" hiện TRƯỚC cơn mưa 90 phút game, tới hết cơn.
+ *  Cùng mẫu goldenHourAgenda: chỉ hiện khi hôm nay có khung giờ mưa/giông (`rainSpell`) và giàn
+ *  đang để ngoài (`rackInTheOpen`). Là mồi quyết định "phải CẤT GIÀN kịp" — người chưa đọc hướng
+ *  dẫn cũng biết phải làm theo giờ mưa. THUẦN — dựa trên thời tiết đã tất định (R1/R5). */
+export function rackRainAgenda(args: {
+  minutes: number;
+  day: number;
+  seed: number;
+  weather: Weather;
+  jobs: PreserveJob[];
+}): AgendaItem[] {
+  const inOpen = rackInTheOpen(args.jobs).length;
+  if (inOpen === 0) return [];
+  const spell = rainSpell(args.seed, args.day, args.weather);
+  if (!spell || args.minutes >= spell.end) return [];
+  const h = String(Math.floor(spell.start / 60)).padStart(2, '0');
+  const m = String(spell.start % 60).padStart(2, '0');
+  return [{
+    key: 'rack-rain',
+    atMinutes: Math.max(0, spell.start - 90),
+    untilMinutes: spell.end,
+    icon: '🏺',
+    label: `☔ ${h}:${m} mưa — sân còn ${inOpen} nong đang phơi`,
+    panel: 'garden' as const,
+  }];
+}
+
 // ───── Ghép lại: lọc quá giờ, sắp tăng dần ─────
 
 export interface TodayAgendaArgs {
@@ -282,6 +313,9 @@ export interface TodayAgendaArgs {
   hasCourier?: boolean;
   contracts?: Record<string, ContractState>;
   order?: ActiveOrder | null;
+  /** Hệ 1 (SPEC-CHIEU-SAU): thời tiết hôm nay + mẻ phơi trên giàn → nhắc cất kịp khi sắp mưa. */
+  weather?: Weather;
+  preserveJobs?: PreserveJob[];
 }
 
 /** Dải "Kế hoạch hôm nay": ghép 8 nguồn có sẵn, lọc cái đã qua giờ (trừ cái đang
@@ -306,6 +340,7 @@ export function todayAgenda(args: TodayAgendaArgs): AgendaItem[] {
     ...partyOrderAgenda(args.day, args.order),
     ...errandAgenda({ day: args.day, arcs: args.regularArcs }),
     ...arcAgenda({ day: args.day, arc: args.surpriseArc }),
+    ...rackRainAgenda({ minutes: args.minutes, day: args.day, seed: args.seed, weather: args.weather ?? 'sunny', jobs: args.preserveJobs ?? [] }),
   ];
   return all
     .filter((it) => args.minutes < it.untilMinutes)

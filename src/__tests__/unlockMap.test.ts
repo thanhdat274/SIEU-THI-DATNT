@@ -11,6 +11,7 @@ import { INSPECTION_UNLOCK } from '../data/biz';
 import { COOK_UNLOCK } from '../data/recipes';
 import { QUAN_NUOC_UNLOCK } from '../data/quanNuoc';
 import { SHOP_TIERS } from '../data/shopTiers';
+import { PHOI_UNLOCK } from '../data/preserve';
 import { CHAPTERS, chapterById, type ChapterContext } from '../data/chapters';
 import { PRESTIGE_MIN_LEVEL, PRESTIGE_MIN_REVENUE } from '../core/prestige';
 
@@ -51,6 +52,7 @@ describe('SYSTEM_UNLOCKS — catalog hợp lệ', () => {
     expect(at('licenses').atLevel).toBe(INSPECTION_UNLOCK);
     expect(at('cook').atLevel).toBe(COOK_UNLOCK);
     expect(at('quannuoc').atLevel).toBe(QUAN_NUOC_UNLOCK);
+    expect(at('phoi').atLevel).toBe(PHOI_UNLOCK); // Hệ 1 — Sân phơi (SPEC-CHIEU-SAU §1)
   });
 
   it('catalog bao gồm các HỆ LỚN mà unlocksAt(levels) bỏ sót (combo/social/online/branch/licenses/cook)', () => {
@@ -117,8 +119,8 @@ describe('GĐ168 — mốc lớn nạp lại bản đồ cấp 30+', () => {
     day: 999, level, customers: 9999, staffCount: 99, shopTier, hasRival: true, rivalsBeaten: 99,
   });
 
-  it('snapshot: 21 mục, mảng xếp tăng dần theo cấp, mốc cuối = 75', () => {
-    expect(SYSTEM_UNLOCKS.length).toBe(21);
+  it('snapshot: 22 mục, mảng xếp tăng dần theo cấp, mốc cuối = 75', () => {
+    expect(SYSTEM_UNLOCKS.length).toBe(22);
     for (let i = 1; i < SYSTEM_UNLOCKS.length; i++) {
       expect(SYSTEM_UNLOCKS[i].atLevel).toBeGreaterThanOrEqual(SYSTEM_UNLOCKS[i - 1].atLevel);
     }

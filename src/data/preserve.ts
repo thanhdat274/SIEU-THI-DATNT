@@ -1,4 +1,5 @@
 import { rainSpell, type RainSpell, type Weather } from './weather';
+import { productById } from './products';
 
 /**
  * Hệ 1 — Phơi · Muối · Ủ (SPEC-CHIEU-SAU §1).
@@ -117,6 +118,48 @@ export function phoiDayGain(
 
 /** Mẻ phơi đủ nắng chưa (chuyển "chờ thu"). */
 export const phoiReady = (job: PreserveJob, def: PreserveDef) => job.sun >= def.need;
+
+/** Mẻ PHƠI đang để NGOÀI giàn (chưa cất) — thẻ Sổ đầu ngày + rackRainAgenda dùng để biết
+ *  "giàn còn đang phơi" (lát L3): đếm theo nong, mẻ phơi nào chưa cất là một nong phơi.
+ *  Mẻ muối/ủ (lát L5/L6) không có khái niệm giàn nên không tính. THUẦN. */
+export function rackInTheOpen(jobs: PreserveJob[]): PreserveJob[] {
+  return jobs.filter((j) => {
+    const d = preserveDefById(j.defId);
+    return d.kind === 'phoi' && !j.covered;
+  });
+}
+
+/** Một dòng cho thẻ Sổ đầu ngày "🏺 Phơi · Muối · Ủ" (SPEC §1.10). */
+export interface PreserveMorningTip { icon: string; text: string; act: string }
+
+/** L3 — nội dung thẻ Sổ đầu ngày liên quan trạm: mẻ chín chờ thu + hôm nay mưa mà giàn đang phơi
+ *  (kèm giờ mưa). Chỉ trả tip khi CÓ việc → UI ẩn thẻ khi rỗng. Muối/ủ (lát L5/L6) sẽ thêm dòng
+ *  "dưa vào cửa sổ ngon hôm nay" — móc sẵn chỗ này. THUẦN, dựa trên thời tiết tất định (R5). */
+export function preserveMorningTips(args: {
+  day: number;
+  seed: number;
+  weather: Weather;
+  jobs: PreserveJob[];
+}): PreserveMorningTip[] {
+  const tips: PreserveMorningTip[] = [];
+  // 1. Mẻ phơi đã đủ nắng, chờ thu.
+  for (const j of args.jobs) {
+    const d = preserveDefById(j.defId);
+    if (d.kind !== 'phoi' || !phoiReady(j, d)) continue;
+    tips.push({ icon: '✅', text: `${productById(d.outputId).name} đủ nắng — gỡ về để thu`, act: 'Trang trại → Phơi' });
+  }
+  // 2. Hôm nay có mưa/giông mà giàn còn để ngoài → nhắc CẤT GIÀN kịp (kèm giờ mưa). Đặt lên đầu cho nổi.
+  const inOpen = rackInTheOpen(args.jobs).length;
+  if (inOpen > 0) {
+    const spell = rainSpell(args.seed, args.day, args.weather);
+    if (spell) {
+      const h = String(Math.floor(spell.start / 60)).padStart(2, '0');
+      const m = String(spell.start % 60).padStart(2, '0');
+      tips.unshift({ icon: '☂️', text: `Mưa ${h}:${m} — giàn còn ${inOpen} nong đang phơi, cất kịp trước mưa`, act: 'Trang trại → Phơi' });
+    }
+  }
+  return tips;
+}
 
 /** Cấp mở sớm nhất mà trạm phơi có mẻ (để mở công trình gian_phoi, lát L2). */
 export const PHOI_UNLOCK = 34;

@@ -58,6 +58,8 @@ import { SickShelvesCard, YesterCombosCard } from './MorningWarnCards';
 import { SolvencyCard, LoanBurdenCard, DailyBurnCard } from './MorningFinanceCards';
 import { ButcherCard, HuiCard } from './MorningMeatHuiCards';
 import { BranchChoresCard, HiepLucCard } from './MorningBranchCards';
+import { PreserveCard } from './MorningPreserveCards';
+import { preserveMorningTips } from '../../data/preserve';
 
 
 
@@ -71,7 +73,7 @@ export function MorningPanel() {
   const { day, level, xp, weatherSeed, weather, forecast, regulars, reservations, storage,
     furniture, staff, contracts, deliveries, shopTier, closePanel, openPanel, repLog, history,
     storageLots, debts, biz, money, branch, licenses, skills, happyHour, analytics, marketClearedDay,
-    demand: stateDemand, activeCombos, priceOf, sellMarketSurplus, stats, autoRoutine, autoOpenAt, lastSummary } = useGame();
+    demand: stateDemand, activeCombos, priceOf, sellMarketSurplus, stats, autoRoutine, autoOpenAt, lastSummary, garden } = useGame();
   const branchChores = branch ? branchMorningPlan(branch, storageUsed(storage), licenses, day, weatherSeed) : [];
   // GĐ123: mồi "kệ cần chú ý" từ analytics có sẵn — giống hệt AnalyticsPanel để không lệch số liệu.
   const shelved = shelfCount(furniture);
@@ -181,6 +183,8 @@ export function MorningPanel() {
   // cho giờ vàng tối. 1 dòng duy nhất khi có món nấu được và giờ đang 13–17h —
   // chọn món mẻ DÀI NHẤT vẫn kịp 17h (mốc bắt đầu muộn nhất còn đúng sự thật);
   // hòa duration thì lấy món lời nhất/phút trạm (GĐ145). Thuần đọc, không đổi state.
+  // GĐ Hệ1-L3 — thẻ Sổ đầu ngày "🏺 Phơi · Muối · Ủ": mẻ chín chờ thu + giàn phơi mà nay mưa
+  const preserveTips = preserveMorningTips({ day, seed: weatherSeed, weather, jobs: garden.preserveJobs });
   const nowMinutes = useClock((c) => Math.floor(c.minutes));
   const eveningPrep = eveningPrepFor({
     nowMinutes, level, furniture, storage,
@@ -200,6 +204,8 @@ export function MorningPanel() {
       {lastSummary?.day === day - 1 && <MorningNewsCard news={lastSummary.news} />}
 
       <AlleyTodayCard weatherSeed={weatherSeed} day={day} level={level} />
+
+      {preserveTips.length > 0 && <PreserveCard tips={preserveTips} onOpen={() => openPanel({ type: 'garden' })} />}
 
       {/* GĐ199/GĐ202: Rốn kho chung + phiếu nạp kho (tách GĐ919 sang SupplyChainCard) */}
       <SupplyChainCard storage={storage} branch={branch ?? undefined} quanNuoc={biz.quanNuoc} quanNuocLast={biz.quanNuocLast ?? null} level={level} weather={weather} day={day} />

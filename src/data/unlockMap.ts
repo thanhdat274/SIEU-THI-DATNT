@@ -10,6 +10,7 @@ import { INSPECTION_UNLOCK } from './biz';
 import { COOK_UNLOCK } from './recipes';
 import { QUAN_NUOC_UNLOCK } from './quanNuoc';
 import { SHOP_TIERS } from './shopTiers';
+import { PHOI_UNLOCK } from './preserve';
 
 /** GĐ81 — "🗺️ Phía trước": bản đồ toàn ván các HỆ + MỐC LỚN mở khóa theo cấp.
  *  `unlocksAt` (levels.ts) chỉ liệt kê món/kệ/tier/thuộc tính theo cấp và bỏ sót hầu hết hệ lớn
@@ -55,6 +56,8 @@ export const SYSTEM_UNLOCKS: SystemUnlock[] = [
   { id: 'land_trai_dau_ngo', icon: '🌳', name: landTier('Trang trại đầu ngõ').name, desc: `12 luống + nuôi heo, bò, dê, đông tảo — ${vnd(landTier('Trang trại đầu ngõ').cost)}.`, atLevel: landTier('Trang trại đầu ngõ').unlock, panel: () => ({ type: 'garden' }) },
   { id: 'quannuoc', icon: '🧋', name: 'Quán nước đầu ngõ', desc: 'Mở quán nước chuyên đồ uống lấy nguyên liệu từ kho.', atLevel: QUAN_NUOC_UNLOCK, panel: () => ({ type: 'quannuoc' }) },
   { id: 'tier_mini_mart', icon: '🏪', name: shopTier('Mini mart').name, desc: `Nới tiệm ${shopTier('Mini mart').width}×${shopTier('Mini mart').depth} — đủ chỗ thêm kệ, tủ lạnh, quầy phụ — ${vnd(shopTier('Mini mart').price)}.`, atLevel: shopTier('Mini mart').unlock, panel: () => ({ type: 'build' }) },
+  // Hệ 1 (SPEC-CHIEU-SAU §1) — mở ở cấp 34 (PHOI_UNLOCK); mốc chỉ dừng ở cấp 75 ở trên, chèn đúng giữa 30 và 40.
+  { id: 'phoi', icon: '🏺', name: 'Sân phơi · Muối · Ủ', desc: 'Tự phơi khô, muối chua, ủ chín món quê — hàng khô nhà làm rẻ hơn mua ở hàng xóm, phơi phải canh mưa.', atLevel: PHOI_UNLOCK, panel: () => ({ type: 'garden' }) },
   { id: 'ch10_mat_tien', icon: '📖', name: 'Chương 10 · Mặt tiền khang trang', desc: 'Cốt truyện tự mở khi đủ cấp (cần cả bậc tiệm Siêu thị tạp hóa) — thưởng 6.000.000đ.', atLevel: 40 },
   { id: 'tier_sieu_thi', icon: '🏪', name: shopTier('Siêu thị tạp hóa').name, desc: `Nới tiệm ${shopTier('Siêu thị tạp hóa').width}×${shopTier('Siêu thị tạp hóa').depth}, tiền nhà tăng theo bậc — ${vnd(shopTier('Siêu thị tạp hóa').price)}.`, atLevel: shopTier('Siêu thị tạp hóa').unlock, panel: () => ({ type: 'build' }) },
   { id: 'ch11_dem_den_sang', icon: '📖', name: 'Chương 11 · Đêm nào cũng đèn sáng', desc: 'Cốt truyện tự mở khi đủ cấp — thưởng 10.000.000đ.', atLevel: 55 },
