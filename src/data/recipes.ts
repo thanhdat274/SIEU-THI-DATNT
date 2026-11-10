@@ -834,6 +834,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'ghe_nuong_sa_te', name: 'Ghẹ nướng sa tế', category: 'fresh', buy: 26000, sell: 45000, color: 0xb8a880, unlock: 199 },
   { id: 'hau_nuong_mo_hanh', name: 'Hàu nướng mỡ hành', category: 'fresh', buy: 26000, sell: 45000, color: 0xd8d8a0, unlock: 198 },
   { id: 'hau_chien_gion', name: 'Hàu chiên giòn', category: 'fresh', buy: 26000, sell: 45000, color: 0xd8c890, unlock: 199 },
+  { id: 'ca_chim_nuong_giay_bac', name: 'Cá chim nướng giấy bạc', category: 'fresh', buy: 26000, sell: 45000, color: 0xd8d0a0, unlock: 198 },
+  { id: 'ca_chim_sot_ca_chua', name: 'Cá chim sốt cà chua', category: 'fresh', buy: 26000, sell: 45000, color: 0xc89080, unlock: 197 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2821,6 +2823,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_hau_chien_gion', name: 'Hàu chiên giòn', station: 'fryer',
     inputs: [{ productId: 'x_hau', quantity: 1 }, { productId: 'x_bot_chien', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }],
     outputId: 'hau_chien_gion', outputQty: 4, durationMin: 20, unlock: 199, reputationGain: 1 },
+  // GĐ2157: Cá chim nướng giấy bạc — bếp gia đình/quán nhậu cả nước: cá chim ướp sả ớt bọc giấy bạc nướng than; không thay thế.
+  { id: 'recipe_ca_chim_nuong_giay_bac', name: 'Cá chim nướng giấy bạc', station: 'food_grill',
+    inputs: [{ productId: 'x_ca_chim', quantity: 1 }, { productId: 'x_sa', quantity: 1 }, { productId: 'x_hanh_la', quantity: 1 }],
+    outputId: 'ca_chim_nuong_giay_bac', outputQty: 4, durationMin: 25, unlock: 198, reputationGain: 1 },
+  // GĐ2158: Cá chim sốt cà chua — bữa cơm gia đình Nam Bộ: cá chim chiên vàng rồi sốt cà chua đậm đà; không thay thế.
+  { id: 'recipe_ca_chim_sot_ca_chua', name: 'Cá chim sốt cà chua', station: 'hot_kettle',
+    inputs: [{ productId: 'x_ca_chim', quantity: 1 }, { productId: 'x_ca_chua', quantity: 2 }, { productId: 'x_duong', quantity: 1 }],
+    outputId: 'ca_chim_sot_ca_chua', outputQty: 4, durationMin: 20, unlock: 197, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────
