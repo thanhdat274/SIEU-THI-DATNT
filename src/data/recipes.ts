@@ -856,6 +856,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'ca_ngat_nuong_trui', name: 'Cá ngát nướng trui', category: 'fresh', buy: 26000, sell: 45000, color: 0xb8a880, unlock: 199 },
   { id: 'muc_nang_hap', name: 'Mực nang hấp', category: 'fresh', buy: 26000, sell: 45000, color: 0xd8c8d8, unlock: 198 },
   { id: 'muc_nang_chien_gion', name: 'Mực nang chiên giòn', category: 'fresh', buy: 26000, sell: 45000, color: 0xd8b8c8, unlock: 199 },
+  { id: 'ngan_quay', name: 'Ngan quay', category: 'fresh', buy: 26000, sell: 45000, color: 0x8a6a4a, unlock: 198 },
+  { id: 'chao_ngan', name: 'Cháo ngan', category: 'fresh', buy: 12000, sell: 20000, color: 0xf0e0c0, unlock: 199 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2931,6 +2933,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_muc_nang_chien_gion', name: 'Mực nang chiên giòn', station: 'fryer',
     inputs: [{ productId: 'x_muc_nang', quantity: 1 }, { productId: 'x_bot_chien', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }],
     outputId: 'muc_nang_chien_gion', outputQty: 4, durationMin: 20, unlock: 199, reputationGain: 1 },
+  // GĐ2179: Ngan quay — quán nhậu cả nước: ngan ướp ngũ vị hương muối, quay chín da vàng giòn; không thay thế.
+  { id: 'recipe_ngan_quay', name: 'Ngan quay', station: 'food_grill',
+    inputs: [{ productId: 'x_ngan', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 1 }],
+    outputId: 'ngan_quay', outputQty: 4, durationMin: 30, unlock: 198, reputationGain: 1 },
+  // GĐ2180: Cháo ngan — món bồi bổ cả nước: ninh xương ngan nấu cháo gạo, thịt xé ăn kèm hành gừng; không thay thế.
+  { id: 'recipe_chao_ngan', name: 'Cháo ngan', station: 'hot_kettle',
+    inputs: [{ productId: 'x_ngan', quantity: 1 }, { productId: 'gao', quantity: 1 }, { productId: 'x_gung', quantity: 1 }],
+    outputId: 'chao_ngan', outputQty: 14, durationMin: 40, unlock: 199, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────

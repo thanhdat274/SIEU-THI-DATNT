@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (10/11/2026)
+- GĐ2179–2180: Ngan làm sẵn (x_ngan, cuối catalog L170); Ngan quay (food_grill, L198), Cháo ngan (hot_kettle, L199).
 - GĐ2177–2178: Mực nang làm sẵn (x_muc_nang, cuối catalog L170); Mực nang hấp (steamer, L198), Mực nang chiên giòn (fryer, L199).
 - GĐ2175–2176: Cá ngát làm sẵn (x_ca_ngat, cuối catalog L170); Cá ngát kho tộ (hot_kettle, L198), Cá ngát nướng trui (food_grill, L199).
 - GĐ2173–2174: Cá nục làm sẵn (x_ca_nuc, cuối catalog L170); Cá nục kho (hot_kettle, L198), Cá nục nướng (food_grill, L199).
