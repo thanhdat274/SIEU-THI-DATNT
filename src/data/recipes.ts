@@ -882,6 +882,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'ca_ro_dong_chien_gion', name: 'Cá rô đồng chiên giòn', category: 'fresh', buy: 26000, sell: 45000, color: 0xc8c060, unlock: 199 },
   { id: 'ca_du_kho_to', name: 'Cá đù kho tộ', category: 'fresh', buy: 26000, sell: 45000, color: 0xc0b0a0, unlock: 198 },
   { id: 'ca_du_chien_gion', name: 'Cá đù chiên giòn', category: 'fresh', buy: 26000, sell: 45000, color: 0xc8c858, unlock: 199 },
+  { id: 'ba_khia_rang_sa_ot', name: 'Ba khía rang sả ớt', category: 'fresh', buy: 26000, sell: 45000, color: 0xc06050, unlock: 198 },
+  { id: 'ba_khia_hap', name: 'Ba khía hấp', category: 'fresh', buy: 26000, sell: 45000, color: 0xd07068, unlock: 199 },
 ];
 
 // ──────────────────────────────────────────────
@@ -3061,6 +3063,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_ca_du_chien_gion', name: 'Cá đù chiên giòn', station: 'fryer',
     inputs: [{ productId: 'x_ca_du', quantity: 1 }, { productId: 'x_bot_chien', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }],
     outputId: 'ca_du_chien_gion', outputQty: 4, durationMin: 20, unlock: 199, reputationGain: 1 },
+  // GĐ2205: Ba khía rang sả ớt — đặc sản Bạc Liêu (miền Tây): ba khía rang khô với sả ớt cay, chấm nước chấm chua ngọt; không thay thế.
+  { id: 'recipe_ba_khia_rang_sa_ot', name: 'Ba khía rang sả ớt', station: 'fryer',
+    inputs: [{ productId: 'x_ba_khia', quantity: 1 }, { productId: 'x_sa', quantity: 1 }, { productId: 'x_ot_bot', quantity: 1 }],
+    outputId: 'ba_khia_rang_sa_ot', outputQty: 4, durationMin: 20, unlock: 198, reputationGain: 1 },
+  // GĐ2206: Ba khía hấp — bữa cơm miền Tây: ba khía hấp với sả cho thơm, chấm nước mắm ớt tỏi; không thay thế.
+  { id: 'recipe_ba_khia_hap', name: 'Ba khía hấp', station: 'steamer',
+    inputs: [{ productId: 'x_ba_khia', quantity: 1 }, { productId: 'x_sa', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }],
+    outputId: 'ba_khia_hap', outputQty: 4, durationMin: 20, unlock: 199, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────
