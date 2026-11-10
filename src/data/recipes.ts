@@ -862,6 +862,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'ca_chach_chien_gion', name: 'Cá chạch chiên giòn', category: 'fresh', buy: 22000, sell: 40000, color: 0xa87a4a, unlock: 199 },
   { id: 'ca_lang_kho_to', name: 'Cá lăng kho tộ', category: 'fresh', buy: 26000, sell: 45000, color: 0xa0a078, unlock: 198 },
   { id: 'ca_lang_nuong', name: 'Cá lăng nướng', category: 'fresh', buy: 26000, sell: 45000, color: 0xb0a880, unlock: 199 },
+  { id: 'ca_hong_kho_to', name: 'Cá hồng kho tộ', category: 'fresh', buy: 26000, sell: 45000, color: 0xd8a8a8, unlock: 198 },
+  { id: 'ca_hong_nuong', name: 'Cá hồng nướng', category: 'fresh', buy: 26000, sell: 45000, color: 0xc8b0b0, unlock: 199 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2961,6 +2963,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_ca_lang_nuong', name: 'Cá lăng nướng', station: 'food_grill',
     inputs: [{ productId: 'x_ca_lang', quantity: 1 }, { productId: 'x_sa', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }],
     outputId: 'ca_lang_nuong', outputQty: 4, durationMin: 30, unlock: 199, reputationGain: 1 },
+  // GĐ2185: Cá hồng kho tộ — bữa cơm miền Bắc: cá hồng kho trong tộ đất với nước mắm đường, tới sánh; không thay thế.
+  { id: 'recipe_ca_hong_kho_to', name: 'Cá hồng kho tộ', station: 'hot_kettle',
+    inputs: [{ productId: 'x_ca_hong', quantity: 1 }, { productId: 'hx_nuoc_mam', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
+    outputId: 'ca_hong_kho_to', outputQty: 4, durationMin: 30, unlock: 198, reputationGain: 1 },
+  // GĐ2186: Cá hồng nướng — quán nhậu cả nước: cá hồng ướp sả ớt, nướng than cho thơm giòn da; không thay thế.
+  { id: 'recipe_ca_hong_nuong', name: 'Cá hồng nướng', station: 'food_grill',
+    inputs: [{ productId: 'x_ca_hong', quantity: 1 }, { productId: 'x_sa', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }],
+    outputId: 'ca_hong_nuong', outputQty: 4, durationMin: 25, unlock: 199, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────
