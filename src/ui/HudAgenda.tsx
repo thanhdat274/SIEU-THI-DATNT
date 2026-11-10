@@ -16,10 +16,17 @@ const goTodo = (it: TodoItem, openPanel: (p: never) => void) => {
   else openPanel({ type: it.go.panel } as never);
 };
 
+/** SPEC-TOI-UU §T2-b: thay `useGame()` (đăng ký cả store) bằng selector trả CHUỖI khoá — chuỗi so theo giá trị
+ *  nên component chỉ vẽ lại khi dải/chip thật sự đổi nội dung; state đầy đủ lấy bằng getState() lúc vẽ. */
+const todoKey = (st: ReturnType<typeof useGame.getState>, minutes: number, withTodos: boolean) =>
+  `${st.panel ? 1 : 0}${st.shopOpen ? 1 : 0}${st.speed > 0 ? 1 : 0}${tutorialActive(st) ? 1 : 0}|` +
+  (withTodos ? todos(st, minutes).map((i) => `${i.id}~${i.text}~${i.icon}~${i.urgency}`).join(';') : '');
+
 /** Chip gợi ý giờ vắng khách: việc đáng làm nhất lúc này, bấm là mở đúng bảng (hay lau nhà luôn). */
 export function IdleChip({ items }: { items?: TodoItem[] }) {
   const minutes = useClock((c) => Math.floor(c.minutes));
-  const s = useGame();
+  useGame((st) => todoKey(st, minutes, !items));
+  const s = useGame.getState();
   // Chỉ nhắc khi đúng là giờ vắng, tiệm đang mở, không bảng nào che màn, đồng hồ đang chạy,
   // và tutorial ngày đầu không đang hiện (tránh chồng hướng dẫn mới vào game).
   if (!(isSlowHour(minutes) && s.shopOpen && !s.panel && s.speed > 0 && !tutorialActive(s))) return null;
@@ -47,7 +54,8 @@ export function IdleChip({ items }: { items?: TodoItem[] }) {
  *  (useClock theo phút nguyên, như GĐ161) — không vẽ lại 60fps. */
 export function TodayAgendaStrip() {
   const minutes = useClock((c) => Math.floor(c.minutes));
-  const s = useGame();
+  useGame((st) => todoKey(st, minutes, true));
+  const s = useGame.getState();
   const all = todos(s, minutes);
   const items = timedTodos(all);
   // Không có hẹn nào (hoặc đang hướng dẫn ngày đầu — như IdleChip, tránh chồng lớp) → trả slot IdleChip.
