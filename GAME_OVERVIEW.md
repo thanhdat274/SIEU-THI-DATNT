@@ -1,6 +1,6 @@
 # TẠP HÓA ĐẦU NGÕ (tap-hoa-3d) — Tổng hợp nội dung game hiện có
 
-> Mục đích: file đưa đi phân tích / lấy ý tưởng. Cập nhật theo code ngày 10/11/2026 (đến GĐ2225).
+> Mục đích: file đưa đi phân tích / lấy ý tưởng. Cập nhật theo code 10/11/2026 (đến GĐ2279 — đã chốt chiều sâu SPEC-CHIEU-SAU: Hệ 1 Phơi·Muối·Ủ, Hệ 2 Tình làng, Hệ 3 Định vị tiệm, Hệ 4 Nhãn riêng + tầng 3D).
 > Nguồn: `PROGRESS.md`, `src/data/*`, `src/core/*`, `src/agents/*`, `server/*`. Số liệu đếm bằng grep nên là xấp xỉ.
 
 ---
@@ -41,6 +41,9 @@
 | 40 | Tiệm xôi (30tr), chương 10 · 45 Siêu thị tạp hóa |
 | 55–58 | Chương 11, Siêu thị khang trang |
 | 60 | Tái sinh NG+, Định vị tiệm (Bình dân / Đặc sản / Tiện lợi) |
+| 60+ | **Hệ 3 Định vị tiệm (SPEC-CHIEU-SAU §3):** treo biển theo 3 hướng từ cấp 60, khớp hướng → bậc 1–5 (3/10/21/35/50 ngày) kèm hiệu ứng + thưởng/phạt, đổi biển 5tr×bậc + 14 ngày "làm lại", ấn NG+, hai biển cùng lúc (Hệ3-L8); biển phụ 3D dưới bảng hiệu tiệm theo hướng treo |
+| 100 | **Hệ 4 Nhãn riêng (SPEC-CHIEU-SAU §4):** lập nhãn (≥100 mẻ & bán ≥500), 6 dòng hàng (100→180), xưởng đóng gói + thợ, uy tín nhãn 5 bậc → premium bán lẻ 5–25%; **bỏ mối 5 đại lý** (110→170, giao kỳ), **bán cho đối thủ** 95% (nuôi rival), **nhượng quyền 3 điểm** (150/170/190), **4 danh hiệu nhãn** (uy tín 40/60/80 + 3 nhượng quyền khỏe 30 ngày); hồ sơ nhãn giữ qua NG+ |
+| 112 | Hệ 1 Phơi·Muối·Ủ (SPEC-CHIEU-SAU §1): 6 mẻ phơi/muối/ủ, giàn nong + bạt kéo (34), vại muối (38), nhà chum (46), mốc ủ lâu ×1,6; một nắng/phơi sương, phụ trại thu hộ |
 | 75 | Chương 12, **Đại siêu thị** (24×14) + ô mở rộng tiếp giáp |
 | 42–50 | Quảng cáo mở rộng (tờ rơi/băng rôn/tiếng lành hẻm) |
 | 100–200 | Món/nội dung cuối game (công thức tới cấp 200 là trần) |
