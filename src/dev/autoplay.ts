@@ -10,7 +10,7 @@ import { LOAN_OPTIONS_MIN } from '../data/biz';
 import { SHOP_TIERS } from '../data/shopTiers';
 import { maxStaff } from '../data/staff';
 import { referenceSell } from '../data/pricing';
-import { isSpecialtyProduct } from '../data/stance';
+import { isSpecialtyProduct, STANCE_TIER_DAYS } from '../data/stance';
 import { SERVICES } from '../data/services';
 import type { CustomerManager } from '../agents/customers';
 import type { StaffManager } from '../agents/staff';
@@ -75,9 +75,18 @@ export function createAutoplay(
   /** Tổng lãi gộp cộng dồn của mọi kệ (giá bán − giá vốn) — chênh trong ngày = lãi gộp bán hàng hôm nay. */
   const shelfMarginTotal = () => Object.values(st().shelfProfit ?? {}).reduce((n, p) => n + p.profit, 0);
 
-  // ───── Hệ 3 L2 (SPEC §3.8): ba chính sách bot theo hướng biển (hiệu ứng = 0, chỉ lệch do hành vi) ─────
-  const cheapPrice = (id: string) => Math.round((referenceSell(id) * 0.95) / 100) * 100; // Bình dân: ~95% thị trường
-  /** Bot Bình dân — hạ giá mọi món đang bày kệ về 95% giá thị trường. */
+  // ───── Hệ 3 L2 (SPEC §3.8): ba chính sách bot theo hướng biển ─────
+  // Giá Bot Bình dân: hạ món ĐỦ BIÊN (thị trường ≥ 1.2× giá vốn) xuống ~0.95 để khớp biển (≤97%) và
+  // kích "rẻ kéo khách" (biển Bình dân khuếch đại độ dốc hút giá rẻ, §3.4); món biên mỏng GIỮ giá thị
+  // trường kẻo bán dưới giá vốn. (GĐ2254: cày 95% MỌI món làm tiệm cạn margin → chỉ cày món đủ biên.)
+  const cheapPrice = (id: string) => {
+    const p = productById(id);
+    const ref = referenceSell(id);
+    if (ref < p.buy * 1.2) return ref; // biên mỏng → giữ giá thị trường
+    const floor = Math.round((p.buy * 1.15) / 100) * 100;
+    return Math.max(floor, Math.round((ref * 0.95) / 100) * 100);
+  };
+  /** Bot Bình dân — hạ giá món đủ biên đang bày kệ về 95% giá thị trường. */
   function priceBinhDan() {
     if (stance !== 'binh_dan') return;
     const s = st();
@@ -101,6 +110,20 @@ export function createAutoplay(
           services: wantSv,
         },
       });
+    }
+  }
+  /** Hệ 3 (SPEC §3.8) — bot TREO BIỂN Ở BẬC 3: khi có tuỳ chọn stance, giữ biển ở bậc 3 (21 ngày khớp)
+   *  để test cân bằng đo ĐÚNG hiệu ứng của hướng suốt kỳ đo. Không có tuỳ chọn → không treo (mốc). */
+  function ensureStance() {
+    if (!stance) return;
+    const s = st();
+    const cur = s.biz.stance;
+    // Test cân bằng đo hiệu ứng ở BẬC 3 → mỗi sáng neo lại bậc 3 / xoá miss (nếu chưa đúng) để biển
+    // không tụt bậc trong kỳ đo (người chơi thật phải tự giữ khớp; bot ở đây là "tiệm đã bậc 3").
+    if (!cur || cur.id !== stance) {
+      useGame.setState({ biz: { ...s.biz, stance: { id: stance, since: s.day, fitDays: STANCE_TIER_DAYS[2], missStreak: 0 } } });
+    } else if ((cur.fitDays ?? 0) !== STANCE_TIER_DAYS[2] || (cur.missStreak ?? 0) !== 0) {
+      useGame.setState({ biz: { ...s.biz, stance: { ...cur, fitDays: STANCE_TIER_DAYS[2], missStreak: 0 } } });
     }
   }
 
@@ -206,6 +229,7 @@ export function createAutoplay(
     hire();
     invest();
     restock();
+    ensureStance(); // Hệ 3 — treo biển ở bậc 3 (SPEC §3.8)
     ensureTienLoi(); // Hệ 3 L2 — bot Tiện lợi: ca đêm + dịch vụ
     priceBinhDan();  // Hệ 3 L2 — bot Bình dân: hạ giá toàn bộ bày kệ
     // Người chơi đứng quầy chính cả ngày
@@ -282,6 +306,7 @@ export function createAutoplay(
     hire();
     invest();
     restock();
+    ensureStance(); // Hệ 3 — treo biển ở bậc 3 (SPEC §3.8)
     ensureTienLoi(); // Hệ 3 L2 — bot Tiện lợi: ca đêm + dịch vụ
     priceBinhDan();  // Hệ 3 L2 — bot Bình dân: hạ giá toàn bộ bày kệ
     const main = shop.counters()[0];

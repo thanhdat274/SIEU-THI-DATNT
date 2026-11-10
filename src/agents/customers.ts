@@ -8,7 +8,8 @@ import { trending } from '../data/suppliers';
 import { skyAt } from '../data/weather';
 import { marketTrafficFactor } from '../data/chophien';
 import { tierMarkdown, fitLots, nearestLife, nearExpiryRefuseChance } from '../data/freshness';
-import { demandPriceFactor, keepChance } from '../data/pricing';
+import { demandPriceFactor, keepChance, PRICE_RULES } from '../data/pricing';
+import { stanceTraffic, stanceLowCap, stanceOverSensitivity, stancePullSlope } from '../data/stance';
 import { CUNG_GOODS, CUNG_PULL, isXoiCungDay } from '../data/tiemXoi';
 import { dayEffects, isWeekend, OFF_SEASON_CLEARANCE, OFF_SEASON_HUNT, offSeason } from '../data/calendar';
 import { crisisEffects } from '../data/crisis';
@@ -183,7 +184,9 @@ export class CustomerManager {
       const visit = (0.5 + decorBoost + repVisitBonus(reputationOf(s.repLog))) * traffic * this.priceAppeal() * dirtVisitFactor(s.dirt)
       * bizTraffic(s.biz, s.day) * happy * socialTraffic(s.social, s.day)
       // Sân chơi đầu hẻm khánh thành rồi thì hẻm đông khách hơn (×1.06; ván mới = 1 nên không đổi nền kinh tế)
-      * landmarkCustomerFactor(s.biz.landmark.contributions);
+      * landmarkCustomerFactor(s.biz.landmark.contributions)
+      // Hệ 3 (SPEC §3.4) — biển Bình dân kéo khách (+20% bậc 5); không treo biển = 1
+      * stanceTraffic(s.biz);
         const open = daytime && s.shopOpen;
         // Khách quen tới đúng giờ quen, không phụ thuộc người đi đường; người bị rival lôi kéo thì tạm vắng
         const poached = s.biz.rival ? Object.keys(s.biz.rival.poached ?? {}) : [];
@@ -309,7 +312,11 @@ export class CustomerManager {
     const ids = [...new Set(s.furniture.flatMap((f) => f.tiers.filter((t) => t.productId && t.count > 0).map((t) => t.productId!)))];
     if (!ids.length) return 1;
     const under = rivalUndercuts(s.biz.rival, (id) => s.priceOf(id), s.day);
-    return ids.reduce((n, id) => n + demandPriceFactor(id, s.priceOf(id)) * (under.has(id) ? 0.85 : 1), 0) / ids.length;
+    // Hệ 3 (SPEC §3.4) — biển Bình dân nới trần "rẻ kéo khách" (1.15→1.25) và khuếch đại độ dốc
+    // hút giá rẻ (stancePullSlope); không treo = cap cũ + slope gốc.
+    const cap = stanceLowCap(s.biz);
+    const slope = stancePullSlope(s.biz) * PRICE_RULES.lowPriceDemandSlope;
+    return ids.reduce((n, id) => n + demandPriceFactor(id, s.priceOf(id), cap, slope) * (under.has(id) ? 0.85 : 1), 0) / ids.length;
   }
 
   /** Khách quen: chủ yếu mua món ưa thích, perk "mua thêm" cộng món, perk "mua lô" nhân số lượng. */
@@ -513,7 +520,9 @@ export class CustomerManager {
           * (crisisEffects(st.biz.crisis, st.day).sensitivity ?? 1); // Hệ 8: khách nhạy giá hơn trong biến cố; trống = 1
         // Rival đang bán rẻ đúng món này thì khách soi giá kỹ hơn hẳn
         const rivalPress = rivalUndercuts(st.biz.rival, (id) => st.priceOf(id), st.day).has(want) ? 1.35 : 1;
-        if (simRng()() > keepChance(want, st.priceOf(want), c.sensitivity * rivalPress * tolerance)) {
+        // Hệ 3 (SPEC §3.4) — biển Bình dân: món bán TRÊN thị trường bị chê nặng hơn (×1.5 bậc 5); không treo = 1
+        const stancePress = stanceOverSensitivity(st.biz, want, st.priceOf(want));
+        if (simRng()() > keepChance(want, st.priceOf(want), c.sensitivity * rivalPress * tolerance * stancePress)) {
           c.missing++;
           c.missed.push({ id: want, why: 'price' });
           st.noteMiss('price', want);

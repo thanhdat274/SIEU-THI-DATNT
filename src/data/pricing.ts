@@ -73,11 +73,17 @@ export function priceBuyOdds(productId: string, price: number): { keep: number; 
   return { keep: keepChance(productId, price), reference: referenceSell(productId) };
 }
 
-/** Giá rẻ hơn gợi ý kéo thêm khách, không vượt trần; giá cao không đổi lượng khách (khách từ chối ở `keepChance`). */
-export function demandPriceFactor(productId: string, price: number): number {
+/** Giá rẻ hơn gợi ý kéo thêm khách, không vượt trần; giá cao không đổi lượng khách (khách từ chối ở `keepChance`).
+ *  `cap` (Hệ 3 L3 — biển Bình dân) nới trần "rẻ kéo khách" tới 1.25; bỏ qua = cap cũ (1.15). */
+export function demandPriceFactor(
+  productId: string,
+  price: number,
+  cap: number = PRICE_RULES.lowPriceDemandCap,
+  slope: number = PRICE_RULES.lowPriceDemandSlope,
+): number {
   const ratio = priceRatio(price, productId);
   if (ratio >= 1) return 1;
-  return Math.min(PRICE_RULES.lowPriceDemandCap, 1 + PRICE_RULES.lowPriceDemandSlope * (1 - ratio));
+  return Math.min(cap, 1 + slope * (1 - ratio));
 }
 
 /** GĐ1224 — bề mặt "giá rẻ kéo khách": bảng giá nói "rẻ hơn gợi ý thì thêm người ghé" mà không cho con

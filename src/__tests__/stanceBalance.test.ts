@@ -2,14 +2,15 @@ import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useGame } from '../core/store';
 import { referenceSell } from '../data/pricing';
 import { SERVICES } from '../data/services';
-import { orderDacSanCandidates } from '../dev/autoplay';
-import { isSpecialtyProduct } from '../data/stance';
+import { orderDacSanCandidates, type AutoplayOptions } from '../dev/autoplay';
+import { isSpecialtyProduct, STANCE_TIER_DAYS } from '../data/stance';
 
-// Hệ 3 L2 (SPEC-CHIEU-SAU §3.8) — dựng khung ĐO cân bằng hướng biển trước khi bật hiệu ứng.
-// Chạy sim cấp 65 (≥ STANCE_UNLOCK 60), 10 ngày, cùng seed, BỐN kịch bản: không biển + ba chính sách
-// bot (Bình dân / Đặc sản / Tiện lợi). L2 HIỆU ỨNG = 0 (công thức kinh tế chưa đổi) → không ép dải
-// ±5-20% lợi nhuận; chỉ khoá rằng khung chạy được và 3 chính sách tạo HÀNH VI khác biệt để lát L3-L5
-// so sánh khi bật hiệu ứng.
+// Hệ 3 L2 (SPEC-CHIEU-SAU §3.8) — dựng khung ĐO cân bằng hướng biển. Chạy sim cấp 65 (≥ STANCE_UNLOCK 60),
+// 10 ngày, cùng seed 7257, BỐN kịch bản ĐỘC LẬP (mỗi kịch bản gieo lại seed): không biển (mốc) + ba chính
+// sách bot (Bình dân / Đặc sản / Tiện lợi). L3 mới bật hiệu ứng Bình dân; Đặc sản (L4) và Tiện lợi (L5)
+// chưa có → dải ±5-20% "mỗi hướng lãi HƠN không biển" (§3.8) chỉ chốt được SAU L5 khi ba hướng cùng hiệu ứng
+// và được tinh chỉnh chung (spread ≤15%). L2/L3 khoá: khung chạy được, mốc GOLDEN[65] ổn định, biển giữ bậc
+// 3, ba chính sách tạo hành vi khác biệt (Bình dân hạ giá / Đặc sản ưu tiên hàng đặc sản / Tiện lợi ca đêm).
 
 vi.mock('../net/session', () => ({ useSession: { getState: () => ({}) }, subscribe: () => () => {} }));
 vi.mock('../net/cloud', () => ({ pushCloudSave: () => {}, takeCloudSave: () => {} }));
@@ -80,25 +81,31 @@ function displayedPriceRatios(): number[] {
   return ratios;
 }
 
-describe('Hệ3-L2 — stanceBalance: khung đo chính sách bot (hiệu ứng = 0)', () => {
+describe('Hệ3-L2/L3 — stanceBalance: khung đo chính sách bot theo hướng biển', () => {
   it('bốn kịch bản chạy được 10 ngày cấp 65 cùng seed; ba chính sách tạo hành vi khác biệt', { timeout: 900_000 }, async () => {
     setSimSeed(7257); // seed tất định cho cả sim và RNG ngẫu nhiên khác
     try {
+      // Mỗi kịch bản gieo LẠI cùng seed → 4 mẫu ĐỘC LẬP (không để kịch bản trước làm lệch RNG của sau).
+      const runOne = async (stance: AutoplayOptions['stance']) => {
+        setSimSeed(7257);
+        return runEconomySim(LV, DAYS, stance ? { stance } : {});
+      };
       // 1) Mốc: không biển.
-      const base = await runEconomySim(LV, DAYS, {});
+      const base = await runOne(undefined);
       const baseRatios = displayedPriceRatios();
       const baseHasNight = (useGame.getState().biz.upgrades ?? []).includes('night');
       const baseServices = (useGame.getState().biz.services ?? []).length;
 
-      // 2) Bình dân: hạ giá toàn bộ bày kệ về ~95% thị trường.
-      const bd = await runEconomySim(LV, DAYS, { stance: 'binh_dan' });
+      // 2) Bình dân: bot hạ giá món đủ biên về ~95% thị trường để khớp biển (≤97%); biển được neo bậc 3.
+      const bd = await runOne('binh_dan');
       const bdRatios = displayedPriceRatios();
+      const bdStance = useGame.getState().biz.stance ?? null;
 
-      // 3) Đặc sản: ưu tiên bày hàng đặc sản (khung đo; hiệu ứng bật ở L4).
-      const ds = await runEconomySim(LV, DAYS, { stance: 'dac_san' });
+      // 3) Đặc sản: ưu tiên bày hàng đặc sản (hiệu ứng bật ở L4).
+      const ds = await runOne('dac_san');
 
       // 4) Tiện lợi: ca đêm + đủ dịch vụ.
-      const tl = await runEconomySim(LV, DAYS, { stance: 'tien_loi' });
+      const tl = await runOne('tien_loi') as typeof bd;
       const tlHasNight = (useGame.getState().biz.upgrades ?? []).includes('night');
       const tlServices = (useGame.getState().biz.services ?? []).length;
 
@@ -114,14 +121,20 @@ describe('Hệ3-L2 — stanceBalance: khung đo chính sách bot (hiệu ứng =
       expect(ds.rows).toHaveLength(DAYS);
       expect(tl.rows).toHaveLength(DAYS);
 
+      // Mốc không biển là điểm chốt (SPEC §3.8 "thêm mốc GOLDEN[65]") — nếu đổi thì khung đo lệch.
+      expect(sumSales(base.rows)).toBe(19413000);
+
       // Bình dân: hành vi khác biệt — hạ giá bày kệ về ~95% thị trường; trung bình rõ rẻ hơn mốc
-      // và có món thật rẻ (L2 hiệu ứng = 0, 1-2 tầng giữ giá cũ không làm hỏng khung đo).
+      // và có món thật rẻ.
       expect(bdRatios.length).toBeGreaterThan(0);
       const avg = (rs: number[]) => rs.reduce((n, r) => n + r, 0) / rs.length;
       expect(Math.min(...bdRatios)).toBeLessThanOrEqual(0.96);
       if (baseRatios.length) expect(avg(bdRatios)).toBeLessThan(avg(baseRatios));
       // Không biển không cố tình hạ (ít nhất không toàn bộ ≤ 97%).
       if (baseRatios.length) expect(baseRatios.some((r) => r > 0.97)).toBe(true);
+
+      // Biển giữ ở BẬC 3 suốt kỳ đo (bot neo bậc 3 mỗi sáng) → hiệu ứng đo đúng ở bậc 3.
+      expect(bdStance?.fitDays).toBeGreaterThanOrEqual(STANCE_TIER_DAYS[2]);
 
       // Tiện lợi: hành vi khác biệt — bật ca đêm + đủ dịch vụ; mốc không chắc đã full.
       expect(tlHasNight).toBe(true);

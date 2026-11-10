@@ -592,6 +592,10 @@ export interface GameState {
   ad?: { defId: string; until: number };
   buyAd: (id: string) => void;
 
+  /** Hệ 3 — Biển định vị (SPEC §3.9): treo biển theo hướng (cấp ≥ 60) / gỡ biển. Co-op: đổi biển cần biểu quyết (L6). */
+  chooseStance: (id: 'binh_dan' | 'dac_san' | 'tien_loi') => void;
+  dropStance: () => void;
+
   /** Hệ 8 — Biến cố dài (GĐ Hệ8-L3): làm một việc chuẩn bị trong đợt đang chạy (trừ tiền + vào preps). */
   doCrisisPrep: (prepId: string) => void;
 

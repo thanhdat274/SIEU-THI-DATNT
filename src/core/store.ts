@@ -56,6 +56,7 @@ import { createTiemXoiSlice } from './slices/tiemXoi';
 import { createPrestigeSlice } from './slices/prestige';
 import { createDiscoverySlice } from './slices/discovery';
 import { createCrisisSlice } from './slices/crisis';
+import { createStanceSlice } from './slices/stance';
 
 export * from './gameTypes';
 export { migrateTiers } from './stock';
@@ -263,6 +264,7 @@ export const useGame = create<GameState>((set, get) => {
     ...createPrestigeSlice(set, get),
     ...createDiscoverySlice(set, get),
     ...createCrisisSlice(set, get),
+    ...createStanceSlice(set, get),
   };
 });
 

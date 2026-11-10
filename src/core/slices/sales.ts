@@ -11,6 +11,7 @@ import { comboById, maxActiveCombos } from '../../data/combos';
 import { paymentById } from '../../data/payments';
 import { COOKED_PRODUCT_IDS } from '../../data/recipes';
 import { dishPriceMul } from '../../data/dishStars';
+import { stanceDishMul } from '../../data/stance';
 import { REGION_IDS } from '../../data/regionSpecialty';
 import { regionPriceMul, stockedProductIds } from '../../data/regionFlags';
 import { departmentPriceMul } from '../../data/departments';
@@ -82,7 +83,8 @@ export const createSalesSlice = (set: SetState, get: GetState): Pick<GameState, 
       const line = byItem[it.id] ?? { qty: 0, revenue: 0, cost: 0 };
       let itemPremium = 0;
       if (COOKED_PRODUCT_IDS.has(it.id)) {
-        itemPremium = Math.round(it.price * (dishPriceMul(servedCounts[it.id] ?? 0) - 1));
+        // Hệ 3 (SPEC §3.4) — biển Bình dân: sao món chỉ hưởng NỬA phần thưởng giá; không treo = hưởng đủ
+        itemPremium = Math.round(it.price * (dishPriceMul(servedCounts[it.id] ?? 0) - 1) * stanceDishMul(s.biz));
         servedCounts[it.id] = (servedCounts[it.id] ?? 0) + 1;
       }
       if (REGION_IDS.has(it.id)) {

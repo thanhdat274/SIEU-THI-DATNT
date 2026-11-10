@@ -1,6 +1,8 @@
 import { COOKED_PRODUCT_IDS } from './recipes';
 import { NEIGHBOR_ONLY_IDS } from './homemade';
 import { REGION_IDS } from './regionSpecialty';
+import { referenceSell } from './pricing';
+import { PRICE_RULES } from './pricing';
 
 /**
  * Hệ 3 (SPEC-CHIEU-SAU §3) — ĐỊNH VỊ TIỆM (Lát L1: CHỈ ĐO).
@@ -142,3 +144,116 @@ export function leaningStance(c: StanceCtx): StanceId | null {
   }
   return best?.id ?? null;
 }
+
+// ──────────────────────────────────────────────
+// Hệ 3 L3 (SPEC-CHIEU-SAU §3.5, §3.9) — TREO BIỂN + BẬC + HIỆU ỨNG BÌNH DÂN
+// ──────────────────────────────────────────────
+
+/** Trạng thái biển hiệu đang treo (biz.stance). THIẾU ở save cũ = chưa treo (vô hại). */
+export interface StanceState {
+  id: StanceId;
+  /** Ngày treo biển (cho lịch sử). */
+  since: number;
+  /** Tổng số ngày KHỚP hướng kể từ khi treo (quyết định bậc). */
+  fitDays: number;
+  /** Số ngày LỆCH liên tiếp (đủ 3 thì tụt 1 bậc). */
+  missStreak: number;
+  /** Ngày đang "làm lại biển" (đổi hướng, L6): trước ngày này không có hiệu ứng. THIẾU = không đổi lại. */
+  switchUntil?: number;
+}
+
+/** Ngày khớp tích lũy để lên từng bậc (SPEC §3.5): 3/10/21/35/50 ngày → bậc 1…5. */
+export const STANCE_TIER_DAYS = [3, 10, 21, 35, 50] as const;
+
+/** Bậc biển (0..5) theo tổng ngày khớp; 0 = chưa có hiệu ứng. */
+export function stanceTier(fitDays: number): number {
+  let t = 0;
+  for (const d of STANCE_TIER_DAYS) if (fitDays >= d) t++;
+  return t;
+}
+
+/** Biển đang CÓ HIỆU LỰC không (không treo, hoặc đang làm lại biển)? */
+export function stanceActive(st: StanceState | undefined, day: number): boolean {
+  if (!st) return false;
+  if (st.switchUntil !== undefined && day < st.switchUntil) return false;
+  return true;
+}
+
+/**
+ * Hệ 3 L3 — Cập nhật biển mỗi đêm (gọi từ endDay). `fit` = hôm nay KHỚP hướng đang treo hay không.
+ * Khớp → +1 ngày (fitDays) và xoá missStreak. Lệch → missStreak++; đủ 3 ngày lệch liền thì tụt 1 bậc
+ * (fitDays về ngưỡng bậc dưới, missStreak về 0 — khỏi tụt dồn mỗi đêm). Đang làm lại biển → không đổi.
+ */
+export function applyStanceDay(st: StanceState, fit: boolean, day: number): StanceState {
+  if (st.switchUntil !== undefined && day < st.switchUntil) return st;
+  const miss = fit ? 0 : (st.missStreak ?? 0) + 1;
+  let fitDays = (st.fitDays ?? 0) + (fit ? 1 : 0);
+  if (miss >= 3) {
+    const cur = stanceTier(fitDays);
+    const lowerTier = Math.max(0, cur - 1);
+    fitDays = lowerTier > 0 ? STANCE_TIER_DAYS[lowerTier - 1] : 0;
+  }
+  return { id: st.id, since: st.since, fitDays, missStreak: miss >= 3 ? 0 : miss, ...(st.switchUntil !== undefined ? { switchUntil: st.switchUntil } : {}) };
+}
+
+/** Map khớp theo từng hướng (cả ba) — để endDay lấy fit của ĐÚNG hướng đang treo. */
+export function stanceFitByDirection(c: StanceCtx): Record<StanceId, boolean> {
+  const m: Record<StanceId, boolean> = { binh_dan: false, dac_san: false, tien_loi: false };
+  for (const r of stanceFit(c)) m[r.id] = r.fit;
+  return m;
+}
+
+export interface StanceStateRef {
+  stance?: StanceState;
+}
+/** Bậc hiện tại của khách hàng (đọc entry point có biz.stance). */
+export const stanceTierOf = (e: StanceStateRef) => (e.stance ? stanceTier(e.stance.fitDays ?? 0) : 0);
+
+// ── Hiệu ứng kinh tế (SPEC §3.4) ──
+// Mỗi hướng thưởng/phạt tăng TUYẾN TÍNH theo bậc 1→5; con số dưới là ở BẬC 5. Cổng cấp 60 (R1) và
+// stanceActive → khi KHÔNG treo biển / không hiệu lực / hướng khác thì mọi hệ số trả đúng giá trị TRUNG TÍNH
+// (1 hoặc cap cũ) nên golden L30 & tiệm không treo biển KHÔNG đổi. L3 chỉ bật hiệu ứng hướng BÌNH DÂN;
+// Đặc sản / Tiện lợi chưa có (L4/L5) → neutral.
+const binhDanStep = (tier: number) => tier / 5; // hệ số tuyến tính 0..1 theo bậc
+
+/** Lợi Bình dân — khách ghé +20% (bậc 5). Không treo biển / hướng khác = 1. */
+export function stanceTraffic(e: StanceStateRef): number {
+  const t = stanceTierOf(e);
+  if (!t || !stanceActive(e.stance, 0) || e.stance!.id !== 'binh_dan') return 1;
+  return 1 + 0.2 * binhDanStep(t);
+}
+
+/** Lợi Bình dân — trần "rẻ kéo khách" (lowPriceDemandCap) 1.15 → 1.25 (bậc 5). Không treo = cap cũ. */
+export function stanceLowCap(e: StanceStateRef): number {
+  const t = stanceTierOf(e);
+  if (!t || !stanceActive(e.stance, 0) || e.stance!.id !== 'binh_dan') return PRICE_RULES.lowPriceDemandCap;
+  return PRICE_RULES.lowPriceDemandCap + 0.1 * binhDanStep(t);
+}
+
+/** Lợi Bình dân — "rẻ kéo khách": độ dốc hút giá rẻ ×(1+3·bậc/5) (bậc 5 = ×4). Biển Bình dân sống nhờ
+ *  khối lượng bán rẻ → cần độ dốc thật để hạ giá kéo đủ khách bù margin. (GĐ2254 đo: slope mặc định 0.5
+ *  quá yếu — hạ 3-5% không kéo nổi khách; nhưng quá mạnh như ×9 làm bot hết hàng. Để mức vừa, chốt khi
+ *  cân bằng cả 3 hướng ở L5.) Không treo / hướng khác = 1 (slope gốc). */
+export function stancePullSlope(e: StanceStateRef): number {
+  const t = stanceTierOf(e);
+  if (!t || !stanceActive(e.stance, 0) || e.stance!.id !== 'binh_dan') return 1;
+  return 1 + 3 * binhDanStep(t);
+}
+
+/** Giá phải trả Bình dân — khách đã quen rẻ: món BÁN TRÊN thị trường bị chê nặng hơn 50% (bậc 5).
+ *  Hệ số này nhân vào độ nhạy khách trong `keepChance` (chỉ phần giá vượt thị trường). Không treo /
+ *  bán rẻ / hướng khác = 1. */
+export function stanceOverSensitivity(e: StanceStateRef, productId: string, price: number): number {
+  const t = stanceTierOf(e);
+  if (!t || !stanceActive(e.stance, 0) || e.stance!.id !== 'binh_dan') return 1;
+  if (price <= referenceSell(productId)) return 1;
+  return 1 + 0.5 * binhDanStep(t);
+}
+
+/** Giá phải trả Bình dân — sao món (dishPriceMul) chỉ còn hưởng NỬA (bậc 5). Không treo = 1 (hưởng đủ). */
+export function stanceDishMul(e: StanceStateRef): number {
+  const t = stanceTierOf(e);
+  if (!t || !stanceActive(e.stance, 0) || e.stance!.id !== 'binh_dan') return 1;
+  return 1 - 0.5 * binhDanStep(t);
+}
+

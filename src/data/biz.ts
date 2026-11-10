@@ -7,6 +7,7 @@ import { formatMoney } from './products';
 import { newQuanNuoc, type QuanNuocState } from './quanNuoc';
 import { newTiemXoi, type TiemXoiState } from './tiemXoi';
 import type { HiepLucState } from './hiepLuc';
+import type { StanceState } from './stance';
 import { monthOf } from './calendar';
 import { emptyYear } from './yearReport';
 import { xpToNext } from './levels';
@@ -156,6 +157,8 @@ export interface BizState {
   services?: string[];
   /** Thiết bị đã mua (camera, máy POS); thiếu ở save cũ. */
   upgrades?: string[];
+  /** Hệ 3 (SPEC-CHIEU-SAU §3.9) — biển hiệu đang treo (định vị tiệm, cấp ≥ 60). THIẾU = chưa treo. */
+  stance?: StanceState;
   /** Quán nước đầu ngõ (GĐ7, bán đồ uống rút từ kho); thiếu ở save cũ — nạp bản cũ tự bù mặc định. */
   quanNuoc: QuanNuocState;
   /** Tiệm xôi (GĐ410): xưởng nấu xôi số lượng lớn đổ vào kho chung mỗi đêm. */

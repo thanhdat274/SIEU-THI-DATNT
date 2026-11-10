@@ -40,6 +40,8 @@ import { ANIMAL_ORDER, farmCritChance, farmhandChores, FARM_ORDER_UNLOCK, farmOr
 import { preserveNight, farmhandPreserve, preserveDefById } from '../../data/preserve';
 import { crisisNight } from '../../data/crisis';
 import { lifeEventFor, lifeEventById, gioLabel } from '../../data/lifeEvent';
+import { stanceActive, stanceFitByDirection, applyStanceDay, stanceTier, STANCE_UNLOCK, STANCE_META } from '../../data/stance';
+import { buildStanceCtx } from '../../data/stanceData';
 import { logAnalyticsDay } from '../../data/analytics';
 import { appRating } from '../../data/online';
 import { onlineDayEnd } from './online';
@@ -486,6 +488,19 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
     // GĐ489: cộng dồn suất ăn tại chỗ (thành tựu "Quán xôi đông khách")
     const tx = biz.biz.tiemXoi;
     biz.biz = { ...biz.biz, tiemXoiLast, tiemXoi: { ...tx, dineTotal: (tx.dineTotal ?? 0) + (tiemXoiLast.dine ?? 0) } };
+  }
+  // Hệ 3 (SPEC-CHIEU-SAU §3.5) — CUỐI NGÀY cập nhật biển hiệu: hôm nay khớp hướng đang treo không.
+  // Đo ĐÚNG hướng treo (stanceFitByDirection). Cổng cấp ≥ 60 (R1) + stanceActive (không phải đang làm
+  // lại biển) → tiệm không treo biển / golden L30 hoàn toàn không chạm.
+  const stStance0 = biz.biz.stance;
+  if (stStance0 && s.level >= STANCE_UNLOCK && stanceActive(stStance0, s.day)) {
+    const fitNow = stanceFitByDirection(buildStanceCtx(s))[stStance0.id];
+    const nextSt = applyStanceDay(stStance0, fitNow, s.day);
+    const nm = STANCE_META[stStance0.id].name;
+    if (fitNow) say(`🪧 Hôm nay khớp hướng ${nm} (bậc ${stanceTier(nextSt.fitDays)})`);
+    else if ((stStance0.missStreak ?? 0) + 1 >= 3) say(`🪧 ${nm} lệch 3 ngày liền — tụt một bậc`);
+    else say(`🪧 Hôm nay lệch hướng ${nm} — coi lại thẻ Định vị`);
+    biz.biz = { ...biz.biz, stance: nextSt };
   }
   const todayReviews = s.reviews.filter((r) => r.day === s.day);
   const record: DayRecord = {
