@@ -592,6 +592,9 @@ export interface GameState {
   ad?: { defId: string; until: number };
   buyAd: (id: string) => void;
 
+  /** Hệ 8 — Biến cố dài (GĐ Hệ8-L3): làm một việc chuẩn bị trong đợt đang chạy (trừ tiền + vào preps). */
+  doCrisisPrep: (prepId: string) => void;
+
   /** Trang trại (trồng, bón phân, nuôi gà/vịt/ngỗng/bò/heo/dê/gà Đông Tảo, đơn quán xóm). */
   garden: GardenState;
   plantCrop: (plotIndex: number, cropId: string) => void;

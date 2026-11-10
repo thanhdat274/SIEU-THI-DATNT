@@ -4,6 +4,8 @@ import {
   crisisPhaseLabel, crisisTotalDays, yearCrises,
 } from '../data/crisis';
 import { dayOfYear } from '../data/calendar';
+import { newGameData, useGame } from '../core/store';
+import { beforeEach } from 'vitest';
 
 // GĐ Hệ8-L1 — khung Biến cố dài (SPEC-CHIEU-RONG §8.3). THUẦN, không đụng sim:
 // lịch suy từ hash(weatherSeed, năm) → TẤT ĐỊNH, chưa có action/state nào nối vào endDay.
@@ -254,5 +256,45 @@ describe('Hệ8-L3 — crisisNight: đêm mở/ECHO/đóng đợt + lợi đư�
     const n = crisisNight(s.seed, s.startDay - 1, s.level, { calmYears: true });
     expect(n.crisis).toBeUndefined();
     expect(n.news).toEqual([]);
+  });
+});
+
+describe('Hệ8-L3 — doCrisisPrep (slice trên store)', () => {
+  const preps = () => CRISIS_DEFS[0].preps;
+  beforeEach(() => {
+    useGame.setState({ ...newGameData(), level: 50, money: 10_000_000, day: 400 });
+    useGame.setState({
+      biz: { ...useGame.getState().biz, crisis: { defId: 'dao_duong', startDay: 400, preps: [], choices: {}, kind: 0 } },
+    });
+  });
+  const g = () => useGame.getState();
+
+  it('làm prep thành công: trừ đúng giá + thêm vào preps', () => {
+    const cost = preps().find((p) => p.id === 'banner')!.cost;
+    const m0 = g().money;
+    g().doCrisisPrep('banner');
+    expect(g().money).toBe(m0 - cost);
+    expect(g().biz.crisis?.preps).toContain('banner');
+  });
+
+  it('không có crisis state → không làm được, không trừ tiền', () => {
+    useGame.setState({ biz: { ...g().biz, crisis: undefined } });
+    const m0 = g().money;
+    g().doCrisisPrep('banner');
+    expect(g().money).toBe(m0);
+  });
+
+  it('thiếu tiền → không trừ, không vào preps', () => {
+    useGame.setState({ money: 100 });
+    g().doCrisisPrep('path');
+    expect(g().biz.crisis?.preps).not.toContain('path');
+  });
+
+  it('làm trùng prep → không trừ lần hai', () => {
+    g().doCrisisPrep('banner');
+    const m0 = g().money;
+    g().doCrisisPrep('banner');
+    expect(g().money).toBe(m0);
+    expect(g().biz.crisis?.preps.filter((x) => x === 'banner')).toHaveLength(1);
   });
 });

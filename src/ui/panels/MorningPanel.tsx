@@ -59,6 +59,7 @@ import { SolvencyCard, LoanBurdenCard, DailyBurnCard } from './MorningFinanceCar
 import { ButcherCard, HuiCard } from './MorningMeatHuiCards';
 import { BranchChoresCard, HiepLucCard } from './MorningBranchCards';
 import { PreserveCard } from './MorningPreserveCards';
+import { CrisisCard } from './MorningCrisisCards';
 import { preserveMorningTips } from '../../data/preserve';
 
 
@@ -206,6 +207,9 @@ export function MorningPanel() {
       <AlleyTodayCard weatherSeed={weatherSeed} day={day} level={level} />
 
       {preserveTips.length > 0 && <PreserveCard tips={preserveTips} onOpen={() => openPanel({ type: 'garden' })} />}
+
+      {/* GĐ Hệ8-L3 — thẻ Biến cố dài: đợt nào + hiệu ứng hôm nay + việc chuẩn bị (HUD chip đã hiện ở thanh trên) */}
+      <CrisisCard biz={biz} day={day} />
 
       {/* GĐ199/GĐ202: Rốn kho chung + phiếu nạp kho (tách GĐ919 sang SupplyChainCard) */}
       <SupplyChainCard storage={storage} branch={branch ?? undefined} quanNuoc={biz.quanNuoc} quanNuocLast={biz.quanNuocLast ?? null} level={level} weather={weather} day={day} />
