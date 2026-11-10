@@ -74,4 +74,15 @@ describe('GĐ2215 — regionFlagPayoff (bảng hiệu vinh danh đáng bao nhiê
     const zero = regionFlagPayoffLine(regionFlagPayoff(bac, 0, 5, 50));
     expect(zero).toContain('chưa đủ bộ');
   });
+
+  it('kê vol số lượt bán hôm nay → line hiện đ/ngày SỐNG "hôm nay lời thêm"', () => {
+    // bán 3 khô bò + 2 mắc khén hôm nay ở vinh danh
+    const p = regionFlagPayoff(tayNguyen, 2, 5, 50, 0, { rg_kho_bo: 3, rg_mac_khen: 2 });
+    expect(p.pricePerDay).toBe(3 * Math.round(106000 * 0.05) + 2 * Math.round(98600 * 0.05));
+    const line = regionFlagPayoffLine(p);
+    expect(line).toContain('hôm nay lời thêm');
+    expect(line).toContain(p.pricePerDay.toLocaleString('vi-VN'));
+    // không kê vol → không thấy "hôm nay lời thêm" (chỉ vd. /lượt)
+    expect(regionFlagPayoffLine(regionFlagPayoff(tayNguyen, 2, 5, 50))).not.toContain('hôm nay lời thêm');
+  });
 });

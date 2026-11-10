@@ -84,13 +84,19 @@ export function regionFlagPayoff(
   };
 }
 
-/** Dòng ngắn cho bề mặt sắp xếp: bảng hiệu đang thêm bao nhiêu khách, đặc sản miền lời thêm bao nhiêu/lần. */
+/** Dòng ngắn cho bề mặt sắp xếp: bảng hiệu đang thêm bao nhiêu khách, đặc sản miền lời thêm bao nhiêu. */
 export function regionFlagPayoffLine(p: RegionFlagPayoff): string {
   if (p.tier === 0) return `🚩 Bảng ${p.region}: chưa đủ bộ đặc sản miền — treo cũng chưa có tác dụng.`;
-  const top = p.priceRows.slice().sort((a, b) => b.extraPerSale - a.extraPerSale)[0];
-  const price = top
-    ? `; đặc sản miền +${Math.round(p.pricePct * 100)}% giá (vd. ${top.name} +${top.extraPerSale.toLocaleString('vi-VN')}đ/lượt bán)`
-    : '';
   const extra = p.extraKhach > 0 ? `; thêm ~${p.extraKhach} khách/ngày` : '';
+  // Có vol (số lượt bán thật) thì hiện đ/ngày SỐNG hôm nay; không thì chỉ vd. lời/lượt.
+  let price: string;
+  if (p.pricePerDay > 0) {
+    price = `; đặc sản miền +${Math.round(p.pricePct * 100)}% giá · hôm nay lời thêm ~${p.pricePerDay.toLocaleString('vi-VN')}đ`;
+  } else {
+    const top = p.priceRows.slice().sort((a, b) => b.extraPerSale - a.extraPerSale)[0];
+    price = top
+      ? `; đặc sản miền +${Math.round(p.pricePct * 100)}% giá (vd. ${top.name} +${top.extraPerSale.toLocaleString('vi-VN')}đ/lượt bán)`
+      : '';
+  }
   return `🚩 Bảng ${p.region} (${p.tier === 2 ? 'vinh danh' : 'đủ bộ'}): +${p.decorDelta}🩷${extra}${price}.`;
 }

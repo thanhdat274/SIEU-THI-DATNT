@@ -49,6 +49,8 @@ export function ArrangePanel() {
   const { furniture: savedFurniture, money, level, closePanel, placeFurniture, moveFurniture, moveMainCounter, sellFurniture, notify } = useGame();
   const servedCounts = useGame((s) => s.servedCounts);
   const repLog = useGame((s) => s.repLog);
+  const salesToday = useGame((s) => s.salesToday);
+  const stats = useGame((s) => s.stats);
   const plan = useMemo(() => shopLayout.plan(), []);
   // Quầy chính nằm trong bản nháp như một món có uid 0 (không mua/bán được, chỉ dời và xoay)
   const saved = useMemo(() => [{ uid: MAIN_UID, type: 'checkout' as const, x: plan.counter.x, z: plan.counter.z, rot: plan.counter.rot, tiers: [] }, ...savedFurniture], [plan, savedFurniture]);
@@ -94,9 +96,17 @@ export function ArrangePanel() {
   const changes = added.length + removed.length + moved.length;
   const sel = draft.find((f) => f.uid === selected) ?? null;
   // GĐ2215 — bảng hiệu vinh danh đặc sản đáng bao nhiêu khách/đ: tier theo kệ bày trong bản nháp + lượt bán.
+  // GĐ2218 — nối số lượt bán THẬT hôm nay (salesToday) + phí chi tiêu bình quân → phần đ/ngày của bảng hiệu hiện SỐNG.
   const flagSel = sel && sel.type.startsWith('bang_hieu_') ? regionFlagByType(sel.type) : null;
   const bannerPayoff = flagSel
-    ? regionFlagPayoff(flagSel, regionFlagTier(flagSel, stockedProductIds(draft), servedCounts ?? {}), reputationOf(repLog).overall, level)
+    ? regionFlagPayoff(
+        flagSel,
+        regionFlagTier(flagSel, stockedProductIds(draft), servedCounts ?? {}),
+        reputationOf(repLog).overall,
+        level,
+        stats && stats.customers > 0 ? stats.revenue / stats.customers : 0,
+        salesToday ?? {},
+      )
     : null;
 
   const commit = (next: Furniture[]) => {
