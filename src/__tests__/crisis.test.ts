@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
-  CRISIS_DEFS, crisisActive, crisisDefById, crisisEffects, crisisFor, crisisPhaseLabel,
-  crisisTotalDays, yearCrises,
+  CRISIS_DEFS, crisisActive, crisisDefById, crisisEffects, crisisFor, crisisNight,
+  crisisPhaseLabel, crisisTotalDays, yearCrises,
 } from '../data/crisis';
 import { dayOfYear } from '../data/calendar';
 
@@ -195,5 +195,64 @@ describe('Hệ8-L3 — việc chuẩn bị làm dịu đợt (DAO_DUONG)', () =>
       expect(s.atDay).toBeLessThan(crisisTotalDays(DAO_DUONG));
       expect(s.text && s.options.length >= 2).toBeTruthy();
     }
+  });
+});
+
+describe('Hệ8-L3 — crisisNight: đêm mở/ECHO/đóng đợt + lợi đường mới', () => {
+  // Tìm seed có ĐÚNG 1 đợt đào đường năm 2 (ổn định, trong một năm).
+  function seedWithOne(): { seed: number; startDay: number; level: number } {
+    for (let seed = 169; seed < 800; seed++) {
+      for (let year = 1; year <= 4; year++) {
+        const slots = yearCrises(seed, year, 60);
+        if (slots.length === 1 && slots[0].defId === 'dao_duong') {
+          return { seed, startDay: slots[0].startDay, level: 60 };
+        }
+      }
+    }
+    throw new Error('không tìm thấy seed test');
+  }
+  const s = seedWithOne();
+  const total = crisisTotalDays(DAO_DUONG);
+
+  it('đêm trước ngày đầu đợt → MỞ đợt (crisis mới) + đếm crisesSeen + tin', () => {
+    const night = crisisNight(s.seed, s.startDay - 1, s.level, {});
+    expect(night.crisis).toEqual({ defId: 'dao_duong', startDay: s.startDay, preps: [], choices: {}, kind: 0 });
+    expect(night.crisesSeen).toEqual(['dao_duong']);
+    expect(night.news.length).toBeGreaterThan(0);
+  });
+
+  it('đang giữa đợt → ECHO giữ nguyên crisis (preps/choices không bị xoá)', () => {
+    const mid = crisisNight(s.seed, s.startDay - 1, s.level, {});
+    const later = crisisNight(s.seed, s.startDay + 5, s.level, {
+      crisis: mid.crisis, crisesSeen: mid.crisesSeen,
+    });
+    expect(later.crisis).toEqual(mid.crisis);
+    expect(later.crisis?.defId).toBe('dao_duong');
+  });
+
+  it('đêm cuối đợt → đóng: crisis undefined, roadBoon = true (lợi đường mới)', () => {
+    const opened = crisisNight(s.seed, s.startDay - 1, s.level, {});
+    const close = crisisNight(s.seed, s.startDay + total - 1, s.level, opened);
+    expect(close.crisis).toBeUndefined();
+    expect(close.roadBoon).toBe(true);
+    expect(close.lastCrisis?.defId).toBe('dao_duong');
+    expect(close.news.some((n) => n.includes('kết thúc'))).toBe(true);
+  });
+
+  it('mọi đêm không có đợt → không mở, roadBoon đứng nguyên', () => {
+    // một ngày xa đợt: năm khác hoặc ngoài slot
+    const far = crisisFor(s.seed, s.startDay + total + 30, s.level);
+    if (far === null) {
+      const n = crisisNight(s.seed, s.startDay + total + 29, s.level, { roadBoon: false });
+      expect(n.crisis).toBeUndefined();
+      expect(n.roadBoon).toBe(false);
+      expect(n.news).toEqual([]);
+    }
+  });
+
+  it('Năm yên ả (calm) → không bao giờ mở dù đang trong lịch', () => {
+    const n = crisisNight(s.seed, s.startDay - 1, s.level, { calmYears: true });
+    expect(n.crisis).toBeUndefined();
+    expect(n.news).toEqual([]);
   });
 });

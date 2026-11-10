@@ -321,3 +321,67 @@ export function crisisPhaseLabel(def: CrisisDef, day: number, st: CrisisState): 
   }
   return def.phases.at(-1)?.label ?? '';
 }
+
+// ───────────────────── Đêm đóng đợt / mở đợt (gọi từ endDay) ─────────────────────
+
+/** Lát cắt biz mà `crisisNight` đọc/ghi — endDay gộp vào state. */
+export interface CrisisBizSlice {
+  crisis?: CrisisState;
+  crisesSeen?: string[];
+  calmYears?: boolean;
+  roadBoon?: boolean;
+  lastCrisis?: { defId: string; endDay: number; loss: number; saved: number };
+}
+
+export interface CrisisNightResult {
+  crisis: CrisisState | undefined;
+  crisesSeen: string[];
+  roadBoon: boolean;
+  lastCrisis: { defId: string; endDay: number; loss: number; saved: number } | undefined;
+  /** Tin đêm để gộp vào bản tin ngày mai. */
+  news: string[];
+}
+
+/**
+ * Mỗi đêm, SỔ ĐẦU NGÀY tính đợt biến cố cho ngày mai từ lịch tất định và mở/đóng trạng thái:
+ * - hết đợt đang chạy → ghi nhận aftermath (đường mới) + lastCrisis, xoá crisis;
+ * - tới ngày đầu đợt mới (Báo trước) → tạo CrisisState + đếm vào crisesSeen;
+ * - ECHO: đang giữa đợt → giữ nguyên crisis (để preps/choices không bị xoá).
+ * THUẦN — không rút simRng (R1), lịch suy từ hash. Tắt bằng `calmYears` (Năm yên ả).
+ */
+export function crisisNight(
+  seed: number,
+  /** Ngày game sắp KẾT THÚC (đêm này); ta chuẩn bị cho ngày mai = day + 1. */
+  day: number,
+  level: number,
+  biz: CrisisBizSlice,
+  calm = false,
+): CrisisNightResult {
+  const calmOn = calm || (biz.calmYears ?? false);
+  const next = day + 1;
+  // Đợt sẽ còn hoạt động vào ngày mai? (gồm Báo trước)
+  const willStay = crisisFor(seed, next, level, calmOn);
+  const cur = biz.crisis;
+  const crisesSeen = [...(biz.crisesSeen ?? [])];
+  const news: string[] = [];
+  let roadBoon = biz.roadBoon ?? false;
+  let lastCrisis = biz.lastCrisis;
+
+  const same = cur && willStay && willStay.defId === cur.defId && willStay.startDay === cur.startDay;
+  // 1) Đóng đợt cũ đã hết (không còn trong lịch ngày mai, hoặc đổi đợt khác chưa xảy ra).
+  if (cur && !same) {
+    const def = crisisDefById(cur.defId);
+    if (def?.aftermath?.kind === 'road') roadBoon = true;
+    lastCrisis = { defId: cur.defId, endDay: next - 1, loss: 0, saved: cur.preps.length * 200000 };
+    if (def) news.push(`${def.icon} ${def.name} đã kết thúc.${def.aftermath ? ` ${def.aftermath.label}.` : ''}`);
+  }
+  // 2) Mở đợt mới (hiện chưa chạy đợt cùng slot); giữ đợt đang giữa chừng (preps/choices).
+  let crisis = cur && same ? cur : undefined;
+  if (willStay && !same) {
+    if (!crisesSeen.includes(willStay.defId)) crisesSeen.push(willStay.defId);
+    const def = crisisDefById(willStay.defId)!;
+    crisis = { defId: willStay.defId, startDay: willStay.startDay, preps: [], choices: {}, kind: 0 };
+    news.push(`${def.icon} ${def.name}: ${crisisPhaseLabel(def, next, crisis)} — mở Sổ đầu ngày xem việc chuẩn bị.`);
+  }
+  return { crisis, crisesSeen, roadBoon, lastCrisis, news };
+}
