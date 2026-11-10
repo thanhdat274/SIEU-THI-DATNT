@@ -145,6 +145,10 @@ export const MINI_UNLOCK = 32;
 export const miniDefById = (id: string): FestivalMiniDef | undefined =>
   FESTIVAL_MINIS.find((m) => m.id === id);
 
+/** Trò khéo tay nên mở cho một dịp (trò thật đầu tiên gắn với dịp, bỏ trò giả tap_test). */
+export const miniForFestival = (festivalId: string): FestivalMiniDef | undefined =>
+  FESTIVAL_MINIS.find((m) => m.id !== 'tap_test' && m.festivals.includes(festivalId));
+
 /** Trò này khéo tay có mở ở cấp `level` không. */
 export const miniUnlocked = (def: FestivalMiniDef, level: number): boolean => def.unlock <= level;
 

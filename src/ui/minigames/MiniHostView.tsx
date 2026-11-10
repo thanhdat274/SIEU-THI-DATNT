@@ -25,8 +25,10 @@ interface MiniGameProps {
 
 // Mỗi trò là một chunk riêng (nạp lười): chỉ tải trò người chơi đang mở.
 const TapSpot = lazy(() => import('./TapSpot').then((m) => ({ default: m.TapSpot })));
+const GioQua = lazy(() => import('./GioQua').then((m) => ({ default: m.GioQua })));
 const GAME_MAP: Record<string, LazyExoticComponent<ComponentType<MiniGameProps>>> = {
   tap_test: TapSpot,
+  gio_qua: GioQua,
 };
 
 type Phase = 'play' | 'result';
@@ -72,6 +74,10 @@ export function MiniHostView() {
     const s = clampScore(raw);
     setScore(s);
     setPhase('result');
+    // Hệ7-L2: ghi thưởng thật cho TRÒ GẮN DỊP LỄ (trò giả tap_test không vô save).
+    if (active && def && def.festivals.length > 0) {
+      useGame.getState().scoreFestivalMini(def.id, s, active.mode);
+    }
   }
   function skip() { finish(0); }
   function close() {

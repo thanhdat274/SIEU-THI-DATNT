@@ -259,7 +259,7 @@ export function MorningPanel() {
 
       {seasonEvent(day) && <SeasonEventCard day={day} weatherSeed={weatherSeed} biz={biz} />}
 
-      {effects.festival && <FestivalNowCard festival={effects.festival} level={level} haveStock={haveStock} fv={fv} fvDelta={fvDelta} />}
+      {effects.festival && <FestivalNowCard festival={effects.festival} level={level} day={day} haveStock={haveStock} fv={fv} fvDelta={fvDelta} />}
       <HotGoodsCards eventHot={effects.hot} weekHot={hot} haveStock={haveStock} />
       {soon && <FestivalSoonCard soon={soon} level={level} storage={storage} fv={fv} fvDelta={fvDelta} />}
 

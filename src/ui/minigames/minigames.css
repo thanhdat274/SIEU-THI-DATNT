@@ -79,3 +79,54 @@
 .minitap-cell.target { background: #e67e22; border-color: #d35400; }
 .minitap-cell:active { opacity: 0.6; }
 .minitap-count { font-size: 15px; color: #5d3a1a; font-weight: 600; }
+
+/* Trò ① Xếp giỏ quà */
+.gioqua { text-align: center; width: 100%; }
+.gioqua-grid {
+  display: inline-grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  background: #d8b877;
+  border: 3px solid #b98d3d;
+  border-radius: 10px;
+  padding: 6px;
+  margin: 0 auto 10px;
+}
+.gioqua-row { display: contents; }
+.gioqua-cell {
+  width: 56px;
+  height: 56px;
+  border-radius: 8px;
+  background: #fff3d6;
+  border: 1px dashed #c9a35f;
+  font-size: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: manipulation;
+}
+.gioqua-cell.filled { border-style: solid; background: #ffe9bf; }
+.gioqua-cell.spot { background: #d5efc4; border-style: solid; border-color: #5f9e41; cursor: pointer; }
+.gioqua-cell:active { opacity: 0.6; }
+.gioqua-tray {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+.gioqua-gift {
+  border: 2px solid #cfb689;
+  background: #fff;
+  border-radius: 10px;
+  padding: 6px 8px;
+  min-width: 64px;
+  cursor: pointer;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.gioqua-gift.sel { border-color: #1e8449; background: #eaf6d6; }
+.gioqua-gift-icon { font-size: 22px; }
+.gioqua-gift-name { font-size: 11px; color: #5d3a1a; }

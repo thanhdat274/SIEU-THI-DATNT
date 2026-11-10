@@ -11,6 +11,8 @@ import { supplyOutletOf } from '../../data/supplyOutlet';
 import { splitLockedRecipes } from '../../data/cookList';
 import { cookSpeed, bartenderBoost } from '../../core/slices/orders';
 import { FESTIVALS, festivalOn } from '../../data/calendar';
+import { miniForFestival } from '../../data/festivalMini';
+import { useMiniHost } from '../minigames/miniHost';
 import { dishStarGoalOf, dishVessel, dishMaxLabel, maxedDishLine, STAR_BOOST_ITEM, STAR_BOOST_UNLOCK } from '../../data/dishStars';
 import { Footer, styles, Tabs } from './shared';
 
@@ -169,9 +171,18 @@ export function CookPanel() {
                     {locked ? (
                       <span style={{ fontSize: 12 }}>🔒 Cấp {r.unlock}</span>
                     ) : (
-                      <button style={styles.btn} disabled={!!reason} title={reason ?? 'Bắt đầu nấu'} onClick={() => startCook(r.id)}>
-                        {reason ?? '🍳 Nấu'}
-                      </button>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'stretch' }}>
+                        <button style={styles.btn} disabled={!!reason} title={reason ?? 'Bắt đầu nấu'} onClick={() => startCook(r.id)}>
+                          {reason ?? '🍳 Nấu'}
+                        </button>
+                        {/* Hệ 7 — Làm khéo tay: công thức lễ đang đúng dịp có trò thưởng thêm (Xếp giỏ quà…) */}
+                        {!outOfSeason && (() => {
+                          const m = r.festival ? miniForFestival(r.festival) : undefined;
+                          return m ? (
+                            <button className="mini" onClick={() => useMiniHost.getState().openMini(m.id, day)}>🎋 {m.name}</button>
+                          ) : null;
+                        })()}
+                      </div>
                     )}
                   </div>
                 );
