@@ -11,6 +11,7 @@ import { tierMarkdown, fitLots, nearestLife, nearExpiryRefuseChance } from '../d
 import { demandPriceFactor, keepChance } from '../data/pricing';
 import { CUNG_GOODS, CUNG_PULL, isXoiCungDay } from '../data/tiemXoi';
 import { dayEffects, isWeekend, OFF_SEASON_CLEARANCE, OFF_SEASON_HUNT, offSeason } from '../data/calendar';
+import { crisisEffects } from '../data/crisis';
 import { chooseSubstitute } from '../data/substitute';
 import { COOKED_PRODUCT_IDS, RECIPES } from '../data/recipes';
 import { NEIGHBOR_ONLY_IDS } from '../data/homemade';
@@ -167,6 +168,7 @@ export class CustomerManager {
         const night = nightTrafficAt(s.minutes);
         const bandTraffic = night ?? timeBandAt(s.minutes)?.traffic ?? 1;
         const rush = bandTraffic * dayEffects(s.weatherSeed, s.day, s.level).traffic
+          * crisisEffects(s.biz.crisis, s.day).traffic // Hệ 8 (SPEC §8.3): biến cố dài nhân khách; trống = 1
           * (hasSkill(s.skills, 'local_legend') ? 1.1 : 1) * festival * eventTraffic * marketTrafficFactor(s.day);
         this.spawnIn = (daytime ? (night ? NIGHT_SPAN : OPEN_UNTIL - OPEN_FROM) / perDay / rush : 60) * (0.5 + simRng()());
         // GĐ1495 — bỏ trần "+25% chậu cây": điểm trang trí 🩷 cộng dồn mọi đồ decor, kéo khách
@@ -506,7 +508,8 @@ export class CustomerManager {
         st.noteDemand(want);
         const shortName = productById(want).name.replace(/\s*\(.*\)\s*/g, '');
         // Giá càng cao so với giá gợi ý thì khách càng ngại mua; món thiết yếu ít bị ảnh hưởng hơn, hàng của mùa lễ cũng vậy
-        const tolerance = dayEffects(st.weatherSeed, st.day, st.level).tolerance(want);
+        const tolerance = dayEffects(st.weatherSeed, st.day, st.level).tolerance(want)
+          * (crisisEffects(st.biz.crisis, st.day).sensitivity ?? 1); // Hệ 8: khách nhạy giá hơn trong biến cố; trống = 1
         // Rival đang bán rẻ đúng món này thì khách soi giá kỹ hơn hẳn
         const rivalPress = rivalUndercuts(st.biz.rival, (id) => st.priceOf(id), st.day).has(want) ? 1.35 : 1;
         if (simRng()() > keepChance(want, st.priceOf(want), c.sensitivity * rivalPress * tolerance)) {

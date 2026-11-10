@@ -229,6 +229,16 @@ export interface BizState {
   surpriseArc?: import('./surpriseArcs').SurpriseArcState;
   /** Các arc sự kiện ĐÃ kể (kể xong lẫn khép sớm — GĐ164): không kể lại. Bản lưu cũ thiếu → []. */
   surpriseArcsTold?: string[];
+  /** Hệ 8 — Biến cố dài (SPEC-CHIEU-RONG §8): đợt đang chạy. Bản lưu cũ thiếu → undefined (không đợt nào). */
+  crisis?: import('./crisis').CrisisState;
+  /** Các biến cố dài đã từng xảy ra trong ván (ngăn lặp lại nhiều lần cùng loại). Bản lưu cũ thiếu → []. */
+  crisesSeen?: string[];
+  /** Tuỳ chọn "Năm yên ả" (đã tắt biến cố dài) — không nhận huy hiệu vượt khó. Bản lưu cũ thiếu → false. */
+  calmYears?: boolean;
+  /** Lợi đường mới (đào đường): nhân khách vĩnh viễn — đã nhận chưa (cho cả ván). Bản lưu cũ thiếu → false. */
+  roadBoon?: boolean;
+  /** Biến cố dài đã kết thúc gần nhất (để hiện bảng tổng kết cuối đợt) — lát L4. Bản lưu cũ thiếu → undefined. */
+  lastCrisis?: { defId: string; endDay: number; loss: number; saved: number };
 }
 
 /** Sự kiện thử thách theo mùa (GĐ75). */
@@ -269,6 +279,8 @@ export const newBiz = (): BizState => ({
   seasonEvt: undefined,
   cleanStreak: 0, cleanBest: 0, cleanClaimed: 0, regularArcs: {},
   seasonAlmanac: {}, almanacClaimed: [],
+  // Hệ 8 — Biến cố dài (SPEC-CHIEU-RONG §8): mặc định không đợt nào, chưa đổi gì
+  crisis: undefined, crisesSeen: [], calmYears: false, roadBoon: false, lastCrisis: undefined,
 });
 
 /** Hệ số đi bộ của chủ tiệm hôm nay: nhà đẹp ngủ ngon, ăn sáng, xe (chỉ khi ở ngoài đường). */

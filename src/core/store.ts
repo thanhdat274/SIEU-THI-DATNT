@@ -11,6 +11,8 @@ import { REGULARS, visitsToday, type RegularProgress, type Reservation } from '.
 import { reputationOf } from '../data/reputation';
 import type { ActiveOrder } from '../data/orders';
 import { dayEffects, festivalOn, festivalStock } from '../data/calendar';
+import { crisisEffects } from '../data/crisis';
+import { productById } from '../data/products';
 import type { HappyHour } from '../data/rhythm';
 import type { VenueDay } from '../data/venueTrend';
 import type { RiskDay } from '../data/risk';
@@ -214,10 +216,12 @@ export function initialWeather(seed = newWeatherSeed()) {
 export const useClock = create<{ minutes: number }>(() => ({ minutes: DAY_START }));
 
 export const useGame = create<GameState>((set, get) => {
-  // Giá nhập theo lễ, sự kiện thị trường và kỹ năng thương lượng
+  // Giá nhập theo lễ, sự kiện thị trường và kỹ năng thương lượng; biến cố dài (Hệ 8) nhân thêm — trống = 1
   setCostModifier((id, day) => {
     const s = get();
-    return dayEffects(s.weatherSeed, day, s.level).cost(id) * (hasSkill(s.skills, 'negotiator') ? 0.95 : 1);
+    return dayEffects(s.weatherSeed, day, s.level).cost(id)
+      * crisisEffects(s.biz.crisis, day).cost(id, productById(id).category)
+      * (hasSkill(s.skills, 'negotiator') ? 0.95 : 1);
   });
   // Giá gợi ý hiện hành theo hệ số thị trường (khan hàng trượt lên, tồn nhiều trượt xuống)
   setMarketIndex((id) => get().market[id] ?? 1);
