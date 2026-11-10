@@ -21,6 +21,7 @@ export function CookPanel() {
   const { level, storage, storageLots, furniture, cookJobs, servedCounts, startCook, closePanel, openPanel, setBuildMode } = useGame();
   // GĐ1118 — bản đồ hạn còn lại của hàng sắp hỏng (kho + kệ) để nhắc nấu ngay trên dòng công thức
   const expiringMap = new Map(expiringSoon(storage, storageLots, furniture.flatMap((f) => f.tiers)).map((l) => [l.id, l.life]));
+  useClock((s) => Math.floor(s.minutes)); // §T2-a: tiến độ mẻ nấu ghi tại chỗ, vẽ lại theo nhịp phút game
   const day = useGame((s) => s.day);
   const cookMastery = useGame((s) => s.cookMastery);
   // GĐ161: giờ hiện tại (vẽ lại 1 lần mỗi phút game như Hud) + tốc độ trạm thật

@@ -94,10 +94,13 @@ export const createClockSlice = (set: SetState, get: GetState): Pick<GameState, 
       const base = dt * MINUTES_PER_SECOND * s.speed * cookSpeed(get);
       // Mẻ ở trạm pha chế được pha chế trực ca tăng tốc thêm (cùng đầu bếp)
       const drink = base * bartenderBoost(get);
-      const next = jobs.map((j) => {
+      // SPEC-TOI-UU §T2-a: ghi thẳng `remaining` tại chỗ (như `minutes`) — không `set` mỗi khung nên các
+      // component đăng ký cả store không vẽ lại 60 lần/giây; chỉ `set` khi có mẻ xong. UI đọc tiến độ qua useClock.
+      for (const j of jobs) {
         const r = RECIPE_MAP[j.recipeId];
-        return { ...j, remaining: j.remaining - (r?.station === 'drink_counter' ? drink : base) };
-      });
+        j.remaining -= r?.station === 'drink_counter' ? drink : base;
+      }
+      const next = jobs;
       const done = next.filter((j) => j.remaining <= 0);
       if (done.length) {
         const sealQ = sealYieldBonus(get().biz); // Hệ3-L8 Ấn Đặc sản: mỗi mẻ nấu ra thêm 1 đơn vị
@@ -129,8 +132,6 @@ export const createClockSlice = (set: SetState, get: GetState): Pick<GameState, 
           get().notify(`🍲 Nấu xong: ${made} ${productById(r.outputId).name} đã vào kho, bày lên kệ được ngay`);
           get().addXp(4);
         }
-      } else {
-        set({ cookJobs: next });
       }
     }
   },
