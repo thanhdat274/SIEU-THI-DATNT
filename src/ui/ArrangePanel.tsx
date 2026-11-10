@@ -4,6 +4,9 @@ import { shopLayout } from '../core/actions';
 import { SELL_BACK, useGame, type Furniture } from '../core/store';
 import { FURNITURE, footprint, frontDir, furnitureDef, type FurnitureType } from '../data/furniture';
 import { EYE_LEVEL_BONUS, eyeRow, heatColor, isDisplay, shelfEfficiency, spotVisibility, visibilityLabel, type ShopGeom } from '../data/layout';
+import { regionFlagByType, regionFlagTier, stockedProductIds } from '../data/regionFlags';
+import { regionFlagPayoff, regionFlagPayoffLine } from '../data/regionFlagPayoff';
+import { reputationOf } from '../data/reputation';
 import { formatMoney } from '../data/products';
 import { ExpandTab, PaintTab } from './panels/BuildPanel';
 import { MAIN_UID, STEP, snap, frontLine, findSpot } from './arrangeGeometry';
@@ -44,6 +47,8 @@ type Tab = 'furniture' | 'paint' | 'expand';
  */
 export function ArrangePanel() {
   const { furniture: savedFurniture, money, level, closePanel, placeFurniture, moveFurniture, moveMainCounter, sellFurniture, notify } = useGame();
+  const servedCounts = useGame((s) => s.servedCounts);
+  const repLog = useGame((s) => s.repLog);
   const plan = useMemo(() => shopLayout.plan(), []);
   // Quầy chính nằm trong bản nháp như một món có uid 0 (không mua/bán được, chỉ dời và xoay)
   const saved = useMemo(() => [{ uid: MAIN_UID, type: 'checkout' as const, x: plan.counter.x, z: plan.counter.z, rot: plan.counter.rot, tiers: [] }, ...savedFurniture], [plan, savedFurniture]);
@@ -88,6 +93,11 @@ export function ArrangePanel() {
   });
   const changes = added.length + removed.length + moved.length;
   const sel = draft.find((f) => f.uid === selected) ?? null;
+  // GĐ2215 — bảng hiệu vinh danh đặc sản đáng bao nhiêu khách/đ: tier theo kệ bày trong bản nháp + lượt bán.
+  const flagSel = sel && sel.type.startsWith('bang_hieu_') ? regionFlagByType(sel.type) : null;
+  const bannerPayoff = flagSel
+    ? regionFlagPayoff(flagSel, regionFlagTier(flagSel, stockedProductIds(draft), servedCounts ?? {}), reputationOf(repLog).overall, level)
+    : null;
 
   const commit = (next: Furniture[]) => {
     setHistory((h) => [...h.slice(-49), draft]);
@@ -341,6 +351,7 @@ export function ArrangePanel() {
                 <div className="ar-inspect-name">
                   <b>{ICONS[sel.type]} {nameOf(sel)}</b>
                   <small>{sel.uid === MAIN_UID ? 'Quầy chính của tiệm: kéo để dời, xoay để đổi hướng khách xếp hàng. Dời miễn phí.' : sel.uid < 0 ? `Mua mới · ${formatMoney(furnitureDef(sel.type).price)}` : furnitureDef(sel.type).desc}</small>
+                  {bannerPayoff && <small>{regionFlagPayoffLine(bannerPayoff)}</small>}
                   {isDisplay(sel) && (
                     <small>
                       📍 {visibilityLabel(selAttention)} · {Math.round(selAttention * 100)}%
