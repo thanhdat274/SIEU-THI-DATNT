@@ -808,6 +808,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'luon_xao_sa_ot', name: 'Lươn xào sả ớt', category: 'fresh', buy: 22000, sell: 38000, color: 0x8a5a2a, unlock: 193 },
   { id: 'chao_vit', name: 'Cháo vịt', category: 'fresh', buy: 12000, sell: 20000, color: 0xf0e0c0, unlock: 194 },
   { id: 'vit_kho_gung', name: 'Vịt kho gừng', category: 'fresh', buy: 18000, sell: 30000, color: 0x8a5a2a, unlock: 195 },
+  { id: 'ech_xao_sa_ot', name: 'Ếch xào sả ớt', category: 'fresh', buy: 20000, sell: 34000, color: 0x9a7a3a, unlock: 196 },
+  { id: 'ech_chien_nuoc_mam', name: 'Ếch chiên nước mắm', category: 'fresh', buy: 24000, sell: 40000, color: 0xb8803a, unlock: 197 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2691,6 +2693,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_vit_kho_gung', name: 'Vịt kho gừng', station: 'hot_kettle',
     inputs: [{ productId: 'x_vit', quantity: 1 }, { productId: 'x_gung', quantity: 1 }],
     outputId: 'vit_kho_gung', outputQty: 6, durationMin: 40, unlock: 195, reputationGain: 1 },
+  // GĐ2131: Ếch xào sả ớt — cơm nhà/quán nhậu Nam Bộ: ếch làm sạch chặt miếng xào lửa lớn với sả, ớt; không thay thế.
+  { id: 'recipe_ech_xao_sa_ot', name: 'Ếch xào sả ớt', station: 'fryer',
+    inputs: [{ productId: 'x_ech', quantity: 1 }, { productId: 'x_sa', quantity: 1 }, { productId: 'ot_hien', quantity: 1 }],
+    outputId: 'ech_xao_sa_ot', outputQty: 4, durationMin: 20, unlock: 196, reputationGain: 1 },
+  // GĐ2132: Ếch chiên nước mắm — quán nhậu Nam Bộ: ếch chiên vàng rồi đảo với nước mắm tỏi sánh; nước mắm = nước mắm nhà ủ.
+  { id: 'recipe_ech_chien_nuoc_mam', name: 'Ếch chiên nước mắm', station: 'fryer',
+    inputs: [{ productId: 'x_ech', quantity: 1 }, { productId: 'hx_nuoc_mam', quantity: 1 }, { productId: 'x_toi', quantity: 1 }],
+    outputId: 'ech_chien_nuoc_mam', outputQty: 4, durationMin: 20, unlock: 197, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────
