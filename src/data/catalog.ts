@@ -354,4 +354,5 @@ export const CATALOG_PRODUCTS: Product[] = [
   p('x_hau', 'Hàu làm sẵn', 'fresh', 60000, 85000, 0xd8d8c0, 170), // GĐ2155: cho hàu nướng mỡ hành, hàu chiên giòn
   p('x_ca_chim', 'Cá chim làm sẵn', 'fresh', 60000, 85000, 0xd8d0c0, 170), // GĐ2157: cho cá chim nướng giấy bạc, cá chim sốt cà chua
   p('x_tom_tit', 'Tôm tít làm sẵn', 'fresh', 55000, 78000, 0xd8c0a8, 170), // GĐ2159: cho tôm tít rang muối, tôm tít hấp sả
+  p('x_so_huyet', 'Sò huyết làm sẵn', 'fresh', 50000, 72000, 0xd8a0a0, 170), // GĐ2161: cho sò huyết nướng mỡ hành, sò huyết xào tỏi
 ];

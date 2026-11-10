@@ -838,6 +838,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'ca_chim_sot_ca_chua', name: 'Cá chim sốt cà chua', category: 'fresh', buy: 26000, sell: 45000, color: 0xc89080, unlock: 197 },
   { id: 'tom_tit_rang_muoi', name: 'Tôm tít rang muối', category: 'fresh', buy: 26000, sell: 45000, color: 0xd8b898, unlock: 198 },
   { id: 'tom_tit_hap_sa', name: 'Tôm tít hấp sả', category: 'fresh', buy: 26000, sell: 45000, color: 0xc8d8b0, unlock: 199 },
+  { id: 'so_huyet_nuong_mo_hanh', name: 'Sò huyết nướng mỡ hành', category: 'fresh', buy: 26000, sell: 45000, color: 0xd8a8a0, unlock: 198 },
+  { id: 'so_huyet_xao_toi', name: 'Sò huyết xào tỏi', category: 'fresh', buy: 26000, sell: 45000, color: 0xc8b8b0, unlock: 199 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2841,6 +2843,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_tom_tit_hap_sa', name: 'Tôm tít hấp sả', station: 'steamer',
     inputs: [{ productId: 'x_tom_tit', quantity: 1 }, { productId: 'x_sa', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }],
     outputId: 'tom_tit_hap_sa', outputQty: 4, durationMin: 25, unlock: 199, reputationGain: 1 },
+  // GĐ2161: Sò huyết nướng mỡ hành — quán nhậu hải sản cả nước: sò huyết nướng vỏ mở, rưới mỡ hành phi thơm; không thay thế.
+  { id: 'recipe_so_huyet_nuong_mo_hanh', name: 'Sò huyết nướng mỡ hành', station: 'food_grill',
+    inputs: [{ productId: 'x_so_huyet', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }],
+    outputId: 'so_huyet_nuong_mo_hanh', outputQty: 4, durationMin: 25, unlock: 198, reputationGain: 1 },
+  // GĐ2162: Sò huyết xào tỏi — quán nhậu hải sản cả nước: sò huyết luộc sơ xào lửa lớn với tỏi phi thơm; không thay thế.
+  { id: 'recipe_so_huyet_xao_toi', name: 'Sò huyết xào tỏi', station: 'fryer',
+    inputs: [{ productId: 'x_so_huyet', quantity: 1 }, { productId: 'x_toi', quantity: 1 }, { productId: 'x_hanh_la', quantity: 1 }],
+    outputId: 'so_huyet_xao_toi', outputQty: 4, durationMin: 20, unlock: 199, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────
