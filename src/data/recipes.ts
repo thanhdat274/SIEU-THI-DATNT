@@ -840,6 +840,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'tom_tit_hap_sa', name: 'Tôm tít hấp sả', category: 'fresh', buy: 26000, sell: 45000, color: 0xc8d8b0, unlock: 199 },
   { id: 'so_huyet_nuong_mo_hanh', name: 'Sò huyết nướng mỡ hành', category: 'fresh', buy: 26000, sell: 45000, color: 0xd8a8a0, unlock: 198 },
   { id: 'so_huyet_xao_toi', name: 'Sò huyết xào tỏi', category: 'fresh', buy: 26000, sell: 45000, color: 0xc8b8b0, unlock: 199 },
+  { id: 'ca_bong_kho_tieu', name: 'Cá bống kho tiêu', category: 'fresh', buy: 26000, sell: 45000, color: 0xb8a888, unlock: 198 },
+  { id: 'ca_bong_chien_gion', name: 'Cá bống chiên giòn', category: 'fresh', buy: 26000, sell: 45000, color: 0xc8a878, unlock: 199 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2851,6 +2853,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_so_huyet_xao_toi', name: 'Sò huyết xào tỏi', station: 'fryer',
     inputs: [{ productId: 'x_so_huyet', quantity: 1 }, { productId: 'x_toi', quantity: 1 }, { productId: 'x_hanh_la', quantity: 1 }],
     outputId: 'so_huyet_xao_toi', outputQty: 4, durationMin: 20, unlock: 199, reputationGain: 1 },
+  // GĐ2163: Cá bống kho tiêu — cơm nhà Nam Bộ: cá bống kho nước mắm đường nhiều tiêu tới keo; không thay thế.
+  { id: 'recipe_ca_bong_kho_tieu', name: 'Cá bống kho tiêu', station: 'hot_kettle',
+    inputs: [{ productId: 'x_ca_bong', quantity: 1 }, { productId: 'x_tieu_xay', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
+    outputId: 'ca_bong_kho_tieu', outputQty: 4, durationMin: 30, unlock: 198, reputationGain: 1 },
+  // GĐ2164: Cá bống chiên giòn — quán nhậu cả nước: cá bống ướp muối chiên vàng giòn, chấm nước mắm gừng; không thay thế.
+  { id: 'recipe_ca_bong_chien_gion', name: 'Cá bống chiên giòn', station: 'fryer',
+    inputs: [{ productId: 'x_ca_bong', quantity: 1 }, { productId: 'x_bot_chien', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }],
+    outputId: 'ca_bong_chien_gion', outputQty: 4, durationMin: 20, unlock: 199, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────

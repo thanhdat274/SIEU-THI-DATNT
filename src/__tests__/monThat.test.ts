@@ -199,6 +199,8 @@ const MON_THAT: Record<string, { name: string; station: string; cachNau: string 
   recipe_tom_tit_hap_sa: { name: 'Tôm tít hấp sả', station: 'steamer', cachNau: 'tôm tít hấp sả gừng tới chín, chấm muối tiêu chanh (quán nhậu hải sản cả nước)' },
   recipe_so_huyet_nuong_mo_hanh: { name: 'Sò huyết nướng mỡ hành', station: 'food_grill', cachNau: 'sò huyết nướng vỏ mở, rưới mỡ hành phi thơm (quán nhậu hải sản cả nước)' },
   recipe_so_huyet_xao_toi: { name: 'Sò huyết xào tỏi', station: 'fryer', cachNau: 'sò huyết luộc sơ xào lửa lớn với tỏi phi thơm (quán nhậu hải sản cả nước)' },
+  recipe_ca_bong_kho_tieu: { name: 'Cá bống kho tiêu', station: 'hot_kettle', cachNau: 'cá bống kho nước mắm đường nhiều tiêu tới keo (cơm nhà Nam Bộ)' },
+  recipe_ca_bong_chien_gion: { name: 'Cá bống chiên giòn', station: 'fryer', cachNau: 'cá bống ướp muối chiên vàng giòn, chấm nước mắm gừng (quán nhậu cả nước)' },
 };
 
 /** Chữ mô tả tự chế không ai dùng làm tên món ngoài chợ. */
