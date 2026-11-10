@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { returnNudge, returnReminder } from '../data/returnReminder';
+import { returnNudge, returnNudgeWeek, returnReminder } from '../data/returnReminder';
 import { yearReward, yearEnd, yearOf } from '../data/yearReport';
 import { formatMoney } from '../data/products';
+import { emptyWeek, weeklyChallenge, WEEK_DAYS, type WeekTally } from '../data/bizWeeks';
 
 // GĐ2224 — lớp nhắc "đã N ngày chưa quay" (màn đăng nhập), nối vào mốc thưởng tròn năm.
 // THUẦN đọc từ lastSeenAt (real thời gian) + day/level có sẵn: không đụng state/save/sim/seed.
@@ -78,5 +79,34 @@ describe('GĐ2224 — returnReminder (đã N ngày chưa quay · nối thưởng
     const items = returnNudge(now, now - 4 * DAY_MS, 100, 30, 20, [15]); // mốc 30 còn cách 10
     expect(items.find((i) => i.key === 'almanac')).toBeUndefined();
     expect(items[0].key).toBe('plain');
+  });
+
+  // ── GĐ2226 — nhắc deadline thử thách tuần ở màn đăng nhập (mốc quay lại ngắn hạn) ──
+  it('GĐ2226 — giữa tuần, đang hụt mục tiêu → nhắc deadline + thiếu + thưởng theo đúng thử thách', () => {
+    const wk = returnNudgeWeek(now, now - 2 * DAY_MS, 4, 10, emptyWeek(1), []);
+    expect(wk).not.toBeNull();
+    const ch = weeklyChallenge(Math.ceil(4 / WEEK_DAYS), 10);
+    const target = ch.target(10, []);
+    expect(wk!.text).toContain('còn ~4 ngày'); // day 4 → WEEK_DAYS − 3
+    expect(wk!.text).toContain(target.toLocaleString('vi-VN'));
+    expect(wk!.text).toContain(`"${ch.title}"`);
+    expect(wk!.text).toContain(formatMoney(ch.reward(10)));
+  });
+
+  it('GĐ2226 — chưa có sổ tuần (week null) → null', () => {
+    expect(returnNudgeWeek(now, now - 2 * DAY_MS, 4, 10, null, [])).toBeNull();
+  });
+
+  it('GĐ2226 — đã đạt mục tiêu tuần này → null', () => {
+    const ch = weeklyChallenge(Math.ceil(4 / WEEK_DAYS), 10);
+    const t = ch.target(10, []);
+    const fake: WeekTally = ch.measure === 'revenue'
+      ? { ...emptyWeek(1), revenue: t }
+      : { ...emptyWeek(1), [ch.measure]: t };
+    expect(returnNudgeWeek(now, now - 2 * DAY_MS, 4, 10, fake, [])).toBeNull();
+  });
+
+  it('GĐ2226 — chơi đều (vắng < 1 ngày) → null', () => {
+    expect(returnNudgeWeek(now, now - 12 * 3_600_000, 4, 10, emptyWeek(1), [])).toBeNull();
   });
 });

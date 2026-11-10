@@ -21,6 +21,7 @@ import { yearEnd, yearOf, yearReward } from './yearReport';
 import { dayOfYear } from './calendar';
 import { SEASON_REWARD_PER_STAR, seasonEvent, seasonEventName, seasonWindow } from './seasonEvent';
 import { almanacMilestoneReward, nextAlmanacMilestone } from './seasonAlmanac';
+import { WEEK_DAYS, weeklyChallenge, type WeekTally } from './bizWeeks';
 
 /** Chỉ nhắc khi thật sự vắng ít nhất 1 NGÀY THẬT (chơi hằng ngày không bị làm phiền). */
 export const RETURN_MIN_DAYS = 1;
@@ -104,4 +105,40 @@ export function returnReminder(now: number, lastSeenAt: number, gameDay: number,
   const gameDaysToYearEnd = yearEnd(yearOf(gameDay)) - gameDay;
   const item = returnNudge(now, lastSeenAt, gameDay, level)[0] ?? { key: 'plain' as ReturnAnchor, icon: '🐢', text: `Đã ${away} ngày chưa quay — hẻm nhớ tiệm nhà, ghé lại nhé!` };
   return { daysAway: away, gameDaysToYearEnd, kind: item.key, line: item.text };
+}
+
+/**
+ * GĐ2226 — NHẮC DEADLINE THỬ THÁCH TUẦN ở màn đăng nhập (mốc quay lại ngắn hạn nhất).
+ *
+ * Thử thách tuần (weeklyChallenge/closeWeek) vốn chỉ hiện trong PeriodTabs lúc đang chơi; chưa có lớp
+ * nhắc bền "đang hụt mục tiêu tuần này, còn mấy ngày" ở màn đăng nhập. Helper này bù mảnh đó, THUẦN đọc
+ * từ biz.week (WeekTally) + weeklyChallenge + cấp: đang hụt thì mách "còn ~N ngày · thiếu ~M đơn/đ...".
+ * Không đụng state/save/kinh tế (chỉ đọc), không chạy sim. Null khi: chơi đều (vắng <1 ngày), chưa có
+ * sổ tuần, đã đạt mục tiêu, hoặc hết tuần.
+ */
+export interface ReturnWeekNudge {
+  icon: string;
+  text: string;
+}
+export function returnNudgeWeek(
+  now: number,
+  lastSeenAt: number,
+  gameDay: number,
+  level: number,
+  week: WeekTally | null,
+  owned: string[] = [],
+): ReturnWeekNudge | null {
+  if (daysAway(now, lastSeenAt) < RETURN_MIN_DAYS) return null;
+  if (!week) return null;
+  const weekNum = Math.ceil(gameDay / WEEK_DAYS);
+  const ch = weeklyChallenge(weekNum, level);
+  const current = ch.measure === 'revenue' ? (week.revenue ?? 0) : (week[ch.measure] ?? 0);
+  const target = ch.target(level, owned);
+  const remaining = WEEK_DAYS - ((gameDay - 1) % WEEK_DAYS);
+  if (remaining < 1 || target <= 0 || current >= target) return null;
+  const missing = Math.max(0, target - current);
+  return {
+    icon: ch.icon,
+    text: `Tuần này còn ~${remaining} ngày — thiếu ~${missing.toLocaleString('vi-VN')} ${ch.unit} nữa đạt "${ch.title}" (thưởng ~${formatMoney(ch.reward(level))}đ)!`,
+  };
 }

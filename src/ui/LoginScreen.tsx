@@ -5,7 +5,8 @@ import { useGame } from '../core/store';
 import { formatMoney } from '../data/products';
 import { cloudSaveWithin, prefetchCloudSave } from '../net/cloud';
 import { giftOfStreak, giftText, scaledGift } from '../data/gifts';
-import { returnNudge } from '../data/returnReminder';
+import { returnNudge, returnNudgeWeek } from '../data/returnReminder';
+import type { WeekTally } from '../data/bizWeeks';
 import { firebaseReady, loginGoogle, logoutGoogle } from '../net/firebase';
 import { useSession, type SaveSummary } from '../net/session';
 import { recordConsent } from '../net/consent';
@@ -235,14 +236,17 @@ function DailyNudge({ g }: { g: { day: number; level: number; giftStreak: number
  * chào mừng (checkWelcomeBack) vốn chỉ bắn một notify lúc vào game. THUẦN đọc (returnNudge từ
  * lastSeenAt/day/level/almanac), không đổi state/save. Chơi đều mỗi ngày → mảng rỗng → không hiện.
  */
-function ReturnNudge({ g }: { g: { day: number; level: number; lastSeenAt: number; biz?: { seasonAlmanac?: Record<string, number>; almanacClaimed?: number[] } } }) {
-  const almanac = g.biz?.seasonAlmanac ?? {};
+function ReturnNudge({ g }: { g: { day: number; level: number; lastSeenAt: number; biz?: { seasonAlmanac?: Record<string, number>; almanacClaimed?: number[]; week?: WeekTally; services?: string[] } } }) {
+  const biz = g.biz;
+  const almanac = biz?.seasonAlmanac ?? {};
   const total = Object.values(almanac).reduce((a, n) => a + (n ?? 0), 0);
-  const items = returnNudge(Date.now(), g.lastSeenAt, g.day, g.level, total, g.biz?.almanacClaimed ?? []);
-  if (!items.length) return null;
+  const items = returnNudge(Date.now(), g.lastSeenAt, g.day, g.level, total, biz?.almanacClaimed ?? []);
+  const wk = returnNudgeWeek(Date.now(), g.lastSeenAt, g.day, g.level, biz?.week ?? null, biz?.services ?? []);
+  const all = wk ? [{ key: 'week', icon: wk.icon, text: wk.text }, ...items] : items;
+  if (!all.length) return null;
   return (
     <>
-      {items.map((it) => (
+      {all.map((it) => (
         <div className="login-nudge" key={it.key}>
           <span aria-hidden="true">{it.icon}</span>
           <span>{it.text}</span>
