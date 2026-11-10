@@ -20,6 +20,7 @@ import { serveCoverage, SERVE_TOP_HOURS } from '../../data/serveCoverage';
 import { hirePayoff } from '../../data/hirePayoff';
 import { managerAutoPayoff } from '../../data/managerAutoPayoff';
 import { warehouseKeeperPayoff } from '../../data/warehouseKeeperPayoff';
+import { farmhandPayoff } from '../../data/farmhandPayoff';
 import { spoilNightReport } from '../../data/advice';
 import { petActive } from '../../data/bizAchievements';
 import { storeMissRevenue } from '../../data/advice';
@@ -36,7 +37,7 @@ import { gapsOf, SITE_NAME, type Site } from '../../data/transfer';
 
 export function StaffPanel() {
   const [tab, setTab] = useState<'team' | 'hire'>('team');
-  const { staff, candidates, level, day, money, autoOpen, hire, fire, setShift, trainStaff, promoteStaff, closePanel, biz, branch, hireForBranch, stats, skills, dirt, storage, deliveries, furniture, sales, salesToday, analytics } = useGame();
+  const { staff, candidates, level, day, money, autoOpen, hire, fire, setShift, trainStaff, promoteStaff, closePanel, biz, branch, hireForBranch, stats, skills, dirt, storage, deliveries, furniture, sales, salesToday, analytics, garden } = useGame();
   const [pick, setPick] = useState<Record<number, Shift>>({});
   const max = maxStaff(level);
   const bStaff = branch?.staff ?? [];
@@ -69,6 +70,8 @@ export function StaffPanel() {
   // GĐ2221 — quản lý kho tự giảm hàng hỏng: "đêm qua" theo convention SkillsPanel = analytics[day-1] (đêm vừa chốt).
   const warehouseBestSkill = staff.reduce((best, st) => (st.role === 'warehouse_mgr' ? Math.max(best, st.skill) : best), 0);
   const warehousePayoff = warehouseKeeperPayoff({ spoiltCost: (analytics ? spoilNightReport(analytics, day - 1)?.totalCost : 0) ?? 0, bestSkill: warehouseBestSkill });
+  // GĐ2222 — phụ trại tự lo trại (tưới/cho ăn/gom/thu) mỗi tối đáng bao nhiêu: đọc trạng thái trại thật.
+  const farmhandVal = farmhandPayoff(garden, storage ?? {}, day);
   const total = [...staff, ...bStaff].reduce((sum, st) => sum + dailyWage(st), 0);
   // GĐ141: giá trị hôm nay của từng nhân viên ca ngày tiệm chính so với lương (thuần đọc stats.byHour)
   const staffValues = staffValueToday(stats?.byHour, staff);
@@ -181,6 +184,9 @@ export function StaffPanel() {
               {st.role === 'warehouse_mgr' && warehousePayoff.ok && (
                 <div style={{ fontSize: 11, color: '#3498db' }} title="Quản lý kho sắp xếp kho xoay hàng cận hạn lên trước nên hàng hỏng qua đêm chậm hơn — tiền cứu được tính từ số hỏng thật đêm qua.">{warehousePayoff.line}</div>
               )}
+              {st.role === 'farmhand' && farmhandVal.ok && (
+                <div style={{ fontSize: 11, color: '#3498db' }} title="Phụ trại mỗi tối tự tưới luống khô, đổ cám cho chuồng đói, gom trứng/sữa và thu hoạch luống chín — giá trị tính từ trạng thái trại thật (bán lẻ nhà trồng).">{farmhandVal.line}</div>
+              )}
               <PromoteRow st={st} level={level} money={money} onPromote={promoteStaff} />
               <div style={staffSt.actions}>
                 <span style={staffSt.label}>🕒 Ca làm</span>
@@ -267,6 +273,9 @@ export function StaffPanel() {
                   <div style={{ fontSize: 11, marginTop: 2, color: '#3498db' }} title="Quản lý kho sắp xếp kho xoay hàng cận hạn lên trước nên hàng hỏng qua đêm chậm hơn — tiền cứu được tính từ số hỏng thật đêm qua (ước theo tay nghề người này).">{p.line}</div>
                 ) : null;
               })()}
+              {c.role === 'farmhand' && farmhandVal.ok && (
+                <div style={{ fontSize: 11, marginTop: 2, color: '#3498db' }} title="Phụ trại mỗi tối tự tưới luống khô, đổ cám cho chuồng đói, gom trứng/sữa và thu hoạch luống chín — giá trị tính từ trạng thái trại thật (bán lẻ nhà trồng).">{farmhandVal.line}</div>
+              )}
               {branch && BRANCH_ROLES.includes(c.role) && (
                 <div style={staffSt.actions}>
                   <span style={staffSt.label}>🏪 Hoặc thuê vào tiện lợi 24/7</span>
