@@ -9,7 +9,7 @@ import { Callout, Footer, Swatch, styles, Tabs } from './shared';
 import { DebtBook } from './DebtBook';
 import { regularGiftPlan, REGULAR_GIFT_LEVEL, giftFriendship, giftableCount, sortForGift, giftPanelLine } from '../../data/regularGift';
 import {
-  REGULAR_TIES, TIE_LABEL, TIE_ICON, alleyBond, tieIsHostile, tieKey,
+  REGULAR_TIES, TIE_LABEL, TIE_ICON, alleyBond, tieIsHostile, tieKey, displayTieKind,
 } from '../../data/regularTies';
 
 /** GĐ793 — nút đòi khách quen bị rival lôi kéo (cùng kiểu nút vàng accent của hệ thống). */
@@ -245,7 +245,7 @@ function TiesView({ bond, regulars, tiesMended, met }: {
           return (
             <div key={tieKey(t.a, t.b)} style={{ background: '#3a3a4d', borderRadius: 8, padding: '6px 12px', fontSize: 12 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
-                <span><span style={{ opacity: 0.8 }}>{TIE_ICON[t.kind]} {TIE_LABEL[t.kind]}</span><br />{name(t.a)} · {name(t.b)}</span>
+                <span><span style={{ opacity: 0.8 }}>{TIE_ICON[displayTieKind(t, tiesMended)]} {TIE_LABEL[displayTieKind(t, tiesMended)]}</span><br />{name(t.a)} · {name(t.b)}</span>
                 <span style={{ color: '#f1c40f', fontWeight: 600, whiteSpace: 'nowrap' }}>💛 {m}</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>

@@ -116,6 +116,13 @@ export function tieIsHostile(t: RegularTie, tiesMended: string[] = []): boolean 
   return !tiesMended.includes(tieKey(t.a, t.b));
 }
 
+/** Loại cạnh HIỂN THỊ (GĐ Hệ2-L5, SPEC §2.6): cạnh khắc khẩu đã hoà giải hiện thành "Bạn bè" —
+ *  giữ nguyên kind nếu vẫn còn thù. Dùng ở tab Quan hệ để người chơi thấy cạnh đã làm lành. */
+export function displayTieKind(t: RegularTie, tiesMended: string[] = []): TieKind {
+  if (t.kind !== 'khac_khau' || tieIsHostile(t, tiesMended)) return t.kind;
+  return 'ban_be';
+}
+
 /** Tất cả cạnh của một người (cả hoà giải lẫn chưa). */
 export function tiesOf(regularId: string): RegularTie[] {
   return REGULAR_TIES.filter((t) => t.a === regularId || t.b === regularId);
