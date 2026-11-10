@@ -826,6 +826,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'ca_keo_kho_to', name: 'Cá kèo kho tộ', category: 'fresh', buy: 19000, sell: 34000, color: 0x7a5a3a, unlock: 199 },
   { id: 'de_xao_lan', name: 'Dê xào lăn', category: 'fresh', buy: 26000, sell: 45000, color: 0x6a4a2a, unlock: 198 },
   { id: 'de_nuong_sa_te', name: 'Dê nướng sa tế', category: 'fresh', buy: 26000, sell: 45000, color: 0x8a4a2a, unlock: 199 },
+  { id: 'so_diep_hap_sa', name: 'Sò điệp hấp sả', category: 'fresh', buy: 26000, sell: 45000, color: 0xc8d8a0, unlock: 198 },
+  { id: 'so_diep_xao_nam', name: 'Sò điệp xào nấm', category: 'fresh', buy: 26000, sell: 45000, color: 0xb8c8a0, unlock: 199 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2781,6 +2783,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_de_nuong_sa_te', name: 'Dê nướng sa tế', station: 'food_grill',
     inputs: [{ productId: 'x_de', quantity: 1 }, { productId: 'x_sa_te', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }],
     outputId: 'de_nuong_sa_te', outputQty: 4, durationMin: 25, unlock: 199, reputationGain: 1 },
+  // GĐ2149: Sò điệp hấp sả — quán hải sản miền Trung/Nam: sò điệp hấp chín với sả, ăn kèm hành lá; không thay thế.
+  { id: 'recipe_so_diep_hap_sa', name: 'Sò điệp hấp sả', station: 'steamer',
+    inputs: [{ productId: 'x_so_diep', quantity: 1 }, { productId: 'x_sa', quantity: 1 }, { productId: 'x_hanh_la', quantity: 1 }],
+    outputId: 'so_diep_hap_sa', outputQty: 4, durationMin: 20, unlock: 198, reputationGain: 1 },
+  // GĐ2150: Sò điệp xào nấm — quán hải sản cả nước: sò điệp xào lửa lớn với nấm kim châm, tỏi phi; không thay thế.
+  { id: 'recipe_so_diep_xao_nam', name: 'Sò điệp xào nấm', station: 'fryer',
+    inputs: [{ productId: 'x_so_diep', quantity: 1 }, { productId: 'x_nam_kim_cham', quantity: 1 }, { productId: 'x_toi', quantity: 1 }],
+    outputId: 'so_diep_xao_nam', outputQty: 4, durationMin: 20, unlock: 199, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────
