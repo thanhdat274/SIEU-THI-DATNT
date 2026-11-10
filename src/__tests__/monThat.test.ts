@@ -183,6 +183,8 @@ const MON_THAT: Record<string, { name: string; station: string; cachNau: string 
   recipe_chim_cut_chien_gion: { name: 'Chim cút chiên giòn', station: 'fryer', cachNau: 'chim cút ướp muối tỏi, chiên vàng giòn nguyên con (quán nhậu cả nước)' },
   recipe_ca_keo_nuong_ong_tre: { name: 'Cá kèo nướng ống tre', station: 'food_grill', cachNau: 'cá kèo nhét ống tre nướng than, chấm muối ớt (Sóc Trăng)' },
   recipe_ca_keo_kho_to: { name: 'Cá kèo kho tộ', station: 'hot_kettle', cachNau: 'cá kèo kho tộ đất nước mắm sả ớt tới sánh (Nam Bộ)' },
+  recipe_de_xao_lan: { name: 'Dê xào lăn', station: 'fryer', cachNau: 'dê thái mỏng xào lửa lớn với sả gừng (quán nhậu Nam Bộ)' },
+  recipe_de_nuong_sa_te: { name: 'Dê nướng sa tế', station: 'food_grill', cachNau: 'dê ướp sa tế muối, nướng than cho thơm (quán nhậu cả nước)' },
 };
 
 /** Chữ mô tả tự chế không ai dùng làm tên món ngoài chợ. */
