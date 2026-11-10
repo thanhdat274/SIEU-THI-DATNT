@@ -87,3 +87,18 @@ export function adPayoffLine(p: AdPayoff): string {
     : '';
   return `${p.def.icon} ${p.def.name} (${formatMoney(p.def.cost)}): ${daily}${money}${verdict}.`;
 }
+
+/**
+ * GĐ2223 — DÒNG SỐNG "hôm nay" cho chiến dịch ĐANG chạy: băng-rôn/tờ-rơi/tiếng lành hôm nay đang
+ * kéo thêm ~bao nhiêu khách và ~bao nhiêu tiền, tính bằng phí chi tiêu bình quân THẬT của hôm nay
+ * (stats.revenue / stats.customers). Trước GĐ2223, banner đang chạy chỉ hiện "+N🩷 hút khách" (điểm
+ * decor ảo) mà không quy ra người chơi thấy được khách/tiền — nguyên tắc Không hộp đen (như GĐ2218
+ * đã làm cho bảng hiệu). THUẦN đọc, tái dùng adPayoff (không đổi state/sim/save). avgPerVisit = 0
+ * (chưa có khách hôm nay) thì chỉ nêu khách, không bịa tiền.
+ */
+export function adTodayLine(def: AdDef, stars: number, level: number, avgPerVisit: number): string {
+  const p = adPayoff(def, stars, level, avgPerVisit);
+  if (p.extraKhach <= 0) return `Hôm nay chưa kéo thêm khách đáng kể.`;
+  const money = p.moneyPerDay > 0 ? ` ≈ ${p.moneyPerDay.toLocaleString('vi-VN')}đ hôm nay` : '';
+  return `Hôm nay đang kéo thêm ~${p.extraKhach} khách${money}.`;
+}

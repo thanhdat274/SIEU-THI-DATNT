@@ -16,7 +16,7 @@ import { EXPANSION_TILE_CAP, MAX_SHOP_TIER, expansionBlock, expansionTilePrice, 
 import { bigBasketInsight, BIG_BASKET_TIER } from '../../data/bigBasket';
 import { meatCounterPayoff, meatChainCooled } from '../../data/meatCounterPayoff';
 import { isMeat } from '../../data/meat';
-import { ADS, adById, adBoost, adPayoff, adPayoffLine } from '../../data/advertising';
+import { ADS, adById, adBoost, adPayoff, adPayoffLine, adTodayLine } from '../../data/advertising';
 import { nearestLife, shelfLife } from '../../data/freshness';
 import { formatMoney } from '../../data/products';
 import { shortLabel } from '../shortLabel';
@@ -453,12 +453,18 @@ export function AdsTab() {
   return (
     <>
       <p style={styles.sub}>Bỏ tiền quảng cáo để dân hẻm biết tiệm: tờ rơi / băng rôn / "tiếng lành" kéo thêm khách đi đường trong vài ngày (giá trị như điểm trang trí 🩷). Mở từ cấp 42.</p>
-      {ad && (
-        <div style={{ ...styles.card, marginBottom: 8, background: 'rgba(241,196,15,.10)' }}>
-          <b>📣 Đang chạy: {adById(ad.defId)?.name ?? ad.defId}</b> · tới ngày {ad.until}
-          {boostToday > 0 && <span style={{ color: '#f1c40f' }}> · hôm nay +{boostToday}🩷 hút khách</span>}
-        </div>
-      )}
+      {ad && (() => {
+        const adef = adById(ad.defId);
+        return (
+          <div style={{ ...styles.card, marginBottom: 8, background: 'rgba(241,196,15,.10)' }}>
+            <b>📣 Đang chạy: {adef?.name ?? ad.defId}</b> · tới ngày {ad.until}
+            {boostToday > 0 && <span style={{ color: '#f1c40f' }}> · hôm nay +{boostToday}🩷 hút khách</span>}
+            {boostToday > 0 && adef && (
+              <div style={{ fontSize: 11, marginTop: 2, color: '#9ecbff' }} title="Tính theo phí chi tiêu bình quân thật của hôm nay (doanh thu / số khách).">{adTodayLine(adef, stars, level, avgPerVisit)}</div>
+            )}
+          </div>
+        );
+      })()}
       {ADS.filter((a) => a.unlock <= level).map((def) => {
         const p = adPayoff(def, stars, level, avgPerVisit);
         const active = ad?.defId === def.id;
