@@ -872,6 +872,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'ca_trich_chien_gion', name: 'Cá trích chiên giòn', category: 'fresh', buy: 26000, sell: 45000, color: 0xc8c858, unlock: 199 },
   { id: 'ca_doi_kho_to', name: 'Cá đối kho tộ', category: 'fresh', buy: 26000, sell: 45000, color: 0xb8c0c8, unlock: 198 },
   { id: 'ca_doi_chien_gion', name: 'Cá đối chiên giòn', category: 'fresh', buy: 26000, sell: 45000, color: 0xc8c060, unlock: 199 },
+  { id: 'ca_chem_hap_xi_dau', name: 'Cá chẽm hấp xì dầu', category: 'fresh', buy: 26000, sell: 45000, color: 0xc0d0d8, unlock: 198 },
+  { id: 'ca_chem_nuong_giay_bac', name: 'Cá chẽm nướng giấy bạc', category: 'fresh', buy: 26000, sell: 45000, color: 0xc8d0d0, unlock: 199 },
 ];
 
 // ──────────────────────────────────────────────
@@ -3011,6 +3013,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_ca_doi_chien_gion', name: 'Cá đối chiên giòn', station: 'fryer',
     inputs: [{ productId: 'x_ca_doi', quantity: 1 }, { productId: 'x_bot_chien', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }],
     outputId: 'ca_doi_chien_gion', outputQty: 4, durationMin: 20, unlock: 199, reputationGain: 1 },
+  // GĐ2195: Cá chẽm hấp xì dầu — nhà hàng hải sản cả nước: cá chẽm hấp chín với xì dầu gừng, ăn nguyên con; không thay thế.
+  { id: 'recipe_ca_chem_hap_xi_dau', name: 'Cá chẽm hấp xì dầu', station: 'steamer',
+    inputs: [{ productId: 'x_ca_chem', quantity: 1 }, { productId: 'x_nuoc_tuong', quantity: 1 }, { productId: 'x_gung', quantity: 1 }],
+    outputId: 'ca_chem_hap_xi_dau', outputQty: 4, durationMin: 25, unlock: 198, reputationGain: 1 },
+  // GĐ2196: Cá chẽm nướng giấy bạc — quán nhậu cả nước: cá chẽm ướp sả ớt, bọc giấy bạc nướng than cho thơm; không thay thế.
+  { id: 'recipe_ca_chem_nuong_giay_bac', name: 'Cá chẽm nướng giấy bạc', station: 'food_grill',
+    inputs: [{ productId: 'x_ca_chem', quantity: 1 }, { productId: 'x_sa', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }],
+    outputId: 'ca_chem_nuong_giay_bac', outputQty: 4, durationMin: 30, unlock: 199, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────
