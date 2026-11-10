@@ -864,6 +864,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'ca_lang_nuong', name: 'Cá lăng nướng', category: 'fresh', buy: 26000, sell: 45000, color: 0xb0a880, unlock: 199 },
   { id: 'ca_hong_kho_to', name: 'Cá hồng kho tộ', category: 'fresh', buy: 26000, sell: 45000, color: 0xd8a8a8, unlock: 198 },
   { id: 'ca_hong_nuong', name: 'Cá hồng nướng', category: 'fresh', buy: 26000, sell: 45000, color: 0xc8b0b0, unlock: 199 },
+  { id: 'ca_thu_kho_to', name: 'Cá thu kho tộ', category: 'fresh', buy: 26000, sell: 45000, color: 0x98a8d0, unlock: 198 },
+  { id: 'ca_thu_nuong_giay_bac', name: 'Cá thu nướng giấy bạc', category: 'fresh', buy: 26000, sell: 45000, color: 0xa8b8d8, unlock: 199 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2971,6 +2973,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_ca_hong_nuong', name: 'Cá hồng nướng', station: 'food_grill',
     inputs: [{ productId: 'x_ca_hong', quantity: 1 }, { productId: 'x_sa', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }],
     outputId: 'ca_hong_nuong', outputQty: 4, durationMin: 25, unlock: 199, reputationGain: 1 },
+  // GĐ2187: Cá thu kho tộ — bữa cơm miền Bắc: cá thu kho tộ đất với nước mắm đường, tới sánh; không thay thế.
+  { id: 'recipe_ca_thu_kho_to', name: 'Cá thu kho tộ', station: 'hot_kettle',
+    inputs: [{ productId: 'x_ca_thu', quantity: 1 }, { productId: 'hx_nuoc_mam', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
+    outputId: 'ca_thu_kho_to', outputQty: 4, durationMin: 30, unlock: 198, reputationGain: 1 },
+  // GĐ2188: Cá thu nướng giấy bạc — quán nhậu cả nước: cá thu ướp sả ớt, bọc giấy bạc nướng than cho thơm; không thay thế.
+  { id: 'recipe_ca_thu_nuong_giay_bac', name: 'Cá thu nướng giấy bạc', station: 'food_grill',
+    inputs: [{ productId: 'x_ca_thu', quantity: 1 }, { productId: 'x_sa', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }],
+    outputId: 'ca_thu_nuong_giay_bac', outputQty: 4, durationMin: 30, unlock: 199, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────

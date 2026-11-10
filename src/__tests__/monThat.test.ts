@@ -223,6 +223,8 @@ const MON_THAT: Record<string, { name: string; station: string; cachNau: string 
   recipe_ca_lang_nuong: { name: 'Cá lăng nướng', station: 'food_grill', cachNau: 'cá lăng ướp sả ớt nướng than cho thơm, chấm muối tiêu chanh (quán nhậu cả nước)' },
   recipe_ca_hong_kho_to: { name: 'Cá hồng kho tộ', station: 'hot_kettle', cachNau: 'cá hồng kho tộ đất với nước mắm đường tới sánh (bữa cơm miền Bắc)' },
   recipe_ca_hong_nuong: { name: 'Cá hồng nướng', station: 'food_grill', cachNau: 'cá hồng ướp sả ớt nướng than cho thơm giòn da (quán nhậu cả nước)' },
+  recipe_ca_thu_kho_to: { name: 'Cá thu kho tộ', station: 'hot_kettle', cachNau: 'cá thu kho tộ đất với nước mắm đường tới sánh (bữa cơm miền Bắc)' },
+  recipe_ca_thu_nuong_giay_bac: { name: 'Cá thu nướng giấy bạc', station: 'food_grill', cachNau: 'cá thu ướp sả ớt bọc giấy bạc nướng than cho thơm (quán nhậu cả nước)' },
 };
 
 /** Chữ mô tả tự chế không ai dùng làm tên món ngoài chợ. */

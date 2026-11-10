@@ -367,4 +367,5 @@ export const CATALOG_PRODUCTS: Product[] = [
   p('x_ca_chach', 'Cá chạch làm sẵn', 'fresh', 32000, 46000, 0x8a7a5a, 170), // GĐ2181: cho cá chạch kho tộ, cá chạch chiên giòn
   p('x_ca_lang', 'Cá lăng làm sẵn', 'fresh', 60000, 85000, 0xa8a890, 170), // GĐ2183: cho cá lăng kho tộ, cá lăng nướng
   p('x_ca_hong', 'Cá hồng làm sẵn', 'fresh', 55000, 78000, 0xd8a8a8, 170), // GĐ2185: cho cá hồng kho tộ, cá hồng nướng
+  p('x_ca_thu', 'Cá thu làm sẵn', 'fresh', 70000, 95000, 0x98a8c8, 170), // GĐ2187: cho cá thu kho tộ, cá thu nướng giấy bạc
 ];
