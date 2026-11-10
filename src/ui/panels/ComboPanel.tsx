@@ -3,6 +3,7 @@ import { useGame } from '../../core/store';
 import { formatMoney, productById } from '../../data/products';
 import { COMBO_PULL, COMBO_UNLOCK, comboById, comboSuggest, liveWeakCombo, maxActiveCombos, nextComboSlotLevel, unlockedCombos } from '../../data/combos';
 import { comboDaySnapshot } from '../../core/slices/comboDay';
+import { comboMargin, comboRealizedPayoff } from '../../data/comboPayoff';
 import { Footer, styles } from './shared';
 
 /** Bật/tắt combo khuyến mãi. */
@@ -20,6 +21,13 @@ export function ComboPanel() {
   // GĐ1244 — đã chạy đủ slot mà có combo yếu: gợi ý combo NÊN ĐỔI vào slot vừa bỏ (comboSuggest xử replaceId
   // như slot đã giải phóng), đóng vòng "tắt combo yếu → bật combo nào". Chỉ khi đủ slot để tránh trùng dòng "Còn slot".
   const replaceSug = weak && activeCombos.length >= max ? comboSuggest(level, sales, activeCombos, 1, { replaceId: weak.id }) : [];
+  // GĐ2213 — "kèo lấn lãi bán hàng": đối chiếu chiết khấu đã trả hôm nay với lời thật của cặp món (giá nhập).
+  const realized = comboRealizedPayoff(
+    Object.fromEntries(activeCombos.map((id) => [id, comboToday[id]?.count ?? 0])),
+    Object.fromEntries(activeCombos.map((id) => [id, comboToday[id]?.discount ?? 0])),
+    activeCombos,
+  );
+  const overrun = realized.filter((r) => r.overrun);
   return (
     <>
       <h2 style={styles.title}>🎁 Combo khuyến mãi</h2>
@@ -43,6 +51,11 @@ export function ComboPanel() {
           🔁 Nếu tắt <b>"{weakCombo.name}"</b> thì nên bật: {replaceSug.map((s) => `"${s.name}" (${s.reason})`).join(' · ')}
         </p>
       )}
+      {overrun.length > 0 && (
+        <p style={{ ...styles.sub, color: '#e74c3c', margin: '4px 0' }} title="GĐ2213: chiết khấu combo đã trả hôm nay vượt lời thật của cặp món (giá nhập) — kèo lấn lãi bán hàng, ngược Luật cứng">
+          🔴 Kèo lấn lãi bán hàng: {overrun.map((r) => `"${r.name}" chiết khấu ${formatMoney(r.discountGiven)} nhưng lời cặp chỉ ~${formatMoney(r.count * r.gross)}`).join(' · ')} — nên tắt/đổi combo này cho khỏi lỗ lời.
+        </p>
+      )}
       {activeCombos.length >= max && (
         <p style={{ ...styles.sub, color: '#f1c40f' }}>⚠️ Đã chạy đủ {max}/{max} combo. Bấm "Đang chạy" để tắt một combo thì mới bật được combo khác{nextSlot ? `, hoặc lên cấp ${nextSlot} để chạy thêm.` : '.'}</p>
       )}
@@ -63,6 +76,7 @@ export function ComboPanel() {
                   <div style={{ fontSize: 12, opacity: 0.8 }}>
                     {formatMoney(full)} → <b>{formatMoney(full - cut)}</b> (giảm {Math.round(c.discount * 100)}%) · lãi cả cặp{' '}
                     <span style={{ color: margin > 0 ? '#2ecc71' : '#e74c3c' }}>{trendMark(margin)}{formatMoney(margin)}</span>
+                    <span style={{ opacity: 0.7 }}> · chiết khấu ăn ~{Math.round(comboMargin(c).eaten * 100)}% lời</span>
                   </div>
                   <div style={{ fontSize: 12, opacity: 0.65 }}>🔥 đã kích hoạt {comboHitCount?.[c.id] ?? 0} lần ở quầy</div>
                   <div style={{ fontSize: 12 }}>
