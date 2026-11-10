@@ -1,0 +1,47 @@
+# SPEC-TOI-UU §T5-L4 — lưới an toàn tự động.
+#  • Mỗi push / PR: tsc + nhóm test fast (đơn vị + store) + ngân sách dung lượng. Nhanh, chặn lỗi hiển nhiên.
+#  • Hằng đêm (và chạy tay): thêm nhóm sim (mô phỏng kinh tế, golden, dải) — nặng, chạy phút.
+name: test
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: '0 20 * * *' # 03:00 giờ VN
+  workflow_dispatch:
+
+concurrency:
+  group: test-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  fast:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npm run test:fast
+        env:
+          VITEST_MAX_THREADS: '2'
+      - run: npm run check:bundle
+
+  sim:
+    # Chỉ chạy đêm / chạy tay: mô phỏng dài, không chặn từng push.
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run test:sim
+        env:
+          VITEST_MAX_THREADS: '2'
