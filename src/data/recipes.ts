@@ -884,6 +884,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'ca_du_chien_gion', name: 'Cá đù chiên giòn', category: 'fresh', buy: 26000, sell: 45000, color: 0xc8c858, unlock: 199 },
   { id: 'ba_khia_rang_sa_ot', name: 'Ba khía rang sả ớt', category: 'fresh', buy: 26000, sell: 45000, color: 0xc06050, unlock: 198 },
   { id: 'ba_khia_hap', name: 'Ba khía hấp', category: 'fresh', buy: 26000, sell: 45000, color: 0xd07068, unlock: 199 },
+  { id: 'cai_ngot_xao_toi', name: 'Cải ngọt xào tỏi', category: 'fresh', buy: 5000, sell: 9000, color: 0x3f8f3a, unlock: 198 },
+  { id: 'cai_ngot_luoc', name: 'Cải ngọt luộc', category: 'fresh', buy: 4000, sell: 7000, color: 0x4f9f3a, unlock: 199 },
 ];
 
 // ──────────────────────────────────────────────
@@ -3071,6 +3073,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_ba_khia_hap', name: 'Ba khía hấp', station: 'steamer',
     inputs: [{ productId: 'x_ba_khia', quantity: 1 }, { productId: 'x_sa', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }],
     outputId: 'ba_khia_hap', outputQty: 4, durationMin: 20, unlock: 199, reputationGain: 1 },
+  // GĐ2207: Cải ngọt xào tỏi — bữa cơm cả nước: cải ngọt xào nhanh trên lửa lớn với tỏi phi thơm; không thay thế.
+  { id: 'recipe_cai_ngot_xao_toi', name: 'Cải ngọt xào tỏi', station: 'fryer',
+    inputs: [{ productId: 'x_cai_ngot', quantity: 1 }, { productId: 'x_toi', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }],
+    outputId: 'cai_ngot_xao_toi', outputQty: 4, durationMin: 10, unlock: 198, reputationGain: 1 },
+  // GĐ2208: Cải ngọt luộc — bữa cơm miền Bắc: cải ngọt luộc chín tới, chấm nước mắm tỏi ớt; không thay thế.
+  { id: 'recipe_cai_ngot_luoc', name: 'Cải ngọt luộc', station: 'hot_kettle',
+    inputs: [{ productId: 'x_cai_ngot', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }],
+    outputId: 'cai_ngot_luoc', outputQty: 4, durationMin: 10, unlock: 199, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────

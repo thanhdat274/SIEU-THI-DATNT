@@ -243,6 +243,8 @@ const MON_THAT: Record<string, { name: string; station: string; cachNau: string 
   recipe_ca_du_chien_gion: { name: 'Cá đù chiên giòn', station: 'fryer', cachNau: 'cá đù tẩm bột chiên ngập dầu cho giòn da (quán nhậu ven biển)' },
   recipe_ba_khia_rang_sa_ot: { name: 'Ba khía rang sả ớt', station: 'fryer', cachNau: 'ba khía rang khô với sả ớt cay, chấm nước chấm chua ngọt (đặc sản Bạc Liêu, miền Tây)' },
   recipe_ba_khia_hap: { name: 'Ba khía hấp', station: 'steamer', cachNau: 'ba khía hấp với sả cho thơm, chấm nước mắm ớt tỏi (bữa cơm miền Tây)' },
+  recipe_cai_ngot_xao_toi: { name: 'Cải ngọt xào tỏi', station: 'fryer', cachNau: 'cải ngọt xào nhanh trên lửa lớn với tỏi phi thơm (bữa cơm cả nước)' },
+  recipe_cai_ngot_luoc: { name: 'Cải ngọt luộc', station: 'hot_kettle', cachNau: 'cải ngọt luộc chín tới, chấm nước mắm tỏi ớt (bữa cơm miền Bắc)' },
 };
 
 /** Chữ mô tả tự chế không ai dùng làm tên món ngoài chợ. */
