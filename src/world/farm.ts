@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { ANIMAL_ORDER, CROPS, landPlots, type AnimalKind, type Plot } from '../data/garden';
 import { createBeastMakers, type Beast } from './farmBeasts';
 import { createCropBuilder } from './farmCrops';
+import { preserveDefById, pickleState, uRipe, uAged, type PreserveJob } from '../data/preserve';
 
 /**
  * Trang trại đầu ngõ: mảnh đất có rào nằm nam con đường thứ hai (từ tiệm đi bằng nút 🚜).
@@ -605,6 +606,7 @@ export function createFarm() {
     greenhouse.visible = (b.nha_luoi ?? 0) > 0;
     runPen.visible = (b.bai_tha ?? 0) > 0;
     scareNew.visible = (b.bu_nhin ?? 0) > 0;
+    syncPreserveBuildings(b);
   };
 
   // ----- Cây trồng trên luống: mầm → đang lớn → gần chín → chín sai trái -----
@@ -659,6 +661,165 @@ export function createFarm() {
     while (list.length > n) group.remove(list.pop()!.root);
   };
 
+  // ----- Khu chế biến Phơi · Muối · Ủ (Hệ 1 §1.8): nong tre, vại sành, chum đất ở góc đông trại -----
+  // Ba dàn bày dọc rào đông; mỗi dàn hiện theo công trình đã mua (số chỗ = sức chứa theo sao),
+  // được setBuildings/setPreserves điều khiển: nong đổi màu theo nắng, vại theo bậc vớt, chum theo tuổi ủ.
+  type PreserveKind = 'phoi' | 'muoi' | 'u';
+  const PRESERVE_CAP: Record<PreserveKind, Record<number, number>> = {
+    phoi: { 1: 2, 2: 4, 3: 6 },
+    muoi: { 1: 2, 2: 4, 3: 6 },
+    u: { 1: 1, 2: 2, 3: 4 },
+  };
+  // Màu "mẻ đang làm" theo tiến độ (đổi vật liệu, không dựng lại shader — đúng mẫu đổi vật liệu).
+  const PHOI_UNRIPE = new THREE.Color(0x9dab54); // phơi còn dở
+  const PHOI_READY = new THREE.Color(0xe8c25a);  // đủ nắng vàng chín
+  const VAI_STATES: [string, number][] = [['haran', 0x9a8f7e], ['ngon', 0x7fc46a], ['dat', 0xd8b64a], ['kem', 0xa96a3a], ['hong', 0x5a6450]];
+  const U_EARLY = new THREE.Color(0x8a7a60);      // còn ủ
+  const U_RIPE = new THREE.Color(0x9c6b3c);       // đủ ngày
+  const U_AGED = new THREE.Color(0xd8a03a);       // ủ lâu
+
+  const preserve = new THREE.Group();
+  group.add(preserve);
+  type Slot = { root: THREE.Group; tint: THREE.MeshStandardMaterial; label: THREE.Mesh | null };
+  const stations: Record<PreserveKind, { root: THREE.Group; slots: Slot[] }> = {
+    phoi: { root: new THREE.Group(), slots: [] },
+    muoi: { root: new THREE.Group(), slots: [] },
+    u: { root: new THREE.Group(), slots: [] },
+  };
+  const preservePos: Record<PreserveKind, [number, number]> = { phoi: [11.8, 2.2], muoi: [11.8, -0.8], u: [11.8, -3.8] };
+
+  /** Dựng toàn bộ ba dàn (chạy một lần khi tạo trại) với số chỗ tối đa 6/6/4, ẩn dư bằng sức chứa. */
+  const buildPreserve = () => {
+    // nong tre: vành tròn đan, mặt lõm
+    const nong = (): Slot => {
+      const root = new THREE.Group();
+      const tray = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.06, 16), new THREE.MeshStandardMaterial({ color: 0xcfa94e }));
+      tray.position.y = 0.03;
+      const inner = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.03, 16), new THREE.MeshStandardMaterial({ color: 0x8a6b35 }));
+      inner.position.y = 0.06;
+      const weave = new THREE.Mesh(new THREE.CircleGeometry(0.34, 16), new THREE.MeshStandardMaterial({ color: 0xa97f3f }));
+      weave.rotation.x = -Math.PI / 2;
+      weave.position.y = 0.075;
+      const tint = new THREE.MeshStandardMaterial({ color: PHOI_UNRIPE });
+      const mound = new THREE.Mesh(new THREE.SphereGeometry(0.26, 10, 6), tint);
+      mound.position.y = 0.2; mound.scale.y = 0.6;
+      root.add(tray, inner, weave, mound);
+      return { root, tint, label: null };
+    };
+    // vại sành: thân phình, miệng cụp, lá úp nồi
+    const vai = (): Slot => {
+      const root = new THREE.Group();
+      const clay = new THREE.MeshStandardMaterial({ color: 0xa95c3a });
+      const body = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.16, 0.5, 14), clay);
+      body.position.y = 0.25;
+      const bulge = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.06, 8, 14), clay);
+      bulge.rotation.x = Math.PI / 2; bulge.position.y = 0.28;
+      const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.17, 0.12, 14), clay);
+      neck.position.y = 0.58;
+      const tint = new THREE.MeshStandardMaterial({ color: 0x9a8f7e });
+      const fill = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.13, 0.3, 12), tint);
+      fill.position.y = 0.32;
+      const lid = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.26, 0.06, 14), new THREE.MeshStandardMaterial({ color: 0x8a4a2e }));
+      lid.position.y = 0.66;
+      root.add(body, bulge, neck, fill, lid);
+      return { root, tint, label: null };
+    };
+    // chum đất: thân tròn to, nắp chóp, để trong góc mái che
+    const chum = (): Slot => {
+      const root = new THREE.Group();
+      const pot = new THREE.MeshStandardMaterial({ color: 0x7a4526 });
+      const body = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.24, 0.6, 16), pot);
+      body.position.y = 0.3;
+      const belly = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.09, 8, 16), pot);
+      belly.rotation.x = Math.PI / 2; belly.position.y = 0.34;
+      const tint = new THREE.MeshStandardMaterial({ color: U_EARLY });
+      const fill = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.26, 0.4, 12), tint);
+      fill.position.y = 0.32;
+      const lid = new THREE.Mesh(new THREE.SphereGeometry(0.32, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), pot);
+      lid.position.y = 0.72;
+      root.add(body, belly, fill, lid);
+      return { root, tint, label: null };
+    };
+    const make: Record<PreserveKind, () => Slot> = { phoi: nong, muoi: vai, u: chum };
+    const KINDS: PreserveKind[] = ['phoi', 'muoi', 'u'];
+    for (const kind of KINDS) {
+      const st = stations[kind];
+      const [x, z] = preservePos[kind];
+      // khung dàn/bàn đỡ
+      if (kind === 'phoi') {
+        // giàn tre: hai thanh dọc song song đặt nong lên
+        for (const dx of [-0.5, 0.5]) {
+          const bar = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.06, 3.2), new THREE.MeshStandardMaterial({ color: 0x6b4a2a }));
+          bar.position.set(0, 0.3, dx);
+          st.root.add(bar);
+        }
+      } else if (kind === 'muoi') {
+        const table = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.06, 3.0), new THREE.MeshStandardMaterial({ color: 0x7a5230 }));
+        table.position.y = 0.32;
+        st.root.add(table);
+      } else {
+        // mái che chum: trụ góc + mái tôn
+        for (const [fx, fz] of [[-0.6, -1.6], [0.6, -1.6], [-0.6, 1.6], [0.6, 1.6]] as const) {
+          const post = new THREE.Mesh(new THREE.BoxGeometry(0.08, 1.5, 0.08), new THREE.MeshStandardMaterial({ color: 0x6b4a2a }));
+          post.position.set(fx, 0.75, fz);
+          st.root.add(post);
+        }
+        const roof = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.08, 3.8), new THREE.MeshStandardMaterial({ color: 0x7f8c99 }));
+        roof.position.y = 1.5;
+        st.root.add(roof);
+      }
+      // các chỗ để đồ, dựng tối đa rồi ẩn theo sức chứa
+      const MAX = kind === 'u' ? 4 : 6;
+      for (let i = 0; i < MAX; i++) st.slots.push(make[kind]());
+      st.root.position.set(x, 0, z);
+      st.root.visible = false;
+      preserve.add(st.root);
+    }
+  };
+  buildPreserve();
+
+  /** Bậc dàn (sao công trình) → số chỗ hiện; bật dàn khi đã mua. */
+  const syncPreserveBuildings = (b: Partial<Record<string, number>>) => {
+    const map: [PreserveKind, string][] = [['phoi', 'gian_phoi'], ['muoi', 'vai_muoi'], ['u', 'chum_u']];
+    for (const [kind, key] of map) {
+      const star = b[key] ?? 0;
+      const st = stations[kind];
+      st.root.visible = star > 0;
+      const cap = PRESERVE_CAP[kind][star] ?? 0;
+      st.slots.forEach((s, i) => { s.root.visible = i < cap; });
+    }
+  };
+
+  /** Đổ mẻ vào các chỗ trống của dàn theo loại; nhuộm màu theo tiến độ của từng mẻ. */
+  const setPreserves = (jobs: PreserveJob[], day: number) => {
+    const KINDS: PreserveKind[] = ['phoi', 'muoi', 'u'];
+    for (const kind of KINDS) {
+      const mine = jobs.filter((j) => preserveDefById(j.defId).kind === kind);
+      stations[kind].slots.forEach((slot, i) => {
+        const job = mine[i];
+        if (!job) { slot.tint.visible = false; slot.root.visible = false; return; }
+        const def = preserveDefById(job.defId);
+        slot.root.visible = true;
+        slot.tint.visible = true;
+        if (kind === 'phoi') {
+          // nong: màu theo nắng gom được / cần (xám nhạt → vàng chín khi đủ nắng)
+          const p = Math.min(1, job.sun / Math.max(1, def.need));
+          slot.tint.visible = p > 0;
+          slot.tint.color.copy(PHOI_UNRIPE).lerp(PHOI_READY, p);
+        } else if (kind === 'muoi') {
+          const st = pickleState(job, def, day);
+          const c = VAI_STATES.find(([s]) => s === st)?.[1] ?? 0x9a8f7e;
+          slot.tint.color.setHex(c);
+        } else {
+          // chum: còn ủ → đủ ngày → ủ lâu ra nhiều hơn
+          if (uAged(job, def, day)) slot.tint.color.copy(U_AGED);
+          else if (uRipe(job, def, day)) slot.tint.color.copy(U_RIPE);
+          else slot.tint.color.copy(U_EARLY);
+        }
+      });
+    }
+  };
+
   // Vector tạm cho bước di chuyển của vật nuôi (không cấp phát mỗi khung)
   const _dir = new THREE.Vector3();
 
@@ -696,6 +857,6 @@ export function createFarm() {
     }
   };
 
-  return { group, boxes, rebuild, setBuildings, setAnimals, setPlots, update, spot: SPOT, wellSpot: WELL_SPOT };
+  return { group, boxes, rebuild, setBuildings, setAnimals, setPlots, setPreserves, update, spot: SPOT, wellSpot: WELL_SPOT };
 }
 

@@ -20,6 +20,7 @@ import { loadNatureProps } from './natureProps';
 import { createStorefrontLantern } from './storefrontLantern';
 import { createAlleyLamps } from './alleyLamps';
 import { createOpenSign } from './storefrontSign';
+import { createStanceSign, type StanceSign } from './stanceSign';
 import { createWaitLamp } from './storefrontWaitLamp';
 import { createCompoundWarm } from './compoundWarm';
 import { createQuanNuocWarm } from './quanNuocWarm';
@@ -71,6 +72,8 @@ export interface World {
   alleyLamps: ReturnType<typeof createAlleyLamps>;
   /** Biển treo "mở/đóng cửa" trước cửa tiệm (gđ179): chỉ hình ảnh, tấm trạng thái đổi màu theo shopOpen — không chặn lưới. */
   openSign: ReturnType<typeof createOpenSign>;
+  /** Biển phụ "ĐỊNH VỊ" dưới bảng hiệu tiệm (Hệ 3 §3.9): chữ đổi theo hướng đang treo — không chặn lưới. */
+  stanceSign: StanceSign;
   /** Đèn báo "khách đang đợi" cạnh cửa (gđ180): chỉ hình ảnh, sáng ấm khi waiting>0 — không chặn lưới. */
   waitLamp: ReturnType<typeof createWaitLamp>;
   /** Đèn ấm chập tối của riêng người chơi (gđ185): hiên nhà + cổng trại — chỉ nguồn sáng, không chặn lưới. */
@@ -239,6 +242,9 @@ export function createWorld(scene: THREE.Scene, grid: NavGrid): World {
   const quanNuocWarm = createQuanNuocWarm();
   const openSign = createOpenSign();
   scene.add(openSign.group);
+  // Hệ 3 §3.9 — biển phụ định vị dưới bảng hiệu tiệm (chữ đổi theo hướng treo)
+  const stanceSign = createStanceSign();
+  scene.add(stanceSign.group);
   const waitLamp = createWaitLamp();
   waitLamp.group.visible = false; // GĐ1820: bỏ đèn báo khách chờ
   scene.add(waitLamp.group);
@@ -344,6 +350,7 @@ export function createWorld(scene: THREE.Scene, grid: NavGrid): World {
     branchStand,
     storefront,
     openSign,
+    stanceSign,
     waitLamp,
     compoundWarm,
     quanNuocWarm,

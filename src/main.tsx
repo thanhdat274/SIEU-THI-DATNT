@@ -820,6 +820,12 @@ function renderFrame() {
   // Biển mở/đóng cửa trước tiệm (gđ179): tấm trạng thái đổi màu theo tiệm đang mở/đóng, đung nhẹ khi mở
   world.openSign.update(g.shopOpen, performance.now() / 1000);
   world.openSign.group.visible = world.shop.building.frontWallShown; // GĐ1822: ẩn theo tường mặt tiền bị cắt
+  // Hệ 3 §3.9 — biển phụ định vị: chữ theo hướng đang treo (stance + stance2), ẩn theo tường mặt tiền
+  const stanceIds: import('./data/stance').StanceId[] = [];
+  if (g.biz.stance) stanceIds.push(g.biz.stance.id);
+  if (g.biz.stance2) stanceIds.push(g.biz.stance2.id);
+  world.stanceSign.update(stanceIds);
+  world.stanceSign.group.visible = world.shop.building.frontWallShown;
   // Đèn báo "khách đang đợi" cạnh cửa (gđ180): sáng ấm khi có khách chờ quầy và tiệm mở
   // GĐ186: cộng thêm mức KHẨN "sắp mất khách" khi hàng đông lâu — nháy nhanh để chủ ghé về quầy
   let urgAdv = g.minutes - lastUrgMinutes;

@@ -4,7 +4,7 @@ import { useGame } from '../core/store';
 
 describe('GĐ1004 — world/farmSync tách khỏi main.tsx', () => {
   it('dựng trang trại một lần ngay và dựng lại khi đổi bậc đất', () => {
-    const farm = { rebuild: vi.fn(), setBuildings: vi.fn(), setPlots: vi.fn(), setAnimals: vi.fn() };
+    const farm = { rebuild: vi.fn(), setBuildings: vi.fn(), setPlots: vi.fn(), setAnimals: vi.fn(), setPreserves: vi.fn() };
     installFarmSync(farm);
     expect(farm.rebuild).toHaveBeenCalledTimes(1);
     const g = useGame.getState().garden;
