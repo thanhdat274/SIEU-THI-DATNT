@@ -860,6 +860,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'chao_ngan', name: 'Cháo ngan', category: 'fresh', buy: 12000, sell: 20000, color: 0xf0e0c0, unlock: 199 },
   { id: 'ca_chach_kho_to', name: 'Cá chạch kho tộ', category: 'fresh', buy: 22000, sell: 40000, color: 0x8a6a4a, unlock: 198 },
   { id: 'ca_chach_chien_gion', name: 'Cá chạch chiên giòn', category: 'fresh', buy: 22000, sell: 40000, color: 0xa87a4a, unlock: 199 },
+  { id: 'ca_lang_kho_to', name: 'Cá lăng kho tộ', category: 'fresh', buy: 26000, sell: 45000, color: 0xa0a078, unlock: 198 },
+  { id: 'ca_lang_nuong', name: 'Cá lăng nướng', category: 'fresh', buy: 26000, sell: 45000, color: 0xb0a880, unlock: 199 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2951,6 +2953,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_ca_chach_chien_gion', name: 'Cá chạch chiên giòn', station: 'fryer',
     inputs: [{ productId: 'x_ca_chach', quantity: 1 }, { productId: 'x_bot_chien', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }],
     outputId: 'ca_chach_chien_gion', outputQty: 4, durationMin: 20, unlock: 199, reputationGain: 1 },
+  // GĐ2183: Cá lăng kho tộ — bữa cơm miền Bắc: cá lăng kho trong tộ đất với nước mắm đường, gừng tới sánh; không thay thế.
+  { id: 'recipe_ca_lang_kho_to', name: 'Cá lăng kho tộ', station: 'hot_kettle',
+    inputs: [{ productId: 'x_ca_lang', quantity: 1 }, { productId: 'hx_nuoc_mam', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
+    outputId: 'ca_lang_kho_to', outputQty: 4, durationMin: 30, unlock: 198, reputationGain: 1 },
+  // GĐ2184: Cá lăng nướng — quán nhậu cả nước: cá lăng ướp sả ớt, nướng than cho thơm, chấm muối tiêu chanh; không thay thế.
+  { id: 'recipe_ca_lang_nuong', name: 'Cá lăng nướng', station: 'food_grill',
+    inputs: [{ productId: 'x_ca_lang', quantity: 1 }, { productId: 'x_sa', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }],
+    outputId: 'ca_lang_nuong', outputQty: 4, durationMin: 30, unlock: 199, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────

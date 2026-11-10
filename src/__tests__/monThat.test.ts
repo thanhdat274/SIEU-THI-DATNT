@@ -219,6 +219,8 @@ const MON_THAT: Record<string, { name: string; station: string; cachNau: string 
   recipe_chao_ngan: { name: 'Cháo ngan', station: 'hot_kettle', cachNau: 'ninh xương ngan nấu cháo gạo, thịt xé ăn kèm hành gừng (món bồi bổ cả nước)' },
   recipe_ca_chach_kho_to: { name: 'Cá chạch kho tộ', station: 'hot_kettle', cachNau: 'cá chạch kho tộ đất nước mắm đường, riềng tiêu (bữa cơm miền Bắc)' },
   recipe_ca_chach_chien_gion: { name: 'Cá chạch chiên giòn', station: 'fryer', cachNau: 'cá chạch ướp muối tiêu chiên vàng giòn, chấm nước mắm gừng (quán nhậu cả nước)' },
+  recipe_ca_lang_kho_to: { name: 'Cá lăng kho tộ', station: 'hot_kettle', cachNau: 'cá lăng kho tộ đất nước mắm đường, gừng tới sánh (bữa cơm miền Bắc)' },
+  recipe_ca_lang_nuong: { name: 'Cá lăng nướng', station: 'food_grill', cachNau: 'cá lăng ướp sả ớt nướng than cho thơm, chấm muối tiêu chanh (quán nhậu cả nước)' },
 };
 
 /** Chữ mô tả tự chế không ai dùng làm tên món ngoài chợ. */
