@@ -3,6 +3,7 @@ import { productById } from './products';
 import { regularById } from './regulars';
 import { EMOTIONAL_FRIENDSHIP } from './regularTrust';
 import { tiesOf, otherOf } from './regularTies';
+import { STANCE_META, type StanceId } from './stance';
 import { simRng } from '../core/rand';
 
 // ───────────────────────── Tiệm đối thủ ─────────────────────────
@@ -127,6 +128,23 @@ export function poachLungLayOf(
 /** Rival mạnh quá mốc này mới dám giựt nhân viên (chỉ rival máu liều). */
 export const STAFF_POACH_STRENGTH = 60;
 export const STAFF_POACH_CHANCE = 0.04;
+// Hệ 3 L7 (SPEC §3.6) — ĐỐI THỦ PHẢN ỨNG theo hướng biển định vị của tiệm mình. "Match" = hướng mà
+// chiến thuật đặc trưng của rival trực diện (đua giá / mua chuộc phê bình / giựt nhân viên); "khắc tinh"
+// = hướng KHIẾN chiến thuật đó VÔ DỤNG → hai bên ít giẫm chân nhau, sức ép −25% (phá giá nhạt hơn).
+export const STANCE_MATCH: Record<RivalPersonality, StanceId> = {
+  cutter: 'binh_dan', quality: 'dac_san', aggressive: 'tien_loi',
+};
+export const STANCE_KRYPTONITE: Record<RivalPersonality, StanceId> = {
+  cutter: 'dac_san', quality: 'tien_loi', aggressive: 'binh_dan',
+};
+/** cutter gặp tiệm Bình dân: đua giá không lại → chuyển khuyến mãi ngắn ngày dài chừng này ngày. */
+export const RIVAL_SALE_DAYS = 3;
+/** aggressive gặp tiệm Tiện lợi: nhân xác suất giựt nhân viên ca đêm. */
+export const RIVAL_AGGRESSIVE_POACH_MULT = 1.6;
+/** quality gặp tiệm Đặc sản: mỗi review chất lượng xấu của tiệm mình → rival +2 sức mạnh. */
+export const RIVAL_BAD_REVIEW_POWER = 2;
+/** "Khắc tinh": sức ép rival còn 75% (phá giá nhạt 25%). */
+export const RIVAL_KRYPTONITE_PRESSURE = 0.75;
 /** GĐ1185 — nhân viên đang bị rival máu liều "để mắt": rival đủ mạnh (≥ STAFF_POACH_STRENGTH) sẽ móc
  *  NHÂN VIÊN GIỎI NHẤT của mình (đúng đích rivalNightAI chọn: sort theo skill giảm, lấy đầu). Trả về id
  *  người bị nhắm (undefined khi chưa có nguy cơ). Song song `atRiskOfPoach` (khách quen, GĐ794) — THUẦN đọc,
@@ -323,6 +341,12 @@ export interface RivalNightCtx {
   rng?: () => number;
   /** Cấp người chơi — cổng mở cơ chế "lôi kéo theo cụm" (SPEC 2.7, R1: < POACH_CLUSTER_UNLOCK thì tắt). */
   level?: number;
+  /** Hệ 3 L7 (SPEC §3.6) — Hướng biển định vị tiệm mình ĐANG CÓ HIỆU LỰC (undefined = không treo/không
+   *  hiệu lực → rival không đổi hành vi). Cổng cấp 60 nên golden L30 an toàn. */
+  stance?: StanceId;
+  /** Hệ 3 L7 (SPEC §3.6) — Số review CHẤT LƯỢNG XẤU (≤2★) tiệm mình bị HÔM NAY: rival chơi chất lượng
+   *  (quality) gặp tiệm Đặc sản tranh nhà phê bình → mỗi lượt +2 sức mạnh. */
+  badReview?: number;
 }
 
 export interface RivalNightResult {
@@ -332,6 +356,11 @@ export interface RivalNightResult {
   poachedStaffId?: number;
   /** Khách quen quay lại tiệm mình (được cộng thêm thân thiết). */
   returned: string[];
+  /** Hệ 3 L7 — Cộng thêm vào sức mạnh rival ở tầng core (khắc phục core ghi đè strength bằng rivalNightly):
+   *  quality gặp Đặc sản +2/ lượt review chất lượng xấu. */
+  strengthBonus?: number;
+  /** Hệ 3 L7 — Rival chuyển sang khuyến mãi ngắn ngày: đề nghị ngày hết sale (cutter gặp Bình dân), để core đặt saleUntil. */
+  saleAdvice?: number;
 }
 
 /**
@@ -343,9 +372,35 @@ export function rivalNightAI(r: Rival, ctx: RivalNightCtx): RivalNightResult {
   const rng = ctx.rng ?? simRng();
   const news: string[] = [];
   const pers = r.personality ?? 'cutter';
-  const undercut = RIVAL_UNDERCUT[pers];
+  let undercut = RIVAL_UNDERCUT[pers];
   const next: Rival = { ...r, prices: { ...r.prices }, stock: { ...r.stock }, poached: { ...r.poached } };
   next.poached = Object.fromEntries(Object.entries(next.poached ?? {}).filter(([id]) => ctx.friendships[id] !== undefined));
+
+  // Hệ 3 L7 (SPEC §3.6) — đối thủ phản ứng theo HƯỚNG BIỂN tiệm mình (chỉ khi có biển hiệu lực, cấp ≥ 60).
+  // "Khắc tinh": chiến thuật đặc trưng của rival vô dụng với hướng này → sức ép −25% (phá giá nhạt hơn).
+  // "Match": rival trực diện với hướng này → đổi chiến thuật (xem 3 nhánh dưới).
+  let saleAdvice: number | undefined;
+  let staffPoachMult = 1;
+  const stance = ctx.stance;
+  if (stance) {
+    if (STANCE_KRYPTONITE[pers] === stance) {
+      undercut = 1 - (1 - undercut) * RIVAL_KRYPTONITE_PRESSURE; // phá giá còn 75% sức ép
+    } else if (STANCE_MATCH[pers] === stance) {
+      if (pers === 'cutter') {
+        // Đua giá không lại tiệm Bình dân → bỏ ép giá dài hạn hôm nay, chuyển khuyến mãi ngắn ngày.
+        undercut = 1;
+        saleAdvice = ctx.day + RIVAL_SALE_DAYS;
+        news.push(`🏷️ ${r.name} thấy không thể đua giá với tiệm Bình dân, chuyển sang đợt giảm giá chớp nhoáng ${RIVAL_SALE_DAYS} ngày.`);
+      } else if (pers === 'quality') {
+        // Tranh nhà phê bình với tiệm Đặc sản: mình bị review chất lượng xấu thì rival mạnh lên.
+        const bad = ctx.badReview ?? 0;
+        if (bad > 0) news.push(`✨ ${r.name} chộp được tiệm mình có ${bad} review chê — giành phần nhà phê bình, mạnh lên.`);
+      } else if (pers === 'aggressive') {
+        // Gặp tiệm Tiện lợi → gia tăng móc nhân viên ca đêm.
+        staffPoachMult = RIVAL_AGGRESSIVE_POACH_MULT;
+      }
+    }
+  }
 
   // 1. Chọn mục tiêu: top món bán chạy của mình, rival bày hàng và giá dưới mình một chút
   const targets = Object.entries(ctx.byItem).sort((a, b) => b[1].qty - a[1].qty).slice(0, RIVAL_TARGETS)
@@ -361,7 +416,7 @@ export function rivalNightAI(r: Rival, ctx: RivalNightCtx): RivalNightResult {
     next.stock![id] = (next.stock![id] ?? 0) - 8;
     if (next.stock![id]! <= 0) { delete next.stock![id]; delete next.prices![id]; }
   }
-  if (targets.length) {
+  if (targets.length && undercut < 1) {
     const names = targets.slice(0, 2).map(([id]) => productById(id).name).join(', ');
     news.push(`⚔️ ${r.name} bày thêm hàng, bán rẻ đúng món ${names} của tiệm mình — xem giá họ ở Kinh doanh`);
   }
@@ -412,12 +467,16 @@ export function rivalNightAI(r: Rival, ctx: RivalNightCtx): RivalNightResult {
     }
   }
 
-  // 3. Rival máu liều mạnh quá mốc thì móc nhân viên giỏi nhất của mình
+  // 3. Rival máu liều mạnh quá mốc thì móc nhân viên giỏi nhất của mình (Hệ3-L7: gặp tiệm Tiện lợi ×poachMult)
   let poachedStaffId: number | undefined;
-  if (pers === 'aggressive' && r.strength >= STAFF_POACH_STRENGTH && ctx.staff.length && rng() < STAFF_POACH_CHANCE) {
+  if (pers === 'aggressive' && r.strength >= STAFF_POACH_STRENGTH && ctx.staff.length && rng() < STAFF_POACH_CHANCE * staffPoachMult) {
     const best = [...ctx.staff].sort((a, b) => b.skill - a.skill)[0];
     poachedStaffId = best.id;
     news.push(`⚔️ ${r.name} móc ${best.name} sang làm với lương gấp rưỡi! Vào lại tuyển người ở bảng Nhân viên`);
   }
-  return { rival: next, news, poachedStaffId, returned };
+  let strengthBonus = 0;
+  if (stance && STANCE_MATCH[pers] === stance && pers === 'quality') {
+    strengthBonus = RIVAL_BAD_REVIEW_POWER * (ctx.badReview ?? 0);
+  }
+  return { rival: next, news, poachedStaffId, returned, strengthBonus, saleAdvice };
 }

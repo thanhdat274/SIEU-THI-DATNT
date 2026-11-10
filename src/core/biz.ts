@@ -14,6 +14,7 @@ import { summarizeReviews } from '../data/reviews';
 import { monthlyRelRebate, relTier } from '../data/supplierRel';
 import { supplierById } from '../data/suppliers';
 import { isFairOpen, makeFairOffer } from '../data/fairmerchant';
+import { stanceActive } from '../data/stance';
 import { lifetimeRegularVisits, monthlyTriAn, EMOTIONAL_FRIENDSHIP } from '../data/regularTrust';
 import { hiepLucPayoff, hiepLucBonus, hiepLucEligible, HIEPLUC_MIN, HIEPLUC_COC } from '../data/hiepLuc';
 import { seasonEvent, seasonObjective, seasonEventName, SEASON_REWARD_PER_STAR, seasonOf, type SeasonKey } from '../data/seasonEvent';
@@ -224,18 +225,24 @@ export function bizEndOfDay(s: GameState, stats: DayStats, hiepLucRevenue = 0): 
     const priced = Object.keys(s.prices);
     const priceIndex = priced.length ? priced.reduce((n, id) => n + s.prices[id] / productById(id).sell, 0) / priced.length : 1;
     // Đối thủ có não: nhìn sổ bán hôm nay để phá giá đúng món mình bán chạy, lôi kéo khách quen xa lạ
+    const actStance = s.biz.stance && stanceActive(s.biz.stance, day) ? s.biz.stance.id : undefined;
     const ai = rivalNightAI(b.rival, {
       day, byItem: stats.byItem ?? {}, priceOf: (id) => s.priceOf(id),
       friendships: Object.fromEntries(Object.entries(s.regulars).map(([id, r]) => [id, r.friendship])),
       giftCounter: counter?.tactic === 'gift',
       staff: s.staff.map((st) => ({ id: st.id, name: st.name, skill: st.skill })),
       level: s.level,
+      // Hệ 3 L7 (SPEC §3.6) — hướng biển định vị đang có hiệu lực + review chất lượng xấu hôm nay
+      stance: actStance,
+      badReview: s.reviews.filter((r) => r.day === day && r.stars <= 2).length,
     });
     news.push(...ai.news);
     for (const rid of ai.returned) s.adjustFriendship(rid, 5);
     poachedStaffId = ai.poachedStaffId;
-    let strength = rivalNightly(b.rival, { rating, missRate, priceIndex, adsActive: activeAds(s.biz.ads, day).length > 0 }) - counterHit;
+    let strength = rivalNightly(b.rival, { rating, missRate, priceIndex, adsActive: activeAds(s.biz.ads, day).length > 0 }) - counterHit + (ai.strengthBonus ?? 0);
     let sale = simRng()() < 0.15 ? day + 1 + Math.floor(simRng()() * 2) : b.rival.saleUntil;
+    // Hệ 3 L7 — rival chuyển sang khuyến mãi ngắn ngày (cutter gặp Bình dân): đặt sale theo đề xuất.
+    if (ai.saleAdvice != null) sale = ai.saleAdvice;
     // Bị đánh mà vẫn trụ: đối thủ có khi trả đũa bằng đợt giảm giá ngay ngày mai
     if (counterHit > 0 && strength > 0 && simRng()() < COUNTER_RETAILIATE) {
       strength = Math.min(100, strength + COUNTER_RETAILIATE_BUFF);
