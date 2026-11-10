@@ -374,4 +374,5 @@ export const CATALOG_PRODUCTS: Product[] = [
   p('x_ca_chem', 'Cá chẽm làm sẵn', 'fresh', 62000, 88000, 0xc0d0d8, 170), // GĐ2195: cho cá chẽm hấp xì dầu, cá chẽm nướng giấy bạc
   p('x_ca_ngu', 'Cá ngừ làm sẵn', 'fresh', 65000, 92000, 0xb86868, 170), // GĐ2197: cho cá ngừ kho tộ, cá ngừ nướng giấy bạc
   p('x_ca_bop', 'Cá bớp làm sẵn', 'fresh', 60000, 85000, 0xe8c8b8, 170), // GĐ2199: cho cá bớp hấp xì dầu, cá bớp nướng giấy bạc
+  p('x_ca_ro_dong', 'Cá rô đồng làm sẵn', 'fresh', 30000, 45000, 0xa8b898, 170), // GĐ2201: cho cá rô đồng kho tộ, cá rô đồng chiên giòn
 ];

@@ -878,6 +878,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'ca_ngu_nuong_giay_bac', name: 'Cá ngừ nướng giấy bạc', category: 'fresh', buy: 26000, sell: 45000, color: 0xc87870, unlock: 199 },
   { id: 'ca_bop_hap_xi_dau', name: 'Cá bớp hấp xì dầu', category: 'fresh', buy: 26000, sell: 45000, color: 0xe0c8b8, unlock: 198 },
   { id: 'ca_bop_nuong_giay_bac', name: 'Cá bớp nướng giấy bạc', category: 'fresh', buy: 26000, sell: 45000, color: 0xe0d0c0, unlock: 199 },
+  { id: 'ca_ro_dong_kho_to', name: 'Cá rô đồng kho tộ', category: 'fresh', buy: 26000, sell: 45000, color: 0xa8b898, unlock: 198 },
+  { id: 'ca_ro_dong_chien_gion', name: 'Cá rô đồng chiên giòn', category: 'fresh', buy: 26000, sell: 45000, color: 0xc8c060, unlock: 199 },
 ];
 
 // ──────────────────────────────────────────────
@@ -3041,6 +3043,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_ca_bop_nuong_giay_bac', name: 'Cá bớp nướng giấy bạc', station: 'food_grill',
     inputs: [{ productId: 'x_ca_bop', quantity: 1 }, { productId: 'x_sa', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }],
     outputId: 'ca_bop_nuong_giay_bac', outputQty: 4, durationMin: 30, unlock: 199, reputationGain: 1 },
+  // GĐ2201: Cá rô đồng kho tộ — bữa cơm đồng bằng Bắc Bộ: cá rô đồng kho tộ đất với nước mắm đường, tới sánh; không thay thế.
+  { id: 'recipe_ca_ro_dong_kho_to', name: 'Cá rô đồng kho tộ', station: 'hot_kettle',
+    inputs: [{ productId: 'x_ca_ro_dong', quantity: 1 }, { productId: 'hx_nuoc_mam', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
+    outputId: 'ca_ro_dong_kho_to', outputQty: 4, durationMin: 30, unlock: 198, reputationGain: 1 },
+  // GĐ2202: Cá rô đồng chiên giòn — quán nhậu đồng quê: cá rô đồng tẩm bột chiên ngập dầu cho giòn; không thay thế.
+  { id: 'recipe_ca_ro_dong_chien_gion', name: 'Cá rô đồng chiên giòn', station: 'fryer',
+    inputs: [{ productId: 'x_ca_ro_dong', quantity: 1 }, { productId: 'x_bot_chien', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }],
+    outputId: 'ca_ro_dong_chien_gion', outputQty: 4, durationMin: 20, unlock: 199, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────
