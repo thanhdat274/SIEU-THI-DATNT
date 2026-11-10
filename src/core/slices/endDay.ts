@@ -39,7 +39,7 @@ import { staffDayEnd } from '../../data/staffTraits';
 import { BUZZ_DAYS, CRISIS_MUL, POST_CAP, SOCIAL_UNLOCK, socialDayEnd, type SocialPost } from '../../data/social';
 import { ANIMAL_ORDER, farmCritChance, farmhandChores, FARM_ORDER_UNLOCK, farmOrderCapacity, farmOrderNews, farmOrderProduce, gardenNight, makeFarmOrder, type AnimalKind } from '../../data/garden';
 import { preserveNight, farmhandPreserve, preserveDefById } from '../../data/preserve';
-import { brandRepDaily, brandWorkshopDay } from '../../data/brand';
+import { brandDealNight, brandRepDaily, brandWorkshopDay } from '../../data/brand';
 import { crisisNight } from '../../data/crisis';
 import { lifeEventFor, lifeEventById, gioLabel } from '../../data/lifeEvent';
 import { stanceActive, stanceFitByDirection, applyStanceDay, stanceTier, STANCE_UNLOCK, STANCE_META, hasStanceSeal, isStanceSealable, type StanceState } from '../../data/stance';
@@ -596,6 +596,10 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
       const rd = brandRepDaily(brandB1, s.day, reviewProducts);
       biz.biz = { ...biz.biz, brand: rd.brand };
       for (const n of rd.news) say(n);
+      // Đại lý: kỳ đi qua hôm nay mà chưa giao → bỏ kỳ (−8, đếm kỳ hỏng, 3 lần cắt hợp đồng).
+      const dd = brandDealNight(rd.brand, s.day);
+      biz.biz = { ...biz.biz, brand: dd.brand };
+      for (const n of dd.news) say(n);
     }
   }
   // SPEC-TOI-UU §T1 (L1): gom bản ghi ẩn danh ngày vừa chốt — lưu CỤC BỘ, không gửi đi đâu.

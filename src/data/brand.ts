@@ -3,6 +3,9 @@ import { productById } from './products';
 import type { TodoItem } from './todo';
 import { registerTodo, urgencyAt } from './todo';
 
+/** Tên sản phẩm bỏ phần ngoặc (mẫu slice brand.ui). */
+const pname = (id: string) => (productById(id)?.name ?? id).replace(/\s*\([^)]*\)\s*$/, '');
+
 /**
  * Hệ 4 — NHÃN HÀNG RIÊNG (SPEC-CHIEU-SAU §4).
  * Từ cấp 100, những món nhà làm đã thành thạo được dán nhãn mang tên tiệm, sản xuất theo lô ở xưởng,
@@ -37,7 +40,11 @@ export interface FranchiseState {
 export interface BrandReplog { day: number; delta: number; why: string }
 
 /** Một hợp đồng bỏ mối đại lý: chính là ContractState của hợp đồng thường, thêm `productId` dòng được chọn. */
-export type BrandDeal = ContractState & { productId: string };
+export type BrandDeal = ContractState & {
+  productId: string;
+  /** Số kỳ hỏng (trễ/bỏ) liên tiếp — đủ BRAND_DEAL_CUT_AFTER thì đại lý cắt hợp đồng. */
+  missed?: number;
+};
 
 export interface BrandWorkshop {
   open: boolean;
@@ -66,6 +73,8 @@ export interface BrandState {
   lastPackDay: number;
   /** Các hợp đồng bỏ mối đang giữ (dealer id → deal; dùng khung ContractState). */
   deals: Record<string, BrandDeal>;
+  /** Ngày game từng đại lý bị cắt hợp đồng có thể ký lại (30 ngày sau cắt); thiếu = chưa cắt. */
+  reopenDays?: Record<string, number>;
   /** Các điểm nhượng quyền đang mở. */
   franchises: FranchiseState[];
   /** Ngày game tới hạn nhập hàng cho từng điểm nhượng quyền (tuần). */
@@ -236,6 +245,43 @@ export function brandDealValue(dealer: BrandDealerDef, productId: string): numbe
 /** Ba kỳ hỏng liên tiếp → đại lý cắt hợp đồng; 30 ngày sau mới ký lại được. */
 export const BRAND_DEAL_CUT_AFTER = 3;
 export const BRAND_DEAL_REOPEN_DAYS = 30;
+
+/** Uy tín nhãn (§4.6): giao đúng hẹn +2 / trễ −4 / thiếu-bỏ kỳ −8. */
+export const BRAND_REP_ONTIME = 2;
+export const BRAND_REP_LATE = -4;
+export const BRAND_REP_MISS = -8;
+
+/**
+ * Đêm đến: kỳ đại lý đã ĐI QUA hôm nay mà chưa giao → "bỏ kỳ" (−8 uy tín) và tính một kỳ hỏng;
+ * đủ BRAND_DEAL_CUT_AFTER kỳ hỏng liên tiếp → đại lý cắt hợp đồng, 30 ngày sau mới ký lại.
+ * THUẦN (không RNG) — mọi mốc ≥ 100, golden L30 giữ nguyên.
+ */
+export function brandDealNight(b: BrandState, day: number): { brand: BrandState; news: string[] } {
+  const news: string[] = [];
+  const entries = Object.entries(b.deals);
+  if (entries.length === 0) return { brand: b, news };
+  let cur = b;
+  for (const [dealerId, deal] of entries) {
+    const def = brandDealerById(dealerId);
+    if (!def || !deal.pending || deal.dueDay >= day) continue; // chưa tới hạn / đã giao / không phải kỳ treo
+    // Bỏ kỳ: đã qua ngày mà chưa giao.
+    const name = def.title;
+    const missed = (deal.missed ?? 0) + 1;
+    cur = applyBrandRep(cur, day, BRAND_REP_MISS, `bỏ kỳ giao "${name}" (${pname(deal.productId)})`);
+    if (missed >= BRAND_DEAL_CUT_AFTER) {
+      const rest = { ...cur.deals };
+      delete rest[dealerId];
+      cur = { ...cur, deals: rest, reopenDays: { ...(cur.reopenDays ?? {}), [dealerId]: day + BRAND_DEAL_REOPEN_DAYS } };
+      news.push(`🚨 "${name}" cắt hợp đồng vì bỏ ${missed} kỳ liên tiếp — ${BRAND_DEAL_REOPEN_DAYS} ngày sau mới ký lại`);
+    } else {
+      cur = {
+        ...cur, deals: { ...cur.deals, [dealerId]: { ...deal, missed, pending: true, overdue: true, dueDay: day + def.periodDays } },
+      };
+      news.push(`🚚 Bỏ kỳ giao "${name}" — uy tín ${BRAND_REP_MISS} (kỳ hỏng thứ ${missed}/${BRAND_DEAL_CUT_AFTER})`);
+    }
+  }
+  return { brand: cur, news };
+}
 
 // ───── Nhượng quyền (§4.5e) ─────
 

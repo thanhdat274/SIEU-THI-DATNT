@@ -2,8 +2,9 @@ import { useMemo, useState } from 'react';
 import { useGame } from '../../core/store';
 import { productById } from '../../data/products';
 import {
-  BRAND_LINE_SLOTS, BRAND_UNLOCK, brandLineEligible, brandLineSlots, brandRepTier, brandStockUnits,
-  brandWorkshopCapacity, type BrandState,
+  BRAND_DEALER_UNLOCK, BRAND_DEAL_CUT_AFTER, BRAND_DEALERS, BRAND_LINE_SLOTS, BRAND_UNLOCK,
+  brandDealerById, brandDealersAvail, brandLineEligible, brandLineSlots, brandRepTier, brandStockUnits,
+  brandDealValue, brandWorkshopCapacity, type BrandState,
 } from '../../data/brand';
 import { Footer, styles, Tabs } from './shared';
 
@@ -24,7 +25,7 @@ const pname = (id: string) => (productById(id)?.name ?? id).replace(/\s*\([^)]*\
  * Xưởng/Bỏ mối/Nhượng quyền sẽ mở ở các lát sau.
  */
 export function BrandPanel() {
-  const { level, money, biz, garden, soldEver, foundBrand, addBrandLine, dropBrandLine, buyBrandWorkshop, hireBrandWorker, fireBrandWorker, closePanel } = useGame();
+  const { level, money, biz, garden, soldEver, foundBrand, addBrandLine, dropBrandLine, buyBrandWorkshop, hireBrandWorker, fireBrandWorker, acceptBrandDeal, commitBrandDeal, releaseBrandDeal, deliverBrandDeal, closePanel, day } = useGame();
   const [tab, setTab] = useState<Tab>('lines');
   const [name, setName] = useState('');
   const b = biz.brand;
@@ -82,10 +83,7 @@ export function BrandPanel() {
           )}
 
           {tab === 'dealers' && (
-            <div style={styles.card}>
-              <b>🚛 Bỏ mối đại lý</b>
-              <span style={{ fontSize: 12, opacity: 0.75, flex: 1 }}>Ký hợp đồng giao hàng nhãn cho các đại lý theo định kỳ (sẽ mở ở lát sau).</span>
-            </div>
+            <DealersTab b={b} level={level} rep={b.rep} day={day} onAccept={acceptBrandDeal} onCommit={commitBrandDeal} onRelease={releaseBrandDeal} onDeliver={deliverBrandDeal} />
           )}
 
           {tab === 'franchise' && (
@@ -214,5 +212,86 @@ function LinesTab(props: {
       )}
       {candidates.length === 0 && <p style={styles.sub}>Chưa có món nhà làm nào — qua Hệ 1 (Sân phơi · Muối · Ủ) hoàn các mẻ để dồn mẻ làm.</p>}
     </div>
+  );
+}
+
+function DealersTab(props: {
+  b: BrandState; level: number; rep: number; day: number;
+  onAccept: (dealerId: string, productId: string) => void;
+  onCommit: (id: string) => void; onRelease: (id: string) => void; onDeliver: (id: string) => boolean;
+}) {
+  const { b, level, rep, day, onAccept, onCommit, onRelease, onDeliver } = props;
+  const avail = brandDealersAvail(level, rep);
+  const reSign = (id: string) => {
+    const r = b.reopenDays?.[id];
+    return r === undefined ? 0 : Math.max(0, r - day);
+  };
+  return (
+    <div>
+      <p style={{ ...styles.sub, maxWidth: 620 }}>
+        Ký hợp đồng giao hàng nhãn cho đại lý theo định kỳ — giá mua lại thấp hơn bán lẻ nhưng số lượng nhiều
+        và đều. Giao đúng hẹn +2 uy tín, trễ −4, bỏ kỳ −8; <b>{BRAND_DEAL_CUT_AFTER} kỳ hỏng liên tiếp thì bị cắt
+        hợp đồng</b> (30 ngày sau mới ký lại). Mở từ cấp {BRAND_DEALER_UNLOCK}.
+      </p>
+
+      {Object.entries(b.deals).map(([id, deal]) => {
+        const def = brandDealerById(id)!;
+        const dueIn = deal.dueDay - day;
+        const have = b.stock[deal.productId] ?? 0;
+        return (
+          <div key={id} style={styles.card}>
+            <span style={{ flex: 1 }}>
+              <b>{def.icon} {def.title}</b>
+              <div style={{ fontSize: 12, opacity: 0.8 }}>
+                {pname(deal.productId)} · {def.qty} đv mỗi {def.periodDays} ngày · {brandDealValue(def, deal.productId).toLocaleString('vi-VN')}đ/kỳ
+                {' '}· kỳ tới {dueIn <= 0 ? (deal.overdue ? 'QUÁ HẠN' : 'hôm nay') : `${dueIn} ngày nữa`}
+                {' '}· kho nhãn {have}/{def.qty}
+                {deal.committed ? ' · 🤝 đã cam kết' : ''}
+              </div>
+            </span>
+            {!deal.committed && <button style={styles.btn} disabled={have < def.qty} onClick={() => onCommit(id)}>🤝 Cam kết</button>}
+            {deal.committed && <button style={styles.btn} onClick={() => onRelease(id)}>↩️ Hoàn cọc</button>}
+            <button style={styles.btn} disabled={have < def.qty} onClick={() => onDeliver(id)}>🚚 Giao kỳ</button>
+          </div>
+        );
+      })}
+
+      {Object.keys(b.deals).length === 0 && <p style={styles.sub}>Chưa có hợp đồng nào — chọn đại lý bên dưới để ký.</p>}
+
+      <p style={{ ...styles.sub, marginTop: 12 }}>Đại lý có thể ký ({avail.length}/{BRAND_DEALERS.length}):</p>
+      {avail.map((def) => {
+        const deal = b.deals[def.id];
+        const reopen = reSign(def.id);
+        const unsigned = !deal && reopen === 0;
+        return (
+          <div key={def.id} style={styles.card}>
+            <span style={{ flex: 1 }}>
+              <b>{def.icon} {def.title}</b>
+              <div style={{ fontSize: 12, opacity: 0.8 }}>
+                {def.qty} đv mỗi {def.periodDays} ngày · {Math.round(def.pricePerUnit * 100)}% giá bán lẻ · cần uy tín {def.rep}
+              </div>
+            </span>
+            {deal
+              ? <span style={{ fontSize: 12, opacity: 0.8 }}>đang ký</span>
+              : reopen > 0
+                ? <span style={{ fontSize: 12, opacity: 0.7 }}>cắt · còn {reopen} ngày</span>
+                : <DealerSign def={def} lines={b.lines} onAccept={onAccept} />}
+          </div>
+        );
+      })}
+      {avail.length === 0 && <p style={styles.sub}>Chưa có đại lý nào — mở theo cấp và nâng uy tín nhãn.</p>}
+    </div>
+  );
+}
+
+function DealerSign({ def, lines, onAccept }: { def: { id: string; title: string }; lines: { productId: string }[]; onAccept: (id: string, productId: string) => void }) {
+  const [sel, setSel] = useState(lines[0]?.productId ?? '');
+  return (
+    <span style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+      <select value={sel} onChange={(e) => setSel(e.target.value)} disabled={lines.length === 0} style={{ padding: '5px', borderRadius: 6, border: '1px solid #555', background: '#2b2b3a', color: '#f5f5f5' }}>
+        {lines.map((l) => <option key={l.productId} value={l.productId}>{pname(l.productId)}</option>)}
+      </select>
+      <button style={styles.btn} disabled={lines.length === 0 || !sel} onClick={() => onAccept(def.id, sel)}>Ký hợp đồng</button>
+    </span>
   );
 }

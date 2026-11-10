@@ -633,6 +633,11 @@ export interface GameState {
   buyBrandWorkshop: () => void;
   hireBrandWorker: () => void;
   fireBrandWorker: () => void;
+  /** Hệ 4 — Bỏ mối đại lý (SPEC §4.5c): ký hợp đồng giao hàng nhãn / cam kết trữ / giao kỳ. GUARDED 'brand'. */
+  acceptBrandDeal: (dealerId: string, productId: string) => void;
+  commitBrandDeal: (dealerId: string) => void;
+  releaseBrandDeal: (dealerId: string) => void;
+  deliverBrandDeal: (dealerId: string) => boolean;
 
   /** Trang trại (trồng, bón phân, nuôi gà/vịt/ngỗng/bò/heo/dê/gà Đông Tảo, đơn quán xóm). */
   garden: GardenState;

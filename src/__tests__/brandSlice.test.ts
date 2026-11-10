@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useGame } from '../core/store';
-import { BRAND_UNLOCK, BRAND_WORKSHOP_MAX_STAFF, brandWorkshopDay, type BrandState } from '../data/brand';
+import { BRAND_UNLOCK, BRAND_WORKSHOP_MAX_STAFF, brandDealNight, brandWorkshopDay, type BrandState } from '../data/brand';
 import { productById } from '../data/products';
 
 vi.mock('../net/session', () => ({ useSession: { getState: () => ({}) }, subscribe: () => () => {} }));
@@ -218,3 +218,112 @@ describe('Hệ4-L3 — brandWorkshopDay: đóng hàng chưa nhãn thành hàng n
     expect(r.brand.stock.hx_mam_tep).toBe(20);
   });
 });
+
+describe('Hệ4-L5 — bỏ mối đại lý (SPEC §4.5c): ký / cam kết / giao kỳ / uy tín theo §4.6', () => {
+  /** Nhãn có 1 dòng nước mắm + kho nhãn đủ. */
+  const dealBrand = (over: Partial<BrandState> = {}): BrandState => ({
+    name: 'Nhà Năm',
+    workshop: null, lastPackDay: 0,
+    lines: [{ productId: 'hx_nuoc_mam', since: 100, made: 200, sold: 0 }],
+    stock: { hx_nuoc_mam: 200 },
+    rep: 0, maxRep: 0, repLog: [],
+    deals: {}, franchises: [], franchiseDue: {},
+    ...over,
+  });
+
+  const signAt = (level: number, b: BrandState, day = 100) => {
+    const s = useGame.getState();
+    useGame.setState({
+      level,
+      day,
+      soldEver: { hx_nuoc_mam: 600 },
+      biz: { ...s.biz, brand: b },
+    } as never);
+  };
+
+  it('cổng ký: cấp/quy tín/dòng — thiếu điều kiện thì không ký', () => {
+    // cấp 100 < 110 → không ký
+    signAt(100, dealBrand());
+    useGame.getState().acceptBrandDeal('sap_cho_huyen', 'hx_nuoc_mam');
+    expect(Object.keys(useGame.getState().biz.brand!.deals)).toHaveLength(0);
+    // đủ cấp nhưng uy tín 0 < 20 → không ký
+    signAt(115, dealBrand());
+    useGame.getState().acceptBrandDeal('sap_cho_huyen', 'hx_nuoc_mam');
+    expect(Object.keys(useGame.getState().biz.brand!.deals)).toHaveLength(0);
+    // đủ uy tín → ký được
+    useGame.setState({ day: 100, biz: { ...useGame.getState().biz, brand: dealBrand({ rep: 25, maxRep: 25 }) } } as never);
+    useGame.getState().acceptBrandDeal('sap_cho_huyen', 'hx_nuoc_mam');
+    expect(useGame.getState().biz.brand!.deals.sap_cho_huyen).toBeTruthy();
+    expect(useGame.getState().biz.brand!.deals.sap_cho_huyen.dueDay).toBe(100 + 5); // periodDays 5
+  });
+
+  it('cửa hàng đặc sản cần uy tín 40 — chưa đủ thì bị chặn', () => {
+    signAt(130, dealBrand({ rep: 25, maxRep: 25 }));
+    useGame.getState().acceptBrandDeal('cua_hang_dac_san', 'hx_nuoc_mam');
+    expect(Object.keys(useGame.getState().biz.brand!.deals)).toHaveLength(0);
+  });
+
+  it('giao đúng hẹn đủ hàng: +tiền, trừ kho nhãn, +2 uy tín, chuỗi +1', () => {
+    signAt(125, dealBrand({ rep: 45, maxRep: 45 }));
+    useGame.getState().acceptBrandDeal('sap_cho_huyen', 'hx_nuoc_mam'); // due 125? day=100 -> due 105
+    const deal = useGame.getState().biz.brand!.deals.sap_cho_huyen;
+    // đưa due về hôm nay để giao đúng hẹn
+    useGame.setState({ day: deal.dueDay, biz: { ...useGame.getState().biz, brand: { ...useGame.getState().biz.brand!, deals: { sap_cho_huyen: { ...deal, overdue: false } } } } } as never);
+    const before = useGame.getState().money;
+    const ok = useGame.getState().deliverBrandDeal('sap_cho_huyen');
+    const st = useGame.getState();
+    const b = st.biz.brand!;
+    expect(ok).toBe(true);
+    // 40 đv × giá bán lẻ × 0.82
+    expect(st.money - before).toBe(brandDealValueForSap());
+    expect(b.stock.hx_nuoc_mam).toBe(200 - 40);
+    expect(b.rep).toBe(47); // 45 + 2
+    expect(b.lines[0].sold).toBe(40);
+    expect(b.deals.sap_cho_huyen.streak).toBe(1);
+  });
+
+  it('giao trễ (overdue): −4 uy tín, chuỗi về 0', () => {
+    signAt(125, dealBrand({ rep: 45, maxRep: 45 }));
+    useGame.getState().acceptBrandDeal('sap_cho_huyen', 'hx_nuoc_mam');
+    const deal = useGame.getState().biz.brand!.deals.sap_cho_huyen;
+    useGame.setState({ day: deal.dueDay, biz: { ...useGame.getState().biz, brand: { ...useGame.getState().biz.brand!, deals: { sap_cho_huyen: { ...deal, overdue: true } } } } } as never);
+    useGame.getState().deliverBrandDeal('sap_cho_huyen');
+    const b = useGame.getState().biz.brand!;
+    expect(b.rep).toBe(41); // 45 - 4
+    expect(b.deals.sap_cho_huyen.streak).toBe(0);
+    expect(b.deals.sap_cho_huyen.missed).toBe(1);
+  });
+
+  it('kho nhãn thiếu → không giao được, giữ nguyên', () => {
+    signAt(125, dealBrand({ rep: 45, maxRep: 45, stock: { hx_nuoc_mam: 5 } }));
+    useGame.getState().acceptBrandDeal('sap_cho_huyen', 'hx_nuoc_mam');
+    const before = useGame.getState().money;
+    const ok = useGame.getState().deliverBrandDeal('sap_cho_huyen');
+    expect(ok).toBe(false);
+    expect(useGame.getState().money).toBe(before);
+  });
+
+  it('brandDealNight: kỳ đi qua chưa giao → −8, đủ 3 kỳ hỏng liên tiếp → cắt + reopenDays', () => {
+    signAt(125, dealBrand({ rep: 50, maxRep: 50 }));
+    useGame.getState().acceptBrandDeal('sap_cho_huyen', 'hx_nuoc_mam'); // due day+5
+    // giả lập 3 lần bỏ kỳ liên tiếp
+    let b = useGame.getState().biz.brand!;
+    for (let i = 0; i < 3; i++) {
+      const d = b.deals.sap_cho_huyen;
+      // qua hạn 1 ngày
+      b = { ...b, deals: { sap_cho_huyen: { ...d, pending: true, dueDay: 100 + (i + 1) * 5 } } };
+      useGame.setState({ day: 100 + (i + 1) * 5 + 1, biz: { ...useGame.getState().biz, brand: b } } as never);
+      const r = brandDealNight(useGame.getState().biz.brand!, 100 + (i + 1) * 5 + 1);
+      b = r.brand;
+    }
+    expect(b.rep).toBe(50 - 3 * 8);
+    expect(b.deals.sap_cho_huyen).toBeUndefined(); // bị cắt
+    expect(b.reopenDays!.sap_cho_huyen).toBeGreaterThan(0); // 30 ngày sau mới ký lại
+  });
+});
+
+/** Giá một kỳ đại lý Sạp chợ huyện (40 đv × bán lẻ × 0.82) — đọc từ brand.ts. */
+function brandDealValueForSap() {
+  // 40 đơn vị nước mắm bán lẻ × 0.82
+  return Math.round(productById('hx_nuoc_mam').sell * 40 * 0.82);
+}
