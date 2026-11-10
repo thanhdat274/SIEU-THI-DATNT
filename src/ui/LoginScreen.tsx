@@ -5,7 +5,7 @@ import { useGame } from '../core/store';
 import { formatMoney } from '../data/products';
 import { cloudSaveWithin, prefetchCloudSave } from '../net/cloud';
 import { giftOfStreak, giftText, scaledGift } from '../data/gifts';
-import { returnReminder } from '../data/returnReminder';
+import { returnNudge } from '../data/returnReminder';
 import { firebaseReady, loginGoogle, logoutGoogle } from '../net/firebase';
 import { useSession, type SaveSummary } from '../net/session';
 import { recordConsent } from '../net/consent';
@@ -230,18 +230,25 @@ function DailyNudge({ g }: { g: { day: number; level: number; giftStreak: number
 }
 
 /**
- * GĐ2224 — lớp nhắc "đã N ngày chưa quay" ở màn đăng nhập: cho người chơi quay lại một lý do bền
- * (nối vào mốc thưởng tròn năm) — khác quà chào mừng (checkWelcomeBack) vốn chỉ bắn một notify lúc vào
- * game. THUẦN đọc (returnReminder), không đổi state/save. Chơi đều mỗi ngày → helper trả null → ẩn.
+ * GĐ2224+GĐ2225 — lớp nhắc "đã N ngày chưa quay" ở màn đăng nhập: cho người quay lại lý do bền bằng
+ * cách liệt kê các mốc thưởng sắp hết hạn (thưởng tròn năm / sự kiện mùa / mốc niên giám) — khác quà
+ * chào mừng (checkWelcomeBack) vốn chỉ bắn một notify lúc vào game. THUẦN đọc (returnNudge từ
+ * lastSeenAt/day/level/almanac), không đổi state/save. Chơi đều mỗi ngày → mảng rỗng → không hiện.
  */
-function ReturnNudge({ g }: { g: { day: number; level: number; lastSeenAt: number } }) {
-  const r = returnReminder(Date.now(), g.lastSeenAt, g.day, g.level);
-  if (!r) return null;
+function ReturnNudge({ g }: { g: { day: number; level: number; lastSeenAt: number; biz?: { seasonAlmanac?: Record<string, number>; almanacClaimed?: number[] } } }) {
+  const almanac = g.biz?.seasonAlmanac ?? {};
+  const total = Object.values(almanac).reduce((a, n) => a + (n ?? 0), 0);
+  const items = returnNudge(Date.now(), g.lastSeenAt, g.day, g.level, total, g.biz?.almanacClaimed ?? []);
+  if (!items.length) return null;
   return (
-    <div className="login-nudge">
-      <span aria-hidden="true">🐢</span>
-      <span>{r.line}</span>
-    </div>
+    <>
+      {items.map((it) => (
+        <div className="login-nudge" key={it.key}>
+          <span aria-hidden="true">{it.icon}</span>
+          <span>{it.text}</span>
+        </div>
+      ))}
+    </>
   );
 }
 
