@@ -18,6 +18,7 @@ import { dateOfDoy, isWeekend, YEAR_DAYS } from './calendar';
 import { simRng } from '../core/rand';
 import { fmtMul } from './products';
 import { isXoiCungDay } from './tiemXoi';
+import type { PreserveJob } from './preserve';
 
 /** Mở trang trại từ cấp này. */
 export const GARDEN_UNLOCK = 8;
@@ -318,6 +319,10 @@ export interface GardenState {
   stone: number;
   /** Cỏ dại cành rụng còn chưa dọn (mọc lại mỗi đêm, bão rơi nhiều). */
   debris: number;
+  /** Hệ 1 — mẻ phơi/muối/ủ đang làm (SPEC-CHIEU-SAU §1). Mặc định trống. */
+  preserveJobs: PreserveJob[];
+  /** Hệ 1 — các khoảng phút hôm nay giàn phơi để NGOÀI trời (bản lưu cũ thiếu → rỗng). */
+  rackLog: { day: number; out: [number, number][] };
 }
 
 /** Đơn quán xóm đặt nông sản: giao đủ đúng hạn thì được giá hời hơn giá bán thường. */
@@ -402,6 +407,8 @@ export const newGarden = (): GardenState => ({
   wood: 0,
   stone: 0,
   debris: 0,
+  preserveJobs: [],
+  rackLog: { day: 0, out: [] },
 });
 
 /** Khách trả thêm bấy nhiêu phần giá cho món nhà trồng (nêu ở gợi ý giá). */
