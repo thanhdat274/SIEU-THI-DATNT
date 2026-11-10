@@ -56,6 +56,8 @@ export default defineConfig({
         // Tách vendor thành chunk riêng (GĐ174, học từ Xóm Nông Trại): thư viện ít đổi ở lại
         // nguyên trong cache trình duyệt qua các bản update code game, và tải song song.
         manualChunks(id: string) {
+          // SPEC-TOI-UU §T2-f: dữ liệu công thức/sản phẩm có tên chunk ổn định (trước đây tên nhầm 'surpriseArcs').
+          if (/[\/]src[\/]data[\/](recipes|products)\.ts$/.test(id)) return 'data-recipes';
           if (!id.includes('node_modules')) return undefined;
           if (/[\\/]node_modules[\\/](react|react-dom|scheduler)[\\/]/.test(id)) return 'vendor-react';
           if (/[\\/]three[\\/]examples[\\/]jsm[\\/]loaders[\\/]/.test(id)) return undefined; // GLTF/Draco nạp lười (gltfLoader.ts)
