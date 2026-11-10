@@ -866,6 +866,10 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'ca_hong_nuong', name: 'Cá hồng nướng', category: 'fresh', buy: 26000, sell: 45000, color: 0xc8b0b0, unlock: 199 },
   { id: 'ca_thu_kho_to', name: 'Cá thu kho tộ', category: 'fresh', buy: 26000, sell: 45000, color: 0x98a8d0, unlock: 198 },
   { id: 'ca_thu_nuong_giay_bac', name: 'Cá thu nướng giấy bạc', category: 'fresh', buy: 26000, sell: 45000, color: 0xa8b8d8, unlock: 199 },
+  { id: 'ca_dua_kho_to', name: 'Cá dứa kho tộ', category: 'fresh', buy: 26000, sell: 45000, color: 0xa8c0b8, unlock: 198 },
+  { id: 'ca_dua_nuong_muoi_ot', name: 'Cá dứa nướng muối ớt', category: 'fresh', buy: 26000, sell: 45000, color: 0xc8b888, unlock: 199 },
+  { id: 'ca_trich_kho_tieu', name: 'Cá trích kho tiêu', category: 'fresh', buy: 26000, sell: 45000, color: 0xc8c0d0, unlock: 198 },
+  { id: 'ca_trich_chien_gion', name: 'Cá trích chiên giòn', category: 'fresh', buy: 26000, sell: 45000, color: 0xc8c858, unlock: 199 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2981,6 +2985,22 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_ca_thu_nuong_giay_bac', name: 'Cá thu nướng giấy bạc', station: 'food_grill',
     inputs: [{ productId: 'x_ca_thu', quantity: 1 }, { productId: 'x_sa', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }],
     outputId: 'ca_thu_nuong_giay_bac', outputQty: 4, durationMin: 30, unlock: 199, reputationGain: 1 },
+  // GĐ2189: Cá dứa kho tộ — đặc sản An Giang (miền Tây): cá dứa kho tộ đất với nước mắm đường, tới sánh; không thay thế.
+  { id: 'recipe_ca_dua_kho_to', name: 'Cá dứa kho tộ', station: 'hot_kettle',
+    inputs: [{ productId: 'x_ca_dua', quantity: 1 }, { productId: 'hx_nuoc_mam', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
+    outputId: 'ca_dua_kho_to', outputQty: 4, durationMin: 30, unlock: 198, reputationGain: 1 },
+  // GĐ2190: Cá dứa nướng muối ớt — quán nhậu miền Tây: cá dứa ướp muối ớt, nướng than cho thơm giòn da; không thay thế.
+  { id: 'recipe_ca_dua_nuong_muoi_ot', name: 'Cá dứa nướng muối ớt', station: 'food_grill',
+    inputs: [{ productId: 'x_ca_dua', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }, { productId: 'x_ot_bot', quantity: 1 }],
+    outputId: 'ca_dua_nuong_muoi_ot', outputQty: 4, durationMin: 25, unlock: 199, reputationGain: 1 },
+  // GĐ2191: Cá trích kho tiêu — bữa cơm ven biển miền Trung: cá trích kho đậm với nước mắm đường, tiêu, tới sánh; không thay thế.
+  { id: 'recipe_ca_trich_kho_tieu', name: 'Cá trích kho tiêu', station: 'hot_kettle',
+    inputs: [{ productId: 'x_ca_trich', quantity: 1 }, { productId: 'hx_nuoc_mam', quantity: 1 }, { productId: 'x_tieu_xay', quantity: 1 }],
+    outputId: 'ca_trich_kho_tieu', outputQty: 4, durationMin: 30, unlock: 198, reputationGain: 1 },
+  // GĐ2192: Cá trích chiên giòn — bữa cơm ven biển miền Trung: cá trích tẩm bột chiên ngập dầu cho giòn; không thay thế.
+  { id: 'recipe_ca_trich_chien_gion', name: 'Cá trích chiên giòn', station: 'fryer',
+    inputs: [{ productId: 'x_ca_trich', quantity: 1 }, { productId: 'x_bot_chien', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }],
+    outputId: 'ca_trich_chien_gion', outputQty: 4, durationMin: 20, unlock: 199, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────

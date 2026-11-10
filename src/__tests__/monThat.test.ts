@@ -225,6 +225,10 @@ const MON_THAT: Record<string, { name: string; station: string; cachNau: string 
   recipe_ca_hong_nuong: { name: 'Cá hồng nướng', station: 'food_grill', cachNau: 'cá hồng ướp sả ớt nướng than cho thơm giòn da (quán nhậu cả nước)' },
   recipe_ca_thu_kho_to: { name: 'Cá thu kho tộ', station: 'hot_kettle', cachNau: 'cá thu kho tộ đất với nước mắm đường tới sánh (bữa cơm miền Bắc)' },
   recipe_ca_thu_nuong_giay_bac: { name: 'Cá thu nướng giấy bạc', station: 'food_grill', cachNau: 'cá thu ướp sả ớt bọc giấy bạc nướng than cho thơm (quán nhậu cả nước)' },
+  recipe_ca_dua_kho_to: { name: 'Cá dứa kho tộ', station: 'hot_kettle', cachNau: 'cá dứa kho tộ đất với nước mắm đường tới sánh (đặc sản An Giang, miền Tây)' },
+  recipe_ca_dua_nuong_muoi_ot: { name: 'Cá dứa nướng muối ớt', station: 'food_grill', cachNau: 'cá dứa ướp muối ớt nướng than cho thơm giòn da (quán nhậu miền Tây)' },
+  recipe_ca_trich_kho_tieu: { name: 'Cá trích kho tiêu', station: 'hot_kettle', cachNau: 'cá trích kho đậm với nước mắm đường tiêu tới sánh (bữa cơm ven biển miền Trung)' },
+  recipe_ca_trich_chien_gion: { name: 'Cá trích chiên giòn', station: 'fryer', cachNau: 'cá trích tẩm bột chiên ngập dầu cho giòn (bữa cơm ven biển miền Trung)' },
 };
 
 /** Chữ mô tả tự chế không ai dùng làm tên món ngoài chợ. */
