@@ -816,6 +816,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'ca_tre_nuong_trui', name: 'Cá trê nướng trui', category: 'fresh', buy: 22000, sell: 38000, color: 0x6a5a3a, unlock: 199 },
   { id: 'chao_bo_cau', name: 'Cháo bồ câu', category: 'fresh', buy: 12000, sell: 20000, color: 0xf0e0c0, unlock: 196 },
   { id: 'bo_cau_quay', name: 'Bồ câu quay', category: 'fresh', buy: 22000, sell: 38000, color: 0x8a6a3a, unlock: 197 },
+  { id: 'chao_ba_ba', name: 'Cháo ba ba', category: 'fresh', buy: 14000, sell: 26000, color: 0xf0e0c0, unlock: 198 },
+  { id: 'ba_ba_hap_sa', name: 'Ba ba hấp sả', category: 'fresh', buy: 26000, sell: 40000, color: 0x6a7a4a, unlock: 199 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2731,6 +2733,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_bo_cau_quay', name: 'Bồ câu quay', station: 'food_grill',
     inputs: [{ productId: 'x_bo_cau', quantity: 1 }, { productId: 'x_gung', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }],
     outputId: 'bo_cau_quay', outputQty: 4, durationMin: 30, unlock: 197, reputationGain: 1 },
+  // GĐ2139: Cháo ba ba — món bồi bổ Hà Nội: ba ba hầm lấy nước nấu cháo gạo, thịt ba ba xé ăn kèm; không thay thế.
+  { id: 'recipe_chao_ba_ba', name: 'Cháo ba ba', station: 'hot_kettle',
+    inputs: [{ productId: 'x_ba_ba', quantity: 1 }, { productId: 'gao', quantity: 1 }, { productId: 'x_hanh_kho', quantity: 1 }],
+    outputId: 'chao_ba_ba', outputQty: 14, durationMin: 45, unlock: 198, reputationGain: 1 },
+  // GĐ2140: Ba ba hấp sả — món hấp cả nước: ba ba hấp với sả, gừng cho thơm, chấm nước mắm gừng; không thay thế.
+  { id: 'recipe_ba_ba_hap_sa', name: 'Ba ba hấp sả', station: 'steamer',
+    inputs: [{ productId: 'x_ba_ba', quantity: 1 }, { productId: 'x_sa', quantity: 1 }, { productId: 'x_gung', quantity: 1 }],
+    outputId: 'ba_ba_hap_sa', outputQty: 6, durationMin: 30, unlock: 199, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────
