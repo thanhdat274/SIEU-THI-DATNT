@@ -189,6 +189,8 @@ const MON_THAT: Record<string, { name: string; station: string; cachNau: string 
   recipe_so_diep_xao_nam: { name: 'Sò điệp xào nấm', station: 'fryer', cachNau: 'sò điệp xào lửa lớn với nấm kim châm, tỏi phi (quán hải sản cả nước)' },
   recipe_bach_tuoc_nuong: { name: 'Bạch tuộc nướng', station: 'food_grill', cachNau: 'bạch tuộc nướng than, quết sa tế, chấm muối tiêu chanh (quán nhậu hải sản)' },
   recipe_bach_tuoc_xao_sa_te: { name: 'Bạch tuộc xào sa tế', station: 'fryer', cachNau: 'bạch tuộc xào lửa lớn với sa tế cay, ăn kèm hành lá (quán nhậu)' },
+  recipe_ghe_rang_muoi: { name: 'Ghẹ rang muối', station: 'fryer', cachNau: 'ghẹ rang tro muối nóng hổi, thơm mặn (quán hải sản miền Trung/Nam)' },
+  recipe_ghe_nuong_sa_te: { name: 'Ghẹ nướng sa tế', station: 'food_grill', cachNau: 'ghẹ nướng than quét sa tế cay, chấm muối tiêu chanh (quán nhậu)' },
 };
 
 /** Chữ mô tả tự chế không ai dùng làm tên món ngoài chợ. */
