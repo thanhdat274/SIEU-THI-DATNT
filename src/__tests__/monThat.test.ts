@@ -213,6 +213,8 @@ const MON_THAT: Record<string, { name: string; station: string; cachNau: string 
   recipe_ca_nuc_nuong: { name: 'Cá nục nướng', station: 'food_grill', cachNau: 'cá nục ướp muối ớt, nướng than cho thơm giòn da (quán nhậu miền Trung)' },
   recipe_ca_ngat_kho_to: { name: 'Cá ngát kho tộ', station: 'hot_kettle', cachNau: 'cá ngát kho tộ đất nước mắm đường, hành tiêu tới sánh (bữa cơm Nam Bộ)' },
   recipe_ca_ngat_nuong_trui: { name: 'Cá ngát nướng trui', station: 'food_grill', cachNau: 'cá ngát nướng trui lửa rơm, cuốn bánh tráng chấm nước mắm me (miền Tây)' },
+  recipe_muc_nang_hap: { name: 'Mực nang hấp', station: 'steamer', cachNau: 'mực nang hấp sả gừng giữ vị ngọt, chấm muối tiêu chanh (quán nhậu hải sản cả nước)' },
+  recipe_muc_nang_chien_gion: { name: 'Mực nang chiên giòn', station: 'fryer', cachNau: 'mực nang cắt khoanh tẩm bột chiên giòn vàng (quán nhậu hải sản cả nước)' },
 };
 
 /** Chữ mô tả tự chế không ai dùng làm tên món ngoài chợ. */

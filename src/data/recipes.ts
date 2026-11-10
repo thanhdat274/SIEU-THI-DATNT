@@ -854,6 +854,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'ca_nuc_nuong', name: 'Cá nục nướng', category: 'fresh', buy: 22000, sell: 40000, color: 0xc8b898, unlock: 199 },
   { id: 'ca_ngat_kho_to', name: 'Cá ngát kho tộ', category: 'fresh', buy: 26000, sell: 45000, color: 0xa89878, unlock: 198 },
   { id: 'ca_ngat_nuong_trui', name: 'Cá ngát nướng trui', category: 'fresh', buy: 26000, sell: 45000, color: 0xb8a880, unlock: 199 },
+  { id: 'muc_nang_hap', name: 'Mực nang hấp', category: 'fresh', buy: 26000, sell: 45000, color: 0xd8c8d8, unlock: 198 },
+  { id: 'muc_nang_chien_gion', name: 'Mực nang chiên giòn', category: 'fresh', buy: 26000, sell: 45000, color: 0xd8b8c8, unlock: 199 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2921,6 +2923,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_ca_ngat_nuong_trui', name: 'Cá ngát nướng trui', station: 'food_grill',
     inputs: [{ productId: 'x_ca_ngat', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }, { productId: 'x_sa', quantity: 1 }],
     outputId: 'ca_ngat_nuong_trui', outputQty: 4, durationMin: 30, unlock: 199, reputationGain: 1 },
+  // GĐ2177: Mực nang hấp — quán nhậu hải sản cả nước: mực nang hấp sả gừng giữ vị ngọt, chấm muối tiêu chanh; không thay thế.
+  { id: 'recipe_muc_nang_hap', name: 'Mực nang hấp', station: 'steamer',
+    inputs: [{ productId: 'x_muc_nang', quantity: 1 }, { productId: 'x_sa', quantity: 1 }, { productId: 'x_gung', quantity: 1 }],
+    outputId: 'muc_nang_hap', outputQty: 4, durationMin: 25, unlock: 198, reputationGain: 1 },
+  // GĐ2178: Mực nang chiên giòn — quán nhậu hải sản cả nước: mực nang cắt khoanh tẩm bột chiên giòn vàng; không thay thế.
+  { id: 'recipe_muc_nang_chien_gion', name: 'Mực nang chiên giòn', station: 'fryer',
+    inputs: [{ productId: 'x_muc_nang', quantity: 1 }, { productId: 'x_bot_chien', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }],
+    outputId: 'muc_nang_chien_gion', outputQty: 4, durationMin: 20, unlock: 199, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────
