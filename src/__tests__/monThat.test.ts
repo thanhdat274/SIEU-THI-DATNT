@@ -245,6 +245,8 @@ const MON_THAT: Record<string, { name: string; station: string; cachNau: string 
   recipe_ba_khia_hap: { name: 'Ba khía hấp', station: 'steamer', cachNau: 'ba khía hấp với sả cho thơm, chấm nước mắm ớt tỏi (bữa cơm miền Tây)' },
   recipe_cai_ngot_xao_toi: { name: 'Cải ngọt xào tỏi', station: 'fryer', cachNau: 'cải ngọt xào nhanh trên lửa lớn với tỏi phi thơm (bữa cơm cả nước)' },
   recipe_cai_ngot_luoc: { name: 'Cải ngọt luộc', station: 'hot_kettle', cachNau: 'cải ngọt luộc chín tới, chấm nước mắm tỏi ớt (bữa cơm miền Bắc)' },
+  recipe_cai_thao_xao_toi: { name: 'Cải thảo xào tỏi', station: 'fryer', cachNau: 'cải thảo xào nhanh trên lửa lớn với tỏi phi thơm (bữa cơm cả nước)' },
+  recipe_cai_thao_luoc: { name: 'Cải thảo luộc', station: 'hot_kettle', cachNau: 'cải thảo luộc chín tới, chấm nước mắm tỏi ớt (bữa cơm miền Bắc)' },
 };
 
 /** Chữ mô tả tự chế không ai dùng làm tên món ngoài chợ. */

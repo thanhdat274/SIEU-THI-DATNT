@@ -886,6 +886,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'ba_khia_hap', name: 'Ba khía hấp', category: 'fresh', buy: 26000, sell: 45000, color: 0xd07068, unlock: 199 },
   { id: 'cai_ngot_xao_toi', name: 'Cải ngọt xào tỏi', category: 'fresh', buy: 5000, sell: 9000, color: 0x3f8f3a, unlock: 198 },
   { id: 'cai_ngot_luoc', name: 'Cải ngọt luộc', category: 'fresh', buy: 4000, sell: 7000, color: 0x4f9f3a, unlock: 199 },
+  { id: 'cai_thao_xao_toi', name: 'Cải thảo xào tỏi', category: 'fresh', buy: 5000, sell: 9000, color: 0x4fa04a, unlock: 198 },
+  { id: 'cai_thao_luoc', name: 'Cải thảo luộc', category: 'fresh', buy: 4000, sell: 7000, color: 0x5fb05a, unlock: 199 },
 ];
 
 // ──────────────────────────────────────────────
@@ -3081,6 +3083,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_cai_ngot_luoc', name: 'Cải ngọt luộc', station: 'hot_kettle',
     inputs: [{ productId: 'x_cai_ngot', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }],
     outputId: 'cai_ngot_luoc', outputQty: 4, durationMin: 10, unlock: 199, reputationGain: 1 },
+  // GĐ2209: Cải thảo xào tỏi — bữa cơm cả nước: cải thảo xào nhanh trên lửa lớn với tỏi phi thơm; không thay thế.
+  { id: 'recipe_cai_thao_xao_toi', name: 'Cải thảo xào tỏi', station: 'fryer',
+    inputs: [{ productId: 'x_cai_thao', quantity: 1 }, { productId: 'x_toi', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }],
+    outputId: 'cai_thao_xao_toi', outputQty: 4, durationMin: 10, unlock: 198, reputationGain: 1 },
+  // GĐ2210: Cải thảo luộc — bữa cơm miền Bắc: cải thảo luộc chín tới, chấm nước mắm tỏi ớt; không thay thế.
+  { id: 'recipe_cai_thao_luoc', name: 'Cải thảo luộc', station: 'hot_kettle',
+    inputs: [{ productId: 'x_cai_thao', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }],
+    outputId: 'cai_thao_luoc', outputQty: 4, durationMin: 10, unlock: 199, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────
