@@ -201,6 +201,8 @@ const MON_THAT: Record<string, { name: string; station: string; cachNau: string 
   recipe_so_huyet_xao_toi: { name: 'Sò huyết xào tỏi', station: 'fryer', cachNau: 'sò huyết luộc sơ xào lửa lớn với tỏi phi thơm (quán nhậu hải sản cả nước)' },
   recipe_ca_bong_kho_tieu: { name: 'Cá bống kho tiêu', station: 'hot_kettle', cachNau: 'cá bống kho nước mắm đường nhiều tiêu tới keo (cơm nhà Nam Bộ)' },
   recipe_ca_bong_chien_gion: { name: 'Cá bống chiên giòn', station: 'fryer', cachNau: 'cá bống ướp muối chiên vàng giòn, chấm nước mắm gừng (quán nhậu cả nước)' },
+  recipe_ca_mu_hap_xi_dau: { name: 'Cá mú hấp xì dầu', station: 'steamer', cachNau: 'cá mú hấp gừng rưới xì dầu, ăn kèm hành (quán nhậu hải sản cả nước)' },
+  recipe_ca_mu_nuong_muoi_ot: { name: 'Cá mú nướng muối ớt', station: 'food_grill', cachNau: 'cá mú ướp muối ớt, nướng than cho thơm (quán nhậu hải sản cả nước)' },
 };
 
 /** Chữ mô tả tự chế không ai dùng làm tên món ngoài chợ. */
