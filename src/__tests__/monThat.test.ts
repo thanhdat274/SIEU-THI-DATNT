@@ -207,6 +207,8 @@ const MON_THAT: Record<string, { name: string; station: string; cachNau: string 
   recipe_mong_tay_xao_sa_ot: { name: 'Móng tay xào sả ớt', station: 'fryer', cachNau: 'sò móng tay luộc sơ xào lửa lớn sả ớt (quán nhậu hải sản cả nước)' },
   recipe_ca_chep_om_dua: { name: 'Cá chép om dưa', station: 'hot_kettle', cachNau: 'cá chép om dưa chua, nước dưa chín thấm vị (bữa cơm miền Bắc)' },
   recipe_ca_chep_chien_gion: { name: 'Cá chép chiên giòn', station: 'fryer', cachNau: 'cá chép ướp muối chiên vàng giòn nguyên con (bữa cơm miền Bắc)' },
+  recipe_ca_tram_kho_to: { name: 'Cá trắm kho tộ', station: 'hot_kettle', cachNau: 'cá trắm kho tộ đất nước mắm đường ớt tới sánh (bữa cơm miền Bắc)' },
+  recipe_ca_tram_chien_gion: { name: 'Cá trắm chiên giòn', station: 'fryer', cachNau: 'cá trắm ướp muối tiêu chiên vàng giòn (bữa cơm miền Bắc)' },
 };
 
 /** Chữ mô tả tự chế không ai dùng làm tên món ngoài chợ. */

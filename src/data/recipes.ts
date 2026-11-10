@@ -848,6 +848,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'mong_tay_xao_sa_ot', name: 'Móng tay xào sả ớt', category: 'fresh', buy: 26000, sell: 45000, color: 0xc8c0b0, unlock: 199 },
   { id: 'ca_chep_om_dua', name: 'Cá chép om dưa', category: 'fresh', buy: 26000, sell: 45000, color: 0xb8a878, unlock: 198 },
   { id: 'ca_chep_chien_gion', name: 'Cá chép chiên giòn', category: 'fresh', buy: 26000, sell: 45000, color: 0xc8b888, unlock: 199 },
+  { id: 'ca_tram_kho_to', name: 'Cá trắm kho tộ', category: 'fresh', buy: 26000, sell: 45000, color: 0xa8b8c8, unlock: 198 },
+  { id: 'ca_tram_chien_gion', name: 'Cá trắm chiên giòn', category: 'fresh', buy: 26000, sell: 45000, color: 0xb8c8c8, unlock: 199 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2891,6 +2893,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_ca_chep_chien_gion', name: 'Cá chép chiên giòn', station: 'fryer',
     inputs: [{ productId: 'x_ca_chep', quantity: 1 }, { productId: 'x_bot_chien', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }],
     outputId: 'ca_chep_chien_gion', outputQty: 4, durationMin: 25, unlock: 199, reputationGain: 1 },
+  // GĐ2171: Cá trắm kho tộ — bữa cơm miền Bắc: cá trắm kho trong tộ đất với nước mắm đường, ớt tới sánh; không thay thế.
+  { id: 'recipe_ca_tram_kho_to', name: 'Cá trắm kho tộ', station: 'hot_kettle',
+    inputs: [{ productId: 'x_ca_tram', quantity: 1 }, { productId: 'hx_nuoc_mam', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
+    outputId: 'ca_tram_kho_to', outputQty: 4, durationMin: 30, unlock: 198, reputationGain: 1 },
+  // GĐ2172: Cá trắm chiên giòn — bữa cơm miền Bắc: cá trắm ướp muối tiêu chiên vàng giòn, chấm nước mắm; không thay thế.
+  { id: 'recipe_ca_tram_chien_gion', name: 'Cá trắm chiên giòn', station: 'fryer',
+    inputs: [{ productId: 'x_ca_tram', quantity: 1 }, { productId: 'x_bot_chien', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }],
+    outputId: 'ca_tram_chien_gion', outputQty: 4, durationMin: 25, unlock: 199, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────

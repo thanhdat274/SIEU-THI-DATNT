@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (10/11/2026)
+- GĐ2171–2172: Cá trắm làm sẵn (x_ca_tram, cuối catalog L170); Cá trắm kho tộ (hot_kettle, L198), Cá trắm chiên giòn (fryer, L199).
 - GĐ2169–2170: Cá chép làm sẵn (x_ca_chep, cuối catalog L170); Cá chép om dưa (hot_kettle, L198), Cá chép chiên giòn (fryer, L199).
 - GĐ2167–2168: Sò móng tay làm sẵn (x_mong_tay, cuối catalog L170); Móng tay nướng mỡ hành (food_grill, L198), Móng tay xào sả ớt (fryer, L199).
 - GĐ2165–2166: Cá mú làm sẵn (x_ca_mu, cuối catalog L170); Cá mú hấp xì dầu (steamer, L198), Cá mú nướng muối ớt (food_grill, L199).
