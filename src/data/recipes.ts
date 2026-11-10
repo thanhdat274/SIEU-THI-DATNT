@@ -804,6 +804,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'cha_la_lot', name: 'Chả lá lốt', category: 'fresh', buy: 12000, sell: 22000, color: 0x3a5a2a, unlock: 189 },
   { id: 'bun_rieu', name: 'Bún riêu', category: 'fresh', buy: 15000, sell: 26000, color: 0xd8703a, unlock: 190 },
   { id: 'canh_cua_mong_toi', name: 'Canh cua mồng tơi', category: 'fresh', buy: 12000, sell: 20000, color: 0x6a8a3a, unlock: 191 },
+  { id: 'mien_luon', name: 'Miến lươn', category: 'fresh', buy: 16000, sell: 28000, color: 0xb8904a, unlock: 192 },
+  { id: 'luon_xao_sa_ot', name: 'Lươn xào sả ớt', category: 'fresh', buy: 22000, sell: 38000, color: 0x8a5a2a, unlock: 193 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2671,6 +2673,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_canh_cua_mong_toi', name: 'Canh cua mồng tơi', station: 'hot_kettle',
     inputs: [{ productId: 'x_cua_dong', quantity: 1 }, { productId: 'x_mong_toi', quantity: 1 }],
     outputId: 'canh_cua_mong_toi', outputQty: 4, durationMin: 25, unlock: 191, reputationGain: 1 },
+  // GĐ2127: Miến lươn — Hà Nội/Nghệ An: lươn chiên giòn hoặc xào, chan nước dùng xương với miến dong; không thay thế.
+  { id: 'recipe_mien_luon', name: 'Miến lươn', station: 'hot_kettle',
+    inputs: [{ productId: 'x_mien_dong', quantity: 1 }, { productId: 'x_luon', quantity: 1 }, { productId: 'x_hanh_kho', quantity: 1 }],
+    outputId: 'mien_luon', outputQty: 6, durationMin: 30, unlock: 192, reputationGain: 1 },
+  // GĐ2128: Lươn xào sả ớt — cơm nhà/quán nhậu cả nước: lươn làm sạch cắt khúc xào lửa lớn với sả, ớt; không thay thế.
+  { id: 'recipe_luon_xao_sa_ot', name: 'Lươn xào sả ớt', station: 'fryer',
+    inputs: [{ productId: 'x_luon', quantity: 1 }, { productId: 'x_sa', quantity: 1 }, { productId: 'ot_hien', quantity: 1 }],
+    outputId: 'luon_xao_sa_ot', outputQty: 4, durationMin: 20, unlock: 193, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────

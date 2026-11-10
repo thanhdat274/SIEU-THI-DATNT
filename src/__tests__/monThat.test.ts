@@ -163,6 +163,8 @@ const MON_THAT: Record<string, { name: string; station: string; cachNau: string 
   recipe_cha_la_lot: { name: 'Chả lá lốt', station: 'fryer', cachNau: 'thịt băm cuốn lá lốt rán chảo (miền Bắc)' },
   recipe_bun_rieu: { name: 'Bún riêu', station: 'hot_kettle', cachNau: 'cua đồng giã lọc nấu riêu với cà chua (miền Bắc)' },
   recipe_canh_cua_mong_toi: { name: 'Canh cua mồng tơi', station: 'hot_kettle', cachNau: 'cua đồng giã lọc nấu với mồng tơi (cơm nhà)' },
+  recipe_mien_luon: { name: 'Miến lươn', station: 'hot_kettle', cachNau: 'miến dong chan nước dùng, lươn chiên/xào (Hà Nội, Nghệ An)' },
+  recipe_luon_xao_sa_ot: { name: 'Lươn xào sả ớt', station: 'fryer', cachNau: 'lươn cắt khúc xào lửa lớn sả ớt (cơm nhà/quán nhậu)' },
 };
 
 /** Chữ mô tả tự chế không ai dùng làm tên món ngoài chợ. */
