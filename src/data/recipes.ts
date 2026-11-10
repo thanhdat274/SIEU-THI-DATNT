@@ -810,6 +810,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'vit_kho_gung', name: 'Vịt kho gừng', category: 'fresh', buy: 18000, sell: 30000, color: 0x8a5a2a, unlock: 195 },
   { id: 'ech_xao_sa_ot', name: 'Ếch xào sả ớt', category: 'fresh', buy: 20000, sell: 34000, color: 0x9a7a3a, unlock: 196 },
   { id: 'ech_chien_nuoc_mam', name: 'Ếch chiên nước mắm', category: 'fresh', buy: 24000, sell: 40000, color: 0xb8803a, unlock: 197 },
+  { id: 'bun_mang_vit', name: 'Bún măng vịt', category: 'fresh', buy: 16000, sell: 28000, color: 0xd8c080, unlock: 198 },
+  { id: 'chao_luon', name: 'Cháo lươn', category: 'fresh', buy: 12000, sell: 20000, color: 0xd8b070, unlock: 199 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2701,6 +2703,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_ech_chien_nuoc_mam', name: 'Ếch chiên nước mắm', station: 'fryer',
     inputs: [{ productId: 'x_ech', quantity: 1 }, { productId: 'hx_nuoc_mam', quantity: 1 }, { productId: 'x_toi', quantity: 1 }],
     outputId: 'ech_chien_nuoc_mam', outputQty: 4, durationMin: 20, unlock: 197, reputationGain: 1 },
+  // GĐ2133: Bún măng vịt — cả nước: luộc vịt lấy nước nấu măng, ăn với bún và thịt vịt chấm mắm gừng; măng tươi → măng khô nhà phơi (bản miền Bắc vẫn dùng măng khô).
+  { id: 'recipe_bun_mang_vit', name: 'Bún măng vịt', station: 'hot_kettle',
+    inputs: [{ productId: 'bun', quantity: 1 }, { productId: 'x_vit', quantity: 1 }, { productId: 'hx_mang_kho', quantity: 1 }],
+    outputId: 'bun_mang_vit', outputQty: 8, durationMin: 40, unlock: 198, reputationGain: 1 },
+  // GĐ2134: Cháo lươn — đặc sản Nghệ An: lươn xào nghệ hành khô, nấu cháo gạo với nước luộc lươn; không thay thế.
+  { id: 'recipe_chao_luon', name: 'Cháo lươn', station: 'hot_kettle',
+    inputs: [{ productId: 'x_luon', quantity: 1 }, { productId: 'gao', quantity: 1 }, { productId: 'x_hanh_kho', quantity: 1 }],
+    outputId: 'chao_luon', outputQty: 14, durationMin: 40, unlock: 199, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────

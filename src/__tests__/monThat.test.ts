@@ -169,6 +169,8 @@ const MON_THAT: Record<string, { name: string; station: string; cachNau: string 
   recipe_vit_kho_gung: { name: 'Vịt kho gừng', station: 'hot_kettle', cachNau: 'vịt chặt miếng kho gừng nước mắm (cơm nhà Nam Bộ)' },
   recipe_ech_xao_sa_ot: { name: 'Ếch xào sả ớt', station: 'fryer', cachNau: 'ếch chặt miếng xào lửa lớn sả ớt (Nam Bộ)' },
   recipe_ech_chien_nuoc_mam: { name: 'Ếch chiên nước mắm', station: 'fryer', cachNau: 'ếch chiên vàng đảo nước mắm tỏi (quán nhậu Nam Bộ)' },
+  recipe_bun_mang_vit: { name: 'Bún măng vịt', station: 'hot_kettle', cachNau: 'nước luộc vịt nấu măng, ăn với bún (cả nước)' },
+  recipe_chao_luon: { name: 'Cháo lươn', station: 'hot_kettle', cachNau: 'lươn xào hành khô, nấu cháo gạo (Nghệ An)' },
 };
 
 /** Chữ mô tả tự chế không ai dùng làm tên món ngoài chợ. */
