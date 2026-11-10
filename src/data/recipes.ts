@@ -874,6 +874,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'ca_doi_chien_gion', name: 'Cá đối chiên giòn', category: 'fresh', buy: 26000, sell: 45000, color: 0xc8c060, unlock: 199 },
   { id: 'ca_chem_hap_xi_dau', name: 'Cá chẽm hấp xì dầu', category: 'fresh', buy: 26000, sell: 45000, color: 0xc0d0d8, unlock: 198 },
   { id: 'ca_chem_nuong_giay_bac', name: 'Cá chẽm nướng giấy bạc', category: 'fresh', buy: 26000, sell: 45000, color: 0xc8d0d0, unlock: 199 },
+  { id: 'ca_ngu_kho_to', name: 'Cá ngừ kho tộ', category: 'fresh', buy: 26000, sell: 45000, color: 0xb86868, unlock: 198 },
+  { id: 'ca_ngu_nuong_giay_bac', name: 'Cá ngừ nướng giấy bạc', category: 'fresh', buy: 26000, sell: 45000, color: 0xc87870, unlock: 199 },
 ];
 
 // ──────────────────────────────────────────────
@@ -3021,6 +3023,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_ca_chem_nuong_giay_bac', name: 'Cá chẽm nướng giấy bạc', station: 'food_grill',
     inputs: [{ productId: 'x_ca_chem', quantity: 1 }, { productId: 'x_sa', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }],
     outputId: 'ca_chem_nuong_giay_bac', outputQty: 4, durationMin: 30, unlock: 199, reputationGain: 1 },
+  // GĐ2197: Cá ngừ kho tộ — bữa cơm miền Trung/Nam: cá ngừ kho tộ đất với nước mắm đường, tới sánh; không thay thế.
+  { id: 'recipe_ca_ngu_kho_to', name: 'Cá ngừ kho tộ', station: 'hot_kettle',
+    inputs: [{ productId: 'x_ca_ngu', quantity: 1 }, { productId: 'hx_nuoc_mam', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
+    outputId: 'ca_ngu_kho_to', outputQty: 4, durationMin: 30, unlock: 198, reputationGain: 1 },
+  // GĐ2198: Cá ngừ nướng giấy bạc — quán nhậu cả nước: cá ngừ ướp sả ớt, bọc giấy bạc nướng than cho thơm; không thay thế.
+  { id: 'recipe_ca_ngu_nuong_giay_bac', name: 'Cá ngừ nướng giấy bạc', station: 'food_grill',
+    inputs: [{ productId: 'x_ca_ngu', quantity: 1 }, { productId: 'x_sa', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }],
+    outputId: 'ca_ngu_nuong_giay_bac', outputQty: 4, durationMin: 30, unlock: 199, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────
