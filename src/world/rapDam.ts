@@ -3,6 +3,7 @@ import { useGame } from '../core/store';
 import { LIFE_EVENT_UNLOCK, gioHostOn, gioHouseIndex } from '../data/lifeEvent';
 import { regularById } from '../data/regulars';
 import { NEIGHBOR_HOUSES, houseDoor } from '../data/phoneOrders';
+import { hasFeature } from '../data/features';
 
 /**
  * Hệ 2 L8 (SPEC §2.9) — RẠP ĐÁM TRONG 3D. Ngày có đám giỗ của một khách quen, dựng rạp bạt trước
@@ -164,7 +165,7 @@ export function installRapDamSync(scene: THREE.Scene): RapDamSync {
   let lastLevel = -1;
   const update = () => {
     const s = useGame.getState();
-    const host = s.level >= LIFE_EVENT_UNLOCK ? gioHostOn(s.day) : null;
+    const host = hasFeature(s, 'lifeEvent') ? gioHostOn(s.day) : null;
     if (!host) {
       group.visible = false;
       return;

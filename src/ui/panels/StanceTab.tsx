@@ -2,6 +2,7 @@ import { useGame } from '../../core/store';
 import { STANCE_META, STANCE_UNLOCK, STANCE_IDS, STANCE_TIER_DAYS, stanceTier, stanceActive, stanceFit } from '../../data/stance';
 import { buildStanceCtx } from '../../data/stanceData';
 import { card, title, btn } from './businessStyles';
+import { hasFeature } from '../../data/features';
 
 /**
  * Hệ 3 (SPEC-CHIEU-SAU §3.4, §3.5, §3.9) — "🪧 Biển hiệu": trước khi treo đo 3 hướng X/Y; sau khi treo
@@ -41,7 +42,7 @@ export function StanceTab() {
             Còn {STANCE_TIER_DAYS[tier] - st.fitDays} ngày khớp nữa lên bậc {tier + 1}
           </div>
         )}
-        {s.level >= STANCE_UNLOCK && (
+        {hasFeature(s, 'stance') && (
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 4 }}>
             {STANCE_IDS.map((id) => (
               <button key={id} style={{ ...btn, marginLeft: 0 }} onClick={() => useGame.getState().chooseStance(id)}>

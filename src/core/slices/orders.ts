@@ -1,6 +1,6 @@
 import { starBoostBlock, STAR_BOOST_ITEM, STAR_BOOST_SERVED } from '../../data/dishStars';
 import { furnitureDef, isCookStation } from '../../data/furniture';
-import { masteredDuration, masteryTier, masteryCut, MASTERY_NAMES, MASTERY_UNLOCK } from '../../data/cookMastery';
+import { masteredDuration, masteryTier, masteryCut, MASTERY_NAMES } from '../../data/cookMastery';
 import { formatMoney, productById } from '../../data/products';
 import type { Lot } from '../../data/freshness';
 import { regularById, regularFriendship } from '../../data/regulars';
@@ -18,6 +18,7 @@ import { playSfx } from '../audio';
 import type { GameState, SetState, GetState } from '../gameTypes';
 import { copyStock, putStock, takeStock, type Stock } from '../stock';
 import { formatClock } from '../store';
+import { hasFeature } from '../../data/features';
 
 /** Đơn hàng: điện thoại giao tận nhà, đơn tiệc, mẻ nấu, hợp đồng cung cấp, mục tiêu chung của hẻm. */
 
@@ -163,7 +164,7 @@ export const createOrdersSlice = (set: SetState, get: GetState): Pick<GameState,
     const tierBefore = masteryTier(done), tierAfter = masteryTier(done + 1);
     set({ ...k, garden: { ...s.garden, homegrown }, cookMastery: { ...(s.cookMastery ?? {}), [recipeId]: done + 1 }, cookJobs: [...s.cookJobs, { id, recipeId, remaining: dur, total: dur }] });
     s.notify(`🍳 Đang nấu ${r.name} (${dur} phút) — nguyên liệu đã trừ kho, nấu xong tự vào kho`);
-    if (s.level >= MASTERY_UNLOCK && tierAfter > tierBefore) s.notify(`${MASTERY_NAMES[tierAfter]} món ${r.name}! Mẻ sau nấu nhanh hơn ${Math.round(masteryCut(done + 1, s.level) * 100)}%`);
+    if (hasFeature(s, 'mastery') && tierAfter > tierBefore) s.notify(`${MASTERY_NAMES[tierAfter]} món ${r.name}! Mẻ sau nấu nhanh hơn ${Math.round(masteryCut(done + 1, s.level) * 100)}%`);
     return true;
   },
   declineOrder: () => set({ order: null }),

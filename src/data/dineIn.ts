@@ -1,5 +1,6 @@
 import type { Furniture } from '../core/gameTypes';
 import { footprint, furnitureDef } from './furniture';
+import { hasFeature } from './features';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GĐ1490 — quy tắc "ghế kề bàn" cho khu ăn tại chỗ (THUẦN, không đụng store/three
@@ -63,7 +64,7 @@ export const TIP_RATE = 0.1;
 
 /** Khách này có muốn ngồi lại ăn không? `roll` là lần quay đã rút (không rút khi điều kiện sớm sai). */
 export function wantsDineIn(args: { level: number; hasCooked: boolean; roll: number }): boolean {
-  return args.level >= DINE_UNLOCK && args.hasCooked && args.roll < DINE_CHANCE;
+  return hasFeature(args, 'dineIn') && args.hasCooked && args.roll < DINE_CHANCE;
 }
 
 /**

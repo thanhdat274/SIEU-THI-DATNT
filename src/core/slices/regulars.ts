@@ -11,6 +11,7 @@ import { regularGiftPlan, giftFriendship, giftXp, giftableCount, giftRemainNote 
 import { type GameState, type SetState, type GetState, addHour } from '../gameTypes';
 import { rippleFriendship, friendlyRipple, FORGIVE_HO_HANG_GAIN, TIES_UNLOCK, RIPPLE_DAILY_CAP } from '../../data/regularTies';
 import { lifeEventById, menuValue, menuSize, LIFE_EVENT_UNLOCK, LIFE_EVENT_KIND_LABEL } from '../../data/lifeEvent';
+import { hasFeature } from '../../data/features';
 
 /** Khách: lượt ghé, khách quen, lời hẹn giữ món, sổ nợ, đánh giá. */
 
@@ -230,7 +231,7 @@ export const createRegularsSlice = (set: SetState, get: GetState): Pick<GameStat
     const nextRival = { ...rival, poached };
     // "Đòi về → cả cụm miễn 7 ngày" (SPEC 2.7): họ hàng/bạn bè của người vừa đòi + chính họ
     // được miễn bị kéo tới day + POACH_IMMUNE_DAYS (cổng ≥ POACH_CLUSTER_UNLOCK để golden L30 không đổi).
-    if (s.level >= POACH_CLUSTER_UNLOCK) {
+    if (hasFeature(s, 'poachCluster')) {
       const immune = { ...(rival.poachImmune ?? {}) };
       const until = s.day + POACH_IMMUNE_DAYS;
       for (const n of poachClusterNeighbors(id)) immune[n] = until;

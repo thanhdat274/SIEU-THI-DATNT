@@ -11,11 +11,11 @@ import { timeBandAt } from './rhythm';
 import { warehouseTier } from './warehouse';
 import { casesFor } from './products';
 import { ANIMALS, ANIMAL_ORDER, EGG_PER_TRAY, GARDEN_UNLOCK, plotReady } from './garden';
-import { SOCIAL_UNLOCK } from './social';
 import { FEATURES } from './levels';
 import { fmtHour } from './cookSchedule';
 import { regularById } from './regulars';
 import { errandWindow, pendingErrands } from './regularArc';
+import { hasFeature } from './features';
 
 /** Một gợi ý việc nên làm lúc vắng khách. */
 export interface IdleTip {
@@ -140,7 +140,7 @@ export const idleTip = (s: GameState): IdleTip | null => {
     return { icon: '⏰', text: `${LEAD}chưa đặt giờ vàng, đặt khung giảm giá`, act: 'prices' };
   // 8. Đăng bài xã hội: "đã đăng hôm nay" đọc social.promoDay (ngày đăng bài quảng bá gần nhất);
   //    stats.socialPosts là bộ đếm mọi bài trong ngày (kể cả xin lỗi) nên không dùng ở đây
-  if (s.level >= SOCIAL_UNLOCK && s.social.promoDay !== s.day)
+  if (hasFeature(s, 'social') && s.social.promoDay !== s.day)
     return { icon: '📱', text: `${LEAD}chưa đăng bài hôm nay, quảng bá tiệm`, act: 'social' };
   // 9. Mặc định dịu: tới được đây là tiệm đã gọn gàng — hợp lúc xem lại sổ đầu ngày
   return { icon: '📋', text: `${LEAD}hợp lúc xem lại sổ đầu ngày`, act: 'morning' };

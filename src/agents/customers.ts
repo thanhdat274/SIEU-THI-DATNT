@@ -26,28 +26,27 @@ import { noteComboDay } from '../core/slices/comboDay';
 import { bulkExtra, festivalVisit, perkValue, pickRegular, referFriends, regularById, reserveAsk, INFLUENCER_ID, unlockedFavorites, type RegularDef } from '../data/regulars';
 import { influencerActive } from '../data/social';
 import { pickProfession, PROFESSIONS, type ProfessionDef } from '../data/professions';
-import { DEBT_PARTIAL_CHANCE, DEBT_PARTIAL_MIN, installmentNow, CREDIT_UNLOCK, repaysToday, wantsCredit, creditLeft, creditAskText } from '../data/credit';
-import { askQueuedPatience, ASK_MINUTES, CANDY_ANNOY, CHANGE_CHANCE, CHANGE_UNLOCK, CREDIT_REFUSE_FRIEND_LOSS, changeChoice, defaultCounterPolicy, HAGGLE_CHANCE, HAGGLE_CHANCE_REG, HAGGLE_MIN_TOTAL, HAGGLE_UNLOCK, haggleChoice, haggleCounterOff, haggleOff, haggleSettle, oddChange, pricematchSettle } from '../data/counterDeals';
+import { DEBT_PARTIAL_CHANCE, DEBT_PARTIAL_MIN, installmentNow, repaysToday, wantsCredit, creditLeft, creditAskText } from '../data/credit';
+import { askQueuedPatience, ASK_MINUTES, CANDY_ANNOY, CHANGE_CHANCE, CREDIT_REFUSE_FRIEND_LOSS, changeChoice, defaultCounterPolicy, HAGGLE_CHANCE, HAGGLE_CHANCE_REG, HAGGLE_MIN_TOTAL, haggleChoice, haggleCounterOff, haggleOff, haggleSettle, oddChange, pricematchSettle } from '../data/counterDeals';
 import { rollService, SERVICE_BUY_ALONG, type ServiceDef } from '../data/services';
 import { earnService, earnTip } from '../core/biz';
 import { paymentById, pickPayment } from '../data/payments';
 import { askAtCounter, askPending, clearAsk, expireAsk, answerAsk, askWallElapsed, useCounterAsk } from '../core/counterAsk';
 import { cashierRng } from '../core/rand';
 import { cashierHaggleChoice, cashierChangeChoice } from '../data/counterDeals';
-import { VENDOR_CHANCE, VENDOR_FROM, VENDOR_UNTIL, WHOLESALE_UNLOCK } from '../data/wholesale';
+import { VENDOR_CHANCE, VENDOR_FROM, VENDOR_UNTIL } from '../data/wholesale';
 import { isBigBasket, bigBasketCount, bigBasketAbandons } from '../data/bigBasket';
 import { meatDemandFactor } from '../data/meat';
 import {
   bestSkillOnDuty, DIRT_MAX, DIRT_PER_VISIT, dirtVisitFactor,
 } from '../data/staff';
 import {
-  CRITIC_CHANCE, CRITIC_HARD_UNLOCK, CRITIC_PENALTY_REVIEWS, CRITIC_UNLOCK, CRITIC_WINDOW_MINUTES,
-  criticReward, pickCriticDish, criticPraiseReviews, criticCallText, criticCookFits,
-} from '../data/critic';
+  CRITIC_CHANCE, CRITIC_PENALTY_REVIEWS, CRITIC_UNLOCK, CRITIC_WINDOW_MINUTES,
+  criticReward, pickCriticDish, criticPraiseReviews, criticCallText, criticCookFits } from '../data/critic';
 import { metaRng } from '../core/rand';
 import { theftCatchChance, theftSpawnChance } from '../data/theftRisk';
 import { socialTraffic } from '../data/social';
-import { adTargets, bizTraffic, LOYALTY_UNLOCK, loyaltyRedeemChance, petActive, rivalPriceGap, rivalUndercuts } from '../data/biz';
+import { adTargets, bizTraffic, loyaltyRedeemChance, petActive, rivalPriceGap, rivalUndercuts } from '../data/biz';
 import { landmarkCustomerFactor } from '../data/landmark';
 import { redeemLoyalty, storyOnVisit } from '../core/biz';
 import { hasUpgrade } from '../data/upgrades';
@@ -59,6 +58,7 @@ import { departmentDecorBonus } from '../data/departments';
 import { adBoost } from '../data/advertising';
 import { vietSetDecorBonus } from '../data/decorSets';
 import { playSfx } from '../core/audio';
+import { hasFeature } from '../data/features';
 
 /** Tỉ lệ món khách chọn trong số hàng đang giảm giá (nếu có). */
 const SALE_HUNT = 0.2;
@@ -69,9 +69,8 @@ import type { Counter, GroceryShop } from '../shop/groceryShop';
 import type { NavGrid } from '../world/navGrid';
 import { CoinPopFX } from '../render/fx/coinPop';
 import {
-  DINE_UNLOCK, DINE_WAIT_SECONDS, EAT_SECONDS, TOILET_NEED_CHANCE, TOILET_STRICT_UNLOCK, TOILET_USE_SECONDS,
-  dineTip, freeSeat, freeToilet, isToilet, toiletFee, wantsDineIn, type SeatInfo, menuTipMul,
-} from '../data/dineIn';
+  DINE_WAIT_SECONDS, EAT_SECONDS, TOILET_NEED_CHANCE, TOILET_STRICT_UNLOCK, TOILET_USE_SECONDS,
+  dineTip, freeSeat, freeToilet, isToilet, toiletFee, wantsDineIn, type SeatInfo, menuTipMul } from '../data/dineIn';
 import { MACHINE_VISIT_CHANCE, MACHINE_USE_SECONDS, MACHINE_TYPES, freeMachine, isMachine, machineFeeAt, machineImpulse, MACHINE_IMPULSE_LEVEL, clawWin, type MachineId } from '../data/machines';
 import {
   Customer, FRANTIC_AT, IMPATIENT_AT, PATIENCE_MINUTES, SIDEWALK_Z, impatienceEmoji, patienceMultiplier, counterQueueScore, leastScore, reviewStars, type Deal,
@@ -215,7 +214,7 @@ export class CustomerManager {
 
     // Người bán rong: sáng sớm ghé lấy sỉ, mỗi ngày tối đa một người
     if (this.vendorAt === undefined) {
-      this.vendorAt = s.level >= WHOLESALE_UNLOCK && simRng()() < VENDOR_CHANCE
+      this.vendorAt = hasFeature(s, 'wholesale') && simRng()() < VENDOR_CHANCE
         ? VENDOR_FROM + simRng()() * (VENDOR_UNTIL - VENDOR_FROM - 20)
         : null;
     }
@@ -671,7 +670,7 @@ export class CustomerManager {
     if (Object.keys(combo.byCombo).length) noteComboDay(combo.byCombo, combo.byDiscount);
     // Thẻ tích điểm: khách đủ tem được tặng món rẻ nhất trong giỏ
     const lp = useGame.getState();
-    if (first.basket.length && lp.level >= LOYALTY_UNLOCK && simRng()() < loyaltyRedeemChance(lp.biz.loyalty)) {
+    if (first.basket.length && hasFeature(lp, 'loyalty') && simRng()() < loyaltyRedeemChance(lp.biz.loyalty)) {
       combo.discount += redeemLoyalty(first.basket.map((it) => it.price));
       first.say('🎫', 2);
     }
@@ -760,7 +759,7 @@ export class CustomerManager {
     const st = useGame.getState();
     const hasCooked = c.basket.some((it) => COOKED_PRODUCT_IDS.has(it.id));
     // Chỉ rút vòng quay khi điều kiện sớm thoả — không ăn tại chỗ thì không dịch chuỗi ngẫu nhiên
-    const roll = hasCooked && st.level >= DINE_UNLOCK ? simRng()() : 1;
+    const roll = hasCooked && hasFeature(st, 'dineIn') ? simRng()() : 1;
     if (!wantsDineIn({ level: st.level, hasCooked, roll })) return false;
     const seat = freeSeat(st.furniture, this.seatBusy);
     this.releaseFromQueue(c);
@@ -915,7 +914,7 @@ export class CustomerManager {
     const total = c.basket.reduce((n, it) => n + it.price, 0);
     const reg = c.regular;
     let ask: { kind: Deal['kind']; amount: number; icon: string; who: string; text: string; options: string[]; fallback: number } | null = null;
-    if (reg && st.allowCredit && st.level >= CREDIT_UNLOCK && !st.debts[reg.id]?.reminded
+    if (reg && st.allowCredit && hasFeature(st, 'credit') && !st.debts[reg.id]?.reminded
       && wantsCredit(reg, st.regulars[reg.id], st.debts[reg.id], total, simRng()())) {
       const owed = st.debts[reg.id]?.amount ?? 0;
       ask = {
@@ -936,7 +935,7 @@ export class CustomerManager {
       };
     // GĐ722: khách quen cũng mặc cả NHƯNG chỉ khi chủ đứng quầy — từ chối bà con là lựa chọn có chủ ý của người chơi,
     // không bao giờ là tai nạn autoplay (không ai ở quầy thì không rút rng — dòng mô phỏng giữ nguyên từng nhịp)
-    } else if (st.level >= HAGGLE_UNLOCK && total >= HAGGLE_MIN_TOTAL && (!reg || this.playerAtCounter(counter)) && simRng()() < (reg ? HAGGLE_CHANCE_REG : HAGGLE_CHANCE)) {
+    } else if (hasFeature(st, 'haggle') && total >= HAGGLE_MIN_TOTAL && (!reg || this.playerAtCounter(counter)) && simRng()() < (reg ? HAGGLE_CHANCE_REG : HAGGLE_CHANCE)) {
       const off = haggleOff(total);
       const counterOff = haggleCounterOff(total);
       ask = {
@@ -947,7 +946,7 @@ export class CustomerManager {
         // GĐ721: thêm nút "trả giá lại" — bớt nửa mức khách xin; khách có thể gật giá giữa (thương lượng thật)
         options: [`🤝 Bớt ${formatMoney(off)}`, `💬 Trả nửa (−${formatMoney(counterOff)})`, 'Giá đúng rồi'], fallback: 2,
       };
-    } else if (!reg && st.biz.rival && st.level >= HAGGLE_UNLOCK && total >= 10_000 && this.playerAtCounter(counter)) {
+    } else if (!reg && st.biz.rival && hasFeature(st, 'haggle') && total >= 10_000 && this.playerAtCounter(counter)) {
       // GĐ725 — kèo khớp giá: khách soi thấy rival bán rẻ món trong giỏ. Chỉ khi chủ đứng quầy (bài học GĐ722:
       // autoplay không trả lời được thì KHÔNG rút rng — dòng mô phỏng giữ nguyên từng nhịp).
       const gap = rivalPriceGap(st.biz.rival, (id) => st.priceOf(id), st.day, c.basket.map((it) => it.id));
@@ -960,7 +959,7 @@ export class CustomerManager {
         };
       }
       // gap 0 (vignette không trúng) → rơi qua nhánh tiền lẻ như thường
-    } else if (st.level >= CHANGE_UNLOCK && oddChange(total) && simRng()() < CHANGE_CHANCE) {
+    } else if (hasFeature(st, 'change') && oddChange(total) && simRng()() < CHANGE_CHANCE) {
       const odd = oddChange(total);
       ask = {
         kind: 'change', amount: total % 5000, icon: '🪙', who: reg?.name ?? 'Khách',
@@ -1223,7 +1222,7 @@ export class CustomerManager {
     }
     // Ghé lần đầu trong ngày: đặt lời gọi món (chỉ khi tiệm đang mở)
     if (this.criticAt == null || !s.shopOpen || s.minutes < this.criticAt) return;
-    this.criticHard = s.level >= CRITIC_HARD_UNLOCK;
+    this.criticHard = hasFeature(s, 'criticHard');
     const stations = new Set<string>(s.furniture.filter((f) => isCookStation(f.type)).map((f) => f.type));
     this.criticProduct = pickCriticDish(RECIPES, s.level, this.criticHard, (r) => stations.has(r.station) && criticCookFits(r.durationMin) && !offSeason(r.outputId, s.day));
     this.criticUntil = s.minutes + CRITIC_WINDOW_MINUTES;

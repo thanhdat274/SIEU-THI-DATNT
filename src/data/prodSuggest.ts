@@ -1,9 +1,9 @@
 import { ANIMALS, CROPS, inSeason } from './garden';
-import { COOK_UNLOCK, COOKED_PRODUCT_IDS, RECIPES, type CookingStation } from './recipes';
-import { QUAN_NUOC_UNLOCK } from './quanNuoc';
+import { COOKED_PRODUCT_IDS, RECIPES, type CookingStation } from './recipes';
 import { QUAN_RECIPES, quanRecipeById } from './quanRecipes';
 import { HOT_FOOD_MUL, NIGHT_ITEMS, type BranchState } from './branches';
 import { productById } from './products';
+import { hasFeature } from './features';
 
 // ───── Nên hôm nay: chuỗi sản xuất hội tụ (GĐ73) ─────
 // Trục MUA đã được soi (GĐ57 "Mua khi rẻ", GĐ22 "Nên nhập gấp") nhưng trục TỰ SẢN XUẤT
@@ -112,7 +112,7 @@ export function prodSuggestToday(a: ProdSuggestArgs): ProdSugg[] {
   }
 
   // ── 🍲 Nên nấu: công thức trạm đã mở, đủ nguyên liệu, món ra đang hot ──
-  if (a.level >= COOK_UNLOCK) {
+  if (hasFeature(a, 'cook')) {
     for (const r of RECIPES) {
       if (r.unlock > a.level) continue;
       if (!a.stationOpen(r.station)) continue;
@@ -126,7 +126,7 @@ export function prodSuggestToday(a: ProdSuggestArgs): ProdSugg[] {
   }
 
   // ── 🧋 Nạp quán nước: quán còn thiếu đồ uống ──
-  if (a.level >= QUAN_NUOC_UNLOCK && a.quanNuocOpen && a.quanNuocShort) {
+  if (hasFeature(a, 'quanNuoc') && a.quanNuocOpen && a.quanNuocShort) {
     out.push({ icon: '🧋', label: 'Nạp đồ uống cho quán nước', detail: 'hôm qua khách muốn nhiều hơn số bán được', panel: 'quannuoc' });
   }
 

@@ -36,13 +36,13 @@ import { isCookStation } from '../../data/furniture';
 import type { CookingStation } from '../../data/recipes';
 import { COMPLAINTS_FOR_SURPRISE, isAlcohol, LICENSE_FINE, LICENSE_GRACE, licenseById, licenseStatus, missingLicenses, newInspection, RENEW_WARN_DAYS, requiredLicenses, SURPRISE_INSPECTION, SUSPEND_AFTER } from '../../data/licenses';
 import { staffDayEnd } from '../../data/staffTraits';
-import { BUZZ_DAYS, CRISIS_MUL, POST_CAP, SOCIAL_UNLOCK, socialDayEnd, type SocialPost } from '../../data/social';
-import { ANIMAL_ORDER, farmCritChance, farmhandChores, FARM_ORDER_UNLOCK, farmOrderCapacity, farmOrderNews, farmOrderProduce, gardenNight, makeFarmOrder, type AnimalKind } from '../../data/garden';
+import { BUZZ_DAYS, CRISIS_MUL, POST_CAP, socialDayEnd, type SocialPost } from '../../data/social';
+import { ANIMAL_ORDER, farmCritChance, farmhandChores, farmOrderCapacity, farmOrderNews, farmOrderProduce, gardenNight, makeFarmOrder, type AnimalKind } from '../../data/garden';
 import { preserveNight, farmhandPreserve, preserveDefById } from '../../data/preserve';
 import { brandDealNight, brandFranchiseNight, brandRivalOffer, brandRepDaily, brandWorkshopDay } from '../../data/brand';
 import { crisisNight } from '../../data/crisis';
 import { lifeEventFor, lifeEventById, gioLabel } from '../../data/lifeEvent';
-import { stanceActive, stanceFitByDirection, applyStanceDay, stanceTier, STANCE_UNLOCK, STANCE_META, hasStanceSeal, isStanceSealable, type StanceState } from '../../data/stance';
+import { stanceActive, stanceFitByDirection, applyStanceDay, stanceTier, STANCE_META, hasStanceSeal, isStanceSealable, type StanceState } from '../../data/stance';
 import { buildStanceCtx } from '../../data/stanceData';
 import { logAnalyticsDay } from '../../data/analytics';
 import { appRating } from '../../data/online';
@@ -51,6 +51,7 @@ import { onlineDayEvent, onlineEventLine } from '../../data/online';
 import { wageRelief } from '../../data/wageRelief';
 import { runBranch, branchNewDay } from './branch';
 import { simRng } from '../rand';
+import { hasFeature } from '../../data/features';
 
 /** Cuối ngày: chi nhánh chạy qua đêm, hàng hỏng, nợ, đơn, thanh tra, thị trường, lương, sang ngày mới. */
 
@@ -236,7 +237,7 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
     gardenNews.push(`📦 ${garden.farmOrder.from} huỷ đơn nông sản quá hạn — đơn khác sẽ ghé sau`);
     garden = { ...garden, farmOrder: null };
   }
-  if (!garden.farmOrder && s.level >= FARM_ORDER_UNLOCK) {
+  if (!garden.farmOrder && hasFeature(s, 'farmOrder')) {
     const order = makeFarmOrder(s.day + 1, undefined, farmOrderProduce(garden), farmOrderCapacity(garden));
     garden = { ...garden, farmOrder: order };
     gardenNews.push(farmOrderNews(order));
@@ -396,11 +397,11 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
   news.push(...crew.news);
   const shrinkItems = Object.values(crew.goodsTaken).reduce((n, q) => n + q, 0);
   // Mạng xã hội: lời khen chê nổi bật hôm nay lên mạng, có thể lan truyền
-  const socialDay = s.level >= SOCIAL_UNLOCK ? socialDayEnd(s.social, get().reviews, s.day) : { social: s.social, news: [] };
+  const socialDay = hasFeature(s, 'social') ? socialDayEnd(s.social, get().reviews, s.day) : { social: s.social, news: [] };
   news.push(...socialDay.news);
   // Bắt được nhân viên ăn bớt hàng: tin xấu lan trên mạng thành khủng hoảng nhỏ (mỗi lần một nửa cơ hội)
   let socialNext = socialDay.social;
-  if (crew.caught.length && !socialNext.buzz && s.level >= SOCIAL_UNLOCK && simRng()() < 0.5) {
+  if (crew.caught.length && !socialNext.buzz && hasFeature(s, 'social') && simRng()() < 0.5) {
     const id = (socialNext.posts.at(-1)?.id ?? 0) + 1;
     const post: SocialPost = {
       id, day: s.day, author: 'Khách qua đường', stars: 1,
@@ -509,7 +510,7 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
   // lại biển) → tiệm không treo biển / golden L30 hoàn toàn không chạm.
   const stStance0 = biz.biz.stance;
   const stStance2 = biz.biz.stance2;
-  if (s.level >= STANCE_UNLOCK) {
+  if (hasFeature(s, 'stance')) {
     // Cập nhật TỪNG biển đang hiệu lực (biển chính + biển phụ Hệ3-L8 khi đủ 3 ấn). Đo đúng hướng
     // đang treo (stanceFitByDirection); đang làm lại biển (switchUntil) → stanceActive false, không đổi.
     let b = biz.biz;

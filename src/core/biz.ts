@@ -1,8 +1,8 @@
 import { simRng } from './rand';
+import { hasFeature } from '../data/features';
 export { theftFactor, spoilFactor } from '../data/biz';
 import {
-  adById, activeAds, BREAKFAST, closeMonth, closeWeek, COUNTER_RETAILIATE, COUNTER_RETAILIATE_BUFF, COUNTER_STREAK_MAX, counterById, emptyMonth, emptyWeek, HUI_COLLAPSE, newRival, RIVAL_BUY_DAYS, RIVAL_PERSONALITIES, RIVAL_SHOP_OFFER_DAYS, RIVAL_SHOP_PRICE, rivalNightAI, loanInterest, petActive, PETS, PRICE_WAR_MIN_SALES, RIVAL_BEAT_REWARD, RIVAL_BEAT_XP, RIVAL_BOSS_GEN, RIVAL_COOLDOWN, RIVAL_SHOPS, RIVAL_START, RIVAL_TREND_DAYS, RIVAL_UNLOCK, rivalNightly, rivalTier, VEHICLES, WEEK_DAYS, type BizState, type CounterTactic, type Vehicle,
-} from '../data/biz';
+  adById, activeAds, BREAKFAST, closeMonth, closeWeek, COUNTER_RETAILIATE, COUNTER_RETAILIATE_BUFF, COUNTER_STREAK_MAX, counterById, emptyMonth, emptyWeek, HUI_COLLAPSE, newRival, RIVAL_BUY_DAYS, RIVAL_PERSONALITIES, RIVAL_SHOP_OFFER_DAYS, RIVAL_SHOP_PRICE, rivalNightAI, loanInterest, petActive, PETS, PRICE_WAR_MIN_SALES, RIVAL_BEAT_REWARD, RIVAL_BEAT_XP, RIVAL_BOSS_GEN, RIVAL_COOLDOWN, RIVAL_SHOPS, RIVAL_START, RIVAL_TREND_DAYS, rivalNightly, rivalTier, VEHICLES, WEEK_DAYS, type BizState, type CounterTactic, type Vehicle } from '../data/biz';
 import { CONVENIENCE, newBranch, shelfTotal } from '../data/branches';
 import { monthOf, upcomingFestival, describeDate } from '../data/calendar';
 import { closeYear, emptyYear, yearOf } from '../data/yearReport';
@@ -270,7 +270,7 @@ export function bizEndOfDay(s: GameState, stats: DayStats, hiepLucRevenue = 0): 
     }
   } else if (b.counter) {
     b.counter = null; // đối thủ đóng cửa giữa chừng thì đợt phản công cũng kết thúc
-  } else if (s.level >= RIVAL_UNLOCK && (b.rivalsBeaten > 0 || b.prestige.level > 0) && day + 1 >= b.rivalNextDay && simRng()() < 0.25) {
+  } else if (hasFeature(s, 'rival') && (b.rivalsBeaten > 0 || b.prestige.level > 0) && day + 1 >= b.rivalNextDay && simRng()() < 0.25) {
     // "Rival đời mới": chọn cửa hàng theo thế hệ trong catalog 12 tên, bậc quy mô càng lúc càng lớn,
     // tính cách rút tránh lặp ngay thế hệ trước (lastRivalPers do nhánh đóng cửa ghi lại).
     // GĐ170: cổng thêm prestige.level > 0 — sau tái sinh rivalsBeaten đã về 0 (không giữ "thuế boss cũ"),

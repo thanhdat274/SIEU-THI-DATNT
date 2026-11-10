@@ -22,6 +22,7 @@ import type { GameState, SetState, GetState } from '../gameTypes';
 import { questContext } from '../store';
 import { alleyBond, tiesMilestonesReached } from '../../data/regularTies';
 import { LIFE_EVENT_UNLOCK } from '../../data/lifeEvent';
+import { hasFeature } from '../../data/features';
 
 /** Tiến trình: XP, nhiệm vụ, danh hiệu, kỹ năng, quà điểm danh, vòng quay, trang phục, tên tiệm. */
 
@@ -213,7 +214,7 @@ export const createProgressSlice = (set: SetState, get: GetState): Pick<GameStat
     // ── Mốc "Tình làng" (SPEC §2.8): 25/50/75/100% — tiền + mốc 100% tặng decor, MỘT LẦN MỖI VÁN ──
     // Cổng cấp ≥ LIFE_EVENT_UNLOCK (32) cùng mọi hệ 2 → golden L30 giữ byte (R1). checkTitles chạy
     // khi thân thiết đổi (giftRegular/deliver/giao đơn…) nên mốc tự nhận đúng lúc vượt.
-    if (s.level >= LIFE_EVENT_UNLOCK) {
+    if (hasFeature(s, 'lifeEvent')) {
       const claimed = s.biz.tiesMilestones ?? [];
       const reached = tiesMilestonesReached(bond, claimed);
       if (reached.length) {
