@@ -51,3 +51,30 @@ export function CrisisCard({ biz, day }: { biz: { crisis?: CrisisState }; day: n
     </div>
   );
 }
+
+/** L4 — Bảng tổng kết cuối đợt (SPEC-CHIEU-RONG §8.3/§8.7): sáng ngày sau đợt kết thúc, tóm tắt
+ *  nhờ chuẩn bị cứu được bao nhiêu + lợi sau đợt (đường mới). `lastCrisis` do crisisNight ghi đêm đóng.
+ *  Chỉ hiện ĐÚNG một buổi sáng (endDay + 1), rồi thôi. */
+export function CrisisSummaryCard({
+  biz,
+  day,
+}: {
+  biz: { lastCrisis?: { defId: string; endDay: number; loss: number; saved: number }; roadBoon?: boolean };
+  day: number;
+}) {
+  const last = biz.lastCrisis;
+  // Bảng tổng kết chỉ hiện sáng ngay sau ngày đợt khép (lastCrisis.endDay), không hiện lại sau đó.
+  if (!last || last.endDay !== day - 1) return null;
+  const def = crisisDefById(last.defId);
+  return (
+    <div style={{ ...styles.card, display: 'block', fontSize: 12, lineHeight: 1.6, marginBottom: 8, borderColor: '#228b22' }}>
+      <b style={{ ...styles.cardTitle, color: '#228b22' }}>✅ {def?.icon} Đợt {def?.name} đã kết thúc</b>
+      <div style={{ marginTop: 2 }}>
+        {last.saved > 0
+          ? <>Nhờ {last.saved >= 750_000 ? 'chuẩn bị kỹ càng' : 'các việc chuẩn bị'}, đợt này thiệt hại được làm dịu, ước cứu được <b>{formatMoney(last.saved)}</b>.</>
+          : <>Bạn đã trải qua đợt này mà không chuẩn bị gì — may là vẫn vượt qua được.</>}
+      </div>
+      {def && biz.roadBoon && <div style={{ marginTop: 2, color: '#228b22' }}>Đường mới khang trang — từ nay khách ghé thêm một chút.</div>}
+    </div>
+  );
+}

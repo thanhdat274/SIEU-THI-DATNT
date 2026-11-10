@@ -241,6 +241,16 @@ describe('Hệ8-L3 — crisisNight: đêm mở/ECHO/đóng đợt + lợi đư�
     expect(close.news.some((n) => n.includes('kết thúc'))).toBe(true);
   });
 
+  it('L4 — đóng đợt có prep: ghi huy hiệu vượt khó + lastCrisis.saved ước theo prep đã làm', () => {
+    const opened = crisisNight(s.seed, s.startDay - 1, s.level, {});
+    const withPreps = { ...opened, crisis: { ...opened.crisis!, preps: ['banner', 'courier'] } };
+    const close = crisisNight(s.seed, s.startDay + total - 1, s.level, withPreps);
+    expect(close.crisisBadges).toContain('dao_duong');        // huy hiệu vào hồ sơ tiệm
+    // banner (traffic) + courier (kênh) đều làm dịu → mỗi cái ~250k, tổng 500k
+    expect(close.lastCrisis?.saved).toBe(500000);
+    expect(close.lastCrisis?.loss).toBe(0);                    // chưa theo dõi lãi nền — điểm khởi đầu
+  });
+
   it('mọi đêm không có đợt → không mở, roadBoon đứng nguyên', () => {
     // một ngày xa đợt: năm khác hoặc ngoài slot
     const far = crisisFor(s.seed, s.startDay + total + 30, s.level);

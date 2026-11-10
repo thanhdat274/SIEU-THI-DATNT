@@ -3,6 +3,7 @@ import { relTier } from '../../data/supplierRel';
 import { lifetimeRegularVisits, vipTierOf, EMOTIONAL_FRIENDSHIP } from '../../data/regularTrust';
 import { serviceById } from '../../data/services';
 import { MASTER_BADGES, badgeEarned, type DossierInput } from '../../data/dossier';
+import { CRISIS_DEFS } from '../../data/crisis';
 import { styles } from './shared';
 
 /** Hồ sơ tiệm + Huy hiệu thâm niên (GĐ71): chân dung dài hạn gộp mọi bể tiệm. Thuần đọc, không sửa state. */
@@ -58,6 +59,27 @@ export function DossierPanel({ closePanel }: { closePanel: () => void }) {
       </div>
 
       <div style={{ display: 'grid', gap: 6, marginTop: 6 }}>
+        {/* Hệ8-L4 — huy hiệu "vượt khó": từng đợt biến cố dài đã vượt qua. Không cho Năm yên ả (đã tắt). */}
+        <div style={{ ...styles.card, display: 'block' }}>
+          <b>🚧 Huy hiệu vượt khó (Biến cố dài)</b>
+          {CRISIS_DEFS.length === 0 ? null : (
+            <div style={{ display: 'grid', gap: 3, marginTop: 6 }}>
+              {CRISIS_DEFS.map((d) => {
+                const on = (biz.crisisBadges ?? []).includes(d.id);
+                return (
+                  <div key={d.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, opacity: on ? 1 : 0.55 }}>
+                    <span>{on ? `${d.icon} ${d.name}` : `○ ${d.name}`}</span>
+                    <b>{on ? '✅ Vượt qua' : 'Chưa trải qua'}</b>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          <p style={{ fontSize: 11, marginTop: 4, opacity: 0.75 }}>
+            Mỗi đợt biến cố dài bình tĩnh vượt qua là một dấu ấn. Chọn "Năm yên ả" thì không có huy hiệu này.
+          </p>
+        </div>
+
         {MASTER_BADGES.map((b) => {
           const on = badgeEarned(d, b);
           return (

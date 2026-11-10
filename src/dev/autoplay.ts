@@ -4,6 +4,7 @@ import { dailyQuests, betStatus } from '../data/quests';
 import { furnitureDef, FURNITURE } from '../data/furniture';
 import { FEATURES } from '../data/levels';
 import { unlockedProducts, productById } from '../data/products';
+import { crisisDefById } from '../data/crisis';
 import { takeLoan } from '../core/biz';
 import { LOAN_OPTIONS_MIN } from '../data/biz';
 import { SHOP_TIERS } from '../data/shopTiers';
@@ -20,6 +21,12 @@ export interface AutoplayOptions {
   yieldEvery?: number;
   /** Tốc độ game mỗi tick (mặc định 4). Cao hơn = ít tick/ngày hơn, chạy nhanh hơn nhưng bước mô phỏng thô hơn. */
   speed?: number;
+  /** L4 — bot "biết chuẩn bị": khi có đợt biến cố dài, mỗi sáng mua các việc chuẩn bị vừa túi tiền (doCrisisPrep). */
+  crisisPrep?: boolean;
+  /** Bắt đầu mô phỏng từ ngày này (seedLevel gieo sẵn tiệm cấp cao rồi tua tới đây) — dùng cho test cân bằng. */
+  startDay?: number;
+  /** Bật "Năm yên ả" (tắt biến cố dài) — dùng làm mốc đối chứng trong crisisBalance. */
+  calm?: boolean;
 }
 
 /**
@@ -42,6 +49,7 @@ export function createAutoplay(
   opts: AutoplayOptions = {},
 ) {
   const betTier = opts.betTier ?? 1.5;
+  const crisisPrepOpt = opts.crisisPrep ?? false;
   const yieldEvery = opts.yieldEvery ?? 0;
   const speed = opts.speed ?? 4;
   const st = () => useGame.getState();
@@ -131,6 +139,17 @@ export function createAutoplay(
     return { quest, bet: st().questLog.bet?.bonus ?? 0 };
   }
 
+  /** L4 — bot "chuẩn bị đủ": khi đang có đợt biến cố dài, sáng nào cũng mua việc chuẩn bị vừa túi tiền. */
+  function crisisPrep() {
+    if (!crisisPrepOpt) return;
+    const s = st();
+    const c = s.biz.crisis;
+    if (!c) return;
+    const def = crisisDefById(c.defId);
+    if (!def) return;
+    for (const p of def.preps) s.doCrisisPrep(p.id); // doCrisisPrep tự lo tiền/đã làm
+  }
+
   /** Chơi ĐÚNG 1 ngày. `yieldHook` (nếu có) chạy sau mỗi batch tick để nhả main thread cho worker. */
   async function playOneDay(yieldHook: (() => Promise<void>) | null): Promise<Record<string, number | string | Record<string, number>>> {
     const step = yieldEvery > 0 ? yieldEvery : 40;
@@ -146,6 +165,7 @@ export function createAutoplay(
     const margin0 = shelfMarginTotal();
     // Chốt kèo buổi sáng trước khi chơi: mục tiêu cả bộ theo ×betTier
     lockBet();
+    crisisPrep();
     let questDay = 0;
     let betDay = 0;
     for (let i = 0; i < 20000 && st().day === day; i++) {
@@ -217,6 +237,7 @@ export function createAutoplay(
     const day = st().day;
     const margin0 = shelfMarginTotal();
     lockBet();
+    crisisPrep();
     let questDay = 0;
     let betDay = 0;
     for (let i = 0; i < 20000 && st().day === day; i++) {

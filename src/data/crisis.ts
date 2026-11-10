@@ -100,6 +100,8 @@ export const CRISIS_YEAR_NONE = 0.15;
 export const CRISIS_YEAR_ONE = 0.60;
 
 const YEAR_DAYS = 365;
+/** Giá trị ước một việc chuẩn bị chống giảm khách/kênh tránh được (lát L4, bảng tổng kết). */
+const CRISIS_PREP_WORTH = 250_000;
 /** Dãy ngày trong năm (0-based) bị khoá: 10 ngày trước Tết tới hết Tết. Tết từ md(1,28) = doy 27. */
 const TET_BLOCK_FROM = 17; // 27 − 10
 const TET_BLOCK_TO = 38;   // md(2,8) = 31 + 7
@@ -271,6 +273,17 @@ export const crisisDefById = (id: string) => CRISIS_DEFS.find((c) => c.id === id
 
 export const crisisTotalDays = (def: CrisisDef) => def.phases.reduce((n, p) => n + p.days, 0);
 
+// ── L4 — ép lịch cho test cân bằng (crisisBalance.test.ts) ─────────────────────
+// Cùng pattern `setSimSeed`/`clearSimSeed` (core/rand.ts): khi có override, lịch tự nhiên
+// bị THAY THẾ hoàn toàn bằng slot này → hai lượt chạy sim đối chứng so được "cùng quãng".
+// Chỉ để đo cân bằng — không dùng trong game thật.
+let overrideSlot: { defId: string; startDay: number } | null = null;
+/** Ép một đợt biến cố vào slot cố định (test cân bằng); `null` để tắt trở về lịch tự nhiên. */
+export function seedCrisisOverride(def: { defId: string; startDay: number } | null): void {
+  overrideSlot = def;
+}
+export const clearCrisisOverride = () => (overrideSlot = null);
+
 // ───────────────────── Lịch biến cố (TẤT ĐỊNH) ─────────────────────
 
 function eligibleDay(def: CrisisDef, year: number, day: number, prevStart: number): boolean {
@@ -334,6 +347,12 @@ export function crisisFor(
   calm = false,
 ): { defId: string; startDay: number } | null {
   if (calm) return null;
+  // L4 — ép lịch cho test cân bằng: override thay thế hẳn lịch tự nhiên (chỉ khi nằm trong cửa sổ).
+  if (overrideSlot) {
+    const def = crisisDefById(overrideSlot.defId);
+    if (def && day >= overrideSlot.startDay && day < overrideSlot.startDay + crisisTotalDays(def)) return overrideSlot;
+    return null;
+  }
   const year = Math.floor((day - 1) / YEAR_DAYS);
   // Đợt mở ra có thể trải sang năm sau (bắt đầu cuối năm), nên phải tra cả năm hiện tại và năm trước.
   const years = year > 0 ? [year, year - 1] : [year];
@@ -450,6 +469,7 @@ export function crisisPhaseLabel(def: CrisisDef, day: number, st: CrisisState): 
 export interface CrisisBizSlice {
   crisis?: CrisisState;
   crisesSeen?: string[];
+  crisisBadges?: string[];
   calmYears?: boolean;
   roadBoon?: boolean;
   lastCrisis?: { defId: string; endDay: number; loss: number; saved: number };
@@ -458,6 +478,7 @@ export interface CrisisBizSlice {
 export interface CrisisNightResult {
   crisis: CrisisState | undefined;
   crisesSeen: string[];
+  crisisBadges: string[];
   roadBoon: boolean;
   lastCrisis: { defId: string; endDay: number; loss: number; saved: number } | undefined;
   /** Tin đêm để gộp vào bản tin ngày mai. */
@@ -485,6 +506,7 @@ export function crisisNight(
   const willStay = crisisFor(seed, next, level, calmOn);
   const cur = biz.crisis;
   const crisesSeen = [...(biz.crisesSeen ?? [])];
+  const crisisBadges = [...(biz.crisisBadges ?? [])];
   const news: string[] = [];
   let roadBoon = biz.roadBoon ?? false;
   let lastCrisis = biz.lastCrisis;
@@ -494,8 +516,18 @@ export function crisisNight(
   if (cur && !same) {
     const def = crisisDefById(cur.defId);
     if (def?.aftermath?.kind === 'road') roadBoon = true;
-    lastCrisis = { defId: cur.defId, endDay: next - 1, loss: 0, saved: cur.preps.length * 200000 };
-    if (def) news.push(`${def.icon} ${def.name} đã kết thúc.${def.aftermath ? ` ${def.aftermath.label}.` : ''}`);
+    // L4 — bảng tổng kết: `loss` 0 (chưa theo dõi lãi nền), `saved` ước từ việc chuẩn bị đã làm:
+    // mỗi prep làm dịu khách/kênh ≈ mức thiệt hại tránh được ~250k (ĐIỂM KHỞI ĐẦU, cân bằng qua sim).
+    const saved = cur.preps.reduce((n, id) => {
+      const p = def?.preps.find((x) => x.id === id);
+      return n + (p && (p.traffic !== undefined || p.channel) ? CRISIS_PREP_WORTH : 0);
+    }, 0);
+    lastCrisis = { defId: cur.defId, endDay: next - 1, loss: 0, saved };
+    if (def) {
+      news.push(`${def.icon} ${def.name} đã kết thúc.${def.aftermath ? ` ${def.aftermath.label}.` : ''}`);
+      // Huy hiệu "vượt khó" vào hồ sơ tiệm (không cho Năm yên ả — đợt đã không mở).
+      if (!crisisBadges.includes(cur.defId)) crisisBadges.push(cur.defId);
+    }
   }
   // 2) Mở đợt mới (hiện chưa chạy đợt cùng slot); giữ đợt đang giữa chừng (preps/choices).
   let crisis = cur && same ? cur : undefined;
@@ -505,5 +537,5 @@ export function crisisNight(
     crisis = { defId: willStay.defId, startDay: willStay.startDay, preps: [], choices: {}, kind: 0 };
     news.push(`${def.icon} ${def.name}: ${crisisPhaseLabel(def, next, crisis)} — mở Sổ đầu ngày xem việc chuẩn bị.`);
   }
-  return { crisis, crisesSeen, roadBoon, lastCrisis, news };
+  return { crisis, crisesSeen, crisisBadges, roadBoon, lastCrisis, news };
 }

@@ -128,6 +128,9 @@ export function buildEconomyWorld() {
  */
 export async function runEconomySim(level: number, days: number, opts: AutoplayOptions = {}): Promise<{ rows: EconomyRow[]; averages: EconomyAverages }> {
   seedLevel(level);
+  // L4 — cho test cân bằng: tua tới ngày bắt đầu và bật/tắt Năm yên ả (mốc đối chứng).
+  if (opts.calm !== undefined) useGame.setState({ biz: { ...useGame.getState().biz, calmYears: opts.calm } });
+  if (opts.startDay !== undefined) useGame.setState({ day: opts.startDay, minutes: DAY_START });
   const world = buildEconomyWorld();
   const players = createAutoplay(world.shop, world.customers, world.staff, world.player, opts) as AutoplayRunner;
   const log = await players.async(days);
