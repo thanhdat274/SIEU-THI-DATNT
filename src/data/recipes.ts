@@ -802,6 +802,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'muc_xao_sa_ot', name: 'Mực xào sả ớt', category: 'fresh', buy: 20000, sell: 34000, color: 0xd8a070, unlock: 187 },
   { id: 'bo_la_lot', name: 'Bò lá lốt', category: 'fresh', buy: 16000, sell: 28000, color: 0x4a6a2a, unlock: 188 },
   { id: 'cha_la_lot', name: 'Chả lá lốt', category: 'fresh', buy: 12000, sell: 22000, color: 0x3a5a2a, unlock: 189 },
+  { id: 'bun_rieu', name: 'Bún riêu', category: 'fresh', buy: 15000, sell: 26000, color: 0xd8703a, unlock: 190 },
+  { id: 'canh_cua_mong_toi', name: 'Canh cua mồng tơi', category: 'fresh', buy: 12000, sell: 20000, color: 0x6a8a3a, unlock: 191 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2661,6 +2663,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_cha_la_lot', name: 'Chả lá lốt', station: 'fryer',
     inputs: [{ productId: 'x_thit_heo', quantity: 1 }, { productId: 'x_la_lot', quantity: 1 }],
     outputId: 'cha_la_lot', outputQty: 4, durationMin: 20, unlock: 189, reputationGain: 1 },
+  // GĐ2125: Bún riêu — miền Bắc, phổ biến cả nước: cua đồng giã lọc nấu riêu, nước dùng chua cà chua, ăn với bún; không thay thế.
+  { id: 'recipe_bun_rieu', name: 'Bún riêu', station: 'hot_kettle',
+    inputs: [{ productId: 'bun', quantity: 1 }, { productId: 'x_cua_dong', quantity: 1 }, { productId: 'x_ca_chua', quantity: 1 }],
+    outputId: 'bun_rieu', outputQty: 5, durationMin: 30, unlock: 190, reputationGain: 1 },
+  // GĐ2126: Canh cua mồng tơi — cơm nhà mùa hè cả nước: cua đồng giã lọc nấu riêu với mồng tơi; không thay thế.
+  { id: 'recipe_canh_cua_mong_toi', name: 'Canh cua mồng tơi', station: 'hot_kettle',
+    inputs: [{ productId: 'x_cua_dong', quantity: 1 }, { productId: 'x_mong_toi', quantity: 1 }],
+    outputId: 'canh_cua_mong_toi', outputQty: 4, durationMin: 25, unlock: 191, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────
