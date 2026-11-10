@@ -2,9 +2,11 @@ import { useMemo, useState } from 'react';
 import { useGame } from '../../core/store';
 import { productById } from '../../data/products';
 import {
-  BRAND_DEALER_UNLOCK, BRAND_DEAL_CUT_AFTER, BRAND_DEALERS, BRAND_LINE_SLOTS, BRAND_RIVAL_STRENGTH_GAIN,
+  BRAND_DEALER_UNLOCK, BRAND_DEAL_CUT_AFTER, BRAND_DEALERS, BRAND_FRANCHISE_REP, BRAND_FRANCHISE_SETUP,
+  BRAND_FRANCHISE_SLOTS, BRAND_FRANCHISE_UNLOCK, BRAND_LINE_SLOTS, BRAND_RIVAL_STRENGTH_GAIN,
   BRAND_UNLOCK, brandDealerById, brandDealersAvail, brandLineEligible, brandLineSlots, brandRepTier,
-  brandStockUnits, brandDealValue, brandRivalValue, brandWorkshopCapacity, type BrandState,
+  brandStockUnits, brandDealValue, brandRivalValue, brandWorkshopCapacity, franchiseIncome,
+  type BrandState,
 } from '../../data/brand';
 import { Footer, styles, Tabs } from './shared';
 
@@ -25,7 +27,7 @@ const pname = (id: string) => (productById(id)?.name ?? id).replace(/\s*\([^)]*\
  * Xưởng/Bỏ mối/Nhượng quyền sẽ mở ở các lát sau.
  */
 export function BrandPanel() {
-  const { level, money, biz, garden, soldEver, foundBrand, addBrandLine, dropBrandLine, buyBrandWorkshop, hireBrandWorker, fireBrandWorker, acceptBrandDeal, commitBrandDeal, releaseBrandDeal, deliverBrandDeal, acceptRivalSupply, closePanel, day } = useGame();
+  const { level, money, biz, garden, soldEver, foundBrand, addBrandLine, dropBrandLine, buyBrandWorkshop, hireBrandWorker, fireBrandWorker, acceptBrandDeal, commitBrandDeal, releaseBrandDeal, deliverBrandDeal, acceptRivalSupply, openFranchise, closeFranchise, closePanel, day } = useGame();
   const [tab, setTab] = useState<Tab>('lines');
   const [name, setName] = useState('');
   const b = biz.brand;
@@ -89,10 +91,7 @@ export function BrandPanel() {
           )}
 
           {tab === 'franchise' && (
-            <div style={styles.card}>
-              <b>🏮 Nhượng quyền</b>
-              <span style={{ fontSize: 12, opacity: 0.75, flex: 1 }}>Mở điểm nhượng quyền bán hàng nhãn — tiếng lan xa, thêm nghĩa vụ cung hàng (sẽ mở ở lát sau).</span>
-            </div>
+            <FranchiseTab b={b} level={level} money={money} onOpen={openFranchise} onClose={closeFranchise} />
           )}
         </>
       )}
@@ -311,5 +310,52 @@ function DealerSign({ def, lines, onAccept }: { def: { id: string; title: string
       </select>
       <button style={styles.btn} disabled={lines.length === 0 || !sel} onClick={() => onAccept(def.id, sel)}>Ký hợp đồng</button>
     </span>
+  );
+}
+
+function FranchiseTab(props: { b: BrandState; level: number; money: number; onOpen: (defId: string) => void; onClose: (defId: string) => void }) {
+  const { b, level, money, onOpen, onClose } = props;
+  return (
+    <div>
+      <p style={{ ...styles.sub, maxWidth: 620 }}>
+        Mở điểm nhượng quyền bán hàng nhãn — mỗi tuần xe tự chở <b>{BRAND_FRANCHISE_SLOTS[0].weekly}</b> đơn vị trở
+        lên (tùy quy mô), mỗi đêm điểm trả phí nhượng quyền và cộng uy tín. Thiếu hàng 1 tuần: sức khỏe giảm, uy tín
+        −3; thiếu 3 tuần liền: điểm đóng, mất {vnd(BRAND_FRANCHISE_SETUP)} setup. Phí mở {vnd(BRAND_FRANCHISE_SETUP)} · cần uy tín {BRAND_FRANCHISE_REP} · mở từ cấp {BRAND_FRANCHISE_UNLOCK}.
+      </p>
+
+      {b.franchises.map((f) => {
+        const def = BRAND_FRANCHISE_SLOTS.find((x) => x.id === f.id);
+        if (!def) return null;
+        const due = b.franchiseDue[f.id];
+        return (
+          <div key={f.id} style={styles.card}>
+            <span style={{ flex: 1 }}>
+              <b>{def.icon} {def.title}</b>
+              <div style={{ fontSize: 12, opacity: 0.8 }}>
+                khoẻ {f.health}/100 · mỗi tuần {def.weekly} đơn vị · phí/đêm ≈ {franchiseIncome(f.health, b.rep, def.size, 1).toLocaleString('vi-VN')}đ
+                {' '}· nhập hàng {due !== undefined ? (due <= 1 ? (due <= 0 ? 'quá hạn' : 'hôm nay') : `còn ${due} ngày`) : '—'}
+              </div>
+            </span>
+            <button style={styles.btn} onClick={() => onClose(f.id)}>Đóng điểm</button>
+          </div>
+        );
+      })}
+      {b.franchises.length === 0 && <p style={styles.sub}>Chưa có điểm nhượng quyền nào — chọn suất bên dưới để mở.</p>}
+
+      <p style={{ ...styles.sub, marginTop: 12 }}>Suất nhượng quyền:</p>
+      {BRAND_FRANCHISE_SLOTS.map((def) => {
+        const has = b.franchises.some((f) => f.id === def.id);
+        const locked = level < def.unlock || b.rep < BRAND_FRANCHISE_REP || money < BRAND_FRANCHISE_SETUP || has;
+        return (
+          <div key={def.id} style={styles.card}>
+            <span style={{ flex: 1 }}>
+              <b>{def.icon} {def.title}</b>
+              <div style={{ fontSize: 12, opacity: 0.8 }}>cấp {def.unlock} · mỗi tuần {def.weekly} đơn vị · quy mô {def.size}</div>
+            </span>
+            <button style={styles.btn} disabled={locked} onClick={() => onOpen(def.id)}>{has ? 'Đã mở' : 'Mở điểm'}</button>
+          </div>
+        );
+      })}
+    </div>
   );
 }

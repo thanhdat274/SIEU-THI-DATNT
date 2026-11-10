@@ -366,6 +366,72 @@ export function franchiseIncome(health: number, rep: number, size: number, day: 
   return Math.round(150_000 * size * healthFactor * repBoost * wobble * BRAND_FRANCHISE_RATE * 40);
 }
 
+/**
+ * Hệ 4 (SPEC §4.5e) — MỖI ĐÊM xử lý nhượng quyền: (1) mỗi điểm ĐANG KHOẺ cộng uy tín +0,2/ngày
+ * ("tiếng lan xa"); (2) tới TUẦN nhập hàng thì xe tự chở N đơn vị hàng nhãn từ kho chung (đủ → khoẻ lên,
+ * thiếu → sức khoẻ giảm, uy tín −3, thêm một tuần thiếu — đủ BRAND_FRANCHISE_CLOSE_WEEKS thì điểm ĐÓNG).
+ * THUẦN (không RNG), mọi mốc ≥ 100 → golden L30 giữ nguyên.
+ */
+export function brandFranchiseNight(b: BrandState, day: number): { brand: BrandState; income: number; news: string[] } {
+  const news: string[] = [];
+  if (b.franchises.length === 0) return { brand: b, income: 0, news };
+  let cur = b;
+  let income = 0;
+  const remain: FranchiseState[] = [];
+  const due: Record<string, number> = { ...cur.franchiseDue };
+  for (const f of cur.franchises) {
+    const def = BRAND_FRANCHISE_SLOTS.find((s) => s.id === f.id);
+    if (!def) continue;
+    // (1) Điểm đang khoẻ → uy tín +0,2/ngày + phí nhượng quyền đêm.
+    if (f.health > 0) {
+      cur = applyBrandRep(cur, day, BRAND_FRANCHISE_HEALTHY_REP, `nhượng quyền "${def.title}" khoẻ`);
+      income += franchiseIncome(f.health, cur.rep, def.size, day);
+    }
+    // (2) Tuần nhập hàng.
+    const d = due[f.id];
+    if (d !== undefined && day >= d) {
+      const units = def.weekly;
+      const have = brandStockUnits(cur);
+      if (have >= units) {
+        // chở đủ từ kho chung (gọt đều các dòng)
+        let need = units;
+        const stock = { ...cur.stock };
+        for (const line of cur.lines) {
+          if (need <= 0) break;
+          const take = Math.min(need, stock[line.productId] ?? 0);
+          if (take > 0) {
+            const left = (stock[line.productId] ?? 0) - take;
+            if (left > 0) stock[line.productId] = left; else delete stock[line.productId];
+            need -= take;
+          }
+        }
+        const health2 = Math.min(100, f.health + 10);
+        const nf = { ...f, health: health2, missedWeeks: 0 };
+        remain.push(nf);
+        due[f.id] = day + 7;
+        cur = { ...cur, stock };
+        news.push(`🏮 "${def.title}" nhập đủ ${def.weekly} nhãn tuần này — khoẻ ${health2}/100`);
+      } else {
+        const health2 = Math.max(0, f.health - 20);
+        const missed = f.missedWeeks + 1;
+        cur = applyBrandRep(cur, day, -BRAND_FRANCHISE_MISS_REP, `thiếu hàng tuần "${def.title}"`);
+        if (missed >= BRAND_FRANCHISE_CLOSE_WEEKS) {
+          delete due[f.id];
+          news.push(`🚨 "${def.title}" thiếu hàng ${BRAND_FRANCHISE_CLOSE_WEEKS} tuần liền — điểm ĐÓNG, mất ${BRAND_FRANCHISE_SETUP.toLocaleString('vi-VN')}đ phí setup`);
+        } else {
+          remain.push({ ...f, health: health2, missedWeeks: missed });
+          due[f.id] = day + 7;
+          news.push(`🚨 "${def.title}" thiếu hàng — sức khoẻ ${health2}/100 (tuần hỏng ${missed}/${BRAND_FRANCHISE_CLOSE_WEEKS}), uy tín −${BRAND_FRANCHISE_MISS_REP}`);
+        }
+      }
+    } else {
+      remain.push(f); // chưa tới tuần — giữ nguyên
+    }
+  }
+  const brand = { ...cur, franchises: remain, franchiseDue: due };
+  return { brand, income, news };
+}
+
 // ───── Cổng & helper thuần chung ─────
 
 /** Tổng số đơn vị hàng nhãn trong kho của mọi dòng đang giữ. */

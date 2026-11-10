@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useGame } from '../core/store';
-import { BRAND_UNLOCK, BRAND_WORKSHOP_MAX_STAFF, brandDealNight, brandRivalOffer, brandRivalValue, brandWorkshopDay, type BrandState } from '../data/brand';
+import { BRAND_UNLOCK, BRAND_WORKSHOP_MAX_STAFF, brandDealNight, brandFranchiseNight, brandRivalOffer, brandRivalValue, brandWorkshopDay, type BrandState } from '../data/brand';
 import { productById } from '../data/products';
 
 vi.mock('../net/session', () => ({ useSession: { getState: () => ({}) }, subscribe: () => () => {} }));
@@ -380,5 +380,67 @@ describe('Hệ4-L6 — bỏ mối cho đối thủ (SPEC §4.5d): lời chào t�
     expect(useGame.getState().money).toBe(before);
     expect(useGame.getState().biz.brand!.stock.hx_nuoc_mam).toBe(100);
     expect(useGame.getState().biz.brand!.rivalOffer).toBeUndefined();
+  });
+});
+
+describe('Hệ4-L8 — nhượng quyền (SPEC §4.5e): mở điểm / tuần nhập hàng / đóng', () => {
+  const fBrand = (over: Partial<BrandState> = {}): BrandState => ({
+    name: 'Nhà Năm',
+    workshop: null, lastPackDay: 0,
+    lines: [{ productId: 'hx_nuoc_mam', since: 100, made: 500, sold: 0 }],
+    stock: { hx_nuoc_mam: 500 },
+    rep: 70, maxRep: 70, repLog: [],
+    deals: {}, franchises: [], franchiseDue: {},
+    ...over,
+  });
+  const fc = (level: number, b: BrandState, day = 200, money = 200_000_000) => {
+    const s = useGame.getState();
+    useGame.setState({ level, day, money, soldEver: { hx_nuoc_mam: 600 }, biz: { ...s.biz, brand: b } } as never);
+  };
+
+  it('cổng mở: cấp 150 / uy tín 60 / 80tr setup / không quá 3 điểm', () => {
+    fc(140, fBrand()); // cấp chưa đủ
+    useGame.getState().openFranchise('pho_co');
+    expect(useGame.getState().biz.brand!.franchises).toHaveLength(0);
+    fc(160, fBrand({ rep: 50, maxRep: 50 })); // uy tín < 60
+    useGame.getState().openFranchise('pho_co');
+    expect(useGame.getState().biz.brand!.franchises).toHaveLength(0);
+    fc(160, fBrand(), 200, 50_000_000); // thiếu tiền
+    useGame.getState().openFranchise('pho_co');
+    expect(useGame.getState().biz.brand!.franchises).toHaveLength(0);
+    fc(160, fBrand()); // đủ → mở được
+    const before = useGame.getState().money;
+    useGame.getState().openFranchise('pho_co');
+    const st = useGame.getState();
+    expect(st.money).toBe(before - 80_000_000);
+    expect(st.biz.brand!.franchises).toHaveLength(1);
+    expect(st.biz.brand!.franchiseDue.pho_co).toBe(200 + 7);
+  });
+
+  it('brandFranchiseNight: mỗi đêm điểm khỏe +0,2 uy tín + phí; tuần đủ hàng → khoẻ lên, thiếu → health giảm + −3 uy tín', () => {
+    const b0 = fBrand({ rep: 70, maxRep: 70, franchises: [{ id: 'pho_co', openedDay: 200, health: 60, missedWeeks: 0 }], franchiseDue: { pho_co: 201 } });
+    const r = brandFranchiseNight(b0, 200);
+    // ngày 200 chưa tới tuần 201 → chỉ +0,2 uy tín + phí
+    expect(r.brand.rep).toBeCloseTo(70 + 0.2);
+    expect(r.income).toBeGreaterThan(0);
+    expect(r.brand.franchises[0].health).toBe(60);
+    // tới tuần 201, kho đủ 500 ≥ 40 → xe chở đủ, khoẻ lên
+    const r2 = brandFranchiseNight(r.brand, 201);
+    expect(r2.brand.franchises[0].health).toBe(70);
+    expect(r2.brand.stock.hx_nuoc_mam).toBe(500 - 40);
+    expect(r2.brand.franchiseDue.pho_co).toBe(201 + 7);
+  });
+
+  it('3 tuần thiếu hàng liên tiếp → điểm đóng, mất suất', () => {
+    let b: BrandState = fBrand({ rep: 70, maxRep: 70, stock: { hx_nuoc_mam: 5 }, franchises: [{ id: 'pho_co', openedDay: 200, health: 60, missedWeeks: 0 }], franchiseDue: { pho_co: 201 } });
+    let day = 201;
+    for (let i = 0; i < 3; i++) {
+      const r = brandFranchiseNight(b, day);
+      b = r.brand;
+      day += 7;
+    }
+    // 3 tuần hỏng → điểm đóng (mai không còn)
+    expect(b.franchises.some((f) => f.id === 'pho_co')).toBe(false);
+    expect(b.rep).toBeLessThan(70); // bị trừ uy tín mỗi tuần thiếu
   });
 });

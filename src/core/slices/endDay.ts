@@ -39,7 +39,7 @@ import { staffDayEnd } from '../../data/staffTraits';
 import { BUZZ_DAYS, CRISIS_MUL, POST_CAP, SOCIAL_UNLOCK, socialDayEnd, type SocialPost } from '../../data/social';
 import { ANIMAL_ORDER, farmCritChance, farmhandChores, FARM_ORDER_UNLOCK, farmOrderCapacity, farmOrderNews, farmOrderProduce, gardenNight, makeFarmOrder, type AnimalKind } from '../../data/garden';
 import { preserveNight, farmhandPreserve, preserveDefById } from '../../data/preserve';
-import { brandDealNight, brandRivalOffer, brandRepDaily, brandWorkshopDay } from '../../data/brand';
+import { brandDealNight, brandFranchiseNight, brandRivalOffer, brandRepDaily, brandWorkshopDay } from '../../data/brand';
 import { crisisNight } from '../../data/crisis';
 import { lifeEventFor, lifeEventById, gioLabel } from '../../data/lifeEvent';
 import { stanceActive, stanceFitByDirection, applyStanceDay, stanceTier, STANCE_UNLOCK, STANCE_META, hasStanceSeal, isStanceSealable, type StanceState } from '../../data/stance';
@@ -608,6 +608,11 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
         const nb = { ...dd.brand, rivalOffer: undefined };
         biz.biz = { ...biz.biz, brand: nb };
       }
+      // Nhượng quyền (§4.5e): mỗi đêm +0,2 uy tín/điểm khoẻ + phí nhượng quyền; tuần nhập hàng đủ/thiếu.
+      const fn = brandFranchiseNight(biz.biz.brand ?? dd.brand, s.day);
+      biz.biz = { ...biz.biz, brand: fn.brand };
+      moneyAfter += fn.income;
+      for (const n of fn.news) say(n);
     }
   }
   // SPEC-TOI-UU §T1 (L1): gom bản ghi ẩn danh ngày vừa chốt — lưu CỤC BỘ, không gửi đi đâu.
