@@ -828,6 +828,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'de_nuong_sa_te', name: 'Dê nướng sa tế', category: 'fresh', buy: 26000, sell: 45000, color: 0x8a4a2a, unlock: 199 },
   { id: 'so_diep_hap_sa', name: 'Sò điệp hấp sả', category: 'fresh', buy: 26000, sell: 45000, color: 0xc8d8a0, unlock: 198 },
   { id: 'so_diep_xao_nam', name: 'Sò điệp xào nấm', category: 'fresh', buy: 26000, sell: 45000, color: 0xb8c8a0, unlock: 199 },
+  { id: 'bach_tuoc_nuong', name: 'Bạch tuộc nướng', category: 'fresh', buy: 26000, sell: 45000, color: 0xd8a0b8, unlock: 198 },
+  { id: 'bach_tuoc_xao_sa_te', name: 'Bạch tuộc xào sa tế', category: 'fresh', buy: 26000, sell: 45000, color: 0xc8a0a8, unlock: 199 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2791,6 +2793,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_so_diep_xao_nam', name: 'Sò điệp xào nấm', station: 'fryer',
     inputs: [{ productId: 'x_so_diep', quantity: 1 }, { productId: 'x_nam_kim_cham', quantity: 1 }, { productId: 'x_toi', quantity: 1 }],
     outputId: 'so_diep_xao_nam', outputQty: 4, durationMin: 20, unlock: 199, reputationGain: 1 },
+  // GĐ2151: Bạch tuộc nướng — quán nhậu hải sản cả nước: bạch tuộc nướng than, quết sa tế, chấm muối tiêu chanh; không thay thế.
+  { id: 'recipe_bach_tuoc_nuong', name: 'Bạch tuộc nướng', station: 'food_grill',
+    inputs: [{ productId: 'x_bach_tuoc', quantity: 1 }, { productId: 'x_sa_te', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }],
+    outputId: 'bach_tuoc_nuong', outputQty: 4, durationMin: 25, unlock: 198, reputationGain: 1 },
+  // GĐ2152: Bạch tuộc xào sa tế — quán nhậu cả nước: bạch tuộc xào lửa lớn với sa tế cay, ăn kèm hành lá; không thay thế.
+  { id: 'recipe_bach_tuoc_xao_sa_te', name: 'Bạch tuộc xào sa tế', station: 'fryer',
+    inputs: [{ productId: 'x_bach_tuoc', quantity: 1 }, { productId: 'x_sa_te', quantity: 1 }, { productId: 'x_hanh_la', quantity: 1 }],
+    outputId: 'bach_tuoc_xao_sa_te', outputQty: 4, durationMin: 20, unlock: 199, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────
