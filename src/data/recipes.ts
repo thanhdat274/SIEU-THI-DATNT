@@ -786,6 +786,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'bo_ne', name: 'Bò né', category: 'fresh', buy: 24000, sell: 38000, color: 0x8a4a2a, unlock: 187 },
   { id: 'bong_cai_xao_bo', name: 'Bông cải xào bò', category: 'fresh', buy: 14000, sell: 26000, color: 0x4a7a3a, unlock: 188 },
   { id: 'bong_cai_xao_tom', name: 'Bông cải xào tôm', category: 'fresh', buy: 15000, sell: 27000, color: 0x5a8a4a, unlock: 189 },
+  { id: 'oc_hap_sa', name: 'Ốc hấp sả', category: 'fresh', buy: 20000, sell: 34000, color: 0x7a6a3a, unlock: 190 },
+  { id: 'muc_chien_gion', name: 'Mực chiên giòn', category: 'fresh', buy: 18000, sell: 30000, color: 0xe8c070, unlock: 191 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2581,6 +2583,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_bong_cai_xao_tom', name: 'Bông cải xào tôm', station: 'fryer',
     inputs: [{ productId: 'x_bong_cai_xanh', quantity: 1 }, { productId: 'x_tom_tuoi', quantity: 1 }, { productId: 'x_toi', quantity: 1 }],
     outputId: 'bong_cai_xao_tom', outputQty: 4, durationMin: 15, unlock: 189, reputationGain: 1 },
+  // GĐ2109: Ốc hấp sả — quán ốc Nam Bộ: ốc bươu xếp nồi lót sả đập dập, hấp chín, chấm muối tiêu chanh; không thay thế.
+  { id: 'recipe_oc_hap_sa', name: 'Ốc hấp sả', station: 'steamer',
+    inputs: [{ productId: 'x_oc', quantity: 1 }, { productId: 'x_sa', quantity: 2 }],
+    outputId: 'oc_hap_sa', outputQty: 3, durationMin: 20, unlock: 190, reputationGain: 1 },
+  // GĐ2110: Mực chiên giòn — quán nhậu cả nước: mực ống cắt khoanh lăn bột chiên giòn ngập dầu; không thay thế.
+  { id: 'recipe_muc_chien_gion', name: 'Mực chiên giòn', station: 'fryer',
+    inputs: [{ productId: 'x_muc_tuoi', quantity: 1 }, { productId: 'x_bot_chien', quantity: 1 }],
+    outputId: 'muc_chien_gion', outputQty: 4, durationMin: 15, unlock: 191, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────

@@ -145,6 +145,8 @@ const MON_THAT: Record<string, { name: string; station: string; cachNau: string 
   recipe_bo_ne: { name: 'Bò né', station: 'fryer', cachNau: 'bò trứng pate áp chảo gang (Sài Gòn)' },
   recipe_bong_cai_xao_bo: { name: 'Bông cải xào bò', station: 'fryer', cachNau: 'bò xào tái với bông cải xanh, tỏi (cơm nhà)' },
   recipe_bong_cai_xao_tom: { name: 'Bông cải xào tôm', station: 'fryer', cachNau: 'tôm xào tỏi đảo bông cải xanh (cơm nhà)' },
+  recipe_oc_hap_sa: { name: 'Ốc hấp sả', station: 'steamer', cachNau: 'ốc lót sả đập hấp chín (quán ốc Nam Bộ)' },
+  recipe_muc_chien_gion: { name: 'Mực chiên giòn', station: 'fryer', cachNau: 'mực khoanh lăn bột chiên ngập dầu (quán nhậu)' },
 };
 
 /** Chữ mô tả tự chế không ai dùng làm tên món ngoài chợ. */
