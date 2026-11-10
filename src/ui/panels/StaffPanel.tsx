@@ -170,6 +170,9 @@ export function StaffPanel() {
                 <StaffValueLine sv={staffValues.find((v) => v.id === st.id)} />
               )}
               <StaffIdleLine row={idleRows.find((r) => r.id === st.id)} />
+              {st.role === 'manager' && managerPayoff.ok && (
+                <div style={{ fontSize: 11, color: '#3498db' }} title="Quản lý tự nhập hàng khi kho sắp cạn (theo luật sẵn có).">{managerPayoff.line}</div>
+              )}
               <PromoteRow st={st} level={level} money={money} onPromote={promoteStaff} />
               <div style={staffSt.actions}>
                 <span style={staffSt.label}>🕒 Ca làm</span>
