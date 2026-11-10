@@ -52,7 +52,7 @@ export function ComboPanel() {
         </p>
       )}
       {overrun.length > 0 && (
-        <p style={{ ...styles.sub, color: '#e74c3c', margin: '4px 0' }} title="GĐ2213: chiết khấu combo đã trả hôm nay vượt lời thật của cặp món (giá nhập) — kèo lấn lãi bán hàng, ngược Luật cứng">
+        <p style={{ ...styles.sub, color: '#e74c3c', margin: '4px 0' }} title="Chiết khấu combo đã trả hôm nay vượt lời thật của cặp món (giá nhập) — kèo lấn lãi bán hàng, ngược Luật cứng">
           🔴 Kèo lấn lãi bán hàng: {overrun.map((r) => `"${r.name}" chiết khấu ${formatMoney(r.discountGiven)} nhưng lời cặp chỉ ~${formatMoney(r.count * r.gross)}`).join(' · ')} — nên tắt/đổi combo này cho khỏi lỗ lời.
         </p>
       )}

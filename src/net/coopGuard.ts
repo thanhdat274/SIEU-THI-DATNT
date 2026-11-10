@@ -43,4 +43,7 @@ export const GUARDED: Record<string, (args: unknown[]) => string> = {
   toggleQuanRecipe: () => 'quan',
   brewQuanHand: () => 'quan',
   upgradeQuanTier: () => 'quan',
+  // GĐ2219 — mua quảng cáo: một đợt quảng cáo dùng chung cho cả hẻm (ad.state), hai người mua cùng
+  // lúc chỉ một người thành công (người sau đợi một chút rồi bấm lại).
+  buyAd: () => 'shop:ad',
 };
