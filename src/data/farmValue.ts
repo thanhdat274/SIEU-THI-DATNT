@@ -13,7 +13,7 @@ import {
   farmCritChance, farmGrazeDiscount, farmGrowthFlat, farmGrowthPct, harvestYield, inSeason, LAND_TIERS,
 } from './garden';
 import { productById } from './products';
-import { rackCap, PHOI_UNLOCK } from './preserve';
+import { rackCap, vaiCap, PHOI_UNLOCK, VAI_UNLOCK } from './preserve';
 
 /** Giá bán lẻ 1 món nhà trồng/nhà nuôi ở quầy (đã cộng 20% nhãn nhà trồng). */
 export const homegrownSell = (productId: string) =>
@@ -300,6 +300,14 @@ export const farmBuildingValue = (g: GardenState): FarmBuildingValue[] => {
       // (nắng/mưa/bão tất định theo seed) nên chỉ dòng định tính, không cày số đ/ngày mơ hồ (Luật 3).
       const built = star > 0 ? `Sân phơi cấp ${star}: ${cap} nong cho mẻ phơi — bánh tráng, tôm khô, mực một nắng` : `Chưa xây (${cost.toLocaleString('vi-VN')}đ, mở cấp ${PHOI_UNLOCK}): ${cap} nong phơi món khô (bánh tráng, tôm khô, mực một nắng)`;
       line = built;
+      hasMoney = false;
+    } else if (id === 'vai_muoi') {
+      const cap = vaiCap(star);
+      // Hệ Muối (SPEC §1.5): không phụ thuộc trời, phụ thuộc THỜI ĐIỂM vớt — vớt đúng cửa sổ ngon,
+      // vớt trễ thì khú/hỏng, nên dòng định tính (Luật 3), không cày số đ/ngày mơ hồ.
+      line = star > 0
+        ? `Dãy vại cấp ${star}: ${cap} vại muối chua — dưa muối, cà pháo, chanh muối, củ kiệu, dưa hành, dưa cải`
+        : `Chưa xây (${cost.toLocaleString('vi-VN')}đ, mở cấp ${VAI_UNLOCK}): ${cap} vại muối chua (dưa muối, cà pháo, chanh muối…)`;
       hasMoney = false;
     } else { // nha_luoi
       const flat = farmGrowthFlat(g);

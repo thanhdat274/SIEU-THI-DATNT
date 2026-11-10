@@ -13,7 +13,7 @@ import { bestCropForMenu, bestAnimalForMenu, farmVsDrinks, homegrownImpact, orde
 import { isWeekend } from '../../data/calendar';
 import { expiringSoon, expiryNoteFor, newUnlockMark } from '../../data/advice';
 import { isXoiCungDay } from '../../data/tiemXoi';
-import { preserveDefsOf, preserveDefById, phoiReady, rackCap, PHOI_UNLOCK } from '../../data/preserve';
+import { preserveDefsOf, preserveDefById, phoiReady, rackCap, vaiCap, VAI_UNLOCK, pickleState, pickleAge, PHOI_UNLOCK } from '../../data/preserve';
 import { describeDay, type Weather } from '../../data/weather';
 import { Callout, Footer, styles, Tabs } from './shared';
 
@@ -408,6 +408,11 @@ function PhoiTab(props: {
   const phoiDefs = preserveDefsOf('phoi').filter((d) => d.unlock <= level);
   const phoiJobs = garden.preserveJobs.filter((j) => preserveDefById(j.defId).kind === 'phoi');
   const gd = FARM_BUILDINGS.gian_phoi;
+  // Lát L5 — Dãy vại muối
+  const vaiStar = garden.buildings.vai_muoi ?? 0;
+  const muoiDefs = preserveDefsOf('muoi').filter((d) => d.unlock <= level);
+  const muoiJobs = garden.preserveJobs.filter((j) => preserveDefById(j.defId).kind === 'muoi');
+  const vd = FARM_BUILDINGS.vai_muoi;
   return (
     <div style={{ display: 'grid', gap: 6, maxWidth: 560 }}>
       {level < PHOI_UNLOCK ? (
@@ -499,6 +504,74 @@ function PhoiTab(props: {
             <div style={{ fontSize: 12, opacity: 0.75, marginTop: 4 }}>
               {phoiDefs.length === 0 ? `Chưa có mẻ phơi nào ở cấp này${star ? '' : ' — còn cần xây Sân phơi trước'}.` : 'Mẹo: bánh tráng phơi sương mù cũng đủ nắng (fogBonus); mực một nắng chỉ ăn ngày nắng đẹp.'}
             </div>
+          </div>
+
+          <div style={{ display: 'block', marginTop: 6 }}>
+            {level < VAI_UNLOCK ? (
+              <div style={styles.card}>🔒 Dãy vại muối mở ở cấp {VAI_UNLOCK}: ngâm dưa muối, cà pháo, chanh muối, củ kiệu… vớt đúng cửa sổ thì ngon, để trễ thì khú/hỏng.</div>
+            ) : (
+              <div style={{ ...styles.card, display: 'block' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center' }}>
+                  <b>{vd.icon} {vd.name} {vaiStar > 0 ? `${'★'.repeat(vaiStar)}${'☆'.repeat(FARM_BUILDING_MAX_STAR - vaiStar)}` : ''}</b>
+                  {vaiStar === 0 ? (
+                    <button style={{ ...styles.btn, background: money >= vd.cost ? '#f1c40f' : '#555', color: money >= vd.cost ? '#222' : '#fff' }} onClick={() => buyFarmBuilding('vai_muoi')}>
+                      Xây Dãy vại ({formatMoney(vd.cost)})
+                    </button>
+                  ) : (
+                    <span style={{ fontSize: 12, opacity: 0.75 }}>{vaiCap(vaiStar)} vại</span>
+                  )}
+                </div>
+                {vaiStar > 0 && vaiStar < FARM_BUILDING_MAX_STAR && (
+                  <button style={{ ...styles.btn, background: '#f1c40f', color: '#222', marginTop: 6 }} onClick={() => upgradeFarmBuilding('vai_muoi')}
+                    title={`Cần gỗ + đá + tiền, thêm 2 vại`}>
+                    ⬆️ Lên sao {vaiStar + 1} ({formatMoney(vd.upgrades[vaiStar - 1].money)} + 🪵{vd.upgrades[vaiStar - 1].wood} 🪨{vd.upgrades[vaiStar - 1].stone})
+                  </button>
+                )}
+                {muoiJobs.length === 0 ? (
+                  <div style={{ fontSize: 12, opacity: 0.75, marginTop: 6 }}>{vaiStar === 0 ? 'Xây Dãy vại để ngâm món muối chua.' : 'Vại trống — chọn một mẻ dưới đây.'}</div>
+                ) : (
+                  muoiJobs.map((j) => {
+                    const d = preserveDefById(j.defId);
+                    const out = productById(d.outputId);
+                    const st = pickleState(j, d, day);
+                    const age = pickleAge(j, day);
+                    const win = st === 'ngon' ? '🟢 NGON' : st === 'haran' ? '⏳ còn hăng' : st === 'dat' ? '🟡 đạt' : st === 'kem' ? '🟠 khú' : '🔴 hỏng';
+                    const can = st === 'ngon' || st === 'dat' || st === 'kem';
+                    return (
+                      <div key={j.id} style={{ ...styles.card, display: 'block', marginTop: 6 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center' }}>
+                          <b>{out.name}</b>
+                          <button style={{ ...styles.btn, background: can ? '#2ecc71' : '#555', color: '#fff' }} onClick={() => collectPreserve(j.id)} disabled={st === 'haran'}>
+                            {st === 'haran' ? `⏳ ngày ${age.toFixed(1)}/${d.window![0]} còn hăng` : st === 'hong' ? `🗑️ Hỏng — đổ bỏ` : `🫙 Vớt (${age.toFixed(1)})`}
+                          </button>
+                        </div>
+                        <div style={{ fontSize: 12, opacity: 0.75, marginTop: 4 }}>
+                          Bắt đầu ngày {j.startDay} · cửa sổ vớt ngon {d.window![0]}–{d.window![0] + 1} · {win}{j.allHomegrown ? ' · toàn nhà trồng' : ''}
+                          {st === 'ngon' ? ' · GIÁ HƠN +20%' : ''}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+                <div style={{ fontSize: 12, marginTop: 4, display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                  {muoiDefs.map((d) => {
+                    const out = productById(d.outputId);
+                    const lack = d.inputs.find((i) => (storage[i.productId] ?? 0) < i.quantity);
+                    const can = vaiStar > 0 && !lack && muoiJobs.length < vaiCap(vaiStar);
+                    const label = `${out.name}${d.inputs.map((i) => ` (${productById(i.productId).name} ${i.quantity})`).join('')}`;
+                    return (
+                      <button key={d.id} style={{ ...styles.btn, background: can ? '#2ecc71' : '#555', color: '#fff' }} onClick={() => startPreserve(d.id)}
+                        title={lack ? `Thiếu ${productById(lack.productId).name} — nhập trước rồi muối` : `${out.name}: vớt ngon ngày ${d.window![0]}–${d.window![0] + 1}. ${d.note}`}>
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+                <div style={{ fontSize: 12, opacity: 0.75, marginTop: 4 }}>
+                  Mỗi món có cửa sổ vớt riêng (nút hiện "còn hăng / vớt ngon"): vớt đúng đầu cửa sổ thì NGON (toàn lô bán +20%), vớt trễ thì khú (×0,6) rồi hỏng. Nắng nóng làm chua nhanh, mưa không hại vại.
+                </div>
+              </div>
+            )}
           </div>
         </>
       )}

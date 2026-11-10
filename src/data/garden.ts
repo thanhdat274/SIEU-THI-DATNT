@@ -213,7 +213,7 @@ export const harvestYield = (def: CropDef, day: number, ripenDay?: number) =>
   Math.round(def.yieldQty * (def.season && inSeason(def, ripenDay ?? day) ? SEASON_YIELD : 1));
 
 /** Công trình trại: mua bằng tiền, nâng sao bằng tiền + gỗ + đá nhặt từ dọn trại (kiểu HappyTown). */
-export type FarmBuildingId = 'tuoi_tu_dong' | 'nha_luoi' | 'bai_tha' | 'bu_nhin' | 'gian_phoi';
+export type FarmBuildingId = 'tuoi_tu_dong' | 'nha_luoi' | 'bai_tha' | 'bu_nhin' | 'gian_phoi' | 'vai_muoi';
 
 export interface FarmBuildingDef {
   id: FarmBuildingId;
@@ -254,9 +254,14 @@ export const FARM_BUILDINGS: Record<FarmBuildingId, FarmBuildingDef> = {
     upgrades: [{ money: 3_500_000, wood: 6, stone: 4 }, { money: 5_000_000, wood: 10, stone: 6 }],
     note: 'Không gian thoáng đãng cho dăm nong phơi & sau này là vại muối, chum ủ: mỗi sao thêm 2 nong (2/4/6); nắng mưa tính theo giàn',
   },
+  vai_muoi: {
+    id: 'vai_muoi', name: 'Dãy vại muối', icon: '🫙', cost: 6_000_000, unlock: 38,
+    upgrades: [{ money: 4_000_000, wood: 6, stone: 4 }, { money: 6_000_000, wood: 10, stone: 6 }],
+    note: 'Một dãy vại sành đặt nơi râm mát cho món muối chua: mỗi sao thêm 2 vại (2/4/6); vớt đúng cửa sổ thì ngon, để quá thì khú',
+  },
 };
 
-export const FARM_BUILDING_ORDER: FarmBuildingId[] = ['bu_nhin', 'tuoi_tu_dong', 'bai_tha', 'nha_luoi', 'gian_phoi'];
+export const FARM_BUILDING_ORDER: FarmBuildingId[] = ['bu_nhin', 'tuoi_tu_dong', 'bai_tha', 'nha_luoi', 'gian_phoi', 'vai_muoi'];
 /** Sao tối đa của công trình. */
 export const FARM_BUILDING_MAX_STAR = 3;
 

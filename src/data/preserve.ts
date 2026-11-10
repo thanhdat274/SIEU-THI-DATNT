@@ -59,6 +59,9 @@ export interface PreserveJob {
   wet: number;
   /** Nguyên liệu toàn nhà trồng/nhà nuôi → thành phẩm chắc chắn mang nhãn. */
   allHomegrown: boolean;
+  /** muoi (lát L5): ngày "nắng nóng" cộng dồn — mỗi ngày Nắng đẹp tính nhanh thêm 0,25 ngày
+   *  cho mẻ muối (SPEC §1.5 "trời nắng nóng làm chua nhanh"). Save cũ thiếu → tự bù 0 (R2). */
+  heat?: number;
 }
 
 // ── Bảng nắng: "thời tiết × trạng thái giàn" (SPEC §1.5) ──
@@ -119,6 +122,35 @@ export function phoiDayGain(
 /** Mẻ phơi đủ nắng chưa (chuyển "chờ thu"). */
 export const phoiReady = (job: PreserveJob, def: PreserveDef) => job.sun >= def.need;
 
+// ── Lát L5: VẠI MUỐI (SPEC §1.5) ──
+/**
+ * Tuổi hiệu dụng của mẻ muối: (ngày bắt đầu → hôm nay) cộng nhiệt đã gom (mỗi ngày Nắng đẹp +0,25).
+ * Trời nắng nóng làm chua nhanh — dùng để mở cửa sổ vớt sớm hơn. THUẦN.
+ */
+export const pickleAge = (job: PreserveJob, day: number) => (day - job.startDay) + (job.heat ?? 0);
+
+export type PickleState =
+  | 'haran'  // Mới muối chưa tới cửa sổ — còn hăng, chưa chua, không vớt được.
+  | 'ngon'   // Đúng đầu cửa sổ (window[0]..window[0]+1) — vớt ra Ngon (toàn lô nhãn nhà trồng).
+  | 'dat'    // Giữa cửa sổ — vớt ra Đạt (đủ sản lượng, nhãn chỉ khi toàn nhà trồng).
+  | 'kem'    // Vớt trễ, sau window[1] tối đa 2 ngày — "khú", sản lượng ×0,6.
+  | 'hong';  // Vớt quá trễ — hỏng, phải đổ bỏ (không cho sản lượng).
+
+/** Chất lượng vớt của mẻ muối theo tuổi hiệu dụng (SPEC §1.5 bảng "Vớt vào lúc"). */
+export function pickleState(job: PreserveJob, def: PreserveDef, day: number): PickleState {
+  const w = def.window!;
+  const age = pickleAge(job, day);
+  if (age < w[0]) return 'haran';
+  if (age <= w[0] + 1) return 'ngon';
+  if (age <= w[1]) return 'dat';
+  if (age <= w[1] + 2) return 'kem';
+  return 'hong';
+}
+
+/** Sức chứa vại muối theo sao (SPEC §1.3: 2/4/6 vại) — lát L5 chặn farm (R7). */
+export const VAI_CAPACITY: Record<number, number> = { 1: 2, 2: 4, 3: 6 };
+export const vaiCap = (star: number) => VAI_CAPACITY[star] ?? 0;
+
 /** Mẻ PHƠI đang để NGOÀI giàn (chưa cất) — thẻ Sổ đầu ngày + rackRainAgenda dùng để biết
  *  "giàn còn đang phơi" (lát L3): đếm theo nong, mẻ phơi nào chưa cất là một nong phơi.
  *  Mẻ muối/ủ (lát L5/L6) không có khái niệm giàn nên không tính. THUẦN. */
@@ -158,11 +190,19 @@ export function preserveMorningTips(args: {
       tips.unshift({ icon: '☂️', text: `Mưa ${h}:${m} — giàn còn ${inOpen} nong đang phơi, cất kịp trước mưa`, act: 'Trang trại → Phơi' });
     }
   }
+  // 3. Mẻ muối vào cửa sổ vớt ngon hôm nay (lát L5) — đặt sau hai việc phơi cho nổi.
+  for (const j of args.jobs) {
+    const d = preserveDefById(j.defId);
+    if (d.kind !== 'muoi') continue;
+    const st = pickleState(j, d, args.day);
+    if (st === 'ngon') {
+      tips.push({ icon: '🫙', text: `${productById(d.outputId).name} đã vớt NGON — hôm nay/ngày mai là đẹp nhất`, act: 'Trang trại → Vại muối' });
+    } else if (st === 'hong') {
+      tips.push({ icon: '🗑️', text: `${productById(d.outputId).name} muối đã HOẢNG — đổ bỏ để trống vại`, act: 'Trang trại → Vại muối' });
+    }
+  }
   return tips;
 }
-
-/** Cấp mở sớm nhất mà trạm phơi có mẻ (để mở công trình gian_phoi, lát L2). */
-export const PHOI_UNLOCK = 34;
 
 /**
  * Một đêm trại: các mẻ phơi nhận "nắng" theo thời tiết ngày vừa qua + trạng thái giàn (`out`).
@@ -179,7 +219,13 @@ export function preserveNight(
   const next: PreserveJob[] = [];
   for (const job of jobs) {
     const def = preserveDefById(job.defId);
-    if (def.kind !== 'phoi') { next.push(job); continue; } // muoi/u để lát sau
+    if (def.kind === 'muoi') {
+      // Muối không phụ thuộc thời tiết rủi ro — chỉ nắng nóng làm chua nhanh hơn (heat +0,25/ngày nắng).
+      // Mẻ nào đã quá hạn hỏng (đổ bỏ) vẫn nằm đó cho người chơi hoặc phụ trại nhặt đổ (lát L5).
+      next.push({ ...job, heat: (job.heat ?? 0) + (ctx.weather === 'sunny' ? 0.25 : 0) });
+      continue;
+    }
+    if (def.kind !== 'phoi') { next.push(job); continue; } // u (lát L6) giữ nguyên
     const g = phoiDayGain(out, spell, ctx.weather, { tarp: ctx.tarp, stormSafe: ctx.stormSafe, fogBonus: def.fogBonus });
     if (g.stormLost) {
       news.push(`⛈️ Giông bão làm mất cả mẻ ${def.outputId} đang phơi ngoài giàn — cất kịp mới an toàn`);
@@ -258,7 +304,59 @@ export const PRESERVE_DEFS: PreserveDef[] = [
     sunOnly: true, learnAfterSold: 30,
     note: 'Miền biển — mực ống tươi phơi đúng một nắng; chỉ ngày nắng đẹp mới tính, đủ 1 nắng là xong.',
   },
+  // ── Lát L5: 6 VẠI MUỐI (SPEC §1.6) — toàn món muối chua thật, cửa sổ vớt theo từng món ──
+  {
+    id: 'ps_dua_muoi', kind: 'muoi', outputId: 'hx_dua_muoi', outputQty: 4,
+    // Dưa muối (miền Bắc): rau cải phơi héo, ngâm nước muối pha loãng (x_muoi + x_rau_cai),
+    // ủ 2–4 ngày chua giòn. Cửa sổ vớt ngon ngày 2–4.
+    inputs: [{ productId: 'x_rau_cai', quantity: 2 }, { productId: 'x_muoi', quantity: 1 }],
+    unlock: 38, need: 2, window: [2, 4], learnAfterSold: 30,
+    note: 'Miền Bắc — cải muối chua ăn kèm; rau cải + muối ủ 2–4 ngày, vớt ngon đầu cửa sổ ngày 2–3.',
+  },
+  {
+    id: 'ps_ca_phao', kind: 'muoi', outputId: 'hx_ca_phao', outputQty: 4,
+    // Cà pháo muối (miền Nam): cà pháo ngâm nước muối cho giòn chua, ăn với mắm tôm/mắm nêm.
+    // Game chưa có cà pháo → thay bằng cà tím (x_ca_tim), cùng họ cà; ghi rõ là thay thế (CLAUDE.md 4).
+    inputs: [{ productId: 'x_ca_tim', quantity: 2 }, { productId: 'x_muoi', quantity: 1 }],
+    unlock: 38, need: 3, window: [3, 5], learnAfterSold: 30,
+    note: 'Miền Nam — cà pháo muối giòn chua; game thay cà pháo bằng cà tím (x_ca_tim). Cửa sổ vớt ngày 3–5.',
+  },
+  {
+    id: 'ps_chanh_muoi', kind: 'muoi', outputId: 'hx_chanh_muoi', outputQty: 3,
+    // Chanh muối (miền Bắc, đặc sản Hà Nội): chanh đào/chanh xanh chôn trong muối 7–12 ngày
+    // cho ruột chuyển nâu, dùng pha nước chanh muối giải nhiệt. Muối lâu hơn thì mặn quá.
+    inputs: [{ productId: 'x_chanh_khong_hat', quantity: 1 }, { productId: 'x_muoi', quantity: 2 }],
+    unlock: 40, need: 7, window: [7, 12], learnAfterSold: 30,
+    note: 'Miền Bắc — chanh muối Hà Nội; chanh + muối chôn 7–12 ngày, vớt ngon quanh ngày 7–8.',
+  },
+  {
+    id: 'ps_cu_kieu', kind: 'muoi', outputId: 'hx_cu_kieu', outputQty: 3,
+    // Củ kiệu muối (miền Nam, Tết): củ kiệu ngâm nước muối + đường cho chua giòn trong, ăn kèm bánh tét.
+    // Game chưa có củ kiệu → thay bằng hành khô (x_hanh_kho), cùng họ hành/tỏi (Allium); ghi rõ thay thế.
+    inputs: [{ productId: 'x_hanh_kho', quantity: 2 }, { productId: 'x_muoi', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
+    unlock: 68, need: 5, window: [5, 8], learnAfterSold: 30,
+    note: 'Miền Nam Tết — củ kiệu muối; game thay củ kiệu bằng hành khô (x_hanh_kho). Cửa sổ vớt ngày 5–8.',
+  },
+  {
+    id: 'ps_dua_hanh', kind: 'muoi', outputId: 'hx_dua_hanh', outputQty: 3,
+    // Dưa hành muối (miền Bắc, Tết): hành củ nhúng nước sôi, ủ với muối cho chua giòn, ăn kèm thịt đông.
+    inputs: [{ productId: 'x_hanh_kho', quantity: 2 }, { productId: 'x_muoi', quantity: 1 }],
+    unlock: 102, need: 3, window: [3, 5], learnAfterSold: 30,
+    note: 'Miền Bắc Tết — dưa hành muối; hành khô + muối ủ 3–5 ngày, vớt ngon ngày 3–4.',
+  },
+  {
+    id: 'ps_dua_cai', kind: 'muoi', outputId: 'hx_dua_cai', outputQty: 4,
+    // Dưa cải chua (miền Nam): bẹ cải xanh phơi héo, ủ với nước muối cho chua, ăn kèm cá kho.
+    inputs: [{ productId: 'x_rau_cai', quantity: 2 }, { productId: 'x_muoi', quantity: 1 }],
+    unlock: 105, need: 2, window: [2, 4], learnAfterSold: 30,
+    note: 'Miền Nam — dưa cải chua; bẹ cải + muối ủ 2–4 ngày, vớt ngon đầu cửa sổ ngày 2–3.',
+  },
 ];
+
+/** Cấp mở sớm nhất mà trạm phơi có mẻ (để mở công trình gian_phoi, lát L2). */
+export const PHOI_UNLOCK = 34;
+/** Cấp mở sớm nhất mà vại muối có mẻ (để mở công trình vai_muoi, lát L5). */
+export const VAI_UNLOCK = 38;
 
 /** Mở khóa cho lát L5/L6 (nền trước; các mẻ muối/ủ chưa có trong danh mục L1). */
 export const preserveDefById = (id: string) => PRESERVE_DEFS.find((d) => d.id === id)!;
