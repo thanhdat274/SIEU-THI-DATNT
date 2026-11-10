@@ -19,6 +19,8 @@ import { staffEff } from '../../data/staffEff';
 import { serveCoverage, SERVE_TOP_HOURS } from '../../data/serveCoverage';
 import { hirePayoff } from '../../data/hirePayoff';
 import { managerAutoPayoff } from '../../data/managerAutoPayoff';
+import { warehouseKeeperPayoff } from '../../data/warehouseKeeperPayoff';
+import { spoilNightReport } from '../../data/advice';
 import { petActive } from '../../data/bizAchievements';
 import { storeMissRevenue } from '../../data/advice';
 import { staffValueToday, staffShiftSummary, courierPhoneValue } from '../../data/staffValue';
@@ -34,7 +36,7 @@ import { gapsOf, SITE_NAME, type Site } from '../../data/transfer';
 
 export function StaffPanel() {
   const [tab, setTab] = useState<'team' | 'hire'>('team');
-  const { staff, candidates, level, day, money, autoOpen, hire, fire, setShift, trainStaff, promoteStaff, closePanel, biz, branch, hireForBranch, stats, skills, dirt, storage, deliveries, furniture, sales, salesToday } = useGame();
+  const { staff, candidates, level, day, money, autoOpen, hire, fire, setShift, trainStaff, promoteStaff, closePanel, biz, branch, hireForBranch, stats, skills, dirt, storage, deliveries, furniture, sales, salesToday, analytics } = useGame();
   const [pick, setPick] = useState<Record<number, Shift>>({});
   const max = maxStaff(level);
   const bStaff = branch?.staff ?? [];
@@ -64,6 +66,9 @@ export function StaffPanel() {
   }, {});
   const shelved = [...new Set((furniture ?? []).flatMap((f) => f.tiers.map((t) => t.productId).filter((id): id is string => !!id)))];
   const managerPayoff = managerAutoPayoff({ shelved, storage, pending, sales: sales ?? {}, salesToday: salesToday ?? {}, missLog: stats?.missLog });
+  // GĐ2221 — quản lý kho tự giảm hàng hỏng: "đêm qua" theo convention SkillsPanel = analytics[day-1] (đêm vừa chốt).
+  const warehouseBestSkill = staff.reduce((best, st) => (st.role === 'warehouse_mgr' ? Math.max(best, st.skill) : best), 0);
+  const warehousePayoff = warehouseKeeperPayoff({ spoiltCost: (analytics ? spoilNightReport(analytics, day - 1)?.totalCost : 0) ?? 0, bestSkill: warehouseBestSkill });
   const total = [...staff, ...bStaff].reduce((sum, st) => sum + dailyWage(st), 0);
   // GĐ141: giá trị hôm nay của từng nhân viên ca ngày tiệm chính so với lương (thuần đọc stats.byHour)
   const staffValues = staffValueToday(stats?.byHour, staff);
@@ -173,6 +178,9 @@ export function StaffPanel() {
               {st.role === 'manager' && managerPayoff.ok && (
                 <div style={{ fontSize: 11, color: '#3498db' }} title="Quản lý tự nhập hàng khi kho sắp cạn (theo luật sẵn có).">{managerPayoff.line}</div>
               )}
+              {st.role === 'warehouse_mgr' && warehousePayoff.ok && (
+                <div style={{ fontSize: 11, color: '#3498db' }} title="Quản lý kho sắp xếp kho xoay hàng cận hạn lên trước nên hàng hỏng qua đêm chậm hơn — tiền cứu được tính từ số hỏng thật đêm qua.">{warehousePayoff.line}</div>
+              )}
               <PromoteRow st={st} level={level} money={money} onPromote={promoteStaff} />
               <div style={staffSt.actions}>
                 <span style={staffSt.label}>🕒 Ca làm</span>
@@ -253,6 +261,12 @@ export function StaffPanel() {
               {c.role === 'manager' && managerPayoff.ok && (
                 <div style={{ fontSize: 11, marginTop: 2, color: '#3498db' }} title="Quản lý tự nhập hàng khi kho sắp cạn (theo luật sẵn có).">{managerPayoff.line}</div>
               )}
+              {c.role === 'warehouse_mgr' && (() => {
+                const p = warehouseKeeperPayoff({ spoiltCost: (analytics ? spoilNightReport(analytics, day - 1)?.totalCost : 0) ?? 0, bestSkill: c.skill });
+                return p.ok ? (
+                  <div style={{ fontSize: 11, marginTop: 2, color: '#3498db' }} title="Quản lý kho sắp xếp kho xoay hàng cận hạn lên trước nên hàng hỏng qua đêm chậm hơn — tiền cứu được tính từ số hỏng thật đêm qua (ước theo tay nghề người này).">{p.line}</div>
+                ) : null;
+              })()}
               {branch && BRANCH_ROLES.includes(c.role) && (
                 <div style={staffSt.actions}>
                   <span style={staffSt.label}>🏪 Hoặc thuê vào tiện lợi 24/7</span>
