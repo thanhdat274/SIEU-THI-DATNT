@@ -177,6 +177,8 @@ const MON_THAT: Record<string, { name: string; station: string; cachNau: string 
   recipe_bo_cau_quay: { name: 'Bồ câu quay', station: 'food_grill', cachNau: 'bồ câu ướp gừng muối, quay chín da vàng giòn (quay cả nước)' },
   recipe_chao_ba_ba: { name: 'Cháo ba ba', station: 'hot_kettle', cachNau: 'ba ba hầm nấu cháo gạo, thịt xé ăn kèm (Hà Nội)' },
   recipe_ba_ba_hap_sa: { name: 'Ba ba hấp sả', station: 'steamer', cachNau: 'ba ba hấp sả gừng cho thơm, chấm nước mắm gừng (hấp cả nước)' },
+  recipe_chao_ga_ac: { name: 'Cháo gà ác', station: 'hot_kettle', cachNau: 'gà ác hầm nấu cháo gạo, thịt xé ăn kèm (món bồi bổ cả nước)' },
+  recipe_ga_ac_hap: { name: 'Gà ác hấp', station: 'steamer', cachNau: 'gà ác hấp cách thủy với gừng, ăn kèm muối tiêu (hấp bồi bổ cả nước)' },
 };
 
 /** Chữ mô tả tự chế không ai dùng làm tên món ngoài chợ. */

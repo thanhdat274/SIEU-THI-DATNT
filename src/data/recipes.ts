@@ -818,6 +818,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'bo_cau_quay', name: 'Bồ câu quay', category: 'fresh', buy: 22000, sell: 38000, color: 0x8a6a3a, unlock: 197 },
   { id: 'chao_ba_ba', name: 'Cháo ba ba', category: 'fresh', buy: 14000, sell: 26000, color: 0xf0e0c0, unlock: 198 },
   { id: 'ba_ba_hap_sa', name: 'Ba ba hấp sả', category: 'fresh', buy: 26000, sell: 40000, color: 0x6a7a4a, unlock: 199 },
+  { id: 'chao_ga_ac', name: 'Cháo gà ác', category: 'fresh', buy: 14000, sell: 24000, color: 0xf0e0c0, unlock: 198 },
+  { id: 'ga_ac_hap', name: 'Gà ác hấp', category: 'fresh', buy: 24000, sell: 42000, color: 0x6a5a4a, unlock: 199 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2741,6 +2743,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_ba_ba_hap_sa', name: 'Ba ba hấp sả', station: 'steamer',
     inputs: [{ productId: 'x_ba_ba', quantity: 1 }, { productId: 'x_sa', quantity: 1 }, { productId: 'x_gung', quantity: 1 }],
     outputId: 'ba_ba_hap_sa', outputQty: 6, durationMin: 30, unlock: 199, reputationGain: 1 },
+  // GĐ2141: Cháo gà ác — món bồi bổ cả nước: gà ác hầm lấy nước nấu cháo gạo, thịt gà ác xé ăn kèm; không thay thế.
+  { id: 'recipe_chao_ga_ac', name: 'Cháo gà ác', station: 'hot_kettle',
+    inputs: [{ productId: 'x_ga_ac', quantity: 1 }, { productId: 'gao', quantity: 1 }, { productId: 'x_hanh_kho', quantity: 1 }],
+    outputId: 'chao_ga_ac', outputQty: 14, durationMin: 45, unlock: 198, reputationGain: 1 },
+  // GĐ2142: Gà ác hấp — món hấp bồi bổ cả nước: gà ác hấp cách thủy với gừng cho thơm, ăn kèm muối tiêu; không thay thế.
+  { id: 'recipe_ga_ac_hap', name: 'Gà ác hấp', station: 'steamer',
+    inputs: [{ productId: 'x_ga_ac', quantity: 1 }, { productId: 'x_gung', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }],
+    outputId: 'ga_ac_hap', outputQty: 4, durationMin: 35, unlock: 199, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────
