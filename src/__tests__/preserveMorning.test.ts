@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { preserveMorningTips, rackInTheOpen, type PreserveJob } from '../data/preserve';
-import { rackRainAgenda, todayAgenda } from '../data/todayAgenda';
+import { preserveMorningTips, preserveTodoItems, rackInTheOpen, type PreserveJob } from '../data/preserve';
+import { TODO_SOURCES } from '../data/todo';
 import { rainSpell } from '../data/weather';
 
 /**
@@ -45,29 +45,35 @@ describe('rackInTheOpen — đếm nong đang phơi ngoài giàn', () => {
   });
 });
 
-describe('rackRainAgenda — dải việc hôm nay nhắc trước mưa 90 phút', () => {
-  it('giàn để ngoài + hôm nay mưa → chip "☔ HH:MM mưa — sân còn N nong đang phơi"', () => {
+describe('preserveTodoItems — Sổ việc chung nhắc trước mưa 90 phút (SPEC-TOI-UU §T6)', () => {
+  it('giàn để ngoài + hôm nay mưa → việc có giờ "☔ HH:MM mưa — sân còn N nong đang phơi"', () => {
     const spell = rainSpell(11, 40, 'rain');
-    const items = rackRainAgenda({ minutes: 6 * 60, day: 40, seed: 11, weather: 'rain', jobs: [phoiJob(), phoiJob(), phoiJob()] });
-    expect(items).toHaveLength(1);
-    const it = items[0];
-    expect(it.key).toBe('rack-rain');
-    expect(it.panel).toBe('garden');
+    const items = preserveTodoItems({ minutes: 6 * 60, day: 40, seed: 11, weather: 'rain', jobs: [phoiJob(), phoiJob(), phoiJob()] });
+    const it = items.find((i) => i.id === 'rack-rain')!;
+    expect(it.go).toEqual({ panel: 'garden' });
     // hiện TRƯỚC mưa 90 phút game
-    expect(it.atMinutes).toBe(Math.max(0, spell!.start - 90));
-    expect(it.untilMinutes).toBe(spell!.end);
-    expect(it.label).toBe(`☔ ${spillClock(spell!.start)} mưa — sân còn 3 nong đang phơi`);
+    expect(it.at).toBe(Math.max(0, spell!.start - 90));
+    expect(it.until).toBe(spell!.end);
+    expect(it.text).toBe(`☔ ${spillClock(spell!.start)} mưa — sân còn 3 nong đang phơi`);
+    // dòng mưa không lặp hai lần trong Sổ đầu ngày
+    expect(items.filter((i) => /mưa/i.test(i.text))).toHaveLength(1);
+    expect(it.morning).toBe(true);
   });
 
-  it('giàn cất hết / không mưa / mưa đã qua → không chip', () => {
-    expect(rackRainAgenda({ minutes: 0, day: 40, seed: 11, weather: 'rain', jobs: [] })).toEqual([]);
-    expect(rackRainAgenda({ minutes: 0, day: 40, seed: 11, weather: 'sunny', jobs: [phoiJob()] })).toEqual([]);
+  it('giàn cất hết / không mưa / mưa đã qua → không có việc mưa', () => {
+    const rain = (a: Parameters<typeof preserveTodoItems>[0]) => preserveTodoItems(a).filter((i) => i.id === 'rack-rain');
+    expect(rain({ minutes: 0, day: 40, seed: 11, weather: 'rain', jobs: [] })).toEqual([]);
+    expect(rain({ minutes: 0, day: 40, seed: 11, weather: 'sunny', jobs: [phoiJob()] })).toEqual([]);
     const spell = rainSpell(11, 40, 'rain')!;
-    expect(rackRainAgenda({ minutes: spell.end, day: 40, seed: 11, weather: 'rain', jobs: [phoiJob()] })).toEqual([]);
+    expect(rain({ minutes: spell.end, day: 40, seed: 11, weather: 'rain', jobs: [phoiJob()] })).toEqual([]);
   });
 
-  it('nối vào todayAgenda: không mẻ phơi → không chip (dải cũ không đổi)', () => {
-    const items = todayAgenda({ minutes: 0, day: 40, seed: 11, weather: 'rain', level: 40, regulars: {} });
-    expect(items.some((i) => i.key === 'rack-rain')).toBe(false);
+  it('mẻ đủ nắng → việc Sổ đầu ngày (morning), mở bảng Trang trại', () => {
+    const items = preserveTodoItems({ minutes: 0, day: 40, seed: 1, weather: 'sunny', jobs: [phoiJob({ sun: 2 })] });
+    expect(items.some((i) => i.morning && i.text.includes('đủ nắng') && i.urgency === 'today')).toBe(true);
+  });
+
+  it('hệ tự đăng ký nguồn "preserve" (không sửa todayAgenda/MorningPanel)', () => {
+    expect(typeof TODO_SOURCES.preserve).toBe('function');
   });
 });

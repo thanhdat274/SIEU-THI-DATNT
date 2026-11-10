@@ -58,10 +58,10 @@ import { SickShelvesCard, YesterCombosCard } from './MorningWarnCards';
 import { SolvencyCard, LoanBurdenCard, DailyBurnCard } from './MorningFinanceCards';
 import { ButcherCard, HuiCard } from './MorningMeatHuiCards';
 import { BranchChoresCard, HiepLucCard } from './MorningBranchCards';
-import { PreserveCard } from './MorningPreserveCards';
 import { CrisisCard, CrisisSummaryCard } from './MorningCrisisCards';
 import { LifeEventCard } from './MorningLifeEventCards';
-import { preserveMorningTips } from '../../data/preserve';
+import '../../core/todoLegacy';
+import { morningTodos, todos } from '../../data/todo';
 import { isCookStation } from '../../data/furniture';
 
 
@@ -76,7 +76,7 @@ export function MorningPanel() {
   const { day, level, xp, weatherSeed, weather, forecast, regulars, reservations, storage,
     furniture, staff, contracts, deliveries, shopTier, closePanel, openPanel, repLog, history,
     storageLots, debts, biz, money, branch, licenses, skills, happyHour, analytics, marketClearedDay,
-    demand: stateDemand, activeCombos, priceOf, sellMarketSurplus, stats, autoRoutine, autoOpenAt, lastSummary, garden } = useGame();
+    demand: stateDemand, activeCombos, priceOf, sellMarketSurplus, stats, autoRoutine, autoOpenAt, lastSummary } = useGame();
   const branchChores = branch ? branchMorningPlan(branch, storageUsed(storage), licenses, day, weatherSeed) : [];
   // GĐ123: mồi "kệ cần chú ý" từ analytics có sẵn — giống hệt AnalyticsPanel để không lệch số liệu.
   const shelved = shelfCount(furniture);
@@ -161,7 +161,11 @@ export function MorningPanel() {
     day, storage, shelved,
     health: itemHealthList(analytics, level, storage, shelved, stateDemand),
   });
-  const actions = buildMorningActions({ day, level, weather, weatherSeed, storage, staff, regulars, expected, debts, biz, branch, branchChores, quanHealth, haveStock, dueContracts, chophien, lastSummary, furniture: useGame.getState().furniture });
+  const nowMinutes = useClock((c) => Math.floor(c.minutes));
+  // SPEC-TOI-UU §T6 — việc các hệ tự đăng ký vào Sổ việc chung (đánh dấu `morning`) nhập vào thẻ "Việc hôm nay".
+  // Hệ mới KHÔNG thêm thẻ/đoạn vào file này: `registerTodo` trong file data của hệ đó.
+  const systemTodos = morningTodos(todos(useGame.getState(), nowMinutes));
+  const actions = buildMorningActions({ day, level, weather, weatherSeed, storage, staff, regulars, expected, debts, biz, branch, branchChores, quanHealth, haveStock, dueContracts, chophien, lastSummary, furniture: useGame.getState().furniture, systemTodos });
   const nextEvt = nextEventLine(day, level, QUAN_NUOC_UNLOCK, forecast[0]); // GĐ637
   // GĐ132: mồi "🧭 Sắp mở khóa" cho người chơi MỚI (tuần đầu) — 1–2 hệ lớn sắp mở + XP còn thiếu (thuần đọc)
   const earlyUnlocks = earlyUnlockTeaser({ level, xp, day });
@@ -188,9 +192,6 @@ export function MorningPanel() {
   // cho giờ vàng tối. 1 dòng duy nhất khi có món nấu được và giờ đang 13–17h —
   // chọn món mẻ DÀI NHẤT vẫn kịp 17h (mốc bắt đầu muộn nhất còn đúng sự thật);
   // hòa duration thì lấy món lời nhất/phút trạm (GĐ145). Thuần đọc, không đổi state.
-  // GĐ Hệ1-L3 — thẻ Sổ đầu ngày "🏺 Phơi · Muối · Ủ": mẻ chín chờ thu + giàn phơi mà nay mưa
-  const preserveTips = preserveMorningTips({ day, seed: weatherSeed, weather, jobs: garden.preserveJobs });
-  const nowMinutes = useClock((c) => Math.floor(c.minutes));
   const eveningPrep = eveningPrepFor({
     nowMinutes, level, furniture, storage,
     cSpeed: nowMinutes >= 13 * 60 && nowMinutes < 17 * 60 ? cookSpeed(useGame.getState) : 1,
@@ -209,8 +210,6 @@ export function MorningPanel() {
       {lastSummary?.day === day - 1 && <MorningNewsCard news={lastSummary.news} />}
 
       <AlleyTodayCard weatherSeed={weatherSeed} day={day} level={level} />
-
-      {preserveTips.length > 0 && <PreserveCard tips={preserveTips} onOpen={() => openPanel({ type: 'garden' })} />}
 
       {/* GĐ Hệ8-L3 — thẻ Biến cố dài: đợt nào + hiệu ứng hôm nay + việc chuẩn bị (HUD chip đã hiện ở thanh trên) */}
       <CrisisCard biz={biz} day={day} />

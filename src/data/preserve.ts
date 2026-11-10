@@ -1,6 +1,7 @@
 import { rainSpell, nextWeather, WEATHER, type RainSpell, type Weather } from './weather';
 import { productById } from './products';
 import { upcomingFestival, FESTIVAL_NOTICE_DAYS } from './calendar';
+import { registerTodo, urgencyAt, type TodoItem } from './todo';
 
 /**
  * Hệ 1 — Phơi · Muối · Ủ (SPEC-CHIEU-SAU §1).
@@ -456,3 +457,44 @@ export const preserveDefsOf = (kind: PreserveKind) => PRESERVE_DEFS.filter((d) =
 export const RACK_CAPACITY: Record<number, number> = { 1: 2, 2: 4, 3: 6 };
 /** Trần số nong phơi một giàn. */
 export const rackCap = (star: number) => RACK_CAPACITY[star] ?? 0;
+
+// ───────────────────────── Sổ việc chung (SPEC-TOI-UU §T6) ─────────────────────────
+// Hệ 1 tự đăng ký nguồn việc ở đây — KHÔNG sửa todayAgenda.ts / MorningPanel.tsx / HudAgenda.tsx.
+
+/** Việc của Phơi · Muối · Ủ cho Sổ việc: (1) chip có giờ "☔ HH:MM mưa — sân còn N nong đang phơi"
+ *  hiện TRƯỚC cơn mưa 90 phút game tới hết cơn (mồi "phải CẤT GIÀN kịp"); (2) các dòng Sổ đầu ngày
+ *  của `preserveMorningTips` (mẻ chín chờ thu, dưa vào cửa sổ ngon, đếm lùi lễ). THUẦN (R1/R5). */
+export function preserveTodoItems(args: {
+  minutes: number;
+  day: number;
+  seed: number;
+  weather: Weather;
+  jobs: PreserveJob[];
+}): TodoItem[] {
+  const out: TodoItem[] = [];
+  const inOpen = rackInTheOpen(args.jobs).length;
+  const spell = inOpen > 0 ? rainSpell(args.seed, args.day, args.weather) : null;
+  if (spell && args.minutes < spell.end) {
+    const h = String(Math.floor(spell.start / 60)).padStart(2, '0');
+    const m = String(spell.start % 60).padStart(2, '0');
+    const at = Math.max(0, spell.start - 90);
+    out.push({
+      id: 'rack-rain',
+      icon: '🏺',
+      text: `☔ ${h}:${m} mưa — sân còn ${inOpen} nong đang phơi`,
+      urgency: urgencyAt(args.minutes, at),
+      at,
+      until: spell.end,
+      morning: true,
+      go: { panel: 'garden' },
+    });
+  }
+  preserveMorningTips(args).forEach((t, i) => {
+    if (t.icon === '☂️') return; // dòng mưa đã có ở chip có giờ phía trên
+    out.push({ id: `preserve-tip-${i}`, icon: t.icon, text: t.text, urgency: 'today', morning: true, go: { panel: 'garden' } });
+  });
+  return out;
+}
+
+registerTodo('preserve', (s, minutes) =>
+  preserveTodoItems({ minutes, day: s.day, seed: s.weatherSeed, weather: s.weather, jobs: s.garden.preserveJobs ?? [] }));

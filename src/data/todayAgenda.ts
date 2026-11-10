@@ -21,8 +21,6 @@ import type { Reputation } from './reputation';
 import { productById } from './products';
 import { goldenHourBands } from './rhythm';
 import { fmtHour, pickEveningPrep } from './cookSchedule';
-import { rainSpell, type Weather } from './weather';
-import { rackInTheOpen, type PreserveJob } from './preserve';
 import { ANSWER_MINUTES, PHONE_SLOTS, PHONE_UNLOCK } from './phoneOrders';
 import { RECIPE_MAP } from './recipes';
 import { kitchenValue } from './kitchenValue';
@@ -31,11 +29,10 @@ import { partyOrderById } from './orders';
 import type { ActiveOrder } from './orders';
 import { errandWindow, pendingErrands, type RegularArcState } from './regularArc';
 import { arcScenePending, surpriseArcById, type SurpriseArcState } from './surpriseArcs';
-import { lifeEventById, type LifeEventState } from './lifeEvent';
 import type { ContractState, CookJob } from '../core/gameTypes';
 
 /** Bảng mở được khi bấm chip — tập con các Panel['type'] có thật (gameTypes.ts). */
-export type AgendaPanel = 'regulars' | 'morning' | 'cook' | 'contracts' | 'quests' | 'garden';
+export type AgendaPanel = 'regulars' | 'morning' | 'cook' | 'contracts' | 'quests';
 
 /** Một "chip hẹn" trên dải Kế hoạch hôm nay. */
 export interface AgendaItem {
@@ -262,58 +259,9 @@ export function arcAgenda(args: { day: number; arc?: SurpriseArcState }): Agenda
   }];
 }
 
-// ───── 9. Phơi · Muối · Ủ: sắp mưa mà giàn đang phơi (SPEC-CHIEU-SAU Hệ1-L3) ─────
-
-/** Chip "☔ HH:MM mưa — sân còn N nong đang phơi" hiện TRƯỚC cơn mưa 90 phút game, tới hết cơn.
- *  Cùng mẫu goldenHourAgenda: chỉ hiện khi hôm nay có khung giờ mưa/giông (`rainSpell`) và giàn
- *  đang để ngoài (`rackInTheOpen`). Là mồi quyết định "phải CẤT GIÀN kịp" — người chưa đọc hướng
- *  dẫn cũng biết phải làm theo giờ mưa. THUẦN — dựa trên thời tiết đã tất định (R1/R5). */
-export function rackRainAgenda(args: {
-  minutes: number;
-  day: number;
-  seed: number;
-  weather: Weather;
-  jobs: PreserveJob[];
-}): AgendaItem[] {
-  const inOpen = rackInTheOpen(args.jobs).length;
-  if (inOpen === 0) return [];
-  const spell = rainSpell(args.seed, args.day, args.weather);
-  if (!spell || args.minutes >= spell.end) return [];
-  const h = String(Math.floor(spell.start / 60)).padStart(2, '0');
-  const m = String(spell.start % 60).padStart(2, '0');
-  return [{
-    key: 'rack-rain',
-    atMinutes: Math.max(0, spell.start - 90),
-    untilMinutes: spell.end,
-    icon: '🏺',
-    label: `☔ ${h}:${m} mưa — sân còn ${inOpen} nong đang phơi`,
-    panel: 'garden' as const,
-  }];
-}
-
-// ───── 10. Việc nhà trong hẻm (GĐ Hệ2-L3, SPEC-CHIEU-SAU §2.5) ─────
-
-/** Chip "🏮 Giỗ {chủ} — còn N ngày" khi có việc nhà đang mời/đã nhận (biz.lifeEvent), hiện CẢ NGÀY
- *  (mốc 6h sáng tới 23h). Bấm mở Sổ đầu ngày nơi có thẻ nhận/giao cỗ. Giao xong → biz.lifeEvent
- *  = undefined nên không còn chip. */
-export function lifeEventAgenda(day: number, lifeEvent?: LifeEventState): AgendaItem[] {
-  if (!lifeEvent) return [];
-  const def = lifeEventById(lifeEvent.defId);
-  if (!def) return [];
-  const daysLeft = lifeEvent.eventDay - day;
-  const host = regularById(def.host);
-  const label = lifeEvent.accepted
-    ? `🏮 Giỗ ${host?.name ?? def.host}${daysLeft > 0 ? ` còn ${daysLeft} ngày` : ' — tới ngày giao'}`
-    : `🏮 Giỗ ${host?.name ?? def.host} — nhận lo cỗ?`;
-  return [{
-    key: `lifeevent-${lifeEvent.defId}`,
-    atMinutes: 6 * 60,
-    untilMinutes: 23 * 60,
-    icon: '🏮',
-    label,
-    panel: 'morning' as const,
-  }];
-}
+// Nguồn 9 (giàn phơi sắp mưa) và 10 (việc nhà trong hẻm) đã chuyển sang Sổ việc chung:
+// `preserveTodoItems` (data/preserve.ts) và `lifeEventTodoItems` (data/lifeEvent.ts) tự đăng ký qua
+// `registerTodo` (data/todo.ts, SPEC-TOI-UU §T6). HỆ MỚI KHÔNG THÊM NGUỒN VÀO FILE NÀY NỮA.
 
 // ───── Ghép lại: lọc quá giờ, sắp tăng dần ─────
 
@@ -338,11 +286,6 @@ export interface TodayAgendaArgs {
   hasCourier?: boolean;
   contracts?: Record<string, ContractState>;
   order?: ActiveOrder | null;
-  /** Hệ 1 (SPEC-CHIEU-SAU): thời tiết hôm nay + mẻ phơi trên giàn → nhắc cất kịp khi sắp mưa. */
-  weather?: Weather;
-  preserveJobs?: PreserveJob[];
-  /** Hệ 2 (SPEC-CHIEU-SAU §2.5): việc nhà trong hẻm đang mời/đã nhận (biz.lifeEvent). */
-  lifeEvent?: LifeEventState;
 }
 
 /** Dải "Kế hoạch hôm nay": ghép 8 nguồn có sẵn, lọc cái đã qua giờ (trừ cái đang
@@ -367,8 +310,6 @@ export function todayAgenda(args: TodayAgendaArgs): AgendaItem[] {
     ...partyOrderAgenda(args.day, args.order),
     ...errandAgenda({ day: args.day, arcs: args.regularArcs }),
     ...arcAgenda({ day: args.day, arc: args.surpriseArc }),
-    ...rackRainAgenda({ minutes: args.minutes, day: args.day, seed: args.seed, weather: args.weather ?? 'sunny', jobs: args.preserveJobs ?? [] }),
-    ...lifeEventAgenda(args.day, args.lifeEvent),
   ];
   return all
     .filter((it) => args.minutes < it.untilMinutes)

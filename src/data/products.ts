@@ -3,6 +3,7 @@ import { COOKED_PRODUCTS } from './recipes';
 import { HOMEMADE_PRODUCTS, NEIGHBOR2_PRODUCTS } from './homemade';
 import { REGION_PRODUCTS } from './regionSpecialty';
 import { LATE_GAME_PRODUCTS } from './lateGameProducts';
+import { epochGate } from './contentEpoch';
 
 /** Ngành hàng: quyết định bày ở đâu (kệ thường, tủ mát, tủ đông). */
 export type Category = 'dry' | 'drink' | 'cold' | 'frozen' | 'household' | 'fresh' | 'meat';
@@ -29,6 +30,9 @@ export interface Product {
   color: number;
   /** Cấp mở khóa. */
   unlock: number;
+  /** Kỷ nguyên nội dung (contentEpoch.ts): món MỚI ghi `since: 1` để test golden (kỷ nguyên 0) không thấy,
+   *  nhờ đó được mở ở BẤT KỲ cấp nào. Không ghi = nội dung gốc. */
+  since?: number;
 }
 
 const p = (
@@ -194,6 +198,9 @@ PRODUCTS.push(...NEIGHBOR2_PRODUCTS.map((it) => ({ ...it, unlock: Math.max(it.un
 PRODUCTS.push(...REGION_PRODUCTS.map((it) => ({ ...it, unlock: Math.max(it.unlock, SHELF_READY[it.category] ?? 1) })));
 // Hàng cuối game cấp 87–200 (lateGameProducts.ts): lấp cấp trống và kéo dài lộ trình lên cấp
 PRODUCTS.push(...LATE_GAME_PRODUCTS);
+// Kỷ nguyên nội dung (SPEC-TOI-UU §T4): dòng có `since` tự khoá `unlock` khi sim golden chạy ở kỷ nguyên 0.
+// Phải gọi SAU mọi lệnh push ở trên.
+epochGate(PRODUCTS);
 
 export const productById = (id: string) => PRODUCTS.find((it) => it.id === id)!;
 

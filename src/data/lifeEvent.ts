@@ -2,7 +2,7 @@
 // Hệ 2 · Tình làng nghĩa xóm — Cơ chế 2: Việc nhà trong hẻm (SPEC-CHIEU-SAU §2.5)
 // ----------------------------------------------------------------------------
 // Lát L3: ĐÁM GIỖ HẰNG NĂM cho 6 khách quen mở sớm nhất + ô `biz.lifeEvent`
-//          + 3 mức cỗ (gọn/đủ/linh đình) + thẻ Sổ đầu ngày + lifeEventAgenda.
+//          + 3 mức cỗ (gọn/đủ/linh đình) + thẻ Sổ đầu ngày + nguồn Sổ việc (lifeEventTodoItems).
 //
 // Giỗ là việc LẶP HẰNG NĂM: ngày cố định băm từ id (`gioDoy`, salt KHÁC
 // `birthdayDoy` của regulars.ts) nên KHÔNG LƯU (R4) — hai máy chơi chung luôn
@@ -18,6 +18,7 @@ import { dayOfYear, dateOfDoy } from './calendar';
 import { regularById, type RegularProgress } from './regulars';
 import { RECIPES, STATION_BY_OUTPUT, type CookingStation } from './recipes';
 import { productById } from './products';
+import { registerTodo, type TodoItem } from './todo';
 
 /** Loại việc nhà trong hẻm. */
 export type LifeEventKind = 'gio' | 'cuoi' | 'day_thang' | 'tan_gia' | 'mung_tho';
@@ -258,3 +259,31 @@ export function gioHouseIndex(host: string): number {
   for (let i = 0; i < host.length; i++) h = (h * 31 + host.charCodeAt(i)) & 0x7fffffff;
   return h % 5;
 }
+
+// ───────────────────────── Sổ việc chung (SPEC-TOI-UU §T6) ─────────────────────────
+// Hệ 2 tự đăng ký nguồn việc ở đây — KHÔNG sửa todayAgenda.ts / MorningPanel.tsx / HudAgenda.tsx.
+
+/** Chip "🏮 Giỗ {chủ} — còn N ngày" khi có việc nhà đang mời/đã nhận (biz.lifeEvent), hiện CẢ NGÀY
+ *  (mốc 6h sáng tới 23h). Bấm mở Sổ đầu ngày nơi có thẻ nhận/giao cỗ. Giao xong → biz.lifeEvent
+ *  = undefined nên không còn chip. THUẦN. */
+export function lifeEventTodoItems(day: number, lifeEvent?: LifeEventState): TodoItem[] {
+  if (!lifeEvent) return [];
+  const def = lifeEventById(lifeEvent.defId);
+  if (!def) return [];
+  const daysLeft = lifeEvent.eventDay - day;
+  const host = regularById(def.host);
+  const text = lifeEvent.accepted
+    ? `🏮 Giỗ ${host?.name ?? def.host}${daysLeft > 0 ? ` còn ${daysLeft} ngày` : ' — tới ngày giao'}`
+    : `🏮 Giỗ ${host?.name ?? def.host} — nhận lo cỗ?`;
+  return [{
+    id: `lifeevent-${lifeEvent.defId}`,
+    icon: '🏮',
+    text,
+    urgency: lifeEvent.accepted && daysLeft <= 0 ? 'now' : 'today',
+    at: 6 * 60,
+    until: 23 * 60,
+    go: { panel: 'morning' },
+  }];
+}
+
+registerTodo('lifeEvent', (s) => lifeEventTodoItems(s.day, s.biz.lifeEvent));

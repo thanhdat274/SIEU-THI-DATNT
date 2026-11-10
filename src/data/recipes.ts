@@ -5,6 +5,8 @@
 // cấp mở khóa, và trạm nấu (station). Thành phẩm tự động thêm vào PRODUCTS.
 // ============================================================================
 
+import { epochGate } from './contentEpoch';
+
 /** Trạm nấu: nơi có thể thực hiện recipe. */
 export type CookingStation =
   | 'food_grill'     // Bếp nướng (bánh mì trứng, xúc xích, cơm sườn)
@@ -42,6 +44,9 @@ export interface Recipe {
   reputationGain: number;
   /** Chỉ thực hiện được trong dịp lễ này (id trong FESTIVALS) — vd. giỏ quà Tết chỉ gói được mùa Tết. */
   festival?: string;
+  /** Kỷ nguyên nội dung (contentEpoch.ts): công thức MỚI ghi `since: 1` (và ghi cùng số ở dòng
+   *  COOKED_PRODUCTS của thành phẩm) để test golden không thấy → được mở ở bất kỳ cấp nào. */
+  since?: number;
 }
 
 // ──────────────────────────────────────────────
@@ -49,7 +54,7 @@ export interface Recipe {
 // ──────────────────────────────────────────────
 
 /** Sản phẩm tự chế: được thêm vào PRODUCTS khi khởi tạo (xem products.ts). */
-export const COOKED_PRODUCTS: { id: string; name: string; category: import('./products').Category; buy: number; sell: number; color: number; unlock: number }[] = [
+export const COOKED_PRODUCTS: { id: string; name: string; category: import('./products').Category; buy: number; sell: number; color: number; unlock: number; since?: number }[] = [
   // --- Bếp nướng (food_grill) ---
   { id: 'banh_mi_trung_nuong', name: 'Bánh mì trứng nướng', category: 'fresh', buy: 13000, sell: 24700, color: 0xdc7633, unlock: 38 },
   { id: 'xuc_xich_nuong', name: 'Xúc xích nướng', category: 'fresh', buy: 3000, sell: 5700, color: 0xc0392b, unlock: 22 },
@@ -3096,6 +3101,9 @@ export const RECIPES: Recipe[] = [
 // ──────────────────────────────────────────────
 // HELPER MAPS
 // ──────────────────────────────────────────────
+
+// Kỷ nguyên nội dung (SPEC-TOI-UU §T4): công thức có `since` tự khoá `unlock` khi sim golden chạy ở kỷ nguyên 0.
+epochGate(RECIPES);
 
 export const RECIPE_MAP: Record<string, Recipe> = Object.fromEntries(RECIPES.map(r => [r.id, r]));
 
