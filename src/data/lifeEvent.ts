@@ -236,3 +236,25 @@ const LIFE_EVENT_FALLBACK: Record<string, LifeEventDef> = Object.fromEntries(
 
 /** Toàn bộ def việc nhà (6 giỗ hằng năm + việc lớn một lần). */
 export const LIFE_EVENTS: LifeEventDef[] = LIFE_EVENTS_ALL;
+
+// ── Hệ 2 L8 (SPEC §2.9): RẠP ĐÁM 3D ────────────────────────────────
+// Ngày có đám giỗ, dựng rạp bạt trước "nhà" chủ giỗ trong hẻm. Hai helper thuần R4 (KHÔNG lưu,
+// KHÔNG đụng kinh tế/RNG → golden an toàn) để layer 3D biết hôm nay có giỗ của ai và đứng ở đâu.
+
+/** Chủ đám giỗ hôm nay (§2.9) — băm ngày giỗ từ id, TẤT ĐỊNH theo ngày chơi; null nếu hôm nay không
+ *  phải ngày giỗ của khách quen nào. Ăn khớp `nextGioDay` (ngày trong năm trùng `gioDoy`). */
+export function gioHostOn(day: number): string | null {
+  const doy = dayOfYear(day);
+  for (const d of LIFE_EVENTS) {
+    if (d.kind === 'gio' && gioDoy(d) === doy) return d.host;
+  }
+  return null;
+}
+
+/** Chỗ dựng rạp trước nhà chủ giỗ trong hẻm: chọn 1 trong `NEIGHBOR_HOUSES` băm ổn định theo id chủ
+ *  (28 chủ giỗ → 5 nhà, cùng người luôn về cùng nhà → rạp không "nhảy nhà"). */
+export function gioHouseIndex(host: string): number {
+  let h = 7;
+  for (let i = 0; i < host.length; i++) h = (h * 31 + host.charCodeAt(i)) & 0x7fffffff;
+  return h % 5;
+}

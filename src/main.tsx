@@ -44,6 +44,7 @@ import { createTiltShift } from './render/fx/tiltShift';
 import { applyLightBudget, initLightPool } from './render/lightBudget';
 import { NavGrid } from './world/navGrid';
 import { installQuanNuocSync } from './world/quanNuocSync';
+import { installRapDamSync } from './world/rapDam';
 import { createWorld } from './world/world';
 import { tiemXoiStandState, tiemXoiHandQty, tiemXoiDinerFigures } from './data/tiemXoi';
 import { quanHandLeft } from './data/quanNuoc';
@@ -236,6 +237,8 @@ installFarmSync(world.farm, (pop) => {
 });
 
 installQuanNuocSync(world, grid, shop);
+// Hệ 2 L8 (SPEC §2.9): rạp đám dựng trước nhà chủ giỗ hôm có đám — tự ẩn hiện theo ngày/cấp.
+installRapDamSync(scene);
 
 // Tiệm xôi 3D (GĐ430): biển đất khi đủ cấp, sạp xôi khi đã mở. Tải lười (cấp 40 mới cần), đặt phía tây
 // hẻm đối diện quán nước, chỉ hình ảnh, không chặn lưới.
