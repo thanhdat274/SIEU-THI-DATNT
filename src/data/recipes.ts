@@ -850,6 +850,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'ca_chep_chien_gion', name: 'Cá chép chiên giòn', category: 'fresh', buy: 26000, sell: 45000, color: 0xc8b888, unlock: 199 },
   { id: 'ca_tram_kho_to', name: 'Cá trắm kho tộ', category: 'fresh', buy: 26000, sell: 45000, color: 0xa8b8c8, unlock: 198 },
   { id: 'ca_tram_chien_gion', name: 'Cá trắm chiên giòn', category: 'fresh', buy: 26000, sell: 45000, color: 0xb8c8c8, unlock: 199 },
+  { id: 'ca_nuc_kho', name: 'Cá nục kho', category: 'fresh', buy: 22000, sell: 40000, color: 0xb8a888, unlock: 198 },
+  { id: 'ca_nuc_nuong', name: 'Cá nục nướng', category: 'fresh', buy: 22000, sell: 40000, color: 0xc8b898, unlock: 199 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2901,6 +2903,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_ca_tram_chien_gion', name: 'Cá trắm chiên giòn', station: 'fryer',
     inputs: [{ productId: 'x_ca_tram', quantity: 1 }, { productId: 'x_bot_chien', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }],
     outputId: 'ca_tram_chien_gion', outputQty: 4, durationMin: 25, unlock: 199, reputationGain: 1 },
+  // GĐ2173: Cá nục kho — bữa cơm miền Trung/Nam: cá nục kho nước mắm đường, sả ớt tới sánh; không thay thế.
+  { id: 'recipe_ca_nuc_kho', name: 'Cá nục kho', station: 'hot_kettle',
+    inputs: [{ productId: 'x_ca_nuc', quantity: 1 }, { productId: 'hx_nuoc_mam', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
+    outputId: 'ca_nuc_kho', outputQty: 4, durationMin: 30, unlock: 198, reputationGain: 1 },
+  // GĐ2174: Cá nục nướng — quán nhậu miền Trung: cá nục ướp muối ớt, nướng than cho thơm giòn da; không thay thế.
+  { id: 'recipe_ca_nuc_nuong', name: 'Cá nục nướng', station: 'food_grill',
+    inputs: [{ productId: 'x_ca_nuc', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }, { productId: 'x_ot_bot', quantity: 1 }],
+    outputId: 'ca_nuc_nuong', outputQty: 4, durationMin: 25, unlock: 199, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────
