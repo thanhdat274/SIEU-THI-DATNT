@@ -790,6 +790,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'muc_chien_gion', name: 'Mực chiên giòn', category: 'fresh', buy: 18000, sell: 30000, color: 0xe8c070, unlock: 191 },
   { id: 'bo_cuon_nam_kim_cham', name: 'Bò cuộn nấm kim châm', category: 'fresh', buy: 16000, sell: 28000, color: 0xa8603a, unlock: 192 },
   { id: 'oc_xao_me', name: 'Ốc xào me', category: 'fresh', buy: 22000, sell: 36000, color: 0x9a5a2a, unlock: 193 },
+  { id: 'ngheu_xao_sa_ot', name: 'Nghêu xào sả ớt', category: 'fresh', buy: 16000, sell: 28000, color: 0xd8b080, unlock: 194 },
+  { id: 'chao_ngheu', name: 'Cháo nghêu', category: 'fresh', buy: 9000, sell: 16000, color: 0xf0e0c0, unlock: 195 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2601,6 +2603,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_oc_xao_me', name: 'Ốc xào me', station: 'fryer',
     inputs: [{ productId: 'x_oc', quantity: 1 }, { productId: 'x_me', quantity: 1 }, { productId: 'x_toi', quantity: 1 }],
     outputId: 'oc_xao_me', outputQty: 3, durationMin: 20, unlock: 193, reputationGain: 1 },
+  // GĐ2113: Nghêu xào sả ớt — quán ốc Nam Bộ: nghêu xào lửa lớn với sả băm, ớt tươi cho miệng nghêu mở; không thay thế.
+  { id: 'recipe_ngheu_xao_sa_ot', name: 'Nghêu xào sả ớt', station: 'fryer',
+    inputs: [{ productId: 'ngheu', quantity: 1 }, { productId: 'x_sa', quantity: 1 }, { productId: 'ot_hien', quantity: 1 }],
+    outputId: 'ngheu_xao_sa_ot', outputQty: 4, durationMin: 15, unlock: 194, reputationGain: 1 },
+  // GĐ2114: Cháo nghêu — đặc sản Gò Công (Tiền Giang): luộc nghêu lấy nước nấu cháo gạo, cho thịt nghêu vào; không thay thế.
+  { id: 'recipe_chao_ngheu', name: 'Cháo nghêu', station: 'hot_kettle',
+    inputs: [{ productId: 'ngheu', quantity: 1 }, { productId: 'gao', quantity: 1 }],
+    outputId: 'chao_ngheu', outputQty: 12, durationMin: 30, unlock: 195, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────

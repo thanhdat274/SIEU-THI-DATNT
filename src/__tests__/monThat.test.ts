@@ -149,6 +149,8 @@ const MON_THAT: Record<string, { name: string; station: string; cachNau: string 
   recipe_muc_chien_gion: { name: 'Mực chiên giòn', station: 'fryer', cachNau: 'mực khoanh lăn bột chiên ngập dầu (quán nhậu)' },
   recipe_bo_cuon_nam_kim_cham: { name: 'Bò cuộn nấm kim châm', station: 'food_grill', cachNau: 'bò thái mỏng cuộn nấm kim châm nướng vỉ (quán nướng)' },
   recipe_oc_xao_me: { name: 'Ốc xào me', station: 'fryer', cachNau: 'ốc luộc sơ xào sốt me tỏi (quán ốc Sài Gòn)' },
+  recipe_ngheu_xao_sa_ot: { name: 'Nghêu xào sả ớt', station: 'fryer', cachNau: 'nghêu xào lửa lớn sả ớt (quán ốc Nam Bộ)' },
+  recipe_chao_ngheu: { name: 'Cháo nghêu', station: 'hot_kettle', cachNau: 'nước luộc nghêu nấu cháo gạo (Gò Công)' },
 };
 
 /** Chữ mô tả tự chế không ai dùng làm tên món ngoài chợ. */
