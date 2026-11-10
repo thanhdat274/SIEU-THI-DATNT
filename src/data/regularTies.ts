@@ -97,6 +97,19 @@ export function rippleFriendship(
     .map((t) => ({ id: otherOf(t, sourceId), delta: opts.weighted === false ? delta : Math.round(delta * TIE_WEIGHT[t.kind]) }));
 }
 
+/** Lan "lành" toàn bộ cạnh TRỪ cạnh khắc khẩu (chưa hoà giải) — dùng cho việc lo việc nhà (giỗ,
+ *  SPEC §2.5: "mọi người có cạnh với host, TRỪ khắc khẩu, nhận phần lan — cả họ biết tiệm lo cỗ ngon").
+ *  Cạnh khắc khẩu đã mended thì được lan như cạnh thân (tieIsHostile trả false). THUẦN. */
+export function friendlyRipple(
+  sourceId: string,
+  delta: number,
+  tiesMended: string[] = [],
+): { id: string; delta: number }[] {
+  return tiesOf(sourceId)
+    .filter((t) => !tieIsHostile(t, tiesMended))
+    .map((t) => ({ id: otherOf(t, sourceId), delta: Math.round(delta * TIE_WEIGHT[t.kind]) }));
+}
+
 /** Một cạnh có được xem là "khắc khẩu" không (tính cả cạnh đã hoà giải: đã mended thì không còn). */
 export function tieIsHostile(t: RegularTie, tiesMended: string[] = []): boolean {
   if (t.kind !== 'khac_khau') return false;

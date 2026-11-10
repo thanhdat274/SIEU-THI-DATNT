@@ -603,8 +603,14 @@ export interface GameState {
   applyRipple: (
     sourceId: string,
     delta: number,
-    opts?: { only?: 'ho_hang' | 'ban_be' | 'lang_gieng' | 'dong_nghe' | 'khac_khau'; weighted?: boolean },
+    opts?: { only?: 'ho_hang' | 'ban_be' | 'lang_gieng' | 'dong_nghe' | 'khac_khau'; weighted?: boolean; friendlyOnly?: boolean },
   ) => void;
+
+  /** Hệ 2 — Việc nhà trong hẻm (GĐ Hệ2-L3, SPEC §2.5): nhận/từ chối/giao cỗ giỗ.
+   *  Cổng cấp ≥ LIFE_EVENT_UNLOCK; GUARDED 'lifeEvent'. */
+  acceptLifeEvent: (tier: 0 | 1 | 2) => void;
+  declineLifeEvent: () => void;
+  deliverLifeEvent: () => boolean;
 
   /** Trang trại (trồng, bón phân, nuôi gà/vịt/ngỗng/bò/heo/dê/gà Đông Tảo, đơn quán xóm). */
   garden: GardenState;

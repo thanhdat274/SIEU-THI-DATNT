@@ -59,8 +59,10 @@ import { SolvencyCard, LoanBurdenCard, DailyBurnCard } from './MorningFinanceCar
 import { ButcherCard, HuiCard } from './MorningMeatHuiCards';
 import { BranchChoresCard, HiepLucCard } from './MorningBranchCards';
 import { PreserveCard } from './MorningPreserveCards';
-import { CrisisCard } from './MorningCrisisCards';
+import { CrisisCard, CrisisSummaryCard } from './MorningCrisisCards';
+import { LifeEventCard } from './MorningLifeEventCards';
 import { preserveMorningTips } from '../../data/preserve';
+import { isCookStation } from '../../data/furniture';
 
 
 
@@ -94,6 +96,8 @@ export function MorningPanel() {
   const cleanNext = nextCleanTier(cleanStreak);
   const cleanExtra = cleanNext ? `chạm ${cleanNext.name} → +${formatMoney(cleanBonus(cleanNext.n, level))}` : `đã đạt ${CLEAN_TIERS[CLEAN_TIERS.length - 1].name}`;
   const shopName = useGame((s) => s.shopName);
+  // GĐ Hệ2-L3 — Việc nhà trong hẻm: thẻ giỗ cần biết có đủ trạm nấu để nhận từng mức cỗ.
+  const cookStations = [...new Set(furniture.filter((f) => isCookStation(f.type)).map((f) => f.type as string))];
   // GĐ1285 — khách quen nào đang bị phụ món ưa (missLog của ngày + lời chê gần) → cảnh báo giữ chân
   const reviews = useGame((s) => s.reviews);
   const regularChurnData = regularChurn({ missLog: stats?.missLog, reviews });
@@ -210,6 +214,9 @@ export function MorningPanel() {
 
       {/* GĐ Hệ8-L3 — thẻ Biến cố dài: đợt nào + hiệu ứng hôm nay + việc chuẩn bị (HUD chip đã hiện ở thanh trên) */}
       <CrisisCard biz={biz} day={day} />
+      {biz.lifeEvent && <LifeEventCard st={biz.lifeEvent} stations={cookStations} />}
+      {/* GĐ Hệ8-L4 — bảng tổng kết cuối đợt (chỉ sáng ngay sau khi đợt khép) */}
+      <CrisisSummaryCard biz={biz} day={day} />
 
       {/* GĐ199/GĐ202: Rốn kho chung + phiếu nạp kho (tách GĐ919 sang SupplyChainCard) */}
       <SupplyChainCard storage={storage} branch={branch ?? undefined} quanNuoc={biz.quanNuoc} quanNuocLast={biz.quanNuocLast ?? null} level={level} weather={weather} day={day} />

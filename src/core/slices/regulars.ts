@@ -9,11 +9,12 @@ import { satisfiedLine, walkoutLine } from '../../data/regularTrust';
 import { REP_CAP } from '../../data/reputation';
 import { regularGiftPlan, giftFriendship, giftXp, giftableCount, giftRemainNote } from '../../data/regularGift';
 import { type GameState, type SetState, type GetState, addHour } from '../gameTypes';
-import { rippleFriendship, FORGIVE_HO_HANG_GAIN, TIES_UNLOCK, RIPPLE_DAILY_CAP } from '../../data/regularTies';
+import { rippleFriendship, friendlyRipple, FORGIVE_HO_HANG_GAIN, TIES_UNLOCK, RIPPLE_DAILY_CAP } from '../../data/regularTies';
+import { lifeEventById, menuValue, menuSize, LIFE_EVENT_UNLOCK } from '../../data/lifeEvent';
 
 /** Khách: lượt ghé, khách quen, lời hẹn giữ món, sổ nợ, đánh giá. */
 
-export const createRegularsSlice = (set: SetState, get: GetState): Pick<GameState, 'recordVisit' | 'regularVisit' | 'addReservation' | 'cancelReservation' | 'adjustFriendship' | 'applyRipple' | 'rescuePoachedRegular' | 'checkoutOnCredit' | 'collectDebt' | 'collectDebtPartial' | 'remindDebt' | 'forgiveDebt' | 'giftRegular' | 'addReview'> => ({
+export const createRegularsSlice = (set: SetState, get: GetState): Pick<GameState, 'recordVisit' | 'regularVisit' | 'addReservation' | 'cancelReservation' | 'adjustFriendship' | 'applyRipple' | 'acceptLifeEvent' | 'declineLifeEvent' | 'deliverLifeEvent' | 'rescuePoachedRegular' | 'checkoutOnCredit' | 'collectDebt' | 'collectDebtPartial' | 'remindDebt' | 'forgiveDebt' | 'giftRegular' | 'addReview'> => ({
   recordVisit: (happy, sample) => {
     const s = get();
     set({
@@ -126,7 +127,11 @@ export const createRegularsSlice = (set: SetState, get: GetState): Pick<GameStat
     if (s.level < TIES_UNLOCK) return;
     const rippleDay = { ...(s.biz.rippleDay ?? {}) };
     let touched = false;
-    for (const { id, delta: d } of rippleFriendship(sourceId, delta, opts)) {
+    // GĐ Hệ2-L3: `friendlyOnly` — lo việc nhà (giỗ) chỉ lan sang cạnh THÂN (trừ khắc khẩu chưa hoà giải).
+    const list = opts.friendlyOnly
+      ? friendlyRipple(sourceId, delta, s.biz.tiesMended ?? [])
+      : rippleFriendship(sourceId, delta, opts);
+    for (const { id, delta: d } of list) {
       if (d === 0) continue;
       const rec = rippleDay[id];
       const sum = rec && rec.day === s.day ? rec.sum : 0;
@@ -138,6 +143,60 @@ export const createRegularsSlice = (set: SetState, get: GetState): Pick<GameStat
       get().adjustFriendship(id, applied);
     }
     if (touched) set({ biz: { ...get().biz, rippleDay } });
+  },
+  // GĐ Hệ2-L3 (SPEC §2.5) — Việc nhà trong hẻm: giỗ hằng năm. Một việc một lúc (biz.lifeEvent).
+  // Nhận lời: chọn mức cỗ gọn/đủ/linh đình (đánh đổi như placeBet). Giao: takeStock như deliverOrder.
+  acceptLifeEvent: (tier) => {
+    const s = get();
+    if (s.level < LIFE_EVENT_UNLOCK) return; // cổng cấp toàn hệ (golden L30 an toàn)
+    const le = s.biz.lifeEvent;
+    if (!le || le.accepted || s.day >= le.eventDay) return;
+    set({ biz: { ...s.biz, lifeEvent: { ...le, tier, accepted: true } } });
+    const def = lifeEventById(le.defId);
+    const tname = ['gọn', 'đủ', 'linh đình'][tier];
+    s.notify(def ? `🏮 ${def.region === 'nam' ? 'Cỗ miền Nam' : 'Cỗ miền Bắc'} mức ${tname} — còn ${le.eventDay - s.day} ngày chuẩn bị` : `🏮 Đã nhận lo cỗ mức ${tname}`);
+  },
+  declineLifeEvent: () => {
+    const s = get();
+    const le = s.biz.lifeEvent;
+    if (!le || le.accepted) return;
+    // Từ chối ngay từ đầu không mất gì; giữ record đến hết cửa sổ để không mời việc khác đè (tối đa 1 việc).
+    set({ biz: { ...s.biz, lifeEvent: { ...le, tier: 0, accepted: false } } });
+    s.notify('🏮 Đã từ chối giúp cỗ (không mất gì)');
+  },
+  deliverLifeEvent: () => {
+    const s = get();
+    const le = s.biz.lifeEvent;
+    const def = le && lifeEventById(le.defId);
+    if (!le || !def || !le.accepted) return false;
+    if (s.day < le.eventDay) { s.notify('Chưa tới ngày cỗ — tới ngày mới giao được'); return false; }
+    const menu = def.menus[le.tier];
+    const missing = Object.entries(menu).filter(([id, q]) => (s.storage[id] ?? 0) < q);
+    if (missing.length) {
+      s.notify(`Còn thiếu cỗ: ${missing.map(([id, q]) => `${q} ${productById(id).name}`).join(', ')}`);
+      return false;
+    }
+    const k = copyStock(s);
+    for (const [id, q] of Object.entries(menu)) takeStock(k, id, q);
+    const pay = menuValue(menu) + def.bonus[le.tier];
+    const hostGain = def.friendship[le.tier];
+    const sold = menuSize(menu);
+    set({
+      ...k,
+      biz: { ...s.biz, lifeEvent: undefined },
+      money: s.money + pay,
+      stats: { ...s.stats, revenue: s.stats.revenue + pay, itemsSold: s.stats.itemsSold + sold },
+      totals: { ...s.totals, revenue: s.totals.revenue + pay, itemsSold: s.totals.itemsSold + sold },
+    });
+    get().addXp(sold * 5);
+    // Chủ cộng thân thiết; cả họ có cạnh với chủ (trừ khắc khẩu) lan theo trọng số, qua trần ±3/ngày.
+    get().adjustFriendship(def.host, hostGain);
+    get().applyRipple(def.host, hostGain, { friendlyOnly: true });
+    get().recordDiscovery(Object.keys(menu)); // Sổ tay Tiệm (GĐ36)
+    get().addReview(5, undefined, Object.keys(menu)[0]);
+    s.notify(`🏮 Giao xong cỗ giỗ (${def.region === 'nam' ? 'miền Nam' : 'miền Bắc'}): +${formatMoney(pay)} · 💛 +${hostGain} thân thiết`);
+    get().checkTitles();
+    return true;
   },
   // GĐ793 — đòi lại khách quen bị rival lôi kéo: tặng 1 món họ thích trong kho + tiền quà, mỗi ngày 1 người.
   // Chạy ở máy chạy (GUARDED 'rival:poach') nên chơi đơn và hẻm online ra cùng kết quả.

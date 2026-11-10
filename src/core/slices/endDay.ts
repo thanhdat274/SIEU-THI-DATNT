@@ -39,6 +39,7 @@ import { BUZZ_DAYS, CRISIS_MUL, POST_CAP, SOCIAL_UNLOCK, socialDayEnd, type Soci
 import { ANIMAL_ORDER, farmCritChance, farmhandChores, FARM_ORDER_UNLOCK, farmOrderCapacity, farmOrderNews, farmOrderProduce, gardenNight, makeFarmOrder, type AnimalKind } from '../../data/garden';
 import { preserveNight, farmhandPreserve, preserveDefById } from '../../data/preserve';
 import { crisisNight } from '../../data/crisis';
+import { lifeEventFor, lifeEventById, gioLabel } from '../../data/lifeEvent';
 import { logAnalyticsDay } from '../../data/analytics';
 import { appRating } from '../../data/online';
 import { onlineDayEnd } from './online';
@@ -456,6 +457,29 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
     ...biz.biz,
     crisis: crisisN.crisis, crisesSeen: crisisN.crisesSeen, crisisBadges: crisisN.crisisBadges, roadBoon: crisisN.roadBoon, lastCrisis: crisisN.lastCrisis,
   };
+  // GĐ Hệ2-L3 (SPEC-CHIEU-SAU §2.5) — VIỆC NHÀ TRONG HẺM: mời ĐÁM GIỖ hằng năm (giỗ lặp, R4,
+  // không lưu — ngày băm từ id cùng lịch nên hai máy hẻm luôn khớp). Cổng cấp ≥ LIFE_EVENT_UNLOCK
+  // (golden L30 an toàn); một việc một lúc (biz.lifeEvent), tối đa 1 giỗ/năm (R7).
+  const curLife = biz.biz.lifeEvent;
+  if (curLife && curLife.accepted && curLife.eventDay <= s.day) {
+    // Đã nhận lời mà hết ngày cỗ chưa giao → lỡ hẹn: chủ −, cụm họ hàng −, một review 1★.
+    const ldef = lifeEventById(curLife.defId);
+    if (ldef) {
+      const loss = ldef.friendship[curLife.tier];
+      s.addReview(1, 'stock');
+      s.adjustFriendship(ldef.host, -loss);
+      s.applyRipple(ldef.host, -loss, { friendlyOnly: true });
+      say(`😠 Lỡ hẹn đám giỗ nhà ${regularById(ldef.host)?.name ?? ldef.host}: -${loss} thân thiết`);
+    }
+    biz.biz = { ...biz.biz, lifeEvent: undefined };
+  } else if (!curLife || curLife.eventDay < s.day) {
+    const offer = lifeEventFor({ day: s.day, seed: s.weatherSeed, level: s.level, regulars: s.regulars });
+    if (offer) {
+      const ldef = lifeEventById(offer.defId);
+      biz.biz = { ...biz.biz, lifeEvent: { defId: offer.defId, eventDay: offer.eventDay, tier: 0, accepted: false } };
+      if (ldef) say(`🏮 Giỗ nhà ${regularById(ldef.host)?.name ?? ldef.host} (${gioLabel(ldef)}) nhờ lo cỗ — xem Sổ đầu ngày`);
+    }
+  }
   // Kết quả quán nước hôm nay ghi vào biz để UI hiển thị (xem lại "hôm qua bán được bao nhiêu ly")
   if (quanNuocLast) biz.biz = { ...biz.biz, quanNuocLast };
   if (tiemXoiLast) {

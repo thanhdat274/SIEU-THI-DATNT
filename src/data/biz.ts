@@ -213,6 +213,9 @@ export interface BizState {
   /** Lần cuối xoá nợ mới lan tới họ hàng (GĐ Hệ2-L2): chống farm "cho vay nhỏ rồi xoá liên tục",
    *  chỉ lan 1 lần/30 ngày cho mỗi con nợ. Map regularId → lastDay. Bản lưu cũ thiếu → undefined. */
   forgiveRipple?: Record<string, number>;
+  /** Việc nhà trong hẻm đang mời/đã nhận (GĐ Hệ2-L3, SPEC §2.5): giỗ hằng năm mở cấp ≥ 32.
+   *  Tối đa 1 việc một lúc. Bản lưu cũ thiếu → undefined (chưa có việc nào, không cần SAVE_VERSION). */
+  lifeEvent?: import('./lifeEvent').LifeEventState;
   /** Ngày game đã nhận thưởng đón lễ (GĐ70): 1 dịp lễ 1 lần. Bản lưu cũ thiếu →
    *  undefined (chưa nhận dịp nào, không cần SAVE_VERSION). */
   prepClaimed?: number;

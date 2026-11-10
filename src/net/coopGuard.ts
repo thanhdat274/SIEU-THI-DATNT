@@ -20,6 +20,11 @@ export const GUARDED: Record<string, (args: unknown[]) => string> = {
   // GĐ793 — đòi khách quen bị rival lôi kéo: cả hẻm dùng chung danh sách bị lôi kéo, hai người bấm cùng lúc
   // thì người sau được báo "đợi một chút" thay vì đòi trùng một người.
   rescuePoachedRegular: () => 'rival:poach',
+  // GĐ Hệ2-L3 — Việc nhà trong hẻm: một việc một lúc (biz.lifeEvent chung), hai người bấm cùng lúc
+  // thì người sau đợi một chút (SPEC §2.9: khoá chung 'lifeEvent').
+  acceptLifeEvent: () => 'lifeEvent',
+  declineLifeEvent: () => 'lifeEvent',
+  deliverLifeEvent: () => 'lifeEvent',
   expandFarm: () => 'farm:land',
   feedPen: (a) => `pen:${a[0]}`,
   buyAnimal: (a) => `buyAnimal:${a[0]}`,

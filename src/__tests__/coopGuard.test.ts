@@ -108,6 +108,7 @@ const LOCAL_ONLY: Record<string, string> = {
   addReservation: 'nhận giữ món cho một khách quen (thêm hẹn mới)',
   cancelReservation: 'huỷ lời hẹn của một khách quen theo id người',
   adjustFriendship: 'cộng/trừ thân thiết một khách quen theo id người',
+  applyRipple: 'mô phỏng nội bộ lan thân thiết theo cạnh (đơn/việc nhà) — chạy cùng adjustFriendship trên máy chạy, không ai bấm từ UI',
   acceptContract: 'nhận hợp đồng cung cấp theo id (thêm trạng thái mới)',
   deliverContract: 'giao kỳ hiện tại của một hợp đồng theo id',
   commitContract: 'cam kết kỳ: trữ đúng số hàng kỳ này khỏi kho chung theo id; toàn cục dồn chứ không đè chỗ',

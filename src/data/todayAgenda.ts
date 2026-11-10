@@ -31,6 +31,7 @@ import { partyOrderById } from './orders';
 import type { ActiveOrder } from './orders';
 import { errandWindow, pendingErrands, type RegularArcState } from './regularArc';
 import { arcScenePending, surpriseArcById, type SurpriseArcState } from './surpriseArcs';
+import { lifeEventById, type LifeEventState } from './lifeEvent';
 import type { ContractState, CookJob } from '../core/gameTypes';
 
 /** Bảng mở được khi bấm chip — tập con các Panel['type'] có thật (gameTypes.ts). */
@@ -290,6 +291,30 @@ export function rackRainAgenda(args: {
   }];
 }
 
+// ───── 10. Việc nhà trong hẻm (GĐ Hệ2-L3, SPEC-CHIEU-SAU §2.5) ─────
+
+/** Chip "🏮 Giỗ {chủ} — còn N ngày" khi có việc nhà đang mời/đã nhận (biz.lifeEvent), hiện CẢ NGÀY
+ *  (mốc 6h sáng tới 23h). Bấm mở Sổ đầu ngày nơi có thẻ nhận/giao cỗ. Giao xong → biz.lifeEvent
+ *  = undefined nên không còn chip. */
+export function lifeEventAgenda(day: number, lifeEvent?: LifeEventState): AgendaItem[] {
+  if (!lifeEvent) return [];
+  const def = lifeEventById(lifeEvent.defId);
+  if (!def) return [];
+  const daysLeft = lifeEvent.eventDay - day;
+  const host = regularById(def.host);
+  const label = lifeEvent.accepted
+    ? `🏮 Giỗ ${host?.name ?? def.host}${daysLeft > 0 ? ` còn ${daysLeft} ngày` : ' — tới ngày giao'}`
+    : `🏮 Giỗ ${host?.name ?? def.host} — nhận lo cỗ?`;
+  return [{
+    key: `lifeevent-${lifeEvent.defId}`,
+    atMinutes: 6 * 60,
+    untilMinutes: 23 * 60,
+    icon: '🏮',
+    label,
+    panel: 'morning' as const,
+  }];
+}
+
 // ───── Ghép lại: lọc quá giờ, sắp tăng dần ─────
 
 export interface TodayAgendaArgs {
@@ -316,6 +341,8 @@ export interface TodayAgendaArgs {
   /** Hệ 1 (SPEC-CHIEU-SAU): thời tiết hôm nay + mẻ phơi trên giàn → nhắc cất kịp khi sắp mưa. */
   weather?: Weather;
   preserveJobs?: PreserveJob[];
+  /** Hệ 2 (SPEC-CHIEU-SAU §2.5): việc nhà trong hẻm đang mời/đã nhận (biz.lifeEvent). */
+  lifeEvent?: LifeEventState;
 }
 
 /** Dải "Kế hoạch hôm nay": ghép 8 nguồn có sẵn, lọc cái đã qua giờ (trừ cái đang
@@ -341,6 +368,7 @@ export function todayAgenda(args: TodayAgendaArgs): AgendaItem[] {
     ...errandAgenda({ day: args.day, arcs: args.regularArcs }),
     ...arcAgenda({ day: args.day, arc: args.surpriseArc }),
     ...rackRainAgenda({ minutes: args.minutes, day: args.day, seed: args.seed, weather: args.weather ?? 'sunny', jobs: args.preserveJobs ?? [] }),
+    ...lifeEventAgenda(args.day, args.lifeEvent),
   ];
   return all
     .filter((it) => args.minutes < it.untilMinutes)
