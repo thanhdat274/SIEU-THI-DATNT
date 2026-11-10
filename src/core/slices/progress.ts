@@ -1,3 +1,4 @@
+import { noteUnlocked } from '../dayReport';
 import { applyChest } from '../../data/giftChest';
 import { weekendGift } from '../../data/weekendGift';
 import { vietSetCount } from '../../data/decorSets';
@@ -341,6 +342,8 @@ export const createProgressSlice = (set: SetState, get: GetState): Pick<GameStat
     if (level !== s.level) {
       playSfx('levelup');
       s.notify(levelUpToast(level, gained));
+      // SPEC-TOI-UU §T1 (L1): đếm số mục mới mở hôm nay cho báo cáo ngày ẩn danh.
+      noteUnlocked(gained.length);
     }
   },
 });

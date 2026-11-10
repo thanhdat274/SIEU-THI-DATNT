@@ -14,6 +14,7 @@ import { isQuanMatchDay, quanDayNews, quanNuocDay } from '../../data/quanNuoc';
 import { isXoiCungDay, tiemXoiDay, tiemXoiSaved, tiemXoiDinePlan } from '../../data/tiemXoi';
 import { bizEndOfDay, checkAchievements, freshAchievements } from '../biz';
 import { type DayStats } from '../dayStats';
+import { collectReport, startDay } from '../dayReport';
 import { PHONE_FRIEND_GAIN } from '../../data/phoneOrders';
 import { nextMarketIndex } from '../../data/market';
 import { hasSkill } from '../../data/titles';
@@ -572,6 +573,8 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
     stats.shortfall = -moneyAfter; // stats là DayStats — panel/lastSummary giữ cùng tham chiếu
     say(`⚠️ Két thiếu ${formatMoney(-moneyAfter)} sau khi trả nhà/lương/vận hành — bán bù sớm kẻo lún sâu`);
   }
+  // SPEC-TOI-UU §T1 (L1): gom bản ghi ẩn danh ngày vừa chốt — lưu CỤC BỘ, không gửi đi đâu.
+  collectReport(s, stats);
   set({
     candidates: generateCandidates(s.level, nextId),
     day: s.day + 1,
@@ -592,6 +595,8 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
     biz: biz.biz,
     branch: nextBranch ? { ...nextBranch.branch, revenueToday: 0, customersToday: 0, lostToday: 0, missedToday: 0, simAt: wokeLate ? LATE_WAKE_AT : DAY_START, lastTrip: nextBranch.branch.lastTrip - 1440 } : null,
   });
+  // SPEC-TOI-UU §T1 (L1): bắt đầu tích luỹ cho ngày game mới vừa set.
+  startDay(get().day);
   // GĐ169 — thưởng chuỗi tuần/tháng đổi XP: cộng sau khi state ngày mới đã set (đi qua addXp để
   // lên cấp/mở khóa đúng một luồng; XP Chuỗi là thành phần kinh tế NHẸ Leader duyệt theo audit).
   // GĐ569: tin sau ngủ (lên cấp, thành tựu, danh hiệu, thay ô) cũng gom vào cùng toast — đứng ngay sau thời tiết.

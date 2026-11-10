@@ -40,6 +40,7 @@ import { CameraController } from './render/cameraController';
 import { InteriorView } from './render/interiorView';
 import { createRenderer, GFX_CHOICE, INITIAL_GFX, installRenderGuard, Lighting, LOW_POWER, type GameRenderer } from './render/scene';
 import { GFX_LABEL, GFX_PRESETS, QualityGovernor, detectLevel, gfxStatus, onGfxChoice, readDeviceHints, readPerfLog, recordPerf, reportGfx, type GfxChoice } from './render/graphicsQuality';
+import { exportReportsJson, noteLiveFps, noteLiveGfx, noteRealSec, openSession, setMode } from './core/dayReport';
 import { applyCrowdLod } from './agents/walker';
 import { createTiltShift } from './render/fx/tiltShift';
 import { applyLightBudget, initLightPool } from './render/lightBudget';
@@ -631,6 +632,11 @@ function applyGfx() {
   reportGfx(gfxChoice, gfx.step.level, gfx.avgFps);
 }
 applyGfx();
+// SPEC-TOI-UU §T1 (L1): bắt đầu bộ tích luỹ báo cáo ngày cho ngày game hiện tại + lộ `game.report()`
+// dùng trong console (xuất 30 bản ghi cục bộ) — dùng được ngay khi chưa có server.
+openSession(useGame.getState().day, gfx.avgFps, gfx.step.level);
+setMode(inAlley() ? 'alley' : 'solo');
+window.game = { ...(window.game ?? {}), report: () => console.log(exportReportsJson()) };
 onGfxChoice((c) => {
   gfxChoice = c;
   const level = c === 'auto' ? detectLevel(readDeviceHints()) : c;
@@ -653,6 +659,11 @@ const clock = new THREE.Clock();
 /** Vòng lặp một khung hình — WebGPU cần renderer.init() xong mới được render nên tách ra riêng. */
 function renderFrame() {
   const dt = Math.min(clock.getDelta(), 0.1);
+  // SPEC-TOI-UU §T1 (L1): đếm giây thật đã chơi (chỉ khi tab hiện) + lấy số đo FPS/đồ hoạ
+  // cho báo cáo ngày ẩn danh. Rẻ, không ghi localStorage mỗi khung (flush gộp 5s).
+  if (document.visibilityState === 'visible') noteRealSec(dt);
+  noteLiveFps(gfx.avgFps);
+  noteLiveGfx(gfx.step.level);
   // GĐ488: tương tự cho nhà quán nước
   world.quanNuoc.setRoofHidden(insideQuanHouse(world.quanNuoc.group.position.x, world.quanNuoc.group.position.z, player.position.x, player.position.z));
   // GĐ487: chủ đứng trong nhà tiệm xôi thì ẩn mái để nhìn thấy quầy, nồi và khách ngồi ăn

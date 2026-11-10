@@ -11,6 +11,7 @@
     "check:bundle": "node scripts/check-bundle.mjs",
     "golden:update": "node scripts/golden-update.mjs",
     "unlock:curve": "node scripts/unlock-curve.mjs",
+    "test:times": "node scripts/test-times.mjs",
     "audit:notify": "node scripts/audit-notify.mjs",
     "persona:digest": "node scripts/persona-digest.mjs",
     "test:coverage": "vitest run --coverage --exclude src/__tests__/weeklyGoalCap.test.ts --exclude src/__tests__/economySim.test.ts --exclude src/__tests__/simGolden.test.ts",

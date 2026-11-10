@@ -13,6 +13,7 @@ import { copyStock, putStock } from '../stock';
 import { useClock } from '../store';
 import { runBranch } from './branch';
 import { endDay } from './endDay';
+import { countPanel } from '../dayReport';
 import { updateOnline } from './online';
 import { updatePhones, cookSpeed, bartenderBoost } from './orders';
 import { maybeInspection } from '../inspection';
@@ -100,17 +101,32 @@ export const createClockSlice = (set: SetState, get: GetState): Pick<GameState, 
       const done = next.filter((j) => j.remaining <= 0);
       if (done.length) {
         const sealQ = sealYieldBonus(get().biz); // Hệ3-L8 Ấn Đặc sản: mỗi mẻ nấu ra thêm 1 đơn vị
+        // Hệ7-L2: thưởng trò khéo tay cộng vào mẻ KẾ TIẾP của công thức (biz.miniBonus) — đọc, cộng, xoá.
+        const miniB = get().biz.miniBonus ?? {};
+        const usedBonus = new Set<string>();
         const k = copyStock(get());
         for (const j of done) {
           const r = RECIPE_MAP[j.recipeId];
-          if (r) putStock(k, r.outputId, r.outputQty + sealQ);
+          const bonus = miniB[j.recipeId] ?? 0;
+          if (r) {
+            putStock(k, r.outputId, r.outputQty + sealQ + bonus);
+            if (bonus) usedBonus.add(j.recipeId);
+          }
         }
         set({ ...k, cookJobs: next.filter((j) => j.remaining > 0) });
+        // xoá phần thưởng đã dùng hết (thưởng chỉ áp cho MỘT mẻ tiếp theo)
+        if (usedBonus.size) {
+          const keep = { ...get().biz.miniBonus };
+          for (const id of usedBonus) delete keep[id];
+          set((st) => ({ biz: { ...st.biz, miniBonus: keep } }));
+        }
         playSfx('ding');
         for (const j of done) {
           const r = RECIPE_MAP[j.recipeId];
           if (!r) continue;
-          get().notify(`🍲 Nấu xong: ${r.outputQty + sealQ} ${productById(r.outputId).name} đã vào kho, bày lên kệ được ngay`);
+          const bonus = miniB[j.recipeId] ?? 0;
+          const made = r.outputQty + sealQ + bonus;
+          get().notify(`🍲 Nấu xong: ${made} ${productById(r.outputId).name} đã vào kho, bày lên kệ được ngay`);
           get().addXp(4);
         }
       } else {
@@ -153,7 +169,11 @@ export const createClockSlice = (set: SetState, get: GetState): Pick<GameState, 
     if (!m) return;
     messageTimer = setTimeout(() => set({ message: null }), m.includes(' · ') ? 4500 : 3000);
   },
-  openPanel: (panel) => set({ panel }),
+  openPanel: (panel) => {
+    // SPEC-TOI-UU §T1 (L1): đếm số lần mở bảng trong ngày — một chỗ duy nhất mọi bảng đi qua.
+    countPanel(panel.type);
+    set({ panel });
+  },
   // GĐ1503 — chốt cờ đã xem tour HUD (UI thuần, không đụng kinh tế)
   markHudTourDone: () => set({ hudTourDone: true }),
   closePanel: () => set({ panel: null }),
