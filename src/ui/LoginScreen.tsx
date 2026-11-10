@@ -5,6 +5,7 @@ import { useGame } from '../core/store';
 import { formatMoney } from '../data/products';
 import { cloudSaveWithin, prefetchCloudSave } from '../net/cloud';
 import { giftOfStreak, giftText, scaledGift } from '../data/gifts';
+import { returnReminder } from '../data/returnReminder';
 import { firebaseReady, loginGoogle, logoutGoogle } from '../net/firebase';
 import { useSession, type SaveSummary } from '../net/session';
 import { recordConsent } from '../net/consent';
@@ -131,6 +132,7 @@ export function LoginScreen() {
 
         <section className="login-card" aria-live="polite">
           {local && <DailyNudge g={local.data} />}
+          {local && <ReturnNudge g={local.data} />}
           {choice ? (
             <>
               <h2>Chọn bản lưu để chơi tiếp</h2>
@@ -223,6 +225,22 @@ function DailyNudge({ g }: { g: { day: number; level: number; giftStreak: number
     <div className="login-nudge claimable">
       <span aria-hidden="true">🎁</span>
       <span>Quà điểm danh hôm nay: <b>{gift.icon} {gift.label}</b> ({giftText(gift)}) · chuỗi sắp tới <b>{streak}</b> ngày — vào tiệm nhận ngay!</span>
+    </div>
+  );
+}
+
+/**
+ * GĐ2224 — lớp nhắc "đã N ngày chưa quay" ở màn đăng nhập: cho người chơi quay lại một lý do bền
+ * (nối vào mốc thưởng tròn năm) — khác quà chào mừng (checkWelcomeBack) vốn chỉ bắn một notify lúc vào
+ * game. THUẦN đọc (returnReminder), không đổi state/save. Chơi đều mỗi ngày → helper trả null → ẩn.
+ */
+function ReturnNudge({ g }: { g: { day: number; level: number; lastSeenAt: number } }) {
+  const r = returnReminder(Date.now(), g.lastSeenAt, g.day, g.level);
+  if (!r) return null;
+  return (
+    <div className="login-nudge">
+      <span aria-hidden="true">🐢</span>
+      <span>{r.line}</span>
     </div>
   );
 }
