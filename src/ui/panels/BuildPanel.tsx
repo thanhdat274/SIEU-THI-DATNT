@@ -8,6 +8,7 @@ import { FURNITURE_GROUP_TABS, furnitureGroup, type FurnitureGroup } from '../..
 import { VIET_SET, VIET_SET_TIERS, vietSetCount, vietSetDecorBonus } from '../../data/decorSets';
 import { decorPayoff, decorPayoffLine } from '../../data/decorPayoff';
 import { decorBuyPayoff, decorBuyPayoffLine } from '../../data/decorBuyPayoff';
+import { decorRank, decorRankLine } from '../../data/decorRank';
 import { decorScoreOf } from '../../data/layout';
 import { reputationOf } from '../../data/reputation';
 import { activeDepartments, departmentWalled, DEPT_ECON_FROM_TIER, departmentsUnlockedAtTier } from '../../data/departments';
@@ -111,6 +112,11 @@ export function FurnitureTab() {
       {level > 30 && decorInfo.decorScore > 0 && (
         <div style={{ fontSize: 12, color: '#9ecbff', opacity: 0.9, margin: '2px 0 8px' }}>{decorPayoffLine(decorInfo)}</div>
       )}
+      {(() => {
+        const rows = decorRank(level, reputationOf(repLog).overall, avgPerVisit, new Set(furniture.map((ff) => ff.type)));
+        const line = rows.length >= 2 ? decorRankLine(rows, 3) : '';
+        return line ? <div style={{ fontSize: 12, color: '#f1c40f', opacity: 0.9, margin: '0 0 8px' }}>{line}</div> : null;
+      })()}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
         {FURNITURE_GROUP_TABS.map((t) => (
           <button key={t.id} style={{ ...styles.btn, opacity: group === t.id ? 1 : 0.55 }} aria-pressed={group === t.id} onClick={() => setGroup(t.id)}>{t.label}</button>
@@ -120,9 +126,9 @@ export function FurnitureTab() {
         {FURNITURE.filter((f) => group === 'all' || furnitureGroup(f) === group).map((f) => {
           const offFest = !festivalShopOpen(f, day);
           const locked = f.unlock > level || offFest;
-          const decorD = furnitureDef(f.type).decor ?? 0;
+  const decorD = furnitureDef(f.type).decor ?? 0;
           const buyPayoff = decorD > 0
-            ? decorBuyPayoffLine(decorBuyPayoff(furnitureDef(f.type).price, decorD, reputationOf(repLog).overall, level, avgPerVisit))
+            ? decorBuyPayoffLine(decorBuyPayoff(furnitureDef(f.type).price ?? 0, decorD, reputationOf(repLog).overall, level, avgPerVisit))
             : '';
           return (
             <div key={f.type} style={{ ...styles.card, opacity: locked ? 0.5 : 1 }}>
