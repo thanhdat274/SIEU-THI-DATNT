@@ -9,11 +9,13 @@ import { Week, Month } from './panels/PeriodTabs';
 import { card, btn, sub, row } from './panels/businessStyles';
 import { Achievements } from './panels/AchievementsTab';
 import { Life, Pets, Services, Upgrades } from './panels/ShopLifeTabs';
+import { StanceTab } from './panels/StanceTab';
 
 const TABS = [
   ['market', '⚔️ Cạnh tranh'],
   ['services', '🧾 Dịch vụ'],
   ['money', '🏦 Vay & hụi'],
+  ['stance', '🪧 Định vị'],
   ['week', '📊 Lãi lỗ'],
   ['month', '📆 Tháng'],
   ['pets', '🐾 Thú cưng'],
@@ -51,6 +53,7 @@ export function BusinessPanel() {
         {tab === 'market' && <Market />}
         {tab === 'services' && <Services />}
         {tab === 'money' && <Money />}
+        {tab === 'stance' && <StanceTab />}
         {tab === 'week' && <Week />}
         {tab === 'month' && <Month />}
         {tab === 'pets' && <Pets />}
