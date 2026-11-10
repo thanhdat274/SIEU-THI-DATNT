@@ -236,6 +236,16 @@ export const MON_KHUON: Record<string, { gd: string; station: string; inputs: st
   recipe_trung_nuong: { gd: "GĐ2068", station: 'food_grill', inputs: ['x_trung_ga', 'x_hanh_la'] },
   recipe_trung_op_la: { gd: "GĐ2065", station: 'fryer', inputs: ['x_trung_ga'] },
   recipe_vit_kho_gung: { gd: "GĐ2130", station: 'hot_kettle', inputs: ['x_vit', 'x_gung'] },
+  recipe_banh_beo: { gd: "GĐ1952", station: 'steamer', inputs: ['x_bot_gao', 'x_bot_nang', 'x_tom_tuoi', 'x_hanh_phi'] },
+  recipe_banh_bo: { gd: "GĐ1955", station: 'steamer', inputs: ['x_bot_gao', 'x_duong', 'x_dua_cot_hop'] },
+  recipe_banh_bot_loc: { gd: "GĐ1936", station: 'steamer', inputs: ['x_bot_nang', 'x_tom_tuoi', 'x_hanh_la'] },
+  recipe_banh_can: { gd: "GĐ1951", station: 'food_grill', inputs: ['x_bot_gao', 'trung', 'x_hanh_la'] },
+  recipe_banh_chuoi_hap: { gd: "GĐ1954", station: 'steamer', inputs: ['x_chuoi', 'x_bot_nang', 'x_dua_cot_hop', 'x_duong'] },
+  recipe_banh_gio: { gd: "GĐ1935", station: 'steamer', inputs: ['x_bot_gao', 'x_thit_heo', 'x_nam_meo_kho'] },
+  recipe_banh_khot: { gd: "GĐ1937", station: 'fryer', inputs: ['x_bot_gao', 'x_tom_tuoi', 'x_hanh_la'] },
+  recipe_bot_chien_trung: { gd: "GĐ1953", station: 'fryer', inputs: ['x_bot_gao', 'x_bot_nang', 'trung', 'x_hanh_la'] },
+  recipe_bun_dau_mam_tom: { gd: "GĐ1956", station: 'fryer', inputs: ['x_bun_tuoi', 'x_dau_hu', 'x_mam_tom'] },
+  recipe_sua_dau_nanh_xay: { gd: "GĐ1938", station: 'blender', inputs: ['x_dau_nanh_hat', 'x_duong'] },
 };
 
 describe.each(Object.entries(MON_KHUON))('%s', (id, mon) => {
