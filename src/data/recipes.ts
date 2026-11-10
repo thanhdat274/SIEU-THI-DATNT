@@ -880,6 +880,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'ca_bop_nuong_giay_bac', name: 'Cá bớp nướng giấy bạc', category: 'fresh', buy: 26000, sell: 45000, color: 0xe0d0c0, unlock: 199 },
   { id: 'ca_ro_dong_kho_to', name: 'Cá rô đồng kho tộ', category: 'fresh', buy: 26000, sell: 45000, color: 0xa8b898, unlock: 198 },
   { id: 'ca_ro_dong_chien_gion', name: 'Cá rô đồng chiên giòn', category: 'fresh', buy: 26000, sell: 45000, color: 0xc8c060, unlock: 199 },
+  { id: 'ca_du_kho_to', name: 'Cá đù kho tộ', category: 'fresh', buy: 26000, sell: 45000, color: 0xc0b0a0, unlock: 198 },
+  { id: 'ca_du_chien_gion', name: 'Cá đù chiên giòn', category: 'fresh', buy: 26000, sell: 45000, color: 0xc8c858, unlock: 199 },
 ];
 
 // ──────────────────────────────────────────────
@@ -3051,6 +3053,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_ca_ro_dong_chien_gion', name: 'Cá rô đồng chiên giòn', station: 'fryer',
     inputs: [{ productId: 'x_ca_ro_dong', quantity: 1 }, { productId: 'x_bot_chien', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }],
     outputId: 'ca_ro_dong_chien_gion', outputQty: 4, durationMin: 20, unlock: 199, reputationGain: 1 },
+  // GĐ2203: Cá đù kho tộ — bữa cơm ven biển cả nước: cá đù kho tộ đất với nước mắm đường, tới sánh; không thay thế.
+  { id: 'recipe_ca_du_kho_to', name: 'Cá đù kho tộ', station: 'hot_kettle',
+    inputs: [{ productId: 'x_ca_du', quantity: 1 }, { productId: 'hx_nuoc_mam', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
+    outputId: 'ca_du_kho_to', outputQty: 4, durationMin: 30, unlock: 198, reputationGain: 1 },
+  // GĐ2204: Cá đù chiên giòn — quán nhậu ven biển: cá đù tẩm bột chiên ngập dầu cho giòn da; không thay thế.
+  { id: 'recipe_ca_du_chien_gion', name: 'Cá đù chiên giòn', station: 'fryer',
+    inputs: [{ productId: 'x_ca_du', quantity: 1 }, { productId: 'x_bot_chien', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }],
+    outputId: 'ca_du_chien_gion', outputQty: 4, durationMin: 20, unlock: 199, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────

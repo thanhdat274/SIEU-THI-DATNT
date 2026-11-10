@@ -239,6 +239,8 @@ const MON_THAT: Record<string, { name: string; station: string; cachNau: string 
   recipe_ca_bop_nuong_giay_bac: { name: 'Cá bớp nướng giấy bạc', station: 'food_grill', cachNau: 'cá bớp ướp sả ớt bọc giấy bạc nướng than cho thơm (quán nhậu cả nước)' },
   recipe_ca_ro_dong_kho_to: { name: 'Cá rô đồng kho tộ', station: 'hot_kettle', cachNau: 'cá rô đồng kho tộ đất với nước mắm đường tới sánh (bữa cơm đồng bằng Bắc Bộ)' },
   recipe_ca_ro_dong_chien_gion: { name: 'Cá rô đồng chiên giòn', station: 'fryer', cachNau: 'cá rô đồng tẩm bột chiên ngập dầu cho giòn (quán nhậu đồng quê)' },
+  recipe_ca_du_kho_to: { name: 'Cá đù kho tộ', station: 'hot_kettle', cachNau: 'cá đù kho tộ đất với nước mắm đường tới sánh (bữa cơm ven biển cả nước)' },
+  recipe_ca_du_chien_gion: { name: 'Cá đù chiên giòn', station: 'fryer', cachNau: 'cá đù tẩm bột chiên ngập dầu cho giòn da (quán nhậu ven biển)' },
 };
 
 /** Chữ mô tả tự chế không ai dùng làm tên món ngoài chợ. */
