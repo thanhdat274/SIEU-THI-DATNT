@@ -588,6 +588,10 @@ export interface GameState {
   inspection: InspectionRecord;
   buyLicense: (id: LicenseId) => void;
 
+  /** Quảng cáo (GĐ2219): đợt kéo khách đang hiệu lực; undefined = chưa có. */
+  ad?: { defId: string; until: number };
+  buyAd: (id: string) => void;
+
   /** Trang trại (trồng, bón phân, nuôi gà/vịt/ngỗng/bò/heo/dê/gà Đông Tảo, đơn quán xóm). */
   garden: GardenState;
   plantCrop: (plotIndex: number, cropId: string) => void;

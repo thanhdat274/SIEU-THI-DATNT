@@ -16,6 +16,7 @@ import { EXPANSION_TILE_CAP, MAX_SHOP_TIER, expansionBlock, expansionTilePrice, 
 import { bigBasketInsight, BIG_BASKET_TIER } from '../../data/bigBasket';
 import { meatCounterPayoff, meatChainCooled } from '../../data/meatCounterPayoff';
 import { isMeat } from '../../data/meat';
+import { ADS, adById, adBoost, adPayoff, adPayoffLine } from '../../data/advertising';
 import { nearestLife, shelfLife } from '../../data/freshness';
 import { formatMoney } from '../../data/products';
 import { shortLabel } from '../shortLabel';
@@ -23,12 +24,13 @@ import { newUnlockMark, shelfBuyHint, storeMissRevenue } from '../../data/advice
 import { Callout, Footer, Swatch, styles, Tabs } from './shared';
 
 export function BuildPanel() {
-  const [tab, setTab] = useState<'furniture' | 'paint' | 'expand'>('furniture');
+  const [tab, setTab] = useState<'furniture' | 'paint' | 'expand' | 'ads'>('furniture');
   const setBuildMode = useGame((s) => s.setBuildMode);
   const tabs = [
     ['furniture', '🪑 Nội thất'],
     ['paint', '🎨 Sơn sửa'],
     ['expand', '🏗️ Mở rộng tiệm'],
+    ['ads', '📣 Quảng cáo'],
   ] as const;
   return (
     <>
@@ -37,6 +39,7 @@ export function BuildPanel() {
       {tab === 'furniture' && <FurnitureTab />}
       {tab === 'paint' && <PaintTab />}
       {tab === 'expand' && <ExpandTab />}
+      {tab === 'ads' && <AdsTab />}
       <Footer onClose={() => useGame.setState({ panel: null })} closeLabel="Di chuyển đồ có sẵn">
         <button style={styles.btn} onClick={() => setBuildMode(false)}>Thoát chế độ xây</button>
       </Footer>
@@ -434,3 +437,50 @@ function ExpansionTiles() {
   );
 }
 
+
+/** GĐ2219 — Quảng cáo: bỏ tiền kéo khách đi đường trong vài ngày (như điểm decor có hạn). */
+export function AdsTab() {
+  const level = useGame((s) => s.level);
+  const day = useGame((s) => s.day);
+  const money = useGame((s) => s.money);
+  const stats = useGame((s) => s.stats);
+  const repLog = useGame((s) => s.repLog);
+  const ad = useGame((s) => s.ad);
+  const buyAd = useGame((s) => s.buyAd);
+  const avgPerVisit = stats && stats.customers > 0 ? stats.revenue / stats.customers : 0;
+  const stars = reputationOf(repLog).overall;
+  const boostToday = adBoost(ad, day);
+  return (
+    <>
+      <p style={styles.sub}>Bỏ tiền quảng cáo để dân hẻm biết tiệm: tờ rơi / băng rôn / "tiếng lành" kéo thêm khách đi đường trong vài ngày (giá trị như điểm trang trí 🩷). Mở từ cấp 42.</p>
+      {ad && (
+        <div style={{ ...styles.card, marginBottom: 8, background: 'rgba(241,196,15,.10)' }}>
+          <b>📣 Đang chạy: {adById(ad.defId)?.name ?? ad.defId}</b> · tới ngày {ad.until}
+          {boostToday > 0 && <span style={{ color: '#f1c40f' }}> · hôm nay +{boostToday}🩷 hút khách</span>}
+        </div>
+      )}
+      {ADS.filter((a) => a.unlock <= level).map((def) => {
+        const p = adPayoff(def, stars, level, avgPerVisit);
+        const active = ad?.defId === def.id;
+        return (
+          <div key={def.id} style={{ ...styles.card, opacity: active ? 0.85 : 1 }}>
+            <div style={{ flex: 1 }}>
+              <b>{def.icon} {def.name}</b> · {formatMoney(def.cost)}
+              <div style={{ fontSize: 12, opacity: 0.75 }}>{def.desc}</div>
+              <div style={{ fontSize: 12, color: '#9ecbff' }}>{adPayoffLine(p)}</div>
+            </div>
+            <button style={styles.btn} disabled={active || money < def.cost} onClick={() => buyAd(def.id)}>
+              {active ? 'Đang chạy' : shortLabel('Chạy', def.cost, money)}
+            </button>
+          </div>
+        );
+      })}
+      {ADS.filter((a) => a.unlock > level).map((def) => (
+        <div key={def.id} style={{ ...styles.card, opacity: 0.5 }}>
+          <b>{def.icon} {def.name}</b> · {formatMoney(def.cost)}
+          <span style={{ fontSize: 12 }}> 🔒 Cấp {def.unlock}</span>
+        </div>
+      ))}
+    </>
+  );
+}

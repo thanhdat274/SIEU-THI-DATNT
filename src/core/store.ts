@@ -48,6 +48,7 @@ import { createSocialSlice } from './slices/social';
 import { createOnlineSlice } from './slices/online';
 import { createGardenSlice } from './slices/garden';
 import { createLicensesSlice } from './slices/licenses';
+import { createAdsSlice } from './slices/ads';
 import { createQuanNuocSlice } from './slices/quanNuoc';
 import { createTiemXoiSlice } from './slices/tiemXoi';
 import { createPrestigeSlice } from './slices/prestige';
@@ -251,6 +252,7 @@ export const useGame = create<GameState>((set, get) => {
     ...createOnlineSlice(set, get),
     ...createGardenSlice(set, get),
     ...createLicensesSlice(set, get),
+    ...createAdsSlice(set, get),
     ...createQuanNuocSlice(set, get),
     ...createTiemXoiSlice(set, get),
     ...createPrestigeSlice(set, get),
