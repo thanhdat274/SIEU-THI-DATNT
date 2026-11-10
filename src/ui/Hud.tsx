@@ -40,6 +40,7 @@ import { logoutGoogle, deleteAccount } from '../net/firebase';
 import { deleteAccountData } from '../net/account';
 import { useSession } from '../net/session';
 import { MoneyChip, MusicToggle, SoundToggle } from './HudChips';
+import { crisisDefById, crisisPhaseLabel } from '../data/crisis';
 import { HudTour } from './HudTour';
 import { Panels } from './Panels';
 import { hubFirst, hubOf } from './hubs';
@@ -137,6 +138,10 @@ export function Hud() {
   const happyHour = useGame((s) => s.happyHour);
   const skillsLeft = useGame((s) => skillPoints(s.level) - s.skills.length);
   const effects = dayEffects(weatherSeed, day, level);
+  // Hệ8 — Biến cố dài (SPEC-CHIEU-RONG §8): chip hiển thị khi đang có đợt (state mở/đóng ở endDay).
+  const crisis = useGame((s) => s.biz.crisis);
+  const crisisDef = crisis ? crisisDefById(crisis.defId) : undefined;
+  const crisisPhase = crisis && crisisDef ? crisisPhaseLabel(crisisDef, day, crisis) : '';
   const soon = upcomingFestival(day);
   const { spell, raining, skyIcon } = skyState(weatherSeed, day, weather, minutes);
   const forecastText = forecastTextOf(weatherSeed, day, forecast);
@@ -336,6 +341,11 @@ ${forecastText}`}>
                 {effects.festival && `${effects.festival.icon} ${effects.festival.name}`}
                 {effects.festival && effects.market && ' · '}
                 {effects.market && `${effects.market.icon} ${effects.market.label}`}
+              </small>
+            )}
+            {crisisDef && crisisPhase && (
+              <small className="hud-crisis-chip" title={`${crisisDef.name} — ${crisisPhase}.${crisisDef.aftermath ? ` Hoàn thành phần chuẩn bị để nhận ${crisisDef.aftermath.label}.` : ''}`}>
+                {crisisDef.icon} {crisisPhase}
               </small>
             )}
             {soon && (

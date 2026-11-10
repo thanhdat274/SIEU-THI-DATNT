@@ -70,6 +70,8 @@
 }
 #ui .hud-status { position: static; flex: none; flex-wrap: wrap; align-items: flex-start; max-width: 100%; }
 #ui .hud-weather { font-size: 22px; }
+/* GĐ2232 — chip Biến cố dài (Hệ8): nổi bật cảnh báo nhưng không đỏ gay gắt. */
+#ui .hud-crisis-chip { color: #a0522d !important; font-weight: 700; letter-spacing: 0.2px; }
 #ui .hud-forecast { opacity: 0.85; letter-spacing: 2px; }
 #ui .hud-forecast::before { content: "Dự báo "; letter-spacing: 0; }
 #ui .hud-time b { font-size: 18px; }
