@@ -17,6 +17,9 @@ export type StanceId = 'binh_dan' | 'dac_san' | 'tien_loi';
 /** Cấp mở hệ Định vị tiệm (SPEC §3.9) — golden L30 không chạm (R1). */
 export const STANCE_UNLOCK = 60;
 
+/** L6 — Đổi hướng biển: trả tiền làm biển 5tr × bậc hiện tại (SPEC §3.4 "5tr × bậc tiệm"). Lần treo đầu MIỄN PHÍ. */
+export const STANCE_SWITCH_BASE_COST = 5_000_000;
+
 export const STANCE_IDS: StanceId[] = ['binh_dan', 'dac_san', 'tien_loi'];
 
 /** Nhãn tiếng Việt + icon cho từng hướng (thẻ + biển). */
