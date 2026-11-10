@@ -342,4 +342,5 @@ export const CATALOG_PRODUCTS: Product[] = [
   p('x_vit', 'Vịt làm sẵn', 'fresh', 70000, 95000, 0x8a6a4a, 170), // GĐ2129: cho cháo vịt, vịt kho gừng
   p('x_ech', 'Ếch làm sẵn', 'fresh', 50000, 70000, 0x7a8a4a, 170), // GĐ2131: cho ếch xào sả ớt, ếch chiên nước mắm
   p('x_ca_tre', 'Cá trê làm sẵn', 'fresh', 45000, 60000, 0x6a5a4a, 170), // GĐ2135: cho cá trê chiên giòn, cá trê nướng trui
+  p('x_bo_cau', 'Bồ câu làm sẵn', 'fresh', 40000, 55000, 0x8a7a6a, 170), // GĐ2137: cho cháo bồ câu, bồ câu quay
 ];

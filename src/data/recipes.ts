@@ -814,6 +814,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'chao_luon', name: 'Cháo lươn', category: 'fresh', buy: 12000, sell: 20000, color: 0xd8b070, unlock: 199 },
   { id: 'ca_tre_chien_gion', name: 'Cá trê chiên giòn', category: 'fresh', buy: 22000, sell: 38000, color: 0xb88a4a, unlock: 198 },
   { id: 'ca_tre_nuong_trui', name: 'Cá trê nướng trui', category: 'fresh', buy: 22000, sell: 38000, color: 0x6a5a3a, unlock: 199 },
+  { id: 'chao_bo_cau', name: 'Cháo bồ câu', category: 'fresh', buy: 12000, sell: 20000, color: 0xf0e0c0, unlock: 196 },
+  { id: 'bo_cau_quay', name: 'Bồ câu quay', category: 'fresh', buy: 22000, sell: 38000, color: 0x8a6a3a, unlock: 197 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2721,6 +2723,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_ca_tre_nuong_trui', name: 'Cá trê nướng trui', station: 'food_grill',
     inputs: [{ productId: 'x_ca_tre', quantity: 1 }, { productId: 'x_me', quantity: 1 }, { productId: 'x_banh_trang', quantity: 1 }],
     outputId: 'ca_tre_nuong_trui', outputQty: 4, durationMin: 25, unlock: 199, reputationGain: 1 },
+  // GĐ2137: Cháo bồ câu — món bồi bổ cả nước: bồ câu hầm lấy nước nấu cháo gạo, thịt bồ câu xé ăn kèm; không thay thế.
+  { id: 'recipe_chao_bo_cau', name: 'Cháo bồ câu', station: 'hot_kettle',
+    inputs: [{ productId: 'x_bo_cau', quantity: 1 }, { productId: 'gao', quantity: 1 }, { productId: 'x_hanh_kho', quantity: 1 }],
+    outputId: 'chao_bo_cau', outputQty: 14, durationMin: 40, unlock: 196, reputationGain: 1 },
+  // GĐ2138: Bồ câu quay — món quay cả nước: bồ câu ướp gừng, muối, quay chín da vàng giòn, chặt ăn kèm; quay lò → bếp nướng than thay, không thay thế.
+  { id: 'recipe_bo_cau_quay', name: 'Bồ câu quay', station: 'food_grill',
+    inputs: [{ productId: 'x_bo_cau', quantity: 1 }, { productId: 'x_gung', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }],
+    outputId: 'bo_cau_quay', outputQty: 4, durationMin: 30, unlock: 197, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────
