@@ -67,7 +67,7 @@ export function BrandPanel() {
 
       {b && (
         <>
-          <RepBar rep={b.rep} name={b.name} />
+          <RepBar rep={b.rep} name={b.name} repLog={b.repLog} />
 
           <Tabs<Tab>
             tabs={TABS}
@@ -102,7 +102,7 @@ export function BrandPanel() {
   );
 }
 
-function RepBar({ rep, name }: { rep: number; name: string }) {
+function RepBar({ rep, name, repLog }: { rep: number; name: string; repLog: { day: number; delta: number; why: string }[] }) {
   const tier = brandRepTier(rep);
   return (
     <div style={{ ...styles.card, background: '#41324f' }}>
@@ -112,6 +112,17 @@ function RepBar({ rep, name }: { rep: number; name: string }) {
         <div style={{ height: 8, background: '#2b2b3a', borderRadius: 4, marginTop: 6, overflow: 'hidden' }}>
           <div style={{ height: '100%', width: `${rep}%`, background: '#f39c12', borderRadius: 4 }} />
         </div>
+        {repLog.length > 0 && (
+          <div style={{ marginTop: 8, fontSize: 12, opacity: 0.85 }}>
+            {repLog.slice(-4).reverse().map((e, i) => (
+              <div key={i} style={{ display: 'flex', gap: 6, marginTop: 2 }}>
+                <span style={{ opacity: 0.6 }}>ngày {e.day}</span>
+                <span style={{ color: e.delta >= 0 ? '#7ee787' : '#ff7b72', width: 40 }}>{e.delta >= 0 ? `+${e.delta}` : e.delta}</span>
+                <span style={{ flex: 1 }}>{e.why}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

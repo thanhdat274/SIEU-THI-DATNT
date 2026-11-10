@@ -39,7 +39,7 @@ import { staffDayEnd } from '../../data/staffTraits';
 import { BUZZ_DAYS, CRISIS_MUL, POST_CAP, SOCIAL_UNLOCK, socialDayEnd, type SocialPost } from '../../data/social';
 import { ANIMAL_ORDER, farmCritChance, farmhandChores, FARM_ORDER_UNLOCK, farmOrderCapacity, farmOrderNews, farmOrderProduce, gardenNight, makeFarmOrder, type AnimalKind } from '../../data/garden';
 import { preserveNight, farmhandPreserve, preserveDefById } from '../../data/preserve';
-import { brandWorkshopDay } from '../../data/brand';
+import { brandRepDaily, brandWorkshopDay } from '../../data/brand';
 import { crisisNight } from '../../data/crisis';
 import { lifeEventFor, lifeEventById, gioLabel } from '../../data/lifeEvent';
 import { stanceActive, stanceFitByDirection, applyStanceDay, stanceTier, STANCE_UNLOCK, STANCE_META, hasStanceSeal, isStanceSealable, type StanceState } from '../../data/stance';
@@ -586,6 +586,16 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
       garden = { ...garden, homegrown: wk.homegrown };
       moneyAfter -= wk.fee + wk.wage;
       for (const n of wk.news) say(n);
+    }
+    // Hệ 4 (SPEC §4.6) — mỗi ngày: nhãn nguội (không đóng gói 14 ngày) −1, review 4–5★ có món nhãn +0.2
+    // (nguồn đại lý/nhượng quyền sẽ nối ở lát sau khi các hệ đó xong). Nhãn chỉ tồn tại từ cấp 100
+    // → golden L30 giữ nguyên (R1).
+    const brandB1 = biz.biz.brand;
+    if (brandB1) {
+      const reviewProducts = s.reviews.filter((r) => r.day === s.day && r.stars >= 4).map((r) => r.productId).filter(Boolean) as string[];
+      const rd = brandRepDaily(brandB1, s.day, reviewProducts);
+      biz.biz = { ...biz.biz, brand: rd.brand };
+      for (const n of rd.news) say(n);
     }
   }
   // SPEC-TOI-UU §T1 (L1): gom bản ghi ẩn danh ngày vừa chốt — lưu CỤC BỘ, không gửi đi đâu.

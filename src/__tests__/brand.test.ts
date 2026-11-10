@@ -3,9 +3,12 @@ import {
   BRAND_ENTRY_BATCHES, BRAND_ENTRY_SOLD, BRAND_FRANCHISE_SLOTS, BRAND_REP_TIERS,
   BRAND_WORKSHOP_CAPACITY, BRAND_WORKSHOP_MAX_STAFF, brandDealValue, brandLineEligible,
   brandLineSlots, brandObligations, brandPremium, brandRepTier, brandRunway,
-  brandStockUnits, brandWorkshopCapacity, franchiseIncome, applyBrandRep, type BrandState,
+  brandStockUnits, brandWorkshopCapacity, franchiseIncome, applyBrandRep,
+  brandColdDelta, brandRepFromReviews, brandRepDaily, brandMorningTips, brandTodoItems,
+  type BrandState, type BrandDeal,
 } from '../data/brand';
 import { productById } from '../data/products';
+import { TODO_SOURCES } from '../data/todo';
 
 /** Nhãn mặc định cho test (chưa có gì ngoài tên + một dòng nắm giữ trong kho). */
 const brand = (over: Partial<BrandState> = {}): BrandState => ({
@@ -21,6 +24,18 @@ const brand = (over: Partial<BrandState> = {}): BrandState => ({
   franchises: [],
   franchiseDue: {},
   ...over,
+});
+
+/** Một hợp đồng đại lý mẫu: kỳ đầu `pending`, đến hạn `dueDay`. */
+const deal = (dueDay: number): BrandDeal => ({
+  defId: 'sap_cho_huyen',
+  dueDay,
+  delivered: 0,
+  pending: true,
+  streak: 0,
+  overdue: false,
+  locked: {},
+  productId: 'hx_nuoc_mam',
 });
 
 describe('Hệ4-L1 — brandLineSlots: mở dần số dòng nhãn theo cấp', () => {
@@ -138,5 +153,61 @@ describe('Hệ4-L1 — nhượng quyền: thu nhập tất định theo quy mô 
     expect(a).toBeGreaterThan(0);
     expect(a).toBeGreaterThan(b);
     expect(a).toBe(same); // tất định
+  });
+});
+
+describe('Hệ4-L4 — uy tín mỗi ngày (§4.6): nhãn nguội + review 4–5★, repLog', () => {
+  it('chưa có dòng nhãn → không tính nhãn nguội', () => {
+    expect(brandColdDelta(brand({ lines: [] }), 400)).toEqual({ delta: 0 });
+  });
+  it('có dòng mà 14 ngày không đóng gói → −1/ngày; còn hằng ngày thì không trừ', () => {
+    // lastPackDay 0, dòng từ 100 → ngày 14 đủ nguội
+    expect(brandColdDelta(brand({ lines: [{ productId: 'hx_nuoc_mam', since: 100, made: 0, sold: 0 }], lastPackDay: 0 }), 14)).toEqual({ delta: -1, why: expect.any(String) });
+    expect(brandColdDelta(brand(), 400).delta).toBe(-1);
+    expect(brandColdDelta(brand({ lastPackDay: 399 }), 400)).toEqual({ delta: 0 });
+  });
+  it('review 4–5★ có món mang nhãn → +0.2 MỖI review, trần +2/ngày', () => {
+    const b = brand(); // dòng hx_nuoc_mam
+    expect(brandRepFromReviews(b, ['hx_nuoc_mam']).delta).toBe(0.2);
+    expect(brandRepFromReviews(b, ['hx_nuoc_mam', 'hx_nuoc_mam', 'khong_nhan']).delta).toBe(0.4); // 2 review cùng dòng vẫn tính
+    expect(brandRepFromReviews(b, ['hx_nuoc_mam', 'khong_nhan']).lines).toEqual(['hx_nuoc_mam']);
+    expect(brandRepFromReviews(b, ['hang_khac']).delta).toBe(0);
+    // nhiều review cộng dồn từng review, trần 2/ngày
+    const b2 = brand({ lines: [brand().lines[0], { productId: 'hx_mam_tep', since: 100, made: 0, sold: 0 }] });
+    const many = Array<string>(12).fill('hx_nuoc_mam').concat(Array<string>(12).fill('hx_mam_tep'));
+    expect(brandRepFromReviews(b2, many).delta).toBe(2); // 24 review → kẹp 2
+    expect(brandRepFromReviews(b2, ['hx_nuoc_mam', 'hx_mam_tep', 'hx_nuoc_mam', 'hx_mam_tep', 'hx_nuoc_mam', 'hx_mam_tep']).delta).toBeCloseTo(1.2); // 6 review
+  });
+  it('brandRepDaily gộp nguội + review, clamp 0–100, tất định', () => {
+    const b = brand({ rep: 1, lastPackDay: 0, lines: [{ productId: 'hx_nuoc_mam', since: 100, made: 0, sold: 0 }] });
+    const { brand: nb, news } = brandRepDaily(b, 20, ['hx_nuoc_mam']);
+    expect(nb.rep).toBeCloseTo(1 - 1 + 0.2); // nguội + review
+    expect(nb.repLog[0].why).toContain('nguội');
+    expect(news.length).toBeGreaterThan(0);
+  });
+  it('uy tín dưới 0 bị kẹp về 0, không âm', () => {
+    const nb = brandRepDaily(brand({ rep: 0.1, lastPackDay: 0, lines: [brand().lines[0]] }), 20, []).brand;
+    expect(nb.rep).toBe(0);
+  });
+});
+
+describe('Hệ4-L4 — thẻ Sổ đầu ngày "🏷️ Nhãn" + Sổ việc chung (registerTodo)', () => {
+  it('không nhãn → không tip', () => {
+    expect(brandMorningTips(undefined, 100)).toEqual([]);
+  });
+  it('runway thiếu hàng cho 7 ngày tới → tip; đủ thì không', () => {
+    // có nghĩa vụ kỳ đại lý đến hạn trong 7 ngày, stock ít hơn nhu cầu
+    const dealObj = deal(100);
+    const b = brand({ deals: { sap_cho_huyen: dealObj } });
+    const tips = brandMorningTips(b, 95);
+    expect(tips.length).toBeGreaterThan(0); // stock 30 < qty 40
+    const ok = brand({ stock: { hx_nuoc_mam: 400 }, deals: { sap_cho_huyen: deal(100) }, lastPackDay: 95 });
+    expect(brandMorningTips(ok, 95)).toEqual([]);
+  });
+  it('todo của brand vào Sổ việc chung (registerTodo + morning)', () => {
+    const items = brandTodoItems(brand({ deals: { sap_cho_huyen: deal(100) } }), 95);
+    expect(items.length).toBeGreaterThan(0);
+    expect(items.every((i) => i.morning)).toBe(true);
+    expect(TODO_SOURCES.brand).toBeTypeOf('function');
   });
 });

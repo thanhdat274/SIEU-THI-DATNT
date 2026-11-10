@@ -1,5 +1,7 @@
 import type { ContractState } from '../core/gameTypes';
 import { productById } from './products';
+import type { TodoItem } from './todo';
+import { registerTodo, urgencyAt } from './todo';
 
 /**
  * Hệ 4 — NHÃN HÀNG RIÊNG (SPEC-CHIEU-SAU §4).
@@ -322,3 +324,88 @@ export function applyBrandRep(b: BrandState, day: number, delta: number, why: st
   // maxRep là uy tín cao nhất từng đạt — ít nhất bằng rep hiện có (và giá trị vừa clamp).
   return { ...b, rep, maxRep: Math.max(b.maxRep, b.rep, rep), repLog };
 }
+
+// ───── Uy tín mỗi ngày (§4.6) — các nguồn không cần dữ liệu đại lý/nhượng quyền ─────
+
+/** Không đóng gói gì trong bao nhiêu ngày thì "nhãn nguội" −1/ngày (§4.6). */
+export const BRAND_COLD_DAYS = 14;
+/** Review 4–5★ có món mang nhãn trong giỏ → +0.2 (trần mỗi ngày). */
+export const BRAND_REP_REVIEW_PER = 0.2;
+export const BRAND_REP_REVIEW_CAP = 2;
+
+/** "Nhãn nguội": có dòng nhãn mà `day - lastPackDay ≥ 14` → −1 uy tín ngày này. THUẦN. */
+export function brandColdDelta(b: BrandState, day: number): { delta: number; why?: string } {
+  if (b.lines.length === 0) return { delta: 0 }; // chưa có dòng thì không có "nhãn" để nguội
+  if (day - b.lastPackDay >= BRAND_COLD_DAYS) return { delta: -1, why: 'nhãn nguội (không đóng gói 14 ngày)' };
+  return { delta: 0 };
+}
+
+/**
+ * Tổng uy tín +0.2 cho MỖI review 4–5★ hôm nay có món MANG NHÃN trong giỏ (proxy: `productId` của review
+ * là món đắt nhất trong giỏ — §4.6). Trần BRAND_REP_REVIEW_CAP (2) mỗi ngày. Trả danh sách dòng được
+ * thưởng (để log) lẫn tổng. THUẦN, tất định (không RNG).
+ */
+export function brandRepFromReviews(b: BrandState, reviewProducts: string[]): { delta: number; lines: string[] } {
+  const lineSet = new Set(b.lines.map((l) => l.productId));
+  const matches = reviewProducts.filter((id) => lineSet.has(id));
+  const delta = Math.min(matches.length * BRAND_REP_REVIEW_PER, BRAND_REP_REVIEW_CAP);
+  return { delta, lines: [...new Set(matches)] };
+}
+
+/** Áp cả cụm uy tín ngày cho nhãn (nguội + review), ghi repLog + news. Trả BrandState mới. THUẦN. */
+export function brandRepDaily(b: BrandState, day: number, reviewProducts: string[]): { brand: BrandState; news: string[] } {
+  const news: string[] = [];
+  let cur = b;
+  const cold = brandColdDelta(b, day);
+  if (cold.delta) {
+    cur = applyBrandRep(cur, day, cold.delta, cold.why!);
+    news.push(`🏷️ ${cold.why}: uy tín ${cur.rep > 0 ? cur.rep : 0}`);
+  }
+  const rv = brandRepFromReviews(cur, reviewProducts);
+  if (rv.delta > 0) {
+    cur = applyBrandRep(cur, day, rv.delta, `review 4–5★ có ${rv.lines.join('·')} mang nhãn`);
+    news.push(`🏷️ Uy tín +${rv.delta} nhờ ${rv.lines.length} review tốt có món nhãn`);
+  }
+  return { brand: cur, news };
+}
+
+// ───────────────────────── Sổ việc chung (SPEC-TOI-UU §T6) ─────────────────────────
+// Hệ 4 tự đăng ký nguồn việc ở đây — KHÔNG sửa todayAgenda.ts / MorningPanel.tsx / HudAgenda.tsx.
+
+/** Một dòng cho thẻ Sổ đầu ngày "🏷️ Nhãn" (SPEC §4.6/§4.10). */
+export interface BrandMorningTip { icon: string; text: string; urgency: 'today' | 'now'; at?: number }
+
+/**
+ * Nội dung thẻ "🏷️ Nhãn" trong Sổ đầu ngày: kỳ đại lý/nhượng quyền đến hạn trong 7 ngày mà hàng nhãn
+ * còn thiếu (runway < 1), mới giao tiếp tục giữ chuỗi, và nhãn đang nguội. Chỉ trả tip khi CÓ việc
+ * → UI ẩn thẻ khi rỗng. THUẦN (R1/R5).
+ */
+export function brandMorningTips(b: BrandState | undefined, day: number): BrandMorningTip[] {
+  if (!b) return [];
+  const tips: BrandMorningTip[] = [];
+  const rw = brandRunway(b, day);
+  if (rw.need > 0 && rw.stock < rw.need) {
+    tips.push({
+      icon: '📦', text: `Hàng nhãn thiếu ${rw.need - rw.stock} đơn vị cho ${rw.days} ngày tới`, urgency: rw.stock === 0 ? 'now' : 'today',
+      at: brandObligations(b, day)[0]?.dueDay === day ? 480 : undefined,
+    });
+  }
+  const cold = brandColdDelta(b, day);
+  if (cold.delta) tips.push({ icon: '❄️', text: 'Đã 14 ngày không đóng gói — nhãn nguội, uy tín trừ dần', urgency: 'today' });
+  return tips;
+}
+
+/** Việc của Nhãn hàng riêng cho Sổ việc chung: các tip Sổ đầu ngày. THUẦN. */
+export function brandTodoItems(b: BrandState | undefined, day: number): TodoItem[] {
+  return brandMorningTips(b, day).map((t, i) => ({
+    id: `brand-tip-${i}`,
+    icon: t.icon,
+    text: t.text,
+    urgency: t.urgency,
+    at: t.at,
+    morning: true,
+    go: { panel: 'brand' },
+  }));
+}
+
+registerTodo('brand', (s) => brandTodoItems(s.biz.brand, s.day));
