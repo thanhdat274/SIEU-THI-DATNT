@@ -13,11 +13,24 @@ export const createStanceSlice = (set: SetState, get: GetState): Pick<GameState,
     if (s.level < STANCE_UNLOCK) return s.notify(`🪧 Treo biển mở từ cấp ${STANCE_UNLOCK}`);
     if (!STANCE_IDS.includes(id)) return;
     const cur = s.biz.stance;
+    const cur2 = s.biz.stance2;
+    const threeSeals = (s.biz.prestige.seals ?? []).length >= 3;
     const day = s.day;
     const next = { id, since: day, fitDays: 0, missStreak: 0 };
     if (!cur) {
       set({ biz: { ...s.biz, stance: next } });
       s.notify(`🪧 Đã treo biển Định vị. Theo dõi độ khớp mỗi đêm ở Sổ đầu ngày.`);
+    } else if (threeSeals && id !== cur.id) {
+      // Hệ3-L8 — đủ 3 ấn → treo biển PHỤ thứ hai (hiệu ứng 60%, SPEC §3.7). Treo/đổi biển phụ MIỄN PHÍ.
+      if (!cur2) {
+        set({ biz: { ...s.biz, stance2: next } });
+        s.notify(`🪧 Đủ 3 ấn định vị — treo biển PHỤ thứ hai (hiệu ứng 60%). Theo dõi độ khớp mỗi đêm.`);
+      } else if (cur2.id !== id) {
+        set({ biz: { ...s.biz, stance2: { id, since: day, fitDays: 0, missStreak: 0 } } });
+        s.notify(`🪧 Đổi biển phụ sang hướng mới — bậc về 0 (hiệu ứng 60%).`);
+      } else {
+        s.notify(`🪧 Đang treo biển phụ hướng này rồi.`);
+      }
     } else if (cur.id !== id) {
       // L6 — Đổi hướng: trả tiền làm biển 5tr × bậc hiện tại; làm lại 14 ngày, bậc về 0 (SPEC §3.4).
       const tier = stanceTier(cur.fitDays ?? 0);

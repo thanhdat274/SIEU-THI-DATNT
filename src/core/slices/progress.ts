@@ -180,6 +180,8 @@ export const createProgressSlice = (set: SetState, get: GetState): Pick<GameStat
     const rating = summarizeReviews(s.reviews);
     // GĐ171: danh hiệu "Chủ hẻm lão làng" — hoàn thành TRỌN BỘ mục tiêu vòng tái sinh hiện tại
     // (chỉ xét ở vòng NG+; mục tiêu đọc state reset-vòng nên là thành tích của MỘT vòng cụ thể).
+    // Hệ3-L8: các mục tiêu theo HƯỚNG biển (ng_stance_*) loại khỏi "trọn bộ" — ba hướng vốn loại trừ
+    // nhau trong một vòng (đổi biển về 0 bậc), chúng là "lý do chơi khác nhau" chứ không phải checklist.
     const ngGoalsAllDone =
       s.biz.prestige.level >= 1 &&
       ngGoalProgress({
@@ -190,7 +192,10 @@ export const createProgressSlice = (set: SetState, get: GetState): Pick<GameStat
         supplierRel: s.biz.supplierRel ?? {},
         marketClearedDay: s.marketClearedDay,
         rivalsBeaten: s.biz.rivalsBeaten,
-      }).every((g) => g.done);
+        stance: s.biz.stance,
+      })
+        .filter((g) => !g.id.startsWith('ng_stance_'))
+        .every((g) => g.done);
     const bond = alleyBond(s.regulars, s.biz.tiesMended ?? []);
     const ctx: TitleContext = {
       level: s.level, day: s.day, customers: s.totals.customers, itemsSold: s.totals.itemsSold, revenue: s.totals.revenue,
@@ -200,6 +205,7 @@ export const createProgressSlice = (set: SetState, get: GetState): Pick<GameStat
       ngGoalsAllDone,
       vietSetPieces: vietSetCount(s.furniture),
       alleyBond: bond,
+      seals: (s.biz.prestige.seals ?? []).length, // Hệ3-L8: đủ 3 ấn → danh hiệu Tam ấn định vị
     };
     // ── Mốc "Tình làng" (SPEC §2.8): 25/50/75/100% — tiền + mốc 100% tặng decor, MỘT LẦN MỖI VÁN ──
     // Cổng cấp ≥ LIFE_EVENT_UNLOCK (32) cùng mọi hệ 2 → golden L30 giữ byte (R1). checkTitles chạy
@@ -289,6 +295,7 @@ export const createProgressSlice = (set: SetState, get: GetState): Pick<GameStat
       supplierRel: s.biz.supplierRel ?? {},
       marketClearedDay: s.marketClearedDay,
       rivalsBeaten: s.biz.rivalsBeaten, // GĐ171: mục tiêu rival đo theo vòng (reset mỗi tái sinh — GĐ170)
+      stance: s.biz.stance, // Hệ3-L8: mục tiêu theo hướng biển đo bậc vòng này
     });
     const goal = progress.find((g) => g.id === id);
     if (!goal || !goal.done) return false;

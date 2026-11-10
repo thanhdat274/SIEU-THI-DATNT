@@ -4,6 +4,7 @@ import { faintMinutes } from '../../data/biz';
 import { maybeSurprise } from '../biz';
 import { DIRT_MAX } from '../../data/staff';
 import { RECIPE_MAP } from '../../data/recipes';
+import { sealYieldBonus } from '../../data/stance';
 import { playSfx } from '../audio';
 import { STOCK_WARN_AT, nightNeed, shelfTotal } from '../../data/branches';
 import { OPERATING_REVENUE_RATE, rentOf } from '../../data/shopTiers';
@@ -98,17 +99,18 @@ export const createClockSlice = (set: SetState, get: GetState): Pick<GameState, 
       });
       const done = next.filter((j) => j.remaining <= 0);
       if (done.length) {
+        const sealQ = sealYieldBonus(get().biz); // Hệ3-L8 Ấn Đặc sản: mỗi mẻ nấu ra thêm 1 đơn vị
         const k = copyStock(get());
         for (const j of done) {
           const r = RECIPE_MAP[j.recipeId];
-          if (r) putStock(k, r.outputId, r.outputQty);
+          if (r) putStock(k, r.outputId, r.outputQty + sealQ);
         }
         set({ ...k, cookJobs: next.filter((j) => j.remaining > 0) });
         playSfx('ding');
         for (const j of done) {
           const r = RECIPE_MAP[j.recipeId];
           if (!r) continue;
-          get().notify(`🍲 Nấu xong: ${r.outputQty} ${productById(r.outputId).name} đã vào kho, bày lên kệ được ngay`);
+          get().notify(`🍲 Nấu xong: ${r.outputQty + sealQ} ${productById(r.outputId).name} đã vào kho, bày lên kệ được ngay`);
           get().addXp(4);
         }
       } else {

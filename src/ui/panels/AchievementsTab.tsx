@@ -65,6 +65,7 @@ function PrestigeSection() {
     supplierRel: biz.supplierRel ?? {},
     marketClearedDay,
     rivalsBeaten: biz.rivalsBeaten, // GĐ171: mục tiêu rival đo theo vòng (reset mỗi tái sinh — GĐ170)
+    stance: biz.stance, // Hệ3-L8: mục tiêu theo hướng biển đo bậc vòng này
   });
   return (
     <div style={{ ...card, marginTop: 8, border: '1px solid rgba(241,196,15,0.4)' }}>

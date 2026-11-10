@@ -1,4 +1,5 @@
 import { relTier, PARTNER_TIERS } from './supplierRel';
+import { stanceTier, type StanceId, type StanceState } from './stance';
 
 /**
  * Mục tiêu vòng tái sinh (GĐ140) — trục NG+ khác lối chơi đầu (audit deleg_7cea64c0, Slice 2).
@@ -37,6 +38,9 @@ export interface NgGoalCtx {
   marketCleared: boolean;
   /** GĐ171: số đối thủ đã hạ TRONG VÒNG — prestigeRestart reset về 0 mỗi vòng (GĐ170), đo được. */
   rivalsBeaten: number;
+  /** Hệ3-L8: bậc biển (0..5) của từng hướng TRONG VÒNG này — stance reset mỗi vòng (prestigeRestart),
+   *  nên đọc `biz.stance.fitDays` là tiến trình vòng hiện tại (SPEC §3.7, NG goal "đạt bậc 3 một hướng"). */
+  stanceTiers: Record<StanceId, number>;
 }
 
 export interface NgGoal {
@@ -151,6 +155,33 @@ export const NG_GOALS: NgGoal[] = [
     reward: 1_200_000,
     done: (c) => c.level >= 50,
   },
+  // Hệ 3 L8 (SPEC §3.7) — mục tiêu theo hướng biển: "vòng này đạt bậc 3 một hướng chưa có ấn".
+  // Thêm 3 mục (một/hướng) để mỗi lần tái sinh có lý do chọn hướng khác nhau, thay vì chỉ +8% doanh thu.
+  // Bậc reset mỗi vòng (prestigeRestart → newGameData → không biển) nên đo đúng tiến trình vòng hiện tại.
+  {
+    id: 'ng_stance_binh',
+    icon: '🪧',
+    name: 'Bình dân lên bậc ba',
+    desc: 'Treo hướng Bình dân lên bậc 3 trong vòng này (ưu tiên hướng chưa có ấn)',
+    reward: 1_100_000,
+    done: (c) => c.stanceTiers.binh_dan >= 3,
+  },
+  {
+    id: 'ng_stance_dac',
+    icon: '🪧',
+    name: 'Đặc sản lên bậc ba',
+    desc: 'Treo hướng Đặc sản lên bậc 3 trong vòng này (ưu tiên hướng chưa có ấn)',
+    reward: 1_100_000,
+    done: (c) => c.stanceTiers.dac_san >= 3,
+  },
+  {
+    id: 'ng_stance_tien',
+    icon: '🪧',
+    name: 'Tiện lợi lên bậc ba',
+    desc: 'Treo hướng Tiện lợi lên bậc 3 trong vòng này (ưu tiên hướng chưa có ấn)',
+    reward: 1_100_000,
+    done: (c) => c.stanceTiers.tien_loi >= 3,
+  },
 ];
 
 /** Thuần: dựng tiến trình các mục tiêu cho một state NG+ (prestigeLevel, level, staff, ordersDone, supplierRel, marketClearedDay, rivalsBeaten).
@@ -163,10 +194,14 @@ export function ngGoalProgress(input: {
   supplierRel: Record<string, { spent: number; orders: number }>;
   marketClearedDay: number;
   rivalsBeaten: number;
+  /** Hệ3-L8: biển hiệu đang treo trong vòng này (bỏ qua khi không treo). */
+  stance?: StanceState;
 }): Array<Omit<NgGoal, 'done'> & { done: boolean; target?: number }> {
   const topRelTier = Object.keys(input.supplierRel).length
     ? Math.max(...Object.values(input.supplierRel).map((r) => relTier(r.spent).level))
     : 0;
+  const stanceTiers: Record<StanceId, number> = { binh_dan: 0, dac_san: 0, tien_loi: 0 };
+  if (input.stance) stanceTiers[input.stance.id] = stanceTier(input.stance.fitDays ?? 0);
   const ctx: NgGoalCtx = {
     prestigeLevel: input.prestigeLevel,
     level: input.level,
@@ -175,6 +210,7 @@ export function ngGoalProgress(input: {
     topRelTier,
     marketCleared: input.marketClearedDay > 0,
     rivalsBeaten: input.rivalsBeaten,
+    stanceTiers,
   };
   return NG_GOALS.map((g) => {
     const target = scaledTarget(g, input.prestigeLevel);

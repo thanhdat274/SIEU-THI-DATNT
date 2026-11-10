@@ -21,6 +21,8 @@ export interface TitleContext {
   vietSetPieces?: number;
   /** GĐ Hệ2-L7 (SPEC §2.8): chỉ số "Tình làng" 0–100% (regularTies.alleyBond) — mốc 25/50/75/100%. */
   alleyBond?: number;
+  /** Hệ3-L8: số ấn định vị đang giữ (0..3) — đủ 3 → danh hiệu + treo hai biển. */
+  seals?: number;
 }
 
 export interface TitleDef {
@@ -65,6 +67,8 @@ export const TITLES: TitleDef[] = [
   { id: 'xom_vui_ve', icon: '🎊', name: 'Xóm vui vẻ', description: 'Chỉ số Tình làng đạt 75%.', done: (c) => (c.alleyBond ?? 0) >= 75 },
   { id: 'hem_van_hoa', icon: '🏮', name: 'Hẻm văn hoá', description: 'Chỉ số Tình làng đạt 100% — cả hẻm như mái nhà chung.', done: (c) => (c.alleyBond ?? 0) >= 100 },
   { id: 'chu_hem_lao_lang', icon: '🧭', name: 'Chủ hẻm lão làng', description: 'Hoàn thành trọn bộ mục tiêu của một vòng tái sinh (NG+).', done: (c) => c.ngGoalsAllDone === true },
+  // Hệ3-L8 (SPEC §3.7): đủ ba ấn định vị → danh hiệu + mở treo hai biển cùng lúc.
+  { id: 'tam_an_dinh_vi', icon: '🔰', name: 'Tam ấn định vị', description: 'Thu thập đủ ba ấn định vị (Bình dân, Đặc sản, Tiện lợi) qua các vòng.', done: (c) => (c.seals ?? 0) >= 3 },
 ];
 
 /**

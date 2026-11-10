@@ -6,6 +6,7 @@ import {
 } from '../../data/garden';
 import { CROPS, cropById, type CropDef } from '../../data/garden';
 import { preserveDefById, phoiReady, rackCap, type PreserveJob } from '../../data/preserve';
+import { sealYieldBonus } from '../../data/stance';
 import type { GameState, SetState, GetState } from '../gameTypes';
 import { copyStock, putStock, takeStock } from '../stock';
 import { simRng } from '../rand';
@@ -337,13 +338,14 @@ export const createGardenSlice = (set: SetState, get: GetState): Pick<GameState,
       return s.notify(`${productById(def.outputId).name} chưa đủ nắng (${job.sun.toFixed(1)}/${def.need}) — để thêm ngày nắng đẹp`);
     }
     const k = copyStock(s);
-    putStock(k, def.outputId, def.outputQty);
+    const yieldQ = def.outputQty + sealYieldBonus(s.biz); // Hệ3-L8 Ấn Đặc sản: mỗi mẻ phơi ra thêm 1 đơn vị
+    putStock(k, def.outputId, yieldQ);
     const homegrown = { ...s.garden.homegrown };
-    if (job.allHomegrown) homegrown[def.outputId] = (homegrown[def.outputId] ?? 0) + def.outputQty;
+    if (job.allHomegrown) homegrown[def.outputId] = (homegrown[def.outputId] ?? 0) + yieldQ;
     const jobs = s.garden.preserveJobs.filter((j) => j.id !== jobId);
     set({ ...k, garden: { ...s.garden, preserveJobs: jobs, homegrown } });
     const xp = Math.min(40, 4 * (s.day - job.startDay));
-    s.notify(`🧺 Gỡ ${def.outputQty} ${productById(def.outputId).name} khỏi giàn${job.allHomegrown ? ' (toàn nhà trồng, giá hơn)' : ''} — khách thích hàng tự phơi`);
+    s.notify(`🧺 Gỡ ${yieldQ} ${productById(def.outputId).name} khỏi giàn${job.allHomegrown ? ' (toàn nhà trồng, giá hơn)' : ''} — khách thích hàng tự phơi`);
     s.addXp(xp);
   },
   setRackCovered: (on) => {

@@ -107,4 +107,16 @@ describe('Hệ3-L6 — đổi biển mất tiền (5tr × bậc), treo đầu mi
     expect(STANCE_SWITCH_BASE_COST).toBe(5_000_000);
     expect(STANCE_UNLOCK).toBe(60);
   });
+
+  it('đủ 3 ấn → treo biển PHỤ thứ hai MIỄN PHÍ; chưa đủ 3 ấn thì vẫn đổi biển chính mất tiền (Hệ3-L8)', () => {
+    setUp(60, 100_000_000, { id: 'binh_dan', since: 1, fitDays: 21, missStreak: 0 }); // bậc 3
+    useGame.setState({
+      biz: { ...useGame.getState().biz, prestige: { level: 3, bonus: 0.24, goalsClaimed: [], seals: ['binh_dan', 'dac_san', 'tien_loi'] } },
+    } as never);
+    useGame.getState().chooseStance('tien_loi');
+    const st = useGame.getState();
+    expect(st.biz.stance?.id).toBe('binh_dan'); // biển chính không bị đổi thành thêm biển phụ
+    expect(st.biz.stance2?.id).toBe('tien_loi'); // biển phụ treo thêm
+    expect(st.money).toBe(100_000_000); // miễn phí
+  });
 });

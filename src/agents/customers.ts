@@ -9,7 +9,7 @@ import { skyAt } from '../data/weather';
 import { marketTrafficFactor } from '../data/chophien';
 import { tierMarkdown, fitLots, nearestLife, nearExpiryRefuseChance } from '../data/freshness';
 import { demandPriceFactor, keepChance, PRICE_RULES } from '../data/pricing';
-import { stanceTraffic, stanceLowCap, stanceOverSensitivity, stancePullSlope, stanceSensitivity, stanceNearExpiry, stanceCriticChance, stanceBasketAdd, isSpecialtyProduct, stanceNightMul, stanceSlowMul, stanceServiceMul, stancePatience, stanceBasketCut } from '../data/stance';
+import { stanceTraffic, stanceLowCap, stanceOverSensitivity, stancePullSlope, stanceSensitivity, stanceNearExpiry, stanceCriticChance, stanceBasketAdd, isSpecialtyProduct, stanceNightMul, stanceSlowMul, stanceServiceMul, stancePatience, stanceBasketCut, sealPatience } from '../data/stance';
 import { CUNG_GOODS, CUNG_PULL, isXoiCungDay } from '../data/tiemXoi';
 import { dayEffects, isWeekend, OFF_SEASON_CLEARANCE, OFF_SEASON_HUNT, offSeason } from '../data/calendar';
 import { crisisEffects } from '../data/crisis';
@@ -442,6 +442,7 @@ export class CustomerManager {
     c.patience *= patienceMultiplier({ petCat: petActive(s.biz.pets.cat, s.day), professionId: c.profession?.id ?? null, care });
     // Hệ 3 (SPEC §3.4) — biển Tiện lợi: khách vội, kiên nhẫn xếp hàng −20% (bậc 5). Không treo = 1.
     c.patience *= stancePatience(s.biz);
+    c.patience *= sealPatience(s.biz); // Hệ3-L8 Ấn Tiện lợi: kiên nhẫn mọi khách +10% (giữ qua NG+)
     c.wants = regular
       ? this.regularWants(regular)
       : c.profession

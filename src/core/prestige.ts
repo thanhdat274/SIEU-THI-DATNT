@@ -90,7 +90,7 @@ export function prestigeRestart(prev: GameState): GameState {
       // rival đời mới quay lại từ cấp 8 qua nhánh đời mới (cổng prestige.level > 0 ở core/biz.ts).
       rival: null,
       rivalsBeaten: 0,
-      prestige: { level, bonus, goalsClaimed: [] },
+      prestige: { level, bonus, goalsClaimed: [], seals: prev.biz.prestige.seals ?? [] },
     },
     // Object dữ liệu này sẽ được store merge (set) lên state hiện có (vốn giữ sẵn các hàm slice),
     // nên ép kiểu sang GameState ở đây cho khớp hợp đồng — giống cách newGameData() được dùng trong thực tế.

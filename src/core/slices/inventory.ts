@@ -8,6 +8,7 @@ import { orderTotal, supplierById } from '../../data/suppliers';
 import { addRel, deliversInstantly } from '../../data/supplierRel';
 import { fitLots, mergeLots, tierMarkdown, takeOldest } from '../../data/freshness';
 import { COOKED_PRODUCT_IDS } from '../../data/recipes';
+import { sealImportMul } from '../../data/stance';
 import { type GameState, type Furniture, type SetState, type GetState, storageCapacity, storageUsed } from '../gameTypes';
 import { copyStock, putStock, takeStock, returnTier } from '../stock';
 import { updateFurniture } from './build';
@@ -31,7 +32,7 @@ export const createInventorySlice = (set: SetState, get: GetState): Pick<GameSta
       s.notify(`🍳 ${productById(productId).name} là món nhà làm — vào trạm nấu để chế biến nhé`);
       return false;
     }
-    const cost = productById(productId).buy * qty;
+    const cost = Math.round(productById(productId).buy * qty * sealImportMul(s.biz)); // Hệ3-L8 Ấn Bình dân: nhập rẻ 2%
     if (s.money < cost) {
       s.notify('Không đủ tiền!');
       return false;
@@ -60,7 +61,7 @@ export const createInventorySlice = (set: SetState, get: GetState): Pick<GameSta
     // `q > 0` sẽ nối chuỗi vào kho ("03") và trừ tiền không khớp hàng. Co-op nhận lệnh từ máy
     // khách qua cùng action này nên chặn ở đây là chặn cả hai chế độ.
     const lines = Object.fromEntries(Object.entries(items).filter(([, q]) => Number.isInteger(q) && q > 0));
-    const cost = orderTotal(sup, lines, s.day);
+    const cost = Math.round(orderTotal(sup, lines, s.day) * sealImportMul(s.biz)); // Hệ3-L8 Ấn Bình dân: nhập rẻ 2%
     if (!Object.keys(lines).length) return false;
     if (cost < sup.minOrder) {
       s.notify(`${sup.name} nhận đơn từ ${formatMoney(sup.minOrder)}`);

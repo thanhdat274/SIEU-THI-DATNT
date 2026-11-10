@@ -40,9 +40,10 @@ const doneOf = (s: GameState) => {
 describe('ngGoalProgress — thuần, đo theo VÒNG', () => {
   beforeEach(() => useGame.setState({ ...newGameData() }));
 
-  it('định nghĩa đủ 7 mục tiêu với tiêu diện NG+', () => {
+  it('định nghĩa đủ 10 mục tiêu với tiêu diện NG+', () => {
     expect(NG_GOALS.map((g) => g.id)).toEqual([
       'ng_cho_first', 'ng_rel_t2', 'ng_worker_3', 'ng_orders_20', 'ng_rival_2', 'ng_level_40', 'ng_level_50',
+      'ng_stance_binh', 'ng_stance_dac', 'ng_stance_tien',
     ]);
     for (const g of NG_GOALS) {
       expect(g.reward).toBeGreaterThan(0);

@@ -7,7 +7,7 @@ import { formatMoney } from './products';
 import { newQuanNuoc, type QuanNuocState } from './quanNuoc';
 import { newTiemXoi, type TiemXoiState } from './tiemXoi';
 import type { HiepLucState } from './hiepLuc';
-import type { StanceState } from './stance';
+import type { StanceId, StanceState } from './stance';
 import { monthOf } from './calendar';
 import { emptyYear } from './yearReport';
 import { xpToNext } from './levels';
@@ -152,13 +152,15 @@ export interface BizState {
   tutShelved?: boolean;
   /** Tái sinh (NG+): số lần đã tái sinh (0 = lần chơi đầu) và hệ số doanh thu đang hưởng (0 → không đổi).
    *  `goalsClaimed` (GĐ140): mục tiêu vòng tái sinh đã nhận thưởng trong vòng hiện tại — reset mỗi vòng. */
-  prestige: { level: number; bonus: number; goalsClaimed?: string[] };
+  prestige: { level: number; bonus: number; goalsClaimed?: string[]; seals?: StanceId[] };
   /** Dịch vụ ở quầy đã mở (nạp tiền, thu hộ); thiếu ở save cũ. */
   services?: string[];
   /** Thiết bị đã mua (camera, máy POS); thiếu ở save cũ. */
   upgrades?: string[];
   /** Hệ 3 (SPEC-CHIEU-SAU §3.9) — biển hiệu đang treo (định vị tiệm, cấp ≥ 60). THIẾU = chưa treo. */
   stance?: StanceState;
+  /** Hệ3-L8 — biển THỨ HAI (mở khi đủ 3 ấn định vị); treo hai biển, hiệu ứng mỗi biển 60%. THIẾU = một biển. */
+  stance2?: StanceState;
   /** Quán nước đầu ngõ (GĐ7, bán đồ uống rút từ kho); thiếu ở save cũ — nạp bản cũ tự bù mặc định. */
   quanNuoc: QuanNuocState;
   /** Tiệm xôi (GĐ410): xưởng nấu xôi số lượng lớn đổ vào kho chung mỗi đêm. */
@@ -283,7 +285,7 @@ export const newBiz = (): BizState => ({
   pets: {}, achievements: [], perfectDays: 0,
   surprise: null, surpriseDay: 0, story: {}, storyPending: null,
   home: [], vehicle: 'none', breakfastDay: 0,
-  chapters: [], chapterPending: null, counterKills: 0, tutorialOff: false, prestige: { level: 0, bonus: 0, goalsClaimed: [] }, services: [], upgrades: [],
+  chapters: [], chapterPending: null, counterKills: 0, tutorialOff: false, prestige: { level: 0, bonus: 0, goalsClaimed: [], seals: [] }, services: [], upgrades: [],
   quanNuoc: newQuanNuoc(),
   tiemXoi: newTiemXoi(),
   discoveryClaimed: [],

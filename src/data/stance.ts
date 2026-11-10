@@ -208,9 +208,50 @@ export function stanceFitByDirection(c: StanceCtx): Record<StanceId, boolean> {
 
 export interface StanceStateRef {
   stance?: StanceState;
+  /** Hệ3-L8: biển THỨ HAI khi đủ 3 ấn — treo hai biển cùng lúc, hiệu ứng mỗi biển còn 60% (SPEC §3.7). */
+  stance2?: StanceState;
+  /** L8 — các ấn định vị giữ qua NG+ (đọc từ `biz.prestige.seals`). Thiếu = rỗng. */
+  prestige?: { seals?: StanceId[] };
 }
 /** Bậc hiện tại của khách hàng (đọc entry point có biz.stance). */
 export const stanceTierOf = (e: StanceStateRef) => (e.stance ? stanceTier(e.stance.fitDays ?? 0) : 0);
+
+/**
+ * Hệ3-L8 — danh sách biển ĐANG CÓ HIỆU LỰC (cả biển chính + biển phụ). `mult` = 1 khi chỉ một biển
+ * (giữ NGUYÊN hành vi hiện tại — mọi test/golden không đổi), 0.6 cho MỖI biển khi treo hai biển
+ * (SPEC §3.7 "hiệu ứng mỗi biển còn 60%"). day mặc định 0 như các hàm hiệu ứng hiện tại.
+ */
+export function activeSigns(e: StanceStateRef, day = 0): Array<{ st: StanceState; mult: number }> {
+  const a = stanceActive(e.stance, day) ? e.stance : undefined;
+  const b = stanceActive(e.stance2, day) ? e.stance2 : undefined;
+  if (a && b) return [{ st: a, mult: 0.6 }, { st: b, mult: 0.6 }];
+  if (a) return [{ st: a, mult: 1 }];
+  if (b) return [{ st: b, mult: 1 }];
+  return [];
+}
+
+// ── Hệ 3 L8 — ẤN định vị giữ qua NG+ (SPEC §3.7) ──
+// Đạt bậc 5 một hướng thì nhận ẤN, lưu `biz.prestige.seals`. Lợi vĩnh viễn nhỏ, có hiệu lực dù vòng sau
+// treo biển gì (chỉ chơi đơn). Earning gated bởi bậc; hiệu lực gated chỉ bởi có ấn hay không → tiệm không
+// có ấn (golden L30, mọi save cũ, tiệm chưa NG+) trả đúng trung tính (1 / 0).
+export const STANCE_SEAL_TIER = 5 as const; // bậc 5 → nhận ấn (STANCE_TIER_DAYS[4] = 50 ngày khớp)
+export const SEAL_IMPORT_DISCOUNT = 0.98 as const; // Ấn Bình dân: nhập mọi mối rẻ 2%
+export const SEAL_YIELD_BONUS = 1 as const; // Ấn Đặc sản: mỗi mẻ ra thêm 1 đơn vị
+export const SEAL_PATIENCE_BONUS = 0.10 as const; // Ấn Tiện lợi: kiên nhẫn mọi khách +10%
+
+/** Danh sách ấn đang giữ. */
+export const stanceSeals = (e: StanceStateRef): StanceId[] => e.prestige?.seals ?? [];
+/** Đang giữ ấn hướng này không. */
+export const hasStanceSeal = (e: StanceStateRef, id: StanceId): boolean => stanceSeals(e).includes(id);
+/** Bậc biển đã đủ để nhận ấn chưa (bậc 5). */
+export const isStanceSealable = (st: StanceState): boolean => stanceTier(st.fitDays ?? 0) >= STANCE_SEAL_TIER;
+
+/** Ấn Bình dân — nhập hàng rẻ 2% (nhân vào giá mua). Không có ấn = 1. */
+export function sealImportMul(e: StanceStateRef): number { return hasStanceSeal(e, 'binh_dan') ? SEAL_IMPORT_DISCOUNT : 1; }
+/** Ấn Tiện lợi — kiên nhẫn xếp hàng +10% (nhân vào patience). Không có ấn = 1. */
+export function sealPatience(e: StanceStateRef): number { return hasStanceSeal(e, 'tien_loi') ? 1 + SEAL_PATIENCE_BONUS : 1; }
+/** Ấn Đặc sản — mỗi mẻ nấu/phơi ra thêm N đơn vị (cộng vào outputQty). Không có ấn = 0. */
+export function sealYieldBonus(e: StanceStateRef): number { return hasStanceSeal(e, 'dac_san') ? SEAL_YIELD_BONUS : 0; }
 
 // ── Hiệu ứng kinh tế (SPEC §3.4) ──
 // Mỗi hướng thưởng/phạt tăng TUYẾN TÍNH theo bậc 1→5; con số dưới là ở BẬC 5. Cổng cấp 60 (R1) và
@@ -222,11 +263,14 @@ const binhDanStep = (tier: number) => tier / 5; // hệ số tuyến tính 0..1 
 /** Thừa số lưu lượng khách theo hướng biển. Bình dân +20% (bậc 5); Đặc sản −15% (bậc 5, giá phải trả —
  *  "ngon có tiếng" nên ít khách đường phố hơn). Tiện lợi chưa có (L5). Không treo biển / hướng khác = 1. */
 export function stanceTraffic(e: StanceStateRef): number {
-  const t = stanceTierOf(e);
-  if (!t || !stanceActive(e.stance, 0)) return 1;
-  if (e.stance!.id === 'binh_dan') return 1 + 0.2 * binhDanStep(t);
-  if (e.stance!.id === 'dac_san') return 1 - 0.15 * binhDanStep(t);
-  return 1;
+  let v = 1;
+  for (const { st, mult } of activeSigns(e)) {
+    const t = stanceTier(st.fitDays ?? 0);
+    if (!t) continue;
+    if (st.id === 'binh_dan') v += 0.2 * binhDanStep(t) * mult;
+    else if (st.id === 'dac_san') v -= 0.15 * binhDanStep(t) * mult;
+  }
+  return v;
 }
 
 /**
@@ -235,10 +279,14 @@ export function stanceTraffic(e: StanceStateRef): number {
  * tuyến tính chung (để cân bằng 3 hướng so sánh được cùng thang). Không treo / hướng khác / hàng thường = 1.
  */
 export function stanceSensitivity(e: StanceStateRef, productId: string, step: number = binhDanStep(stanceTierOf(e))): number {
-  const t = stanceTierOf(e);
-  if (!t || !stanceActive(e.stance, 0) || e.stance!.id !== 'dac_san') return 1;
-  if (!isSpecialtyProduct(productId)) return 1;
-  return 1 - 0.3 * step;
+  void step; // bậc tính theo từng biển (activeSigns) — tham số giữ để không vỡ API caller
+  let v = 1;
+  for (const { st, mult } of activeSigns(e)) {
+    const t = stanceTier(st.fitDays ?? 0);
+    if (!t || st.id !== 'dac_san' || !isSpecialtyProduct(productId)) continue;
+    v -= 0.3 * binhDanStep(t) * mult;
+  }
+  return v;
 }
 
 /**
@@ -246,9 +294,13 @@ export function stanceSensitivity(e: StanceStateRef, productId: string, step: nu
  * (`nearExpiryRefuseChance`) ×2 (bậc 5). Không treo / hướng khác = 1.
  */
 export function stanceNearExpiry(e: StanceStateRef): number {
-  const t = stanceTierOf(e);
-  if (!t || !stanceActive(e.stance, 0) || e.stance!.id !== 'dac_san') return 1;
-  return 1 + 1 * binhDanStep(t);
+  let v = 1;
+  for (const { st, mult } of activeSigns(e)) {
+    const t = stanceTier(st.fitDays ?? 0);
+    if (!t || st.id !== 'dac_san') continue;
+    v += 1 * binhDanStep(t) * mult;
+  }
+  return v;
 }
 
 /**
@@ -256,9 +308,13 @@ export function stanceNearExpiry(e: StanceStateRef): number {
  * `HOMEGROWN_PREMIUM` (0.2): bậc 5 → 1.5 (0.3/0.2 = +30%). Không treo / hướng khác = 1 (giữ +20%).
  */
 export function stanceHomegrownMul(e: StanceStateRef): number {
-  const t = stanceTierOf(e);
-  if (!t || !stanceActive(e.stance, 0) || e.stance!.id !== 'dac_san') return 1;
-  return 1 + 0.5 * binhDanStep(t);
+  let v = 1;
+  for (const { st, mult } of activeSigns(e)) {
+    const t = stanceTier(st.fitDays ?? 0);
+    if (!t || st.id !== 'dac_san') continue;
+    v += 0.5 * binhDanStep(t) * mult;
+  }
+  return v;
 }
 
 /**
@@ -266,9 +322,13 @@ export function stanceHomegrownMul(e: StanceStateRef): number {
  * lên `CRITIC_CHANCE`. Không treo / hướng khác = 1.
  */
 export function stanceCriticChance(e: StanceStateRef): number {
-  const t = stanceTierOf(e);
-  if (!t || !stanceActive(e.stance, 0) || e.stance!.id !== 'dac_san') return 1;
-  return 1 + 1 * binhDanStep(t);
+  let v = 1;
+  for (const { st, mult } of activeSigns(e)) {
+    const t = stanceTier(st.fitDays ?? 0);
+    if (!t || st.id !== 'dac_san') continue;
+    v += 1 * binhDanStep(t) * mult;
+  }
+  return v;
 }
 
 /**
@@ -277,9 +337,11 @@ export function stanceCriticChance(e: StanceStateRef): number {
  * chọn như món thường nên không tạo chuỗi RNG riêng (an toàn khi không treo biển).
  */
 export function stanceBasketAdd(e: StanceStateRef): number {
-  const t = stanceTierOf(e);
-  if (!t || !stanceActive(e.stance, 0) || e.stance!.id !== 'dac_san') return 0;
-  return binhDanStep(t) >= 1 ? 1 : 0;
+  for (const { st } of activeSigns(e)) {
+    const t = stanceTier(st.fitDays ?? 0);
+    if (st.id === 'dac_san' && binhDanStep(t) >= 1) return 1;
+  }
+  return 0;
 }
 
 // ── Hiệu ứng Tiện lợi (L5) ────────────────────────────────────────────────
@@ -287,25 +349,37 @@ export function stanceBasketAdd(e: StanceStateRef): number {
 /** Lợi Tiện lợi — dịch vụ quầy & máy tự phục vụ thu THÊM +25% (bậc 5). Nhân vào phí trước khi ghi doanh
  *  thu (`earnService`). Không treo / hướng khác = 1. */
 export function stanceServiceMul(e: StanceStateRef): number {
-  const t = stanceTierOf(e);
-  if (!t || !stanceActive(e.stance, 0) || e.stance!.id !== 'tien_loi') return 1;
-  return 1 + 0.25 * binhDanStep(t);
+  let v = 1;
+  for (const { st, mult } of activeSigns(e)) {
+    const t = stanceTier(st.fitDays ?? 0);
+    if (!t || st.id !== 'tien_loi') continue;
+    v += 0.25 * binhDanStep(t) * mult;
+  }
+  return v;
 }
 
 /** Lợi Tiện lợi — khách đêm +50% (bậc 5). Nhân vào nhịp `bandTraffic` khi đang là ca đêm (`isNight`).
  *  Không treo / hướng khác = 1. */
 export function stanceNightMul(e: StanceStateRef): number {
-  const t = stanceTierOf(e);
-  if (!t || !stanceActive(e.stance, 0) || e.stance!.id !== 'tien_loi') return 1;
-  return 1 + 0.5 * binhDanStep(t);
+  let v = 1;
+  for (const { st, mult } of activeSigns(e)) {
+    const t = stanceTier(st.fitDays ?? 0);
+    if (!t || st.id !== 'tien_loi') continue;
+    v += 0.5 * binhDanStep(t) * mult;
+  }
+  return v;
 }
 
 /** Lợi Tiện lợi — khung vắng (`slowBands`) được thêm +15% khách (bậc 5). Nhân vào nhịp `bandTraffic`
  *  khi đang trong khung giờ vắng. Không treo / hướng khác = 1. */
 export function stanceSlowMul(e: StanceStateRef): number {
-  const t = stanceTierOf(e);
-  if (!t || !stanceActive(e.stance, 0) || e.stance!.id !== 'tien_loi') return 1;
-  return 1 + 0.15 * binhDanStep(t);
+  let v = 1;
+  for (const { st, mult } of activeSigns(e)) {
+    const t = stanceTier(st.fitDays ?? 0);
+    if (!t || st.id !== 'tien_loi') continue;
+    v += 0.15 * binhDanStep(t) * mult;
+  }
+  return v;
 }
 
 /** Giá phải trả Tiện lợi — khách vội: kiên nhẫn xếp hàng −20% (bậc 5). Nhân vào `patience`
@@ -313,23 +387,33 @@ export function stanceSlowMul(e: StanceStateRef): number {
  *  mất lượng khách lớn vì khách bỏ hàng chờ; dải ±5-20% §3.8 chưa đạt — L5 để mức này rồi chốt khi cân
  *  bằng chung 3 hướng.) */
 export function stancePatience(e: StanceStateRef): number {
-  const t = stanceTierOf(e);
-  if (!t || !stanceActive(e.stance, 0) || e.stance!.id !== 'tien_loi') return 1;
-  return 1 - 0.2 * binhDanStep(t);
+  let v = 1;
+  for (const { st, mult } of activeSigns(e)) {
+    const t = stanceTier(st.fitDays ?? 0);
+    if (!t || st.id !== 'tien_loi') continue;
+    v -= 0.2 * binhDanStep(t) * mult;
+  }
+  return v;
 }
 
 /** Giá phải trả Tiện lợi — giỏ nhỏ hơn 1 món (bậc 5). Trả số món trừ (int 0..1) để khách vội mua ít. */
 export function stanceBasketCut(e: StanceStateRef): number {
-  const t = stanceTierOf(e);
-  if (!t || !stanceActive(e.stance, 0) || e.stance!.id !== 'tien_loi') return 0;
-  return binhDanStep(t) >= 1 ? 1 : 0;
+  for (const { st } of activeSigns(e)) {
+    const t = stanceTier(st.fitDays ?? 0);
+    if (st.id === 'tien_loi' && binhDanStep(t) >= 1) return 1;
+  }
+  return 0;
 }
 
 /** Lợi Bình dân — trần "rẻ kéo khách" (lowPriceDemandCap) 1.15 → 1.25 (bậc 5). Không treo = cap cũ. */
 export function stanceLowCap(e: StanceStateRef): number {
-  const t = stanceTierOf(e);
-  if (!t || !stanceActive(e.stance, 0) || e.stance!.id !== 'binh_dan') return PRICE_RULES.lowPriceDemandCap;
-  return PRICE_RULES.lowPriceDemandCap + 0.1 * binhDanStep(t);
+  let v = PRICE_RULES.lowPriceDemandCap;
+  for (const { st, mult } of activeSigns(e)) {
+    const t = stanceTier(st.fitDays ?? 0);
+    if (!t || st.id !== 'binh_dan') continue;
+    v += 0.1 * binhDanStep(t) * mult;
+  }
+  return v;
 }
 
 /** Lợi Bình dân — "rẻ kéo khách": độ dốc hút giá rẻ ×(1+3·bậc/5) (bậc 5 = ×4). Biển Bình dân sống nhờ
@@ -337,25 +421,36 @@ export function stanceLowCap(e: StanceStateRef): number {
  *  quá yếu — hạ 3-5% không kéo nổi khách; nhưng quá mạnh như ×9 làm bot hết hàng. Để mức vừa, chốt khi
  *  cân bằng cả 3 hướng ở L5.) Không treo / hướng khác = 1 (slope gốc). */
 export function stancePullSlope(e: StanceStateRef): number {
-  const t = stanceTierOf(e);
-  if (!t || !stanceActive(e.stance, 0) || e.stance!.id !== 'binh_dan') return 1;
-  return 1 + 3 * binhDanStep(t);
+  let v = 1;
+  for (const { st, mult } of activeSigns(e)) {
+    const t = stanceTier(st.fitDays ?? 0);
+    if (!t || st.id !== 'binh_dan') continue;
+    v += 3 * binhDanStep(t) * mult;
+  }
+  return v;
 }
 
 /** Giá phải trả Bình dân — khách đã quen rẻ: món BÁN TRÊN thị trường bị chê nặng hơn 50% (bậc 5).
  *  Hệ số này nhân vào độ nhạy khách trong `keepChance` (chỉ phần giá vượt thị trường). Không treo /
  *  bán rẻ / hướng khác = 1. */
 export function stanceOverSensitivity(e: StanceStateRef, productId: string, price: number): number {
-  const t = stanceTierOf(e);
-  if (!t || !stanceActive(e.stance, 0) || e.stance!.id !== 'binh_dan') return 1;
-  if (price <= referenceSell(productId)) return 1;
-  return 1 + 0.5 * binhDanStep(t);
+  let v = 1;
+  for (const { st, mult } of activeSigns(e)) {
+    const t = stanceTier(st.fitDays ?? 0);
+    if (!t || st.id !== 'binh_dan' || price <= referenceSell(productId)) continue;
+    v += 0.5 * binhDanStep(t) * mult;
+  }
+  return v;
 }
 
 /** Giá phải trả Bình dân — sao món (dishPriceMul) chỉ còn hưởng NỬA (bậc 5). Không treo = 1 (hưởng đủ). */
 export function stanceDishMul(e: StanceStateRef): number {
-  const t = stanceTierOf(e);
-  if (!t || !stanceActive(e.stance, 0) || e.stance!.id !== 'binh_dan') return 1;
-  return 1 - 0.5 * binhDanStep(t);
+  let v = 1;
+  for (const { st, mult } of activeSigns(e)) {
+    const t = stanceTier(st.fitDays ?? 0);
+    if (!t || st.id !== 'binh_dan') continue;
+    v -= 0.5 * binhDanStep(t) * mult;
+  }
+  return v;
 }
 

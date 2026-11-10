@@ -40,7 +40,7 @@ import { ANIMAL_ORDER, farmCritChance, farmhandChores, FARM_ORDER_UNLOCK, farmOr
 import { preserveNight, farmhandPreserve, preserveDefById } from '../../data/preserve';
 import { crisisNight } from '../../data/crisis';
 import { lifeEventFor, lifeEventById, gioLabel } from '../../data/lifeEvent';
-import { stanceActive, stanceFitByDirection, applyStanceDay, stanceTier, STANCE_UNLOCK, STANCE_META } from '../../data/stance';
+import { stanceActive, stanceFitByDirection, applyStanceDay, stanceTier, STANCE_UNLOCK, STANCE_META, hasStanceSeal, isStanceSealable, type StanceState } from '../../data/stance';
 import { buildStanceCtx } from '../../data/stanceData';
 import { logAnalyticsDay } from '../../data/analytics';
 import { appRating } from '../../data/online';
@@ -423,7 +423,18 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
     market[p.id] = nextMarketIndex(market[p.id] ?? 1, (k.storage[p.id] ?? 0) + onShelf, 0, demand[p.id] ?? 0);
   }
   // Trả lương và tiền nhà cuối ngày (kèm phí thợ bảo trì sáng nay nếu có); chi nhánh mua đứt nên không cộng tiền thuê
-  const rent = rentOf(s.shopTier);
+  const rentFull = rentOf(s.shopTier);
+  // Hệ8-L8 (SPEC-CHIEU-RONG §8.3): trong biến cố dài, tiệm đang âm tiền thì chủ nhà miễn tiền nhà 3 ngày
+  // (mỗi đợt một lần — `rentGrace` undefined nghĩa là đợt này còn quyền). Chỉ áp khi thật sự không đủ trả nhà.
+  const crisisAct = s.biz.crisis;
+  let rent = rentFull;
+  let rentGraceN: number | undefined; // giá trị mới ghi lại vào crisis (undefined = không đổi)
+  if (crisisAct && s.money < rentFull) {
+    const g = crisisAct.rentGrace;
+    if (g === undefined) { rent = 0; rentGraceN = 3; } // lần đầu đợt này: tặng khung 3 ngày
+    else if (g > 0) { rent = 0; rentGraceN = g - 1; } // tiếp tục hưởng ngày còn lại
+  }
+  if (rent === 0 && rentFull > 0) say(`🏠 Chủ nhà miễn tiền nhà ${formatMoney(rentFull)} hôm nay — hẻm gặp biến cố dài, thông cảm 3 ngày`);
   const relief = wageRelief(s.money - rent, wagesDue(s), s.staff); // GĐ1525
   const wages = wagesDue(s) - relief + branchWages;
   if (relief) say(`🤝 Két không đủ trả lương — người làm lâu nhất thông cảm bỏ qua ${formatMoney(relief)} hôm nay`);
@@ -455,9 +466,11 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
   // tắt bằng biz.calmYears (Năm yên ả). Chỉ chạm biz.*crisis, không đụng phần khác.
   const crisisN = crisisNight(s.weatherSeed, s.day, s.level, biz.biz);
   if (crisisN.news.length) say(crisisN.news.join(' · '));
+  // Hệ8-L8 — miễn tiền nhà ở trên đã tiêu một ngày trong khung 3 ngày → ghi lại vào crisis state.
+  const crisisNext = crisisN.crisis && rentGraceN !== undefined ? { ...crisisN.crisis, rentGrace: rentGraceN } : crisisN.crisis;
   biz.biz = {
     ...biz.biz,
-    crisis: crisisN.crisis, crisesSeen: crisisN.crisesSeen, crisisBadges: crisisN.crisisBadges, roadBoon: crisisN.roadBoon, lastCrisis: crisisN.lastCrisis,
+    crisis: crisisNext, crisesSeen: crisisN.crisesSeen, crisisBadges: crisisN.crisisBadges, roadBoon: crisisN.roadBoon, lastCrisis: crisisN.lastCrisis,
   };
   // GĐ Hệ2-L3 (SPEC-CHIEU-SAU §2.5) — VIỆC NHÀ TRONG HẺM: mời ĐÁM GIỖ hằng năm (giỗ lặp, R4,
   // không lưu — ngày băm từ id cùng lịch nên hai máy hẻm luôn khớp). Cổng cấp ≥ LIFE_EVENT_UNLOCK
@@ -493,14 +506,31 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
   // Đo ĐÚNG hướng treo (stanceFitByDirection). Cổng cấp ≥ 60 (R1) + stanceActive (không phải đang làm
   // lại biển) → tiệm không treo biển / golden L30 hoàn toàn không chạm.
   const stStance0 = biz.biz.stance;
-  if (stStance0 && s.level >= STANCE_UNLOCK && stanceActive(stStance0, s.day)) {
-    const fitNow = stanceFitByDirection(buildStanceCtx(s))[stStance0.id];
-    const nextSt = applyStanceDay(stStance0, fitNow, s.day);
-    const nm = STANCE_META[stStance0.id].name;
-    if (fitNow) say(`🪧 Hôm nay khớp hướng ${nm} (bậc ${stanceTier(nextSt.fitDays)})`);
-    else if ((stStance0.missStreak ?? 0) + 1 >= 3) say(`🪧 ${nm} lệch 3 ngày liền — tụt một bậc`);
-    else say(`🪧 Hôm nay lệch hướng ${nm} — coi lại thẻ Định vị`);
-    biz.biz = { ...biz.biz, stance: nextSt };
+  const stStance2 = biz.biz.stance2;
+  if (s.level >= STANCE_UNLOCK) {
+    // Cập nhật TỪNG biển đang hiệu lực (biển chính + biển phụ Hệ3-L8 khi đủ 3 ấn). Đo đúng hướng
+    // đang treo (stanceFitByDirection); đang làm lại biển (switchUntil) → stanceActive false, không đổi.
+    let b = biz.biz;
+    const tickSign = (sig: { st: StanceState | undefined; key: 'stance' | 'stance2' }) => {
+      if (!sig.st || !stanceActive(sig.st, s.day)) return;
+      const fitNow = stanceFitByDirection(buildStanceCtx(s))[sig.st.id];
+      const nextSt = applyStanceDay(sig.st, fitNow, s.day);
+      const nm = STANCE_META[sig.st.id].name;
+      if (fitNow) say(`🪧 Hôm nay khớp hướng ${nm} (bậc ${stanceTier(nextSt.fitDays)})`);
+      else if ((sig.st.missStreak ?? 0) + 1 >= 3) say(`🪧 ${nm} lệch 3 ngày liền — tụt một bậc`);
+      else say(`🪧 Hôm nay lệch hướng ${nm} — coi lại thẻ Định vị`);
+      b = { ...b, [sig.key]: nextSt };
+      // Hệ 3 L8 (SPEC §3.7) — đạt bậc 5 một hướng → nhận ẤN định vị, lưu prestige.seals (giữ qua NG+).
+      // Ấn chỉ có ý nghĩa ở vòng NG+ chơi đơn; lợi nhỏ và gated chỉ bởi có ấn → golden/hẻm không đổi.
+      if (isStanceSealable(nextSt) && !hasStanceSeal(b, sig.st.id)) {
+        const seals = [...(b.prestige.seals ?? []), sig.st.id];
+        b = { ...b, prestige: { ...b.prestige, seals } };
+        say(`🏅 Đạt bậc 5 hướng ${nm} — nhận Ấn ${nm}, giữ qua các lần tái sinh`);
+      }
+    };
+    tickSign({ st: stStance0, key: 'stance' });
+    tickSign({ st: stStance2, key: 'stance2' });
+    biz.biz = b;
   }
   const todayReviews = s.reviews.filter((r) => r.day === s.day);
   const record: DayRecord = {
