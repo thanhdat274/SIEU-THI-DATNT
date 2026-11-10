@@ -17,9 +17,10 @@ const phoiJob = (over: Partial<PreserveJob> = {}): PreserveJob => ({
 const spillClock = (start: number) => `${String(Math.floor(start / 60)).padStart(2, '0')}:${String(start % 60).padStart(2, '0')}`;
 
 describe('preserveMorningTips — thẻ Sổ đầu ngày (chỉ hiện khi có việc)', () => {
-  it('không có mẻ / giàn không để ngoài → rỗng (UI ẩn thẻ)', () => {
-    expect(preserveMorningTips({ day: 40, seed: 1, weather: 'sunny', jobs: [] })).toEqual([]);
-    expect(preserveMorningTips({ day: 40, seed: 1, weather: 'sunny', jobs: [phoiJob({ covered: true })] })).toEqual([]);
+  it('không có mẻ / giàn không để ngoài / chưa tới dịp lễ → rỗng (UI ẩn thẻ)', () => {
+    // day 20 (dayOfYear 19): không lễ nào trong cửa sổ đếm lùi 6 ngày → thẻ rỗng.
+    expect(preserveMorningTips({ day: 20, seed: 1, weather: 'sunny', jobs: [] })).toEqual([]);
+    expect(preserveMorningTips({ day: 20, seed: 1, weather: 'sunny', jobs: [phoiJob({ covered: true })] })).toEqual([]);
   });
 
   it('giàn đang phơi + hôm nay mưa → nhắc cất kèm giờ mưa (đặt lên đầu)', () => {

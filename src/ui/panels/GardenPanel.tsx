@@ -14,6 +14,8 @@ import { isWeekend } from '../../data/calendar';
 import { expiringSoon, expiryNoteFor, newUnlockMark } from '../../data/advice';
 import { isXoiCungDay } from '../../data/tiemXoi';
 import { preserveDefsOf, preserveDefById, phoiReady, rackCap, vaiCap, chumCap, VAI_UNLOCK, CHUM_UNLOCK, pickleState, pickleAge, uRipe, uAged, PHOI_UNLOCK } from '../../data/preserve';
+import { preservePayoff } from '../../data/preservePayoff';
+import { NEIGHBOR_SUPPLIER_IDS } from '../../data/supplierRel';
 import { describeDay, type Weather } from '../../data/weather';
 import { Callout, Footer, styles, Tabs } from './shared';
 
@@ -41,7 +43,9 @@ export function GardenPanel() {
       {tab === 'phoi' && (
         <PhoiTab level={level} money={money} day={day} weather={weather} weatherSeed={weatherSeed} tomorrow={forecast[0] ?? weather}
           garden={garden} storage={storage} buyFarmBuilding={buyFarmBuilding} upgradeFarmBuilding={upgradeFarmBuilding}
-          startPreserve={startPreserve} collectPreserve={collectPreserve} setRackCovered={setRackCovered} buyRackTarp={buyRackTarp} />
+          startPreserve={startPreserve} collectPreserve={collectPreserve} setRackCovered={setRackCovered} buyRackTarp={buyRackTarp}
+          neighborLife={[...NEIGHBOR_SUPPLIER_IDS].reduce((n, id) => n + (biz.supplierRel?.[id]?.spent ?? 0), 0)}
+          neighborMonth={[...NEIGHBOR_SUPPLIER_IDS].reduce((n, id) => n + (biz.supplierRelMonth?.[id] ?? 0), 0)} />
       )}
       {tab === 'farm' && (level < GARDEN_UNLOCK ? (
         <p style={styles.sub}>🔒 Trang trại mở ở cấp {GARDEN_UNLOCK}: dọn lại mảnh đất ven đường đã.</p>
@@ -401,8 +405,9 @@ function PhoiTab(props: {
   buyFarmBuilding: (id: FarmBuildingId) => void; upgradeFarmBuilding: (id: FarmBuildingId) => void;
   startPreserve: (defId: string) => void; collectPreserve: (jobId: number) => void;
   setRackCovered: (on: boolean) => void; buyRackTarp: () => void;
+  neighborLife?: number; neighborMonth?: number;
 }) {
-  const { level, money, day, weather, weatherSeed, tomorrow, garden, storage, buyFarmBuilding, upgradeFarmBuilding, startPreserve, collectPreserve, setRackCovered, buyRackTarp } = props;
+  const { level, money, day, weather, weatherSeed, tomorrow, garden, storage, buyFarmBuilding, upgradeFarmBuilding, startPreserve, collectPreserve, setRackCovered, buyRackTarp, neighborLife, neighborMonth } = props;
   const star = garden.buildings.gian_phoi ?? 0;
   const rackCovered = garden.rackLog.day === day && !!garden.rackLog.out && garden.rackLog.out.length === 0;
   const phoiDefs = preserveDefsOf('phoi').filter((d) => d.unlock <= level);
@@ -418,6 +423,7 @@ function PhoiTab(props: {
   const uDefs = preserveDefsOf('u').filter((d) => d.unlock <= level);
   const uJobs = garden.preserveJobs.filter((j) => preserveDefById(j.defId).kind === 'u');
   const cd = FARM_BUILDINGS.chum_u;
+  const payoff = preservePayoff({ level, neighborSpentLife: neighborLife, neighborSpentMonth: neighborMonth });
   return (
     <div style={{ display: 'grid', gap: 6, maxWidth: 560 }}>
       {level < PHOI_UNLOCK ? (
@@ -429,6 +435,17 @@ function PhoiTab(props: {
               Hôm nay: <b>{describeDay(weatherSeed, day, weather)}</b> · Mai: <b>{describeDay(weatherSeed, day + 1, tomorrow)}</b>. Cất giàn trước cơn mưa / giông bão là mẻ an toàn.
             </div>
           </Callout>
+
+          {payoff.rows.length > 0 && (
+            <div style={{ ...styles.card, display: 'block', background: '#fdf6e3' }}>
+              <div style={{ fontSize: 12, opacity: 0.8 }}>{payoff.headline}</div>
+              <div style={{ fontSize: 12, opacity: 0.75, marginTop: 4 }}>
+                {payoff.rows.map((r) => (
+                  <div key={r.defId}>· {r.line}</div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div style={{ ...styles.card, display: 'block' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center' }}>

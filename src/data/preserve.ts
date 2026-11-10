@@ -1,5 +1,6 @@
 import { rainSpell, nextWeather, WEATHER, type RainSpell, type Weather } from './weather';
 import { productById } from './products';
+import { upcomingFestival, FESTIVAL_NOTICE_DAYS } from './calendar';
 
 /**
  * Hệ 1 — Phơi · Muối · Ủ (SPEC-CHIEU-SAU §1).
@@ -224,6 +225,23 @@ export function preserveMorningTips(args: {
       tips.push({ icon: '🫛', text: `${productById(d.outputId).name} đủ ngày ủ — có thể rút (giữ ẩm tới mốc lâu sẽ ra nhiều hơn)`, act: 'Trang trại → Nhà chum' });
     }
   }
+  // 5. Lịch lễ (lát L7, SPEC §1.8): đếm lùi tới dịp sắp tới. Nếu có mẻ muối/ủ "vừa khít" thời gian
+  //    (finish trong khoảng inDays..inDays+2 → chỉ kịp nếu làm NGAY) thì nhắc "làm HÔM NAY cho kịp lễ".
+  const soon = upcomingFestival(args.day, FESTIVAL_NOTICE_DAYS + FESTIVAL_NOTICE_DAYS);
+  if (soon) {
+    const tight = PRESERVE_DEFS.filter((d) => {
+      if (d.kind === 'phoi') return false;
+      const f = d.kind === 'u' ? d.need : d.window![1];
+      return f >= soon.inDays && f <= soon.inDays + 2;
+    });
+    if (tight.length > 0) {
+      tips.push({
+        icon: '🏮',
+        text: `Còn ${soon.inDays} ngày tới ${soon.festival.icon} ${soon.festival.name} — ${tight.map((d) => `${productById(d.outputId).name} cần ${d.kind === 'u' ? d.need : d.window![1]} ngày`).join(', ')}: làm HÔM NAY cho kịp lễ`,
+        act: 'Trang trại → Phơi · Muối · Ủ',
+      });
+    }
+  }
   return tips;
 }
 
@@ -332,7 +350,7 @@ export const PRESERVE_DEFS: PreserveDef[] = [
     id: 'ps_dua_muoi', kind: 'muoi', outputId: 'hx_dua_muoi', outputQty: 4,
     // Dưa muối (miền Bắc): rau cải phơi héo, ngâm nước muối pha loãng (x_muoi + x_rau_cai),
     // ủ 2–4 ngày chua giòn. Cửa sổ vớt ngon ngày 2–4.
-    inputs: [{ productId: 'x_rau_cai', quantity: 2 }, { productId: 'x_muoi', quantity: 1 }],
+    inputs: [{ productId: 'x_rau_cai', quantity: 1 }, { productId: 'x_muoi', quantity: 2 }],
     unlock: 38, need: 2, window: [2, 4], learnAfterSold: 30,
     note: 'Miền Bắc — cải muối chua ăn kèm; rau cải + muối ủ 2–4 ngày, vớt ngon đầu cửa sổ ngày 2–3.',
   },
@@ -340,7 +358,7 @@ export const PRESERVE_DEFS: PreserveDef[] = [
     id: 'ps_ca_phao', kind: 'muoi', outputId: 'hx_ca_phao', outputQty: 4,
     // Cà pháo muối (miền Nam): cà pháo ngâm nước muối cho giòn chua, ăn với mắm tôm/mắm nêm.
     // Game chưa có cà pháo → thay bằng cà tím (x_ca_tim), cùng họ cà; ghi rõ là thay thế (CLAUDE.md 4).
-    inputs: [{ productId: 'x_ca_tim', quantity: 2 }, { productId: 'x_muoi', quantity: 1 }],
+    inputs: [{ productId: 'x_ca_tim', quantity: 1 }, { productId: 'x_muoi', quantity: 2 }],
     unlock: 38, need: 3, window: [3, 5], learnAfterSold: 30,
     note: 'Miền Nam — cà pháo muối giòn chua; game thay cà pháo bằng cà tím (x_ca_tim). Cửa sổ vớt ngày 3–5.',
   },
@@ -348,7 +366,7 @@ export const PRESERVE_DEFS: PreserveDef[] = [
     id: 'ps_chanh_muoi', kind: 'muoi', outputId: 'hx_chanh_muoi', outputQty: 3,
     // Chanh muối (miền Bắc, đặc sản Hà Nội): chanh đào/chanh xanh chôn trong muối 7–12 ngày
     // cho ruột chuyển nâu, dùng pha nước chanh muối giải nhiệt. Muối lâu hơn thì mặn quá.
-    inputs: [{ productId: 'x_chanh_khong_hat', quantity: 1 }, { productId: 'x_muoi', quantity: 2 }],
+    inputs: [{ productId: 'x_chanh_khong_hat', quantity: 5 }, { productId: 'x_muoi', quantity: 2 }],
     unlock: 40, need: 7, window: [7, 12], learnAfterSold: 30,
     note: 'Miền Bắc — chanh muối Hà Nội; chanh + muối chôn 7–12 ngày, vớt ngon quanh ngày 7–8.',
   },
@@ -356,27 +374,27 @@ export const PRESERVE_DEFS: PreserveDef[] = [
     id: 'ps_cu_kieu', kind: 'muoi', outputId: 'hx_cu_kieu', outputQty: 3,
     // Củ kiệu muối (miền Nam, Tết): củ kiệu ngâm nước muối + đường cho chua giòn trong, ăn kèm bánh tét.
     // Game chưa có củ kiệu → thay bằng hành khô (x_hanh_kho), cùng họ hành/tỏi (Allium); ghi rõ thay thế.
-    inputs: [{ productId: 'x_hanh_kho', quantity: 2 }, { productId: 'x_muoi', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
+    inputs: [{ productId: 'x_hanh_kho', quantity: 4 }, { productId: 'x_muoi', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
     unlock: 68, need: 5, window: [5, 8], learnAfterSold: 30,
     note: 'Miền Nam Tết — củ kiệu muối; game thay củ kiệu bằng hành khô (x_hanh_kho). Cửa sổ vớt ngày 5–8.',
   },
   {
     id: 'ps_dua_hanh', kind: 'muoi', outputId: 'hx_dua_hanh', outputQty: 3,
     // Dưa hành muối (miền Bắc, Tết): hành củ nhúng nước sôi, ủ với muối cho chua giòn, ăn kèm thịt đông.
-    inputs: [{ productId: 'x_hanh_kho', quantity: 2 }, { productId: 'x_muoi', quantity: 1 }],
+    inputs: [{ productId: 'x_hanh_kho', quantity: 6 }, { productId: 'x_muoi', quantity: 1 }],
     unlock: 102, need: 3, window: [3, 5], learnAfterSold: 30,
     note: 'Miền Bắc Tết — dưa hành muối; hành khô + muối ủ 3–5 ngày, vớt ngon ngày 3–4.',
   },
   {
     id: 'ps_dua_cai', kind: 'muoi', outputId: 'hx_dua_cai', outputQty: 4,
     // Dưa cải chua (miền Nam): bẹ cải xanh phơi héo, ủ với nước muối cho chua, ăn kèm cá kho.
-    inputs: [{ productId: 'x_rau_cai', quantity: 2 }, { productId: 'x_muoi', quantity: 1 }],
+    inputs: [{ productId: 'x_rau_cai', quantity: 10 }, { productId: 'x_muoi', quantity: 1 }],
     unlock: 105, need: 2, window: [2, 4], learnAfterSold: 30,
     note: 'Miền Nam — dưa cải chua; bẹ cải + muối ủ 2–4 ngày, vớt ngon đầu cửa sổ ngày 2–3.',
   },
   // ── Lát L6: 6 CHUM Ủ (SPEC §1.6) — chum không hỏng theo thời gian; ủ lâu ra NHIỀU hơn (aged) ──
   {
-    id: 'ps_mam_tep', kind: 'u', outputId: 'hx_mam_tep', outputQty: 4,
+    id: 'ps_mam_tep', kind: 'u', outputId: 'hx_mam_tep', outputQty: 6,
     // Mắm tép (miền Trung): tép tươi trộn muối ủ chín thành mắm đặc sánh, dùng chấm rau luộc.
     // Game không có tép → thay bằng tôm tươi (x_tom_tuoi) cùng họ tôm tép; ghi rõ thay thế (CLAUDE.md 4).
     inputs: [{ productId: 'x_tom_tuoi', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }],
@@ -384,7 +402,7 @@ export const PRESERVE_DEFS: PreserveDef[] = [
     note: 'Miền Trung — mắm tép tươi ủ muối; game thay tép bằng tôm tươi (x_tom_tuoi). Ủ 10 ngày.',
   },
   {
-    id: 'ps_tuong_ban', kind: 'u', outputId: 'hx_tuong_ban', outputQty: 4,
+    id: 'ps_tuong_ban', kind: 'u', outputId: 'hx_tuong_ban', outputQty: 7,
     // Tương bần (Hưng Yên, miền Bắc): đậu tương (đậu nành) + gạo nếp làm mốc + muối, ủ 14 ngày
     // cho vị mặn ngọt đặc trưng 'Tương Cự Đà, đậu Hà Nội'.
     inputs: [{ productId: 'x_dau_nanh_hat', quantity: 1 }, { productId: 'x_nep', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }],
@@ -403,7 +421,7 @@ export const PRESERVE_DEFS: PreserveDef[] = [
     id: 'ps_toi_den', kind: 'u', outputId: 'hx_toi_den', outputQty: 2,
     // Tỏi đen (khắp nơi, phổ biến Phú Yên): nguyên củ tỏi ủ ở nhiệt ẩm ổn định 21 ngày cho lên men
     // đen ngọt; giữ nhiệt ủ lâu ra NHIỀU hơn cùng sản phẩm.
-    inputs: [{ productId: 'x_toi', quantity: 2 }],
+    inputs: [{ productId: 'x_toi', quantity: 11 }],
     unlock: 58, need: 21, aged: { day: 40, outputQty: 3 }, learnAfterSold: 30,
     note: 'Khắp miền (Phú Yên nổi tiếng) — tỏi đen: củ tỏi ủ ẩm 21 ngày lên men đen ngọt; ủ 40 ngày ra thêm.',
   },
@@ -418,7 +436,7 @@ export const PRESERVE_DEFS: PreserveDef[] = [
   {
     id: 'ps_tuong_hot', kind: 'u', outputId: 'hx_tuong_hot', outputQty: 3,
     // Tương hột (miền Tây): đậu nành hột nguyên ủ với nếp mốc + muối, tương còn nguyên hột vàng.
-    inputs: [{ productId: 'x_dau_nanh_hat', quantity: 1 }, { productId: 'x_nep', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }],
+    inputs: [{ productId: 'x_dau_nanh_hat', quantity: 1 }, { productId: 'x_nep', quantity: 1 }, { productId: 'x_muoi', quantity: 2 }],
     unlock: 78, need: 14, learnAfterSold: 30,
     note: 'Miền Tây — tương hột: hột đậu nành + nếp mốc + muối ủ 14 ngày.',
   },

@@ -113,7 +113,7 @@ describe('Hệ1-L6 — store: startPreserve + collectPreserve qua chum ủ', () 
     g.collectPreserve(g.garden.preserveJobs[0].id);
     const s = useGame.getState();
     expect(s.garden.preserveJobs).toHaveLength(0);
-    expect(s.storage.hx_mam_tep).toBe(4);
+    expect(s.storage.hx_mam_tep).toBe(6);
     expect(s.garden.homegrown.hx_mam_tep ?? 0).toBe(0);
   });
 
