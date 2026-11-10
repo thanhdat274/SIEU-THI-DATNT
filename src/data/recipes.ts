@@ -792,6 +792,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'oc_xao_me', name: 'Ốc xào me', category: 'fresh', buy: 22000, sell: 36000, color: 0x9a5a2a, unlock: 193 },
   { id: 'ngheu_xao_sa_ot', name: 'Nghêu xào sả ớt', category: 'fresh', buy: 16000, sell: 28000, color: 0xd8b080, unlock: 194 },
   { id: 'chao_ngheu', name: 'Cháo nghêu', category: 'fresh', buy: 9000, sell: 16000, color: 0xf0e0c0, unlock: 195 },
+  { id: 'hu_tieu_xao_bo', name: 'Hủ tiếu xào bò', category: 'fresh', buy: 14000, sell: 24000, color: 0xc8904a, unlock: 196 },
+  { id: 'chao_muc', name: 'Cháo mực', category: 'fresh', buy: 10000, sell: 18000, color: 0xf0e8d0, unlock: 197 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2611,6 +2613,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_chao_ngheu', name: 'Cháo nghêu', station: 'hot_kettle',
     inputs: [{ productId: 'ngheu', quantity: 1 }, { productId: 'gao', quantity: 1 }],
     outputId: 'chao_ngheu', outputQty: 12, durationMin: 30, unlock: 195, reputationGain: 1 },
+  // GĐ2115: Hủ tiếu xào bò — quán cơm/hủ tiếu Nam Bộ: hủ tiếu khô trụng mềm xào với bò tái, rau cải; không thay thế.
+  { id: 'recipe_hu_tieu_xao_bo', name: 'Hủ tiếu xào bò', station: 'fryer',
+    inputs: [{ productId: 'hut_tieu', quantity: 1 }, { productId: 'x_thit_bo', quantity: 1 }, { productId: 'x_rau_cai', quantity: 1 }],
+    outputId: 'hu_tieu_xao_bo', outputQty: 4, durationMin: 15, unlock: 196, reputationGain: 1 },
+  // GĐ2116: Cháo mực — quán cháo miền Bắc/Trung: cháo gạo ninh nhừ, mực tươi thái khoanh cho vào sau; không thay thế.
+  { id: 'recipe_chao_muc', name: 'Cháo mực', station: 'hot_kettle',
+    inputs: [{ productId: 'x_muc_tuoi', quantity: 1 }, { productId: 'gao', quantity: 1 }],
+    outputId: 'chao_muc', outputQty: 12, durationMin: 30, unlock: 197, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────
