@@ -128,3 +128,28 @@ describe('mẻ trọn vòng (start → 2 đêm nắng → collect)', () => {
     }
   });
 });
+
+describe('Hệ 1 L4 — phụ trại tự cất/thu sân phơi qua endDay', () => {
+  it('có phụ trại: mẻ đủ nắng được nó thu về kho (nhãn nhà trồng), mẻ dở cất theo trời mai', () => {
+    useGame.setState({
+      day: 40, weather: 'sunny', forecast: ['sunny', 'sunny', 'sunny', 'sunny'],
+      staff: [{ id: 1, name: 'Bé Tư', role: 'farmhand', skill: 1, wage: 0, shift: 'full' } as never],
+      garden: { ...g().garden, buildings: { gian_phoi: 1 }, homegrown: { banhtrang: 3 },
+        preserveJobs: [
+          { id: 101, defId: 'ps_banh_trang', startDay: 40, sun: 2, covered: false, wet: 0, allHomegrown: true },
+          { id: 102, defId: 'ps_banh_trang', startDay: 40, sun: 1, covered: false, wet: 0, allHomegrown: false },
+        ] },
+    });
+    endDay(useGame.setState, useGame.getState);
+    const after = g();
+    // mẻ 101 (đủ 2 nắng) bị thu về kho + nhãn nhà trồng
+    expect(after.storage['hx_banh_trang']).toBeGreaterThanOrEqual(btm().outputQty);
+    expect(after.garden.homegrown['hx_banh_trang'] ?? 0).toBeGreaterThanOrEqual(btm().outputQty);
+    // mẻ 102 (dở) còn lại trên giàn — với phụ trại thì nó CẤT theo trời mai, không để mặc định ngoài
+    const remain = after.garden.preserveJobs.find((j) => j.id === 102);
+    expect(remain).toBeTruthy();
+    // rackLog do phụ trại đặt cho NGÀY MAI (day 41), không phải reset mặc định lộn xộn
+    expect(after.garden.rackLog.day).toBe(41);
+  });
+});
+

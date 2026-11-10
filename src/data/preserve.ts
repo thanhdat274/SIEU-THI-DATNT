@@ -1,4 +1,4 @@
-import { rainSpell, type RainSpell, type Weather } from './weather';
+import { rainSpell, nextWeather, WEATHER, type RainSpell, type Weather } from './weather';
 import { productById } from './products';
 
 /**
@@ -190,6 +190,47 @@ export function preserveNight(
     next.push({ ...job, sun: job.sun + gain, wet: job.wet + (g.wet ? 1 : 0) });
   }
   return { jobs: next, news };
+}
+
+/** Lát L4 — một món phụ trại thu hộ từ giàn. */
+export interface PreservePick { productId: string; qty: number; homegrown: boolean }
+
+/**
+ * L4 — phụ trại lo sân phơi hộ mỗi tối (SPEC §1.8): (1) thu mẻ đã đủ nắng cho vào kho (+ nhãn
+ * nhà trồng nếu toàn nhà trồng); (2) mai có mưa/giông thì CẤT giàn còn phơi, mai tạnh thì MANG RA.
+ * Trả mẻ thu + trạng thái giàn cho ngày mai (rackLog) + tin. THUẦN, tất định từ `nextWeather`
+ * (weatherSeed + ngày mai, chuỗi Markov R5) — KHÔNG gọi simRng (R1). Không mẻ phơi → không việc.
+ */
+export function farmhandPreserve(args: {
+  jobs: PreserveJob[];
+  day: number;
+  seed: number;
+  weather: Weather;
+}): { jobs: PreserveJob[]; rackLog: { day: number; out: [number, number][] }; picked: PreservePick[]; news: string[] } {
+  const news: string[] = [];
+  const picked: PreservePick[] = [];
+  const tomorrow = nextWeather(args.seed, args.day + 1, args.weather);
+  const wetTmr = tomorrow === 'rain' || tomorrow === 'storm';
+  const kept: PreserveJob[] = [];
+  const phoiKept: PreserveJob[] = [];
+  for (const j of args.jobs) {
+    const d = preserveDefById(j.defId);
+    if (d.kind !== 'phoi') { kept.push(j); continue; }
+    if (phoiReady(j, d)) {
+      // Thu hộ mẻ chín — bỏ khỏi giàn.
+      picked.push({ productId: d.outputId, qty: d.outputQty, homegrown: j.allHomegrown });
+      continue;
+    }
+    // Còn phơi dở — để nguyên giàn, chỉ đổi trạng thái cất/mang theo TRỜI MAI.
+    phoiKept.push({ ...j, covered: wetTmr });
+  }
+  const jobs = [...kept, ...phoiKept];
+  if (picked.length) news.push(`gỡ ${picked.length} nong phơi đủ nắng đem vào`);
+  if (phoiKept.length) {
+    if (wetTmr) news.push(`cất ${phoiKept.length} nong vì mai ${WEATHER[tomorrow].name.toLowerCase()}`);
+    else news.push(`mang ${phoiKept.length} nong ra phơi (mai ${WEATHER[tomorrow].name.toLowerCase()})`);
+  }
+  return { jobs, rackLog: { day: args.day + 1, out: wetTmr ? [] : [[0, 1440]] }, picked, news };
 }
 
 // ── 3 mẻ phơi đầu (L1): toàn nguyên liệu thô đã có, đúng cách phơi thật ──

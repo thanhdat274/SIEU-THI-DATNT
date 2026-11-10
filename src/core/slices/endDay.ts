@@ -37,7 +37,7 @@ import { COMPLAINTS_FOR_SURPRISE, isAlcohol, LICENSE_FINE, LICENSE_GRACE, licens
 import { staffDayEnd } from '../../data/staffTraits';
 import { BUZZ_DAYS, CRISIS_MUL, POST_CAP, SOCIAL_UNLOCK, socialDayEnd, type SocialPost } from '../../data/social';
 import { ANIMAL_ORDER, farmCritChance, farmhandChores, FARM_ORDER_UNLOCK, farmOrderCapacity, farmOrderNews, farmOrderProduce, gardenNight, makeFarmOrder, type AnimalKind } from '../../data/garden';
-import { preserveNight } from '../../data/preserve';
+import { preserveNight, farmhandPreserve, preserveDefById } from '../../data/preserve';
 import { logAnalyticsDay } from '../../data/analytics';
 import { appRating } from '../../data/online';
 import { onlineDayEnd } from './online';
@@ -111,6 +111,9 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
   })() : s.garden;
   let farmhandPicked: { productId: string; qty: number }[] = [];
   let farmhandFeedUsed: { productId: string; bags: number }[] = [];
+  // Hệ 1 L4 — phụ trại thu hộ mẻ phơi chín (để dưới (endDay) cho vào kho + nhãn), + rackLog cho mai.
+  const preservePicked: { productId: string; qty: number; homegrown: boolean }[] = [];
+  let fhPreserveRack: { day: number; out: [number, number][] } | undefined;
   const farmhandNews: string[] = [];
   const fed: Partial<Record<AnimalKind, boolean>> = {};
   for (const kk of ANIMAL_ORDER) if (garden.pens[kk]?.fedDay === s.day) fed[kk] = true;
@@ -121,6 +124,15 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
     farmhandFeedUsed = chores.feedUsed;
     for (const kk of chores.fedKinds) fed[kk] = true;
     if (chores.news.length) farmhandNews.push(`🧑‍🌾 ${farmhand.name} lo trại hộ: ${chores.news.join(', ')}`);
+    // Hệ 1 L4 — phụ trại lo SÂN PHƠI hộ: thu mẻ chín + cất/mang giàn theo TRỜI MAI (chạy TRƯỚC
+    // preserveNight để mẻ chín đã rời giàn; preserveNight còn lại nhận nắng của HÔM NAY).
+    if (garden.preserveJobs.some((j) => preserveDefById(j.defId).kind === 'phoi')) {
+      const fhP = farmhandPreserve({ jobs: garden.preserveJobs, day: s.day, seed: s.weatherSeed, weather: s.weather });
+      garden = { ...garden, preserveJobs: fhP.jobs, rackLog: fhP.rackLog };
+      fhPreserveRack = fhP.rackLog;
+      preservePicked.push(...fhP.picked);
+      if (fhP.news.length) farmhandNews.push(`🧑‍🌾 ${farmhand.name} lo sân phơi hộ: ${fhP.news.join(', ')}`);
+    }
   }
   const gardenNightResult = gardenNight(garden, { day: s.day, weather: s.weather, fed });
   garden = gardenNightResult.garden;
@@ -133,7 +145,9 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
     tarp: !!garden.rackTarp,
     stormSafe: (garden.buildings?.nha_luoi ?? 0) >= 3, // SPEC §1.8: nhà lưới 3★ che sân phơi khỏi bão
   });
-  garden = { ...garden, preserveJobs: phoiNight.jobs, rackLog: { day: s.day + 1, out: [[0, 1440]] } };
+  // Hệ 1 L4 — phụ trại đã cất/mang giàn cho NGÀY MAI (và thu mẻ chín) từ khối farmhand phía trên:
+  // giữ rackLog của nó (nếu có) thay vì reset mặc định, để mai mưa giàn đã nằm trong nhà.
+  garden = { ...garden, preserveJobs: phoiNight.jobs, rackLog: fhPreserveRack ?? { day: s.day + 1, out: [[0, 1440]] } };
   // Sổ phân tích 30 ngày: bán/hỏng/lỡ bán theo từng món + cờ combo & giờ vàng của hôm nay
   const lostPerItem: Record<string, number> = {};
   for (const [key, n] of Object.entries(s.stats.missLog ?? {})) {
@@ -198,6 +212,15 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
     for (const p of farmhandPicked) {
       putStock(k, p.productId, p.qty);
       homegrown[p.productId] = (homegrown[p.productId] ?? 0) + p.qty;
+    }
+    garden = { ...garden, homegrown };
+  }
+  // Hệ 1 L4 — mẻ phơi phụ trại thu hộ: vào kho; nhãn nhà trồng chỉ theo mẻ toàn nhà trồng (allHomegrown).
+  if (preservePicked.length) {
+    const homegrown = { ...garden.homegrown };
+    for (const p of preservePicked) {
+      putStock(k, p.productId, p.qty);
+      if (p.homegrown) homegrown[p.productId] = (homegrown[p.productId] ?? 0) + p.qty;
     }
     garden = { ...garden, homegrown };
   }

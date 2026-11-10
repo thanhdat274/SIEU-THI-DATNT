@@ -37,7 +37,7 @@ import { gapsOf, SITE_NAME, type Site } from '../../data/transfer';
 
 export function StaffPanel() {
   const [tab, setTab] = useState<'team' | 'hire'>('team');
-  const { staff, candidates, level, day, money, autoOpen, hire, fire, setShift, trainStaff, promoteStaff, closePanel, biz, branch, hireForBranch, stats, skills, dirt, storage, deliveries, furniture, sales, salesToday, analytics, garden } = useGame();
+  const { staff, candidates, level, day, money, autoOpen, hire, fire, setShift, trainStaff, promoteStaff, closePanel, biz, branch, hireForBranch, stats, skills, dirt, storage, deliveries, furniture, sales, salesToday, analytics, garden, weatherSeed, weather } = useGame();
   const [pick, setPick] = useState<Record<number, Shift>>({});
   const max = maxStaff(level);
   const bStaff = branch?.staff ?? [];
@@ -71,7 +71,7 @@ export function StaffPanel() {
   const warehouseBestSkill = staff.reduce((best, st) => (st.role === 'warehouse_mgr' ? Math.max(best, st.skill) : best), 0);
   const warehousePayoff = warehouseKeeperPayoff({ spoiltCost: (analytics ? spoilNightReport(analytics, day - 1)?.totalCost : 0) ?? 0, bestSkill: warehouseBestSkill });
   // GĐ2222 — phụ trại tự lo trại (tưới/cho ăn/gom/thu) mỗi tối đáng bao nhiêu: đọc trạng thái trại thật.
-  const farmhandVal = farmhandPayoff(garden, storage ?? {}, day);
+  const farmhandVal = farmhandPayoff(garden, storage ?? {}, day, { seed: weatherSeed, weather });
   const total = [...staff, ...bStaff].reduce((sum, st) => sum + dailyWage(st), 0);
   // GĐ141: giá trị hôm nay của từng nhân viên ca ngày tiệm chính so với lương (thuần đọc stats.byHour)
   const staffValues = staffValueToday(stats?.byHour, staff);
