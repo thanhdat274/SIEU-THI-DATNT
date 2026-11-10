@@ -146,13 +146,16 @@ export interface KitProps {
   setFestival(on: boolean): void;
   /** Hiện/ẩn đồ trang trí thường ngày theo mức đồ họa (đồ sự kiện không bị ảnh hưởng). */
   setDecor(on: boolean): void;
+  /** Hệ8-L8 (SPEC-CHIEU-RONG §8.6) — trang trí 3D theo biến cố dài đang chạy: rãnh đào/máy xúc
+   *  (dao_duong), mặt nước ngập mỏng (mua_lu), biển "Bình ổn giá" (bao_gia). Undefined = không có. */
+  setCrisisVisual(kind: 'dao_duong' | 'mua_lu' | 'bao_gia' | undefined): void;
 }
 
 /**
  * Bắt đầu tải kit: trả về group trống để `scene.add` NGAY (thế giới không phải chờ), các prop
  * vừa tải xong vừa chen vào. Lỗi mạng chỉ ghi console — kit là đồ trang trí, không có vẫn chơi được.
  */
-export function loadKitProps(baseUrl = '/models/kit/'): { group: THREE.Group; done: Promise<KitProps>; marketGroup: THREE.Group; setMarketDay(on: boolean): void; roadworkGroup: THREE.Group; setRoadwork(on: boolean): void; festivalGroup: THREE.Group; setFestival(on: boolean): void; setDecor(on: boolean): void; setQuanDecor(on: boolean): void } {
+export function loadKitProps(baseUrl = '/models/kit/'): { group: THREE.Group; done: Promise<KitProps>; marketGroup: THREE.Group; setMarketDay(on: boolean): void; roadworkGroup: THREE.Group; setRoadwork(on: boolean): void; festivalGroup: THREE.Group; setFestival(on: boolean): void; setDecor(on: boolean): void; setQuanDecor(on: boolean): void; setCrisisVisual(kind: 'dao_duong' | 'mua_lu' | 'bao_gia' | undefined): void } {
   const group = new THREE.Group();
   group.name = 'kitProps';
   // Nhóm gánh hàng chợ phiên (gđ181): con của group, mặc định ẩn — setMarketDay bật khi isMarketDay.
@@ -176,12 +179,44 @@ export function loadKitProps(baseUrl = '/models/kit/'): { group: THREE.Group; do
   group.add(quanGroup);
   // Đồ trang trí thường ngày là con trực tiếp của group (trừ 3 nhóm sự kiện); prop tải muộn đọc cờ này
   let decorOn = true;
-  const isEventGroup = (o: THREE.Object3D) => o === marketGroup || o === roadworkGroup || o === festivalGroup || o === quanGroup;
+  const isEventGroup = (o: THREE.Object3D) => o === marketGroup || o === roadworkGroup || o === festivalGroup || o === quanGroup || o === crisisGroup;
   const setDecor = (on: boolean) => {
     decorOn = on;
     for (const c of group.children) if (!isEventGroup(c)) c.visible = on;
   };
-  const result: KitProps = { group, loaded: 0, failed: [], marketGroup, setMarketDay: (on) => { marketGroup.visible = on; }, roadworkGroup, setRoadwork: (on) => { roadworkGroup.visible = on; }, festivalGroup, setFestival: () => { festivalGroup.visible = false; /* GĐ1820: người dùng bỏ cột dây cờ trước tiệm */ }, setDecor };
+  // Hệ8-L8 — nhóm trang trí 3D theo biến cố dài: dựng bằng khối đơn giản (không cần model), ẩn mặc định.
+  const crisisGroup = new THREE.Group();
+  crisisGroup.name = 'crisisProps';
+  crisisGroup.visible = false;
+  group.add(crisisGroup);
+  // Rãnh đào + hai máy xúc gợi tả khu vực công trình (dao_duong): hộp đất trũng + khối máy.
+  const trench = new THREE.Group(); trench.name = 'crisisTrench'; crisisGroup.add(trench);
+  const dig = new THREE.Mesh(
+    new THREE.BoxGeometry(1.6, 0.18, 0.5), new THREE.MeshLambertMaterial({ color: 0x5c4033 }),
+  ); dig.position.set(0, 0.05, 0); dig.rotation.y = 0.4; trench.add(dig);
+  const machine = (x: number, z: number, yaw: number) => {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.5, 0.3), new THREE.MeshLambertMaterial({ color: 0xf0a500 }));
+    m.position.set(x, 0.3, z); m.rotation.y = yaw; m.castShadow = true; trench.add(m);
+  }; machine(-0.9, -0.2, 0.2); machine(1.0, 0.2, 2.6);
+  // Mặt nước ngập mỏng (mua_lu): một mặt nước trong bán trong suốt phủ mép hẻm.
+  const flood = new THREE.Mesh(
+    new THREE.PlaneGeometry(10, 3, 1, 1),
+    new THREE.MeshLambertMaterial({ color: 0x3b82f6, transparent: true, opacity: 0.35 }),
+  ); flood.name = 'crisisFlood'; flood.rotation.x = -Math.PI / 2; flood.position.set(4, 0.02, -1.5); crisisGroup.add(flood);
+  // Biển "Bình ổn giá" (bao_gia): tấm biển nhỏ trước tiệm + chân đứng.
+  const sign = new THREE.Group(); sign.name = 'crisisPriceSign'; crisisGroup.add(sign);
+  const signLamp = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 0.5), new THREE.MeshLambertMaterial({ color: 0x2ecc71 }));
+  signLamp.position.set(1, 1.6, 0.4); sign.add(signLamp);
+  const leg = new THREE.Mesh(new THREE.BoxGeometry(0.06, 1.4, 0.06), new THREE.MeshLambertMaterial({ color: 0x555555 }));
+  leg.position.set(1, 0.7, 0.4); sign.add(leg);
+  const setCrisisVisual: KitProps['setCrisisVisual'] = (kind) => {
+    if (!kind) { crisisGroup.visible = false; return; }
+    trench.visible = kind === 'dao_duong';
+    flood.visible = kind === 'mua_lu';
+    sign.visible = kind === 'bao_gia';
+    crisisGroup.visible = true;
+  };
+  const result: KitProps = { group, loaded: 0, failed: [], marketGroup, setMarketDay: (on) => { marketGroup.visible = on; }, roadworkGroup, setRoadwork: (on) => { roadworkGroup.visible = on; }, festivalGroup, setFestival: () => { festivalGroup.visible = false; /* GĐ1820: người dùng bỏ cột dây cờ trước tiệm */ }, setDecor, setCrisisVisual };
   const done = new Promise<KitProps>((resolve) => {
     const finish = () => resolve(result);
     if (KIT_PLACEMENTS.length === 0) return finish();
@@ -266,5 +301,5 @@ export function loadKitProps(baseUrl = '/models/kit/'): { group: THREE.Group; do
         finish();
       });
   });
-  return { group, done, marketGroup, setMarketDay: result.setMarketDay, roadworkGroup, setRoadwork: result.setRoadwork, festivalGroup, setFestival: result.setFestival, setDecor, setQuanDecor: (on) => { quanGroup.visible = on; } };
+  return { group, done, marketGroup, setMarketDay: result.setMarketDay, roadworkGroup, setRoadwork: result.setRoadwork, festivalGroup, setFestival: result.setFestival, setDecor, setQuanDecor: (on) => { quanGroup.visible = on; }, setCrisisVisual: result.setCrisisVisual };
 }

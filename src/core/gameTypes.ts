@@ -602,6 +602,10 @@ export interface GameState {
   /** Hệ 8 — Biến cố dài: chọn một lựa chọn trong cảnh (ghi choices + đếm kind theo chiều hướng ấm). */
   chooseCrisisScene: (dayIndex: number, option: number, warm: boolean) => void;
 
+  /** Hệ 8 — Biến cố dài (SPEC-CHIEU-RONG §8.3): bật/tắt "Năm yên ả" — tắt hẳn biến cố dài,
+   *  đổi lại không nhận huy hiệu vượt khó. Toggle chỉ luật lịch, mở đợt mới không còn. */
+  setCalmYears: (on: boolean) => void;
+
   /** Hệ 2 — Tình làng (GĐ Hệ2-L2, SPEC §2.4): lan thân thiết từ sự kiện lớn sang người có cạnh
    *  với nguồn (trần ±3/ngày/người). Cổng cấp ≥ TIES_UNLOCK. */
   applyRipple: (

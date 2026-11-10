@@ -81,6 +81,8 @@ export interface CrisisDef {
   /** Cảnh lựa chọn theo ngày thứ của đợt (0-based từ startDay) — lát L3. */
   scenes: { atDay: number; text: string; options: string[] }[];
   aftermath?: CrisisBoon;
+  /** Hệ8-L8 — trang trí 3D tương ứng (SPEC §8.6): rào chắn/rãnh đào, mặt nước ngập, biển Bình ổn giá. */
+  visual?: 'dao_duong' | 'mua_lu' | 'bao_gia';
 }
 
 export interface CrisisState {
@@ -93,6 +95,12 @@ export interface CrisisState {
   choices: Record<number, number>;
   /** Số lựa chọn "ấm" đã chốt (dùng cho hậu quả + thân thiết — hệ 2). */
   kind: number;
+  /**
+   * Hệ8-L8 (SPEC-CHIEU-RONG §8.3) — miễn tiền nhà trong biến cố: tiệm đang âm tiền thì chủ nhà
+   * miễn tiền nhà 3 ngày, MỖI ĐỢT MỘT LẦN. `undefined` = đợt này chưa hưởng lần nào (còn quyền);
+   * `0` = đã hưởng hết 3 ngày; `>0` = số ngày còn được miễn. Không cho Năm yên ả (đợt đã không mở).
+   */
+  rentGrace?: number;
 }
 
 /** Năm game có 0 / 1 / 2 / yên ả (xác suất 60/25/15 — SPEC §8.3). */
@@ -159,6 +167,7 @@ const DAO_DUONG: CrisisDef = {
     },
   ],
   aftermath: { kind: 'road', traffic: 1.03, label: 'Đường mới khang trang: khách ghé thêm' },
+  visual: 'dao_duong',
 };
 
 /** ② Bão giá — bất kỳ mùa, cấp 40 (SPEC §8.4). Giá nhập tăng dần tới +14%, khách nhạy giá.
@@ -195,6 +204,7 @@ const BAO_GIA: CrisisDef = {
       options: ['Bán (lời nhanh lần này)', 'Giữ cho khách xóm mua giá cũ'],
     },
   ],
+  visual: 'bao_gia',
 };
 
 /**
@@ -235,6 +245,7 @@ const MUA_LU: CrisisDef = {
       options: ['Từ chối — giữ giá (danh tiếng giữ nguyên)', 'Tăng giá (lời lớn 2 ngày, sau đó danh tiếng tụt + một bài chê lan truyền)'],
     },
   ],
+  visual: 'mua_lu',
 };
 
 /** ④ Dịch tả heo — bất kỳ mùa, cấp 48 (SPEC §8.4). Cầu thịt heo giảm, giá nhập thịt tăng. */

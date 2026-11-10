@@ -60,6 +60,7 @@ export const GUARDED: Record<string, (args: unknown[]) => string> = {
   // dùng chung cho cả hẻm → khoá chung "crisis" để hai người không đè nhau trong đợt.
   doCrisisPrep: () => 'crisis',
   chooseCrisisScene: () => 'crisis',
+  setCalmYears: () => 'crisis',
   // Hệ 3 — Biển định vị (SPEC §3.9): biển là của cả tiệm, treo/gỡ cùng sửa biz.stance chung → khoá 'stance'.
   chooseStance: () => 'stance',
   dropStance: () => 'stance',

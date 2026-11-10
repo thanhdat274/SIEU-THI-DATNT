@@ -5,6 +5,7 @@ import {
 } from '../data/crisis';
 import { dayOfYear } from '../data/calendar';
 import { newGameData, useGame } from '../core/store';
+import { endDay } from '../core/slices/endDay';
 import { beforeEach } from 'vitest';
 
 // GĐ Hệ8-L1 — khung Biến cố dài (SPEC-CHIEU-RONG §8.3). THUẦN, không đụng sim:
@@ -405,5 +406,71 @@ describe('Hệ8-L6/L7 — Mùa lũ + Dịch tả heo khung dữ liệu', () => {
     expect(e.farm).toBe('swine');
     expect(e.cost('x_thit_heo', 'meat')).toBeCloseTo(1.15, 5);
     expect(e.demand?.down).toContain('x_thit_heo');
+  });
+});
+
+describe('Hệ8-L8 — Năm yên ả + miễn tiền nhà trong biến cố (SPEC-CHIEU-RONG §8.3/8.6)', () => {
+  beforeEach(() => {
+    useGame.setState({ ...newGameData(), level: 50, money: 5_000_000, day: 400, notify: () => {} });
+  });
+  const g = () => useGame.getState();
+
+  it('setCalmYears bật/tắt biz.calmYears', () => {
+    expect(g().biz.calmYears ?? false).toBe(false);
+    g().setCalmYears(true);
+    expect(g().biz.calmYears).toBe(true);
+    g().setCalmYears(false);
+    expect(g().biz.calmYears).toBe(false);
+  });
+
+  it('trang trí 3D: dao_duong/bao_gia/mua_lu có visual; dịch tả heo không có', () => {
+    expect(crisisDefById('dao_duong')?.visual).toBe('dao_duong');
+    expect(crisisDefById('bao_gia')?.visual).toBe('bao_gia');
+    expect(crisisDefById('mua_lu')?.visual).toBe('mua_lu');
+    expect(crisisDefById('dich_ta')?.visual).toBeUndefined();
+  });
+
+  // Tìm ngày (≤ dải hợp lý) có đợt đang hoạt động VÀ còn hoạt động hôm sau — để crisis sống sót qua
+  // crisisNight (same) nên rentGrace ghi lại được. WeatherSeed ngẫu nhiên mỗi vòng → không ép được ngày.
+  const activeWindow = () => {
+    const seed = g().weatherSeed;
+    for (let day = 100; day < 9000; day++) {
+      const now = crisisFor(seed, day, g().level);
+      const tom = crisisFor(seed, day + 1, g().level);
+      if (now && tom && now.defId === tom.defId && now.startDay === tom.startDay) {
+        return { day, defId: now.defId, startDay: now.startDay };
+      }
+    }
+    return undefined;
+  };
+
+  it('trong biến cố, tiệm âm tiền → miễn tiền nhà (rent=0) và tặng khung 3 ngày', () => {
+    const win = activeWindow();
+    if (!win) return; // dải này không có đợt chạy sang ngày sau — nhường cho test rent>0 bên dưới
+    useGame.setState({ day: win.day, money: 1000, biz: { ...g().biz, crisis: { defId: win.defId, startDay: win.startDay, preps: [], choices: {}, kind: 0 } } });
+    endDay(useGame.setState, useGame.getState);
+    expect(g().lastSummary?.stats.rent).toBe(0);
+    expect(g().biz.crisis?.rentGrace).toBe(3);
+  });
+
+  it('còn ngày trong khung → tiếp tục miễn và giảm dần', () => {
+    const win = activeWindow();
+    if (!win) return;
+    useGame.setState({ day: win.day, money: 1000, biz: { ...g().biz, crisis: { defId: win.defId, startDay: win.startDay, preps: [], choices: {}, kind: 0, rentGrace: 2 } } });
+    endDay(useGame.setState, useGame.getState);
+    expect(g().lastSummary?.stats.rent).toBe(0);
+    expect(g().biz.crisis?.rentGrace).toBe(1);
+  });
+
+  it('đủ tiền trả nhà trong biến cố → không miễn, không mở khung', () => {
+    useGame.setState({ money: 100_000_000, biz: { ...g().biz, crisis: { defId: 'bao_gia', startDay: 400, preps: [], choices: {}, kind: 0 } } });
+    endDay(useGame.setState, useGame.getState);
+    expect(g().lastSummary?.stats.rent).toBeGreaterThan(0);
+  });
+
+  it('không có biến cố → không miễn tiền nhà dù âm tiền', () => {
+    useGame.setState({ money: 1000, biz: { ...g().biz, crisis: undefined } });
+    endDay(useGame.setState, useGame.getState);
+    expect(g().lastSummary?.stats.rent).toBeGreaterThan(0);
   });
 });

@@ -2,6 +2,7 @@ import { loadStories } from './data/biz';
 import { skyAt } from './data/weather';
 import { isMarketDay } from './data/chophien';
 import { isRoadworks } from './data/roadwork';
+import { crisisDefById } from './data/crisis';
 import { isFestivalDeco } from './data/festivalDeco';
 import { dateOfDoy } from './data/calendar';
 import { queueUrgency, accumulateBackup } from './world/storefrontWaitLamp';
@@ -350,6 +351,8 @@ let lastMinutes = useGame.getState().minutes;
 let lastMarketDay = isMarketDay(useGame.getState().day);
 // Hôm nay có sửa đường trước hẻm không (gđ184): đổi cảnh rào chắn khi sự kiện market roadworks thay đổi
 let lastRoadwork = isRoadworks(useGame.getState().weatherSeed, useGame.getState().day, useGame.getState().level);
+// Hệ8-L8 — trang trí 3D theo biến cố dài đang chạy (đổi cảnh khi loại biến cố đổi).
+let lastCrisisVisual: 'dao_duong' | 'mua_lu' | 'bao_gia' | undefined = undefined;
 let lastFestival = isFestivalDeco(useGame.getState().day);
 // Mùa cho cây nature (GĐ1830): phượng đỏ hè, đào/mai nở Tết — chỉ đổi khi sang tháng mới
 let lastNatureMonth = dateOfDoy(useGame.getState().day).month;
@@ -821,6 +824,13 @@ function renderFrame() {
   if (roadwork !== lastRoadwork) {
     lastRoadwork = roadwork;
     world.kit.setRoadwork(roadwork);
+  }
+  // Hệ8-L8 (SPEC-CHIEU-RONG §8.6) — trang trí 3D theo biến cố dài đang chạy (rãnh đào, mặt nước ngập,
+  // biển "Bình ổn giá"). Đọc g.biz.crisis mỗi nhịp; đổi cảnh chỉ khi khác loại.
+  const crisisVisual = g.biz.crisis ? crisisDefById(g.biz.crisis.defId)?.visual : undefined;
+  if (crisisVisual !== lastCrisisVisual) {
+    lastCrisisVisual = crisisVisual;
+    world.kit.setCrisisVisual(crisisVisual);
   }
   // Con hẻm vào dịp (gđ197): hôm nào có lễ hội (Tết, Trung thu, 20/11...), dựng dãy cờ ngang hẻm —
   // kinh tế ngày vẫn đông khách theo sim, cảnh hẻm "vào dịp" hiện ra bằng màu.

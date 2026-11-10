@@ -8,7 +8,7 @@ import type { GameState, GetState, SetState } from '../gameTypes';
  * `crisisNight` (data/crisis.ts, THUẦN) gọi từ endDay; slice này chỉ ghi tiêu tiền + preps/choices.
  * Cấp mở ≥ 36, autoplay không tự bấm → golden L30 không đổi (R1).
  */
-export const createCrisisSlice = (set: SetState, get: GetState): Pick<GameState, 'doCrisisPrep' | 'chooseCrisisScene'> => ({
+export const createCrisisSlice = (set: SetState, get: GetState): Pick<GameState, 'doCrisisPrep' | 'chooseCrisisScene' | 'setCalmYears'> => ({
   doCrisisPrep: (prepId: string) => {
     const s = get();
     const st = s.biz.crisis;
@@ -42,5 +42,13 @@ export const createCrisisSlice = (set: SetState, get: GetState): Pick<GameState,
       biz: { ...s.biz, crisis: { ...st, choices: { ...st.choices, [dayIndex]: option }, kind: st.kind + (warm ? 1 : 0) } },
     });
     s.notify(`${def.icon} ${scene.options[option] ?? 'Đã chọn.'}`);
+  },
+  setCalmYears: (on: boolean) => {
+    const s = get();
+    if ((s.biz.calmYears ?? false) === on) return;
+    set({ biz: { ...s.biz, calmYears: on } });
+    s.notify(on
+      ? '🌿 Bật Năm yên ả: tạm ngừng biến cố dài — nhưng sẽ không nhận huy hiệu vượt khó.'
+      : '🪧 Tắt Năm yên ả: biến cố dài trở lại theo mùa như thật.');
   },
 });
