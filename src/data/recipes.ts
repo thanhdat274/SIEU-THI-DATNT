@@ -858,6 +858,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'muc_nang_chien_gion', name: 'Mực nang chiên giòn', category: 'fresh', buy: 26000, sell: 45000, color: 0xd8b8c8, unlock: 199 },
   { id: 'ngan_quay', name: 'Ngan quay', category: 'fresh', buy: 26000, sell: 45000, color: 0x8a6a4a, unlock: 198 },
   { id: 'chao_ngan', name: 'Cháo ngan', category: 'fresh', buy: 12000, sell: 20000, color: 0xf0e0c0, unlock: 199 },
+  { id: 'ca_chach_kho_to', name: 'Cá chạch kho tộ', category: 'fresh', buy: 22000, sell: 40000, color: 0x8a6a4a, unlock: 198 },
+  { id: 'ca_chach_chien_gion', name: 'Cá chạch chiên giòn', category: 'fresh', buy: 22000, sell: 40000, color: 0xa87a4a, unlock: 199 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2941,6 +2943,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_chao_ngan', name: 'Cháo ngan', station: 'hot_kettle',
     inputs: [{ productId: 'x_ngan', quantity: 1 }, { productId: 'gao', quantity: 1 }, { productId: 'x_gung', quantity: 1 }],
     outputId: 'chao_ngan', outputQty: 14, durationMin: 40, unlock: 199, reputationGain: 1 },
+  // GĐ2181: Cá chạch kho tộ — bữa cơm miền Bắc: cá chạch kho trong tộ đất với nước mắm đường, riềng tiêu; không thay thế.
+  { id: 'recipe_ca_chach_kho_to', name: 'Cá chạch kho tộ', station: 'hot_kettle',
+    inputs: [{ productId: 'x_ca_chach', quantity: 1 }, { productId: 'hx_nuoc_mam', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
+    outputId: 'ca_chach_kho_to', outputQty: 4, durationMin: 30, unlock: 198, reputationGain: 1 },
+  // GĐ2182: Cá chạch chiên giòn — quán nhậu cả nước: cá chạch ướp muối tiêu chiên vàng giòn, chấm nước mắm gừng; không thay thế.
+  { id: 'recipe_ca_chach_chien_gion', name: 'Cá chạch chiên giòn', station: 'fryer',
+    inputs: [{ productId: 'x_ca_chach', quantity: 1 }, { productId: 'x_bot_chien', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }],
+    outputId: 'ca_chach_chien_gion', outputQty: 4, durationMin: 20, unlock: 199, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────
