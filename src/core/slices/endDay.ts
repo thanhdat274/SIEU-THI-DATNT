@@ -38,6 +38,7 @@ import { staffDayEnd } from '../../data/staffTraits';
 import { BUZZ_DAYS, CRISIS_MUL, POST_CAP, SOCIAL_UNLOCK, socialDayEnd, type SocialPost } from '../../data/social';
 import { ANIMAL_ORDER, farmCritChance, farmhandChores, FARM_ORDER_UNLOCK, farmOrderCapacity, farmOrderNews, farmOrderProduce, gardenNight, makeFarmOrder, type AnimalKind } from '../../data/garden';
 import { preserveNight, farmhandPreserve, preserveDefById } from '../../data/preserve';
+import { crisisNight } from '../../data/crisis';
 import { logAnalyticsDay } from '../../data/analytics';
 import { appRating } from '../../data/online';
 import { onlineDayEnd } from './online';
@@ -444,6 +445,15 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
   const staffIdleNote = staffIdleAct ? { staffIdle: staffIdleAct } : {};
   const biz = bizEndOfDay(s, stats, (br?.revenueToday ?? 0) + quanRevenue);
   if (biz.news.length) say(biz.news.join(' · '));
+  // GĐ Hệ8-L3 (SPEC-CHIEU-RONG §8) — Biến cố dài: đêm nay mở/đóng đợt biến cố cho ngày mai.
+  // TẤT ĐỊNH từ lịch hash trên weatherSeed (KHÔNG simRng — R1), cấp mở ≥ 36 nên golden L30 vẫn nguyên;
+  // tắt bằng biz.calmYears (Năm yên ả). Chỉ chạm biz.*crisis, không đụng phần khác.
+  const crisisN = crisisNight(s.weatherSeed, s.day, s.level, biz.biz);
+  if (crisisN.news.length) say(crisisN.news.join(' · '));
+  biz.biz = {
+    ...biz.biz,
+    crisis: crisisN.crisis, crisesSeen: crisisN.crisesSeen, roadBoon: crisisN.roadBoon, lastCrisis: crisisN.lastCrisis,
+  };
   // Kết quả quán nước hôm nay ghi vào biz để UI hiển thị (xem lại "hôm qua bán được bao nhiêu ly")
   if (quanNuocLast) biz.biz = { ...biz.biz, quanNuocLast };
   if (tiemXoiLast) {
