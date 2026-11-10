@@ -832,6 +832,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'bach_tuoc_xao_sa_te', name: 'Bạch tuộc xào sa tế', category: 'fresh', buy: 26000, sell: 45000, color: 0xc8a0a8, unlock: 199 },
   { id: 'ghe_rang_muoi', name: 'Ghẹ rang muối', category: 'fresh', buy: 26000, sell: 45000, color: 0xc8b8a0, unlock: 198 },
   { id: 'ghe_nuong_sa_te', name: 'Ghẹ nướng sa tế', category: 'fresh', buy: 26000, sell: 45000, color: 0xb8a880, unlock: 199 },
+  { id: 'hau_nuong_mo_hanh', name: 'Hàu nướng mỡ hành', category: 'fresh', buy: 26000, sell: 45000, color: 0xd8d8a0, unlock: 198 },
+  { id: 'hau_chien_gion', name: 'Hàu chiên giòn', category: 'fresh', buy: 26000, sell: 45000, color: 0xd8c890, unlock: 199 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2811,6 +2813,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_ghe_nuong_sa_te', name: 'Ghẹ nướng sa tế', station: 'food_grill',
     inputs: [{ productId: 'x_ghe', quantity: 1 }, { productId: 'x_sa_te', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }],
     outputId: 'ghe_nuong_sa_te', outputQty: 4, durationMin: 25, unlock: 199, reputationGain: 1 },
+  // GĐ2155: Hàu nướng mỡ hành — món đặc sản Bình Định/Phú Yên: hàu nướng vỏ rưới mỡ hành phi thơm; không thay thế.
+  { id: 'recipe_hau_nuong_mo_hanh', name: 'Hàu nướng mỡ hành', station: 'food_grill',
+    inputs: [{ productId: 'x_hau', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }],
+    outputId: 'hau_nuong_mo_hanh', outputQty: 4, durationMin: 25, unlock: 198, reputationGain: 1 },
+  // GĐ2156: Hàu chiên giòn — quán nhậu cả nước: hàu tẩm bột chiên giòn vàng ruộm; không thay thế.
+  { id: 'recipe_hau_chien_gion', name: 'Hàu chiên giòn', station: 'fryer',
+    inputs: [{ productId: 'x_hau', quantity: 1 }, { productId: 'x_bot_chien', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }],
+    outputId: 'hau_chien_gion', outputQty: 4, durationMin: 20, unlock: 199, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────
