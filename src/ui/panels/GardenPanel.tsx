@@ -13,7 +13,7 @@ import { bestCropForMenu, bestAnimalForMenu, farmVsDrinks, homegrownImpact, orde
 import { isWeekend } from '../../data/calendar';
 import { expiringSoon, expiryNoteFor, newUnlockMark } from '../../data/advice';
 import { isXoiCungDay } from '../../data/tiemXoi';
-import { preserveDefsOf, preserveDefById, phoiReady, rackCap, vaiCap, VAI_UNLOCK, pickleState, pickleAge, PHOI_UNLOCK } from '../../data/preserve';
+import { preserveDefsOf, preserveDefById, phoiReady, rackCap, vaiCap, chumCap, VAI_UNLOCK, CHUM_UNLOCK, pickleState, pickleAge, uRipe, uAged, PHOI_UNLOCK } from '../../data/preserve';
 import { describeDay, type Weather } from '../../data/weather';
 import { Callout, Footer, styles, Tabs } from './shared';
 
@@ -413,6 +413,11 @@ function PhoiTab(props: {
   const muoiDefs = preserveDefsOf('muoi').filter((d) => d.unlock <= level);
   const muoiJobs = garden.preserveJobs.filter((j) => preserveDefById(j.defId).kind === 'muoi');
   const vd = FARM_BUILDINGS.vai_muoi;
+  // Lát L6 — Nhà chum ủ
+  const chumStar = garden.buildings.chum_u ?? 0;
+  const uDefs = preserveDefsOf('u').filter((d) => d.unlock <= level);
+  const uJobs = garden.preserveJobs.filter((j) => preserveDefById(j.defId).kind === 'u');
+  const cd = FARM_BUILDINGS.chum_u;
   return (
     <div style={{ display: 'grid', gap: 6, maxWidth: 560 }}>
       {level < PHOI_UNLOCK ? (
@@ -569,6 +574,73 @@ function PhoiTab(props: {
                 </div>
                 <div style={{ fontSize: 12, opacity: 0.75, marginTop: 4 }}>
                   Mỗi món có cửa sổ vớt riêng (nút hiện "còn hăng / vớt ngon"): vớt đúng đầu cửa sổ thì NGON (toàn lô bán +20%), vớt trễ thì khú (×0,6) rồi hỏng. Nắng nóng làm chua nhanh, mưa không hại vại.
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div style={{ display: 'block', marginTop: 6 }}>
+            {level < CHUM_UNLOCK ? (
+              <div style={styles.card}>🔒 Nhà chum ủ mở ở cấp {CHUM_UNLOCK}: ủ mắm tép, tương bần, nước mắm, tỏi đen, tôm chua Huế, tương hột. Chum không hỏng theo thời gian — giữ lâu tới mốc ủ thì ra NHIỀU hơn.</div>
+            ) : (
+              <div style={{ ...styles.card, display: 'block' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center' }}>
+                  <b>{cd.icon} {cd.name} {chumStar > 0 ? `${'★'.repeat(chumStar)}${'☆'.repeat(FARM_BUILDING_MAX_STAR - chumStar)}` : ''}</b>
+                  {chumStar === 0 ? (
+                    <button style={{ ...styles.btn, background: money >= cd.cost ? '#f1c40f' : '#555', color: money >= cd.cost ? '#222' : '#fff' }} onClick={() => buyFarmBuilding('chum_u')}>
+                      Xây Nhà chum ({formatMoney(cd.cost)})
+                    </button>
+                  ) : (
+                    <span style={{ fontSize: 12, opacity: 0.75 }}>{chumCap(chumStar)} chum</span>
+                  )}
+                </div>
+                {chumStar > 0 && chumStar < FARM_BUILDING_MAX_STAR && (
+                  <button style={{ ...styles.btn, background: '#f1c40f', color: '#222', marginTop: 6 }} onClick={() => upgradeFarmBuilding('chum_u')}
+                    title={`Cần gỗ + đá + tiền, thêm 1 chum`}>
+                    ⬆️ Lên sao {chumStar + 1} ({formatMoney(cd.upgrades[chumStar - 1].money)} + 🪵{cd.upgrades[chumStar - 1].wood} 🪨{cd.upgrades[chumStar - 1].stone})
+                  </button>
+                )}
+                {uJobs.length === 0 ? (
+                  <div style={{ fontSize: 12, opacity: 0.75, marginTop: 6 }}>{chumStar === 0 ? 'Xây Nhà chum để bắt đầu ủ.' : 'Chum trống — chọn một mẻ dưới đây.'}</div>
+                ) : (
+                  uJobs.map((j) => {
+                    const d = preserveDefById(j.defId);
+                    const out = productById(d.outputId);
+                    const age = pickleAge(j, day);
+                    const ripe = uRipe(j, d, day);
+                    const aged = uAged(j, d, day);
+                    const label = aged ? `🫛 Rút ${d.aged!.outputQty}` : ripe ? `🫛 Rút ${d.outputQty}` : `⏳ ${age.toFixed(0)}/${d.need} ngày`;
+                    return (
+                      <div key={j.id} style={{ ...styles.card, display: 'block', marginTop: 6 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center' }}>
+                          <b>{out.name}</b>
+                          <button style={{ ...styles.btn, background: ripe ? '#2ecc71' : '#555', color: '#fff' }} onClick={() => collectPreserve(j.id)} disabled={!ripe}>
+                            {label}
+                          </button>
+                        </div>
+                        <div style={{ fontSize: 12, opacity: 0.75, marginTop: 4 }}>
+                          Bắt đầu ngày {j.startDay} · rút ngon từ ngày {d.need}{d.aged ? ` · ủ LÂU tới ${d.aged.day} ngày ra ${d.aged.outputQty} (nhãn nhà làm)` : ''}{j.allHomegrown ? ' · toàn nhà trồng' : ''}{aged ? ' · GIÁ HƠN +20%' : ''}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+                <div style={{ fontSize: 12, marginTop: 4, display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                  {uDefs.map((d) => {
+                    const out = productById(d.outputId);
+                    const lack = d.inputs.find((i) => (storage[i.productId] ?? 0) < i.quantity);
+                    const can = chumStar > 0 && !lack && uJobs.length < chumCap(chumStar);
+                    const label = `${out.name}${d.inputs.map((i) => ` (${productById(i.productId).name} ${i.quantity})`).join('')}`;
+                    return (
+                      <button key={d.id} style={{ ...styles.btn, background: can ? '#2ecc71' : '#555', color: '#fff' }} onClick={() => startPreserve(d.id)}
+                        title={lack ? `Thiếu ${productById(lack.productId).name} — nhập trước rồi ủ` : `${out.name}: ${d.need} ngày rút; ${d.aged ? `ủ ${d.aged.day} ngày ra ${d.aged.outputQty}. ` : ''}${d.note}`}>
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+                <div style={{ fontSize: 12, opacity: 0.75, marginTop: 4 }}>
+                  Chum không hỏng theo thời gian; đủ ngày là rút được hàng thường, GIỮ thêm tới mốc ủ lâu (nếu món có) thì ra nhiều hơn và cả lô bán +20%.
                 </div>
               </div>
             )}

@@ -213,7 +213,7 @@ export const harvestYield = (def: CropDef, day: number, ripenDay?: number) =>
   Math.round(def.yieldQty * (def.season && inSeason(def, ripenDay ?? day) ? SEASON_YIELD : 1));
 
 /** Công trình trại: mua bằng tiền, nâng sao bằng tiền + gỗ + đá nhặt từ dọn trại (kiểu HappyTown). */
-export type FarmBuildingId = 'tuoi_tu_dong' | 'nha_luoi' | 'bai_tha' | 'bu_nhin' | 'gian_phoi' | 'vai_muoi';
+export type FarmBuildingId = 'tuoi_tu_dong' | 'nha_luoi' | 'bai_tha' | 'bu_nhin' | 'gian_phoi' | 'vai_muoi' | 'chum_u';
 
 export interface FarmBuildingDef {
   id: FarmBuildingId;
@@ -259,9 +259,14 @@ export const FARM_BUILDINGS: Record<FarmBuildingId, FarmBuildingDef> = {
     upgrades: [{ money: 4_000_000, wood: 6, stone: 4 }, { money: 6_000_000, wood: 10, stone: 6 }],
     note: 'Một dãy vại sành đặt nơi râm mát cho món muối chua: mỗi sao thêm 2 vại (2/4/6); vớt đúng cửa sổ thì ngon, để quá thì khú',
   },
+  chum_u: {
+    id: 'chum_u', name: 'Nhà chum ủ', icon: '🫛', cost: 12_000_000, unlock: 46,
+    upgrades: [{ money: 8_000_000, wood: 8, stone: 5 }, { money: 12_000_000, wood: 12, stone: 8 }],
+    note: 'Kho mát cho chum ủ rượu tương, mắm, tỏi đen…: mỗi sao thêm 1 chum (1/2/4); chum không hỏng theo thời gian, ủ lâu chỉ ra nhiều hơn',
+  },
 };
 
-export const FARM_BUILDING_ORDER: FarmBuildingId[] = ['bu_nhin', 'tuoi_tu_dong', 'bai_tha', 'nha_luoi', 'gian_phoi', 'vai_muoi'];
+export const FARM_BUILDING_ORDER: FarmBuildingId[] = ['bu_nhin', 'tuoi_tu_dong', 'bai_tha', 'nha_luoi', 'gian_phoi', 'vai_muoi', 'chum_u'];
 /** Sao tối đa của công trình. */
 export const FARM_BUILDING_MAX_STAR = 3;
 

@@ -151,6 +151,17 @@ export function pickleState(job: PreserveJob, def: PreserveDef, day: number): Pi
 export const VAI_CAPACITY: Record<number, number> = { 1: 2, 2: 4, 3: 6 };
 export const vaiCap = (star: number) => VAI_CAPACITY[star] ?? 0;
 
+// ── Lát L6: NHÀ CHUM Ủ (SPEC §1.5) ──
+/** Sức chứa chum ủ theo sao (SPEC §1.3: 1/2/4 chum) — lát L6 chặn farm (R7). */
+export const CHUM_CAPACITY: Record<number, number> = { 1: 1, 2: 2, 3: 4 };
+export const chumCap = (star: number) => CHUM_CAPACITY[star] ?? 0;
+
+/** Ủ (chum): đủ `need` ngày là rút được hàng thường. */
+export const uRipe = (job: PreserveJob, def: PreserveDef, day: number) => pickleAge(job, day) >= def.need;
+/** Ủ tới mốc lâu (`aged.day`) → rút ra CÙNG sản phẩm nhưng NHIỀU hơn (×~1,6), cả lô mang nhãn. */
+export const uAged = (job: PreserveJob, def: PreserveDef, day: number) =>
+  !!def.aged && pickleAge(job, day) >= def.aged.day;
+
 /** Mẻ PHƠI đang để NGOÀI giàn (chưa cất) — thẻ Sổ đầu ngày + rackRainAgenda dùng để biết
  *  "giàn còn đang phơi" (lát L3): đếm theo nong, mẻ phơi nào chưa cất là một nong phơi.
  *  Mẻ muối/ủ (lát L5/L6) không có khái niệm giàn nên không tính. THUẦN. */
@@ -199,6 +210,18 @@ export function preserveMorningTips(args: {
       tips.push({ icon: '🫙', text: `${productById(d.outputId).name} đã vớt NGON — hôm nay/ngày mai là đẹp nhất`, act: 'Trang trại → Vại muối' });
     } else if (st === 'hong') {
       tips.push({ icon: '🗑️', text: `${productById(d.outputId).name} muối đã HOẢNG — đổ bỏ để trống vại`, act: 'Trang trại → Vại muối' });
+    }
+  }
+  // 4. Mẻ ủ (chum) vừa đủ ngày hoặc tới mốc ủ lâu hôm nay (lát L6).
+  for (const j of args.jobs) {
+    const d = preserveDefById(j.defId);
+    if (d.kind !== 'u') continue;
+    const ripe = pickleAge(j, args.day) >= d.need;
+    const aged = !!d.aged && pickleAge(j, args.day) >= d.aged.day;
+    if (aged) {
+      tips.push({ icon: '🫛', text: `${productById(d.outputId).name} đã ủ TỚI MỐC LÂU — rút ra NHIỀU hơn (${d.aged!.outputQty})`, act: 'Trang trại → Nhà chum' });
+    } else if (ripe) {
+      tips.push({ icon: '🫛', text: `${productById(d.outputId).name} đủ ngày ủ — có thể rút (giữ ẩm tới mốc lâu sẽ ra nhiều hơn)`, act: 'Trang trại → Nhà chum' });
     }
   }
   return tips;
@@ -351,12 +374,62 @@ export const PRESERVE_DEFS: PreserveDef[] = [
     unlock: 105, need: 2, window: [2, 4], learnAfterSold: 30,
     note: 'Miền Nam — dưa cải chua; bẹ cải + muối ủ 2–4 ngày, vớt ngon đầu cửa sổ ngày 2–3.',
   },
+  // ── Lát L6: 6 CHUM Ủ (SPEC §1.6) — chum không hỏng theo thời gian; ủ lâu ra NHIỀU hơn (aged) ──
+  {
+    id: 'ps_mam_tep', kind: 'u', outputId: 'hx_mam_tep', outputQty: 4,
+    // Mắm tép (miền Trung): tép tươi trộn muối ủ chín thành mắm đặc sánh, dùng chấm rau luộc.
+    // Game không có tép → thay bằng tôm tươi (x_tom_tuoi) cùng họ tôm tép; ghi rõ thay thế (CLAUDE.md 4).
+    inputs: [{ productId: 'x_tom_tuoi', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }],
+    unlock: 46, need: 10, learnAfterSold: 30,
+    note: 'Miền Trung — mắm tép tươi ủ muối; game thay tép bằng tôm tươi (x_tom_tuoi). Ủ 10 ngày.',
+  },
+  {
+    id: 'ps_tuong_ban', kind: 'u', outputId: 'hx_tuong_ban', outputQty: 4,
+    // Tương bần (Hưng Yên, miền Bắc): đậu tương (đậu nành) + gạo nếp làm mốc + muối, ủ 14 ngày
+    // cho vị mặn ngọt đặc trưng 'Tương Cự Đà, đậu Hà Nội'.
+    inputs: [{ productId: 'x_dau_nanh_hat', quantity: 1 }, { productId: 'x_nep', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }],
+    unlock: 46, need: 14, learnAfterSold: 30,
+    note: 'Miền Bắc (Hưng Yên) — tương bần: đậu nành + nếp mốc + muối ủ 14 ngày.',
+  },
+  {
+    id: 'ps_nuoc_mam', kind: 'u', outputId: 'hx_nuoc_mam', outputQty: 3,
+    // Nước mắm cá cơm (miền biển): cá cơm tươi + muối ủ 12 tháng rút cốt. Game nén còn 14 ngày;
+    // ủ tiếp 28 ngày ra NHIỀU hơn ×~1,6 (đã chốt: không thêm sản phẩm mới). Cá cơm → thay cá basa (x_ca_basa).
+    inputs: [{ productId: 'x_ca_basa', quantity: 1 }, { productId: 'x_muoi', quantity: 2 }],
+    unlock: 46, need: 14, aged: { day: 28, outputQty: 5 }, learnAfterSold: 30,
+    note: 'Miền biển — nước mắm cá cơm; game thay cá cơm bằng cá basa (x_ca_basa), ủ 14 ngày, lâu 28 ngày ra thêm (thật 12 tháng, game nén).',
+  },
+  {
+    id: 'ps_toi_den', kind: 'u', outputId: 'hx_toi_den', outputQty: 2,
+    // Tỏi đen (khắp nơi, phổ biến Phú Yên): nguyên củ tỏi ủ ở nhiệt ẩm ổn định 21 ngày cho lên men
+    // đen ngọt; giữ nhiệt ủ lâu ra NHIỀU hơn cùng sản phẩm.
+    inputs: [{ productId: 'x_toi', quantity: 2 }],
+    unlock: 58, need: 21, aged: { day: 40, outputQty: 3 }, learnAfterSold: 30,
+    note: 'Khắp miền (Phú Yên nổi tiếng) — tỏi đen: củ tỏi ủ ẩm 21 ngày lên men đen ngọt; ủ 40 ngày ra thêm.',
+  },
+  {
+    id: 'ps_tom_chua', kind: 'u', outputId: 'hx_tom_chua', outputQty: 3,
+    // Tôm chua Huế (miền Trung): tôm sú bóc vỏ ủ với thính gạo + riềng sả + ớt + tỏi + nước mắm + đường,
+    // chua cay ăn kèm bánh tráng cuốn. Ủ ~7 ngày.
+    inputs: [{ productId: 'x_tom_tuoi', quantity: 1 }, { productId: 'x_sa', quantity: 1 }, { productId: 'x_toi', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }],
+    unlock: 67, need: 7, learnAfterSold: 30,
+    note: 'Miền Trung (Huế) — tôm chua: tôm + sả + tỏi + muối ủ ~7 ngày chua cay.',
+  },
+  {
+    id: 'ps_tuong_hot', kind: 'u', outputId: 'hx_tuong_hot', outputQty: 3,
+    // Tương hột (miền Tây): đậu nành hột nguyên ủ với nếp mốc + muối, tương còn nguyên hột vàng.
+    inputs: [{ productId: 'x_dau_nanh_hat', quantity: 1 }, { productId: 'x_nep', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }],
+    unlock: 78, need: 14, learnAfterSold: 30,
+    note: 'Miền Tây — tương hột: hột đậu nành + nếp mốc + muối ủ 14 ngày.',
+  },
 ];
 
 /** Cấp mở sớm nhất mà trạm phơi có mẻ (để mở công trình gian_phoi, lát L2). */
 export const PHOI_UNLOCK = 34;
 /** Cấp mở sớm nhất mà vại muối có mẻ (để mở công trình vai_muoi, lát L5). */
 export const VAI_UNLOCK = 38;
+/** Cấp mở sớm nhất mà nhà chum ủ có mẻ (để mở công trình chum_u, lát L6). */
+export const CHUM_UNLOCK = 46;
 
 /** Mở khóa cho lát L5/L6 (nền trước; các mẻ muối/ủ chưa có trong danh mục L1). */
 export const preserveDefById = (id: string) => PRESERVE_DEFS.find((d) => d.id === id)!;

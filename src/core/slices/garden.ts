@@ -5,7 +5,7 @@ import {
   type AnimalKind, type Plot,
 } from '../../data/garden';
 import { CROPS, cropById, type CropDef } from '../../data/garden';
-import { preserveDefById, phoiReady, rackCap, vaiCap, VAI_UNLOCK, pickleState, pickleAge, type PreserveJob } from '../../data/preserve';
+import { preserveDefById, phoiReady, rackCap, vaiCap, chumCap, VAI_UNLOCK, CHUM_UNLOCK, pickleState, pickleAge, uRipe, uAged, type PreserveJob } from '../../data/preserve';
 import { sealYieldBonus } from '../../data/stance';
 import type { GameState, SetState, GetState } from '../gameTypes';
 import { copyStock, putStock, takeStock } from '../stock';
@@ -309,9 +309,13 @@ export const createGardenSlice = (set: SetState, get: GetState): Pick<GameState,
     const def = preserveDefById(defId);
     if (!def) return;
     if (s.level < def.unlock) return s.notify(`${productById(def.outputId).name} mở ở cấp ${def.unlock}`);
-    if (def.kind === 'u') return s.notify('Nhà chum ủ đang làm sau — giờ chỉ phơi và vại muối');
-    // Trạm theo loại mẻ (SPEC §1.3): phơi = Sân phơi, muối = Dãy vại.
-    if (def.kind === 'muoi') {
+    // Trạm theo loại mẻ (SPEC §1.3): phơi = Sân phơi, muối = Dãy vại, ủ = Nhà chum.
+    if (def.kind === 'u') {
+      if ((s.garden.buildings.chum_u ?? 0) < 1) return s.notify(`Cần xây Nhà chum ủ trước (cấp ${CHUM_UNLOCK}, Trang trại → Công trình)`);
+      const inChum = s.garden.preserveJobs.filter((j) => preserveDefById(j.defId).kind === 'u').length;
+      const cap = chumCap(s.garden.buildings.chum_u ?? 0);
+      if (inChum >= cap) return s.notify(`Nhà chum đủ ${cap} chum rồi — nâng sao lên để làm thêm`);
+    } else if (def.kind === 'muoi') {
       if ((s.garden.buildings.vai_muoi ?? 0) < 1) return s.notify(`Cần xây Dãy vại muối trước (cấp ${VAI_UNLOCK}, Trang trại → Công trình)`);
       const inVai = s.garden.preserveJobs.filter((j) => preserveDefById(j.defId).kind === 'muoi').length;
       const cap = vaiCap(s.garden.buildings.vai_muoi ?? 0);
@@ -325,7 +329,7 @@ export const createGardenSlice = (set: SetState, get: GetState): Pick<GameState,
     const k = copyStock(s);
     for (const inp of def.inputs) {
       if ((k.storage[inp.productId] ?? 0) < inp.quantity) {
-        return s.notify(`Thiếu ${productById(inp.productId).name} (cần ${inp.quantity}) — nhập trước rồi ${def.kind === 'muoi' ? 'muối' : 'phơi'}`);
+        return s.notify(`Thiếu ${productById(inp.productId).name} (cần ${inp.quantity}) — nhập trước rồi ${def.kind === 'phoi' ? 'phơi' : def.kind === 'muoi' ? 'muối' : 'ủ'}`);
       }
     }
     for (const inp of def.inputs) takeStock(k, inp.productId, inp.quantity);
@@ -335,6 +339,8 @@ export const createGardenSlice = (set: SetState, get: GetState): Pick<GameState,
     set({ ...k, garden: { ...s.garden, preserveJobs: [...s.garden.preserveJobs, job] } });
     if (def.kind === 'muoi') {
       s.notify(`🫙 Đã ngâm ${productById(def.outputId).name} vào vại — vớt ngon quanh ngày ${def.window![0]}–${def.window![0] + 1}`);
+    } else if (def.kind === 'u') {
+      s.notify(`🫛 Đã đặt ${productById(def.outputId).name} vào chum ủ — ${def.need} ngày rút được, giữ lâu tới mốc ủ sẽ ra nhiều hơn`);
     } else {
       s.notify(`☀️ Đã trải ${productById(def.outputId).name} lên giàn — đủ ${def.need} nắng là thu`);
     }
@@ -371,6 +377,26 @@ export const createGardenSlice = (set: SetState, get: GetState): Pick<GameState,
       const tag = st === 'ngon' ? ' NGON' : st === 'kem' ? ' (khú, kém)' : '';
       s.notify(`🫙 Vớt ${yieldQ} ${productById(def.outputId).name}${tag}${lab ? ' — toàn nhà trồng, giá hơn' : ''}`);
       s.addXp(st === 'ngon' ? 12 : 6);
+      return;
+    }
+    if (def.kind === 'u') {
+      // Nhà chum: đủ need là rút hàng thường; giữ tới mốc ủ lâu (aged.day) rút ra NHIỀU hơn, cả lô nhãn (SPEC §1.5).
+      const age = pickleAge(job, s.day);
+      if (!uRipe(job, def, s.day)) {
+        return s.notify(`${productById(def.outputId).name} chưa đủ ngày ủ (${age.toFixed(0)}/${def.need}) — giữ thêm`);
+      }
+      const aged = uAged(job, def, s.day);
+      const qty = aged ? def.aged!.outputQty : def.outputQty;
+      const k = copyStock(s);
+      const yieldQ = qty + sealYieldBonus(s.biz); // Hệ3-L8 Ấn Đặc sản: mỗi mẻ thêm 1
+      putStock(k, def.outputId, yieldQ);
+      const homegrown = { ...s.garden.homegrown };
+      const lab = aged || job.allHomegrown; // ủ lâu → CẢ lô mang nhãn nhà làm (+20%)
+      if (lab) homegrown[def.outputId] = (homegrown[def.outputId] ?? 0) + yieldQ;
+      const jobs = s.garden.preserveJobs.filter((j) => j.id !== jobId);
+      set({ ...k, garden: { ...s.garden, preserveJobs: jobs, homegrown } });
+      s.notify(`🫛 Rút ${yieldQ} ${productById(def.outputId).name}${aged ? ' (ủ LÂU, ra nhiều hơn)' : ''}${lab ? ' — nhà làm, giá hơn' : ''}`);
+      s.addXp(aged ? 15 : 8);
       return;
     }
     if (!phoiReady(job, def)) {
