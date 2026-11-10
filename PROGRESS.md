@@ -21,7 +21,7 @@
 
 ## Trạng thái hiện tại (10/11/2026)
 - GĐ2109–2110: Ốc hấp sả (steamer, L190), Mực chiên giòn (fryer, L191).
-- GĐ2107–2108: Bông cải xào bò (L188), Bông cải xào tôm (L189), fryer.
+- GĐ2107–2108: Mực xào thơm (L188, thay món trùng Bò xào bông cải), Bông cải xào tôm (L189), fryer.
 - GĐ2105–2106: Ốc xào sả ớt (fryer, L186), Bò né (fryer, L187).
 - GĐ2103–2104: Ốc bươu nhồi thịt (steamer, L184), Nghêu nướng mỡ hành (food_grill, L185). Nhắc: thêm nguyên liệu phải soi cả products.ts (nghêu đã có sẵn).
 - GĐ2099–2102: nguyên liệu Ốc bươu (cuối catalog, mở 170); Nghêu hấp sả (steamer, L181), Canh nghêu (L182) dùng nghêu sẵn có, Ốc luộc (L183).

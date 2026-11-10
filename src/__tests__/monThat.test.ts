@@ -143,7 +143,7 @@ const MON_THAT: Record<string, { name: string; station: string; cachNau: string 
   recipe_ngheu_nuong_mo_hanh: { name: 'Nghêu nướng mỡ hành', station: 'food_grill', cachNau: 'nghêu nướng than, rưới mỡ hành đậu phộng (quán ốc)' },
   recipe_oc_xao_sa_ot: { name: 'Ốc xào sả ớt', station: 'fryer', cachNau: 'ốc luộc sơ xào lửa lớn sả ớt (quán ốc Nam Bộ)' },
   recipe_bo_ne: { name: 'Bò né', station: 'fryer', cachNau: 'bò trứng pate áp chảo gang (Sài Gòn)' },
-  recipe_bong_cai_xao_bo: { name: 'Bông cải xào bò', station: 'fryer', cachNau: 'bò xào tái với bông cải xanh, tỏi (cơm nhà)' },
+  recipe_muc_xao_thom: { name: 'Mực xào thơm', station: 'fryer', cachNau: 'mực xào lửa lớn với thơm, hành tây (cơm nhà Nam Bộ)' },
   recipe_bong_cai_xao_tom: { name: 'Bông cải xào tôm', station: 'fryer', cachNau: 'tôm xào tỏi đảo bông cải xanh (cơm nhà)' },
   recipe_oc_hap_sa: { name: 'Ốc hấp sả', station: 'steamer', cachNau: 'ốc lót sả đập hấp chín (quán ốc Nam Bộ)' },
   recipe_muc_chien_gion: { name: 'Mực chiên giòn', station: 'fryer', cachNau: 'mực khoanh lăn bột chiên ngập dầu (quán nhậu)' },
