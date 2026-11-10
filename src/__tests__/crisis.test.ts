@@ -144,3 +144,56 @@ describe('Hệ8-L1 — crisisEffects: mọi hệ số = 1 khi không có biến 
     expect(crisisPhaseLabel(DAO_DUONG, 415, st)).toBe('Dịu dần');
   });
 });
+
+describe('Hệ8-L3 — việc chuẩn bị làm dịu đợt (DAO_DUONG)', () => {
+  const caoDiem = 404; // ngày 4 = ngày đầu Cao điểm (traffic base 0.65)
+
+  it('3 việc chuẩn bị, đầy đủ trường phục vụ thẻ', () => {
+    expect(DAO_DUONG.preps).toHaveLength(3);
+    for (const p of DAO_DUONG.preps) {
+      expect(p.id && p.label && p.cost > 0 && p.effect).toBeTruthy();
+    }
+  });
+
+  it('Cao điểm — không làm gì: traffic 0.65, channel online 1.4 / phone 1.5, dirt 2, supplyDelay 0.3', () => {
+    const e = crisisEffects({ defId: 'dao_duong', startDay: 400, preps: [], choices: {}, kind: 0 }, caoDiem);
+    expect(e.traffic).toBe(0.65);
+    expect(e.channel).toEqual({ online: 1.4, phone: 1.5 });
+    expect(e.dirt).toBe(2);
+    expect(e.supplyDelay).toBe(0.3);
+  });
+
+  it('làm "băng rôn" → khách nâng lên 0.78', () => {
+    const e = crisisEffects({ defId: 'dao_duong', startDay: 400, preps: ['banner'], choices: {}, kind: 0 }, caoDiem);
+    expect(e.traffic).toBe(0.78);
+  });
+
+  it('làm "lối ván" → khách nâng lên 0.85', () => {
+    const e = crisisEffects({ defId: 'dao_duong', startDay: 400, preps: ['path'], choices: {}, kind: 0 }, caoDiem);
+    expect(e.traffic).toBe(0.85);
+  });
+
+  it('làm cả "băng rôn" + "lối ván" → 0.85 (lấy mức tốt nhất, không cộng dồn quá)', () => {
+    const e = crisisEffects({ defId: 'dao_duong', startDay: 400, preps: ['banner', 'path'], choices: {}, kind: 0 }, caoDiem);
+    expect(e.traffic).toBe(0.85);
+  });
+
+  it('prep "courier" không nâng khách nhưng giữ kênh ổn hơn (online 1.15 / phone 1.2)', () => {
+    const e = crisisEffects({ defId: 'dao_duong', startDay: 400, preps: ['courier'], choices: {}, kind: 0 }, caoDiem);
+    expect(e.traffic).toBe(0.65);
+    expect(e.channel).toEqual({ online: 1.15, phone: 1.2 });
+  });
+
+  it('giai đoạn Báo trước không có hiệu ứng kênh dù đã làm prep', () => {
+    const e = crisisEffects({ defId: 'dao_duong', startDay: 400, preps: ['banner'], choices: {}, kind: 0 }, 400);
+    expect(e.channel).toBeUndefined();
+  });
+
+  it('cảnh lựa chọn nằm trong đợt (atDay 3 và 9, trước khi hết Cao điểm)', () => {
+    expect(DAO_DUONG.scenes.map((s) => s.atDay)).toEqual([3, 9]);
+    for (const s of DAO_DUONG.scenes) {
+      expect(s.atDay).toBeLessThan(crisisTotalDays(DAO_DUONG));
+      expect(s.text && s.options.length >= 2).toBeTruthy();
+    }
+  });
+});

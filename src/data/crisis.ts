@@ -50,6 +50,10 @@ export interface CrisisPrep {
   cost: number;
   needStock?: Record<string, number>;
   effect: string;
+  /** Làm thì khách tối thiểu đạt mức này — crisisEffects lấy max giữa traffic giai đoạn và prep đã làm (cáp ≤ 1, nhiều prep lấy mức tốt nhất). */
+  traffic?: number;
+  /** Làm thì thay hệ số kênh (giữ đơn online/điện thoại ổn định hơn). */
+  channel?: { online?: number; phone?: number };
 }
 
 export interface CrisisBoon {
@@ -116,8 +120,36 @@ const DAO_DUONG: CrisisDef = {
     { label: 'Cao điểm', days: 10, traffic: 0.65, channel: { online: 1.4, phone: 1.5 }, dirt: 2, supplyDelay: 0.3 },
     { label: 'Dịu dần', days: 4, traffic: 0.85 },
   ],
-  preps: [],   // L3: thuê thêm người giao, băng rôn, góp làm lối đi tạm
-  scenes: [],  // L3: cảnh tuần 1 thợ gửi xe, tuần 2 ống nước vỡ
+  // L3 — 3 việc chuẩn bị. Giá là ĐIỂM KHỞI ĐẦU; cân bằng thật qua crisisBalance (L4) + simEconomy.
+  preps: [
+    {
+      id: 'courier', label: 'Thuê thêm người giao hàng', cost: 450_000,
+      effect: 'Xe giao riêng tránh được đoạn đào — đơn online / điện thoại mất ít hơn.',
+      channel: { online: 1.15, phone: 1.2 },
+    },
+    {
+      id: 'banner', label: 'Treo băng rôn “Vẫn mở cửa — giao tận nhà”', cost: 180_000,
+      traffic: 0.78, channel: { online: 1.1, phone: 1.2 },
+      effect: 'Khách đọc băng rôn biết mình còn mở — khách đi bộ mất ít hơn (×0,78).',
+    },
+    {
+      id: 'path', label: 'Góp tiền làm lối đi tạm bằng ván', cost: 1_500_000,
+      traffic: 0.85,
+      effect: 'Mọi người đi lại được nhờ — khách chỉ còn ×0,85 và xóm nhớ tấm lòng (thân thiết +).',
+    },
+  ],
+  scenes: [
+    {
+      atDay: 3, // cuối tuần Báo trước / đầu Cao điểm
+      text: 'Công nhân làm cống xin gửi nhờ xe cút kít trước cửa và mua chịu ít nước cho công trình.',
+      options: ['Gửi nhờ + bán chịu (cả đợt có thêm khách công nhân, +thân thiết)', 'Từ chối, cứ làm việc của mình'],
+    },
+    {
+      atDay: 9, // giữa Cao điểm
+      text: 'Lúc mưa to, ống nước vỡ làm ngập trước cửa cả dãy nhà.',
+      options: ['Tự bỏ tiền thuê bơm cho cả dãy (tốn tiền, +thân thiết lan theo cụm)', 'Chờ phường xử lý'],
+    },
+  ],
   aftermath: { kind: 'road', traffic: 1.03, label: 'Đường mới khang trang: khách ghé thêm' },
 };
 
@@ -255,14 +287,24 @@ export function crisisEffects(st: CrisisState | undefined, day: number): CrisisE
     off -= p.days;
   }
   if (!phase) return { traffic: 1, cost: () => 1 };
+  // L3 — việc chuẩn bị đã làm làm dịu đợt: khách lấy mức tốt nhất (max), kênh dùng hiệu ứng prep (thay giai đoạn).
+  const prepsDone = def.preps.filter((p) => st.preps.includes(p.id));
+  const prepTraffic = prepsDone.reduce((m, p) => Math.max(m, p.traffic ?? 0), 0);
+  const traffic = Math.max(phase.traffic ?? 1, prepTraffic);
+  // Kênh chỉ có ý nghĩa ở giai đoạn nào vốn ghi hiệu ứng kênh (Cao điểm); prep làm thì override lên trên.
+  const baseChannel = phase.channel;
+  const chanOn = prepsDone.find((p) => p.channel?.online !== undefined)?.channel?.online;
+  const chanPh = prepsDone.find((p) => p.channel?.phone !== undefined)?.channel?.phone;
   return {
-    traffic: phase.traffic ?? 1,
+    traffic,
     cost: (productId, category) => {
       if (phase.costIds?.[productId] !== undefined) return phase.costIds[productId];
       return phase.cost?.[category] ?? 1;
     },
     ...(phase.demand ? { demand: phase.demand } : {}),
-    ...(phase.channel ? { channel: phase.channel } : {}),
+    channel: baseChannel
+      ? { online: chanOn ?? baseChannel.online, phone: chanPh ?? baseChannel.phone }
+      : undefined,
     ...(phase.sensitivity !== undefined ? { sensitivity: phase.sensitivity } : {}),
     ...(phase.dirt !== undefined ? { dirt: phase.dirt } : {}),
     ...(phase.supplyDelay !== undefined ? { supplyDelay: phase.supplyDelay } : {}),
