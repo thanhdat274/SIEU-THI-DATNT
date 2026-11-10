@@ -820,6 +820,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'ba_ba_hap_sa', name: 'Ba ba hấp sả', category: 'fresh', buy: 26000, sell: 40000, color: 0x6a7a4a, unlock: 199 },
   { id: 'chao_ga_ac', name: 'Cháo gà ác', category: 'fresh', buy: 14000, sell: 24000, color: 0xf0e0c0, unlock: 198 },
   { id: 'ga_ac_hap', name: 'Gà ác hấp', category: 'fresh', buy: 24000, sell: 42000, color: 0x6a5a4a, unlock: 199 },
+  { id: 'chim_cut_quay', name: 'Chim cút quay', category: 'fresh', buy: 22000, sell: 38000, color: 0x8a5a3a, unlock: 198 },
+  { id: 'chim_cut_chien_gion', name: 'Chim cút chiên giòn', category: 'fresh', buy: 22000, sell: 38000, color: 0xa87a3a, unlock: 199 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2751,6 +2753,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_ga_ac_hap', name: 'Gà ác hấp', station: 'steamer',
     inputs: [{ productId: 'x_ga_ac', quantity: 1 }, { productId: 'x_gung', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }],
     outputId: 'ga_ac_hap', outputQty: 4, durationMin: 35, unlock: 199, reputationGain: 1 },
+  // GĐ2143: Chim cút quay — món quay quán nhậu cả nước: chim cút ướp ngũ vị hương, muối, quay cho da vàng thơm; quay lò → bếp nướng than, không thay thế.
+  { id: 'recipe_chim_cut_quay', name: 'Chim cút quay', station: 'food_grill',
+    inputs: [{ productId: 'x_chim_cut', quantity: 1 }, { productId: 'x_ngu_vi_huong', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }],
+    outputId: 'chim_cut_quay', outputQty: 4, durationMin: 30, unlock: 198, reputationGain: 1 },
+  // GĐ2144: Chim cút chiên giòn — món chiên quán nhậu cả nước: chim cút ướp muối tỏi, chiên vàng giòn nguyên con; không thay thế.
+  { id: 'recipe_chim_cut_chien_gion', name: 'Chim cút chiên giòn', station: 'fryer',
+    inputs: [{ productId: 'x_chim_cut', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }, { productId: 'x_toi', quantity: 1 }],
+    outputId: 'chim_cut_chien_gion', outputQty: 4, durationMin: 25, unlock: 199, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────

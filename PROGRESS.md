@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (10/11/2026)
+- GĐ2143–2144: Chim cút làm sẵn (x_chim_cut, cuối catalog L170); Chim cút quay (food_grill, L198), Chim cút chiên giòn (fryer, L199).
 - GĐ2141–2142: Gà ác làm sẵn (x_ga_ac, cuối catalog L170); Cháo gà ác (hot_kettle, L198), Gà ác hấp (steamer, L199).
 - GĐ2139–2140: Ba ba làm sẵn (x_ba_ba, cuối catalog L170); Cháo ba ba (hot_kettle, L198), Ba ba hấp sả (steamer, L199).
 - GĐ2137–2138: Bồ câu làm sẵn (x_bo_cau, cuối catalog L170); Cháo bồ câu (hot_kettle, L196), Bồ câu quay (food_grill, L197).
