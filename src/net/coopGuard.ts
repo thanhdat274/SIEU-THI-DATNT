@@ -56,4 +56,8 @@ export const GUARDED: Record<string, (args: unknown[]) => string> = {
   // GĐ2219 — mua quảng cáo: một đợt quảng cáo dùng chung cho cả hẻm (ad.state), hai người mua cùng
   // lúc chỉ một người thành công (người sau đợi một chút rồi bấm lại).
   buyAd: () => 'shop:ad',
+  // Hệ 8 — Biến cố dài (SPEC-CHIEU-RONG §8.6): làm việc chuẩn bị / chọn cảnh cùng sửa crisis state
+  // dùng chung cho cả hẻm → khoá chung "crisis" để hai người không đè nhau trong đợt.
+  doCrisisPrep: () => 'crisis',
+  chooseCrisisScene: () => 'crisis',
 };
