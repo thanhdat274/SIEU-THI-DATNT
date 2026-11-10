@@ -788,6 +788,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'bong_cai_xao_tom', name: 'Bông cải xào tôm', category: 'fresh', buy: 15000, sell: 27000, color: 0x5a8a4a, unlock: 189 },
   { id: 'oc_hap_sa', name: 'Ốc hấp sả', category: 'fresh', buy: 20000, sell: 34000, color: 0x7a6a3a, unlock: 190 },
   { id: 'muc_chien_gion', name: 'Mực chiên giòn', category: 'fresh', buy: 18000, sell: 30000, color: 0xe8c070, unlock: 191 },
+  { id: 'bo_cuon_nam_kim_cham', name: 'Bò cuộn nấm kim châm', category: 'fresh', buy: 16000, sell: 28000, color: 0xa8603a, unlock: 192 },
+  { id: 'oc_xao_me', name: 'Ốc xào me', category: 'fresh', buy: 22000, sell: 36000, color: 0x9a5a2a, unlock: 193 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2591,6 +2593,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_muc_chien_gion', name: 'Mực chiên giòn', station: 'fryer',
     inputs: [{ productId: 'x_muc_tuoi', quantity: 1 }, { productId: 'x_bot_chien', quantity: 1 }],
     outputId: 'muc_chien_gion', outputQty: 4, durationMin: 15, unlock: 191, reputationGain: 1 },
+  // GĐ2111: Bò cuộn nấm kim châm — món nướng quán lẩu nướng cả nước: ba chỉ bò thái mỏng cuộn nấm kim châm, nướng vỉ than; không thay thế.
+  { id: 'recipe_bo_cuon_nam_kim_cham', name: 'Bò cuộn nấm kim châm', station: 'food_grill',
+    inputs: [{ productId: 'x_thit_bo', quantity: 1 }, { productId: 'x_nam_kim_cham', quantity: 1 }],
+    outputId: 'bo_cuon_nam_kim_cham', outputQty: 4, durationMin: 15, unlock: 192, reputationGain: 1 },
+  // GĐ2112: Ốc xào me — quán ốc Sài Gòn: ốc bươu luộc sơ, xào với nước me chua ngọt, tỏi phi; không thay thế.
+  { id: 'recipe_oc_xao_me', name: 'Ốc xào me', station: 'fryer',
+    inputs: [{ productId: 'x_oc', quantity: 1 }, { productId: 'x_me', quantity: 1 }, { productId: 'x_toi', quantity: 1 }],
+    outputId: 'oc_xao_me', outputQty: 3, durationMin: 20, unlock: 193, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────
