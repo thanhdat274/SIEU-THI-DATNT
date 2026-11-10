@@ -181,6 +181,8 @@ const MON_THAT: Record<string, { name: string; station: string; cachNau: string 
   recipe_ga_ac_hap: { name: 'Gà ác hấp', station: 'steamer', cachNau: 'gà ác hấp cách thủy với gừng, ăn kèm muối tiêu (hấp bồi bổ cả nước)' },
   recipe_chim_cut_quay: { name: 'Chim cút quay', station: 'food_grill', cachNau: 'chim cút ướp ngũ vị hương muối, quay chín da vàng (quán nhậu cả nước)' },
   recipe_chim_cut_chien_gion: { name: 'Chim cút chiên giòn', station: 'fryer', cachNau: 'chim cút ướp muối tỏi, chiên vàng giòn nguyên con (quán nhậu cả nước)' },
+  recipe_ca_keo_nuong_ong_tre: { name: 'Cá kèo nướng ống tre', station: 'food_grill', cachNau: 'cá kèo nhét ống tre nướng than, chấm muối ớt (Sóc Trăng)' },
+  recipe_ca_keo_kho_to: { name: 'Cá kèo kho tộ', station: 'hot_kettle', cachNau: 'cá kèo kho tộ đất nước mắm sả ớt tới sánh (Nam Bộ)' },
 };
 
 /** Chữ mô tả tự chế không ai dùng làm tên món ngoài chợ. */

@@ -822,6 +822,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'ga_ac_hap', name: 'Gà ác hấp', category: 'fresh', buy: 24000, sell: 42000, color: 0x6a5a4a, unlock: 199 },
   { id: 'chim_cut_quay', name: 'Chim cút quay', category: 'fresh', buy: 22000, sell: 38000, color: 0x8a5a3a, unlock: 198 },
   { id: 'chim_cut_chien_gion', name: 'Chim cút chiên giòn', category: 'fresh', buy: 22000, sell: 38000, color: 0xa87a3a, unlock: 199 },
+  { id: 'ca_keo_nuong_ong_tre', name: 'Cá kèo nướng ống tre', category: 'fresh', buy: 19000, sell: 34000, color: 0x8a7a5a, unlock: 198 },
+  { id: 'ca_keo_kho_to', name: 'Cá kèo kho tộ', category: 'fresh', buy: 19000, sell: 34000, color: 0x7a5a3a, unlock: 199 },
 ];
 
 // ──────────────────────────────────────────────
@@ -2761,6 +2763,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_chim_cut_chien_gion', name: 'Chim cút chiên giòn', station: 'fryer',
     inputs: [{ productId: 'x_chim_cut', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }, { productId: 'x_toi', quantity: 1 }],
     outputId: 'chim_cut_chien_gion', outputQty: 4, durationMin: 25, unlock: 199, reputationGain: 1 },
+  // GĐ2145: Cá kèo nướng ống tre — đặc sản Sóc Trăng: cá kèo nhét ống tre nướng trên lửa than cho thơm, chấm muối ớt; nướng tre → bếp nướng than, không thay thế.
+  { id: 'recipe_ca_keo_nuong_ong_tre', name: 'Cá kèo nướng ống tre', station: 'food_grill',
+    inputs: [{ productId: 'x_ca_keo', quantity: 1 }, { productId: 'x_sa', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }],
+    outputId: 'ca_keo_nuong_ong_tre', outputQty: 4, durationMin: 25, unlock: 198, reputationGain: 1 },
+  // GĐ2146: Cá kèo kho tộ — Nam Bộ: cá kèo kho trong tộ đất với nước mắm, sả, ớt tới sánh; không thay thế.
+  { id: 'recipe_ca_keo_kho_to', name: 'Cá kèo kho tộ', station: 'hot_kettle',
+    inputs: [{ productId: 'x_ca_keo', quantity: 1 }, { productId: 'hx_nuoc_mam', quantity: 1 }, { productId: 'x_sa', quantity: 1 }],
+    outputId: 'ca_keo_kho_to', outputQty: 4, durationMin: 35, unlock: 199, reputationGain: 1 },
 ];
 
 // ──────────────────────────────────────────────
