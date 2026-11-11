@@ -50,13 +50,19 @@ export function TripOverlay() {
           </div>
           <div className="trip-bar"><div className="trip-bar-fill" style={{ width: `${Math.round(p * 100)}%` }} /></div>
           <p className="trip-ov-note">
-            {remain > 0 ? <>Còn {Math.ceil(remain / 60)}h nữa xe về — đang vắng tiệm.</> : 'Xe vừa về tới.'}
+            {trip.by === 'self'
+              ? (remain > 0 ? <>Còn {Math.ceil(remain / 60)}h nữa xe về — đang vắng tiệm.</> : 'Xe vừa về tới.')
+              : (remain > 0 ? <>Còn {Math.ceil(remain / 60)}h nữa người giao về — chủ vẫn trông tiệm.</> : 'Người giao vừa về tới.')}
             {' '}Mang theo <b>{formatMoney(trip.cash)}</b> mua hàng.
           </p>
         </div>
-        <CartEditor key={trip.routeId} trip={trip} />
-        <RoadEvents trip={trip} />
-        <HaggleEditor trip={trip} />
+        {trip.by === 'self' && (
+          <>
+            <CartEditor key={trip.routeId} trip={trip} />
+            <RoadEvents trip={trip} />
+            <HaggleEditor trip={trip} />
+          </>
+        )}
         <DebtEditor />
       </div>
     );
@@ -101,6 +107,7 @@ export function TripOverlay() {
         </label>
         <Garage />
         <DebtEditor />
+        <CourierSender routeId={picked} cash={cash} />
         <div className="trip-ov-actions">
           <button className="mini-btn" onClick={() => setOpen(false)}>Bỏ qua</button>
           <button className="mini-btn primary" disabled={!picked} onClick={go}>Lên đường</button>
@@ -331,6 +338,71 @@ function DebtEditor() {
       <p className="trip-ov-note">{route?.name ?? ''} còn {formatMoney(d.amount)} — trả trong {TRIP_DEBT_DUE_DAYS} ngày, kẻo mất ưu đãi mối ruột.</p>
       <div className="trip-ov-actions">
         <button className="mini-btn primary" disabled={s.money < d.amount} onClick={() => tripRepayDebt()}>Trả nợ {formatMoney(d.amount)}</button>
+      </div>
+    </div>
+  );
+}
+
+/** Hệ 5-L8 — sai người giao hàng (vai 🛵) đi thay (SPEC §5.8): lập sẵn giỏ theo trần tiền + sức xe,
+ *  người đi không mặc cả tay (bậc ≥4★ tự mặc cả −6%), chủ ở lại tiệm. Giỏ tự động: ưu tiên món tiết kiệm nhất/thùng. */
+function CourierSender({ routeId, cash }: { routeId: string; cash: string }) {
+  const s = useGame();
+  const level = s.level;
+  const couriers = s.staff.filter((w) => w.role === 'courier');
+  const bizH = s.biz.hauler;
+  const hauler = haulerById(bizH ?? 'moto');
+  const hasCargo = bizH === 'ba_gac' || bizH === 'xe_tai';
+  const startTrip = useGame((x) => x.startTrip);
+  const [courierId, setCourierId] = useState<number | ''>('');
+  const route = routeById(routeId);
+  const cashN = parseInt(cash, 10) || 0;
+  if (!route || couriers.length === 0) return null;
+  const tier = routeRelTier(s.biz.supplierRel?.[`route:${route.id}`]);
+  const stock = routeStockResolve(s.biz.routeStock, route, s.day, tier);
+  const disabled = !hasCargo || !hauler || courierId === '' || cashN <= 0;
+
+  const buildCart = (): Record<string, number> => {
+    const cart: Record<string, number> = {};
+    if (!hauler) return cart;
+    let spend = 0; let cases = 0;
+    const cands = route.goods
+      .map((g) => ({ g, p: productById(g.productId) }))
+      .filter((x): x is { g: (typeof route.goods)[number]; p: NonNullable<ReturnType<typeof productById>> } => !!x.p && x.p.unlock <= level)
+      .map(({ g, p }) => {
+        const price = routeBuyPrice(p.buy, routeDiscountFor(route, g.productId, p.category));
+        const size = caseSize(g.productId);
+        return { pid: g.productId, p, price, size, savePerBox: (p.buy - price) / Math.max(1, size) };
+      })
+      .sort((a, b) => b.savePerBox - a.savePerBox);
+    for (const c of cands) {
+      const left = routeStockLeft(stock, route, c.pid, c.p.category);
+      const maxQty = Math.floor(Math.min(left, (hauler.cases - cases) * c.size, c.price > 0 ? (cashN - spend) / c.price : 0));
+      if (maxQty > 0) { cart[c.pid] = maxQty; spend += c.price * maxQty; cases += c.size * maxQty; }
+    }
+    return cart;
+  };
+
+  return (
+    <div className="trip-garage">
+      <div className="trip-garage-title">👤 Sai người giao hàng đi thay (giả niêm yết, không mặc cả tay)</div>
+      <div className="trip-garage-row">
+        {couriers.map((w) => (
+          <button key={w.id} className={`trip-garage-btn ${courierId === w.id ? 'trip-garage-sel' : ''}`}
+            onClick={() => setCourierId(w.id)}>
+            {`🛵 ${w.name.slice(0, 12)} · ${w.skill}★`}
+            <span className="trip-garage-sub">{w.skill >= 4 ? 'tự mặc cả −6%' : 'chưa mặc cả được'}</span>
+          </button>
+        ))}
+      </div>
+      {!hasCargo && <span className="trip-garage-sub">Cần xe chở hàng (ba gác/xe tải) để sai người đi.</span>}
+      <div className="trip-ov-actions">
+        <button className="mini-btn primary" disabled={disabled}
+          onClick={() => {
+            const c = buildCart();
+            if (Object.keys(c).length) startTrip(route.id, courierId as number, cashN, c);
+          }}>
+          Giao cho người (giỏ tự động)
+        </button>
       </div>
     </div>
   );

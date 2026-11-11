@@ -12,6 +12,7 @@ import { routeById, roundTripMinutes, routeBuyPrice, routeDiscountFor, routeGood
 import { casesFor, productById, type Category, type Product } from './products';
 import { WEEK_DAYS } from './bizWeeks';
 import { relTier } from './supplierRel';
+import type { RoadEvent } from './roadEvents';
 import type { Stock } from '../core/stock';
 import { copyStock, putStock } from '../core/stock';
 import { shelfLife } from './freshness';
@@ -141,6 +142,28 @@ export const TRIP_DEBT_PCT = 0.20;
 
 /** Khoản nợ mối ruột đã QUÁ HẠN chưa (trả trong TRIP_DEBT_DUE_DAYS ngày, SPEC §5.7). */
 export const debtOverdue = (d: { dueDay: number }, day: number): boolean => day > d.dueDay;
+
+// ─────────────── L8: sai người giao hàng đi thay (SPEC-CHIEU-RONG §5.8) ───────────────
+
+/** Người giao hàng từ 4★ được 1 lượt mặc cả TỰ ĐỘNG khi đi thay: lấy nửa mức tối đa (6%). */
+export const COURIER_AUTO_HAGGLE = 0.06;
+export const courierAutoHaggle = (skill: number): number => (skill >= 4 ? COURIER_AUTO_HAGGLE : 0);
+
+/** Người giao hàng tự chọn phương án mặc định của chuyện dọc đường (SPEC §5.8): "phương án chậm, an toàn" —
+ *  ưu tiên phương án chỉ tốn thời gian (không tiền/phí/ướt); không có thì chọn chậm nhất. Trả index option. */
+export function courierSafeOption(evt: RoadEvent | undefined): number {
+  if (!evt || evt.options.length === 0) return -1;
+  let pure = -1;
+  for (let i = 0; i < evt.options.length; i++) {
+    const o = evt.options[i];
+    if (o.cost || o.friend || o.sell || o.wet) continue;
+    if (pure < 0 || o.minutes > evt.options[pure].minutes) pure = i;
+  }
+  if (pure >= 0) return pure;
+  let slow = 0;
+  for (let i = 1; i < evt.options.length; i++) if (evt.options[i].minutes > evt.options[slow].minutes) slow = i;
+  return slow;
+}
 
 /** Khoá trữ trong `routeStock.left` cho một món — hàng riêng của tuyến theo productId, còn lại theo nhóm ngành. */
 export const routeStockKey = (route: RouteDef, productId: string, category: Category): string =>

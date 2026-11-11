@@ -5,6 +5,7 @@ import {
   beginTrip, cartBuyCost, cartBuyCostDiscounted, tripArrived, tripLoadStock, tripLotLife, tripProgress, tripRemaining, tripRoadHours,
   routeStockFresh, routeStockKey, routeStockLeft, routeStockResolve, routeStockSpend, weekOfDay, checkCart,
   cartCases, cartSavings, routeRelTier, routeCapBonus, debtOverdue, TRIP_DEBT_DUE_DAYS, TRIP_DEBT_PCT,
+  courierAutoHaggle, courierSafeOption,
 } from '../data/trip';
 import { haggleFloor, haggleOffer, haggleDiscount, HAGGLE_MAX_ROUNDS } from '../data/haggle';
 import { roadEventDraw, ROAD_EVENTS, type RoadCtx } from '../data/roadEvents';
@@ -118,7 +119,7 @@ describe('startTrip — kiểm tra đầu vào (L2)', () => {
   it('tuyến lạ / bằng nhân viên / tiền ≤ 0: chặn với lý do', () => {
     for (const [routeId, by, cash, expectMsg] of [
       ['khong_co', 'self', 200000, 'tuyến'],
-      ['cho_huyen', 5, 200000, 'thuê'],
+      ['cho_huyen', 5, 200000, 'giao hàng'],
       ['cho_huyen', 'self', 0, 'tiền'],
     ] as const) {
       const toasts = prep(50);
@@ -633,5 +634,84 @@ describe('L7 — mối ruột tại nguồn (SPEC §5.7)', () => {
     const s = useGame.getState();
     expect(s.biz.routeDebt).toBeUndefined();
     expect(s.biz.routeGrudge?.routeId).toBe('cho_trung');
+  });
+});
+
+describe('L8 — sai người giao hàng đi thay (SPEC §5.8)', () => {
+  const tn = routeById('tay_nguyen')!;
+  const courier = { id: 901, name: 'Bang', role: 'courier' as const, skill: 5, wage: 25000, shift: 'morning' as const };
+  const putCourier = () => useGame.setState({ staff: [courier] });
+
+  it('courierAutoHaggle: từ 4★ giảm nửa mức tối đa (6%), dưới 4★ không', () => {
+    expect(courierAutoHaggle(3)).toBe(0);
+    expect(courierAutoHaggle(4)).toBe(0.06);
+    expect(courierAutoHaggle(5)).toBe(0.06);
+  });
+
+  it('courierSafeOption: ưu tiên phương án thuần chậm nhất (an toàn); không có thì chậm nhất', () => {
+    const e = ROAD_EVENTS.find((x) => x.options.some((o) => !o.cost && !o.wet && !o.friend && !o.sell))!;
+    const i = courierSafeOption(e);
+    const o = e.options[i];
+    // phương án được chọn phải là phương án thuần chậm (chỉ tốn thời gian) và là chậm nhất trong loại đó
+    expect(o.cost || o.wet || o.friend || o.sell).toBeFalsy();
+    for (const op of e.options) if (!(op.cost || op.wet || op.friend || op.sell)) expect(o.minutes).toBeGreaterThanOrEqual(op.minutes);
+  });
+
+  it('slice: sai người giao đi — lập sẵn giỏ, không có xe chở hàng thì chặn', () => {
+    const toasts = prep(54); putCourier();
+    useGame.setState({ money: 50_000_000 });
+    // chưa có xe chở hàng (biểu hauler = moto/thiếu) → chặn
+    useGame.getState().startTrip('tay_nguyen', 901, 200_000, { rg_kho_bo: 2 });
+    expect(useGame.getState().biz.trip).toBeUndefined();
+    expect(toasts.some((t) => t.includes('xe chở hàng'))).toBe(true);
+  });
+
+  it('slice: có xe ba gác + courier 5★ — gửi đi đúng: by là id, mặc cả tự động 6%, chủ Ở LẠI tiệm', () => {
+    const toasts = prep(54); putCourier();
+    useGame.setState({ money: 50_000_000, biz: { ...useGame.getState().biz, hauler: 'ba_gac' } });
+    useGame.getState().startTrip('tay_nguyen', 901, 200_000, { rg_kho_bo: 2, rg_mac_khen: 1 });
+    const s = useGame.getState();
+    expect(s.biz.trip).toBeDefined();
+    expect(s.biz.trip!.by).toBe(901);
+    expect(s.biz.trip!.haggle?.best).toBe(0.06); // skill 5 → tự mặc cả
+    expect(s.location).toBe('Nhà của bạn');        // chủ không vắng
+    expect(s.biz.trip!.cart['rg_kho_bo']).toBe(2);
+    expect(toasts.some((t) => t.includes('Bang'))).toBe(true);
+  });
+
+  it('slice: courier không sửa giỏ / chọn chuyện giữa chừng', () => {
+    prep(54); putCourier();
+    useGame.setState({ money: 50_000_000, biz: { ...useGame.getState().biz, hauler: 'ba_gac' } });
+    useGame.getState().startTrip('tay_nguyen', 901, 200_000, { rg_kho_bo: 1 });
+    const evtId = useGame.getState().biz.trip!.flags[0];
+    const cart0 = { ...useGame.getState().biz.trip!.cart };
+    useGame.getState().tripSetCart({ rg_kho_bo: 5 });
+    expect(useGame.getState().biz.trip!.cart).toEqual(cart0); // không đổi
+    useGame.getState().tripChoose(evtId, 0);
+    expect(useGame.getState().biz.trip!.cart).toEqual(cart0); // không đổi
+  });
+
+  it('slice: người giao về — hàng vào kho, trừ tiền (có chiết khấu tự động), chủ vẫn ở nhà', () => {
+    prep(54); putCourier();
+    useGame.setState({ money: 50_000_000, biz: { ...useGame.getState().biz, hauler: 'ba_gac' } });
+    useGame.getState().startTrip('tay_nguyen', 901, 200_000, { rg_kho_bo: 2 }); // 2×40300=80.600
+    const t = useGame.getState().biz.trip!;
+    const money0 = useGame.getState().money;
+    useGame.setState({ minutes: t.returnAt });
+    useGame.getState().tripArrive();
+    const s = useGame.getState();
+    expect(s.biz.trip).toBeUndefined();
+    expect(s.storage.rg_kho_bo).toBe(2); // hàng vào kho
+    expect(s.location).toBe('Nhà của bạn'); // chủ không về "từ tuyến" (vẫn ở nhà)
+    // trả tiền theo giá niêm yết trừ mặc cả tự động 6%: 80.600 × 0.94 = 75.764
+    expect(s.money).toBe(money0 - Math.round(80_600 * (1 - 0.06)));
+  });
+
+  it('slice: chưa lập sẵn giỏ (rỗng) thì không gửi người giao', () => {
+    const toasts = prep(54); putCourier();
+    useGame.setState({ money: 50_000_000, biz: { ...useGame.getState().biz, hauler: 'ba_gac' } });
+    useGame.getState().startTrip('tay_nguyen', 901, 200_000, {});
+    expect(useGame.getState().biz.trip).toBeUndefined();
+    expect(toasts.some((t) => t.includes('giỏ hàng'))).toBe(true);
   });
 });

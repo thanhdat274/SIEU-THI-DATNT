@@ -1,5 +1,5 @@
 import { haulerById, routeById, roundTripMinutes, routeUnlocked, haulerUnlocked, tripTravelCost, COOL_BOX, type HaulerId } from '../../data/routes';
-import { beginTrip, tripLoadStock, routeStockResolve, routeStockSpend, checkCart, cartBuyCostDiscounted, cartCases, weekOfDay, routeRelTier, debtOverdue, TRIP_DEBT_DUE_DAYS, TRIP_DEBT_PCT, type TripState } from '../../data/trip';
+import { beginTrip, tripLoadStock, routeStockResolve, routeStockSpend, checkCart, cartBuyCostDiscounted, cartCases, weekOfDay, routeRelTier, debtOverdue, courierAutoHaggle, courierSafeOption, TRIP_DEBT_DUE_DAYS, TRIP_DEBT_PCT, type TripState } from '../../data/trip';
 import { haggleFloor, haggleOffer, haggleDiscount, HAGGLE_MAX_ROUNDS, HAGGLE_GRUDGE_WEEKS } from '../../data/haggle';
 import { roadEventDraw, type RoadCtx } from '../../data/roadEvents';
 import { addRel, relTier } from '../../data/supplierRel';
@@ -71,19 +71,69 @@ function routeTier(s: GameState, routeId: string): number {
  *   nhà. Gọi từ tick khi `minutes ≥ returnAt` hoặc endDay nếu ngủ trước khi về (§5.10).
  */
 export const createTripSlice = (set: SetState, get: GetState): Pick<GameState, 'startTrip' | 'tripSetCart' | 'tripHaggle' | 'tripAcceptPrice' | 'tripChoose' | 'buyHauler' | 'buyCoolBox' | 'tripArrive' | 'tripRepayDebt'> => ({
-  startTrip: (routeId: string, by: 'self' | number, cash: number) => {
+  startTrip: (routeId: string, by: 'self' | number, cash: number, presetCart?: Record<string, number>) => {
     const s = get();
     const route = routeById(routeId);
     if (!route) return s.notify('🚚 Không tìm thấy tuyến này.');
     if (!routeUnlocked(route, s.level)) return s.notify(`🚚 Tuyến "${route.name}" mở từ cấp ${route.unlock}.`);
-    const hauler = haulerById(s.biz.hauler ?? 'moto');
-    if (!hauler) return;
-    if (!haulerUnlocked(hauler, s.level)) return s.notify(`🚚 Xe này mở từ cấp ${hauler.unlock}.`);
     if (s.biz.trip) return s.notify('🚚 Đang có một chuyến đi tỉnh — xong chuyến này mới đi tiếp được.');
-    if (by !== 'self') return s.notify('🚚 Lát sau mới thuê người giao hàng đi thay được (L8).');
     const carry = Math.floor(cash);
     if (carry <= 0) return s.notify('🚚 Mang theo ít nhất một khoản tiền để mua hàng.');
     if (carry > MAX_CARRY_K) return s.notify('🚚 Số tiền mang theo quả là quá khổ.');
+
+    // L8 (§5.8) — sai người giao hàng đi thay: không sửa giỏ/mặc cả giữa chừng, không chuyện do người chơi
+    // chọn; cần nhân viên courier + xe chở hàng (ba gác/xe tải); lập sẵn giỏ hàng kèm trần tiền.
+    if (by !== 'self') {
+      const courier = s.staff.find((w) => w.id === by && w.role === 'courier');
+      if (!courier) return s.notify('🚚 Chọn một người giao hàng (vai 🛵) để sai đi.');
+      const h = haulerById(s.biz.hauler ?? 'moto');
+      if (!h || !haulerUnlocked(h, s.level)) return;
+      const hasCargoCar = s.biz.hauler === 'ba_gac' || s.biz.hauler === 'xe_tai';
+      if (!hasCargoCar) return s.notify('🚚 Sai người đi cần xe chở hàng (ba gác / xe tải) — mua ở mục sắm xe.');
+      if (!presetCart || Object.keys(presetCart).length === 0) return s.notify('🚚 Lập sẵn giỏ hàng để người giao chở về.');
+      const clean: Record<string, number> = {};
+      for (const [pid, q] of Object.entries(presetCart)) {
+        const qq = Math.floor(q); if (qq <= 0 || !productById(pid)) continue;
+        clean[pid] = (clean[pid] ?? 0) + qq;
+      }
+      if (Object.keys(clean).length === 0) return s.notify('🚚 Giỏ hàng lập sẵn rỗng.');
+      const miles = roundTripMinutes(route, h);
+      if (s.money < tripTravelCost(h, miles)) return s.notify(`🚚 Không đủ tiền vé/xăng (${formatMoney(tripTravelCost(h, miles))}).`);
+      const tier = routeTier(s, route.id);
+      const stock = routeStockResolve(s.biz.routeStock, route, s.day, tier);
+      const check = checkCart({ ...beginTrip(route, h, s.day, Math.floor(s.minutes), by, carry, clean), cart: clean }, route, h, stock);
+      if (!check.ok) return s.notify(`🚚 Giỏ hàng: ${check.reason}.`);
+      // chuyện dọc đường do người giao TỰ chọn phương án an toàn (chậm) trước khi lên đường (§5.8).
+      const ctx = tripCtx(s, beginTrip(route, h, s.day, Math.floor(s.minutes), by, carry, clean), h.cases);
+      let delayMin = 0; const flags: string[] = [];
+      for (const beat of [1, 4] as const) {
+        const evt = roadEventDraw(s.weatherSeed, s.day, route.id, beat, ctx);
+        if (evt) {
+          const i = courierSafeOption(evt);
+          if (i >= 0) delayMin += evt.options[i].minutes;
+          flags.push(evt.id);
+        }
+      }
+      const trip: TripState = beginTrip(route, h, s.day, Math.floor(s.minutes), by, carry, clean);
+      trip.delayMin = delayMin;
+      trip.returnAt += delayMin;
+      trip.flags = flags;
+      const autoBest = courierAutoHaggle(courier.skill);
+      if (autoBest > 0) trip.haggle = { round: 0, best: autoBest, anger: 0 };
+      const stocks = s.biz.routeStock ?? {};
+      set({
+        money: s.money - tripTravelCost(h, miles),
+        location: s.location, // chủ Ở LẠI tiệm (người giao vắng cả buổi, §5.8)
+        biz: { ...s.biz, trip, routeStock: { ...stocks, [route.id]: routeStockResolve(stocks, route, s.day, tier) } },
+      });
+      const d = autoBest > 0 ? `, tự mặc cả −${Math.round(autoBest * 100)}%` : '';
+      s.notify(`🚚 ${courier.name} đi ${route.name} ${h.name} — về ${mm(trip.returnAt)}${d}.`);
+      return;
+    }
+
+    const hauler = haulerById(s.biz.hauler ?? 'moto');
+    if (!hauler) return;
+    if (!haulerUnlocked(hauler, s.level)) return s.notify(`🚚 Xe này mở từ cấp ${hauler.unlock}.`);
     const minutes = roundTripMinutes(route, hauler);
     const travelCost = tripTravelCost(hauler, minutes);
     if (s.money < travelCost) return s.notify(`🚚 Không đủ tiền vé/xăng (${formatMoney(travelCost)}).`);
@@ -105,6 +155,7 @@ export const createTripSlice = (set: SetState, get: GetState): Pick<GameState, '
     const s = get();
     const t = s.biz.trip;
     if (!t) return s.notify('🚚 Không có chuyến đi nào đang diễn ra.');
+    if (t.by !== 'self') return s.notify('🚚 Người giao đang đi — giỏ lập sẵn rồi, không sửa giữa chừng.');
     const route = routeById(t.routeId);
     if (!route) return;
     const hauler = haulerById(t.hauler);
@@ -179,6 +230,7 @@ export const createTripSlice = (set: SetState, get: GetState): Pick<GameState, '
     const s = get();
     const t = s.biz.trip;
     if (!t) return s.notify('🚚 Không có chuyến đi nào đang diễn ra.');
+    if (t.by !== 'self') return s.notify('🚚 Người giao tự chọn đường an toàn rồi.');
     const route = routeById(t.routeId);
     if (!route) return;
     const cases = haulerById(t.hauler)?.cases ?? 0;
@@ -258,14 +310,11 @@ export const createTripSlice = (set: SetState, get: GetState): Pick<GameState, '
     const carried = t.cash;
     const paid = Math.min(goodsCost, carried);
     const owing = Math.max(0, goodsCost - carried);
-    const owes = t.by === 'self' && tier >= 3 && owing > 0;
-    let money = s.money;
+    const owes = tier >= 3 && owing > 0; // tự đi hay người giao đều vẫn là "mối ruột bậc 3+" của tuyến (§5.7)
+    let money = Math.max(0, s.money - paid);
     let routeDebt = s.biz.routeDebt;
-    if (t.by === 'self') {
-      money = Math.max(0, s.money - paid);
-      if (owes) routeDebt = { routeId: route.id, amount: owing + (s.biz.routeDebt?.amount ?? 0), dueDay: s.day + TRIP_DEBT_DUE_DAYS };
-    }
-    const spent = t.by === 'self' ? paid : 0;
+    if (owes) routeDebt = { routeId: route.id, amount: owing + (s.biz.routeDebt?.amount ?? 0), dueDay: s.day + TRIP_DEBT_DUE_DAYS };
+    const spent = paid;
     const rel = s.biz.supplierRel ?? {};
     const relKey = `route:${route.id}`;
     set({
@@ -277,7 +326,7 @@ export const createTripSlice = (set: SetState, get: GetState): Pick<GameState, '
         trip: undefined,
         routeDebt,
         routeStock: { ...stocks, [route.id]: routeStockSpend(st0, route, t.cart) },
-        supplierRel: t.by === 'self' ? { ...rel, [relKey]: addRel(rel[relKey], goodsCost) } : rel,
+        supplierRel: { ...rel, [relKey]: addRel(rel[relKey], goodsCost) },
       },
     });
     const hauler = haulerById(t.hauler);

@@ -613,7 +613,9 @@ export interface GameState {
 
   /** Hệ 5 — Chuyến đi tỉnh (SPEC-CHIEU-RONG §5.10): bắt đầu chuyến (vắng mặt thật, đồng hồ vẫn chạy),
    *  lập giỏ hàng mang về, và xử lý xe về (hàng vào kho) — gọi từ tick/endDay. GUARDED khoá 'trip'. */
-  startTrip: (routeId: string, by: 'self' | number, cash: number) => void;
+  /** `startTrip(routeId, by, cash, presetCart?)`: `by==='self'` tự đi (mặc cả trong chuyến); `by` là id nhân
+   *  viên courier thì SAI NGƯỜI ĐI THAY (§5.8) — phải kèm giỏ hàng lập sẵn `presetCart` (loại mặc cả theo người đó). */
+  startTrip: (routeId: string, by: 'self' | number, cash: number, presetCart?: Record<string, number>) => void;
   tripSetCart: (items: Record<string, number>) => void;
   /** Hệ 5 (L4) — trả giá mặc cả cho cả xe hàng (phần trăm giảm thêm 0..1). TẤT ĐỊNH theo seed. */
   tripHaggle: (offer: number) => void;
