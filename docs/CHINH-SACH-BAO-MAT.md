@@ -54,6 +54,14 @@ Máy chủ ghi nhật ký mỗi yêu cầu API kèm mã định danh người d�
 - Ứng dụng **không** cài các công cụ theo dõi quảng cáo / nhà phân tích bên ngoài (không Google Analytics, không Pixel...).
 - Ứng dụng **không** thu thập dữ liệu nhạy cảm (sức khỏe, tôn giáo, tình dục, dữ liệu sinh trắc học...).
 
+### 2.6. Số liệu ẩn danh (telemetry — TUỲ CHỌN, mặc định tắt)
+
+- Người chơi có thể chọn đồng ý gửi **số liệu ẩn danh** để giúp cân bằng game (scope `telemetry_anon`). Lựa chọn này **mặc định tắt** và không bắt buộc: không đồng ý thì không mất chức năng nào.
+- Mỗi ngày game gửi **một bản tóm tắt** gồm: cấp, số khách, số khách bực/khách bỏ về, giây thật đã chơi, dải tiền, hệ đã dùng, độ phân giải đồ họa, loại thiết bị, và một id ngẫu nhiên sinh trên máy (`install`).
+- Bản tóm tắt này **không** chứa tên, email, số điện thoại, mã tài khoản (uid), vị trí, hay bất kỳ nhận dạng cá nhân nào. `install` là định danh giả danh, tách rời hoàn toàn khỏi tài khoản (không bao giờ ghép với uid).
+- Người chơi xem đúng nội dung gửi đi qua mục "Xem gửi những gì", bật/tắt hoặc xuất bản nhật ký chơi thử (30 bản gần nhất) bất cứ lúc nào trong menu „⋯".
+- Người chưa đăng nhập: lựa chọn lưu trên máy (`localStorage`). Người đã đăng nhập: lựa chọn được ghi thêm vào bản đồng ý. Bản ghi đã gửi được tự động xoá sau 180 ngày.
+
 ## 3. Mục đích xử lý
 
 1. Cung cấp và đồng bộ tiến trình trò chơi (tài khoản + cloud).

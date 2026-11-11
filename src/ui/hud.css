@@ -534,6 +534,23 @@
   white-space: nowrap;
 }
 #ui .hud-help kbd, #ui .hud-help span { white-space: nowrap; }
+/* SPEC-TOI-UU §T1 (L2): bản ghi mẫu "Xem gửi những gì" — giữ gọn, cuộn khi dài. */
+#ui .hud-more-tele-sample {
+  grid-column: 1 / -1;
+  margin: 2px 2px 8px;
+  padding: 8px;
+  font-size: 10px;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 180px;
+  overflow: auto;
+  background: var(--hud-panel);
+  border: 1px dashed var(--hud-border);
+  border-radius: 6px;
+  color: var(--hud-muted);
+}
+#ui .hud-dialogue .hud-more-tele-sample { max-height: 140px; }
 #ui .hud-badge.hud-dot { top: 2px; right: 10px; width: 9px; height: 9px; padding: 0; background: #e74c3c; }
 #ui .hud-help { min-width: 260px; display: grid; gap: 6px; padding: 10px 12px; font-size: 13px; }
 #ui .hud-help div { display: flex; justify-content: space-between; gap: 12px; }

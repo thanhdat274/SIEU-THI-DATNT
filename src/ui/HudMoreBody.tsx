@@ -4,6 +4,7 @@ import { GFX_CYCLE, GFX_LABEL, gfxStatus, setGfxChoice } from '../render/graphic
 import { exportReportsJson } from '../core/dayReport';
 import { ToolButton, type ToolDef } from './HudToolButton';
 import { groupTools } from './groupTools';
+import { TELEMETRY_SCOPE, telemetryOptedIn, setTelemetryOptIn, telemetrySample } from '../data/telemetryConsent';
 
 /** Tải file JSON 30 bản ghi ngày ẩn danh (SPEC-TOI-UU §T1) — người chơi thử gửi qua tin nhắn. */
 function downloadPlayLog() {
@@ -26,6 +27,7 @@ const TOUCH = typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)
 export function MoreMenuBody({ tools, level, onHelp, keys, setKeys, setOpen }: {
   tools: ToolDef[]; level: number; onHelp: () => void; keys: boolean; setKeys: (v: boolean) => void; setOpen: (v: boolean) => void;
 }) {
+  const [teleOpen, setTeleOpen] = useState(false);
   return (
     <>
       {keys ? (
@@ -45,10 +47,24 @@ export function MoreMenuBody({ tools, level, onHelp, keys, setKeys, setOpen }: {
           <ToolButton tool={{ icon: '📖', label: 'Hướng dẫn', on: onHelp }} level={level} onPicked={() => setOpen(false)} />
           {/* SPEC-TOI-UU §T1 (L1): xuất 30 bản ghi ngày ẩn danh cục bộ (không gửi đi đâu). */}
           <ToolButton tool={{ icon: '📤', label: 'Xuất nhật ký chơi thử', on: downloadPlayLog }} level={level} onPicked={() => setOpen(false)} />
+          {/* SPEC-TOI-UU §T1 (L2): bật/tắt + xem "gửi những gì" (mặc định TẮT). */}
+          <ToolButton tool={{ icon: '📊', label: telemetryOptedIn() ? 'Số liệu ẩn danh: BẬT' : 'Số liệu ẩn danh: TẮT', on: () => setTeleOptIn() }} level={level} />
+          <ToolButton tool={{ icon: '👁️', label: 'Xem gửi những gì', on: () => setTeleOpen(!teleOpen) }} level={level} />
+          {teleOpen && (
+            <pre className="hud-more-tele-sample">
+              Scope {TELEMETRY_SCOPE} — bản ghi mẫu (ẩn danh), không tên/uid/vị trí:
+              {telemetrySample()}
+            </pre>
+          )}
         </>
       )}
     </>
   );
+}
+
+/** Đổi lựa chọn "Số liệu ẩn danh" (mặc định tắt, SPEC-TOI-UU §T1 L2). */
+function setTeleOptIn() {
+  setTelemetryOptIn(!telemetryOptedIn());
 }
 
 /**

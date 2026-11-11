@@ -67,6 +67,7 @@ const Tutorial = lazy(() => import('./Tutorial').then((m) => ({ default: m.Tutor
 const VendorAlert = lazy(() => import('./VendorAlert').then((m) => ({ default: m.VendorAlert })));
 const CounterAskAlert = lazy(() => import('./HudAlerts').then((m) => ({ default: m.CounterAskAlert }))); // GĐ636
 const ChapterDialogue = lazy(() => import('./ChapterDialogue').then((m) => ({ default: m.ChapterDialogue })));
+const TelemetryPrompt = lazy(() => import('./TelemetryPrompt').then((m) => ({ default: m.TelemetryPrompt })));
 
 /** Màn hình cảm ứng: không có phím, thay chữ phím [X] bằng biểu tượng chạm. */
 const TOUCH = typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches;
@@ -495,6 +496,7 @@ Online: ${coop.peers.map((p) => (p.id === coop.selfId ? 'bạn' : p.name)).join(
         ]} />
       )}
       <Suspense fallback={null}><ChapterDialogue /></Suspense>
+      <TelemetryPrompt />
 
       {/* Dưới cùng: dải kế hoạch hôm nay (hoặc gợi ý giờ vắng), gợi ý tương tác, rồi thanh công cụ */}
       <div className="hud-bottom">
