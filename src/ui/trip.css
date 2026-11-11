@@ -125,3 +125,9 @@
   padding: 2px 2px 0;
 }
 .trip-shop-save { color: #1e8449; font-weight: 700; }
+
+/* Hệ 5-L4 — bàn mặc cả với người bán (nhịp 3). */
+.trip-haggle { display: flex; flex-direction: column; gap: 6px; }
+.trip-haggle-face { font-size: 11px; color: #6b4a26; background: #fdf6e3; border-radius: 8px; padding: 5px 8px; }
+.trip-haggle-row { display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: #5d3a1a; }
+.trip-haggle-range { width: 100%; accent-color: #1e8449; }

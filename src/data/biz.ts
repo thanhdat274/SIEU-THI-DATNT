@@ -182,6 +182,9 @@ export interface BizState {
   trip?: TripState;
   /** Hệ 5 (L3) — lượng hàng còn tại nguồn từng tuyến theo TUẦN (R7 cổng chống farm, SPEC §5.5). THIẾU = chưa có. */
   routeStock?: Record<string, RouteStock>;
+  /** Hệ 5 (L4) — người bán nổi phật ý vì bị ép quá tay: sàn mặc cả cao hơn 3% tới hết tuần này (SPEC §5.6).
+   *  THIẾU = chưa ai phật ý. */
+  routeGrudge?: { routeId: string; untilWeek: number };
   /** Quán nước đầu ngõ (GĐ7, bán đồ uống rút từ kho); thiếu ở save cũ — nạp bản cũ tự bù mặc định. */
   quanNuoc: QuanNuocState;
   /** Tiệm xôi (GĐ410): xưởng nấu xôi số lượng lớn đổ vào kho chung mỗi đêm. */

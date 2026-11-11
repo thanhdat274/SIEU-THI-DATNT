@@ -84,6 +84,12 @@ export function cartBuyCost(t: TripState, route: RouteDef): number {
   return sum;
 }
 
+/** Chi phí mua cả xe hàng SAU KHI mặc cả (L4): giá niêm yết tuyến nhân (1 – giảm thêm đã chốt). */
+export function cartBuyCostDiscounted(t: TripState, route: RouteDef): number {
+  const d = Math.max(0, Math.min(1, t.haggle?.best ?? 0));
+  return Math.round(cartBuyCost(t, route) * (1 - d));
+}
+
 /** Hạn (ngày) còn lại khi nhập kho — không thùng đá thì tươi/thịt mất hạn theo số giờ trên đường (§5.4). */
 export function tripLotLife(p: Product, t: TripState, coolBox: boolean): number {
   const life = shelfLife(p.id);

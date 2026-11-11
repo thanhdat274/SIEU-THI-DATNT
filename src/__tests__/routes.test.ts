@@ -40,11 +40,13 @@ describe('ROUTES (tuyến)', () => {
     }
   });
 
-  it('L1 có đúng 2 tuyến: Chợ huyện (theo ngành) + Miệt vườn (theo đặc sản Nam)', () => {
+  it('L1 có đúng 2 tuyến: Chợ huyện (theo ngành + hàng thô cụ thể) + Miệt vườn (theo đặc sản Nam)', () => {
     expect(ROUTES.map((r) => r.id)).toEqual(['cho_huyen', 'miet_vuon']);
     const j = routeById('cho_huyen')!;
-    expect(j.categoryDeals?.length).toBeGreaterThan(0);
-    expect(j.goods).toHaveLength(0);
+    expect(j.categoryDeals?.length).toBeGreaterThan(0); // ưu đãi theo ngành (20–25%)
+    // L3 — Chợ huyện cũng bán cụ thể nguyên liệu thô số lượng lớn (tôm, cá, măng tươi, §5.5) để chọn hàng chở về.
+    expect(j.goods.length).toBeGreaterThan(0);
+    expect(new Set(j.goods.map((g) => g.productId)).size).toBe(j.goods.length);
     const v = routeById('miet_vuon')!;
     expect(v.region).toBe('Nam');
     expect(v.goods).toHaveLength(5);

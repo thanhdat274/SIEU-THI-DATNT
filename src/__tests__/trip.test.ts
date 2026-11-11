@@ -2,10 +2,11 @@ import { describe, expect, it, beforeEach } from 'vitest';
 import { newGameData, useGame } from '../core/store';
 import { haulerById, routeById, routeBuyPrice, routeDiscountFor } from '../data/routes';
 import {
-  beginTrip, cartBuyCost, tripArrived, tripLoadStock, tripLotLife, tripProgress, tripRemaining, tripRoadHours,
+  beginTrip, cartBuyCost, cartBuyCostDiscounted, tripArrived, tripLoadStock, tripLotLife, tripProgress, tripRemaining, tripRoadHours,
   routeStockFresh, routeStockKey, routeStockLeft, routeStockResolve, routeStockSpend, weekOfDay, checkCart,
   cartCases, cartSavings,
 } from '../data/trip';
+import { haggleFloor, haggleOffer, haggleDiscount, HAGGLE_MAX_ROUNDS } from '../data/haggle';
 import { productById, caseSize } from '../data/products';
 
 /**
@@ -334,5 +335,96 @@ describe('L3 slice — weeklyCap vào chọn hàng & xe về trừ nguồn', () 
     const s = useGame.getState();
     expect(s.storage.rau).toBe(10);
     expect(s.biz.routeStock?.['cho_huyen']?.left['rau']).toBe(110); // 120−10
+  });
+});
+
+describe('L4 slice — mặc cả (Nhịp 3)', () => {
+  it('sàn mặc cả TẤT ĐỊNH: cùng seed + day + routeId → cùng floor (đổi seed khác floor)', () => {
+    const r = routeById('cho_huyen')!;
+    const f1 = haggleFloor(r, 12345, 10, 0, 1);
+    const f2 = haggleFloor(r, 12345, 10, 0, 1);
+    const f3 = haggleFloor(r, 99999, 10, 0, 1);
+    expect(f2).toBe(f1);
+    expect(f3).not.toBe(f1);
+    expect(f1).toBeGreaterThanOrEqual(0.02);
+    expect(f1).toBeLessThanOrEqual(0.12);
+  });
+
+  it('mối quen tại nguồn hạ sàn 1%/bậc (mặc cả sâu hơn)', () => {
+    const r = routeById('cho_huyen')!;
+    const floor0 = haggleFloor(r, 12345, 10, 0, 1);
+    const floor3 = haggleFloor(r, 12345, 10, 3, 1);
+    expect(floor3 - floor0).toBeCloseTo(0.03, 8);
+  });
+
+  it('phật ý: sàn cao hơn 3%', () => {
+    const r = routeById('cho_huyen')!;
+    const normal = haggleFloor(r, 12345, 10, 0, 1);
+    const angry = haggleFloor(r, 12345, 10, 0, 1, 0, true);
+    expect(angry - normal).toBeCloseTo(0.03, 8);
+  });
+
+  it('haggleOffer: trả ≥ sàn thì gật và chốt; trả < sàn thì lắc, mất lượt', () => {
+    const r = routeById('cho_huyen')!;
+    const floor = haggleFloor(r, 12345, 10, 0, 1); // ~ [0.02, 0.12]
+    const accept = haggleOffer(undefined, Math.max(0, floor - 0.001), floor);
+    expect(accept.accepted).toBe(true);
+    const reject = haggleOffer(undefined, 0.13 > floor ? 0.13 : floor + 0.05, floor);
+    expect(reject.accepted).toBe(false);
+    expect(reject.round).toBe(1);
+  });
+
+  it('ép quá tay 3 lần liền → grudge (phật ý)', () => {
+    const r = routeById('cho_huyen')!;
+    const floor = 0.05;
+    expect(haggleOffer(undefined, 0.05 + 0.09, floor).grudge).toBe(false); // 1 lần
+    const rep1 = haggleOffer(undefined, 0.05 + 0.09, floor);
+    const rep2 = haggleOffer({ round: rep1.round, best: 0, anger: rep1.anger }, 0.05 + 0.09, floor);
+    const rep3 = haggleOffer({ round: rep2.round, best: 0, anger: rep2.anger }, 0.05 + 0.09, floor);
+    expect(rep3.grudge).toBe(true);
+    expect(rep3.anger).toBe(0); // reset sau khi phật ý
+  });
+
+  it('tripHaggle: chốt giá đúng offer → xe về trả tiền theo giá giảm + ghi mối ruột', () => {
+    prep(50, 420);
+    useGame.setState({ money: 2_000_000 });
+    useGame.getState().startTrip('cho_huyen', 'self', 500000);
+    useGame.getState().tripSetCart({ rau: 10 });
+    const money0 = useGame.getState().money;
+    // Trả 1% → luôn ≤ sàn (sàn ≥ 2%) → gật, chốt giảm 1%.
+    useGame.getState().tripHaggle(0.01);
+    const t = useGame.getState().biz.trip!;
+    expect(haggleDiscount(t.haggle)).toBe(0.01);
+    useGame.setState({ minutes: 420 + 180 });
+    useGame.getState().tripArrive();
+    const s = useGame.getState();
+    const listed = cartBuyCost(t, routeById('cho_huyen')!);
+    const disc = haggleDiscount(t.haggle);
+    expect(s.money).toBe(money0 - Math.round(listed * (1 - disc))); // đã trả tiền hàng
+    expect(s.storage.rau).toBe(10);
+    expect(s.biz.supplierRel?.['route:cho_huyen']?.orders).toBe(1); // mối ruột ghi doanh mua
+  });
+
+  it('tripHaggle: ép quá tay đủ lần → routeGrudge 2 tuần', () => {
+    prep(50, 420);
+    useGame.setState({ money: 2_000_000, weatherSeed: 42, day: 1 }); // sàn rất thấp (0.024) → offer 0.16 ép quá tay
+    useGame.getState().startTrip('cho_huyen', 'self', 500000);
+    useGame.getState().tripSetCart({ rau: 10 });
+    // Trả mức cực cao liên tục (đều dưới sàn >8%) → phật ý ngay lượt 3
+    for (let i = 0; i < 3; i++) useGame.getState().tripHaggle(0.16);
+    const g = useGame.getState().biz.routeGrudge;
+    expect(g?.routeId).toBe('cho_huyen');
+    const w = weekOfDay(useGame.getState().day);
+    expect(g!.untilWeek).toBe(w + 1); // hoạt động tuần này + tuần sau = 2 tuần phạt
+  });
+
+  it('tripAcceptPrice: bỏ qua mặc cả, không phạt — về mua giá niêm yết', () => {
+    prep(50, 420);
+    useGame.setState({ money: 2_000_000 });
+    useGame.getState().startTrip('cho_huyen', 'self', 500000);
+    useGame.getState().tripSetCart({ rau: 10 });
+    useGame.getState().tripAcceptPrice();
+    expect(haggleDiscount(useGame.getState().biz.trip!.haggle)).toBe(0);
+    expect(useGame.getState().biz.trip!.haggle!.round).toBe(0);
   });
 });

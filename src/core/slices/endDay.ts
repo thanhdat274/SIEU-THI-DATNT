@@ -32,7 +32,8 @@ import { VENUE_TREND_DAYS, type VenueDay } from '../../data/venueTrend';
 import { RISK_TREND_DAYS, emptyRiskToday } from '../../data/risk';
 import { type GameState, type ContractState, type DayRecord, type SetState, type GetState, DAY_START, HISTORY_DAYS, wagesDue, emptyStats, daySalesProfit } from '../gameTypes';
 import { putStock, spoilOvernight, takeStock, type Stock } from '../stock';
-import { tripLoadStock, routeStockResolve, routeStockSpend } from '../../data/trip';
+import { tripLoadStock, routeStockResolve, routeStockSpend, cartBuyCostDiscounted } from '../../data/trip';
+import { addRel } from '../../data/supplierRel';
 import { routeById } from '../../data/routes';
 import { isCookStation } from '../../data/furniture';
 import type { CookingStation } from '../../data/recipes';
@@ -624,22 +625,30 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
   // chuyến kết thúc, chủ về nhà. Bổ sung vào accumulator `k` (chảy vào set cuối) nên không đổi golden
   // (biz.trip trống ở sim — sim không bao giờ gọi startTrip).
   if (biz.biz.trip) {
-    const wasSelf = biz.biz.trip.by === 'self';
-    const tl = tripLoadStock(biz.biz.trip, k, !!biz.biz.coolBox);
+    const trip0 = biz.biz.trip;
+    const wasSelf = trip0.by === 'self';
+    const tl = tripLoadStock(trip0, k, !!biz.biz.coolBox);
     k.storage = tl.storage;
     k.storageLots = tl.storageLots;
     // Hệ 5-L3 — hàng đã lấy khỏi nguồn: trừ lượng tuần (R7). Bổ sung vào accumulator biz.biz.
-    const route = routeById(biz.biz.trip.routeId);
+    const route = routeById(trip0.routeId);
     const stocks = biz.biz.routeStock ?? {};
+    // Hệ 5-L4 — trả tiền mua hàng theo giá tuyến (trừ giảm thêm mặc cả) + ghi doanh mua mối ruột tại nguồn.
+    const goodsCost = route ? cartBuyCostDiscounted(trip0, route) : 0;
+    const spent = wasSelf ? Math.min(goodsCost, Math.max(0, moneyAfter)) : 0;
+    const rel = biz.biz.supplierRel ?? {};
+    const relKey = `route:${route?.id ?? ''}`;
+    if (wasSelf && route) biz.biz = { ...biz.biz, supplierRel: { ...rel, [relKey]: addRel(rel[relKey], goodsCost) } };
+    moneyAfter -= spent;
     biz.biz = route
       ? {
           ...biz.biz,
-          routeStock: { ...stocks, [route.id]: routeStockSpend(routeStockResolve(stocks, route, s.day), route, biz.biz.trip.cart) },
+          routeStock: { ...stocks, [route.id]: routeStockSpend(routeStockResolve(stocks, route, s.day), route, trip0.cart) },
           trip: undefined,
         }
       : { ...biz.biz, trip: undefined };
     if (wasSelf) set({ location: 'Nhà của bạn' });
-    say('🚚 Xe đi tỉnh về muộn trong đêm — hàng đã vào kho, chuyến kết thúc.');
+    say(`🚚 Xe đi tỉnh về muộn trong đêm — hàng đã vào kho, trả ${formatMoney(spent)}. Chuyến kết thúc.`);
   }
   set({
     candidates: generateCandidates(s.level, nextId),

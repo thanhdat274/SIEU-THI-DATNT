@@ -83,5 +83,7 @@ export const GUARDED: Record<string, (args: unknown[]) => string> = {
   // Hệ 5 — Chuyến đi tỉnh (SPEC-CHIEU-RONG §5.10): một chuyến tại một thời điểm → khoá chung 'trip'.
   startTrip: () => 'trip',
   tripSetCart: () => 'trip',
+  tripHaggle: () => 'trip',
+  tripAcceptPrice: () => 'trip',
   tripArrive: () => 'trip',
 };

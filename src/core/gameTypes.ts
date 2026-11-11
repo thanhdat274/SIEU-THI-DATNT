@@ -615,6 +615,10 @@ export interface GameState {
    *  lập giỏ hàng mang về, và xử lý xe về (hàng vào kho) — gọi từ tick/endDay. GUARDED khoá 'trip'. */
   startTrip: (routeId: string, by: 'self' | number, cash: number) => void;
   tripSetCart: (items: Record<string, number>) => void;
+  /** Hệ 5 (L4) — trả giá mặc cả cho cả xe hàng (phần trăm giảm thêm 0..1). TẤT ĐỊNH theo seed. */
+  tripHaggle: (offer: number) => void;
+  /** Hệ 5 (L4) — bỏ qua mặc cả ("Thôi, giá đó được rồi"): mua giá niêm yết, không phạt. */
+  tripAcceptPrice: () => void;
   tripArrive: () => void;
 
   /** Hệ 2 — Tình làng (GĐ Hệ2-L2, SPEC §2.4): lan thân thiết từ sự kiện lớn sang người có cạnh

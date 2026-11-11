@@ -2,8 +2,10 @@ import { useMemo, useState } from 'react';
 import { useClock, useGame } from '../core/store';
 import { ROUTES, haulerById, routeById, routeUnlocked, routeBuyPrice, routeDiscountFor } from '../data/routes';
 import {
-  routeStockResolve, routeStockLeft, cartCases, cartBuyCost, cartSavings, tripProgress, tripRemaining, type TripState,
+  routeStockResolve, routeStockLeft, cartCases, cartBuyCost, cartBuyCostDiscounted, cartSavings, tripProgress, tripRemaining, weekOfDay, type TripState,
 } from '../data/trip';
+import { haggleFloor, haggleDiscount, HAGGLE_MAX_ROUNDS, HAGGLE_MAX_OFFER } from '../data/haggle';
+import { relTier } from '../data/supplierRel';
 import { productById, formatMoney, caseSize, casesFor } from '../data/products';
 import './trip.css';
 
@@ -51,6 +53,7 @@ export function TripOverlay() {
           </p>
         </div>
         <CartEditor key={trip.routeId} trip={trip} />
+        <HaggleEditor trip={trip} />
       </div>
     );
   }
@@ -182,6 +185,68 @@ function CartEditor({ trip }: { trip: TripState }) {
             <button className="mini-btn" onClick={() => setOpen(false)}>Đóng</button>
             <button className="mini-btn primary" onClick={commit}>Chốt giỏ</button>
           </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Nhịp 3 — Mặc cả với người bán tại nguồn (L4, SPEC §5.6). Trả giá = % giảm thêm so với giá niêm yết tuyến;
+ *  sàn ẩn tất định theo seed, 3 lượt; ép quá tay 3 lần liền → phật ý (sàn cao hơn 2 tuần). */
+function HaggleEditor({ trip }: { trip: TripState }) {
+  const biz = useGame((s) => s.biz);
+  const weatherSeed = useGame((s) => s.weatherSeed);
+  const tripHaggle = useGame((s) => s.tripHaggle);
+  const tripAcceptPrice = useGame((s) => s.tripAcceptPrice);
+
+  const route = routeById(trip.routeId);
+  const rel = biz.supplierRel?.[`route:${route?.id ?? ''}`];
+  const tier = rel ? relTier(rel.spent).level : 0;
+  const grudge = !!biz.routeGrudge && biz.routeGrudge.routeId === route?.id && biz.routeGrudge.untilWeek >= weekOfDay(trip.day);
+  const cases = cartCases(trip.cart);
+  const floor = route ? haggleFloor(route, weatherSeed, trip.day, tier, cases, 0, grudge) : 0;
+  const discount = haggleDiscount(trip.haggle);
+  const round = trip.haggle?.round ?? 0;
+  const done = discount > 0 || round >= HAGGLE_MAX_ROUNDS;
+  const [offer, setOffer] = useState(0);
+
+  if (!route || Object.keys(trip.cart).length === 0) return null;
+
+  const listed = cartBuyCost(trip, route);
+  const paid = done ? Math.round(listed * (1 - discount)) : Math.round(listed * (1 - offer));
+  const pct = Math.round(offer * 100);
+  const mood = discount > 0 ? '😊' : round >= HAGGLE_MAX_ROUNDS ? '😐' : '🙂';
+
+  return (
+    <div className="trip-ov-card">
+      <div className="trip-ov-route">
+        <span className="trip-ov-route-name">🤝 Mặc cả với người bán</span>
+        <span className="trip-ov-route-meta">
+          {done
+            ? (discount > 0 ? `Chốt −${Math.round(discount * 100)}% → ${formatMoney(paid)}` : 'Mua giá niêm yết.')
+            : `Giá niêm yết ${formatMoney(listed)} · còn ${HAGGLE_MAX_ROUNDS - round} lượt`}
+        </span>
+      </div>
+
+      {!done && (
+        <div className="trip-haggle">
+          <div className="trip-haggle-face">
+            {mood} {grudge ? 'Người bán vẫn còn phật ý (giá khó xuống).' : (tier > 0 ? `Mối quen bậc ${tier} — dễ mặc cả hơn.` : 'Trả giá nhẹ nhẹ, đừng ép quá tay.')}
+          </div>
+          <div className="trip-haggle-row">
+            <span>Giảm thêm {pct}% → {formatMoney(paid)}</span>
+            <input className="trip-haggle-range" type="range" min={0} max={Math.round(HAGGLE_MAX_OFFER * 100)} step={1}
+              value={pct} onChange={(e) => setOffer(Number(e.target.value) / 100)} />
+          </div>
+          <div className="trip-ov-actions">
+            <button className="mini-btn" onClick={() => tripAcceptPrice()}>Thôi, giá đó được rồi</button>
+            <button className="mini-btn primary" onClick={() => tripHaggle(offer)}>Trả giá</button>
+          </div>
+        </div>
+      )}
+      {done && discount > 0 && (
+        <div className="trip-ov-actions">
+          <button className="mini-btn" onClick={() => tripAcceptPrice()}>Chốt xe hàng</button>
         </div>
       )}
     </div>

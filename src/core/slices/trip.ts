@@ -1,5 +1,7 @@
 import { haulerById, routeById, roundTripMinutes, routeUnlocked, haulerUnlocked, tripTravelCost } from '../../data/routes';
-import { beginTrip, tripLoadStock, routeStockResolve, routeStockSpend, checkCart, type TripState } from '../../data/trip';
+import { beginTrip, tripLoadStock, routeStockResolve, routeStockSpend, checkCart, cartBuyCostDiscounted, cartCases, weekOfDay, type TripState } from '../../data/trip';
+import { haggleFloor, haggleOffer, haggleDiscount, HAGGLE_MAX_ROUNDS, HAGGLE_GRUDGE_WEEKS } from '../../data/haggle';
+import { addRel, relTier } from '../../data/supplierRel';
 import { productById, formatMoney } from '../../data/products';
 import type { GameState, GetState, SetState } from '../gameTypes';
 
@@ -26,7 +28,7 @@ const mm = (m: number): string => {
  * - `tripArrive()`: xe về — hàng vào kho (hạn bớt theo đường, trừ khi có thùng đá), xoá chuyến, chủ về
  *   nhà. Gọi từ tick khi `minutes ≥ returnAt` hoặc endDay nếu ngủ trước khi về (§5.10).
  */
-export const createTripSlice = (set: SetState, get: GetState): Pick<GameState, 'startTrip' | 'tripSetCart' | 'tripArrive'> => ({
+export const createTripSlice = (set: SetState, get: GetState): Pick<GameState, 'startTrip' | 'tripSetCart' | 'tripHaggle' | 'tripAcceptPrice' | 'tripArrive'> => ({
   startTrip: (routeId: string, by: 'self' | number, cash: number) => {
     const s = get();
     const route = routeById(routeId);
@@ -78,6 +80,49 @@ export const createTripSlice = (set: SetState, get: GetState): Pick<GameState, '
     s.notify('🚚 Đã chốt giỏ hàng chở về — xe về là hàng vào kho.');
   },
 
+  // L4 — mức sàn mặc cả hiện tại của tuyến cho chuyến này (TẤT ĐỊNH theo weatherSeed + day + routeId).
+  tripHaggle: (offer: number) => {
+    const s = get();
+    const t = s.biz.trip;
+    if (!t) return s.notify('🚚 Không có chuyến đi nào đang diễn ra.');
+    if (t.by !== 'self') return s.notify('🚚 Người đi thay mặc cả theo cách riêng (L8).');
+    const route = routeById(t.routeId);
+    if (!route) return;
+    const already = haggleDiscount(t.haggle);
+    if (already > 0) return s.notify('🚚 Đã chốt giá — đừng trả tiếp, người bán rất dễ phật ý.');
+    const rel = s.biz.supplierRel?.[`route:${route.id}`];
+    const tier = rel ? relTier(rel.spent).level : 0;
+    const grudge = s.biz.routeGrudge?.routeId === route.id && s.biz.routeGrudge.untilWeek >= weekOfDay(s.day);
+    const cases = cartCases(t.cart);
+    const floor = haggleFloor(route, s.weatherSeed, t.day, tier, cases, 0, grudge);
+    const offerC = Math.max(0, Math.min(0.16, offer));
+    const res = haggleOffer(t.haggle, offerC, floor);
+    if (res.accepted) {
+      const pay = cartBuyCostDiscounted({ ...t, haggle: { round: res.round, best: offerC, anger: 0 } }, route);
+      set({ biz: { ...s.biz, trip: { ...t, haggle: { round: res.round, best: offerC, anger: 0 } } } });
+      s.notify(`🚚 Người bán gật: "Được, ${formatMoney(pay)}." Chốt giá.`);
+      return;
+    }
+    if (res.grudge) {
+      set({ biz: { ...s.biz, routeGrudge: { routeId: route.id, untilWeek: weekOfDay(s.day) + HAGGLE_GRUDGE_WEEKS - 1 }, trip: { ...t, haggle: { round: res.round, best: 0, anger: 0 } } } });
+      s.notify('🚚 Ép quá tay mãi — người bán phật ý, tuần sau khó hạ giá.');
+      return;
+    }
+    const left = HAGGLE_MAX_ROUNDS - res.round;
+    set({ biz: { ...s.biz, trip: { ...t, haggle: { round: res.round, best: 0, anger: res.anger } } } });
+    s.notify(left > 0
+      ? `🚚 Người bán lắc đầu — còn ${left} lượt mặc cả.`
+      : '🚚 Hết lượt — mua giá niêm yết của tuyến.');
+  },
+
+  tripAcceptPrice: () => {
+    const s = get();
+    const t = s.biz.trip;
+    if (!t) return s.notify('🚚 Không có chuyến đi nào đang diễn ra.');
+    set({ biz: { ...s.biz, trip: { ...t, haggle: { round: t.haggle?.round ?? 0, best: t.haggle?.best ?? 0, anger: t.haggle?.anger ?? 0 } } } });
+    s.notify('🚚 Thôi, giá đó được rồi — chốt giỏ (không phạt).');
+  },
+
   tripArrive: () => {
     const s = get();
     const t = s.biz.trip;
@@ -90,18 +135,25 @@ export const createTripSlice = (set: SetState, get: GetState): Pick<GameState, '
     // L3 — hàng đã lấy khỏi nguồn: trừ lượng tuần của tuyến (R7 cổng chống farm).
     const stocks = s.biz.routeStock ?? {};
     const st0 = routeStockResolve(stocks, route, s.day);
+    // L4 — trả TIỀN mua hàng (giá niêm yết tuyến trừ giảm thêm đã mặc cả) và ghi doanh mua mối ruột tại nguồn.
+    const goodsCost = cartBuyCostDiscounted(t, route);
+    const spent = t.by === 'self' ? Math.min(goodsCost, s.money) : 0;
+    const rel = s.biz.supplierRel ?? {};
+    const relKey = `route:${route.id}`;
     set({
       ...k,
+      money: t.by === 'self' ? Math.max(0, s.money - spent) : s.money,
       location: t.by === 'self' ? TRIP_HOME : s.location,
       biz: {
         ...s.biz,
         trip: undefined,
         routeStock: { ...stocks, [route.id]: routeStockSpend(st0, route, t.cart) },
+        supplierRel: t.by === 'self' ? { ...rel, [relKey]: addRel(rel[relKey], goodsCost) } : rel,
       },
     });
     const hauler = haulerById(t.hauler);
     s.notify(items > 0
-      ? `🚚 ${hauler?.name ?? 'Xe'} về tới — ${items} món đã vào kho (${route.name}).`
-      : `🚚 ${hauler?.name ?? 'Xe'} về tới (${route.name}) — không mang hàng về.`);
+      ? `🚚 ${hauler?.name ?? 'Xe'} về — ${items} món vào kho, trả ${formatMoney(spent)}.`
+      : `🚚 ${hauler?.name ?? 'Xe'} về (${route.name}) — không hàng.`);
   },
 });
