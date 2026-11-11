@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { useGame } from '../core/store';
 import {
-  TELEMETRY_SCOPE, telemetryAsked, telemetryOptedIn, markTelemetryAsked, setTelemetryOptIn, telemetrySample,
+  telemetryAsked, telemetryOptedIn, markTelemetryAsked, setTelemetryOptIn,
 } from '../data/telemetryConsent';
-import { PRIVACY_VERSION } from '../net/consentPolicy';
 import { deleteTelemetry, flushReports } from '../core/dayReport';
+import { TelemetrySampleView } from './TelemetrySampleView';
 
 /**
  * SPEC-TOI-UU §T1 (L2) — Hỏi MỘT lần, sau ngày game thứ 2, về "Số liệu ẩn danh" (mặc định tắt).
@@ -47,10 +47,7 @@ export function TelemetryPrompt() {
         </span>
       </div>
       {open && (
-        <pre className="hud-more-tele-sample">
-            Bản ghi mẫu — scope {TELEMETRY_SCOPE} (v{PRIVACY_VERSION}):
-            {telemetrySample()}
-        </pre>
+        <TelemetrySampleView />
       )}
     </div>
   );
