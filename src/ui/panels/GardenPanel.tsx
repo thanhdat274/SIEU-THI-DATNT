@@ -17,6 +17,7 @@ import { isXoiCungDay } from '../../data/tiemXoi';
 import { preserveDefsOf, preserveDefById, phoiReady, rackCap, vaiCap, chumCap, VAI_UNLOCK, CHUM_UNLOCK, pickleState, pickleAge, uRipe, uAged, PHOI_UNLOCK } from '../../data/preserve';
 import { picklePayoff } from '../../data/picklePayoff';
 import { phoiPayoff } from '../../data/phoiPayoff';
+import { preserveOutlet } from '../../data/preserveOutlet';
 import { preservePayoff } from '../../data/preservePayoff';
 import { NEIGHBOR_SUPPLIER_IDS } from '../../data/supplierRel';
 import { describeDay, type Weather } from '../../data/weather';
@@ -526,7 +527,7 @@ function PhoiTab(props: {
                 const label = `${out.name}${d.inputs.map((i) => ` (${productById(i.productId).name} ${i.quantity})`).join('')}`;
                 return (
                   <button key={d.id} style={{ ...styles.btn, background: can ? '#2ecc71' : '#555', color: '#fff' }} onClick={() => startPreserve(d.id)}
-                    title={lack ? `Thiếu ${productById(lack.productId).name} — nhập trước rồi phơi` : `${out.name}: ${d.note}`}>
+                    title={lack ? `Thiếu ${productById(lack.productId).name} — nhập trước rồi phơi` : `${out.name}: ${d.note}. ${preserveOutlet(d.outputId).line}`}>
                     {label}
                   </button>
                 );
@@ -593,7 +594,7 @@ function PhoiTab(props: {
                     const label = `${out.name}${d.inputs.map((i) => ` (${productById(i.productId).name} ${i.quantity})`).join('')}`;
                     return (
                       <button key={d.id} style={{ ...styles.btn, background: can ? '#2ecc71' : '#555', color: '#fff' }} onClick={() => startPreserve(d.id)}
-                        title={lack ? `Thiếu ${productById(lack.productId).name} — nhập trước rồi muối` : `${out.name}: vớt ngon ngày ${d.window![0]}–${d.window![0] + 1}. ${d.note}`}>
+                        title={lack ? `Thiếu ${productById(lack.productId).name} — nhập trước rồi muối` : `${out.name}: vớt ngon ngày ${d.window![0]}–${d.window![0] + 1}. ${d.note}. ${preserveOutlet(d.outputId).line}`}>
                         {label}
                       </button>
                     );
@@ -661,7 +662,7 @@ function PhoiTab(props: {
                     const label = `${out.name}${d.inputs.map((i) => ` (${productById(i.productId).name} ${i.quantity})`).join('')}`;
                     return (
                       <button key={d.id} style={{ ...styles.btn, background: can ? '#2ecc71' : '#555', color: '#fff' }} onClick={() => startPreserve(d.id)}
-                        title={lack ? `Thiếu ${productById(lack.productId).name} — nhập trước rồi ủ` : `${out.name}: ${d.need} ngày rút; ${d.aged ? `ủ ${d.aged.day} ngày ra ${d.aged.outputQty}. ` : ''}${d.note}`}>
+                        title={lack ? `Thiếu ${productById(lack.productId).name} — nhập trước rồi ủ` : `${out.name}: ${d.need} ngày rút; ${d.aged ? `ủ ${d.aged.day} ngày ra ${d.aged.outputQty}. ` : ''}${d.note}. ${preserveOutlet(d.outputId).line}`}>
                         {label}
                       </button>
                     );

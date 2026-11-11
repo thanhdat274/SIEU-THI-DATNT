@@ -9,9 +9,15 @@ const here = dirname(fileURLToPath(import.meta.url));
 const src = readFileSync(join(here, '../ui/panels/GardenPanel.tsx'), 'utf8');
 
 describe('picklePayoff — nối vào PhoiTab (GardenPanel)', () => {
-  it('import picklePayoff + phoiPayoff', () => {
+  it('import picklePayoff + phoiPayoff + preserveOutlet', () => {
     expect(src).toContain("import { picklePayoff } from '../../data/picklePayoff'");
     expect(src).toContain("import { phoiPayoff } from '../../data/phoiPayoff'");
+    expect(src).toContain("import { preserveOutlet } from '../../data/preserveOutlet'");
+  });
+  it('đầu ra (preserveOutlet) nối vào 3 nút "Bắt đầu mẻ" phơi/muối/ủ', () => {
+    // phoi (không có d), muối (d.window), ủ (d.need) — mỗi cái một lần.
+    expect(src).toContain('preserveOutlet(d.outputId).line');
+    expect((src.split('preserveOutlet(d.outputId).line').length - 1)).toBeGreaterThanOrEqual(3);
   });
   it('dòng 💰 payoff trong mỗi mẻ MUỐI (cạnh nút Vớt)', () => {
     // nằm trong khối muoiJobs.map → có nút vớt và dòng payoff màu cam
