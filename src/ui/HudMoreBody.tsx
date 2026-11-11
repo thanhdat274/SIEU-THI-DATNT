@@ -9,6 +9,7 @@ import { HUBS } from './hubs';
 import { SYSTEM_UNLOCKS } from '../data/unlockMap';
 import { PRODUCTS } from '../data/products';
 import { TELEMETRY_SCOPE, telemetryOptedIn, setTelemetryOptIn, telemetrySample } from '../data/telemetryConsent';
+import { deleteTelemetry, flushReports } from '../core/dayReport';
 
 /** Tải file JSON 30 bản ghi ngày ẩn danh (SPEC-TOI-UU §T1) — người chơi thử gửi qua tin nhắn. */
 function downloadPlayLog() {
@@ -74,9 +75,12 @@ export function MoreMenuBody({ tools, level, onHelp, keys, setKeys, setOpen }: {
   );
 }
 
-/** Đổi lựa chọn "Số liệu ẩn danh" (mặc định tắt, SPEC-TOI-UU §T1 L2). */
+/** Đổi lựa chọn "Số liệu ẩn danh" (mặc định tắt, SPEC-TOI-UU §T1 L2/L3). */
 function setTeleOptIn() {
-  setTelemetryOptIn(!telemetryOptedIn());
+  const next = !telemetryOptedIn();
+  setTelemetryOptIn(next);
+  if (next) void flushReports();   // L3: bật → gửi ngay các bản chưa gửi.
+  else void deleteTelemetry();     // L3: tắt → xoá số liệu đã gửi của install trên server.
 }
 
 /**

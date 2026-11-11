@@ -271,3 +271,43 @@ export function clearReports(): void {
   try { localStorage.removeItem(REPORTS_KEY); localStorage.removeItem(ACC_KEY); } catch { /* bỏ qua */ }
   acc = freshAcc(-1);
 }
+
+/** Các bản ghi chưa gửi máy chủ (đánh dấu `_sent`), lấy BATCH_MAX bản mới nhất để gửi lô. */
+type StoredReport = DayReport & { _sent?: boolean };
+const BATCH_MAX = 20;
+
+/**
+ * SPEC-TOI-UU §T1 (L3) — gửi lô báo cáo chưa gửi tới `POST /t` khi người chơi ĐÃ đồng ý telemetry.
+ * Trả số bản đã gửi. Mặc định tắt, không mạng thì bỏ qua (lần sau gửi tiếp).
+ */
+export async function flushReports(): Promise<number> {
+  const { telemetryOptedIn } = await import('../data/telemetryConsent');
+  if (!telemetryOptedIn()) return 0;
+  try {
+    const list = JSON.parse(localStorage.getItem(REPORTS_KEY) ?? '[]') as StoredReport[];
+    const pending = list.filter((r) => !r._sent).slice(-BATCH_MAX);
+    if (!pending.length) return 0;
+    const reports = pending.map(({ _sent, ...r }) => r);
+    const res = await fetch('/t', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ install: installId(), reports }),
+    });
+    if (!res.ok) return 0;
+    const sent = new Set(pending);
+    localStorage.setItem(REPORTS_KEY, JSON.stringify(list.map((r) => (sent.has(r) ? { ...r, _sent: true } : r)).slice(-REPORTS_MAX)));
+    return pending.length;
+  } catch {
+    return 0;
+  }
+}
+
+/** Tắt telemetry → yêu cầu server xoá toàn bộ số liệu của install này (R13). */
+export async function deleteTelemetry(): Promise<boolean> {
+  try {
+    const res = await fetch(`/t/${encodeURIComponent(installId())}`, { method: 'DELETE' });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}

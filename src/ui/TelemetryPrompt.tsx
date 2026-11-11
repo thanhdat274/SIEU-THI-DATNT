@@ -4,6 +4,7 @@ import {
   TELEMETRY_SCOPE, telemetryAsked, telemetryOptedIn, markTelemetryAsked, setTelemetryOptIn, telemetrySample,
 } from '../data/telemetryConsent';
 import { PRIVACY_VERSION } from '../net/consentPolicy';
+import { deleteTelemetry, flushReports } from '../core/dayReport';
 
 /**
  * SPEC-TOI-UU §T1 (L2) — Hỏi MỘT lần, sau ngày game thứ 2, về "Số liệu ẩn danh" (mặc định tắt).
@@ -21,6 +22,8 @@ export function TelemetryPrompt() {
     setTelemetryOptIn(on);
     markTelemetryAsked();
     setOpen(false);
+    if (on) void flushReports();           // L3: đồng ý → gửi ngay các bản chưa gửi.
+    else void deleteTelemetry();           // L3: tắt → xoá số liệu của install trên server.
   };
 
   return (

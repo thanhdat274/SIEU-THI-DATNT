@@ -14,7 +14,7 @@ import { isQuanMatchDay, quanDayNews, quanNuocDay } from '../../data/quanNuoc';
 import { isXoiCungDay, tiemXoiDay, tiemXoiSaved, tiemXoiDinePlan } from '../../data/tiemXoi';
 import { bizEndOfDay, checkAchievements, freshAchievements } from '../biz';
 import { type DayStats } from '../dayStats';
-import { collectReport, startDay } from '../dayReport';
+import { collectReport, flushReports, startDay } from '../dayReport';
 import { PHONE_FRIEND_GAIN } from '../../data/phoneOrders';
 import { nextMarketIndex } from '../../data/market';
 import { hasSkill } from '../../data/titles';
@@ -621,6 +621,8 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
   }
   // SPEC-TOI-UU §T1 (L1): gom bản ghi ẩn danh ngày vừa chốt — lưu CỤC BỘ, không gửi đi đâu.
   collectReport(s, stats);
+  // SPEC-TOI-UU §T1 (L3): nếu đã đồng ý telemetry, gửi lô báo cáo chưa gửi đi (không chặn qua đêm).
+  void flushReports();
   // Hệ 5-L2 (SPEC-CHIEU-RONG §5.10) — ngủ TRƯỚC khi xe đi tỉnh về: hàng vẫn về nhập kho đêm nay,
   // chuyến kết thúc, chủ về nhà. Bổ sung vào accumulator `k` (chảy vào set cuối) nên không đổi golden
   // (biz.trip trống ở sim — sim không bao giờ gọi startTrip).

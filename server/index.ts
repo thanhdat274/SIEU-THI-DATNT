@@ -20,6 +20,7 @@ import {
   type TokenBucket,
 } from './room';
 import { heartbeatStep } from './room';
+import { BATCH_MAX, TELEMETRY_TTL_DAYS, tBucketKey, validateReport } from './telemetry';
 
 config({ path: resolve(dirname(fileURLToPath(import.meta.url)), '.env') });
 const env = process.env;
@@ -91,6 +92,20 @@ async function consentsCollection() {
   return consents;
 }
 
+/** Số liệu ẩn danh (SPEC-TOI-UU §T1) — install không phải uid, tự xoá sau 180 ngày. */
+interface TelemetryRecord { install: string; createdAt: number; expiredAt: number; report: unknown }
+let telemetry: Collection<TelemetryRecord> | null = null;
+async function telemetryCollection() {
+  if (!telemetry) {
+    const client = await new MongoClient(env.MONGO_URI ?? env.MONGODB_URI ?? '').connect();
+    telemetry = client.db(env.MONGODB_DATABASE ?? 'taphoa3d').collection<TelemetryRecord>('telemetry');
+    // Auto-delete sau 180 ngày + truy vấn theo install (cho DELETE /t/:install).
+    await telemetry.createIndex({ expiredAt: 1 }, { expireAfterSeconds: 0 });
+    await telemetry.createIndex({ install: 1 });
+  }
+  return telemetry;
+}
+
 const app = express();
 app.use(express.json({ limit: '2mb' }));
 
@@ -113,6 +128,48 @@ app.use('/api', async (req, res, next) => {
   if (!account) return void res.status(401).json({ error: 'Chưa đăng nhập.' });
   res.locals.account = account;
   next();
+});
+
+// ---- SPEC-TOI-UU §T1 (L3): telemetry ẩn danh, KHÔNG cần đăng nhập (install là id giả danh trên máy). ----
+const tBuckets = new Map<string, { at: number; n: number }>();
+function takeTelemetryToken(key: string, now = Date.now(), windowMs = 5 * 60_000, max = 200): boolean {
+  const b = tBuckets.get(key);
+  if (!b || now - b.at > windowMs) { tBuckets.set(key, { at: now, n: 1 }); return true; }
+  if (b.n >= max) return false;
+  b.n++;
+  return true;
+}
+if (tBuckets.size > 5000) { for (const k of [...tBuckets.keys()]) if (Date.now() - tBuckets.get(k)!.at > 5 * 60_000) tBuckets.delete(k); }
+
+// Khách gửi lô bản ghi ngày đã chốt (tối đa BATCH_MAX), mỗi bản phải đúng lược đồ DayReport.
+app.post('/t', async (req, res) => {
+  const ip = String(req.headers['x-forwarded-for'] ?? req.socket.remoteAddress ?? '');
+  const body = req.body;
+  const install = (typeof body?.install === 'string' ? body.install : '');
+  const key = tBucketKey(install, ip);
+  if (!takeTelemetryToken(key)) { res.setHeader('Retry-After', '300'); return void res.status(429).json({ error: 'too-many' }); }
+  if (!Array.isArray(body?.reports) || body.reports.length === 0 || body.reports.length > BATCH_MAX) return void res.status(400).json({ error: 'bad-batch' });
+  const now = Date.now();
+  const expiredAt = now + TELEMETRY_TTL_DAYS * 24 * 3600 * 1000;
+  const good: TelemetryRecord[] = [];
+  let dropped = 0;
+  for (const raw of body.reports) {
+    const v = validateReport(raw);
+    if (v.ok) good.push({ install, createdAt: now, expiredAt, report: v.report });
+    else dropped++;
+  }
+  if (good.length) await (await telemetryCollection()).insertMany(good);
+  res.json({ ok: true, accepted: good.length, dropped });
+});
+
+// Tắt telemetry → xoá toàn bộ số liệu của install đó (R13: dữ liệu xoá được).
+app.delete('/t/:install', async (req, res) => {
+  const install = String(req.params.install ?? '');
+  if (!/^[a-z0-9_-]{8,96}$/.test(install)) return void res.status(400).json({ error: 'bad-install' });
+  const ip = String(req.headers['x-forwarded-for'] ?? req.socket.remoteAddress ?? '');
+  if (!takeTelemetryToken(tBucketKey(install, ip))) { res.setHeader('Retry-After', '300'); return void res.status(429).json({ error: 'too-many' }); }
+  const d = await (await telemetryCollection()).deleteMany({ install });
+  res.json({ ok: true, deleted: d.deletedCount });
 });
 
 // Giới hạn tần suất REST theo uid (đã xác thực mới đếm; DEV_AUTH_BYPASS cũng bị limit theo uid giả của nó).
