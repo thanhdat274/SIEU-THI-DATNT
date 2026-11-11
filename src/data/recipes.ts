@@ -5,7 +5,7 @@
 // cấp mở khóa, và trạm nấu (station). Thành phẩm tự động thêm vào PRODUCTS.
 // ============================================================================
 
-import { epochGate } from './contentEpoch';
+import { CONTENT_EPOCH_NOW, epochGate } from './contentEpoch';
 
 /** Trạm nấu: nơi có thể thực hiện recipe. */
 export type CookingStation =
@@ -131,6 +131,13 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   // mẻ (nem chua 9k×2 + đường 17k) = 35k → 8 phần × 9k = 72k, lãi 37k/mẻ, nấu hời hơn bán thẳng nguyên liệu (49k < 72k).
   // Khép chuỗi hàng xóm (bà Tám) → chảo chiên, mở 36 (sau mốc golden 30 → sim không đổi).
   { id: 'nem_chua_ran', name: 'Nem chua rán', category: 'fresh', buy: 4500, sell: 9000, color: 0xd35400, unlock: 36 },
+  // GĐ2346: Bánh bao chiên — món chiên giòn trứ danh, lấp khoảng trống của "bánh bao chiên" trong họ bánh bao
+  // (hấp 39 · lạp xưởng 45 · kim sa 52 đều có, CHIÊN chưa có). Chảo chiên: bột mì + thịt heo + hành phi.
+  // Mẻ (bột mì 26k×2 + thịt heo 38k + hành phi 2.5k) = 92.5k → 10 cái × 14.5k = 145k, lãi ~52.5k/mẻ, nấu hời
+  // hơn bán thẳng nguyên liệu (92.5k < 145k). Mở 71: trên mọi mốc sim cân bằng không cổng epoch (crisis 45~48,
+  // stance 65~69, L50 50~52) — chỉ simBands 100 thấy (đã chấp nhận được ở mốc 48). Nội dung MỚI ghi `since:
+  // CONTENT_EPOCH_NOW` → sim golden kỷ nguyên 0 không thấy (LUẬT món mới, SPEC-TOI-UU §T4).
+  { id: 'banh_bao_chien', name: 'Bánh bao chiên', category: 'fresh', buy: 9500, sell: 14500, color: 0xc8732a, unlock: 71, since: CONTENT_EPOCH_NOW },
   // GĐ1332: Bánh xèo — món bánh xèo giòn trứ danh (Mỹ Tho/Đà Nẵng) từ bột gạo + nước cốt dừa + thịt + hành phi:
   // trước nay TỘT KHÔNG có bánh xèo trong bếp dù là món ăn biểu tượng nhất — lấp khoảng trống trạm chảo chiên.
   // Mẻ (bột gạo 9k + nước cốt dừa 10k + thịt 30k + hành phi 1.5k×2) = 52k → 6 cái × 19k = 114k, lãi 62k/mẻ.
@@ -1998,6 +2005,11 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_ca_vien', name: 'Cá viên chiên', station: 'fryer',
     inputs: [{ productId: 'ca', quantity: 1 }],
     outputId: 'ca_vien_chien', outputQty: 10, durationMin: 15, unlock: 32, reputationGain: 2 },
+  // GĐ2346: Bánh bao chiên — món chiên lấp khoảng trống họ bánh bao (chảo chiên), mở 71 trên mọi mốc sim cân bằng
+  // không cổng epoch (crisis ~48 · stance ~69 · L50 ~52); simBands 100 chịu được. since: 1 để kỷ nguyên 0 không thấy.
+  { id: 'recipe_banh_bao_chien', name: 'Bánh bao chiên', station: 'fryer',
+    inputs: [{ productId: 'botmi', quantity: 2 }, { productId: 'x_thit_heo', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 1 }],
+    outputId: 'banh_bao_chien', outputQty: 10, durationMin: 18, unlock: 71, reputationGain: 2, since: CONTENT_EPOCH_NOW },
   // GĐ1324: Nem chua rán — đặc sản nhà bà Tám (nem chua GĐ1085) thành nguyên liệu chảo chiên, món ăn vặt.
   { id: 'recipe_nem_chua_ran', name: 'Nem chua rán', station: 'fryer',
     inputs: [{ productId: 'hx_nem_chua', quantity: 2 }, { productId: 'x_duong', quantity: 1 }],
