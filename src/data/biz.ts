@@ -185,6 +185,9 @@ export interface BizState {
   /** Hệ 5 (L4) — người bán nổi phật ý vì bị ép quá tay: sàn mặc cả cao hơn 3% tới hết tuần này (SPEC §5.6).
    *  THIẾU = chưa ai phật ý. */
   routeGrudge?: { routeId: string; untilWeek: number };
+  /** Hệ 5 (L7) — mối ruột bậc 3+ tại nguồn được ghi nợ MỘT chuyến (SPEC §5.7): tiền mua quá két, trả trong 7 ngày.
+   *  THIẾU = không nợ ai. */
+  routeDebt?: { routeId: string; amount: number; dueDay: number };
   /** Quán nước đầu ngõ (GĐ7, bán đồ uống rút từ kho); thiếu ở save cũ — nạp bản cũ tự bù mặc định. */
   quanNuoc: QuanNuocState;
   /** Tiệm xôi (GĐ410): xưởng nấu xôi số lượng lớn đổ vào kho chung mỗi đêm. */

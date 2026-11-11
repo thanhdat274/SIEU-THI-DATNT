@@ -154,3 +154,7 @@
 .trip-garage-btn:hover:not(:disabled) { background: #f4e7c8; }
 .trip-garage-btn:disabled { opacity: 0.45; cursor: default; }
 .trip-garage-sub { font-size: 10px; color: #7a5a30; }
+
+/* Hệ 5-L7 — nợ mối ruột tại nguồn (§5.7). */
+.trip-debt-due { font-size: 11px; color: #1e8449; font-weight: 700; white-space: nowrap; }
+.trip-debt-due.late { color: #c0392b; }

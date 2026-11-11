@@ -11,6 +11,7 @@ import type { HaulerDef, HaulerId, RouteDef } from './routes';
 import { routeById, roundTripMinutes, routeBuyPrice, routeDiscountFor, routeGood } from './routes';
 import { casesFor, productById, type Category, type Product } from './products';
 import { WEEK_DAYS } from './bizWeeks';
+import { relTier } from './supplierRel';
 import type { Stock } from '../core/stock';
 import { copyStock, putStock } from '../core/stock';
 import { shelfLife } from './freshness';
@@ -126,23 +127,41 @@ export interface RouteStock {
 /** Tuần game của một ngày (1-based). */
 export const weekOfDay = (day: number): number => Math.max(1, Math.ceil(day / WEEK_DAYS));
 
+/** Mối ruột tại nguồn (SPEC §5.7): bậc mối quen theo doanh mua tích lũy khoá `route:${id}`. */
+export const routeRelTier = (rel: { spent: number } | undefined): number =>
+  rel ? relTier(rel.spent).level : 0;
+
+/** Mối ruột bậc càng cao, `weeklyCap` nguồn càng dày (SPEC §5.7: +10% mỗi bậc). */
+export const routeCapBonus = (tier: number): number => 1 + 0.10 * Math.max(0, tier);
+
+/** Ghi nợ một chuyến (bậc 3+ "Mối ruột" được phép — SPEC §5.7): trả trong this nhiều ngày. */
+export const TRIP_DEBT_DUE_DAYS = 7;
+/** Giới hạn nợ khi mua quá tiền mang theo: tối đa this % của `cash`. */
+export const TRIP_DEBT_PCT = 0.20;
+
+/** Khoản nợ mối ruột đã QUÁ HẠN chưa (trả trong TRIP_DEBT_DUE_DAYS ngày, SPEC §5.7). */
+export const debtOverdue = (d: { dueDay: number }, day: number): boolean => day > d.dueDay;
+
 /** Khoá trữ trong `routeStock.left` cho một món — hàng riêng của tuyến theo productId, còn lại theo nhóm ngành. */
 export const routeStockKey = (route: RouteDef, productId: string, category: Category): string =>
   routeGood(route, productId) ? productId : `cat:${category}`;
 
-/** Khởi tạo lượng nguồn cho một TUẦN mới của tuyến (đổ đầy theo weeklyCap từng món/nhóm). */
-export function routeStockFresh(day: number, route: RouteDef): RouteStock {
+/** Khởi tạo lượng nguồn cho một TUẦN mới của tuyến (đổ đầy theo weeklyCap từng món/nhóm).
+ *  `tierBonus` = bậc mối ruột tại nguồn → weeklyCap +10%/bậc (§5.7). */
+export function routeStockFresh(day: number, route: RouteDef, tierBonus = 0): RouteStock {
+  const k = routeCapBonus(tierBonus);
   const left: Record<string, number> = {};
-  for (const g of route.goods) left[g.productId] = (left[g.productId] ?? 0) + g.weeklyCap;
-  for (const c of route.categoryDeals ?? []) left[`cat:${c.category}`] = (left[`cat:${c.category}`] ?? 0) + c.weeklyCap;
+  for (const g of route.goods) left[g.productId] = (left[g.productId] ?? 0) + Math.floor(g.weeklyCap * k);
+  for (const c of route.categoryDeals ?? []) left[`cat:${c.category}`] = (left[`cat:${c.category}`] ?? 0) + Math.floor(c.weeklyCap * k);
   return { week: weekOfDay(day), left };
 }
 
-/** Lấy routeStock của tuyến (tạo mới/đổ đầy nếu sang tuần khác). Không sửa đầu vào. */
-export function routeStockResolve(stocks: Record<string, RouteStock> | undefined, route: RouteDef, day: number): RouteStock {
+/** Lấy routeStock của tuyến (tạo mới/đổ đầy nếu sang tuần khác). Không sửa đầu vào.
+ *  Bậc mối ruột chỉ áp dụng khi LÀM MỚI (sang tuần) — tuần đang chạy giữ nguyên. */
+export function routeStockResolve(stocks: Record<string, RouteStock> | undefined, route: RouteDef, day: number, tierBonus = 0): RouteStock {
   const cur = stocks?.[route.id];
   if (cur && cur.week === weekOfDay(day)) return cur;
-  return routeStockFresh(day, route);
+  return routeStockFresh(day, route, tierBonus);
 }
 
 /** Lượng còn lại ở nguồn tuần này cho một món (0 nếu không bán/hết). */
@@ -165,10 +184,11 @@ export function routeStockSpend(stock: RouteStock, route: RouteDef, cart: Record
 export type CartCheck = { ok: true } | { ok: false; reason: string };
 
 /**
- * Kiểm tra giỏ hàng chở về (nhịp 2 — chọn hàng, L3): tiền mang theo ≤ `cash`, sức chở ≤ `hauler.cases`,
- * và lượng mua ≤ lượng còn ở nguồn tuần này (`stock`). `cart` được đọc từ `t`.
+ * Kiểm tra giỏ hàng chở về (nhịp 2 — chọn hàng, L3): sức chở ≤ `hauler.cases`, lượng mua ≤ lượng còn ở
+ * nguồn tuần này (`stock`), và tiền ≤ `cash`. `debtLimit` (mối ruột bậc 3+, §5.7) cho phép mua QUÁ `cash`
+ * tối đa `debtLimit` — phần quá đó xe về ghi nợ. `cart` được đọc từ `t`.
  */
-export function checkCart(t: TripState, route: RouteDef, hauler: HaulerDef, stock: RouteStock): CartCheck {
+export function checkCart(t: TripState, route: RouteDef, hauler: HaulerDef, stock: RouteStock, debtLimit = 0): CartCheck {
   let cash = 0;
   let cases = 0;
   for (const [pid, qty] of Object.entries(t.cart)) {
@@ -179,7 +199,7 @@ export function checkCart(t: TripState, route: RouteDef, hauler: HaulerDef, stoc
     cash += routeBuyPrice(p.buy, routeDiscountFor(route, pid, p.category)) * q;
     cases += casesFor(pid, q);
   }
-  if (cash > t.cash) return { ok: false, reason: 'Vượt tiền mang theo' };
+  if (cash > t.cash + debtLimit) return { ok: false, reason: 'Vượt tiền mang theo' };
   if (cases > hauler.cases) return { ok: false, reason: `Quá sức chở (${cases}/${hauler.cases} thùng)` };
   return { ok: true };
 }

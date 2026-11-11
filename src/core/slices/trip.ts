@@ -1,5 +1,5 @@
 import { haulerById, routeById, roundTripMinutes, routeUnlocked, haulerUnlocked, tripTravelCost, COOL_BOX, type HaulerId } from '../../data/routes';
-import { beginTrip, tripLoadStock, routeStockResolve, routeStockSpend, checkCart, cartBuyCostDiscounted, cartCases, weekOfDay, type TripState } from '../../data/trip';
+import { beginTrip, tripLoadStock, routeStockResolve, routeStockSpend, checkCart, cartBuyCostDiscounted, cartCases, weekOfDay, routeRelTier, debtOverdue, TRIP_DEBT_DUE_DAYS, TRIP_DEBT_PCT, type TripState } from '../../data/trip';
 import { haggleFloor, haggleOffer, haggleDiscount, HAGGLE_MAX_ROUNDS, HAGGLE_GRUDGE_WEEKS } from '../../data/haggle';
 import { roadEventDraw, type RoadCtx } from '../../data/roadEvents';
 import { addRel, relTier } from '../../data/supplierRel';
@@ -54,6 +54,11 @@ function topFriendId(s: GameState): string | undefined {
   return max >= 3 ? best : undefined;
 }
 
+/** Bậc mối ruột tại nguồn tuyến này (SPEC §5.7) — cho sàn mặc cả, weeklyCap +10%/bậc, và ghi nợ từ bậc 3. */
+function routeTier(s: GameState, routeId: string): number {
+  return routeRelTier(s.biz.supplierRel?.[`route:${routeId}`]);
+}
+
 /**
  * Hệ 5 — Chuyến đi tỉnh (SPEC-CHIEU-RONG §5). L2: `startTrip` + vắng mặt + xe về nhập kho.
  *
@@ -65,7 +70,7 @@ function topFriendId(s: GameState): string | undefined {
  * - `tripArrive()`: xe về — hàng vào kho (hạn bớt theo đường, trừ khi có thùng đá), xoá chuyến, chủ về
  *   nhà. Gọi từ tick khi `minutes ≥ returnAt` hoặc endDay nếu ngủ trước khi về (§5.10).
  */
-export const createTripSlice = (set: SetState, get: GetState): Pick<GameState, 'startTrip' | 'tripSetCart' | 'tripHaggle' | 'tripAcceptPrice' | 'tripChoose' | 'buyHauler' | 'buyCoolBox' | 'tripArrive'> => ({
+export const createTripSlice = (set: SetState, get: GetState): Pick<GameState, 'startTrip' | 'tripSetCart' | 'tripHaggle' | 'tripAcceptPrice' | 'tripChoose' | 'buyHauler' | 'buyCoolBox' | 'tripArrive' | 'tripRepayDebt'> => ({
   startTrip: (routeId: string, by: 'self' | number, cash: number) => {
     const s = get();
     const route = routeById(routeId);
@@ -86,11 +91,12 @@ export const createTripSlice = (set: SetState, get: GetState): Pick<GameState, '
 
     const trip: TripState = beginTrip(route, hauler, s.day, Math.floor(s.minutes), 'self', carry, {});
     // L3 — đảm bảo đã có routeStock của tuyến cho tuần này để chọn hàng (R7 khấu trừ khi về).
+    // L7 — mối ruột bậc cao làm mới nguồn tuần dày hơn (routeStockResolve chỉ áp khi sang tuần mới).
     const stocks = s.biz.routeStock ?? {};
     set({
       money: s.money - travelCost,
       location: TRIP_AWAY,
-      biz: { ...s.biz, trip, routeStock: { ...stocks, [route.id]: routeStockResolve(stocks, route, s.day) } },
+      biz: { ...s.biz, trip, routeStock: { ...stocks, [route.id]: routeStockResolve(stocks, route, s.day, routeTier(s, route.id)) } },
     });
     s.notify(`🚚 Lên đường ${route.name} bằng ${hauler.name} — xe về lúc ${mm(trip.returnAt)}. Vắng tiệm mấy tiếng nhé.`);
   },
@@ -104,17 +110,26 @@ export const createTripSlice = (set: SetState, get: GetState): Pick<GameState, '
     const hauler = haulerById(t.hauler);
     if (!hauler) return;
     // L3 — giỏ hàng chở về phải nằm trong: tiền mang theo + sức chở xe + lượng còn ở nguồn tuần này (R7).
-    const stock = routeStockResolve(s.biz.routeStock, route, s.day);
+    // L7 — mối ruột bậc 3+ ("Mối ruột") được ghi nợ tối đa 20% cash: mua quá tiền mang theo, xe về ghi nợ (§5.7).
+    const stock = routeStockResolve(s.biz.routeStock, route, s.day, routeTier(s, route.id));
     const clean: Record<string, number> = {};
     for (const [pid, qty] of Object.entries(items)) {
       const q = Math.floor(qty); if (q <= 0) continue;
       if (!productById(pid)) continue;
       clean[pid] = (clean[pid] ?? 0) + q;
     }
-    const check = checkCart({ ...t, cart: clean }, route, hauler, stock);
+    const tier = routeTier(s, route.id);
+    // L7 — mối ruột bậc 3+ được ghi nợ, nhưng CÒN nợ quá hạn tuyến này thì không vay tiếp (§5.7).
+    const oldDebt = s.biz.routeDebt;
+    const debtBlocked = !!oldDebt && oldDebt.routeId === route.id && debtOverdue(oldDebt, s.day);
+    const debtLimit = tier >= 3 && t.by === 'self' && !debtBlocked ? Math.floor(t.cash * TRIP_DEBT_PCT) : 0;
+    const check = checkCart({ ...t, cart: clean }, route, hauler, stock, debtLimit);
     if (!check.ok) return s.notify(`🚚 Chọn hàng: ${check.reason}.`);
     set({ biz: { ...s.biz, trip: { ...t, cart: clean } } });
-    s.notify('🚚 Đã chốt giỏ hàng chở về — xe về là hàng vào kho.');
+    const paidNow = cartBuyCostDiscounted({ ...t, cart: clean, haggle: t.haggle }, route);
+    s.notify(paidNow > t.cash
+      ? '🚚 Chốt giỏ rồi — quá tiền mang theo, xe về ghi nợ mối ruột.'
+      : '🚚 Đã chốt giỏ hàng chở về — xe về là hàng vào kho.');
   },
 
   // L4 — mức sàn mặc cả hiện tại của tuyến cho chuyến này (TẤT ĐỊNH theo weatherSeed + day + routeId).
@@ -233,27 +248,60 @@ export const createTripSlice = (set: SetState, get: GetState): Pick<GameState, '
     const k = tripLoadStock(t, { storage: s.storage, storageLots: s.storageLots }, coolBox);
     const items = Object.entries(t.cart).reduce((n, [, q]) => n + Math.floor(q), 0);
     // L3 — hàng đã lấy khỏi nguồn: trừ lượng tuần của tuyến (R7 cổng chống farm).
+    // L7 — mối ruột bậc cao làm nguồn tuần dày hơn (+10%/bậc) khi MỚI sang tuần.
     const stocks = s.biz.routeStock ?? {};
-    const st0 = routeStockResolve(stocks, route, s.day);
+    const tier = routeTier(s, route.id);
+    const st0 = routeStockResolve(stocks, route, s.day, tier);
     // L4 — trả TIỀN mua hàng (giá niêm yết tuyến trừ giảm thêm đã mặc cả) và ghi doanh mua mối ruột tại nguồn.
+    // L7 (§5.7) — mối ruột bậc 3+ cho mua QUÁ tiền mang theo; khoản quá `cash` ghi nợ, trả trong 7 ngày.
     const goodsCost = cartBuyCostDiscounted(t, route);
-    const spent = t.by === 'self' ? Math.min(goodsCost, s.money) : 0;
+    const carried = t.cash;
+    const paid = Math.min(goodsCost, carried);
+    const owing = Math.max(0, goodsCost - carried);
+    const owes = t.by === 'self' && tier >= 3 && owing > 0;
+    let money = s.money;
+    let routeDebt = s.biz.routeDebt;
+    if (t.by === 'self') {
+      money = Math.max(0, s.money - paid);
+      if (owes) routeDebt = { routeId: route.id, amount: owing + (s.biz.routeDebt?.amount ?? 0), dueDay: s.day + TRIP_DEBT_DUE_DAYS };
+    }
+    const spent = t.by === 'self' ? paid : 0;
     const rel = s.biz.supplierRel ?? {};
     const relKey = `route:${route.id}`;
     set({
       ...k,
-      money: t.by === 'self' ? Math.max(0, s.money - spent) : s.money,
+      money,
       location: t.by === 'self' ? TRIP_HOME : s.location,
       biz: {
         ...s.biz,
         trip: undefined,
+        routeDebt,
         routeStock: { ...stocks, [route.id]: routeStockSpend(st0, route, t.cart) },
         supplierRel: t.by === 'self' ? { ...rel, [relKey]: addRel(rel[relKey], goodsCost) } : rel,
       },
     });
     const hauler = haulerById(t.hauler);
-    s.notify(items > 0
-      ? `🚚 ${hauler?.name ?? 'Xe'} về — ${items} món vào kho, trả ${formatMoney(spent)}.`
-      : `🚚 ${hauler?.name ?? 'Xe'} về (${route.name}) — không hàng.`);
+    if (owes) s.notify(`🚚 ${hauler?.name ?? 'Xe'} về — hàng vào kho, ghi nợ ${formatMoney(owing)} (trả ${TRIP_DEBT_DUE_DAYS} ngày).`);
+    else if (items > 0) s.notify(`🚚 ${hauler?.name ?? 'Xe'} về — ${items} món vào kho, trả ${formatMoney(spent)}.`);
+    else s.notify(`🚚 ${hauler?.name ?? 'Xe'} về (${route.name}) — không hàng.`);
+  },
+
+  // L7 (§5.7) — trả nợ mối ruột tại nguồn. Quá hạn vẫn phải trả đủ; trả xong nếu từng quá hạn thì người bán
+  // giận (sàn mặc cả cao hơn 2 tuần) — nợ vướng mãi là mất ưu đãi mối ruột.
+  tripRepayDebt: () => {
+    const s = get();
+    const d = s.biz.routeDebt;
+    if (!d) return s.notify('🧾 Không có khoản nợ nào đang ghi.');
+    if (s.money < d.amount) return s.notify(`🧾 Két chưa đủ trả nợ (còn ${formatMoney(d.amount)}).`);
+    const wasOverdue = debtOverdue(d, s.day);
+    const biz = { ...s.biz, routeDebt: undefined };
+    if (wasOverdue) {
+      biz.routeGrudge = { routeId: d.routeId, untilWeek: weekOfDay(s.day) + HAGGLE_GRUDGE_WEEKS - 1 };
+      set({ money: s.money - d.amount, biz });
+      s.notify(`🧾 Đã trả nợ ${formatMoney(d.amount)} — quá hạn nên người bán giận, 1-2 tuần khó mặc cả.`);
+    } else {
+      set({ money: s.money - d.amount, biz });
+      s.notify(`🧾 Đã trả nợ ${formatMoney(d.amount)} cho mối ruột — giữ ưu đãi.`);
+    }
   },
 });

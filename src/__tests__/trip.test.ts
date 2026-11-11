@@ -4,7 +4,7 @@ import { haulerById, routeById, routeBuyPrice, routeDiscountFor } from '../data/
 import {
   beginTrip, cartBuyCost, cartBuyCostDiscounted, tripArrived, tripLoadStock, tripLotLife, tripProgress, tripRemaining, tripRoadHours,
   routeStockFresh, routeStockKey, routeStockLeft, routeStockResolve, routeStockSpend, weekOfDay, checkCart,
-  cartCases, cartSavings,
+  cartCases, cartSavings, routeRelTier, routeCapBonus, debtOverdue, TRIP_DEBT_DUE_DAYS, TRIP_DEBT_PCT,
 } from '../data/trip';
 import { haggleFloor, haggleOffer, haggleDiscount, HAGGLE_MAX_ROUNDS } from '../data/haggle';
 import { roadEventDraw, ROAD_EVENTS, type RoadCtx } from '../data/roadEvents';
@@ -545,5 +545,93 @@ describe('L6 slice — mua xe chở hàng & thùng đá', () => {
       expect(p, `thiếu productById('${g.productId}')`).toBeDefined();
       expect(p!.unlock).toBeLessThanOrEqual(50); // người đi cấp 50 mua được
     }
+  });
+});
+
+describe('L7 — mối ruột tại nguồn (SPEC §5.7)', () => {
+  const choTrung = routeById('cho_trung')!;
+  const NEM = 'rg_nem_chua'; // Chợ miền Trung, 32%, buy 40000 → giá tuyến 27200
+
+  it('bậc mối quen theo doanh mua: 0/1/2/3 đúng mốc + weeklyCap +10%/bậc', () => {
+    expect(routeRelTier(undefined)).toBe(0);
+    expect(routeRelTier({ spent: 2_999_999 })).toBe(0);
+    expect(routeRelTier({ spent: 3_000_000 })).toBe(1);
+    expect(routeRelTier({ spent: 30_000_000 })).toBe(3);
+    expect(routeCapBonus(3)).toBe(1.3);
+    expect(routeCapBonus(0)).toBe(1);
+  });
+
+  it('nguồn tuần mới dày hơn theo bậc (weeklyCap +10%/bậc, làm tròn xuống)', () => {
+    const st0 = routeStockResolve(undefined, choTrung, 1, 0);
+    const st3 = routeStockResolve(undefined, choTrung, 1, 3);
+    expect(st0.left['rg_me_xung']).toBe(12);
+    expect(st3.left['rg_me_xung']).toBe(15); // 12 × 1.3 = 15.6 → 15
+  });
+
+  it('debtOverdue: hạn 7 ngày, quá hạn từ ngày 8', () => {
+    expect(debtOverdue({ dueDay: 7 }, 7)).toBe(false);
+    expect(debtOverdue({ dueDay: 7 }, 8)).toBe(true);
+  });
+
+  it('checkCart: quá tiền mang theo bị chặn; có debtLimit (mối ruột b3+) thì quá cash được phép tối đa limit', () => {
+    const t = beginTrip(choTrung, haulerById('moto')!, 1, 420, 'self', 100_000, { [NEM]: 4 });
+    const stock = routeStockFresh(1, choTrung);
+    expect(cartBuyCost(t, choTrung)).toBeGreaterThan(100_000); // 4×27200 = 108.800 > cash
+    expect(checkCart(t, choTrung, haulerById('moto')!, stock).ok).toBe(false); // không mối ruột
+    expect(checkCart(t, choTrung, haulerById('moto')!, stock, Math.floor(100_000 * TRIP_DEBT_PCT)).ok).toBe(true);
+  });
+
+  it('slice: bậc 3+ chốt giỏ quá cash, xe về ghi nợ đúng khoản quá cash; trả nợ hết', () => {
+    const toasts = prep(50);
+    useGame.setState({ money: 500_000, biz: { ...useGame.getState().biz, supplierRel: { 'route:cho_trung': { spent: 30_000_000, orders: 1 } } } });
+    useGame.getState().startTrip('cho_trung', 'self', 100_000);
+    expect(useGame.getState().biz.trip).toBeDefined();
+    useGame.getState().tripSetCart({ [NEM]: 4 }); // 108.800 > 100k cash, tier 3 cho ghi nợ
+    expect(Object.keys(useGame.getState().biz.trip!.cart).length).toBe(1);
+    // về
+    const money0 = useGame.getState().money; // sau travel 90k
+    useGame.setState({ minutes: useGame.getState().biz.trip!.returnAt });
+    useGame.getState().tripArrive();
+    const s = useGame.getState();
+    const d = s.biz.routeDebt!;
+    expect(d.routeId).toBe('cho_trung');
+    expect(d.amount).toBe(108_800 - 100_000); // 8.800 nợ
+    expect(d.dueDay).toBe(s.day + TRIP_DEBT_DUE_DAYS);
+    expect(s.money).toBe(money0 - 100_000); // chỉ trả phần trong cash
+    expect(toasts.some((t) => t.includes('nợ'))).toBe(true);
+    // trả nợ
+    useGame.getState().tripRepayDebt();
+    const s2 = useGame.getState();
+    expect(s2.biz.routeDebt).toBeUndefined();
+    expect(s2.money).toBe(s.money - 8_800);
+  });
+
+  it('slice: bậc dưới 3 không được ghi nợ (giỏ quá cash bị chặn)', () => {
+    const toasts = prep(50);
+    useGame.setState({ money: 500_000, biz: { ...useGame.getState().biz, supplierRel: { 'route:cho_trung': { spent: 10_000_000, orders: 1 } } } });
+    useGame.getState().startTrip('cho_trung', 'self', 100_000);
+    useGame.getState().tripSetCart({ [NEM]: 4 }); // 108.800 > 100k, bậc 2 → chặn
+    expect(Object.keys(useGame.getState().biz.trip!.cart).length).toBe(0);
+    expect(toasts.some((t) => t.includes('Vượt tiền'))).toBe(true);
+  });
+
+  it('slice: nợ quá hạn rồi trả → người bán giận (sàn mặc cả cao hơn); trả trong hạn thì giữ ưu đãi', () => {
+    prep(50);
+    useGame.setState({
+      money: 500_000,
+      day: 1,
+      biz: { ...useGame.getState().biz, supplierRel: { 'route:cho_trung': { spent: 30_000_000, orders: 1 } } },
+    });
+    useGame.getState().startTrip('cho_trung', 'self', 100_000);
+    useGame.getState().tripSetCart({ [NEM]: 4 });
+    useGame.setState({ minutes: useGame.getState().biz.trip!.returnAt });
+    useGame.getState().tripArrive();
+    expect(useGame.getState().biz.routeDebt?.amount).toBe(8_800);
+    // quá hạn: hạn day 8, để day 9 rồi trả
+    useGame.setState({ day: 9 });
+    useGame.getState().tripRepayDebt();
+    const s = useGame.getState();
+    expect(s.biz.routeDebt).toBeUndefined();
+    expect(s.biz.routeGrudge?.routeId).toBe('cho_trung');
   });
 });

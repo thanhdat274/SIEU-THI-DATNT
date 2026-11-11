@@ -626,6 +626,8 @@ export interface GameState {
   /** Hệ 5 (L6) — mua thùng đá giữ lạnh vào `biz.coolBox` (hàng tươi về không mất hạn). */
   buyCoolBox: () => void;
   tripArrive: () => void;
+  /** Hệ 5 (L7) — trả nợ mối ruột tại nguồn (SPEC §5.7). */
+  tripRepayDebt: () => void;
 
   /** Hệ 2 — Tình làng (GĐ Hệ2-L2, SPEC §2.4): lan thân thiết từ sự kiện lớn sang người có cạnh
    *  với nguồn (trần ±3/ngày/người). Cổng cấp ≥ TIES_UNLOCK. */

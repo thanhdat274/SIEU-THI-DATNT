@@ -120,6 +120,51 @@ export const ROUTES: RouteDef[] = [
     ],
     events: [],
   },
+  // Làng nghề miền Bắc — 46, 5h, đặc sản Bắc (§5.5). KHÔNG thêm sản phẩm mới: dùng đặc sản vùng
+  // `regionSpecialty.ts` đã có (trà shan, cốm làng Vòng, bánh cốm — thật, đúng miền).
+  {
+    id: 'lang_nghe_bac',
+    name: 'Làng nghề miền Bắc',
+    icon: '🌾',
+    unlock: 46,
+    region: 'Bắc',
+    hours: 5,
+    goods: [
+      { productId: 'rg_tra_shan', discount: 0.30, weeklyCap: 12 },
+      { productId: 'rg_com_lang', discount: 0.30, weeklyCap: 12 },
+      { productId: 'rg_banh_com', discount: 0.30, weeklyCap: 12 },
+    ],
+    events: [],
+  },
+  // Chợ miền Trung — 50, 6h, đặc sản Trung, biên 32% (spec §5.5).
+  {
+    id: 'cho_trung',
+    name: 'Chợ miền Trung',
+    icon: '🏮',
+    unlock: 50,
+    region: 'Trung',
+    hours: 6,
+    goods: [
+      { productId: 'rg_me_xung', discount: 0.32, weeklyCap: 12 },
+      { productId: 'rg_nem_chua', discount: 0.32, weeklyCap: 12 },
+      { productId: 'rg_keo_cu_do', discount: 0.32, weeklyCap: 12 },
+    ],
+    events: [],
+  },
+  // Tây Nguyên — 54, 8h, đặc sản Tây Nguyên, biên 35% (dày nhất — spec §5.5: "biên dày nhất").
+  {
+    id: 'tay_nguyen',
+    name: 'Tây Nguyên',
+    icon: '⛰️',
+    unlock: 54,
+    region: 'Tây Nguyên',
+    hours: 8,
+    goods: [
+      { productId: 'rg_kho_bo', discount: 0.35, weeklyCap: 12 },
+      { productId: 'rg_mac_khen', discount: 0.35, weeklyCap: 12 },
+    ],
+    events: [],
+  },
 ];
 
 export const routeById = (id: string): RouteDef | undefined => ROUTES.find((r) => r.id === id);

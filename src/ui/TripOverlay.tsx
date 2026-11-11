@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useClock, useGame } from '../core/store';
 import { ROUTES, HAULERS, COOL_BOX, haulerById, routeById, haulerUnlocked, routeUnlocked, routeBuyPrice, routeDiscountFor } from '../data/routes';
 import {
-  routeStockResolve, routeStockLeft, cartCases, cartBuyCost, cartBuyCostDiscounted, cartSavings, tripProgress, tripRemaining, weekOfDay, type TripState,
+  routeStockResolve, routeStockLeft, cartCases, cartBuyCost, cartBuyCostDiscounted, cartSavings, tripProgress, tripRemaining, weekOfDay, routeRelTier, debtOverdue, TRIP_DEBT_DUE_DAYS, TRIP_DEBT_PCT, type TripState,
 } from '../data/trip';
 import { haggleFloor, haggleDiscount, HAGGLE_MAX_ROUNDS, HAGGLE_MAX_OFFER } from '../data/haggle';
 import { roadEventDraw } from '../data/roadEvents';
@@ -57,6 +57,7 @@ export function TripOverlay() {
         <CartEditor key={trip.routeId} trip={trip} />
         <RoadEvents trip={trip} />
         <HaggleEditor trip={trip} />
+        <DebtEditor />
       </div>
     );
   }
@@ -67,6 +68,7 @@ export function TripOverlay() {
   if (!open) {
     return (
       <div className="trip-ov">
+        <DebtEditor />
         <button className="trip-ov-launch" onClick={() => setOpen(true)}>🚚 Đi tỉnh</button>
       </div>
     );
@@ -98,6 +100,7 @@ export function TripOverlay() {
           <input type="number" value={cash} min={1} onChange={(e) => setCash(e.target.value)} />
         </label>
         <Garage />
+        <DebtEditor />
         <div className="trip-ov-actions">
           <button className="mini-btn" onClick={() => setOpen(false)}>Bỏ qua</button>
           <button className="mini-btn primary" disabled={!picked} onClick={go}>Lên đường</button>
@@ -115,6 +118,7 @@ function CartEditor({ trip }: { trip: TripState }) {
 
   const route = routeById(trip.routeId);
   const hauler = haulerById(trip.hauler);
+  const tier = routeRelTier(biz.supplierRel?.[`route:${route?.id ?? ''}`]);
   const [draft, setDraft] = useState<Record<string, number>>({ ...trip.cart });
   const [open, setOpen] = useState(false);
 
@@ -129,11 +133,15 @@ function CartEditor({ trip }: { trip: TripState }) {
 
   if (!route || !hauler || goods.length === 0) return null;
 
-  const stock = routeStockResolve(biz.routeStock, route, trip.day);
+  const stock = routeStockResolve(biz.routeStock, route, trip.day, tier);
   const used = cartCases(draft);
   const t = { ...trip, cart: draft };
   const paid = cartBuyCost(t, route);
   const savings = cartSavings(t, route);
+  const debtLimit = tier >= 3 ? Math.floor(trip.cash * TRIP_DEBT_PCT) : 0;
+  const moneyLbl = paid > trip.cash
+    ? ` (nợ ${formatMoney(paid - trip.cash)})`
+    : tier >= 3 ? ' (mối ruột ghi nợ được)' : '';
 
   const setQ = (pid: string, q: number) => {
     const next = { ...draft };
@@ -164,7 +172,8 @@ function CartEditor({ trip }: { trip: TripState }) {
             const remainingCap = Math.max(0, hauler.cases - (used - qCases));
             const maxByCap = remainingCap * size;
             const maxByLeft = Math.max(0, left);
-            const maxByCash = price > 0 ? Math.floor((trip.cash - (paid - price * q)) / price) : 0;
+            const cashRoom = trip.cash + debtLimit;
+            const maxByCash = price > 0 ? Math.floor((cashRoom - (paid - price * q)) / price) : 0;
             const maxQ = Math.max(0, Math.min(maxByCap, maxByLeft, maxByCash));
             return (
               <div key={pid} className="trip-shop-row">
@@ -182,7 +191,7 @@ function CartEditor({ trip }: { trip: TripState }) {
             );
           })}
           <div className="trip-shop-total">
-            <span>Chở {used}/{hauler.cases} thùng · {formatMoney(paid)}/{formatMoney(trip.cash)}đ</span>
+            <span>Chở {used}/{hauler.cases} thùng · {formatMoney(paid)}/{formatMoney(trip.cash)}đ{moneyLbl}</span>
             {savings > 0 && <span className="trip-shop-save">+{formatMoney(savings)} so mối lái</span>}
           </div>
           <div className="trip-ov-actions">
@@ -300,6 +309,31 @@ function fmtCost(o: { label: string; minutes: number; cost?: number; wet?: boole
   if (o.sell) return 'bán bớt hàng';
   if (o.wet) return 'hàng dễ ướt';
   return o.minutes > 0 ? `+${o.minutes}′` : '';
+}
+
+/** Hệ 5-L7 — thẻ nợ mối ruột tại nguồn (SPEC §5.7): chưa trả nổi thì bấm trả; quá hạn đỏ + mất ưu đãi. */
+function DebtEditor() {
+  const s = useGame();
+  const day = s.day;
+  const d = s.biz.routeDebt;
+  const tripRepayDebt = useGame((x) => x.tripRepayDebt);
+  if (!d) return null;
+  const overdue = debtOverdue(d, day);
+  const route = routeById(d.routeId);
+  return (
+    <div className="trip-ov-card">
+      <div className="trip-ov-head">
+        <b>{overdue ? '🧾 Nợ mối ruột QUÁ HẠN' : '🧾 Ghi nợ chuyến đi'}</b>
+        <span className={`trip-debt-due ${overdue ? 'late' : ''}`}>
+          {formatMoney(d.amount)} · {overdue ? `quá hạn ${day - d.dueDay} ngày` : `hạn ${d.dueDay}`}
+        </span>
+      </div>
+      <p className="trip-ov-note">{route?.name ?? ''} còn {formatMoney(d.amount)} — trả trong {TRIP_DEBT_DUE_DAYS} ngày, kẻo mất ưu đãi mối ruột.</p>
+      <div className="trip-ov-actions">
+        <button className="mini-btn primary" disabled={s.money < d.amount} onClick={() => tripRepayDebt()}>Trả nợ {formatMoney(d.amount)}</button>
+      </div>
+    </div>
+  );
 }
 
 /** Hệ 5-L6 — sắm xe chở hàng & thùng đá giữ lạnh (bảng nhỏ trong bảng chọn chuyến). */

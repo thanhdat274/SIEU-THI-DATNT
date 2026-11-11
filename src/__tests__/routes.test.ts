@@ -40,8 +40,8 @@ describe('ROUTES (tuyến)', () => {
     }
   });
 
-  it('L1 có đúng 2 tuyến: Chợ huyện (theo ngành + hàng thô cụ thể) + Miệt vườn (theo đặc sản Nam)', () => {
-    expect(ROUTES.map((r) => r.id)).toEqual(['cho_huyen', 'miet_vuon']);
+  it('L1+L7 có đủ 5 tuyến: Chợ huyện + Miệt vườn (L1) + Bắc/Trung/Tây Nguyên (L7)', () => {
+    expect(ROUTES.map((r) => r.id)).toEqual(['cho_huyen', 'miet_vuon', 'lang_nghe_bac', 'cho_trung', 'tay_nguyen']);
     const j = routeById('cho_huyen')!;
     expect(j.categoryDeals?.length).toBeGreaterThan(0); // ưu đãi theo ngành (20–25%)
     // L3 — Chợ huyện cũng bán cụ thể nguyên liệu thô số lượng lớn (tôm, cá, măng tươi, §5.5) để chọn hàng chở về.
@@ -51,6 +51,19 @@ describe('ROUTES (tuyến)', () => {
     expect(v.region).toBe('Nam');
     expect(v.goods).toHaveLength(5);
     expect(v.categoryDeals).toBeUndefined();
+    // L7 — 3 tuyến còn lại, đúng miền + đúng biên theo spec §5.5 (30%/32%/35%), mở >30 (golden-safe).
+    const expects: [string, string, string[], number][] = [
+      ['lang_nghe_bac', 'Bắc', ['rg_tra_shan', 'rg_com_lang', 'rg_banh_com'], 0.30],
+      ['cho_trung', 'Trung', ['rg_me_xung', 'rg_nem_chua', 'rg_keo_cu_do'], 0.32],
+      ['tay_nguyen', 'Tây Nguyên', ['rg_kho_bo', 'rg_mac_khen'], 0.35],
+    ];
+    for (const [id, region, pids, disc] of expects) {
+      const r = routeById(id)!;
+      expect(r.region).toBe(region);
+      expect(r.unlock).toBeGreaterThan(30);
+      expect(r.goods.map((g) => g.productId)).toEqual(pids);
+      for (const g of r.goods) expect(g.discount).toBe(disc);
+    }
   });
 
   it('mọi đặc sản của Miệt vườn đều biên 30% và tồn tại trong bảng', () => {

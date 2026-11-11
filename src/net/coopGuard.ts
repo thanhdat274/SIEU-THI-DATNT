@@ -89,4 +89,5 @@ export const GUARDED: Record<string, (args: unknown[]) => string> = {
   buyHauler: () => 'trip',
   buyCoolBox: () => 'trip',
   tripArrive: () => 'trip',
+  tripRepayDebt: () => 'trip',
 };
