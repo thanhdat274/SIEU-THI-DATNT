@@ -29,9 +29,12 @@ export const stars = (n: number) => '★'.repeat(n) + '☆'.repeat(5 - n);
 
 export const starColor = (n: number) => (n >= 4 ? '#2ecc71' : n === 3 ? '#f1c40f' : '#e74c3c');
 
-export function Footer({ onClose, closeLabel = 'Đóng', children }: { onClose: () => void; closeLabel?: string; children?: React.ReactNode }) {
+/** GĐ2349 — `pin`: ghim hàng nút xuống ĐÁY khung khi nội dung ngắn (marginTop:'auto' trong flex
+ *  column của panel bọc ngoài; nội dung dài thì auto-margin tự về 0 như thường) — hết cảnh panel
+ *  Sổ đầu ngày kết thúc giữa panel rồi trống nửa khung dưới (QA người chơi). */
+export function Footer({ onClose, closeLabel = 'Đóng', children, pin }: { onClose: () => void; closeLabel?: string; children?: React.ReactNode; pin?: boolean }) {
   return (
-    <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 16 }}>
+    <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: pin ? 'auto' : 16, ...(pin ? { paddingTop: 16 } : {}) }}>
       {children}
       <button style={{ ...styles.btn, background: '#f1c40f' }} onClick={onClose}>{closeLabel}</button>
     </div>

@@ -44,6 +44,13 @@ const BrandPanel = lazy(() => import('./panels/BrandPanel').then((m) => ({ defau
 const TodoListPanel = lazy(() => import('./panels/TodoListPanel').then((m) => ({ default: m.TodoListPanel })));
 const NotifLogPanel = lazy(() => import('./panels/NotifLogPanel').then((m) => ({ default: m.NotifLogPanel })));
 
+/** GĐ2349 — khung "vừa" cho vài panel nội dung vốn ngắn (Sổ thông báo): không ép khung LỚN 688px
+ *  thì hết khoảng trống đáy lớn khi tin còn ít. Mỗi loại vẫn MỘT khung cố định (không co giãn theo
+ *  nội dung — luật GĐ662), chỉ chọn cỡ trong hệ thống khung nhỏ/vừa/lớn của thiết kế. */
+export const PANEL_HEIGHT: Partial<Record<string, string>> = {
+  log: 'min(520px, calc(100dvh - 108px))',
+};
+
 export function Panels() {
   const panel = useGame((s) => s.panel);
   const closePanel = useGame((s) => s.closePanel);
@@ -62,7 +69,7 @@ export function Panels() {
   if (panel.type === 'arrange') return <Suspense fallback={<div style={styles.backdrop}><PanelLoading /></div>}><ArrangePanel /></Suspense>;
   return (
     <div style={styles.backdrop} onClick={(e) => e.target === e.currentTarget && closePanel()}>
-      <div className="panel" style={styles.panel}>
+      <div className="panel" style={{ ...styles.panel, ...(PANEL_HEIGHT[panel.type] ? { height: PANEL_HEIGHT[panel.type] } : {}) }}>
         <button style={styles.close} title="Đóng (Esc)" aria-label="Đóng" onClick={closePanel}>✕</button>
         {hub && <Tabs tabs={hubTabs(hub, level, panel.type)} value={panel.type} onChange={(t) => openPanel({ type: t } as never)} />}
         {/* Playtest P1 T4: panel tải lười hiện khung chờ thay vì màn trắng ~3 giây (tưởng treo) */}

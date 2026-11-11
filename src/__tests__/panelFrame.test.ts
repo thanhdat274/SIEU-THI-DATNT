@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { styles } from '../ui/panels/shared';
+import { PANEL_HEIGHT } from '../ui/Panels';
 
 /**
  * GĐ662 — khung modal CỐ ĐỊNH (QA toàn diện giao diện).
@@ -37,5 +38,12 @@ describe('khung modal cố định (GĐ662)', () => {
     expect(p.backgroundColor).toBe('#2b2b3a');
     expect(p.backgroundImage).toContain('linear-gradient');
     expect(p.backgroundAttachment).toBe('local, local, scroll, scroll');
+  });
+
+  it('GĐ2349 — panel nội dung ngắn chọn khung "vừa" (log 520px), các panel khác giữ khung LỚN 688px', () => {
+    expect(PANEL_HEIGHT.log).toBe('min(520px, calc(100dvh - 108px))');
+    // chỉ một vài loại được chọn cỡ khác — phần còn lại (kể cả khung LỚN) không bị đụng
+    expect(Object.keys(PANEL_HEIGHT)).toEqual(['log']);
+    expect(panel().height).toBe('min(688px, calc(100dvh - 108px))');
   });
 });

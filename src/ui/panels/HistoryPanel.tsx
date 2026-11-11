@@ -242,7 +242,14 @@ export function HistoryPanel() {
     <>
       <h2 style={styles.title}>📈 Sổ theo dõi 30 ngày</h2>
       <p style={styles.sub}>Doanh thu và lãi từng ngày (lãi hôm nay chưa trừ lương/tiền nhà tới khi sang ngày mới). Cột xám là số lượt khách. Dùng để nhìn đà tăng trưởng: nhập thêm hàng thì doanh thu có nhích không, khách có đông dần không.</p>
-      {/* viewBox để SVG co theo panel (max-width:100%) thay vì giữ cố định 600px tràn ngang màn hẹp */}
+      {/* GĐ2349 — ngày đầu chưa có số liệu ngày trước: không vẽ ô SVG trắng trống, hiện lời dẫn */}
+      {history.length === 0 ? (
+        <div style={{ ...styles.card, justifyContent: 'flex-start', maxWidth: 560 }}>
+          🌱 Mới khai trương — chưa có số liệu ngày trước. Bán vài ngày rồi quay lại đây xem đà tăng trưởng
+          (doanh thu/lãi/khách từng ngày so cạnh nhau).
+        </div>
+      ) : (
+      <>
       <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', maxWidth: 600, background: '#fafbfc', borderRadius: 8, border: '1px solid #e3e6ea' }}>
         <line x1={padL} y1={zero} x2={W - padL} y2={zero} stroke="#d6dae0" />
         {days.map((d, i) => (
@@ -264,6 +271,8 @@ export function HistoryPanel() {
         🏆 Lãi nhất: <b>ngày {best.day}</b> — doanh thu {formatMoney(best.revenue)}, lãi {formatMoney(best.profit)}
       </p>
       <p style={{ ...styles.row, flexWrap: 'wrap' }}>📊 Lãi bình quân {days.length} ngày: <b>{formatMoney(avgProfit)}</b>/ngày · khách bình quân <b>{Math.round(days.reduce((n, d) => n + d.customers, 0) / days.length)}</b> lượt/ngày</p>
+      </>
+      )}
       {/* Heatmap vị trí kệ: kệ nào bán chạy nhất kể từ khi đặt (xem bản đồ màu ở màn 🏪 Sắp xếp → 🔥) */}
       {(() => {
         const ranked = furnitureList
