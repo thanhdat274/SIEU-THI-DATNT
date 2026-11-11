@@ -15,7 +15,7 @@ describe('hasFeature (T3-L2)', () => {
   });
   it('mốc giữ nguyên hiện trạng (đổi mốc phải sửa test này — có chủ ý)', () => {
     expect(FEATURE_LEVEL).toMatchObject({
-      wholesale: 6, loyalty: 5, dineIn: 30, credit: 4, haggle: 2, change: 2, criticHard: 45, rival: 8,
+      wholesale: 6, loyalty: 5, dineIn: 33, credit: 4, haggle: 2, change: 2, criticHard: 45, rival: 8,
       poachCluster: 32, farmOrder: 16, social: 8, stance: 60, mastery: 31, lifeEvent: 32, cook: 21, quanNuoc: 29,
     });
   });

@@ -37,11 +37,11 @@ describe('machines — máy tự phục vụ thu phí mỗi lượt (GĐ1493)', 
     expect(MACHINE_VISIT_CHANCE).toBe(0.15);
   });
 
-  it('máy khai unlock đúng bậc: cân sức khỏe 25 (đặc trưng tạp hóa), bán nước + gắp thú 30 (đi cùng khu ăn uống)', () => {
+  it('máy khai unlock đúng bậc: cân sức khỏe 25 (đặc trưng tạp hóa), bán nước 31 + gắp thú 35 (T3-L4 rải ra khỏi cấp 30)', () => {
     const unlockOf = (id: string) => furnitureDef(id as never).unlock;
     expect(unlockOf('scale_machine')).toBe(25);
-    expect(unlockOf('vending_drink')).toBe(30);
-    expect(unlockOf('claw_machine')).toBe(30);
+    expect(unlockOf('vending_drink')).toBe(31);
+    expect(unlockOf('claw_machine')).toBe(35);
     for (const id of Object.keys(MACHINE_TYPES)) {
       expect(furnitureDef(id as never).tiers).toBe(0);
       expect(furnitureDef(id as never).categories).toHaveLength(0);

@@ -132,19 +132,19 @@ export const FURNITURE: FurnitureDef[] = [
   // GĐ1490 — KHU ĂN TẠI CHỢ: khách mua món nấu tươi có thể ngồi lại ăn (đối chiếu khu dine-in)
   // ──────────────────────────────────────────────
   {
-    type: 'dining_table', name: 'Bàn ăn', price: 120000, unlock: 30, size: [1.2, 0.7], tiers: 0, slots: 0, capacity: 0,
+    type: 'dining_table', name: 'Bàn ăn', price: 120000, unlock: 33, size: [1.2, 0.7], tiers: 0, slots: 0, capacity: 0, // SPEC-TOI-UU T3-L4: Khu ăn 30→33
     categories: [], seatSlots: 4,
     desc: 'Khu ăn tại chỗ: khách mua món nấu tươi ngồi lại ăn ở đây (tối đa 4 ghế kề bàn)',
   },
   {
-    type: 'chair', name: 'Ghế ăn', price: 40000, unlock: 30, size: [0.5, 0.5], tiers: 0, slots: 0, capacity: 0,
+    type: 'chair', name: 'Ghế ăn', price: 40000, unlock: 33, size: [0.5, 0.5], tiers: 0, slots: 0, capacity: 0,
     categories: [], desc: 'Đặt sát bàn ăn (trong tầm 1 ô kề) mới tính là một chỗ ngồi',
   },
   // ──────────────────────────────────────────────
   // GĐ1493 — MÁY TỰ PHỤC VỤ: khách ghé chơi/thử rồi trả phí mỗi lượt (không cần nhân viên)
   // ──────────────────────────────────────────────
   {
-    type: 'vending_drink', name: 'Máy bán nước tự động', price: 120000, unlock: 30, size: [0.8, 0.7], tiers: 0, slots: 0, capacity: 0,
+    type: 'vending_drink', name: 'Máy bán nước tự động', price: 120000, unlock: 31, size: [0.8, 0.7], tiers: 0, slots: 0, capacity: 0, // SPEC-TOI-UU T3-L4: 30→31
     categories: [], desc: 'Khách ghé lấy nước trả phí 1.200đ/lượt — giá máy tương đương ~100 lượt (đi cùng khu ăn uống)',
   },
   {
@@ -168,14 +168,14 @@ export const FURNITURE: FurnitureDef[] = [
     categories: [], desc: 'Khách lên cân xem kết quả trả phí 1.000đ/lượt — đặc trưng tiệm tạp hóa Việt',
   },
   {
-    type: 'claw_machine', name: 'Máy gắp thú', price: 180000, unlock: 30, size: [0.8, 0.7], tiers: 0, slots: 0, capacity: 0,
+    type: 'claw_machine', name: 'Máy gắp thú', price: 180000, unlock: 35, size: [0.8, 0.7], tiers: 0, slots: 0, capacity: 0, // SPEC-TOI-UU T3-L4: 30→35
     categories: [], desc: 'Khách gắp thú bông trả phí 1.800đ/lượt, nhỏ con nấn ná không chịu đi (đi cùng khu ăn uống)',
   },
   // ──────────────────────────────────────────────
   // GĐ1494 — NHÀ VỆ SINH: tiện ích khu ăn tại chỗ, hoàn vốn chậm (~500 lượt); khách ăn xong cần
   // ──────────────────────────────────────────────
   {
-    type: 'toilet_squat', name: 'Nhà vệ sinh ngồi xổm', price: 250000, unlock: 30, size: [0.8, 0.8], tiers: 0, slots: 0, capacity: 0,
+    type: 'toilet_squat', name: 'Nhà vệ sinh ngồi xổm', price: 250000, unlock: 33, size: [0.8, 0.8], tiers: 0, slots: 0, capacity: 0,
     categories: [], desc: 'Khách ăn xong ghé trả phí 500đ/lượt; thiếu bồn lúc siêu thị còn nhỏ thì khách chịu thôi',
   },
   {

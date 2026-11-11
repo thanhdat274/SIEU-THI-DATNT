@@ -42,8 +42,8 @@ describe('wantsDineIn — quyết định thuần (GĐ1491)', () => {
     expect(wantsDineIn({ level: DINE_UNLOCK - 1, hasCooked: true, roll: 0 })).toBe(false);
     expect(wantsDineIn({ level: DINE_UNLOCK, hasCooked: false, roll: 0 })).toBe(false);
   });
-  it('hằng số: mở tại cấp 30, chance 0,3, ăn 8 giây game', () => {
-    expect(DINE_UNLOCK).toBe(30);
+  it('hằng số: mở tại cấp 33 (T3-L4 dời khỏi 30), chance 0,3, ăn 8 giây game', () => {
+    expect(DINE_UNLOCK).toBe(33);
     expect(DINE_CHANCE).toBe(0.3);
     expect(EAT_SECONDS).toBeGreaterThan(0);
   });

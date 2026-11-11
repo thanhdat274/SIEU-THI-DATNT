@@ -10,8 +10,8 @@ import { RECIPES } from '../data/recipes';
 import { productById } from '../data/products';
 
 describe('critic — dữ liệu & chọn món (GĐ1498)', () => {
-  it('hằng số: mở cấp 30, nghiêm ngặt cấp 45, thưởng mềm 200k / lớn 500k, phạt 3 đánh giá 1★', () => {
-    expect(CRITIC_UNLOCK).toBe(30);
+  it('hằng số: mở cấp 37 (T3-L4 chờ khu ăn chạy vài cấp), nghiêm ngặt cấp 45, thưởng mềm 200k / lớn 500k, phạt 3 đánh giá 1★', () => {
+    expect(CRITIC_UNLOCK).toBe(37);
     expect(CRITIC_HARD_UNLOCK).toBe(45);
     expect(CRITIC_CHANCE).toBe(0.5);
     expect(CRITIC_WINDOW_MINUTES).toBe(30);

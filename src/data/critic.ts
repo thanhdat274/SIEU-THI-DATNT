@@ -8,7 +8,7 @@ import { metaRng } from '../core/rand';
 //   · từ CRITIC_HARD_UNLOCK (siêu thị lớn): gọi BẤT KỲ món đã mở (kể cả món mới) + có phạt.
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const CRITIC_UNLOCK = 30;
+export const CRITIC_UNLOCK = 37; // SPEC-TOI-UU T3-L4: 30→37 (chỉ có nghĩa khi khu ăn đã chạy vài cấp)
 export const CRITIC_HARD_UNLOCK = 45;
 /** Xác suất có nhà phê bình ghé mỗi ngày (tối đa 1 lần/ngày). */
 export const CRITIC_CHANCE = 0.5;
