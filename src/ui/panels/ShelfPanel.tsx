@@ -6,15 +6,19 @@ import { furnitureDef } from '../../data/furniture';
 import { CATEGORIES, formatMoney, unlockedProducts } from '../../data/products';
 import { repairCost, RISK_RULES, wears } from '../../data/risks';
 import { wearRisk } from '../../data/wearRisk';
+import { shelfCount, itemHealthList } from '../../data/analytics';
+import { shelfSlotValue } from '../../data/shelfSlotValue';
 import { LifeBadge, Footer, styles } from './shared';
 import { masteryBadge } from '../../data/sellMastery';
 
 export function ShelfPanel({ uid }: { uid: number }) {
-  const { level, storage, storageLots, furniture, stockTier, openPanel, closePanel, soldEver } = useGame();
+  const { level, storage, storageLots, furniture, stockTier, openPanel, closePanel, soldEver, analytics, demand } = useGame();
   const f = furniture.find((it) => it.uid === uid);
   if (!f) return null;
   const def = furnitureDef(f.type);
   const products = unlockedProducts(level).filter((p) => def.categories.includes(p.category));
+  const onShelf = shelfCount(furniture);
+  const slot = shelfSlotValue(itemHealthList(analytics, level, storage, onShelf, demand), onShelf);
   return (
     <>
       <h2 style={styles.title}>🗄️ {def.name}</h2>
@@ -39,7 +43,9 @@ export function ShelfPanel({ uid }: { uid: number }) {
               { value: '', label: '(Trống)' },
               ...products.map((p) => {
                 const life = nearestLife(fitLots(storageLots[p.id], storage[p.id] ?? 0, p.id));
-                return { value: p.id, label: p.name, hint: `kho: ${storage[p.id] ?? 0}${life ? ` · ⏳${life}d` : ''}${masteryBadge(level, soldEver[p.id] ?? 0)}` };
+                const s = slot.items.find((x) => x.id === p.id);
+                const sl = s ? (s.flag === 'lose' ? ' · ĐANG LỖ' : ` · lãi ${formatMoney(s.perSlot ?? 0)}/ô/ngày`) : ' · chưa bày';
+                return { value: p.id, label: p.name, hint: `kho: ${storage[p.id] ?? 0}${life ? ` · ⏳${life}d` : ''}${sl}${masteryBadge(level, soldEver[p.id] ?? 0)}` };
               }),
             ]}
           />
@@ -48,6 +54,16 @@ export function ShelfPanel({ uid }: { uid: number }) {
             life={tier.productId ? nearestLife(fitLots(tier.lots, tier.count, tier.productId)) : null}
             sale={tierMarkdown(tier.productId, tier.lots, tier.count)}
           />
+          {tier.productId && (() => {
+            const s = slot.items.find((x) => x.id === tier.productId);
+            if (!s) return null;
+            return (
+              <span style={{ fontSize: 11, color: s.flag === 'lose' ? '#e74c3c' : '#e67e22', marginLeft: 6 }}>
+                📊 lãi {formatMoney(s.perSlot ?? 0)}/ô/ngày
+                {s.flag === 'lose' ? ' · ĐANG LỖ — nên dọn' : slot.best != null && s.perSlot != null && s.perSlot < slot.best ? ` · kém ô hay nhất ${formatMoney(slot.best)}` : ''}
+              </span>
+            );
+          })()}
           <button
             style={styles.btn}
             disabled={!tier.productId || tier.count >= def.capacity || !(storage[tier.productId] > 0)}
