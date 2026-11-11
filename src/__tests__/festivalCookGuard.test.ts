@@ -10,7 +10,7 @@ import { newGameData, useGame } from '../core/store';
  *
  * Hợp đồng: startCook món lễ ngoài đúng dịp → false, KHÔNG tạo cookJobs, báo đúng chuỗi.
  * recipe_gio_83 festival 'quoc_te_phu_nu' (8/3, md(3,7..9) → dayOfYear 65–67 → game day 66–68),
- * unlock 30, station gift_wrap.
+ * unlock 31 (T3-L4 răng cưa dời 30→31), station gift_wrap.
  */
 
 /** Dựng trạng thái ở `day`, bắt notify vào toasts[]. */
@@ -18,7 +18,7 @@ const prep = (day: number) => {
   const toasts: string[] = [];
   useGame.setState({
     ...newGameData(),
-    level: 30,
+    level: 31, // recipe_gio_83 mở 31 — trên cấp này chỉ còn cổng lễ/trạm chặn
     day,
     notify: (m: string) => void toasts.push(m),
   });

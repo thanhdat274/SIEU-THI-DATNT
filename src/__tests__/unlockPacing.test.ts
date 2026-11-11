@@ -36,8 +36,8 @@ describe('unlockPacing — baseline hiện trạng (SPEC-TOI-UU §T3)', () => {
     const band = (lo: number, hi: number) => byLevel.slice(lo, hi + 1).reduce((a, b) => a + b, 0);
     expect(band(1, 10)).toBe(65);
     expect(band(11, 20)).toBe(99);
-    expect(band(21, 30)).toBe(202); // L4: dời 5 đồ nội thất khỏi cấp 30 (bàn/ghế/vệ sinh→33, bán nước→31, gắp thú→35) — trước là 207
-    expect(band(31, 40)).toBe(268); // 5 đồ đó dồn vào 31–40 — trước là 263
+    expect(band(21, 30)).toBe(187); // T3-L4 răng cưa: dời ~43 món khỏi 26/28/30 về phía 27/29/31 (mỗi cấp 26–31 về 13–18 mục) — trước là 202
+    expect(band(31, 40)).toBe(283); // phần dời sang cấp 31 dồn vào 31–40 — trước là 268
     expect(band(41, 60)).toBe(337);
     expect(band(61, 80)).toBe(151);
   });
@@ -48,11 +48,12 @@ describe('unlockPacing — baseline hiện trạng (SPEC-TOI-UU §T3)', () => {
     expect(maxAny, `một cấp hiện mở ${maxAny} mục`).toBeLessThanOrEqual(90);
   });
 
-  it('cụm quá tải 31–40 có kiểm soát (baseline 268, cấm vượt 320 trước khi dời mốc)', () => {
+  it('cụm quá tải 31–40 có kiểm soát (baseline 283, cấm vượt 320 trước khi dời mốc)', () => {
     // Dải này quá tải nhất (spec §T3). L4 đã dồn 5 đồ nội thất khỏi cấp 30 vào đây
-    // (dời mốc có chủ ý + golden:update); chưa rải bớt món thì không được tăng thêm.
+    // (dời mốc có chủ ý + golden:update); răng cưa T3-L4 dồn thêm ~12 món sang cấp 31.
+    // Chưa rải bớt món thì không được tăng thêm.
     expect(band31to40, `dải 31–40 hiện ${band31to40} mục`).toBeLessThanOrEqual(320);
-    expect(band31to40, 'baseline dải 31–40').toBe(268);
+    expect(band31to40, 'baseline dải 31–40').toBe(283);
   });
 
   it('danh sách hệ lớn theo cấp (dời mốc một hệ = phải cập nhật baseline có chủ ý)', () => {

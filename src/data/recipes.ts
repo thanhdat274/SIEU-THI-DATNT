@@ -58,8 +58,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   // --- Bếp nướng (food_grill) ---
   { id: 'banh_mi_trung_nuong', name: 'Bánh mì trứng nướng', category: 'fresh', buy: 13000, sell: 24700, color: 0xdc7633, unlock: 38 },
   { id: 'xuc_xich_nuong', name: 'Xúc xích nướng', category: 'fresh', buy: 3000, sell: 5700, color: 0xc0392b, unlock: 22 },
-  { id: 'com_hop_ga', name: 'Cơm hộp gà', category: 'fresh', buy: 8200, sell: 15600, color: 0xf5cba7, unlock: 30 },
-  { id: 'banh_trang_tron', name: 'Bánh tráng trộn', category: 'fresh', buy: 6700, sell: 12700, color: 0xe84393, unlock: 28 },
+  { id: 'com_hop_ga', name: 'Cơm hộp gà', category: 'fresh', buy: 8200, sell: 15600, color: 0xf5cba7, unlock: 31 },
+  { id: 'banh_trang_tron', name: 'Bánh tráng trộn', category: 'fresh', buy: 6700, sell: 12700, color: 0xe84393, unlock: 29 },
   // GĐ1322: Bóp gỏi khô bò — món đặc sản vùng (khô bò mối lái dacsan GĐ1321) trộn rau + đường thành mẻ:
   // mẻ (khô bò 62k + rau 10k×2 + đường 17k) = 99k → 8 đĩa × 24k = 192k, lãi 93k/mẻ, nấu hời hơn bán thẳng
   // nguyên liệu (159k < 192k). Khép chuỗi mối lái → bếp, mở 50 = đúng cấp khô bò (sau mốc golden 30 → sim không đổi).
@@ -102,16 +102,16 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'ca_kho_to', name: 'Cá kho tộ', category: 'fresh', buy: 19000, sell: 38000, color: 0xcdb79e, unlock: 32 },
 
   // --- Máy xay (blender) ---
-  { id: 'sinh_to_trai_cay', name: 'Sinh tố trái cây', category: 'cold', buy: 7500, sell: 14300, color: 0xfd79a8, unlock: 28 },
-  { id: 'kem_trai_cay', name: 'Kem trái cây tự làm', category: 'frozen', buy: 9400, sell: 17900, color: 0xff9ff3, unlock: 28 },
+  { id: 'sinh_to_trai_cay', name: 'Sinh tố trái cây', category: 'cold', buy: 7500, sell: 14300, color: 0xfd79a8, unlock: 29 },
+  { id: 'kem_trai_cay', name: 'Kem trái cây tự làm', category: 'frozen', buy: 9400, sell: 17900, color: 0xff9ff3, unlock: 29 },
   // GĐ1094: Sữa chua dê — mẻ (dê 45k + trái cây 25k + đường 17k) = 87k → 6 hũ × 22k = 132k, lãi 45k/mẻ, nấu hời hơn bán nguyên liệu (119k < 132k)
   { id: 'sua_chua_de', name: 'Sữa chua dê', category: 'cold', buy: 11000, sell: 22000, color: 0xfdf6ec, unlock: 40 },
 
   // --- Quầy pha (drink_counter) ---
   { id: 'ca_phe_sua_da', name: 'Cà phê sữa đá', category: 'drink', buy: 9800, sell: 18700, color: 0x6e2c00, unlock: 25 },
   { id: 'tra_sua', name: 'Trà sữa', category: 'drink', buy: 9800, sell: 18600, color: 0xdfe6e9, unlock: 25 },
-  { id: 'bac_xiu', name: 'Bạc xỉu', category: 'drink', buy: 9600, sell: 18200, color: 0xf5cba7, unlock: 26 },
-  { id: 'tra_dao_cam_sa', name: 'Trà đào cam sả', category: 'drink', buy: 10300, sell: 19600, color: 0xfab1a0, unlock: 28 },
+  { id: 'bac_xiu', name: 'Bạc xỉu', category: 'drink', buy: 9600, sell: 18200, color: 0xf5cba7, unlock: 27 },
+  { id: 'tra_dao_cam_sa', name: 'Trà đào cam sả', category: 'drink', buy: 10300, sell: 19600, color: 0xfab1a0, unlock: 29 },
   { id: 'tra_o_mai_mo', name: 'Trà ô mai mơ', category: 'drink', buy: 12000, sell: 21000, color: 0xe8a878, unlock: 168 },
   { id: 'tra_o_mai_me', name: 'Trà ô mai me', category: 'drink', buy: 12000, sell: 21000, color: 0xb87848, unlock: 169 },
   { id: 'tra_o_mai_sau', name: 'Trà ô mai sấu', category: 'drink', buy: 12000, sell: 21000, color: 0xc0d080, unlock: 170 },
@@ -125,7 +125,7 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'ca_phe_trung', name: 'Cà phê trứng', category: 'drink', buy: 21500, sell: 40900, color: 0xe17055, unlock: 36 },
 
   // --- Chảo chiên (fryer) ---
-  { id: 'bap_xao', name: 'Bắp xào', category: 'fresh', buy: 2700, sell: 5100, color: 0xf9ca24, unlock: 26 },
+  { id: 'bap_xao', name: 'Bắp xào', category: 'fresh', buy: 2700, sell: 5100, color: 0xf9ca24, unlock: 27 },
   { id: 'ca_vien_chien', name: 'Cá viên chiên', category: 'fresh', buy: 5000, sell: 9500, color: 0xe55039, unlock: 32 },
   // GĐ1324: Nem chua rán — đặc sản nhà bà Tám (nem chua hẻm xóm GĐ1085) chiên giòn, món ăn vặt quen thuộc:
   // mẻ (nem chua 9k×2 + đường 17k) = 35k → 8 phần × 9k = 72k, lãi 37k/mẻ, nấu hời hơn bán thẳng nguyên liệu (49k < 72k).
@@ -635,13 +635,13 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
 
   // --- Combo ---
   { id: 'combo_xoi_doi', name: 'Suất Xôi Đôi', category: 'fresh', buy: 4300, sell: 8200, color: 0xe17055, unlock: 40 },
-  { id: 'combo_nuoc_doi', name: 'Combo Hai Ly', category: 'drink', buy: 19600, sell: 37200, color: 0x74b9ff, unlock: 26 },
+  { id: 'combo_nuoc_doi', name: 'Combo Hai Ly', category: 'drink', buy: 19600, sell: 37200, color: 0x74b9ff, unlock: 27 },
 
   // --- Giỏ quà ngày lễ (bàn gói quà; chỉ bán trong dịp, xem festival trong RECIPES) ---
-  { id: 'gio_qua_tet', name: 'Giỏ quà Tết', category: 'dry', buy: 47000, sell: 89000, color: 0xc0392b, unlock: 28 },
-  { id: 'gio_qua_83', name: 'Giỏ quà 8/3', category: 'dry', buy: 47000, sell: 89000, color: 0xe84393, unlock: 30 },
+  { id: 'gio_qua_tet', name: 'Giỏ quà Tết', category: 'dry', buy: 47000, sell: 89000, color: 0xc0392b, unlock: 29 },
+  { id: 'gio_qua_83', name: 'Giỏ quà 8/3', category: 'dry', buy: 47000, sell: 89000, color: 0xe84393, unlock: 31 },
   { id: 'gio_qua_2011', name: 'Giỏ quà 20/11', category: 'dry', buy: 50000, sell: 95000, color: 0xf78fb3, unlock: 32 },
-  { id: 'gio_qua_trung_thu', name: 'Giỏ quà Trung thu', category: 'dry', buy: 56000, sell: 106000, color: 0xd4a24c, unlock: 30 },
+  { id: 'gio_qua_trung_thu', name: 'Giỏ quà Trung thu', category: 'dry', buy: 56000, sell: 106000, color: 0xd4a24c, unlock: 31 },
 
   // GĐ1941: Gắn lối ra nấu cho nguyên liệu nhà làm "hàng chết" (homemade.ts) còn món CHÍNH CÓ THẬT ngoài đời —
   // trước nay chúng chỉ bán thẳng. Mỗi món: mẻ lãi dương TÍNH TỪ GIÁ THẬT (value > cost & > bán thẳng nguyên liệu),
@@ -915,10 +915,10 @@ export const RECIPES: Recipe[] = [
     outputId: 'xuc_xich_nuong', outputQty: 10, durationMin: 12, unlock: 22, reputationGain: 1 },
   { id: 'recipe_com_hop_ga', name: 'Cơm hộp gà', station: 'food_grill',
     inputs: [{ productId: 'gao', quantity: 1 }, { productId: 'thit', quantity: 5 }, { productId: 'rau', quantity: 3 }],
-    outputId: 'com_hop_ga', outputQty: 50, durationMin: 25, unlock: 30, reputationGain: 3 },
+    outputId: 'com_hop_ga', outputQty: 50, durationMin: 25, unlock: 31, reputationGain: 3 },
   { id: 'recipe_banh_trang', name: 'Bánh tráng trộn', station: 'food_grill',
     inputs: [{ productId: 'banhtrang', quantity: 3 }, { productId: 'traicay', quantity: 1 }],
-    outputId: 'banh_trang_tron', outputQty: 6, durationMin: 10, unlock: 28, reputationGain: 2 },
+    outputId: 'banh_trang_tron', outputQty: 6, durationMin: 10, unlock: 29, reputationGain: 2 },
   { id: 'recipe_com_suon', name: 'Cơm sườn nướng', station: 'food_grill',
     inputs: [{ productId: 'gao', quantity: 1 }, { productId: 'thit', quantity: 8 }, { productId: 'rau', quantity: 2 }],
     outputId: 'com_suon_nuong', outputQty: 50, durationMin: 30, unlock: 40, reputationGain: 4 },
@@ -1030,14 +1030,14 @@ export const RECIPES: Recipe[] = [
   // --- Máy xay (blender) ---
   { id: 'recipe_sinh_to', name: 'Sinh tố trái cây', station: 'blender',
     inputs: [{ productId: 'traicay', quantity: 1 }, { productId: 'suachua', quantity: 1 }],
-    outputId: 'sinh_to_trai_cay', outputQty: 4, durationMin: 8, unlock: 28, reputationGain: 2 },
+    outputId: 'sinh_to_trai_cay', outputQty: 4, durationMin: 8, unlock: 29, reputationGain: 2 },
   // GĐ1938: Sữa đậu nành tự xay (có thật): đậu nành hạt xay + đường, máy xay. Mở 34.
   { id: 'recipe_sua_dau_nanh_xay', name: 'Sữa đậu nành tự xay', station: 'blender',
     inputs: [{ productId: 'x_dau_nanh_hat', quantity: 2 }, { productId: 'x_duong', quantity: 1 }],
     outputId: 'sua_dau_nanh_xay', outputQty: 10, durationMin: 10, unlock: 34, reputationGain: 2 },
   { id: 'recipe_kem', name: 'Kem trái cây tự làm', station: 'blender',
     inputs: [{ productId: 'traicay', quantity: 1 }, { productId: 'suachua', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
-    outputId: 'kem_trai_cay', outputQty: 5, durationMin: 12, unlock: 28, reputationGain: 3 },
+    outputId: 'kem_trai_cay', outputQty: 5, durationMin: 12, unlock: 29, reputationGain: 3 },
   // GĐ1094: Sữa chua dê — món xay của sữa dê trại (dê mở cấp 27 nhưng chưa có lối ra bếp; sữa dẻ đắt gấp
   // rưỡi sữa bò, hợp khách sành). Mở 40 > mốc golden 30 → sim không đổi.
   { id: 'recipe_sua_chua_de', name: 'Sữa chua dê', station: 'blender',
@@ -1955,10 +1955,10 @@ export const RECIPES: Recipe[] = [
     outputId: 'tra_sua', outputQty: 5, durationMin: 8, unlock: 25, reputationGain: 3 },
   { id: 'recipe_bac_xiu', name: 'Bạc xỉu', station: 'drink_counter',
     inputs: [{ productId: 'caphe', quantity: 1 }, { productId: 'sua', quantity: 3 }],
-    outputId: 'bac_xiu', outputQty: 5, durationMin: 8, unlock: 26, reputationGain: 2 },
+    outputId: 'bac_xiu', outputQty: 5, durationMin: 8, unlock: 27, reputationGain: 2 },
   { id: 'recipe_tra_dao', name: 'Trà đào cam sả', station: 'drink_counter',
     inputs: [{ productId: 'tra', quantity: 1 }, { productId: 'traicay', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
-    outputId: 'tra_dao_cam_sa', outputQty: 6, durationMin: 10, unlock: 28, reputationGain: 3 },
+    outputId: 'tra_dao_cam_sa', outputQty: 6, durationMin: 10, unlock: 29, reputationGain: 3 },
   // GĐ1923: lối ra THỨ HAI của ô mai mơ nhà làm (bà Tám) — ra quầy pha, không chỉ nấu cháo.
   { id: 'recipe_tra_o_mai_mo', name: 'Trà ô mai mơ', station: 'drink_counter',
     inputs: [{ productId: 'tra', quantity: 1 }, { productId: 'hx_mut_mo', quantity: 1 }],
@@ -1994,7 +1994,7 @@ export const RECIPES: Recipe[] = [
   // --- Chảo chiên (fryer) ---
   { id: 'recipe_bap_xao', name: 'Bắp xào', station: 'fryer',
     inputs: [{ productId: 'bap', quantity: 2 }],
-    outputId: 'bap_xao', outputQty: 6, durationMin: 12, unlock: 26, reputationGain: 2 },
+    outputId: 'bap_xao', outputQty: 6, durationMin: 12, unlock: 27, reputationGain: 2 },
   { id: 'recipe_ca_vien', name: 'Cá viên chiên', station: 'fryer',
     inputs: [{ productId: 'ca', quantity: 1 }],
     outputId: 'ca_vien_chien', outputQty: 10, durationMin: 15, unlock: 32, reputationGain: 2 },
@@ -2114,21 +2114,21 @@ export const RECIPES: Recipe[] = [
     outputId: 'combo_xoi_doi', outputQty: 1, durationMin: 5, unlock: 40, reputationGain: 2 },
   { id: 'combo_nuoc_doi', name: 'Combo Hai Ly', station: 'drink_counter',
     inputs: [{ productId: 'tra_sua', quantity: 1 }, { productId: 'ca_phe_sua_da', quantity: 1 }],
-    outputId: 'combo_nuoc_doi', outputQty: 1, durationMin: 3, unlock: 26, reputationGain: 2 },
+    outputId: 'combo_nuoc_doi', outputQty: 1, durationMin: 3, unlock: 27, reputationGain: 2 },
 
   // --- Giỏ quà ngày lễ (bàn gói quà): mỗi mẻ 2 giỏ, chỉ gói trong đúng dịp ---
   { id: 'recipe_gio_tet', name: 'Giỏ quà Tết', station: 'gift_wrap',
     inputs: [{ productId: 'x_keo', quantity: 8 }, { productId: 'x_banh_quy', quantity: 4 }, { productId: 'tra', quantity: 2 }, { productId: 'x_bao_li_xi', quantity: 2 }],
-    outputId: 'gio_qua_tet', outputQty: 2, durationMin: 12, unlock: 28, reputationGain: 3, festival: 'tet' },
+    outputId: 'gio_qua_tet', outputQty: 2, durationMin: 12, unlock: 29, reputationGain: 3, festival: 'tet' },
   { id: 'recipe_gio_83', name: 'Giỏ quà 8/3', station: 'gift_wrap',
     inputs: [{ productId: 'traicay', quantity: 2 }, { productId: 'sua', quantity: 4 }, { productId: 'banh', quantity: 4 }],
-    outputId: 'gio_qua_83', outputQty: 2, durationMin: 10, unlock: 30, reputationGain: 3, festival: 'quoc_te_phu_nu' },
+    outputId: 'gio_qua_83', outputQty: 2, durationMin: 10, unlock: 31, reputationGain: 3, festival: 'quoc_te_phu_nu' },
   { id: 'recipe_gio_2011', name: 'Giỏ quà 20/11', station: 'gift_wrap',
     inputs: [{ productId: 'tra', quantity: 2 }, { productId: 'sua', quantity: 4 }, { productId: 'banh', quantity: 4 }, { productId: 'x_khan_giay', quantity: 2 }],
     outputId: 'gio_qua_2011', outputQty: 2, durationMin: 10, unlock: 32, reputationGain: 3, festival: 'nha_giao' },
   { id: 'recipe_gio_trung_thu', name: 'Giỏ quà Trung thu', station: 'gift_wrap',
     inputs: [{ productId: 'x_banh_trung_thu', quantity: 4 }, { productId: 'tra', quantity: 2 }],
-    outputId: 'gio_qua_trung_thu', outputQty: 2, durationMin: 10, unlock: 30, reputationGain: 3, festival: 'trung_thu' },
+    outputId: 'gio_qua_trung_thu', outputQty: 2, durationMin: 10, unlock: 31, reputationGain: 3, festival: 'trung_thu' },
   // GĐ1345: Giỏ quà Giáng sinh — lễ tặng quà lớn duy nhất còn thiếu giỏ: giỏ premium đầu tiên có rượu vang
   // (ruou 35) + bánh kẹo + trà, gói trong đúng dịp giang_sinh: mẻ (rượu 120k + bánh 5k×4 + trà 20k×2) = 180k
   // → 2 giỏ × 140k = 280k, lãi 100k/mẻ, gói hời hơn bán thẳng nguyên liệu (262k < 280k).
