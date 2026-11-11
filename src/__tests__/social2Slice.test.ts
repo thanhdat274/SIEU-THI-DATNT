@@ -53,7 +53,7 @@ describe('social2 — chỉ bản lưu cá nhân (chặn khi hẻm online, §6.6
     const msgs = grabMsgs();
     useGame.setState({ money: 1_000_000 });
     const before = useGame.getState().money;
-    await useGame.getState().buyMarketLot({ id: 'lot1', seller: 'u', productId: 'x_mi', qty: 10, unit: 0, price: 5000, band: '30-59', createdAt: 0 });
+    await useGame.getState().buyMarketLot({ id: 'lot1', seller: 'u', productId: 'x_mi', qty: 10, unit: 0, price: 5000 });
     expect(useGame.getState().money).toBe(before);
     expect(msgs.some((m) => m.includes('chơi đơn'))).toBe(true);
   });

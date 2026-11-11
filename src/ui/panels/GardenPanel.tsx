@@ -15,6 +15,7 @@ import { isWeekend } from '../../data/calendar';
 import { expiringSoon, expiryNoteFor, newUnlockMark } from '../../data/advice';
 import { isXoiCungDay } from '../../data/tiemXoi';
 import { preserveDefsOf, preserveDefById, phoiReady, rackCap, vaiCap, chumCap, VAI_UNLOCK, CHUM_UNLOCK, pickleState, pickleAge, uRipe, uAged, PHOI_UNLOCK } from '../../data/preserve';
+import { picklePayoff } from '../../data/picklePayoff';
 import { preservePayoff } from '../../data/preservePayoff';
 import { NEIGHBOR_SUPPLIER_IDS } from '../../data/supplierRel';
 import { describeDay, type Weather } from '../../data/weather';
@@ -577,6 +578,7 @@ function PhoiTab(props: {
                           Bắt đầu ngày {j.startDay} · cửa sổ vớt ngon {d.window![0]}–{d.window![0] + 1} · {win}{j.allHomegrown ? ' · toàn nhà trồng' : ''}
                           {st === 'ngon' ? ' · GIÁ HƠN +20%' : ''}
                         </div>
+                        <div style={{ fontSize: 12, color: '#e67e22', marginTop: 4 }}>💰 {picklePayoff({ job: j, def: d, day }).line}</div>
                       </div>
                     );
                   })
@@ -644,6 +646,7 @@ function PhoiTab(props: {
                         <div style={{ fontSize: 12, opacity: 0.75, marginTop: 4 }}>
                           Bắt đầu ngày {j.startDay} · rút ngon từ ngày {d.need}{d.aged ? ` · ủ LÂU tới ${d.aged.day} ngày ra ${d.aged.outputQty} (nhãn nhà làm)` : ''}{j.allHomegrown ? ' · toàn nhà trồng' : ''}{aged ? ' · GIÁ HƠN +20%' : ''}
                         </div>
+                        <div style={{ fontSize: 12, color: '#e67e22', marginTop: 4 }}>💰 {picklePayoff({ job: j, def: d, day }).line}</div>
                       </div>
                     );
                   })
