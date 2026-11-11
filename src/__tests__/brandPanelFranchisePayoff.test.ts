@@ -18,3 +18,14 @@ describe('franchisePayoff — nối vào FranchiseTab (BrandPanel)', () => {
     expect(src).toContain('frp.line');
   });
 });
+
+describe('brandLinePayoff — nối vào LinesTab (BrandPanel)', () => {
+  it('import brandLinePayoff + truyền payoff vào LinesTab', () => {
+    expect(src).toContain("import { brandLinePayoff } from '../../data/brandLinePayoff'");
+    expect(src).toContain('payoff={brandLinePayoff(b).rows}');
+  });
+  it('mỗi dòng nhãn trong lines.map render dòng 📊 payoff', () => {
+    expect(src).toContain('const blp = payoff.find((r) => r.productId === l.productId);');
+    expect(src).toContain('📊 {blp.line}');
+  });
+});

@@ -10,6 +10,7 @@ import {
   type BrandState,
 } from '../../data/brand';
 import { franchisePayoff } from '../../data/franchisePayoff';
+import { brandLinePayoff } from '../../data/brandLinePayoff';
 import { Footer, styles, Tabs } from './shared';
 
 type Tab = 'lines' | 'workshop' | 'dealers' | 'franchise';
@@ -85,7 +86,7 @@ export function BrandPanel() {
           />
           </div>
 
-          {tab === 'lines' && <LinesTab lines={b.lines} candidates={candidates} slots={brandLineSlots(level)} onAdd={addBrandLine} onDrop={dropBrandLine} stock={brandStockUnits(b)} />}
+          {tab === 'lines' && <LinesTab lines={b.lines} candidates={candidates} slots={brandLineSlots(level)} onAdd={addBrandLine} onDrop={dropBrandLine} stock={brandStockUnits(b)} payoff={brandLinePayoff(b).rows} />}
 
           {tab === 'workshop' && (
             <WorkshopTab b={b} level={level} money={money} onBuy={buyBrandWorkshop} onHire={hireBrandWorker} onFire={fireBrandWorker} />
@@ -185,8 +186,9 @@ function LinesTab(props: {
   onAdd: (id: string) => void;
   onDrop: (id: string) => void;
   stock: number;
+  payoff: { productId: string; line: string }[];
 }) {
-  const { lines, candidates, slots, onAdd, onDrop, stock } = props;
+  const { lines, candidates, slots, onAdd, onDrop, stock, payoff } = props;
   return (
     <div>
       <p style={{ ...styles.sub, maxWidth: 620 }}>
@@ -194,12 +196,17 @@ function LinesTab(props: {
         làm 100 mẻ và bán 500 đơn vị. Dòng tiếp mở ở cấp {BRAND_LINE_SLOTS[lines.length] ?? 'tối đa'}.
       </p>
 
-      {lines.length > 0 && lines.map((l) => (
-        <div key={l.productId} style={styles.card}>
-          <span style={{ flex: 1 }}><b>{pname(l.productId)}</b> <span style={{ opacity: 0.7 }}>· đóng {l.made} · bán {l.sold}</span></span>
-          <button style={styles.btn} onClick={() => onDrop(l.productId)}>Bỏ dòng</button>
-        </div>
-      ))}
+      {lines.length > 0 && lines.map((l) => {
+        const blp = payoff.find((r) => r.productId === l.productId);
+        return (
+          <div key={l.productId} style={styles.card}>
+            <span style={{ flex: 1 }}><b>{pname(l.productId)}</b> <span style={{ opacity: 0.7 }}>· đóng {l.made} · bán {l.sold}</span>
+              {blp && <div style={{ fontSize: 12, color: '#e67e22', marginTop: 4 }}>📊 {blp.line}</div>}
+            </span>
+            <button style={styles.btn} onClick={() => onDrop(l.productId)}>Bỏ dòng</button>
+          </div>
+        );
+      })}
       {lines.length === 0 && <p style={styles.sub}>Chưa có dòng nhãn nào. Bên dưới là các món nhà làm đã thực hiện — chọn món đủ điều kiện để thêm.</p>}
 
       {candidates.length > 0 && (
