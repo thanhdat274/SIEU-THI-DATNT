@@ -33,6 +33,13 @@ export const REGION_PRODUCTS: {
   // ── Tây Nguyên ──
   { id: 'rg_kho_bo', name: 'Khô bò (gói)', region: 'Tây Nguyên', category: 'dry', buy: 62000, sell: 106000, color: 0xb03a2e, unlock: 50 },
   { id: 'rg_mac_khen', name: 'Mắc khén (gói)', region: 'Tây Nguyên', category: 'dry', buy: 58000, sell: 98600, color: 0x6d4c41, unlock: 52 },
+  // GĐ2211–2212: mở rộng mối lái vùng (hướng 2 GĐ1076 "nhập hàng NGOÀI tạp hóa") — 2 đặc sản thật, miễn trùng.
+  // Biên chuẩn ×1.70 như GĐ1321, unlock 54/55 > mốc golden sim 30 (mọi mốc gold chặt ở L30) → sim/autoplay không đổi.
+  // Khớp bất biến regionFlags GĐ1505: mỗi miền ≥2 loại, sell trong [1.6,1.8]×buy, unlock ≥42.
+  // Bắc: Bánh cốm (gói) — cốm khô ép thành bánh thật (làng Vòng mùa thu), khác hẳn Cốm làng Vòng (thóc cốm tươi, rg_com_lang).
+  { id: 'rg_banh_com', name: 'Bánh cốm (gói)', region: 'Bắc', category: 'dry', buy: 42000, sell: 71400, color: 0x9ac84b, unlock: 55 },
+  // Trung: Kẹo cu đơ (gói) — đặc sản Nghệ An–Hà Tĩnh: đậu phộng + vừng + mật + gừng, kẹp bánh tráng nướng.
+  { id: 'rg_keo_cu_do', name: 'Kẹo cu đơ (gói)', region: 'Trung', category: 'dry', buy: 40000, sell: 68000, color: 0xc0703a, unlock: 54 },
 ];
 
 export const REGION_IDS: ReadonlySet<string> = new Set(REGION_PRODUCTS.map((h) => h.id));

@@ -10,6 +10,13 @@ import { COOKED_PRODUCT_IDS } from '../data/recipes';
 const mkFurniture = (uid: number, type: string, x: number, z: number) =>
   ({ uid, type, x, z, rot: 0, tiers: [] } as never);
 
+// L4: DINE_UNLOCK 30→33 húp luôn luật thực đơn (MENU_RULE_UNLOCK=31): muốn tip giữ 10%
+// thì tiệm phải có ≥2 món nấu khác nhau bày kệ (menuTipMul=1) — bày nốt 2 món đầu bảng.
+const mkCookedShelf = () => ({
+  uid: 99, type: 'shelf', x: 0, z: 0, rot: 0,
+  tiers: [...COOKED_PRODUCT_IDS].slice(0, 2).map((id) => ({ productId: id, count: 2, lots: [] })),
+} as never);
+
 const said: string[] = [];
 const fakeCustomer = (basket: { id: string; price: number }[]) => ({
   basket,
@@ -82,7 +89,7 @@ describe('tip đi vào két + sổ ngày khi khách ăn xong (GĐ1492)', () => {
 
   it('phục vụ ngay (không chờ): tip nguyên 10% vào money + stats.tips + doanh thu', () => {
     seedTrúngQuay();
-    useGame.setState({ level: DINE_UNLOCK, furniture: [mkFurniture(1, 'dining_table', 0, 0), mkFurniture(2, 'chair', 0.85, 0)] });
+    useGame.setState({ level: DINE_UNLOCK, furniture: [mkFurniture(1, 'dining_table', 0, 0), mkFurniture(2, 'chair', 0.85, 0), mkCookedShelf()] });
     const s0 = useGame.getState();
     const c = fakeCustomer([{ id: [...COOKED_PRODUCT_IDS][0], price: 30_000 }]);
     expect(manager.maybeDineIn(c as never, fakeCounter as never)).toBe(true);
@@ -100,11 +107,11 @@ describe('tip đi vào két + sổ ngày khi khách ăn xong (GĐ1492)', () => {
   it('chờ ghế lâu (> nửa ngưỡng) mới ngồi: tip còn 60% (GĐ1511)', () => {
     seedTrúngQuay();
     // Ban đầu không có ghế → khách chờ; rồi ghế xuất hiện → ngồi sau 7s chờ
-    useGame.setState({ level: DINE_UNLOCK, furniture: [mkFurniture(1, 'dining_table', 0, 0)] });
+    useGame.setState({ level: DINE_UNLOCK, furniture: [mkFurniture(1, 'dining_table', 0, 0), mkCookedShelf()] });
     const c = fakeCustomer([{ id: [...COOKED_PRODUCT_IDS][0], price: 30_000 }]);
     expect(manager.maybeDineIn(c as never, fakeCounter as never)).toBe(true);
     expect(c.seat).toBeUndefined();
-    useGame.setState({ furniture: [mkFurniture(1, 'dining_table', 0, 0), mkFurniture(2, 'chair', 0.85, 0)] });
+    useGame.setState({ furniture: [mkFurniture(1, 'dining_table', 0, 0), mkFurniture(2, 'chair', 0.85, 0), mkCookedShelf()] });
     manager.updateSeatWaiting(c as never, 7);
     expect(c.seat).toEqual({ tableUid: 1, chairUid: 2 });
     expect(c.diningWait).toBe(7);

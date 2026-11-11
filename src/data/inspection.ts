@@ -10,8 +10,10 @@ import { formatMoney } from './products';
 // mọi rút ngẫu nhiên đi qua metaRng ở nơi gọi).
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** Cấp mở: sau khi vòng ngày đã vững (lao công/quét sàn có ý nghĩa), trước khu ăn tại chỗ. */
-export const INSPECTION_UNLOCK = 18;
+/** Cấp mở: sau khi vòng ngày đã vững (lao công/quét sàn có ý nghĩa), trước khu ăn tại chỗ.
+ *  ĐỔI TÊN từ INSPECTION_UNLOCK (SPEC-TOI-UU §T3-L1): hệ này là Đoàn kiểm tra VỆ SINH (GĐ1506),
+ *  KHÁC hệ Thanh tra thị trường (biz, cấp 12). Hai hệ dùng chung một tên hằng — đổi tên để hết va. */
+export const HYGIENE_UNLOCK = 18;
 /** Gieo 1 lần mỗi 5 phút game, tỉ lệ/lần → kỳ vọng ~1–2 lần/ngày mở cửa 11 giờ. */
 export const INSPECTION_ROLL_EVERY = 5;
 export const INSPECTION_CHANCE = 0.012;
@@ -94,4 +96,4 @@ export const praiseXp = (level: number): number => (level >= FINE_XP_LEVEL ? PRA
 
 /** GĐ1583 — đuôi cảnh báo sàn bẩn trên HUD: từ cấp mở đoàn kiểm tra, nhắc sàn bẩn sẽ bị phạt. */
 export const dirtInspectionNote = (level: number, dirt: number): string =>
-  level >= INSPECTION_UNLOCK && dirt >= DIRT_FAIL_AT ? ' · đoàn kiểm tra ghé lúc này sẽ lập biên bản' : '';
+  level >= HYGIENE_UNLOCK && dirt >= DIRT_FAIL_AT ? ' · đoàn kiểm tra ghé lúc này sẽ lập biên bản' : '';

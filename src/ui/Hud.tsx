@@ -1,3 +1,4 @@
+import { bumpHudRender } from '../core/perf';
 import { askConfirm } from './ConfirmDialog';
 import { wantsRestockButton } from '../core/bizAchieve';
 import { hudThemeOn } from '../data/hudTheme';
@@ -40,6 +41,7 @@ import { logoutGoogle, deleteAccount } from '../net/firebase';
 import { deleteAccountData } from '../net/account';
 import { useSession } from '../net/session';
 import { MoneyChip, MusicToggle, SoundToggle } from './HudChips';
+import { crisisDefById, crisisPhaseLabel } from '../data/crisis';
 import { HudTour } from './HudTour';
 import { Panels } from './Panels';
 import { hubFirst, hubOf } from './hubs';
@@ -48,6 +50,8 @@ import { rivalBadgeOf, socialBadgeOf, onlineBadgeOf, licenseBadgeOf, loanBadgeOf
 import { AccountMenu, MoreMenu } from './HudMenus';
 import './hud.css';
 const SurpriseAlert = lazy(() => import('./SurpriseAlert').then((m) => ({ default: m.SurpriseAlert })));
+const MiniHost = lazy(() => import('./minigames/MiniHostView').then((m) => ({ default: m.MiniHostView })));
+const TripOverlay = lazy(() => import('./TripOverlay').then((m) => ({ default: m.TripOverlay })));
 const ExpiryAlert = lazy(() => import('./ExpiryAlert').then((m) => ({ default: m.ExpiryAlert })));
 const UnlockActBanner = lazy(() => import('./UnlockActBanner').then((m) => ({ default: m.UnlockActBanner })));
 const BranchAlert = lazy(() => import('./HudAlerts').then((m) => ({ default: m.BranchAlert })));
@@ -63,6 +67,7 @@ const Tutorial = lazy(() => import('./Tutorial').then((m) => ({ default: m.Tutor
 const VendorAlert = lazy(() => import('./VendorAlert').then((m) => ({ default: m.VendorAlert })));
 const CounterAskAlert = lazy(() => import('./HudAlerts').then((m) => ({ default: m.CounterAskAlert }))); // GĐ636
 const ChapterDialogue = lazy(() => import('./ChapterDialogue').then((m) => ({ default: m.ChapterDialogue })));
+const TelemetryPrompt = lazy(() => import('./TelemetryPrompt').then((m) => ({ default: m.TelemetryPrompt })));
 
 /** Màn hình cảm ứng: không có phím, thay chữ phím [X] bằng biểu tượng chạm. */
 const TOUCH = typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches;
@@ -103,6 +108,8 @@ function useBottomBarHeight() {
 }
 
 export function Hud() {
+  // SPEC-TOI-UU §T2 (L1): đếm số lần React vẽ lại HUD/giây (chỉ đếm khi bật ?perf=1).
+  bumpHudRender();
   useBottomBarHeight();
   const narrow = useNarrowScreen();
   const {
@@ -137,6 +144,10 @@ export function Hud() {
   const happyHour = useGame((s) => s.happyHour);
   const skillsLeft = useGame((s) => skillPoints(s.level) - s.skills.length);
   const effects = dayEffects(weatherSeed, day, level);
+  // Hệ8 — Biến cố dài (SPEC-CHIEU-RONG §8): chip hiển thị khi đang có đợt (state mở/đóng ở endDay).
+  const crisis = useGame((s) => s.biz.crisis);
+  const crisisDef = crisis ? crisisDefById(crisis.defId) : undefined;
+  const crisisPhase = crisis && crisisDef ? crisisPhaseLabel(crisisDef, day, crisis) : '';
   const soon = upcomingFestival(day);
   const { spell, raining, skyIcon } = skyState(weatherSeed, day, weather, minutes);
   const forecastText = forecastTextOf(weatherSeed, day, forecast);
@@ -338,6 +349,11 @@ ${forecastText}`}>
                 {effects.market && `${effects.market.icon} ${effects.market.label}`}
               </small>
             )}
+            {crisisDef && crisisPhase && (
+              <small className="hud-crisis-chip" title={`${crisisDef.name} — ${crisisPhase}.${crisisDef.aftermath ? ` Hoàn thành phần chuẩn bị để nhận ${crisisDef.aftermath.label}.` : ''}`}>
+                {crisisDef.icon} {crisisPhase}
+              </small>
+            )}
             {soon && (
               <small title={`${soon.festival.blurb}\nHàng nên nhập sẵn: ${festivalStock(soon.festival, level).map((id) => productById(id).name).join(', ')}`}>
                 ⏳ {soon.festival.icon} {soon.festival.name} {soon.inDays === 1 ? 'ngày mai' : `sau ${soon.inDays} ngày`}
@@ -389,6 +405,8 @@ ${forecastText}`}>
         <Suspense fallback={null}><FestivalBanner /></Suspense>
         <Suspense fallback={null}><Tutorial review={helpTutorial} onDone={() => setHelpTutorial(false)} /></Suspense>
         <Suspense fallback={null}><SurpriseAlert /></Suspense>
+        <Suspense fallback={null}><MiniHost /></Suspense>
+        <Suspense fallback={null}><TripOverlay /></Suspense>
         <Suspense fallback={null}><StoryAlert /></Suspense>
         {(hiddenAlerts > 0 || alertsOpen) && (
           <button className="hud-btn hud-alerts-more" onClick={() => setAlertsOpen(!alertsOpen)}>{alertsOpen ? 'Thu gọn thông báo' : `+${hiddenAlerts} thông báo`}</button>
@@ -478,6 +496,7 @@ Online: ${coop.peers.map((p) => (p.id === coop.selfId ? 'bạn' : p.name)).join(
         ]} />
       )}
       <Suspense fallback={null}><ChapterDialogue /></Suspense>
+      <TelemetryPrompt />
 
       {/* Dưới cùng: dải kế hoạch hôm nay (hoặc gợi ý giờ vắng), gợi ý tương tác, rồi thanh công cụ */}
       <div className="hud-bottom">

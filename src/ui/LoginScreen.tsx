@@ -5,6 +5,8 @@ import { useGame } from '../core/store';
 import { formatMoney } from '../data/products';
 import { cloudSaveWithin, prefetchCloudSave } from '../net/cloud';
 import { giftOfStreak, giftText, scaledGift } from '../data/gifts';
+import { returnNudge, returnNudgeWeek } from '../data/returnReminder';
+import type { WeekTally } from '../data/bizWeeks';
 import { firebaseReady, loginGoogle, logoutGoogle } from '../net/firebase';
 import { useSession, type SaveSummary } from '../net/session';
 import { recordConsent } from '../net/consent';
@@ -131,6 +133,7 @@ export function LoginScreen() {
 
         <section className="login-card" aria-live="polite">
           {local && <DailyNudge g={local.data} />}
+          {local && <ReturnNudge g={local.data} />}
           {choice ? (
             <>
               <h2>Chọn bản lưu để chơi tiếp</h2>
@@ -224,6 +227,32 @@ function DailyNudge({ g }: { g: { day: number; level: number; giftStreak: number
       <span aria-hidden="true">🎁</span>
       <span>Quà điểm danh hôm nay: <b>{gift.icon} {gift.label}</b> ({giftText(gift)}) · chuỗi sắp tới <b>{streak}</b> ngày — vào tiệm nhận ngay!</span>
     </div>
+  );
+}
+
+/**
+ * GĐ2224+GĐ2225 — lớp nhắc "đã N ngày chưa quay" ở màn đăng nhập: cho người quay lại lý do bền bằng
+ * cách liệt kê các mốc thưởng sắp hết hạn (thưởng tròn năm / sự kiện mùa / mốc niên giám) — khác quà
+ * chào mừng (checkWelcomeBack) vốn chỉ bắn một notify lúc vào game. THUẦN đọc (returnNudge từ
+ * lastSeenAt/day/level/almanac), không đổi state/save. Chơi đều mỗi ngày → mảng rỗng → không hiện.
+ */
+function ReturnNudge({ g }: { g: { day: number; level: number; lastSeenAt: number; biz?: { seasonAlmanac?: Record<string, number>; almanacClaimed?: number[]; week?: WeekTally; services?: string[] } } }) {
+  const biz = g.biz;
+  const almanac = biz?.seasonAlmanac ?? {};
+  const total = Object.values(almanac).reduce((a, n) => a + (n ?? 0), 0);
+  const items = returnNudge(Date.now(), g.lastSeenAt, g.day, g.level, total, biz?.almanacClaimed ?? []);
+  const wk = returnNudgeWeek(Date.now(), g.lastSeenAt, g.day, g.level, biz?.week ?? null, biz?.services ?? []);
+  const all = wk ? [{ key: 'week', icon: wk.icon, text: wk.text }, ...items] : items;
+  if (!all.length) return null;
+  return (
+    <>
+      {all.map((it) => (
+        <div className="login-nudge" key={it.key}>
+          <span aria-hidden="true">{it.icon}</span>
+          <span>{it.text}</span>
+        </div>
+      ))}
+    </>
   );
 }
 

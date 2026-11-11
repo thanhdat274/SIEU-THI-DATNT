@@ -35,8 +35,9 @@ describe('nội dung cuối game (cấp 51–100)', () => {
 
   it('trần nhân viên cuối game đủ cho đại siêu thị', () => {
     expect(maxStaff(90)).toBeGreaterThan(20);
-    // Vai trò không bị mở khóa thêm (tránh placeholder) — vẫn dừng ở 35
-    expect(unlockedRoles(100).length).toBe(unlockedRoles(35).length);
+    // Vai trò không bị mở khóa thêm sau cấp trụ của Vai lớn nhất: customer_care (Chăm sóc khách)
+    // dời lên 38 ở GĐ2321 (T3-L4) — đây là vai có thật, không phải placeholder; hết vai sau 38.
+    expect(unlockedRoles(38).length).toBe(unlockedRoles(100).length);
   });
 });
 

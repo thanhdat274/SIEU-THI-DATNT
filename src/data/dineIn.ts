@@ -1,5 +1,6 @@
 import type { Furniture } from '../core/gameTypes';
 import { footprint, furnitureDef } from './furniture';
+import { hasFeature } from './features';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GĐ1490 — quy tắc "ghế kề bàn" cho khu ăn tại chỗ (THUẦN, không đụng store/three
@@ -50,8 +51,8 @@ export interface SeatInfo {
 // có thể ngồi lại ăn thay vì ra về. Hằng số + quyết định tách THUẦN để test/soi sáng.
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** Cấp mở khu ăn tại chỗ (khớp unlock của bàn ăn/ghế — "Mini mart" đủ lớn mới có chỗ ngồi). */
-export const DINE_UNLOCK = 30;
+/** Cấp mở khu ăn tại chỗ (SPEC-TOI-UU T3-L4: 30→33, tách khỏi Mini mart, cần bếp quen; khớp unlock bàn/ghế). */
+export const DINE_UNLOCK = 33;
 /** Tỉ lệ khách mua món nấu tươi muốn ngồi lại ăn (khi còn chỗ trống). */
 export const DINE_CHANCE = 0.3;
 /** Thời gian ngồi ăn (giây game) — cùng thước đo với các pause trong agent khách. */
@@ -63,7 +64,7 @@ export const TIP_RATE = 0.1;
 
 /** Khách này có muốn ngồi lại ăn không? `roll` là lần quay đã rút (không rút khi điều kiện sớm sai). */
 export function wantsDineIn(args: { level: number; hasCooked: boolean; roll: number }): boolean {
-  return args.level >= DINE_UNLOCK && args.hasCooked && args.roll < DINE_CHANCE;
+  return hasFeature(args, 'dineIn') && args.hasCooked && args.roll < DINE_CHANCE;
 }
 
 /**

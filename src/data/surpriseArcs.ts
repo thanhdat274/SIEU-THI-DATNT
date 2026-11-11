@@ -64,6 +64,18 @@ export interface SurpriseArcDef {
   title: string;
   icon: string;
   unlock: number;
+  /**
+   * GĐ Hệ2-L5 (SPEC §2.6): hai khách quen PHẢI ĐÃ TỪNG GHÉ thì arc mới vào pool
+   * ("lọc arc mà cả hai người đã từng ghé") — cho arc khắc khẩu giữa các khách quen mở muộn,
+   * tránh kể chuyện hai người mà người chơi chưa từng gặp. THUẦN, đọc `visits` của người chơi.
+   */
+  needRegulars?: string[];
+  /**
+   * GĐ Hệ2-L5 (SPEC §2.6): cạnh `khac_khau` mà arc này hoà giải. Khi arc hoà giải theo đường
+   * "ấm" (good, khép với thưởng) thì ghi tieKey(a,b) vào `biz.tiesMended` → cạnh không còn thù,
+   * hiển thị thành "Bạn bè". Thiếu = arc thường, không đổi quan hệ.
+   */
+  healsTie?: { a: string; b: string };
   /** Số ngày tối đa (mỗi ngày 1 cảnh); expiry = startedDay + days − 1. */
   days: number;
   scenes: Scene[];

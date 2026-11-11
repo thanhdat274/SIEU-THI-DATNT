@@ -1,6 +1,9 @@
 /** Tiệm đối thủ (GĐ959): tách nguyên văn khỏi biz.ts; biz.ts vẫn re-export nên import cũ không đổi. */
 import { productById } from './products';
 import { regularById } from './regulars';
+import { EMOTIONAL_FRIENDSHIP } from './regularTrust';
+import { tiesOf, otherOf } from './regularTies';
+import { STANCE_META, type StanceId } from './stance';
 import { simRng } from '../core/rand';
 
 // ───────────────────────── Tiệm đối thủ ─────────────────────────
@@ -22,6 +25,10 @@ export interface Rival {
   stock?: Record<string, number>;
   /** Khách quen bị lôi kéo sang rival: id → ngày bị lôi kéo. */
   poached?: Record<string, number>;
+  /** "Lung lay" (GĐ Hệ2-L6): họ hàng/bạn bè của người vừa bị kéo — id → đêm hết hạn (3 đêm xác suất bị kéo ×2). */
+  poachLungLay?: Record<string, number>;
+  /** "Miễn dịch cụm" (GĐ Hệ2-L6): đòi về một người → cả cụm id → đêm hết hạn (7 ngày không bị kéo). */
+  poachImmune?: Record<string, number>;
 }
 
 export type RivalPersonality = 'cutter' | 'quality' | 'aggressive';
@@ -76,6 +83,15 @@ export const RIVAL_UNDERCUT = { cutter: 0.88, quality: 0.97, aggressive: 0.92 };
 export const POACH_FRIENDSHIP = 25;
 /** Xác suất cơ bản mỗi đêm một khách quen bị lôi kéo (nhân theo sức mạnh rival). */
 export const POACH_CHANCE = 0.05;
+/** Cổng mở cơ chế "lôi kéo theo cụm" (SPEC 2.7, R1: ≥32 nên golden L30 không đổi). */
+export const POACH_CLUSTER_UNLOCK = 32;
+/** "Lung lay" kéo dài 3 đêm; trong lúc lung lay xác suất bị kéo nhân đôi. */
+export const POACH_LUNG_LAY_NIGHTS = 3;
+export const POACH_LUNG_LAY_MULT = 2;
+/** Đòi về một người → cả cụm miễn bị kéo 7 ngày. */
+export const POACH_IMMUNE_DAYS = 7;
+/** Mỗi "mỏ neo" (thân thiết ≥ EMOTIONAL_FRIENDSHIP) giảm 25% xác suất bị kéo của người có cạnh với họ. */
+export const POACH_ANCHOR_REDUCE = 0.25;
 /** GĐ794 — khách quen đang "dễ bị kéo": rival đủ mạnh, còn chỗ (<3 người), khách mới quen (thân thiết < mốc) và chưa bị kéo.
  *  Cùng điều kiện với rivalNightAI nên cảnh báo không hứa hão; thuần, dùng chung chơi đơn/hẻm online. */
 export function atRiskOfPoach(rival: Rival | null | undefined, friendships: Record<string, number | undefined>): string[] {
@@ -86,9 +102,49 @@ export function atRiskOfPoach(rival: Rival | null | undefined, friendships: Reco
     .filter(([id, f]) => f !== undefined && f < POACH_FRIENDSHIP && !poached[id])
     .map(([id]) => id);
 }
+/** "Cụm" của một người: họ hàng/bạn bè (các cạnh KHÔNG khắc khẩu) — SPEC 2.7 "cả cụm". THUẦN. */
+export function poachClusterNeighbors(regularId: string): string[] {
+  return tiesOf(regularId).filter((t) => t.kind !== 'khac_khau').map((t) => otherOf(t, regularId));
+}
+/** Số "mỏ neo" (thân thiết ≥ EMOTIONAL_FRIENDSHIP) nối cạnh với người này — mỗi mỏ neo giảm 25%
+ *  xác suất bị kéo của người có cạnh với họ (SPEC 2.7). THUẦN. */
+export function anchorCountFor(regularId: string, friendships: Record<string, number>): number {
+  return tiesOf(regularId).filter((t) => (friendships[otherOf(t, regularId)] ?? 0) >= EMOTIONAL_FRIENDSHIP).length;
+}
+/** Ai đang "lung lay" (SPEC 2.7) — CẢNH BÁO HUD: họ hàng/bạn bè của người vừa bị kéo (còn trong vòng
+ *  3 đêm), thân < POACH_FRIENDSHIP, chưa bị kéo. Điều kiện trùng rivalNightAI nên không hứa hão. THUẦN. */
+export function poachLungLayOf(
+  rival: Rival | null | undefined,
+  friendships: Record<string, number>,
+  level = 0,
+  day = 0,
+): string[] {
+  if (!rival || level < POACH_CLUSTER_UNLOCK) return [];
+  const poached = rival.poached ?? {};
+  return Object.entries(rival.poachLungLay ?? {})
+    .filter(([id, until]) => until > day && !poached[id] && (friendships[id] ?? 0) < POACH_FRIENDSHIP)
+    .map(([id]) => id);
+}
 /** Rival mạnh quá mốc này mới dám giựt nhân viên (chỉ rival máu liều). */
 export const STAFF_POACH_STRENGTH = 60;
 export const STAFF_POACH_CHANCE = 0.04;
+// Hệ 3 L7 (SPEC §3.6) — ĐỐI THỦ PHẢN ỨNG theo hướng biển định vị của tiệm mình. "Match" = hướng mà
+// chiến thuật đặc trưng của rival trực diện (đua giá / mua chuộc phê bình / giựt nhân viên); "khắc tinh"
+// = hướng KHIẾN chiến thuật đó VÔ DỤNG → hai bên ít giẫm chân nhau, sức ép −25% (phá giá nhạt hơn).
+export const STANCE_MATCH: Record<RivalPersonality, StanceId> = {
+  cutter: 'binh_dan', quality: 'dac_san', aggressive: 'tien_loi',
+};
+export const STANCE_KRYPTONITE: Record<RivalPersonality, StanceId> = {
+  cutter: 'dac_san', quality: 'tien_loi', aggressive: 'binh_dan',
+};
+/** cutter gặp tiệm Bình dân: đua giá không lại → chuyển khuyến mãi ngắn ngày dài chừng này ngày. */
+export const RIVAL_SALE_DAYS = 3;
+/** aggressive gặp tiệm Tiện lợi: nhân xác suất giựt nhân viên ca đêm. */
+export const RIVAL_AGGRESSIVE_POACH_MULT = 1.6;
+/** quality gặp tiệm Đặc sản: mỗi review chất lượng xấu của tiệm mình → rival +2 sức mạnh. */
+export const RIVAL_BAD_REVIEW_POWER = 2;
+/** "Khắc tinh": sức ép rival còn 75% (phá giá nhạt 25%). */
+export const RIVAL_KRYPTONITE_PRESSURE = 0.75;
 /** GĐ1185 — nhân viên đang bị rival máu liều "để mắt": rival đủ mạnh (≥ STAFF_POACH_STRENGTH) sẽ móc
  *  NHÂN VIÊN GIỎI NHẤT của mình (đúng đích rivalNightAI chọn: sort theo skill giảm, lấy đầu). Trả về id
  *  người bị nhắm (undefined khi chưa có nguy cơ). Song song `atRiskOfPoach` (khách quen, GĐ794) — THUẦN đọc,
@@ -283,6 +339,14 @@ export interface RivalNightCtx {
   /** Nhân viên đang làm (chỉ rival máu liều mới giựt). */
   staff: { id: number; name: string; skill: number }[];
   rng?: () => number;
+  /** Cấp người chơi — cổng mở cơ chế "lôi kéo theo cụm" (SPEC 2.7, R1: < POACH_CLUSTER_UNLOCK thì tắt). */
+  level?: number;
+  /** Hệ 3 L7 (SPEC §3.6) — Hướng biển định vị tiệm mình ĐANG CÓ HIỆU LỰC (undefined = không treo/không
+   *  hiệu lực → rival không đổi hành vi). Cổng cấp 60 nên golden L30 an toàn. */
+  stance?: StanceId;
+  /** Hệ 3 L7 (SPEC §3.6) — Số review CHẤT LƯỢNG XẤU (≤2★) tiệm mình bị HÔM NAY: rival chơi chất lượng
+   *  (quality) gặp tiệm Đặc sản tranh nhà phê bình → mỗi lượt +2 sức mạnh. */
+  badReview?: number;
 }
 
 export interface RivalNightResult {
@@ -292,6 +356,11 @@ export interface RivalNightResult {
   poachedStaffId?: number;
   /** Khách quen quay lại tiệm mình (được cộng thêm thân thiết). */
   returned: string[];
+  /** Hệ 3 L7 — Cộng thêm vào sức mạnh rival ở tầng core (khắc phục core ghi đè strength bằng rivalNightly):
+   *  quality gặp Đặc sản +2/ lượt review chất lượng xấu. */
+  strengthBonus?: number;
+  /** Hệ 3 L7 — Rival chuyển sang khuyến mãi ngắn ngày: đề nghị ngày hết sale (cutter gặp Bình dân), để core đặt saleUntil. */
+  saleAdvice?: number;
 }
 
 /**
@@ -303,9 +372,35 @@ export function rivalNightAI(r: Rival, ctx: RivalNightCtx): RivalNightResult {
   const rng = ctx.rng ?? simRng();
   const news: string[] = [];
   const pers = r.personality ?? 'cutter';
-  const undercut = RIVAL_UNDERCUT[pers];
+  let undercut = RIVAL_UNDERCUT[pers];
   const next: Rival = { ...r, prices: { ...r.prices }, stock: { ...r.stock }, poached: { ...r.poached } };
   next.poached = Object.fromEntries(Object.entries(next.poached ?? {}).filter(([id]) => ctx.friendships[id] !== undefined));
+
+  // Hệ 3 L7 (SPEC §3.6) — đối thủ phản ứng theo HƯỚNG BIỂN tiệm mình (chỉ khi có biển hiệu lực, cấp ≥ 60).
+  // "Khắc tinh": chiến thuật đặc trưng của rival vô dụng với hướng này → sức ép −25% (phá giá nhạt hơn).
+  // "Match": rival trực diện với hướng này → đổi chiến thuật (xem 3 nhánh dưới).
+  let saleAdvice: number | undefined;
+  let staffPoachMult = 1;
+  const stance = ctx.stance;
+  if (stance) {
+    if (STANCE_KRYPTONITE[pers] === stance) {
+      undercut = 1 - (1 - undercut) * RIVAL_KRYPTONITE_PRESSURE; // phá giá còn 75% sức ép
+    } else if (STANCE_MATCH[pers] === stance) {
+      if (pers === 'cutter') {
+        // Đua giá không lại tiệm Bình dân → bỏ ép giá dài hạn hôm nay, chuyển khuyến mãi ngắn ngày.
+        undercut = 1;
+        saleAdvice = ctx.day + RIVAL_SALE_DAYS;
+        news.push(`🏷️ ${r.name} thấy không thể đua giá với tiệm Bình dân, chuyển sang đợt giảm giá chớp nhoáng ${RIVAL_SALE_DAYS} ngày.`);
+      } else if (pers === 'quality') {
+        // Tranh nhà phê bình với tiệm Đặc sản: mình bị review chất lượng xấu thì rival mạnh lên.
+        const bad = ctx.badReview ?? 0;
+        if (bad > 0) news.push(`✨ ${r.name} chộp được tiệm mình có ${bad} review chê — giành phần nhà phê bình, mạnh lên.`);
+      } else if (pers === 'aggressive') {
+        // Gặp tiệm Tiện lợi → gia tăng móc nhân viên ca đêm.
+        staffPoachMult = RIVAL_AGGRESSIVE_POACH_MULT;
+      }
+    }
+  }
 
   // 1. Chọn mục tiêu: top món bán chạy của mình, rival bày hàng và giá dưới mình một chút
   const targets = Object.entries(ctx.byItem).sort((a, b) => b[1].qty - a[1].qty).slice(0, RIVAL_TARGETS)
@@ -321,7 +416,7 @@ export function rivalNightAI(r: Rival, ctx: RivalNightCtx): RivalNightResult {
     next.stock![id] = (next.stock![id] ?? 0) - 8;
     if (next.stock![id]! <= 0) { delete next.stock![id]; delete next.prices![id]; }
   }
-  if (targets.length) {
+  if (targets.length && undercut < 1) {
     const names = targets.slice(0, 2).map(([id]) => productById(id).name).join(', ');
     news.push(`⚔️ ${r.name} bày thêm hàng, bán rẻ đúng món ${names} của tiệm mình — xem giá họ ở Kinh doanh`);
   }
@@ -340,23 +435,48 @@ export function rivalNightAI(r: Rival, ctx: RivalNightCtx): RivalNightResult {
     }
   }
   if (r.strength >= 35 && Object.keys(poached).length < 3) {
+    // "Lôi kéo theo cụm" (SPEC 2.7): cụm vừa đòi về được miễn trong 7 ngày — loại khỏi đối tượng.
+    const cluster = (ctx.level ?? 0) >= POACH_CLUSTER_UNLOCK;
+    const immune = next.poachImmune ?? {};
     const candidates = Object.entries(ctx.friendships)
-      .filter(([id, f]) => f < POACH_FRIENDSHIP && !poached[id] && f !== undefined)
+      .filter(([id, f]) => f < POACH_FRIENDSHIP && !poached[id] && f !== undefined && (cluster ? !(immune[id] != null && immune[id] > ctx.day) : true))
       .sort((a, b) => a[1] - b[1]);
     const victim = candidates[0];
-    if (victim && rng() < POACH_CHANCE * (r.strength / 100) * (pers === 'aggressive' ? 1.6 : pers === 'quality' ? 0.5 : 1)) {
-      poached[victim[0]] = ctx.day;
-      const def = regularById(victim[0]);
-      news.push(`😠 ${r.name} lôi kéo ${def?.name ?? 'một khách quen'} — mở Khách quen để đòi về`);
+    if (victim) {
+      // Xác suất kéo: cơ bản × (sức/100) × tính cách, nhân theo cụm khi đã mở (lung lay ×2, mỏ neo ×0.75 mỗi neo)
+      let chance = POACH_CHANCE * (r.strength / 100) * (pers === 'aggressive' ? 1.6 : pers === 'quality' ? 0.5 : 1);
+      if (cluster) {
+        const lungLay = next.poachLungLay ?? {};
+        if ((lungLay[victim[0]] ?? 0) > ctx.day) chance *= POACH_LUNG_LAY_MULT;
+        chance *= Math.pow(1 - POACH_ANCHOR_REDUCE, anchorCountFor(victim[0], ctx.friendships));
+      }
+      if (rng() < chance) {
+        poached[victim[0]] = ctx.day;
+        const def = regularById(victim[0]);
+        // Lôi kéo theo cụm: họ hàng/bạn bè còn xa lạ của người vừa bị kéo thành "lung lay" 3 đêm
+        if (cluster) {
+          const ll = { ...(next.poachLungLay ?? {}) };
+          const until = ctx.day + POACH_LUNG_LAY_NIGHTS;
+          for (const nb of poachClusterNeighbors(victim[0])) {
+            if ((ctx.friendships[nb] ?? 0) < POACH_FRIENDSHIP && !poached[nb]) ll[nb] = until;
+          }
+          if (Object.keys(ll).length) next.poachLungLay = ll;
+        }
+        news.push(`😠 ${r.name} lôi kéo ${def?.name ?? 'một khách quen'} — mở Khách quen để đòi về`);
+      }
     }
   }
 
-  // 3. Rival máu liều mạnh quá mốc thì móc nhân viên giỏi nhất của mình
+  // 3. Rival máu liều mạnh quá mốc thì móc nhân viên giỏi nhất của mình (Hệ3-L7: gặp tiệm Tiện lợi ×poachMult)
   let poachedStaffId: number | undefined;
-  if (pers === 'aggressive' && r.strength >= STAFF_POACH_STRENGTH && ctx.staff.length && rng() < STAFF_POACH_CHANCE) {
+  if (pers === 'aggressive' && r.strength >= STAFF_POACH_STRENGTH && ctx.staff.length && rng() < STAFF_POACH_CHANCE * staffPoachMult) {
     const best = [...ctx.staff].sort((a, b) => b.skill - a.skill)[0];
     poachedStaffId = best.id;
     news.push(`⚔️ ${r.name} móc ${best.name} sang làm với lương gấp rưỡi! Vào lại tuyển người ở bảng Nhân viên`);
   }
-  return { rival: next, news, poachedStaffId, returned };
+  let strengthBonus = 0;
+  if (stance && STANCE_MATCH[pers] === stance && pers === 'quality') {
+    strengthBonus = RIVAL_BAD_REVIEW_POWER * (ctx.badReview ?? 0);
+  }
+  return { rival: next, news, poachedStaffId, returned, strengthBonus, saleAdvice };
 }

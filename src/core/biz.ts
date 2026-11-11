@@ -1,8 +1,8 @@
 import { simRng } from './rand';
+import { hasFeature } from '../data/features';
 export { theftFactor, spoilFactor } from '../data/biz';
 import {
-  adById, activeAds, BREAKFAST, closeMonth, closeWeek, COUNTER_RETAILIATE, COUNTER_RETAILIATE_BUFF, COUNTER_STREAK_MAX, counterById, emptyMonth, emptyWeek, HUI_COLLAPSE, newRival, RIVAL_BUY_DAYS, RIVAL_PERSONALITIES, RIVAL_SHOP_OFFER_DAYS, RIVAL_SHOP_PRICE, rivalNightAI, loanInterest, petActive, PETS, PRICE_WAR_MIN_SALES, RIVAL_BEAT_REWARD, RIVAL_BEAT_XP, RIVAL_BOSS_GEN, RIVAL_COOLDOWN, RIVAL_SHOPS, RIVAL_START, RIVAL_TREND_DAYS, RIVAL_UNLOCK, rivalNightly, rivalTier, VEHICLES, WEEK_DAYS, type BizState, type CounterTactic, type Vehicle,
-} from '../data/biz';
+  adById, activeAds, BREAKFAST, closeMonth, closeWeek, COUNTER_RETAILIATE, COUNTER_RETAILIATE_BUFF, COUNTER_STREAK_MAX, counterById, emptyMonth, emptyWeek, HUI_COLLAPSE, newRival, RIVAL_BUY_DAYS, RIVAL_PERSONALITIES, RIVAL_SHOP_OFFER_DAYS, RIVAL_SHOP_PRICE, rivalNightAI, loanInterest, petActive, PETS, PRICE_WAR_MIN_SALES, RIVAL_BEAT_REWARD, RIVAL_BEAT_XP, RIVAL_BOSS_GEN, RIVAL_COOLDOWN, RIVAL_SHOPS, RIVAL_START, RIVAL_TREND_DAYS, rivalNightly, rivalTier, VEHICLES, WEEK_DAYS, type BizState, type CounterTactic, type Vehicle } from '../data/biz';
 import { CONVENIENCE, newBranch, shelfTotal } from '../data/branches';
 import { monthOf, upcomingFestival, describeDate } from '../data/calendar';
 import { closeYear, emptyYear, yearOf } from '../data/yearReport';
@@ -14,6 +14,7 @@ import { summarizeReviews } from '../data/reviews';
 import { monthlyRelRebate, relTier } from '../data/supplierRel';
 import { supplierById } from '../data/suppliers';
 import { isFairOpen, makeFairOffer } from '../data/fairmerchant';
+import { stanceActive } from '../data/stance';
 import { lifetimeRegularVisits, monthlyTriAn, EMOTIONAL_FRIENDSHIP } from '../data/regularTrust';
 import { hiepLucPayoff, hiepLucBonus, hiepLucEligible, HIEPLUC_MIN, HIEPLUC_COC } from '../data/hiepLuc';
 import { seasonEvent, seasonObjective, seasonEventName, SEASON_REWARD_PER_STAR, seasonOf, type SeasonKey } from '../data/seasonEvent';
@@ -224,17 +225,24 @@ export function bizEndOfDay(s: GameState, stats: DayStats, hiepLucRevenue = 0): 
     const priced = Object.keys(s.prices);
     const priceIndex = priced.length ? priced.reduce((n, id) => n + s.prices[id] / productById(id).sell, 0) / priced.length : 1;
     // Đối thủ có não: nhìn sổ bán hôm nay để phá giá đúng món mình bán chạy, lôi kéo khách quen xa lạ
+    const actStance = s.biz.stance && stanceActive(s.biz.stance, day) ? s.biz.stance.id : undefined;
     const ai = rivalNightAI(b.rival, {
       day, byItem: stats.byItem ?? {}, priceOf: (id) => s.priceOf(id),
       friendships: Object.fromEntries(Object.entries(s.regulars).map(([id, r]) => [id, r.friendship])),
       giftCounter: counter?.tactic === 'gift',
       staff: s.staff.map((st) => ({ id: st.id, name: st.name, skill: st.skill })),
+      level: s.level,
+      // Hệ 3 L7 (SPEC §3.6) — hướng biển định vị đang có hiệu lực + review chất lượng xấu hôm nay
+      stance: actStance,
+      badReview: s.reviews.filter((r) => r.day === day && r.stars <= 2).length,
     });
     news.push(...ai.news);
     for (const rid of ai.returned) s.adjustFriendship(rid, 5);
     poachedStaffId = ai.poachedStaffId;
-    let strength = rivalNightly(b.rival, { rating, missRate, priceIndex, adsActive: activeAds(s.biz.ads, day).length > 0 }) - counterHit;
+    let strength = rivalNightly(b.rival, { rating, missRate, priceIndex, adsActive: activeAds(s.biz.ads, day).length > 0 }) - counterHit + (ai.strengthBonus ?? 0);
     let sale = simRng()() < 0.15 ? day + 1 + Math.floor(simRng()() * 2) : b.rival.saleUntil;
+    // Hệ 3 L7 — rival chuyển sang khuyến mãi ngắn ngày (cutter gặp Bình dân): đặt sale theo đề xuất.
+    if (ai.saleAdvice != null) sale = ai.saleAdvice;
     // Bị đánh mà vẫn trụ: đối thủ có khi trả đũa bằng đợt giảm giá ngay ngày mai
     if (counterHit > 0 && strength > 0 && simRng()() < COUNTER_RETAILIATE) {
       strength = Math.min(100, strength + COUNTER_RETAILIATE_BUFF);
@@ -262,7 +270,7 @@ export function bizEndOfDay(s: GameState, stats: DayStats, hiepLucRevenue = 0): 
     }
   } else if (b.counter) {
     b.counter = null; // đối thủ đóng cửa giữa chừng thì đợt phản công cũng kết thúc
-  } else if (s.level >= RIVAL_UNLOCK && (b.rivalsBeaten > 0 || b.prestige.level > 0) && day + 1 >= b.rivalNextDay && simRng()() < 0.25) {
+  } else if (hasFeature(s, 'rival') && (b.rivalsBeaten > 0 || b.prestige.level > 0) && day + 1 >= b.rivalNextDay && simRng()() < 0.25) {
     // "Rival đời mới": chọn cửa hàng theo thế hệ trong catalog 12 tên, bậc quy mô càng lúc càng lớn,
     // tính cách rút tránh lặp ngay thế hệ trước (lastRivalPers do nhánh đóng cửa ghi lại).
     // GĐ170: cổng thêm prestige.level > 0 — sau tái sinh rivalsBeaten đã về 0 (không giữ "thuế boss cũ"),

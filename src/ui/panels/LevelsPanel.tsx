@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useGame } from '../../core/store';
 import { maxStaff } from '../../data/staff';
-import { customersPerDay, MAX_LEVEL, unlocksAt, xpToNext } from '../../data/levels';
+import { customersPerDay, MAX_LEVEL, unlockGroups, unlocksAt, xpToNext } from '../../data/levels';
 import { Footer, styles } from './shared';
 
 /** Lộ trình cấp: tiến độ cấp hiện tại và mọi mốc có mở khóa, kèm XP còn thiếu. */
@@ -12,15 +12,24 @@ export function LevelsPanel() {
     ...unlocksAt(lv),
     ...(lv > 1 && maxStaff(lv - 1) > 0 && maxStaff(lv) > maxStaff(lv - 1) ? [`Thêm chỗ nhân viên (tối đa ${maxStaff(lv)})`] : []),
   ];
+  const groupsWithStaff = (lv: number) => {
+    const groups = unlockGroups(lv);
+    if (lv > 1 && maxStaff(lv - 1) > 0 && maxStaff(lv) > maxStaff(lv - 1)) {
+      groups.push({ label: 'Nhân viên', icon: '😀', items: [`Thêm chỗ nhân viên (tối đa ${maxStaff(lv)})`] });
+    }
+    return groups;
+  };
   // XP tích lũy từ chỗ đang đứng tới từng cấp sau
-  const rows: { lv: number; need: number; unlocks: string[] }[] = [];
+  const rows: { lv: number; need: number; unlocks: string[]; groups: ReturnType<typeof groupsWithStaff> }[] = [];
   let need = xpToNext(level) - xp;
   for (let lv = level + 1; lv <= MAX_LEVEL; lv++) {
     const unlocks = unlocksWithStaff(lv);
-    if (unlocks.length || showAll) rows.push({ lv, need, unlocks });
+    if (unlocks.length || showAll) rows.push({ lv, need, unlocks, groups: groupsWithStaff(lv) });
     need += xpToNext(lv);
   }
   const past = Array.from({ length: level - 1 }, (_, i) => i + 2).filter((lv) => unlocksWithStaff(lv).length);
+  // T3-L5: cấp mở > 6 mục thì gom nhóm ("12 món mới · 2 đồ nội thất") thay vì liệt kê hết.
+  const grouped = (r: typeof rows[number]) => r.unlocks.length > 6;
   return (
     <>
       <h2 style={styles.title}>⭐ Lộ trình cấp độ</h2>
@@ -47,13 +56,21 @@ export function LevelsPanel() {
               <b>🔒 Cấp {r.lv}</b>
               <span style={{ opacity: 0.75, fontSize: 13 }}>còn {r.need.toLocaleString('vi-VN')} XP</span>
             </div>
-            {r.unlocks.length > 0 && (
+            {r.unlocks.length > 0 && (grouped(r) ? (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 6, fontSize: 12 }}>
+                {r.groups.map((g) => (
+                  <span key={g.label} title={g.items.join(' · ')} style={{ padding: '2px 9px', borderRadius: 999, background: 'rgba(255,255,255,0.1)' }}>
+                    {g.icon} {g.label} · {g.items.length === 1 ? g.items[0] : g.items.length}
+                  </span>
+                ))}
+              </div>
+            ) : (
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 6 }}>
                 {r.unlocks.map((u) => (
                   <span key={u} style={{ fontSize: 12, padding: '2px 9px', borderRadius: 999, background: 'rgba(255,255,255,0.1)' }}>{u}</span>
                 ))}
               </div>
-            )}
+            ))}
           </div>
         ))}
       </div>

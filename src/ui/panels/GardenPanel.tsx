@@ -1,9 +1,12 @@
 import { useGame } from '../../core/store';
+import { useState } from 'react';
+import { useFocusPulse } from '../focusPulse';
 import { productById, formatMoney, fmtMul } from '../../data/products';
 import { shortLabel } from '../shortLabel';
 import {
   ANIMALS, ANIMAL_ORDER, animalMode, CROPS, EGG_PER_TRAY, FARM_BUILDING_MAX_STAR, FARM_BUILDINGS, FARM_BUILDING_ORDER, FARM_ORDER_UNLOCK,
   FERTILIZER_PRODUCT, GARDEN_UNLOCK, cropById, inSeason, LAND_TIERS, monthOf, penCap, fattenReady, plotLabel, plotReady,
+  type FarmBuildingId, type GardenState,
 } from '../../data/garden';
 import { animalBuyPayback, animalPerDay, bestAnimal, bestCrop, cropPerDay, farmBuildingValue, farmExpandPayback } from '../../data/farmValue';
 import { farmVsCook } from '../../data/farmKitchenValue';
@@ -11,11 +14,22 @@ import { bestCropForMenu, bestAnimalForMenu, farmVsDrinks, homegrownImpact, orde
 import { isWeekend } from '../../data/calendar';
 import { expiringSoon, expiryNoteFor, newUnlockMark } from '../../data/advice';
 import { isXoiCungDay } from '../../data/tiemXoi';
-import { Callout, Footer, styles } from './shared';
+import { preserveDefsOf, preserveDefById, phoiReady, rackCap, vaiCap, chumCap, VAI_UNLOCK, CHUM_UNLOCK, pickleState, pickleAge, uRipe, uAged, PHOI_UNLOCK } from '../../data/preserve';
+import { picklePayoff } from '../../data/picklePayoff';
+import { phoiPayoff } from '../../data/phoiPayoff';
+import { preserveOutlet } from '../../data/preserveOutlet';
+import { preservePayoff } from '../../data/preservePayoff';
+import { NEIGHBOR_SUPPLIER_IDS } from '../../data/supplierRel';
+import { describeDay, type Weather } from '../../data/weather';
+import { Callout, Footer, styles, Tabs } from './shared';
 
 /** Trang trại đầu ngõ: trồng theo mùa vụ, nuôi 7 loài, công trình + dọn trại lấy gỗ đá nâng sao, đơn quán xóm. */
 export function GardenPanel() {
-  const { garden, level, money, day, weather, storage, storageLots, furniture, biz, plantCrop, waterGarden, waterPlot, fertilizePlot, harvestPlot, buyAnimal, feedPen, collectPen, sellFattened, expandFarm, deliverFarmOrder, buyFarmBuilding, upgradeFarmBuilding, cleanupFarm, closePanel } = useGame();
+  // T6-L3: mở từ Sổ việc có thể tới thẳng tab Phơi · Muối · Ủ (`focus: 'phoi'`).
+  const initialFocus = useGame((s) => (s.panel?.type === 'garden' ? s.panel.focus : undefined));
+  const [tab, setTab] = useState<'farm' | 'phoi'>(initialFocus === 'phoi' ? 'phoi' : 'farm');
+  useFocusPulse(initialFocus);
+  const { garden, level, money, day, weather, weatherSeed, forecast, storage, storageLots, furniture, biz, plantCrop, waterGarden, waterPlot, fertilizePlot, harvestPlot, buyAnimal, feedPen, collectPen, sellFattened, expandFarm, deliverFarmOrder, buyFarmBuilding, upgradeFarmBuilding, cleanupFarm, startPreserve, collectPreserve, setRackCovered, buyRackTarp, closePanel } = useGame();
   const homegrown = Object.entries(garden.homegrown).filter(([, q]) => q > 0);
   const quanMenu = biz.quanNuoc?.open ? (biz.quanNuoc.menu ?? []) : []; // GĐ1141: quán đóng → mảng rỗng (không gợi pha), không phải undefined (xét tất cả)
   const stationOpen = (st: import('../../data/recipes').CookingStation) => furniture.some((f2) => f2.type === st); // GĐ1140
@@ -32,7 +46,17 @@ export function GardenPanel() {
         Mảnh trại cuối đường thứ hai (bấm nút 🚜 Ra trại để qua). Hiện là "{tier.name}" với {garden.plots.length} luống đất,
         chuồng {ANIMAL_ORDER.map((k) => ANIMALS[k].name.toLowerCase()).join('/')}. Hàng nhà trồng/nhà nuôi vào kho — khách trả thêm 20%, chi nhánh 24/7 bán được luôn.
       </p>
-      {level < GARDEN_UNLOCK ? (
+      <div data-focus="phoi">
+      <Tabs tabs={[['farm', '🚜 Trang trại'], ['phoi', '🏺 Phơi · Muối · Ủ']]} value={tab} onChange={setTab} />
+      </div>
+      {tab === 'phoi' && (
+        <PhoiTab level={level} money={money} day={day} weather={weather} weatherSeed={weatherSeed} tomorrow={forecast[0] ?? weather}
+          garden={garden} storage={storage} buyFarmBuilding={buyFarmBuilding} upgradeFarmBuilding={upgradeFarmBuilding}
+          startPreserve={startPreserve} collectPreserve={collectPreserve} setRackCovered={setRackCovered} buyRackTarp={buyRackTarp}
+          neighborLife={[...NEIGHBOR_SUPPLIER_IDS].reduce((n, id) => n + (biz.supplierRel?.[id]?.spent ?? 0), 0)}
+          neighborMonth={[...NEIGHBOR_SUPPLIER_IDS].reduce((n, id) => n + (biz.supplierRelMonth?.[id] ?? 0), 0)} />
+      )}
+      {tab === 'farm' && (level < GARDEN_UNLOCK ? (
         <p style={styles.sub}>🔒 Trang trại mở ở cấp {GARDEN_UNLOCK}: dọn lại mảnh đất ven đường đã.</p>
       ) : (
         <div style={{ display: 'grid', gap: 6, maxWidth: 560 }}>
@@ -377,8 +401,281 @@ export function GardenPanel() {
             </div>
           </div>
         </div>
-      )}
+      ))}
       <Footer onClose={closePanel} />
     </>
+  );
+}
+
+/** Hệ 1 (§1.10) — tab "🏺 Phơi · Muối · Ủ" trong Sân phơi: dự báo 2 ngày kèm giờ mưa, giàn, các nong đang phơi, mẻ mới. */
+function PhoiTab(props: {
+  level: number; money: number; day: number; weather: Weather; weatherSeed: number; tomorrow: Weather;
+  garden: GardenState; storage: Record<string, number>;
+  buyFarmBuilding: (id: FarmBuildingId) => void; upgradeFarmBuilding: (id: FarmBuildingId) => void;
+  startPreserve: (defId: string) => void; collectPreserve: (jobId: number) => void;
+  setRackCovered: (on: boolean) => void; buyRackTarp: () => void;
+  neighborLife?: number; neighborMonth?: number;
+}) {
+  const { level, money, day, weather, weatherSeed, tomorrow, garden, storage, buyFarmBuilding, upgradeFarmBuilding, startPreserve, collectPreserve, setRackCovered, buyRackTarp, neighborLife, neighborMonth } = props;
+  const star = garden.buildings.gian_phoi ?? 0;
+  const rackCovered = garden.rackLog.day === day && !!garden.rackLog.out && garden.rackLog.out.length === 0;
+  const phoiDefs = preserveDefsOf('phoi').filter((d) => d.unlock <= level);
+  const phoiJobs = garden.preserveJobs.filter((j) => preserveDefById(j.defId).kind === 'phoi');
+  const gd = FARM_BUILDINGS.gian_phoi;
+  // Lát L5 — Dãy vại muối
+  const vaiStar = garden.buildings.vai_muoi ?? 0;
+  const muoiDefs = preserveDefsOf('muoi').filter((d) => d.unlock <= level);
+  const muoiJobs = garden.preserveJobs.filter((j) => preserveDefById(j.defId).kind === 'muoi');
+  const vd = FARM_BUILDINGS.vai_muoi;
+  // Lát L6 — Nhà chum ủ
+  const chumStar = garden.buildings.chum_u ?? 0;
+  const uDefs = preserveDefsOf('u').filter((d) => d.unlock <= level);
+  const uJobs = garden.preserveJobs.filter((j) => preserveDefById(j.defId).kind === 'u');
+  const cd = FARM_BUILDINGS.chum_u;
+  const payoff = preservePayoff({ level, neighborSpentLife: neighborLife, neighborSpentMonth: neighborMonth });
+  return (
+    <div style={{ display: 'grid', gap: 6, maxWidth: 560 }}>
+      {level < PHOI_UNLOCK ? (
+        <div style={styles.card}>🔒 Hệ Phơi · Muối · Ủ mở ở cấp {PHOI_UNLOCK}: tráng bánh tráng, phơi tôm khô, mực một nắng… trước nhất cần Sân phơi trong <b>Công trình</b> (tab Trang trại → dọn trại lấy gỗ đá để xây/nâng).</div>
+      ) : (
+        <>
+          <Callout tone="info" title="🌤️ Dự báo 2 ngày — giàn phơi">
+            <div style={{ fontSize: 12, marginTop: 4 }}>
+              Hôm nay: <b>{describeDay(weatherSeed, day, weather)}</b> · Mai: <b>{describeDay(weatherSeed, day + 1, tomorrow)}</b>. Cất giàn trước cơn mưa / giông bão là mẻ an toàn.
+            </div>
+          </Callout>
+
+          {payoff.rows.length > 0 && (
+            <div style={{ ...styles.card, display: 'block', background: '#fdf6e3' }}>
+              <div style={{ fontSize: 12, opacity: 0.8 }}>{payoff.headline}</div>
+              <div style={{ fontSize: 12, opacity: 0.75, marginTop: 4 }}>
+                {payoff.rows.map((r) => (
+                  <div key={r.defId}>· {r.line}</div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div style={{ ...styles.card, display: 'block' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center' }}>
+              <b>{gd.icon} {gd.name} {star > 0 ? `${'★'.repeat(star)}${'☆'.repeat(FARM_BUILDING_MAX_STAR - star)}` : ''}</b>
+              <span style={{ display: 'flex', gap: 4 }}>
+                {star === 0 ? (
+                  <button style={{ ...styles.btn, background: money >= gd.cost ? '#f1c40f' : '#555', color: money >= gd.cost ? '#222' : '#fff' }} onClick={() => buyFarmBuilding('gian_phoi')}>
+                    Xây Sân phơi ({formatMoney(gd.cost)})
+                  </button>
+                ) : (
+                  <>
+                    <button style={{ ...styles.btn, background: rackCovered ? '#3498db' : '#e67e22', color: '#fff' }} onClick={() => setRackCovered(!rackCovered)}>
+                      {rackCovered ? '☀️ Mang giàn ra phơi' : '🌙 Cất giàn'}
+                    </button>
+                    {!garden.rackTarp && money >= 2_500_000 && (
+                      <button style={{ ...styles.btn, background: '#8e44ad', color: '#fff' }} onClick={buyRackTarp} title="Mưa to để ngoài cũng không ướt, vẫn nhận 0,4 nắng">
+                        🪂 Bạt kéo ({formatMoney(2_500_000)})
+                      </button>
+                    )}
+                  </>
+                )}
+              </span>
+            </div>
+            <div style={{ fontSize: 12, opacity: 0.75, marginTop: 4 }}>
+              {star === 0 ? `${gd.note}. Mở ở cấp ${PHOI_UNLOCK}.` : `${star} sao: sân có ${rackCap(star)} nong${garden.rackTarp ? ' · đã có bạt kéo' : ''}. Gỗ/đá nâng sao ở Dọn trại.`}
+            </div>
+            {star > 0 && star < FARM_BUILDING_MAX_STAR && (
+              <button style={{ ...styles.btn, background: '#f1c40f', color: '#222', marginTop: 6 }} onClick={() => upgradeFarmBuilding('gian_phoi')}
+                title={`Cần gỗ + đá + tiền, thêm 2 nong`}>
+                ⬆️ Lên sao {star + 1} ({formatMoney(gd.upgrades[star - 1].money)} + 🪵{gd.upgrades[star - 1].wood} 🪨{gd.upgrades[star - 1].stone})
+              </button>
+            )}
+          </div>
+
+          {phoiJobs.length === 0 ? (
+            <div style={{ ...styles.card, fontSize: 12, opacity: 0.75 }}>Giàn đang trống — chọn một mẻ dưới đây để bắt đầu phơi.</div>
+          ) : (
+            phoiJobs.map((j) => {
+              const def = preserveDefById(j.defId);
+              const ready = phoiReady(j, def);
+              const out = productById(def.outputId);
+              const pct = Math.min(100, Math.round((j.sun / def.need) * 100));
+              return (
+                <div key={j.id} style={{ ...styles.card, display: 'block' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center' }}>
+                    <b>{out.name}</b>
+                    <button style={{ ...styles.btn, background: ready ? '#2ecc71' : '#555', color: '#fff' }} onClick={() => collectPreserve(j.id)}>
+                      {ready ? `🧺 Gỡ xuống (${def.outputQty})` : `⏳ ${j.sun.toFixed(1)}/${def.need} nắng`}
+                    </button>
+                  </div>
+                  <div style={{ height: 6, background: '#333', borderRadius: 3, marginTop: 6, overflow: 'hidden' }}>
+                    <div style={{ height: 6, width: `${pct}%`, background: ready ? '#2ecc71' : '#f1c40f' }} />
+                  </div>
+                  <div style={{ fontSize: 12, opacity: 0.75, marginTop: 4 }}>
+                    Bắt đầu ngày {j.startDay} · {j.wet > 0 ? `dính mưa ${j.wet} lần` : 'chưa dính mưa'}{j.allHomegrown ? ' · toàn nhà trồng (giá hơn)' : ''} · {def.note}
+                  </div>
+                  <div style={{ fontSize: 12, color: '#e67e22', marginTop: 4 }}>💰 {phoiPayoff({ job: j, def }).line}</div>
+                </div>
+              );
+            })
+          )}
+
+          <div style={{ ...styles.card, display: 'block' }}>
+            <b>☀️ Bắt đầu một mẻ phơi</b>
+            <div style={{ fontSize: 12, marginTop: 4, display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+              {phoiDefs.map((d) => {
+                const out = productById(d.outputId);
+                const lack = d.inputs.find((i) => (storage[i.productId] ?? 0) < i.quantity);
+                const can = star > 0 && !lack && phoiJobs.length < rackCap(star);
+                const label = `${out.name}${d.inputs.map((i) => ` (${productById(i.productId).name} ${i.quantity})`).join('')}`;
+                return (
+                  <button key={d.id} style={{ ...styles.btn, background: can ? '#2ecc71' : '#555', color: '#fff' }} onClick={() => startPreserve(d.id)}
+                    title={lack ? `Thiếu ${productById(lack.productId).name} — nhập trước rồi phơi` : `${out.name}: ${d.note}. ${preserveOutlet(d.outputId).line}`}>
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+            <div style={{ fontSize: 12, opacity: 0.75, marginTop: 4 }}>
+              {phoiDefs.length === 0 ? `Chưa có mẻ phơi nào ở cấp này${star ? '' : ' — còn cần xây Sân phơi trước'}.` : 'Mẹo: bánh tráng phơi sương mù cũng đủ nắng (fogBonus); mực một nắng chỉ ăn ngày nắng đẹp.'}
+            </div>
+          </div>
+
+          <div style={{ display: 'block', marginTop: 6 }}>
+            {level < VAI_UNLOCK ? (
+              <div style={styles.card}>🔒 Dãy vại muối mở ở cấp {VAI_UNLOCK}: ngâm dưa muối, cà pháo, chanh muối, củ kiệu… vớt đúng cửa sổ thì ngon, để trễ thì khú/hỏng.</div>
+            ) : (
+              <div style={{ ...styles.card, display: 'block' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center' }}>
+                  <b>{vd.icon} {vd.name} {vaiStar > 0 ? `${'★'.repeat(vaiStar)}${'☆'.repeat(FARM_BUILDING_MAX_STAR - vaiStar)}` : ''}</b>
+                  {vaiStar === 0 ? (
+                    <button style={{ ...styles.btn, background: money >= vd.cost ? '#f1c40f' : '#555', color: money >= vd.cost ? '#222' : '#fff' }} onClick={() => buyFarmBuilding('vai_muoi')}>
+                      Xây Dãy vại ({formatMoney(vd.cost)})
+                    </button>
+                  ) : (
+                    <span style={{ fontSize: 12, opacity: 0.75 }}>{vaiCap(vaiStar)} vại</span>
+                  )}
+                </div>
+                {vaiStar > 0 && vaiStar < FARM_BUILDING_MAX_STAR && (
+                  <button style={{ ...styles.btn, background: '#f1c40f', color: '#222', marginTop: 6 }} onClick={() => upgradeFarmBuilding('vai_muoi')}
+                    title={`Cần gỗ + đá + tiền, thêm 2 vại`}>
+                    ⬆️ Lên sao {vaiStar + 1} ({formatMoney(vd.upgrades[vaiStar - 1].money)} + 🪵{vd.upgrades[vaiStar - 1].wood} 🪨{vd.upgrades[vaiStar - 1].stone})
+                  </button>
+                )}
+                {muoiJobs.length === 0 ? (
+                  <div style={{ fontSize: 12, opacity: 0.75, marginTop: 6 }}>{vaiStar === 0 ? 'Xây Dãy vại để ngâm món muối chua.' : 'Vại trống — chọn một mẻ dưới đây.'}</div>
+                ) : (
+                  muoiJobs.map((j) => {
+                    const d = preserveDefById(j.defId);
+                    const out = productById(d.outputId);
+                    const st = pickleState(j, d, day);
+                    const age = pickleAge(j, day);
+                    const win = st === 'ngon' ? '🟢 NGON' : st === 'haran' ? '⏳ còn hăng' : st === 'dat' ? '🟡 đạt' : st === 'kem' ? '🟠 khú' : '🔴 hỏng';
+                    const can = st === 'ngon' || st === 'dat' || st === 'kem';
+                    return (
+                      <div key={j.id} style={{ ...styles.card, display: 'block', marginTop: 6 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center' }}>
+                          <b>{out.name}</b>
+                          <button style={{ ...styles.btn, background: can ? '#2ecc71' : '#555', color: '#fff' }} onClick={() => collectPreserve(j.id)} disabled={st === 'haran'}>
+                            {st === 'haran' ? `⏳ ngày ${age.toFixed(1)}/${d.window![0]} còn hăng` : st === 'hong' ? `🗑️ Hỏng — đổ bỏ` : `🫙 Vớt (${age.toFixed(1)})`}
+                          </button>
+                        </div>
+                        <div style={{ fontSize: 12, opacity: 0.75, marginTop: 4 }}>
+                          Bắt đầu ngày {j.startDay} · cửa sổ vớt ngon {d.window![0]}–{d.window![0] + 1} · {win}{j.allHomegrown ? ' · toàn nhà trồng' : ''}
+                          {st === 'ngon' ? ' · GIÁ HƠN +20%' : ''}
+                        </div>
+                        <div style={{ fontSize: 12, color: '#e67e22', marginTop: 4 }}>💰 {picklePayoff({ job: j, def: d, day }).line}</div>
+                      </div>
+                    );
+                  })
+                )}
+                <div style={{ fontSize: 12, marginTop: 4, display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                  {muoiDefs.map((d) => {
+                    const out = productById(d.outputId);
+                    const lack = d.inputs.find((i) => (storage[i.productId] ?? 0) < i.quantity);
+                    const can = vaiStar > 0 && !lack && muoiJobs.length < vaiCap(vaiStar);
+                    const label = `${out.name}${d.inputs.map((i) => ` (${productById(i.productId).name} ${i.quantity})`).join('')}`;
+                    return (
+                      <button key={d.id} style={{ ...styles.btn, background: can ? '#2ecc71' : '#555', color: '#fff' }} onClick={() => startPreserve(d.id)}
+                        title={lack ? `Thiếu ${productById(lack.productId).name} — nhập trước rồi muối` : `${out.name}: vớt ngon ngày ${d.window![0]}–${d.window![0] + 1}. ${d.note}. ${preserveOutlet(d.outputId).line}`}>
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+                <div style={{ fontSize: 12, opacity: 0.75, marginTop: 4 }}>
+                  Mỗi món có cửa sổ vớt riêng (nút hiện "còn hăng / vớt ngon"): vớt đúng đầu cửa sổ thì NGON (toàn lô bán +20%), vớt trễ thì khú (×0,6) rồi hỏng. Nắng nóng làm chua nhanh, mưa không hại vại.
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div style={{ display: 'block', marginTop: 6 }}>
+            {level < CHUM_UNLOCK ? (
+              <div style={styles.card}>🔒 Nhà chum ủ mở ở cấp {CHUM_UNLOCK}: ủ mắm tép, tương bần, nước mắm, tỏi đen, tôm chua Huế, tương hột. Chum không hỏng theo thời gian — giữ lâu tới mốc ủ thì ra NHIỀU hơn.</div>
+            ) : (
+              <div style={{ ...styles.card, display: 'block' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center' }}>
+                  <b>{cd.icon} {cd.name} {chumStar > 0 ? `${'★'.repeat(chumStar)}${'☆'.repeat(FARM_BUILDING_MAX_STAR - chumStar)}` : ''}</b>
+                  {chumStar === 0 ? (
+                    <button style={{ ...styles.btn, background: money >= cd.cost ? '#f1c40f' : '#555', color: money >= cd.cost ? '#222' : '#fff' }} onClick={() => buyFarmBuilding('chum_u')}>
+                      Xây Nhà chum ({formatMoney(cd.cost)})
+                    </button>
+                  ) : (
+                    <span style={{ fontSize: 12, opacity: 0.75 }}>{chumCap(chumStar)} chum</span>
+                  )}
+                </div>
+                {chumStar > 0 && chumStar < FARM_BUILDING_MAX_STAR && (
+                  <button style={{ ...styles.btn, background: '#f1c40f', color: '#222', marginTop: 6 }} onClick={() => upgradeFarmBuilding('chum_u')}
+                    title={`Cần gỗ + đá + tiền, thêm 1 chum`}>
+                    ⬆️ Lên sao {chumStar + 1} ({formatMoney(cd.upgrades[chumStar - 1].money)} + 🪵{cd.upgrades[chumStar - 1].wood} 🪨{cd.upgrades[chumStar - 1].stone})
+                  </button>
+                )}
+                {uJobs.length === 0 ? (
+                  <div style={{ fontSize: 12, opacity: 0.75, marginTop: 6 }}>{chumStar === 0 ? 'Xây Nhà chum để bắt đầu ủ.' : 'Chum trống — chọn một mẻ dưới đây.'}</div>
+                ) : (
+                  uJobs.map((j) => {
+                    const d = preserveDefById(j.defId);
+                    const out = productById(d.outputId);
+                    const age = pickleAge(j, day);
+                    const ripe = uRipe(j, d, day);
+                    const aged = uAged(j, d, day);
+                    const label = aged ? `🫛 Rút ${d.aged!.outputQty}` : ripe ? `🫛 Rút ${d.outputQty}` : `⏳ ${age.toFixed(0)}/${d.need} ngày`;
+                    return (
+                      <div key={j.id} style={{ ...styles.card, display: 'block', marginTop: 6 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center' }}>
+                          <b>{out.name}</b>
+                          <button style={{ ...styles.btn, background: ripe ? '#2ecc71' : '#555', color: '#fff' }} onClick={() => collectPreserve(j.id)} disabled={!ripe}>
+                            {label}
+                          </button>
+                        </div>
+                        <div style={{ fontSize: 12, opacity: 0.75, marginTop: 4 }}>
+                          Bắt đầu ngày {j.startDay} · rút ngon từ ngày {d.need}{d.aged ? ` · ủ LÂU tới ${d.aged.day} ngày ra ${d.aged.outputQty} (nhãn nhà làm)` : ''}{j.allHomegrown ? ' · toàn nhà trồng' : ''}{aged ? ' · GIÁ HƠN +20%' : ''}
+                        </div>
+                        <div style={{ fontSize: 12, color: '#e67e22', marginTop: 4 }}>💰 {picklePayoff({ job: j, def: d, day }).line}</div>
+                      </div>
+                    );
+                  })
+                )}
+                <div style={{ fontSize: 12, marginTop: 4, display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                  {uDefs.map((d) => {
+                    const out = productById(d.outputId);
+                    const lack = d.inputs.find((i) => (storage[i.productId] ?? 0) < i.quantity);
+                    const can = chumStar > 0 && !lack && uJobs.length < chumCap(chumStar);
+                    const label = `${out.name}${d.inputs.map((i) => ` (${productById(i.productId).name} ${i.quantity})`).join('')}`;
+                    return (
+                      <button key={d.id} style={{ ...styles.btn, background: can ? '#2ecc71' : '#555', color: '#fff' }} onClick={() => startPreserve(d.id)}
+                        title={lack ? `Thiếu ${productById(lack.productId).name} — nhập trước rồi ủ` : `${out.name}: ${d.need} ngày rút; ${d.aged ? `ủ ${d.aged.day} ngày ra ${d.aged.outputQty}. ` : ''}${d.note}. ${preserveOutlet(d.outputId).line}`}>
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+                <div style={{ fontSize: 12, opacity: 0.75, marginTop: 4 }}>
+                  Chum không hỏng theo thời gian; đủ ngày là rút được hàng thường, GIỮ thêm tới mốc ủ lâu (nếu món có) thì ra nhiều hơn và cả lô bán +20%.
+                </div>
+              </div>
+            )}
+          </div>
+        </>
+      )}
+    </div>
   );
 }

@@ -1,7 +1,7 @@
 import { fitLots, nearestLife } from '../../data/freshness';
 import { storageCapacity, storageUsed, useGame } from '../../core/store';
 import { warehouseTier, WAREHOUSE_TIERS } from '../../data/warehouse';
-import { MATERIAL_FROM_TIER, MATERIAL_KEYS, MATERIAL_LABEL, MATERIAL_PACK, MATERIAL_PACK_PRICE, hasMaterials, materialsFor, missingMaterials } from '../../data/wareMaterials';
+import { MATERIAL_FROM_TIER, MATERIAL_KEYS, MATERIAL_LABEL, costOfMaterials, hasMaterials, materialBlockLabel, materialsFor, missingMaterials } from '../../data/wareMaterials';
 import { caseSize, describeUnits, formatMoney, productById } from '../../data/products';
 import { shortLabel } from '../shortLabel';
 import { storeMissRevenue, coldOverflow } from '../../data/advice';
@@ -115,7 +115,7 @@ export function StoragePanel() {
             <b>Nâng lên {next.name}</b>: chứa {next.cases} thùng, giữ lạnh {next.cold} món, {next.racks} kệ, {next.fridges} tủ lạnh.
           </span>
           <button style={styles.btn} disabled={level < next.unlock || money < next.price || !hasMaterials(wareMaterials, tierIndex + 1)} onClick={upgradeWarehouse}>
-            {level < next.unlock ? `🔒 Cấp ${next.unlock}` : shortLabel(formatMoney(next.price), next.price, money)}
+            {level < next.unlock ? `🔒 Cấp ${next.unlock}` : (materialBlockLabel(wareMaterials, tierIndex + 1) ?? shortLabel(formatMoney(next.price), next.price, money))}
           </button>
         </div>
       )}
@@ -123,6 +123,7 @@ export function StoragePanel() {
         // GĐ1945 — vật liệu nâng kho: để ở bãi, không chiếm thùng
         const need = materialsFor(tierIndex + 1);
         const miss = missingMaterials(wareMaterials, tierIndex + 1);
+        const cost = costOfMaterials(miss);
         return (
           <div style={{ ...styles.card, marginTop: 8 }}>
             <span style={{ flex: 1, fontSize: 13 }}>
@@ -133,9 +134,11 @@ export function StoragePanel() {
                 </span>
               ))}
             </span>
-            <button style={styles.btn} disabled={money < MATERIAL_PACK_PRICE} onClick={buyMaterialPack}>
-              {shortLabel(`Mua bộ (+${MATERIAL_PACK.gach}/${MATERIAL_PACK.ximang}/${MATERIAL_PACK.thep})`, MATERIAL_PACK_PRICE, money)}
-            </button>
+            {cost > 0 ? (
+              <button style={styles.btn} disabled={money < cost} onClick={buyMaterialPack}>
+                {shortLabel('Mua đủ phần thiếu', cost, money)}
+              </button>
+            ) : <span style={{ fontSize: 12, color: '#2ecc71' }}>✅ Đủ vật liệu</span>}
           </div>
         );
       })()}

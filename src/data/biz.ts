@@ -7,6 +7,10 @@ import { formatMoney } from './products';
 import { newQuanNuoc, type QuanNuocState } from './quanNuoc';
 import { newTiemXoi, type TiemXoiState } from './tiemXoi';
 import type { HiepLucState } from './hiepLuc';
+import type { StanceId, StanceState } from './stance';
+import type { BrandState } from './brand';
+import type { HaulerId } from './routes';
+import type { TripState, RouteStock } from './trip';
 import { monthOf } from './calendar';
 import { emptyYear } from './yearReport';
 import { xpToNext } from './levels';
@@ -150,12 +154,40 @@ export interface BizState {
   /** Playtest P0 T2: người chơi đã tự bày hàng lên kệ ít nhất một lần (hàng khai trương có sẵn không tính). Tùy chọn — save cũ thiếu = chưa. */
   tutShelved?: boolean;
   /** Tái sinh (NG+): số lần đã tái sinh (0 = lần chơi đầu) và hệ số doanh thu đang hưởng (0 → không đổi).
-   *  `goalsClaimed` (GĐ140): mục tiêu vòng tái sinh đã nhận thưởng trong vòng hiện tại — reset mỗi vòng. */
-  prestige: { level: number; bonus: number; goalsClaimed?: string[] };
+   *  `goalsClaimed` (GĐ140): mục tiêu vòng tái sinh đã nhận thưởng trong vòng hiện tại — reset mỗi vòng.
+   *  `brandLegacy` (Hệ4-L9): nhãn riêng của vòng trước giữ lại CHỈ ĐỂ HIỂN THỊ trong hồ sơ tiệm (tên + uy tín
+   *  cao nhất), không có hiệu ứng gameplay trong vòng mới. */
+  prestige: { level: number; bonus: number; goalsClaimed?: string[]; seals?: StanceId[]; brandLegacy?: { name: string; maxRep: number } };
   /** Dịch vụ ở quầy đã mở (nạp tiền, thu hộ); thiếu ở save cũ. */
   services?: string[];
   /** Thiết bị đã mua (camera, máy POS); thiếu ở save cũ. */
   upgrades?: string[];
+  /** Hệ 3 (SPEC-CHIEU-SAU §3.9) — biển hiệu đang treo (định vị tiệm, cấp ≥ 60). THIẾU = chưa treo. */
+  stance?: StanceState;
+  /** Hệ3-L8 — biển THỨ HAI (mở khi đủ 3 ấn định vị); treo hai biển, hiệu ứng mỗi biển 60%. THIẾU = một biển. */
+  stance2?: StanceState;
+  /** Hệ 4 — Nhãn hàng riêng (SPEC-CHIEU-SAU §4): nhãn + dòng hàng + xưởng + đại lý + nhượng quyền.
+   *  Bản lưu cũ thiếu → undefined (chưa lập nhãn, không cần SAVE_VERSION). */
+  brand?: BrandState;
+  /** Hệ 7 — Trò khéo tay dịp lễ (SPEC-CHIEU-RONG §7): id trò → ngày game đã nhận thưởng (1 lần/ngày lễ, R7). */
+  miniPlayed?: Record<string, number>;
+  /** Hệ 7 — phần thưởng SỐ LƯỢNG cho mẻ KẾ TIẾP của công thức (recipeId → số thêm); startCook/clock đọc và xoá. */
+  miniBonus?: Record<string, number>;
+  /** Hệ 7 — điểm trang trí cộng tạm tới hết dịp ({furniture, bonus, until} = ngày game hết hạn) — lát L4. */
+  festivalFlair?: { furniture: string; bonus: number; until: number }[];
+  /** Hệ 5 — Chuyến đi tỉnh (SPEC-CHIEU-RONG §5): xe chở hàng đang dùng (THIẾU = xe máy ô 42, free) và có thùng đá giữ lạnh chưa (L3 mới mua được). */
+  hauler?: HaulerId;
+  coolBox?: boolean;
+  /** Hệ 5 — chuyến đi tỉnh ĐANG DIỄN RA (người chơi/nhân viên vắng mặt thật, SPEC §5.3). THIẾU = không có chuyến. */
+  trip?: TripState;
+  /** Hệ 5 (L3) — lượng hàng còn tại nguồn từng tuyến theo TUẦN (R7 cổng chống farm, SPEC §5.5). THIẾU = chưa có. */
+  routeStock?: Record<string, RouteStock>;
+  /** Hệ 5 (L4) — người bán nổi phật ý vì bị ép quá tay: sàn mặc cả cao hơn 3% tới hết tuần này (SPEC §5.6).
+   *  THIẾU = chưa ai phật ý. */
+  routeGrudge?: { routeId: string; untilWeek: number };
+  /** Hệ 5 (L7) — mối ruột bậc 3+ tại nguồn được ghi nợ MỘT chuyến (SPEC §5.7): tiền mua quá két, trả trong 7 ngày.
+   *  THIẾU = không nợ ai. */
+  routeDebt?: { routeId: string; amount: number; dueDay: number };
   /** Quán nước đầu ngõ (GĐ7, bán đồ uống rút từ kho); thiếu ở save cũ — nạp bản cũ tự bù mặc định. */
   quanNuoc: QuanNuocState;
   /** Tiệm xôi (GĐ410): xưởng nấu xôi số lượng lớn đổ vào kho chung mỗi đêm. */
@@ -203,6 +235,25 @@ export interface BizState {
   /** Tháng đã trả quà tri ân cuối tháng (GĐ69): tránh trả 2 lần cho cùng một tháng.
    *  Bản lưu cũ thiếu → undefined (chưa trả tháng nào, không cần SAVE_VERSION). */
   triAnPaidMonth?: number;
+  /** Các cạnh khắc khẩu đã hoà giải (GĐ Hệ2-L1, SPEC-CHIEU-SAU §2.6): khóa `a|b` chuẩn hoá.
+   *  Bản lưu cũ thiếu → undefined (chưa hoà giải cạnh nào, không cần SAVE_VERSION). */
+  tiesMended?: string[];
+  /** Các mốc "Tình làng" 25/50/75/100% đã nhận thưởng (GĐ Hệ2-L7, SPEC §2.8): mỗi mốc 1 lần/ván
+   *  (tiền + mốc 100% tặng decor). Bản lưu cũ thiếu → undefined (chưa nhận mốc nào, không cần SAVE_VERSION). */
+  tiesMilestones?: number[];
+  /** Bộ đếm lan thân thiết trong ngày (GĐ Hệ2-L2, SPEC §2.4): mỗi người nhận tối đa ±3/ngày.
+   *  `rippleDay[id] = { day, sum }` với `sum` = tổng lan đã áp hôm đó (reset khi đổi ngày).
+   *  Bản lưu cũ thiếu → undefined (không cần SAVE_VERSION). */
+  rippleDay?: Record<string, { day: number; sum: number }>;
+  /** Lần cuối xoá nợ mới lan tới họ hàng (GĐ Hệ2-L2): chống farm "cho vay nhỏ rồi xoá liên tục",
+   *  chỉ lan 1 lần/30 ngày cho mỗi con nợ. Map regularId → lastDay. Bản lưu cũ thiếu → undefined. */
+  forgiveRipple?: Record<string, number>;
+  /** Việc nhà trong hẻm đang mời/đã nhận (GĐ Hệ2-L3, SPEC §2.5): giỗ hằng năm mở cấp ≥ 32.
+   *  Tối đa 1 việc một lúc. Bản lưu cũ thiếu → undefined (chưa có việc nào, không cần SAVE_VERSION). */
+  lifeEvent?: import('./lifeEvent').LifeEventState;
+  /** Các việc lớn một lần (cưới/đầy tháng/tân gia/mừng thọ) đã làm HOẶC đã từ chối (GĐ Hệ2-L4,
+   *  SPEC §2.5): 1 việc/ván (R7). Giỗ hằng năm KHÔNG ghi vào đây. Bản lưu cũ thiếu → undefined. */
+  lifeEventsDone?: string[];
   /** Ngày game đã nhận thưởng đón lễ (GĐ70): 1 dịp lễ 1 lần. Bản lưu cũ thiếu →
    *  undefined (chưa nhận dịp nào, không cần SAVE_VERSION). */
   prepClaimed?: number;
@@ -229,6 +280,45 @@ export interface BizState {
   surpriseArc?: import('./surpriseArcs').SurpriseArcState;
   /** Các arc sự kiện ĐÃ kể (kể xong lẫn khép sớm — GĐ164): không kể lại. Bản lưu cũ thiếu → []. */
   surpriseArcsTold?: string[];
+  /** Hệ 8 — Biến cố dài (SPEC-CHIEU-RONG §8): đợt đang chạy. Bản lưu cũ thiếu → undefined (không đợt nào). */
+  crisis?: import('./crisis').CrisisState;
+  /** Các biến cố dài đã từng xảy ra trong ván (ngăn lặp lại nhiều lần cùng loại). Bản lưu cũ thiếu → []. */
+  crisesSeen?: string[];
+  /** Huy hiệu "vượt khó" đã nhận khi hoàn tất từng loại đợt (để hiện trong hồ sơ tiệm — lát L4). Bản lưu cũ thiếu → []. */
+  crisisBadges?: string[];
+  /** Tuỳ chọn "Năm yên ả" (đã tắt biến cố dài) — không nhận huy hiệu vượt khó. Bản lưu cũ thiếu → false. */
+  calmYears?: boolean;
+  /** Lợi đường mới (đào đường): nhân khách vĩnh viễn — đã nhận chưa (cho cả ván). Bản lưu cũ thiếu → false. */
+  roadBoon?: boolean;
+  /** Biến cố dài đã kết thúc gần nhất (để hiện bảng tổng kết cuối đợt) — lát L4. Bản lưu cũ thiếu → undefined. */
+  lastCrisis?: { defId: string; endDay: number; loss: number; saved: number };
+  /**
+   * Hệ 6 — Online không đồng bộ (SPEC-CHIEU-RONG §6.5). Trạng thái CỤC BỘ để đồng bộ với server:
+   * tạm lưu danh thiếp, trần ngày/tuần mua-bán, lẵng hoa đang chạy. Mặc định undefined (chưa dùng
+   * cộng đồng) — simGolden/khách không đụng tới nên không ảnh hưởng golden. Bản lưu cũ thiếu → undefined.
+   */
+  social2?: Social2State;
+}
+
+/**
+ * Hệ 6 — trạng thái cục bộ của cộng đồng online không đồng bộ. Server là nguồn chân lý (trần, điểm);
+ * state này chỉ để UI nhớ nhanh + đếm trần phía máy người chơi (server vẫn tự kiểm lại).
+ */
+export interface Social2State {
+  /** Người chơi đã bật scope `public_card` chưa (đồng ý khoe danh thiếp, §6.4a). Mặc định TẮT. */
+  cardPublic: boolean;
+  /** Mã bạn bè 6 ký tự do server cấp (sinh khi bật). Lưu lại để không phải hỏi lại. */
+  code?: string;
+  /** Bản danh thiếp gần nhất đã đẩy lên (để so khác & cập nhật). */
+  card?: { shopName: string; ownerName: string; level: number; day: number };
+  /** Lẵng hoa đang trang trí: `until` = ngày game hết hiệu lực (+3). */
+  flowers: { until: number }[];
+  /** Lô đã đăng trong tuần hiện tại (week key → số lô) để ẩn nút hết hạn trên UI. */
+  lotsWeek: { week: string; n: number };
+  /** Lô người chơi đã mua hôm nay (date key → số lô) — chợ tối đa 2 lô/ngày. */
+  buysDay: { date: string; n: number };
+  /** ids trong inbox đã nhận cục bộ (chống nhận nhầm 2 lần nếu server/tin chệch). */
+  claimed: string[];
 }
 
 /** Sự kiện thử thách theo mùa (GĐ75). */
@@ -249,7 +339,7 @@ export const newBiz = (): BizState => ({
   pets: {}, achievements: [], perfectDays: 0,
   surprise: null, surpriseDay: 0, story: {}, storyPending: null,
   home: [], vehicle: 'none', breakfastDay: 0,
-  chapters: [], chapterPending: null, counterKills: 0, tutorialOff: false, prestige: { level: 0, bonus: 0, goalsClaimed: [] }, services: [], upgrades: [],
+  chapters: [], chapterPending: null, counterKills: 0, tutorialOff: false, prestige: { level: 0, bonus: 0, goalsClaimed: [], seals: [] }, services: [], upgrades: [],
   quanNuoc: newQuanNuoc(),
   tiemXoi: newTiemXoi(),
   discoveryClaimed: [],
@@ -269,6 +359,17 @@ export const newBiz = (): BizState => ({
   seasonEvt: undefined,
   cleanStreak: 0, cleanBest: 0, cleanClaimed: 0, regularArcs: {},
   seasonAlmanac: {}, almanacClaimed: [],
+  // Hệ 8 — Biến cố dài (SPEC-CHIEU-RONG §8): mặc định không đợt nào, chưa đổi gì
+  crisis: undefined, crisesSeen: [], crisisBadges: [], calmYears: false, roadBoon: false, lastCrisis: undefined,
+  // Hệ 7 — Trò khéo tay lễ (SPEC-CHIEU-RONG §7): chưa chơi/không thưởng, không có flair
+  miniPlayed: {}, miniBonus: {}, festivalFlair: undefined,
+  // Hệ 6 — cộng đồng online không đồng bộ (SPEC-CHIEU-RONG §6.5): mặc định chưa bật scope
+  social2: emptySocial2(),
+});
+
+/** Trạng thái cộng đồng Hệ 6 ban đầu (chưa bật scope, chưa có gì). */
+export const emptySocial2 = (): Social2State => ({
+  cardPublic: false, flowers: [], lotsWeek: { week: '', n: 0 }, buysDay: { date: '', n: 0 }, claimed: [],
 });
 
 /** Hệ số đi bộ của chủ tiệm hôm nay: nhà đẹp ngủ ngon, ăn sáng, xe (chỉ khi ở ngoài đường). */

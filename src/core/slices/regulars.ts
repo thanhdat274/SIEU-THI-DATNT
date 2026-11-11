@@ -2,17 +2,20 @@ import { formatMoney, productById } from '../../data/products';
 import { composeReview, REVIEW_CAP } from '../../data/reviews';
 import { REGULARS, regularById, regularCheckout, BIRTHDAY_BONUS, isBirthday, regularFriendship, regularWalkout, INFLUENCER_ID, RESERVE_BONUS, RESERVE_MISS_LOSS, rescueGiftFor } from '../../data/regulars';
 import { FORGIVE_FRIEND_GAIN, installmentNow, REMIND_FRIEND_LOSS } from '../../data/credit';
-import { counterActive, RESCUE_FEE, RESCUE_FRIENDSHIP } from '../../data/biz';
+import { counterActive, RESCUE_FEE, RESCUE_FRIENDSHIP, POACH_CLUSTER_UNLOCK, POACH_IMMUNE_DAYS, poachClusterNeighbors } from '../../data/biz';
 import { copyStock, takeStock } from '../stock';
 import { arcForRegular, arcById, currentArcStep, arcStepFulfilled } from '../../data/regularArc';
 import { satisfiedLine, walkoutLine } from '../../data/regularTrust';
 import { REP_CAP } from '../../data/reputation';
 import { regularGiftPlan, giftFriendship, giftXp, giftableCount, giftRemainNote } from '../../data/regularGift';
 import { type GameState, type SetState, type GetState, addHour } from '../gameTypes';
+import { rippleFriendship, friendlyRipple, FORGIVE_HO_HANG_GAIN, TIES_UNLOCK, RIPPLE_DAILY_CAP } from '../../data/regularTies';
+import { lifeEventById, menuValue, menuSize, LIFE_EVENT_UNLOCK, LIFE_EVENT_KIND_LABEL } from '../../data/lifeEvent';
+import { hasFeature } from '../../data/features';
 
 /** Khách: lượt ghé, khách quen, lời hẹn giữ món, sổ nợ, đánh giá. */
 
-export const createRegularsSlice = (set: SetState, get: GetState): Pick<GameState, 'recordVisit' | 'regularVisit' | 'addReservation' | 'cancelReservation' | 'adjustFriendship' | 'rescuePoachedRegular' | 'checkoutOnCredit' | 'collectDebt' | 'collectDebtPartial' | 'remindDebt' | 'forgiveDebt' | 'giftRegular' | 'addReview'> => ({
+export const createRegularsSlice = (set: SetState, get: GetState): Pick<GameState, 'recordVisit' | 'regularVisit' | 'addReservation' | 'cancelReservation' | 'adjustFriendship' | 'applyRipple' | 'acceptLifeEvent' | 'declineLifeEvent' | 'deliverLifeEvent' | 'rescuePoachedRegular' | 'checkoutOnCredit' | 'collectDebt' | 'collectDebtPartial' | 'remindDebt' | 'forgiveDebt' | 'giftRegular' | 'addReview'> => ({
   recordVisit: (happy, sample) => {
     const s = get();
     set({
@@ -118,6 +121,89 @@ export const createRegularsSlice = (set: SetState, get: GetState): Pick<GameStat
     set({ regulars: { ...s.regulars, [id]: r.progress } });
     if (r.newPerks.length) s.notify(`💛 ${def.name} thân thiết hơn: ${r.newPerks.map((p) => p.description).join(' ')}`);
   },
+  // GĐ Hệ2-L2 (SPEC §2.4) — lan thân thiết từ SỰ KIỆN LỚN sang người có cạnh với nguồn, qua `rippleFriendship`.
+  // Trần ±RIPPLE_DAILY_CAP/ngày cho mỗi người nhận (rippleDay); cổng cấp ≥ TIES_UNLOCK (golden L30 an toàn).
+  applyRipple: (sourceId, delta, opts = {}) => {
+    const s = get();
+    if (s.level < TIES_UNLOCK) return;
+    const rippleDay = { ...(s.biz.rippleDay ?? {}) };
+    let touched = false;
+    // GĐ Hệ2-L3: `friendlyOnly` — lo việc nhà (giỗ) chỉ lan sang cạnh THÂN (trừ khắc khẩu chưa hoà giải).
+    const list = opts.friendlyOnly
+      ? friendlyRipple(sourceId, delta, s.biz.tiesMended ?? [])
+      : rippleFriendship(sourceId, delta, opts);
+    for (const { id, delta: d } of list) {
+      if (d === 0) continue;
+      const rec = rippleDay[id];
+      const sum = rec && rec.day === s.day ? rec.sum : 0;
+      const capped = Math.max(-RIPPLE_DAILY_CAP, Math.min(RIPPLE_DAILY_CAP, sum + d));
+      const applied = capped - sum;
+      if (applied === 0) continue;
+      rippleDay[id] = { day: s.day, sum: capped };
+      touched = true;
+      get().adjustFriendship(id, applied);
+    }
+    if (touched) set({ biz: { ...get().biz, rippleDay } });
+  },
+  // GĐ Hệ2-L3 (SPEC §2.5) — Việc nhà trong hẻm: giỗ hằng năm. Một việc một lúc (biz.lifeEvent).
+  // Nhận lời: chọn mức cỗ gọn/đủ/linh đình (đánh đổi như placeBet). Giao: takeStock như deliverOrder.
+  acceptLifeEvent: (tier) => {
+    const s = get();
+    if (s.level < LIFE_EVENT_UNLOCK) return; // cổng cấp toàn hệ (golden L30 an toàn)
+    const le = s.biz.lifeEvent;
+    if (!le || le.accepted || s.day >= le.eventDay) return;
+    set({ biz: { ...s.biz, lifeEvent: { ...le, tier, accepted: true } } });
+    const def = lifeEventById(le.defId);
+    const tname = ['gọn', 'đủ', 'linh đình'][tier];
+    s.notify(def ? `🏮 ${LIFE_EVENT_KIND_LABEL[def.kind]} ${def.region === 'nam' ? '· cỗ miền Nam' : '· cỗ miền Bắc'} mức ${tname} — còn ${le.eventDay - s.day} ngày chuẩn bị` : `🏮 Đã nhận lo cỗ mức ${tname}`);
+  },
+  declineLifeEvent: () => {
+    const s = get();
+    const le = s.biz.lifeEvent;
+    if (!le || le.accepted) return;
+    // Từ chối ngay từ đầu không mất gì; giữ record đến hết cửa sổ để không mời việc khác đè (tối đa 1 việc).
+    // Việc lớn một lần (không phải giỗ) → đánh dấu đã xử lý để không nhắc lại (1 việc/ván, R7).
+    const def = lifeEventById(le.defId);
+    const done = def && def.kind !== 'gio' ? [...(s.biz.lifeEventsDone ?? []), def.id] : s.biz.lifeEventsDone ?? [];
+    set({ biz: { ...s.biz, lifeEvent: { ...le, tier: 0, accepted: false }, lifeEventsDone: done } });
+    s.notify('🏮 Đã từ chối giúp cỗ (không mất gì)');
+  },
+  deliverLifeEvent: () => {
+    const s = get();
+    const le = s.biz.lifeEvent;
+    const def = le && lifeEventById(le.defId);
+    if (!le || !def || !le.accepted) return false;
+    if (s.day < le.eventDay) { s.notify('Chưa tới ngày cỗ — tới ngày mới giao được'); return false; }
+    const menu = def.menus[le.tier];
+    const missing = Object.entries(menu).filter(([id, q]) => (s.storage[id] ?? 0) < q);
+    if (missing.length) {
+      s.notify(`Còn thiếu cỗ: ${missing.map(([id, q]) => `${q} ${productById(id).name}`).join(', ')}`);
+      return false;
+    }
+    const k = copyStock(s);
+    for (const [id, q] of Object.entries(menu)) takeStock(k, id, q);
+    const pay = menuValue(menu) + def.bonus[le.tier];
+    const hostGain = def.friendship[le.tier];
+    const sold = menuSize(menu);
+    // Việc lớn một lần (không phải giỗ) → ghi vào lifeEventsDone sau khi giao xong (1 việc/ván, R7).
+    const done = def.kind !== 'gio' ? [...(s.biz.lifeEventsDone ?? []), def.id] : s.biz.lifeEventsDone ?? [];
+    set({
+      ...k,
+      biz: { ...s.biz, lifeEvent: undefined, lifeEventsDone: done },
+      money: s.money + pay,
+      stats: { ...s.stats, revenue: s.stats.revenue + pay, itemsSold: s.stats.itemsSold + sold },
+      totals: { ...s.totals, revenue: s.totals.revenue + pay, itemsSold: s.totals.itemsSold + sold },
+    });
+    get().addXp(sold * 5);
+    // Chủ cộng thân thiết; cả họ có cạnh với chủ (trừ khắc khẩu) lan theo trọng số, qua trần ±3/ngày.
+    get().adjustFriendship(def.host, hostGain);
+    get().applyRipple(def.host, hostGain, { friendlyOnly: true });
+    get().recordDiscovery(Object.keys(menu)); // Sổ tay Tiệm (GĐ36)
+    get().addReview(5, undefined, Object.keys(menu)[0]);
+    s.notify(`🏮 Giao xong ${LIFE_EVENT_KIND_LABEL[def.kind]} (${def.region === 'nam' ? 'miền Nam' : 'miền Bắc'}): +${formatMoney(pay)} · 💛 +${hostGain} thân thiết`);
+    get().checkTitles();
+    return true;
+  },
   // GĐ793 — đòi lại khách quen bị rival lôi kéo: tặng 1 món họ thích trong kho + tiền quà, mỗi ngày 1 người.
   // Chạy ở máy chạy (GUARDED 'rival:poach') nên chơi đơn và hẻm online ra cùng kết quả.
   rescuePoachedRegular: (id) => {
@@ -142,12 +228,22 @@ export const createRegularsSlice = (set: SetState, get: GetState): Pick<GameStat
     takeStock(stock, gift, 1);
     const poached = { ...(rival.poached ?? {}) };
     delete poached[id];
+    const nextRival = { ...rival, poached };
+    // "Đòi về → cả cụm miễn 7 ngày" (SPEC 2.7): họ hàng/bạn bè của người vừa đòi + chính họ
+    // được miễn bị kéo tới day + POACH_IMMUNE_DAYS (cổng ≥ POACH_CLUSTER_UNLOCK để golden L30 không đổi).
+    if (hasFeature(s, 'poachCluster')) {
+      const immune = { ...(rival.poachImmune ?? {}) };
+      const until = s.day + POACH_IMMUNE_DAYS;
+      for (const n of poachClusterNeighbors(id)) immune[n] = until;
+      immune[id] = until;
+      nextRival.poachImmune = immune;
+    }
     set({
       storage: stock.storage,
       storageLots: stock.storageLots,
       money: s.money - RESCUE_FEE,
       stats: { ...s.stats, spent: s.stats.spent + RESCUE_FEE },
-      biz: { ...s.biz, rival: { ...rival, poached }, rescueDay: s.day },
+      biz: { ...s.biz, rival: nextRival, rescueDay: s.day },
     });
     get().adjustFriendship(id, RESCUE_FRIENDSHIP);
     get().notify(`💛 Tặng ${productById(gift).name}, ${def.name} quay lại tiệm — +${RESCUE_FRIENDSHIP} thân thiết`);
@@ -207,6 +303,12 @@ export const createRegularsSlice = (set: SetState, get: GetState): Pick<GameStat
     delete debts[regularId];
     set({ debts });
     s.adjustFriendship(regularId, FORGIVE_FRIEND_GAIN);
+    // GĐ Hệ2-L2: họ hàng của con nợ cũng +2 ("nhớ ơn"), nhưng chỉ lan 1 lần/30 ngày cho mỗi con nợ (chống farm).
+    const fri = s.biz.forgiveRipple ?? {};
+    if ((fri[regularId] ?? -Infinity) + 30 <= s.day) {
+      s.applyRipple(regularId, FORGIVE_HO_HANG_GAIN, { only: 'ho_hang', weighted: false });
+      set({ biz: { ...get().biz, forgiveRipple: { ...fri, [regularId]: s.day } } });
+    }
     s.notify(`🤝 Xoá nợ ${formatMoney(debt.amount)} cho ${regularById(regularId)?.name} · +${FORGIVE_FRIEND_GAIN} thân thiết`);
   },
   // GĐ1557 — tặng 1 món khách thích từ kho: +3 thân thiết, mỗi khách 1 lần/ngày (cấp ≥38).

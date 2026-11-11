@@ -108,6 +108,7 @@ const LOCAL_ONLY: Record<string, string> = {
   addReservation: 'nhận giữ món cho một khách quen (thêm hẹn mới)',
   cancelReservation: 'huỷ lời hẹn của một khách quen theo id người',
   adjustFriendship: 'cộng/trừ thân thiết một khách quen theo id người',
+  applyRipple: 'mô phỏng nội bộ lan thân thiết theo cạnh (đơn/việc nhà) — chạy cùng adjustFriendship trên máy chạy, không ai bấm từ UI',
   acceptContract: 'nhận hợp đồng cung cấp theo id (thêm trạng thái mới)',
   deliverContract: 'giao kỳ hiện tại của một hợp đồng theo id',
   commitContract: 'cam kết kỳ: trữ đúng số hàng kỳ này khỏi kho chung theo id; toàn cục dồn chứ không đè chỗ',
@@ -148,6 +149,13 @@ const LOCAL_ONLY: Record<string, string> = {
   declineOnline: 'từ chối một đơn app theo id đơn',
   doPrestige: 'reset toàn cục sang vòng mới (tái sinh NG+) — chỉ chơi đơn, action tự chặn khi đang ở hẻm online',
   claimNgGoal: 'nhận thưởng mục tiêu vòng tái sinh (NG+) theo id — cờ đã nhận chốt một lần/vòng, chỉ chơi đơn như doPrestige',
+  // Hệ 6 — Cộng đồng online không đồng bộ (§6.6): chợ liên hẻm, lẵng hoa, thư, danh thiếp ở đợt đầu CHỈ cho
+  // bản lưu cá nhân — tiệm chung có nhiều người cùng sửa kho dễ tranh chấp. 5 action tự chặn khi hẻm online (như doPrestige).
+  toggleCardPublic: 'Hệ 6: bật/tắt danh thiếp công khai — chỉ bản lưu cá nhân, tự chặn khi hẻm online (§6.6)',
+  pushCard: 'Hệ 6: đẩy danh thiếp lên server — chỉ bản lưu cá nhân, tự chặn khi hẻm online (§6.6)',
+  claimInbox: 'Hệ 6: nhận thư (lẵng hoa/tiền lô) — chỉ bản lưu cá nhân, tự chặn khi hẻm online (§6.6)',
+  postMarketLot: 'Hệ 6: đăng lô lên chợ liên hẻm — chỉ bản lưu cá nhân, tự chặn khi hẻm online (§6.6)',
+  buyMarketLot: 'Hệ 6: mua lô chợ liên hẻm, trừ két + hàng về sáng mai — chỉ bản lưu cá nhân, tự chặn khi hẻm online (§6.6)',
 };
 
 /** Hàm nội bộ của store/không phải thao tác game thì loại khỏi danh sách đối chiếu. */

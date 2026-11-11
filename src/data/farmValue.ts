@@ -13,6 +13,7 @@ import {
   farmCritChance, farmGrazeDiscount, farmGrowthFlat, farmGrowthPct, harvestYield, inSeason, LAND_TIERS,
 } from './garden';
 import { productById } from './products';
+import { rackCap, vaiCap, chumCap, PHOI_UNLOCK, VAI_UNLOCK, CHUM_UNLOCK } from './preserve';
 
 /** Giá bán lẻ 1 món nhà trồng/nhà nuôi ở quầy (đã cộng 20% nhãn nhà trồng). */
 export const homegrownSell = (productId: string) =>
@@ -292,6 +293,28 @@ export const farmBuildingValue = (g: GardenState): FarmBuildingValue[] => {
             ? `Tưới tự động cấp ${star}: tự tưới cả vườn + cây lớn nhanh thêm ${gPct}%/sao`
             : `Tưới tự động cấp 1: tự tưới cả vườn mỗi sáng (khỏi thao tác); lên cấp 2–3 để cây lớn nhanh hơn`)
         : `Chưa xây (${cost.toLocaleString('vi-VN')}đ): tự tưới cả vườn mỗi sáng, khỏi thao tác`;
+      hasMoney = false;
+    } else if (id === 'gian_phoi') {
+      const cap = rackCap(star);
+      // Hệ Phơi (SPEC §1): đổi nguyên liệu thô thành món khô bán được — lợi phụ thuộc phơi theo trời
+      // (nắng/mưa/bão tất định theo seed) nên chỉ dòng định tính, không cày số đ/ngày mơ hồ (Luật 3).
+      const built = star > 0 ? `Sân phơi cấp ${star}: ${cap} nong cho mẻ phơi — bánh tráng, tôm khô, mực một nắng` : `Chưa xây (${cost.toLocaleString('vi-VN')}đ, mở cấp ${PHOI_UNLOCK}): ${cap} nong phơi món khô (bánh tráng, tôm khô, mực một nắng)`;
+      line = built;
+      hasMoney = false;
+    } else if (id === 'vai_muoi') {
+      const cap = vaiCap(star);
+      // Hệ Muối (SPEC §1.5): không phụ thuộc trời, phụ thuộc THỜI ĐIỂM vớt — vớt đúng cửa sổ ngon,
+      // vớt trễ thì khú/hỏng, nên dòng định tính (Luật 3), không cày số đ/ngày mơ hồ.
+      line = star > 0
+        ? `Dãy vại cấp ${star}: ${cap} vại muối chua — dưa muối, cà pháo, chanh muối, củ kiệu, dưa hành, dưa cải`
+        : `Chưa xây (${cost.toLocaleString('vi-VN')}đ, mở cấp ${VAI_UNLOCK}): ${cap} vại muối chua (dưa muối, cà pháo, chanh muối…)`;
+      hasMoney = false;
+    } else if (id === 'chum_u') {
+      const cap = chumCap(star);
+      // Hệ Ủ (SPEC §1.5): chum không hỏng theo thời gian, rủi ro = chi phí cơ hội — dòng định tính (Luật 3).
+      line = star > 0
+        ? `Nhà chum cấp ${star}: ${cap} chum ủ — mắm tép, tương bần, nước mắm, tỏi đen, tôm chua Huế, tương hột`
+        : `Chưa xây (${cost.toLocaleString('vi-VN')}đ, mở cấp ${CHUM_UNLOCK}): ${cap} chum ủ (mắm tép, tương bần, nước mắm…)`;
       hasMoney = false;
     } else { // nha_luoi
       const flat = farmGrowthFlat(g);

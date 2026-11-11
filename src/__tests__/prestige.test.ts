@@ -64,7 +64,7 @@ describe('Hằng số prestige + mặc định ván mới', () => {
   });
 
   it('newGameData đặt biz.prestige mặc định {level:0, bonus:0}', () => {
-    expect(newGameData().biz.prestige).toEqual({ level: 0, bonus: 0, goalsClaimed: [] });
+    expect(newGameData().biz.prestige).toEqual({ level: 0, bonus: 0, goalsClaimed: [], seals: [] });
   });
 
   it('revenueFactor: 0→1 (save cũ vô hại), 0.08→1.08', () => {
@@ -78,7 +78,7 @@ describe('Hằng số prestige + mặc định ván mới', () => {
     delete (save.biz as unknown as Record<string, unknown>).prestige;
     applySnapshot(save);
     const s = useGame.getState();
-    expect(s.biz.prestige).toEqual({ level: 0, bonus: 0, goalsClaimed: [] });
+    expect(s.biz.prestige).toEqual({ level: 0, bonus: 0, goalsClaimed: [], seals: [] });
   });
 });
 
@@ -203,7 +203,7 @@ describe('prestige tăng sau restart', () => {
 
   it('từ ván mới mặc định (level 0) → level 1, bonus 0.08', () => {
     const r = prestigeRestart(newGameData() as GameState);
-    expect(r.biz.prestige).toEqual({ level: 1, bonus: 0.08, goalsClaimed: [] });
+    expect(r.biz.prestige).toEqual({ level: 1, bonus: 0.08, goalsClaimed: [], seals: [] });
     expect(r.biz.prestige.bonus).toBeCloseTo(nextBonus(0));
   });
 });
@@ -219,12 +219,12 @@ describe('doPrestige qua store — đủ điều kiện', () => {
       totals: { ...s0.totals, revenue: PRESTIGE_MIN_REVENUE },
       notify: (m: string) => { msgs.push(m); },
     });
-    expect(useGame.getState().biz.prestige).toEqual({ level: 0, bonus: 0, goalsClaimed: [] });
+    expect(useGame.getState().biz.prestige).toEqual({ level: 0, bonus: 0, goalsClaimed: [], seals: [] });
     useGame.getState().doPrestige();
     const s = useGame.getState();
     expect(s.level).toBe(1);
     expect(s.money).toBe(newGameData().money);
-    expect(s.biz.prestige).toEqual({ level: 1, bonus: 0.08, goalsClaimed: [] });
+    expect(s.biz.prestige).toEqual({ level: 1, bonus: 0.08, goalsClaimed: [], seals: [] });
     expect(msgs.some((m) => m.includes('Tái sinh') || m.includes('🌟'))).toBe(true);
   });
 });
@@ -284,7 +284,26 @@ describe('save round-trip prestige', () => {
     applySnapshot(snap);
     const s = useGame.getState();
     // goalsClaimed (GĐ140) là trường mới tự bù [] qua merge — save cũ thiếu vẫn nạp được
-    expect(s.biz.prestige).toEqual({ level: 3, bonus: 0.32, goalsClaimed: [] });
+    expect(s.biz.prestige).toEqual({ level: 3, bonus: 0.32, goalsClaimed: [], seals: [] });
     expect(s.biz.achievements).toEqual(['ach_a', 'ach_b']);
+  });
+});
+
+describe('Hệ4-L9 — prestigeRestart giữ hồ sơ nhãn (brandLegacy) và reset nhãn hiện tại', () => {
+  it('có nhãn đang chạy → giữ brandLegacy (tên + uy tín cao nhất) CHỈ để hiển thị, nhãn mới reset (brand null)', () => {
+    const s = richState();
+    s.biz.brand = {
+      name: 'Nhà Năm', lines: [], stock: {}, rep: 55, maxRep: 88, repLog: [],
+      workshop: null, lastPackDay: 1, deals: {}, franchises: [], franchiseDue: {},
+    };
+    const r = prestigeRestart(s);
+    expect(r.biz.prestige.brandLegacy).toEqual({ name: 'Nhà Năm', maxRep: 88 });
+    expect(r.biz.brand).toBeUndefined(); // vòng mới chưa lập nhãn
+  });
+  it('không có nhãn → giữ nguyên brandLegacy của vòng trước (nếu có)', () => {
+    const s = richState();
+    s.biz.prestige = { level: 2, bonus: 0.24, brandLegacy: { name: 'Nhà Cũ', maxRep: 60 } };
+    const r = prestigeRestart(s);
+    expect(r.biz.prestige.brandLegacy).toEqual({ name: 'Nhà Cũ', maxRep: 60 });
   });
 });

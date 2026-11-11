@@ -40,24 +40,24 @@ export const CATALOG_PRODUCTS: Product[] = [
   p('x_ca_hop', 'Cá hộp', 'dry', 20000, 26000, 0xa3cb4d, 22),
   p('x_pate_hop', 'Pate hộp', 'dry', 15000, 20000, 0xcb4da7, 24),
   p('x_tieu_xay', 'Tiêu xay', 'dry', 8000, 11000, 0x4d4dcb, 24),
-  p('x_mam_tom', 'Mắm tôm', 'dry', 10000, 14000, 0x904dcb, 26),
-  p('x_ca_phe_hoa_tan', 'Cà phê hòa tan', 'dry', 45000, 55000, 0xc54dcb, 28),
-  p('x_bot_chien', 'Bột chiên giòn', 'dry', 6000, 8000, 0x57cb4d, 30),
+  p('x_mam_tom', 'Mắm tôm', 'dry', 10000, 14000, 0x904dcb, 27),
+  p('x_ca_phe_hoa_tan', 'Cà phê hòa tan', 'dry', 45000, 55000, 0xc54dcb, 29),
+  p('x_bot_chien', 'Bột chiên giòn', 'dry', 6000, 8000, 0x57cb4d, 31),
   p('x_dau_hao', 'Dầu hào', 'dry', 20000, 25000, 0xcbb84d, 33),
   p('x_bun_kho', 'Bún khô', 'dry', 12000, 15000, 0x4d9fcb, 35),
   p('x_giam', 'Giấm', 'dry', 8000, 10000, 0xcb5d4d, 37),
   p('x_keo_cao_su', 'Kẹo cao su', 'dry', 3000, 5000, 0x5d4dcb, 12),
   p('x_banh_bong_lan', 'Bánh bông lan', 'dry', 4000, 6000, 0x684dcb, 18),
   p('x_banh_socola', 'Bánh sô-cô-la', 'dry', 30000, 38000, 0xcb4d55, 22),
-  p('x_dau_phong', 'Đậu phộng rang', 'dry', 10000, 14000, 0x64cb4d, 26),
-  p('x_rong_bien', 'Rong biển sấy', 'dry', 6000, 8000, 0x4d9dcb, 30),
+  p('x_dau_phong', 'Đậu phộng rang', 'dry', 10000, 14000, 0x64cb4d, 27),
+  p('x_rong_bien', 'Rong biển sấy', 'dry', 6000, 8000, 0x4d9dcb, 31),
   p('x_kho_ga', 'Khô gà lá chanh', 'dry', 20000, 28000, 0xc0cb4d, 35),
   p('x_khan_giay', 'Khăn giấy', 'household', 8000, 12000, 0xcb594d, 12),
   p('x_ban_chai', 'Bàn chải đánh răng', 'household', 8000, 12000, 0xcb4dc5, 14),
   p('x_tui_rac', 'Túi rác', 'household', 10000, 15000, 0x98cb4d, 22),
-  p('x_nhang_muoi', 'Nhang muỗi', 'household', 15000, 20000, 0x814dcb, 26),
-  p('x_khau_trang', 'Khẩu trang', 'household', 15000, 20000, 0xcb604d, 28),
-  p('x_nhang', 'Nhang thơm', 'household', 12000, 18000, 0xcbc74d, 30),
+  p('x_nhang_muoi', 'Nhang muỗi', 'household', 15000, 20000, 0x814dcb, 27),
+  p('x_khau_trang', 'Khẩu trang', 'household', 15000, 20000, 0xcb604d, 29),
+  p('x_nhang', 'Nhang thơm', 'household', 12000, 18000, 0xcbc74d, 31),
   p('x_nuoc_lau_san', 'Nước lau sàn', 'household', 25000, 32000, 0xc5cb4d, 33),
   p('x_bang_ve_sinh', 'Băng vệ sinh', 'household', 18000, 23000, 0x794dcb, 35),
   p('x_bong_den', 'Bóng đèn', 'household', 25000, 35000, 0x4d5bcb, 37),
@@ -65,18 +65,18 @@ export const CATALOG_PRODUCTS: Product[] = [
   p('x_sua_dau_nanh', 'Sữa đậu nành', 'drink', 5000, 7000, 0x884dcb, 12),
   p('x_ca_phe_lon', 'Cà phê lon', 'drink', 10000, 14000, 0xcb4d55, 20),
   p('x_nuoc_cam', 'Nước cam ép', 'drink', 9000, 12000, 0x4dcb73, 24),
-  p('x_nuoc_yen', 'Nước yến', 'drink', 9000, 12000, 0x4d83cb, 28),
+  p('x_nuoc_yen', 'Nước yến', 'drink', 9000, 12000, 0x4d83cb, 29),
   p('x_sua_chua_uong', 'Sữa chua uống', 'drink', 5000, 7000, 0xcb704d, 33),
   p('x_ca_chua', 'Cà chua', 'fresh', 5000, 8000, 0xcb4dc2, 16),
   p('x_hanh_la', 'Hành lá', 'fresh', 2000, 3000, 0x4dcb75, 18),
   p('x_chuoi', 'Chuối', 'fresh', 10000, 14000, 0x4dcbb0, 22),
   p('x_khoai_tay', 'Khoai tây', 'fresh', 8000, 11000, 0x4d6ccb, 24),
-  p('x_bun_tuoi', 'Bún tươi', 'fresh', 5000, 8000, 0x9acb4d, 26),
-  p('x_cha_lua', 'Chả lụa', 'cold', 25000, 32000, 0xcb4d4f, 28),
-  p('x_thit_heo', 'Thịt heo', 'cold', 30000, 38000, 0xcb4dc0, 30),
+  p('x_bun_tuoi', 'Bún tươi', 'fresh', 5000, 8000, 0x9acb4d, 27),
+  p('x_cha_lua', 'Chả lụa', 'cold', 25000, 32000, 0xcb4d4f, 29),
+  p('x_thit_heo', 'Thịt heo', 'cold', 30000, 38000, 0xcb4dc0, 31),
   p('x_ca_vien', 'Cá viên', 'frozen', 25000, 32000, 0xcb5d4d, 22),
-  p('x_bo_vien', 'Bò viên', 'frozen', 30000, 38000, 0xb4cb4d, 26),
-  p('x_canh_ga', 'Cánh gà đông lạnh', 'frozen', 40000, 50000, 0x684dcb, 30),
+  p('x_bo_vien', 'Bò viên', 'frozen', 30000, 38000, 0xb4cb4d, 27),
+  p('x_canh_ga', 'Cánh gà đông lạnh', 'frozen', 40000, 50000, 0x684dcb, 31),
   p('x_sim_dt', 'Sim điện thoại', 'household', 50000, 60000, 0x4d5bcb, 16),
   p('x_banh_tet', 'Bánh tét', 'dry', 26000, 35000, 0x4d4fcb, 43),
   p('x_hat_dua', 'Hạt dưa', 'dry', 8000, 12000, 0xb03a2e, 3),
@@ -104,7 +104,7 @@ export const CATALOG_PRODUCTS: Product[] = [
   p('x_sua_lua_mach', 'Sữa lúa mạch', 'drink', 6000, 8000, 0x4dcbba, 14),
   p('x_nuoc_dien_giai', 'Nước điện giải', 'drink', 8000, 11000, 0x4dcb57, 18),
   p('x_nuoc_dua_hop', 'Nước dừa hộp', 'drink', 9000, 13000, 0xcb4db6, 22),
-  p('x_soda_chanh', 'Soda chanh', 'drink', 7000, 10000, 0xa1cb4d, 26),
+  p('x_soda_chanh', 'Soda chanh', 'drink', 7000, 10000, 0xa1cb4d, 27),
   p('x_bim_bim_tom', 'Bim bim vị tôm', 'dry', 4000, 6000, 0x5d4dcb, 5),
   p('x_keo_deo', 'Kẹo dẻo', 'dry', 5000, 7000, 0xcb4d75, 7),
   p('x_banh_que', 'Bánh que', 'dry', 5000, 7000, 0x4dcb73, 9),
@@ -115,13 +115,13 @@ export const CATALOG_PRODUCTS: Product[] = [
   p('x_sua_tam', 'Sữa tắm', 'household', 55000, 68000, 0xcb4db4, 12),
   p('x_nuoc_xa_vai', 'Nước xả vải', 'household', 60000, 74000, 0xcbcb4d, 22),
   p('x_dao_cao', 'Dao cạo râu', 'household', 12000, 16000, 0x884dcb, 24),
-  p('x_kem_chong_nang', 'Kem chống nắng', 'household', 90000, 115000, 0xbe4dcb, 28),
+  p('x_kem_chong_nang', 'Kem chống nắng', 'household', 90000, 115000, 0xbe4dcb, 29),
   p('x_rau_cai', 'Rau cải', 'fresh', 7000, 10000, 0xcb4d73, 14),
   p('x_trung_vit', 'Trứng vịt', 'fresh', 3000, 4500, 0xb04dcb, 16),
   p('x_gia_do', 'Giá đỗ', 'cold', 4000, 6000, 0x90cb4d, 18),
   p('x_kem_oc_que', 'Kem ốc quế', 'frozen', 9000, 13000, 0xcb734d, 20),
   p('x_banh_bao', 'Bánh bao đông lạnh', 'frozen', 20000, 27000, 0xcb9f4d, 24),
-  p('x_ca_basa', 'Cá basa phi lê', 'frozen', 45000, 58000, 0xb24dcb, 28),
+  p('x_ca_basa', 'Cá basa phi lê', 'frozen', 45000, 58000, 0xb24dcb, 29),
   p('x_nep', 'Nếp cái (1kg)', 'dry', 28000, 36000, 0xcb4da3, 60),
   p('x_dau_xanh', 'Đậu xanh cà vỏ', 'dry', 2500, 4000, 0x4d57cb, 60),
   p('x_hanh_phi', 'Hành phi', 'dry', 1500, 2500, 0x68cb4d, 36),
@@ -153,42 +153,42 @@ export const CATALOG_PRODUCTS: Product[] = [
   p('x_bap', 'Bắp ngọt', 'fresh', 6000, 9000, 0xabcb4d, 22),
   p('x_tao', 'Táo', 'fresh', 18000, 26000, 0xcb6c4d, 22),
   p('x_na', 'Na', 'fresh', 18000, 26000, 0x4dcbc9, 24),
-  p('x_mang_cut', 'Măng cụt', 'fresh', 24000, 34000, 0x6acb4d, 28),
-  p('x_nho_xanh', 'Nho xanh', 'fresh', 30000, 42000, 0xcba94d, 28),
-  p('x_nho_tim', 'Nho tím', 'fresh', 30000, 42000, 0x4d59cb, 30),
+  p('x_mang_cut', 'Măng cụt', 'fresh', 24000, 34000, 0x6acb4d, 29),
+  p('x_nho_xanh', 'Nho xanh', 'fresh', 30000, 42000, 0xcba94d, 29),
+  p('x_nho_tim', 'Nho tím', 'fresh', 30000, 42000, 0x4d59cb, 31),
   p('x_thanh_long_trang', 'Thanh long ruột trắng', 'fresh', 10000, 15000, 0xcb4db6, 22),
-  p('x_thanh_long_tim', 'Thanh long ruột tím', 'fresh', 16000, 23000, 0xcb794d, 26),
+  p('x_thanh_long_tim', 'Thanh long ruột tím', 'fresh', 16000, 23000, 0xcb794d, 27),
   p('x_xoai', 'Xoài', 'fresh', 12000, 18000, 0x5d4dcb, 22),
   p('x_cam', 'Cam', 'fresh', 10000, 15000, 0xcb4da5, 20),
   p('x_du_du', 'Đu đủ', 'fresh', 8000, 12000, 0xcb964d, 20),
   p('x_thom', 'Thơm (dứa)', 'fresh', 10000, 15000, 0xcb4f4d, 22),
   p('x_gac', 'Trái gấc', 'fresh', 25000, 38000, 0xd9301f, 43), // GĐ1665 — nguyên liệu xôi gấc
   p('x_oi', 'Ổi', 'fresh', 10000, 15000, 0x4db2cb, 20),
-  p('x_bo', 'Bơ', 'fresh', 18000, 26000, 0xcb6a4d, 26),
-  p('x_mit', 'Mít', 'fresh', 16000, 24000, 0x59cb4d, 26),
-  p('x_chom_chom', 'Chôm chôm', 'fresh', 15000, 22000, 0x4dcbb6, 28),
-  p('x_vai', 'Vải', 'fresh', 22000, 32000, 0xcb4d8c, 30),
+  p('x_bo', 'Bơ', 'fresh', 18000, 26000, 0xcb6a4d, 27),
+  p('x_mit', 'Mít', 'fresh', 16000, 24000, 0x59cb4d, 27),
+  p('x_chom_chom', 'Chôm chôm', 'fresh', 15000, 22000, 0x4dcbb6, 29),
+  p('x_vai', 'Vải', 'fresh', 22000, 32000, 0xcb4d8c, 31),
   p('x_buoi', 'Bưởi', 'fresh', 16000, 24000, 0x684dcb, 24),
   p('x_chanh_day', 'Chanh dây', 'fresh', 12000, 18000, 0x4da9cb, 26),
   p('x_banh_trang', 'Bánh tráng (xấp lớn)', 'dry', 10000, 14000, 0x644dcb, 20),
   p('x_bot_nang', 'Bột năng', 'dry', 8000, 11000, 0xcb6a4d, 24),
   p('x_bot_gao', 'Bột gạo', 'dry', 9000, 13000, 0xcb4d59, 24),
   p('x_nui_kho', 'Nui khô', 'dry', 12000, 17000, 0xcb4d81, 26),
-  p('x_mi_trung_kho', 'Mì trứng khô', 'dry', 14000, 19000, 0xbccb4d, 28),
+  p('x_mi_trung_kho', 'Mì trứng khô', 'dry', 14000, 19000, 0xbccb4d, 29),
   p('x_mien_dong', 'Miến dong', 'dry', 15000, 21000, 0x4d6acb, 20),
   p('x_nam_meo_kho', 'Nấm mèo khô', 'dry', 12000, 17000, 0xa34dcb, 30),
   p('x_nam_huong_kho', 'Nấm hương khô', 'dry', 18000, 25000, 0x4dcb77, 33),
   p('x_tom_kho', 'Tôm khô', 'dry', 25000, 34000, 0x4d64cb, 30),
   p('x_ca_kho', 'Cá khô', 'dry', 22000, 30000, 0xcb9a4d, 33),
   p('x_ot_bot', 'Ớt bột', 'dry', 7000, 10000, 0x4dcb75, 22),
-  p('x_tieu_hat', 'Tiêu hạt', 'dry', 12000, 17000, 0x944dcb, 28),
+  p('x_tieu_hat', 'Tiêu hạt', 'dry', 12000, 17000, 0x944dcb, 29),
   p('x_dua_cot_hop', 'Nước cốt dừa hộp', 'dry', 10000, 14000, 0x7dcb4d, 30),
   p('x_bap_rang_bo', 'Bắp rang bơ', 'dry', 8000, 12000, 0xb64dcb, 16),
   p('x_snack_bap', 'Snack bắp', 'dry', 5000, 7000, 0xa14dcb, 9),
   p('x_banh_xop', 'Bánh xốp', 'dry', 7000, 10000, 0x4d8ecb, 12),
   p('x_banh_trang_nuong', 'Bánh tráng nướng', 'dry', 8000, 12000, 0x4d5dcb, 24),
-  p('x_com_chay', 'Cơm cháy', 'dry', 10000, 15000, 0xcb4dc0, 28),
-  p('x_kho_bo', 'Khô bò', 'dry', 22000, 30000, 0x4dcba7, 28),
+  p('x_com_chay', 'Cơm cháy', 'dry', 10000, 15000, 0xcb4dc0, 29),
+  p('x_kho_bo', 'Khô bò', 'dry', 22000, 30000, 0x4dcba7, 31),
   p('x_kho_muc', 'Khô mực', 'dry', 30000, 42000, 0x4d9dcb, 33),
   p('x_keo_lac', 'Kẹo lạc', 'dry', 7000, 10000, 0x514dcb, 22),
   p('x_banh_dau_xanh', 'Bánh đậu xanh', 'dry', 12000, 17000, 0xabcb4d, 22),
@@ -324,4 +324,59 @@ export const CATALOG_PRODUCTS: Product[] = [
   p('x_nuoc_cam_hop', 'Nước cam hộp', 'drink', 8000, 12000, 0xcb4d81, 26),
   p('x_ca_phe_sua_lon', 'Cà phê sữa lon', 'drink', 9000, 13000, 0x774dcb, 30),
   p('x_nuoc_sam', 'Nước sâm đóng chai', 'drink', 7000, 10000, 0xcb664d, 28),
+  p('x_dau_que', 'Đậu que', 'fresh', 8000, 12000, 0x5aa83a, 135), // GĐ2049: cho đậu que xào (cuối danh sách, mở muộn để không xáo kinh tế sớm)
+  p('x_muop', 'Mướp', 'fresh', 7000, 10000, 0x8ab84a, 135), // GĐ2049: cho canh mướp
+  p('x_me', 'Me chua', 'fresh', 10000, 15000, 0x8a5a2a, 165), // GĐ2080: cho cua rang me (cuối danh sách, mở muộn)
+  p('x_rau_ram', 'Rau răm', 'fresh', 2000, 3000, 0x5a8a3a, 165), // GĐ2080: cho gỏi gà
+  p('x_dau_bap', 'Đậu bắp', 'fresh', 8000, 12000, 0x6aa84a, 165), // GĐ2084: cho đậu bắp luộc/xào (cuối danh sách, mở muộn)
+  p('x_mong_toi', 'Mồng tơi', 'fresh', 5000, 8000, 0x3a7a2a, 165), // GĐ2087: cho canh mồng tơi (cuối danh sách, mở muộn)
+  p('x_bau', 'Bầu', 'fresh', 8000, 12000, 0x9ac87a, 165), // GĐ2087: cho canh bầu
+  p('x_rau_den', 'Rau dền', 'fresh', 5000, 8000, 0x8a3a5a, 165), // GĐ2091: cho canh rau dền (cuối danh sách, mở muộn)
+  p('x_bi_dao', 'Bí đao', 'fresh', 8000, 12000, 0xb8d8b0, 165), // GĐ2091: cho canh bí đao
+  p('x_su_su', 'Su su', 'fresh', 7000, 10000, 0xa8d88a, 165), // GĐ2091: cho su su xào tỏi
+  p('x_rau_ngot', 'Rau ngót', 'fresh', 5000, 8000, 0x2a6a2a, 165), // GĐ2095: cho canh rau ngót (cuối danh sách, mở muộn)
+  p('x_oc', 'Ốc bươu', 'fresh', 30000, 42000, 0x6a5a3a, 170), // GĐ2099: cho ốc luộc (nghêu dùng 'ngheu' sẵn có)
+  p('x_la_lot', 'Lá lốt', 'fresh', 4000, 6000, 0x3a7a3a, 170), // GĐ2123: cho bò lá lốt, chả lá lốt
+  p('x_cua_dong', 'Cua đồng', 'fresh', 30000, 42000, 0x6a5a3a, 170), // GĐ2125: cho bún riêu, canh cua
+  p('x_luon', 'Lươn', 'fresh', 60000, 80000, 0x5a4a2a, 170), // GĐ2127: cho miến lươn, lươn xào sả ớt
+  p('x_vit', 'Vịt làm sẵn', 'fresh', 70000, 95000, 0x8a6a4a, 170), // GĐ2129: cho cháo vịt, vịt kho gừng
+  p('x_ech', 'Ếch làm sẵn', 'fresh', 50000, 70000, 0x7a8a4a, 170), // GĐ2131: cho ếch xào sả ớt, ếch chiên nước mắm
+  p('x_ca_tre', 'Cá trê làm sẵn', 'fresh', 45000, 60000, 0x6a5a4a, 170), // GĐ2135: cho cá trê chiên giòn, cá trê nướng trui
+  p('x_bo_cau', 'Bồ câu làm sẵn', 'fresh', 40000, 55000, 0x8a7a6a, 170), // GĐ2137: cho cháo bồ câu, bồ câu quay
+  p('x_ba_ba', 'Ba ba làm sẵn', 'fresh', 80000, 105000, 0x5a6a4a, 170), // GĐ2139: cho cháo ba ba, ba ba hấp sả
+  p('x_ga_ac', 'Gà ác làm sẵn', 'fresh', 60000, 80000, 0x4a4a3a, 170), // GĐ2141: cho cháo gà ác, gà ác hấp (gà ác ≠ thịt gà thường)
+  p('x_chim_cut', 'Chim cút làm sẵn', 'fresh', 40000, 55000, 0x7a5a4a, 170), // GĐ2143: cho chim cút quay, chim cút chiên giòn
+  p('x_ca_keo', 'Cá kèo làm sẵn', 'fresh', 35000, 48000, 0x6a6a4a, 170), // GĐ2145: cho cá kèo nướng ống tre, cá kèo kho tộ
+  p('x_de', 'Thịt dê làm sẵn', 'fresh', 70000, 95000, 0x6a4a3a, 170), // GĐ2147: cho dê xào lăn, dê nướng sa tế
+  p('x_so_diep', 'Sò điệp làm sẵn', 'fresh', 60000, 85000, 0xd8c8b0, 170), // GĐ2149: cho sò điệp hấp sả, sò điệp xào nấm
+  p('x_bach_tuoc', 'Bạch tuộc làm sẵn', 'fresh', 60000, 85000, 0xd8b0c8, 170), // GĐ2151: cho bạch tuộc nướng, bạch tuộc xào sa tế
+  p('x_ghe', 'Ghẹ làm sẵn', 'fresh', 60000, 85000, 0xc8b0a0, 170), // GĐ2153: cho ghẹ rang muối, ghẹ nướng sa tế
+  p('x_hau', 'Hàu làm sẵn', 'fresh', 60000, 85000, 0xd8d8c0, 170), // GĐ2155: cho hàu nướng mỡ hành, hàu chiên giòn
+  p('x_ca_chim', 'Cá chim làm sẵn', 'fresh', 60000, 85000, 0xd8d0c0, 170), // GĐ2157: cho cá chim nướng giấy bạc, cá chim sốt cà chua
+  p('x_tom_tit', 'Tôm tít làm sẵn', 'fresh', 55000, 78000, 0xd8c0a8, 170), // GĐ2159: cho tôm tít rang muối, tôm tít hấp sả
+  p('x_so_huyet', 'Sò huyết làm sẵn', 'fresh', 50000, 72000, 0xd8a0a0, 170), // GĐ2161: cho sò huyết nướng mỡ hành, sò huyết xào tỏi
+  p('x_ca_bong', 'Cá bống làm sẵn', 'fresh', 42000, 60000, 0xb8a888, 170), // GĐ2163: cho cá bống kho tiêu, cá bống chiên giòn
+  p('x_ca_mu', 'Cá mú làm sẵn', 'fresh', 65000, 92000, 0xb8a8c8, 170), // GĐ2165: cho cá mú hấp xì dầu, cá mú nướng muối ớt
+  p('x_mong_tay', 'Sò móng tay làm sẵn', 'fresh', 48000, 68000, 0xd8c8c0, 170), // GĐ2167: cho móng tay nướng mỡ hành, móng tay xào sả ớt
+  p('x_ca_chep', 'Cá chép làm sẵn', 'fresh', 42000, 60000, 0xa8b8a8, 170), // GĐ2169: cho cá chép om dưa, cá chép chiên giòn
+  p('x_ca_tram', 'Cá trắm làm sẵn', 'fresh', 55000, 78000, 0xa8b0b8, 170), // GĐ2171: cho cá trắm kho tộ, cá trắm chiên giòn
+  p('x_ca_nuc', 'Cá nục làm sẵn', 'fresh', 32000, 45000, 0xc0b8a8, 170), // GĐ2173: cho cá nục kho, cá nục nướng
+  p('x_ca_ngat', 'Cá ngát làm sẵn', 'fresh', 52000, 74000, 0xb8a898, 170), // GĐ2175: cho cá ngát kho tộ, cá ngát nướng trui
+  p('x_muc_nang', 'Mực nang làm sẵn', 'fresh', 62000, 88000, 0xd8c8d0, 170), // GĐ2177: cho mực nang hấp, mực nang chiên giòn
+  p('x_ngan', 'Ngan làm sẵn', 'fresh', 70000, 95000, 0x8a7a6a, 170), // GĐ2179: cho ngan quay, cháo ngan (vịt xiêm ≠ vịt thường)
+  p('x_ca_chach', 'Cá chạch làm sẵn', 'fresh', 32000, 46000, 0x8a7a5a, 170), // GĐ2181: cho cá chạch kho tộ, cá chạch chiên giòn
+  p('x_ca_lang', 'Cá lăng làm sẵn', 'fresh', 60000, 85000, 0xa8a890, 170), // GĐ2183: cho cá lăng kho tộ, cá lăng nướng
+  p('x_ca_hong', 'Cá hồng làm sẵn', 'fresh', 55000, 78000, 0xd8a8a8, 170), // GĐ2185: cho cá hồng kho tộ, cá hồng nướng
+  p('x_ca_thu', 'Cá thu làm sẵn', 'fresh', 70000, 95000, 0x98a8c8, 170), // GĐ2187: cho cá thu kho tộ, cá thu nướng giấy bạc
+  p('x_ca_dua', 'Cá dứa làm sẵn', 'fresh', 60000, 85000, 0xa8c0b8, 170), // GĐ2189: cho cá dứa kho tộ, cá dứa nướng muối ớt
+  p('x_ca_trich', 'Cá trích làm sẵn', 'fresh', 25000, 40000, 0xc8d0d8, 170), // GĐ2191: cho cá trích kho tiêu, cá trích chiên giòn
+  p('x_ca_doi', 'Cá đối làm sẵn', 'fresh', 42000, 60000, 0xa8b8c8, 170), // GĐ2193: cho cá đối kho tộ, cá đối chiên giòn
+  p('x_ca_chem', 'Cá chẽm làm sẵn', 'fresh', 62000, 88000, 0xc0d0d8, 170), // GĐ2195: cho cá chẽm hấp xì dầu, cá chẽm nướng giấy bạc
+  p('x_ca_ngu', 'Cá ngừ làm sẵn', 'fresh', 65000, 92000, 0xb86868, 170), // GĐ2197: cho cá ngừ kho tộ, cá ngừ nướng giấy bạc
+  p('x_ca_bop', 'Cá bớp làm sẵn', 'fresh', 60000, 85000, 0xe8c8b8, 170), // GĐ2199: cho cá bớp hấp xì dầu, cá bớp nướng giấy bạc
+  p('x_ca_ro_dong', 'Cá rô đồng làm sẵn', 'fresh', 30000, 45000, 0xa8b898, 170), // GĐ2201: cho cá rô đồng kho tộ, cá rô đồng chiên giòn
+  p('x_ca_du', 'Cá đù làm sẵn', 'fresh', 38000, 55000, 0xc8b8a8, 170), // GĐ2203: cho cá đù kho tộ, cá đù chiên giòn
+  p('x_ba_khia', 'Ba khía làm sẵn', 'fresh', 45000, 65000, 0xb85048, 170), // GĐ2205: cho ba khía rang sả ớt, ba khía hấp
+  p('x_cai_ngot', 'Cải ngọt', 'fresh', 5000, 8000, 0x3f8f3a, 170), // GĐ2207: cho cải ngọt xào tỏi, cải ngọt luộc
+  p('x_cai_thao', 'Cải thảo', 'fresh', 5000, 8000, 0x4fa04a, 170), // GĐ2209: cho cải thảo xào tỏi, cải thảo luộc
 ];

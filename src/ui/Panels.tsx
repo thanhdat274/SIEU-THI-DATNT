@@ -30,6 +30,7 @@ const GiftPanel = lazy(() => import('./panels/GiftPanel').then((m) => ({ default
 const CookPanel = lazy(() => import('./panels/CookPanel').then((m) => ({ default: m.CookPanel })));
 const SocialPanel = lazy(() => import('./panels/SocialPanel').then((m) => ({ default: m.SocialPanel })));
 const OnlinePanel = lazy(() => import('./panels/OnlinePanel').then((m) => ({ default: m.OnlinePanel })));
+const CommunityPanel = lazy(() => import('./panels/CommunityPanel').then((m) => ({ default: m.CommunityPanel })));
 const LicensesPanel = lazy(() => import('./panels/LicensesPanel').then((m) => ({ default: m.LicensesPanel })));
 const GardenPanel = lazy(() => import('./panels/GardenPanel').then((m) => ({ default: m.GardenPanel })));
 const AnalyticsPanel = lazy(() => import('./panels/AnalyticsPanel').then((m) => ({ default: m.AnalyticsPanel })));
@@ -39,6 +40,8 @@ const DiscoveryPanel = lazy(() => import('./panels/DiscoveryPanel').then((m) => 
 const LandmarkPanel = lazy(() => import('./panels/LandmarkPanel').then((m) => ({ default: m.LandmarkPanel })));
 const DossierPanel = lazy(() => import('./panels/DossierPanel').then((m) => ({ default: m.DossierPanel })));
 const RoadmapPanel = lazy(() => import('./panels/RoadmapPanel').then((m) => ({ default: m.RoadmapPanel })));
+const BrandPanel = lazy(() => import('./panels/BrandPanel').then((m) => ({ default: m.BrandPanel })));
+const TodoListPanel = lazy(() => import('./panels/TodoListPanel').then((m) => ({ default: m.TodoListPanel })));
 
 export function Panels() {
   const panel = useGame((s) => s.panel);
@@ -66,6 +69,7 @@ export function Panels() {
         {panel.type === 'order' && <OrderPanel />}
         {panel.type === 'social' && <SocialPanel />}
         {panel.type === 'online' && <OnlinePanel />}
+        {panel.type === 'community' && <CommunityPanel />}
         {panel.type === 'licenses' && <LicensesPanel />}
         {panel.type === 'shelf' && <ShelfPanel uid={panel.uid} />}
         {panel.type === 'build' && <BuildPanel />}
@@ -97,6 +101,8 @@ export function Panels() {
         {panel.type === 'records' && <RecordsPanel />}
         {panel.type === 'dossier' && <DossierPanel closePanel={closePanel} />}
         {panel.type === 'roadmap' && <RoadmapPanel />}
+        {panel.type === 'brand' && <BrandPanel />}
+        {panel.type === 'todo' && <TodoListPanel />}
         </Suspense>
       </div>
     </div>

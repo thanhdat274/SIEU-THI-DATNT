@@ -6,7 +6,7 @@ import { Dropdown } from '../Dropdown';
 import { useGame } from '../../core/store';
 import { dailyWage, maxStaff, ROLES, SHIFTS, type Shift, type Staff } from '../../data/staff';
 import { formatMoney, fmtMul } from '../../data/products';
-import { shortLabel } from '../shortLabel';
+import { blockedLabel, shortLabel } from '../shortLabel';
 import { hasUpgrade } from '../../data/upgrades';
 import { branchStaffWish } from '../../data/branches';
 import { BranchShiftStrip, BranchValueLine, NightStaffLine, NightStrip, ShiftValueStrip, StaffIdleLine, StaffValueLine, CourierValueLine, StaffPoachWarn } from './StaffLines';
@@ -18,6 +18,10 @@ import { trainValue } from '../../data/trainValue';
 import { staffEff } from '../../data/staffEff';
 import { serveCoverage, SERVE_TOP_HOURS } from '../../data/serveCoverage';
 import { hirePayoff } from '../../data/hirePayoff';
+import { managerAutoPayoff } from '../../data/managerAutoPayoff';
+import { warehouseKeeperPayoff } from '../../data/warehouseKeeperPayoff';
+import { farmhandPayoff } from '../../data/farmhandPayoff';
+import { spoilNightReport } from '../../data/advice';
 import { petActive } from '../../data/bizAchievements';
 import { storeMissRevenue } from '../../data/advice';
 import { staffValueToday, staffShiftSummary, courierPhoneValue } from '../../data/staffValue';
@@ -33,7 +37,7 @@ import { gapsOf, SITE_NAME, type Site } from '../../data/transfer';
 
 export function StaffPanel() {
   const [tab, setTab] = useState<'team' | 'hire'>('team');
-  const { staff, candidates, level, day, money, autoOpen, hire, fire, setShift, trainStaff, promoteStaff, closePanel, biz, branch, hireForBranch, stats, skills, dirt, storage } = useGame();
+  const { staff, candidates, level, day, money, autoOpen, hire, fire, setShift, trainStaff, promoteStaff, closePanel, biz, branch, hireForBranch, stats, skills, dirt, storage, deliveries, furniture, sales, salesToday, analytics, garden, weatherSeed, weather } = useGame();
   const [pick, setPick] = useState<Record<number, Shift>>({});
   const max = maxStaff(level);
   const bStaff = branch?.staff ?? [];
@@ -55,6 +59,19 @@ export function StaffPanel() {
     hasCamera: (biz.upgrades ?? []).includes('camera'),
     hasSharpEye: skills.includes('sharp_eye'),
   };
+  // GĐ2220 — quản lý tự nhập hàng: đọc đúng luật managerNeedToRestock (pending từ deliveries, shelved
+  // từ furniture tiers) để nói "thuê quản lý nó tự nhập N món sắp cạn / hôm nay lỡ ~Xđ vì hết hàng".
+  const pending = (deliveries ?? []).reduce<Record<string, number>>((acc, d) => {
+    for (const [id, q] of Object.entries(d.items)) acc[id] = (acc[id] ?? 0) + q;
+    return acc;
+  }, {});
+  const shelved = [...new Set((furniture ?? []).flatMap((f) => f.tiers.map((t) => t.productId).filter((id): id is string => !!id)))];
+  const managerPayoff = managerAutoPayoff({ shelved, storage, pending, sales: sales ?? {}, salesToday: salesToday ?? {}, missLog: stats?.missLog });
+  // GĐ2221 — quản lý kho tự giảm hàng hỏng: "đêm qua" theo convention SkillsPanel = analytics[day-1] (đêm vừa chốt).
+  const warehouseBestSkill = staff.reduce((best, st) => (st.role === 'warehouse_mgr' ? Math.max(best, st.skill) : best), 0);
+  const warehousePayoff = warehouseKeeperPayoff({ spoiltCost: (analytics ? spoilNightReport(analytics, day - 1)?.totalCost : 0) ?? 0, bestSkill: warehouseBestSkill });
+  // GĐ2222 — phụ trại tự lo trại (tưới/cho ăn/gom/thu) mỗi tối đáng bao nhiêu: đọc trạng thái trại thật.
+  const farmhandVal = farmhandPayoff(garden, storage ?? {}, day, { seed: weatherSeed, weather });
   const total = [...staff, ...bStaff].reduce((sum, st) => sum + dailyWage(st), 0);
   // GĐ141: giá trị hôm nay của từng nhân viên ca ngày tiệm chính so với lương (thuần đọc stats.byHour)
   const staffValues = staffValueToday(stats?.byHour, staff);
@@ -161,6 +178,15 @@ export function StaffPanel() {
                 <StaffValueLine sv={staffValues.find((v) => v.id === st.id)} />
               )}
               <StaffIdleLine row={idleRows.find((r) => r.id === st.id)} />
+              {st.role === 'manager' && managerPayoff.ok && (
+                <div style={{ fontSize: 11, color: '#3498db' }} title="Quản lý tự nhập hàng khi kho sắp cạn (theo luật sẵn có).">{managerPayoff.line}</div>
+              )}
+              {st.role === 'warehouse_mgr' && warehousePayoff.ok && (
+                <div style={{ fontSize: 11, color: '#3498db' }} title="Quản lý kho sắp xếp kho xoay hàng cận hạn lên trước nên hàng hỏng qua đêm chậm hơn — tiền cứu được tính từ số hỏng thật đêm qua.">{warehousePayoff.line}</div>
+              )}
+              {st.role === 'farmhand' && farmhandVal.ok && (
+                <div style={{ fontSize: 11, color: '#3498db' }} title="Phụ trại mỗi tối tự tưới luống khô, đổ cám cho chuồng đói, gom trứng/sữa và thu hoạch luống chín — giá trị tính từ trạng thái trại thật (bán lẻ nhà trồng).">{farmhandVal.line}</div>
+              )}
               <PromoteRow st={st} level={level} money={money} onPromote={promoteStaff} />
               <div style={staffSt.actions}>
                 <span style={staffSt.label}>🕒 Ca làm</span>
@@ -187,7 +213,7 @@ export function StaffPanel() {
                         title={st.trainedDay === day ? 'Hôm nay đã học rồi' : 'Cộng kinh nghiệm, đủ thì lên sao (lương tăng theo)'}
                         onClick={() => trainStaff(st.id)}
                       >
-                        {st.trainedDay === day ? `🎓 Đào tạo ${formatMoney(trainCost(st.skill))}` : shortLabel(`🎓 Đào tạo ${formatMoney(trainCost(st.skill))}`, trainCost(st.skill), money)}
+                        {blockedLabel(st.trainedDay === day ? '🎓 Mai học tiếp' : null, `🎓 Đào tạo ${formatMoney(trainCost(st.skill))}`, trainCost(st.skill), money)}
                       </button>
                       {tv.paybackDays !== null && (
                         <span style={{ fontSize: 12, color: tv.worth ? '#2ecc71' : '#e67e22' }} title="Ước theo giá trị hôm nay của ca này">
@@ -238,6 +264,18 @@ export function StaffPanel() {
                   <div style={{ fontSize: 11, marginTop: 2, color: '#2ecc71' }}>{p.line}</div>
                 ) : null;
               })()}
+              {c.role === 'manager' && managerPayoff.ok && (
+                <div style={{ fontSize: 11, marginTop: 2, color: '#3498db' }} title="Quản lý tự nhập hàng khi kho sắp cạn (theo luật sẵn có).">{managerPayoff.line}</div>
+              )}
+              {c.role === 'warehouse_mgr' && (() => {
+                const p = warehouseKeeperPayoff({ spoiltCost: (analytics ? spoilNightReport(analytics, day - 1)?.totalCost : 0) ?? 0, bestSkill: c.skill });
+                return p.ok ? (
+                  <div style={{ fontSize: 11, marginTop: 2, color: '#3498db' }} title="Quản lý kho sắp xếp kho xoay hàng cận hạn lên trước nên hàng hỏng qua đêm chậm hơn — tiền cứu được tính từ số hỏng thật đêm qua (ước theo tay nghề người này).">{p.line}</div>
+                ) : null;
+              })()}
+              {c.role === 'farmhand' && farmhandVal.ok && (
+                <div style={{ fontSize: 11, marginTop: 2, color: '#3498db' }} title="Phụ trại mỗi tối tự tưới luống khô, đổ cám cho chuồng đói, gom trứng/sữa và thu hoạch luống chín — giá trị tính từ trạng thái trại thật (bán lẻ nhà trồng).">{farmhandVal.line}</div>
+              )}
               {branch && BRANCH_ROLES.includes(c.role) && (
                 <div style={staffSt.actions}>
                   <span style={staffSt.label}>🏪 Hoặc thuê vào tiện lợi 24/7</span>
@@ -387,7 +425,7 @@ export function DeployBoard() {
         title={branch.open ? 'Đóng cửa chi nhánh trước' : 'Chuyển cả đội chi nhánh về tiệm chính (tới khi đủ chỗ)'}
         onClick={() => { void askConfirm('Dồn hết nhân viên chi nhánh về tiệm chính?', { okLabel: 'Dồn về' }).then((ok) => ok && evacuateBranch()); }}
       >
-        🏬 Dồn hết sang tiệm chính
+        {blockedLabel(branch.open ? '🏬 Đóng chi nhánh để dồn' : null, '🏬 Dồn hết sang tiệm chính', 0, 0)}
       </button>
     </div>
   );
@@ -406,7 +444,7 @@ export function PromoteRow({ st, level, money, onPromote }: { st: Staff; level: 
         {chk.ok ? ` — đủ điều kiện (lương ×${fmtMul(chk.def.raise)})` : ` — cần ${chk.missing.join(', ')}`}
       </span>
       <button style={styles.btn} disabled={!chk.ok || money < chk.def.cost} onClick={() => onPromote(st.id)}>
-        {chk.ok ? shortLabel(`Thăng chức · ${formatMoney(chk.def.cost)}`, chk.def.cost, money) : `Thăng chức · ${formatMoney(chk.def.cost)}`}
+        {blockedLabel(chk.ok ? null : 'Chưa đủ điều kiện', `Thăng chức · ${formatMoney(chk.def.cost)}`, chk.def.cost, money)}
       </button>
       {chk.ok && (() => {
         const w = promotionWorth(st, chk.to);

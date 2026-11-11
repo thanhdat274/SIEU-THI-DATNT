@@ -5,7 +5,7 @@ import {
   orderAssessment, orderGap, orderRateTone, ratingImpact,
 } from '../../data/online';
 import { formatMoney } from '../../data/products';
-import { shortLabel } from '../shortLabel';
+import { blockedLabel, shortLabel } from '../shortLabel';
 import { onlineNet } from '../../data/onlineNet';
 import { onlineRatingValue, RATING_FLOOR, RATING_TARGET } from '../../data/onlineRatingValue';
 import { Footer, styles, Callout } from './shared';
@@ -144,7 +144,7 @@ export function OnlinePanel() {
                       {/* Grab */}
                       <div style={{ marginTop: 5 }}>
                         <button style={{ ...btn, background: '#2ecc71' }} disabled={!enough || money < grabFee(o.km, evGrab)} onClick={() => acceptOnline(o.id, 'grab')}>
-                          🟢 {enough ? shortLabel(`Grab ${formatMoney(grabFee(o.km, evGrab))}`, grabFee(o.km, evGrab), money) : `Grab ${formatMoney(grabFee(o.km, evGrab))}`} (~{a.grabTravelT}′)
+                          🟢 {blockedLabel(enough ? null : 'Thiếu hàng', `Grab ${formatMoney(grabFee(o.km, evGrab))}`, grabFee(o.km, evGrab), money)} (~{a.grabTravelT}′)
                         </button>
                         <small style={{ display: 'block', fontSize: 11, opacity: 0.8, marginTop: 1 }}>
                           Grab ~{a.grabTravelT}′ · phí {formatMoney(grabFee(o.km, evGrab))} → {grabStars}★ (điểm về {grabNext.toFixed(1)})

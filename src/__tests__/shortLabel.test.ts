@@ -13,7 +13,7 @@ describe('GĐ1632 — các bảng mua bằng tiền dùng shortLabel', () => {
   it('Giấy phép / Online / MXH / Nâng cấp tiệm / Xây dựng', async () => {
     const { readFileSync } = await import('node:fs');
     for (const f of ['LicensesPanel', 'OnlinePanel', 'SocialPanel', 'ShopLifeTabs', 'BuildPanel', 'StaffPanel', 'MarketTab', 'GardenPanel'])
-      expect(readFileSync(`src/ui/panels/${f}.tsx`, 'utf8'), f).toContain('shortLabel(');
+      expect(readFileSync(`src/ui/panels/${f}.tsx`, 'utf8'), f).toMatch(/(shortLabel|blockedLabel)\(/); // GĐ1964: blockedLabel bọc shortLabel
   });
 });
 

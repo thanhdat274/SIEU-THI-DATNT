@@ -58,6 +58,13 @@ import { SickShelvesCard, YesterCombosCard } from './MorningWarnCards';
 import { SolvencyCard, LoanBurdenCard, DailyBurnCard } from './MorningFinanceCards';
 import { ButcherCard, HuiCard } from './MorningMeatHuiCards';
 import { BranchChoresCard, HiepLucCard } from './MorningBranchCards';
+import { CrisisCard, CrisisSummaryCard } from './MorningCrisisCards';
+import { LifeEventCard } from './MorningLifeEventCards';
+import '../../core/todoLegacy';
+import { morningTodos, todos } from '../../data/todo';
+import { isCookStation } from '../../data/furniture';
+import { Fragment } from 'react';
+import { budgetMorning, type MorningCardEntry } from './morningBudget';
 
 
 
@@ -91,6 +98,8 @@ export function MorningPanel() {
   const cleanNext = nextCleanTier(cleanStreak);
   const cleanExtra = cleanNext ? `chạm ${cleanNext.name} → +${formatMoney(cleanBonus(cleanNext.n, level))}` : `đã đạt ${CLEAN_TIERS[CLEAN_TIERS.length - 1].name}`;
   const shopName = useGame((s) => s.shopName);
+  // GĐ Hệ2-L3 — Việc nhà trong hẻm: thẻ giỗ cần biết có đủ trạm nấu để nhận từng mức cỗ.
+  const cookStations = [...new Set(furniture.filter((f) => isCookStation(f.type)).map((f) => f.type as string))];
   // GĐ1285 — khách quen nào đang bị phụ món ưa (missLog của ngày + lời chê gần) → cảnh báo giữ chân
   const reviews = useGame((s) => s.reviews);
   const regularChurnData = regularChurn({ missLog: stats?.missLog, reviews });
@@ -154,7 +163,11 @@ export function MorningPanel() {
     day, storage, shelved,
     health: itemHealthList(analytics, level, storage, shelved, stateDemand),
   });
-  const actions = buildMorningActions({ day, level, weather, weatherSeed, storage, staff, regulars, expected, debts, biz, branch, branchChores, quanHealth, haveStock, dueContracts, chophien, lastSummary, furniture: useGame.getState().furniture });
+  const nowMinutes = useClock((c) => Math.floor(c.minutes));
+  // SPEC-TOI-UU §T6 — việc các hệ tự đăng ký vào Sổ việc chung (đánh dấu `morning`) nhập vào thẻ "Việc hôm nay".
+  // Hệ mới KHÔNG thêm thẻ/đoạn vào file này: `registerTodo` trong file data của hệ đó.
+  const systemTodos = morningTodos(todos(useGame.getState(), nowMinutes));
+  const actions = buildMorningActions({ day, level, weather, weatherSeed, storage, staff, regulars, expected, debts, biz, branch, branchChores, quanHealth, haveStock, dueContracts, chophien, lastSummary, furniture: useGame.getState().furniture, systemTodos });
   const nextEvt = nextEventLine(day, level, QUAN_NUOC_UNLOCK, forecast[0]); // GĐ637
   // GĐ132: mồi "🧭 Sắp mở khóa" cho người chơi MỚI (tuần đầu) — 1–2 hệ lớn sắp mở + XP còn thiếu (thuần đọc)
   const earlyUnlocks = earlyUnlockTeaser({ level, xp, day });
@@ -181,12 +194,50 @@ export function MorningPanel() {
   // cho giờ vàng tối. 1 dòng duy nhất khi có món nấu được và giờ đang 13–17h —
   // chọn món mẻ DÀI NHẤT vẫn kịp 17h (mốc bắt đầu muộn nhất còn đúng sự thật);
   // hòa duration thì lấy món lời nhất/phút trạm (GĐ145). Thuần đọc, không đổi state.
-  const nowMinutes = useClock((c) => Math.floor(c.minutes));
   const eveningPrep = eveningPrepFor({
     nowMinutes, level, furniture, storage,
     cSpeed: nowMinutes >= 13 * 60 && nowMinutes < 17 * 60 ? cookSpeed(useGame.getState) : 1,
     bBoost: nowMinutes >= 13 * 60 && nowMinutes < 17 * 60 ? bartenderBoost(useGame.getState) : 1,
   });
+  // SPEC-TOI-UU §T6 (L5): ngân sách Sổ đầu ngày — mỗi thẻ được gán mức gấp `prio`, hiện tối đa
+  // MORNING_CARD_CAP thẻ thẳng (xếp theo mức gấp), còn lại gập "Xem thêm N mục". Thẻ không có tín
+  // hiệu thì điều kiện của nó cho `null` → không tốn suất. Khung cố định (tiêu đề/giờ/điện thoại/footer)
+  // nằm NGOÀI ngân sách để luôn nhìn thấy.
+  const cards: MorningCardEntry[] = [
+    { id: 'news', prio: 100, node: lastSummary?.day === day - 1 ? <MorningNewsCard news={lastSummary.news} /> : null },
+    { id: 'alley', prio: 100, node: <AlleyTodayCard weatherSeed={weatherSeed} day={day} level={level} /> },
+    { id: 'crisis', prio: 0, node: <CrisisCard biz={biz} day={day} /> },
+    { id: 'lifeEvent', prio: 0, node: biz.lifeEvent ? <LifeEventCard st={biz.lifeEvent} stations={cookStations} /> : null },
+    { id: 'crisisSummary', prio: 0, node: <CrisisSummaryCard biz={biz} day={day} /> },
+    { id: 'supply', prio: 50, node: <SupplyChainCard storage={storage} branch={branch ?? undefined} quanNuoc={biz.quanNuoc} quanNuocLast={biz.quanNuocLast ?? null} level={level} weather={weather} day={day} /> },
+    { id: 'earlyUnlocks', prio: 60, node: earlyUnlocks ? <EarlyUnlocksCard earlyUnlocks={earlyUnlocks} /> : null },
+    { id: 'chophien', prio: 50, node: chophien ? <MarketSurplusCard chophien={chophien} /> : null },
+    { id: 'todayActions', prio: 20, node: <><TodayActionsCard actions={actions} onOpen={(panel) => openPanel({ type: panel as never })} />{nextEvt && <button onClick={() => openPanel({ type: 'calendar' })} title="Xem lịch năm" style={{ display: 'block', fontSize: 11, opacity: 0.7, margin: '-4px 0 8px', background: 'transparent', border: 'none', color: 'inherit', padding: 0, cursor: 'pointer', textAlign: 'left' }}>{nextEvt} →</button>}</> },
+    { id: 'sick', prio: 30, node: sickest.length > 0 ? <SickShelvesCard sickest={sickest} /> : null },
+    { id: 'yesterCombos', prio: 70, node: yesterCombos.length > 0 ? <YesterCombosCard yesterCombos={yesterCombos} /> : null },
+    { id: 'loanNote', prio: 70, node: biz.loan ? <LoanNoteCard loan={biz.loan} day={day} /> : null },
+    { id: 'counter', prio: 50, node: <CounterDemandCard demand={demand} cleanStreak={cleanStreak} cleanBest={biz.cleanBest ?? 0} cleanExtra={cleanExtra} /> },
+    { id: 'eveningPrep', prio: 40, node: eveningPrep ? <EveningPrepCallout name={eveningPrep.name} startBy={eveningPrep.startBy} /> : null },
+    { id: 'butcher', prio: 40, node: hasMeatCounter && butcherV.skill < MAX_BUTCHER_STAR ? <ButcherCard butcherV={butcherV} recentMeat={recentMeat} meatMissed={meatMissed} /> : null },
+    { id: 'hui', prio: 70, node: biz.hui ? <HuiCard hui={biz.hui} /> : null },
+    { id: 'solvency', prio: 70, node: (biz.loan || biz.hui) ? <SolvencyCard sol={solvency({ money, storage, priceOf, loan: biz.loan, hui: biz.hui, day })} /> : null },
+    { id: 'loanBurden', prio: 70, node: biz.loan ? <LoanBurdenCard lb={loanBurden(biz.loan.principal, stats?.revenue ?? 0)} /> : null },
+    { id: 'dailyBurn', prio: 70, node: <DailyBurnCard db={dailyBurn(staff, branch?.staff ?? [], shopTier, biz.loan, biz.hui, recentAvgRevenue(history, 7), (biz.quanNuoc.open ? biz.quanNuoc.staff * QUAN_NUOC_WAGE : 0) + (biz.tiemXoi?.open ? biz.tiemXoi.staff * TIEM_XOI_WAGE : 0))} /> },
+    { id: 'quanNuoc', prio: 80, node: biz.quanNuoc.open ? <QuanNuocCard quanNuoc={biz.quanNuoc} quanNuocLast={biz.quanNuocLast ?? null} quanHealth={quanHealth} /> : null },
+    { id: 'tiemXoi', prio: 80, node: biz.tiemXoi?.open ? <TiemXoiCard tiemXoi={biz.tiemXoi} last={biz.tiemXoiLast} /> : null },
+    { id: 'branchChores', prio: 80, node: branchChores.length > 0 ? <BranchChoresCard branchChores={branchChores} /> : null },
+    { id: 'hiepLuc', prio: 80, node: hiepLucEligible(branch, biz.quanNuoc, level) ? <HiepLucCard biz={biz} day={day} /> : null },
+    { id: 'season', prio: 60, node: seasonEvent(day) ? <SeasonEventCard day={day} weatherSeed={weatherSeed} biz={biz} /> : null },
+    { id: 'festivalNow', prio: 50, node: effects.festival ? <FestivalNowCard festival={effects.festival} level={level} day={day} haveStock={haveStock} fv={fv} fvDelta={fvDelta} /> : null },
+    { id: 'hot', prio: 60, node: <HotGoodsCards eventHot={effects.hot} weekHot={hot} haveStock={haveStock} /> },
+    { id: 'festivalSoon', prio: 60, node: soon ? <FestivalSoonCard soon={soon} level={level} storage={storage} fv={fv} fvDelta={fvDelta} /> : null },
+    { id: 'regulars', prio: 90, node: <><ExpectedRegularsList expected={expected} regulars={regulars} reservations={reservations} favsOf={favsOf} haveStock={haveStock} churn={regularChurnData} value={regularValueOf} nextPerk={nextPerkValueOf} refer={referValueOf} timeline={nextPerkTimelineOf} />{weeklyTopData && <div style={{ fontSize: 12, marginTop: 8, color: '#b8860b' }}>🏆 Khách vàng theo tuần (giỏ × tần ghé): {weeklyTopData.map((w) => `${w.regular.name} ~${formatMoney(w.weekly)}/tuần`).join(' · ')}</div>}{cohortText && <div style={{ fontSize: 12, marginTop: 6, color: '#d2691e' }}>{cohortText}</div>}</> },
+    { id: 'dueDebts', prio: 10, node: dueDebts.length > 0 ? <DueDebtsCard dueDebts={dueDebts} day={day} /> : null },
+    { id: 'expiring', prio: 30, node: expiring.length > 0 ? <div style={{ marginTop: 10 }}><AdviceCard title={`🥀 Hàng sắp hỏng (${expiring.reduce((n, l) => n + l.qty, 0)} món)`} items={expiryTips} onAct={(a) => a.action && openPanel({ type: a.action })} /></div> : null },
+    { id: 'reservations', prio: 10, node: resList.length > 0 ? <ReservationsCard resList={resList} haveStock={haveStock} /> : null },
+    { id: 'dueContracts', prio: 10, node: dueContracts.length > 0 ? <DueContractsCard dueContracts={dueContracts} day={day} storage={storage} /> : null },
+  ];
+  const budget = budgetMorning(cards);
   return (
     <>
       {/* GĐ1836 (review đợt 4 R5, tái xuất Đ1): mobile 375px tiêu đề đầy đủ bọc 3 dòng — bản mobile
@@ -196,80 +247,16 @@ export function MorningPanel() {
         : <>☀️ {shopName} · Sổ đầu ngày {day} ({today.day}/{today.month}) · {weekdayOf(day)}</>}</h2>
       <MorningSubtitle weatherSeed={weatherSeed} day={day} weather={weather} tomorrow={forecast[0]} level={level} rent={rentOf(shopTier)}
         autoNote={autoOpenNote(autoOpenAt, autoRoutine, cashierOpensMorning(staff))} />
-      {/* GĐ565: tin sáng đầy đủ — toast chỉ hiện 3 giây và gộp '+N tin' */}
-      {lastSummary?.day === day - 1 && <MorningNewsCard news={lastSummary.news} />}
-
-      <AlleyTodayCard weatherSeed={weatherSeed} day={day} level={level} />
-
-      {/* GĐ199/GĐ202: Rốn kho chung + phiếu nạp kho (tách GĐ919 sang SupplyChainCard) */}
-      <SupplyChainCard storage={storage} branch={branch ?? undefined} quanNuoc={biz.quanNuoc} quanNuocLast={biz.quanNuocLast ?? null} level={level} weather={weather} day={day} />
-
-      {earlyUnlocks && <EarlyUnlocksCard earlyUnlocks={earlyUnlocks} />}
-
-      {chophien && <MarketSurplusCard chophien={chophien} />}
-
-      <TodayActionsCard actions={actions} onOpen={(panel) => openPanel({ type: panel as never })} />
-      {nextEvt && <button onClick={() => openPanel({ type: 'calendar' })} title="Xem lịch năm" style={{ display: 'block', fontSize: 11, opacity: 0.7, margin: '-4px 0 8px', background: 'transparent', border: 'none', color: 'inherit', padding: 0, cursor: 'pointer', textAlign: 'left' }}>{nextEvt} →</button>}
-
-      {sickest.length > 0 && <SickShelvesCard sickest={sickest} />}
-
-      {yesterCombos.length > 0 && <YesterCombosCard yesterCombos={yesterCombos} />}
-
-      {biz.loan && <LoanNoteCard loan={biz.loan} day={day} />}
-
-      {/* 🛒 Nhu cầu quầy (GĐ78) — tách GĐ920 sang CounterDemandCard */}
-      <CounterDemandCard demand={demand} cleanStreak={cleanStreak} cleanBest={biz.cleanBest ?? 0} cleanExtra={cleanExtra} />
-
-      {/* GĐ161: 1 dòng gợi ý duy nhất khi mở sổ trong khung vắng 13–17h — nấu kịp giờ vàng tối */}
-      {eveningPrep && <EveningPrepCallout name={eveningPrep.name} startBy={eveningPrep.startBy} />}
-
-      {hasMeatCounter && butcherV.skill < MAX_BUTCHER_STAR && <ButcherCard butcherV={butcherV} recentMeat={recentMeat} meatMissed={meatMissed} />}
-
-      {biz.hui && <HuiCard hui={biz.hui} />}
-
-      {(biz.loan || biz.hui) && <SolvencyCard sol={solvency({ money, storage, priceOf, loan: biz.loan, hui: biz.hui, day })} />}
-
-      {biz.loan && <LoanBurdenCard lb={loanBurden(biz.loan.principal, stats?.revenue ?? 0)} />}
-
-      <DailyBurnCard db={dailyBurn(staff, branch?.staff ?? [], shopTier, biz.loan, biz.hui, recentAvgRevenue(history, 7), (biz.quanNuoc.open ? biz.quanNuoc.staff * QUAN_NUOC_WAGE : 0) + (biz.tiemXoi?.open ? biz.tiemXoi.staff * TIEM_XOI_WAGE : 0))} />
-
-      {biz.quanNuoc.open && <QuanNuocCard quanNuoc={biz.quanNuoc} quanNuocLast={biz.quanNuocLast ?? null} quanHealth={quanHealth} />}
-
-      {biz.tiemXoi?.open && <TiemXoiCard tiemXoi={biz.tiemXoi} last={biz.tiemXoiLast} />}
-
-      {branchChores.length > 0 && <BranchChoresCard branchChores={branchChores} />}
-
-      {hiepLucEligible(branch, biz.quanNuoc, level) && <HiepLucCard biz={biz} day={day} />}
-
-      {seasonEvent(day) && <SeasonEventCard day={day} weatherSeed={weatherSeed} biz={biz} />}
-
-      {effects.festival && <FestivalNowCard festival={effects.festival} level={level} haveStock={haveStock} fv={fv} fvDelta={fvDelta} />}
-      <HotGoodsCards eventHot={effects.hot} weekHot={hot} haveStock={haveStock} />
-      {soon && <FestivalSoonCard soon={soon} level={level} storage={storage} fv={fv} fvDelta={fvDelta} />}
-
-      <ExpectedRegularsList expected={expected} regulars={regulars} reservations={reservations} favsOf={favsOf} haveStock={haveStock} churn={regularChurnData} value={regularValueOf} nextPerk={nextPerkValueOf} refer={referValueOf} timeline={nextPerkTimelineOf} />
-
-      {weeklyTopData && (
-        <div style={{ fontSize: 12, marginTop: 8, color: '#b8860b' }}>
-          🏆 Khách vàng theo tuần (giỏ × tần ghé): {weeklyTopData.map((w) => `${w.regular.name} ~${formatMoney(w.weekly)}/tuần`).join(' · ')}
-        </div>
+      {/* Spec T6-L5: hiện tối đa MORNING_CARD_CAP thẻ thẳng theo mức gấp, còn lại gập "Xem thêm". */}
+      {budget.visible.map((c) => <Fragment key={c.id}>{c.node}</Fragment>)}
+      {budget.rest.length > 0 && (
+        <details style={{ marginTop: 12 }}>
+          <summary style={{ fontSize: 13, opacity: 0.9, cursor: 'pointer', fontWeight: 600 }}>🧶 Xem thêm {budget.rest.length} mục…</summary>
+          <div style={{ display: 'grid', gap: 6, marginTop: 8 }}>
+            {budget.rest.map((c) => <Fragment key={c.id}>{c.node}</Fragment>)}
+          </div>
+        </details>
       )}
-      {cohortText && (
-        <div style={{ fontSize: 12, marginTop: 6, color: '#d2691e' }}>{cohortText}</div>
-      )}
-
-      {dueDebts.length > 0 && <DueDebtsCard dueDebts={dueDebts} day={day} />}
-
-      {expiring.length > 0 && (
-        <div style={{ marginTop: 10 }}>
-          <AdviceCard title={`🥀 Hàng sắp hỏng (${expiring.reduce((n, l) => n + l.qty, 0)} món)`} items={expiryTips} onAct={(a) => a.action && openPanel({ type: a.action })} />
-        </div>
-      )}
-
-      {resList.length > 0 && <ReservationsCard resList={resList} haveStock={haveStock} />}
-
-      {dueContracts.length > 0 && <DueContractsCard dueContracts={dueContracts} day={day} storage={storage} />}
-
       <h3 style={{ margin: '10px 0 4px', fontSize: 14 }}>📞 Điện thoại</h3>
       <p style={styles.sub}>
         {courier

@@ -85,3 +85,16 @@ describe('spaceUsePct — % mặt bằng bị nội thất chiếm', () => {
     expect(spaceUsePct(stuff, 2)).toBe(spaceUsePct(stuff, 2));
   });
 });
+
+// GĐ1949 — % sàn tính cả ô mở rộng ở bậc cuối
+import { shopFootprint, MAX_SHOP_TIER } from '../data/expansionTiles';
+describe('spaceUsePct + ô mở rộng', () => {
+  it('ô mở rộng làm % sàn giảm; bậc chưa cuối không đổi', () => {
+    const stuff = Array.from({ length: 30 }, () => ({ type: 'bigShelf' as const }));
+    const base = spaceUsePct(stuff, MAX_SHOP_TIER);
+    const extra = shopFootprint(MAX_SHOP_TIER, 6).depth - SHOP_TIERS[MAX_SHOP_TIER].depth;
+    expect(extra).toBe(6);
+    expect(spaceUsePct(stuff, MAX_SHOP_TIER, extra)).toBeLessThan(base);
+    expect(shopFootprint(2, 6).depth - SHOP_TIERS[2].depth).toBe(0);
+  });
+});

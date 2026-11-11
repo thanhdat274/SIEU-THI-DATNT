@@ -3,7 +3,8 @@
  * (và có thể khởi động một hệ thống như tiệm đối thủ). Chỉ có dữ liệu; hiện/đóng nằm ở `core/biz.ts`.
  */
 
-import { RIVAL_BOSS_GEN, RIVAL_UNLOCK } from './biz';
+import { RIVAL_BOSS_GEN } from './biz';
+import { hasFeature } from './features';
 
 /** Những gì điều kiện mở chương cần đọc. */
 export interface ChapterContext {
@@ -74,7 +75,7 @@ export const CHAPTERS: readonly Chapter[] = [
   },
   {
     id: 'ch4_sieu_thi', title: 'Chương 4 · Siêu thị đối diện mở cửa',
-    when: (c) => c.level >= RIVAL_UNLOCK && !c.hasRival && c.rivalsBeaten === 0,
+    when: (c) => hasFeature(c, 'rival') && !c.hasRival && c.rivalsBeaten === 0,
     lines: [
       say('👴', 'Bác Tám tổ trưởng', `Con hay tin gì chưa? ${STORY_RIVAL_NAME} vừa thuê mặt bằng ngay đối diện đầu hẻm, mai khai trương.`),
       say('🏪', 'Quản lý siêu thị', 'Khai trương giảm giá cả tuần! Bà con qua bên tôi, máy lạnh mát rượi, hàng gì cũng có.'),

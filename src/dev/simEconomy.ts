@@ -12,7 +12,7 @@ import { GroceryShop } from '../shop/groceryShop';
 import { CustomerManager } from '../agents/customers';
 import { StaffManager } from '../agents/staff';
 import { Player } from '../agents/player';
-import { createAutoplay, type AutoplayRunner, type AutoplayOptions } from './autoplay';
+import { createAutoplay, brandSim, type AutoplayRunner, type AutoplayOptions } from './autoplay';
 import type { Furniture } from '../core/store';
 
 /**
@@ -127,7 +127,13 @@ export function buildEconomyWorld() {
  * lỗi RPC timeout của vitest).
  */
 export async function runEconomySim(level: number, days: number, opts: AutoplayOptions = {}): Promise<{ rows: EconomyRow[]; averages: EconomyAverages }> {
+  if (opts.brand) brandSim.reset(); // Hệ 4 L7 — gom thu-chi nhãn cho test cân bằng (§4.8)
   seedLevel(level);
+  // L4 — cho test cân bằng: tua tới ngày bắt đầu và bật/tắt Năm yên ả (mốc đối chứng).
+  if (opts.calm !== undefined) useGame.setState({ biz: { ...useGame.getState().biz, calmYears: opts.calm } });
+  if (opts.startDay !== undefined) useGame.setState({ day: opts.startDay, minutes: DAY_START });
+  // Hệ 4 L7 — cho test cân bằng gieo trạng thái đặc biệt (nhãn riêng) NGAY SAU khi seed xong, TRƯỚC khi autoplay chạy.
+  opts.inject?.();
   const world = buildEconomyWorld();
   const players = createAutoplay(world.shop, world.customers, world.staff, world.player, opts) as AutoplayRunner;
   const log = await players.async(days);

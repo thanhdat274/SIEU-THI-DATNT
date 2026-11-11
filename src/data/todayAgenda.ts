@@ -259,6 +259,10 @@ export function arcAgenda(args: { day: number; arc?: SurpriseArcState }): Agenda
   }];
 }
 
+// Nguồn 9 (giàn phơi sắp mưa) và 10 (việc nhà trong hẻm) đã chuyển sang Sổ việc chung:
+// `preserveTodoItems` (data/preserve.ts) và `lifeEventTodoItems` (data/lifeEvent.ts) tự đăng ký qua
+// `registerTodo` (data/todo.ts, SPEC-TOI-UU §T6). HỆ MỚI KHÔNG THÊM NGUỒN VÀO FILE NÀY NỮA.
+
 // ───── Ghép lại: lọc quá giờ, sắp tăng dần ─────
 
 export interface TodayAgendaArgs {

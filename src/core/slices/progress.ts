@@ -1,3 +1,4 @@
+import { noteUnlocked } from '../dayReport';
 import { applyChest } from '../../data/giftChest';
 import { weekendGift } from '../../data/weekendGift';
 import { vietSetCount } from '../../data/decorSets';
@@ -19,6 +20,9 @@ import { ngGoalProgress } from '../../data/ngGoals';
 import { playSfx } from '../audio';
 import type { GameState, SetState, GetState } from '../gameTypes';
 import { questContext } from '../store';
+import { alleyBond, tiesMilestonesReached } from '../../data/regularTies';
+import { LIFE_EVENT_UNLOCK } from '../../data/lifeEvent';
+import { hasFeature } from '../../data/features';
 
 /** Tiến trình: XP, nhiệm vụ, danh hiệu, kỹ năng, quà điểm danh, vòng quay, trang phục, tên tiệm. */
 
@@ -178,6 +182,8 @@ export const createProgressSlice = (set: SetState, get: GetState): Pick<GameStat
     const rating = summarizeReviews(s.reviews);
     // GĐ171: danh hiệu "Chủ hẻm lão làng" — hoàn thành TRỌN BỘ mục tiêu vòng tái sinh hiện tại
     // (chỉ xét ở vòng NG+; mục tiêu đọc state reset-vòng nên là thành tích của MỘT vòng cụ thể).
+    // Hệ3-L8: các mục tiêu theo HƯỚNG biển (ng_stance_*) loại khỏi "trọn bộ" — ba hướng vốn loại trừ
+    // nhau trong một vòng (đổi biển về 0 bậc), chúng là "lý do chơi khác nhau" chứ không phải checklist.
     const ngGoalsAllDone =
       s.biz.prestige.level >= 1 &&
       ngGoalProgress({
@@ -188,15 +194,49 @@ export const createProgressSlice = (set: SetState, get: GetState): Pick<GameStat
         supplierRel: s.biz.supplierRel ?? {},
         marketClearedDay: s.marketClearedDay,
         rivalsBeaten: s.biz.rivalsBeaten,
-      }).every((g) => g.done);
+        stance: s.biz.stance,
+      })
+        .filter((g) => !g.id.startsWith('ng_stance_'))
+        .every((g) => g.done);
+    const bond = alleyBond(s.regulars, s.biz.tiesMended ?? []);
     const ctx: TitleContext = {
       level: s.level, day: s.day, customers: s.totals.customers, itemsSold: s.totals.itemsSold, revenue: s.totals.revenue,
       rating: rating.average, reviewCount: rating.count, ordersDone: s.ordersDone, staffCount: s.staff.length,
+      brandRep: s.biz.brand?.rep ?? 0, // Hệ4-L9 — danh hiệu nhãn riêng
+      brandFranchiseStreak: s.biz.brand?.franchiseHealthyStreak ?? 0,
       closeRegulars: Object.values(s.regulars).filter((r) => r.perks.length).length,
       prestige: s.biz.prestige.level,
       ngGoalsAllDone,
       vietSetPieces: vietSetCount(s.furniture),
+      alleyBond: bond,
+      seals: (s.biz.prestige.seals ?? []).length, // Hệ3-L8: đủ 3 ấn → danh hiệu Tam ấn định vị
     };
+    // ── Mốc "Tình làng" (SPEC §2.8): 25/50/75/100% — tiền + mốc 100% tặng decor, MỘT LẦN MỖI VÁN ──
+    // Cổng cấp ≥ LIFE_EVENT_UNLOCK (32) cùng mọi hệ 2 → golden L30 giữ byte (R1). checkTitles chạy
+    // khi thân thiết đổi (giftRegular/deliver/giao đơn…) nên mốc tự nhận đúng lúc vượt.
+    if (hasFeature(s, 'lifeEvent')) {
+      const claimed = s.biz.tiesMilestones ?? [];
+      const reached = tiesMilestonesReached(bond, claimed);
+      if (reached.length) {
+        let money = 0;
+        let stash = s.furnStash;
+        for (const m of reached) {
+          money += m.money;
+          if (m.decor) stash = { ...stash, [m.decor]: (stash[m.decor] ?? 0) + 1 };
+        }
+        const biz = { ...s.biz, tiesMilestones: [...claimed, ...reached.map((m) => m.pct)] };
+        const stashChanged = reached.some((m) => m.decor);
+        set({
+          money: s.money + money,
+          biz,
+          ...(stashChanged ? { furnStash: stash } : {}),
+          stats: { ...s.stats, questIncome: (s.stats.questIncome ?? 0) + money },
+        });
+        const names = reached.map((m) => `${m.pct}%`).join(', ');
+        s.notify(`🏮 Tình làng đạt ${names}: +${formatMoney(money)}${stashChanged ? ' · 🎁 nhận "Cổng chào hẻm văn hoá" (Kho đồ → đặt trong tiệm)' : ''}`);
+        playSfx('achieve');
+      }
+    }
     const fresh = TITLES.filter((t) => !s.titles.includes(t.id) && t.done(ctx));
     // Danh hiệu NG+ độc quyền: cần đủ số lần tái sinh (bộ sưu tập giữ qua vòng) + thỏa điều kiện thường.
     const freshPrestige = PRESTIGE_TITLES.filter(
@@ -259,6 +299,7 @@ export const createProgressSlice = (set: SetState, get: GetState): Pick<GameStat
       supplierRel: s.biz.supplierRel ?? {},
       marketClearedDay: s.marketClearedDay,
       rivalsBeaten: s.biz.rivalsBeaten, // GĐ171: mục tiêu rival đo theo vòng (reset mỗi tái sinh — GĐ170)
+      stance: s.biz.stance, // Hệ3-L8: mục tiêu theo hướng biển đo bậc vòng này
     });
     const goal = progress.find((g) => g.id === id);
     if (!goal || !goal.done) return false;
@@ -304,6 +345,8 @@ export const createProgressSlice = (set: SetState, get: GetState): Pick<GameStat
     if (level !== s.level) {
       playSfx('levelup');
       s.notify(levelUpToast(level, gained));
+      // SPEC-TOI-UU §T1 (L1): đếm số mục mới mở hôm nay cho báo cáo ngày ẩn danh.
+      noteUnlocked(gained.length);
     }
   },
 });

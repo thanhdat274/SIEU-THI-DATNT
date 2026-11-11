@@ -54,6 +54,25 @@ Máy chủ ghi nhật ký mỗi yêu cầu API kèm mã định danh người d�
 - Ứng dụng **không** cài các công cụ theo dõi quảng cáo / nhà phân tích bên ngoài (không Google Analytics, không Pixel...).
 - Ứng dụng **không** thu thập dữ liệu nhạy cảm (sức khỏe, tôn giáo, tình dục, dữ liệu sinh trắc học...).
 
+### 2.6. Số liệu ẩn danh (telemetry — TUỲ CHỌN, mặc định tắt)
+
+- Người chơi có thể chọn đồng ý gửi **số liệu ẩn danh** để giúp cân bằng game (scope `telemetry_anon`). Lựa chọn này **mặc định tắt** và không bắt buộc: không đồng ý thì không mất chức năng nào.
+- Mỗi ngày game gửi **một bản tóm tắt** gồm: cấp, số khách, số khách bực/khách bỏ về, giây thật đã chơi, dải tiền, hệ đã dùng, độ phân giải đồ họa, loại thiết bị, và một id ngẫu nhiên sinh trên máy (`install`).
+- Bản tóm tắt này **không** chứa tên, email, số điện thoại, mã tài khoản (uid), vị trí, hay bất kỳ nhận dạng cá nhân nào. `install` là định danh giả danh, tách rời hoàn toàn khỏi tài khoản (không bao giờ ghép với uid).
+- Người chơi xem đúng nội dung gửi đi qua mục "Xem gửi những gì", bật/tắt hoặc xuất bản nhật ký chơi thử (30 bản gần nhất) bất cứ lúc nào trong menu „⋯".
+- Người chưa đăng nhập: lựa chọn lưu trên máy (`localStorage`). Người đã đăng nhập: lựa chọn được ghi thêm vào bản đồng ý. Bản ghi đã gửi được tự động xoá sau 180 ngày.
+
+### 2.7. Cộng đồng (danh thiếp, bạn bè, chợ, thi đua, hội chợ — TUỲ CHỌN, mặc định tắt)
+
+- Đăng nhập Google KHÔNG tự mở tính năng cộng đồng. Để khoe tiệm cho người khác, người chơi **chủ động bật scope `public_card`** (một ô đồng ý riêng, mặc định tắt). Khi bật, tên tiệm, tên chủ (tên Google đã rút gọn), cấp tiệm, và sơ đồ tiệm trở thành **dữ liệu công khai** — người khác xem được qua mã bạn bè và xuất hiện trên bảng xếp hạng.
+- Bạn bè kết bằng mã 6 ký tự (tối đa 30). Thư/`inbox` lưu trên máy chủ tối đa 30 ngày.
+- Chợ liên hẻm: lô hàng đăng bán để công khai tới 7 ngày thật; tên người bán là tên tiệm công khai (đã bật scope). Giá bán và trần theo luật game.
+- Thi đua tuần / hội chợ: chỉ dùng điểm có trần và chỉ số tổng hợp từ bản lưu; **không** hiển thị tiền, doanh thu hay cấp làm tiêu chí xếp hạng.
+- Gửi **lẵng hoa / lời khen**: tên người gửi (tên tiệm công khai) sẽ hiện cho người nhận.
+- Tên do người dùng tự gõ được **lọc từ cấm phía máy chủ** và có nút báo cáo; tên bị báo cáo nhiều sẽ tự đổi thành "Tiệm tạp hóa".
+- Tắt scope `public_card` hoặc xoá tài khoản: **danh thiếp, bạn bè, thư, điểm tuần/mùa và phần góp hội chợ bị xoá khỏi máy chủ** ngay.
+- Mọi tính năng ở mục này đều có **trần mỗi ngày** phía người nhận; không mạng / chưa đăng nhập thì bảng Cộng đồng chỉ hiện lời mời đăng nhập và không ảnh hưởng tới chơi đơn.
+
 ## 3. Mục đích xử lý
 
 1. Cung cấp và đồng bộ tiến trình trò chơi (tài khoản + cloud).

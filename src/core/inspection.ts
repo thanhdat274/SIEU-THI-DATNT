@@ -3,8 +3,8 @@ import { askAtCounter, askPending } from './counterAsk';
 import { metaRng } from './rand';
 import { formatMoney } from '../data/products';
 import {
-  DIRT_FAIL_AT, INSPECTION_CHANCE, INSPECTION_NOTES, INSPECTION_PRAISE, INSPECTION_ROLL_EVERY,
-  INSPECTION_UNLOCK, inspectionFine, inspectionOutcome, pickNote, finePaidXp, praiseXp,
+  DIRT_FAIL_AT, HYGIENE_UNLOCK, INSPECTION_CHANCE, INSPECTION_NOTES, INSPECTION_PRAISE, INSPECTION_ROLL_EVERY,
+  inspectionFine, inspectionOutcome, pickNote, finePaidXp, praiseXp,
 } from '../data/inspection';
 
 /**
@@ -19,7 +19,7 @@ let seenDay = -1;
 
 /** Điều kiện ghé kiểm tra (tách ra để test): tiệm đang mở, đủ cấp, trong giờ bán. */
 export const inspectionDue = (level: number, shopOpen: boolean, minutes: number, askWaiting: boolean): boolean =>
-  level >= INSPECTION_UNLOCK && shopOpen && !askWaiting && minutes >= 9 * 60 && minutes <= 20 * 60;
+  level >= HYGIENE_UNLOCK && shopOpen && !askWaiting && minutes >= 9 * 60 && minutes <= 20 * 60;
 
 export function maybeInspection(dtMinutes: number) {
   const s = useGame.getState();

@@ -70,6 +70,8 @@
 }
 #ui .hud-status { position: static; flex: none; flex-wrap: wrap; align-items: flex-start; max-width: 100%; }
 #ui .hud-weather { font-size: 22px; }
+/* GĐ2232 — chip Biến cố dài (Hệ8): nổi bật cảnh báo nhưng không đỏ gay gắt. */
+#ui .hud-crisis-chip { color: #a0522d !important; font-weight: 700; letter-spacing: 0.2px; }
 #ui .hud-forecast { opacity: 0.85; letter-spacing: 2px; }
 #ui .hud-forecast::before { content: "Dự báo "; letter-spacing: 0; }
 #ui .hud-time b { font-size: 18px; }
@@ -532,6 +534,40 @@
   white-space: nowrap;
 }
 #ui .hud-help kbd, #ui .hud-help span { white-space: nowrap; }
+/* SPEC-TOI-UU §T1 (L2): bản ghi mẫu "Xem gửi những gì" — giữ gọn, cuộn khi dài. */
+#ui .hud-more-tele-sample {
+  grid-column: 1 / -1;
+  margin: 2px 2px 8px;
+  padding: 8px;
+  font-size: 10px;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 180px;
+  overflow: auto;
+  background: var(--hud-panel);
+  border: 1px dashed var(--hud-border);
+  border-radius: 6px;
+  color: var(--hud-muted);
+}
+#ui .hud-dialogue .hud-more-tele-sample { max-height: 140px; }
+/* SPEC-TOI-UU §T6 (L6): tìm nhanh trong menu Thêm. */
+#ui .hud-more-search { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 6px; }
+#ui .hud-more-search-input {
+  width: 100%; box-sizing: border-box;
+  border: 1px solid var(--hud-border); border-radius: 6px;
+  padding: 7px 8px; font-size: 12px; background: var(--hud-panel); color: var(--hud-text);
+}
+#ui .hud-more-search-results { display: flex; flex-direction: column; gap: 2px; max-height: 200px; overflow: auto; }
+#ui .hud-more-search-hit {
+  display: flex; align-items: center; gap: 6px;
+  border: 1px solid var(--hud-border); border-radius: 6px; background: var(--hud-panel);
+  padding: 5px 7px; font-size: 12px; color: var(--hud-text); cursor: pointer; text-align: left;
+}
+#ui .hud-more-search-hit:hover { background: var(--hud-accent-soft, #f4e7c8); }
+#ui .hud-more-search-name { font-weight: 600; }
+#ui .hud-more-search-group { margin-left: auto; font-size: 10px; opacity: 0.55; white-space: nowrap; }
+#ui .hud-more-search-empty { font-size: 11px; opacity: 0.6; padding: 2px 2px 0; }
 #ui .hud-badge.hud-dot { top: 2px; right: 10px; width: 9px; height: 9px; padding: 0; background: #e74c3c; }
 #ui .hud-help { min-width: 260px; display: grid; gap: 6px; padding: 10px 12px; font-size: 13px; }
 #ui .hud-help div { display: flex; justify-content: space-between; gap: 12px; }

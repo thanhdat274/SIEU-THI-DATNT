@@ -58,7 +58,7 @@ describe('startCook — nấu tiêu hàng nhà trồng/nhà nuôi', () => {
     // recipe_com_hop_ga cần gao 1 + thit 5 + rau 3; chỉ gao có nhãn homegrown
     useGame.setState({
       ...newGameData(),
-      level: 30,
+      level: 31, // com_hop_ga mở 31 (T3-L4 răng cưa 30→31)
       furniture: [GRILL as never],
       storage: { gao: 1, thit: 5, rau: 3 },
       garden: { ...newGameData().garden, homegrown: { gao: 1 } },

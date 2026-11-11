@@ -8,9 +8,11 @@ import { trending } from '../data/suppliers';
 import { skyAt } from '../data/weather';
 import { marketTrafficFactor } from '../data/chophien';
 import { tierMarkdown, fitLots, nearestLife, nearExpiryRefuseChance } from '../data/freshness';
-import { demandPriceFactor, keepChance } from '../data/pricing';
+import { demandPriceFactor, keepChance, PRICE_RULES } from '../data/pricing';
+import { stanceTraffic, stanceLowCap, stanceOverSensitivity, stancePullSlope, stanceSensitivity, stanceNearExpiry, stanceCriticChance, stanceBasketAdd, isSpecialtyProduct, stanceNightMul, stanceSlowMul, stanceServiceMul, stancePatience, stanceBasketCut, sealPatience } from '../data/stance';
 import { CUNG_GOODS, CUNG_PULL, isXoiCungDay } from '../data/tiemXoi';
 import { dayEffects, isWeekend, OFF_SEASON_CLEARANCE, OFF_SEASON_HUNT, offSeason } from '../data/calendar';
+import { crisisEffects } from '../data/crisis';
 import { chooseSubstitute } from '../data/substitute';
 import { COOKED_PRODUCT_IDS, RECIPES } from '../data/recipes';
 import { NEIGHBOR_ONLY_IDS } from '../data/homemade';
@@ -24,28 +26,27 @@ import { noteComboDay } from '../core/slices/comboDay';
 import { bulkExtra, festivalVisit, perkValue, pickRegular, referFriends, regularById, reserveAsk, INFLUENCER_ID, unlockedFavorites, type RegularDef } from '../data/regulars';
 import { influencerActive } from '../data/social';
 import { pickProfession, PROFESSIONS, type ProfessionDef } from '../data/professions';
-import { DEBT_PARTIAL_CHANCE, DEBT_PARTIAL_MIN, installmentNow, CREDIT_UNLOCK, repaysToday, wantsCredit, creditLeft, creditAskText } from '../data/credit';
-import { askQueuedPatience, ASK_MINUTES, CANDY_ANNOY, CHANGE_CHANCE, CHANGE_UNLOCK, CREDIT_REFUSE_FRIEND_LOSS, changeChoice, defaultCounterPolicy, HAGGLE_CHANCE, HAGGLE_CHANCE_REG, HAGGLE_MIN_TOTAL, HAGGLE_UNLOCK, haggleChoice, haggleCounterOff, haggleOff, haggleSettle, oddChange, pricematchSettle } from '../data/counterDeals';
+import { DEBT_PARTIAL_CHANCE, DEBT_PARTIAL_MIN, installmentNow, repaysToday, wantsCredit, creditLeft, creditAskText } from '../data/credit';
+import { askQueuedPatience, ASK_MINUTES, CANDY_ANNOY, CHANGE_CHANCE, CREDIT_REFUSE_FRIEND_LOSS, changeChoice, defaultCounterPolicy, HAGGLE_CHANCE, HAGGLE_CHANCE_REG, HAGGLE_MIN_TOTAL, haggleChoice, haggleCounterOff, haggleOff, haggleSettle, oddChange, pricematchSettle } from '../data/counterDeals';
 import { rollService, SERVICE_BUY_ALONG, type ServiceDef } from '../data/services';
 import { earnService, earnTip } from '../core/biz';
 import { paymentById, pickPayment } from '../data/payments';
 import { askAtCounter, askPending, clearAsk, expireAsk, answerAsk, askWallElapsed, useCounterAsk } from '../core/counterAsk';
 import { cashierRng } from '../core/rand';
 import { cashierHaggleChoice, cashierChangeChoice } from '../data/counterDeals';
-import { VENDOR_CHANCE, VENDOR_FROM, VENDOR_UNTIL, WHOLESALE_UNLOCK } from '../data/wholesale';
+import { VENDOR_CHANCE, VENDOR_FROM, VENDOR_UNTIL } from '../data/wholesale';
 import { isBigBasket, bigBasketCount, bigBasketAbandons } from '../data/bigBasket';
 import { meatDemandFactor } from '../data/meat';
 import {
   bestSkillOnDuty, DIRT_MAX, DIRT_PER_VISIT, dirtVisitFactor,
 } from '../data/staff';
 import {
-  CRITIC_CHANCE, CRITIC_HARD_UNLOCK, CRITIC_PENALTY_REVIEWS, CRITIC_UNLOCK, CRITIC_WINDOW_MINUTES,
-  criticReward, pickCriticDish, criticPraiseReviews, criticCallText, criticCookFits,
-} from '../data/critic';
+  CRITIC_CHANCE, CRITIC_PENALTY_REVIEWS, CRITIC_UNLOCK, CRITIC_WINDOW_MINUTES,
+  criticReward, pickCriticDish, criticPraiseReviews, criticCallText, criticCookFits } from '../data/critic';
 import { metaRng } from '../core/rand';
 import { theftCatchChance, theftSpawnChance } from '../data/theftRisk';
 import { socialTraffic } from '../data/social';
-import { adTargets, bizTraffic, LOYALTY_UNLOCK, loyaltyRedeemChance, petActive, rivalPriceGap, rivalUndercuts } from '../data/biz';
+import { adTargets, bizTraffic, loyaltyRedeemChance, petActive, rivalPriceGap, rivalUndercuts } from '../data/biz';
 import { landmarkCustomerFactor } from '../data/landmark';
 import { redeemLoyalty, storyOnVisit } from '../core/biz';
 import { hasUpgrade } from '../data/upgrades';
@@ -54,8 +55,11 @@ import {
 } from '../data/layout';
 import { regionFlagDecorBonus, stockedProductIds } from '../data/regionFlags';
 import { departmentDecorBonus } from '../data/departments';
+import { adBoost } from '../data/advertising';
 import { vietSetDecorBonus } from '../data/decorSets';
+import { festivalFlairBonus } from '../data/festivalMini';
 import { playSfx } from '../core/audio';
+import { hasFeature } from '../data/features';
 
 /** Tỉ lệ món khách chọn trong số hàng đang giảm giá (nếu có). */
 const SALE_HUNT = 0.2;
@@ -66,9 +70,8 @@ import type { Counter, GroceryShop } from '../shop/groceryShop';
 import type { NavGrid } from '../world/navGrid';
 import { CoinPopFX } from '../render/fx/coinPop';
 import {
-  DINE_UNLOCK, DINE_WAIT_SECONDS, EAT_SECONDS, TOILET_NEED_CHANCE, TOILET_STRICT_UNLOCK, TOILET_USE_SECONDS,
-  dineTip, freeSeat, freeToilet, isToilet, toiletFee, wantsDineIn, type SeatInfo, menuTipMul,
-} from '../data/dineIn';
+  DINE_WAIT_SECONDS, EAT_SECONDS, TOILET_NEED_CHANCE, TOILET_STRICT_UNLOCK, TOILET_USE_SECONDS,
+  dineTip, freeSeat, freeToilet, isToilet, toiletFee, wantsDineIn, type SeatInfo, menuTipMul } from '../data/dineIn';
 import { MACHINE_VISIT_CHANCE, MACHINE_USE_SECONDS, MACHINE_TYPES, freeMachine, isMachine, machineFeeAt, machineImpulse, MACHINE_IMPULSE_LEVEL, clawWin, type MachineId } from '../data/machines';
 import {
   Customer, FRANTIC_AT, IMPATIENT_AT, PATIENCE_MINUTES, SIDEWALK_Z, impatienceEmoji, patienceMultiplier, counterQueueScore, leastScore, reviewStars, type Deal,
@@ -164,14 +167,20 @@ export class CustomerManager {
         const eventTraffic = (s.event?.traffic ?? 1) * (s.opening?.day === s.day ? OPENING_TRAFFIC : 1) * s.wheelBoost;
         // Ban đêm sinh khách theo khung ca đêm (22h–6h): thưa nhưng đều, giờ nào cũng có người ghé
         const night = nightTrafficAt(s.minutes);
-        const bandTraffic = night ?? timeBandAt(s.minutes)?.traffic ?? 1;
+        const dayBand = timeBandAt(s.minutes);
+        const slowNow = dayBand ? dayBand.traffic < 0.8 : false;
+        const bandTraffic = (night ?? dayBand?.traffic ?? 1)
+          // Hệ 3 (SPEC §3.4) — biển Tiện lợi: khách đêm +50% (bậc 5); khung vắng (traffic<0.8, `slowBands`) thêm +15%.
+          * (night !== null ? stanceNightMul(s.biz) : slowNow ? stanceSlowMul(s.biz) : 1);
         const rush = bandTraffic * dayEffects(s.weatherSeed, s.day, s.level).traffic
+          * crisisEffects(s.biz.crisis, s.day).traffic // Hệ 8 (SPEC §8.3): biến cố dài nhân khách; trống = 1
+          * (s.biz.roadBoon ? 1.03 : 1) // Hệ 8 lợi "đường mới" (aftermath Đào đường); chưa có = 1
           * (hasSkill(s.skills, 'local_legend') ? 1.1 : 1) * festival * eventTraffic * marketTrafficFactor(s.day);
         this.spawnIn = (daytime ? (night ? NIGHT_SPAN : OPEN_UNTIL - OPEN_FROM) / perDay / rush : 60) * (0.5 + simRng()());
         // GĐ1495 — bỏ trần "+25% chậu cây": điểm trang trí 🩷 cộng dồn mọi đồ decor, kéo khách
         // theo sao danh tiếng (quán đẹp chỉ phát huy khi phục vụ tốt); không máy trong sim cũ → 0.
         // GĐ1505 — bảng hiệu đặc sản 4 miền: bày đủ bộ đặc sản miền (mối lái vùng xa) thì +🩷 thêm
-        const decorBoost = decorVisitBoost(decorScoreOf(s.furniture) + vietSetDecorBonus(s.furniture) + regionFlagDecorBonus(s.furniture, stockedProductIds(s.furniture), s.servedCounts ?? {}) + departmentDecorBonus(s.furniture, s.shopTier), reputationOf(s.repLog).overall);
+        const decorBoost = decorVisitBoost(decorScoreOf(s.furniture) + vietSetDecorBonus(s.furniture) + festivalFlairBonus(s.biz, s.day) + regionFlagDecorBonus(s.furniture, stockedProductIds(s.furniture), s.servedCounts ?? {}) + departmentDecorBonus(s.furniture, s.shopTier) + adBoost(s.ad, s.day), reputationOf(s.repLog).overall);
         // Đang mưa thì ít người ra đường, tạnh mưa lại đông như thường
         const traffic = skyAt(s.weatherSeed, s.day, s.weather, s.minutes).traffic * festival * eventTraffic;
       // Bày hàng rẻ hơn giá gợi ý thì tiếng lành đồn xa, thêm người ghé; sàn bẩn thì ngại vào; giờ vàng kéo khách về đúng khung
@@ -179,7 +188,9 @@ export class CustomerManager {
       const visit = (0.5 + decorBoost + repVisitBonus(reputationOf(s.repLog))) * traffic * this.priceAppeal() * dirtVisitFactor(s.dirt)
       * bizTraffic(s.biz, s.day) * happy * socialTraffic(s.social, s.day)
       // Sân chơi đầu hẻm khánh thành rồi thì hẻm đông khách hơn (×1.06; ván mới = 1 nên không đổi nền kinh tế)
-      * landmarkCustomerFactor(s.biz.landmark.contributions);
+      * landmarkCustomerFactor(s.biz.landmark.contributions)
+      // Hệ 3 (SPEC §3.4) — biển Bình dân kéo khách (+20% bậc 5); không treo biển = 1
+      * stanceTraffic(s.biz);
         const open = daytime && s.shopOpen;
         // Khách quen tới đúng giờ quen, không phụ thuộc người đi đường; người bị rival lôi kéo thì tạm vắng
         const poached = s.biz.rival ? Object.keys(s.biz.rival.poached ?? {}) : [];
@@ -204,7 +215,7 @@ export class CustomerManager {
 
     // Người bán rong: sáng sớm ghé lấy sỉ, mỗi ngày tối đa một người
     if (this.vendorAt === undefined) {
-      this.vendorAt = s.level >= WHOLESALE_UNLOCK && simRng()() < VENDOR_CHANCE
+      this.vendorAt = hasFeature(s, 'wholesale') && simRng()() < VENDOR_CHANCE
         ? VENDOR_FROM + simRng()() * (VENDOR_UNTIL - VENDOR_FROM - 20)
         : null;
     }
@@ -305,7 +316,11 @@ export class CustomerManager {
     const ids = [...new Set(s.furniture.flatMap((f) => f.tiers.filter((t) => t.productId && t.count > 0).map((t) => t.productId!)))];
     if (!ids.length) return 1;
     const under = rivalUndercuts(s.biz.rival, (id) => s.priceOf(id), s.day);
-    return ids.reduce((n, id) => n + demandPriceFactor(id, s.priceOf(id)) * (under.has(id) ? 0.85 : 1), 0) / ids.length;
+    // Hệ 3 (SPEC §3.4) — biển Bình dân nới trần "rẻ kéo khách" (1.15→1.25) và khuếch đại độ dốc
+    // hút giá rẻ (stancePullSlope); không treo = cap cũ + slope gốc.
+    const cap = stanceLowCap(s.biz);
+    const slope = stancePullSlope(s.biz) * PRICE_RULES.lowPriceDemandSlope;
+    return ids.reduce((n, id) => n + demandPriceFactor(id, s.priceOf(id), cap, slope) * (under.has(id) ? 0.85 : 1), 0) / ids.length;
   }
 
   /** Khách quen: chủ yếu mua món ưa thích, perk "mua thêm" cộng món, perk "mua lô" nhân số lượng. */
@@ -410,7 +425,8 @@ export class CustomerManager {
     const withCart = hasCart && (c.bigBasket || simRng()() < 0.5);
     const maxItems = s.level >= FEATURES.basket ? 4 : 3;
     const count = (c.bigBasket ? bigBasketCount(simRng()) : withCart ? 3 + Math.floor(simRng()() * 5) : 1 + Math.floor(simRng()() * maxItems))
-      + (hasSkill(s.skills, 'big_basket') && simRng()() < 0.5 ? 1 : 0);
+      + (hasSkill(s.skills, 'big_basket') && simRng()() < 0.5 ? 1 : 0)
+      - stanceBasketCut(s.biz); // Hệ 3 (SPEC §3.4) — biển Tiện lợi: khách vội, giỏ nhỏ hơn 1 món (bậc 5). Không treo = 0.
     if (hasSkill(s.skills, 'charm')) c.sensitivity *= 0.85;
     // GĐ1212 — P sinh trộm thành helper THUẦN theftSpawnChance (chance × đêm×2 × chó×0.45 × camera×0.7): hành vi GIỮ NGUYÊN.
     c.thief = !regular && !service && s.level >= RISK_RULES.theft.unlock && simRng()() < theftSpawnChance({
@@ -424,11 +440,19 @@ export class CustomerManager {
     // thức/hằng) để logic này test được; hành vi giữ nguyên (chỉ đổi chỗ nhân nội tuyến → một lần gọi).
     const care = bestSkillOnDuty(s.staff, 'customer_care', s.minutes);
     c.patience *= patienceMultiplier({ petCat: petActive(s.biz.pets.cat, s.day), professionId: c.profession?.id ?? null, care });
+    // Hệ 3 (SPEC §3.4) — biển Tiện lợi: khách vội, kiên nhẫn xếp hàng −20% (bậc 5). Không treo = 1.
+    c.patience *= stancePatience(s.biz);
+    c.patience *= sealPatience(s.biz); // Hệ3-L8 Ấn Tiện lợi: kiên nhẫn mọi khách +10% (giữ qua NG+)
     c.wants = regular
       ? this.regularWants(regular)
       : c.profession
         ? this.professionWants(c.profession, Math.max(1, count + c.profession.extraItems))
         : this.chooseWants(count);
+    // Hệ 3 (SPEC §3.4) — biển Đặc sản: giỏ có hàng đặc sản thì mua thêm 1 món (giỏ lớn hơn). Không treo = 0.
+    if (stanceBasketAdd(s.biz) && c.wants.some((w) => isSpecialtyProduct(w, s.garden?.homegrown))) {
+      const extra = this.chooseWants(1)[0];
+      if (extra) c.wants.push(extra);
+    }
     // Khách quen có lời hẹn giữ món hôm nay: đi lấy đúng món đó trước (kệ trống thì thành mất hẹn)
     if (regular) {
       const res = s.reservations[regular.id];
@@ -461,7 +485,7 @@ export class CustomerManager {
         const machineUid = machine.uid;
         // GĐ1542 — ghi sổ theo loại máy (biz.serviceLife) để biết máy đã thu được bao nhiêu.
         const machineType = machine.type;
-        const fee = machineFeeAt(machine.type, s.minutes, s.level, s.day, s.weather);
+        const fee = Math.round(machineFeeAt(machine.type, s.minutes, s.level, s.day, s.weather) * stanceServiceMul(s.biz));
         const icon = MACHINE_TYPES[machine.type as MachineId].icon;
         this.machineBusy.add(machineUid);
         if (s.level >= MACHINE_IMPULSE_LEVEL && machineImpulse(s.level, simRng()())) c.wants.push(...this.chooseWants(1));
@@ -505,10 +529,14 @@ export class CustomerManager {
         st.noteDemand(want);
         const shortName = productById(want).name.replace(/\s*\(.*\)\s*/g, '');
         // Giá càng cao so với giá gợi ý thì khách càng ngại mua; món thiết yếu ít bị ảnh hưởng hơn, hàng của mùa lễ cũng vậy
-        const tolerance = dayEffects(st.weatherSeed, st.day, st.level).tolerance(want);
+        const tolerance = dayEffects(st.weatherSeed, st.day, st.level).tolerance(want)
+          * (crisisEffects(st.biz.crisis, st.day).sensitivity ?? 1); // Hệ 8: khách nhạy giá hơn trong biến cố; trống = 1
         // Rival đang bán rẻ đúng món này thì khách soi giá kỹ hơn hẳn
         const rivalPress = rivalUndercuts(st.biz.rival, (id) => st.priceOf(id), st.day).has(want) ? 1.35 : 1;
-        if (simRng()() > keepChance(want, st.priceOf(want), c.sensitivity * rivalPress * tolerance)) {
+        // Hệ 3 (SPEC §3.4) — biển Bình dân: món bán TRÊN thị trường bị chê nặng hơn (×1.5 bậc 5); biển
+        // Đặc sản: hàng đặc sản khách chịu giá hơn (sensitivity ×0.7 bậc 5). Không treo biển = cả hai = 1.
+        const stancePress = stanceOverSensitivity(st.biz, want, st.priceOf(want)) * stanceSensitivity(st.biz, want);
+        if (simRng()() > keepChance(want, st.priceOf(want), c.sensitivity * rivalPress * tolerance * stancePress)) {
           c.missing++;
           c.missed.push({ id: want, why: 'price' });
           st.noteMiss('price', want);
@@ -519,7 +547,7 @@ export class CustomerManager {
         const shelfF = shelfUid !== undefined ? st.furniture.find((x) => x.uid === shelfUid) : undefined;
         const shelfTier = shelfF?.tiers.find((x) => x.productId === want && x.count > 0);
         const shelfLife = shelfTier ? nearestLife(fitLots(shelfTier.lots, shelfTier.count, want)) : null;
-        if (shelfLife !== null && simRng()() < nearExpiryRefuseChance(shelfLife, productById(want).category)) {
+        if (shelfLife !== null && simRng()() < nearExpiryRefuseChance(shelfLife, productById(want).category) * stanceNearExpiry(st.biz)) {
           c.say('⏳ Hàng cận hạn!');
           st.noteMiss('expired', want);
           return;
@@ -643,7 +671,7 @@ export class CustomerManager {
     if (Object.keys(combo.byCombo).length) noteComboDay(combo.byCombo, combo.byDiscount);
     // Thẻ tích điểm: khách đủ tem được tặng món rẻ nhất trong giỏ
     const lp = useGame.getState();
-    if (first.basket.length && lp.level >= LOYALTY_UNLOCK && simRng()() < loyaltyRedeemChance(lp.biz.loyalty)) {
+    if (first.basket.length && hasFeature(lp, 'loyalty') && simRng()() < loyaltyRedeemChance(lp.biz.loyalty)) {
       combo.discount += redeemLoyalty(first.basket.map((it) => it.price));
       first.say('🎫', 2);
     }
@@ -700,7 +728,7 @@ export class CustomerManager {
       this.coinFx.spawn(counter.center, total);
     }
     if (first.service) {
-      earnService(first.service.def.id, first.service.fee);
+      earnService(first.service.def.id, Math.round(first.service.fee * stanceServiceMul(st.biz)));
       first.say(first.service.def.icon, 2);
     }
     if (first.regular) {
@@ -732,7 +760,7 @@ export class CustomerManager {
     const st = useGame.getState();
     const hasCooked = c.basket.some((it) => COOKED_PRODUCT_IDS.has(it.id));
     // Chỉ rút vòng quay khi điều kiện sớm thoả — không ăn tại chỗ thì không dịch chuỗi ngẫu nhiên
-    const roll = hasCooked && st.level >= DINE_UNLOCK ? simRng()() : 1;
+    const roll = hasCooked && hasFeature(st, 'dineIn') ? simRng()() : 1;
     if (!wantsDineIn({ level: st.level, hasCooked, roll })) return false;
     const seat = freeSeat(st.furniture, this.seatBusy);
     this.releaseFromQueue(c);
@@ -796,7 +824,7 @@ export class CustomerManager {
     const toilet = freeToilet(s.furniture, this.toiletBusy);
     if (toilet) {
       const toiletUid = toilet.uid;
-      const fee = toiletFee(toilet.type);
+      const fee = Math.round(toiletFee(toilet.type) * stanceServiceMul(s.biz));
       this.toiletBusy.add(toiletUid);
       c.say('💧', 2.5);
       this.walk(c, this.shop.spotFor(toilet));
@@ -887,7 +915,7 @@ export class CustomerManager {
     const total = c.basket.reduce((n, it) => n + it.price, 0);
     const reg = c.regular;
     let ask: { kind: Deal['kind']; amount: number; icon: string; who: string; text: string; options: string[]; fallback: number } | null = null;
-    if (reg && st.allowCredit && st.level >= CREDIT_UNLOCK && !st.debts[reg.id]?.reminded
+    if (reg && st.allowCredit && hasFeature(st, 'credit') && !st.debts[reg.id]?.reminded
       && wantsCredit(reg, st.regulars[reg.id], st.debts[reg.id], total, simRng()())) {
       const owed = st.debts[reg.id]?.amount ?? 0;
       ask = {
@@ -908,7 +936,7 @@ export class CustomerManager {
       };
     // GĐ722: khách quen cũng mặc cả NHƯNG chỉ khi chủ đứng quầy — từ chối bà con là lựa chọn có chủ ý của người chơi,
     // không bao giờ là tai nạn autoplay (không ai ở quầy thì không rút rng — dòng mô phỏng giữ nguyên từng nhịp)
-    } else if (st.level >= HAGGLE_UNLOCK && total >= HAGGLE_MIN_TOTAL && (!reg || this.playerAtCounter(counter)) && simRng()() < (reg ? HAGGLE_CHANCE_REG : HAGGLE_CHANCE)) {
+    } else if (hasFeature(st, 'haggle') && total >= HAGGLE_MIN_TOTAL && (!reg || this.playerAtCounter(counter)) && simRng()() < (reg ? HAGGLE_CHANCE_REG : HAGGLE_CHANCE)) {
       const off = haggleOff(total);
       const counterOff = haggleCounterOff(total);
       ask = {
@@ -919,7 +947,7 @@ export class CustomerManager {
         // GĐ721: thêm nút "trả giá lại" — bớt nửa mức khách xin; khách có thể gật giá giữa (thương lượng thật)
         options: [`🤝 Bớt ${formatMoney(off)}`, `💬 Trả nửa (−${formatMoney(counterOff)})`, 'Giá đúng rồi'], fallback: 2,
       };
-    } else if (!reg && st.biz.rival && st.level >= HAGGLE_UNLOCK && total >= 10_000 && this.playerAtCounter(counter)) {
+    } else if (!reg && st.biz.rival && hasFeature(st, 'haggle') && total >= 10_000 && this.playerAtCounter(counter)) {
       // GĐ725 — kèo khớp giá: khách soi thấy rival bán rẻ món trong giỏ. Chỉ khi chủ đứng quầy (bài học GĐ722:
       // autoplay không trả lời được thì KHÔNG rút rng — dòng mô phỏng giữ nguyên từng nhịp).
       const gap = rivalPriceGap(st.biz.rival, (id) => st.priceOf(id), st.day, c.basket.map((it) => it.id));
@@ -932,7 +960,7 @@ export class CustomerManager {
         };
       }
       // gap 0 (vignette không trúng) → rơi qua nhánh tiền lẻ như thường
-    } else if (st.level >= CHANGE_UNLOCK && oddChange(total) && simRng()() < CHANGE_CHANCE) {
+    } else if (hasFeature(st, 'change') && oddChange(total) && simRng()() < CHANGE_CHANCE) {
       const odd = oddChange(total);
       ask = {
         kind: 'change', amount: total % 5000, icon: '🪙', who: reg?.name ?? 'Khách',
@@ -1166,7 +1194,8 @@ export class CustomerManager {
     if (s.level < CRITIC_UNLOCK) return;
     if (this.criticRolledDay !== s.day) {
       this.criticRolledDay = s.day;
-      this.criticAt = metaRng() < CRITIC_CHANCE ? 8 * 60 + Math.floor(metaRng() * 12 * 60) : null;
+      // Hệ 3 (SPEC §3.4) — biển Đặc sản: nhà phê bình ghé thường hơn (×2 bậc 5); không treo = 1
+      this.criticAt = metaRng() < CRITIC_CHANCE * stanceCriticChance(s.biz) ? 8 * 60 + Math.floor(metaRng() * 12 * 60) : null;
     }
     // Đang có lời hẹn phục vụ: món vừa được bày lên kệ thì chiếu đãi ngay, hết khung thì trượt hẹn
     if (this.criticProduct) {
@@ -1194,7 +1223,7 @@ export class CustomerManager {
     }
     // Ghé lần đầu trong ngày: đặt lời gọi món (chỉ khi tiệm đang mở)
     if (this.criticAt == null || !s.shopOpen || s.minutes < this.criticAt) return;
-    this.criticHard = s.level >= CRITIC_HARD_UNLOCK;
+    this.criticHard = hasFeature(s, 'criticHard');
     const stations = new Set<string>(s.furniture.filter((f) => isCookStation(f.type)).map((f) => f.type));
     this.criticProduct = pickCriticDish(RECIPES, s.level, this.criticHard, (r) => stations.has(r.station) && criticCookFits(r.durationMin) && !offSeason(r.outputId, s.day));
     this.criticUntil = s.minutes + CRITIC_WINDOW_MINUTES;

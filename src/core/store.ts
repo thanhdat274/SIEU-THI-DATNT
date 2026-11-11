@@ -11,6 +11,8 @@ import { REGULARS, visitsToday, type RegularProgress, type Reservation } from '.
 import { reputationOf } from '../data/reputation';
 import type { ActiveOrder } from '../data/orders';
 import { dayEffects, festivalOn, festivalStock } from '../data/calendar';
+import { crisisEffects } from '../data/crisis';
+import { productById } from '../data/products';
 import type { HappyHour } from '../data/rhythm';
 import type { VenueDay } from '../data/venueTrend';
 import type { RiskDay } from '../data/risk';
@@ -48,10 +50,17 @@ import { createSocialSlice } from './slices/social';
 import { createOnlineSlice } from './slices/online';
 import { createGardenSlice } from './slices/garden';
 import { createLicensesSlice } from './slices/licenses';
+import { createAdsSlice } from './slices/ads';
 import { createQuanNuocSlice } from './slices/quanNuoc';
 import { createTiemXoiSlice } from './slices/tiemXoi';
 import { createPrestigeSlice } from './slices/prestige';
 import { createDiscoverySlice } from './slices/discovery';
+import { createCrisisSlice } from './slices/crisis';
+import { createStanceSlice } from './slices/stance';
+import { createBrandSlice } from './slices/brand';
+import { createMiniSlice } from './slices/minigame';
+import { createTripSlice } from './slices/trip';
+import { createSocial2Slice } from './slices/social2';
 
 export * from './gameTypes';
 export { migrateTiers } from './stock';
@@ -213,10 +222,12 @@ export function initialWeather(seed = newWeatherSeed()) {
 export const useClock = create<{ minutes: number }>(() => ({ minutes: DAY_START }));
 
 export const useGame = create<GameState>((set, get) => {
-  // Giá nhập theo lễ, sự kiện thị trường và kỹ năng thương lượng
+  // Giá nhập theo lễ, sự kiện thị trường và kỹ năng thương lượng; biến cố dài (Hệ 8) nhân thêm — trống = 1
   setCostModifier((id, day) => {
     const s = get();
-    return dayEffects(s.weatherSeed, day, s.level).cost(id) * (hasSkill(s.skills, 'negotiator') ? 0.95 : 1);
+    return dayEffects(s.weatherSeed, day, s.level).cost(id)
+      * crisisEffects(s.biz.crisis, day).cost(id, productById(id).category)
+      * (hasSkill(s.skills, 'negotiator') ? 0.95 : 1);
   });
   // Giá gợi ý hiện hành theo hệ số thị trường (khan hàng trượt lên, tồn nhiều trượt xuống)
   setMarketIndex((id) => get().market[id] ?? 1);
@@ -251,10 +262,17 @@ export const useGame = create<GameState>((set, get) => {
     ...createOnlineSlice(set, get),
     ...createGardenSlice(set, get),
     ...createLicensesSlice(set, get),
+    ...createAdsSlice(set, get),
     ...createQuanNuocSlice(set, get),
     ...createTiemXoiSlice(set, get),
     ...createPrestigeSlice(set, get),
     ...createDiscoverySlice(set, get),
+    ...createCrisisSlice(set, get),
+    ...createStanceSlice(set, get),
+    ...createBrandSlice(set, get),
+    ...createMiniSlice(set, get),
+    ...createTripSlice(set, get),
+    ...createSocial2Slice(set, get),
   };
 });
 

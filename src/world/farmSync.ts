@@ -1,6 +1,7 @@
 import { useGame, type GameState } from '../core/store';
 import { ANIMAL_ORDER, type AnimalKind, type GardenState } from '../data/garden';
 import { harvestPops, type FarmPop } from '../data/farmJuice';
+import type { PreserveJob } from '../data/preserve';
 
 /** Phần trang trại của world mà bộ đồng bộ cần (createFarm trả về). */
 interface FarmView {
@@ -8,6 +9,8 @@ interface FarmView {
   setBuildings(b: GameState['garden']['buildings']): void;
   setPlots(p: GameState['garden']['plots'], day: number): void;
   setAnimals(kind: AnimalKind, n: number): void;
+  /** Hệ 1 L8 — mẻ đang phơi/muối/ủ đổ vào nong/vại/chum (nhuộm theo tiến độ). */
+  setPreserves(jobs: PreserveJob[], day: number): void;
 }
 
 /**
@@ -22,11 +25,13 @@ export function installFarmSync(farm: FarmView, onPop?: (pop: FarmPop) => void) 
   farm.rebuild(init.garden.land);
   farm.setBuildings(init.garden.buildings);
   farm.setPlots(init.garden.plots, init.day);
+  farm.setPreserves(init.garden.preserveJobs, init.day);
   let lastFarmLand = init.garden.land;
   let lastPenCounts: Partial<Record<AnimalKind, number>> = {};
   let lastFarmBuildings = init.garden.buildings;
   let lastPlots = init.garden.plots;
   let lastFarmDay = init.day;
+  let lastPreserveJobs = init.garden.preserveJobs;
   let lastGarden: GardenState = init.garden;
   const syncFarmAnimals = (s: GameState) => {
     for (const kind of ANIMAL_ORDER) {
@@ -53,6 +58,11 @@ export function installFarmSync(farm: FarmView, onPop?: (pop: FarmPop) => void) 
       lastPlots = s.garden.plots;
       lastFarmDay = s.day;
       farm.setPlots(s.garden.plots, s.day);
+    }
+    // Hệ 1 L8 — mẻ phơi/muối/ủ đổi (bắt đầu/gỡ/thu hoặc sang ngày) → đổ lại nong/vại/chum
+    if (s.garden.preserveJobs !== lastPreserveJobs || s.day !== lastFarmDay) {
+      lastPreserveJobs = s.garden.preserveJobs;
+      farm.setPreserves(s.garden.preserveJobs, s.day);
     }
     syncFarmAnimals(s);
     // GĐ1255 — homegrown tăng (thu luống / lấy trứng / vắt sữa) → bong bóng tại luống/chuồng đó

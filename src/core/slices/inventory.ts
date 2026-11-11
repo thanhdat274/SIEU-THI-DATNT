@@ -1,13 +1,14 @@
 import { furnitureDef } from '../../data/furniture';
 import { fitList } from '../../data/onboarding';
 import { WAREHOUSE_TIERS } from '../../data/warehouse';
-import { MATERIAL_FROM_TIER, MATERIAL_KEYS, MATERIAL_LABEL, MATERIAL_PACK, MATERIAL_PACK_PRICE, emptyWareMaterials, hasMaterials, materialsFor, missingMaterials } from '../../data/wareMaterials';
+import { MATERIAL_FROM_TIER, MATERIAL_KEYS, MATERIAL_LABEL, costOfMaterials, emptyWareMaterials, hasMaterials, materialsFor, missingMaterials } from '../../data/wareMaterials';
 import { customersPerDay } from '../../data/levels';
 import { formatMoney, productById, unlockedProducts } from '../../data/products';
 import { orderTotal, supplierById } from '../../data/suppliers';
 import { addRel, deliversInstantly } from '../../data/supplierRel';
 import { fitLots, mergeLots, tierMarkdown, takeOldest } from '../../data/freshness';
 import { COOKED_PRODUCT_IDS } from '../../data/recipes';
+import { sealImportMul } from '../../data/stance';
 import { type GameState, type Furniture, type SetState, type GetState, storageCapacity, storageUsed } from '../gameTypes';
 import { copyStock, putStock, takeStock, returnTier } from '../stock';
 import { updateFurniture } from './build';
@@ -31,7 +32,7 @@ export const createInventorySlice = (set: SetState, get: GetState): Pick<GameSta
       s.notify(`🍳 ${productById(productId).name} là món nhà làm — vào trạm nấu để chế biến nhé`);
       return false;
     }
-    const cost = productById(productId).buy * qty;
+    const cost = Math.round(productById(productId).buy * qty * sealImportMul(s.biz)); // Hệ3-L8 Ấn Bình dân: nhập rẻ 2%
     if (s.money < cost) {
       s.notify('Không đủ tiền!');
       return false;
@@ -60,7 +61,7 @@ export const createInventorySlice = (set: SetState, get: GetState): Pick<GameSta
     // `q > 0` sẽ nối chuỗi vào kho ("03") và trừ tiền không khớp hàng. Co-op nhận lệnh từ máy
     // khách qua cùng action này nên chặn ở đây là chặn cả hai chế độ.
     const lines = Object.fromEntries(Object.entries(items).filter(([, q]) => Number.isInteger(q) && q > 0));
-    const cost = orderTotal(sup, lines, s.day);
+    const cost = Math.round(orderTotal(sup, lines, s.day) * sealImportMul(s.biz)); // Hệ3-L8 Ấn Bình dân: nhập rẻ 2%
     if (!Object.keys(lines).length) return false;
     if (cost < sup.minOrder) {
       s.notify(`${sup.name} nhận đơn từ ${formatMoney(sup.minOrder)}`);
@@ -129,16 +130,21 @@ export const createInventorySlice = (set: SetState, get: GetState): Pick<GameSta
     return true;
   },
   buyMaterialPack: () => {
+    // GĐ1947 — mua ĐÚNG phần vật liệu còn thiếu cho cấp kho kế tiếp (theo đơn giá), không mua bộ cố định thừa
     const s = get();
-    if (s.warehouseTier + 1 < MATERIAL_FROM_TIER) { s.notify('Chưa cần vật liệu: kho cấp này nâng bằng tiền'); return false; }
-    if (s.money < MATERIAL_PACK_PRICE) { s.notify('Không đủ tiền!'); return false; }
+    const toTier = s.warehouseTier + 1;
+    if (toTier < MATERIAL_FROM_TIER) { s.notify('Chưa cần vật liệu: kho cấp này nâng bằng tiền'); return false; }
     const have = s.wareMaterials ?? emptyWareMaterials();
+    const miss = missingMaterials(have, toTier);
+    const cost = costOfMaterials(miss);
+    if (cost <= 0) { s.notify('Đã đủ vật liệu, bấm Nâng cấp kho được rồi'); return false; }
+    if (s.money < cost) { s.notify('Không đủ tiền!'); return false; }
     set({
-      money: s.money - MATERIAL_PACK_PRICE,
-      wareMaterials: { gach: have.gach + MATERIAL_PACK.gach, ximang: have.ximang + MATERIAL_PACK.ximang, thep: have.thep + MATERIAL_PACK.thep },
-      stats: { ...s.stats, spent: s.stats.spent + MATERIAL_PACK_PRICE }, totals: { ...s.totals, spent: s.totals.spent + MATERIAL_PACK_PRICE },
+      money: s.money - cost,
+      wareMaterials: { gach: have.gach + miss.gach, ximang: have.ximang + miss.ximang, thep: have.thep + miss.thep },
+      stats: { ...s.stats, spent: s.stats.spent + cost }, totals: { ...s.totals, spent: s.totals.spent + cost },
     });
-    s.notify(`🧱 Đã mua bộ vật liệu (${formatMoney(MATERIAL_PACK_PRICE)}), để ở bãi sau kho`);
+    s.notify(`🧱 Đã mua đủ vật liệu (${formatMoney(cost)}), để ở bãi sau kho`);
     return true;
   },
   replaceEmptySlots: (announce = false) => {

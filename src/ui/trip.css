@@ -1,0 +1,172 @@
+/* Hệ 5-L2 — lớp phủ tối giản Chuyến đi tỉnh (SPEC-CHIEU-RONG §5.3/§5.10). */
+.trip-ov {
+  position: fixed;
+  right: 12px;
+  bottom: 84px;
+  z-index: 1100;
+  max-width: min(300px, calc(100vw - 24px));
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-end;
+}
+.trip-ov-card {
+  background: #fffaf0;
+  border: 2px solid #e8d9b8;
+  border-radius: 12px;
+  padding: 10px 12px;
+  width: 100%;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.trip-ov-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  color: #5d3a1a;
+  font-size: 13px;
+}
+.trip-ov-when { color: #1e8449; font-weight: 600; white-space: nowrap; }
+.trip-bar {
+  height: 8px;
+  border-radius: 4px;
+  background: #eee0c0;
+  overflow: hidden;
+}
+.trip-bar-fill { height: 100%; background: #1e8449; transition: width 0.3s; }
+.trip-ov-note { margin: 0; font-size: 12px; color: #6b4a26; }
+.trip-ov-launch {
+  border: none;
+  border-radius: 999px;
+  padding: 9px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  background: #1e8449;
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+}
+.trip-ov-route {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  border: 2px solid #cfb689;
+  border-radius: 10px;
+  background: #fff;
+  padding: 7px 10px;
+  cursor: pointer;
+  text-align: left;
+}
+.trip-ov-route.sel { border-color: #1e8449; background: #eaf6d6; }
+.trip-ov-route-name { font-size: 13px; font-weight: 600; color: #5d3a1a; }
+.trip-ov-route-meta { font-size: 11px; color: #7a5a30; }
+.trip-ov-cash {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: #5d3a1a;
+}
+.trip-ov-cash input {
+  border: 2px solid #cfb689;
+  border-radius: 8px;
+  padding: 6px 8px;
+  font-size: 13px;
+  background: #fff;
+}
+.trip-ov-actions { display: flex; justify-content: flex-end; gap: 8px; }
+
+/* Hệ 5-L3 — bàn chọn hàng chở về (nhịp 2). */
+.trip-shop { display: flex; flex-direction: column; gap: 6px; }
+.trip-shop-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border: 1px solid #e8d9b8;
+  border-radius: 8px;
+  padding: 6px 8px;
+  background: #fff;
+}
+.trip-shop-info { display: flex; flex-direction: column; gap: 1px; }
+.trip-shop-name { font-size: 13px; font-weight: 600; color: #5d3a1a; }
+.trip-shop-meta { font-size: 10px; color: #7a5a30; }
+.trip-shop-step { display: flex; align-items: center; gap: 4px; }
+.trip-shop-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  border: 1px solid #cfb689;
+  background: #f4e7c8;
+  color: #5d3a1a;
+  font-weight: 700;
+  cursor: pointer;
+}
+.trip-shop-btn:disabled { opacity: 0.35; cursor: default; }
+.trip-shop-qty {
+  width: 46px;
+  border: 1px solid #cfb689;
+  border-radius: 6px;
+  padding: 4px 6px;
+  font-size: 13px;
+  text-align: center;
+  background: #fff;
+}
+.trip-shop-total {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 12px;
+  color: #5d3a1a;
+  padding: 2px 2px 0;
+}
+.trip-shop-save { color: #1e8449; font-weight: 700; }
+
+/* Hệ 5-L4 — bàn mặc cả với người bán (nhịp 3). */
+.trip-haggle { display: flex; flex-direction: column; gap: 6px; }
+.trip-haggle-face { font-size: 11px; color: #6b4a26; background: #fdf6e3; border-radius: 8px; padding: 5px 8px; }
+.trip-haggle-row { display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: #5d3a1a; }
+.trip-haggle-range { width: 100%; accent-color: #1e8449; }
+
+/* Hệ 5-L5 — thẻ chuyện dọc đường (nhịp 1/4). */
+.trip-event { display: flex; flex-direction: column; gap: 4px; }
+.trip-event-opt {
+  display: flex; justify-content: space-between; align-items: center; gap: 8px;
+  border: 1px solid #cfb689; border-radius: 8px; background: #fff;
+  padding: 6px 9px; font-size: 12px; color: #5d3a1a; cursor: pointer; text-align: left;
+}
+.trip-event-opt:hover { background: #f4e7c8; }
+.trip-event-cost { color: #1e8449; font-weight: 600; white-space: nowrap; font-size: 11px; }
+
+/* Hệ 5-L6 — bảng sắm xe & thùng đá. */
+.trip-garage { display: flex; flex-direction: column; gap: 4px; }
+.trip-garage-title { font-size: 12px; font-weight: 600; color: #5d3a1a; }
+.trip-garage-row { display: flex; flex-wrap: wrap; gap: 5px; }
+.trip-garage-btn {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 1px;
+  border: 1px solid #cfb689; border-radius: 8px; background: #fff;
+  padding: 5px 8px; font-size: 11px; color: #5d3a1a; cursor: pointer; text-align: left;
+}
+.trip-garage-btn:hover:not(:disabled) { background: #f4e7c8; }
+.trip-garage-btn:disabled { opacity: 0.45; cursor: default; }
+.trip-garage-sel { border-color: #1e8449; background: #eaf6d6; }
+.trip-garage-sub { font-size: 10px; color: #7a5a30; }
+
+/* Hệ 5-L7 — nợ mối ruột tại nguồn (§5.7). */
+.trip-debt-due { font-size: 11px; color: #1e8449; font-weight: 700; white-space: nowrap; }
+.trip-debt-due.late { color: #c0392b; }
+
+/* Hệ 5-L8 — thẻ tripPayoff: so tự đi / sai người / mua mối lái bằng tiền thật (§5.8). */
+.trip-payoff-row {
+  display: flex; flex-direction: column; gap: 1px;
+  border-top: 1px dashed #e8d9b8; padding: 4px 0 2px; width: 100%;
+}
+.trip-payoff-name { font-size: 12px; font-weight: 600; color: #5d3a1a; }
+.trip-payoff-cost { font-size: 12px; color: #5d3a1a; display: flex; justify-content: space-between; }
+.trip-payoff-cost em { font-style: normal; font-weight: 700; color: #1e8449; }
+.trip-payoff-cost.best em { color: #1e8449; }
+.trip-payoff-note { font-size: 10px; color: #7a5a30; }

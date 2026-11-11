@@ -3,6 +3,7 @@ import { COOKED_PRODUCTS } from './recipes';
 import { HOMEMADE_PRODUCTS, NEIGHBOR2_PRODUCTS } from './homemade';
 import { REGION_PRODUCTS } from './regionSpecialty';
 import { LATE_GAME_PRODUCTS } from './lateGameProducts';
+import { epochGate } from './contentEpoch';
 
 /** Ngành hàng: quyết định bày ở đâu (kệ thường, tủ mát, tủ đông). */
 export type Category = 'dry' | 'drink' | 'cold' | 'frozen' | 'household' | 'fresh' | 'meat';
@@ -29,6 +30,9 @@ export interface Product {
   color: number;
   /** Cấp mở khóa. */
   unlock: number;
+  /** Kỷ nguyên nội dung (contentEpoch.ts): món MỚI ghi `since: 1` để test golden (kỷ nguyên 0) không thấy,
+   *  nhờ đó được mở ở BẤT KỲ cấp nào. Không ghi = nội dung gốc. */
+  since?: number;
 }
 
 const p = (
@@ -55,7 +59,7 @@ export const PRODUCTS: Product[] = [
   p('botgiat', 'Bột giặt', 'household', 35000, 48000, 0x3498db, 20),
   p('daugoi', 'Dầu gội', 'household', 45000, 62000, 0x8e44ad, 22),
   p('caphe', 'Cà phê gói', 'dry', 30000, 42000, 0x6e2c00, 24),
-  p('rau', 'Rau củ', 'fresh', 10000, 16000, 0x27ae60, 26),
+  p('rau', 'Rau củ', 'fresh', 10000, 16000, 0x27ae60, 27),
   p('traicay', 'Trái cây', 'fresh', 25000, 38000, 0xe74c3c, 28),
   p('thit', 'Thịt đông lạnh', 'frozen', 60000, 85000, 0xc0392b, 30),
   p('ca', 'Cá đông lạnh', 'frozen', 50000, 72000, 0x85c1e9, 32),
@@ -130,7 +134,7 @@ export const PRODUCTS: Product[] = [
   p('trung_vit', 'Trứng vịt (vỉ 10)', 'dry', 32000, 45000, 0xeef0e2, 1),
   p('trung_goos', 'Trứng ngỗng (vỉ 10)', 'dry', 280000, 350000, 0xf4f1e8, 18),
   p('sua_de', 'Sữa dê (lốc)', 'cold', 45000, 60000, 0xfdf6ec, 27),
-  p('thit_ga_dt', 'Thịt gà Đông Tảo', 'fresh', 380000, 450000, 0xb03a2e, 30),
+  p('thit_ga_dt', 'Thịt gà Đông Tảo', 'fresh', 380000, 450000, 0xb03a2e, 31),
   p('x_nhan', 'Nhãn', 'fresh', 24000, 34000, 0xcbc04d, 30),
   // Nội dung cuối game (53–78): hàng cao cấp/hàng biếu giá sỉ VN 2026, lấp các khoảng trống cấp
   p('ca_hoi', 'Cá hồi phi lê (gói)', 'frozen', 320000, 440000, 0xff8a65, 53),
@@ -194,6 +198,9 @@ PRODUCTS.push(...NEIGHBOR2_PRODUCTS.map((it) => ({ ...it, unlock: Math.max(it.un
 PRODUCTS.push(...REGION_PRODUCTS.map((it) => ({ ...it, unlock: Math.max(it.unlock, SHELF_READY[it.category] ?? 1) })));
 // Hàng cuối game cấp 87–200 (lateGameProducts.ts): lấp cấp trống và kéo dài lộ trình lên cấp
 PRODUCTS.push(...LATE_GAME_PRODUCTS);
+// Kỷ nguyên nội dung (SPEC-TOI-UU §T4): dòng có `since` tự khoá `unlock` khi sim golden chạy ở kỷ nguyên 0.
+// Phải gọi SAU mọi lệnh push ở trên.
+epochGate(PRODUCTS);
 
 export const productById = (id: string) => PRODUCTS.find((it) => it.id === id)!;
 

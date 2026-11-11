@@ -13,6 +13,7 @@ import { idToken } from './firebase';
 import { wsUrl } from './serverUrl';
 export { listAlleys, createAlley, joinAlley, quitAlley, type AlleySummary } from './alleyApi';
 import { useSession, type AlleyPeer } from './session';
+import { STANCE_META, type StanceId } from '../data/stance';
 
 /**
  * Hẻm online 2–4 người (xem server/index.ts). Mọi thành viên quyền như nhau:
@@ -168,6 +169,7 @@ function installGuards() {
   }
   useGame.setState(wrapped as Partial<GameState>);
   installSleepVote();
+  installStanceVote();
 }
 
 /** Máy chạy: ai trong hẻm đang nằm giường chờ sang ngày (id người chơi), của ngày sleepDay. */
@@ -223,6 +225,66 @@ function settleSleep(): boolean {
 export function cancelSleep() {
   if (isGuest()) return void send({ type: 'act', name: CANCEL_SLEEP, args: [] });
   sleepers.delete(useSession.getState().coop?.selfId ?? 0);
+}
+
+// ── Hệ 3 L6 (SPEC §3.9) — Bỏ phiếu đổi biển định vị ──
+// Biển là của CẢ tiệm, đổi (đổi hướng / gỡ) ảnh hưởng cả hẻm → ở hẻm online phải cả hẻm đồng ý, giống bỏ
+// phiếu ngủ (installSleepVote). Mỗi người đang online bấm hướng mình muốn; khi MỌI người đã bấm CÙNG một
+// hướng thì tiến hành (thu tiền làm biển + 14 ngày như chơi đơn). Ấn (NG+) không áp dụng trong hẻm online.
+const stanceVotes = new Map<number, StanceId | 'none'>(); // actorId → hướng muốn (hoặc 'none' = gỡ biển)
+let realChooseStance: ((id: StanceId) => void) | null = null;
+let realDropStance: (() => void) | null = null;
+
+/** Máy chạy: bọc chooseStance/dropStance bằng bản bỏ phiếu (chỉ khi ở hẻm). */
+function installStanceVote() {
+  const game = useGame.getState();
+  const choose = game.chooseStance as ((id: StanceId) => void) & { vote?: boolean };
+  if (choose.vote) return;
+  realChooseStance = choose;
+  realDropStance = game.dropStance;
+  const label = (t: StanceId | 'none') => (t === 'none' ? 'gỡ biển' : `${STANCE_META[t].icon} ${STANCE_META[t].name}`);
+  const peersOf = () => useSession.getState().coop?.peers ?? [];
+  const current = () => currentActor ?? useSession.getState().coop?.selfId ?? 0;
+  const voteChoose = (id: StanceId) => {
+    const s = useGame.getState();
+    if (s.biz?.stance?.id === id) { s.notify('🪧 Đang treo biển hướng này rồi.'); return; }
+    stanceVotes.set(current(), id);
+    if (settleStance()) return;
+    const peers = peersOf();
+    const waiting = peers.filter((p) => !stanceVotes.has(p.id)).map((p) => p.name).join(', ');
+    s.notify(`🪧 Bỏ phiếu đổi sang ${label(id)} (${stanceVotes.size}/${peers.length}). Chờ ${waiting || 'đủ người'} bấm cùng hướng.`);
+  };
+  voteChoose.vote = true;
+  const voteDrop = () => {
+    const s = useGame.getState();
+    if (!s.biz?.stance) { s.notify('🪧 Chưa treo biển.'); return; }
+    stanceVotes.set(current(), 'none');
+    if (settleStance()) return;
+    const peers = peersOf();
+    const waiting = peers.filter((p) => !stanceVotes.has(p.id)).map((p) => p.name).join(', ');
+    s.notify(`🪧 Bỏ phiếu gỡ biển (${stanceVotes.size}/${peers.length}). Chờ ${waiting || 'đủ người'} đồng ý.`);
+  };
+  voteDrop.vote = true;
+  useGame.setState({ chooseStance: voteChoose, dropStance: voteDrop } as Partial<GameState>);
+}
+
+/** Máy chạy: đủ phiếu (mọi người online đã bấm cùng một hướng) thì làm thật. */
+function settleStance(): boolean {
+  const peers = useSession.getState().coop?.peers ?? [];
+  if (!peers.length || stanceVotes.size < peers.length) return false;
+  for (const p of peers) if (!stanceVotes.has(p.id)) return false;
+  const targets = new Set(stanceVotes.values());
+  if (targets.size !== 1) return false; // chưa thống nhất hướng → giữ phiếu, chờ đổi
+  const target = [...targets][0] as StanceId | 'none';
+  stanceVotes.clear();
+  if (target === 'none') { realDropStance?.(); return true; }
+  realChooseStance?.(target);
+  return true;
+}
+
+/** Xoá phiếu biển của người vừa rời hẻm (khỏi bị kẹt bởi phiếu cũ). */
+function pruneStanceVotes(live: Set<number>) {
+  for (const id of [...stanceVotes.keys()]) if (!live.has(id)) stanceVotes.delete(id);
 }
 
 /**
@@ -376,6 +438,7 @@ function becomePlayer() {
   checkpoint();
   touched.clear();
   sleepers.clear();
+  stanceVotes.clear();
   // Khách đang chờ câu trả lời bị dọn cùng mô phỏng: bỏ câu hỏi, từ giờ nhận câu hỏi từ máy chạy mới
   clearAsk();
   useSession.setState((s) => ({ coop: s.coop && { ...s.coop, role: 'player' } }));
@@ -399,6 +462,8 @@ function onMessage(msg: Msg) {
       for (const p of msg.peers) if (p.id !== self) addOther(p);
       // Người còn thiếu phiếu vừa rời hẻm: những người còn lại đã ngủ hết thì sang ngày
       if (role() === 'runner') settleSleep();
+      pruneStanceVotes(ids); // xoá phiếu đổi biển của người vừa rời; đủ người còn lại đồng ý thì đổi
+      if (role() === 'runner') settleStance();
       if (msg.joined) game.notify(`👋 ${msg.joined} đã vào hẻm`);
       if (msg.left) game.notify(`👋 ${msg.left} đã rời hẻm`);
       break;

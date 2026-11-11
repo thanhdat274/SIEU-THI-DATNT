@@ -1,0 +1,289 @@
+/* Hệ 7 — Trò khéo tay dịp lễ (SPEC-CHIEU-RONG §7.4): vẽ bằng DOM/CSS + canvas 2D, chạy mượt trên máy yếu. */
+
+.mini-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  background: rgba(20, 16, 8, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+}
+
+.mini-card {
+  background: #fffaf0;
+  border: 2px solid #e8d9b8;
+  border-radius: 16px;
+  width: min(420px, 96vw);
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+}
+
+.mini-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: #f4e7c8;
+  border-bottom: 1px solid #e8d9b8;
+}
+.mini-title { font-weight: 700; font-size: 15px; color: #5d3a1a; }
+.mini-timer { font-weight: 800; font-size: 18px; color: #1e8449; }
+.mini-timer.danger { color: #c0392b; animation: miniBlink 0.5s step-start infinite; }
+@keyframes miniBlink { 50% { opacity: 0.25; } }
+
+.mini-body {
+  flex: 1;
+  padding: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 180px;
+}
+.mini-loading { opacity: 0.7; text-align: center; }
+
+.mini-foot { display: flex; justify-content: center; gap: 10px; padding: 10px 14px; border-top: 1px solid #eee0c0; }
+.mini-btn {
+  border: none;
+  border-radius: 10px;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  background: #eee0c0;
+  color: #5d3a1a;
+  cursor: pointer;
+}
+.mini-btn.primary { background: #1e8449; color: #fff; }
+.mini-btn:active { transform: translateY(1px); }
+
+.mini-result { flex: 1; padding: 20px 16px; text-align: center; display: flex; flex-direction: column; gap: 12px; align-items: center; justify-content: center; }
+.mini-result-score { font-size: 18px; margin: 0; }
+.mini-result-reward { color: #1e8449; font-weight: 600; margin: 0; }
+
+/* Trò giả L1 — Kiểm tay */
+.minitap { text-align: center; width: 100%; }
+.minitap-hint { margin: 0 0 10px; font-size: 14px; color: #5d3a1a; }
+.minitap-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; width: 100%; max-width: 260px; margin: 0 auto; touch-action: manipulation; }
+.minitap-cell {
+  aspect-ratio: 1;
+  border: 2px solid #cfb689;
+  border-radius: 10px;
+  background: #fff;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.minitap-cell.target { background: #e67e22; border-color: #d35400; }
+.minitap-cell:active { opacity: 0.6; }
+.minitap-count { font-size: 15px; color: #5d3a1a; font-weight: 600; }
+
+/* Trò ① Xếp giỏ quà */
+.gioqua { text-align: center; width: 100%; }
+.gioqua-grid {
+  display: inline-grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  background: #d8b877;
+  border: 3px solid #b98d3d;
+  border-radius: 10px;
+  padding: 6px;
+  margin: 0 auto 10px;
+}
+.gioqua-row { display: contents; }
+.gioqua-cell {
+  width: 56px;
+  height: 56px;
+  border-radius: 8px;
+  background: #fff3d6;
+  border: 1px dashed #c9a35f;
+  font-size: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: manipulation;
+}
+.gioqua-cell.filled { border-style: solid; background: #ffe9bf; }
+.gioqua-cell.spot { background: #d5efc4; border-style: solid; border-color: #5f9e41; cursor: pointer; }
+.gioqua-cell:active { opacity: 0.6; }
+.gioqua-tray {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+.gioqua-gift {
+  border: 2px solid #cfb689;
+  background: #fff;
+  border-radius: 10px;
+  padding: 6px 8px;
+  min-width: 64px;
+  cursor: pointer;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.gioqua-gift.sel { border-color: #1e8449; background: #eaf6d6; }
+.gioqua-gift-icon { font-size: 22px; }
+.gioqua-gift-name { font-size: 11px; color: #5d3a1a; }
+
+/* ── Hệ 7-L3 — Gói bánh chưng ───────────────────────────── */
+.banhchung { text-align: center; width: 100%; }
+.banhchung-khuon {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  max-width: 300px;
+  margin: 0 auto 12px;
+}
+.banhchung-cell {
+  height: 40px;
+  border: 2px dashed #cfb689;
+  border-radius: 8px;
+  background: #fdf6e3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  color: #5d3a1a;
+}
+.banhchung-cell.filled { border-style: solid; border-color: #8a9a5b; background: #eef4d8; }
+.banhchung-cell.meo { border-style: solid; border-color: #e74c3c; background: #fbe0dc; }
+.banhchung-cell.done { border-color: #1e8449; background: #eaf6d6; }
+.banhchung-tray {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+.banhchung-ing {
+  border: 2px solid #cfb689;
+  background: #fff;
+  border-radius: 10px;
+  padding: 6px 8px;
+  min-width: 58px;
+  cursor: pointer;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.banhchung-ing.next { border-color: #1e8449; background: #eaf6d6; }
+.banhchung-ing.decor { opacity: 0.85; }
+.banhchung-ing:disabled { opacity: 0.5; cursor: default; }
+.banhchung-ing-icon { font-size: 22px; }
+.banhchung-ing-name { font-size: 11px; color: #5d3a1a; }
+
+/* ── Hệ 7-L4 — Bày mâm ngũ quả ─────────────────────────── */
+.mamnguqua { text-align: center; width: 100%; }
+.mamnguqua-tray {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+.mamnguqua-fruit {
+  border: 2px solid #cfb689;
+  background: #fff;
+  border-radius: 10px;
+  padding: 6px 8px;
+  min-width: 58px;
+  cursor: pointer;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  touch-action: manipulation;
+}
+.mamnguqua-fruit.sel { border-color: #1e8449; background: #eaf6d6; }
+.mamnguqua-fruit.hand { border-color: #c0392b; background: #fde8e3; }
+.mamnguqua-fruit.used { opacity: 0.4; cursor: default; }
+.mamnguqua-fruit-icon { font-size: 22px; }
+.mamnguqua-fruit-name { font-size: 11px; color: #5d3a1a; }
+
+.mamnguqua-man {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  background: #e8d9b8;
+  border: 3px solid #cfb689;
+  border-radius: 60% 60% 50% 50% / 55% 55% 45% 45%;
+  padding: 14px;
+  width: min(260px, 100%);
+  margin: 0 auto 10px;
+}
+.mamnguqua-row { display: flex; gap: 8px; justify-content: center; }
+.mamnguqua-slot {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  border: 2px dashed #a98b52;
+  background: #fdf6e3;
+  font-size: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.mamnguqua-slot.base { width: 54px; height: 54px; }
+.mamnguqua-slot.filled { border-style: solid; border-color: #8a9a5b; background: #eef4d8; }
+.mamnguqua-slot.hint { border-color: #1e8449; border-style: dotted; }
+
+/* ── Hệ 7-L5 — Phất đèn ông sao ─────────────────────────── */
+.denong { text-align: center; width: 100%; }
+.denong-star {
+  width: min(220px, 100%);
+  margin: 0 auto 8px;
+  touch-action: manipulation;
+}
+.denong-edge { stroke: #c9a35f; stroke-width: 2; stroke-linecap: round; }
+.denong-edge.ok { stroke: #1e8449; }
+.denong-tip {
+  fill: #fdf6e3;
+  stroke: #a98b52;
+  stroke-width: 2;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.denong-tip.tapped { fill: #1e8449; stroke: #145a32; }
+.denong-tip:active { fill: #e67e22; }
+
+.denong-paste {
+  position: relative;
+  width: min(240px, 100%);
+  height: 220px;
+  margin: 0 auto 8px;
+}
+.denong-sheet {
+  position: absolute;
+  width: 72px;
+  height: 64px;
+  border: 2px solid #cfb689;
+  border-radius: 12px;
+  background: #fff;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  touch-action: manipulation;
+}
+.denong-sheet.pasted { border-color: #c0392b; background: #fdecec; }
+.denong-sheet.pos-0 { left: 10px; top: 84px; }
+.denong-sheet.pos-1 { left: 40px; top: 10px; }
+.denong-sheet.pos-2 { left: 164px; top: 10px; }
+.denong-sheet.pos-3 { left: 194px; top: 84px; }
+.denong-sheet.pos-4 { left: 102px; top: 30px; }
+.denong-sheet.center { left: 84px; top: 96px; }
+.denong-sheet-icon { font-size: 22px; }
+.denong-sheet-name { font-size: 10px; color: #5d3a1a; }

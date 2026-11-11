@@ -6,6 +6,7 @@ import { chapterById, nextChapter, STORY_RIVAL_NAME } from '../data/chapters';
 import { inGoldenHour } from '../data/rhythm';
 import { formatMoney, productById } from '../data/products';
 import { arcGoodCount, arcSceneAt, arcReward as surpriseArcReward, findSurprise, sceneFor, surpriseArcById, SURPRISE_ARCS, type SurpriseArcState } from '../data/surpriseArcs';
+import { tieKey } from '../data/regularTies';
 import { useGame } from './store';
 
 const S = () => useGame.getState();
@@ -63,7 +64,11 @@ export function maybeSurprise(elapsedMinutes: number) {
   const told = b.surpriseArcsTold ?? [];
   const pool = [
     ...SURPRISES.filter((e) => e.unlock <= s.level).map((e) => ({ id: e.id, unlock: e.unlock })),
-    ...SURPRISE_ARCS.filter((a) => a.unlock <= s.level && !told.includes(a.id)).map((a) => ({ id: a.id, unlock: a.unlock })),
+    // GĐ Hệ2-L5 (SPEC §2.6): arc khắc khẩu chỉ vào pool khi CẢ HAI đã từng ghé (needRegulars).
+    ...SURPRISE_ARCS
+      .filter((a) => a.unlock <= s.level && !told.includes(a.id))
+      .filter((a) => !a.needRegulars || a.needRegulars.every((id) => (s.regulars[id]?.visits ?? 0) > 0))
+      .map((a) => ({ id: a.id, unlock: a.unlock })),
   ];
   const pick = pool[Math.floor(simRng()() * pool.length)];
   if (!pick) return;
@@ -128,6 +133,13 @@ export function chooseSurprise(index: number) {
     }
     const nextArc: SurpriseArcState = { ...prev, choices, step: prev.step + 1, ...(finished || scene.reward ? { done: true } : {}) };
     patch({ surpriseArc: nextArc });
+    // GĐ Hệ2-L5 (SPEC §2.6): arc khắc khẩu hoà giải theo đường "ấm" (khép có thưởng = cảnh hoà giải)
+    // → ghi tieKey vào biz.tiesMended: cạnh khắc khẩu không còn thù, hiển thị thành "Bạn bè".
+    if (arc.healsTie && scene.reward) {
+      const key = tieKey(arc.healsTie.a, arc.healsTie.b);
+      const done = S().biz.tiesMended ?? [];
+      if (!done.includes(key)) patch({ tiesMended: [...done, key] });
+    }
     if (reward) {
       if (reward.money) useGame.setState({ money: S().money + reward.money });
       s.notify(`📖 ${arc.title} khép lại · ${c.result} · +${formatMoney(reward.money)}${friendNote}`);

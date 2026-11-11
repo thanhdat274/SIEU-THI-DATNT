@@ -160,6 +160,16 @@ describe('GĐ171 — claim + reset qua vòng', () => {
     expect(next.biz.rival).toBeNull();
   });
 
+  it('prestigeRestart MANG ẤN định vị sang vòng mới (Hệ3-L8, SPEC §3.7)', () => {
+    const s = round2State();
+    s.biz.prestige.seals = ['binh_dan', 'dac_san'];
+    const next = prestigeRestart(s);
+    expect(next.biz.prestige.seals).toEqual(['binh_dan', 'dac_san']);
+    // đủ 3 ấn → danh hiệu Tam ấn định vị (test logic done qua TitleContext seals)
+    expect(TITLES.find((t) => t.id === 'tam_an_dinh_vi')!.done({ seals: 3 } as never)).toBe(true);
+    expect(TITLES.find((t) => t.id === 'tam_an_dinh_vi')!.done({ seals: 2 } as never)).toBe(false);
+  });
+
   it('claim MỌI mục tiêu (mốc cuối qua claimNgGoal) → checkTitles mở danh hiệu trọn bộ', () => {
     const s = round2State();
     s.level = 60; s.ordersDone = 30; s.marketClearedDay = 5; s.biz.rivalsBeaten = 3;

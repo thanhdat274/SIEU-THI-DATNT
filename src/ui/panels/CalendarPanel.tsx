@@ -3,6 +3,8 @@ import { productById } from '../../data/products';
 import { isXoiCungDay } from '../../data/tiemXoi';
 import { isQuanMatchDay } from '../../data/quanNuoc';
 import { CUM_DAYS, dateOfDoy, dayOfYear, FESTIVALS, festivalOn, festivalStock, gameDayOfDoy, isWeekend, MONTH_LENGTHS, weekdayOf, YEAR_DAYS } from '../../data/calendar';
+import { LIFE_EVENTS, gioDoy } from '../../data/lifeEvent';
+import { regularById } from '../../data/regulars';
 import { Footer, styles } from './shared';
 
 /** Lịch sự kiện cả năm: lưới 12 tháng tô màu theo dịp lễ, kèm hiệu ứng từng dịp để nhập hàng trước. */
@@ -27,6 +29,15 @@ export function CalendarPanel() {
     return a.month === b.month ? `${a.day}–${b.day}/${a.month}` : `${a.day}/${a.month}–${b.day}/${b.month}`;
   };
   const today = dateOfDoy(doy);
+  // GĐ Hệ2-L3 — Đánh dấu ngày giỗ "đã biết" (chủ đã mở): băm từ id (gioDoy) nên khớp mọi máy (R4).
+  const gioByDoy = new Map<number, string[]>();
+  for (const le of LIFE_EVENTS) {
+    const host = regularById(le.host);
+    if (!host || level < host.unlock) continue;
+    const arr = gioByDoy.get(gioDoy(le)) ?? [];
+    arr.push(host.name);
+    gioByDoy.set(gioDoy(le), arr);
+  }
   return (
     <>
       <h2 style={styles.title}>🗓️ Lịch sự kiện</h2>
@@ -47,19 +58,20 @@ export function CalendarPanel() {
               const gd = gameDayOfDoy(doy0);
               const wknd = isWeekend(gd);
               const cung = isXoiCungDay(gd); // GĐ639: mùng 1 & rằm
+              const gios = gioByDoy.get(doy0);
               return (
                 <div
                   key={d}
-                  title={`${d}/${m + 1} · ${weekdayOf(gd)}${f ? `: ${f.name}` : ''}${wknd ? ' · cuối tuần' : ''}${cung ? ' · ngày cúng' : ''}${isQuanMatchDay(gd, 'sunny') ? ' · tối có trận (nếu không mưa)' : ''}`}
+                  title={`${d}/${m + 1} · ${weekdayOf(gd)}${f ? `: ${f.name}` : ''}${wknd ? ' · cuối tuần' : ''}${cung ? ' · ngày cúng' : ''}${gios ? ` · giỗ: ${gios.join(', ')}` : ''}${isQuanMatchDay(gd, 'sunny') ? ' · tối có trận (nếu không mưa)' : ''}`}
                   style={{
                     height: 16, borderRadius: 3, fontSize: 11, display: 'flex', alignItems: 'center', justifyContent: 'center',
                     // GĐ264: #54546e — #4a4a63 quá gần nền #3a3a4d, mắt thường khó thấy ô cuối tuần
-                    background: f ? `hsl(${(idx * 47) % 360} 55% 42%)` : wknd ? '#54546e' : '#3a3a4d',
+                    background: f ? `hsl(${(idx * 47) % 360} 55% 42%)` : gios ? '#6a4a2a' : wknd ? '#54546e' : '#3a3a4d',
                     outline: doy0 === doy ? '2px solid #fff' : undefined,
                     cursor: 'default',
                   }}
                 >
-                  {f ? f.icon : cung ? <span style={{ opacity: 0.8 }}>🙏</span> : ''}
+                  {f ? f.icon : gios ? '🏮' : cung ? <span style={{ opacity: 0.8 }}>🙏</span> : ''}
                 </div>
               );
             })}

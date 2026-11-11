@@ -4,6 +4,7 @@ import { faintMinutes } from '../../data/biz';
 import { maybeSurprise } from '../biz';
 import { DIRT_MAX } from '../../data/staff';
 import { RECIPE_MAP } from '../../data/recipes';
+import { sealYieldBonus } from '../../data/stance';
 import { playSfx } from '../audio';
 import { STOCK_WARN_AT, nightNeed, shelfTotal } from '../../data/branches';
 import { OPERATING_REVENUE_RATE, rentOf } from '../../data/shopTiers';
@@ -12,6 +13,7 @@ import { copyStock, putStock } from '../stock';
 import { useClock } from '../store';
 import { runBranch } from './branch';
 import { endDay } from './endDay';
+import { countPanel } from '../dayReport';
 import { updateOnline } from './online';
 import { updatePhones, cookSpeed, bartenderBoost } from './orders';
 import { maybeInspection } from '../inspection';
@@ -79,6 +81,9 @@ export const createClockSlice = (set: SetState, get: GetState): Pick<GameState, 
       set({ branch: { ...br, warnedDay: s.day } });
       if (have < nightNeed()) get().notify(`⚠️ Kho chung sắp cạn (còn ${have}, đêm nay cần ~${nightNeed()}) — nhập thêm!`);
     }
+    // Hệ 5-L2 (SPEC-CHIEU-RONG §5.10) — xe đi tỉnh về khi hết giờ: một phép so sánh cùng kiểu STOCK_WARN_AT,
+    // canh `biz.trip` trống nên simGolden (không bao giờ startTrip) không đổi một byte.
+    if (s.biz.trip && minutes >= s.biz.trip.returnAt) get().tripArrive();
     updatePhones(set, get);
     updateOnline(set, get);
     // GĐ1507 — truyền đúng phút đã trôi: bug elapsed=0 làm pool sự kiện một-phát chết từ GĐ962
@@ -92,27 +97,44 @@ export const createClockSlice = (set: SetState, get: GetState): Pick<GameState, 
       const base = dt * MINUTES_PER_SECOND * s.speed * cookSpeed(get);
       // Mẻ ở trạm pha chế được pha chế trực ca tăng tốc thêm (cùng đầu bếp)
       const drink = base * bartenderBoost(get);
-      const next = jobs.map((j) => {
+      // SPEC-TOI-UU §T2-a: ghi thẳng `remaining` tại chỗ (như `minutes`) — không `set` mỗi khung nên các
+      // component đăng ký cả store không vẽ lại 60 lần/giây; chỉ `set` khi có mẻ xong. UI đọc tiến độ qua useClock.
+      for (const j of jobs) {
         const r = RECIPE_MAP[j.recipeId];
-        return { ...j, remaining: j.remaining - (r?.station === 'drink_counter' ? drink : base) };
-      });
+        j.remaining -= r?.station === 'drink_counter' ? drink : base;
+      }
+      const next = jobs;
       const done = next.filter((j) => j.remaining <= 0);
       if (done.length) {
+        const sealQ = sealYieldBonus(get().biz); // Hệ3-L8 Ấn Đặc sản: mỗi mẻ nấu ra thêm 1 đơn vị
+        // Hệ7-L2: thưởng trò khéo tay cộng vào mẻ KẾ TIẾP của công thức (biz.miniBonus) — đọc, cộng, xoá.
+        const miniB = get().biz.miniBonus ?? {};
+        const usedBonus = new Set<string>();
         const k = copyStock(get());
         for (const j of done) {
           const r = RECIPE_MAP[j.recipeId];
-          if (r) putStock(k, r.outputId, r.outputQty);
+          const bonus = miniB[j.recipeId] ?? 0;
+          if (r) {
+            putStock(k, r.outputId, r.outputQty + sealQ + bonus);
+            if (bonus) usedBonus.add(j.recipeId);
+          }
         }
         set({ ...k, cookJobs: next.filter((j) => j.remaining > 0) });
+        // xoá phần thưởng đã dùng hết (thưởng chỉ áp cho MỘT mẻ tiếp theo)
+        if (usedBonus.size) {
+          const keep = { ...get().biz.miniBonus };
+          for (const id of usedBonus) delete keep[id];
+          set((st) => ({ biz: { ...st.biz, miniBonus: keep } }));
+        }
         playSfx('ding');
         for (const j of done) {
           const r = RECIPE_MAP[j.recipeId];
           if (!r) continue;
-          get().notify(`🍲 Nấu xong: ${r.outputQty} ${productById(r.outputId).name} đã vào kho, bày lên kệ được ngay`);
+          const bonus = miniB[j.recipeId] ?? 0;
+          const made = r.outputQty + sealQ + bonus;
+          get().notify(`🍲 Nấu xong: ${made} ${productById(r.outputId).name} đã vào kho, bày lên kệ được ngay`);
           get().addXp(4);
         }
-      } else {
-        set({ cookJobs: next });
       }
     }
   },
@@ -151,7 +173,11 @@ export const createClockSlice = (set: SetState, get: GetState): Pick<GameState, 
     if (!m) return;
     messageTimer = setTimeout(() => set({ message: null }), m.includes(' · ') ? 4500 : 3000);
   },
-  openPanel: (panel) => set({ panel }),
+  openPanel: (panel) => {
+    // SPEC-TOI-UU §T1 (L1): đếm số lần mở bảng trong ngày — một chỗ duy nhất mọi bảng đi qua.
+    countPanel(panel.type);
+    set({ panel });
+  },
   // GĐ1503 — chốt cờ đã xem tour HUD (UI thuần, không đụng kinh tế)
   markHudTourDone: () => set({ hudTourDone: true }),
   closePanel: () => set({ panel: null }),

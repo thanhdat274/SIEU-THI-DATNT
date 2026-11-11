@@ -90,7 +90,13 @@ export function prestigeRestart(prev: GameState): GameState {
       // rival đời mới quay lại từ cấp 8 qua nhánh đời mới (cổng prestige.level > 0 ở core/biz.ts).
       rival: null,
       rivalsBeaten: 0,
-      prestige: { level, bonus, goalsClaimed: [] },
+      prestige: {
+        level, bonus, goalsClaimed: [], seals: prev.biz.prestige.seals ?? [],
+        // Hệ4-L9: nhãn riêng của vòng trước giữ lại CHỈ ĐỂ HIỂN THỊ (hồ sơ tiệm) — không còn gameplay.
+        brandLegacy: prev.biz.brand
+          ? { name: prev.biz.brand.name, maxRep: prev.biz.brand.maxRep }
+          : prev.biz.prestige.brandLegacy,
+      },
     },
     // Object dữ liệu này sẽ được store merge (set) lên state hiện có (vốn giữ sẵn các hàm slice),
     // nên ép kiểu sang GameState ở đây cho khớp hợp đồng — giống cách newGameData() được dùng trong thực tế.
@@ -117,6 +123,10 @@ export interface PrestigePreviewInput {
   currentDay: number;
   /** Số ngày dữ liệu phân tích đã gom (độ dài analytics.flags — key là ngày game). */
   analyticsDays: number;
+  /** Hệ4-L9: nhãn riêng của vòng trước (nếu có) — hiện "bỏ lại" trong hồ sơ. */
+  brandLegacy?: { name: string; maxRep: number } | null;
+  /** Hệ4-L9: nhãn riêng ĐANG có ở vòng này (nếu có) — cũng bị bỏ lại khi tái sinh. */
+  brand?: { name: string; maxRep: number } | null;
 }
 
 /** Dự phóng tái sinh (GĐ139): định lượng "bỏ lại gì" vs "nhận gì" cho quyết định NG+ — trục lặp lại
@@ -125,7 +135,7 @@ export interface PrestigePreviewInput {
  * (mối quen nhà cung, phiên chợ chưa kịp gánh, bề dày phân tích); nhận = thu nhập vòng sau tăng theo +8%.
  */
 export function prestigePreview(input: PrestigePreviewInput) {
-  const { level, lifetimeRevenue, prestigeLevel, bonus, avgDailyProfit, supplierRel, marketClearedDay, currentDay, analyticsDays } = input;
+  const { level, lifetimeRevenue, prestigeLevel, bonus, avgDailyProfit, supplierRel, marketClearedDay, currentDay, analyticsDays, brandLegacy, brand } = input;
   const eligible = prestigeEligible(level, lifetimeRevenue, prestigeLevel);
   const capped = prestigeLevel >= PRESTIGE_MAX_LEVEL;
   const nb = nextBonus(prestigeLevel); // 0.08 → 0.48
@@ -135,6 +145,8 @@ export function prestigePreview(input: PrestigePreviewInput) {
   const suppliers = Object.values(supplierRel);
   const suppliersActive = suppliers.filter((r) => r.spent > 0).length;
   const topRelTier = suppliers.length ? Math.max(...suppliers.map((r) => relTier(r.spent).level)) : 0;
+  // Hệ4-L9: nhãn riêng bỏ lại (vòng trước giữ để hiển thị, hoặc nhãn đang có ở vòng này sẽ mất).
+  const lostBrand = brand ?? brandLegacy ?? null;
   // Bỏ lại: chợ phiên — hôm nay là ngày chợ mà chưa bán → bỏ lại phiên chợ chưa kịp gánh.
   const marketDayEvery = 7; // MARKET_EVERY của chợ phiên (GĐ135); FIRST_MARKET=7
   const unsoldMarketDay = eligible && !capped && marketClearedDay !== currentDay && currentDay >= 7 && currentDay % marketDayEvery === 0;
@@ -148,5 +160,6 @@ export function prestigePreview(input: PrestigePreviewInput) {
     unsoldMarketDay,
     analyticsDays,
     maxTier: PARTNER_TIERS.length,
+    lostBrand: lostBrand ? { name: lostBrand.name, maxRep: lostBrand.maxRep } : null, // Hệ4-L9
   };
 }

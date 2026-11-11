@@ -7,7 +7,7 @@ import {
 import { quanBestAdd, quanBestAddLine } from '../../data/quanMenuSuggest';
 import { quanHandPayoff, quanHandPayoffLine } from '../../data/quanHandPayoff';
 import { styles } from './shared';
-import { shortLabel } from '../shortLabel';
+import { blockedLabel, shortLabel } from '../shortLabel';
 import { newUnlockMark } from '../../data/advice';
 
 /** Thực đơn pha chế quán nước (GĐ415): chọn tối đa 4 món, mỗi món hiện lời/ly và số ly kho đủ pha. */
@@ -41,7 +41,7 @@ export function QuanMenuSection() {
       </div>
       <button style={{ ...styles.btn, marginLeft: 0, marginBottom: 6 }} disabled={!menu.length || quanHandLeft(q, day) <= 0} onClick={() => brewQuanHand()}
         title="Tự đứng quầy pha một mẻ, lần lượt từng món trên thực đơn, bán ngay giá tay nghề +20%">
-        🍹 Tự pha {QUAN_HAND_CUPS} ly (còn {quanHandLeft(q, day)} mẻ)
+        {blockedLabel(!menu.length ? '🍹 Chọn món vào thực đơn trước' : null, `🍹 Tự pha ${QUAN_HAND_CUPS} ly (còn ${quanHandLeft(q, day)} mẻ)`, 0, money)}
       </button>
       {handLine && (
         <div style={{ fontSize: 11, marginTop: 2, color: '#2ecc71' }}>{handLine}</div>
@@ -62,7 +62,7 @@ export function QuanMenuSection() {
               disabled={locked || (!on && menu.length >= slots)}
               onClick={() => toggleQuanRecipe(r.id)}
             >
-              {locked ? `Cấp ${r.unlock}` : on ? '✓ Bán' : 'Thêm'}
+              {locked ? `Cấp ${r.unlock}` : on ? '✓ Bán' : blockedLabel(menu.length >= slots ? `Đủ ${slots} ô` : null, 'Thêm', 0, money)}
             </button>
             <div style={{ fontSize: 13, lineHeight: 1.4 }}>
               {r.icon} <b>{r.name}</b>{newUnlockMark(r.unlock, level)} · {formatMoney(Math.round(r.price * mul))} · lời ~{formatMoney(profit)}/ly{r.hot ? " · ♨ đồ nóng (mưa/rét đông khách)" : ""}

@@ -2,6 +2,8 @@ import type { ReactNode } from 'react';
 import { formatMoney, productById, fmtMul } from '../../data/products';
 import { festivalStock, type Festival } from '../../data/calendar';
 import { prepItems, prepBonus, PREP_MIN_QTY } from '../../data/festivalPrep';
+import { miniForFestival } from '../../data/festivalMini';
+import { useMiniHost } from '../minigames/miniHost';
 import type { festivalValue } from '../../data/festivalValue';
 import { styles } from './shared';
 
@@ -9,10 +11,11 @@ type FV = ReturnType<typeof festivalValue>;
 const pct = (x: number) => `${x >= 1 ? '+' : ''}${Math.round((x - 1) * 100)}%`;
 
 /** GĐ937: tách khỏi MorningPanel (nguyên văn thẻ lễ hội ĐANG diễn ra). */
-export function FestivalNowCard({ festival, level, haveStock, fv, fvDelta }: {
-  festival: Festival; level: number; haveStock: (id: string) => boolean; fv: FV; fvDelta: ReactNode;
+export function FestivalNowCard({ festival, level, day, haveStock, fv, fvDelta }: {
+  festival: Festival; level: number; day: number; haveStock: (id: string) => boolean; fv: FV; fvDelta: ReactNode;
 }) {
   const stock = festivalStock(festival, level);
+  const mini = miniForFestival(festival.id);
   return (
     <div style={{ ...styles.card, display: 'block', marginBottom: 8, outline: '2px solid #f1c40f' }}>
       <b style={styles.cardTitle}>{festival.icon} {festival.name} đang diễn ra</b>
@@ -29,6 +32,12 @@ export function FestivalNowCard({ festival, level, haveStock, fv, fvDelta }: {
         <div style={{ fontSize: 12, marginTop: 2 }}>
           🎉 ước thêm {fvDelta}
         </div>
+      )}
+      {/* Hệ 7 — làm khéo tay dịp lễ: thẻ dịp đang diễn ra có nút mở trò thưởng thêm */}
+      {mini && (
+        <button className="mini" style={{ marginTop: 8 }} onClick={() => useMiniHost.getState().openMini(mini.id, day)}>
+          🎋 {mini.icon} {mini.name} — hàng lễ hôm nay thêm phần
+        </button>
       )}
     </div>
   );

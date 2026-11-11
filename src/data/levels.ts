@@ -42,19 +42,30 @@ export const LEVEL_TITLES: Record<number, string> = {
   200: '👑 Thánh tạp hóa',
 };
 
-/** Danh sách thứ mở khóa ở một cấp, để báo cho người chơi. */
+/** Một nhóm mở khóa ở một cấp, để gom bớt khi cấp mở quá nhiều (SPEC-TOI-UU T3-L5). */
+export interface UnlockGroup { label: string; icon: string; items: string[] }
+
+/** Các nhóm thứ mở khóa ở một cấp, giữ thứ tự ổn định. */
+export function unlockGroups(level: number): UnlockGroup[] {
+  const groups: UnlockGroup[] = [];
+  const push = (label: string, icon: string, items: string[]) => {
+    if (items.length) groups.push({ label, icon, items });
+  };
+  push('Món mới', '🛒', PRODUCTS.filter((p) => p.unlock === level).map((p) => p.name));
+  push('Đồ nội thất', '🪑', FURNITURE.filter((f) => f.unlock === level && level > 1).map((f) => f.name));
+  push('Mở rộng tiệm', '🏬', SHOP_TIERS.filter((t) => t.unlock === level && level > 1).map((t) => t.name));
+  push('Tính năng', '✨', (Object.keys(FEATURES) as (keyof typeof FEATURES)[])
+    .filter((k) => FEATURES[k] === level)
+    .map((k) => FEATURE_NAMES[k]));
+  push('Trang trại', '🚜', level === GARDEN_UNLOCK ? ['Trang trại đầu ngõ: trồng rau, nuôi gà lấy trứng'] : []);
+  push('Mở rộng trang trại', '🌱', LAND_TIERS.filter((t, i) => i > 0 && t.unlock === level).map((t) => t.name));
+  push('Thanh toán', '💳', PAYMENTS.filter((p) => p.unlock === level && level > 1).map((p) => `${p.icon} Thanh toán ${p.name}`));
+  push('Danh hiệu', '🏅', LEVEL_TITLES[level] ? [`Danh hiệu ${LEVEL_TITLES[level]}`] : []);
+  push('Quán nước', '🧋', level === QUAN_NUOC_UNLOCK ? ['Quán Nước Đầu Ngõ: xây quán nước ở đầu hẻm, nguyên liệu lấy từ kho'] : []);
+  return groups;
+}
+
+/** Danh sách thứ mở khóa ở một cấp, để báo cho người chơi (mảng phẳng, giữ thứ tự nhóm). */
 export function unlocksAt(level: number): string[] {
-  return [
-    ...PRODUCTS.filter((p) => p.unlock === level).map((p) => p.name),
-    ...FURNITURE.filter((f) => f.unlock === level && level > 1).map((f) => f.name),
-    ...SHOP_TIERS.filter((t) => t.unlock === level && level > 1).map((t) => `Mở rộng tiệm: ${t.name}`),
-    ...(Object.keys(FEATURES) as (keyof typeof FEATURES)[])
-      .filter((k) => FEATURES[k] === level)
-      .map((k) => FEATURE_NAMES[k]),
-    ...(level === GARDEN_UNLOCK ? ['🚜 Trang trại đầu ngõ: trồng rau, nuôi gà lấy trứng'] : []),
-    ...LAND_TIERS.filter((t, i) => i > 0 && t.unlock === level).map((t) => `Mở rộng trang trại: ${t.name}`),
-    ...PAYMENTS.filter((p) => p.unlock === level && level > 1).map((p) => `${p.icon} Thanh toán ${p.name}`),
-    ...(LEVEL_TITLES[level] ? [`Danh hiệu ${LEVEL_TITLES[level]}`] : []),
-    ...(level === QUAN_NUOC_UNLOCK ? ['🧋 Quán Nước Đầu Ngõ: xây quán nước ở đầu hẻm, nguyên liệu lấy từ kho'] : []),
-  ];
+  return unlockGroups(level).flatMap((g) => g.items);
 }

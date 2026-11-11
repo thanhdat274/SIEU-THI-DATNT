@@ -44,9 +44,9 @@ import { slowBands } from '../data/rhythm';
 import { productById } from '../data/products';
 
 describe('TIME_BANDS — bất biến cấu trúc (GĐ285)', () => {
-  it('6 khung phủ LIÊN TỤC 6h–22h (giờ bán hàng), không hở không chồng', () => {
+  it('6 khung phủ LIÊN TỤC 6h–22h30 (giờ bán hàng), không hở không chồng', () => {
     expect(TIME_BANDS[0].from).toBe(6 * 60);
-    expect(TIME_BANDS[TIME_BANDS.length - 1].to).toBe(22 * 60);
+    expect(TIME_BANDS[TIME_BANDS.length - 1].to).toBe(22 * 60 + 30); // GĐ1948: phủ tới giờ đóng 22:30;
     for (let i = 1; i < TIME_BANDS.length; i++) {
       expect(TIME_BANDS[i].from).toBe(TIME_BANDS[i - 1].to);
     }

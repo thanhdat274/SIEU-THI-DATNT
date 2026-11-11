@@ -68,7 +68,7 @@ describe('demandForecast — Nhu cầu quầy (GĐ78)', () => {
     const labels = f.bands.map((b) => b.label);
     expect(labels[0]).toBe('6h–9h');
     expect(labels[2]).toBe('11h–13h');
-    expect(labels[5]).toBe('20h–22h');
+    expect(labels[5]).toBe('20h–22h30');
   });
 
   it('peakBands trả đúng nhãn các đỉnh', () => {

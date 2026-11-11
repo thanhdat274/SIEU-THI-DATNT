@@ -35,7 +35,7 @@ describe('khoá cấu trúc nạp lười thế giới 3D (GĐ704/GĐ708)', () =
     expect(boot).not.toMatch(/from 'three'/);
     // vỏ chỉ là UI: mọi import tĩnh phải nằm trong danh sách cho phép (three/render chỉ vào qua main)
     for (const m of boot.matchAll(/from '([^']+)'/g)) {
-      expect(['react', 'react-dom/client', './core/save', './core/tabLock', './core/store', './net/firebase', './net/session', './ui/ConfirmDialog', './ui/Hud', './ui/LoginScreen', './ui/TabLockScreen'])
+      expect(['react', 'react-dom/client', './core/save', './core/tabLock', './core/store', './net/firebase', './net/session', './ui/ConfirmDialog', './ui/Hud', './ui/LoginScreen', './ui/PerfOverlay', './ui/TabLockScreen'])
         .toContain(m[1]);
     }
   });

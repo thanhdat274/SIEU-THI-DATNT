@@ -8,7 +8,7 @@ import { FestivalNowCard, FestivalSoonCard } from '../ui/panels/FestivalCards';
 const f = FESTIVALS[0];
 describe('GĐ937 — FestivalCards', () => {
   it('đang diễn ra: tiêu đề + hệ số khách', () => {
-    const h = renderToStaticMarkup(createElement(FestivalNowCard, { festival: f, level: 30, haveStock: () => false, fv: undefined as never, fvDelta: null }));
+    const h = renderToStaticMarkup(createElement(FestivalNowCard, { festival: f, level: 30, day: 1, haveStock: () => false, fv: undefined as never, fvDelta: null }));
     expect(h).toContain(`${f.name} đang diễn ra`); expect(h).toContain('khách');
   });
   it('sắp tới: ngày mai vs sau N ngày, hàng thiếu đánh dấu cảnh báo', () => {

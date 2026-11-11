@@ -121,31 +121,34 @@ export interface CookJob {
 export type Panel =
   | { type: 'order'; autofill?: boolean } // GĐ1512: autofill = mở từ nút 'Nhập đủ' trên toast → tự điền gợi ý
   | { type: 'shelf'; uid: number }
-  | { type: 'build' }
+  | { type: 'build'; focus?: string }
   | { type: 'arrange' }
   | { type: 'prices' }
-  | { type: 'staff' }
+  | { type: 'staff'; focus?: string }
   | { type: 'branch' }
   | { type: 'levels' }
   | { type: 'reviews' }
-  | { type: 'storage' }
+  | { type: 'storage'; focus?: string }
   | { type: 'planogram' }
   | { type: 'quests' }
   | { type: 'regulars' }
   | { type: 'skills' }
   | { type: 'combos' }
-  | { type: 'contracts' }
+  | { type: 'contracts'; focus?: string }
   | { type: 'costume' }
-  | { type: 'business' }
+  | { type: 'business'; focus?: string }
   | { type: 'calendar' }
   | { type: 'gifts' }
-  | { type: 'cook' }
-  | { type: 'morning' }
+  | { type: 'cook'; focus?: string }
+  | { type: 'morning'; focus?: string }
+  | { type: 'todo' } // GĐ2317: Sổ việc chung (SPEC-TOI-UU §T6-L3) — gộp mọi nguồn đã đăng ký qua registerTodo
   | { type: 'history' }
   | { type: 'social' }
   | { type: 'online' }
+  | { type: 'community' } // Hệ 6 (SPEC-CHIEU-RONG §6.5): bạn bè/chợ/thi đua/hội chợ online không đồng bộ
   | { type: 'licenses' }
-  | { type: 'garden' }
+  | { type: 'garden'; focus?: string }
+  | { type: 'brand'; focus?: string }
   | { type: 'analytics' }
   | { type: 'quannuoc' }
   | { type: 'discovery' }
@@ -162,6 +165,19 @@ export interface Placing {
   movingUid?: number;
   /** 'stash' = lấy từ kho đồ (đặt miễn phí); 'trial' = đặt dùng thử (chưa trả tiền). */
   source?: 'stash' | 'trial';
+}
+
+/** Một mục trong hộp thư cộng đồng Hệ 6 (server/social.ts InboxDoc). */
+export interface SocialInboxItem {
+  id: string;
+  kind: 'flower' | 'praise' | 'lot_sold' | 'lot_bought' | string;
+  from: string;
+  payload: { lotId?: string; productId?: string; qty?: number; unit?: number; money?: number } | null;
+  createdAt: number;
+}
+/** Một lô bán ở chợ liên hẻm (client — đúng khung server trả về). */
+export interface MarketLotClient {
+  id: string; seller: string; productId: string; qty: number; unit: number; price: number;
 }
 
 export interface GameState {
@@ -474,6 +490,19 @@ export interface GameState {
   openPanel: (panel: Panel) => void;
   closePanel: () => void;
 
+  // Hệ 6 — Cộng đồng online không đồng bộ (SPEC-CHIEU-RONG §6.5). Mutations có đụng kinh tế/trạng
+  // thái thì đặt ở đây để test được; đọc dữ liệu thì panel gọi thẳng src/net/socialApi.
+  /** Bật/tắt scope `public_card` (khoe danh thiếp). Bật → đẩy danh thiếp lên; tắt → server xoá. */
+  toggleCardPublic: (on: boolean) => Promise<void>;
+  /** Đẩy danh thiếp hiện tại lên server (giữ mã bạn bè). Gọi khi cấp/tên/tiến độ đổi bên Cuối ngày. */
+  pushCard: () => Promise<void>;
+  /** Nhận thư: áp thưởng lẵng hoa/lời khen, tiền lô bán, hàng lô mua — rồi đánh dấu đã nhận trên server. */
+  claimInbox: (items: SocialInboxItem[]) => void;
+  /** Đăng một lô bán lên chợ liên hẻm. */
+  postMarketLot: (input: { productId: string; qty: number; unit: number; suggestPrice: number }) => Promise<void>;
+  /** Mua một lô ở chợ liên hẻm: trừ tiền ngay, hàng về kho sáng mai (thư lot_bought). */
+  buyMarketLot: (lot: MarketLotClient) => Promise<void>;
+
   toggleShop: () => void;
   /** Nhập hàng vào kho (đại lý đầu ngõ, có ngay). */
   buy: (productId: string, qty: number) => boolean;
@@ -588,6 +617,81 @@ export interface GameState {
   inspection: InspectionRecord;
   buyLicense: (id: LicenseId) => void;
 
+  /** Quảng cáo (GĐ2219): đợt kéo khách đang hiệu lực; undefined = chưa có. */
+  ad?: { defId: string; until: number };
+  buyAd: (id: string) => void;
+
+  /** Hệ 3 — Biển định vị (SPEC §3.9): treo biển theo hướng (cấp ≥ 60) / gỡ biển. Co-op: đổi biển cần biểu quyết (L6). */
+  chooseStance: (id: 'binh_dan' | 'dac_san' | 'tien_loi') => void;
+  dropStance: () => void;
+
+  /** Hệ 8 — Biến cố dài (GĐ Hệ8-L3): làm một việc chuẩn bị trong đợt đang chạy (trừ tiền + vào preps). */
+  doCrisisPrep: (prepId: string) => void;
+
+  /** Hệ 8 — Biến cố dài: chọn một lựa chọn trong cảnh (ghi choices + đếm kind theo chiều hướng ấm). */
+  chooseCrisisScene: (dayIndex: number, option: number, warm: boolean) => void;
+
+  /** Hệ 8 — Biến cố dài (SPEC-CHIEU-RONG §8.3): bật/tắt "Năm yên ả" — tắt hẳn biến cố dài,
+   *  đổi lại không nhận huy hiệu vượt khó. Toggle chỉ luật lịch, mở đợt mới không còn. */
+  setCalmYears: (on: boolean) => void;
+
+  /** Hệ 7 — Trò khéo tay lễ (SPEC-CHIEU-RONG §7.7): ghi điểm xong một trò — thưởng 1 lần/ngày lễ,
+   *  điểm kẹp 0–100, cộng bonusQty vào mẻ kế tiếp / flair vào điểm trang trí. */
+  scoreFestivalMini: (id: string, score: number, mode: 'fast' | 'calm') => void;
+
+  /** Hệ 5 — Chuyến đi tỉnh (SPEC-CHIEU-RONG §5.10): bắt đầu chuyến (vắng mặt thật, đồng hồ vẫn chạy),
+   *  lập giỏ hàng mang về, và xử lý xe về (hàng vào kho) — gọi từ tick/endDay. GUARDED khoá 'trip'. */
+  /** `startTrip(routeId, by, cash, presetCart?)`: `by==='self'` tự đi (mặc cả trong chuyến); `by` là id nhân
+   *  viên courier thì SAI NGƯỜI ĐI THAY (§5.8) — phải kèm giỏ hàng lập sẵn `presetCart` (loại mặc cả theo người đó). */
+  startTrip: (routeId: string, by: 'self' | number, cash: number, presetCart?: Record<string, number>) => void;
+  tripSetCart: (items: Record<string, number>) => void;
+  /** Hệ 5 (L4) — trả giá mặc cả cho cả xe hàng (phần trăm giảm thêm 0..1). TẤT ĐỊNH theo seed. */
+  tripHaggle: (offer: number) => void;
+  /** Hệ 5 (L4) — bỏ qua mặc cả ("Thôi, giá đó được rồi"): mua giá niêm yết, không phạt. */
+  tripAcceptPrice: () => void;
+  /** Hệ 5 (L5) — chọn phương án cho chuyện dọc đường (nhịp 1/4): chậm giờ, mất tiền, ướt hàng, bán bớt, thân thiết. */
+  tripChoose: (evtId: string, index: number) => void;
+  /** Hệ 5 (L6) — mua/đổi xe chở hàng (ba gác/xe tải) vào `biz.hauler`. */
+  buyHauler: (id: string) => void;
+  /** Hệ 5 (L6) — mua thùng đá giữ lạnh vào `biz.coolBox` (hàng tươi về không mất hạn). */
+  buyCoolBox: () => void;
+  tripArrive: () => void;
+  /** Hệ 5 (L7) — trả nợ mối ruột tại nguồn (SPEC §5.7). */
+  tripRepayDebt: () => void;
+
+  /** Hệ 2 — Tình làng (GĐ Hệ2-L2, SPEC §2.4): lan thân thiết từ sự kiện lớn sang người có cạnh
+   *  với nguồn (trần ±3/ngày/người). Cổng cấp ≥ TIES_UNLOCK. */
+  applyRipple: (
+    sourceId: string,
+    delta: number,
+    opts?: { only?: 'ho_hang' | 'ban_be' | 'lang_gieng' | 'dong_nghe' | 'khac_khau'; weighted?: boolean; friendlyOnly?: boolean },
+  ) => void;
+
+  /** Hệ 2 — Việc nhà trong hẻm (GĐ Hệ2-L3, SPEC §2.5): nhận/từ chối/giao cỗ giỗ.
+   *  Cổng cấp ≥ LIFE_EVENT_UNLOCK; GUARDED 'lifeEvent'. */
+  acceptLifeEvent: (tier: 0 | 1 | 2) => void;
+  declineLifeEvent: () => void;
+  deliverLifeEvent: () => boolean;
+
+  /** Hệ 4 — Nhãn hàng riêng (SPEC §4.10): lập nhãn / thêm-bỏ dòng hàng. GUARDED 'brand'. */
+  foundBrand: (name: string) => void;
+  addBrandLine: (productId: string) => void;
+  dropBrandLine: (productId: string) => void;
+  /** Hệ 4 — Xưởng đóng gói (SPEC §4.5a): mua xưởng / thuê-cho nghỉ thợ. GUARDED 'brand'. */
+  buyBrandWorkshop: () => void;
+  hireBrandWorker: () => void;
+  fireBrandWorker: () => void;
+  /** Hệ 4 — Bỏ mối đại lý (SPEC §4.5c): ký hợp đồng giao hàng nhãn / cam kết trữ / giao kỳ. GUARDED 'brand'. */
+  acceptBrandDeal: (dealerId: string, productId: string) => void;
+  commitBrandDeal: (dealerId: string) => void;
+  releaseBrandDeal: (dealerId: string) => void;
+  deliverBrandDeal: (dealerId: string) => boolean;
+  /** Hệ 4 — Bỏ mối cho đối thủ (§4.5d): nhận lời chào mua hàng nhãn 95%, rival +1 sức mạnh. GUARDED 'brand'. */
+  acceptRivalSupply: () => void;
+  /** Hệ 4 — Nhượng quyền (§4.5e): mở/đóng điểm nhượng quyền. GUARDED 'brand'. */
+  openFranchise: (defId: string) => void;
+  closeFranchise: (defId: string) => void;
+
   /** Trang trại (trồng, bón phân, nuôi gà/vịt/ngỗng/bò/heo/dê/gà Đông Tảo, đơn quán xóm). */
   garden: GardenState;
   plantCrop: (plotIndex: number, cropId: string) => void;
@@ -615,6 +719,14 @@ export interface GameState {
   upgradeFarmBuilding: (id: FarmBuildingId) => void;
   /** Dọn cỏ dại cành rụng trong trại: nhặt gỗ và đá để nâng sao công trình. */
   cleanupFarm: () => void;
+  /** Hệ 1 — bắt đầu một mẻ phơi/muối/ủ lên giàn (đổi nguyên liệu thành mẻ chờ nắng/ngày). */
+  startPreserve: (defId: string) => void;
+  /** Hệ 1 — gỡ một mẻ đã đủ nắng xuống: thành phẩm vào kho (+XP theo ngày, trần 40). */
+  collectPreserve: (jobId: number) => void;
+  /** Hệ 1 — cất/mang giàn phơi ra trời: cất thì an toàn mưa bão nhưng không nhận nắng. */
+  setRackCovered: (on: boolean) => void;
+  /** Hệ 1 — mua Bạt kéo cho sân phơi (một lần): mưa to không ướt mẻ. */
+  buyRackTarp: () => void;
   /** Sổ phân tích 30 ngày theo món (sức khoẻ món, ABC, gợi ý). */
   analytics: AnalyticsState;
   /** Ghi món vừa bán vào 'Sổ tay Tiệm' và tự thưởng mốc thu thập khi vượt ngưỡng (GĐ36). */

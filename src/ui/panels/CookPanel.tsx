@@ -11,6 +11,8 @@ import { supplyOutletOf } from '../../data/supplyOutlet';
 import { splitLockedRecipes } from '../../data/cookList';
 import { cookSpeed, bartenderBoost } from '../../core/slices/orders';
 import { FESTIVALS, festivalOn } from '../../data/calendar';
+import { miniForFestival } from '../../data/festivalMini';
+import { useMiniHost } from '../minigames/miniHost';
 import { dishStarGoalOf, dishVessel, dishMaxLabel, maxedDishLine, STAR_BOOST_ITEM, STAR_BOOST_UNLOCK } from '../../data/dishStars';
 import { Footer, styles, Tabs } from './shared';
 
@@ -19,6 +21,7 @@ export function CookPanel() {
   const { level, storage, storageLots, furniture, cookJobs, servedCounts, startCook, closePanel, openPanel, setBuildMode } = useGame();
   // GĐ1118 — bản đồ hạn còn lại của hàng sắp hỏng (kho + kệ) để nhắc nấu ngay trên dòng công thức
   const expiringMap = new Map(expiringSoon(storage, storageLots, furniture.flatMap((f) => f.tiers)).map((l) => [l.id, l.life]));
+  useClock((s) => Math.floor(s.minutes)); // §T2-a: tiến độ mẻ nấu ghi tại chỗ, vẽ lại theo nhịp phút game
   const day = useGame((s) => s.day);
   const cookMastery = useGame((s) => s.cookMastery);
   // GĐ161: giờ hiện tại (vẽ lại 1 lần mỗi phút game như Hud) + tốc độ trạm thật
@@ -169,9 +172,18 @@ export function CookPanel() {
                     {locked ? (
                       <span style={{ fontSize: 12 }}>🔒 Cấp {r.unlock}</span>
                     ) : (
-                      <button style={styles.btn} disabled={!!reason} title={reason ?? 'Bắt đầu nấu'} onClick={() => startCook(r.id)}>
-                        {reason ?? '🍳 Nấu'}
-                      </button>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'stretch' }}>
+                        <button style={styles.btn} disabled={!!reason} title={reason ?? 'Bắt đầu nấu'} onClick={() => startCook(r.id)}>
+                          {reason ?? '🍳 Nấu'}
+                        </button>
+                        {/* Hệ 7 — Làm khéo tay: công thức lễ đang đúng dịp có trò thưởng thêm (Xếp giỏ quà…) */}
+                        {!outOfSeason && (() => {
+                          const m = r.festival ? miniForFestival(r.festival) : undefined;
+                          return m ? (
+                            <button className="mini" onClick={() => useMiniHost.getState().openMini(m.id, day)}>🎋 {m.name}</button>
+                          ) : null;
+                        })()}
+                      </div>
                     )}
                   </div>
                 );

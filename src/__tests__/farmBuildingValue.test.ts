@@ -72,12 +72,32 @@ describe('farmBuildingValue', () => {
     expect(line(mkG({ bu_nhin: 3 }, {}), 'bu_nhin')!.cost).toBe(0); // tối sao
   });
 
-  it('trả 4 công trình đủ thứ tự + thuần (hai lần gọi như nhau)', () => {
+  it('trả 7 công trình đủ thứ tự + thuần (hai lần gọi như nhau)', () => {
     const g = mkG({ bai_tha: 1 }, { chicken: { count: 1 } });
     const a = farmBuildingValue(g);
     const b = farmBuildingValue(g);
-    expect(a.map(x => x.id)).toEqual(['bu_nhin', 'tuoi_tu_dong', 'bai_tha', 'nha_luoi']);
+    expect(a.map(x => x.id)).toEqual(['bu_nhin', 'tuoi_tu_dong', 'bai_tha', 'nha_luoi', 'gian_phoi', 'vai_muoi', 'chum_u']);
     expect(a).toEqual(b);
-    expect(a.length).toBe(4);
+    expect(a.length).toBe(7);
+  });
+
+  it('sân phơi: kể đúng số nong theo sao (2/4/6), chưa xây thì kể giá mua + cấp mở', () => {
+    const mk = (b: Record<string, number>) => farmBuildingValue(mkG(b, {}));
+    expect(mk({}).find(x => x.id === 'gian_phoi')!.cost).toBe(5_000_000);
+    expect(mk({ gian_phoi: 1 }).find(x => x.id === 'gian_phoi')!.cost).toBe(3_500_000);
+    expect(mk({ gian_phoi: 1 }).find(x => x.id === 'gian_phoi')!.line).toContain('2 nong');
+    expect(mk({ gian_phoi: 3 }).find(x => x.id === 'gian_phoi')!.line).toContain('6 nong');
+
+    // Dãy vại muối (lát L5): giá mua 6tr, cấp mở 38, kể số vại theo sao.
+    expect(mk({}).find(x => x.id === 'vai_muoi')!.cost).toBe(6_000_000);
+    expect(mk({ vai_muoi: 1 }).find(x => x.id === 'vai_muoi')!.line).toContain('2 vại');
+    expect(mk({ vai_muoi: 3 }).find(x => x.id === 'vai_muoi')!.line).toContain('6 vại');
+
+    // Nhà chum ủ (lát L6): giá mua 12tr, cấp mở 46, kể số chum theo sao (1/2/4).
+    expect(mk({}).find(x => x.id === 'chum_u')!.cost).toBe(12_000_000);
+    expect(mk({ chum_u: 1 }).find(x => x.id === 'chum_u')!.line).toContain('1 chum');
+    expect(mk({ chum_u: 3 }).find(x => x.id === 'chum_u')!.line).toContain('4 chum');
+
+    expect(mk({ gian_phoi: 3 }).find(x => x.id === 'gian_phoi')!.cost).toBe(0); // tối sao
   });
 });

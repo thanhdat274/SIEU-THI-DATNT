@@ -14,6 +14,7 @@ import { isQuanMatchDay, quanDayNews, quanNuocDay } from '../../data/quanNuoc';
 import { isXoiCungDay, tiemXoiDay, tiemXoiSaved, tiemXoiDinePlan } from '../../data/tiemXoi';
 import { bizEndOfDay, checkAchievements, freshAchievements } from '../biz';
 import { type DayStats } from '../dayStats';
+import { collectReport, flushReports, startDay } from '../dayReport';
 import { PHONE_FRIEND_GAIN } from '../../data/phoneOrders';
 import { nextMarketIndex } from '../../data/market';
 import { hasSkill } from '../../data/titles';
@@ -31,12 +32,21 @@ import { VENUE_TREND_DAYS, type VenueDay } from '../../data/venueTrend';
 import { RISK_TREND_DAYS, emptyRiskToday } from '../../data/risk';
 import { type GameState, type ContractState, type DayRecord, type SetState, type GetState, DAY_START, HISTORY_DAYS, wagesDue, emptyStats, daySalesProfit } from '../gameTypes';
 import { putStock, spoilOvernight, takeStock, type Stock } from '../stock';
+import { tripLoadStock, routeStockResolve, routeStockSpend, cartBuyCostDiscounted } from '../../data/trip';
+import { addRel } from '../../data/supplierRel';
+import { routeById } from '../../data/routes';
 import { isCookStation } from '../../data/furniture';
 import type { CookingStation } from '../../data/recipes';
 import { COMPLAINTS_FOR_SURPRISE, isAlcohol, LICENSE_FINE, LICENSE_GRACE, licenseById, licenseStatus, missingLicenses, newInspection, RENEW_WARN_DAYS, requiredLicenses, SURPRISE_INSPECTION, SUSPEND_AFTER } from '../../data/licenses';
 import { staffDayEnd } from '../../data/staffTraits';
-import { BUZZ_DAYS, CRISIS_MUL, POST_CAP, SOCIAL_UNLOCK, socialDayEnd, type SocialPost } from '../../data/social';
-import { ANIMAL_ORDER, farmCritChance, farmhandChores, FARM_ORDER_UNLOCK, farmOrderCapacity, farmOrderNews, farmOrderProduce, gardenNight, makeFarmOrder, type AnimalKind } from '../../data/garden';
+import { BUZZ_DAYS, CRISIS_MUL, POST_CAP, socialDayEnd, type SocialPost } from '../../data/social';
+import { ANIMAL_ORDER, farmCritChance, farmhandChores, farmOrderCapacity, farmOrderNews, farmOrderProduce, gardenNight, makeFarmOrder, type AnimalKind } from '../../data/garden';
+import { preserveNight, farmhandPreserve, preserveDefById } from '../../data/preserve';
+import { brandDealNight, brandFranchiseNight, brandRivalOffer, brandRepDaily, brandWorkshopDay } from '../../data/brand';
+import { crisisNight } from '../../data/crisis';
+import { lifeEventFor, lifeEventById, gioLabel } from '../../data/lifeEvent';
+import { stanceActive, stanceFitByDirection, applyStanceDay, stanceTier, STANCE_META, hasStanceSeal, isStanceSealable, type StanceState } from '../../data/stance';
+import { buildStanceCtx } from '../../data/stanceData';
 import { logAnalyticsDay } from '../../data/analytics';
 import { appRating } from '../../data/online';
 import { onlineDayEnd } from './online';
@@ -44,6 +54,7 @@ import { onlineDayEvent, onlineEventLine } from '../../data/online';
 import { wageRelief } from '../../data/wageRelief';
 import { runBranch, branchNewDay } from './branch';
 import { simRng } from '../rand';
+import { hasFeature } from '../../data/features';
 
 /** Cuối ngày: chi nhánh chạy qua đêm, hàng hỏng, nợ, đơn, thanh tra, thị trường, lương, sang ngày mới. */
 
@@ -110,6 +121,9 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
   })() : s.garden;
   let farmhandPicked: { productId: string; qty: number }[] = [];
   let farmhandFeedUsed: { productId: string; bags: number }[] = [];
+  // Hệ 1 L4 — phụ trại thu hộ mẻ phơi chín (để dưới (endDay) cho vào kho + nhãn), + rackLog cho mai.
+  const preservePicked: { productId: string; qty: number; homegrown: boolean }[] = [];
+  let fhPreserveRack: { day: number; out: [number, number][] } | undefined;
   const farmhandNews: string[] = [];
   const fed: Partial<Record<AnimalKind, boolean>> = {};
   for (const kk of ANIMAL_ORDER) if (garden.pens[kk]?.fedDay === s.day) fed[kk] = true;
@@ -120,9 +134,30 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
     farmhandFeedUsed = chores.feedUsed;
     for (const kk of chores.fedKinds) fed[kk] = true;
     if (chores.news.length) farmhandNews.push(`🧑‍🌾 ${farmhand.name} lo trại hộ: ${chores.news.join(', ')}`);
+    // Hệ 1 L4 — phụ trại lo SÂN PHƠI hộ: thu mẻ chín + cất/mang giàn theo TRỜI MAI (chạy TRƯỚC
+    // preserveNight để mẻ chín đã rời giàn; preserveNight còn lại nhận nắng của HÔM NAY).
+    if (garden.preserveJobs.some((j) => preserveDefById(j.defId).kind === 'phoi')) {
+      const fhP = farmhandPreserve({ jobs: garden.preserveJobs, day: s.day, seed: s.weatherSeed, weather: s.weather });
+      garden = { ...garden, preserveJobs: fhP.jobs, rackLog: fhP.rackLog };
+      fhPreserveRack = fhP.rackLog;
+      preservePicked.push(...fhP.picked);
+      if (fhP.news.length) farmhandNews.push(`🧑‍🌾 ${farmhand.name} lo sân phơi hộ: ${fhP.news.join(', ')}`);
+    }
   }
   const gardenNightResult = gardenNight(garden, { day: s.day, weather: s.weather, fed });
   garden = gardenNightResult.garden;
+  // Hệ 1 (§1.5) — mẻ phơi qua đêm nhận nắng theo thời tiết hôm nay + trạng thái giàn (TẤT ĐỊNH từ
+  // rainSpell trên weatherSeed+day — KHÔNG gọi simRng, golden cấp 30 vẫn nguyên). Giàn để ngoài là
+  // mặc định mỗi ngày; game không có đồng hồ nên "cất kịp mưa + 0,4" là mốc lát L3 (Sổ đầu ngày).
+  const phoiOut: [number, number][] = garden.rackLog?.day === s.day ? garden.rackLog.out : [[0, 1440]];
+  const phoiNight = preserveNight(garden.preserveJobs, phoiOut, {
+    day: s.day, weather: s.weather, seed: s.weatherSeed,
+    tarp: !!garden.rackTarp,
+    stormSafe: (garden.buildings?.nha_luoi ?? 0) >= 3, // SPEC §1.8: nhà lưới 3★ che sân phơi khỏi bão
+  });
+  // Hệ 1 L4 — phụ trại đã cất/mang giàn cho NGÀY MAI (và thu mẻ chín) từ khối farmhand phía trên:
+  // giữ rackLog của nó (nếu có) thay vì reset mặc định, để mai mưa giàn đã nằm trong nhà.
+  garden = { ...garden, preserveJobs: phoiNight.jobs, rackLog: fhPreserveRack ?? { day: s.day + 1, out: [[0, 1440]] } };
   // Sổ phân tích 30 ngày: bán/hỏng/lỡ bán theo từng món + cờ combo & giờ vàng của hôm nay
   const lostPerItem: Record<string, number> = {};
   for (const [key, n] of Object.entries(s.stats.missLog ?? {})) {
@@ -190,13 +225,22 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
     }
     garden = { ...garden, homegrown };
   }
+  // Hệ 1 L4 — mẻ phơi phụ trại thu hộ: vào kho; nhãn nhà trồng chỉ theo mẻ toàn nhà trồng (allHomegrown).
+  if (preservePicked.length) {
+    const homegrown = { ...garden.homegrown };
+    for (const p of preservePicked) {
+      putStock(k, p.productId, p.qty);
+      if (p.homegrown) homegrown[p.productId] = (homegrown[p.productId] ?? 0) + p.qty;
+    }
+    garden = { ...garden, homegrown };
+  }
   // Đơn quán xóm đặt nông sản: quá hạn thì quán xin lỗi bỏ, trống thì có đơn mới chờ
-  const gardenNews = [...gardenNightResult.news, ...farmhandNews];
+  const gardenNews = [...gardenNightResult.news, ...farmhandNews, ...phoiNight.news];
   if (garden.farmOrder && s.day >= garden.farmOrder.dueDay) {
     gardenNews.push(`📦 ${garden.farmOrder.from} huỷ đơn nông sản quá hạn — đơn khác sẽ ghé sau`);
     garden = { ...garden, farmOrder: null };
   }
-  if (!garden.farmOrder && s.level >= FARM_ORDER_UNLOCK) {
+  if (!garden.farmOrder && hasFeature(s, 'farmOrder')) {
     const order = makeFarmOrder(s.day + 1, undefined, farmOrderProduce(garden), farmOrderCapacity(garden));
     garden = { ...garden, farmOrder: order };
     gardenNews.push(farmOrderNews(order));
@@ -236,6 +280,8 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
     if (order.accepted && def) {
       s.addReview(1, 'stock');
       if (def.regular) s.adjustFriendship(def.regular, -STORY_ORDER_FRIEND_LOSS);
+      // GĐ Hệ2-L2: tiếng dữ lan theo cạnh — người có cạnh với khách lỡ hẹn hụt thân theo trọng số.
+      if (def.regular) s.applyRipple(def.regular, -STORY_ORDER_FRIEND_LOSS);
       say(`😠 Lỡ hẹn đơn "${def.title}" của ${def.from}${def.regular ? ` · -${STORY_ORDER_FRIEND_LOSS} thân thiết` : ''}`);
     }
     order = null;
@@ -354,11 +400,11 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
   news.push(...crew.news);
   const shrinkItems = Object.values(crew.goodsTaken).reduce((n, q) => n + q, 0);
   // Mạng xã hội: lời khen chê nổi bật hôm nay lên mạng, có thể lan truyền
-  const socialDay = s.level >= SOCIAL_UNLOCK ? socialDayEnd(s.social, get().reviews, s.day) : { social: s.social, news: [] };
+  const socialDay = hasFeature(s, 'social') ? socialDayEnd(s.social, get().reviews, s.day) : { social: s.social, news: [] };
   news.push(...socialDay.news);
   // Bắt được nhân viên ăn bớt hàng: tin xấu lan trên mạng thành khủng hoảng nhỏ (mỗi lần một nửa cơ hội)
   let socialNext = socialDay.social;
-  if (crew.caught.length && !socialNext.buzz && s.level >= SOCIAL_UNLOCK && simRng()() < 0.5) {
+  if (crew.caught.length && !socialNext.buzz && hasFeature(s, 'social') && simRng()() < 0.5) {
     const id = (socialNext.posts.at(-1)?.id ?? 0) + 1;
     const post: SocialPost = {
       id, day: s.day, author: 'Khách qua đường', stars: 1,
@@ -383,7 +429,18 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
     market[p.id] = nextMarketIndex(market[p.id] ?? 1, (k.storage[p.id] ?? 0) + onShelf, 0, demand[p.id] ?? 0);
   }
   // Trả lương và tiền nhà cuối ngày (kèm phí thợ bảo trì sáng nay nếu có); chi nhánh mua đứt nên không cộng tiền thuê
-  const rent = rentOf(s.shopTier);
+  const rentFull = rentOf(s.shopTier);
+  // Hệ8-L8 (SPEC-CHIEU-RONG §8.3): trong biến cố dài, tiệm đang âm tiền thì chủ nhà miễn tiền nhà 3 ngày
+  // (mỗi đợt một lần — `rentGrace` undefined nghĩa là đợt này còn quyền). Chỉ áp khi thật sự không đủ trả nhà.
+  const crisisAct = s.biz.crisis;
+  let rent = rentFull;
+  let rentGraceN: number | undefined; // giá trị mới ghi lại vào crisis (undefined = không đổi)
+  if (crisisAct && s.money < rentFull) {
+    const g = crisisAct.rentGrace;
+    if (g === undefined) { rent = 0; rentGraceN = 3; } // lần đầu đợt này: tặng khung 3 ngày
+    else if (g > 0) { rent = 0; rentGraceN = g - 1; } // tiếp tục hưởng ngày còn lại
+  }
+  if (rent === 0 && rentFull > 0) say(`🏠 Chủ nhà miễn tiền nhà ${formatMoney(rentFull)} hôm nay — hẻm gặp biến cố dài, thông cảm 3 ngày`);
   const relief = wageRelief(s.money - rent, wagesDue(s), s.staff); // GĐ1525
   const wages = wagesDue(s) - relief + branchWages;
   if (relief) say(`🤝 Két không đủ trả lương — người làm lâu nhất thông cảm bỏ qua ${formatMoney(relief)} hôm nay`);
@@ -410,12 +467,76 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
   const staffIdleNote = staffIdleAct ? { staffIdle: staffIdleAct } : {};
   const biz = bizEndOfDay(s, stats, (br?.revenueToday ?? 0) + quanRevenue);
   if (biz.news.length) say(biz.news.join(' · '));
+  // GĐ Hệ8-L3 (SPEC-CHIEU-RONG §8) — Biến cố dài: đêm nay mở/đóng đợt biến cố cho ngày mai.
+  // TẤT ĐỊNH từ lịch hash trên weatherSeed (KHÔNG simRng — R1), cấp mở ≥ 36 nên golden L30 vẫn nguyên;
+  // tắt bằng biz.calmYears (Năm yên ả). Chỉ chạm biz.*crisis, không đụng phần khác.
+  const crisisN = crisisNight(s.weatherSeed, s.day, s.level, biz.biz);
+  if (crisisN.news.length) say(crisisN.news.join(' · '));
+  // Hệ8-L8 — miễn tiền nhà ở trên đã tiêu một ngày trong khung 3 ngày → ghi lại vào crisis state.
+  const crisisNext = crisisN.crisis && rentGraceN !== undefined ? { ...crisisN.crisis, rentGrace: rentGraceN } : crisisN.crisis;
+  biz.biz = {
+    ...biz.biz,
+    crisis: crisisNext, crisesSeen: crisisN.crisesSeen, crisisBadges: crisisN.crisisBadges, roadBoon: crisisN.roadBoon, lastCrisis: crisisN.lastCrisis,
+  };
+  // GĐ Hệ2-L3 (SPEC-CHIEU-SAU §2.5) — VIỆC NHÀ TRONG HẺM: mời ĐÁM GIỖ hằng năm (giỗ lặp, R4,
+  // không lưu — ngày băm từ id cùng lịch nên hai máy hẻm luôn khớp). Cổng cấp ≥ LIFE_EVENT_UNLOCK
+  // (golden L30 an toàn); một việc một lúc (biz.lifeEvent), tối đa 1 giỗ/năm (R7).
+  const curLife = biz.biz.lifeEvent;
+  if (curLife && curLife.accepted && curLife.eventDay <= s.day) {
+    // Đã nhận lời mà hết ngày cỗ chưa giao → lỡ hẹn: chủ −, cụm họ hàng −, một review 1★.
+    const ldef = lifeEventById(curLife.defId);
+    if (ldef) {
+      const loss = ldef.friendship[curLife.tier];
+      s.addReview(1, 'stock');
+      s.adjustFriendship(ldef.host, -loss);
+      s.applyRipple(ldef.host, -loss, { friendlyOnly: true });
+      say(`😠 Lỡ hẹn đám giỗ nhà ${regularById(ldef.host)?.name ?? ldef.host}: -${loss} thân thiết`);
+    }
+    biz.biz = { ...biz.biz, lifeEvent: undefined };
+  } else if (!curLife || curLife.eventDay < s.day) {
+    const offer = lifeEventFor({ day: s.day, seed: s.weatherSeed, level: s.level, regulars: s.regulars, done: biz.biz.lifeEventsDone });
+    if (offer) {
+      const ldef = lifeEventById(offer.defId);
+      biz.biz = { ...biz.biz, lifeEvent: { defId: offer.defId, eventDay: offer.eventDay, tier: 0, accepted: false } };
+      if (ldef) say(`🏮 Giỗ nhà ${regularById(ldef.host)?.name ?? ldef.host} (${gioLabel(ldef)}) nhờ lo cỗ — xem Sổ đầu ngày`);
+    }
+  }
   // Kết quả quán nước hôm nay ghi vào biz để UI hiển thị (xem lại "hôm qua bán được bao nhiêu ly")
   if (quanNuocLast) biz.biz = { ...biz.biz, quanNuocLast };
   if (tiemXoiLast) {
     // GĐ489: cộng dồn suất ăn tại chỗ (thành tựu "Quán xôi đông khách")
     const tx = biz.biz.tiemXoi;
     biz.biz = { ...biz.biz, tiemXoiLast, tiemXoi: { ...tx, dineTotal: (tx.dineTotal ?? 0) + (tiemXoiLast.dine ?? 0) } };
+  }
+  // Hệ 3 (SPEC-CHIEU-SAU §3.5) — CUỐI NGÀY cập nhật biển hiệu: hôm nay khớp hướng đang treo không.
+  // Đo ĐÚNG hướng treo (stanceFitByDirection). Cổng cấp ≥ 60 (R1) + stanceActive (không phải đang làm
+  // lại biển) → tiệm không treo biển / golden L30 hoàn toàn không chạm.
+  const stStance0 = biz.biz.stance;
+  const stStance2 = biz.biz.stance2;
+  if (hasFeature(s, 'stance')) {
+    // Cập nhật TỪNG biển đang hiệu lực (biển chính + biển phụ Hệ3-L8 khi đủ 3 ấn). Đo đúng hướng
+    // đang treo (stanceFitByDirection); đang làm lại biển (switchUntil) → stanceActive false, không đổi.
+    let b = biz.biz;
+    const tickSign = (sig: { st: StanceState | undefined; key: 'stance' | 'stance2' }) => {
+      if (!sig.st || !stanceActive(sig.st, s.day)) return;
+      const fitNow = stanceFitByDirection(buildStanceCtx(s))[sig.st.id];
+      const nextSt = applyStanceDay(sig.st, fitNow, s.day);
+      const nm = STANCE_META[sig.st.id].name;
+      if (fitNow) say(`🪧 Hôm nay khớp hướng ${nm} (bậc ${stanceTier(nextSt.fitDays)})`);
+      else if ((sig.st.missStreak ?? 0) + 1 >= 3) say(`🪧 ${nm} lệch 3 ngày liền — tụt một bậc`);
+      else say(`🪧 Hôm nay lệch hướng ${nm} — coi lại thẻ Định vị`);
+      b = { ...b, [sig.key]: nextSt };
+      // Hệ 3 L8 (SPEC §3.7) — đạt bậc 5 một hướng → nhận ẤN định vị, lưu prestige.seals (giữ qua NG+).
+      // Ấn chỉ có ý nghĩa ở vòng NG+ chơi đơn; lợi nhỏ và gated chỉ bởi có ấn → golden/hẻm không đổi.
+      if (isStanceSealable(nextSt) && !hasStanceSeal(b, sig.st.id)) {
+        const seals = [...(b.prestige.seals ?? []), sig.st.id];
+        b = { ...b, prestige: { ...b.prestige, seals } };
+        say(`🏅 Đạt bậc 5 hướng ${nm} — nhận Ấn ${nm}, giữ qua các lần tái sinh`);
+      }
+    };
+    tickSign({ st: stStance0, key: 'stance' });
+    tickSign({ st: stStance2, key: 'stance2' });
+    biz.biz = b;
   }
   const todayReviews = s.reviews.filter((r) => r.day === s.day);
   const record: DayRecord = {
@@ -452,10 +573,84 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
   if (wokeLate) say('😴 Ngủ muộn vì ca đêm: hôm nay dậy trễ, bỏ lỡ buổi sáng đông khách!');
   // GĐ1833 (review đợt 2 R3 / đợt 3 R3): két âm sau khi trả nhà/lương/vận hành — nói thẳng con số
   // thiếu trong tổng kết (và kê dòng riêng) để người chơi biết mình đang nợ chứ không mất một cách vô cớ.
-  const moneyAfter = (extra.money ?? s.money) - wages - rent - maintCost - opCost + inspectPay + biz.money + onlineDay.money + crew.tips - crew.cashLoss + quanRevenue - quanWages;
+  let moneyAfter = (extra.money ?? s.money) - wages - rent - maintCost - opCost + inspectPay + biz.money + onlineDay.money + crew.tips - crew.cashLoss + quanRevenue - quanWages;
   if (moneyAfter < 0) {
     stats.shortfall = -moneyAfter; // stats là DayStats — panel/lastSummary giữ cùng tham chiếu
     say(`⚠️ Két thiếu ${formatMoney(-moneyAfter)} sau khi trả nhà/lương/vận hành — bán bù sớm kẻo lún sâu`);
+  }
+  // Hệ 4 (SPEC §4.5a) — XƯỞNG ĐÓNG GÓI chạy QUA ĐÊM: lấy hàng chưa nhãn trong kho `k`, đóng thành hàng
+  // nhãn (brand.stock + lastPackDay), trừ phí bao bì + lương thợ. Cổng cấp ≥ 100 (R1 golden giữ nguyên);
+  // không nhãn/xưởng/thợ → không chạy, trung tính.
+  {
+    const brandB0 = biz.biz.brand;
+    if (brandB0 && brandB0.workshop?.open && brandB0.workshop.staff > 0) {
+      const wk = brandWorkshopDay(brandB0, k.storage, garden.homegrown, s.day);
+      biz.biz = { ...biz.biz, brand: wk.brand };
+      k.storage = wk.storage;
+      garden = { ...garden, homegrown: wk.homegrown };
+      moneyAfter -= wk.fee + wk.wage;
+      for (const n of wk.news) say(n);
+    }
+    // Hệ 4 (SPEC §4.6) — mỗi ngày: nhãn nguội (không đóng gói 14 ngày) −1, review 4–5★ có món nhãn +0.2
+    // (nguồn đại lý/nhượng quyền sẽ nối ở lát sau khi các hệ đó xong). Nhãn chỉ tồn tại từ cấp 100
+    // → golden L30 giữ nguyên (R1).
+    const brandB1 = biz.biz.brand;
+    if (brandB1) {
+      const reviewProducts = s.reviews.filter((r) => r.day === s.day && r.stars >= 4).map((r) => r.productId).filter(Boolean) as string[];
+      const rd = brandRepDaily(brandB1, s.day, reviewProducts);
+      biz.biz = { ...biz.biz, brand: rd.brand };
+      for (const n of rd.news) say(n);
+      // Đại lý: kỳ đi qua hôm nay mà chưa giao → bỏ kỳ (−8, đếm kỳ hỏng, 3 lần cắt hợp đồng).
+      const dd = brandDealNight(rd.brand, s.day);
+      biz.biz = { ...biz.biz, brand: dd.brand };
+      for (const n of dd.news) say(n);
+      // Rival (§4.5d): ghé hỏi mua hàng nhãn định kỳ (tất định theo ngày) — lời chào hiện ở tab Bỏ mối.
+      const rivalOffer = brandRivalOffer(dd.brand, biz.biz.rival, s.day);
+      if (rivalOffer) biz.biz = { ...biz.biz, brand: { ...dd.brand, rivalOffer } };
+      else if (dd.brand.rivalSold !== undefined || dd.brand.rivalOffer) {
+        // hết hạn chào → xoá lời chào đã cũ (giữ rivalSold)
+        const nb = { ...dd.brand, rivalOffer: undefined };
+        biz.biz = { ...biz.biz, brand: nb };
+      }
+      // Nhượng quyền (§4.5e): mỗi đêm +0,2 uy tín/điểm khoẻ + phí nhượng quyền; tuần nhập hàng đủ/thiếu.
+      const fn = brandFranchiseNight(biz.biz.brand ?? dd.brand, s.day);
+      biz.biz = { ...biz.biz, brand: fn.brand };
+      moneyAfter += fn.income;
+      for (const n of fn.news) say(n);
+    }
+  }
+  // SPEC-TOI-UU §T1 (L1): gom bản ghi ẩn danh ngày vừa chốt — lưu CỤC BỘ, không gửi đi đâu.
+  collectReport(s, stats);
+  // SPEC-TOI-UU §T1 (L3): nếu đã đồng ý telemetry, gửi lô báo cáo chưa gửi đi (không chặn qua đêm).
+  void flushReports();
+  // Hệ 5-L2 (SPEC-CHIEU-RONG §5.10) — ngủ TRƯỚC khi xe đi tỉnh về: hàng vẫn về nhập kho đêm nay,
+  // chuyến kết thúc, chủ về nhà. Bổ sung vào accumulator `k` (chảy vào set cuối) nên không đổi golden
+  // (biz.trip trống ở sim — sim không bao giờ gọi startTrip).
+  if (biz.biz.trip) {
+    const trip0 = biz.biz.trip;
+    const wasSelf = trip0.by === 'self';
+    const tl = tripLoadStock(trip0, k, !!biz.biz.coolBox);
+    k.storage = tl.storage;
+    k.storageLots = tl.storageLots;
+    // Hệ 5-L3 — hàng đã lấy khỏi nguồn: trừ lượng tuần (R7). Bổ sung vào accumulator biz.biz.
+    const route = routeById(trip0.routeId);
+    const stocks = biz.biz.routeStock ?? {};
+    // Hệ 5-L4 — trả tiền mua hàng theo giá tuyến (trừ giảm thêm mặc cả) + ghi doanh mua mối ruột tại nguồn.
+    const goodsCost = route ? cartBuyCostDiscounted(trip0, route) : 0;
+    const spent = wasSelf ? Math.min(goodsCost, Math.max(0, moneyAfter)) : 0;
+    const rel = biz.biz.supplierRel ?? {};
+    const relKey = `route:${route?.id ?? ''}`;
+    if (wasSelf && route) biz.biz = { ...biz.biz, supplierRel: { ...rel, [relKey]: addRel(rel[relKey], goodsCost) } };
+    moneyAfter -= spent;
+    biz.biz = route
+      ? {
+          ...biz.biz,
+          routeStock: { ...stocks, [route.id]: routeStockSpend(routeStockResolve(stocks, route, s.day), route, trip0.cart) },
+          trip: undefined,
+        }
+      : { ...biz.biz, trip: undefined };
+    if (wasSelf) set({ location: 'Nhà của bạn' });
+    say(`🚚 Xe đi tỉnh về muộn trong đêm — hàng đã vào kho, trả ${formatMoney(spent)}. Chuyến kết thúc.`);
   }
   set({
     candidates: generateCandidates(s.level, nextId),
@@ -477,6 +672,11 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
     biz: biz.biz,
     branch: nextBranch ? { ...nextBranch.branch, revenueToday: 0, customersToday: 0, lostToday: 0, missedToday: 0, simAt: wokeLate ? LATE_WAKE_AT : DAY_START, lastTrip: nextBranch.branch.lastTrip - 1440 } : null,
   });
+  // SPEC-TOI-UU §T1 (L1): bắt đầu tích luỹ cho ngày game mới vừa set.
+  startDay(get().day);
+  // Hệ 6 (SPEC-CHIEU-RONG §6.5): người đã bật `public_card` thì Cuối ngày tự đẩy danh thiếp lên server.
+  // CHỈ khi bật scope (người thật đăng nhập) → simGolden/khách không bao giờ đi tới đây: not a byte kinh tế.
+  if (get().biz.social2?.cardPublic) void get().pushCard();
   // GĐ169 — thưởng chuỗi tuần/tháng đổi XP: cộng sau khi state ngày mới đã set (đi qua addXp để
   // lên cấp/mở khóa đúng một luồng; XP Chuỗi là thành phần kinh tế NHẸ Leader duyệt theo audit).
   // GĐ569: tin sau ngủ (lên cấp, thành tựu, danh hiệu, thay ô) cũng gom vào cùng toast — đứng ngay sau thời tiết.

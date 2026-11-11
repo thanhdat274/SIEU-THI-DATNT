@@ -10,7 +10,7 @@ export type FurnitureType =
   | 'kho_dao' | 'ke_gia_vi' | 'ke_chen' | 'thung_rac' | 'tham_chan' | 'den_long' | 'tranh_dong_ho' | 'bon_rua'
   | 'bang_hieu_bac' | 'bang_hieu_trung' | 'bang_hieu_nam' | 'bang_hieu_tay_nguyen'
   | 'binh_bat_trang' | 'trong_dong' | 'chua_mot_cot'
-  | 'mam_ngu_qua' | 'den_ong_sao'
+  | 'mam_ngu_qua' | 'den_ong_sao' | 'cong_chao'
   | CookingStation;
 
 /** Trạm nấu: id trùng tên trạm trong recipes.ts; đặt trong tiệm mới nấu được món của trạm đó. */
@@ -117,7 +117,7 @@ export const FURNITURE: FurnitureDef[] = [
     categories: [], desc: 'Trạm nấu: món chiên, xào, áp chảo (xem Sổ nấu 🍳)',
   },
   {
-    type: 'rice_station', name: 'Quầy xôi', price: 360000, unlock: 36, size: [1.2, 0.8], tiers: 0, slots: 0, capacity: 0,
+    type: 'rice_station', name: 'Quầy xôi', price: 360000, unlock: 40, size: [1.2, 0.8], tiers: 0, slots: 0, capacity: 0,
     categories: [], desc: 'Trạm nấu: xôi các loại, suất xôi đôi (xem Sổ nấu 🍳)',
   },
   {
@@ -132,19 +132,19 @@ export const FURNITURE: FurnitureDef[] = [
   // GĐ1490 — KHU ĂN TẠI CHỢ: khách mua món nấu tươi có thể ngồi lại ăn (đối chiếu khu dine-in)
   // ──────────────────────────────────────────────
   {
-    type: 'dining_table', name: 'Bàn ăn', price: 120000, unlock: 30, size: [1.2, 0.7], tiers: 0, slots: 0, capacity: 0,
+    type: 'dining_table', name: 'Bàn ăn', price: 120000, unlock: 33, size: [1.2, 0.7], tiers: 0, slots: 0, capacity: 0, // SPEC-TOI-UU T3-L4: Khu ăn 30→33
     categories: [], seatSlots: 4,
     desc: 'Khu ăn tại chỗ: khách mua món nấu tươi ngồi lại ăn ở đây (tối đa 4 ghế kề bàn)',
   },
   {
-    type: 'chair', name: 'Ghế ăn', price: 40000, unlock: 30, size: [0.5, 0.5], tiers: 0, slots: 0, capacity: 0,
+    type: 'chair', name: 'Ghế ăn', price: 40000, unlock: 33, size: [0.5, 0.5], tiers: 0, slots: 0, capacity: 0,
     categories: [], desc: 'Đặt sát bàn ăn (trong tầm 1 ô kề) mới tính là một chỗ ngồi',
   },
   // ──────────────────────────────────────────────
   // GĐ1493 — MÁY TỰ PHỤC VỤ: khách ghé chơi/thử rồi trả phí mỗi lượt (không cần nhân viên)
   // ──────────────────────────────────────────────
   {
-    type: 'vending_drink', name: 'Máy bán nước tự động', price: 120000, unlock: 30, size: [0.8, 0.7], tiers: 0, slots: 0, capacity: 0,
+    type: 'vending_drink', name: 'Máy bán nước tự động', price: 120000, unlock: 31, size: [0.8, 0.7], tiers: 0, slots: 0, capacity: 0, // SPEC-TOI-UU T3-L4: 30→31
     categories: [], desc: 'Khách ghé lấy nước trả phí 1.200đ/lượt — giá máy tương đương ~100 lượt (đi cùng khu ăn uống)',
   },
   {
@@ -168,14 +168,14 @@ export const FURNITURE: FurnitureDef[] = [
     categories: [], desc: 'Khách lên cân xem kết quả trả phí 1.000đ/lượt — đặc trưng tiệm tạp hóa Việt',
   },
   {
-    type: 'claw_machine', name: 'Máy gắp thú', price: 180000, unlock: 30, size: [0.8, 0.7], tiers: 0, slots: 0, capacity: 0,
+    type: 'claw_machine', name: 'Máy gắp thú', price: 180000, unlock: 35, size: [0.8, 0.7], tiers: 0, slots: 0, capacity: 0, // SPEC-TOI-UU T3-L4: 30→35
     categories: [], desc: 'Khách gắp thú bông trả phí 1.800đ/lượt, nhỏ con nấn ná không chịu đi (đi cùng khu ăn uống)',
   },
   // ──────────────────────────────────────────────
   // GĐ1494 — NHÀ VỆ SINH: tiện ích khu ăn tại chỗ, hoàn vốn chậm (~500 lượt); khách ăn xong cần
   // ──────────────────────────────────────────────
   {
-    type: 'toilet_squat', name: 'Nhà vệ sinh ngồi xổm', price: 250000, unlock: 30, size: [0.8, 0.8], tiers: 0, slots: 0, capacity: 0,
+    type: 'toilet_squat', name: 'Nhà vệ sinh ngồi xổm', price: 250000, unlock: 33, size: [0.8, 0.8], tiers: 0, slots: 0, capacity: 0,
     categories: [], desc: 'Khách ăn xong ghé trả phí 500đ/lượt; thiếu bồn lúc siêu thị còn nhỏ thì khách chịu thôi',
   },
   {
@@ -269,6 +269,12 @@ export const FURNITURE: FurnitureDef[] = [
   {
     type: 'den_ong_sao', name: 'Đèn ông sao Trung thu', price: 500000, unlock: 32, size: [0.5, 0.5], tiers: 0, slots: 0, capacity: 0,
     categories: [], decor: 8, festival: 'trung_thu', desc: 'Chỉ bán dịp Tết Trung thu — đèn ông sao năm cánh treo cột (+8 🩷)',
+  },
+  {
+    // GĐ Hệ2-L7 — món thưởng mốc Tình làng 100% (SPEC §2.8). unlock 100 nên KHÔNG mua được trong tiệm;
+    // chỉ nhận qua `furnStash` (Kho đồ → đặt trong tiệm). Đèn lồng treo hai đầu cột, cây nêu giữa.
+    type: 'cong_chao', name: 'Cổng chào hẻm văn hoá', price: 0, unlock: 100, size: [2.4, 0.5], tiers: 0, slots: 0, capacity: 0,
+    categories: [], decor: 20, desc: 'Phần thưởng "Tình làng 100%" — cổng chào đỏ rực treo đèn lồng, cả hẻm như mái nhà chung (+20 🩷). Không bán, chỉ tặng qua sổ sưu tập.',
   },
 ];
 

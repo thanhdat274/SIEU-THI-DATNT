@@ -86,3 +86,21 @@ describe('GĐ139 — prestigePreview (dự phóng tái sinh thuần đọc)', ()
     expect(r.analyticsDays).toBe(30);
   });
 });
+
+describe('Hệ4-L9 — prestigePreview: nhãn riêng bỏ lại khi tái sinh', () => {
+  it('nhãn đang có → lostBrand hiện tên + uy tín cao nhất', () => {
+    const r = prestigePreview(base({ brand: { name: 'Nhà Năm', maxRep: 82 } }));
+    expect(r.lostBrand).toEqual({ name: 'Nhà Năm', maxRep: 82 });
+  });
+  it('không nhãn đang có nhưng có brandLegacy vòng trước → dùng brandLegacy', () => {
+    const r = prestigePreview(base({ brandLegacy: { name: 'Nhà Cũ', maxRep: 60 } }));
+    expect(r.lostBrand).toEqual({ name: 'Nhà Cũ', maxRep: 60 });
+  });
+  it('không nhãn gì → lostBrand null', () => {
+    expect(prestigePreview(base()).lostBrand).toBeNull();
+  });
+  it('nhãn hiện tại được ưu tiên hơn brandLegacy', () => {
+    const r = prestigePreview(base({ brand: { name: 'Mới', maxRep: 50 }, brandLegacy: { name: 'Cũ', maxRep: 90 } }));
+    expect(r.lostBrand).toEqual({ name: 'Mới', maxRep: 50 });
+  });
+});

@@ -18,6 +18,7 @@ import { marketDayAction, type marketClearValue } from '../../data/chophien';
 import { fairMerchantAction } from '../../data/fairmerchant';
 import { seasonEvent, seasonObjective, seasonEventName } from '../../data/seasonEvent';
 import { planDay, type DayAction } from '../../data/dayPlan';
+import type { TodoItem } from '../../data/todo';
 import { monthOf } from '../../data/calendar';
 import type { branchMorningPlan } from '../../data/branchMorning';
 import type { quanNuocHealth } from '../../data/quanNuocInsights';
@@ -33,6 +34,8 @@ export interface MorningActionsCtx {
   chophien: ReturnType<typeof marketClearValue>; lastSummary: S['lastSummary'];
   /** GĐ1572 — tuỳ chọn: nội thất để nhắc máy đánh giày ngày mưa. */
   furniture?: S['furniture'];
+  /** SPEC-TOI-UU §T6 — việc các hệ tự đăng ký vào Sổ việc chung (`morningTodos(todos(...))`). */
+  systemTodos?: TodoItem[];
 }
 
 /** GĐ76/945: gộp mọi nhắc chuẩn bị ngày thành một danh sách ưu tiên (danger trước, khử trùng, cap 7). Tách nguyên văn khỏi MorningPanel. */
@@ -40,6 +43,8 @@ export function buildMorningActions(c: MorningActionsCtx): DayAction[] {
   const { day, level, weather, weatherSeed, storage, staff, regulars, expected, debts, biz, branch, branchChores, quanHealth, haveStock, dueContracts, chophien, lastSummary } = c;
   // GĐ76: gộp mọi nhắc chuẩn bị ngày thành một danh sách ưu tiên (danger trước, khử trùng, cap 7).
   const candidates: DayAction[] = [];
+  // Sổ việc chung: việc `now` là bức thiết (xếp đầu), còn lại ưu tiên 1 — cùng tầng việc chi nhánh.
+  for (const t of c.systemTodos ?? []) candidates.push({ icon: t.icon, text: t.text, panel: t.go && 'panel' in t.go ? t.go.panel : 'morning', danger: t.urgency === 'now', priority: 1 });
   for (const c of branchChores) candidates.push({ icon: c.icon, text: c.text, panel: c.text.includes('xin nghỉ hôm nay') || c.text.includes('xin chuyển sang') ? 'staff' : 'branch', danger: c.danger, priority: 1 });
   // GĐ189: quán nước thiếu kho — trước giờ chỉ là thẻ thụ động, giờ thành việc sáng ưu tiên (nạp đồ uống).
   const quanAction = quanNuocDayAction(quanHealth, day, weather);

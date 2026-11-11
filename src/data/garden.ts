@@ -18,6 +18,7 @@ import { dateOfDoy, isWeekend, YEAR_DAYS } from './calendar';
 import { simRng } from '../core/rand';
 import { fmtMul } from './products';
 import { isXoiCungDay } from './tiemXoi';
+import type { PreserveJob } from './preserve';
 
 /** Mở trang trại từ cấp này. */
 export const GARDEN_UNLOCK = 8;
@@ -212,7 +213,7 @@ export const harvestYield = (def: CropDef, day: number, ripenDay?: number) =>
   Math.round(def.yieldQty * (def.season && inSeason(def, ripenDay ?? day) ? SEASON_YIELD : 1));
 
 /** Công trình trại: mua bằng tiền, nâng sao bằng tiền + gỗ + đá nhặt từ dọn trại (kiểu HappyTown). */
-export type FarmBuildingId = 'tuoi_tu_dong' | 'nha_luoi' | 'bai_tha' | 'bu_nhin';
+export type FarmBuildingId = 'tuoi_tu_dong' | 'nha_luoi' | 'bai_tha' | 'bu_nhin' | 'gian_phoi' | 'vai_muoi' | 'chum_u';
 
 export interface FarmBuildingDef {
   id: FarmBuildingId;
@@ -248,9 +249,24 @@ export const FARM_BUILDINGS: Record<FarmBuildingId, FarmBuildingDef> = {
     upgrades: [{ money: 20_000_000, wood: 10, stone: 6 }, { money: 30_000_000, wood: 16, stone: 10 }],
     note: 'Lưới chắn côn trùng, sâu bệnh và giông bão: mỗi sao cây lớn thêm nửa ngày mỗi đêm, bão không còn sập luống',
   },
+  gian_phoi: {
+    id: 'gian_phoi', name: 'Sân phơi', icon: '🌞', cost: 5_000_000, unlock: 34,
+    upgrades: [{ money: 3_500_000, wood: 6, stone: 4 }, { money: 5_000_000, wood: 10, stone: 6 }],
+    note: 'Không gian thoáng đãng cho dăm nong phơi & sau này là vại muối, chum ủ: mỗi sao thêm 2 nong (2/4/6); nắng mưa tính theo giàn',
+  },
+  vai_muoi: {
+    id: 'vai_muoi', name: 'Dãy vại muối', icon: '🫙', cost: 6_000_000, unlock: 38,
+    upgrades: [{ money: 4_000_000, wood: 6, stone: 4 }, { money: 6_000_000, wood: 10, stone: 6 }],
+    note: 'Một dãy vại sành đặt nơi râm mát cho món muối chua: mỗi sao thêm 2 vại (2/4/6); vớt đúng cửa sổ thì ngon, để quá thì khú',
+  },
+  chum_u: {
+    id: 'chum_u', name: 'Nhà chum ủ', icon: '🫛', cost: 12_000_000, unlock: 46,
+    upgrades: [{ money: 8_000_000, wood: 8, stone: 5 }, { money: 12_000_000, wood: 12, stone: 8 }],
+    note: 'Kho mát cho chum ủ rượu tương, mắm, tỏi đen…: mỗi sao thêm 1 chum (1/2/4); chum không hỏng theo thời gian, ủ lâu chỉ ra nhiều hơn',
+  },
 };
 
-export const FARM_BUILDING_ORDER: FarmBuildingId[] = ['bu_nhin', 'tuoi_tu_dong', 'bai_tha', 'nha_luoi'];
+export const FARM_BUILDING_ORDER: FarmBuildingId[] = ['bu_nhin', 'tuoi_tu_dong', 'bai_tha', 'nha_luoi', 'gian_phoi', 'vai_muoi', 'chum_u'];
 /** Sao tối đa của công trình. */
 export const FARM_BUILDING_MAX_STAR = 3;
 
@@ -318,6 +334,15 @@ export interface GardenState {
   stone: number;
   /** Cỏ dại cành rụng còn chưa dọn (mọc lại mỗi đêm, bão rơi nhiều). */
   debris: number;
+  /** Hệ 1 — mẻ phơi/muối/ủ đang làm (SPEC-CHIEU-SAU §1). Mặc định trống. */
+  preserveJobs: PreserveJob[];
+  /** Hệ 1 — các khoảng phút hôm nay giàn phơi để NGOÀI trời (bản lưu cũ thiếu → rỗng). */
+  rackLog: { day: number; out: [number, number][] };
+  /** Hệ 1 — đã mua Bạt kéo cho sân phơi (mưa to không ướt, vẫn nhận 0,4 nắng). */
+  rackTarp: boolean;
+  /** Hệ 4 — số mẻ phơi/muối/ủ ĐÃ LÀM theo sản phẩm (outputId → mẻ), cho điều kiện vào nhãn
+   *  (SPEC §4.3: thông thạo ≥ 100 mẻ). Bản lưu cũ thiếu → {} (không cần SAVE_VERSION). */
+  preserveMade: Record<string, number>;
 }
 
 /** Đơn quán xóm đặt nông sản: giao đủ đúng hạn thì được giá hời hơn giá bán thường. */
@@ -402,6 +427,10 @@ export const newGarden = (): GardenState => ({
   wood: 0,
   stone: 0,
   debris: 0,
+  preserveJobs: [],
+  rackLog: { day: 0, out: [] },
+  rackTarp: false,
+  preserveMade: {},
 });
 
 /** Khách trả thêm bấy nhiêu phần giá cho món nhà trồng (nêu ở gợi ý giá). */

@@ -209,8 +209,8 @@ describe('GĐ1140 — farmVsCook lọc theo cấp + trạm đã xây (không tư
     const noStation = () => false;
     const withGrill = (st: string) => st === 'food_grill';
     expect(farmVsCook('rau', 0, { level: 30, stationOpen: noStation }).verdict).toBe('sell');
-    // cấp 30 + grill: cơm sườn (40) bị loại, còn Cơm hộp gà (mở 30) → best là cơm hộp, không phải cơm sườn
-    const at30 = farmVsCook('rau', 0, { level: 30, stationOpen: withGrill });
+    // cấp 31 + grill: cơm sườn (40) bị loại, còn Cơm hộp gà (mở 31, T3-L4 răng cưa) → best là cơm hộp, không phải cơm sườn
+    const at30 = farmVsCook('rau', 0, { level: 31, stationOpen: withGrill });
     expect(at30.best!.recipe.id).toBe('recipe_com_hop_ga');
     const full = farmVsCook('rau', 0, { level: 45, stationOpen: withGrill });
     expect(full.best!.recipe.id).toBe('recipe_com_suon');

@@ -1,13 +1,16 @@
 import { useGame } from '../../core/store';
+import { useState } from 'react';
 import { relTier } from '../../data/supplierRel';
 import { lifetimeRegularVisits, vipTierOf, EMOTIONAL_FRIENDSHIP } from '../../data/regularTrust';
 import { serviceById } from '../../data/services';
 import { MASTER_BADGES, badgeEarned, type DossierInput } from '../../data/dossier';
+import { CRISIS_DEFS } from '../../data/crisis';
 import { styles } from './shared';
 
 /** Hồ sơ tiệm + Huy hiệu thâm niên (GĐ71): chân dung dài hạn gộp mọi bể tiệm. Thuần đọc, không sửa state. */
 export function DossierPanel({ closePanel }: { closePanel: () => void }) {
   const { level, biz, regulars } = useGame.getState();
+  const [calmLocal, setCalmLocal] = useState<boolean | undefined>(undefined);
   const d: DossierInput = {
     supplierTier: Math.max(0, ...Object.values(biz.supplierRel ?? {}).map((r) => relTier(r.spent).level)),
     regularTier: vipTierOf(lifetimeRegularVisits(regulars ?? {})).level,
@@ -58,6 +61,43 @@ export function DossierPanel({ closePanel }: { closePanel: () => void }) {
       </div>
 
       <div style={{ display: 'grid', gap: 6, marginTop: 6 }}>
+        {/* Hệ8-L4 — huy hiệu "vượt khó": từng đợt biến cố dài đã vượt qua. Không cho Năm yên ả (đã tắt). */}
+        <div style={{ ...styles.card, display: 'block' }}>
+          <b>🚧 Huy hiệu vượt khó (Biến cố dài)</b>
+          {CRISIS_DEFS.length === 0 ? null : (
+            <div style={{ display: 'grid', gap: 3, marginTop: 6 }}>
+              {CRISIS_DEFS.map((d) => {
+                const on = (biz.crisisBadges ?? []).includes(d.id);
+                return (
+                  <div key={d.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, opacity: on ? 1 : 0.55 }}>
+                    <span>{on ? `${d.icon} ${d.name}` : `○ ${d.name}`}</span>
+                    <b>{on ? '✅ Vượt qua' : 'Chưa trải qua'}</b>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          <p style={{ fontSize: 11, marginTop: 4, opacity: 0.75 }}>
+            Mỗi đợt biến cố dài bình tĩnh vượt qua là một dấu ấn. Chọn "Năm yên ả" thì không có huy hiệu này.
+          </p>
+          {/* Hệ8-L8 (SPEC-CHIEU-RONG §8.3) — tuỳ chọn "Năm yên ả": tắt hẳn biến cố dài, đổi lại không huy hiệu. */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: 6, paddingTop: 6, borderTop: '1px dashed rgba(255,255,255,0.12)' }}>
+            <span style={{ fontSize: 12 }}>
+              🌿 <b>Năm yên ả</b> — tạm ngừng biến cố dài cho người chơi nhẹ nhàng. Mở lại bất cứ lúc nào.
+            </span>
+            <button
+              style={styles.btn}
+              onClick={() => {
+                const next = !(biz.calmYears ?? false);
+                useGame.getState().setCalmYears(next);
+                setCalmLocal(next);
+              }}
+            >
+              {(calmLocal ?? biz.calmYears ?? false) ? 'Đang bật ✓' : 'Đang tắt'}
+            </button>
+          </div>
+        </div>
+
         {MASTER_BADGES.map((b) => {
           const on = badgeEarned(d, b);
           return (

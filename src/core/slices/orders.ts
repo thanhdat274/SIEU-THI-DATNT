@@ -1,6 +1,6 @@
 import { starBoostBlock, STAR_BOOST_ITEM, STAR_BOOST_SERVED } from '../../data/dishStars';
 import { furnitureDef, isCookStation } from '../../data/furniture';
-import { masteredDuration, masteryTier, masteryCut, MASTERY_NAMES, MASTERY_UNLOCK } from '../../data/cookMastery';
+import { masteredDuration, masteryTier, masteryCut, MASTERY_NAMES } from '../../data/cookMastery';
 import { formatMoney, productById } from '../../data/products';
 import type { Lot } from '../../data/freshness';
 import { regularById, regularFriendship } from '../../data/regulars';
@@ -11,6 +11,7 @@ import { CANCEL_AFTER_LATE, describeItems, FAST_TIP, fastWindow, houseById, ON_T
 import { type CookingStation, COOKED_PRODUCT_IDS, RECIPE_MAP } from '../../data/recipes';
 import { BARTENDER_SPEED_PER_STAR, bestSkillOnDuty, SHIFTS } from '../../data/staff';
 import { workSpeed } from '../../data/staffTraits';
+import { courierOnTrip } from '../../data/trip';
 import { commitBonusValue, commitDeposit, CONTRACT_STREAK_BONUS, contractMilestoneDue, contractValue, missingForContract, reservedMissing, supplyContractById } from '../../data/contracts';
 import { describeRep, meetsRep, reputationOf } from '../../data/reputation';
 import { activeGoals, addSales, goalLocked, goalMet } from '../../data/community';
@@ -18,6 +19,7 @@ import { playSfx } from '../audio';
 import type { GameState, SetState, GetState } from '../gameTypes';
 import { copyStock, putStock, takeStock, type Stock } from '../stock';
 import { formatClock } from '../store';
+import { hasFeature } from '../../data/features';
 
 /** Đơn hàng: điện thoại giao tận nhà, đơn tiệc, mẻ nấu, hợp đồng cung cấp, mục tiêu chung của hẻm. */
 
@@ -42,7 +44,8 @@ export const updatePhones = (set: SetState, get: GetState) => {
   const s = get();
   let { phoneOrders, phoneSlot } = s;
   let changed = false;
-  const hasCourier = s.staff.some((w) => w.role === 'courier');
+  // Hệ 5 §5.8: người giao đang đi tỉnh thì vắng cả buổi → coi như KHÔNG có người chở đơn điện thoại hôm đó.
+  const hasCourier = s.staff.some((w) => w.role === 'courier' && !courierOnTrip(s.biz.trip, w.id));
   while (phoneSlot < PHONE_SLOTS.length && s.minutes >= PHONE_SLOTS[phoneSlot]) {
     // Lỡ khung giờ (tua nhanh qua), tiệm đóng cửa hoặc chưa thuê nhân viên giao hàng thì bỏ qua khung đó
     // Có trạm nấu trong tiệm thì đôi khi cuộc gọi là đơn nấu món nhà làm (giá hời)
@@ -163,7 +166,7 @@ export const createOrdersSlice = (set: SetState, get: GetState): Pick<GameState,
     const tierBefore = masteryTier(done), tierAfter = masteryTier(done + 1);
     set({ ...k, garden: { ...s.garden, homegrown }, cookMastery: { ...(s.cookMastery ?? {}), [recipeId]: done + 1 }, cookJobs: [...s.cookJobs, { id, recipeId, remaining: dur, total: dur }] });
     s.notify(`🍳 Đang nấu ${r.name} (${dur} phút) — nguyên liệu đã trừ kho, nấu xong tự vào kho`);
-    if (s.level >= MASTERY_UNLOCK && tierAfter > tierBefore) s.notify(`${MASTERY_NAMES[tierAfter]} món ${r.name}! Mẻ sau nấu nhanh hơn ${Math.round(masteryCut(done + 1, s.level) * 100)}%`);
+    if (hasFeature(s, 'mastery') && tierAfter > tierBefore) s.notify(`${MASTERY_NAMES[tierAfter]} món ${r.name}! Mẻ sau nấu nhanh hơn ${Math.round(masteryCut(done + 1, s.level) * 100)}%`);
     return true;
   },
   declineOrder: () => set({ order: null }),
@@ -268,6 +271,8 @@ export const createOrdersSlice = (set: SetState, get: GetState): Pick<GameState,
     get().addXp(def.xp);
     get().addReview(5, undefined, Object.keys(def.items)[0]);
     if (def.regular) get().adjustFriendship(def.regular, STORY_ORDER_FRIEND_GAIN);
+    // GĐ Hệ2-L2: tiếng lành lan theo cạnh — người có cạnh với khách vừa giao đúng hẹn thân hơn theo trọng số.
+    if (def.regular) get().applyRipple(def.regular, STORY_ORDER_FRIEND_GAIN);
     get().recordDiscovery(Object.keys(def.items)); // Sổ tay Tiệm (GĐ36)
     s.notify(`🎉 Giao xong "${def.title}": +${formatMoney(pay)} · +${def.xp} XP${def.regular ? ` · 💛 +${STORY_ORDER_FRIEND_GAIN} thân thiết với ${def.from}` : ''}`);
     get().checkTitles();

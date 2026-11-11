@@ -1,7 +1,7 @@
 import { useGame } from '../../core/store';
 import { shopHoursLabel } from '../../data/shopHours';
 import { formatMoney } from '../../data/products';
-import { shortLabel } from '../shortLabel';
+import { blockedLabel, shortLabel } from '../shortLabel';
 import {
   TIEM_XOI_COST_MUL, TIEM_XOI_HIRE_FEE, TIEM_XOI_MAX_STAFF, TIEM_XOI_PRICE, TIEM_XOI_TARGET, TIEM_XOI_UNLOCK,
   TIEM_XOI_WAGE, tiemXoiCapacity, tiemXoiHandQty, tiemXoiTarget, TIEM_XOI_BIG_COST, TIEM_XOI_BIG_LEVEL, tiemXoiDineCap, tiemXoiRainMul, tiemXoiWeekendMul, tiemXoiLastLine, isXoiCungDay, tiemXoiCungMul, tiemXoiStaffValues, tiemXoiExpandPayback,
@@ -72,7 +72,7 @@ export function TiemXoiSection() {
           )}
           <div style={{ marginTop: 6 }}>
             <button style={{ ...styles.btn, marginLeft: 0 }} disabled={t.staff >= TIEM_XOI_MAX_STAFF || money < TIEM_XOI_HIRE_FEE} onClick={hireTiemXoi}>
-              {t.staff >= TIEM_XOI_MAX_STAFF ? `Tuyển thợ (${formatMoney(TIEM_XOI_HIRE_FEE)})` : shortLabel(`Tuyển thợ (${formatMoney(TIEM_XOI_HIRE_FEE)})`, TIEM_XOI_HIRE_FEE, money)}
+              {blockedLabel(t.staff >= TIEM_XOI_MAX_STAFF ? `Đủ ${TIEM_XOI_MAX_STAFF} thợ` : null, `Tuyển thợ (${formatMoney(TIEM_XOI_HIRE_FEE)})`, TIEM_XOI_HIRE_FEE, money)}
             </button>
             <button style={styles.btn} disabled={t.staff <= 0} onClick={fireTiemXoi}>Cho nghỉ 1 thợ</button>
             <button style={styles.btn} disabled={t.handDay === day} onClick={() => steamXoiHand()} title="Phím J ở sạp xôi cũng được">

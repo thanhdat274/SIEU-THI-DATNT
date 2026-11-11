@@ -224,4 +224,190 @@ export const SURPRISE_ARCS: SurpriseArcDef[] = [
       },
     ],
   },
+  // ═══════════ GĐ Hệ2-L5 (SPEC §2.6) — NGƯỜI KHẮC KHẨU ═══════════
+  // Ba cạnh khắc khẩu trong regularTies (chu_ba×bac_ba_xe_om, ba_ba_thit×chu_sau_ca,
+  // chi_be_live×vy_live) mỗi cạnh một arc 3 cảnh theo đúng §2.6:
+  //   1) chạm mặt lời qua tiếng lại → bênh A / bênh B / mời cả hai ly trà (good).
+  //   2) hôm sau người phật ý không ghé, người kia kể → nhắn lời / mặc kệ / mang quà sang (good).
+  //   3) hoà giải: ngồi chung bàn quán nước, bắt tay làm lành → cạnh khắc khẩu thành Bạn bè
+  //      (ghi tieKey vào biz.tiesMended qua `healsTie` — good mới hoà, "mặc kệ" khép sớm không hoà).
+  // unlock = 32 (R1: ≥32 giữ golden L30) — đây là nội dung Hệ 2, mở sau khi hẻm bắt đầu có quan hệ.
+  // needRegulars: chỉ vào pool khi CẢ HAI đã từng ghé — kể chuyện hai người mình từng gặp.
+  {
+    id: 'arc_kk_xe_om', baseEventId: 'x_khac_khau_xe_om', icon: '🛵', title: 'Hai bác tài giành cuốc', unlock: 32, days: 3,
+    needRegulars: ['chu_ba', 'bac_ba_xe_om'], healsTie: { a: 'chu_ba', b: 'bac_ba_xe_om' },
+    // Chú Ba × Bác Ba xe ôm: giành chỗ đầu hẻm đón cuốc (note cạnh: "hai người giành cuốc đầu hẻm").
+    scenes: [
+      {
+        id: 'kk-xe-1',
+        teaser: 'hai bác tài cãi nhau ngay trước quầy',
+        text: 'Sáng sớm, Chú Ba xe ôm và Bác Ba xe ôm cùng vọt tới quầy, ai cũng xưng mình "chủ cuốc sớm" chỗ đầu hẻm. Lời qua tiếng lại ngay trước quầy nước.',
+        options: [
+          { label: '🛵 Đứng về phía Chú Ba', result: 'Chú Ba gật gù, Bác Ba hầm hầm bỏ đi: "Được rồi, mai mốt đừng gọi ông!".', friendship: { id: 'chu_ba', delta: 2 } },
+          { label: '🛺 Đứng về phía Bác Ba', result: 'Bác Ba vểnh mặt, Chú Ba lắc đầu: "Xóm này giờ kỵ nhau rồi."', friendship: { id: 'bac_ba_xe_om', delta: 2 } },
+          { label: '🍵 Mời cả hai ly trà xanh xoa dịu', result: 'Hai bác uống trà, còn hờn nhau nhưng ít nhất chịu ngồi cạnh nhau.', needStock: { productId: 'x_tra_xanh', qty: 2 }, xp: 10, good: true },
+        ],
+        nextByChoice: [1, 2, 3],
+      },
+      {
+        id: 'kk-xe-2a',
+        teaser: 'Bác Ba không ghé hôm nay, Chú Ba kể chuyện',
+        text: 'Hôm nay Bác Ba không ghé như mọi khi. Chú Ba ghé, giọng chùng: "Tui có hơi quá tay hôm qua... mà ổng cũng vậy mà." Nói xong nhìn trông chờ.',
+        options: [
+          { label: '💬 Nhắn lời với Bác Ba giùm chú', result: 'Chú Ba gật: "Vậy nhờ cậu nói ổng nghe là tui không giận."', xp: 10, good: true },
+          { label: '🎁 Mang quà sang nhà Bác Ba', result: 'Rót chai nước ngọt, Chú Ba cầm sang bên kia đầu hẻm.', needStock: { productId: 'x_nuoc_ngot', qty: 1 }, xp: 10, good: true },
+          { label: '🙇 Thôi, chuyện của hai người', result: 'Chú Ba ậm ừ rồi ra về, chuyện giấu trong bụng.', xp: 3 },
+        ],
+        nextByChoice: [4, 4, -1],
+      },
+      {
+        id: 'kk-xe-2b',
+        teaser: 'Chú Ba không ghé, Bác Ba kể chuyện',
+        text: 'Chú Ba hôm nay biệt tăm. Bác Ba ghé, cười gượng: "Ông Bà ổng còn giận hả? Tui cũng... hơi lỡ lời."',
+        options: [
+          { label: '💬 Nhắn lời với Chú Ba giùm bác', result: 'Bác Ba gật gù: "Cậu nói giùm là tui gác chuyện lại."', xp: 10, good: true },
+          { label: '🎁 Mang quà sang nhà Chú Ba', result: 'Cầm chai nước ngọt, Bác Ba sang bên kia cắm đầu.', needStock: { productId: 'x_nuoc_ngot', qty: 1 }, xp: 10, good: true },
+          { label: '🙇 Thôi, chuyện của hai người', result: 'Bác Ba thở dài rồi rảo bước, chuyện để đấy.', xp: 3 },
+        ],
+        nextByChoice: [4, 4, -1],
+      },
+      {
+        id: 'kk-xe-2c',
+        teaser: 'hai bác chịu ngồi lại, còn hờn nhẹ',
+        text: 'Ly trà hôm qua phá băng: sáng nay Chú Ba và Bác Ba cùng ghé, còn né mặt nhau nhưng chịu ngồi hai chỗ cạnh nhau.',
+        options: [
+          { label: '🫖 Rót thêm trà, để hai người nói chuyện', result: 'Trà thêm ấm, hai bác bắt đầu bàn chuyện cuốc xe — lời qua lại nhẹ bẫng.', xp: 10, good: true },
+          { label: '🙂 Để tự nhiên', result: 'Hai bác ngồi yên một hồi rồi ai đi nấy, chưa ngã ngũ.', xp: 3 },
+        ],
+        nextByChoice: [4, -1],
+      },
+      {
+        id: 'kk-xe-3',
+        teaser: 'hai bác tài ngồi chung bàn làm lành',
+        text: 'Hôm nay cả hai bác tài ngồi chung bàn ở quán nước, mặt giãn ra hẳn. Bác Ba chìa tay: "Ông thù dai ghê! Thôi, mình chia ca, sáng ông chiều tui — chứ giành nhau làm gì."',
+        options: [
+          { label: '🤝 Vui lòng bắt tay làm lành cho cả hai', result: 'Hai bác tài bắt tay, từ nay xóm không còn tiếng cãi nhau đầu hẻm. Khách chứng kiến khen tiệm "lo chuyện xóm mát tay".', good: true },
+        ],
+        reward: { base: 45000, perLevel: 2200, perGood: 8000, rating: 5, xp: 30 },
+      },
+    ],
+  },
+  {
+    id: 'arc_kk_cho', baseEventId: 'x_khac_khau_cho', icon: '🥩', title: 'Quầy thịt với mớ cá', unlock: 32, days: 3,
+    needRegulars: ['ba_ba_thit', 'chu_sau_ca'], healsTie: { a: 'ba_ba_thit', b: 'chu_sau_ca' },
+    // Bà Ba bán thịt × Chú Sáu chài lưới: thịt với cá giành khách chợ (note cạnh: "thịt với cá giành khách chợ").
+    scenes: [
+      {
+        id: 'kk-cho-1',
+        teaser: 'Bà Ba với Chú Sáu cãi nhau trước quầy',
+        text: 'Chú Sáu chài lưới mang mớ cá lên chợ, ghé quầy tiệm nghe Bà Ba đang mách khách "cá chợ này không bằng thịt nhà bà". Hai người cãi vã ngay trước quầy.',
+        options: [
+          { label: '🥩 Đứng về phía Bà Ba', result: 'Bà Ba tỏ vẻ thắng thế, Chú Sáu hậm hực: "Bà kia coi chừng cá tui ngon hơn!".', friendship: { id: 'ba_ba_thit', delta: 2 } },
+          { label: '🐟 Đứng về phía Chú Sáu', result: 'Chú Sáu vểnh mặt, Bà Ba bĩu môi bỏ đi: "Thịt bà vẫn hơn!".', friendship: { id: 'chu_sau_ca', delta: 2 } },
+          { label: '🍵 Mời cả hai ly trà xanh cho nguội', result: 'Cả hai uống trà, còn căng nhưng bớt nóng, khách chợ đứng xem cũng cười.', needStock: { productId: 'x_tra_xanh', qty: 2 }, xp: 10, good: true },
+        ],
+        nextByChoice: [1, 2, 3],
+      },
+      {
+        id: 'kk-cho-2a',
+        teaser: 'Chú Sáu không ghé, Bà Ba buồn bực',
+        text: 'Hôm nay Chú Sáu không ghé mua mì nước như mọi khi. Bà Ba ghé, giọng tự ái: "Chả lẽ tui nói quá lời hả cậu? Mà cá ổng cũng ngon thật đấy."',
+        options: [
+          { label: '💬 Nhắn lời với Chú Sáu giùm bà', result: 'Bà Ba gật: "Vậy nhờ cậu nói giùm, chợ này đủ chỗ cho cả thịt lẫn cá."', xp: 10, good: true },
+          { label: '🎁 Mang quà sang cho Chú Sáu', result: 'Chai nước ngọt cùng lời chào, Bà Ba mang sang bến sông.', needStock: { productId: 'x_nuoc_ngot', qty: 1 }, xp: 10, good: true },
+          { label: '🙇 Thôi, chợ ai nấy bán', result: 'Bà Ba thở dài, chuyện thịt cá cứ để đấy.', xp: 3 },
+        ],
+        nextByChoice: [4, 4, -1],
+      },
+      {
+        id: 'kk-cho-2b',
+        teaser: 'Bà Ba không ghé, Chú Sáu kể chuyện',
+        text: 'Chú Sáu ghé mua mì, thấy Bà Ba vắng mặt thì ngập ngừng: "Hôm qua tui có hơi nóng... Bà ấy bán thịt ngon thiệt, khách trả giá là tại tui khó ở."',
+        options: [
+          { label: '💬 Nhắn lời với Bà Ba giùm chú', result: 'Chú Sáu gật: "Nhờ cậu nói giùm là chú không giận."', xp: 10, good: true },
+          { label: '🎁 Mang quà sang cho Bà Ba', result: 'Cầm chai nước ngọt, Chú Sáu sang quầy thịt.', needStock: { productId: 'x_nuoc_ngot', qty: 1 }, xp: 10, good: true },
+          { label: '🙇 Thôi, chợ ai nấy bán', result: 'Chú Sáu lẳng lặng mua mì rồi ra bến.', xp: 3 },
+        ],
+        nextByChoice: [4, 4, -1],
+      },
+      {
+        id: 'kk-cho-2c',
+        teaser: 'hai người chịu ngồi xuống chén trà',
+        text: 'Ly trà hôm qua có tác dụng: sáng nay Bà Ba và Chú Sáu cùng ghé, ngồi cách nhau một bàn nhưng không cãi nữa.',
+        options: [
+          { label: '🫖 Rót thêm trà, để hai người nói chuyện', result: 'Trà nguội dần, hai người bắt đầu bàn "thịt kho với cá kho món nào đãi khách".', xp: 10, good: true },
+          { label: '🙂 Để tự nhiên', result: 'Hai người ngồi im một lúc rồi ai đi nấy.', xp: 3 },
+        ],
+        nextByChoice: [4, -1],
+      },
+      {
+        id: 'kk-cho-3',
+        teaser: 'Bà Ba với Chú Sáu ngồi chung bàn làm lành',
+        text: 'Hôm nay Bà Ba và Chú Sáu ngồi chung bàn quán nước. Bà Ba cười: "Thôi, mình phụ nhau — khách chợ muốn thịt lẫn cá." Chú Sáu gật đầu đưa tay bắt.',
+        options: [
+          { label: '🤝 Vui lòng bắt tay làm lành cho cả hai', result: 'Hai người bắt tay, quầy thịt quầy cá từ nay giới thiệu khách qua lại. Tiệm được tiếng "dàn hoà việc chợ".', good: true },
+        ],
+        reward: { base: 45000, perLevel: 2200, perGood: 8000, rating: 5, xp: 30 },
+      },
+    ],
+  },
+  {
+    id: 'arc_kk_live', baseEventId: 'x_khac_khau_live', icon: '📱', title: 'Sóng ai hot hơn', unlock: 32, days: 3,
+    needRegulars: ['chi_be_live', 'vy_live'], healsTie: { a: 'chi_be_live', b: 'vy_live' },
+    // Chị Bé live sale × Chị Vy livestream: giành người xem (note cạnh: "giành người xem"). Vy unlock 34.
+    scenes: [
+      {
+        id: 'kk-live-1',
+        teaser: 'hai chị livestream cãi nhau về lượt xem',
+        text: 'Chị Bé live sale ghé lấy trái cây quay clip, chị Vy livestream cũng vừa tới. Chị Bé chê "sóng của em khô quá", chị Vy bảo "sóng chị đông lượt hơn". Hai chị cãi nhau ngay cạnh quầy.',
+        options: [
+          { label: '📱 Đứng về phía Chị Bé', result: 'Chị Bé hả hê, chị Vy bĩu môi: "Được rồi, xem ai giữ khán giả!".', friendship: { id: 'chi_be_live', delta: 2 } },
+          { label: '🎥 Đứng về phía Chị Vy', result: 'Chị Vy cười tươi, chị Bé quay đi: "Sóng em chưa sợ ai!".', friendship: { id: 'vy_live', delta: 2 } },
+          { label: '🍵 Mời cả hai ly trà xanh ngồi xuống', result: 'Hai chị uống trà, còn sừng sộ nhưng chịu ngồi lại.', needStock: { productId: 'x_tra_xanh', qty: 2 }, xp: 10, good: true },
+        ],
+        nextByChoice: [1, 2, 3],
+      },
+      {
+        id: 'kk-live-2a',
+        teaser: 'Chị Vy không ghé, Chị Bé kể chuyện',
+        text: 'Hôm nay chị Vy không ghé săn đồ hot. Chị Bé ghé, giọng hối lỗi: "Tui hơi quá lời với chị Vy... mà sóng cũng cần nhau thiệt."',
+        options: [
+          { label: '💬 Nhắn lời với chị Vy giùm chị Bé', result: 'Chị Bé gật: "Nhờ cậu nói giùm, mình cùng đẩy hàng cho tiệm."', xp: 10, good: true },
+          { label: '🎁 Mang quà sang cho chị Vy', result: 'Chai nước ngọt cùng lời chào, Chị Bé cầm sang.', needStock: { productId: 'x_nuoc_ngot', qty: 1 }, xp: 10, good: true },
+          { label: '🙇 Thôi, sóng ai nấy lo', result: 'Chị Bé thở dài rồi ra về.', xp: 3 },
+        ],
+        nextByChoice: [4, 4, -1],
+      },
+      {
+        id: 'kk-live-2b',
+        teaser: 'Chị Bé không ghé, Chị Vy kể chuyện',
+        text: 'Chị Vy ghé săn đồ quay đêm, thấy chị Bé vắng thì cười gượng: "Tui với chị Bé giận nhau hoài cũng chán. Hai đứa chạy sóng khác giờ mà."',
+        options: [
+          { label: '💬 Nhắn lời với chị Bé giùm chị Vy', result: 'Chị Vy gật: "Nhờ cậu nói giùm là hết giận."', xp: 10, good: true },
+          { label: '🎁 Mang quà sang cho chị Bé', result: 'Cầm chai nước ngọt, Chị Vy sang bên kia.', needStock: { productId: 'x_nuoc_ngot', qty: 1 }, xp: 10, good: true },
+          { label: '🙇 Thôi, sóng ai nấy lo', result: 'Chị Vy lẳng lặng ra về.', xp: 3 },
+        ],
+        nextByChoice: [4, 4, -1],
+      },
+      {
+        id: 'kk-live-2c',
+        teaser: 'hai chị chịu ngồi lại chén trà',
+        text: 'Ly trà hôm qua có tác dụng: chiều nay hai chị cùng ghé, ngồi cạnh nhau, còn nhìn nhau nhưng bớt gay hẳn.',
+        options: [
+          { label: '🫖 Rót thêm trà, để hai người nói chuyện', result: 'Trà thêm ấm, hai chị bắt đầu bàn "qua sóng nhau đẩy hàng chung cho tiệm".', xp: 10, good: true },
+          { label: '🙂 Để tự nhiên', result: 'Hai chị ngồi im một lúc rồi ai về nấy.', xp: 3 },
+        ],
+        nextByChoice: [4, -1],
+      },
+      {
+        id: 'kk-live-3',
+        teaser: 'hai chị ngồi chung bàn làm lành',
+        text: 'Hôm nay Chị Bé và Chị Vy ngồi chung bàn quán nước. Chị Bé cười: "Thôi mình hợp sức, khách theo chị Vy đêm thì theo em trưa — tiệm mình thành quán quay luôn." Chị Vy gật đầu.',
+        options: [
+          { label: '🤝 Vui lòng bắt tay làm lành cho cả hai', result: 'Hai chị bắt tay, từ nay qua sóng nhau livestream cho tiệm — khán giả kéo về ầm ầm. Bớt một mối khắc khẩu trong hẻm.', good: true },
+        ],
+        reward: { base: 45000, perLevel: 2200, perGood: 8000, rating: 5, xp: 30 },
+      },
+    ],
+  },
 ];

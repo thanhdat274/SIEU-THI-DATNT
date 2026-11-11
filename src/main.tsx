@@ -2,6 +2,7 @@ import { loadStories } from './data/biz';
 import { skyAt } from './data/weather';
 import { isMarketDay } from './data/chophien';
 import { isRoadworks } from './data/roadwork';
+import { crisisDefById } from './data/crisis';
 import { isFestivalDeco } from './data/festivalDeco';
 import { dateOfDoy } from './data/calendar';
 import { queueUrgency, accumulateBackup } from './world/storefrontWaitLamp';
@@ -39,11 +40,14 @@ import { CameraController } from './render/cameraController';
 import { InteriorView } from './render/interiorView';
 import { createRenderer, GFX_CHOICE, INITIAL_GFX, installRenderGuard, Lighting, LOW_POWER, type GameRenderer } from './render/scene';
 import { GFX_LABEL, GFX_PRESETS, QualityGovernor, detectLevel, gfxStatus, onGfxChoice, readDeviceHints, readPerfLog, recordPerf, reportGfx, type GfxChoice } from './render/graphicsQuality';
+import { exportReportsJson, noteLiveFps, noteLiveGfx, noteRealSec, openSession, setMode } from './core/dayReport';
+import { frameTimes, perfOn, sampleFrame, setPerf, setSnapshot, takeHudRedraws } from './core/perf';
 import { applyCrowdLod } from './agents/walker';
 import { createTiltShift } from './render/fx/tiltShift';
 import { applyLightBudget, initLightPool } from './render/lightBudget';
 import { NavGrid } from './world/navGrid';
 import { installQuanNuocSync } from './world/quanNuocSync';
+import { installRapDamSync } from './world/rapDam';
 import { createWorld } from './world/world';
 import { tiemXoiStandState, tiemXoiHandQty, tiemXoiDinerFigures } from './data/tiemXoi';
 import { quanHandLeft } from './data/quanNuoc';
@@ -236,6 +240,8 @@ installFarmSync(world.farm, (pop) => {
 });
 
 installQuanNuocSync(world, grid, shop);
+// Hệ 2 L8 (SPEC §2.9): rạp đám dựng trước nhà chủ giỗ hôm có đám — tự ẩn hiện theo ngày/cấp.
+installRapDamSync(scene);
 
 // Tiệm xôi 3D (GĐ430): biển đất khi đủ cấp, sạp xôi khi đã mở. Tải lười (cấp 40 mới cần), đặt phía tây
 // hẻm đối diện quán nước, chỉ hình ảnh, không chặn lưới.
@@ -347,6 +353,8 @@ let lastMinutes = useGame.getState().minutes;
 let lastMarketDay = isMarketDay(useGame.getState().day);
 // Hôm nay có sửa đường trước hẻm không (gđ184): đổi cảnh rào chắn khi sự kiện market roadworks thay đổi
 let lastRoadwork = isRoadworks(useGame.getState().weatherSeed, useGame.getState().day, useGame.getState().level);
+// Hệ8-L8 — trang trí 3D theo biến cố dài đang chạy (đổi cảnh khi loại biến cố đổi).
+let lastCrisisVisual: 'dao_duong' | 'mua_lu' | 'bao_gia' | undefined = undefined;
 let lastFestival = isFestivalDeco(useGame.getState().day);
 // Mùa cho cây nature (GĐ1830): phượng đỏ hè, đào/mai nở Tết — chỉ đổi khi sang tháng mới
 let lastNatureMonth = dateOfDoy(useGame.getState().day).month;
@@ -625,6 +633,17 @@ function applyGfx() {
   reportGfx(gfxChoice, gfx.step.level, gfx.avgFps);
 }
 applyGfx();
+// SPEC-TOI-UU §T1 (L1): bắt đầu bộ tích luỹ báo cáo ngày cho ngày game hiện tại + lộ `game.report()`
+// dùng trong console (xuất 30 bản ghi cục bộ) — dùng được ngay khi chưa có server.
+openSession(useGame.getState().day, gfx.avgFps, gfx.step.level);
+setMode(inAlley() ? 'alley' : 'solo');
+window.game = {
+  ...(window.game ?? {}),
+  report: () => console.log(exportReportsJson()),
+  perf: (on?: boolean) => { const v = on ?? !perfOn(); setPerf(v); return v; },
+  // SPEC-TOI-UU §T2-L2: 4 cảnh đo cố định (nạp động, không vào bundle đầu). game.bench() hoặc game.bench(10, ['B2'])
+  bench: (seconds?: number, only?: ('B1' | 'B2' | 'B3' | 'B4')[]) => import('./dev/bench').then((m) => m.runBench(controller, seconds, only)),
+};
 onGfxChoice((c) => {
   gfxChoice = c;
   const level = c === 'auto' ? detectLevel(readDeviceHints()) : c;
@@ -634,6 +653,7 @@ onGfxChoice((c) => {
 });
 renderer.shadowMap.autoUpdate = false;
 let frameNo = 0;
+let perfTick = 0;
 // Mảng người dùng lại mỗi khung cho updateDoor (không cấp phát mảng mới mỗi khung)
 const peopleScratch: THREE.Vector3[] = [];
 // Cờ giao hàng: chỉ tính lại khi danh sách đơn thay đổi
@@ -647,6 +667,14 @@ const clock = new THREE.Clock();
 /** Vòng lặp một khung hình — WebGPU cần renderer.init() xong mới được render nên tách ra riêng. */
 function renderFrame() {
   const dt = Math.min(clock.getDelta(), 0.1);
+  // SPEC-TOI-UU §T1 (L1): đếm giây thật đã chơi (chỉ khi tab hiện) + lấy số đo FPS/đồ hoạ
+  // cho báo cáo ngày ẩn danh. Rẻ, không ghi localStorage mỗi khung (flush gộp 5s).
+  if (document.visibilityState === 'visible') noteRealSec(dt);
+  noteLiveFps(gfx.avgFps);
+  noteLiveGfx(gfx.step.level);
+  // SPEC-TOI-UU §T2 (L1): lấy mẫu thời gian khung khi bật ?perf=1 (rẻ, chỉ đẩy vào mảng 180 phần tử).
+  sampleFrame(dt * 1000);
+  if (++perfTick >= 60) { perfTick = 0; capturePerfSnapshot(); }
   // GĐ488: tương tự cho nhà quán nước
   world.quanNuoc.setRoofHidden(insideQuanHouse(world.quanNuoc.group.position.x, world.quanNuoc.group.position.z, player.position.x, player.position.z));
   // GĐ487: chủ đứng trong nhà tiệm xôi thì ẩn mái để nhìn thấy quầy, nồi và khách ngồi ăn
@@ -794,6 +822,12 @@ function renderFrame() {
   // Biển mở/đóng cửa trước tiệm (gđ179): tấm trạng thái đổi màu theo tiệm đang mở/đóng, đung nhẹ khi mở
   world.openSign.update(g.shopOpen, performance.now() / 1000);
   world.openSign.group.visible = world.shop.building.frontWallShown; // GĐ1822: ẩn theo tường mặt tiền bị cắt
+  // Hệ 3 §3.9 — biển phụ định vị: chữ theo hướng đang treo (stance + stance2), ẩn theo tường mặt tiền
+  const stanceIds: import('./data/stance').StanceId[] = [];
+  if (g.biz.stance) stanceIds.push(g.biz.stance.id);
+  if (g.biz.stance2) stanceIds.push(g.biz.stance2.id);
+  world.stanceSign.update(stanceIds);
+  world.stanceSign.group.visible = world.shop.building.frontWallShown;
   // Đèn báo "khách đang đợi" cạnh cửa (gđ180): sáng ấm khi có khách chờ quầy và tiệm mở
   // GĐ186: cộng thêm mức KHẨN "sắp mất khách" khi hàng đông lâu — nháy nhanh để chủ ghé về quầy
   let urgAdv = g.minutes - lastUrgMinutes;
@@ -818,6 +852,13 @@ function renderFrame() {
   if (roadwork !== lastRoadwork) {
     lastRoadwork = roadwork;
     world.kit.setRoadwork(roadwork);
+  }
+  // Hệ8-L8 (SPEC-CHIEU-RONG §8.6) — trang trí 3D theo biến cố dài đang chạy (rãnh đào, mặt nước ngập,
+  // biển "Bình ổn giá"). Đọc g.biz.crisis mỗi nhịp; đổi cảnh chỉ khi khác loại.
+  const crisisVisual = g.biz.crisis ? crisisDefById(g.biz.crisis.defId)?.visual : undefined;
+  if (crisisVisual !== lastCrisisVisual) {
+    lastCrisisVisual = crisisVisual;
+    world.kit.setCrisisVisual(crisisVisual);
   }
   // Con hẻm vào dịp (gđ197): hôm nào có lễ hội (Tết, Trung thu, 20/11...), dựng dãy cờ ngang hẻm —
   // kinh tế ngày vẫn đông khách theo sim, cảnh hẻm "vào dịp" hiện ra bằng màu.
@@ -856,6 +897,32 @@ function renderFrame() {
 
   if (tiltShift) tiltShift.render();
   else renderer.render(scene, camera);
+}
+
+/** Chụp snapshot hiệu năng mỗi giây (SPEC-TOI-UU §T2/L1): renderer.info + đếm đối tượng + HUD. */
+function capturePerfSnapshot() {
+  const info = renderer.info as unknown as {
+    render?: { calls?: number; triangles?: number }; memory?: { geometries?: number; textures?: number };
+  } & { calls?: number; triangles?: number; geometries?: number; textures?: number };
+  const r = info.render ?? info;
+  const mem = info.memory ?? info;
+  let instanced = 0;
+  scene.traverse((o) => { if ((o as THREE.InstancedMesh).isInstancedMesh) instanced++; });
+  const ft = frameTimes();
+  setSnapshot({
+    fps: ft.p50 > 0 ? 1000 / ft.p50 : 0,
+    frameMs: ft,
+    drawCalls: r.calls ?? 0,
+    triangles: r.triangles ?? 0,
+    geometries: mem.geometries ?? 0,
+    textures: mem.textures ?? 0,
+    npc: customers.customers.length,
+    instancedMeshes: instanced,
+    jsMemory: ((performance as unknown as { memory?: { usedJSHeapSize?: number } }).memory?.usedJSHeapSize ?? 0) / 1048576,
+    hudRedraws: takeHudRedraws(),
+    gfx: gfx.step.level,
+    pixelRatio: gfx.step.pixelRatio,
+  });
 }
 
 // WebGPU khởi tạo bất đồng bộ (xin device từ GPU): xong xuôi mới bắt đầu vẽ khung đầu tiên
@@ -900,7 +967,7 @@ void (renderer.init ? renderer.init() : Promise.resolve()).then(() => {
 
 // Để debug trong console khi chạy dev (GĐ714: khôi phục bị mất nhầm khi tách vỏ ở GĐ704)
 if (import.meta.env.DEV) {
-  Object.assign(window, { game: { player, world, controller, grid, useGame, customers, buildMode, staff, renderer, scene, lighting, perf: () => ({ ...gfxStatus(), log: readPerfLog() }) } });
+  Object.assign(window, { game: { player, world, controller, grid, useGame, customers, buildMode, staff, renderer, scene, lighting, perf: () => ({ ...gfxStatus(), log: readPerfLog() }), bench: (seconds?: number, only?: ('B1' | 'B2' | 'B3' | 'B4')[]) => import('./dev/bench').then((m) => m.runBench(controller, seconds, only)) } });
   import('./dev/autoplay').then(({ createAutoplay }) =>
     Object.assign((window as unknown as { game: object }).game, { autoplay: createAutoplay(shop, customers, staff, player) }),
   );

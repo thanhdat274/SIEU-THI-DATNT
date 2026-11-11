@@ -19,6 +19,14 @@ export interface TitleContext {
   ngGoalsAllDone?: boolean;
   /** GĐ1517: số loại món bộ "Đồ Việt" đang đặt (decorSets.vietSetCount). */
   vietSetPieces?: number;
+  /** GĐ Hệ2-L7 (SPEC §2.8): chỉ số "Tình làng" 0–100% (regularTies.alleyBond) — mốc 25/50/75/100%. */
+  alleyBond?: number;
+  /** Hệ3-L8: số ấn định vị đang giữ (0..3) — đủ 3 → danh hiệu + treo hai biển. */
+  seals?: number;
+  /** Hệ4-L9: uy tín nhãn riêng hiện hành (0..100) — mốc 40/60/80 → danh hiệu. */
+  brandRep?: number;
+  /** Hệ4-L9: số ngày liên tiếp đủ 3 điểm nhượng quyền đang khoẻ (đủ 30 → danh hiệu). */
+  brandFranchiseStreak?: number;
 }
 
 export interface TitleDef {
@@ -57,7 +65,19 @@ export const TITLES: TitleDef[] = [
   // đích cuối hướng danh hiệu cho cuốn mục tiêu vòng thay vì chỉ tiền.
   // GĐ1517 — đủ trọn bộ sưu tập decor → danh hiệu (Việt hoá mốc "đủ 8/8 nhận danh hiệu" của sổ sưu tập tham khảo)
   { id: 'giu_hon_viet', icon: '🏺', name: 'Giữ hồn đất Việt', description: 'Bày đủ trọn bộ 5 món "Đồ Việt" trong tiệm.', done: (c) => (c.vietSetPieces ?? 0) >= 5 },
+  // GĐ Hệ2-L7 — mốc "Tình làng" (SPEC §2.8): tiền + danh hiệu một lần mỗi ván; mốc 100% tặng cả decor.
+  { id: 'xom_hoa_thuan', icon: '🌿', name: 'Xóm giềng hoà thuận', description: 'Chỉ số Tình làng đạt 25%.', done: (c) => (c.alleyBond ?? 0) >= 25 },
+  { id: 'ban_lang_than', icon: '🏘️', name: 'Bạn làng thân thiết', description: 'Chỉ số Tình làng đạt 50%.', done: (c) => (c.alleyBond ?? 0) >= 50 },
+  { id: 'xom_vui_ve', icon: '🎊', name: 'Xóm vui vẻ', description: 'Chỉ số Tình làng đạt 75%.', done: (c) => (c.alleyBond ?? 0) >= 75 },
+  { id: 'hem_van_hoa', icon: '🏮', name: 'Hẻm văn hoá', description: 'Chỉ số Tình làng đạt 100% — cả hẻm như mái nhà chung.', done: (c) => (c.alleyBond ?? 0) >= 100 },
   { id: 'chu_hem_lao_lang', icon: '🧭', name: 'Chủ hẻm lão làng', description: 'Hoàn thành trọn bộ mục tiêu của một vòng tái sinh (NG+).', done: (c) => c.ngGoalsAllDone === true },
+  // Hệ3-L8 (SPEC §3.7): đủ ba ấn định vị → danh hiệu + mở treo hai biển cùng lúc.
+  { id: 'tam_an_dinh_vi', icon: '🔰', name: 'Tam ấn định vị', description: 'Thu thập đủ ba ấn định vị (Bình dân, Đặc sản, Tiện lợi) qua các vòng.', done: (c) => (c.seals ?? 0) >= 3 },
+  // ── Hệ4-L9 (SPEC §4.9): danh hiệu nhãn riêng — uy tín 40/60/80 + chuỗi 3 nhượng quyền khỏe 30 ngày ──
+  { id: 'nhan_lang_nghe', icon: '🏷️', name: 'Nhãn làng nghề', description: 'Nhãn riêng đạt uy tín 40 — có tiếng trong huyện.', done: (c) => (c.brandRep ?? 0) >= 40 },
+  { id: 'dac_san_tinh', icon: '🏷️', name: 'Chủ hãng đặc sản tỉnh', description: 'Nhãn riêng đạt uy tín 60 — đặc sản tỉnh.', done: (c) => (c.brandRep ?? 0) >= 60 },
+  { id: 'thuong_hieu_quoc_dan', icon: '🏅', name: 'Thương hiệu quốc dân', description: 'Nhãn riêng đạt uy tín 80 — vang danh khắp nước.', done: (c) => (c.brandRep ?? 0) >= 80 },
+  { id: 'nhan_hieu_tinh', icon: '🌟', name: 'Nhãn hiệu tinh hoa', description: 'Ba điểm nhượng quyền khoẻ suốt 30 ngày — tiếng lan xa bền vững.', done: (c) => (c.brandFranchiseStreak ?? 0) >= 30 },
 ];
 
 /**
