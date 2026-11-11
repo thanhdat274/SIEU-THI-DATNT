@@ -81,6 +81,9 @@ export const createClockSlice = (set: SetState, get: GetState): Pick<GameState, 
       set({ branch: { ...br, warnedDay: s.day } });
       if (have < nightNeed()) get().notify(`⚠️ Kho chung sắp cạn (còn ${have}, đêm nay cần ~${nightNeed()}) — nhập thêm!`);
     }
+    // Hệ 5-L2 (SPEC-CHIEU-RONG §5.10) — xe đi tỉnh về khi hết giờ: một phép so sánh cùng kiểu STOCK_WARN_AT,
+    // canh `biz.trip` trống nên simGolden (không bao giờ startTrip) không đổi một byte.
+    if (s.biz.trip && minutes >= s.biz.trip.returnAt) get().tripArrive();
     updatePhones(set, get);
     updateOnline(set, get);
     // GĐ1507 — truyền đúng phút đã trôi: bug elapsed=0 làm pool sự kiện một-phát chết từ GĐ962

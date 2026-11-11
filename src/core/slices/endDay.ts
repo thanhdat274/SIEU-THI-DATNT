@@ -32,6 +32,7 @@ import { VENUE_TREND_DAYS, type VenueDay } from '../../data/venueTrend';
 import { RISK_TREND_DAYS, emptyRiskToday } from '../../data/risk';
 import { type GameState, type ContractState, type DayRecord, type SetState, type GetState, DAY_START, HISTORY_DAYS, wagesDue, emptyStats, daySalesProfit } from '../gameTypes';
 import { putStock, spoilOvernight, takeStock, type Stock } from '../stock';
+import { tripLoadStock } from '../../data/trip';
 import { isCookStation } from '../../data/furniture';
 import type { CookingStation } from '../../data/recipes';
 import { COMPLAINTS_FOR_SURPRISE, isAlcohol, LICENSE_FINE, LICENSE_GRACE, licenseById, licenseStatus, missingLicenses, newInspection, RENEW_WARN_DAYS, requiredLicenses, SURPRISE_INSPECTION, SUSPEND_AFTER } from '../../data/licenses';
@@ -618,6 +619,17 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
   }
   // SPEC-TOI-UU §T1 (L1): gom bản ghi ẩn danh ngày vừa chốt — lưu CỤC BỘ, không gửi đi đâu.
   collectReport(s, stats);
+  // Hệ 5-L2 (SPEC-CHIEU-RONG §5.10) — ngủ TRƯỚC khi xe đi tỉnh về: hàng vẫn về nhập kho đêm nay,
+  // chuyến kết thúc, chủ về nhà. Bổ sung vào accumulator `k` (chảy vào set cuối) nên không đổi golden
+  // (biz.trip trống ở sim — sim không bao giờ gọi startTrip).
+  if (biz.biz.trip) {
+    const tl = tripLoadStock(biz.biz.trip, k, !!biz.biz.coolBox);
+    k.storage = tl.storage;
+    k.storageLots = tl.storageLots;
+    if (biz.biz.trip.by === 'self') set({ location: 'Nhà của bạn' });
+    say('🚚 Xe đi tỉnh về muộn trong đêm — hàng đã vào kho, chuyến kết thúc.');
+    biz.biz = { ...biz.biz, trip: undefined };
+  }
   set({
     candidates: generateCandidates(s.level, nextId),
     day: s.day + 1,

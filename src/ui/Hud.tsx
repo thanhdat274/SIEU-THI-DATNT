@@ -51,6 +51,7 @@ import { AccountMenu, MoreMenu } from './HudMenus';
 import './hud.css';
 const SurpriseAlert = lazy(() => import('./SurpriseAlert').then((m) => ({ default: m.SurpriseAlert })));
 const MiniHost = lazy(() => import('./minigames/MiniHostView').then((m) => ({ default: m.MiniHostView })));
+const TripOverlay = lazy(() => import('./TripOverlay').then((m) => ({ default: m.TripOverlay })));
 const ExpiryAlert = lazy(() => import('./ExpiryAlert').then((m) => ({ default: m.ExpiryAlert })));
 const UnlockActBanner = lazy(() => import('./UnlockActBanner').then((m) => ({ default: m.UnlockActBanner })));
 const BranchAlert = lazy(() => import('./HudAlerts').then((m) => ({ default: m.BranchAlert })));
@@ -404,6 +405,7 @@ ${forecastText}`}>
         <Suspense fallback={null}><Tutorial review={helpTutorial} onDone={() => setHelpTutorial(false)} /></Suspense>
         <Suspense fallback={null}><SurpriseAlert /></Suspense>
         <Suspense fallback={null}><MiniHost /></Suspense>
+        <Suspense fallback={null}><TripOverlay /></Suspense>
         <Suspense fallback={null}><StoryAlert /></Suspense>
         {(hiddenAlerts > 0 || alertsOpen) && (
           <button className="hud-btn hud-alerts-more" onClick={() => setAlertsOpen(!alertsOpen)}>{alertsOpen ? 'Thu gọn thông báo' : `+${hiddenAlerts} thông báo`}</button>

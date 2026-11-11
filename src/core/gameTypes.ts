@@ -611,6 +611,12 @@ export interface GameState {
    *  điểm kẹp 0–100, cộng bonusQty vào mẻ kế tiếp / flair vào điểm trang trí. */
   scoreFestivalMini: (id: string, score: number, mode: 'fast' | 'calm') => void;
 
+  /** Hệ 5 — Chuyến đi tỉnh (SPEC-CHIEU-RONG §5.10): bắt đầu chuyến (vắng mặt thật, đồng hồ vẫn chạy),
+   *  lập giỏ hàng mang về, và xử lý xe về (hàng vào kho) — gọi từ tick/endDay. GUARDED khoá 'trip'. */
+  startTrip: (routeId: string, by: 'self' | number, cash: number) => void;
+  tripSetCart: (items: Record<string, number>) => void;
+  tripArrive: () => void;
+
   /** Hệ 2 — Tình làng (GĐ Hệ2-L2, SPEC §2.4): lan thân thiết từ sự kiện lớn sang người có cạnh
    *  với nguồn (trần ±3/ngày/người). Cổng cấp ≥ TIES_UNLOCK. */
   applyRipple: (

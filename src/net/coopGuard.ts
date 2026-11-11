@@ -80,4 +80,8 @@ export const GUARDED: Record<string, (args: unknown[]) => string> = {
   closeFranchise: () => 'brand',
   // Hệ 7 — Trò khéo tay lễ (SPEC-CHIEU-RONG §7.7): mỗi trò là một chỗ thưởng chung trong ngày → khoá 'mini:<id>'.
   scoreFestivalMini: (a) => `mini:${a[0]}`,
+  // Hệ 5 — Chuyến đi tỉnh (SPEC-CHIEU-RONG §5.10): một chuyến tại một thời điểm → khoá chung 'trip'.
+  startTrip: () => 'trip',
+  tripSetCart: () => 'trip',
+  tripArrive: () => 'trip',
 };

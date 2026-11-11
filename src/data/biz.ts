@@ -9,6 +9,8 @@ import { newTiemXoi, type TiemXoiState } from './tiemXoi';
 import type { HiepLucState } from './hiepLuc';
 import type { StanceId, StanceState } from './stance';
 import type { BrandState } from './brand';
+import type { HaulerId } from './routes';
+import type { TripState } from './trip';
 import { monthOf } from './calendar';
 import { emptyYear } from './yearReport';
 import { xpToNext } from './levels';
@@ -173,6 +175,11 @@ export interface BizState {
   miniBonus?: Record<string, number>;
   /** Hệ 7 — điểm trang trí cộng tạm tới hết dịp ({furniture, bonus, until} = ngày game hết hạn) — lát L4. */
   festivalFlair?: { furniture: string; bonus: number; until: number }[];
+  /** Hệ 5 — Chuyến đi tỉnh (SPEC-CHIEU-RONG §5): xe chở hàng đang dùng (THIẾU = xe máy ô 42, free) và có thùng đá giữ lạnh chưa (L3 mới mua được). */
+  hauler?: HaulerId;
+  coolBox?: boolean;
+  /** Hệ 5 — chuyến đi tỉnh ĐANG DIỄN RA (người chơi/nhân viên vắng mặt thật, SPEC §5.3). THIẾU = không có chuyến. */
+  trip?: TripState;
   /** Quán nước đầu ngõ (GĐ7, bán đồ uống rút từ kho); thiếu ở save cũ — nạp bản cũ tự bù mặc định. */
   quanNuoc: QuanNuocState;
   /** Tiệm xôi (GĐ410): xưởng nấu xôi số lượng lớn đổ vào kho chung mỗi đêm. */
