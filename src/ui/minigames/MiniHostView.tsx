@@ -26,9 +26,11 @@ interface MiniGameProps {
 // Mỗi trò là một chunk riêng (nạp lười): chỉ tải trò người chơi đang mở.
 const TapSpot = lazy(() => import('./TapSpot').then((m) => ({ default: m.TapSpot })));
 const GioQua = lazy(() => import('./GioQua').then((m) => ({ default: m.GioQua })));
+const BanhChung = lazy(() => import('./BanhChung').then((m) => ({ default: m.BanhChung })));
 const GAME_MAP: Record<string, LazyExoticComponent<ComponentType<MiniGameProps>>> = {
   tap_test: TapSpot,
   gio_qua: GioQua,
+  banh_chung: BanhChung,
 };
 
 type Phase = 'play' | 'result';

@@ -130,3 +130,51 @@
 .gioqua-gift.sel { border-color: #1e8449; background: #eaf6d6; }
 .gioqua-gift-icon { font-size: 22px; }
 .gioqua-gift-name { font-size: 11px; color: #5d3a1a; }
+
+/* ── Hệ 7-L3 — Gói bánh chưng ───────────────────────────── */
+.banhchung { text-align: center; width: 100%; }
+.banhchung-khuon {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  max-width: 300px;
+  margin: 0 auto 12px;
+}
+.banhchung-cell {
+  height: 40px;
+  border: 2px dashed #cfb689;
+  border-radius: 8px;
+  background: #fdf6e3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  color: #5d3a1a;
+}
+.banhchung-cell.filled { border-style: solid; border-color: #8a9a5b; background: #eef4d8; }
+.banhchung-cell.meo { border-style: solid; border-color: #e74c3c; background: #fbe0dc; }
+.banhchung-cell.done { border-color: #1e8449; background: #eaf6d6; }
+.banhchung-tray {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+.banhchung-ing {
+  border: 2px solid #cfb689;
+  background: #fff;
+  border-radius: 10px;
+  padding: 6px 8px;
+  min-width: 58px;
+  cursor: pointer;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.banhchung-ing.next { border-color: #1e8449; background: #eaf6d6; }
+.banhchung-ing.decor { opacity: 0.85; }
+.banhchung-ing:disabled { opacity: 0.5; cursor: default; }
+.banhchung-ing-icon { font-size: 22px; }
+.banhchung-ing-name { font-size: 11px; color: #5d3a1a; }
