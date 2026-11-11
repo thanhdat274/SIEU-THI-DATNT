@@ -39,3 +39,13 @@ describe('brandWorkshopPayoff — nối vào WorkshopTab (BrandPanel)', () => {
     expect(src).toContain('brandWorkshopPayoff(b, storage).line');
   });
 });
+
+describe('brandDealPayoff — nối vào hợp đồng đại lý (DealersTab)', () => {
+  it('import brandDealPayoff', () => {
+    expect(src).toContain("import { brandDealPayoff } from '../../data/brandDealPayoff'");
+  });
+  it('mỗi hợp đồng trong b.deals map render dòng 📊 payoff', () => {
+    expect(src).toContain('const dlp = brandDealPayoff(def, deal.productId, b.rep);');
+    expect(src).toContain('📊 {dlp.line}');
+  });
+});

@@ -12,6 +12,7 @@ import {
 import { franchisePayoff } from '../../data/franchisePayoff';
 import { brandLinePayoff } from '../../data/brandLinePayoff';
 import { brandWorkshopPayoff } from '../../data/brandWorkshopPayoff';
+import { brandDealPayoff } from '../../data/brandDealPayoff';
 import { Footer, styles, Tabs } from './shared';
 
 type Tab = 'lines' | 'workshop' | 'dealers' | 'franchise';
@@ -271,6 +272,7 @@ function DealersTab(props: {
         const def = brandDealerById(id)!;
         const dueIn = deal.dueDay - day;
         const have = b.stock[deal.productId] ?? 0;
+        const dlp = brandDealPayoff(def, deal.productId, b.rep);
         return (
           <div key={id} style={styles.card}>
             <span style={{ flex: 1 }}>
@@ -281,6 +283,7 @@ function DealersTab(props: {
                 {' '}· kho nhãn {have}/{def.qty}
                 {deal.committed ? ' · 🤝 đã cam kết' : ''}
               </div>
+              <div style={{ fontSize: 12, color: '#e67e22', marginTop: 4 }}>📊 {dlp.line}</div>
             </span>
             {!deal.committed && <button style={styles.btn} disabled={have < def.qty} onClick={() => onCommit(id)}>🤝 Cam kết</button>}
             {deal.committed && <button style={styles.btn} onClick={() => onRelease(id)}>↩️ Hoàn cọc</button>}
