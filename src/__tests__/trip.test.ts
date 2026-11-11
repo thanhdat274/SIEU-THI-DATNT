@@ -6,6 +6,7 @@ import {
   routeStockFresh, routeStockKey, routeStockLeft, routeStockResolve, routeStockSpend, weekOfDay, checkCart,
   cartCases, cartSavings, routeRelTier, routeCapBonus, debtOverdue, TRIP_DEBT_DUE_DAYS, TRIP_DEBT_PCT,
   courierAutoHaggle, courierSafeOption,
+  tripPayoff, payoffRefCart, TRIP_REF_CASES, PAYOFF_SELF_HAGGLE,
 } from '../data/trip';
 import { haggleFloor, haggleOffer, haggleDiscount, HAGGLE_MAX_ROUNDS } from '../data/haggle';
 import { roadEventDraw, ROAD_EVENTS, type RoadCtx } from '../data/roadEvents';
@@ -713,5 +714,70 @@ describe('L8 — sai người giao hàng đi thay (SPEC §5.8)', () => {
     useGame.getState().startTrip('tay_nguyen', 901, 200_000, {});
     expect(useGame.getState().biz.trip).toBeUndefined();
     expect(toasts.some((t) => t.includes('giỏ hàng'))).toBe(true);
+  });
+});
+
+describe('L8 — tripPayoff: so tự đi / sai người / mua mối lái (SPEC §5.8)', () => {
+  it('giỏ tham chiếu là một chuyến ba gác đầy (≤ 30 thùng), mỗi món ≤ weeklyCap', () => {
+    for (const id of ['cho_huyen', 'miet_vuon', 'lang_nghe_bac', 'cho_trung', 'tay_nguyen']) {
+      const route = routeById(id)!;
+      const { cart, cases } = payoffRefCart(route);
+      expect(cases).toBeLessThanOrEqual(TRIP_REF_CASES);
+      expect(cartCases(cart)).toBe(cases);
+      for (const [pid, q] of Object.entries(cart)) {
+        // mỗi món không quá weeklyCap của tuyến
+        const g = route.goods.find((x) => x.productId === pid);
+        expect(q).toBeLessThanOrEqual(g?.weeklyCap ?? 0);
+      }
+    }
+  });
+
+  it('mua ở mối lái luôn đắt hơn tự đi (chiết khấu tuyến + mặc cả)', () => {
+    for (const id of ['miet_vuon', 'lang_nghe_bac', 'cho_trung', 'tay_nguyen']) {
+      const route = routeById(id)!;
+      const p = tripPayoff(route);
+      const middleman = p.rows.find((r) => r.id === 'middleman')!;
+      const self = p.rows.find((r) => r.id === 'self')!;
+      expect(middleman.cost).toBeGreaterThan(self.cost);
+      expect(self.savings).toBeGreaterThan(0);
+      // tự đi = niêm yết tuyến × (1 − sàn mặc cả đại diện)
+      let listing = 0;
+      for (const [pid, qty] of Object.entries(p.cart)) {
+        const pd = productById(pid)!;
+        listing += routeBuyPrice(pd.buy, routeDiscountFor(route, pid, pd.category)) * qty;
+      }
+      expect(self.cost).toBe(Math.round(listing * (1 - PAYOFF_SELF_HAGGLE)));
+    }
+  });
+
+  it('sai người = giá niêm yết (không mặc cả) + cước công — đắt hơn tự đi đúng phần mặc cả', () => {
+    for (const id of ['miet_vuon', 'lang_nghe_bac', 'cho_trung', 'tay_nguyen']) {
+      const route = routeById(id)!;
+      const p = tripPayoff(route);
+      const middleman = p.rows.find((r) => r.id === 'middleman')!;
+      const self = p.rows.find((r) => r.id === 'self')!;
+      const courier = p.rows.find((r) => r.id === 'courier')!;
+      // cước công cố định 30.000 mỗi chuyến
+      let listing = 0;
+      for (const [pid, qty] of Object.entries(p.cart)) {
+        const pd = productById(pid)!;
+        listing += routeBuyPrice(pd.buy, routeDiscountFor(route, pid, pd.category)) * qty;
+      }
+      expect(courier.cost).toBe(listing + 30_000);
+      expect(courier.savings).toBe(middleman.cost - courier.cost);
+      // sai người không mặc cả → đắt hơn tự đi đúng phần giảm 6% (plus cước công)
+      expect(courier.cost - self.cost).toBe(Math.round(listing * PAYOFF_SELF_HAGGLE) + 30_000);
+      expect(courier.cost).toBeGreaterThan(self.cost);
+    }
+  });
+
+  it('thẻ sắp xếp rẻ nhất lên đầu; best là kênh rẻ nhất', () => {
+    for (const id of ['miet_vuon', 'lang_nghe_bac', 'cho_trung', 'tay_nguyen']) {
+      const p = tripPayoff(routeById(id)!);
+      expect(p.best).toBe(p.rows[0].id);
+      for (let i = 1; i < p.rows.length; i++) {
+        expect(p.rows[i].cost).toBeGreaterThanOrEqual(p.rows[i - 1].cost);
+      }
+    }
   });
 });

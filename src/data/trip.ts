@@ -9,7 +9,7 @@
  */
 import type { HaulerDef, HaulerId, RouteDef } from './routes';
 import { routeById, roundTripMinutes, routeBuyPrice, routeDiscountFor, routeGood } from './routes';
-import { casesFor, productById, type Category, type Product } from './products';
+import { casesFor, caseSize, productById, type Category, type Product } from './products';
 import { WEEK_DAYS } from './bizWeeks';
 import { relTier } from './supplierRel';
 import type { RoadEvent } from './roadEvents';
@@ -235,6 +235,87 @@ export function cartCases(cart: Record<string, number>): number {
     n += casesFor(pid, q);
   }
   return n;
+}
+
+// ─────────────── L8: tripPayoff — so "tự đi / sai người / mua mối lái" (SPEC §5.8) ───────────────
+
+/** Giỏ tham chiếu để so: MỘT CHUYẾN BA GÁC ĐẦY (30 thùng, SPEC §5.9). */
+export const TRIP_REF_CASES = 30;
+/** Mức mặc cả người chơi TỰ ĐI dùng để so (giữa khoảng 0–12% của §5.8, sàn điển hình ~6%). */
+export const PAYOFF_SELF_HAGGLE = 0.06;
+/** Cước công người giao cho một chuyến (mức 1.1× lương nhân viên ~2★ của courier, §5.8). */
+export const PAYOFF_COURIER_WAGE = 30_000;
+
+/** Ba kênh mua so sánh trên thẻ tripPayoff. */
+export type TripPayoffId = 'middleman' | 'self' | 'courier';
+
+/** Một dòng so sánh trên thẻ payoff. */
+export interface TripPayoffRow {
+  id: TripPayoffId;
+  name: string;
+  icon: string;
+  /** Tiền mặt bỏ ra để lấy đúng giỏ tham chiếu (VNĐ). */
+  cost: number;
+  /** Rẻ hơn (dương) hay đắt hơn (âm) bao nhiêu so với mua ở mối lái về nhà. */
+  savings: number;
+  note: string;
+}
+
+/** Kết quả thẻ so sánh cho một tuyến (SPEC §5.8: "so bằng số tiền thật"). */
+export interface TripPayoff {
+  routeId: string;
+  routeName: string;
+  /** Giỏ tham chiếu = một chuyến ba gác đầy (các món của tuyến, theo weeklyCap). */
+  cart: Record<string, number>;
+  cases: number;
+  /** Kênh rẻ nhất. */
+  best: TripPayoffId;
+  rows: TripPayoffRow[];
+}
+
+/** Giỏ tham chiếu của một tuyến: nạp các món tới kín ~30 thùng, mỗi món tối đa weeklyCap. THUẦN. */
+export function payoffRefCart(route: RouteDef): { cart: Record<string, number>; cases: number } {
+  const cart: Record<string, number> = {};
+  let used = 0;
+  for (const g of route.goods) {
+    const p = productById(g.productId); if (!p) continue;
+    const s = caseSize(g.productId);
+    const fit = Math.floor((TRIP_REF_CASES - used) * s);
+    const take = Math.max(0, Math.min(g.weeklyCap, fit));
+    if (take > 0) { cart[g.productId] = take; used += casesFor(g.productId, take); }
+    if (used >= TRIP_REF_CASES) break;
+  }
+  return { cart, cases: used };
+}
+
+/**
+ * Thẻ so sánh một chuyến (SPEC §5.8): cùng giỏ tham chiếu, ba kênh bỏ ra bao nhiêu tiền mặt.
+ *   - `middleman` = mua ở mối lái về nhà (giá nhập chuẩn, không phải đi).
+ *   - `self`      = tự đi, mặc cả tại nguồn (giá niêm yết tuyến nhân 1 − sàn điển hình 6%).
+ *   - `courier`   = sai người giao, giá niêm yết (không mặc cả) + cước công.
+ * Hàng của `cart` chỉ nằm trong weeklyCap tuần — dùng để ước lượng, không trừ state.
+ */
+export function tripPayoff(route: RouteDef): TripPayoff {
+  const { cart, cases } = payoffRefCart(route);
+  let middleman = 0;
+  let listing = 0;
+  for (const [pid, qty] of Object.entries(cart)) {
+    const q = Math.floor(qty); if (q <= 0) continue;
+    const p = productById(pid); if (!p) continue;
+    middleman += p.buy * q;
+    listing += routeBuyPrice(p.buy, routeDiscountFor(route, pid, p.category)) * q;
+  }
+  const selfCost = Math.round(listing * (1 - PAYOFF_SELF_HAGGLE));
+  const courierCost = listing + PAYOFF_COURIER_WAGE;
+  const row = (id: TripPayoffId, name: string, icon: string, cost: number, note: string): TripPayoffRow =>
+    ({ id, name, icon, cost, savings: middleman - cost, note });
+  const rows: TripPayoffRow[] = [
+    row('middleman', 'Mua ở mối lái', '🏪', middleman, 'Giá nhập chuẩn, khỏi phải đi.'),
+    row('courier', 'Sai người đi', '🛵', courierCost, 'Giá niêm yết + cước người giao; không mặc cả.'),
+    row('self', 'Tự đi lấy', '🛺', selfCost, `Mặc cả tại nguồn (giảm ~${Math.round(PAYOFF_SELF_HAGGLE * 100)}%).`),
+  ];
+  rows.sort((a, b) => a.cost - b.cost);
+  return { routeId: route.id, routeName: route.name, cart, cases, best: rows[0].id, rows };
 }
 
 /** Số tiền TIẾT KIỆM được so với mua giá mối lái (giá nhập chuẩn) — để UI hiện "đang lời bao nhiêu" (§5.6). */

@@ -159,3 +159,14 @@
 /* Hệ 5-L7 — nợ mối ruột tại nguồn (§5.7). */
 .trip-debt-due { font-size: 11px; color: #1e8449; font-weight: 700; white-space: nowrap; }
 .trip-debt-due.late { color: #c0392b; }
+
+/* Hệ 5-L8 — thẻ tripPayoff: so tự đi / sai người / mua mối lái bằng tiền thật (§5.8). */
+.trip-payoff-row {
+  display: flex; flex-direction: column; gap: 1px;
+  border-top: 1px dashed #e8d9b8; padding: 4px 0 2px; width: 100%;
+}
+.trip-payoff-name { font-size: 12px; font-weight: 600; color: #5d3a1a; }
+.trip-payoff-cost { font-size: 12px; color: #5d3a1a; display: flex; justify-content: space-between; }
+.trip-payoff-cost em { font-style: normal; font-weight: 700; color: #1e8449; }
+.trip-payoff-cost.best em { color: #1e8449; }
+.trip-payoff-note { font-size: 10px; color: #7a5a30; }

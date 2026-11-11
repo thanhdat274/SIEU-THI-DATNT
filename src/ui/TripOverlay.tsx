@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useClock, useGame } from '../core/store';
 import { ROUTES, HAULERS, COOL_BOX, haulerById, routeById, haulerUnlocked, routeUnlocked, routeBuyPrice, routeDiscountFor } from '../data/routes';
 import {
-  routeStockResolve, routeStockLeft, cartCases, cartBuyCost, cartBuyCostDiscounted, cartSavings, tripProgress, tripRemaining, weekOfDay, routeRelTier, debtOverdue, TRIP_DEBT_DUE_DAYS, TRIP_DEBT_PCT, type TripState,
+  routeStockResolve, routeStockLeft, cartCases, cartBuyCost, cartBuyCostDiscounted, cartSavings, tripProgress, tripRemaining, weekOfDay, routeRelTier, debtOverdue, TRIP_DEBT_DUE_DAYS, TRIP_DEBT_PCT, tripPayoff, type TripState,
 } from '../data/trip';
 import { haggleFloor, haggleDiscount, HAGGLE_MAX_ROUNDS, HAGGLE_MAX_OFFER } from '../data/haggle';
 import { roadEventDraw } from '../data/roadEvents';
@@ -107,6 +107,7 @@ export function TripOverlay() {
         </label>
         <Garage />
         <DebtEditor />
+        {picked && <PayoffCard routeId={picked} />}
         <CourierSender routeId={picked} cash={cash} />
         <div className="trip-ov-actions">
           <button className="mini-btn" onClick={() => setOpen(false)}>Bỏ qua</button>
@@ -339,6 +340,30 @@ function DebtEditor() {
       <div className="trip-ov-actions">
         <button className="mini-btn primary" disabled={s.money < d.amount} onClick={() => tripRepayDebt()}>Trả nợ {formatMoney(d.amount)}</button>
       </div>
+    </div>
+  );
+}
+
+/** Hệ 5-L8 — thẻ tripPayoff (SPEC §5.8): so "tự đi / sai người / mua mối lái" bằng tiền thật cho
+ *  một giỏ tham chiếu (một chuyến ba gác đầy). Dữ liệu thuần, chỉ hiện khi đã chọn tuyến. */
+function PayoffCard({ routeId }: { routeId: string }) {
+  const route = routeById(routeId);
+  if (!route) return null;
+  const p = useMemo(() => tripPayoff(route), [route]);
+  return (
+    <div className="trip-ov-route" style={{ cursor: 'default' }}>
+      <span className="trip-ov-route-name">🧾 So sánh một chuyến {route.icon} {route.name}</span>
+      <span className="trip-ov-route-meta">giỏ ước ~{p.cases} thùng · cùng weeklyCap tuần</span>
+      {p.rows.map((r) => (
+        <div key={r.id} className="trip-payoff-row">
+          <span className="trip-payoff-name">{r.icon} {r.name}</span>
+          <span className={r.id === p.best ? 'trip-payoff-cost best' : 'trip-payoff-cost'}>
+            {formatMoney(r.cost)} <em>{r.savings > 0 ? `−${formatMoney(r.savings)}` : `+${formatMoney(-r.savings)}`}</em>
+          </span>
+          <span className="trip-payoff-note">{r.note}</span>
+        </div>
+      ))}
+      <span className="trip-payoff-note">Số ước lượng để chọn cách đi; tiền thật tính khi xe về.</span>
     </div>
   );
 }
