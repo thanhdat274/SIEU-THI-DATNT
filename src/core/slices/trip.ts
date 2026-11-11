@@ -1,8 +1,10 @@
 import { haulerById, routeById, roundTripMinutes, routeUnlocked, haulerUnlocked, tripTravelCost } from '../../data/routes';
 import { beginTrip, tripLoadStock, routeStockResolve, routeStockSpend, checkCart, cartBuyCostDiscounted, cartCases, weekOfDay, type TripState } from '../../data/trip';
 import { haggleFloor, haggleOffer, haggleDiscount, HAGGLE_MAX_ROUNDS, HAGGLE_GRUDGE_WEEKS } from '../../data/haggle';
+import { roadEventDraw, type RoadCtx } from '../../data/roadEvents';
 import { addRel, relTier } from '../../data/supplierRel';
-import { productById, formatMoney } from '../../data/products';
+import { festivalOn } from '../../data/calendar';
+import { productById, formatMoney, caseSize } from '../../data/products';
 import type { GameState, GetState, SetState } from '../gameTypes';
 
 /** Nhãn vị trí khi chủ đang đi tỉnh (SPEC §5.3 — vắng mặt thật; chỉ UI, không đổi kinh tế/golden). */
@@ -17,6 +19,41 @@ const mm = (m: number): string => {
   return `${String(Math.floor(x / 60)).padStart(2, '0')}:${String(x % 60).padStart(2, '0')}`;
 };
 
+/** Bối cảnh một chuyến để rút/lọc chuyện dọc đường (L5) — phụ thuộc state + giỏ xe. Dùng chung slice & UI. */
+export const tripCtx = (s: Pick<GameState, 'weather' | 'regulars'>, t: TripState, cases: number): RoadCtx => {
+  let topFriend = -1;
+  let hasFriend = false;
+  for (const p of Object.values(s.regulars)) {
+    if (p.friendship > topFriend) topFriend = p.friendship;
+  }
+  hasFriend = topFriend >= 3;
+  let hasCargo = false;
+  let hasDryCargo = false;
+  for (const pid of Object.keys(t.cart)) {
+    const p = productById(pid);
+    if (!p) continue;
+    hasCargo = true;
+    if (p.category !== 'drink' && p.category !== 'fresh' && p.category !== 'meat') hasDryCargo = true;
+  }
+  return {
+    weather: s.weather,
+    festival: festivalOn(t.day) !== undefined,
+    hasFriend,
+    loadPct: cases > 0 ? cartCases(t.cart) / cases : 0,
+    hasCargo,
+    hasDryCargo,
+  };
+}
+
+/** Khách quen thân NHẤT (để quà thân thiết của chuyện "quá giang" chảy tới) — undefined nếu chưa ai thân. */
+function topFriendId(s: GameState): string | undefined {
+  let best: string | undefined; let max = -1;
+  for (const [id, p] of Object.entries(s.regulars)) {
+    if (p.friendship > max) { max = p.friendship; best = id; }
+  }
+  return max >= 3 ? best : undefined;
+}
+
 /**
  * Hệ 5 — Chuyến đi tỉnh (SPEC-CHIEU-RONG §5). L2: `startTrip` + vắng mặt + xe về nhập kho.
  *
@@ -28,7 +65,7 @@ const mm = (m: number): string => {
  * - `tripArrive()`: xe về — hàng vào kho (hạn bớt theo đường, trừ khi có thùng đá), xoá chuyến, chủ về
  *   nhà. Gọi từ tick khi `minutes ≥ returnAt` hoặc endDay nếu ngủ trước khi về (§5.10).
  */
-export const createTripSlice = (set: SetState, get: GetState): Pick<GameState, 'startTrip' | 'tripSetCart' | 'tripHaggle' | 'tripAcceptPrice' | 'tripArrive'> => ({
+export const createTripSlice = (set: SetState, get: GetState): Pick<GameState, 'startTrip' | 'tripSetCart' | 'tripHaggle' | 'tripAcceptPrice' | 'tripChoose' | 'tripArrive'> => ({
   startTrip: (routeId: string, by: 'self' | number, cash: number) => {
     const s = get();
     const route = routeById(routeId);
@@ -121,6 +158,48 @@ export const createTripSlice = (set: SetState, get: GetState): Pick<GameState, '
     if (!t) return s.notify('🚚 Không có chuyến đi nào đang diễn ra.');
     set({ biz: { ...s.biz, trip: { ...t, haggle: { round: t.haggle?.round ?? 0, best: t.haggle?.best ?? 0, anger: t.haggle?.anger ?? 0 } } } });
     s.notify('🚚 Thôi, giá đó được rồi — chốt giỏ (không phạt).');
+  },
+
+  tripChoose: (evtId: string, index: number) => {
+    const s = get();
+    const t = s.biz.trip;
+    if (!t) return s.notify('🚚 Không có chuyến đi nào đang diễn ra.');
+    const route = routeById(t.routeId);
+    if (!route) return;
+    const cases = haulerById(t.hauler)?.cases ?? 0;
+    const ctx = tripCtx(s, t, cases);
+    // Rút lại TẤT ĐỊNH cả 2 nhịp rồi khớp evtId → biết chuyện thuộc nhịp nào.
+    const evtDi = roadEventDraw(s.weatherSeed, t.day, t.routeId, 1, ctx);
+    const evtVe = roadEventDraw(s.weatherSeed, t.day, t.routeId, 4, ctx);
+    const evt = evtDi?.id === evtId ? evtDi : evtVe?.id === evtId ? evtVe : null;
+    if (!evt || t.flags.includes(evtId)) return s.notify('🚚 Chuyện đó đã qua rồi.');
+    const opt = evt.options[index];
+    if (!opt) return;
+
+    let trip = { ...t, delayMin: t.delayMin + opt.minutes, returnAt: t.returnAt + opt.minutes, flags: [...t.flags, evtId] };
+    let money = s.money;
+    let regulars = s.regulars;
+    let cart = t.cart;
+    if (opt.cost) money = Math.max(0, money - opt.cost);
+    if (opt.friend) {
+      const fid = topFriendId(s);
+      if (fid) {
+        const cur = s.regulars[fid];
+        regulars = { ...regulars, [fid]: { ...cur, friendship: cur.friendship + opt.friend } };
+      }
+    }
+    if (opt.sell) {
+      const pid = Object.keys(cart).find((k) => (cart[k] ?? 0) > 0);
+      if (pid) {
+        const p = productById(pid);
+        const size = caseSize(pid);
+        const take = Math.min(size, cart[pid] ?? 0);
+        if (p && take > 0) { money += Math.round(p.buy * 1.2) * take; cart = { ...cart, [pid]: cart[pid] - take }; }
+      }
+    }
+    set({ money, regulars, biz: { ...s.biz, trip: { ...trip, cart } } });
+    const tail = opt.wet ? ' — để vậy, hàng có thể bị ướt.' : opt.cost ? ` — tốn ${formatMoney(opt.cost)}.` : opt.friend ? ' — người quen gắn bó hơn.' : opt.minutes > 0 ? ` — chậm ${opt.minutes}′.` : '';
+    s.notify(`🚚 ${evt.title} đã xử lý${tail}`);
   },
 
   tripArrive: () => {

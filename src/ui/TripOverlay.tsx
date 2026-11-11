@@ -5,6 +5,8 @@ import {
   routeStockResolve, routeStockLeft, cartCases, cartBuyCost, cartBuyCostDiscounted, cartSavings, tripProgress, tripRemaining, weekOfDay, type TripState,
 } from '../data/trip';
 import { haggleFloor, haggleDiscount, HAGGLE_MAX_ROUNDS, HAGGLE_MAX_OFFER } from '../data/haggle';
+import { roadEventDraw } from '../data/roadEvents';
+import { tripCtx } from '../core/slices/trip';
 import { relTier } from '../data/supplierRel';
 import { productById, formatMoney, caseSize, casesFor } from '../data/products';
 import './trip.css';
@@ -53,6 +55,7 @@ export function TripOverlay() {
           </p>
         </div>
         <CartEditor key={trip.routeId} trip={trip} />
+        <RoadEvents trip={trip} />
         <HaggleEditor trip={trip} />
       </div>
     );
@@ -211,7 +214,6 @@ function HaggleEditor({ trip }: { trip: TripState }) {
   const [offer, setOffer] = useState(0);
 
   if (!route || Object.keys(trip.cart).length === 0) return null;
-
   const listed = cartBuyCost(trip, route);
   const paid = done ? Math.round(listed * (1 - discount)) : Math.round(listed * (1 - offer));
   const pct = Math.round(offer * 100);
@@ -251,4 +253,50 @@ function HaggleEditor({ trip }: { trip: TripState }) {
       )}
     </div>
   );
+}
+
+/** Hệ 5-L5 — Chuyện dọc đường (nhịp 1 lúc ~20%, nhịp 4 lúc ~80%). Rút TẤT ĐỊNH theo seed;
+ *  hiện khi xe vừa qua mốc và chưa xử lý; chọn → tripChoose áp dụng hiệu ứng. */
+function RoadEvents({ trip }: { trip: TripState }) {
+  const s = useGame();
+  const tripChoose = useGame((x) => x.tripChoose);
+  const minutes = useClock((x) => x.minutes);
+  const hauler = haulerById(trip.hauler);
+  const cases = hauler?.cases ?? 0;
+  const ctx = tripCtx({ weather: s.weather, regulars: s.regulars }, trip, cases);
+  const p = tripProgress(trip, minutes);
+  const evtDi = roadEventDraw(s.weatherSeed, trip.day, trip.routeId, 1, ctx);
+  const evtVe = roadEventDraw(s.weatherSeed, trip.day, trip.routeId, 4, ctx);
+  const flagged = new Set(trip.flags);
+
+  // Nhịp 1: trong khoảng [20%, 45%). Nhịp 4: từ 80% trở đi.
+  const showDi = p >= 0.2 && p < 0.45 && evtDi && !flagged.has(evtDi.id);
+  const showVe = p >= 0.8 && evtVe && !flagged.has(evtVe.id);
+  const evt = showVe ? evtVe : showDi ? evtDi : null;
+  if (!evt) return null;
+
+  return (
+    <div className="trip-ov-card">
+      <div className="trip-ov-head"><b>{evt.icon} {evt.title}</b></div>
+      <p className="trip-ov-note">{evt.desc}</p>
+      <div className="trip-event">
+        {evt.options.map((o, i) => (
+          <button key={i} className="trip-event-opt"
+            onClick={() => { tripChoose(evt.id, i); }}
+          >
+            {o.label}
+            <span className="trip-event-cost">{fmtCost(o)}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function fmtCost(o: { label: string; minutes: number; cost?: number; wet?: boolean; friend?: number; sell?: boolean }) {
+  if (o.cost) return `−${formatMoney(o.cost)} · +${o.minutes}′`;
+  if (o.friend) return `+${o.friend} thân thiết · +${o.minutes}′`;
+  if (o.sell) return 'bán bớt hàng';
+  if (o.wet) return 'hàng dễ ướt';
+  return o.minutes > 0 ? `+${o.minutes}′` : '';
 }

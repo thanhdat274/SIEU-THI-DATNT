@@ -90,11 +90,14 @@ export function cartBuyCostDiscounted(t: TripState, route: RouteDef): number {
   return Math.round(cartBuyCost(t, route) * (1 - d));
 }
 
-/** Hạn (ngày) còn lại khi nhập kho — không thùng đá thì tươi/thịt mất hạn theo số giờ trên đường (§5.4). */
+/** Hạn (ngày) còn lại khi nhập kho — không thùng đá thì tươi/thịt mất hạn theo số giờ trên đường (§5.4);
+ *  L5: chọn "chạy tiếp" khi trời mưa (`flags` có 'wet') → hàng khô làm ướt, mất thêm 2 ngày hạn. */
 export function tripLotLife(p: Product, t: TripState, coolBox: boolean): number {
   const life = shelfLife(p.id);
-  if (coolBox || (p.category !== 'fresh' && p.category !== 'meat')) return life;
-  return Math.max(1, life - tripRoadHours(t));
+  let l = life;
+  if (!(coolBox || (p.category !== 'fresh' && p.category !== 'meat'))) l -= tripRoadHours(t);
+  if (t.flags?.includes('wet') && p.category !== 'drink' && p.category !== 'fresh' && p.category !== 'meat') l -= 2;
+  return Math.max(1, l);
 }
 
 /** Xe về: chuyển `cart` vào kho `stock`, mỗi món một lô (hạn đã bớt theo đường). THUẦN — trả Stock mới. */

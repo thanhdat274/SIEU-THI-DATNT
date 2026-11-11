@@ -619,6 +619,8 @@ export interface GameState {
   tripHaggle: (offer: number) => void;
   /** Hệ 5 (L4) — bỏ qua mặc cả ("Thôi, giá đó được rồi"): mua giá niêm yết, không phạt. */
   tripAcceptPrice: () => void;
+  /** Hệ 5 (L5) — chọn phương án cho chuyện dọc đường (nhịp 1/4): chậm giờ, mất tiền, ướt hàng, bán bớt, thân thiết. */
+  tripChoose: (evtId: string, index: number) => void;
   tripArrive: () => void;
 
   /** Hệ 2 — Tình làng (GĐ Hệ2-L2, SPEC §2.4): lan thân thiết từ sự kiện lớn sang người có cạnh

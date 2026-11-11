@@ -7,6 +7,8 @@ import {
   cartCases, cartSavings,
 } from '../data/trip';
 import { haggleFloor, haggleOffer, haggleDiscount, HAGGLE_MAX_ROUNDS } from '../data/haggle';
+import { roadEventDraw, ROAD_EVENTS, type RoadCtx } from '../data/roadEvents';
+import { tripCtx } from '../core/slices/trip';
 import { productById, caseSize } from '../data/products';
 
 /**
@@ -428,3 +430,71 @@ describe('L4 slice — mặc cả (Nhịp 3)', () => {
     expect(useGame.getState().biz.trip!.haggle!.round).toBe(0);
   });
 });
+
+describe('L5 — chuyện dọc đường (Nhịp 1 & 4)', () => {
+  const ctx: RoadCtx = { weather: 'sunny', festival: false, hasFriend: false, loadPct: 0, hasCargo: false, hasDryCargo: false };
+
+  it('roadEventDraw TẤT ĐỊNH: cùng seed+day+routeId+beat+ctx → cùng chuyện, đổi seed khác', () => {
+    const c: RoadCtx = { ...ctx, weather: 'rain' };
+    const a = roadEventDraw(123, 10, 'cho_huyen', 1, c);
+    const b = roadEventDraw(123, 10, 'cho_huyen', 1, c);
+    const d = roadEventDraw(888, 10, 'cho_huyen', 1, c);
+    expect(b?.id).toBe(a?.id);
+    expect(d?.id).not.toBe(a?.id);
+    expect(['thung_lop', 'mua_lon']).toContain(a?.id); // pool nhịp 1 (trời mưa): chỉ 2 chuyện
+  });
+
+  it('nhịp 1 gồm 5 chuyện chung; nhịp 4 thêm 2 chuyện gắn hàng → 8 chuyện', () => {
+    const full: RoadCtx = { ...ctx, weather: 'rain', festival: true, hasFriend: true, loadPct: 1, hasCargo: true, hasDryCargo: true };
+    expect([...new Set(ROAD_EVENTS.map((e) => e.id))].length).toBe(7);
+    const beat1 = new Set(roadEventPoolIds(1, full));
+    expect(beat1.has('thung_lop')).toBe(true);
+    expect(beat1.has('mua_khong_phu_bat')).toBe(false); // gắn hàng chỉ xuất hiện lúc về
+    expect(beat1.has('nguoi_hoi_mua')).toBe(false);
+    const beat4 = new Set(roadEventPoolIds(4, full));
+    expect(beat4.has('mua_khong_phu_bat')).toBe(true);
+    expect(beat4.has('nguoi_hoi_mua')).toBe(true);
+  });
+
+  it('điều kiện xuất hiện: trời nắng thì không có chuyện mưa', () => {
+    const c: RoadCtx = { ...ctx, weather: 'sunny' };
+    const pool = ROAD_EVENTS.filter((e) => e.when?.(c) ?? true);
+    expect(pool.some((e) => e.id === 'mua_lon')).toBe(false);
+  });
+
+  it('tripChoose áp dụng hiệu ứng: chậm giờ + số tiền + cờ đã xử lý (đúng nhịp rút được)', () => {
+    prep(50, 420);
+    useGame.setState({ weather: 'rain', money: 2_000_000 });
+    useGame.getState().startTrip('cho_huyen', 'self', 300000);
+    const t = useGame.getState().biz.trip!;
+    const hauler = haulerById(t.hauler);
+    const myCtx = tripCtx({ weather: 'rain', regulars: useGame.getState().regulars }, t, hauler?.cases ?? 0);
+    const evt = roadEventDraw(useGame.getState().weatherSeed, t.day, t.routeId, 1, myCtx);
+    expect(evt).not.toBeNull();
+    const opt = evt!.options[0];
+    const money0 = useGame.getState().money;
+    useGame.getState().tripChoose(evt!.id, 0);
+    const t2 = useGame.getState().biz.trip!;
+    expect(t2.flags).toContain(evt!.id);
+    expect(t2.returnAt).toBe(t.returnAt + opt.minutes);
+    expect(t2.delayMin).toBe(opt.minutes);
+    if (opt.cost) expect(useGame.getState().money).toBe(money0 - opt.cost);
+  });
+
+  it('chọn "chạy tiếp khi mưa" (wet) làm hạn hàng khô rụt mất 2 ngày khi nhập kho', () => {
+    const t = beginTrip(choHuyen, moto, 1, 420, 'self', 10_000_000, { rg_kho_tom: 1 });
+    const dry = productById('rg_kho_tom')!;
+    const wet = tripLotLife(dry, { ...t, flags: ['wet'] }, false);
+    const dryL = tripLotLife(dry, t, false);
+    expect(wet).toBe(Math.max(1, dryL - 2));
+  });
+});
+
+function roadEventPoolIds(beat: 1 | 4, ctx: RoadCtx): string[] {
+  const set = new Set<string>();
+  for (let seed = 0; seed < 200; seed++) {
+    const e = roadEventDraw(seed, 1, 'cho_huyen', beat, ctx);
+    if (e) set.add(e.id);
+  }
+  return [...set];
+}
