@@ -117,7 +117,7 @@ export const FURNITURE: FurnitureDef[] = [
     categories: [], desc: 'Trạm nấu: món chiên, xào, áp chảo (xem Sổ nấu 🍳)',
   },
   {
-    type: 'rice_station', name: 'Quầy xôi', price: 360000, unlock: 36, size: [1.2, 0.8], tiers: 0, slots: 0, capacity: 0,
+    type: 'rice_station', name: 'Quầy xôi', price: 360000, unlock: 40, size: [1.2, 0.8], tiers: 0, slots: 0, capacity: 0,
     categories: [], desc: 'Trạm nấu: xôi các loại, suất xôi đôi (xem Sổ nấu 🍳)',
   },
   {

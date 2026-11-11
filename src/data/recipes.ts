@@ -594,17 +594,17 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'mam_ruoc_chung_thit', name: 'Mắm ruốc chưng thịt', category: 'fresh', buy: 11000, sell: 22000, color: 0x9b4a2b, unlock: 40 },
 
   // --- Quây xôi (rice_station) ---
-  { id: 'xoi_dau_xanh', name: 'Xôi đậu xanh', category: 'fresh', buy: 1400, sell: 2600, color: 0xf9ca24, unlock: 36 },
-  { id: 'xoi_man', name: 'Xôi mặn', category: 'fresh', buy: 2900, sell: 5500, color: 0xf5cba7, unlock: 36 },
-  { id: 'xoi_trung', name: 'Xôi trứng', category: 'fresh', buy: 1400, sell: 2600, color: 0xfadbd8, unlock: 36 },
-  { id: 'xoi_dua', name: 'Xôi dừa', category: 'fresh', buy: 800, sell: 1400, color: 0xffffff, unlock: 36 },
-  { id: 'xoi_thap_cam', name: 'Xôi thập cẩm', category: 'fresh', buy: 2900, sell: 5500, color: 0xe17055, unlock: 36 },
-  { id: 'xoi_vo', name: 'Xôi vò', category: 'fresh', buy: 1500, sell: 2800, color: 0xf4d03f, unlock: 36 },
-  { id: 'xoi_bap', name: 'Xôi bắp', category: 'fresh', buy: 1400, sell: 2600, color: 0xf9ca24, unlock: 36 },
+  { id: 'xoi_dau_xanh', name: 'Xôi đậu xanh', category: 'fresh', buy: 1400, sell: 2600, color: 0xf9ca24, unlock: 40 },
+  { id: 'xoi_man', name: 'Xôi mặn', category: 'fresh', buy: 2900, sell: 5500, color: 0xf5cba7, unlock: 40 },
+  { id: 'xoi_trung', name: 'Xôi trứng', category: 'fresh', buy: 1400, sell: 2600, color: 0xfadbd8, unlock: 40 },
+  { id: 'xoi_dua', name: 'Xôi dừa', category: 'fresh', buy: 800, sell: 1400, color: 0xffffff, unlock: 40 },
+  { id: 'xoi_thap_cam', name: 'Xôi thập cẩm', category: 'fresh', buy: 2900, sell: 5500, color: 0xe17055, unlock: 40 },
+  { id: 'xoi_vo', name: 'Xôi vò', category: 'fresh', buy: 1500, sell: 2800, color: 0xf4d03f, unlock: 40 },
+  { id: 'xoi_bap', name: 'Xôi bắp', category: 'fresh', buy: 1400, sell: 2600, color: 0xf9ca24, unlock: 40 },
   // GĐ1665 — xôi gấc: xôi đỏ ngày Tết/đám cưới từ gấc trại
   { id: 'xoi_gac', name: 'Xôi gấc', category: 'fresh', buy: 2000, sell: 3600, color: 0xd9301f, unlock: 43 },
   // GĐ1087: Xôi mít — xôi dừa thêm mít trộn, món ngọt đặc trưng miền Tây, dùng mít của nông trại (liên hệ nông trại → tiệm xôi)
-  { id: 'xoi_mit', name: 'Xôi mít', category: 'fresh', buy: 1600, sell: 3000, color: 0xf8c471, unlock: 36 },
+  { id: 'xoi_mit', name: 'Xôi mít', category: 'fresh', buy: 1600, sell: 3000, color: 0xf8c471, unlock: 40 },
   // GĐ1321: Xôi nếp cẩm — món cẩm cao cấp của gạo nếp cẩm (mở cấp 70, sau mốc golden 30 → sim không đổi).
   // Mẻ (nếp cẩm 55k + đường 17k) = 72k → 40 phần × 5.7k = 228k, lãi 156k/mẻ, nấu hời hơn bán nguyên liệu (78k < 228k)
   { id: 'xoi_nep_cam', name: 'Xôi nếp cẩm', category: 'fresh', buy: 3000, sell: 5700, color: 0x8e44ad, unlock: 70 },
@@ -619,7 +619,7 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   // GĐ1326: Xôi mắm tép — xôi rưới mắm tép nhà hàng xóm (đặc trưng miền Bắc), mặn béo quen thuộc:
   // mẻ (nếp 30k + mắm tép 14k + hành phi 3k + nước tương 12k) = 59k → 40 phần × 3.6k = 144k, lãi 85k/mẻ,
   // nấu hời hơn bán thẳng nguyên liệu (84k < 144k). Khép chuỗi hàng xóm → quây xôi, mở 36 = đúng cấp hành phi (của xôi).
-  { id: 'xoi_mam_tep', name: 'Xôi mắm tép', category: 'fresh', buy: 1800, sell: 3600, color: 0xc0705a, unlock: 36 },
+  { id: 'xoi_mam_tep', name: 'Xôi mắm tép', category: 'fresh', buy: 1800, sell: 3600, color: 0xc0705a, unlock: 40 },
 
   // --- Máy ép mía (sugarcane_press) ---
   { id: 'nuoc_mia', name: 'Nước mía', category: 'drink', buy: 4800, sell: 9100, color: 0x00b894, unlock: 25 },
@@ -634,7 +634,7 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'ga_dt_hap_gung', name: 'Gà Đông Tảo hấp gừng', category: 'fresh', buy: 88000, sell: 172000, color: 0xe8c07a, unlock: 43 },
 
   // --- Combo ---
-  { id: 'combo_xoi_doi', name: 'Suất Xôi Đôi', category: 'fresh', buy: 4300, sell: 8200, color: 0xe17055, unlock: 36 },
+  { id: 'combo_xoi_doi', name: 'Suất Xôi Đôi', category: 'fresh', buy: 4300, sell: 8200, color: 0xe17055, unlock: 40 },
   { id: 'combo_nuoc_doi', name: 'Combo Hai Ly', category: 'drink', buy: 19600, sell: 37200, color: 0x74b9ff, unlock: 26 },
 
   // --- Giỏ quà ngày lễ (bàn gói quà; chỉ bán trong dịp, xem festival trong RECIPES) ---
@@ -2043,31 +2043,31 @@ export const RECIPES: Recipe[] = [
   // + nước tương. Nguyên liệu (đường, nước cốt dừa, dừa nạo, lạp xưởng, hành phi) mở ≤ cấp 36 khớp quây xôi.
   { id: 'recipe_xoi_dau_xanh', name: 'Xôi đậu xanh', station: 'rice_station',
     inputs: [{ productId: 'nep', quantity: 1 }, { productId: 'dau_xanh', quantity: 1 }, { productId: 'x_dua_cot_hop', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
-    outputId: 'xoi_dau_xanh', outputQty: 40, durationMin: 15, unlock: 36, reputationGain: 2 },
+    outputId: 'xoi_dau_xanh', outputQty: 40, durationMin: 15, unlock: 40, reputationGain: 2 },
   { id: 'recipe_xoi_man', name: 'Xôi mặn', station: 'rice_station',
     inputs: [{ productId: 'nep', quantity: 1 }, { productId: 'thit', quantity: 1 }, { productId: 'x_lap_xuong', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 1 }, { productId: 'x_nuoc_tuong', quantity: 1 }],
-    outputId: 'xoi_man', outputQty: 40, durationMin: 15, unlock: 36, reputationGain: 3 },
+    outputId: 'xoi_man', outputQty: 40, durationMin: 15, unlock: 40, reputationGain: 3 },
   { id: 'recipe_xoi_trung', name: 'Xôi trứng', station: 'rice_station',
     inputs: [{ productId: 'nep', quantity: 1 }, { productId: 'trung', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 1 }],
-    outputId: 'xoi_trung', outputQty: 40, durationMin: 12, unlock: 36, reputationGain: 2 },
+    outputId: 'xoi_trung', outputQty: 40, durationMin: 12, unlock: 40, reputationGain: 2 },
   { id: 'recipe_xoi_dua', name: 'Xôi dừa', station: 'rice_station',
     inputs: [{ productId: 'nep', quantity: 1 }, { productId: 'x_dua_cot_hop', quantity: 1 }, { productId: 'x_duong', quantity: 1 }, { productId: 'x_dua_nao', quantity: 1 }],
-    outputId: 'xoi_dua', outputQty: 40, durationMin: 12, unlock: 36, reputationGain: 2 },
+    outputId: 'xoi_dua', outputQty: 40, durationMin: 12, unlock: 40, reputationGain: 2 },
   { id: 'recipe_xoi_thap_cam', name: 'Xôi thập cẩm', station: 'rice_station',
     inputs: [{ productId: 'nep', quantity: 1 }, { productId: 'thit', quantity: 1 }, { productId: 'trung', quantity: 1 }, { productId: 'x_lap_xuong', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 1 }, { productId: 'x_nuoc_tuong', quantity: 1 }],
-    outputId: 'xoi_thap_cam', outputQty: 40, durationMin: 15, unlock: 36, reputationGain: 3 },
+    outputId: 'xoi_thap_cam', outputQty: 40, durationMin: 15, unlock: 40, reputationGain: 3 },
   { id: 'recipe_xoi_vo', name: 'Xôi vò', station: 'rice_station',
     inputs: [{ productId: 'nep', quantity: 1 }, { productId: 'dau_xanh', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
-    outputId: 'xoi_vo', outputQty: 40, durationMin: 12, unlock: 36, reputationGain: 2 },
+    outputId: 'xoi_vo', outputQty: 40, durationMin: 12, unlock: 40, reputationGain: 2 },
   { id: 'recipe_xoi_bap', name: 'Xôi bắp', station: 'rice_station',
     inputs: [{ productId: 'nep', quantity: 1 }, { productId: 'bap', quantity: 1 }, { productId: 'x_dua_cot_hop', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
-    outputId: 'xoi_bap', outputQty: 40, durationMin: 12, unlock: 36, reputationGain: 2 },
+    outputId: 'xoi_bap', outputQty: 40, durationMin: 12, unlock: 40, reputationGain: 2 },
   { id: 'recipe_xoi_gac', name: 'Xôi gấc', station: 'rice_station',
     inputs: [{ productId: 'nep', quantity: 1 }, { productId: 'x_gac', quantity: 1 }, { productId: 'x_dua_cot_hop', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
     outputId: 'xoi_gac', outputQty: 40, durationMin: 15, unlock: 43, reputationGain: 2 },
   { id: 'recipe_xoi_mit', name: 'Xôi mít', station: 'rice_station',
     inputs: [{ productId: 'nep', quantity: 1 }, { productId: 'x_mit', quantity: 1 }, { productId: 'x_dua_cot_hop', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
-    outputId: 'xoi_mit', outputQty: 40, durationMin: 12, unlock: 36, reputationGain: 2 },
+    outputId: 'xoi_mit', outputQty: 40, durationMin: 12, unlock: 40, reputationGain: 2 },
   // GĐ1321: Xôi nếp cẩm — món cẩm cao cấp (gạo nếp cẩm mở cấp 70). Mở 70 sau mốc golden sim 30 → không đổi RNG mốc.
   { id: 'recipe_xoi_nep_cam', name: 'Xôi nếp cẩm', station: 'rice_station',
     inputs: [{ productId: 'nep_cam', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
@@ -2083,7 +2083,7 @@ export const RECIPES: Recipe[] = [
   // GĐ1326: Xôi mắm tép — đặc sản mắm tép nhà hàng xóm (hx_mam_tep GĐ1077) thành nguyên liệu quây xôi. Mở 34 (sau mốc golden 30).
   { id: 'recipe_xoi_mam_tep', name: 'Xôi mắm tép', station: 'rice_station',
     inputs: [{ productId: 'hx_mam_tep', quantity: 1 }, { productId: 'nep', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 2 }, { productId: 'x_nuoc_tuong', quantity: 1 }],
-    outputId: 'xoi_mam_tep', outputQty: 40, durationMin: 15, unlock: 36, reputationGain: 2 },
+    outputId: 'xoi_mam_tep', outputQty: 40, durationMin: 15, unlock: 40, reputationGain: 2 },
 
   // --- Máy ép mía (sugarcane_press) ---
   { id: 'recipe_nuoc_mia', name: 'Nước mía', station: 'sugarcane_press',
@@ -2111,7 +2111,7 @@ export const RECIPES: Recipe[] = [
   // --- Combo ---
   { id: 'combo_xoi_doi', name: 'Suất Xôi Đôi', station: 'rice_station',
     inputs: [{ productId: 'xoi_man', quantity: 1 }, { productId: 'xoi_trung', quantity: 1 }],
-    outputId: 'combo_xoi_doi', outputQty: 1, durationMin: 5, unlock: 36, reputationGain: 2 },
+    outputId: 'combo_xoi_doi', outputQty: 1, durationMin: 5, unlock: 40, reputationGain: 2 },
   { id: 'combo_nuoc_doi', name: 'Combo Hai Ly', station: 'drink_counter',
     inputs: [{ productId: 'tra_sua', quantity: 1 }, { productId: 'ca_phe_sua_da', quantity: 1 }],
     outputId: 'combo_nuoc_doi', outputQty: 1, durationMin: 3, unlock: 26, reputationGain: 2 },
@@ -3153,7 +3153,7 @@ export const STATIONS: StationDef[] = [
   { id: 'fryer', name: 'Chảo chiên', icon: '🍳', description: 'Món chiên, xào, áp chảo', unlock: 26, recipeCount: RECIPES.filter(r => r.station === 'fryer').length },
   { id: 'sugarcane_press', name: 'Máy ép mía', icon: '🥤', description: 'Nước mía tươi', unlock: 25, recipeCount: RECIPES.filter(r => r.station === 'sugarcane_press').length },
   { id: 'steamer', name: 'Nồi hấp', icon: '♨️', description: 'Bánh bao, há cảo, hải sản hấp', unlock: 39, recipeCount: RECIPES.filter(r => r.station === 'steamer').length },
-  { id: 'rice_station', name: 'Quây xôi', icon: '🍚', description: 'Xôi các loại, combo xôi', unlock: 36, recipeCount: RECIPES.filter(r => r.station === 'rice_station').length },
+  { id: 'rice_station', name: 'Quây xôi', icon: '🍚', description: 'Xôi các loại, combo xôi', unlock: 40, recipeCount: RECIPES.filter(r => r.station === 'rice_station').length },
   { id: 'gift_wrap', name: 'Bàn gói quà', icon: '🎁', description: 'Giỏ quà Tết / 8/3 / 20/11 / Trung thu (chỉ gói trong dịp)', unlock: 28, recipeCount: RECIPES.filter(r => r.station === 'gift_wrap').length },
 ];
 

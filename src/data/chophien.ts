@@ -124,7 +124,7 @@ export type MarketTier = 'xom' | 'phuong' | 'daumoi';
 export interface MarketTierDef { id: MarketTier; name: string; unlock: number; maxItems: number; maxUnits: number; fee: number; demand: number }
 export const MARKET_TIERS: Record<MarketTier, MarketTierDef> = {
   xom: { id: 'xom', name: 'Chợ xóm', unlock: 0, maxItems: MAX_CLEAR_ITEMS, maxUnits: MAX_CLEAR_UNITS, fee: 0, demand: 1 },
-  phuong: { id: 'phuong', name: 'Chợ phường', unlock: 32, maxItems: 6, maxUnits: 30, fee: 0.02, demand: 1 },
+  phuong: { id: 'phuong', name: 'Chợ phường', unlock: 34, maxItems: 6, maxUnits: 30, fee: 0.02, demand: 1 },
   daumoi: { id: 'daumoi', name: 'Chợ đầu mối', unlock: 40, maxItems: 8, maxUnits: 60, fee: 0.05, demand: 1.1 },
 };
 export const MARKET_MULT_MIN = 0.3;
