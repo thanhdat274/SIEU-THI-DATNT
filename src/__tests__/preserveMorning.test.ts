@@ -50,7 +50,7 @@ describe('preserveTodoItems — Sổ việc chung nhắc trước mưa 90 phút 
     const spell = rainSpell(11, 40, 'rain');
     const items = preserveTodoItems({ minutes: 6 * 60, day: 40, seed: 11, weather: 'rain', jobs: [phoiJob(), phoiJob(), phoiJob()] });
     const it = items.find((i) => i.id === 'rack-rain')!;
-    expect(it.go).toEqual({ panel: 'garden' });
+    expect(it.go).toEqual({ panel: 'garden', focus: 'phoi' });
     // hiện TRƯỚC mưa 90 phút game
     expect(it.at).toBe(Math.max(0, spell!.start - 90));
     expect(it.until).toBe(spell!.end);

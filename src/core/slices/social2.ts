@@ -2,6 +2,7 @@ import { type GameState, type SetState, type GetState } from '../gameTypes';
 import { copyStock, putStock } from '../stock';
 import { REP_CAP } from '../../data/reputation';
 import { emptySocial2 } from '../../data/biz';
+import { useSession } from '../../net/session';
 
 /**
  * Hệ 6 — Cộng đồng online không đồng bộ (SPEC-CHIEU-RONG §6.5). Các mutation có ĐỤNG KINH TẾ/trạng thái
@@ -10,6 +11,10 @@ import { emptySocial2 } from '../../data/biz';
  *
  * Lập trường: simGolden / chơi khách / chưa bật scope `public_card` → không gọi mạng, không đổi một byte
  * kinh tế. Mọi thứ có trần phía server (§6.3), state này chỉ là bộ nhớ nhanh phía máy người chơi.
+ *
+ * Co-op (§6.6): chợ liên hẻm, lẵng hoa, thư và danh thiếp ở đợt đầu CHỈ cho bản lưu cá nhân — tiệm chung
+ * có nhiều người cùng sửa kho dễ tranh chấp, và `biz.social2`/két/kho là state chung cả hẻm. 5 action này
+ * tự chặn khi ở hẻm online (mẫu doPrestige) → không làm lệch state chung (LOCAL_ONLY trong coopGuard).
  */
 
 /** Lẵng hoa: +5 điểm trang trí trong 3 ngày (khớp server/socialRules). */
@@ -40,8 +45,16 @@ export const createSocial2Slice = (set: SetState, get: GetState): Pick<
     layout: s.furniture.map((f) => ({ type: f.type, x: f.x, z: f.z, rot: f.rot })).slice(0, 240),
   });
 
+  /** Chặn khi đang ở hẻm online: cộng đồng online ở đợt đầu chỉ dành bản lưu cá nhân (§6.6). */
+  const coopBlock = (s: GameState) => {
+    if (!useSession.getState().coop) return false;
+    s.notify('🌐 Cộng đồng online dùng ở chế độ chơi đơn (bản lưu cá nhân).');
+    return true;
+  };
+
   return {
     toggleCardPublic: async (on) => {
+      if (coopBlock(get())) return;
       const anyOn = !!get().biz.social2?.cardPublic;
       if (on === anyOn) return;
       const api = await import('../../net/socialApi');
@@ -62,6 +75,7 @@ export const createSocial2Slice = (set: SetState, get: GetState): Pick<
 
     pushCard: async () => {
       const s = get();
+      if (coopBlock(s)) return;
       if (!s.biz.social2?.cardPublic) return;
       const api = await import('../../net/socialApi');
       try {
@@ -72,6 +86,7 @@ export const createSocial2Slice = (set: SetState, get: GetState): Pick<
     },
 
     claimInbox: (items) => {
+      if (coopBlock(get())) return;
       if (!items.length) return;
       const s = get();
       const cur = s.biz.social2 ?? emptySocial2();
@@ -106,6 +121,7 @@ export const createSocial2Slice = (set: SetState, get: GetState): Pick<
     },
 
     postMarketLot: async (input) => {
+      if (coopBlock(get())) return;
       const s = get();
       const cur = s.biz.social2 ?? emptySocial2();
       const wk = weekKeyLocal();
@@ -124,6 +140,7 @@ export const createSocial2Slice = (set: SetState, get: GetState): Pick<
     },
 
     buyMarketLot: async (lot) => {
+      if (coopBlock(get())) return;
       const s = get();
       const total = lot.price * lot.qty;
       if (s.money < total) { get().notify('❌ Két không đủ tiền mua lô này.'); return; }
