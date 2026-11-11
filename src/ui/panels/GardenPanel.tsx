@@ -16,6 +16,7 @@ import { expiringSoon, expiryNoteFor, newUnlockMark } from '../../data/advice';
 import { isXoiCungDay } from '../../data/tiemXoi';
 import { preserveDefsOf, preserveDefById, phoiReady, rackCap, vaiCap, chumCap, VAI_UNLOCK, CHUM_UNLOCK, pickleState, pickleAge, uRipe, uAged, PHOI_UNLOCK } from '../../data/preserve';
 import { picklePayoff } from '../../data/picklePayoff';
+import { phoiPayoff } from '../../data/phoiPayoff';
 import { preservePayoff } from '../../data/preservePayoff';
 import { NEIGHBOR_SUPPLIER_IDS } from '../../data/supplierRel';
 import { describeDay, type Weather } from '../../data/weather';
@@ -509,6 +510,7 @@ function PhoiTab(props: {
                   <div style={{ fontSize: 12, opacity: 0.75, marginTop: 4 }}>
                     Bắt đầu ngày {j.startDay} · {j.wet > 0 ? `dính mưa ${j.wet} lần` : 'chưa dính mưa'}{j.allHomegrown ? ' · toàn nhà trồng (giá hơn)' : ''} · {def.note}
                   </div>
+                  <div style={{ fontSize: 12, color: '#e67e22', marginTop: 4 }}>💰 {phoiPayoff({ job: j, def }).line}</div>
                 </div>
               );
             })

@@ -9,8 +9,9 @@ const here = dirname(fileURLToPath(import.meta.url));
 const src = readFileSync(join(here, '../ui/panels/GardenPanel.tsx'), 'utf8');
 
 describe('picklePayoff — nối vào PhoiTab (GardenPanel)', () => {
-  it('import picklePayoff', () => {
+  it('import picklePayoff + phoiPayoff', () => {
     expect(src).toContain("import { picklePayoff } from '../../data/picklePayoff'");
+    expect(src).toContain("import { phoiPayoff } from '../../data/phoiPayoff'");
   });
   it('dòng 💰 payoff trong mỗi mẻ MUỐI (cạnh nút Vớt)', () => {
     // nằm trong khối muoiJobs.map → có nút vớt và dòng payoff màu cam
@@ -20,5 +21,8 @@ describe('picklePayoff — nối vào PhoiTab (GardenPanel)', () => {
     // dùng chung biến j/d/day trong khối uJobs.map; đủ 2 lần = muối + ủ
     const occurrences = src.split('picklePayoff({ job: j, def: d, day }).line').length - 1;
     expect(occurrences).toBeGreaterThanOrEqual(2);
+  });
+  it('dòng 💰 payoff trong mỗi nong PHƠI (cạnh nút Gỡ xuống)', () => {
+    expect(src).toContain('phoiPayoff({ job: j, def }).line');
   });
 });
