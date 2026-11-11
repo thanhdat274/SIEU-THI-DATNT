@@ -13,7 +13,10 @@ import { tutorialActive } from './tutorialSteps';
 const goTodo = (it: TodoItem, openPanel: (p: never) => void) => {
   if (!it.go) return;
   if ('act' in it.go) worldActions.mop();
-  else openPanel({ type: it.go.panel } as never);
+  else {
+    const { panel, focus } = it.go;
+    openPanel({ type: panel, ...(focus ? { focus } : {}) } as never);
+  }
 };
 
 /** SPEC-TOI-UU §T2-b: thay `useGame()` (đăng ký cả store) bằng selector trả CHUỖI khoá — chuỗi so theo giá trị

@@ -1,5 +1,6 @@
 import { useGame } from '../../core/store';
 import { useState } from 'react';
+import { useFocusPulse } from '../focusPulse';
 import { productById, formatMoney, fmtMul } from '../../data/products';
 import { shortLabel } from '../shortLabel';
 import {
@@ -21,7 +22,10 @@ import { Callout, Footer, styles, Tabs } from './shared';
 
 /** Trang trại đầu ngõ: trồng theo mùa vụ, nuôi 7 loài, công trình + dọn trại lấy gỗ đá nâng sao, đơn quán xóm. */
 export function GardenPanel() {
-  const [tab, setTab] = useState<'farm' | 'phoi'>('farm');
+  // T6-L3: mở từ Sổ việc có thể tới thẳng tab Phơi · Muối · Ủ (`focus: 'phoi'`).
+  const initialFocus = useGame((s) => (s.panel?.type === 'garden' ? s.panel.focus : undefined));
+  const [tab, setTab] = useState<'farm' | 'phoi'>(initialFocus === 'phoi' ? 'phoi' : 'farm');
+  useFocusPulse(initialFocus);
   const { garden, level, money, day, weather, weatherSeed, forecast, storage, storageLots, furniture, biz, plantCrop, waterGarden, waterPlot, fertilizePlot, harvestPlot, buyAnimal, feedPen, collectPen, sellFattened, expandFarm, deliverFarmOrder, buyFarmBuilding, upgradeFarmBuilding, cleanupFarm, startPreserve, collectPreserve, setRackCovered, buyRackTarp, closePanel } = useGame();
   const homegrown = Object.entries(garden.homegrown).filter(([, q]) => q > 0);
   const quanMenu = biz.quanNuoc?.open ? (biz.quanNuoc.menu ?? []) : []; // GĐ1141: quán đóng → mảng rỗng (không gợi pha), không phải undefined (xét tất cả)
@@ -39,7 +43,9 @@ export function GardenPanel() {
         Mảnh trại cuối đường thứ hai (bấm nút 🚜 Ra trại để qua). Hiện là "{tier.name}" với {garden.plots.length} luống đất,
         chuồng {ANIMAL_ORDER.map((k) => ANIMALS[k].name.toLowerCase()).join('/')}. Hàng nhà trồng/nhà nuôi vào kho — khách trả thêm 20%, chi nhánh 24/7 bán được luôn.
       </p>
+      <div data-focus="phoi">
       <Tabs tabs={[['farm', '🚜 Trang trại'], ['phoi', '🏺 Phơi · Muối · Ủ']]} value={tab} onChange={setTab} />
+      </div>
       {tab === 'phoi' && (
         <PhoiTab level={level} money={money} day={day} weather={weather} weatherSeed={weatherSeed} tomorrow={forecast[0] ?? weather}
           garden={garden} storage={storage} buyFarmBuilding={buyFarmBuilding} upgradeFarmBuilding={upgradeFarmBuilding}

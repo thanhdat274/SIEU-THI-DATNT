@@ -486,12 +486,12 @@ export function preserveTodoItems(args: {
       at,
       until: spell.end,
       morning: true,
-      go: { panel: 'garden' },
+      go: { panel: 'garden', focus: 'phoi' },
     });
   }
   preserveMorningTips(args).forEach((t, i) => {
     if (t.icon === '☂️') return; // dòng mưa đã có ở chip có giờ phía trên
-    out.push({ id: `preserve-tip-${i}`, icon: t.icon, text: t.text, urgency: 'today', morning: true, go: { panel: 'garden' } });
+    out.push({ id: `preserve-tip-${i}`, icon: t.icon, text: t.text, urgency: 'today', morning: true, go: { panel: 'garden', focus: 'phoi' } });
   });
   return out;
 }

@@ -121,33 +121,33 @@ export interface CookJob {
 export type Panel =
   | { type: 'order'; autofill?: boolean } // GĐ1512: autofill = mở từ nút 'Nhập đủ' trên toast → tự điền gợi ý
   | { type: 'shelf'; uid: number }
-  | { type: 'build' }
+  | { type: 'build'; focus?: string }
   | { type: 'arrange' }
   | { type: 'prices' }
-  | { type: 'staff' }
+  | { type: 'staff'; focus?: string }
   | { type: 'branch' }
   | { type: 'levels' }
   | { type: 'reviews' }
-  | { type: 'storage' }
+  | { type: 'storage'; focus?: string }
   | { type: 'planogram' }
   | { type: 'quests' }
   | { type: 'regulars' }
   | { type: 'skills' }
   | { type: 'combos' }
-  | { type: 'contracts' }
+  | { type: 'contracts'; focus?: string }
   | { type: 'costume' }
-  | { type: 'business' }
+  | { type: 'business'; focus?: string }
   | { type: 'calendar' }
   | { type: 'gifts' }
-  | { type: 'cook' }
-  | { type: 'morning' }
+  | { type: 'cook'; focus?: string }
+  | { type: 'morning'; focus?: string }
   | { type: 'todo' } // GĐ2317: Sổ việc chung (SPEC-TOI-UU §T6-L3) — gộp mọi nguồn đã đăng ký qua registerTodo
   | { type: 'history' }
   | { type: 'social' }
   | { type: 'online' }
   | { type: 'licenses' }
-  | { type: 'garden' }
-  | { type: 'brand' }
+  | { type: 'garden'; focus?: string }
+  | { type: 'brand'; focus?: string }
   | { type: 'analytics' }
   | { type: 'quannuoc' }
   | { type: 'discovery' }

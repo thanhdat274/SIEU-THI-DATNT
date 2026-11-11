@@ -560,7 +560,7 @@ export function brandTodoItems(b: BrandState | undefined, day: number): TodoItem
     urgency: t.urgency,
     at: t.at,
     morning: true,
-    go: { panel: 'brand' },
+    go: { panel: 'brand', focus: 'lines' },
   }));
 }
 

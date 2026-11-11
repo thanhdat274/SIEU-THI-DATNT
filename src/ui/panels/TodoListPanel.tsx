@@ -22,7 +22,11 @@ const GROUPS: { key: TodoItem['urgency']; title: string; icon: string }[] = [
 function goTodo(it: TodoItem, openPanel: (p: never) => void) {
   if (!it.go) return;
   if ('act' in it.go) worldActions.mop();
-  else openPanel({ type: it.go.panel } as never);
+  else {
+    // T6-L3: chuyển focus "đúng chỗ" nếu nguồn việc có chỉ định (vd mở đúng tab Phơi trong Trang trại).
+    const { panel, focus } = it.go;
+    openPanel({ type: panel, ...(focus ? { focus } : {}) } as never);
+  }
 }
 
 /** Giờ hẹn / hết hiệu lực (phút trong ngày) → chuỗi "t7:05" gọn cho dòng việc. */

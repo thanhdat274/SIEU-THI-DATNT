@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useFocusPulse } from '../focusPulse';
 import { useGame } from '../../core/store';
 import { productById } from '../../data/products';
 import {
@@ -28,7 +29,10 @@ const pname = (id: string) => (productById(id)?.name ?? id).replace(/\s*\([^)]*\
  */
 export function BrandPanel() {
   const { level, money, biz, garden, soldEver, foundBrand, addBrandLine, dropBrandLine, buyBrandWorkshop, hireBrandWorker, fireBrandWorker, acceptBrandDeal, commitBrandDeal, releaseBrandDeal, deliverBrandDeal, acceptRivalSupply, openFranchise, closeFranchise, closePanel, day } = useGame();
-  const [tab, setTab] = useState<Tab>('lines');
+  // T6-L3: mở từ Sổ việc có thể tới thẳng một tab nhãn (`focus: 'lines' | 'workshop' | 'dealers' | 'franchise'`).
+  const initialFocus = useGame((s) => (s.panel?.type === 'brand' ? s.panel.focus : undefined));
+  const [tab, setTab] = useState<Tab>(initialFocus && (['lines', 'workshop', 'dealers', 'franchise'] as string[]).includes(initialFocus) ? (initialFocus as Tab) : 'lines');
+  useFocusPulse(initialFocus);
   const [name, setName] = useState('');
   const b = biz.brand;
 
@@ -72,11 +76,13 @@ export function BrandPanel() {
         <>
           <RepBar rep={b.rep} name={b.name} repLog={b.repLog} />
 
+          <div data-focus={tab}>
           <Tabs<Tab>
             tabs={TABS}
             value={tab}
             onChange={setTab}
           />
+          </div>
 
           {tab === 'lines' && <LinesTab lines={b.lines} candidates={candidates} slots={brandLineSlots(level)} onAdd={addBrandLine} onDrop={dropBrandLine} stock={brandStockUnits(b)} />}
 
