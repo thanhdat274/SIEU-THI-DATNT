@@ -178,3 +178,62 @@
 .banhchung-ing:disabled { opacity: 0.5; cursor: default; }
 .banhchung-ing-icon { font-size: 22px; }
 .banhchung-ing-name { font-size: 11px; color: #5d3a1a; }
+
+/* ── Hệ 7-L4 — Bày mâm ngũ quả ─────────────────────────── */
+.mamnguqua { text-align: center; width: 100%; }
+.mamnguqua-tray {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+.mamnguqua-fruit {
+  border: 2px solid #cfb689;
+  background: #fff;
+  border-radius: 10px;
+  padding: 6px 8px;
+  min-width: 58px;
+  cursor: pointer;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  touch-action: manipulation;
+}
+.mamnguqua-fruit.sel { border-color: #1e8449; background: #eaf6d6; }
+.mamnguqua-fruit.hand { border-color: #c0392b; background: #fde8e3; }
+.mamnguqua-fruit.used { opacity: 0.4; cursor: default; }
+.mamnguqua-fruit-icon { font-size: 22px; }
+.mamnguqua-fruit-name { font-size: 11px; color: #5d3a1a; }
+
+.mamnguqua-man {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  background: #e8d9b8;
+  border: 3px solid #cfb689;
+  border-radius: 60% 60% 50% 50% / 55% 55% 45% 45%;
+  padding: 14px;
+  width: min(260px, 100%);
+  margin: 0 auto 10px;
+}
+.mamnguqua-row { display: flex; gap: 8px; justify-content: center; }
+.mamnguqua-slot {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  border: 2px dashed #a98b52;
+  background: #fdf6e3;
+  font-size: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.mamnguqua-slot.base { width: 54px; height: 54px; }
+.mamnguqua-slot.filled { border-style: solid; border-color: #8a9a5b; background: #eef4d8; }
+.mamnguqua-slot.hint { border-color: #1e8449; border-style: dotted; }

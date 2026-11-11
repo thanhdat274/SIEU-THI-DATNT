@@ -161,3 +161,25 @@ export const miniTargetRecipe = (def: FestivalMiniDef, festivalId: string | unde
   if (def.target.kind !== 'recipe') return undefined;
   return def.target.recipeId === 'gio_qua' ? GIO_QUA_RECIPES[festivalId ?? ''] : def.target.recipeId;
 };
+
+/** Một dòng điểm trang trí thưởng (mâm ngũ quả / đèn ông sao) — lưu trong `biz.festivalFlair`. */
+export interface FestivalFlairEntry {
+  furniture: string;
+  bonus: number;
+  /** Ngày game hết hiệu lực (ngày cuối của dịp). */
+  until: number;
+}
+
+/**
+ * Tổng điểm trang trí 🩷 đang được cộng nhờ trò khéo tay (Hệ 7 §7.7, L4). THUẦN.
+ * Cộng vào chuỗi `decorScoreOf` bên cạnh `vietSetDecorBonus` (customers.ts) — khi không có trò
+ * (mọi bản lưu cũ, người chưa chơi trò) trả 0 nên không đổi nền kinh tế (không đụng golden).
+ */
+export function festivalFlairBonus(
+  biz: { festivalFlair?: FestivalFlairEntry[] },
+  day: number,
+): number {
+  let sum = 0;
+  for (const f of biz.festivalFlair ?? []) if (day <= f.until) sum += f.bonus;
+  return sum;
+}
