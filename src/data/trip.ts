@@ -8,8 +8,9 @@
  * (`tripSetCart`) trước hoặc trong lúc đi; tới giờ về, hàng được chuyển vào kho.
  */
 import type { HaulerDef, HaulerId, RouteDef } from './routes';
-import { routeById, roundTripMinutes, routeBuyPrice, routeDiscountFor } from './routes';
-import { productById, type Product } from './products';
+import { routeById, roundTripMinutes, routeBuyPrice, routeDiscountFor, routeGood } from './routes';
+import { casesFor, productById, type Category, type Product } from './products';
+import { WEEK_DAYS } from './bizWeeks';
 import type { Stock } from '../core/stock';
 import { copyStock, putStock } from '../core/stock';
 import { shelfLife } from './freshness';
@@ -101,4 +102,98 @@ export function tripLoadStock(t: TripState, stock: Stock, coolBox: boolean): Sto
     putStock(k, pid, q, [{ qty: q, life: tripLotLife(p, t, coolBox) }]);
   }
   return k;
+}
+
+// ─────────────── L3: weeklyCap + sức chở (SPEC §5.5 R7) ───────────────
+
+/** Trạng thái hàng còn tại nguồn một tuyến trong TUẦN hiện tại (R7 — cổng chống farm). */
+export interface RouteStock {
+  /** Tuần game (1-based, weekOfDay()). Khác tuần hiện tại → coi như nguồn đã về hàng mới. */
+  week: number;
+  /** Số món còn có thể mua tuần này — khoá là productId (hàng riêng) hoặc `cat:<Category>` (nhóm ngành). */
+  left: Record<string, number>;
+}
+
+/** Tuần game của một ngày (1-based). */
+export const weekOfDay = (day: number): number => Math.max(1, Math.ceil(day / WEEK_DAYS));
+
+/** Khoá trữ trong `routeStock.left` cho một món — hàng riêng của tuyến theo productId, còn lại theo nhóm ngành. */
+export const routeStockKey = (route: RouteDef, productId: string, category: Category): string =>
+  routeGood(route, productId) ? productId : `cat:${category}`;
+
+/** Khởi tạo lượng nguồn cho một TUẦN mới của tuyến (đổ đầy theo weeklyCap từng món/nhóm). */
+export function routeStockFresh(day: number, route: RouteDef): RouteStock {
+  const left: Record<string, number> = {};
+  for (const g of route.goods) left[g.productId] = (left[g.productId] ?? 0) + g.weeklyCap;
+  for (const c of route.categoryDeals ?? []) left[`cat:${c.category}`] = (left[`cat:${c.category}`] ?? 0) + c.weeklyCap;
+  return { week: weekOfDay(day), left };
+}
+
+/** Lấy routeStock của tuyến (tạo mới/đổ đầy nếu sang tuần khác). Không sửa đầu vào. */
+export function routeStockResolve(stocks: Record<string, RouteStock> | undefined, route: RouteDef, day: number): RouteStock {
+  const cur = stocks?.[route.id];
+  if (cur && cur.week === weekOfDay(day)) return cur;
+  return routeStockFresh(day, route);
+}
+
+/** Lượng còn lại ở nguồn tuần này cho một món (0 nếu không bán/hết). */
+export const routeStockLeft = (stock: RouteStock, route: RouteDef, productId: string, category: Category): number =>
+  stock.left[routeStockKey(route, productId, category)] ?? 0;
+
+/** Trừ lượng đã mua khỏi routeStock khi xe chở về — THUẦN, trả RouteStock mới (kẹp ≥ 0). */
+export function routeStockSpend(stock: RouteStock, route: RouteDef, cart: Record<string, number>): RouteStock {
+  const left = { ...stock.left };
+  for (const [pid, qty] of Object.entries(cart)) {
+    const q = Math.floor(qty); if (q <= 0) continue;
+    const p = productById(pid); if (!p) continue;
+    const k = routeStockKey(route, pid, p.category);
+    left[k] = Math.max(0, (left[k] ?? 0) - q);
+  }
+  return { ...stock, left };
+}
+
+/** Kết quả kiểm tra giỏ hàng chở về. */
+export type CartCheck = { ok: true } | { ok: false; reason: string };
+
+/**
+ * Kiểm tra giỏ hàng chở về (nhịp 2 — chọn hàng, L3): tiền mang theo ≤ `cash`, sức chở ≤ `hauler.cases`,
+ * và lượng mua ≤ lượng còn ở nguồn tuần này (`stock`). `cart` được đọc từ `t`.
+ */
+export function checkCart(t: TripState, route: RouteDef, hauler: HaulerDef, stock: RouteStock): CartCheck {
+  let cash = 0;
+  let cases = 0;
+  for (const [pid, qty] of Object.entries(t.cart)) {
+    const q = Math.floor(qty); if (q <= 0) continue;
+    const p = productById(pid); if (!p) continue;
+    const left = routeStockLeft(stock, route, pid, p.category);
+    if (q > left) return { ok: false, reason: `${p.name} ở nguồn tuần này còn ${left}` };
+    cash += routeBuyPrice(p.buy, routeDiscountFor(route, pid, p.category)) * q;
+    cases += casesFor(pid, q);
+  }
+  if (cash > t.cash) return { ok: false, reason: 'Vượt tiền mang theo' };
+  if (cases > hauler.cases) return { ok: false, reason: `Quá sức chở (${cases}/${hauler.cases} thùng)` };
+  return { ok: true };
+}
+
+/** Tổng số thùng (casesFor) cả xe hàng — đo sức chở đã dùng. */
+export function cartCases(cart: Record<string, number>): number {
+  let n = 0;
+  for (const [pid, qty] of Object.entries(cart)) {
+    const q = Math.floor(qty); if (q <= 0) continue;
+    n += casesFor(pid, q);
+  }
+  return n;
+}
+
+/** Số tiền TIẾT KIỆM được so với mua giá mối lái (giá nhập chuẩn) — để UI hiện "đang lời bao nhiêu" (§5.6). */
+export function cartSavings(t: TripState, route: RouteDef): number {
+  let std = 0;
+  let paid = 0;
+  for (const [pid, qty] of Object.entries(t.cart)) {
+    const q = Math.floor(qty); if (q <= 0) continue;
+    const p = productById(pid); if (!p) continue;
+    std += p.buy * q;
+    paid += routeBuyPrice(p.buy, routeDiscountFor(route, pid, p.category)) * q;
+  }
+  return std - paid;
 }

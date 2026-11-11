@@ -3,8 +3,10 @@ import { newGameData, useGame } from '../core/store';
 import { haulerById, routeById, routeBuyPrice, routeDiscountFor } from '../data/routes';
 import {
   beginTrip, cartBuyCost, tripArrived, tripLoadStock, tripLotLife, tripProgress, tripRemaining, tripRoadHours,
+  routeStockFresh, routeStockKey, routeStockLeft, routeStockResolve, routeStockSpend, weekOfDay, checkCart,
+  cartCases, cartSavings,
 } from '../data/trip';
-import { productById } from '../data/products';
+import { productById, caseSize } from '../data/products';
 
 /**
  * Hệ 5-L2 — Chuyến đi tỉnh (SPEC-CHIEU-RONG §5.3/§5.10): startTrip + vắng mặt + xe về nhập kho.
@@ -151,15 +153,15 @@ describe('startTrip — đi và về trọn vòng (cả hai chế độ dùng ch
     expect(s1.biz.trip?.returnAt).toBe(420 + 180);
     expect(toasts.some((t) => t.includes('về lúc'))).toBe(true);
 
-    // lập giỏ hàng rồi mô phỏng tick tới giờ về
-    useGame.getState().tripSetCart({ mi: 2, rau: 3 });
+    // lập giỏ hàng chở về (L3: chỉ mua được hàng tuyến bán — rau, thịt heo ở Chợ huyện) rồi về tới giờ
+    useGame.getState().tripSetCart({ rau: 3, thit_heo_tuoi: 2 });
     useGame.setState({ minutes: 420 + 180 });
     useGame.getState().tripArrive();
     const s2 = useGame.getState();
     expect(s2.biz.trip).toBeUndefined();
     expect(s2.location).toBe('Nhà của bạn');
-    expect(s2.storage.mi).toBe((newGameData().storage.mi ?? 0) + 2);
     expect(s2.storage.rau).toBe(3);
+    expect(s2.storage.thit_heo_tuoi).toBe(2);
   });
 
   it('chưa có chuyến: tripSetCart / tripArrive đều an toàn (no-op)', () => {
@@ -185,9 +187,9 @@ describe('startTrip — đi và về trọn vòng (cả hai chế độ dùng ch
     useGame.getState().startTrip('cho_huyen', 'self', 10000);
     const toasts: string[] = [];
     useGame.setState({ notify: (m: string) => void toasts.push(m) });
-    useGame.getState().tripSetCart({ mi: 1000 }); // 3tr > 10k
-    expect(useGame.getState().biz.trip?.cart?.mi).toBeUndefined();
-    expect(toasts.some((t) => t.includes('hơn số tiền'))).toBe(true);
+    useGame.getState().tripSetCart({ rau: 120 }); // trong hạn nguồn nhưng 120×7,5k = 900k > 10k
+    expect(useGame.getState().biz.trip?.cart?.rau).toBeUndefined();
+    expect(toasts.some((t) => t.includes('Vượt tiền'))).toBe(true);
   });
 
   it('tripArrive không đổi đường đi của "đi và về" ở mốc Miệt vườn (5h)', () => {
@@ -195,5 +197,142 @@ describe('startTrip — đi và về trọn vòng (cả hai chế độ dùng ch
     useGame.setState({ money: 2_000_000 });
     useGame.getState().startTrip('miet_vuon', 'self', 500000);
     expect(useGame.getState().biz.trip?.returnAt).toBe(360 + 5 * 60); // 5h × 60 × 1,0
+  });
+});
+
+// ─────────────── L3: weeklyCap (R7) + sức chở + chọn hàng ───────────────
+const baGac = haulerById('ba_gac')!;
+
+describe('routeStock (lượng nguồn tuần, R7)', () => {
+  it('weekOfDay tính đúng mốc tuần (7 ngày)', () => {
+    expect(weekOfDay(1)).toBe(1);
+    expect(weekOfDay(7)).toBe(1);
+    expect(weekOfDay(8)).toBe(2);
+    expect(weekOfDay(21)).toBe(3);
+  });
+
+  it('routeStockFresh: hàng riêng theo productId + nhóm ngành theo cat:<cat>', () => {
+    const st = routeStockFresh(1, choHuyen);
+    expect(st.week).toBe(1);
+    expect(st.left['rau']).toBe(120); // goods riêng
+    expect(st.left['thit_heo_tuoi']).toBe(40);
+    expect(st.left['cat:fresh']).toBe(80); // nhóm ngành còn lại
+    expect(st.left['cat:meat']).toBe(60);
+    const mv = routeStockFresh(1, mietVuon);
+    expect(mv.left['rg_kho_tom']).toBe(12); // 5 đặc sản, mỗi loại 12
+  });
+
+  it('routeStockKey: hàng riêng của tuyến theo productId, còn lại theo ngành', () => {
+    expect(routeStockKey(choHuyen, 'rau', 'fresh')).toBe('rau');
+    expect(routeStockKey(choHuyen, 'mia', 'fresh')).toBe('cat:fresh'); // mia không có trong goods
+    expect(routeStockKey(mietVuon, 'rg_kho_tom', 'dry')).toBe('rg_kho_tom');
+  });
+
+  it('routeStockResolve: giữ tuần đang chạy, đổ đầy khi sang tuần mới', () => {
+    const st = routeStockFresh(1, choHuyen);
+    const same = routeStockResolve({ cho_huyen: st }, choHuyen, 3);
+    expect(same).toBe(st);
+    const fresh = routeStockResolve({ cho_huyen: st }, choHuyen, 9); // tuần 2
+    expect(fresh).not.toBe(st);
+    expect(fresh.week).toBe(2);
+    expect(fresh.left['rau']).toBe(120); // lại đầy
+    expect(routeStockResolve(undefined, choHuyen, 1)).toBeDefined();
+  });
+
+  it('routeStockSpend: trừ lượng mua, kẹp ≥ 0, không đụng đầu vào', () => {
+    const st = routeStockFresh(1, choHuyen);
+    const out = routeStockSpend(st, choHuyen, { rau: 30, ca_loc_tuoi: 50 });
+    expect(out.left['rau']).toBe(90);
+    expect(out.left['ca_loc_tuoi']).toBe(0); // 40−50 → kẹp 0
+    expect(st.left['rau']).toBe(120); // gốc không đổi
+  });
+
+  it('routeStockLeft đọc đúng khoá', () => {
+    const st = routeStockFresh(1, choHuyen);
+    expect(routeStockLeft(st, choHuyen, 'rau', 'fresh')).toBe(120);
+    expect(routeStockLeft(st, choHuyen, 'mia', 'fresh')).toBe(80);
+    expect(routeStockLeft(st, choHuyen, 'nuoc', 'drink')).toBe(0);
+  });
+});
+
+describe('checkCart / cartCases / cartSavings (nhịp 2 — chọn hàng)', () => {
+  const bigStock = () => {
+    const st = routeStockFresh(1, choHuyen);
+    st.left['rau'] = 100000;
+    return st;
+  };
+
+  it('giỏ trong giới hạn (tiền + sức chở + nguồn) → ok', () => {
+    const t = beginTrip(choHuyen, baGac, 1, 420, 'self', 10_000_000, { rau: 10, thit_heo_tuoi: 6 });
+    expect(checkCart(t, choHuyen, baGac, bigStock()).ok).toBe(true);
+  });
+
+  it('vượt lượng còn ở nguồn → chặn (R7)', () => {
+    const st = routeStockFresh(1, choHuyen); // rau còn 120
+    const t = beginTrip(choHuyen, baGac, 1, 420, 'self', 10_000_000, { rau: 130 });
+    const c = checkCart(t, choHuyen, baGac, st);
+    expect(c.ok).toBe(false);
+    expect(c.ok === false && c.reason.toLowerCase().includes('nguồn')).toBe(true);
+  });
+
+  it('vượt sức chở xe → chặn', () => {
+    // xe máy 8 thùng; rau 10/thùng → 81 món = 9 thùng > 8
+    const t = beginTrip(choHuyen, moto, 1, 420, 'self', 10_000_000, { rau: 81 });
+    const c = checkCart(t, choHuyen, moto, bigStock());
+    expect(c.ok).toBe(false);
+    expect(c.ok === false && c.reason.includes('sức chở')).toBe(true);
+  });
+
+  it('vượt tiền mang theo → chặn', () => {
+    const t = beginTrip(choHuyen, moto, 1, 420, 'self', 1000, { rau: 2 });
+    const c = checkCart(t, choHuyen, moto, bigStock());
+    expect(c.ok).toBe(false);
+    expect(c.ok === false && c.reason.includes('Vượt tiền')).toBe(true);
+  });
+
+  it('cartCases = tổng thùng (casesFor)', () => {
+    const rau = productById('rau')!;
+    const size = caseSize(rau.id); // 10 món/thùng
+    expect(cartCases({ rau: size })).toBe(1);
+    expect(cartCases({ rau: size + 1 })).toBe(2);
+    expect(cartCases({})).toBe(0);
+  });
+
+  it('cartSavings = chênh lệch giá nhập chuẩn − giá tuyến (đang lời bao nhiêu)', () => {
+    const t = beginTrip(choHuyen, moto, 1, 420, 'self', 10_000_000, { rau: 10 });
+    const rau = productById('rau')!;
+    expect(cartSavings(t, choHuyen)).toBe(Math.round(rau.buy * 0.25) * 10);
+  });
+});
+
+describe('L3 slice — weeklyCap vào chọn hàng & xe về trừ nguồn', () => {
+  it('startTrip khởi tạo routeStock của tuyến cho tuần này', () => {
+    prep(50, 420);
+    useGame.getState().startTrip('cho_huyen', 'self', 300000);
+    const rs = useGame.getState().biz.routeStock?.['cho_huyen'];
+    expect(rs).toBeDefined();
+    expect(rs!.left['rau']).toBe(120);
+    expect(rs!.week).toBe(weekOfDay(useGame.getState().day));
+  });
+
+  it('tripSetCart chặn khi mua quá lượng nguồn tuần (R7)', () => {
+    prep(50, 420);
+    useGame.getState().startTrip('cho_huyen', 'self', 300000);
+    const toasts: string[] = [];
+    useGame.setState({ notify: (m: string) => void toasts.push(m) });
+    useGame.getState().tripSetCart({ rau: 999 }); // > 120 ở nguồn
+    expect(useGame.getState().biz.trip?.cart?.rau).toBeUndefined();
+    expect(toasts.some((t) => t.toLowerCase().includes('nguồn') || t.toLowerCase().includes('rau'))).toBe(true);
+  });
+
+  it('chọn trong giới hạn rồi về: hàng vào kho VÀ trừ lượng nguồn tuần', () => {
+    prep(50, 420);
+    useGame.getState().startTrip('cho_huyen', 'self', 300000);
+    useGame.getState().tripSetCart({ rau: 10 });
+    useGame.setState({ minutes: 420 + 180 });
+    useGame.getState().tripArrive();
+    const s = useGame.getState();
+    expect(s.storage.rau).toBe(10);
+    expect(s.biz.routeStock?.['cho_huyen']?.left['rau']).toBe(110); // 120−10
   });
 });

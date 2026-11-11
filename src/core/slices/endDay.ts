@@ -32,7 +32,8 @@ import { VENUE_TREND_DAYS, type VenueDay } from '../../data/venueTrend';
 import { RISK_TREND_DAYS, emptyRiskToday } from '../../data/risk';
 import { type GameState, type ContractState, type DayRecord, type SetState, type GetState, DAY_START, HISTORY_DAYS, wagesDue, emptyStats, daySalesProfit } from '../gameTypes';
 import { putStock, spoilOvernight, takeStock, type Stock } from '../stock';
-import { tripLoadStock } from '../../data/trip';
+import { tripLoadStock, routeStockResolve, routeStockSpend } from '../../data/trip';
+import { routeById } from '../../data/routes';
 import { isCookStation } from '../../data/furniture';
 import type { CookingStation } from '../../data/recipes';
 import { COMPLAINTS_FOR_SURPRISE, isAlcohol, LICENSE_FINE, LICENSE_GRACE, licenseById, licenseStatus, missingLicenses, newInspection, RENEW_WARN_DAYS, requiredLicenses, SURPRISE_INSPECTION, SUSPEND_AFTER } from '../../data/licenses';
@@ -623,12 +624,22 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
   // chuyến kết thúc, chủ về nhà. Bổ sung vào accumulator `k` (chảy vào set cuối) nên không đổi golden
   // (biz.trip trống ở sim — sim không bao giờ gọi startTrip).
   if (biz.biz.trip) {
+    const wasSelf = biz.biz.trip.by === 'self';
     const tl = tripLoadStock(biz.biz.trip, k, !!biz.biz.coolBox);
     k.storage = tl.storage;
     k.storageLots = tl.storageLots;
-    if (biz.biz.trip.by === 'self') set({ location: 'Nhà của bạn' });
+    // Hệ 5-L3 — hàng đã lấy khỏi nguồn: trừ lượng tuần (R7). Bổ sung vào accumulator biz.biz.
+    const route = routeById(biz.biz.trip.routeId);
+    const stocks = biz.biz.routeStock ?? {};
+    biz.biz = route
+      ? {
+          ...biz.biz,
+          routeStock: { ...stocks, [route.id]: routeStockSpend(routeStockResolve(stocks, route, s.day), route, biz.biz.trip.cart) },
+          trip: undefined,
+        }
+      : { ...biz.biz, trip: undefined };
+    if (wasSelf) set({ location: 'Nhà của bạn' });
     say('🚚 Xe đi tỉnh về muộn trong đêm — hàng đã vào kho, chuyến kết thúc.');
-    biz.biz = { ...biz.biz, trip: undefined };
   }
   set({
     candidates: generateCandidates(s.level, nextId),

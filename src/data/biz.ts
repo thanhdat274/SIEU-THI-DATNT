@@ -10,7 +10,7 @@ import type { HiepLucState } from './hiepLuc';
 import type { StanceId, StanceState } from './stance';
 import type { BrandState } from './brand';
 import type { HaulerId } from './routes';
-import type { TripState } from './trip';
+import type { TripState, RouteStock } from './trip';
 import { monthOf } from './calendar';
 import { emptyYear } from './yearReport';
 import { xpToNext } from './levels';
@@ -180,6 +180,8 @@ export interface BizState {
   coolBox?: boolean;
   /** Hệ 5 — chuyến đi tỉnh ĐANG DIỄN RA (người chơi/nhân viên vắng mặt thật, SPEC §5.3). THIẾU = không có chuyến. */
   trip?: TripState;
+  /** Hệ 5 (L3) — lượng hàng còn tại nguồn từng tuyến theo TUẦN (R7 cổng chống farm, SPEC §5.5). THIẾU = chưa có. */
+  routeStock?: Record<string, RouteStock>;
   /** Quán nước đầu ngõ (GĐ7, bán đồ uống rút từ kho); thiếu ở save cũ — nạp bản cũ tự bù mặc định. */
   quanNuoc: QuanNuocState;
   /** Tiệm xôi (GĐ410): xưởng nấu xôi số lượng lớn đổ vào kho chung mỗi đêm. */

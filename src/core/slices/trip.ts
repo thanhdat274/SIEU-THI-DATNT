@@ -1,5 +1,5 @@
-import { haulerById, routeById, roundTripMinutes, routeUnlocked, haulerUnlocked, tripTravelCost, routeBuyPrice, routeDiscountFor } from '../../data/routes';
-import { beginTrip, tripLoadStock, type TripState } from '../../data/trip';
+import { haulerById, routeById, roundTripMinutes, routeUnlocked, haulerUnlocked, tripTravelCost } from '../../data/routes';
+import { beginTrip, tripLoadStock, routeStockResolve, routeStockSpend, checkCart, type TripState } from '../../data/trip';
 import { productById, formatMoney } from '../../data/products';
 import type { GameState, GetState, SetState } from '../gameTypes';
 
@@ -46,10 +46,12 @@ export const createTripSlice = (set: SetState, get: GetState): Pick<GameState, '
     if (carry > s.money - travelCost) return s.notify('🚚 Số tiền mang theo vượt quá két sau khi trừ vé/xăng.');
 
     const trip: TripState = beginTrip(route, hauler, s.day, Math.floor(s.minutes), 'self', carry, {});
+    // L3 — đảm bảo đã có routeStock của tuyến cho tuần này để chọn hàng (R7 khấu trừ khi về).
+    const stocks = s.biz.routeStock ?? {};
     set({
       money: s.money - travelCost,
       location: TRIP_AWAY,
-      biz: { ...s.biz, trip },
+      biz: { ...s.biz, trip, routeStock: { ...stocks, [route.id]: routeStockResolve(stocks, route, s.day) } },
     });
     s.notify(`🚚 Lên đường ${route.name} bằng ${hauler.name} — xe về lúc ${mm(trip.returnAt)}. Vắng tiệm mấy tiếng nhé.`);
   },
@@ -60,18 +62,20 @@ export const createTripSlice = (set: SetState, get: GetState): Pick<GameState, '
     if (!t) return s.notify('🚚 Không có chuyến đi nào đang diễn ra.');
     const route = routeById(t.routeId);
     if (!route) return;
-    // L2 chưa có nhịp về; chỉ sửa giỏ trong lúc đi (beat 0).
+    const hauler = haulerById(t.hauler);
+    if (!hauler) return;
+    // L3 — giỏ hàng chở về phải nằm trong: tiền mang theo + sức chở xe + lượng còn ở nguồn tuần này (R7).
+    const stock = routeStockResolve(s.biz.routeStock, route, s.day);
     const clean: Record<string, number> = {};
-    let total = 0;
     for (const [pid, qty] of Object.entries(items)) {
       const q = Math.floor(qty); if (q <= 0) continue;
-      const p = productById(pid); if (!p) continue;
+      if (!productById(pid)) continue;
       clean[pid] = (clean[pid] ?? 0) + q;
-      total += routeBuyPrice(p.buy, routeDiscountFor(route, pid, p.category)) * q;
     }
-    if (total > t.cash) return s.notify(`🚚 Giỏ hàng cần ${formatMoney(total)} — hơn số tiền mang theo (${formatMoney(t.cash)}).`);
+    const check = checkCart({ ...t, cart: clean }, route, hauler, stock);
+    if (!check.ok) return s.notify(`🚚 Chọn hàng: ${check.reason}.`);
     set({ biz: { ...s.biz, trip: { ...t, cart: clean } } });
-    s.notify(`🚚 Đã chốt giỏ hàng (${formatMoney(total)}). Xe về la hàng vào kho.`);
+    s.notify('🚚 Đã chốt giỏ hàng chở về — xe về là hàng vào kho.');
   },
 
   tripArrive: () => {
@@ -83,10 +87,17 @@ export const createTripSlice = (set: SetState, get: GetState): Pick<GameState, '
     const coolBox = !!s.biz.coolBox;
     const k = tripLoadStock(t, { storage: s.storage, storageLots: s.storageLots }, coolBox);
     const items = Object.entries(t.cart).reduce((n, [, q]) => n + Math.floor(q), 0);
+    // L3 — hàng đã lấy khỏi nguồn: trừ lượng tuần của tuyến (R7 cổng chống farm).
+    const stocks = s.biz.routeStock ?? {};
+    const st0 = routeStockResolve(stocks, route, s.day);
     set({
       ...k,
       location: t.by === 'self' ? TRIP_HOME : s.location,
-      biz: { ...s.biz, trip: undefined },
+      biz: {
+        ...s.biz,
+        trip: undefined,
+        routeStock: { ...stocks, [route.id]: routeStockSpend(st0, route, t.cart) },
+      },
     });
     const hauler = haulerById(t.hauler);
     s.notify(items > 0

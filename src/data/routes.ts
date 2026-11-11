@@ -81,13 +81,20 @@ export interface RouteDef {
 /** Toàn bộ tuyến. L1 chỉ có Chợ huyện + Miệt vườn; các tuyến khác (L7) thêm sau. */
 export const ROUTES: RouteDef[] = [
   // Chợ huyện — 42, 3h, bán theo ngành rẻ 20–25% so với Đại lý (§5.5): hàng tươi, thịt cá, rau.
+  // L3: thêm các mặt hàng cụ thể (người chợ bán thật) để chọn mua ở nhịp 2; categoryDeals giữ để
+  // nhóm hàng khác cùng ngành cũng được chiết khấu nếu nằm trong giỏ.
   {
     id: 'cho_huyen',
     name: 'Chợ huyện',
     icon: '🛒',
     unlock: 42,
     hours: 3,
-    goods: [],
+    goods: [
+      { productId: 'rau', discount: 0.25, weeklyCap: 120 },
+      { productId: 'thit_heo_tuoi', discount: 0.20, weeklyCap: 40 },
+      { productId: 'ca_loc_tuoi', discount: 0.20, weeklyCap: 40 },
+      { productId: 'ga_ta_tuoi', discount: 0.22, weeklyCap: 30 },
+    ],
     categoryDeals: [
       { category: 'fresh', discount: 0.25, weeklyCap: 80 },
       { category: 'meat', discount: 0.20, weeklyCap: 60 },

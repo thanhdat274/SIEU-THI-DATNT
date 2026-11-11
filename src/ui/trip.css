@@ -79,3 +79,49 @@
   background: #fff;
 }
 .trip-ov-actions { display: flex; justify-content: flex-end; gap: 8px; }
+
+/* Hệ 5-L3 — bàn chọn hàng chở về (nhịp 2). */
+.trip-shop { display: flex; flex-direction: column; gap: 6px; }
+.trip-shop-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border: 1px solid #e8d9b8;
+  border-radius: 8px;
+  padding: 6px 8px;
+  background: #fff;
+}
+.trip-shop-info { display: flex; flex-direction: column; gap: 1px; }
+.trip-shop-name { font-size: 13px; font-weight: 600; color: #5d3a1a; }
+.trip-shop-meta { font-size: 10px; color: #7a5a30; }
+.trip-shop-step { display: flex; align-items: center; gap: 4px; }
+.trip-shop-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  border: 1px solid #cfb689;
+  background: #f4e7c8;
+  color: #5d3a1a;
+  font-weight: 700;
+  cursor: pointer;
+}
+.trip-shop-btn:disabled { opacity: 0.35; cursor: default; }
+.trip-shop-qty {
+  width: 46px;
+  border: 1px solid #cfb689;
+  border-radius: 6px;
+  padding: 4px 6px;
+  font-size: 13px;
+  text-align: center;
+  background: #fff;
+}
+.trip-shop-total {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 12px;
+  color: #5d3a1a;
+  padding: 2px 2px 0;
+}
+.trip-shop-save { color: #1e8449; font-weight: 700; }
