@@ -14,6 +14,12 @@ describe('Playtest P0 M4 — tối đa 2 thẻ thông báo cùng lúc', () => {
     ]);
     expect(h).toEqual([false, false, false, false, true]);
   });
+  it('thẻ lý do dừng giờ (pausing — câu hỏi ở quầy) luôn hiện, không chiếm suất', () => {
+    const h = pickHidden([
+      ['hud-alert', 'info'], ['hud-alert', 'warn'], ['hud-alert', 'pausing', 'phone', 'ringing'],
+    ]);
+    expect(h).toEqual([false, false, false]);
+  });
   it('ít thẻ thì không ẩn gì', () => {
     expect(pickHidden([['hud-alert']])).toEqual([false]);
   });

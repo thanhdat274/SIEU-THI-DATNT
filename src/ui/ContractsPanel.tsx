@@ -1,6 +1,6 @@
 import { useGame } from '../core/store';
 import { describeRep, meetsRep, repScore, reputationOf } from '../data/reputation';
-import { CONTRACT_STREAK_BONUS, CONTRACT_STREAK_EVERY, CONTRACT_COMMIT_BONUS, SUPPLY_CONTRACTS, supplyContractById, contractValue, commitBonusValue, commitDeposit, contractStreakProgress, contractAcceptRoi, type SupplyContract } from '../data/contracts';
+import { CONTRACT_STREAK_BONUS, CONTRACT_STREAK_EVERY, CONTRACT_COMMIT_BONUS, SUPPLY_CONTRACTS, supplyContractById, contractValue, commitBonusValue, commitDeposit, contractStreakProgress, contractAcceptRoi, missingForContract, reservedMissing, restockCost, type SupplyContract } from '../data/contracts';
 import { formatMoney, productById } from '../data/products';
 import { shortLabel } from './shortLabel';
 import { Callout } from './panels/shared';
@@ -50,7 +50,7 @@ export function ContractsPanel() {
 
 /** Các hợp đồng đang hoạt động: đã chấp nhận, chờ giao. */
 function ActiveContracts() {
-  const { contracts, deliverContract, commitContract, releaseContract, money, day } = useGame();
+  const { contracts, deliverContract, commitContract, releaseContract, restockContract, money, day, storage, biz } = useGame();
   const active = Object.entries(contracts).filter(([, cs]) => !cs.pending || cs.dueDay);
   if (!active.length) return null;
   return (
@@ -105,6 +105,22 @@ function ActiveContracts() {
                   <>
                     <span style={{ color: '#f1c40f' }}>🤝 Đã cam kết — trữ {Object.values(cs.locked ?? {}).reduce((n, q) => n + q, 0)} món riêng, cọc {formatMoney(deposit)} (hoàn khi giao).</span>
                     <button style={{ ...btn, background: 'transparent', border: '1px solid #e67e22', color: '#e67e22' }} onClick={() => releaseContract(id)}>↩️ Hủy cam kết</button>
+                    {/* GĐ2351 — nhập bù thẳng vào ngăn trữ riêng đúng phần còn thiếu */}
+                    {(() => {
+                      const rm = reservedMissing(def, cs.locked);
+                      if (!rm.length) return null;
+                      const cost = restockCost(rm, biz);
+                      return (
+                        <button
+                          style={{ ...btn, background: money < cost ? '#777' : '#f1c40f', color: '#222' }}
+                          disabled={money < cost}
+                          onClick={() => restockContract(id)}
+                          title="Nhập ngay đúng phần còn thiếu vào ngăn trữ riêng của kỳ này"
+                        >
+                          🛒 Nhập bù ({formatMoney(cost)})
+                        </button>
+                      );
+                    })()}
                   </>
                 ) : (
                   <>
@@ -119,6 +135,22 @@ function ActiveContracts() {
                       return <span style={{ color: line.c, width: '100%' }}>{line.t}.</span>;
                     })()}
                     <button style={{ ...btn, background: money < deposit ? '#777' : '#f1c40f', color: '#222' }} disabled={money < deposit} onClick={() => commitContract(id)}>{shortLabel('🤝 Cam kết', deposit, money)}</button>
+                    {/* GĐ2351 — nhập bù đúng phần kho còn thiếu để giao/cam kết được kỳ này */}
+                    {(() => {
+                      const missing = missingForContract(def, storage);
+                      if (!missing.length) return null;
+                      const cost = restockCost(missing, biz);
+                      return (
+                        <button
+                          style={{ ...btn, background: money < cost ? '#777' : '#2ecc71', color: '#222' }}
+                          disabled={money < cost}
+                          onClick={() => restockContract(id)}
+                          title="Nhập ngay đúng phần kho còn thiếu cho kỳ giao này (giá nhập như ở Nhập hàng)"
+                        >
+                          🛒 Nhập bù ({formatMoney(cost)})
+                        </button>
+                      );
+                    })()}
                   </>
                 )}
               </div>

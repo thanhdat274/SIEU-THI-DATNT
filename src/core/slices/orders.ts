@@ -12,7 +12,7 @@ import { type CookingStation, COOKED_PRODUCT_IDS, RECIPE_MAP } from '../../data/
 import { BARTENDER_SPEED_PER_STAR, bestSkillOnDuty, SHIFTS } from '../../data/staff';
 import { workSpeed } from '../../data/staffTraits';
 import { courierOnTrip } from '../../data/trip';
-import { commitBonusValue, commitDeposit, CONTRACT_STREAK_BONUS, contractMilestoneDue, contractValue, missingForContract, reservedMissing, supplyContractById } from '../../data/contracts';
+import { commitBonusValue, commitDeposit, CONTRACT_STREAK_BONUS, contractMilestoneDue, contractValue, missingForContract, reservedMissing, restockCost, supplyContractById } from '../../data/contracts';
 import { describeRep, meetsRep, reputationOf } from '../../data/reputation';
 import { activeGoals, addSales, goalLocked, goalMet } from '../../data/community';
 import { playSfx } from '../audio';
@@ -94,7 +94,7 @@ export const updatePhones = (set: SetState, get: GetState) => {
   }
 };
 
-export const createOrdersSlice = (set: SetState, get: GetState): Pick<GameState, 'acceptOrder' | 'startCook' | 'boostDishStar' | 'declineOrder' | 'answerPhone' | 'restockAndAnswerPhone' | 'declinePhone' | 'deliverPhone' | 'deliverOrder' | 'rushDeliverOrder' | 'communitySale' | 'acceptContract' | 'commitContract' | 'releaseContract' | 'deliverContract'> => ({
+export const createOrdersSlice = (set: SetState, get: GetState): Pick<GameState, 'acceptOrder' | 'startCook' | 'boostDishStar' | 'declineOrder' | 'answerPhone' | 'restockAndAnswerPhone' | 'declinePhone' | 'deliverPhone' | 'deliverOrder' | 'rushDeliverOrder' | 'communitySale' | 'acceptContract' | 'commitContract' | 'releaseContract' | 'restockContract' | 'deliverContract'> => ({
   acceptOrder: () => {
     const s = get();
     if (!s.order) return;
@@ -370,6 +370,41 @@ export const createOrdersSlice = (set: SetState, get: GetState): Pick<GameState,
       money: s.money + deposit,
     });
     s.notify(`↩️ Hủy cam kết "${def.title}": hoàn cọc ${formatMoney(deposit)}, mất thưởng kỳ này.`);
+  },
+  // GĐ2351 — nhập bù ĐÚNG phần thiếu của kỳ hợp đồng ngay trên thẻ (QA người chơi: phải ra Nhập hàng
+  // tự tìm từng món là bất tiện). Chưa cam kết: mua vào kho chung qua buy() (đủ luật kho/tiền/ấn);
+  // đã cam kết: tiền → thẳng ngăn trữ riêng `locked` (ngăn này tách khỏi kho bán chung từ lúc cam kết,
+  // mua bù vào đó cũng tách tương tự — không đụng placeOrder/kho chung).
+  restockContract: (id) => {
+    const s = get();
+    const cs = s.contracts[id];
+    const def = cs && supplyContractById(cs.defId);
+    if (!def || !cs) { s.notify('Hợp đồng không hợp lệ'); return; }
+    const committed = cs.committed === true;
+    const missing = committed ? reservedMissing(def, cs.locked) : missingForContract(def, s.storage);
+    if (!missing.length) { s.notify('Kho đã đủ hàng cho kỳ giao này rồi'); return; }
+    const cooked = missing.filter((m) => COOKED_PRODUCT_IDS.has(m.id));
+    if (cooked.length) {
+      s.notify(`🍳 ${cooked.map((m) => `${m.need} ${productById(m.id).name}`).join(', ')} là món nhà làm — vào trạm chế biến nấu trước, không nhập bù được`);
+      return;
+    }
+    const cost = restockCost(missing, s.biz);
+    if (s.money < cost) { s.notify(`Không đủ tiền nhập bù (cần ${formatMoney(cost)})`); return; }
+    const bought = missing.map((m) => `${m.need} ${productById(m.id).name}`).join(', ');
+    if (committed) {
+      const locked = { ...(cs.locked ?? {}) };
+      for (const m of missing) locked[m.id] = (locked[m.id] ?? 0) + m.need;
+      set({ contracts: { ...s.contracts, [id]: { ...cs, locked } }, money: s.money - cost });
+      s.notify(`🛒 Đã nhập bù vào ngăn trữ riêng "${def.title}": ${bought} (${formatMoney(cost)})`);
+      return;
+    }
+    const failed: string[] = [];
+    for (const m of missing) if (!get().buy(m.id, m.need)) failed.push(productById(m.id).name);
+    if (failed.length) {
+      s.notify(`⚠️ Không nhập được: ${failed.join(', ')} (thiếu tiền/chỗ kho)`);
+      return;
+    }
+    s.notify(`🛒 Đã nhập bù cho "${def.title}": ${bought} (${formatMoney(cost)})`);
   },
   deliverContract: (id) => {
     const s = get();

@@ -1,5 +1,6 @@
 import { productById } from './products';
 import type { RepNeed } from './reputation';
+import { sealImportMul } from './stance';
 import type { ContractState } from '../core/gameTypes';
 
 /**
@@ -108,6 +109,13 @@ export const commitDeposit = (def: SupplyContract) => Math.round((contractValue(
 export function reservedMissing(def: SupplyContract, locked: Record<string, number> | undefined): { id: string; need: number }[] {
   const bucket = locked ?? {};
   return Object.entries(def.items).filter(([id, q]) => (bucket[id] ?? 0) < q).map(([id, q]) => ({ id, need: q - (bucket[id] ?? 0) }));
+}
+
+/** GĐ2351 — tiền nhập bù đúng phần thiếu của kỳ (mỗi món làm tròn riêng, khớp công thức của `buy`
+ * trong inventory; có biz thì cộng thêm giảm giá Ấn Bình dân). Thuần đọc — UI hiện nhãn, action chốt. */
+export function restockCost(missing: { id: string; need: number }[], biz?: Parameters<typeof sealImportMul>[0]): number {
+  const mul = biz ? sealImportMul(biz) : 1;
+  return missing.reduce((sum, m) => sum + Math.round(productById(m.id).buy * m.need * mul), 0);
 }
 
 // ───── Sổ chuỗi hợp đồng (GĐ125) ─────

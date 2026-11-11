@@ -276,7 +276,6 @@ export function autoSchedule(staff: Staff[], fatigue: Record<number, number>): S
  * ưu tiên "nguy hiểm" hơn "nhắc việc". Chỉ làm việc khi chi nhánh đã mở. Trả list rỗng nếu ổn.
  */
 export function branchAlerts(b: BranchState, minute: number): { text: string; danger: boolean }[] {
-  if (!b.open) return [];
   const out: { text: string; danger: boolean }[] = [];
   const min = ((minute % 1440) + 1440) % 1440;
   const night = isBranchNight(min);
@@ -286,6 +285,14 @@ export function branchAlerts(b: BranchState, minute: number): { text: string; da
   const stocked = shelfTotal(b.shelf ?? {}) > 0;
   const manager = crew.some((s) => s.role === 'manager');
   const ev = b.event;
+
+  // GĐ2353 — chi nhánh ĐÓNG cửa cũng phải lên tiếng: trước đây `!b.open` → im lặng hoàn toàn,
+  // chủ thuê người xong quay lại chỉ thấy tiệm vắng tanh, kệ trống mà không biết mình còn quên
+  // bấm Mở cửa (mô phỏng ngầm `runBranch` cũng skip hết khi đóng — không ai chở hàng, không khách).
+  if (!b.open) {
+    out.push({ text: '🔴 Chi nhánh TIỆN LỢI chưa MỞ CỬA — nhân viên đứng ngoài ca, xe không chở hàng, khách không ghé. Mở trong bảng Tiện lợi 24/7.', danger: true });
+    return out;
+  }
 
   // Sự kiện đêm đang/đã xảy ra
   if (ev?.kind === 'calloff' && !ev.covered && ev.done !== true) {
@@ -300,7 +307,13 @@ export function branchAlerts(b: BranchState, minute: number): { text: string; da
   }
   // Thiếu người trực / hàng
   if (!cashierLive && !manager) out.push({ text: `🛒 Chi nhánh: không có thu ngân trực lúc này — khách bỏ về`, danger: true });
-  if (!stocked) out.push({ text: `🕳️ Chi nhánh: kệ trống hàng — cần chở hàng từ kho chung`, danger: night });
+  // Kệ trống: nói rõ CÁCH chở (có người trực thì hẹn chuyến kế, không người trực thì chỉ đường bật auto)
+  if (!stocked) {
+    const hauler = b.autoHaul || manager || crew.some((s) => (s.role === 'courier' || s.role === 'stocker') && onShift(s, min));
+    out.push({ text: hauler
+      ? '🕳️ Chi nhánh: kệ trống hàng — người giao/xếp hàng trực sẽ chở từ kho chung trong chuyến kế tiếp (cách nhau ~2 giờ)'
+      : '🕳️ Chi nhánh: kệ trống hàng mà không ai chở được — thuê giao hàng/xếp hàng đúng ca, hoặc bật 🚚 auto chuyển kho trong bảng Tiện lợi', danger: night });
+  }
   // Bảo vệ đêm khi nguy cơ trộm
   if (night && !guardLive && !manager) out.push({ text: `🌙 Chi nhánh ban đêm không bảo vệ — dễ mất trộm`, danger: true });
   return out;

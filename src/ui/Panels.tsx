@@ -42,6 +42,7 @@ const DossierPanel = lazy(() => import('./panels/DossierPanel').then((m) => ({ d
 const RoadmapPanel = lazy(() => import('./panels/RoadmapPanel').then((m) => ({ default: m.RoadmapPanel })));
 const BrandPanel = lazy(() => import('./panels/BrandPanel').then((m) => ({ default: m.BrandPanel })));
 const TodoListPanel = lazy(() => import('./panels/TodoListPanel').then((m) => ({ default: m.TodoListPanel })));
+const NotifLogPanel = lazy(() => import('./panels/NotifLogPanel').then((m) => ({ default: m.NotifLogPanel })));
 
 export function Panels() {
   const panel = useGame((s) => s.panel);
@@ -103,6 +104,7 @@ export function Panels() {
         {panel.type === 'roadmap' && <RoadmapPanel />}
         {panel.type === 'brand' && <BrandPanel />}
         {panel.type === 'todo' && <TodoListPanel />}
+        {panel.type === 'log' && <NotifLogPanel />}
         </Suspense>
       </div>
     </div>

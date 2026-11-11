@@ -81,6 +81,24 @@
   font-family: 'Baloo 2', 'Paytone One', 'Be Vietnam Pro', system-ui, sans-serif;
   letter-spacing: 0.2px;
 }
+/* GĐ2348 — thanh cuộn của khung panel: mặc định của trình duyệt đen chìm trên nền panel tối
+ * (QA người chơi: cuộn tới đáy "không biết cuộn được") — làm núm sáng rõ, mảnh, có hover.
+ * Cả hai trục (dọc + cuộn ngang bảng rộng) và cả vùng cuộn con bên trong panel. */
+.panel {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.28) transparent;
+  overscroll-behavior: contain;
+}
+.panel::-webkit-scrollbar { width: 10px; height: 10px; }
+.panel::-webkit-scrollbar-track { background: transparent; }
+.panel::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 6px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+.panel::-webkit-scrollbar-thumb:hover { background-color: rgba(255, 255, 255, 0.4); }
+.panel::-webkit-scrollbar-corner { background: transparent; }
 /* GĐ1254 — chip đồng hồ có small nowrap (ngày/dự báo/hội thoại). Màn 701–1100px: dòng dài làm chip
    tràn mép phải (layoutAudit clipped 135px ở 768px) — chặn bề rộng + lược bớt bằng ellipsis;
    desktop rộng đủ chỗ nên không đổi hình dáng. */
@@ -246,6 +264,10 @@
   overscroll-behavior: contain;
   scrollbar-width: thin;
 }
+/* GĐ2349 — cột thông báo nằm trong `.hud-left` có pointer-events: none (không chặn cả màn);
+ * thẻ .hud-alert tự bật lại `auto` nên bấm được, nhưng NÚT THƯỜNG kế thừa `none` → nút
+ * "+N thông báo" / "🔔 Sổ thông báo" trông có mà bấm không ăn (QA người chơi GĐ2349). */
+#ui .hud-alerts button { pointer-events: auto; cursor: pointer; }
 #ui .hud-alert {
   pointer-events: auto;
   display: flex;
@@ -534,23 +556,26 @@
   white-space: nowrap;
 }
 #ui .hud-help kbd, #ui .hud-help span { white-space: nowrap; }
-/* SPEC-TOI-UU §T1 (L2): bản ghi mẫu "Xem gửi những gì" — giữ gọn, cuộn khi dài. */
-#ui .hud-more-tele-sample {
+/* SPEC-TOI-UU §T1 (L2): bản ghi mẫu "Xem gửi những gì" — danh sách giải thích dễ đọc (không JSON thô). */
+#ui .hud-tele-sample {
   grid-column: 1 / -1;
   margin: 2px 2px 8px;
   padding: 8px;
-  font-size: 10px;
-  line-height: 1.4;
-  white-space: pre-wrap;
-  word-break: break-word;
-  max-height: 180px;
-  overflow: auto;
+  font-size: 11px;
+  line-height: 1.45;
   background: var(--hud-panel);
   border: 1px dashed var(--hud-border);
   border-radius: 6px;
-  color: var(--hud-muted);
+  color: var(--hud-text);
+  max-height: 200px;
+  overflow: auto;
 }
-#ui .hud-dialogue .hud-more-tele-sample { max-height: 140px; }
+#ui .hud-tele-intro { margin: 0 0 6px; font-size: 11px; color: var(--hud-muted); }
+#ui .hud-tele-rows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+#ui .hud-tele-row { display: flex; gap: 8px; align-items: baseline; }
+#ui .hud-tele-key { flex: 0 0 44%; color: var(--hud-muted); }
+#ui .hud-tele-val { flex: 1 1 auto; font-weight: 600; }
+#ui .hud-dialogue .hud-tele-sample { max-height: 150px; }
 /* SPEC-TOI-UU §T6 (L6): tìm nhanh trong menu Thêm. */
 #ui .hud-more-search { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 6px; }
 #ui .hud-more-search-input {
@@ -614,6 +639,24 @@
 #ui button.hud-hint { pointer-events: auto; border: none; font: inherit; font-size: 15px; font-weight: 600; cursor: pointer; }
 #ui button.hud-hint:active { transform: scale(0.97); }
 #ui .hud-btn.primary { background: var(--hud-accent); }
+
+/* Nút "+N thông báo" (QA người chơi): phải cho biết thẻ NÀO đang bị gom chứ không chỉ con số —
+   nội dung thẻ đầu nằm ngay trên nút, tràn thì ba chấm; tooltip liệt kê đủ các thẻ còn lại. */
+#ui .hud-alerts-more {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: min(560px, calc(100vw - 48px));
+}
+#ui .hud-alerts-more-count { flex: none; }
+#ui .hud-alerts-more-preview {
+  font-weight: 500;
+  color: #444;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
 
 /* Nút bấm HUD trên màn hẹp: đủ to để chạm (tối thiểu ~40px) */
 @media (max-width: 700px) {

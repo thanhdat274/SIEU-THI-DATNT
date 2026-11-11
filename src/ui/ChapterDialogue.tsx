@@ -13,7 +13,27 @@ export function ChapterDialogue() {
   const [line, setLine] = useState(0);
   useEffect(() => setLine(0), [id]);
   const ch = id ? chapterById(id) : undefined;
-  if (!ch || panelOpen) return null;
+  if (!ch) {
+    // Save cũ mang id chương đã bị xoá/đổi tên: ChapterDialogue từng return null → chapterPending
+    // vẫn treo, đồng hồ dừng 0× VĨNH VIỄN mà không có thoại nào hiện. Hiện thẻ tối thiểu để đóng.
+    if (!id || panelOpen) return null;
+    return (
+      <div className="hud-dialogue" role="dialog" aria-label="Cốt truyện">
+        <div className="hud-dialogue-title">📖 Cốt truyện</div>
+        <div className="hud-dialogue-line">
+          <span className="hud-dialogue-avatar" aria-hidden="true">📖</span>
+          <span>
+            <b>Truyện hẻm</b>
+            <p>Một chuyện đã kể rồi — chạm để đón chuyện tiếp theo.</p>
+          </span>
+        </div>
+        <div className="hud-dialogue-foot">
+          <button className="hud-btn primary" onClick={closeChapter}>✔ Xong</button>
+        </div>
+      </div>
+    );
+  }
+  if (panelOpen) return null;
   const l = ch.lines[Math.min(line, ch.lines.length - 1)];
   const last = line >= ch.lines.length - 1;
   const reward = [ch.reward?.money && formatMoney(ch.reward.money), ch.reward?.xp && `${ch.reward.xp} XP`].filter(Boolean).join(', ');

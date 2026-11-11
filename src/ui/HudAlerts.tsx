@@ -97,7 +97,7 @@ export function CounterAskAlert() {
   }, [ask]);
   if (!ask) return null;
   return (
-    <div className="hud-alert phone ringing">
+    <div className="hud-alert pausing phone ringing">
       {ask.icon} <b>{ask.who}</b> {ask.text}
       <small> · tiệm tạm dừng chờ cậu chọn · còn ~{Math.max(1, rem)}s nữa khách tự chốt theo mặc định</small>
       <span className="hud-alert-actions">

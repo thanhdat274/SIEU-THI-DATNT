@@ -27,7 +27,7 @@ import { bulkExtra, festivalVisit, perkValue, pickRegular, referFriends, regular
 import { influencerActive } from '../data/social';
 import { pickProfession, PROFESSIONS, type ProfessionDef } from '../data/professions';
 import { DEBT_PARTIAL_CHANCE, DEBT_PARTIAL_MIN, installmentNow, repaysToday, wantsCredit, creditLeft, creditAskText } from '../data/credit';
-import { askQueuedPatience, ASK_MINUTES, CANDY_ANNOY, CHANGE_CHANCE, CREDIT_REFUSE_FRIEND_LOSS, changeChoice, defaultCounterPolicy, HAGGLE_CHANCE, HAGGLE_CHANCE_REG, HAGGLE_MIN_TOTAL, haggleChoice, haggleCounterOff, haggleOff, haggleSettle, oddChange, pricematchSettle } from '../data/counterDeals';
+import { askQueuedPatience, ASK_MINUTES, ASK_RESOLVE_REAL_S, CANDY_ANNOY, CHANGE_CHANCE, CREDIT_REFUSE_FRIEND_LOSS, changeChoice, defaultCounterPolicy, HAGGLE_CHANCE, HAGGLE_CHANCE_REG, HAGGLE_MIN_TOTAL, haggleChoice, haggleCounterOff, haggleOff, haggleSettle, oddChange, pricematchSettle } from '../data/counterDeals';
 import { rollService, SERVICE_BUY_ALONG, type ServiceDef } from '../data/services';
 import { earnService, earnTip } from '../core/biz';
 import { paymentById, pickPayment } from '../data/payments';
@@ -287,7 +287,16 @@ export class CustomerManager {
   private updateAskRealTime(_s: ReturnType<typeof useGame.getState>) {
     if (!askPending()) return;
     const c = this.customers.find((x) => x.deal === 'waiting');
-    if (!c) return;
+    if (!c) {
+      // Lưới an toàn: câu hỏi đang treo mà MẤT luôn khách `waiting` (lệch trạng thái hiếm gặp) thì
+      // không ai tự chốt — expireAsk đếm theo giờ game (đang dừng ở 0×) nên câu hỏi treo VÔ HẠN,
+      // thế giới đứng im mà không có thẻ lý do rõ ràng. Chốt theo mặc định sau đúng cửa sổ chờ thực.
+      if (askWallElapsed() >= ASK_RESOLVE_REAL_S) {
+        const ask = useCounterAsk.getState().ask;
+        if (ask) answerAsk(ask.fallback);
+      }
+      return;
+    }
     const st = askQueuedPatience(askWallElapsed());
     if (st === 'resolved') {
       c.setBadge(null);

@@ -408,8 +408,33 @@ ${forecastText}`}>
         <Suspense fallback={null}><MiniHost /></Suspense>
         <Suspense fallback={null}><TripOverlay /></Suspense>
         <Suspense fallback={null}><StoryAlert /></Suspense>
-        {(hiddenAlerts > 0 || alertsOpen) && (
-          <button className="hud-btn hud-alerts-more" onClick={() => setAlertsOpen(!alertsOpen)}>{alertsOpen ? 'Thu gọn thông báo' : `+${hiddenAlerts} thông báo`}</button>
+        {(hiddenAlerts.count > 0 || alertsOpen) && (
+          // QA người chơi: nút gom không được chỉ nói "+N" mà phải cho biết THẺ NÀO đang bị gom —
+          // nội dung đầu tiên hiện ngay trên nút, tooltip liệt kê đủ tất cả. GĐ2347: cạnh đó có nút
+          // 🔔 mở Sổ thông báo — tin đã trôi / đã bị gom vẫn đọc lại được toàn văn trong bảng.
+          <>
+            <button
+              className="hud-btn hud-alerts-more"
+              title={hiddenAlerts.texts.length ? `Đang gom:\n${hiddenAlerts.texts.join('\n')}` : undefined}
+              onClick={() => setAlertsOpen(!alertsOpen)}
+            >
+              {alertsOpen ? 'Thu gọn thông báo' : (
+                <>
+                  <span className="hud-alerts-more-count">+{hiddenAlerts.count} thông báo</span>
+                  {hiddenAlerts.texts[0] && (
+                    <span className="hud-alerts-more-preview">: {hiddenAlerts.texts[0].length > 60 ? `${hiddenAlerts.texts[0].slice(0, 59).trimEnd()}…` : hiddenAlerts.texts[0]}</span>
+                  )}
+                </>
+              )}
+            </button>
+            <button
+              className="hud-btn hud-alerts-more"
+              title="Sổ thông báo: xem lại mọi tin đã hiện lên màn hình trong phiên này"
+              onClick={() => openPanel({ type: 'log' })}
+            >
+              🔔 Sổ thông báo
+            </button>
+          </>
         )}
         {conflict && (
           <div className="hud-alert info">

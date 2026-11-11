@@ -113,6 +113,7 @@ const LOCAL_ONLY: Record<string, string> = {
   deliverContract: 'giao kỳ hiện tại của một hợp đồng theo id',
   commitContract: 'cam kết kỳ: trữ đúng số hàng kỳ này khỏi kho chung theo id; toàn cục dồn chứ không đè chỗ',
   releaseContract: 'hủy cam kết: trả hàng về kho chung + hoàn cọc theo id; toàn cục',
+  restockContract: 'GĐ2351 — nhập bù đúng phần thiếu của kỳ theo id (kho chung qua buy, hoặc cộng vào ngăn trữ riêng); toàn cục dồn chứ không đè chỗ',
   acceptOrder: 'nhận đơn tiệc — cờ toàn cục của đơn đang mời',
   declineOrder: 'từ đơn tiệc — cờ toàn cục của đơn đang mời',
   deliverOrder: 'giao đơn tiệc từ kho — đơn đang giữ duy nhất một',

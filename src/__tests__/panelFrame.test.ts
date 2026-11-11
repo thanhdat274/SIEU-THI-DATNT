@@ -29,4 +29,13 @@ describe('khung modal cố định (GĐ662)', () => {
     expect(p.overflowY).toBe('auto');
     expect(p.overflowX).toBe('auto');
   });
+
+  it('GĐ2348 — đáy khung có dấu hiệu cuộn: vệt mờ dần local/scroll, nền không dùng shorthand `background`', () => {
+    const p = panel();
+    // shorthand `background` ghi đè backgroundImage — vệt mờ sẽ biến mất
+    expect(p.background).toBeUndefined();
+    expect(p.backgroundColor).toBe('#2b2b3a');
+    expect(p.backgroundImage).toContain('linear-gradient');
+    expect(p.backgroundAttachment).toBe('local, local, scroll, scroll');
+  });
 });
