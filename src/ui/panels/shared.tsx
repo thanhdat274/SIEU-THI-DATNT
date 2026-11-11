@@ -120,7 +120,10 @@ export const styles: Record<string, React.CSSProperties> = {
         // GĐ662: khung CỐ ĐỊNH (width lẫn height) — chuyển tab trong hub không làm modal co giãn,
         // nhảy vị trí hay đổi chỗ nút ✕; nội dung dài cuộn BÊN TRONG (overflowY/X).
         width: 'calc(100vw - 24px)', height: 'calc(100dvh - 96px)',
-        overflowY: 'auto', overflowX: 'hidden',
+        // GĐ2351 — overflowX AUTO như desktop: bảng rộng (Bảng giá 6 cột…) trên màn hẹp trước đây
+        // bị CẮT mất nửa phải mà không cuộn được (QA mobile 390px GĐ2351). Chuẩn GĐ298: bảng rộng
+        // hơn khung thì cuộn ngang BÊN TRONG, không cắt nội dung.
+        overflowY: 'auto', overflowX: 'auto',
         boxSizing: 'border-box',
         boxShadow: '0 10px 40px rgba(0,0,0,0.5)',
       }
