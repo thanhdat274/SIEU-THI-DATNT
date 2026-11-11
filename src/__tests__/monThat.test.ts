@@ -248,6 +248,7 @@ const MON_THAT: Record<string, { name: string; station: string; cachNau: string 
   recipe_cai_thao_xao_toi: { name: 'Cải thảo xào tỏi', station: 'fryer', cachNau: 'cải thảo xào nhanh trên lửa lớn với tỏi phi thơm (bữa cơm cả nước)' },
   recipe_cai_thao_luoc: { name: 'Cải thảo luộc', station: 'hot_kettle', cachNau: 'cải thảo luộc chín tới, chấm nước mắm tỏi ớt (bữa cơm miền Bắc)' },
   recipe_banh_bao_chien: { name: 'Bánh bao chiên', station: 'fryer', cachNau: 'bánh bao nấu chín rồi chiên vàng giòn (ăn vặt/cơm nhà)' },
+  recipe_banh_tom: { name: 'Bánh tôm', station: 'fryer', cachNau: 'tôm kẹp bánh bột mì chiên ngập dầu chấm nước chấm (Hồ Tây)' },
 };
 
 /** Chữ mô tả tự chế không ai dùng làm tên món ngoài chợ. */

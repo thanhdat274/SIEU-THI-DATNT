@@ -138,6 +138,13 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   // stance 65~69, L50 50~52) — chỉ simBands 100 thấy (đã chấp nhận được ở mốc 48). Nội dung MỚI ghi `since:
   // CONTENT_EPOCH_NOW` → sim golden kỷ nguyên 0 không thấy (LUẬT món mới, SPEC-TOI-UU §T4).
   { id: 'banh_bao_chien', name: 'Bánh bao chiên', category: 'fresh', buy: 9500, sell: 14500, color: 0xc8732a, unlock: 71, since: CONTENT_EPOCH_NOW },
+  // GĐ2350: Bánh tôm — món chiên trứ danh Hồ Tây (tôm kẹp bánh bột mì chiên ngập dầu), lấp khoảng trống
+  // "bánh tôm" và cho TÔM SÚ (hàng meat đắt, 190k) một lối ra MÓN ĂN VẶT bên cạnh các món quán nhậu.
+  // Mẻ (tôm sú 190k + bột mì 18k×2 + hành phi 1.5k) = 227.5k → 18 cái × 19k = 342k, lãi ~114.5k/mẻ
+  // theo giá nhập, và hời hơn bán thẳng nguyên liệu (bán raw 314.5k < 342k). Mở 74: trên mọi mốc sim
+  // cân bằng không cổng epoch (crisis 45~48 · stance 65~69 · L50 50~52), tránh mốc latePremium
+  // 82/86/91/96/100. Nội dung MỚI ghi `since: CONTENT_EPOCH_NOW` → golden kỷ nguyên 0 không thấy.
+  { id: 'banh_tom', name: 'Bánh tôm', category: 'fresh', buy: 12000, sell: 19000, color: 0xe98b4e, unlock: 74, since: CONTENT_EPOCH_NOW },
   // GĐ1332: Bánh xèo — món bánh xèo giòn trứ danh (Mỹ Tho/Đà Nẵng) từ bột gạo + nước cốt dừa + thịt + hành phi:
   // trước nay TỘT KHÔNG có bánh xèo trong bếp dù là món ăn biểu tượng nhất — lấp khoảng trống trạm chảo chiên.
   // Mẻ (bột gạo 9k + nước cốt dừa 10k + thịt 30k + hành phi 1.5k×2) = 52k → 6 cái × 19k = 114k, lãi 62k/mẻ.
@@ -2010,6 +2017,12 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_banh_bao_chien', name: 'Bánh bao chiên', station: 'fryer',
     inputs: [{ productId: 'botmi', quantity: 2 }, { productId: 'x_thit_heo', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 1 }],
     outputId: 'banh_bao_chien', outputQty: 10, durationMin: 18, unlock: 71, reputationGain: 2, since: CONTENT_EPOCH_NOW },
+  // GĐ2350: Bánh tôm — tôm sú kẹp bánh bột mì chiên ngập dầu (Hồ Tây), chảo chiên: mẻ (tôm sú 190k +
+  // bột mì 18k×2 + hành phi 1.5k) = 227.5k → 18 cái × 19k = 342k, lãi ~114.5k/mẻ. Mở 74 trên mọi mốc
+  // sim cân bằng không cổng epoch; since: 1 để kỷ nguyên 0 không thấy.
+  { id: 'recipe_banh_tom', name: 'Bánh tôm', station: 'fryer',
+    inputs: [{ productId: 'tom_su_tuoi', quantity: 1 }, { productId: 'botmi', quantity: 2 }, { productId: 'x_hanh_phi', quantity: 1 }],
+    outputId: 'banh_tom', outputQty: 18, durationMin: 15, unlock: 74, reputationGain: 2, since: CONTENT_EPOCH_NOW },
   // GĐ1324: Nem chua rán — đặc sản nhà bà Tám (nem chua GĐ1085) thành nguyên liệu chảo chiên, món ăn vặt.
   { id: 'recipe_nem_chua_ran', name: 'Nem chua rán', station: 'fryer',
     inputs: [{ productId: 'hx_nem_chua', quantity: 2 }, { productId: 'x_duong', quantity: 1 }],
