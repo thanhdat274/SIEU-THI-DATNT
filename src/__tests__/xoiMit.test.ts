@@ -4,10 +4,10 @@ import { PRODUCTS, productById } from '../data/products';
 import { tiemXoiIds } from '../data/tiemXoi';
 
 describe('GĐ1087 — Xôi mít (liên hệ nông trại → tiệm xôi)', () => {
-  it('Xôi mít là món xôi có trong PRODUCTS, giá bán > giá nhập, mở cấp 36', () => {
+  it('Xôi mít là món xôi có trong PRODUCTS, giá bán > giá nhập, mở cấp 40', () => {
     expect(PRODUCTS.filter((p) => p.id === 'xoi_mit')).toHaveLength(1);
     expect(productById('xoi_mit').sell).toBeGreaterThan(productById('xoi_mit').buy);
-    expect(productById('xoi_mit').unlock).toBe(36);
+    expect(productById('xoi_mit').unlock).toBe(40);
     expect(productById('xoi_mit').category).toBe('fresh');
     expect(new Set(PRODUCTS.map((p) => p.id)).size).toBe(PRODUCTS.length);
   });
@@ -22,8 +22,8 @@ describe('GĐ1087 — Xôi mít (liên hệ nông trại → tiệm xôi)', () =
     expect(r.inputs.some((i) => i.productId === 'nep')).toBe(true);
   });
 
-  it('Xôi mít vào thực đơn quây xôi từ cấp 36 (tiemXoiIds)', () => {
-    expect(tiemXoiIds(35).includes('xoi_mit')).toBe(false);
-    expect(tiemXoiIds(36).includes('xoi_mit')).toBe(true);
+  it('Xôi mít vào thực đơn quây xôi từ cấp 40 (tiemXoiIds)', () => {
+    expect(tiemXoiIds(39).includes('xoi_mit')).toBe(false);
+    expect(tiemXoiIds(40).includes('xoi_mit')).toBe(true);
   });
 });

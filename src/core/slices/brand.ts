@@ -45,7 +45,7 @@ export const createBrandSlice = (set: SetState, get: GetState): Pick<
     const batches = s.garden.preserveMade?.[productId] ?? 0;
     const soldEver = s.soldEver?.[productId] ?? 0;
     if (!brandLineEligible(batches, soldEver)) {
-      return s.notify(`🏷️ Món này chưa đủ điều kiện dán nhãn: cần ${BRAND_LINE_SLOTS.length ? '100 mẻ nhà làm' : ''} & bán 500 đơn vị (đang: ${batches} mẻ, ${soldEver} bán).`);
+      return s.notify(`🏷️ Chưa đủ điều kiện dán nhãn: cần ${BRAND_LINE_SLOTS.length ? '100 mẻ' : ''} + bán 500 (đang: ${batches} mẻ, ${soldEver} bán).`);
     }
     const lines = [...b.lines, { productId, since: s.day, made: 0, sold: 0 }];
     set({ biz: { ...s.biz, brand: { ...b, lines } } });
@@ -125,7 +125,7 @@ export const createBrandSlice = (set: SetState, get: GetState): Pick<
     set({
       biz: { ...s.biz, brand: { ...b, deals: { ...b.deals, [dealerId]: { ...deal, committed: true, locked: { [deal.productId]: def.qty } } } } },
     });
-    s.notify(`🤝 Cam kết "${def.title}": trữ riêng ${def.qty} đơn vị ${pname(deal.productId)} cho kỳ này (thưởng tin cậy khi giao đủ hạn).`);
+    s.notify(`🤝 Cam kết "${def.title}": trữ ${def.qty} ${pname(deal.productId)} cho kỳ này (thưởng nếu giao đủ).`);
   },
   releaseBrandDeal: (dealerId) => {
     const s = get();
@@ -201,7 +201,7 @@ export const createBrandSlice = (set: SetState, get: GetState): Pick<
       biz: { ...s.biz, brand: { ...b, stock, lines, rivalOffer: undefined, rivalSold: (b.rivalSold ?? 0) + offer.units }, rival: rivalB },
       money: s.money + val,
     });
-    s.notify(`🤝 Bán ${offer.units} đơn vị ${pname(offer.productId)} cho đối thủ: +${val.toLocaleString('vi-VN')}đ · nhưng đối thủ +${BRAND_RIVAL_STRENGTH_GAIN} sức mạnh, hàng mình nằm trên kệ họ (tiền nhanh nhưng nuôi đối thủ).`);
+    s.notify(`🤝 Bán ${offer.units} ${pname(offer.productId)} cho đối thủ +${val.toLocaleString('vi-VN')}, họ +${BRAND_RIVAL_STRENGTH_GAIN} sức mạnh (tiền nhanh, nuôi đối thủ).`);
   },
 
   // ───── Nhượng quyền (SPEC §4.5e) ─────
@@ -222,7 +222,7 @@ export const createBrandSlice = (set: SetState, get: GetState): Pick<
       money: s.money - BRAND_FRANCHISE_SETUP,
       biz: { ...s.biz, brand: { ...b, franchises, franchiseDue: { ...b.franchiseDue, [defId]: s.day + 7 } } },
     });
-    s.notify(`🏮 Mở "${def.title}" (−${BRAND_FRANCHISE_SETUP.toLocaleString('vi-VN')}đ setup): mỗi tuần cần ${def.weekly} đơn vị hàng nhãn, mỗi đêm trả phí nhượng quyền.`);
+    s.notify(`🏮 Mở "${def.title}" (−${BRAND_FRANCHISE_SETUP.toLocaleString('vi-VN')}đ): tuần cần ${def.weekly} hàng nhãn, đêm trả phí nhượng quyền.`);
   },
   closeFranchise: (defId) => {
     const s = get();

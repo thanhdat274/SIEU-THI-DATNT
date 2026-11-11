@@ -68,7 +68,7 @@ export function PerfOverlay() {
         <>
           <div style={{ color: '#7f7' }}>✓ Xong 30 giây (dán vào docs/PERF.md)</div>
           <textarea
-            readOnly value={done} style={{ width: 260, height: 70, fontSize: 10 }}
+            readOnly value={done} style={{ width: 260, height: 70, fontSize: 11 }}
             onFocus={(e) => e.currentTarget.select()}
           />
         </>
