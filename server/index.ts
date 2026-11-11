@@ -314,10 +314,11 @@ app.delete('/api/save', async (_req, res) => {
   // SPEC-CHIEU-RONG §6.5: xoá toàn bộ dữ liệu xã hội của tài khoản (danh thiếp, bạn bè, thư,
   // lô đang treo coi như mất, điểm tuần/mùa, phần góp hội chợ, báo cáo).
   const dbnow = (await savesCollection()).db;
-  for (const c of ['shop_cards', 'card_history', 'friends', 'inbox', 'market_lots', 'week_scores', 'season_scores', 'fair_contrib', 'reports']) {
+  for (const c of ['shop_cards', 'card_history', 'friends', 'inbox', 'market_lots', 'week_scores', 'season_scores', 'fair_contrib', 'reports', 'alley_card_consents']) {
     const col = dbnow.collection(c);
-    // friends là cặp hai chiều nên phải xoá cả hai phía; các collection còn lại theo uid.
+    // friends là cặp hai chiều nên phải xoá cả hai phía; reports theo `by` (người gửi); còn lại theo uid.
     if (c === 'friends') await col.deleteMany({ $or: [{ a: uid }, { b: uid }] });
+    else if (c === 'reports') await col.deleteMany({ $or: [{ by: uid }, { target: uid }] });
     else await col.deleteMany({ uid });
   }
   console.log(`[api] DELETE /api/save uid=${uid} -> đã xoá cloud + ${alleys.length} hẻm + đồng ý + dữ liệu xã hội`);
@@ -466,6 +467,24 @@ async function saveCheckpoint(alleyId: string, data: unknown) {
   await (await alleyCollection()).updateOne({ _id: alleyId }, {
     $set: { data: d, lastActive: Date.now(), updatedAt: new Date().toISOString(), day: d.day, level: Number(d.level) || 1, money: d.money },
   });
+  // Hệ 6-L6b (SPEC-CHIEU-RONG §6.4f): bảng hẻm đọc `alley_week_scores` — ghi điểm tuần hẻm NGAY
+  // khi máy chạy gửi checkpoint. Server tự đo (chỉ từ bản lưu hẻm), điểm có TRẦN 100 (§6.3). Không
+  // đụng chơi cá nhân; lỗi nhỏ (chưa cấu hình mongo) thì bỏ qua, hẻm vẫn chơi bình thường.
+  try {
+    const { weekKey, bandForLevel } = await import('./socialRules');
+    const week = weekKey();
+    const level = Number(d.level) || 1;
+    const aws = (await savesCollection()).db.collection('alley_week_scores');
+    const score = Math.min(100, Math.round(level * 3));
+    const together = Math.min(30, Math.max(1, Number(d.day) || 1));
+    await aws.replaceOne(
+      { _id: `${week}:${alleyId}` },
+      { _id: `${week}:${alleyId}`, alley: alleyId, week, band: bandForLevel(level), score, together },
+      { upsert: true },
+    );
+  } catch (err) {
+    console.error('[alley] write week score:', err);
+  }
 }
 
 const server = createServer(app);
