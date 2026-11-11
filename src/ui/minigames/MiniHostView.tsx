@@ -28,11 +28,13 @@ const TapSpot = lazy(() => import('./TapSpot').then((m) => ({ default: m.TapSpot
 const GioQua = lazy(() => import('./GioQua').then((m) => ({ default: m.GioQua })));
 const BanhChung = lazy(() => import('./BanhChung').then((m) => ({ default: m.BanhChung })));
 const MamNguQua = lazy(() => import('./MamNguQua').then((m) => ({ default: m.MamNguQua })));
+const DenOngSao = lazy(() => import('./DenOngSao').then((m) => ({ default: m.DenOngSao })));
 const GAME_MAP: Record<string, LazyExoticComponent<ComponentType<MiniGameProps>>> = {
   tap_test: TapSpot,
   gio_qua: GioQua,
   banh_chung: BanhChung,
   mam_ngu_qua: MamNguQua,
+  den_ong_sao: DenOngSao,
 };
 
 type Phase = 'play' | 'result';
