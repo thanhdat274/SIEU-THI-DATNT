@@ -73,6 +73,8 @@ function routeTier(s: GameState, routeId: string): number {
 export const createTripSlice = (set: SetState, get: GetState): Pick<GameState, 'startTrip' | 'tripSetCart' | 'tripHaggle' | 'tripAcceptPrice' | 'tripChoose' | 'buyHauler' | 'buyCoolBox' | 'tripArrive' | 'tripRepayDebt'> => ({
   startTrip: (routeId: string, by: 'self' | number, cash: number, presetCart?: Record<string, number>) => {
     const s = get();
+    // §5.6 — ngày GIÔNG BÃO không cho xuất phát (dự báo biết trước 2 ngày); chặn cả tự đi lẫn sai người.
+    if (s.weather === 'storm') return s.notify('⛈️ Hôm nay trời giông bão — không nên lên đường, mai đi lành hơn.');
     const route = routeById(routeId);
     if (!route) return s.notify('🚚 Không tìm thấy tuyến này.');
     if (!routeUnlocked(route, s.level)) return s.notify(`🚚 Tuyến "${route.name}" mở từ cấp ${route.unlock}.`);

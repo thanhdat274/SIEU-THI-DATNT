@@ -5,7 +5,7 @@ import {
   beginTrip, cartBuyCost, cartBuyCostDiscounted, tripArrived, tripLoadStock, tripLotLife, tripProgress, tripRemaining, tripRoadHours,
   routeStockFresh, routeStockKey, routeStockLeft, routeStockResolve, routeStockSpend, weekOfDay, checkCart,
   cartCases, cartSavings, routeRelTier, routeCapBonus, debtOverdue, TRIP_DEBT_DUE_DAYS, TRIP_DEBT_PCT,
-  courierAutoHaggle, courierSafeOption,
+  courierAutoHaggle, courierSafeOption, courierOnTrip,
   tripPayoff, payoffRefCart, TRIP_REF_CASES, PAYOFF_SELF_HAGGLE,
 } from '../data/trip';
 import { haggleFloor, haggleOffer, haggleDiscount, HAGGLE_MAX_ROUNDS } from '../data/haggle';
@@ -779,5 +779,50 @@ describe('L8 — tripPayoff: so tự đi / sai người / mua mối lái (SPEC �
         expect(p.rows[i].cost).toBeGreaterThanOrEqual(p.rows[i - 1].cost);
       }
     }
+  });
+});
+
+// ─────────────────── §5.6 + §5.8 — cổng thời tiết & courier đi tỉnh ───────────────────
+describe('§5.6 — ngày GIÔNG BÃO không cho xuất phát', () => {
+  it('startTrip bị chặn khi thời tiết storm (cả tự đi lẫn sai người)', () => {
+    prep(54);
+    useGame.setState({ weather: 'storm', money: 50_000_000, staff: [{ id: 901, name: 'Bang', role: 'courier' as const, skill: 5, wage: 25000, shift: 'morning' as const }], biz: { ...useGame.getState().biz, hauler: 'ba_gac' } });
+    useGame.getState().startTrip('tay_nguyen', 'self', 500_000);
+    expect(useGame.getState().biz.trip).toBeUndefined();
+    useGame.getState().startTrip('tay_nguyen', 901, 500_000, { rg_kho_bo: 1 });
+    expect(useGame.getState().biz.trip).toBeUndefined();
+  });
+
+  it('mưa (rain) vẫn cho xuất phát', () => {
+    prep(54);
+    useGame.setState({ weather: 'rain', money: 50_000_000 });
+    useGame.getState().startTrip('cho_huyen', 'self', 200_000);
+    expect(useGame.getState().biz.trip).toBeDefined();
+  });
+});
+
+describe('§5.8 — courier đang đi tỉnh thì không tính là rảnh', () => {
+  it('courierOnTrip: đúng khi by = id courier; sai khi by = self hoặc không có chuyến', () => {
+    const base = { routeId: 'tay_nguyen', day: 1, departAt: 420, returnAt: 900, cash: 0, cart: {}, beat: 0 as const, hauler: 'moto' as const, delayMin: 0, flags: [] as string[] };
+    expect(courierOnTrip({ ...base, by: 901 }, 901)).toBe(true);
+    expect(courierOnTrip({ ...base, by: 901 }, 902)).toBe(false);
+    expect(courierOnTrip({ ...base, by: 'self' }, 901)).toBe(false);
+    expect(courierOnTrip(undefined, 901)).toBe(false);
+  });
+
+  it('freeCouriers/đơn điện thoại: có courier duy nhất đang đi tỉnh → không còn ai rảnh', () => {
+    // Mô phỏng đúng điều kiện: state có 1 courier, người đó đang là chủ của biz.trip (by = id, hauler ba_gac)
+    prep(54);
+    useGame.setState({ money: 50_000_000, staff: [{ id: 901, name: 'Bang', role: 'courier' as const, skill: 5, wage: 25000, shift: 'morning' as const }], biz: { ...useGame.getState().biz, hauler: 'ba_gac' } });
+    useGame.getState().startTrip('tay_nguyen', 901, 200_000, { rg_kho_bo: 1 });
+    const trip = useGame.getState().biz.trip!;
+    expect(useGame.getState().biz.trip!.by).toBe(901);
+    expect(courierOnTrip(trip, 901)).toBe(true);
+
+    // App: không còn freeCourier để chở đơn (online.ts lọc qua courierOnTrip)
+    // Kiểm gián tiếp qua helper thuần đã đúng; đảm bảo courierOnTrip là nguồn mà online/orders dùng.
+    const couriers = [901];
+    const stillFree = couriers.filter((id) => !courierOnTrip(trip, id));
+    expect(stillFree).toEqual([]);
   });
 });

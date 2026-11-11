@@ -5,6 +5,7 @@ import {
 } from '../../data/online';
 import { formatMoney, productById } from '../../data/products';
 import { regularById, regularFriendship } from '../../data/regulars';
+import { courierOnTrip } from '../../data/trip';
 import { playSfx } from '../audio';
 import type { GameState, GetState, SetState } from '../gameTypes';
 import { copyStock, takeStock } from '../stock';
@@ -12,10 +13,14 @@ import { simRng } from '../rand';
 
 /** Bán online qua app: nhận/từ chối đơn, chọn người chở; đơn đổ về và giao tới nơi chạy trong tick. */
 
-/** Nhân viên giao hàng đang rảnh (mỗi người chở một đơn app một lúc), người tay nghề cao trước. */
+/** Nhân viên giao hàng đang rảnh (mỗi người chở một đơn app một lúc), người tay nghề cao trước.
+ *  Hệ 5 §5.8: người đang đi tỉnh (sai đi thay) vắng cả buổi → không tính là rảnh. */
 const freeCouriers = (s: GameState) => {
   const busy = s.online.orders.filter((o) => o.status === 'shipping' && o.via === 'own').length;
-  return s.staff.filter((st) => st.role === 'courier').sort((a, b) => b.skill - a.skill).slice(busy);
+  return s.staff
+    .filter((st) => st.role === 'courier' && !courierOnTrip(s.biz.trip, st.id))
+    .sort((a, b) => b.skill - a.skill)
+    .slice(busy);
 };
 
 /** Mỗi tick: đơn mới đổ về theo điểm app, đơn chờ quá lâu bị huỷ, hàng tới tay khách thì nhận tiền và sao. */

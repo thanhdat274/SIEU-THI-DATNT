@@ -149,6 +149,11 @@ export const debtOverdue = (d: { dueDay: number }, day: number): boolean => day 
 export const COURIER_AUTO_HAGGLE = 0.06;
 export const courierAutoHaggle = (skill: number): number => (skill >= 4 ? COURIER_AUTO_HAGGLE : 0);
 
+/** Hệ 5 §5.8 — nhân viên giao hàng có id này có đang đi tỉnh (sai người đi thay) không. Tối qua
+ *  `trip.by !== 'self'` và đúng id. Khi vắng thì hệ app/điện thoại không được tính họ là rảnh. */
+export const courierOnTrip = (trip: TripState | undefined, courierId: number): boolean =>
+  !!trip && trip.by !== 'self' && trip.by === courierId;
+
 /** Người giao hàng tự chọn phương án mặc định của chuyện dọc đường (SPEC §5.8): "phương án chậm, an toàn" —
  *  ưu tiên phương án chỉ tốn thời gian (không tiền/phí/ướt); không có thì chọn chậm nhất. Trả index option. */
 export function courierSafeOption(evt: RoadEvent | undefined): number {
