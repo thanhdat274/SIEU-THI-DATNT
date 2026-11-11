@@ -11,6 +11,7 @@ import {
 } from '../../data/brand';
 import { franchisePayoff } from '../../data/franchisePayoff';
 import { brandLinePayoff } from '../../data/brandLinePayoff';
+import { brandWorkshopPayoff } from '../../data/brandWorkshopPayoff';
 import { Footer, styles, Tabs } from './shared';
 
 type Tab = 'lines' | 'workshop' | 'dealers' | 'franchise';
@@ -30,7 +31,7 @@ const pname = (id: string) => (productById(id)?.name ?? id).replace(/\s*\([^)]*\
  * Xưởng/Bỏ mối/Nhượng quyền sẽ mở ở các lát sau.
  */
 export function BrandPanel() {
-  const { level, money, biz, garden, soldEver, foundBrand, addBrandLine, dropBrandLine, buyBrandWorkshop, hireBrandWorker, fireBrandWorker, acceptBrandDeal, commitBrandDeal, releaseBrandDeal, deliverBrandDeal, acceptRivalSupply, openFranchise, closeFranchise, closePanel, day } = useGame();
+  const { level, money, biz, garden, soldEver, storage, foundBrand, addBrandLine, dropBrandLine, buyBrandWorkshop, hireBrandWorker, fireBrandWorker, acceptBrandDeal, commitBrandDeal, releaseBrandDeal, deliverBrandDeal, acceptRivalSupply, openFranchise, closeFranchise, closePanel, day } = useGame();
   // T6-L3: mở từ Sổ việc có thể tới thẳng một tab nhãn (`focus: 'lines' | 'workshop' | 'dealers' | 'franchise'`).
   const initialFocus = useGame((s) => (s.panel?.type === 'brand' ? s.panel.focus : undefined));
   const [tab, setTab] = useState<Tab>(initialFocus && (['lines', 'workshop', 'dealers', 'franchise'] as string[]).includes(initialFocus) ? (initialFocus as Tab) : 'lines');
@@ -89,7 +90,7 @@ export function BrandPanel() {
           {tab === 'lines' && <LinesTab lines={b.lines} candidates={candidates} slots={brandLineSlots(level)} onAdd={addBrandLine} onDrop={dropBrandLine} stock={brandStockUnits(b)} payoff={brandLinePayoff(b).rows} />}
 
           {tab === 'workshop' && (
-            <WorkshopTab b={b} level={level} money={money} onBuy={buyBrandWorkshop} onHire={hireBrandWorker} onFire={fireBrandWorker} />
+            <WorkshopTab b={b} level={level} money={money} storage={storage} onBuy={buyBrandWorkshop} onHire={hireBrandWorker} onFire={fireBrandWorker} />
           )}
 
           {tab === 'dealers' && (
@@ -135,8 +136,8 @@ function RepBar({ rep, name, repLog }: { rep: number; name: string; repLog: { da
   );
 }
 
-function WorkshopTab(props: { b: BrandState; level: number; money: number; onBuy: () => void; onHire: () => void; onFire: () => void }) {
-  const { b, level, money, onBuy, onHire, onFire } = props;
+function WorkshopTab(props: { b: BrandState; level: number; money: number; storage: Record<string, number>; onBuy: () => void; onHire: () => void; onFire: () => void }) {
+  const { b, level, money, storage, onBuy, onHire, onFire } = props;
   const w = b.workshop;
   const vnd = (n: number) => `${(n ?? 0).toLocaleString('vi-VN')}đ`;
   return (
@@ -165,6 +166,7 @@ function WorkshopTab(props: { b: BrandState; level: number; money: number; onBuy
                 Thợ {w.staff}/3 · công suất/đêm ≈ <b>{brandWorkshopCapacity(w)}</b> đơn vị · lương thợ/đêm {vnd(w.staff * 150000)} · phí bao bì 8% giá bán.
                 {' '}Hàng nhãn trong kho: {brandStockUnits(b)} đơn vị.
               </div>
+              <div style={{ fontSize: 12, color: '#e67e22', marginTop: 4 }}>📊 {brandWorkshopPayoff(b, storage).line}</div>
             </div>
             <button style={styles.btn} disabled={w.staff >= 3} onClick={onHire}>+ Thuê thợ</button>
             <button style={styles.btn} disabled={w.staff <= 0} onClick={onFire}>− Cho nghỉ</button>

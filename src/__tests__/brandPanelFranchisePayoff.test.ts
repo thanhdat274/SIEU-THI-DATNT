@@ -29,3 +29,13 @@ describe('brandLinePayoff — nối vào LinesTab (BrandPanel)', () => {
     expect(src).toContain('📊 {blp.line}');
   });
 });
+
+describe('brandWorkshopPayoff — nối vào WorkshopTab (BrandPanel)', () => {
+  it('import brandWorkshopPayoff + truyền storage từ store', () => {
+    expect(src).toContain("import { brandWorkshopPayoff } from '../../data/brandWorkshopPayoff'");
+    expect(src).toContain('storage, foundBrand');
+  });
+  it('thẻ xưởng đang mở render dòng 📊 payoff', () => {
+    expect(src).toContain('brandWorkshopPayoff(b, storage).line');
+  });
+});
