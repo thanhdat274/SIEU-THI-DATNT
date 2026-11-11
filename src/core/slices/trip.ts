@@ -1,4 +1,4 @@
-import { haulerById, routeById, roundTripMinutes, routeUnlocked, haulerUnlocked, tripTravelCost } from '../../data/routes';
+import { haulerById, routeById, roundTripMinutes, routeUnlocked, haulerUnlocked, tripTravelCost, COOL_BOX, type HaulerId } from '../../data/routes';
 import { beginTrip, tripLoadStock, routeStockResolve, routeStockSpend, checkCart, cartBuyCostDiscounted, cartCases, weekOfDay, type TripState } from '../../data/trip';
 import { haggleFloor, haggleOffer, haggleDiscount, HAGGLE_MAX_ROUNDS, HAGGLE_GRUDGE_WEEKS } from '../../data/haggle';
 import { roadEventDraw, type RoadCtx } from '../../data/roadEvents';
@@ -65,7 +65,7 @@ function topFriendId(s: GameState): string | undefined {
  * - `tripArrive()`: xe về — hàng vào kho (hạn bớt theo đường, trừ khi có thùng đá), xoá chuyến, chủ về
  *   nhà. Gọi từ tick khi `minutes ≥ returnAt` hoặc endDay nếu ngủ trước khi về (§5.10).
  */
-export const createTripSlice = (set: SetState, get: GetState): Pick<GameState, 'startTrip' | 'tripSetCart' | 'tripHaggle' | 'tripAcceptPrice' | 'tripChoose' | 'tripArrive'> => ({
+export const createTripSlice = (set: SetState, get: GetState): Pick<GameState, 'startTrip' | 'tripSetCart' | 'tripHaggle' | 'tripAcceptPrice' | 'tripChoose' | 'buyHauler' | 'buyCoolBox' | 'tripArrive'> => ({
   startTrip: (routeId: string, by: 'self' | number, cash: number) => {
     const s = get();
     const route = routeById(routeId);
@@ -200,6 +200,27 @@ export const createTripSlice = (set: SetState, get: GetState): Pick<GameState, '
     set({ money, regulars, biz: { ...s.biz, trip: { ...trip, cart } } });
     const tail = opt.wet ? ' — để vậy, hàng có thể bị ướt.' : opt.cost ? ` — tốn ${formatMoney(opt.cost)}.` : opt.friend ? ' — người quen gắn bó hơn.' : opt.minutes > 0 ? ` — chậm ${opt.minutes}′.` : '';
     s.notify(`🚚 ${evt.title} đã xử lý${tail}`);
+  },
+
+  // L6 — mua/đổi xe chở hàng & thùng đá giữ lạnh (SPEC §5.4). Sim không gọi → golden giữ nguyên.
+  buyHauler: (id: string) => {
+    const s = get();
+    const h = haulerById(id as HaulerId);
+    if (!h) return s.notify('🚚 Không có xe này.');
+    if (!haulerUnlocked(h, s.level)) return s.notify(`🚚 Xe này mở từ cấp ${h.unlock}.`);
+    if (s.biz.hauler === h.id) return s.notify(`🚚 Đang dùng ${h.name} rồi.`);
+    if (s.money < h.price) return s.notify(`🚚 Không đủ tiền — ${h.name} giá ${formatMoney(h.price)}.`);
+    set({ money: s.money - h.price, biz: { ...s.biz, hauler: h.id } });
+    s.notify(`🚚 Đổi sang ${h.name} — chở được ${h.cases} thùng/con.`);
+  },
+
+  buyCoolBox: () => {
+    const s = get();
+    if (s.biz.coolBox) return s.notify('🧊 Đã có thùng đá rồi.');
+    if (s.level < COOL_BOX.unlock) return s.notify(`🧊 Thùng đá mở từ cấp ${COOL_BOX.unlock}.`);
+    if (s.money < COOL_BOX.price) return s.notify(`🧊 Không đủ tiền — giá ${formatMoney(COOL_BOX.price)}.`);
+    set({ money: s.money - COOL_BOX.price, biz: { ...s.biz, coolBox: true } });
+    s.notify('🧊 Đã sắm thùng đá — hàng tươi về không còn mất hạn theo đường.');
   },
 
   tripArrive: () => {

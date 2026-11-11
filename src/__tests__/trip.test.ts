@@ -222,13 +222,13 @@ describe('routeStock (lượng nguồn tuần, R7)', () => {
     expect(st.left['cat:fresh']).toBe(80); // nhóm ngành còn lại
     expect(st.left['cat:meat']).toBe(60);
     const mv = routeStockFresh(1, mietVuon);
-    expect(mv.left['rg_kho_tom']).toBe(12); // 5 đặc sản, mỗi loại 12
+    expect(mv.left['tom_kho']).toBe(12); // 5 đặc sản, mỗi loại 12
   });
 
   it('routeStockKey: hàng riêng của tuyến theo productId, còn lại theo ngành', () => {
     expect(routeStockKey(choHuyen, 'rau', 'fresh')).toBe('rau');
     expect(routeStockKey(choHuyen, 'mia', 'fresh')).toBe('cat:fresh'); // mia không có trong goods
-    expect(routeStockKey(mietVuon, 'rg_kho_tom', 'dry')).toBe('rg_kho_tom');
+    expect(routeStockKey(mietVuon, 'tom_kho', 'dry')).toBe('tom_kho');
   });
 
   it('routeStockResolve: giữ tuần đang chạy, đổ đầy khi sang tuần mới', () => {
@@ -498,3 +498,52 @@ function roadEventPoolIds(beat: 1 | 4, ctx: RoadCtx): string[] {
   }
   return [...set];
 }
+
+describe('L6 slice — mua xe chở hàng & thùng đá', () => {
+  it('buyHauler: mua ba gác → trừ tiền, đặt biz.hauler', () => {
+    prep(50);
+    useGame.setState({ money: 50_000_000 });
+    useGame.getState().buyHauler('ba_gac');
+    expect(useGame.getState().biz.hauler).toBe('ba_gac');
+    expect(useGame.getState().money).toBe(50_000_000 - 18_000_000);
+  });
+
+  it('buyHauler: không đủ tiền / cùng xe / chưa mở → chặn, không đổi', () => {
+    prep(50);
+    useGame.setState({ money: 500_000 }); // < 18M ba gác
+    const toasts: string[] = [];
+    useGame.setState({ notify: (m: string) => void toasts.push(m) });
+    useGame.getState().buyHauler('ba_gac');
+    expect(useGame.getState().biz.hauler).toBeUndefined();
+    expect(toasts.some((t) => t.toLowerCase().includes('đủ tiền'))).toBe(true);
+    // xe tải mở cấp 55 — cấp 50 chặn
+    useGame.setState({ money: 100_000_000 });
+    useGame.getState().buyHauler('xe_tai');
+    expect(useGame.getState().biz.hauler).toBeUndefined();
+    // xe máy (giá 0) là xe mặc định khi chưa mua xe chở hàng — mua về miễn phí thì đổi sang nó
+    useGame.getState().buyHauler('moto');
+    expect(useGame.getState().biz.hauler).toBe('moto');
+  });
+
+  it('buyCoolBox: trừ tiền, set coolBox; mua lại / thiếu tiền → chặn', () => {
+    prep(50);
+    useGame.setState({ money: 10_000_000 });
+    useGame.getState().buyCoolBox();
+    expect(useGame.getState().biz.coolBox).toBe(true);
+    expect(useGame.getState().money).toBe(10_000_000 - 4_000_000);
+    const toasts: string[] = [];
+    useGame.setState({ notify: (m: string) => void toasts.push(m) });
+    useGame.getState().buyCoolBox(); // đã có
+    expect(toasts.some((t) => t.toLowerCase().includes('đã có'))).toBe(true);
+    expect(useGame.getState().money).toBe(10_000_000 - 4_000_000);
+  });
+
+  it('Miệt vườn: 5 đặc sản Nam đều là hàng có THẬT trong games (không crash khi chở về)', () => {
+    const v = routeById('miet_vuon')!;
+    for (const g of v.goods) {
+      const p = productById(g.productId);
+      expect(p, `thiếu productById('${g.productId}')`).toBeDefined();
+      expect(p!.unlock).toBeLessThanOrEqual(50); // người đi cấp 50 mua được
+    }
+  });
+});

@@ -102,6 +102,8 @@ export const ROUTES: RouteDef[] = [
     events: [],
   },
   // Miệt vườn miền Nam — 44, 5h, 5 đặc sản Nam rẻ 30% so với mối lái `dacsan` (§5.5).
+  // Món đều là hàng có thật trong game (NOTE: spec ghi `rg_*` là id mẫu; thay bằng món đang bán
+  // gần nhất — bánh phồng → bánh tráng — theo CLAUDE.md quy tắc 4).
   {
     id: 'miet_vuon',
     name: 'Miệt vườn miền Nam',
@@ -110,11 +112,11 @@ export const ROUTES: RouteDef[] = [
     region: 'Nam',
     hours: 5,
     goods: [
-      { productId: 'rg_kho_tom', discount: 0.30, weeklyCap: 12 },
-      { productId: 'rg_lap_xuong', discount: 0.30, weeklyCap: 12 },
-      { productId: 'rg_banh_pia', discount: 0.30, weeklyCap: 12 },
-      { productId: 'rg_banh_phong', discount: 0.30, weeklyCap: 12 },
-      { productId: 'rg_hat_dieu', discount: 0.30, weeklyCap: 12 },
+      { productId: 'tom_kho', discount: 0.30, weeklyCap: 12 },
+      { productId: 'lap_xuong', discount: 0.30, weeklyCap: 12 },
+      { productId: 'banh_pia', discount: 0.30, weeklyCap: 12 },
+      { productId: 'banhtrang', discount: 0.30, weeklyCap: 12 },
+      { productId: 'hat_dieu_muoi', discount: 0.30, weeklyCap: 12 },
     ],
     events: [],
   },

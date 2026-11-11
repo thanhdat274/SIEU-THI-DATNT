@@ -67,7 +67,7 @@ describe('ROUTES (tuyến)', () => {
 describe('routeDiscountFor / routeBuyPrice (giá)', () => {
   it('Miệt vườn: món đặc sản → 30%', () => {
     const v = routeById('miet_vuon')!;
-    expect(routeDiscountFor(v, 'rg_kho_tom', 'dry')).toBe(0.30);
+    expect(routeDiscountFor(v, 'tom_kho', 'dry')).toBe(0.30);
   });
   it('Chợ huyện: hàng theo ngành → rẻ theo ngành; món ngoài ngành → 0', () => {
     const j = routeById('cho_huyen')!;

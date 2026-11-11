@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useClock, useGame } from '../core/store';
-import { ROUTES, haulerById, routeById, routeUnlocked, routeBuyPrice, routeDiscountFor } from '../data/routes';
+import { ROUTES, HAULERS, COOL_BOX, haulerById, routeById, haulerUnlocked, routeUnlocked, routeBuyPrice, routeDiscountFor } from '../data/routes';
 import {
   routeStockResolve, routeStockLeft, cartCases, cartBuyCost, cartBuyCostDiscounted, cartSavings, tripProgress, tripRemaining, weekOfDay, type TripState,
 } from '../data/trip';
@@ -97,6 +97,7 @@ export function TripOverlay() {
           Tiền mang theo (đ)
           <input type="number" value={cash} min={1} onChange={(e) => setCash(e.target.value)} />
         </label>
+        <Garage />
         <div className="trip-ov-actions">
           <button className="mini-btn" onClick={() => setOpen(false)}>Bỏ qua</button>
           <button className="mini-btn primary" disabled={!picked} onClick={go}>Lên đường</button>
@@ -299,4 +300,41 @@ function fmtCost(o: { label: string; minutes: number; cost?: number; wet?: boole
   if (o.sell) return 'bán bớt hàng';
   if (o.wet) return 'hàng dễ ướt';
   return o.minutes > 0 ? `+${o.minutes}′` : '';
+}
+
+/** Hệ 5-L6 — sắm xe chở hàng & thùng đá giữ lạnh (bảng nhỏ trong bảng chọn chuyến). */
+function Garage() {
+  const level = useGame((s) => s.level);
+  const money = useGame((s) => s.money);
+  const hauler = useGame((s) => s.biz.hauler);
+  const coolBox = useGame((s) => s.biz.coolBox);
+  const buyHauler = useGame((s) => s.buyHauler);
+  const buyCoolBox = useGame((s) => s.buyCoolBox);
+  const open = useGame((s) => s.biz.trip !== undefined);
+
+  const cars = HAULERS.filter((h) => haulerUnlocked(h, level));
+  const can = (price: number) => money >= price;
+  return (
+    <div className="trip-garage">
+      <div className="trip-garage-title">🛠 Xe & thùng đá</div>
+      <div className="trip-garage-row">
+        {cars.map((h) => {
+          const has = hauler === h.id;
+          return (
+            <button key={h.id} className="trip-garage-btn"
+              disabled={has || open || !can(h.price)}
+              onClick={() => buyHauler(h.id)}>
+              {has ? `✓ ${h.name}` : `${h.icon} ${h.name} ${h.price ? formatMoney(h.price) : 'miễn phí'}`}
+              <span className="trip-garage-sub">{h.cases} thùng/con · mở cấp {h.unlock}</span>
+            </button>
+          );
+        })}
+        <button className="trip-garage-btn" disabled={coolBox || open || !can(COOL_BOX.price)}
+          onClick={() => buyCoolBox()}>
+          {coolBox ? '✓ Thùng đá' : `${COOL_BOX.icon} Thùng đá ${formatMoney(COOL_BOX.price)}`}
+          <span className="trip-garage-sub">hàng tươi không mất hạn</span>
+        </button>
+      </div>
+    </div>
+  );
 }

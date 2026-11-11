@@ -141,3 +141,16 @@
 }
 .trip-event-opt:hover { background: #f4e7c8; }
 .trip-event-cost { color: #1e8449; font-weight: 600; white-space: nowrap; font-size: 11px; }
+
+/* Hệ 5-L6 — bảng sắm xe & thùng đá. */
+.trip-garage { display: flex; flex-direction: column; gap: 4px; }
+.trip-garage-title { font-size: 12px; font-weight: 600; color: #5d3a1a; }
+.trip-garage-row { display: flex; flex-wrap: wrap; gap: 5px; }
+.trip-garage-btn {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 1px;
+  border: 1px solid #cfb689; border-radius: 8px; background: #fff;
+  padding: 5px 8px; font-size: 11px; color: #5d3a1a; cursor: pointer; text-align: left;
+}
+.trip-garage-btn:hover:not(:disabled) { background: #f4e7c8; }
+.trip-garage-btn:disabled { opacity: 0.45; cursor: default; }
+.trip-garage-sub { font-size: 10px; color: #7a5a30; }
