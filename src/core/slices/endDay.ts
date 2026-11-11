@@ -674,6 +674,9 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
   });
   // SPEC-TOI-UU §T1 (L1): bắt đầu tích luỹ cho ngày game mới vừa set.
   startDay(get().day);
+  // Hệ 6 (SPEC-CHIEU-RONG §6.5): người đã bật `public_card` thì Cuối ngày tự đẩy danh thiếp lên server.
+  // CHỈ khi bật scope (người thật đăng nhập) → simGolden/khách không bao giờ đi tới đây: not a byte kinh tế.
+  if (get().biz.social2?.cardPublic) void get().pushCard();
   // GĐ169 — thưởng chuỗi tuần/tháng đổi XP: cộng sau khi state ngày mới đã set (đi qua addXp để
   // lên cấp/mở khóa đúng một luồng; XP Chuỗi là thành phần kinh tế NHẸ Leader duyệt theo audit).
   // GĐ569: tin sau ngủ (lên cấp, thành tựu, danh hiệu, thay ô) cũng gom vào cùng toast — đứng ngay sau thời tiết.

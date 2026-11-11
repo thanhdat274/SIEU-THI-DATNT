@@ -31,6 +31,7 @@ export const HUBS: Record<string, readonly HubTab[]> = {
     ['branch', '🏪 Tiện lợi', CONVENIENCE.unlock],
     ['social', '📱 MXH', SOCIAL_UNLOCK],
     ['online', '📲 Online', ONLINE_UNLOCK],
+    ['community', '👥 Cộng đồng', 0],
   ],
 };
 

@@ -145,6 +145,7 @@ export type Panel =
   | { type: 'history' }
   | { type: 'social' }
   | { type: 'online' }
+  | { type: 'community' } // Hệ 6 (SPEC-CHIEU-RONG §6.5): bạn bè/chợ/thi đua/hội chợ online không đồng bộ
   | { type: 'licenses' }
   | { type: 'garden'; focus?: string }
   | { type: 'brand'; focus?: string }
@@ -164,6 +165,19 @@ export interface Placing {
   movingUid?: number;
   /** 'stash' = lấy từ kho đồ (đặt miễn phí); 'trial' = đặt dùng thử (chưa trả tiền). */
   source?: 'stash' | 'trial';
+}
+
+/** Một mục trong hộp thư cộng đồng Hệ 6 (server/social.ts InboxDoc). */
+export interface SocialInboxItem {
+  id: string;
+  kind: 'flower' | 'praise' | 'lot_sold' | 'lot_bought' | string;
+  from: string;
+  payload: { lotId?: string; productId?: string; qty?: number; unit?: number; money?: number } | null;
+  createdAt: number;
+}
+/** Một lô bán ở chợ liên hẻm (client — đúng khung server trả về). */
+export interface MarketLotClient {
+  id: string; seller: string; productId: string; qty: number; unit: number; price: number;
 }
 
 export interface GameState {
@@ -475,6 +489,19 @@ export interface GameState {
   armMessage: () => void;
   openPanel: (panel: Panel) => void;
   closePanel: () => void;
+
+  // Hệ 6 — Cộng đồng online không đồng bộ (SPEC-CHIEU-RONG §6.5). Mutations có đụng kinh tế/trạng
+  // thái thì đặt ở đây để test được; đọc dữ liệu thì panel gọi thẳng src/net/socialApi.
+  /** Bật/tắt scope `public_card` (khoe danh thiếp). Bật → đẩy danh thiếp lên; tắt → server xoá. */
+  toggleCardPublic: (on: boolean) => Promise<void>;
+  /** Đẩy danh thiếp hiện tại lên server (giữ mã bạn bè). Gọi khi cấp/tên/tiến độ đổi bên Cuối ngày. */
+  pushCard: () => Promise<void>;
+  /** Nhận thư: áp thưởng lẵng hoa/lời khen, tiền lô bán, hàng lô mua — rồi đánh dấu đã nhận trên server. */
+  claimInbox: (items: SocialInboxItem[]) => void;
+  /** Đăng một lô bán lên chợ liên hẻm. */
+  postMarketLot: (input: { productId: string; qty: number; unit: number; suggestPrice: number }) => Promise<void>;
+  /** Mua một lô ở chợ liên hẻm: trừ tiền ngay, hàng về kho sáng mai (thư lot_bought). */
+  buyMarketLot: (lot: MarketLotClient) => Promise<void>;
 
   toggleShop: () => void;
   /** Nhập hàng vào kho (đại lý đầu ngõ, có ngay). */

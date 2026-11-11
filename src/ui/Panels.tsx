@@ -30,6 +30,7 @@ const GiftPanel = lazy(() => import('./panels/GiftPanel').then((m) => ({ default
 const CookPanel = lazy(() => import('./panels/CookPanel').then((m) => ({ default: m.CookPanel })));
 const SocialPanel = lazy(() => import('./panels/SocialPanel').then((m) => ({ default: m.SocialPanel })));
 const OnlinePanel = lazy(() => import('./panels/OnlinePanel').then((m) => ({ default: m.OnlinePanel })));
+const CommunityPanel = lazy(() => import('./panels/CommunityPanel').then((m) => ({ default: m.CommunityPanel })));
 const LicensesPanel = lazy(() => import('./panels/LicensesPanel').then((m) => ({ default: m.LicensesPanel })));
 const GardenPanel = lazy(() => import('./panels/GardenPanel').then((m) => ({ default: m.GardenPanel })));
 const AnalyticsPanel = lazy(() => import('./panels/AnalyticsPanel').then((m) => ({ default: m.AnalyticsPanel })));
@@ -68,6 +69,7 @@ export function Panels() {
         {panel.type === 'order' && <OrderPanel />}
         {panel.type === 'social' && <SocialPanel />}
         {panel.type === 'online' && <OnlinePanel />}
+        {panel.type === 'community' && <CommunityPanel />}
         {panel.type === 'licenses' && <LicensesPanel />}
         {panel.type === 'shelf' && <ShelfPanel uid={panel.uid} />}
         {panel.type === 'build' && <BuildPanel />}

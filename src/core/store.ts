@@ -60,6 +60,7 @@ import { createStanceSlice } from './slices/stance';
 import { createBrandSlice } from './slices/brand';
 import { createMiniSlice } from './slices/minigame';
 import { createTripSlice } from './slices/trip';
+import { createSocial2Slice } from './slices/social2';
 
 export * from './gameTypes';
 export { migrateTiers } from './stock';
@@ -271,6 +272,7 @@ export const useGame = create<GameState>((set, get) => {
     ...createBrandSlice(set, get),
     ...createMiniSlice(set, get),
     ...createTripSlice(set, get),
+    ...createSocial2Slice(set, get),
   };
 });
 

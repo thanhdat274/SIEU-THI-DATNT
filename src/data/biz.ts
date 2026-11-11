@@ -292,6 +292,33 @@ export interface BizState {
   roadBoon?: boolean;
   /** Biến cố dài đã kết thúc gần nhất (để hiện bảng tổng kết cuối đợt) — lát L4. Bản lưu cũ thiếu → undefined. */
   lastCrisis?: { defId: string; endDay: number; loss: number; saved: number };
+  /**
+   * Hệ 6 — Online không đồng bộ (SPEC-CHIEU-RONG §6.5). Trạng thái CỤC BỘ để đồng bộ với server:
+   * tạm lưu danh thiếp, trần ngày/tuần mua-bán, lẵng hoa đang chạy. Mặc định undefined (chưa dùng
+   * cộng đồng) — simGolden/khách không đụng tới nên không ảnh hưởng golden. Bản lưu cũ thiếu → undefined.
+   */
+  social2?: Social2State;
+}
+
+/**
+ * Hệ 6 — trạng thái cục bộ của cộng đồng online không đồng bộ. Server là nguồn chân lý (trần, điểm);
+ * state này chỉ để UI nhớ nhanh + đếm trần phía máy người chơi (server vẫn tự kiểm lại).
+ */
+export interface Social2State {
+  /** Người chơi đã bật scope `public_card` chưa (đồng ý khoe danh thiếp, §6.4a). Mặc định TẮT. */
+  cardPublic: boolean;
+  /** Mã bạn bè 6 ký tự do server cấp (sinh khi bật). Lưu lại để không phải hỏi lại. */
+  code?: string;
+  /** Bản danh thiếp gần nhất đã đẩy lên (để so khác & cập nhật). */
+  card?: { shopName: string; ownerName: string; level: number; day: number };
+  /** Lẵng hoa đang trang trí: `until` = ngày game hết hiệu lực (+3). */
+  flowers: { until: number }[];
+  /** Lô đã đăng trong tuần hiện tại (week key → số lô) để ẩn nút hết hạn trên UI. */
+  lotsWeek: { week: string; n: number };
+  /** Lô người chơi đã mua hôm nay (date key → số lô) — chợ tối đa 2 lô/ngày. */
+  buysDay: { date: string; n: number };
+  /** ids trong inbox đã nhận cục bộ (chống nhận nhầm 2 lần nếu server/tin chệch). */
+  claimed: string[];
 }
 
 /** Sự kiện thử thách theo mùa (GĐ75). */
@@ -336,6 +363,13 @@ export const newBiz = (): BizState => ({
   crisis: undefined, crisesSeen: [], crisisBadges: [], calmYears: false, roadBoon: false, lastCrisis: undefined,
   // Hệ 7 — Trò khéo tay lễ (SPEC-CHIEU-RONG §7): chưa chơi/không thưởng, không có flair
   miniPlayed: {}, miniBonus: {}, festivalFlair: undefined,
+  // Hệ 6 — cộng đồng online không đồng bộ (SPEC-CHIEU-RONG §6.5): mặc định chưa bật scope
+  social2: emptySocial2(),
+});
+
+/** Trạng thái cộng đồng Hệ 6 ban đầu (chưa bật scope, chưa có gì). */
+export const emptySocial2 = (): Social2State => ({
+  cardPublic: false, flowers: [], lotsWeek: { week: '', n: 0 }, buysDay: { date: '', n: 0 }, claimed: [],
 });
 
 /** Hệ số đi bộ của chủ tiệm hôm nay: nhà đẹp ngủ ngon, ăn sáng, xe (chỉ khi ở ngoài đường). */
