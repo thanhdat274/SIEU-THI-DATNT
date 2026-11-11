@@ -9,6 +9,7 @@ import {
   brandStockUnits, brandDealValue, brandRivalValue, brandWorkshopCapacity, franchiseIncome,
   type BrandState,
 } from '../../data/brand';
+import { franchisePayoff } from '../../data/franchisePayoff';
 import { Footer, styles, Tabs } from './shared';
 
 type Tab = 'lines' | 'workshop' | 'dealers' | 'franchise';
@@ -333,6 +334,7 @@ function FranchiseTab(props: { b: BrandState; level: number; money: number; onOp
         const def = BRAND_FRANCHISE_SLOTS.find((x) => x.id === f.id);
         if (!def) return null;
         const due = b.franchiseDue[f.id];
+        const frp = franchisePayoff(b).rows.find((r) => r.id === f.id);
         return (
           <div key={f.id} style={styles.card}>
             <span style={{ flex: 1 }}>
@@ -341,6 +343,11 @@ function FranchiseTab(props: { b: BrandState; level: number; money: number; onOp
                 khoẻ {f.health}/100 · mỗi tuần {def.weekly} đơn vị · phí/đêm ≈ {franchiseIncome(f.health, b.rep, def.size, 1).toLocaleString('vi-VN')}đ
                 {' '}· nhập hàng {due !== undefined ? (due <= 1 ? (due <= 0 ? 'quá hạn' : 'hôm nay') : `còn ${due} ngày`) : '—'}
               </div>
+              {frp && (
+                <div style={{ fontSize: 12, color: '#e67e22', marginTop: 4 }}>
+                  📊 {frp.line}
+                </div>
+              )}
             </span>
             <button style={styles.btn} onClick={() => onClose(f.id)}>Đóng điểm</button>
           </div>
