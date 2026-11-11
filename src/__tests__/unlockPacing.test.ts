@@ -80,4 +80,19 @@ describe('unlockPacing — baseline hiện trạng (SPEC-TOI-UU §T3)', () => {
       expect(lv).toBeGreaterThanOrEqual(1);
     }
   });
+
+  it('T3-L6: từ cấp 60 không quá 12 cấp liên tiếp không có mốc mở khoá (nguyên tắc 3)', () => {
+    // Nguyên tắc 3 của SPEC §T3: sau cấp 60, không được có dải 12 cấp liên tiếp trống trơn —
+    // chặn tình trạng "thêm nội dung dồn hết vào thấp, cao cấp không có gì mới để chơi".
+    // Đo bằng ≤ 12 (hiện trạng 0 cấp trống), siết dần như các nguyên tắc 1–2.
+    let run = 0, worst = 0, worstAt = 0, gapStart = 60;
+    for (let l = 60; l <= 200; l++) {
+      if (byLevel[l] === 0) {
+        if (run === 0) gapStart = l;
+        run++;
+        if (run > worst) { worst = run; worstAt = gapStart; }
+      } else run = 0;
+    }
+    expect(worst, `dải trống dài nhất ≥60 là ${worst} cấp (bắt đầu ${worstAt})`).toBeLessThanOrEqual(12);
+  });
 });
