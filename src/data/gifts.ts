@@ -136,8 +136,8 @@ export const scaledPrize = (p: WheelPrize, level: number): WheelPrize => {
 
 /** Xoay một lượt: chọn giải theo trọng số. */
 /** GĐ1528 — Xóm #3 "món báu theo kỳ 28 ngày": từ cấp 33 vòng quay có thêm 1 ô hiếm (~2%) trao món Đồ Việt
- *  của kỳ này vào kho đồ; món đổi theo kỳ 28 ngày, xoay vòng 5 món. Dưới cấp 33 vòng quay y cũ (golden không đổi). */
-export const RARE_WHEEL_UNLOCK = 33;
+ *  của kỳ này vào kho đồ; món đổi theo kỳ 28 ngày, xoay vòng 5 món. Dưới cấp mở vòng quay y cũ (golden không đổi). */
+export const RARE_WHEEL_UNLOCK = 38; // SPEC-TOI-UU §T3-L3: giãn cụm 29–36, dời vòng quay hiếm 33→38 (mốc trên 30 → golden giữ byte)
 export const RARE_PERIOD_DAYS = 28;
 export const RARE_WHEEL_WEIGHT = 2;
 export const rareWheelPiece = (day: number) => VIET_SET[Math.floor(Math.max(0, day - 1) / RARE_PERIOD_DAYS) % VIET_SET.length];

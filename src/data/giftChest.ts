@@ -2,8 +2,8 @@ import type { DailyGift } from './gifts';
 
 /** GĐ1533 — Xóm #11 "rương trọng số": từ cấp 34, rương vàng ngày 7 mở ra 1 trong 6 bậc
  *  theo tỉ lệ 30/20/20/15/10/5%, nhân tiền ×0,6/0,8/1/1,5/2/3 (kỳ vọng ≈×1,12). Tất định theo ngày
- *  (băm số ngày, không RNG) → solo = co-op. Dưới cấp 34 rương y cũ (golden không đổi). */
-export const CHEST_UNLOCK = 34;
+ *  (băm số ngày, không RNG) → solo = co-op. Dưới cấp mở rương y cũ (golden không đổi). */
+export const CHEST_UNLOCK = 39; // SPEC-TOI-UU §T3-L3: giãn cụm 29–36, dời rương 34→39 (mốc trên 30 → golden giữ byte)
 export const CHEST_TIERS: readonly { pct: number; mul: number; name: string }[] = [
   { pct: 30, mul: 0.6, name: 'Rương gỗ' },
   { pct: 20, mul: 0.8, name: 'Rương tre' },

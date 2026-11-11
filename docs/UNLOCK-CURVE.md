@@ -1,6 +1,6 @@
 # Đường cong mở khoá
 
-> Sinh tự động bởi `scripts/unlock-curve.mjs` ngày 2026-11-10. Đếm mẫu chữ trên mã nguồn
+> Sinh tự động bởi `scripts/unlock-curve.mjs` ngày 2026-11-11. Đếm mẫu chữ trên mã nguồn
 > (cú pháp `unlock:N`, `p(...,N)`, tuple cuối game, `*_UNLOCK`), **xấp xỉ** — có thể sót
 > vài dạng khai báo. Chạy lại mỗi khi thêm nội dung, rồi đối chiếu bài test `unlockPacing`.
 
@@ -56,7 +56,7 @@ Chuỗi từng cấp (răng cưa):
 | 12 | `INSPECTION_UNLOCK` | bizAchievements.ts |
 | 14 | `COOP_UNLOCK` | garden.ts |
 | 16 | `FARM_ORDER_UNLOCK` | garden.ts |
-| 18 | `INSPECTION_UNLOCK` | inspection.ts |
+| 18 | `HYGIENE_UNLOCK` | inspection.ts |
 | 21 | `COOK_UNLOCK` | recipes.ts |
 | 29 | `QUAN_NUOC_UNLOCK` | quanNuoc.ts |
 | 30 | `CRITIC_UNLOCK` | critic.ts |
@@ -65,12 +65,13 @@ Chuỗi từng cấp (răng cưa):
 | 31 | `MENU_RULE_UNLOCK` | dineIn.ts |
 | 32 | `LIFE_EVENT_UNLOCK` | lifeEvent.ts |
 | 32 | `MEAT_UNLOCK` | meat.ts |
+| 32 | `MINI_UNLOCK` | festivalMini.ts |
 | 32 | `POACH_CLUSTER_UNLOCK` | rivals.ts |
 | 32 | `TIES_UNLOCK` | regularTies.ts |
-| 33 | `RARE_WHEEL_UNLOCK` | gifts.ts |
-| 34 | `CHEST_UNLOCK` | giftChest.ts |
 | 34 | `PHOI_UNLOCK` | preserve.ts |
+| 38 | `RARE_WHEEL_UNLOCK` | gifts.ts |
 | 38 | `VAI_UNLOCK` | preserve.ts |
+| 39 | `CHEST_UNLOCK` | giftChest.ts |
 | 40 | `TIEM_XOI_UNLOCK` | tiemXoi.ts |
 | 45 | `CRITIC_HARD_UNLOCK` | critic.ts |
 | 45 | `TOILET_STRICT_UNLOCK` | dineIn.ts |
@@ -78,6 +79,10 @@ Chuỗi từng cấp (răng cưa):
 | 55 | `NIGHT_UNLOCK` | night.ts |
 | 60 | `STANCE_UNLOCK` | stance.ts |
 | 66 | `STAR_BOOST_UNLOCK` | dishStars.ts |
+| 100 | `BRAND_UNLOCK` | brand.ts |
+| 100 | `BRAND_WORKSHOP_UNLOCK` | brand.ts |
+| 110 | `BRAND_DEALER_UNLOCK` | brand.ts |
+| 150 | `BRAND_FRANCHISE_UNLOCK` | brand.ts |
 
 ---
 *Quy ước SPEC-TOI-UU §T3: mỗi cấp tối đa 1 hệ lớn (dải 1–60 cách nhau ≥ 2 cấp); không cấp nào
