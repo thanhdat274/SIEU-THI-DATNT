@@ -28,6 +28,19 @@ Khi dùng Ứng dụng, bạn không được:
 
 Chúng tôi có quyền tạm khóa/khóa tài khoản nếu phát hiện vi phạm.
 
+### 3.1. Tính năng cộng đồng (danh thiếp, chợ, thi đua — dùng TUỲ CHỌN)
+
+Tính năng cộng đồng (bạn bè, chợ liên hẻm, thi đua tuần, hội chợ) **không tự bật** khi đăng nhập. Chỉ khi bạn **chủ động bật quyền `public_card`** trong mục tài khoản thì tên tiệm, tên chủ và sơ đồ tiệm của bạn mới **hiển thị công khai** cho người khác (qua mã bạn bè, chợ, bảng xếp hạng) như mô tả trong [Chính sách Bảo mật](CHINH-SACH-BAO-MAT.md) mục 2.7.
+
+Khi dùng tính năng cộng đồng, bạn không được:
+
+- Gõ tên tiệm/tên chủ mang nội dung **thô tục, xúc phạm, mạo danh, quảng cáo** hay vi phạm pháp luật.
+- **Đăng bán lên chợ** hàng hóa gian lận, lỗi dữ liệu, hoặc lợi dụng lỗ hổng để trục lợi.
+- Tạo **nhiều tài khoản/giả người khác** để tâng bốc bản thân trên bảng xếp hạng hoặc làm lệch chợ/thi đua.
+- **Quấy rối, spam** lẵng hoa/lời khen cho người khác.
+
+Chúng tôi có hệ thống **lọc tên cấm** và nút **báo cáo**; tên bị báo cáo và xác minh sẽ tự đổi thành "Tiệm tạp hóa". Chúng tôi có quyền khóa quyền cộng đồng hoặc tài khoản nếu phát hiện vi phạm. Bạn có thể **tắt quyền `public_card`** bất cứ lúc nào trong mục tài khoản — danh thiếp, bạn bè, thư, điểm thi đua và phần góp hội chợ của bạn sẽ bị xóa khỏi máy chủ; chơi đơn không bị ảnh hưởng.
+
 ## 4. Dịch vụ & tiến trình
 
 - Ứng dụng là **game mô phỏng**; tiền bạc, hàng hóa trong game là **ảo**, không có giá trị thực và không thể quy đổi thành tiền thật.

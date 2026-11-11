@@ -14,6 +14,17 @@ export const PRIVACY_VERSION = '2026-11-03';
 export const CONSENT_SCOPES = ['account_cloud', 'terms'] as const;
 export type ConsentScope = (typeof CONSENT_SCOPES)[number];
 
+/**
+ * Scope TUỲ CHỌN (SPEC-CHIEU-RONG §6.4a): không nằm trong danh sách bắt buộc để đăng nhập, người chơi
+ * mở riêng khi muốn khoe danh thiếp tiệm cho người khác. Mặc định TẮT. Kéo theo dữ liệu công khai,
+ * nên phải đồng ý riêng (NĐ 356/2025) và tắt thì server xoá danh thiếp.
+ */
+export const OPTIONAL_SCOPES = ['public_card'] as const;
+export type OptionalScope = (typeof OPTIONAL_SCOPES)[number];
+
+/** Mọi scope (bắt buộc + tuỳ chọn) — dùng để xác thực chuỗi scope client gửi lên. */
+export const ALL_SCOPES = [...CONSENT_SCOPES, ...OPTIONAL_SCOPES] as const;
+
 /** Kênh liên hệ thực hiện quyền chủ thể dữ liệu; rỗng = chưa công bố (panel sẽ báo chưa có). */
 export const SUPPORT_CONTACT = 'nguyenthanhdat27042002@gmail.com';
 
@@ -21,9 +32,9 @@ export const SUPPORT_CONTACT = 'nguyenthanhdat27042002@gmail.com';
 export const allConsentsGiven = (given: Partial<Record<ConsentScope, boolean>>) =>
   CONSENT_SCOPES.every((s) => given[s] === true);
 
-/** Một chuỗi có phải scope đồng ý hợp lệ không. */
-export const isConsentScope = (s: string): s is ConsentScope =>
-  (CONSENT_SCOPES as readonly string[]).includes(s);
+/** Một chuỗi có phải scope đồng ý hợp lệ không (gồm cả tuỳ chọn). */
+export const isConsentScope = (s: string): s is ConsentScope | OptionalScope =>
+  (ALL_SCOPES as readonly string[]).includes(s);
 
 /** Phiên bản Chính sách có đủ ý (không rỗng, hợp độ dài) để ghi bằng chứng không. */
 export const isValidConsentVersion = (v: string) => v.length > 0 && v.length <= 40;
