@@ -33,6 +33,8 @@ export function MoreMenuBody({ tools, level, onHelp, keys, setKeys, setOpen }: {
 }) {
   const [teleOpen, setTeleOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  // SPEC-TOI-UU §T6 (L3): mở Sổ việc chung từ menu ⋯ (không đụng dải HUD / chip / MorningPanel).
+  const openTodo = () => useGame.getState().openPanel({ type: 'todo' } as never);
   return (
     <>
       {keys ? (
@@ -64,6 +66,8 @@ export function MoreMenuBody({ tools, level, onHelp, keys, setKeys, setOpen }: {
           {/* SPEC-TOI-UU §T6 (L6): tìm nhanh bảng / hệ / món. */}
           <ToolButton tool={{ icon: '🔍', label: searchOpen ? 'Tìm nhanh: đóng' : 'Tìm nhanh', on: () => setSearchOpen(!searchOpen) }} level={level} />
           {searchOpen && <HubSearch onPick={() => setOpen(false)} />}
+          {/* SPEC-TOI-UU §T6 (L3): Sổ việc chung — gộp mọi việc gấp/hôm nay/rảnh về một bảng. */}
+          <ToolButton tool={{ icon: '🗒️', label: 'Sổ việc', on: openTodo }} level={level} onPicked={() => setOpen(false)} />
         </>
       )}
     </>
@@ -124,6 +128,7 @@ function buildIndex(): SearchHit[] {
   for (const p of PRODUCTS) {
     out.push({ key: `p:${p.id}`, icon: '🍎', name: p.name, group: 'Món', panel: () => 'prices' });
   }
+  out.push({ key: 'b:todo', icon: '🗒️', name: 'Sổ việc', group: 'Bảng', panel: () => ({ type: 'todo' as const }) });
   return out;
 }
 

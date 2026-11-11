@@ -141,6 +141,7 @@ export type Panel =
   | { type: 'gifts' }
   | { type: 'cook' }
   | { type: 'morning' }
+  | { type: 'todo' } // GĐ2317: Sổ việc chung (SPEC-TOI-UU §T6-L3) — gộp mọi nguồn đã đăng ký qua registerTodo
   | { type: 'history' }
   | { type: 'social' }
   | { type: 'online' }
