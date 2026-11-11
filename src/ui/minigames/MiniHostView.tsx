@@ -4,6 +4,7 @@ import { miniDefById, miniTargetRecipe, type MiniMode } from '../../data/festiva
 import { useGame } from '../../core/store';
 import { useMiniHost } from './miniHost';
 import { miniSeed } from './seeded';
+import { miniPlace, miniReward, miniSkip } from './feel';
 import './minigames.css';
 
 /**
@@ -50,6 +51,7 @@ export function MiniHostView() {
   const [score, setScore] = useState(0);
   const [left, setLeft] = useState(0);
   const progressRef = useRef(0);
+  const feelRef = useRef(0); // Hệ7-L6: âm thanh + rung khi điểm tăng trong lúc chơi
 
   const def = active ? miniDefById(active.defId) : undefined;
   const Game = active ? GAME_MAP[active.defId] : undefined;
@@ -80,17 +82,19 @@ export function MiniHostView() {
     const s = clampScore(raw);
     setScore(s);
     setPhase('result');
+    miniReward(); // Hệ7-L6: vừa xong trò → rung dài + tiếng thưởng
     // Hệ7-L2: ghi thưởng thật cho TRÒ GẮN DỊP LỄ (trò giả tap_test không vô save).
     if (active && def && def.festivals.length > 0) {
       useGame.getState().scoreFestivalMini(def.id, s, active.mode);
     }
   }
-  function skip() { finish(0); }
+  function skip() { miniSkip(); finish(0); }
   function close() {
     closeMini();
     setPhase('play');
     setScore(0);
     progressRef.current = 0;
+    feelRef.current = 0;
   }
 
   const isFast = active.mode === 'fast';
@@ -115,7 +119,10 @@ export function MiniHostView() {
                     seed={miniSeed(weatherSeed, active.day, def.id)}
                     mode={active.mode}
                     onFinish={finish}
-                    onProgress={(s) => { progressRef.current = s; }}
+                    onProgress={(s) => {
+                      if (s > feelRef.current) { feelRef.current = s; miniPlace(); } // Hệ7-L6: có điểm → cạch + rung nhẹ
+                      progressRef.current = s;
+                    }}
                   />
                 </Suspense>
               ) : (
