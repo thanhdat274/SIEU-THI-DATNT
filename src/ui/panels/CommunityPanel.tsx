@@ -137,6 +137,11 @@ function FriendsTab() {
     try { await gift(uid, kind); setOk(kind === 'flower' ? 'Đã gửi lẵng hoa 🎀' : 'Đã gửi lời khen 💬'); }
     catch (e) { setErr((e as Error).message); }
   };
+  const doReport = async (target: string) => {
+    setErr('');
+    try { const { report } = await import('../../net/socialApi'); await report('card', target, 'Tên/nội dung không phù hợp'); setOk('Đã gửi báo cáo — cảm ơn bạn.'); }
+    catch (e) { setErr((e as Error).message); }
+  };
 
   return (
     <div style={{ display: 'grid', gap: 10 }}>
@@ -154,6 +159,7 @@ function FriendsTab() {
         <div style={styles.card}>
           <b>🏪 {view.shopName}</b> <small style={{ opacity: 0.7 }}>· {view.ownerName} · cấp {view.level}</small>
           {view.titles?.length ? <div style={{ fontSize: 12, marginTop: 2 }}>🏅 {view.titles.join(' · ')}</div> : null}
+          <button style={{ ...styles.btn, background: '#e74c3c', marginLeft: 'auto' }} onClick={() => doReport(view.uid)}>🚩 Báo cáo</button>
         </div>
       )}
       <div style={{ ...styles.card, display: 'block' }}>
