@@ -21,6 +21,7 @@ import {
 } from './room';
 import { heartbeatStep } from './room';
 import { BATCH_MAX, TELEMETRY_TTL_DAYS, tBucketKey, validateReport } from './telemetry';
+import { registerSocial } from './social';
 
 config({ path: resolve(dirname(fileURLToPath(import.meta.url)), '.env') });
 const env = process.env;
@@ -205,6 +206,10 @@ app.use('/api', (req, res, next) => {
 
 const summary = (s: CloudSave) => ({ updatedAt: s.updatedAt, day: s.day, level: s.level, money: s.money });
 
+// ---- SPEC-CHIEU-RONG §6: online không đồng bộ (danh thiếp, bạn bè, chợ, thi đua, hội chợ) ----
+// Đăng ký SAU các middleware /api (đã xác thực + giới hạn tần suất). Route nằm trong server/social.ts.
+registerSocial(app);
+
 app.get('/api/save', async (_req, res) => {
   const uid = (res.locals.account as Account).uid;
   const t0 = Date.now();
@@ -306,7 +311,16 @@ app.delete('/api/save', async (_req, res) => {
     }
   }
   await (await consentsCollection()).deleteMany({ uid });
-  console.log(`[api] DELETE /api/save uid=${uid} -> đã xoá cloud + ${alleys.length} hẻm + đồng ý`);
+  // SPEC-CHIEU-RONG §6.5: xoá toàn bộ dữ liệu xã hội của tài khoản (danh thiếp, bạn bè, thư,
+  // lô đang treo coi như mất, điểm tuần/mùa, phần góp hội chợ, báo cáo).
+  const dbnow = (await savesCollection()).db;
+  for (const c of ['shop_cards', 'card_history', 'friends', 'inbox', 'market_lots', 'week_scores', 'season_scores', 'fair_contrib', 'reports']) {
+    const col = dbnow.collection(c);
+    // friends là cặp hai chiều nên phải xoá cả hai phía; các collection còn lại theo uid.
+    if (c === 'friends') await col.deleteMany({ $or: [{ a: uid }, { b: uid }] });
+    else await col.deleteMany({ uid });
+  }
+  console.log(`[api] DELETE /api/save uid=${uid} -> đã xoá cloud + ${alleys.length} hẻm + đồng ý + dữ liệu xã hội`);
   res.json({ deleted: true });
 });
 
