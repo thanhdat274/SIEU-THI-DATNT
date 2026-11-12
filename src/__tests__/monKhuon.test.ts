@@ -254,7 +254,7 @@ export const MON_KHUON: Record<string, { gd: string; station: string; inputs: st
   recipe_banh_it_tran: { gd: "GĐ2356", station: 'steamer', inputs: ['x_nep', 'x_dau_xanh', 'x_thit_heo', 'x_tom_tuoi', 'x_hanh_la'] },
   recipe_nem_lui: { gd: "GĐ2357", station: 'food_grill', inputs: ['x_thit_heo', 'x_sa', 'x_toi', 'x_hanh_phi'] },
   recipe_cao_lau: { gd: "GĐ2369", station: 'steamer', inputs: ['x_bot_gao', 'x_thit_heo', 'x_gia_do', 'x_hanh_phi'] },
-  recipe_banh_troi_tau: { gd: "GĐ2370", station: 'hot_kettle', inputs: ['x_nep', 'x_duong', 'x_gung', 'hx_me_den'] },
+  recipe_banh_troi_tau: { gd: "GĐ2370", station: 'hot_kettle', inputs: ['x_nep', 'x_duong', 'x_gung', 'hx_me_rang'] }, // GĐ2374: mè trắng hx_me_rang thay mè đen chọn nhầm
   recipe_banh_goi: { gd: "GĐ2371", station: 'fryer', inputs: ['x_bot_chien', 'x_thit_xay', 'hx_nam_meo', 'x_bun_tuoi'] },
   recipe_pho_cuon: { gd: "GĐ2372", station: 'food_grill', inputs: ['x_bot_gao', 'x_thit_bo', 'x_rau_mui', 'x_gia_do'] },
   recipe_banh_khoai: { gd: "GĐ2373", station: 'fryer', inputs: ['x_bot_gao', 'x_dua_cot_hop', 'x_thit_heo', 'x_gia_do', 'x_hanh_phi'] },

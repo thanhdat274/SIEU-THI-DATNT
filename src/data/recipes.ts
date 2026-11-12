@@ -181,10 +181,11 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'cao_lau', name: 'Cao lầu', category: 'fresh', buy: 9000, sell: 15000, color: 0xb5651d, unlock: 80, since: CONTENT_EPOCH_NOW },
   // GĐ2370: Bánh trôi tàu — điểm tâm đường nóng trứ danh Hà Nội (lò bake/ngõ Phùng Hưng), TRƯỚC NAY CHƯA CÓ
   // (soát 'bánh trôi tàu'/'banh_troi' = 0 trong src/). Viên bột nếp ruột mè + đường luộc CHÍN trong nồi
-  // nước đường pha gừng, ăn nóng khi trời lạnh — trạm nồi nước đúng cách nấu thật. Mè trắng game chưa có
-  // → dùng gần nhất mè đen xay nhà làm hx_me_den (họ mè, ghi rõ theo CLAUDE.md §4). Mẻ (nếp 28k + đường
-  // 17k + gừng 7k + mè đen 32k) = 84k → 10 chén × 15k = 150k, lãi ~66k/mẻ, hời hơn bán thẳng nguyên liệu
-  // (119k < 150k — luật monKhuon).
+  // nước đường pha gừng, ăn nóng khi trời lạnh — trạm nồi nước đúng cách nấu thật. GĐ2374 SỬA nguyên liệu:
+  // mè trắng đã có từ trước — hx_me_rang 'Mè rang nhà làm' (GĐ1486, mở 55) chính là mè trắng rang; trước
+  // dùng nhầm mè đen xay hx_me_den (chỉ đúng cho Chè mè đen). Mẻ (nếp 28k + đường
+  // 17k + gừng 7k + mè rang 32k) = 84k → 10 chén × 15k = 150k, lãi ~66k/mẻ, hời hơn bán thẳng nguyên liệu
+  // (118k < 150k — luật monKhuon).
   { id: 'banh_troi_tau', name: 'Bánh trôi tàu', category: 'fresh', buy: 9500, sell: 15000, color: 0xe8d8c0, unlock: 81, since: CONTENT_EPOCH_NOW },
   // GĐ2371: Bánh gối — bánh túi gối chiên vàng trứ danh Hà Nội (gánh hàng rong/ô phố cổ), TRƯỚC NAY CHƯA CÓ
   // (soát 'bánh gối'/'banh_goi' = 0 trong src/). Nhân thịt heo xay + miến + mộc nhĩ gói vỏ bột, CHIÊN NGẬP
@@ -2118,11 +2119,12 @@ export const RECIPES: Recipe[] = [
     inputs: [{ productId: 'x_bot_gao', quantity: 1 }, { productId: 'x_thit_heo', quantity: 1 }, { productId: 'x_gia_do', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 1 }],
     outputId: 'cao_lau', outputQty: 10, durationMin: 20, unlock: 80, reputationGain: 2, since: CONTENT_EPOCH_NOW },
   // GĐ2370: Bánh trôi tàu Hà Nội — viên bột nếp ruột mè + đường luộc chín trong nồi nước đường gừng
-  // (không chiên, không hấp — đúng cách nấu thật của trạm ấm nước); mè trắng thiếu → mè đen xay
-  // nhà làm thay. Mở 81 trên mọi mốc sim không cổng epoch, tránh latePremium 82/86/91/96/100;
-  // since: 1 để kỷ nguyên 0 không thấy.
+  // (không chiên, không hấp — đúng cách nấu thật của trạm ấm nước). Mở 81 trên mọi mốc sim không cổng
+  // epoch, tránh latePremium 82/86/91/96/100; since: 1 để kỷ nguyên 0 không thấy.
+  // GĐ2374: sửa nguyên liệu — ruột bánh trôi tàu là mè TRẮNG; hx_me_rang (mè rang nhà làm, GĐ1486, mở 55)
+  // đã có từ trước nên thay cho hx_me_den (mè đen xay — chỉ đúng cho Chè mè đen, GĐ2370 chọn nhầm).
   { id: 'recipe_banh_troi_tau', name: 'Bánh trôi tàu', station: 'hot_kettle',
-    inputs: [{ productId: 'x_nep', quantity: 1 }, { productId: 'x_duong', quantity: 1 }, { productId: 'x_gung', quantity: 1 }, { productId: 'hx_me_den', quantity: 1 }],
+    inputs: [{ productId: 'x_nep', quantity: 1 }, { productId: 'x_duong', quantity: 1 }, { productId: 'x_gung', quantity: 1 }, { productId: 'hx_me_rang', quantity: 1 }],
     outputId: 'banh_troi_tau', outputQty: 10, durationMin: 15, unlock: 81, reputationGain: 2, since: CONTENT_EPOCH_NOW },
   // GĐ2371: Bánh gối Hà Nội — túi gối vàng ruộm nhân thịt xay + miến + mộc nhĩ, CHIÊN NGẬP DẦU ở chảo chiên
   // (đúng cách nấu thật); miến thiếu → bún tươi thay (họ bún/miến), mộc nhĩ dùng nấm mèo khô hx_nam_meo.
