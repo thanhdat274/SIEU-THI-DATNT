@@ -45,8 +45,16 @@ describe('epochGate — dòng có since tự khoá khi kỷ nguyên chưa tới'
     for (const r of RECIPES) if (!r.since) expect(r.unlock, r.id).toBeLessThan(EPOCH_LOCKED);
   });
 
-  it('thành phẩm của công thức có since cũng phải có since (không thì golden vẫn thấy món trên kệ)', () => {
-    for (const r of RECIPES) if (r.since) expect(productById(r.outputId).since, `${r.id}: ghi since ở dòng COOKED_PRODUCTS của ${r.outputId}`).toBe(r.since);
+  it('thành phẩm của công thức có since cũng phải có since, TRỪ thành phẩm là nội dung gốc kỷ nguyên 0 (GĐ2387 nới có chủ ý)', () => {
+    // Nhân bản gốc: công thức since + thành phẩm không since → thành phẩm lọt golden.
+    // GĐ2387 (chuỗi chế biến sâu): recipe_mit_say/recipe_khoai_lang_say output HÀNG CATALOG CÓ SẠN
+    // từ kỷ nguyên 0 (x_mit_say/x_khoai_lang_say, unlock 20/24 < EPOCH_LOCKED) — bản thân công thức
+    // bị khoá ở kỷ nguyên 0 nên không thể rò gì vào golden; thành phẩm gốc vốn đã có trên kệ golden.
+    for (const r of RECIPES)
+      if (r.since) {
+        const p = productById(r.outputId);
+        expect(p.since === r.since || (!p.since && p.unlock < EPOCH_LOCKED), `${r.id}: thành phẩm ${r.outputId} phải có since ${r.since} hoặc là nội dung gốc kỷ nguyên 0`).toBe(true);
+      }
   });
 });
 
