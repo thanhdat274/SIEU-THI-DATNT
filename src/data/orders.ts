@@ -154,6 +154,17 @@ export const PARTY_ORDERS: PartyOrderDef[] = [
     description: 'Nhóm thiện nguyện đi phát quà vùng xa, cần phở bò với bún bò Huế cho cả đoàn ăn sáng trước khi lên xe.',
     items: { pho_bo: 12, bun_bo_hue: 12 }, bonus: 260000, xp: 160,
   },
+  // GĐ2358: 2 đơn tiệc gắn kết 6 món mới (GĐ2350–2357) vào vòng lặp đơn đặt hàng cao cấp (tổng 45/45 ngân sách).
+  {
+    id: 'tiec_trua_van_phong', icon: '🍱', title: 'Tiệc trưa đãi đối tác', from: 'Văn phòng công ty đầu đường', unlock: 77, days: 3,
+    description: 'Công ty tiếp đoàn đối tác buổi trưa, đặt cơm tấm ăn no kèm bánh tôm giòn và bánh đúc nóng.',
+    items: { com_tam: 12, banh_tom: 10, banh_duc_nong: 10 }, bonus: 360000, xp: 220,
+  },
+  {
+    id: 'mam_qua_chieu_hue', icon: '🍡', title: 'Mâm quà chiều xứ Huế', from: 'Hội đồng hương miền Trung', unlock: 79, days: 3,
+    description: 'Cuối tuần hội đồng hương gặp mặt, đặt bánh ít trần, nem lụi nướng thơm và chè khúc bạch tráng miệng.',
+    items: { banh_it_tran: 12, nem_lui: 10, che_khuc_bach: 10 }, bonus: 340000, xp: 220,
+  },
   // Đơn riêng theo câu chuyện từng khách quen
   {
     id: 'xoi_dam_gio', icon: '🍙', title: 'Mẻ xôi đám giỗ', from: regularById('ba_nam')!.name, regular: 'ba_nam', unlock: 12, days: 2,
