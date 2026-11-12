@@ -234,6 +234,9 @@
   border-radius: var(--hud-radius);
   background: var(--hud-bg-solid);
   box-shadow: 0 14px 34px rgba(0, 0, 0, 0.45);
+  max-height: calc(100dvh - 80px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 #ui .hud-menu button {
   display: block;

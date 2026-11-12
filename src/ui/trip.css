@@ -5,10 +5,16 @@
   bottom: 84px;
   z-index: 1100;
   max-width: min(300px, calc(100vw - 24px));
+  max-height: calc(100dvh - 96px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
   display: flex;
   flex-direction: column;
   gap: 8px;
   align-items: flex-end;
+}
+@media (max-height: 480px) {
+  .trip-ov { bottom: 64px; max-height: calc(100dvh - 72px); }
 }
 .trip-ov-card {
   background: #fffaf0;

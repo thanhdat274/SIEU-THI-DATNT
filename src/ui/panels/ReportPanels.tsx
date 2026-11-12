@@ -276,6 +276,7 @@ export function SummaryPanel({ day }: { day: number }) {
               <br /><small style={{ opacity: 0.8 }}>Tiền nhập kho là vốn còn nằm trên kệ — bán dần sẽ về lại.</small>
             </p>
           )}
+          <div style={{ overflowX: 'auto' }}>
           <table style={{ ...styles.table, fontSize: 15 }}>
             <tbody>
               <tr><td style={styles.left}>Doanh thu</td><td>{formatMoney(st.revenue)}</td></tr>
@@ -316,6 +317,7 @@ export function SummaryPanel({ day }: { day: number }) {
               <tr><td style={styles.left}>Kinh nghiệm</td><td>+{st.xp} XP · Cấp {level} ({xp}/{xpToNext(level)})</td></tr>
             </tbody>
           </table>
+          </div>
           {/* GĐ1178: "lãi bán hàng thật" so "thưởng nhiệm vụ + kèo" (Luật 10) — nguồn thu tách hai nửa.
               `profit` ("Tiền vào − tiền ra") trừ cả tiền nhập kho nên ngày nào cũng âm, không phản ánh sức bán;
               `salesProfit` (lãi gộp − lương − thuê) là con số game lưu/thuật toán dùng để cân bằng nhưng chưa
@@ -582,7 +584,8 @@ export function SummaryPanel({ day }: { day: number }) {
           {more && methods.length > 0 && (
             <>
               <h3 style={{ margin: '12px 0 4px', fontSize: 14 }}>💳 Tiền vào theo hình thức thanh toán</h3>
-              <table style={{ ...styles.table, fontSize: 13 }}>
+              <div style={{ overflowX: 'auto' }}>
+          <table style={{ ...styles.table, fontSize: 13 }}>
                 <tbody>
                   {methods.map(([id, m]) => {
                     const def = paymentById(id);
@@ -601,6 +604,7 @@ export function SummaryPanel({ day }: { day: number }) {
                   )}
                 </tbody>
               </table>
+              </div>
             </>
           )}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 6, marginTop: 10 }}>

@@ -45,6 +45,12 @@
   align-items: center;
   justify-content: center;
   min-height: 180px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+@media (max-height: 480px) {
+  .mini-head, .mini-foot { padding: 6px 10px; }
+  .mini-body { min-height: 120px; padding: 8px; align-items: flex-start; }
 }
 .mini-loading { opacity: 0.7; text-align: center; }
 
