@@ -172,6 +172,13 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   // + hành phi 1.5k) = 39.5k → 8 cây × 11k = 88k, lãi ~48.5k/mẻ, hời hơn bán thẳng nguyên liệu (52.5k < 88k).
   // Mở 79 trên mọi mốc sim không cổng epoch, tránh latePremium 82/86/91/96/100.
   { id: 'nem_lui', name: 'Nem lụi', category: 'fresh', buy: 5500, sell: 11000, color: 0xd96b27, unlock: 79, since: CONTENT_EPOCH_NOW },
+  // GĐ2369: Cao lầu — đặc sản Hội An trứ danh, TRƯỚC NAY CHƯA CÓ (soát 'cao lầu'/'cao_lau' = 0 kết quả
+  // trong recipes + MON_THAT/MON_KHUON). Mì gạo HẤP trong xửng (không luộc — làm hỏng sợi dai), nước
+  // dùng đậm đà nấu từ thịt heo, ăn với giá đỗ, hành phi, rau thơm. Nước tro củ + nước giếng Bá Lễ game
+  // chưa có → thay gần nhất là bột gạo làm sợi (ghi rõ theo CLAUDE.md §4); bánh mì mỏi chiên ăn kèm
+  // game chưa có nguyên liệu, bỏ khỏi mẻ. Mẻ (bột gạo 9k + thịt heo 30k + giá đỗ 4k + hành phi 1.5k)
+  // = 44.5k → 10 tô × 15k = 150k, lãi ~105.5k/mẻ, hời hơn bán thẳng nguyên liệu (59.5k < 150k — luật monKhuon).
+  { id: 'cao_lau', name: 'Cao lầu', category: 'fresh', buy: 9000, sell: 15000, color: 0xb5651d, unlock: 80, since: CONTENT_EPOCH_NOW },
   // GĐ1332: Bánh xèo — món bánh xèo giòn trứ danh (Mỹ Tho/Đà Nẵng) từ bột gạo + nước cốt dừa + thịt + hành phi:
   // trước nay TỘT KHÔNG có bánh xèo trong bếp dù là món ăn biểu tượng nhất — lấp khoảng trống trạm chảo chiên.
   // Mẻ (bột gạo 9k + nước cốt dừa 10k + thịt 30k + hành phi 1.5k×2) = 52k → 6 cái × 19k = 114k, lãi 62k/mẻ.
@@ -2075,6 +2082,13 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_nem_lui', name: 'Nem lụi', station: 'food_grill',
     inputs: [{ productId: 'x_thit_heo', quantity: 1 }, { productId: 'x_sa', quantity: 1 }, { productId: 'x_toi', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 1 }],
     outputId: 'nem_lui', outputQty: 8, durationMin: 15, unlock: 79, reputationGain: 2, since: CONTENT_EPOCH_NOW },
+  // GĐ2369: Cao lầu Hội An — mì gạo HẤP trong xửng là cách nấu thật (khác hủ tiếu/bánh canh luộc),
+  // nước dùng đậm đà nấu cùng thịt heo; giá đỗ + hành phi ăn kèm. Nước tro củ + nước giếng Bá Lễ
+  // game chưa có → thay gần nhất bột gạo (CLAUDE.md §4); mở 80 trên mọi mốc sim không cổng epoch,
+  // tránh mốc latePremium 82/86/91/96/100; since: 1 để kỷ nguyên 0 không thấy.
+  { id: 'recipe_cao_lau', name: 'Cao lầu', station: 'steamer',
+    inputs: [{ productId: 'x_bot_gao', quantity: 1 }, { productId: 'x_thit_heo', quantity: 1 }, { productId: 'x_gia_do', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 1 }],
+    outputId: 'cao_lau', outputQty: 10, durationMin: 20, unlock: 80, reputationGain: 2, since: CONTENT_EPOCH_NOW },
   // GĐ1324: Nem chua rán — đặc sản nhà bà Tám (nem chua GĐ1085) thành nguyên liệu chảo chiên, món ăn vặt.
   { id: 'recipe_nem_chua_ran', name: 'Nem chua rán', station: 'fryer',
     inputs: [{ productId: 'hx_nem_chua', quantity: 2 }, { productId: 'x_duong', quantity: 1 }],

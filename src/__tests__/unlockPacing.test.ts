@@ -39,7 +39,7 @@ describe('unlockPacing — baseline hiện trạng (SPEC-TOI-UU §T3)', () => {
     expect(band(21, 30)).toBe(187); // T3-L4 răng cưa: dời ~43 món khỏi 26/28/30 về phía 27/29/31 (mỗi cấp 26–31 về 13–18 mục) — trước là 202
     expect(band(31, 40)).toBe(283); // phần dời sang cấp 31 dồn vào 31–40 — trước là 268
     expect(band(41, 60)).toBe(337);
-    expect(band(61, 80)).toBe(165); // GĐ2346: +2 (bánh bao chiên 71) · GĐ2350: +2 (bánh tôm 74) · GĐ2352: +2 (chè khúc bạch 75) · GĐ2353: +2 (cơm tấm 76) · GĐ2355: +2 (bánh đúc nóng 77) · GĐ2356: +2 (bánh ít trần 78) · GĐ2357: +2 (nem lụi 79)
+    expect(band(61, 80)).toBe(167); // GĐ2346: +2 (bánh bao chiên 71) · GĐ2350: +2 (bánh tôm 74) · GĐ2352: +2 (chè khúc bạch 75) · GĐ2353: +2 (cơm tấm 76) · GĐ2355: +2 (bánh đúc nóng 77) · GĐ2356: +2 (bánh ít trần 78) · GĐ2357: +2 (nem lụi 79) · GĐ2369: +2 (cao lầu 80)
   });
 
   it('không cấp nào mở quá ngưỡng cảnh báo khối lượng (siết dần từ 20 mục)', () => {
