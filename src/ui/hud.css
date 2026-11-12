@@ -5,7 +5,9 @@
 #ui {
   --hud-bg: rgba(22, 24, 34, 0.82);
   --hud-bg-solid: #1d1f2b;
+  --hud-panel: #2b2b3a;
   --hud-line: rgba(255, 255, 255, 0.1);
+  --hud-border: rgba(255, 255, 255, 0.16);
   --hud-text: #fff;
   --hud-muted: rgba(255, 255, 255, 0.62);
   --hud-accent: #f1c40f;
@@ -167,18 +169,24 @@
 #ui .hud-place {
   flex-basis: 100%;
   display: flex;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: 6px;
   align-items: center;
   font-size: 12px;
-  color: var(--hud-muted);
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+  color: #f0f2f8;
+}
+#ui .hud-place > span:first-child {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(22, 24, 34, 0.62);
+  white-space: nowrap;
 }
 #ui .hud-open {
   padding: 2px 8px;
   border-radius: 999px;
-  background: rgba(0, 0, 0, 0.45);
-  color: #bbb;
-  text-shadow: none;
+  background: rgba(22, 24, 34, 0.72);
+  color: #ddd;
+  white-space: nowrap;
 }
 #ui .hud-open.on { background: rgba(46, 204, 113, 0.9); color: #0b2b17; font-weight: 600; }
 
@@ -507,10 +515,11 @@
   right: 0;
   left: auto;
   display: grid;
-  grid-template-columns: repeat(3, minmax(76px, 1fr));
+  grid-template-columns: repeat(3, minmax(88px, 1fr));
   width: max-content;
-  gap: 4px;
-  padding: 8px;
+  max-width: calc(100vw - 24px);
+  gap: 6px;
+  padding: 10px;
   /* Menu mở LÊN TRÊN từ dock nên chiều cao bị chặn bởi đỉnh màn — giới hạn ở MỌI width
      (GĐ93: trước đây chỉ ≤1000px mới có, desktop 1280×800 bị cắt mất hàng nút đầu, không cuộn). */
   max-height: calc(100dvh - var(--hud-bottom-h, 96px) - 60px);
@@ -540,7 +549,21 @@
     overscroll-behavior: contain;
   }
 }
-#ui .hud-more .hud-tool { display: flex; min-width: 0; padding: 10px 6px; font-size: 12px; text-align: center; }
+#ui .hud-more .hud-tool {
+  display: flex;
+  min-width: 0;
+  padding: 10px 6px;
+  font-size: 12px;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 10px;
+}
+#ui .hud-more .hud-tool:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.11);
+  border-color: rgba(241, 196, 15, 0.45);
+}
+#ui .hud-more .hud-badge { top: 5px; right: 5px; }
 #ui .hud-more .hud-tool > span:not(.hud-tool-icon):not(.hud-badge) { display: inline; }
 #ui .hud-more .hud-help { grid-column: 1 / -1; width: max-content; min-width: 280px; }
 /* Tiêu đề nhóm menu Thêm: chiếm trọn hàng lưới, chữ nhỏ mờ tách cụm nút mà không tăng cỡ menu */
@@ -585,13 +608,13 @@
 }
 #ui .hud-more-search-results { display: flex; flex-direction: column; gap: 2px; max-height: 200px; overflow: auto; }
 #ui .hud-more-search-hit {
-  display: flex; align-items: center; gap: 6px;
+  display: flex; align-items: center; gap: 8px;
   border: 1px solid var(--hud-border); border-radius: 6px; background: var(--hud-panel);
-  padding: 5px 7px; font-size: 12px; color: var(--hud-text); cursor: pointer; text-align: left;
+  padding: 6px 8px; font-size: 12px; color: var(--hud-text); cursor: pointer; text-align: left;
 }
-#ui .hud-more-search-hit:hover { background: var(--hud-accent-soft, #f4e7c8); }
-#ui .hud-more-search-name { font-weight: 600; }
-#ui .hud-more-search-group { margin-left: auto; font-size: 10px; opacity: 0.55; white-space: nowrap; }
+#ui .hud-more-search-hit:hover { background: rgba(241, 196, 15, 0.18); border-color: rgba(241, 196, 15, 0.5); }
+#ui .hud-more-search-name { flex: 1; min-width: 0; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#ui .hud-more-search-group { margin-left: auto; font-size: 11px; color: var(--hud-muted); background: rgba(255, 255, 255, 0.08); padding: 1px 6px; border-radius: 999px; white-space: nowrap; }
 #ui .hud-more-search-empty { font-size: 11px; opacity: 0.6; padding: 2px 2px 0; }
 #ui .hud-badge.hud-dot { top: 2px; right: 10px; width: 9px; height: 9px; padding: 0; background: #e74c3c; }
 #ui .hud-help { min-width: 260px; display: grid; gap: 6px; padding: 10px 12px; font-size: 13px; }
@@ -794,6 +817,7 @@
 @media (prefers-reduced-motion: reduce) { #ui .hud-alert.phone.ringing { animation: none; } }
 
 /* Hội thoại chương cốt truyện — luôn nằm trên dock, không bao giờ che nút tương tác */
+#ui:has(.hud-dialogue) .hud-toast { top: 12%; }
 #ui .hud-dialogue {
   pointer-events: auto;
   position: absolute;
@@ -809,7 +833,7 @@
   color: var(--hud-text);
   padding: 12px 16px;
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.45);
-  z-index: 20;
+  z-index: 30;
 }
 /* Điện thoại: dialog nhỏ hơn + đẩy lên cao hơn */
 @media (max-width: 1000px) {
@@ -859,12 +883,26 @@
   #ui .hud-speed button { min-width: 22px; }
 }
 
-/* Dock nhiều nút: khi màn hẹp, cho các nút xuống dòng thay vì bị cắt ở mép màn.
-   Bug thật (multi-size gate): dock ~575px tràn khỏi viewport 360–414px, `overflow-x: visible`
-   và không scroll → các nút cuối (Nhập hàng/Nhiệm vụ/Thêm) nằm ngoài màn, không chạm được.
-   Wrapping thành 2 hàng giữ mọi nút dùng được; desktop đủ rộng (>720px) vẫn một hàng y nguyên. */
-@media (max-width: 720px) {
+/* Dock nhiều nút: bất kỳ màn nào hẹp hơn ~1120px đều cho phép xuống dòng gọn gàng thay vì bị
+   cắt nút "⋯ Thêm" bên phải (768x1024, 800x800, 1024px); desktop rộng vẫn nằm trọn một hàng.
+   Trên màn hẹp ≤720px, căn giữa & giới hạn bề rộng huy hiệu theo từng nút để "19 trống" và
+   "🛒 Phiên chợ" không bao giờ chồm đè lên nhau. */
+@media (max-width: 1120px) {
   #ui .hud-dock { flex-wrap: wrap; justify-content: center; row-gap: 4px; }
+}
+@media (max-width: 1000px) {
+  #ui .hud-dock > .hud-tool .hud-badge,
+  #ui .hud-dock > .hud-pop > .hud-tool .hud-badge:not(.hud-dot) {
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    max-width: calc(100% - 2px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding: 0 4px;
+    font-size: 9px;
+    line-height: 15px;
+  }
 }
 
 /* Số người online hiện cạnh biểu tượng hẻm (danh sách tên nằm trong tooltip khi chip bị thu gọn) */

@@ -5,7 +5,7 @@ import { lifetimeRegularVisits, vipTierOf, EMOTIONAL_FRIENDSHIP } from '../../da
 import { serviceById } from '../../data/services';
 import { MASTER_BADGES, badgeEarned, type DossierInput } from '../../data/dossier';
 import { CRISIS_DEFS } from '../../data/crisis';
-import { styles } from './shared';
+import { Footer, styles } from './shared';
 
 /** Hồ sơ tiệm + Huy hiệu thâm niên (GĐ71): chân dung dài hạn gộp mọi bể tiệm. Thuần đọc, không sửa state. */
 export function DossierPanel({ closePanel }: { closePanel: () => void }) {
@@ -42,14 +42,14 @@ export function DossierPanel({ closePanel }: { closePanel: () => void }) {
   ];
 
   return (
-    <div style={{ width: '100%', maxWidth: 620 }}>
+    <div style={{ width: '100%', display: 'flex', flexDirection: 'column', flex: 1 }}>
       <h2 style={styles.title}>📖 Hồ sơ tiệm</h2>
       <p style={styles.sub}>
         Cả một đời của cửa tiệm gom về một trang. Những dấu ấn dài hạn bạn đã gây được — và 4 huy hiệu thâm niên,
         mỗi cái chỉ đạt khi giữ nhiều hệ cùng sống. Huy hiệu là danh dự, không đổi tiền — đích để nâng cấp xuyên cả ván.
       </p>
 
-      <div style={styles.card}>
+      <div style={{ ...styles.card, display: 'block' }}>
         <b>🖼️ Chân dung dài hạn</b>
         <div style={{ display: 'grid', gap: 3, marginTop: 6 }}>
           {facts.map(([k, v]) => (
@@ -120,7 +120,7 @@ export function DossierPanel({ closePanel }: { closePanel: () => void }) {
         <p style={styles.sub}>Đã đạt {earned.length}/4 huy hiệu thâm niên — danh hiệu {earned.length === 4 ? 'Huyền Thoại Hẻm 🏆' : 'còn chờ bạn vun đắp nhiều hệ hơn'}.</p>
       </div>
 
-      <button style={styles.btn} onClick={closePanel}>Đóng</button>
+      <Footer onClose={closePanel} />
     </div>
   );
 }

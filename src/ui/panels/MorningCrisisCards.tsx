@@ -25,20 +25,20 @@ export function CrisisCard({ biz, day }: { biz: { crisis?: CrisisState }; day: n
   if (e.supplyDelay) effects.push(`hàng mối trễ ${Math.round(e.supplyDelay * 100)}%`);
   const notDone = def.preps.filter((p) => !st.preps.includes(p.id));
   return (
-    <div style={{ ...styles.card, display: 'block', fontSize: 12, lineHeight: 1.6, marginBottom: 8 }}>
-      <b style={{ ...styles.cardTitle, color: '#a0522d' }}>{def.icon} {def.name} · {phase}</b>
+    <div style={{ ...styles.card, display: 'block', fontSize: 12, lineHeight: 1.6, marginBottom: 8, borderLeft: '3px solid #e67e22' }}>
+      <b style={{ ...styles.cardTitle, color: '#e67e22' }}>{def.icon} {def.name} · {phase}</b>
       {effects.length > 0 && (
-        <div style={{ marginTop: 2, color: '#8b0000' }}>Hôm nay: {effects.join(' · ')}.</div>
+        <div style={{ marginTop: 2, color: '#ff7675' }}>Hôm nay: {effects.join(' · ')}.</div>
       )}
       {notDone.length > 0 ? (
         <div style={{ marginTop: 4 }}>Chuẩn bị để đỡ thiệt:
           {notDone.map((p) => (
-            <div key={p.id} style={{ marginTop: 2 }}>
+            <div key={p.id} style={{ marginTop: 4 }}>
               <button
                 onClick={() => doPrep(p.id)}
                 disabled={money < p.cost}
                 title={p.effect}
-                style={{ background: 'transparent', border: '1px solid #b8860b', borderRadius: 4, padding: '1px 6px', color: '#a0522d', cursor: money < p.cost ? 'not-allowed' : 'pointer', fontSize: 11, marginRight: 4 }}
+                style={{ background: 'rgba(241, 196, 15, 0.14)', border: '1px solid rgba(241, 196, 15, 0.45)', borderRadius: 4, padding: '2px 8px', color: '#f5d799', cursor: money < p.cost ? 'not-allowed' : 'pointer', fontSize: 11, marginRight: 4, opacity: money < p.cost ? 0.5 : 1 }}
               >
                 {money < p.cost ? '🔒' : '✔'} {p.label} · {formatMoney(p.cost)}
               </button>
@@ -67,14 +67,14 @@ export function CrisisSummaryCard({
   if (!last || last.endDay !== day - 1) return null;
   const def = crisisDefById(last.defId);
   return (
-    <div style={{ ...styles.card, display: 'block', fontSize: 12, lineHeight: 1.6, marginBottom: 8, borderColor: '#228b22' }}>
-      <b style={{ ...styles.cardTitle, color: '#228b22' }}>✅ {def?.icon} Đợt {def?.name} đã kết thúc</b>
+    <div style={{ ...styles.card, display: 'block', fontSize: 12, lineHeight: 1.6, marginBottom: 8, borderLeft: '3px solid #2ecc71' }}>
+      <b style={{ ...styles.cardTitle, color: '#2ecc71' }}>✅ {def?.icon} Đợt {def?.name} đã kết thúc</b>
       <div style={{ marginTop: 2 }}>
         {last.saved > 0
           ? <>Nhờ {last.saved >= 750_000 ? 'chuẩn bị kỹ càng' : 'các việc chuẩn bị'}, đợt này thiệt hại được làm dịu, ước cứu được <b>{formatMoney(last.saved)}</b>.</>
           : <>Bạn đã trải qua đợt này mà không chuẩn bị gì — may là vẫn vượt qua được.</>}
       </div>
-      {def && biz.roadBoon && <div style={{ marginTop: 2, color: '#228b22' }}>Đường mới khang trang — từ nay khách ghé thêm một chút.</div>}
+      {def && biz.roadBoon && <div style={{ marginTop: 2, color: '#2ecc71' }}>Đường mới khang trang — từ nay khách ghé thêm một chút.</div>}
     </div>
   );
 }

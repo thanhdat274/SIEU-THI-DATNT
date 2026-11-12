@@ -60,7 +60,7 @@ export function ComboPanel() {
         <p style={{ ...styles.sub, color: '#f1c40f' }}>⚠️ Đã chạy đủ {max}/{max} combo. Bấm "Đang chạy" để tắt một combo thì mới bật được combo khác{nextSlot ? `, hoặc lên cấp ${nextSlot} để chạy thêm.` : '.'}</p>
       )}
       {level < COMBO_UNLOCK ? <p style={styles.sub}>🔒 Mở ở cấp {COMBO_UNLOCK}.</p> : (
-        <div style={{ display: 'grid', gap: 6, maxWidth: 560 }}>
+        <div style={{ display: 'grid', gap: 6 }}>
           {combos.map((c) => {
             const on = activeCombos.includes(c.id);
             const blocked = !on && activeCombos.length >= max;

@@ -71,7 +71,7 @@ export function ReviewsPanel() {
             </div>
           )}
           <Tabs tabs={filters} value={filter} onChange={setFilter} />
-          <div style={{ display: 'grid', gap: 6, maxWidth: 560 }}>
+          <div style={{ display: 'grid', gap: 6 }}>
             {/* Mặc định chỉ hiện 12 đánh giá gần nhất: sổ đánh giá ngày 60+ dài ~7.000px trên điện thoại */}
             {(showAll ? shown : shown.slice(0, 12)).map((r) => (
               <div key={r.id} style={{ ...styles.card, display: 'block' }}>

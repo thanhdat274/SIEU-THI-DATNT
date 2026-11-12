@@ -89,7 +89,7 @@ export function PricePanel() {
                 ariaLabel="Mức giảm giờ vàng"
               />
             </span>
-            <button style={styles.fire} onClick={() => setHappyHour(null)}>Tắt</button>
+            <button style={{ ...styles.btn, background: '#e74c3c', color: '#fff' }} onClick={() => setHappyHour(null)}>Tắt</button>
             {(() => {
               const fit = happyWindowFit(happyHour.from);
               const line = fit.verdict === 'dead'
@@ -120,7 +120,7 @@ export function PricePanel() {
         ) : (
           <>
             <span style={{ fontSize: 12, padding: '4px 10px', borderRadius: 999, whiteSpace: 'nowrap', background: 'rgba(255,255,255,0.08)' }}>chưa đặt</span>
-            <button style={styles.hire} onClick={() => setHappyHour({ from: 14, off: 10 })}>Bật từ 14h</button>
+            <button style={{ ...styles.btn, background: '#2ecc71', color: '#1d1f2b', fontWeight: 700 }} onClick={() => setHappyHour({ from: 14, off: 10 })}>Bật từ 14h</button>
           </>
         )}
       </div>
@@ -271,7 +271,7 @@ export function PricePanel() {
           setPrices(Object.fromEntries(Object.entries(prices).map(([id, from]) => [id, { from, to: null }])));
         }}>Về giá gợi ý</button>
         <button
-          style={styles.hire}
+          style={{ ...styles.btn, background: '#2ecc71', color: '#1d1f2b', fontWeight: 700 }}
           onClick={() => {
             const s = useGame.getState();
             const changes: Parameters<typeof s.setPrices>[0] = {};

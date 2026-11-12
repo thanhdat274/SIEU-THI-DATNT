@@ -70,8 +70,9 @@ export function Panels() {
   return (
     <div style={styles.backdrop} onClick={(e) => e.target === e.currentTarget && closePanel()}>
       <div className="panel" style={{ ...styles.panel, ...(PANEL_HEIGHT[panel.type] ? { height: PANEL_HEIGHT[panel.type] } : {}) }}>
-        <button style={styles.close} title="Đóng (Esc)" aria-label="Đóng" onClick={closePanel}>✕</button>
-        {hub && <Tabs tabs={hubTabs(hub, level, panel.type)} value={panel.type} onChange={(t) => openPanel({ type: t } as never)} />}
+        <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
+          <button style={{ ...styles.close, float: undefined, alignSelf: 'flex-end', marginBottom: -30, flex: 'none' }} title="Đóng (Esc)" aria-label="Đóng" onClick={closePanel}>✕</button>
+          {hub && <Tabs tabs={hubTabs(hub, level, panel.type)} value={panel.type} onChange={(t) => openPanel({ type: t } as never)} />}
         {/* Playtest P1 T4: panel tải lười hiện khung chờ thay vì màn trắng ~3 giây (tưởng treo) */}
         <Suspense fallback={<PanelLoading />}>
         {panel.type === 'order' && <OrderPanel />}
@@ -113,6 +114,7 @@ export function Panels() {
         {panel.type === 'todo' && <TodoListPanel />}
         {panel.type === 'log' && <NotifLogPanel />}
         </Suspense>
+        </div>
       </div>
     </div>
   );
@@ -120,5 +122,9 @@ export function Panels() {
 
 /** Khung chờ khi panel đang tải (playtest P1 T4). */
 export function PanelLoading() {
-  return <p role="status" aria-live="polite" style={{ padding: 24, opacity: 0.75, textAlign: 'center' }}>⏳ Đang mở…</p>;
+  return (
+    <div style={{ background: '#2b2b3a', color: '#fff', borderRadius: 12, padding: '18px 28px', boxShadow: '0 10px 40px rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.12)' }}>
+      <p role="status" aria-live="polite" style={{ margin: 0, opacity: 0.85, textAlign: 'center' }}>⏳ Đang mở…</p>
+    </div>
+  );
 }

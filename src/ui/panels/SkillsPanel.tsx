@@ -41,7 +41,7 @@ export function SkillsPanel() {
     <>
       <h2 style={styles.title}>🏅 Danh hiệu & kỹ năng</h2>
       <p style={styles.sub}>Cứ 5 cấp được 1 điểm kỹ năng. Còn {left} điểm.</p>
-      <div style={{ display: 'grid', gap: 6, maxWidth: 560 }}>
+      <div style={{ display: 'grid', gap: 6 }}>
         {SKILLS.map((k) => {
           const learned = skills.includes(k.id);
           const can = !learned && left > 0 && level >= k.unlock;
@@ -71,7 +71,7 @@ export function SkillsPanel() {
         })}
       </div>
       <h3 style={{ margin: '14px 0 8px', fontSize: 15 }}>Danh hiệu ({titles.length}/{ALL_TITLES.length})</h3>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))', gap: 6, maxWidth: 560 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))', gap: 6 }}>
         {TITLES.map((t) => {
           const got = titles.includes(t.id);
           return (
@@ -84,7 +84,7 @@ export function SkillsPanel() {
       </div>
       <h3 style={{ margin: '14px 0 8px', fontSize: 15 }}>🌟 Danh hiệu NG+ (tái sinh)</h3>
       <p style={styles.sub}>Mỗi lần tái sinh mở thêm một danh hiệu độc quyền, giữ qua mọi vòng sau.</p>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))', gap: 6, maxWidth: 560 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))', gap: 6 }}>
         {PRESTIGE_TITLES.map((t) => {
           const got = titles.includes(t.id);
           const locked = !got && prestige < (t.prestige ?? 0);

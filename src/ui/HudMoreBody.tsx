@@ -150,7 +150,8 @@ function HubSearch({ onPick }: { onPick: () => void }) {
       .slice(0, 12);
   }, [q]);
   const open = (h: SearchHit) => {
-    const t = typeof h.panel === 'function' ? (h.panel() as { type?: string }).type : h.panel;
+    const raw = typeof h.panel === 'function' ? h.panel() : h.panel;
+    const t = typeof raw === 'string' ? raw : raw?.type;
     if (t) openPanel({ type: t } as never);
     onPick();
   };

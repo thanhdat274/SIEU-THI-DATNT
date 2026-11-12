@@ -12,7 +12,7 @@ export function DueContractsCard({ dueContracts, day, storage }: {
   return (
     <>
       <h3 style={{ margin: '10px 0 4px', fontSize: 14 }}>🚚 Hợp đồng tới kỳ giao</h3>
-      <div style={{ display: 'grid', gap: 6, maxWidth: 560 }}>
+      <div style={{ display: 'grid', gap: 6 }}>
         {dueContracts.map(({ cs, def }) => def && (
           // GĐ2352 — flexWrap: dòng chuỗi kỳ phía dưới mang `width: '100%'`; trong flex nowrap nó
           // đòi nguyên bề rộng container → ép cột chữ trái co về min-content, mỗi từ rơi một dòng

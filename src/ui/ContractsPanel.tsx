@@ -3,13 +3,13 @@ import { describeRep, meetsRep, repScore, reputationOf } from '../data/reputatio
 import { CONTRACT_STREAK_BONUS, CONTRACT_STREAK_EVERY, CONTRACT_COMMIT_BONUS, SUPPLY_CONTRACTS, supplyContractById, contractValue, commitBonusValue, commitDeposit, contractStreakProgress, contractAcceptRoi, missingForContract, reservedMissing, restockCost, type SupplyContract } from '../data/contracts';
 import { formatMoney, productById } from '../data/products';
 import { shortLabel } from './shortLabel';
-import { Callout } from './panels/shared';
+import { Callout, Footer } from './panels/shared';
 import { commitTry } from '../data/commitTry';
 import { contractPortfolio } from '../data/contractPortfolio';
 
 /** Panel Hợp đồng — xem, chấp nhận và giao hợp đồng cung cấp dài hạn. */
 export function ContractsPanel() {
-  const { level, contracts } = useGame();
+  const { level, contracts, closePanel } = useGame();
   const all = SUPPLY_CONTRACTS;
   const available = all.filter((c) => c.unlock <= level);
   const locked = all.filter((c) => c.unlock > level);
@@ -44,6 +44,7 @@ export function ContractsPanel() {
           </div>
         </>
       )}
+      <Footer onClose={closePanel} />
     </>
   );
 }
@@ -262,7 +263,7 @@ function ContractRow({ contract }: { contract: SupplyContract }) {
 /** Hợp đồng chưa mở khóa — chỉ hiện thông tin khóa. */
 function LockedContract({ contract }: { contract: SupplyContract }) {
   return (
-    <div style={{ background: '#2b2b3a', borderRadius: 8, padding: '8px 12px', opacity: 0.5 }}>
+    <div style={{ background: '#3a3a4d', borderRadius: 8, padding: '8px 12px', opacity: 0.5 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <span style={{ fontSize: 22 }}>🔒</span>
         <div>

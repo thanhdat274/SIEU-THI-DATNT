@@ -1,6 +1,7 @@
 import { useGame } from '../core/store';
 import { COSTUMES, PRESTIGE_COSTUMES, costumeById } from '../data/costumes';
 import { formatMoney } from '../data/products';
+import { Footer } from './panels/shared';
 
 /** Thời điểm người chơi có thể mặc bộ trang phục: cần đủ cấp VÀ đủ số lần tái sinh (nếu là NG+). */
 function isAvailable(c: { unlock: number; prestige?: number }, level: number, prestige: number): boolean {
@@ -9,7 +10,7 @@ function isAvailable(c: { unlock: number; prestige?: number }, level: number, pr
 
 /** Panel Trang phục — chọn và đổi trang phục cho nhân vật chính. */
 export function CostumePanel() {
-  const { level, costume, biz } = useGame();
+  const { level, costume, biz, closePanel } = useGame();
   const prestige = biz.prestige.level;
   const allCostumes = [...COSTUMES, ...PRESTIGE_COSTUMES];
   const available = allCostumes.filter((c) => isAvailable(c, level, prestige));
@@ -46,6 +47,7 @@ export function CostumePanel() {
           </div>
         </>
       )}
+      <Footer onClose={closePanel} />
     </>
   );
 }
@@ -58,7 +60,7 @@ function CostumeRow({ costume: c }: { costume: import('../data/costumes').Costum
   const unlocked = isAvailable(c, level, prestige);
   return (
     <div style={{
-      background: isEquipped ? '#3a3a4d' : '#2b2b3a',
+      background: '#3a3a4d',
       borderRadius: 8,
       padding: '8px 12px',
       outline: isEquipped ? '2px solid #2ecc71' : undefined,
@@ -93,7 +95,7 @@ function CostumeRow({ costume: c }: { costume: import('../data/costumes').Costum
 /** Trang phục chưa mở khóa — chỉ hiện thông tin khóa. */
 function LockedCostume({ costume: c }: { costume: import('../data/costumes').Costume }) {
   return (
-    <div style={{ background: '#2b2b3a', borderRadius: 8, padding: '8px 12px', opacity: 0.45 }}>
+    <div style={{ background: '#3a3a4d', borderRadius: 8, padding: '8px 12px', opacity: 0.45 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <span style={{ fontSize: 22 }}>🔒</span>
         <div>

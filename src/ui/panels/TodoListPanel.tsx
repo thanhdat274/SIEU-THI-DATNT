@@ -1,7 +1,7 @@
 import { useClock, useGame } from '../../core/store';
 import { todos, type TodoItem } from '../../data/todo';
 import { worldActions } from '../../core/actions';
-import { styles } from './shared';
+import { Footer, styles } from './shared';
 
 /**
  * Sổ việc chung (SPEC-TOI-UU §T6-L3): gộp mọi nguồn việc đã đăng ký (`todos()`) thành MỘT bảng,
@@ -39,6 +39,7 @@ function when(at: number | undefined): string | null {
 export function TodoListPanel() {
   const minutes = useClock((c) => Math.floor(c.minutes));
   const openPanel = useGame((s) => s.openPanel);
+  const closePanel = useGame((s) => s.closePanel);
   const list = todos(useGame.getState(), minutes);
 
   return (
@@ -82,6 +83,7 @@ export function TodoListPanel() {
           );
         })
       )}
+      <Footer onClose={closePanel} />
     </>
   );
 }

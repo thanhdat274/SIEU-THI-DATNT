@@ -8,35 +8,48 @@ import { vendingPayoff } from '../data/minorPayoff';
 import { formatMoney, productById, fmtMul } from '../data/products';
 import { shortLabel } from './shortLabel';
 import { haulTripPlan, autoHaulCfg, HAUL_REFILL_BELOW, HAUL_TRIP_EVERY, HAUL_BELOW_MIN, HAUL_BELOW_MAX, HAUL_EVERY_MIN, HAUL_EVERY_MAX } from '../data/branchHaul';
-import { Callout } from './panels/shared';
+import { Callout, Footer } from './panels/shared';
 import { BranchNightTab } from './BranchNightTab';
 import { st } from './branchStyles';
 
 /** Cửa hàng tiện lợi 24/7: thuê mặt bằng, tuyển người, xem doanh thu. */
 export function BranchPanel() {
-  const { branch, level, money, day, weather, storage, stats, atBranch, venueTrend, openBranch, toggleBranch, toggleVending, toggleBranchAutoHaul, setBranchAutoHaul, coverCalloff, closePanel } = useGame();
-  const [tab, setTab] = useState<'info' | 'night' | 'report'>('info');
+  const hasBranch = useGame((s) => !!s.branch);
+  const closePanel = useGame((s) => s.closePanel);
+  return (
+    <>
+      {hasBranch ? <BranchActive /> : <BranchIntro />}
+      <Footer onClose={closePanel} />
+    </>
+  );
+}
 
-  if (!branch) {
-    return (
-      <>
-        <h2 style={st.title}>🏪 {CONVENIENCE.name}</h2>
-        <p style={st.sub}>
-          Mặt bằng rộng {CONVENIENCE.width}×{CONVENIENCE.depth} m ở con đường bên kia, xa tiệm chính. Mở 24/7, chủ không đứng bán:
-          thu ngân trực theo ca, người giao hàng chở hàng từ <b>kho chung</b> sang, bảo vệ canh trộm ban đêm.
-        </p>
-        <ul style={st.sub}>
-          <li>Giá mua mặt bằng (mua đứt, sở hữu luôn): <b>{formatMoney(CONVENIENCE.openCost)}</b></li>
-          <li>Mua đứt nên không có tiền thuê — mỗi ngày chỉ trả lương nhân viên chi nhánh</li>
-          <li>Kệ chứa tới {CONVENIENCE.shelfCap} món, giá bán ×{fmtMul(CONVENIENCE.priceMul)} so với tiệm chính</li>
-        </ul>
-        {level < CONVENIENCE.unlock
-          ? <p style={st.warn}>🔒 Mở ở cấp {CONVENIENCE.unlock}</p>
-          : <button style={st.primary} disabled={money < CONVENIENCE.openCost} onClick={openBranch}>{shortLabel('Mua mặt bằng', CONVENIENCE.openCost, money)}</button>}
-        {level >= CONVENIENCE.unlock && money < CONVENIENCE.openCost && <p style={st.warn}>Chưa đủ tiền — có thể vay ở mục Kinh doanh.</p>}
-      </>
-    );
-  }
+function BranchIntro() {
+  const { level, money, openBranch } = useGame();
+  return (
+    <>
+      <h2 style={st.title}>🏪 {CONVENIENCE.name}</h2>
+      <p style={st.sub}>
+        Mặt bằng rộng {CONVENIENCE.width}×{CONVENIENCE.depth} m ở con đường bên kia, xa tiệm chính. Mở 24/7, chủ không đứng bán:
+        thu ngân trực theo ca, người giao hàng chở hàng từ <b>kho chung</b> sang, bảo vệ canh trộm ban đêm.
+      </p>
+      <ul style={st.sub}>
+        <li>Giá mua mặt bằng (mua đứt, sở hữu luôn): <b>{formatMoney(CONVENIENCE.openCost)}</b></li>
+        <li>Mua đứt nên không có tiền thuê — mỗi ngày chỉ trả lương nhân viên chi nhánh</li>
+        <li>Kệ chứa tới {CONVENIENCE.shelfCap} món, giá bán ×{fmtMul(CONVENIENCE.priceMul)} so với tiệm chính</li>
+      </ul>
+      {level < CONVENIENCE.unlock
+        ? <p style={st.warn}>🔒 Mở ở cấp {CONVENIENCE.unlock}</p>
+        : <button style={st.primary} disabled={money < CONVENIENCE.openCost} onClick={openBranch}>{shortLabel('Mua mặt bằng', CONVENIENCE.openCost, money)}</button>}
+      {level >= CONVENIENCE.unlock && money < CONVENIENCE.openCost && <p style={st.warn}>Chưa đủ tiền — có thể vay ở mục Kinh doanh.</p>}
+    </>
+  );
+}
+
+function BranchActive() {
+  const { branch, level, money, day, weather, storage, stats, atBranch, venueTrend, toggleBranch, toggleVending, toggleBranchAutoHaul, setBranchAutoHaul, coverCalloff } = useGame();
+  const [tab, setTab] = useState<'info' | 'night' | 'report'>('info');
+  if (!branch) return null;
 
   const gaps = uncoveredHours(branch.staff);
   const has = (r: string) => branch.staff.some((s) => s.role === r);
@@ -220,7 +233,6 @@ export function BranchPanel() {
           <div style={st.sub}>Hôm nay: tiệm chính {formatMoney(mainHourly.reduce((n, v) => n + v, 0))} · tiện lợi {formatMoney(branch.revenueToday)}</div>
         </div>
       )}
-      <div style={{ textAlign: 'right', marginTop: 12 }}><button style={st.btn} onClick={closePanel}>Đóng</button></div>
     </>
   );
 }

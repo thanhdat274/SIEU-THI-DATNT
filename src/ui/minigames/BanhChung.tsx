@@ -61,7 +61,7 @@ export function BanhChung({ seed, onFinish, onProgress }: MiniGameProps) {
           const ing = banhIngredientById(step);
           return (
             <span
-              key={step}
+              key={`${step}-${i}`}
               className={`banhchung-cell ${filled ? 'filled' : ''} ${isMéo ? 'meo' : ''}`}
               title={ing?.name ?? step}
             >

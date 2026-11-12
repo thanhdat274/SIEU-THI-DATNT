@@ -58,7 +58,7 @@ export function RegularsPanel() {
         Khách quen ghé vào giờ quen. Bán đúng món họ thích thì thân hơn (+2, món khác +1, mỗi ngày một lần);
         để họ về tay không thì mất 1 điểm. Thân đủ mốc thì họ ghé thường hơn, mua thêm món và boa tiền.
       </p>
-      <div style={{ ...styles.card, maxWidth: 560, marginBottom: 6, border: '1px solid rgba(243,156,18,0.4)', background: 'rgba(243,156,18,0.06)' }}>
+      <div style={{ ...styles.card, marginBottom: 6, border: '1px solid rgba(243,156,18,0.4)', background: 'rgba(243,156,18,0.06)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
           <b>📖 Sổ thương mến</b>
           <span>{triTier.icon} {triTier.name} <span style={{ opacity: 0.7, fontSize: 12 }}>— {triVisits} lượt khách quen</span></span>
@@ -83,7 +83,7 @@ export function RegularsPanel() {
         </div>
       </div>
       {poachedList.length > 0 && rival && (
-        <div style={{ display: 'grid', gap: 6, maxWidth: 560, marginBottom: 8 }}>
+        <div style={{ display: 'grid', gap: 6, marginBottom: 8 }}>
           {poachedList.map(([id, sinceDay]) => {
             const def = regularById(id);
             if (!def) return null;
@@ -118,7 +118,7 @@ export function RegularsPanel() {
           })}
         </div>
       )}
-      <div style={{ display: 'grid', gap: 6, maxWidth: 560 }}>
+      <div style={{ display: 'grid', gap: 6 }}>
         {sortForGift(met, regulars, level, day, storage, (d) => isBirthday(d, day)).map((r) => {
           const prog = regulars[r.id];
           const next = nextPerk(r, prog);
@@ -129,7 +129,7 @@ export function RegularsPanel() {
           // Thẻ gom lại (details): danh sách 10 khách quen dài ~5.000px trên điện thoại —
           // đóng mặc định để lướt nhanh, chạm vào khách cần xem mới mở chi tiết.
           return (
-            <details key={r.id} style={{ background: '#3a3a4d', borderRadius: 8, padding: '8px 12px', maxWidth: 560 }}>
+            <details key={r.id} style={{ background: '#3a3a4d', borderRadius: 8, padding: '8px 12px' }}>
               <summary style={{ display: 'flex', justifyContent: 'space-between', gap: 8, cursor: 'pointer', listStyle: 'none', fontWeight: 700 }}>
                 <span><Swatch color={r.color} /> {r.name}</span>
                 <span style={{ opacity: 0.75, fontSize: 12, fontWeight: 400 }}>
@@ -224,7 +224,7 @@ function TiesView({ bond, regulars, tiesMended, met }: {
   };
   return (
     <>
-      <div style={{ ...styles.card, maxWidth: 560, marginBottom: 8, border: '1px solid rgba(46,204,113,0.4)', background: 'rgba(46,204,113,0.06)' }}>
+      <div style={{ ...styles.card, marginBottom: 8, border: '1px solid rgba(46,204,113,0.4)', background: 'rgba(46,204,113,0.06)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
           <b>🏮 Tình làng nghĩa xóm</b>
           <span style={{ fontWeight: 700, color: '#2ecc71' }}>{bond}%</span>
@@ -239,7 +239,7 @@ function TiesView({ bond, regulars, tiesMended, met }: {
           Họ hàng · bạn bè · láng giềng trong hẻm. Chăm sâu vài người then chốt giữ được cả cụm; mối khắc khẩu thì lo A là B hơi dỗi.
         </div>
       </div>
-      <div style={{ display: 'grid', gap: 4, maxWidth: 560 }}>
+      <div style={{ display: 'grid', gap: 4 }}>
         {friendly.map((t) => {
           const m = Math.min(regulars[t.a]?.friendship ?? 0, regulars[t.b]?.friendship ?? 0);
           const pct = Math.min(100, Math.round((m / 40) * 100));
@@ -259,7 +259,7 @@ function TiesView({ bond, regulars, tiesMended, met }: {
           );
         })}
         {hostile.length > 0 && (
-          <div style={{ fontSize: 12, opacity: 0.9, background: 'rgba(231,76,60,0.08)', borderRadius: 8, padding: '6px 12px', maxWidth: 560 }}>
+          <div style={{ fontSize: 12, opacity: 0.9, background: 'rgba(231,76,60,0.08)', borderRadius: 8, padding: '6px 12px' }}>
             ⚡ <b>Người khắc khẩu</b> — lo chu đáo một người thì người kia hơi dỗi:
             {hostile.map((t) => <div key={tieKey(t.a, t.b)}>💢 {name(t.a)} · {name(t.b)}</div>)}
           </div>

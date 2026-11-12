@@ -59,7 +59,7 @@ export function GardenPanel() {
       {tab === 'farm' && (level < GARDEN_UNLOCK ? (
         <p style={styles.sub}>🔒 Trang trại mở ở cấp {GARDEN_UNLOCK}: dọn lại mảnh đất ven đường đã.</p>
       ) : (
-        <div style={{ display: 'grid', gap: 6, maxWidth: 560 }}>
+        <div style={{ display: 'grid', gap: 6 }}>
           {(() => {
             // GĐ1104 — "Hôm nay đáng" nay nhìn thấy giá trị pha: cây nằm trong thực đơn quán được
             // định giá theo món pha hời hơn bán lẻ (menu chưa mở/món chưa mở → y hệt bestCrop cũ).
@@ -434,7 +434,7 @@ function PhoiTab(props: {
   const cd = FARM_BUILDINGS.chum_u;
   const payoff = preservePayoff({ level, neighborSpentLife: neighborLife, neighborSpentMonth: neighborMonth });
   return (
-    <div style={{ display: 'grid', gap: 6, maxWidth: 560 }}>
+    <div style={{ display: 'grid', gap: 6 }}>
       {level < PHOI_UNLOCK ? (
         <div style={styles.card}>🔒 Hệ Phơi · Muối · Ủ mở ở cấp {PHOI_UNLOCK}: tráng bánh tráng, phơi tôm khô, mực một nắng… trước nhất cần Sân phơi trong <b>Công trình</b> (tab Trang trại → dọn trại lấy gỗ đá để xây/nâng).</div>
       ) : (
@@ -446,7 +446,7 @@ function PhoiTab(props: {
           </Callout>
 
           {payoff.rows.length > 0 && (
-            <div style={{ ...styles.card, display: 'block', background: '#fdf6e3' }}>
+            <div style={{ ...styles.card, display: 'block', background: 'rgba(241, 196, 15, 0.12)', border: '1px solid rgba(241, 196, 15, 0.35)' }}>
               <div style={{ fontSize: 12, opacity: 0.8 }}>{payoff.headline}</div>
               <div style={{ fontSize: 12, opacity: 0.75, marginTop: 4 }}>
                 {payoff.rows.map((r) => (

@@ -4,6 +4,7 @@
   position: fixed;
   inset: 0;
   z-index: 1200;
+  pointer-events: auto;
   background: rgba(20, 16, 8, 0.45);
   display: flex;
   align-items: center;
@@ -13,6 +14,7 @@
 
 .mini-card {
   background: #fffaf0;
+  color: #3d2817;
   border: 2px solid #e8d9b8;
   border-radius: 16px;
   width: min(420px, 96vw);
@@ -259,7 +261,7 @@
 
 .denong-paste {
   position: relative;
-  width: min(240px, 100%);
+  width: min(268px, 100%);
   height: 220px;
   margin: 0 auto 8px;
 }
@@ -281,9 +283,9 @@
 .denong-sheet.pasted { border-color: #c0392b; background: #fdecec; }
 .denong-sheet.pos-0 { left: 10px; top: 84px; }
 .denong-sheet.pos-1 { left: 40px; top: 10px; }
-.denong-sheet.pos-2 { left: 164px; top: 10px; }
-.denong-sheet.pos-3 { left: 194px; top: 84px; }
-.denong-sheet.pos-4 { left: 102px; top: 30px; }
+.denong-sheet.pos-2 { left: calc(100% - 104px); top: 10px; }
+.denong-sheet.pos-3 { left: calc(100% - 76px); top: 84px; }
+.denong-sheet.pos-4 { left: calc(50% - 32px); top: 30px; }
 .denong-sheet.center { left: 84px; top: 96px; }
 .denong-sheet-icon { font-size: 22px; }
 .denong-sheet-name { font-size: 10px; color: #5d3a1a; }

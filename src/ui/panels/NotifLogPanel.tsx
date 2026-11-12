@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { clearNotifLog, notifLog } from '../../core/notifLog';
-import { styles } from './shared';
+import { useGame } from '../../core/store';
+import { Footer, styles } from './shared';
 
 /**
  * GĐ2347 — Sổ thông báo (panel 'log'): mọi tin đã hiện lên HUD trong phiên, mới nhất đứng đầu.
@@ -19,15 +20,16 @@ const clockLabel = (minutes: number): string => {
 };
 
 export function NotifLogPanel() {
+  const closePanel = useGame((s) => s.closePanel);
   const entries = notifLog();
   const [showAll, setShowAll] = useState(false);
   const [, tick] = useState(0);
   const shown = showAll ? entries : entries.slice(0, PAGE);
 
   return (
-    // Tràn đầy khung: panel cố định chiều cao (GĐ662) — khối này height 100% để vùng cuộn
+    // Tràn đầy khung: panel cố định chiều cao (GĐ662) — flex: 1 để vùng cuộn
     // chạm tới đáy khung, hết cảnh "khoảng đen lãng phí" khi tin chưa đầy một trang.
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
       <div style={{ flex: 'none' }}>
         <h2 style={styles.title}>🔔 Sổ thông báo</h2>
         <p style={styles.sub}>
@@ -51,18 +53,18 @@ export function NotifLogPanel() {
           ))}
         </div>
       )}
-      <div style={{ flex: 'none', display: 'flex', gap: 8, justifyContent: 'flex-end', paddingTop: 10 }}>
+      <Footer onClose={closePanel}>
         {entries.length > PAGE && (
-          <button className="hud-btn" onClick={() => setShowAll(!showAll)}>
+          <button style={styles.btn} onClick={() => setShowAll(!showAll)}>
             {showAll ? 'Thu gọn' : `Xem tất cả ${entries.length} tin`}
           </button>
         )}
         {entries.length > 0 && (
-          <button className="hud-btn" onClick={() => { clearNotifLog(); tick((n) => n + 1); }}>
+          <button style={styles.btn} onClick={() => { clearNotifLog(); tick((n) => n + 1); }}>
             🗑 Xoá thông báo cũ
           </button>
         )}
-      </div>
+      </Footer>
     </div>
   );
 }

@@ -10,6 +10,7 @@ import { card, btn, sub, row } from './panels/businessStyles';
 import { Achievements } from './panels/AchievementsTab';
 import { Life, Pets, Services, Upgrades } from './panels/ShopLifeTabs';
 import { StanceTab } from './panels/StanceTab';
+import { Footer } from './panels/shared';
 
 const TABS = [
   ['market', '⚔️ Cạnh tranh'],
@@ -26,11 +27,10 @@ const TABS = [
 
 /** Bảng Kinh doanh: các hệ thống thêm (đối thủ, quảng cáo, tích điểm, vay, hụi, tuần, thú cưng, nhà, xe, thành tựu). */
 export function BusinessPanel() {
+  const closePanel = useGame((s) => s.closePanel);
   const [tab, setTab] = useState<(typeof TABS)[number][0]>('market');
   return (
-    // Khung cố định để mọi tab cùng kích thước, không co giãn theo nội dung.
-    // width 100% + maxWidth (idiom GĐ95): 86vw ở 320px vượt content-box panel 7px làm cắt hàng tab.
-    <div style={{ width: '100%', maxWidth: 760, minHeight: 'min(520px, 70vh)' }}>
+    <div style={{ width: '100%', display: 'flex', flexDirection: 'column', flex: 1 }}>
       <h2 style={{ margin: '0 0 8px' }}>📈 Kinh doanh</h2>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(96px, 1fr))', gap: 4, padding: 4, marginBottom: 12, background: 'rgba(0,0,0,0.25)', borderRadius: 10 }}>
         {TABS.map(([id, label]) => (
@@ -61,6 +61,7 @@ export function BusinessPanel() {
         {tab === 'upgrades' && <Upgrades />}
         {tab === 'ach' && <Achievements />}
       </div>
+      <Footer onClose={closePanel} />
     </div>
   );
 }

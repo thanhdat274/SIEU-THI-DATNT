@@ -194,38 +194,44 @@ function LinesTab(props: {
   const { lines, candidates, slots, onAdd, onDrop, stock, payoff } = props;
   return (
     <div>
-      <p style={{ ...styles.sub, maxWidth: 620 }}>
+      <p style={styles.sub}>
         Dòng nhãn: <b>{lines.length}/{slots}</b> · Hàng nhãn trong kho: <b>{stock}</b> đơn vị. Mỗi món mở dòng khi đã
         làm 100 mẻ và bán 500 đơn vị. Dòng tiếp mở ở cấp {BRAND_LINE_SLOTS[lines.length] ?? 'tối đa'}.
       </p>
 
-      {lines.length > 0 && lines.map((l) => {
-        const blp = payoff.find((r) => r.productId === l.productId);
-        return (
-          <div key={l.productId} style={styles.card}>
-            <span style={{ flex: 1 }}><b>{pname(l.productId)}</b> <span style={{ opacity: 0.7 }}>· đóng {l.made} · bán {l.sold}</span>
-              {blp && <div style={{ fontSize: 12, color: '#e67e22', marginTop: 4 }}>📊 {blp.line}</div>}
-            </span>
-            <button style={styles.btn} onClick={() => onDrop(l.productId)}>Bỏ dòng</button>
-          </div>
-        );
-      })}
+      {lines.length > 0 && (
+        <div style={{ display: 'grid', gap: 6 }}>
+          {lines.map((l) => {
+            const blp = payoff.find((r) => r.productId === l.productId);
+            return (
+              <div key={l.productId} style={styles.card}>
+                <span style={{ flex: 1 }}><b>{pname(l.productId)}</b> <span style={{ opacity: 0.7 }}>· đóng {l.made} · bán {l.sold}</span>
+                  {blp && <div style={{ fontSize: 12, color: '#e67e22', marginTop: 4 }}>📊 {blp.line}</div>}
+                </span>
+                <button style={styles.btn} onClick={() => onDrop(l.productId)}>Bỏ dòng</button>
+              </div>
+            );
+          })}
+        </div>
+      )}
       {lines.length === 0 && <p style={styles.sub}>Chưa có dòng nhãn nào. Bên dưới là các món nhà làm đã thực hiện — chọn món đủ điều kiện để thêm.</p>}
 
       {candidates.length > 0 && (
         <>
           <p style={{ ...styles.sub, marginTop: 12 }}>Món nhà làm của bạn:</p>
-          {candidates.map((c) => (
-            <div key={c.id} style={styles.card}>
-              <span style={{ flex: 1 }}>
-                <b>{pname(c.id)}</b> <span style={{ opacity: 0.7 }}>· {c.made} mẻ · bán {c.sold}</span>
-                {!c.eligible && <span style={{ opacity: 0.6 }}> · cần {(c.made < 100 ? `${100 - c.made} mẻ` : '')}{(c.made < 100 && c.sold < 500 ? ' và ' : '')}{c.sold < 500 ? `bán ${500 - c.sold} đv` : ''}</span>}
-              </span>
-              <button style={styles.btn} disabled={!c.eligible || lines.some((l) => l.productId === c.id) || lines.length >= slots} onClick={() => onAdd(c.id)}>
-                Thêm dòng
-              </button>
-            </div>
-          ))}
+          <div style={{ display: 'grid', gap: 6 }}>
+            {candidates.map((c) => (
+              <div key={c.id} style={styles.card}>
+                <span style={{ flex: 1 }}>
+                  <b>{pname(c.id)}</b> <span style={{ opacity: 0.7 }}>· {c.made} mẻ · bán {c.sold}</span>
+                  {!c.eligible && <span style={{ opacity: 0.6 }}> · cần {(c.made < 100 ? `${100 - c.made} mẻ` : '')}{(c.made < 100 && c.sold < 500 ? ' và ' : '')}{c.sold < 500 ? `bán ${500 - c.sold} đv` : ''}</span>}
+                </span>
+                <button style={styles.btn} disabled={!c.eligible || lines.some((l) => l.productId === c.id) || lines.length >= slots} onClick={() => onAdd(c.id)}>
+                  Thêm dòng
+                </button>
+              </div>
+            ))}
+          </div>
         </>
       )}
       {candidates.length === 0 && <p style={styles.sub}>Chưa có món nhà làm nào — qua Hệ 1 (Sân phơi · Muối · Ủ) hoàn các mẻ để dồn mẻ làm.</p>}
@@ -247,14 +253,14 @@ function DealersTab(props: {
   };
   return (
     <div>
-      <p style={{ ...styles.sub, maxWidth: 620 }}>
+      <p style={styles.sub}>
         Ký hợp đồng giao hàng nhãn cho đại lý theo định kỳ — giá mua lại thấp hơn bán lẻ nhưng số lượng nhiều
         và đều. Giao đúng hẹn +2 uy tín, trễ −4, bỏ kỳ −8; <b>{BRAND_DEAL_CUT_AFTER} kỳ hỏng liên tiếp thì bị cắt
         hợp đồng</b> (30 ngày sau mới ký lại). Mở từ cấp {BRAND_DEALER_UNLOCK}.
       </p>
 
       {rival && rival.strength > 0 && (
-        <div style={{ ...styles.card, background: '#4a2c2c' }}>
+        <div style={{ ...styles.card, background: '#4a2c2c', marginBottom: 6 }}>
           <span style={{ flex: 1 }}>
             <b>😈 {rival.name} — đối thủ ghé mua</b>
             <div style={{ fontSize: 12, opacity: 0.85 }}>
@@ -268,53 +274,58 @@ function DealersTab(props: {
         </div>
       )}
 
-      {Object.entries(b.deals).map(([id, deal]) => {
-        const def = brandDealerById(id)!;
-        const dueIn = deal.dueDay - day;
-        const have = b.stock[deal.productId] ?? 0;
-        const dlp = brandDealPayoff(def, deal.productId, b.rep);
-        return (
-          <div key={id} style={styles.card}>
-            <span style={{ flex: 1 }}>
-              <b>{def.icon} {def.title}</b>
-              <div style={{ fontSize: 12, opacity: 0.8 }}>
-                {pname(deal.productId)} · {def.qty} đv mỗi {def.periodDays} ngày · {brandDealValue(def, deal.productId).toLocaleString('vi-VN')}đ/kỳ
-                {' '}· kỳ tới {dueIn <= 0 ? (deal.overdue ? 'QUÁ HẠN' : 'hôm nay') : `${dueIn} ngày nữa`}
-                {' '}· kho nhãn {have}/{def.qty}
-                {deal.committed ? ' · 🤝 đã cam kết' : ''}
+      {Object.keys(b.deals).length > 0 && (
+        <div style={{ display: 'grid', gap: 6 }}>
+          {Object.entries(b.deals).map(([id, deal]) => {
+            const def = brandDealerById(id)!;
+            const dueIn = deal.dueDay - day;
+            const have = b.stock[deal.productId] ?? 0;
+            const dlp = brandDealPayoff(def, deal.productId, b.rep);
+            return (
+              <div key={id} style={styles.card}>
+                <span style={{ flex: 1 }}>
+                  <b>{def.icon} {def.title}</b>
+                  <div style={{ fontSize: 12, opacity: 0.8 }}>
+                    {pname(deal.productId)} · {def.qty} đv mỗi {def.periodDays} ngày · {brandDealValue(def, deal.productId).toLocaleString('vi-VN')}đ/kỳ
+                    {' '}· kỳ tới {dueIn <= 0 ? (deal.overdue ? 'QUÁ HẠN' : 'hôm nay') : `${dueIn} ngày nữa`}
+                    {' '}· kho nhãn {have}/{def.qty}
+                    {deal.committed ? ' · 🤝 đã cam kết' : ''}
+                  </div>
+                  <div style={{ fontSize: 12, color: '#e67e22', marginTop: 4 }}>📊 {dlp.line}</div>
+                </span>
+                {!deal.committed && <button style={styles.btn} disabled={have < def.qty} onClick={() => onCommit(id)}>🤝 Cam kết</button>}
+                {deal.committed && <button style={styles.btn} onClick={() => onRelease(id)}>↩️ Hoàn cọc</button>}
+                <button style={styles.btn} disabled={have < def.qty} onClick={() => onDeliver(id)}>🚚 Giao kỳ</button>
               </div>
-              <div style={{ fontSize: 12, color: '#e67e22', marginTop: 4 }}>📊 {dlp.line}</div>
-            </span>
-            {!deal.committed && <button style={styles.btn} disabled={have < def.qty} onClick={() => onCommit(id)}>🤝 Cam kết</button>}
-            {deal.committed && <button style={styles.btn} onClick={() => onRelease(id)}>↩️ Hoàn cọc</button>}
-            <button style={styles.btn} disabled={have < def.qty} onClick={() => onDeliver(id)}>🚚 Giao kỳ</button>
-          </div>
-        );
-      })}
+            );
+          })}
+        </div>
+      )}
 
       {Object.keys(b.deals).length === 0 && <p style={styles.sub}>Chưa có hợp đồng nào — chọn đại lý bên dưới để ký.</p>}
 
       <p style={{ ...styles.sub, marginTop: 12 }}>Đại lý có thể ký ({avail.length}/{BRAND_DEALERS.length}):</p>
-      {avail.map((def) => {
-        const deal = b.deals[def.id];
-        const reopen = reSign(def.id);
-        const unsigned = !deal && reopen === 0;
-        return (
-          <div key={def.id} style={styles.card}>
-            <span style={{ flex: 1 }}>
-              <b>{def.icon} {def.title}</b>
-              <div style={{ fontSize: 12, opacity: 0.8 }}>
-                {def.qty} đv mỗi {def.periodDays} ngày · {Math.round(def.pricePerUnit * 100)}% giá bán lẻ · cần uy tín {def.rep}
-              </div>
-            </span>
-            {deal
-              ? <span style={{ fontSize: 12, opacity: 0.8 }}>đang ký</span>
-              : reopen > 0
-                ? <span style={{ fontSize: 12, opacity: 0.7 }}>cắt · còn {reopen} ngày</span>
-                : <DealerSign def={def} lines={b.lines} onAccept={onAccept} />}
-          </div>
-        );
-      })}
+      <div style={{ display: 'grid', gap: 6 }}>
+        {avail.map((def) => {
+          const deal = b.deals[def.id];
+          const reopen = reSign(def.id);
+          return (
+            <div key={def.id} style={styles.card}>
+              <span style={{ flex: 1 }}>
+                <b>{def.icon} {def.title}</b>
+                <div style={{ fontSize: 12, opacity: 0.8 }}>
+                  {def.qty} đv mỗi {def.periodDays} ngày · {Math.round(def.pricePerUnit * 100)}% giá bán lẻ · cần uy tín {def.rep}
+                </div>
+              </span>
+              {deal
+                ? <span style={{ fontSize: 12, opacity: 0.8 }}>đang ký</span>
+                : reopen > 0
+                  ? <span style={{ fontSize: 12, opacity: 0.7 }}>cắt · còn {reopen} ngày</span>
+                  : <DealerSign def={def} lines={b.lines} onAccept={onAccept} />}
+            </div>
+          );
+        })}
+      </div>
       {avail.length === 0 && <p style={styles.sub}>Chưa có đại lý nào — mở theo cấp và nâng uy tín nhãn.</p>}
     </div>
   );
@@ -336,51 +347,57 @@ function FranchiseTab(props: { b: BrandState; level: number; money: number; onOp
   const { b, level, money, onOpen, onClose } = props;
   return (
     <div>
-      <p style={{ ...styles.sub, maxWidth: 620 }}>
+      <p style={styles.sub}>
         Mở điểm nhượng quyền bán hàng nhãn — mỗi tuần xe tự chở <b>{BRAND_FRANCHISE_SLOTS[0].weekly}</b> đơn vị trở
         lên (tùy quy mô), mỗi đêm điểm trả phí nhượng quyền và cộng uy tín. Thiếu hàng 1 tuần: sức khỏe giảm, uy tín
         −3; thiếu 3 tuần liền: điểm đóng, mất {vnd(BRAND_FRANCHISE_SETUP)} setup. Phí mở {vnd(BRAND_FRANCHISE_SETUP)} · cần uy tín {BRAND_FRANCHISE_REP} · mở từ cấp {BRAND_FRANCHISE_UNLOCK}.
       </p>
 
-      {b.franchises.map((f) => {
-        const def = BRAND_FRANCHISE_SLOTS.find((x) => x.id === f.id);
-        if (!def) return null;
-        const due = b.franchiseDue[f.id];
-        const frp = franchisePayoff(b).rows.find((r) => r.id === f.id);
-        return (
-          <div key={f.id} style={styles.card}>
-            <span style={{ flex: 1 }}>
-              <b>{def.icon} {def.title}</b>
-              <div style={{ fontSize: 12, opacity: 0.8 }}>
-                khoẻ {f.health}/100 · mỗi tuần {def.weekly} đơn vị · phí/đêm ≈ {franchiseIncome(f.health, b.rep, def.size, 1).toLocaleString('vi-VN')}đ
-                {' '}· nhập hàng {due !== undefined ? (due <= 1 ? (due <= 0 ? 'quá hạn' : 'hôm nay') : `còn ${due} ngày`) : '—'}
+      {b.franchises.length > 0 && (
+        <div style={{ display: 'grid', gap: 6 }}>
+          {b.franchises.map((f) => {
+            const def = BRAND_FRANCHISE_SLOTS.find((x) => x.id === f.id);
+            if (!def) return null;
+            const due = b.franchiseDue[f.id];
+            const frp = franchisePayoff(b).rows.find((r) => r.id === f.id);
+            return (
+              <div key={f.id} style={styles.card}>
+                <span style={{ flex: 1 }}>
+                  <b>{def.icon} {def.title}</b>
+                  <div style={{ fontSize: 12, opacity: 0.8 }}>
+                    khoẻ {f.health}/100 · mỗi tuần {def.weekly} đơn vị · phí/đêm ≈ {franchiseIncome(f.health, b.rep, def.size, 1).toLocaleString('vi-VN')}đ
+                    {' '}· nhập hàng {due !== undefined ? (due <= 1 ? (due <= 0 ? 'quá hạn' : 'hôm nay') : `còn ${due} ngày`) : '—'}
+                  </div>
+                  {frp && (
+                    <div style={{ fontSize: 12, color: '#e67e22', marginTop: 4 }}>
+                      📊 {frp.line}
+                    </div>
+                  )}
+                </span>
+                <button style={styles.btn} onClick={() => onClose(f.id)}>Đóng điểm</button>
               </div>
-              {frp && (
-                <div style={{ fontSize: 12, color: '#e67e22', marginTop: 4 }}>
-                  📊 {frp.line}
-                </div>
-              )}
-            </span>
-            <button style={styles.btn} onClick={() => onClose(f.id)}>Đóng điểm</button>
-          </div>
-        );
-      })}
+            );
+          })}
+        </div>
+      )}
       {b.franchises.length === 0 && <p style={styles.sub}>Chưa có điểm nhượng quyền nào — chọn suất bên dưới để mở.</p>}
 
       <p style={{ ...styles.sub, marginTop: 12 }}>Suất nhượng quyền:</p>
-      {BRAND_FRANCHISE_SLOTS.map((def) => {
-        const has = b.franchises.some((f) => f.id === def.id);
-        const locked = level < def.unlock || b.rep < BRAND_FRANCHISE_REP || money < BRAND_FRANCHISE_SETUP || has;
-        return (
-          <div key={def.id} style={styles.card}>
-            <span style={{ flex: 1 }}>
-              <b>{def.icon} {def.title}</b>
-              <div style={{ fontSize: 12, opacity: 0.8 }}>cấp {def.unlock} · mỗi tuần {def.weekly} đơn vị · quy mô {def.size}</div>
-            </span>
-            <button style={styles.btn} disabled={locked} onClick={() => onOpen(def.id)}>{has ? 'Đã mở' : 'Mở điểm'}</button>
-          </div>
-        );
-      })}
+      <div style={{ display: 'grid', gap: 6 }}>
+        {BRAND_FRANCHISE_SLOTS.map((def) => {
+          const has = b.franchises.some((f) => f.id === def.id);
+          const locked = level < def.unlock || b.rep < BRAND_FRANCHISE_REP || money < BRAND_FRANCHISE_SETUP || has;
+          return (
+            <div key={def.id} style={styles.card}>
+              <span style={{ flex: 1 }}>
+                <b>{def.icon} {def.title}</b>
+                <div style={{ fontSize: 12, opacity: 0.8 }}>cấp {def.unlock} · mỗi tuần {def.weekly} đơn vị · quy mô {def.size}</div>
+              </span>
+              <button style={styles.btn} disabled={locked} onClick={() => onOpen(def.id)}>{has ? 'Đã mở' : 'Mở điểm'}</button>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

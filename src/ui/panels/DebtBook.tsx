@@ -19,7 +19,7 @@ export function DebtBook() {
   const hag = hagglePolicyEarn(policy.haggle);
   return (
     <>
-    <div style={{ ...styles.card, display: 'block', maxWidth: 560, marginBottom: 8 }}>
+    <div style={{ ...styles.card, display: 'block', marginBottom: 8 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
         <b>📒 Sổ nợ {rows.length ? `· ${formatMoney(total)}` : ''}</b>
         <label style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -68,7 +68,7 @@ export function DebtBook() {
         );
       })}
     </div>
-    <div style={{ ...styles.card, display: 'block', maxWidth: 560, marginBottom: 8 }}>
+    <div style={{ ...styles.card, display: 'block', marginBottom: 8 }}>
       <div style={{ fontSize: 13 }}><b>🧾 Chính sách quầy</b> <span style={{ opacity: 0.7, fontSize: 11 }}>thái độ mặc cả & tiền lẻ</span></div>
       <div style={{ fontSize: 12, opacity: 0.75, marginTop: 2 }}>{summ.haggleText} {summ.changeText}</div>
       <div style={{ fontSize: 12, opacity: 0.75, marginTop: 2 }}>

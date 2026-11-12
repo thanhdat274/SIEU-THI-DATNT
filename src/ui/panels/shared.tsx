@@ -32,7 +32,7 @@ export const starColor = (n: number) => (n >= 4 ? '#2ecc71' : n === 3 ? '#f1c40f
 /** GĐ2349 — `pin`: ghim hàng nút xuống ĐÁY khung khi nội dung ngắn (marginTop:'auto' trong flex
  *  column của panel bọc ngoài; nội dung dài thì auto-margin tự về 0 như thường) — hết cảnh panel
  *  Sổ đầu ngày kết thúc giữa panel rồi trống nửa khung dưới (QA người chơi). */
-export function Footer({ onClose, closeLabel = 'Đóng', children, pin }: { onClose: () => void; closeLabel?: string; children?: React.ReactNode; pin?: boolean }) {
+export function Footer({ onClose, closeLabel = 'Đóng', children, pin = true }: { onClose: () => void; closeLabel?: string; children?: React.ReactNode; pin?: boolean }) {
   return (
     <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: pin ? 'auto' : 16, ...(pin ? { paddingTop: 16 } : {}) }}>
       {children}
