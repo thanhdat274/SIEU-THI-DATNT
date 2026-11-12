@@ -246,6 +246,20 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   // ngâm 31k) = 101k → 10 phần × 20k = 200k, lãi ~99k/mẻ, hời hơn bán thẳng nguyên liệu (148k < 200k —
   // luật monKhuon).
   { id: 'ca_loc_nau_mang_chua', name: 'Cá lóc nấu măng chua', category: 'fresh', buy: 11000, sell: 20000, color: 0xd0b050, unlock: 104, since: CONTENT_EPOCH_NOW },
+  // GĐ2381: Thịt đông — món cỗ Tết miền Bắc trứ danh (thịt kho nước nghệ rồi để LẠNH đông thạch tự nhiên
+  // ngoài Tết), TRƯỚC NAY CHƯA CÓ (soát 'thịt đông'/'thit_dong' = 0 trong src/). Nấu kỹ nồi nước, để đông
+  // thạch — trạm nồi nước đúng cách nấu thật. Dưa hành ăn kèm chuẩn cỗ Bắc → hx_dua_hanh (mở 102) vào
+  // mẻ như phần ăn kèm (tiền lệ món kèm: giá đỗ/hành phi ở cao lầu, theo CLAUDE.md §4). Mộc nhĩ dùng
+  // hx_nam_meo. Mẻ (thịt heo 30k + nấm mèo 35k + hành lá 2k + dưa hành 31k) = 98k → 8 khuôn × 25k =
+  // 200k, lãi ~102k/mẻ, hời hơn bán thẳng nguyên liệu (146k < 200k — luật monKhuon).
+  { id: 'thit_dong', name: 'Thịt đông', category: 'fresh', buy: 7000, sell: 25000, color: 0xe8e0d8, unlock: 102, since: CONTENT_EPOCH_NOW },
+  // GĐ2381: Thịt luộc tôm chua — mâm cỗ Tết miền Nam trứ danh (thịt luộc chấm tôm chua, ăn kèm củ kiệu
+  // muối), TRƯỚC NAY CHƯA CÓ (soát 'thịt luộc tôm chua'/'tôm chua thịt' = 0 trong src/; Thịt luộc GĐ1970
+  // chỉ là bản cơm nhà không có tôm chua/củ kiệu). Nối 2 nguyên liệu hàng xóm Tết còn bán thẳng:
+  // hx_tom_chua (mở 67) + hx_cu_kieu (mở 68). Luộc nồi nước — trạm hot_kettle đúng. Mẻ (thịt heo 30k +
+  // tôm chua Huế 33k + củ kiệu muối 31k) = 94k → 8 phần × 25k = 200k, lãi ~106k/mẻ, hời hơn bán thẳng
+  // nguyên liệu (141k < 200k — luật monKhuon).
+  { id: 'thit_luoc_tom_chua', name: 'Thịt luộc tôm chua', category: 'fresh', buy: 7000, sell: 25000, color: 0xe0a890, unlock: 103, since: CONTENT_EPOCH_NOW },
   // GĐ1332: Bánh xèo — món bánh xèo giòn trứ danh (Mỹ Tho/Đà Nẵng) từ bột gạo + nước cốt dừa + thịt + hành phi:
   // trước nay TỘT KHÔNG có bánh xèo trong bếp dù là món ăn biểu tượng nhất — lấp khoảng trống trạm chảo chiên.
   // Mẻ (bột gạo 9k + nước cốt dừa 10k + thịt 30k + hành phi 1.5k×2) = 52k → 6 cái × 19k = 114k, lãi 62k/mẻ.
@@ -2216,6 +2230,16 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_ca_loc_nau_mang_chua', name: 'Cá lóc nấu măng chua', station: 'hot_kettle',
     inputs: [{ productId: 'ca_loc_tuoi', quantity: 1 }, { productId: 'hx_mang_chua', quantity: 1 }],
     outputId: 'ca_loc_nau_mang_chua', outputQty: 10, durationMin: 25, unlock: 104, reputationGain: 3, since: CONTENT_EPOCH_NOW },
+  // GĐ2381: Thịt đông Tết miền Bắc — nấu kỹ để đông thạch, mộc nhĩ + dưa hành ăn kèm chuẩn cỗ Bắc
+  // (lối ra cho hx_dua_hanh mở 102). Mở 102 trên mọi mốc sim; since: 1 để kỷ nguyên 0 không thấy.
+  { id: 'recipe_thit_dong', name: 'Thịt đông', station: 'hot_kettle',
+    inputs: [{ productId: 'x_thit_heo', quantity: 1 }, { productId: 'hx_nam_meo', quantity: 1 }, { productId: 'x_hanh_la', quantity: 1 }, { productId: 'hx_dua_hanh', quantity: 1 }],
+    outputId: 'thit_dong', outputQty: 8, durationMin: 30, unlock: 102, reputationGain: 3, since: CONTENT_EPOCH_NOW },
+  // GĐ2381: Thịt luộc tôm chua Tết miền Nam — thịt luộc chấm tôm chua Huế, củ kiệu muối ăn kèm (lối ra
+  // cho hx_tom_chua 67 + hx_cu_kieu 68). Mở 103 trên mọi mốc sim; since: 1 để kỷ nguyên 0 không thấy.
+  { id: 'recipe_thit_luoc_tom_chua', name: 'Thịt luộc tôm chua', station: 'hot_kettle',
+    inputs: [{ productId: 'x_thit_heo', quantity: 1 }, { productId: 'hx_tom_chua', quantity: 1 }, { productId: 'hx_cu_kieu', quantity: 1 }],
+    outputId: 'thit_luoc_tom_chua', outputQty: 8, durationMin: 25, unlock: 103, reputationGain: 3, since: CONTENT_EPOCH_NOW },
   // GĐ1324: Nem chua rán — đặc sản nhà bà Tám (nem chua GĐ1085) thành nguyên liệu chảo chiên, món ăn vặt.
   { id: 'recipe_nem_chua_ran', name: 'Nem chua rán', station: 'fryer',
     inputs: [{ productId: 'hx_nem_chua', quantity: 2 }, { productId: 'x_duong', quantity: 1 }],

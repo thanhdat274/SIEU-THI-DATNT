@@ -265,6 +265,8 @@ const MON_THAT: Record<string, { name: string; station: string; cachNau: string 
   recipe_ca_thu_muoi_chien: { name: 'Cá thu muối chiên', station: 'fryer', cachNau: 'cá thu ướp muối chiên giòn trong chảo dầu, ăn cơm nóng chấm mắm ớt (miền Trung)' },
   recipe_xoi_xeo: { name: 'Xôi xéo', station: 'rice_station', cachNau: 'nếp đồ vàng nghệ rắc đậu xanh xéo và hành phi trên mặt, ăn nóng buổi sáng (Hà Nội)' },
   recipe_ca_loc_nau_mang_chua: { name: 'Cá lóc nấu măng chua', station: 'hot_kettle', cachNau: 'cá lóc nấu cùng măng chua ngâm, vị chua dịu từ măng thay me (Nam Bộ)' },
+  recipe_thit_dong: { name: 'Thịt đông', station: 'hot_kettle', cachNau: 'thịt heo kho nước nghệ với mộc nhĩ rồi để lạnh thành thạch đông, ăn với dưa hành (Tết miền Bắc)' },
+  recipe_thit_luoc_tom_chua: { name: 'Thịt luộc tôm chua', station: 'hot_kettle', cachNau: 'thịt heo luộc thái lát chấm tôm chua, ăn kèm củ kiệu muối (cỗ Tết miền Nam)' },
 };
 
 /** Chữ mô tả tự chế không ai dùng làm tên món ngoài chợ. */
