@@ -246,6 +246,19 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   // ngâm 31k) = 101k → 10 phần × 20k = 200k, lãi ~99k/mẻ, hời hơn bán thẳng nguyên liệu (148k < 200k —
   // luật monKhuon).
   { id: 'ca_loc_nau_mang_chua', name: 'Cá lóc nấu măng chua', category: 'fresh', buy: 11000, sell: 20000, color: 0xd0b050, unlock: 104, since: CONTENT_EPOCH_NOW },
+  // ── GĐ2387: CHUỖI SẢN XUẤT CHẾ BIẾN SÂU (Leader chốt hướng mở rộng; OpenSpec chuoi-san-xuat-che-bien-sau)
+  // — nông sản vườn (fresh hỏng nhanh) chế biến thành hàng đặc sản KHÔ giữ lâu bán giá cao; mắt xích thứ
+  // ba của chuỗi vườn sau "bán tươi" và "nấu món". Chỉ 3 hàng mới `cb_*` (bản DẺO, khác bản giòn hx_*
+  // hàng xóm); mít sấy + khoai lang sấy TÁI DÙNG hàng catalog có sẵn chưa có công thức (x_mit_say 20,
+  // x_khoai_lang_say 24). Sấy trên bếp than lửa nhỏ — trạm food_grill đúng cách chế biến thật (comment
+  // ghi rõ từng món). Luật monKhuon: mẻ luôn hời hơn bán tươi thẳng 2 đơn vị nông sản.
+  { id: 'cb_chuoi_say', name: 'Chuối sấy dẻo', category: 'dry', buy: 8000, sell: 15000, color: 0xe0a838, unlock: 36, since: CONTENT_EPOCH_NOW },
+  // GĐ2387: Xoài sấy dẻo — đặc sản Cao Lãnh (Đồng Tháp) trứ danh: cà xoài dẻo sấy thấp lửa giữ màu vàng
+  // ruộm, TRƯỚC NAY CHƯA CÓ bản chế biến (soát 'xoài sấy' chỉ thấy hx_xoai_say giòn hàng xóm mở 89).
+  { id: 'cb_xoai_say', name: 'Xoài sấy dẻo', category: 'dry', buy: 9000, sell: 18000, color: 0xe8b030, unlock: 37, since: CONTENT_EPOCH_NOW },
+  // GĐ2387: Vải sấy — vải thiều Bắc Giang phơi/sấy khô, ăn vặt ngọt lịm, TRƯỚC NAY CHƯA CÓ bản chế biến
+  // (soát 'vải sấy' chỉ thấy hx_vai_say hàng xóm mở 38). Vải sấy thật ~30-50k/lạng — game bán 20k/gói.
+  { id: 'cb_vai_say', name: 'Vải sấy nhà làm', category: 'dry', buy: 10000, sell: 20000, color: 0xd06060, unlock: 38, since: CONTENT_EPOCH_NOW },
   // GĐ2381: Thịt đông — món cỗ Tết miền Bắc trứ danh (thịt kho nước nghệ rồi để LẠNH đông thạch tự nhiên
   // ngoài Tết), TRƯỚC NAY CHƯA CÓ (soát 'thịt đông'/'thit_dong' = 0 trong src/). Nấu kỹ nồi nước, để đông
   // thạch — trạm nồi nước đúng cách nấu thật. Dưa hành ăn kèm chuẩn cỗ Bắc → hx_dua_hanh (mở 102) vào
@@ -2286,6 +2299,23 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_cai_chua_xao_thit', name: 'Cải chua xào thịt heo', station: 'fryer',
     inputs: [{ productId: 'hx_dua_cai', quantity: 1 }, { productId: 'x_thit_heo', quantity: 1 }],
     outputId: 'cai_chua_xao_thit', outputQty: 10, durationMin: 20, unlock: 105, reputationGain: 2, since: CONTENT_EPOCH_NOW },
+  // ── GĐ2387: 5 công thức chế biến sâu — sấy lửa nhỏ trên bếp than (food_grill), mẻ 2 nông sản →
+  // 5 gói (mít/khoai lang → 4-5 gói hàng catalog). Mở rải 36→40; since: 1 để kỷ nguyên 0 không thấy.
+  { id: 'recipe_cb_chuoi_say', name: 'Chuối sấy dẻo', station: 'food_grill',
+    inputs: [{ productId: 'x_chuoi', quantity: 2 }],
+    outputId: 'cb_chuoi_say', outputQty: 5, durationMin: 25, unlock: 36, reputationGain: 2, since: CONTENT_EPOCH_NOW },
+  { id: 'recipe_cb_xoai_say', name: 'Xoài sấy dẻo', station: 'food_grill',
+    inputs: [{ productId: 'x_xoai', quantity: 2 }],
+    outputId: 'cb_xoai_say', outputQty: 5, durationMin: 25, unlock: 37, reputationGain: 2, since: CONTENT_EPOCH_NOW },
+  { id: 'recipe_cb_vai_say', name: 'Vải sấy nhà làm', station: 'food_grill',
+    inputs: [{ productId: 'x_vai', quantity: 2 }],
+    outputId: 'cb_vai_say', outputQty: 5, durationMin: 30, unlock: 38, reputationGain: 2, since: CONTENT_EPOCH_NOW },
+  { id: 'recipe_mit_say', name: 'Mít sấy', station: 'food_grill',
+    inputs: [{ productId: 'x_mit', quantity: 2 }],
+    outputId: 'x_mit_say', outputQty: 4, durationMin: 30, unlock: 39, reputationGain: 2, since: CONTENT_EPOCH_NOW },
+  { id: 'recipe_khoai_lang_say', name: 'Khoai lang sấy', station: 'food_grill',
+    inputs: [{ productId: 'x_khoai_lang_tuoi', quantity: 2 }],
+    outputId: 'x_khoai_lang_say', outputQty: 5, durationMin: 25, unlock: 40, reputationGain: 2, since: CONTENT_EPOCH_NOW },
   // GĐ1324: Nem chua rán — đặc sản nhà bà Tám (nem chua GĐ1085) thành nguyên liệu chảo chiên, món ăn vặt.
   { id: 'recipe_nem_chua_ran', name: 'Nem chua rán', station: 'fryer',
     inputs: [{ productId: 'hx_nem_chua', quantity: 2 }, { productId: 'x_duong', quantity: 1 }],
