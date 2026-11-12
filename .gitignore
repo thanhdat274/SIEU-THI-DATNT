@@ -15,3 +15,4 @@ _downloads/
 .review-scratch/
 browser-screenshots/
 .agent-browser-tools/
+.mongo-data/

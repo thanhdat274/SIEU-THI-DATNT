@@ -80,7 +80,7 @@ export function ShiftValueStrip({ sum, hasData }: { sum: ReturnType<typeof staff
   const rows = (['morning', 'afternoon', 'full'] as const).filter((k) => sum[k].count > 0);
   if (!rows.length || !hasData) return null;
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: `repeat(${rows.length}, 1fr)`, gap: 8 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(180px, 100%), 1fr))', gap: 8 }}>
       {rows.map((k) => {
         const r = sum[k];
         const net = r.net;
@@ -127,7 +127,7 @@ export function BranchShiftStrip({ sum, hasData, hasStaff }: { sum: ReturnType<t
   const rows = BRANCH_SHIFTS.filter((k) => sum[k].count > 0);
   if (!rows.length || !hasData || !hasStaff) return null;
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: `repeat(${rows.length}, 1fr)`, gap: 8 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(180px, 100%), 1fr))', gap: 8 }}>
       {rows.map((k) => {
         const r = sum[k];
         const net = r.net;
