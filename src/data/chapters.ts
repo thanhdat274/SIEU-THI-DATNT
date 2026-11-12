@@ -172,11 +172,25 @@ export const CHAPTERS: readonly Chapter[] = [
     reward: { money: 20000000, xp: 5000 },
   },
   {
+    // GĐ2386 — chương mốc cấp 85: 15 món trứ danh GĐ2370-83 vào bếp nên hẻm "nức tiếng mùi thơm" —
+    // nối mốc 85 (bánh gối/xôi xéo/gà tiềm/thịt đông...) vào truyện theo cấp cũ (ch7-ch12).
+    id: 'ch13_bep_hem_noi_tieng', title: 'Chương 13 · Bếp hẻm nức tiếng',
+    when: (c) => c.level >= 85,
+    lines: [
+      say('👵', 'Bà Năm', 'Khí gì mà sáng sớm cả ngõ thơm mùi bánh gối chiên vậy con? Nhà nào cũng xì xào rằng tiệm mình có xôi xéo, có bánh tiêu nóng.'),
+      me('Dạ con đem về đủ món trứ danh — bánh trôi tàu, cao lầu, phở cuốn, nấu đúng bài bản ngoài đời. Chén gà tiềm nấm hương của tiệm giờ người ta đặt trước cả tuần.'),
+      say('👴', 'Bác Tám tổ trưởng', 'Tết vừa rồi con còn gói cả khuôn thịt đông, mâm cỗ Bắc Nam nhờ tiệm con lo trọn. Đình làng khen xôi xéo vàng nghệ đúng vị Hà Nội.'),
+      me('Bếp giữ được tiếng là nhờ bà con hẻm mình quý ăn thật. Món mới ngoài kia con vẫn cứ học rồi nấu đúng bài, không làm tới.'),
+    ],
+    reward: { money: 25000000, xp: 6000 },
+  },
+  {
     // GĐ170 — trùm cuối của truyện rival (audit tiến trình 29/10, phát hiện d): rival là hệ đối kháng
     // sâu nhất game nhưng chưa có đích cuối — ch5/ch8 im từ rival thứ 2. Rival thứ 12 hạ được chính
     // là 'Siêu Thị Sao Mai' (mục cuối RIVAL_SHOPS, blurb "hậu phương công ty lớn") → chương này khép
     // truyện: chuỗi cửa hàng lớn với hậu phương công ty. when() bám đúng pattern ch5/ch8 (mốc rivalsBeaten).
-    id: 'ch13_sieu_thi_sao_mai', title: 'Chương 13 · Siêu Thị Sao Mai',
+    // GĐ2386: đổi id ch13→ch14 (chèn ch13 mốc cấp 85 phía trên, giữ id nối tiếp ch7→ch15).
+    id: 'ch14_sieu_thi_sao_mai', title: 'Chương 14 · Siêu Thị Sao Mai',
     when: (c) => c.rivalsBeaten >= RIVAL_BOSS_GEN,
     lines: [
       say('👵', 'Bà Năm', 'Siêu Thị Sao Mai dẹp tiệm rồi con ơi! Nghe người quen ở quầy thu ngân của nó nói, công ty mẹ gọi cả bộ máy về trung tâm, bỏ luôn mặt bằng đầu hẻm.'),
@@ -190,6 +204,20 @@ export const CHAPTERS: readonly Chapter[] = [
     // (RIVAL_BEAT_REWARD/XP — giữ nguyên, KHÔNG đụng): tiền 5M (~6×) và XP 3.000 (7,5×) —
     // tầm chương ch10–ch11 (6M/2.200 · 10M/3.200) đúng mốc rivalsBeaten 12 thường chạm cấp ~45+.
     reward: { money: 5_000_000, xp: 3_000 },
+  },
+  {
+    // GĐ2386 — chương khép truyện (epilogue): sau khi hạ Siêu Thị Sao Mai (ch14) và lên cấp 120, tiệm
+    // không còn là "tiệm tạp hóa có nấu ăn" mà là địa chỉ ẩm thực Bắc Nam — khép hành trình bếp của
+    // 15 món trứ danh GĐ2370-83. Mốc kép rivalsBeaten + level 120 nên luôn sau ch14 trên hành trình.
+    id: 'ch15_am_thuc_bac_nam', title: 'Chương 15 · Địa chỉ ẩm thực Bắc Nam',
+    when: (c) => c.rivalsBeaten >= RIVAL_BOSS_GEN && c.level >= 120,
+    lines: [
+      say('💻', 'Anh Tuấn lập trình', 'Hạ được Siêu Thị Sao Mai rồi mà khách vẫn về đông vậy shop ơi — giờ người ta tìm tới vì đồ ăn của tiệm chứ không phải vì kệ hàng nữa.'),
+      me('Dạ từ chén gà tiềm miền Bắc tới cá lóc nấu măng chua miền Nam, cỗ Tết Bắc Nam tiệm con gói cả. Bếp giờ là thương hiệu chính rồi anh.'),
+      say('👵', 'Bà Năm', 'Ngõ nhỏ mình thành địa chỉ ẩm thực cả quận. Nhà nào mặt bằng to hơn cũng không có cái tay nghề này đâu con.'),
+      me('Con giữ lửa bếp này cho hẻm mình dài dài bà ơi. Có gì mới ngoài kia, con vẫn cứ học rồi nấu đúng bài.'),
+    ],
+    reward: { money: 40000000, xp: 8000 },
   },
 ];
 

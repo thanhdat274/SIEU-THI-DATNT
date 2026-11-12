@@ -51,7 +51,7 @@ export function revenueFactor(bonus: number): number {
  * trừ tới ~24–47% khách đúng giai đoạn yếu nhất — "thuế boss cũ"). Câu chuyện rival bắt đầu lại
  * từ thế hệ 1 trong vòng mới (hợp lý: bạn khởi đầu lại từ tiệm nhỏ): rival đời mới quay lại bình
  * thường từ cấp 8 qua nhánh đời mới ở core/biz.ts (cổng prestige.level > 0); các chương rival
- * ch4–ch13 đã xem KHÔNG phát lại vì `chapters` giữ nguyên qua NG+.
+ * ch4–ch15 đã xem KHÔNG phát lại vì `chapters` giữ nguyên qua NG+.
  */
 export function prestigeRestart(prev: GameState): GameState {
   const base = newGameData();

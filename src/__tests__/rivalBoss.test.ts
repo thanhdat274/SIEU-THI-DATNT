@@ -11,7 +11,7 @@ import {
 
 /**
  * GĐ170 — Rival thành một câu chuyện CÓ KẾT (audit tiến trình 29/10, phát hiện d + e):
- *  A. Chương trùm cuối 'Siêu Thị Sao Mai' (ch13) khép truyện rival ở rival thứ 12 (mục cuối
+ *  A. Chương trùm cuối 'Siêu Thị Sao Mai' (ch14, GĐ2386 đổi id từ ch13) khép truyện rival ở rival thứ 12 (mục cuối
  *     catalog, blurb "hậu phương công ty lớn"), thưởng thắng lớn MỘT LẦN theo cơ chế chương.
  *  B. Tái sinh không giữ rival + rivalsBeaten ("thuế boss cũ"); rival đời mới quay lại từ cấp 8
  *     nhờ cổng prestige.level > 0; chương rival đã xem không phát lại.
@@ -19,7 +19,7 @@ import {
  *     gắn hậu tố "cơ sở"; bậc quy mô (rivalTier) giữ nguyên trần gen 10.
  */
 
-const BOSS_ID = 'ch13_sieu_thi_sao_mai';
+const BOSS_ID = 'ch14_sieu_thi_sao_mai';
 const OTHER_CHAPTERS = CHAPTERS.filter((c) => c.id !== BOSS_ID).map((c) => c.id);
 
 /** Ngữ cảnh chương: mọi chỉ số phụ đã thỏa, thay rivalsBeaten để bấm mốc truyện rival. */
@@ -27,7 +27,7 @@ const ctx = (rivalsBeaten: number, level = 60): ChapterContext => ({
   day: 300, level, customers: 9999, staffCount: 9, shopTier: 4, hasRival: false, rivalsBeaten,
 });
 
-describe('ch13_sieu_thi_sao_mai — dữ liệu chương trùm cuối (GĐ170-A)', () => {
+describe('ch14_sieu_thi_sao_mai — dữ liệu chương trùm cuối (GĐ170-A)', () => {
   it('trùm cuối gắn đúng catalog: rival thứ 12 = "Siêu Thị Sao Mai" (mục cuối, hậu phương công ty)', () => {
     expect(RIVAL_BOSS_GEN).toBe(12);
     expect(RIVAL_SHOPS).toHaveLength(RIVAL_BOSS_GEN);
@@ -60,7 +60,7 @@ describe('ch13_sieu_thi_sao_mai — dữ liệu chương trùm cuối (GĐ170-A)
   });
 });
 
-describe('ch13 qua store — xếp chương + thưởng đúng một lần (GĐ170-A)', () => {
+describe('ch14 qua store — xếp chương + thưởng đúng một lần (GĐ170-A)', () => {
   beforeEach(() => {
     // Cấp 60: xpToNext(60) ≈ 5.8k nên +3.000 XP của chương không gây lên cấp — đọc được delta xp
     useGame.setState({
