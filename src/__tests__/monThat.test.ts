@@ -253,6 +253,7 @@ const MON_THAT: Record<string, { name: string; station: string; cachNau: string 
   recipe_com_tam: { name: 'Cơm tấm', station: 'rice_station', cachNau: 'cơm tấm nấu với sườn bì chả, trứng, rắc hành phi (Sài Gòn)' },
   recipe_banh_duc_nong: { name: 'Bánh đúc nóng', station: 'hot_kettle', cachNau: 'khuấy bột gạo và bột năng chín dẻo trong nồi, rắc thịt băm nấm mèo hành phi (Hà Nội)' },
   recipe_banh_it_tran: { name: 'Bánh ít trần', station: 'steamer', cachNau: 'vo vỏ nếp bọc nhân đậu xanh thịt heo tôm tươi, hấp chín rồi rưới mỡ hành lá' },
+  recipe_nem_lui: { name: 'Nem lụi', station: 'food_grill', cachNau: 'quết thịt heo băm với sả tỏi hành phi, bọc cây sả nướng trên bếp than (Huế)' },
 };
 
 /** Chữ mô tả tự chế không ai dùng làm tên món ngoài chợ. */
