@@ -114,6 +114,8 @@ const LOCAL_ONLY: Record<string, string> = {
   commitContract: 'cam kết kỳ: trữ đúng số hàng kỳ này khỏi kho chung theo id; toàn cục dồn chứ không đè chỗ',
   releaseContract: 'hủy cam kết: trả hàng về kho chung + hoàn cọc theo id; toàn cục',
   restockContract: 'GĐ2351 — nhập bù đúng phần thiếu của kỳ theo id (kho chung qua buy, hoặc cộng vào ngăn trữ riêng); toàn cục dồn chứ không đè chỗ',
+  setContractAuto: 'GĐ2366 — bật/tắt chế độ tự động của một hợp đồng theo id: một cờ toàn cục trên hợp đồng, ai bật cũng là cái chung, không đè chỗ nào khác',
+  runAutoContracts: 'GĐ2366 — dò toàn bộ hợp đồng tới kỳ rồi restockContract/deliverContract từng id (máy chạy tự gọi ở endDay, không ai bấm từ UI)',
   acceptOrder: 'nhận đơn tiệc — cờ toàn cục của đơn đang mời',
   declineOrder: 'từ đơn tiệc — cờ toàn cục của đơn đang mời',
   deliverOrder: 'giao đơn tiệc từ kho — đơn đang giữ duy nhất một',

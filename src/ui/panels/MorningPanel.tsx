@@ -254,7 +254,9 @@ export function MorningPanel() {
       {budget.rest.length > 0 && (
         <details style={{ marginTop: 12 }}>
           <summary style={{ fontSize: 13, opacity: 0.9, cursor: 'pointer', fontWeight: 600 }}>🧶 Xem thêm {budget.rest.length} mục…</summary>
-          <div style={{ display: 'grid', gap: 6, marginTop: 8 }}>
+          {/* GĐ2368: kẹp track lưới về chiều rộng khung — chip giờ nowrap trong CounterDemandCard
+              từng đẩy track max-content ~308px khiến mọi thẻ trong "Xem thêm" tràn khung ở 320px */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 6, marginTop: 8 }}>
             {budget.rest.map((c) => <Fragment key={c.id}>{c.node}</Fragment>)}
           </div>
         </details>

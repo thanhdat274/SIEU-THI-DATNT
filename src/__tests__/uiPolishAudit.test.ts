@@ -53,4 +53,15 @@ describe('UI polish & contrast regression guards', () => {
       expect(ui(f), f).toContain('<Footer');
     }
   });
+
+  it('Sổ đầu ngày (GĐ2368): lưới "Xem thêm" kẹp track minmax(0,1fr) và chip giờ biểu đồ co được — không tràn khung màn hẹp', () => {
+    // Chip giờ nowrap cứng từng đẩy track lưới max-content ~308px → cả cụm thẻ trong "Xem thêm"
+    // tràn khung phải ~26px ở 320px (audit trình duyệt GĐ2368: 41 phần tử leak → 0 sau vá).
+    const morning = ui('panels/MorningPanel.tsx');
+    expect(morning).toMatch(/gridTemplateColumns:\s*'minmax\(0, 1fr\)'/);
+    const cd = ui('panels/CounterDemandCard.tsx');
+    // chip div + nhãn span đều phải có minWidth: 0 (cho flex co dưới min-content) + ellipsis
+    expect(cd.match(/minWidth: 0/g)?.length).toBeGreaterThanOrEqual(2);
+    expect(cd).toContain("textOverflow: 'ellipsis'");
+  });
 });
