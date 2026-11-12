@@ -229,3 +229,36 @@ describe('GĐ2351 — restockContract (nhập bù đúng phần thiếu của k�
     expect(toasts.some((t) => t.includes('đã đủ hàng'))).toBe(true);
   });
 });
+
+describe('chế độ tự động hợp đồng (setContractAuto / runAutoContracts)', () => {
+  const setup = (level: number, storage: Record<string, number>) => {
+    const d = def();
+    useGame.setState({
+      level, storage, money: 5_000_000,
+      contracts: { quan_nhau: { defId: 'quan_nhau', dueDay: useGame.getState().day, delivered: 0, pending: false } },
+    });
+  };
+
+  it('dưới cấp 35 không bật được', () => {
+    setup(30, {});
+    useGame.getState().setContractAuto('quan_nhau', true);
+    expect(useGame.getState().contracts.quan_nhau.auto).toBeFalsy();
+  });
+
+  it('bật + tới kỳ + kho thiếu → tự nhập bù rồi giao, kỳ sau vẫn còn bật', () => {
+    setup(40, {});
+    useGame.getState().setContractAuto('quan_nhau', true);
+    const before = useGame.getState().money;
+    useGame.getState().runAutoContracts();
+    const cs = useGame.getState().contracts.quan_nhau;
+    expect(cs.delivered).toBe(1);
+    expect(cs.auto).toBe(true);
+    expect(useGame.getState().money).toBeGreaterThan(before - 5_000_000);
+  });
+
+  it('không bật auto thì không tự giao', () => {
+    setup(40, {});
+    useGame.getState().runAutoContracts();
+    expect(useGame.getState().contracts.quan_nhau.delivered).toBe(0);
+  });
+});

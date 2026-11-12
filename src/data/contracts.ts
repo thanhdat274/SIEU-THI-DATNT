@@ -77,6 +77,9 @@ export function missingForContract(def: SupplyContract, storage: Record<string, 
   return Object.entries(def.items).filter(([id, q]) => (storage[id] ?? 0) < q).map(([id, q]) => ({ id, need: q - (storage[id] ?? 0) }));
 }
 
+/** Cấp mở khóa chế độ tự nhập bù + tự giao hợp đồng (cơ chế mới → cổng cấp > 30 để không lệch golden). */
+export const AUTO_CONTRACT_LEVEL = 35;
+
 // ───── Chuỗi giao đúng hẹn ─────
 // Giao mỗi kỳ đúng hạn (không trễ) sẽ cộng chuỗi; cứ đủ N kỳ đúng hẹn liên tiếp lại có thưởng mốc
 // hậu hĩnh — cho người chơi lý do "quay lại đúng ngày để giữ chuỗi" (câu giữ chân, không đổi kinh tế).

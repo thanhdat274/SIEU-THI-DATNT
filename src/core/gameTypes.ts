@@ -74,6 +74,8 @@ export interface ContractState {
   committed?: boolean;
   /** Hàng đã trữ riêng cho kỳ đã cam kết (không bán dễ dàng ở quầy). */
   locked?: Record<string, number>;
+  /** Tự động: tới kỳ thì tự nhập bù phần thiếu rồi giao (mở từ cấp AUTO_CONTRACT_LEVEL). */
+  auto?: boolean;
 }
 
 export interface Tier {
@@ -421,6 +423,10 @@ export interface GameState {
   communitySale: (ids: string[]) => void;
   /** Giao kỳ hiện tại của hợp đồng từ kho; trả true nếu giao xong. */
   deliverContract: (id: string) => boolean;
+  /** Bật/tắt chế độ tự nhập bù + tự giao mỗi kỳ cho một hợp đồng (cấp ≥ AUTO_CONTRACT_LEVEL). */
+  setContractAuto: (id: string, on: boolean) => void;
+  /** Chạy tự động các hợp đồng đã bật `auto` và tới hạn (gọi lúc sang ngày mới). */
+  runAutoContracts: () => void;
   /** Sự kiện ngẫu nhiên hôm nay (ảnh hưởng lượt khách). */
   event: RandomEvent | null;
   /** Giữ chân: chuỗi điểm danh quà 7 ngày và lượt vòng quay may mắn mỗi ngày. */

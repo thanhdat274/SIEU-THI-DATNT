@@ -1,6 +1,6 @@
 import { useGame } from '../core/store';
 import { describeRep, meetsRep, repScore, reputationOf } from '../data/reputation';
-import { CONTRACT_STREAK_BONUS, CONTRACT_STREAK_EVERY, CONTRACT_COMMIT_BONUS, SUPPLY_CONTRACTS, supplyContractById, contractValue, commitBonusValue, commitDeposit, contractStreakProgress, contractAcceptRoi, missingForContract, reservedMissing, restockCost, type SupplyContract } from '../data/contracts';
+import { AUTO_CONTRACT_LEVEL, CONTRACT_STREAK_BONUS, CONTRACT_STREAK_EVERY, CONTRACT_COMMIT_BONUS, SUPPLY_CONTRACTS, supplyContractById, contractValue, commitBonusValue, commitDeposit, contractStreakProgress, contractAcceptRoi, missingForContract, reservedMissing, restockCost, type SupplyContract } from '../data/contracts';
 import { formatMoney, productById } from '../data/products';
 import { shortLabel } from './shortLabel';
 import { Callout, Footer } from './panels/shared';
@@ -51,7 +51,7 @@ export function ContractsPanel() {
 
 /** Các hợp đồng đang hoạt động: đã chấp nhận, chờ giao. */
 function ActiveContracts() {
-  const { contracts, deliverContract, commitContract, releaseContract, restockContract, money, day, storage, biz } = useGame();
+  const { contracts, deliverContract, commitContract, releaseContract, restockContract, setContractAuto, level, money, day, storage, biz } = useGame();
   const active = Object.entries(contracts).filter(([, cs]) => !cs.pending || cs.dueDay);
   if (!active.length) return null;
   return (
@@ -94,6 +94,15 @@ function ActiveContracts() {
                     {cs.overdue && <span style={{ color: '#e74c3c' }}> · ⚠️ quá hạn — giao lần này sẽ mất chuỗi</span>}
                   </div>
                 </div>
+                <button
+                  style={{ ...btn, background: cs.auto ? '#3498db' : 'transparent', border: '1px solid #3498db', color: cs.auto ? '#fff' : '#3498db', opacity: level < AUTO_CONTRACT_LEVEL ? 0.5 : 1 }}
+                  onClick={() => setContractAuto(id, !cs.auto)}
+                  title={level < AUTO_CONTRACT_LEVEL
+                    ? `Mở từ cấp ${AUTO_CONTRACT_LEVEL}`
+                    : 'Tới kỳ giao thì tự nhập bù phần thiếu (nếu đủ tiền) rồi giao. Món nhà làm vẫn phải nấu trước.'}
+                >
+                  {cs.auto ? '🔁 Tự động: BẬT' : level < AUTO_CONTRACT_LEVEL ? `🔒 Tự động (cấp ${AUTO_CONTRACT_LEVEL})` : '🔁 Tự động'}
+                </button>
                 <button
                   style={{ ...btn, background: left > 0 ? '#2ecc71' : '#e74c3c', color: '#fff' }}
                   onClick={() => deliverContract(id)}

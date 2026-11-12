@@ -688,6 +688,8 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
     checkAchievements();
     // Hàng mới về sáng nay: ô kệ hết hàng mà kho không còn món đó thì đổi sang món khác
     get().checkTitles();
+    // Hợp đồng bật tự động: sáng ngày mới tới kỳ thì tự nhập bù + giao (cấp ≥ AUTO_CONTRACT_LEVEL)
+    get().runAutoContracts();
     if (s.autoSwap) {
       const swapped = get().replaceEmptySlots();
       if (swapped.length && s.day > 1) say(fitList('🔄 Thay ô hết hàng: ', swapped));

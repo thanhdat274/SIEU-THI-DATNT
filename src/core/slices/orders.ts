@@ -12,7 +12,7 @@ import { type CookingStation, COOKED_PRODUCT_IDS, RECIPE_MAP } from '../../data/
 import { BARTENDER_SPEED_PER_STAR, bestSkillOnDuty, SHIFTS } from '../../data/staff';
 import { workSpeed } from '../../data/staffTraits';
 import { courierOnTrip } from '../../data/trip';
-import { commitBonusValue, commitDeposit, CONTRACT_STREAK_BONUS, contractMilestoneDue, contractValue, missingForContract, reservedMissing, restockCost, supplyContractById } from '../../data/contracts';
+import { AUTO_CONTRACT_LEVEL, commitBonusValue, commitDeposit, CONTRACT_STREAK_BONUS, contractMilestoneDue, contractValue, missingForContract, reservedMissing, restockCost, supplyContractById } from '../../data/contracts';
 import { describeRep, meetsRep, reputationOf } from '../../data/reputation';
 import { activeGoals, addSales, goalLocked, goalMet } from '../../data/community';
 import { playSfx } from '../audio';
@@ -94,7 +94,7 @@ export const updatePhones = (set: SetState, get: GetState) => {
   }
 };
 
-export const createOrdersSlice = (set: SetState, get: GetState): Pick<GameState, 'acceptOrder' | 'startCook' | 'boostDishStar' | 'declineOrder' | 'answerPhone' | 'restockAndAnswerPhone' | 'declinePhone' | 'deliverPhone' | 'deliverOrder' | 'rushDeliverOrder' | 'communitySale' | 'acceptContract' | 'commitContract' | 'releaseContract' | 'restockContract' | 'deliverContract'> => ({
+export const createOrdersSlice = (set: SetState, get: GetState): Pick<GameState, 'acceptOrder' | 'startCook' | 'boostDishStar' | 'declineOrder' | 'answerPhone' | 'restockAndAnswerPhone' | 'declinePhone' | 'deliverPhone' | 'deliverOrder' | 'rushDeliverOrder' | 'communitySale' | 'acceptContract' | 'commitContract' | 'releaseContract' | 'restockContract' | 'deliverContract' | 'setContractAuto' | 'runAutoContracts'> => ({
   acceptOrder: () => {
     const s = get();
     if (!s.order) return;
@@ -454,5 +454,24 @@ export const createOrdersSlice = (set: SetState, get: GetState): Pick<GameState,
       + (streambonus ? ` · 🎯 Mốc ${newStreak} kỳ đúng hẹn! +${formatMoney(streambonus)}` : (onTime ? ` · chuỗi đúng hẹn ${newStreak}` : ' · giao muộn, chuỗi đúng hẹn về 0')));
     get().checkTitles();
     return true;
+  },
+  setContractAuto: (id, on) => {
+    const s = get();
+    const cs = s.contracts[id];
+    if (!cs) return;
+    if (s.level < AUTO_CONTRACT_LEVEL) { s.notify(`🔁 Tự động hợp đồng mở từ cấp ${AUTO_CONTRACT_LEVEL}`); return; }
+    set({ contracts: { ...s.contracts, [id]: { ...cs, auto: on } } });
+    s.notify(on ? '🔁 Bật tự động: tới kỳ sẽ tự nhập bù và giao.' : '⏹️ Tắt tự động hợp đồng.');
+  },
+  runAutoContracts: () => {
+    if (get().level < AUTO_CONTRACT_LEVEL) return;
+    for (const id of Object.keys(get().contracts)) {
+      const cs = get().contracts[id];
+      const def = cs && supplyContractById(id);
+      if (!cs || !def || !cs.auto || cs.dueDay > get().day) continue;
+      const missing = cs.committed ? reservedMissing(def, cs.locked) : missingForContract(def, get().storage);
+      if (missing.length) get().restockContract(id);
+      get().deliverContract(id);
+    }
   },
 });
