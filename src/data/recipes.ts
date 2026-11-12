@@ -179,6 +179,13 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   // game chưa có nguyên liệu, bỏ khỏi mẻ. Mẻ (bột gạo 9k + thịt heo 30k + giá đỗ 4k + hành phi 1.5k)
   // = 44.5k → 10 tô × 15k = 150k, lãi ~105.5k/mẻ, hời hơn bán thẳng nguyên liệu (59.5k < 150k — luật monKhuon).
   { id: 'cao_lau', name: 'Cao lầu', category: 'fresh', buy: 9000, sell: 15000, color: 0xb5651d, unlock: 80, since: CONTENT_EPOCH_NOW },
+  // GĐ2370: Bánh trôi tàu — điểm tâm đường nóng trứ danh Hà Nội (lò bake/ngõ Phùng Hưng), TRƯỚC NAY CHƯA CÓ
+  // (soát 'bánh trôi tàu'/'banh_troi' = 0 trong src/). Viên bột nếp ruột mè + đường luộc CHÍN trong nồi
+  // nước đường pha gừng, ăn nóng khi trời lạnh — trạm nồi nước đúng cách nấu thật. Mè trắng game chưa có
+  // → dùng gần nhất mè đen xay nhà làm hx_me_den (họ mè, ghi rõ theo CLAUDE.md §4). Mẻ (nếp 28k + đường
+  // 17k + gừng 7k + mè đen 32k) = 84k → 10 chén × 15k = 150k, lãi ~66k/mẻ, hời hơn bán thẳng nguyên liệu
+  // (119k < 150k — luật monKhuon).
+  { id: 'banh_troi_tau', name: 'Bánh trôi tàu', category: 'fresh', buy: 9500, sell: 15000, color: 0xe8d8c0, unlock: 81, since: CONTENT_EPOCH_NOW },
   // GĐ1332: Bánh xèo — món bánh xèo giòn trứ danh (Mỹ Tho/Đà Nẵng) từ bột gạo + nước cốt dừa + thịt + hành phi:
   // trước nay TỘT KHÔNG có bánh xèo trong bếp dù là món ăn biểu tượng nhất — lấp khoảng trống trạm chảo chiên.
   // Mẻ (bột gạo 9k + nước cốt dừa 10k + thịt 30k + hành phi 1.5k×2) = 52k → 6 cái × 19k = 114k, lãi 62k/mẻ.
@@ -2089,6 +2096,13 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_cao_lau', name: 'Cao lầu', station: 'steamer',
     inputs: [{ productId: 'x_bot_gao', quantity: 1 }, { productId: 'x_thit_heo', quantity: 1 }, { productId: 'x_gia_do', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 1 }],
     outputId: 'cao_lau', outputQty: 10, durationMin: 20, unlock: 80, reputationGain: 2, since: CONTENT_EPOCH_NOW },
+  // GĐ2370: Bánh trôi tàu Hà Nội — viên bột nếp ruột mè + đường luộc chín trong nồi nước đường gừng
+  // (không chiên, không hấp — đúng cách nấu thật của trạm ấm nước); mè trắng thiếu → mè đen xay
+  // nhà làm thay. Mở 81 trên mọi mốc sim không cổng epoch, tránh latePremium 82/86/91/96/100;
+  // since: 1 để kỷ nguyên 0 không thấy.
+  { id: 'recipe_banh_troi_tau', name: 'Bánh trôi tàu', station: 'hot_kettle',
+    inputs: [{ productId: 'x_nep', quantity: 1 }, { productId: 'x_duong', quantity: 1 }, { productId: 'x_gung', quantity: 1 }, { productId: 'hx_me_den', quantity: 1 }],
+    outputId: 'banh_troi_tau', outputQty: 10, durationMin: 15, unlock: 81, reputationGain: 2, since: CONTENT_EPOCH_NOW },
   // GĐ1324: Nem chua rán — đặc sản nhà bà Tám (nem chua GĐ1085) thành nguyên liệu chảo chiên, món ăn vặt.
   { id: 'recipe_nem_chua_ran', name: 'Nem chua rán', station: 'fryer',
     inputs: [{ productId: 'hx_nem_chua', quantity: 2 }, { productId: 'x_duong', quantity: 1 }],

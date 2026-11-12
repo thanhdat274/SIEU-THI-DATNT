@@ -255,6 +255,7 @@ const MON_THAT: Record<string, { name: string; station: string; cachNau: string 
   recipe_banh_it_tran: { name: 'Bánh ít trần', station: 'steamer', cachNau: 'vo vỏ nếp bọc nhân đậu xanh thịt heo tôm tươi, hấp chín rồi rưới mỡ hành lá' },
   recipe_nem_lui: { name: 'Nem lụi', station: 'food_grill', cachNau: 'quết thịt heo băm với sả tỏi hành phi, bọc cây sả nướng trên bếp than (Huế)' },
   recipe_cao_lau: { name: 'Cao lầu', station: 'steamer', cachNau: 'mì gạo hấp trong xửng, nước dùng đậm đà nấu từ thịt heo, ăn với giá đỗ hành phi (Hội An)' },
+  recipe_banh_troi_tau: { name: 'Bánh trôi tàu', station: 'hot_kettle', cachNau: 'viên bột nếp ruột mè đường luộc chín trong nồi nước đường gừng, ăn nóng (Hà Nội)' },
 };
 
 /** Chữ mô tả tự chế không ai dùng làm tên món ngoài chợ. */
