@@ -49,30 +49,46 @@ export function LevelsPanel() {
       <label style={{ fontSize: 13, opacity: 0.8 }}>
         <input type="checkbox" checked={showAll} onChange={(e) => setShowAll(e.target.checked)} /> Hiện cả các cấp không mở khóa gì
       </label>
-      <div style={{ display: 'grid', gap: 6, marginTop: 8, maxWidth: 780 }}>
-        {rows.map((r, i) => (
-          <div key={r.lv} style={{ ...styles.card, display: 'block', outline: i === 0 ? '2px solid #f1c40f' : undefined }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
-              <b>🔒 Cấp {r.lv}</b>
-              <span style={{ opacity: 0.75, fontSize: 13 }}>còn {r.need.toLocaleString('vi-VN')} XP</span>
-            </div>
-            {r.unlocks.length > 0 && (grouped(r) ? (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 6, fontSize: 12 }}>
-                {r.groups.map((g) => (
-                  <span key={g.label} title={g.items.join(' · ')} style={{ padding: '2px 9px', borderRadius: 999, background: 'rgba(255,255,255,0.1)' }}>
-                    {g.icon} {g.label} · {g.items.length === 1 ? g.items[0] : g.items.length}
-                  </span>
+      <div style={{ display: 'grid', gap: 8, marginTop: 8, maxWidth: 780 }}>
+        {Array.from({ length: Math.ceil(MAX_LEVEL / 20) }, (_, bi) => {
+          const from = bi * 20 + 1;
+          const to = Math.min(MAX_LEVEL, (bi + 1) * 20);
+          const bandRows = rows.filter((r) => r.lv >= from && r.lv <= to);
+          if (!bandRows.length) return null;
+          const isFirstBand = rows[0] && bandRows[0].lv === rows[0].lv;
+          return (
+            <details key={from} open={isFirstBand} style={{ ...styles.card, display: 'block', padding: '8px 12px' }}>
+              <summary style={{ fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
+                📍 Cấp {from}–{to} ({bandRows.length} mốc)
+              </summary>
+              <div style={{ display: 'grid', gap: 6, marginTop: 8 }}>
+                {bandRows.map((r) => (
+                  <div key={r.lv} style={{ padding: '8px 10px', borderRadius: 8, background: 'rgba(0,0,0,0.2)', outline: r.lv === rows[0]?.lv ? '2px solid #f1c40f' : undefined }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
+                      <b>🔒 Cấp {r.lv}</b>
+                      <span style={{ opacity: 0.75, fontSize: 13 }}>còn {r.need.toLocaleString('vi-VN')} XP</span>
+                    </div>
+                    {r.unlocks.length > 0 && (grouped(r) ? (
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 6, fontSize: 12 }}>
+                        {r.groups.map((g) => (
+                          <span key={g.label} title={g.items.join(' · ')} style={{ padding: '2px 9px', borderRadius: 999, background: 'rgba(255,255,255,0.1)' }}>
+                            {g.icon} {g.label} · {g.items.length === 1 ? g.items[0] : g.items.length}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 6 }}>
+                        {r.unlocks.map((u) => (
+                          <span key={u} style={{ fontSize: 12, padding: '2px 9px', borderRadius: 999, background: 'rgba(255,255,255,0.1)' }}>{u}</span>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
                 ))}
               </div>
-            ) : (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 6 }}>
-                {r.unlocks.map((u) => (
-                  <span key={u} style={{ fontSize: 12, padding: '2px 9px', borderRadius: 999, background: 'rgba(255,255,255,0.1)' }}>{u}</span>
-                ))}
-              </div>
-            ))}
-          </div>
-        ))}
+            </details>
+          );
+        })}
       </div>
       {past.length > 0 && (
         <details style={{ marginTop: 12, fontSize: 13 }}>

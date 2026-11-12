@@ -227,6 +227,22 @@
 #ui .panel,
 #ui .panel * { box-sizing: border-box; }
 
+/* Co giãn khung panel theo viewport thực tế (kể cả khi thu nhỏ cửa sổ hoặc xoay ngang). */
+@media (max-width: 1000px) {
+  #ui .panel {
+    --panel-px: 14px;
+    width: calc(100vw - 24px) !important;
+    height: calc(100dvh - 96px) !important;
+    padding: 12px 14px !important;
+  }
+}
+@media (max-height: 480px) {
+  #ui .panel {
+    height: calc(100dvh - 72px) !important;
+    padding: 10px 14px !important;
+  }
+}
+
 /* Trạng thái nút chung cho mọi panel (GĐ166): nút khoá phải nhìn là biết không bấm được,
    hover là tín hiệu nhẹ (làm sáng) — áp sau các hiệu ứng hover riêng (brightness cộng thêm,
    không đè background đã có). Agenda chip/HUD nằm ngoài .panel nên không ăn phải. */

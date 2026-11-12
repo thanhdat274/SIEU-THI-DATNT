@@ -70,7 +70,7 @@ export function Panels() {
   return (
     <div style={styles.backdrop} onClick={(e) => e.target === e.currentTarget && closePanel()}>
       <div className="panel" style={{ ...styles.panel, ...(PANEL_HEIGHT[panel.type] ? { height: PANEL_HEIGHT[panel.type] } : {}) }}>
-        <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%', width: '100%', minWidth: 0 }}>
           <button style={{ ...styles.close, float: undefined, alignSelf: 'flex-end', marginBottom: -30, flex: 'none' }} title="Đóng (Esc)" aria-label="Đóng" onClick={closePanel}>✕</button>
           {hub && <Tabs tabs={hubTabs(hub, level, panel.type)} value={panel.type} onChange={(t) => openPanel({ type: t } as never)} />}
         {/* Playtest P1 T4: panel tải lười hiện khung chờ thay vì màn trắng ~3 giây (tưởng treo) */}

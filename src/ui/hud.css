@@ -430,6 +430,7 @@
   align-items: stretch;
   gap: 4px;
   max-width: 100%;
+  box-sizing: border-box;
   padding: 6px;
   border: 1px solid var(--hud-line);
   border-radius: 16px;
@@ -565,7 +566,7 @@
 }
 #ui .hud-more .hud-badge { top: 5px; right: 5px; }
 #ui .hud-more .hud-tool > span:not(.hud-tool-icon):not(.hud-badge) { display: inline; }
-#ui .hud-more .hud-help { grid-column: 1 / -1; width: max-content; min-width: 280px; }
+#ui .hud-more .hud-help { grid-column: 1 / -1; width: 100%; min-width: 0; max-width: 100%; white-space: normal; }
 /* Tiêu đề nhóm menu Thêm: chiếm trọn hàng lưới, chữ nhỏ mờ tách cụm nút mà không tăng cỡ menu */
 #ui .hud-more-group {
   grid-column: 1 / -1;
@@ -722,6 +723,11 @@
   /* Playtest P1 M7: màn ngang 812×375 — ô đồng hồ thu còn 1 dòng (giờ + ngày); dự báo/giờ vàng/lễ ẩn */
   #ui .hud-time > span > small ~ small { display: none; }
   #ui .hud-time > span > b, #ui .hud-time > span > small { display: inline; margin-right: 6px; }
+  #ui .hud-bottom { bottom: 4px; }
+  #ui .hud-dock { padding: 3px 4px; }
+  #ui .hud-dock > .hud-tool, #ui .hud-dock > .hud-pop > .hud-tool { min-height: 36px; padding: 3px 2px; }
+  #ui .hud-speed button { min-height: 34px; }
+  #ui .hud-more { max-height: min(calc(100dvh - 124px), calc(100dvh - var(--hud-bottom-h, 108px) - 24px)) !important; box-sizing: border-box; }
   #ui .hud-tool { padding: 4px 6px; }
   #ui .hud-tool-icon { font-size: 17px; }
 }
@@ -879,8 +885,12 @@
 
 /* Màn rất hẹp (~320-360px): nút dock co lại để dock luôn vừa một hàng, không đẩy nút Thêm ra khỏi màn */
 @media (max-width: 360px) {
-  #ui .hud-dock > .hud-tool, #ui .hud-dock > .hud-pop > .hud-tool { flex: 1 1 26px; min-width: 26px; }
-  #ui .hud-speed button { min-width: 22px; }
+  #ui .hud-bottom { bottom: 4px; width: calc(100% - 8px); }
+  #ui .hud-dock { gap: 1px; padding: 3px; }
+  #ui .hud-dock > .hud-tool, #ui .hud-dock > .hud-pop > .hud-tool { flex: 1 1 22px; min-width: 22px; min-height: 44px; padding: 4px 1px; }
+  #ui .hud-speed { padding: 2px; gap: 1px; }
+  #ui .hud-speed button { min-width: 20px; font-size: 11px; }
+  #ui .hud-more { width: calc(100vw - 16px); grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 8px; }
 }
 
 /* Dock nhiều nút: bất kỳ màn nào hẹp hơn ~1120px đều cho phép xuống dòng gọn gàng thay vì bị

@@ -96,18 +96,20 @@ export function StoragePanel() {
         </Callout>
       )}
       {items.length === 0 ? <p style={styles.sub}>Kho trống. Vào Nhập hàng để đặt thêm.</p> : (
-        <table style={styles.table}>
-          <tbody>
-            {items.map(({ id, q, life }) => (
-              <tr key={id}>
-                <td style={styles.left}>{productById(id).name}</td>
-                <td>{describeUnits(id, q)}</td>
-                <td style={{ opacity: 0.7 }}>{q} món · thùng {caseSize(id)}</td>
-                <td><LifeBadge life={life} sale={0} /></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div style={{ overflowX: 'auto', maxWidth: '100%' }}>
+          <table style={styles.table}>
+            <tbody>
+              {items.map(({ id, q, life }) => (
+                <tr key={id}>
+                  <td style={styles.left}>{productById(id).name}</td>
+                  <td>{describeUnits(id, q)}</td>
+                  <td style={{ opacity: 0.7 }}>{q} món · thùng {caseSize(id)}</td>
+                  <td><LifeBadge life={life} sale={0} /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
       {next && (
         <div style={{ ...styles.card, marginTop: 12 }}>
