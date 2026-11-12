@@ -731,6 +731,11 @@
   #ui .hud-tool { padding: 4px 6px; }
   #ui .hud-tool-icon { font-size: 17px; }
 }
+@media (max-height: 480px) and (max-width: 660px) {
+  #ui .hud-chip.hud-time { max-width: min(58vw, 340px); }
+  #ui .hud-time > span > b { display: block; font-size: 14px; line-height: 1.1; margin-right: 0; }
+  #ui .hud-time > span > small { display: block; font-size: 10px; line-height: 1.15; margin-right: 0; }
+}
 
 /* Màn vừa (701–1000px: máy tính bảng dọc, điện thoại ngang cỡ lớn): nút dock co lại +
    nhãn xuống dòng để giữ một hàng như màn hẹp (trước đây chỉ áp pointer:coarse nên iPad dọc
@@ -883,13 +888,15 @@
   #ui .hud-alert { font-size: 13px; padding: 6px 12px; width: 100%; }
 }
 
-/* Màn rất hẹp (~320-360px): nút dock co lại để dock luôn vừa một hàng, không đẩy nút Thêm ra khỏi màn */
+/* Màn rất hẹp (~320-360px): nút dock chia đều 2 hàng gọn (~48px/nút), không ép 1 hàng 24px gây đè chữ */
 @media (max-width: 360px) {
   #ui .hud-bottom { bottom: 4px; width: calc(100% - 8px); }
-  #ui .hud-dock { gap: 1px; padding: 3px; }
-  #ui .hud-dock > .hud-tool, #ui .hud-dock > .hud-pop > .hud-tool { flex: 1 1 22px; min-width: 22px; min-height: 44px; padding: 4px 1px; }
+  #ui .hud-dock { gap: 10px 2px; padding: 4px 3px; }
+  #ui .hud-dock > .hud-tool, #ui .hud-dock > .hud-pop > .hud-tool { flex: 1 1 48px; min-width: 48px; min-height: 42px; padding: 4px 2px; }
+  #ui .hud-dock > .hud-pop { flex: 1 1 48px; min-width: 48px; }
+  #ui .hud-tool > span:not(.hud-tool-icon):not(.hud-badge) { font-size: 10px; }
   #ui .hud-speed { padding: 2px; gap: 1px; }
-  #ui .hud-speed button { min-width: 20px; font-size: 11px; }
+  #ui .hud-speed button { min-width: 22px; font-size: 11px; }
   #ui .hud-more { width: calc(100vw - 16px); grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 8px; }
 }
 
@@ -898,11 +905,12 @@
    Trên màn hẹp ≤720px, căn giữa & giới hạn bề rộng huy hiệu theo từng nút để "19 trống" và
    "🛒 Phiên chợ" không bao giờ chồm đè lên nhau. */
 @media (max-width: 1120px) {
-  #ui .hud-dock { flex-wrap: wrap; justify-content: center; row-gap: 4px; }
+  #ui .hud-dock { flex-wrap: wrap; justify-content: center; row-gap: 10px; }
 }
 @media (max-width: 1000px) {
   #ui .hud-dock > .hud-tool .hud-badge,
   #ui .hud-dock > .hud-pop > .hud-tool .hud-badge:not(.hud-dot) {
+    top: -4px;
     left: 50%;
     right: auto;
     transform: translateX(-50%);
