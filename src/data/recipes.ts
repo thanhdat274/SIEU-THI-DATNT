@@ -186,6 +186,14 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   // 17k + gừng 7k + mè đen 32k) = 84k → 10 chén × 15k = 150k, lãi ~66k/mẻ, hời hơn bán thẳng nguyên liệu
   // (119k < 150k — luật monKhuon).
   { id: 'banh_troi_tau', name: 'Bánh trôi tàu', category: 'fresh', buy: 9500, sell: 15000, color: 0xe8d8c0, unlock: 81, since: CONTENT_EPOCH_NOW },
+  // GĐ2371: Bánh gối — bánh túi gối chiên vàng trứ danh Hà Nội (gánh hàng rong/ô phố cổ), TRƯỚC NAY CHƯA CÓ
+  // (soát 'bánh gối'/'banh_goi' = 0 trong src/). Nhân thịt heo xay + miến + mộc nhĩ gói vỏ bột, CHIÊN NGẬP
+  // DẦU vàng ruộm — trạm chảo chiên đúng cách nấu thật. Nguyên liệu thật tất cả đã có (không cần proxy):
+  // bột chiên giòn làm vỏ, miến thay bằng bún tươi gần nhất (họ bún/miến, ghi rõ theo CLAUDE.md §4),
+  // mộc nhĩ dùng nấm mèo khô nhà phơi hx_nam_meo (cùng loại nấm mèo đen). Mẻ (bột chiên giòn 6k + thịt
+  // xay 30k + nấm mèo 35k + bún tươi 5k) = 76k → 10 cái × 15k = 150k, lãi ~74k/mẻ, hời hơn bán thẳng
+  // nguyên liệu (112k < 150k — luật monKhuon). Trứng cút ăn kèm game không đủ quy mô mẻ, bỏ khỏi mẻ.
+  { id: 'banh_goi', name: 'Bánh gối', category: 'fresh', buy: 9500, sell: 15000, color: 0xd9a441, unlock: 83, since: CONTENT_EPOCH_NOW },
   // GĐ1332: Bánh xèo — món bánh xèo giòn trứ danh (Mỹ Tho/Đà Nẵng) từ bột gạo + nước cốt dừa + thịt + hành phi:
   // trước nay TỘT KHÔNG có bánh xèo trong bếp dù là món ăn biểu tượng nhất — lấp khoảng trống trạm chảo chiên.
   // Mẻ (bột gạo 9k + nước cốt dừa 10k + thịt 30k + hành phi 1.5k×2) = 52k → 6 cái × 19k = 114k, lãi 62k/mẻ.
@@ -2103,6 +2111,13 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_banh_troi_tau', name: 'Bánh trôi tàu', station: 'hot_kettle',
     inputs: [{ productId: 'x_nep', quantity: 1 }, { productId: 'x_duong', quantity: 1 }, { productId: 'x_gung', quantity: 1 }, { productId: 'hx_me_den', quantity: 1 }],
     outputId: 'banh_troi_tau', outputQty: 10, durationMin: 15, unlock: 81, reputationGain: 2, since: CONTENT_EPOCH_NOW },
+  // GĐ2371: Bánh gối Hà Nội — túi gối vàng ruộm nhân thịt xay + miến + mộc nhĩ, CHIÊN NGẬP DẦU ở chảo chiên
+  // (đúng cách nấu thật); miến thiếu → bún tươi thay (họ bún/miến), mộc nhĩ dùng nấm mèo khô hx_nam_meo.
+  // Mở 83 trên mọi mốc sim không cổng epoch, tránh latePremium 82/86/91/96/100;
+  // since: 1 để kỷ nguyên 0 không thấy.
+  { id: 'recipe_banh_goi', name: 'Bánh gối', station: 'fryer',
+    inputs: [{ productId: 'x_bot_chien', quantity: 1 }, { productId: 'x_thit_xay', quantity: 1 }, { productId: 'hx_nam_meo', quantity: 1 }, { productId: 'x_bun_tuoi', quantity: 1 }],
+    outputId: 'banh_goi', outputQty: 10, durationMin: 20, unlock: 83, reputationGain: 3, since: CONTENT_EPOCH_NOW },
   // GĐ1324: Nem chua rán — đặc sản nhà bà Tám (nem chua GĐ1085) thành nguyên liệu chảo chiên, món ăn vặt.
   { id: 'recipe_nem_chua_ran', name: 'Nem chua rán', station: 'fryer',
     inputs: [{ productId: 'hx_nem_chua', quantity: 2 }, { productId: 'x_duong', quantity: 1 }],
