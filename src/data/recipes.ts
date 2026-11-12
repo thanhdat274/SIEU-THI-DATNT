@@ -260,6 +260,13 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   // tôm chua Huế 33k + củ kiệu muối 31k) = 94k → 8 phần × 25k = 200k, lãi ~106k/mẻ, hời hơn bán thẳng
   // nguyên liệu (141k < 200k — luật monKhuon).
   { id: 'thit_luoc_tom_chua', name: 'Thịt luộc tôm chua', category: 'fresh', buy: 7000, sell: 25000, color: 0xe0a890, unlock: 103, since: CONTENT_EPOCH_NOW },
+  // GĐ2382: Bánh tiêu — bánh rỗng chiên vàng trứ danh Hà Nội, TRƯỚC NAY CHƯA CÓ (soát 'bánh
+  // tiêu'/'banh_tieu' = 0 trong src/). Giá thật 2024-2025: truyền thống 3-5k/cái, loại ĐẶC BIỆT nhân mè
+  // ~10k (Má Hoa Tân Định 11k) → game bán 10k/cái bản nhân mè. Bột mì lên men CHIÊN NGẬP DẦU rỗng ruột,
+  // rắc mè trắng — trạm chảo chiên đúng cách nấu thật; mè trắng dùng hx_me_rang (mở 55, bài học
+  // GĐ2374). Mẻ (bột mì 17k + đường 17k + mè rang 32k) = 66k → 16 cái × 10k = 160k, lãi ~94k/mẻ, hời
+  // hơn bán thẳng nguyên liệu (95k < 160k — luật monKhuon).
+  { id: 'banh_tieu', name: 'Bánh tiêu', category: 'fresh', buy: 6000, sell: 10000, color: 0xe8b878, unlock: 84, since: CONTENT_EPOCH_NOW },
   // GĐ1332: Bánh xèo — món bánh xèo giòn trứ danh (Mỹ Tho/Đà Nẵng) từ bột gạo + nước cốt dừa + thịt + hành phi:
   // trước nay TỘT KHÔNG có bánh xèo trong bếp dù là món ăn biểu tượng nhất — lấp khoảng trống trạm chảo chiên.
   // Mẻ (bột gạo 9k + nước cốt dừa 10k + thịt 30k + hành phi 1.5k×2) = 52k → 6 cái × 19k = 114k, lãi 62k/mẻ.
@@ -2240,6 +2247,12 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_thit_luoc_tom_chua', name: 'Thịt luộc tôm chua', station: 'hot_kettle',
     inputs: [{ productId: 'x_thit_heo', quantity: 1 }, { productId: 'hx_tom_chua', quantity: 1 }, { productId: 'hx_cu_kieu', quantity: 1 }],
     outputId: 'thit_luoc_tom_chua', outputQty: 8, durationMin: 25, unlock: 103, reputationGain: 3, since: CONTENT_EPOCH_NOW },
+  // GĐ2382: Bánh tiêu Hà Nội — bột mì lên men chiên ngập dầu rỗng ruột rắc mè trắng (bản nhân mè giá
+  // 10k theo giá thật loại đặc biệt). Mở 84 trên mọi mốc sim không cổng epoch, tránh latePremium
+  // 82/86/91/96/100; since: 1 để kỷ nguyên 0 không thấy.
+  { id: 'recipe_banh_tieu', name: 'Bánh tiêu', station: 'fryer',
+    inputs: [{ productId: 'x_bot_mi', quantity: 1 }, { productId: 'x_duong', quantity: 1 }, { productId: 'hx_me_rang', quantity: 1 }],
+    outputId: 'banh_tieu', outputQty: 16, durationMin: 15, unlock: 84, reputationGain: 2, since: CONTENT_EPOCH_NOW },
   // GĐ1324: Nem chua rán — đặc sản nhà bà Tám (nem chua GĐ1085) thành nguyên liệu chảo chiên, món ăn vặt.
   { id: 'recipe_nem_chua_ran', name: 'Nem chua rán', station: 'fryer',
     inputs: [{ productId: 'hx_nem_chua', quantity: 2 }, { productId: 'x_duong', quantity: 1 }],
