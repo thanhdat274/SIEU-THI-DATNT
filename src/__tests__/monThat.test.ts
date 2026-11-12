@@ -261,6 +261,7 @@ const MON_THAT: Record<string, { name: string; station: string; cachNau: string 
   recipe_banh_khoai: { name: 'Bánh khoai', station: 'fryer', cachNau: 'bột gạo pha nước cốt dừa đúc khuôn rán ngập dầu, nhân thịt heo giá đỗ xếp lớp chấm mắm muối ớt (Huế)' },
   recipe_muc_mot_nang_nuong: { name: 'Mực một nắng nướng', station: 'food_grill', cachNau: 'mực một nắng phơi nướng trên than hồng nguyên con, xiên que chấm mắm gừng (Nha Trang)' },
   recipe_banh_da_ca_kho: { name: 'Bánh đa cá kho', station: 'food_grill', cachNau: 'bánh đa nướng than ăn với cá dứa kho và rau thơm, chấm nước cá (Nam Định)' },
+  recipe_chao_cua: { name: 'Cháo cua', station: 'hot_kettle', cachNau: 'cua đồng giã lọc lấy riêu nấu cùng cháo trắng, trứng gà, hành mùi (Hà Nội)' },
 };
 
 /** Chữ mô tả tự chế không ai dùng làm tên món ngoài chợ. */
