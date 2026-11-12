@@ -62,14 +62,16 @@ export function TodoListPanel() {
               </div>
               <div style={{ display: 'grid', gap: 6 }}>
                 {shown.map((it) => (
+                  /* `color` phải đặt tường minh: <button> không kế thừa màu chữ của panel —
+                     thiếu nó là chữ đen mặc định của trình duyệt chìm trên thẻ nền tối (QA người chơi). */
                   <button
                     key={`${g.key}:${it.id}`}
-                    style={{ ...styles.card, ...styles.btn, display: 'flex', alignItems: 'center', gap: 10, textAlign: 'left', justifyContent: 'flex-start', width: '100%' }}
+                    style={{ ...styles.card, ...styles.btn, color: '#fff', display: 'flex', alignItems: 'center', gap: 10, textAlign: 'left', justifyContent: 'flex-start', width: '100%' }}
                     onClick={() => goTodo(it, openPanel as never)}
                   >
                     <span style={{ fontSize: 15 }}>{it.icon}</span>
                     <span style={{ flex: 1 }}>{it.text}</span>
-                    {when(it.at) && <span style={{ opacity: 0.6, fontSize: 12, whiteSpace: 'nowrap' }}>🕐 {when(it.at)}</span>}
+                    {when(it.at) && <span style={{ opacity: 0.75, fontSize: 12, whiteSpace: 'nowrap' }}>🕐 {when(it.at)}</span>}
                   </button>
                 ))}
                 {hidden > 0 && (
