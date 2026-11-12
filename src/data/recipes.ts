@@ -267,6 +267,24 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   // GĐ2374). Mẻ (bột mì 17k + đường 17k + mè rang 32k) = 66k → 16 cái × 10k = 160k, lãi ~94k/mẻ, hời
   // hơn bán thẳng nguyên liệu (95k < 160k — luật monKhuon).
   { id: 'banh_tieu', name: 'Bánh tiêu', category: 'fresh', buy: 6000, sell: 10000, color: 0xe8b878, unlock: 84, since: CONTENT_EPOCH_NOW },
+  // GĐ2383: Cải muối nấu tôm khô — canh cải muối với tôm khô cơm nhà miền Bắc trứ danh (ngọt tôm dằn
+  // vị chua nhẹ cải), TRƯỚC NAY CHƯA CÓ (soát 'cải muối'/'cai_muoi' = 0 trong src/). Lối ra bếp cho
+  // hx_cai_muoi (cải muối nhà làm, mở 94 — trước chỉ bán thẳng). Nấu canh nồi nước đúng cách nấu thật.
+  // Mẻ (cải muối 31k + tôm khô 25k) = 56k → 10 phần × 12k = 120k, lãi ~64k/mẻ, hời hơn bán thẳng nguyên
+  // liệu (84k < 120k — luật monKhuon).
+  { id: 'cai_muoi_nau_tom_kho', name: 'Cải muối nấu tôm khô', category: 'fresh', buy: 6500, sell: 12000, color: 0x9ab860, unlock: 94, since: CONTENT_EPOCH_NOW },
+  // GĐ2383: Gà tiềm nấm hương — chén gà tiềm hầm nấm hương trứ danh (tiệm gà tiềm/thuốc Bắc, chén 40-60k
+  // đời thật), TRƯỚC NAY CHƯA CÓ (soát 'gà tiềm'/'ga_tiem' = 0 trong src/). Hầm nguyên con nồi nước kín
+  // — trạm hot_kettle đúng cách nấu thật. Lối ra bếp cho hx_nam_huong_say (nấm hương sấy nhà làm, mở 97
+  // — trước chỉ bán thẳng). Mẻ (gà nguyên con 130k + nấm hương sấy 31k + hành phi 1.5k) = 162.5k →
+  // 8 chén × 42k = 336k, lãi ~173k/mẻ, hời hơn bán thẳng nguyên liệu (227.5k < 336k — luật monKhuon).
+  { id: 'ga_tiem_nam_huong', name: 'Gà tiềm nấm hương', category: 'fresh', buy: 20000, sell: 42000, color: 0xc89a50, unlock: 97, since: CONTENT_EPOCH_NOW },
+  // GĐ2383: Cải chua xào thịt heo — cơm nhà miền Bắc trứ danh (dưa cải chua xào thịt ba chỉ, ăn cơm
+  // nóng), TRƯỚC NAY CHƯA CÓ (soát 'cải chua xào'/'cai_chua_xao' = 0 trong src/). Xào lửa to chảo —
+  // trạm chảo chiên đúng cách nấu thật (tiền lệ Măng khô xào lạp xưởng). Lối ra bếp cho hx_dua_cai
+  // (dưa cải chua nhà làm, mở 105 — trước chỉ bán thẳng). Mẻ (dưa cải chua 31k + thịt heo 30k) = 61k
+  // → 10 phần × 12k = 120k, lãi ~59k/mẻ, hời hơn bán thẳng nguyên liệu (88k < 120k — luật monKhuon).
+  { id: 'cai_chua_xao_thit', name: 'Cải chua xào thịt heo', category: 'fresh', buy: 6500, sell: 12000, color: 0xa8b860, unlock: 105, since: CONTENT_EPOCH_NOW },
   // GĐ1332: Bánh xèo — món bánh xèo giòn trứ danh (Mỹ Tho/Đà Nẵng) từ bột gạo + nước cốt dừa + thịt + hành phi:
   // trước nay TỘT KHÔNG có bánh xèo trong bếp dù là món ăn biểu tượng nhất — lấp khoảng trống trạm chảo chiên.
   // Mẻ (bột gạo 9k + nước cốt dừa 10k + thịt 30k + hành phi 1.5k×2) = 52k → 6 cái × 19k = 114k, lãi 62k/mẻ.
@@ -2253,6 +2271,21 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_banh_tieu', name: 'Bánh tiêu', station: 'fryer',
     inputs: [{ productId: 'x_bot_mi', quantity: 1 }, { productId: 'x_duong', quantity: 1 }, { productId: 'hx_me_rang', quantity: 1 }],
     outputId: 'banh_tieu', outputQty: 16, durationMin: 15, unlock: 84, reputationGain: 2, since: CONTENT_EPOCH_NOW },
+  // GĐ2383: Cải muối nấu tôm khô — canh canh cải muối ngọt tôm khô (lối ra cho hx_cai_muoi mở 94).
+  // Mở 94 trên mọi mốc sim; since: 1 để kỷ nguyên 0 không thấy.
+  { id: 'recipe_cai_muoi_nau_tom_kho', name: 'Cải muối nấu tôm khô', station: 'hot_kettle',
+    inputs: [{ productId: 'hx_cai_muoi', quantity: 1 }, { productId: 'x_tom_kho', quantity: 1 }],
+    outputId: 'cai_muoi_nau_tom_kho', outputQty: 10, durationMin: 20, unlock: 94, reputationGain: 2, since: CONTENT_EPOCH_NOW },
+  // GĐ2383: Gà tiềm nấm hương — hầm kín nguyên con tới mềm, ra chén nước trong thịt rời xương (lối ra
+  // cho hx_nam_huong_say mở 97). Mở 97 trên mọi mốc sim; since: 1 để kỷ nguyên 0 không thấy.
+  { id: 'recipe_ga_tiem_nam_huong', name: 'Gà tiềm nấm hương', station: 'hot_kettle',
+    inputs: [{ productId: 'thit_ga', quantity: 1 }, { productId: 'hx_nam_huong_say', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 1 }],
+    outputId: 'ga_tiem_nam_huong', outputQty: 8, durationMin: 40, unlock: 97, reputationGain: 3, since: CONTENT_EPOCH_NOW },
+  // GĐ2383: Cải chua xào thịt heo — xào lửa to chảo chiên, cải chua vẫn giòn (lối ra cho hx_dua_cai
+  // mở 105). Mở 105 trên mọi mốc sim; since: 1 để kỷ nguyên 0 không thấy.
+  { id: 'recipe_cai_chua_xao_thit', name: 'Cải chua xào thịt heo', station: 'fryer',
+    inputs: [{ productId: 'hx_dua_cai', quantity: 1 }, { productId: 'x_thit_heo', quantity: 1 }],
+    outputId: 'cai_chua_xao_thit', outputQty: 10, durationMin: 20, unlock: 105, reputationGain: 2, since: CONTENT_EPOCH_NOW },
   // GĐ1324: Nem chua rán — đặc sản nhà bà Tám (nem chua GĐ1085) thành nguyên liệu chảo chiên, món ăn vặt.
   { id: 'recipe_nem_chua_ran', name: 'Nem chua rán', station: 'fryer',
     inputs: [{ productId: 'hx_nem_chua', quantity: 2 }, { productId: 'x_duong', quantity: 1 }],

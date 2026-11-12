@@ -40,7 +40,7 @@ describe('unlockPacing — baseline hiện trạng (SPEC-TOI-UU §T3)', () => {
     expect(band(31, 40)).toBe(283); // phần dời sang cấp 31 dồn vào 31–40 — trước là 268
     expect(band(41, 60)).toBe(337);
     expect(band(61, 80)).toBe(167); // GĐ2346: +2 (bánh bao chiên 71) · GĐ2350: +2 (bánh tôm 74) · GĐ2352: +2 (chè khúc bạch 75) · GĐ2353: +2 (cơm tấm 76) · GĐ2355: +2 (bánh đúc nóng 77) · GĐ2356: +2 (bánh ít trần 78) · GĐ2357: +2 (nem lụi 79) · GĐ2369: +2 (cao lầu 80)
-    expect(band(81, 100)).toBe(101 + 2 + 2 + 2 + 2 + 2 + 2 + 2); // GĐ2370: +2 (bánh trôi tàu 81) · GĐ2371: +2 (bánh gối 83) · GĐ2372: +2 (phở cuốn 84) · GĐ2373: +2 (bánh khoai 85) · GĐ2375: +2 (mực một nắng nướng 99) · GĐ2379: +2 (xôi xéo 81) · GĐ2382: +2 (bánh tiêu 84) — trước là 101
+    expect(band(81, 100)).toBe(101 + 2 + 2 + 2 + 2 + 2 + 2 + 2 + 2 + 2); // GĐ2370: +2 (bánh trôi tàu 81) · GĐ2371: +2 (bánh gối 83) · GĐ2372: +2 (phở cuốn 84) · GĐ2373: +2 (bánh khoai 85) · GĐ2375: +2 (mực một nắng nướng 99) · GĐ2379: +2 (xôi xéo 81) · GĐ2382: +2 (bánh tiêu 84) · GĐ2383: +4 (cải muối nấu tôm khô 94 + gà tiềm nấm hương 97) — trước là 101
   });
 
   it('không cấp nào mở quá ngưỡng cảnh báo khối lượng (siết dần từ 20 mục)', () => {
