@@ -47,6 +47,10 @@ export const COMBOS: ComboDef[] = [
   { id: 'trangtron_trasua', icon: '🧋', name: 'Bánh tráng trộn + trà sữa', items: ['banh_trang_tron', 'tra_sua'], discount: 0.1, cook: true },
   { id: 'anvat_chieu', icon: '🌽', name: 'Bắp xào + cá viên chiên', items: ['bap_xao', 'ca_vien_chien'], discount: 0.08, cook: true },
   { id: 'comga_sinhto', icon: '💪', name: 'Cơm gà + sinh tố', items: ['com_hop_ga', 'sinh_to_trai_cay'], discount: 0.1, cook: true },
+  // GĐ2360: Combo món Việt cao cấp (từ cấp 75+) — nối cơm tấm, bánh đúc nóng, nem lụi, chè khúc bạch vào hệ combo.
+  { id: 'comtam_caphe', icon: '🍛', name: 'Cơm tấm + cà phê sữa đá', items: ['com_tam', 'ca_phe_sua_da'], discount: 0.1, cook: true },
+  { id: 'banhduc_khucbach', icon: '🥣', name: 'Bánh đúc nóng + chè khúc bạch', items: ['banh_duc_nong', 'che_khuc_bach'], discount: 0.1, cook: true },
+  { id: 'nemlui_trasua', icon: '🍢', name: 'Nem lụi + trà sữa', items: ['nem_lui', 'tra_sua'], discount: 0.1, cook: true },
 ];
 
 export const comboById = (id: string) => COMBOS.find((c) => c.id === id);
