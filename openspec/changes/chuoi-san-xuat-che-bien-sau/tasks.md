@@ -1,7 +1,6 @@
 # Tasks
 
-> **TRẠNG THÁI: TẠM DỪNG (13-11-2026)** — GĐ2387 đã thử triển khai và REVERT vì phá 2 lock cân bằng
-> (crisisBalance L45 + stanceBalance L65). Xem Outcome trong proposal.md. Giữ nguyên danh sách làm tư liệu thiết kế lại.
+> **TRẠNG THÁI: SHIP LẠI LẦN 2 (13-11-2026)** — thiết kế lại theo pattern GĐ1322 + unlock 70/71 ngoài cửa sổ sim; cả 2 lock cân bằng xanh. Danh sách dưới là bản v1 (không dùng nữa), xem proposal.md §Outcome v2.
 
 
 ## 1. Data — 5 hàng đặc sản + công thức (recipes.ts)

@@ -271,6 +271,8 @@ const MON_THAT: Record<string, { name: string; station: string; cachNau: string 
   recipe_cai_muoi_nau_tom_kho: { name: 'Cải muối nấu tôm khô', station: 'hot_kettle', cachNau: 'cải muối nấu canh với tôm khô, vị chua nhẹ dằn ngọt tôm (miền Bắc)' },
   recipe_ga_tiem_nam_huong: { name: 'Gà tiềm nấm hương', station: 'hot_kettle', cachNau: 'gà nguyên con hầm kín với nấm hương tới mềm, ra chén nước trong thịt rời xương (tiệm gà tiềm)' },
   recipe_cai_chua_xao_thit: { name: 'Cải chua xào thịt heo', station: 'fryer', cachNau: 'dưa cải chua xào lửa to với thịt heo ba chỉ, cải giòn ăn cơm nóng (miền Bắc)' },
+  recipe_che_com: { name: 'Chè cốm', station: 'hot_kettle', cachNau: 'cốm làng Vòng dập nấu với đường và nước cốt dừa, ăn nóng hay lạnh đều ngon (Hà Nội)' },
+  recipe_ga_nuong_mac_khen: { name: 'Gà nướng mắc khén', station: 'food_grill', cachNau: 'gà ướp mắc khén - hồ tiêu rừng nướng than hồng, thơm cay tê đặc trưng (Tây Nguyên)' },
 };
 
 /** Chữ mô tả tự chế không ai dùng làm tên món ngoài chợ. */

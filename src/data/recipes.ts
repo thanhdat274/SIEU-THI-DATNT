@@ -246,6 +246,21 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   // ngâm 31k) = 101k → 10 phần × 20k = 200k, lãi ~99k/mẻ, hời hơn bán thẳng nguyên liệu (148k < 200k —
   // luật monKhuon).
   { id: 'ca_loc_nau_mang_chua', name: 'Cá lóc nấu măng chua', category: 'fresh', buy: 11000, sell: 20000, color: 0xd0b050, unlock: 104, since: CONTENT_EPOCH_NOW },
+  // ── GĐ2387v2: CHUỖI SẢN XUẤT CHẾ BIẾN SÂU (làm lại theo pattern GĐ1322 ĐÃ KIỂM CỨNG balance —
+  // main input là ĐẶC SẢN VÙNG đắt (mối lái) → bot churn thấp; output là COOKED riêng mang since;
+  // unlock > 30; biên mẻ khiêm tốn. V1 (commit e416f6b0) REVERT vì nguyên liệu nông sản RẺ (churn cao)
+  // + tái dùng hàng catalog — xem proposal.md §Outcome). Khép luôn bài học "chè cốm/cốm chưa có".
+  // GĐ2387v2: Chè cốm — chè cốm làng Vòng Hà Nội trứ danh (cốm dập nấu với đường, nước cốt dừa),
+  // TRƯỚC NAY CHƯA CÓ (soát 'chè cốm'/'che_com' = 0 trong src/; cốm trước nay bị ghi 'chưa có nguyên liệu' ở các lần soát trước). Lối ra bếp cho rg_com_lang (Cốm làng Vòng hộp, mở 44 — trước chỉ bán thẳng). Nấu nồi nước
+  // đúng cách. Mẻ (cốm 44k + đường 17k + nước cốt dừa 10k) = 71k → 8 chén × 15k = 120k, lãi ~49k/mẻ,
+  // hời hơn bán thẳng nguyên liệu (111.8k < 120k — luật monKhuon).
+  { id: 'che_com', name: 'Chè cốm', category: 'fresh', buy: 10000, sell: 15000, color: 0x9ac84b, unlock: 70, since: CONTENT_EPOCH_NOW },
+  // GĐ2387v2: Gà nướng mắc khén — món Tây Nguyên trứ danh (gà ướp mắc khén -hồ tiêu rừng nướng than),
+  // TRƯỚC NAY CHƯA CÓ (soát 'mắc khén' = 0 trong src/). Lối ra bếp cho rg_mac_khen (mắc khén gói, mở
+  // 52 — trước chỉ bán thẳng). Nướng than — trạm bếp nướng đúng cách nấu thật. Mẻ (mắc khén 58k +
+  // thịt gà 24k + hành phi 1.5k) = 83.5k → 5 phần × 30k = 150k, lãi ~66.5k/mẻ, hời hơn bán thẳng
+  // nguyên liệu (133.1k < 150k — luật monKhuon).
+  { id: 'ga_nuong_mac_khen', name: 'Gà nướng mắc khén', category: 'fresh', buy: 20000, sell: 30000, color: 0xb07830, unlock: 71, since: CONTENT_EPOCH_NOW },
   // GĐ2381: Thịt đông — món cỗ Tết miền Bắc trứ danh (thịt kho nước nghệ rồi để LẠNH đông thạch tự nhiên
   // ngoài Tết), TRƯỚC NAY CHƯA CÓ (soát 'thịt đông'/'thit_dong' = 0 trong src/). Nấu kỹ nồi nước, để đông
   // thạch — trạm nồi nước đúng cách nấu thật. Dưa hành ăn kèm chuẩn cỗ Bắc → hx_dua_hanh (mở 102) vào
@@ -2286,6 +2301,16 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_cai_chua_xao_thit', name: 'Cải chua xào thịt heo', station: 'fryer',
     inputs: [{ productId: 'hx_dua_cai', quantity: 1 }, { productId: 'x_thit_heo', quantity: 1 }],
     outputId: 'cai_chua_xao_thit', outputQty: 10, durationMin: 20, unlock: 105, reputationGain: 2, since: CONTENT_EPOCH_NOW },
+  // ── GĐ2387v2: 2 công thức chuỗi sản xuất (pattern GĐ1322 — xem đầu khối products phía trên).
+  // GĐ2387v2: Chè cốm — cốm dập nấu đường + nước cốt dừa (lối ra cho rg_com_lang mở 44). Mở 70 (ngoài CẢ cửa sổ sim crisisBalance L45 và stanceBalance L65 — 2 lock mỏng dính với nội dung nấu mới, xem PROGRESS GĐ2387v2); since: 1 để kỷ nguyên 0 không thấy.
+  { id: 'recipe_che_com', name: 'Chè cốm', station: 'hot_kettle',
+    inputs: [{ productId: 'rg_com_lang', quantity: 1 }, { productId: 'x_duong', quantity: 1 }, { productId: 'x_dua_cot_hop', quantity: 1 }],
+    outputId: 'che_com', outputQty: 8, durationMin: 20, unlock: 70, reputationGain: 2, since: CONTENT_EPOCH_NOW },
+  // GĐ2387v2: Gà nướng mắc khén — gà ướp mắc khén nướng than (lối ra cho rg_mac_khen mở 52). Mở 71;
+  // since: 1 để kỷ nguyên 0 không thấy.
+  { id: 'recipe_ga_nuong_mac_khen', name: 'Gà nướng mắc khén', station: 'food_grill',
+    inputs: [{ productId: 'rg_mac_khen', quantity: 1 }, { productId: 'x_thit_ga', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 1 }],
+    outputId: 'ga_nuong_mac_khen', outputQty: 5, durationMin: 25, unlock: 71, reputationGain: 2, since: CONTENT_EPOCH_NOW },
   // GĐ1324: Nem chua rán — đặc sản nhà bà Tám (nem chua GĐ1085) thành nguyên liệu chảo chiên, món ăn vặt.
   { id: 'recipe_nem_chua_ran', name: 'Nem chua rán', station: 'fryer',
     inputs: [{ productId: 'hx_nem_chua', quantity: 2 }, { productId: 'x_duong', quantity: 1 }],
