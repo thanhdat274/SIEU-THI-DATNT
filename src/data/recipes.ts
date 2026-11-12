@@ -194,6 +194,13 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   // xay 30k + nấm mèo 35k + bún tươi 5k) = 76k → 10 cái × 15k = 150k, lãi ~74k/mẻ, hời hơn bán thẳng
   // nguyên liệu (112k < 150k — luật monKhuon). Trứng cút ăn kèm game không đủ quy mô mẻ, bỏ khỏi mẻ.
   { id: 'banh_goi', name: 'Bánh gối', category: 'fresh', buy: 9500, sell: 15000, color: 0xd9a441, unlock: 83, since: CONTENT_EPOCH_NOW },
+  // GĐ2372: Phở cuốn — món cuốn Hà Nội trứ danh (chợ Nhật Tân/Nguyễn Khang), TRƯỚC NAY CHƯA CÓ (soát
+  // 'phở cuốn'/'pho_cuon' = 0 trong src/). Chả bò NƯỚNG trên bếp than cuốn bánh phở tấm với rau mùi +
+  // giá đỗ, chấm nước mắm pha — trạm bếp nướng đúng cách nấu thật. Bánh phở tấm game chưa có → dùng gần
+  // nhất bột gạo (họ gạo làm bánh phở, ghi rõ theo CLAUDE.md §4). Mẻ (bột gạo 9k + thịt bò 42k + rau mùi
+  // 3k + giá đỗ 4k) = 58k → 10 phần × 20k = 200k, lãi ~142k/mẻ, hời hơn bán thẳng nguyên liệu (78k < 200k
+  // — luật monKhuon).
+  { id: 'pho_cuon', name: 'Phở cuốn', category: 'fresh', buy: 12000, sell: 20000, color: 0xc9a24b, unlock: 84, since: CONTENT_EPOCH_NOW },
   // GĐ1332: Bánh xèo — món bánh xèo giòn trứ danh (Mỹ Tho/Đà Nẵng) từ bột gạo + nước cốt dừa + thịt + hành phi:
   // trước nay TỘT KHÔNG có bánh xèo trong bếp dù là món ăn biểu tượng nhất — lấp khoảng trống trạm chảo chiên.
   // Mẻ (bột gạo 9k + nước cốt dừa 10k + thịt 30k + hành phi 1.5k×2) = 52k → 6 cái × 19k = 114k, lãi 62k/mẻ.
@@ -2118,6 +2125,12 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_banh_goi', name: 'Bánh gối', station: 'fryer',
     inputs: [{ productId: 'x_bot_chien', quantity: 1 }, { productId: 'x_thit_xay', quantity: 1 }, { productId: 'hx_nam_meo', quantity: 1 }, { productId: 'x_bun_tuoi', quantity: 1 }],
     outputId: 'banh_goi', outputQty: 10, durationMin: 20, unlock: 83, reputationGain: 3, since: CONTENT_EPOCH_NOW },
+  // GĐ2372: Phở cuốn Hà Nội — chả bò nướng bếp than cuốn bánh phở tấm với rau mùi giá đỗ; bánh phở tấm
+  // thiếu → bột gạo thay (họ gạo làm bánh phở). Mở 84 trên mọi mốc sim không cổng epoch, tránh
+  // latePremium 82/86/91/96/100; since: 1 để kỷ nguyên 0 không thấy.
+  { id: 'recipe_pho_cuon', name: 'Phở cuốn', station: 'food_grill',
+    inputs: [{ productId: 'x_bot_gao', quantity: 1 }, { productId: 'x_thit_bo', quantity: 1 }, { productId: 'x_rau_mui', quantity: 1 }, { productId: 'x_gia_do', quantity: 1 }],
+    outputId: 'pho_cuon', outputQty: 10, durationMin: 20, unlock: 84, reputationGain: 3, since: CONTENT_EPOCH_NOW },
   // GĐ1324: Nem chua rán — đặc sản nhà bà Tám (nem chua GĐ1085) thành nguyên liệu chảo chiên, món ăn vặt.
   { id: 'recipe_nem_chua_ran', name: 'Nem chua rán', station: 'fryer',
     inputs: [{ productId: 'hx_nem_chua', quantity: 2 }, { productId: 'x_duong', quantity: 1 }],
