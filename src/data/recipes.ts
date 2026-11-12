@@ -157,6 +157,11 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   // trứng gà 2.5k + hành phi 1.5k) = 114k → 16 phần × 16k = 256k, lãi ~142k/mẻ, hời hơn bán thẳng
   // nguyên liệu (144k < 256k). Mở 76 trên mọi mốc sim không cổng epoch, tránh latePremium 82/86/91/96/100.
   { id: 'com_tam', name: 'Cơm tấm', category: 'fresh', buy: 7000, sell: 16000, color: 0xf5e0c8, unlock: 76, since: CONTENT_EPOCH_NOW },
+  // GĐ2355: Bánh đúc nóng — điểm tâm Hà Nội (khuấy bột gạo + bột năng chín dẻo trong nồi, rắc thịt heo băm,
+  // nấm mèo khô và hành phi, chan nước mắm ấm). Đủ nguyên liệu thật, không thay thế. Mẻ (bột gạo 9k + bột năng 8k
+  // + thịt heo 30k + nấm mèo khô 12k + hành phi 1.5k) = 60.5k → 10 chén × 12k = 120k, lãi ~59.5k/mẻ, hời hơn
+  // bán thẳng nguyên liệu (81.5k < 120k). Mở 77 trên mọi mốc sim không cổng epoch, tránh latePremium 82/86/91/96/100.
+  { id: 'banh_duc_nong', name: 'Bánh đúc nóng', category: 'fresh', buy: 6000, sell: 12000, color: 0xf3ead8, unlock: 77, since: CONTENT_EPOCH_NOW },
   // GĐ1332: Bánh xèo — món bánh xèo giòn trứ danh (Mỹ Tho/Đà Nẵng) từ bột gạo + nước cốt dừa + thịt + hành phi:
   // trước nay TỘT KHÔNG có bánh xèo trong bếp dù là món ăn biểu tượng nhất — lấp khoảng trống trạm chảo chiên.
   // Mẻ (bột gạo 9k + nước cốt dừa 10k + thịt 30k + hành phi 1.5k×2) = 52k → 6 cái × 19k = 114k, lãi 62k/mẻ.
@@ -2045,6 +2050,11 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_com_tam', name: 'Cơm tấm', station: 'rice_station',
     inputs: [{ productId: 'gao', quantity: 1 }, { productId: 'x_thit_heo', quantity: 1 }, { productId: 'x_trung_ga', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 1 }],
     outputId: 'com_tam', outputQty: 16, durationMin: 20, unlock: 76, reputationGain: 3, since: CONTENT_EPOCH_NOW },
+  // GĐ2355: Bánh đúc nóng — khuấy bột gạo + bột năng chín dẻo ở nồi nấu với thịt heo băm, nấm mèo khô, hành phi (Hà Nội),
+  // mở 77 trên mọi mốc sim không cổng epoch; since: 1 để kỷ nguyên 0 không thấy.
+  { id: 'recipe_banh_duc_nong', name: 'Bánh đúc nóng', station: 'hot_kettle',
+    inputs: [{ productId: 'x_bot_gao', quantity: 1 }, { productId: 'x_bot_nang', quantity: 1 }, { productId: 'x_thit_heo', quantity: 1 }, { productId: 'x_nam_meo_kho', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 1 }],
+    outputId: 'banh_duc_nong', outputQty: 10, durationMin: 15, unlock: 77, reputationGain: 2, since: CONTENT_EPOCH_NOW },
   // GĐ1324: Nem chua rán — đặc sản nhà bà Tám (nem chua GĐ1085) thành nguyên liệu chảo chiên, món ăn vặt.
   { id: 'recipe_nem_chua_ran', name: 'Nem chua rán', station: 'fryer',
     inputs: [{ productId: 'hx_nem_chua', quantity: 2 }, { productId: 'x_duong', quantity: 1 }],

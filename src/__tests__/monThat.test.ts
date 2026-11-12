@@ -251,6 +251,7 @@ const MON_THAT: Record<string, { name: string; station: string; cachNau: string 
   recipe_banh_tom: { name: 'Bánh tôm', station: 'fryer', cachNau: 'tôm kẹp bánh bột mì chiên ngập dầu chấm nước chấm (Hồ Tây)' },
   recipe_che_khuc_bach: { name: 'Chè khúc bạch', station: 'hot_kettle', cachNau: 'đun sữa tươi với đường, trộn thạch bột năng nấu chín (chè Hà Nội)' },
   recipe_com_tam: { name: 'Cơm tấm', station: 'rice_station', cachNau: 'cơm tấm nấu với sườn bì chả, trứng, rắc hành phi (Sài Gòn)' },
+  recipe_banh_duc_nong: { name: 'Bánh đúc nóng', station: 'hot_kettle', cachNau: 'khuấy bột gạo và bột năng chín dẻo trong nồi, rắc thịt băm nấm mèo hành phi (Hà Nội)' },
 };
 
 /** Chữ mô tả tự chế không ai dùng làm tên món ngoài chợ. */
