@@ -271,11 +271,6 @@ const MON_THAT: Record<string, { name: string; station: string; cachNau: string 
   recipe_cai_muoi_nau_tom_kho: { name: 'Cải muối nấu tôm khô', station: 'hot_kettle', cachNau: 'cải muối nấu canh với tôm khô, vị chua nhẹ dằn ngọt tôm (miền Bắc)' },
   recipe_ga_tiem_nam_huong: { name: 'Gà tiềm nấm hương', station: 'hot_kettle', cachNau: 'gà nguyên con hầm kín với nấm hương tới mềm, ra chén nước trong thịt rời xương (tiệm gà tiềm)' },
   recipe_cai_chua_xao_thit: { name: 'Cải chua xào thịt heo', station: 'fryer', cachNau: 'dưa cải chua xào lửa to với thịt heo ba chỉ, cải giòn ăn cơm nóng (miền Bắc)' },
-  recipe_cb_chuoi_say: { name: 'Chuối sấy dẻo', station: 'food_grill', cachNau: 'chuối chín cắt lát sấy lửa nhỏ tới dẻo ngọt, đặc sản trữ lâu (Nam Định)' },
-  recipe_cb_xoai_say: { name: 'Xoài sấy dẻo', station: 'food_grill', cachNau: 'xoài cà lát sấy thấp lửa giữ màu vàng ruộm dẻo ngọt (Cao Lãnh, Đồng Tháp)' },
-  recipe_cb_vai_say: { name: 'Vải sấy nhà làm', station: 'food_grill', cachNau: 'vải thiều bóc vỏ sấy khô ngọt lịm, trữ lâu ăn vặt (Bắc Giang)' },
-  recipe_mit_say: { name: 'Mít sấy', station: 'food_grill', cachNau: 'cơm mít thái miếng sấy khô giòn ngọt, trữ lâu bán quanh năm' },
-  recipe_khoai_lang_say: { name: 'Khoai lang sấy', station: 'food_grill', cachNau: 'khoai lang luộc chín thái lát sấy dẻo, ngọt tự nhiên trữ lâu được' },
 };
 
 /** Chữ mô tả tự chế không ai dùng làm tên món ngoài chợ. */

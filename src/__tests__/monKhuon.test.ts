@@ -270,11 +270,6 @@ export const MON_KHUON: Record<string, { gd: string; station: string; inputs: st
   recipe_cai_muoi_nau_tom_kho: { gd: "GĐ2383", station: 'hot_kettle', inputs: ['hx_cai_muoi', 'x_tom_kho'] },
   recipe_ga_tiem_nam_huong: { gd: "GĐ2383", station: 'hot_kettle', inputs: ['thit_ga', 'hx_nam_huong_say', 'x_hanh_phi'] },
   recipe_cai_chua_xao_thit: { gd: "GĐ2383", station: 'fryer', inputs: ['hx_dua_cai', 'x_thit_heo'] },
-  recipe_cb_chuoi_say: { gd: "GĐ2387", station: 'food_grill', inputs: ['x_chuoi'] }, // quantity 2/mẻ
-  recipe_cb_xoai_say: { gd: "GĐ2387", station: 'food_grill', inputs: ['x_xoai'] },
-  recipe_cb_vai_say: { gd: "GĐ2387", station: 'food_grill', inputs: ['x_vai'] },
-  recipe_mit_say: { gd: "GĐ2387", station: 'food_grill', inputs: ['x_mit'] },
-  recipe_khoai_lang_say: { gd: "GĐ2387", station: 'food_grill', inputs: ['x_khoai_lang_tuoi'] },
 };
 
 describe.each(Object.entries(MON_KHUON))('%s', (id, mon) => {

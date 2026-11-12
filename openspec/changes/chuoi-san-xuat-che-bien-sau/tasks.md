@@ -1,5 +1,9 @@
 # Tasks
 
+> **TRẠNG THÁI: TẠM DỪNG (13-11-2026)** — GĐ2387 đã thử triển khai và REVERT vì phá 2 lock cân bằng
+> (crisisBalance L45 + stanceBalance L65). Xem Outcome trong proposal.md. Giữ nguyên danh sách làm tư liệu thiết kế lại.
+
+
 ## 1. Data — 5 hàng đặc sản + công thức (recipes.ts)
 
 - [x] 1.1 Thêm CB_PRODUCTS khối 5 món `cb_*` vào COOKED_PRODUCTS (chuối sấy dẻo 36, xoài sấy dẻo Cao Lãnh 37, vải sấy Bắc Giang 38, mít sấy 39, khoai lang sấy 40; `since: CONTENT_EPOCH_NOW`)

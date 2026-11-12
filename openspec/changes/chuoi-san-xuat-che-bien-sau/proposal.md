@@ -27,3 +27,12 @@ Chiều sâu "thêm món/lối ra" đã cạn (GĐ2370-86, rà tận cùng). Hư
 - `src/__tests__/monKhuon.test.ts`, `src/__tests__/monThat.test.ts`, `src/__tests__/unlockPacing.test.ts`
 - `docs/UNLOCK-CURVE.md` (npm run unlock:curve), `PROGRESS.md`
 - Không đụng: store/slice/actions, co-op, save schema, UI panel (Sổ nấu hiển thị tự động).
+
+## Outcome (13/11/2026) — BỘC LỘC, TẠM DỪNG chờ thiết kế lại
+
+Triển khai GĐ2387 (commit e416f6b0) đã REVERT vì phá 2 test khoá luật cân bằng:
+
+1. **Bài học 1 — output công thức KHÔNG được chiếm hàng catalog có sẵn**: tái dùng `x_mit_say`/`x_khoai_lang_say` làm output đưa chúng vào `COOKED_PRODUCT_IDS` → bot sim coi là "món nhà làm không nhập được", ngừng mua hàng mối → sập kinh tế L45 (bisect crisisBalance). Output phải là thành phẩm COOKED riêng mang `since`.
+2. **Bài học 2 — hàng cook-output không có đường cầu thì chiếm kệ bán ỉm**: 5 hàng `cb_*` bày kệ mà không ai thèm → bot L65 đổ hàng, mốc stanceBalance sập 19.413M → 11.264M (-42%).
+3. **Bài học 3 — nối demand (rhythm wants) lại làm lệch crisisBalance L45** qua một đường tiêu thụ wants chưa lọc unlock (chưa isolate được; số thay đổi deterministic theo từng cấu hình — đã bisect 6 lần, mỗi cấu hình cho bộ số ổn định).
+4. Kết luận: chuỗi chế biến sâu cần thiết kế lại — hướng khả dĩ: (a) hàng `cb_*` là hàng MUA được (đặc sản mối lái/kênh mới) thay vì cook-output; (b) hoặc cải thiện bot sim nấu/bày trước; (c) hoặc tìm-isolate đường leak wants. OpenSpec giữ lại làm tư liệu thiết kế.

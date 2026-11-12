@@ -37,7 +37,7 @@ describe('unlockPacing — baseline hiện trạng (SPEC-TOI-UU §T3)', () => {
     expect(band(1, 10)).toBe(65);
     expect(band(11, 20)).toBe(99);
     expect(band(21, 30)).toBe(187); // T3-L4 răng cưa: dời ~43 món khỏi 26/28/30 về phía 27/29/31 (mỗi cấp 26–31 về 13–18 mục) — trước là 202
-    expect(band(31, 40)).toBe(283 + 8); // GĐ2387: +8 (chuỗi chế biến sâu — 3 hàng cb_* mới 36/37/38 + 5 công thức 36-40; mít sấy/khoai lang sấy tái dùng hàng catalog có sẵn nên chỉ recipe +2) — trước là 283
+    expect(band(31, 40)).toBe(283); // phần dời sang cấp 31 dồn vào 31–40 — trước là 268
     expect(band(41, 60)).toBe(337);
     expect(band(61, 80)).toBe(167); // GĐ2346: +2 (bánh bao chiên 71) · GĐ2350: +2 (bánh tôm 74) · GĐ2352: +2 (chè khúc bạch 75) · GĐ2353: +2 (cơm tấm 76) · GĐ2355: +2 (bánh đúc nóng 77) · GĐ2356: +2 (bánh ít trần 78) · GĐ2357: +2 (nem lụi 79) · GĐ2369: +2 (cao lầu 80)
     expect(band(81, 100)).toBe(101 + 2 + 2 + 2 + 2 + 2 + 2 + 2 + 2 + 2); // GĐ2370: +2 (bánh trôi tàu 81) · GĐ2371: +2 (bánh gối 83) · GĐ2372: +2 (phở cuốn 84) · GĐ2373: +2 (bánh khoai 85) · GĐ2375: +2 (mực một nắng nướng 99) · GĐ2379: +2 (xôi xéo 81) · GĐ2382: +2 (bánh tiêu 84) · GĐ2383: +4 (cải muối nấu tôm khô 94 + gà tiềm nấm hương 97) — trước là 101
@@ -49,12 +49,12 @@ describe('unlockPacing — baseline hiện trạng (SPEC-TOI-UU §T3)', () => {
     expect(maxAny, `một cấp hiện mở ${maxAny} mục`).toBeLessThanOrEqual(90);
   });
 
-  it('cụm quá tải 31–40 có kiểm soát (baseline 291 sau GĐ2387, cấm vượt 320)', () => {
+  it('cụm quá tải 31–40 có kiểm soát (baseline 283, cấm vượt 320 trước khi dời mốc)', () => {
     // Dải này quá tải nhất (spec §T3). L4 đã dồn 5 đồ nội thất khỏi cấp 30 vào đây
     // (dời mốc có chủ ý + golden:update); răng cưa T3-L4 dồn thêm ~12 món sang cấp 31.
-    // GĐ2387: +8 (chuỗi chế biến sâu rải 36-40) — baseline 283→291, vẫn dưới trần 320.
+    // Chưa rải bớt món thì không được tăng thêm.
     expect(band31to40, `dải 31–40 hiện ${band31to40} mục`).toBeLessThanOrEqual(320);
-    expect(band31to40, 'baseline dải 31–40').toBe(291);
+    expect(band31to40, 'baseline dải 31–40').toBe(283);
   });
 
   it('danh sách hệ lớn theo cấp (dời mốc một hệ = phải cập nhật baseline có chủ ý)', () => {
