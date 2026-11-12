@@ -448,3 +448,27 @@
   border-top: 1px solid #e6e2d6;
 }
 
+
+/* Bản lưu tiến xa hơn + cảnh báo khi chọn bản kém tiến độ */
+.login-save { position: relative; }
+.login-save.ahead { border-color: #e2a400; background: #fffbea; }
+.login-save-badge {
+  display: inline-block;
+  margin-bottom: 4px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: #ffd23f;
+  color: #5b4300;
+  font: 700 11px 'Be Vietnam Pro', system-ui, sans-serif;
+  font-style: normal;
+}
+.login-warn {
+  margin-top: 8px;
+  padding: 9px 11px;
+  border: 2px solid #d64545;
+  border-radius: 10px;
+  background: #fff1f1;
+  font-size: 13px;
+  line-height: 1.4;
+}
+.login-warn .login-row { margin-top: 8px; flex-wrap: wrap; }

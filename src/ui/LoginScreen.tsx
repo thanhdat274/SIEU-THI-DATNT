@@ -1,6 +1,7 @@
 import { shopHoursLabel } from '../data/shopHours';
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
-import { applySnapshot, loadGame, readLocalSave, type SaveData } from '../core/save';
+import { applySnapshot, loadDiscarded, loadGame, readDiscardedSave, readLocalSave, stashDiscarded, type SaveData } from '../core/save';
+import { aheadOf, losesMuch } from '../core/saveCompare';
 import { useGame } from '../core/store';
 import { formatMoney } from '../data/products';
 import { cloudSaveWithin, prefetchCloudSave } from '../net/cloud';
@@ -37,9 +38,10 @@ const ago = (iso: string | number) => {
   return `${Math.round(min / 1440)} ngày trước`;
 };
 
-function SaveButton({ title, save, onPick }: { title: string; save: SaveSummary; onPick: () => void }) {
+function SaveButton({ title, save, onPick, ahead }: { title: string; save: SaveSummary; onPick: () => void; ahead?: boolean }) {
   return (
-    <button className="login-save" onClick={onPick}>
+    <button className={`login-save${ahead ? ' ahead' : ''}`} onClick={onPick}>
+      {ahead && <em className="login-save-badge">⭐ Tiến xa hơn</em>}
       <strong>{title}</strong>
       <span>Ngày {save.day} · cấp {save.level}</span>
       <span>{formatMoney(save.money)}</span>
@@ -59,6 +61,9 @@ export function LoginScreen() {
   const pendingConsent = useRef(false);
   /** Cả máy và cloud đều có bản lưu khác nhau: cho người chơi chọn. */
   const [choice, setChoice] = useState<{ local: SaveSummary; cloud: SaveSummary & { data: SaveData } } | null>(null);
+  /** Bản người chơi vừa bấm nhưng kém tiến độ rõ rệt: chờ xác nhận lần hai. */
+  const [warn, setWarn] = useState<'cloud' | 'local' | null>(null);
+  const discarded = readDiscardedSave();
 
   const local = readLocalSave();
   const localSummary: SaveSummary | null = local && {
@@ -66,7 +71,7 @@ export function LoginScreen() {
   };
 
   // Đổi tài khoản thì bỏ lựa chọn cũ
-  useEffect(() => setChoice(null), [account?.uid]);
+  useEffect(() => { setChoice(null); setWarn(null); }, [account?.uid]);
   // GĐ1822: biết tài khoản là tải trước bản cloud, bấm "Vào tiệm" khỏi chờ
   useEffect(() => { if (account?.uid) prefetchCloudSave(account.uid).catch(() => {}); }, [account?.uid]);
 
@@ -116,6 +121,26 @@ export function LoginScreen() {
     startGame();
   });
 
+  /** Chốt bản được chọn; bản còn lại được cất vào kho "bản đã bị thay" trước khi bị ghi đè. */
+  const commitPick = (kind: 'cloud' | 'local') => {
+    if (!choice || !local) return;
+    if (kind === 'cloud') {
+      stashDiscarded(local.data, local.savedAt, 'local');
+      applySnapshot(choice.cloud.data);
+    } else {
+      stashDiscarded(choice.cloud.data, Date.parse(choice.cloud.updatedAt) || Date.now(), 'cloud');
+      loadGame();
+    }
+    startGame();
+  };
+  /** Bấm chọn: kém tiến độ rõ rệt thì hỏi lại một lần, không thì vào luôn. */
+  const pick = (kind: 'cloud' | 'local') => {
+    if (!choice) return;
+    const [chosen, other] = kind === 'cloud' ? [choice.cloud, choice.local] : [choice.local, choice.cloud];
+    if (warn !== kind && losesMuch(chosen, other)) { setWarn(kind); return; }
+    commitPick(kind);
+  };
+
   const enterAsGuest = () => {
     loadGame();
     startGame();
@@ -134,14 +159,36 @@ export function LoginScreen() {
         <section className="login-card" aria-live="polite">
           {local && <DailyNudge g={local.data} />}
           {local && <ReturnNudge g={local.data} />}
+          {discarded && (
+            <button className="login-link" onClick={() => { loadDiscarded(); startGame(); }}>
+              ↩️ Khôi phục bản đã bị thay: {discarded.from === 'cloud' ? '☁️ cloud' : '💻 máy'} · ngày {discarded.data.day}, cấp {discarded.data.level}, {formatMoney(discarded.data.money)} · lưu {ago(discarded.savedAt)}
+            </button>
+          )}
           {choice ? (
             <>
               <h2>Chọn bản lưu để chơi tiếp</h2>
-              <p className="login-muted">Máy này và cloud đang có hai bản khác nhau. Bản không chọn sẽ bị ghi đè ở lần lưu sau.</p>
-              <div className="login-saves">
-                <SaveButton title="☁️ Trên cloud" save={choice.cloud} onPick={() => { applySnapshot(choice.cloud.data); startGame(); }} />
-                <SaveButton title="💻 Trong máy này" save={choice.local} onPick={() => { loadGame(); startGame(); }} />
-              </div>
+              <p className="login-muted">Máy này và cloud đang có hai bản khác nhau. Bản không chọn sẽ bị ghi đè ở lần lưu sau (game cất một bản sao để bạn khôi phục được).</p>
+              {(() => {
+                const lead = aheadOf(choice.cloud, choice.local);
+                return (
+                  <div className="login-saves">
+                    <SaveButton title="☁️ Trên cloud" save={choice.cloud} ahead={lead === 'a'} onPick={() => pick('cloud')} />
+                    <SaveButton title="💻 Trong máy này" save={choice.local} ahead={lead === 'b'} onPick={() => pick('local')} />
+                  </div>
+                );
+              })()}
+              {warn && (
+                <div className="login-warn" role="alert">
+                  ⚠️ Bản {warn === 'cloud' ? 'cloud' : 'trong máy'} kém tiến độ hơn nhiều
+                  (ngày {(warn === 'cloud' ? choice.cloud : choice.local).day}, cấp {(warn === 'cloud' ? choice.cloud : choice.local).level}
+                  {' '}so với ngày {(warn === 'cloud' ? choice.local : choice.cloud).day}, cấp {(warn === 'cloud' ? choice.local : choice.cloud).level}).
+                  Chọn bản này, bản kia sẽ bị ghi đè — vẫn chọn?
+                  <div className="login-row">
+                    <button className="login-btn small" onClick={() => commitPick(warn)}>Vẫn chọn bản này</button>
+                    <button className="login-btn small primary" onClick={() => setWarn(null)}>Chọn lại</button>
+                  </div>
+                </div>
+              )}
             </>
           ) : account ? (
             <>
