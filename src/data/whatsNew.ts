@@ -4,6 +4,17 @@ export interface WhatsNewEntry { date: string; title: string; lines: string[] }
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
     date: '2026-11-14',
+    title: 'Dạo phố & nghỉ phép',
+    lines: [
+      'Dạo phố (menu Thêm, từ cấp 3): vé số, chùa xin quẻ, ngân hàng, tài xỉu, vay nóng chú Tư — mỗi điểm có trần mỗi ngày.',
+      'Nợ chú Tư hiện trong Sổ đầu ngày và dải việc; quá hạn bị tính lãi chồng.',
+      'Quẻ đại cát/cát làm khách đông hơn trong ngày, xem ở bảng Điểm danh.',
+      'Nhân viên được cho nghỉ phép một ngày (vẫn nhận lương, cộng chút kinh nghiệm).',
+      'Quán nước có dải trạng thái hôm nay: khách, kho, nhân viên, giá, dự kiến lời.',
+    ],
+  },
+  {
+    date: '2026-11-14',
     title: 'Màn đăng nhập đầy đủ hơn',
     lines: [
       'Đặt tên của bạn ngay ngoài màn đăng nhập — tên hiện trên bảng xếp hạng.',

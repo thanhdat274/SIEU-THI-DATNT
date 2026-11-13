@@ -8,7 +8,7 @@ import { Footer, styles } from './shared';
 
 /** Dạo phố: gom các điểm quanh ngõ. Mọi điểm có trần mỗi ngày; ngân hàng mở lại bảng Kinh doanh có sẵn. */
 export function StrollPanel() {
-  const { level, day, money, stroll, closePanel, openPanel, strollTicket, strollIncense, strollFortune, strollDice, strollBorrow, strollRepay } = useGame();
+  const { level, day, money, stroll, wheelBoost, closePanel, openPanel, strollTicket, strollIncense, strollFortune, strollDice, strollBorrow, strollRepay } = useGame();
   const st = strollToday(stroll, day);
   const locked = level < STROLL_UNLOCK;
   const debt = st.shark ? sharkOwedNow(st.shark, day) : 0;
@@ -31,6 +31,7 @@ export function StrollPanel() {
         <p style={styles.sub}>
           {locked ? `Mở từ cấp ${STROLL_UNLOCK}.` : 'Đóng cửa tiệm một lát, ra ngõ xem có gì vui. Tiền đang có: '}
           {!locked && <b>{formatMoney(money)}</b>}
+          {!locked && wheelBoost > 1 && <span style={{ marginLeft: 8, color: '#a3e4a3' }}>🍀 Khách đông thêm {Math.round((wheelBoost - 1) * 100)}% hôm nay</span>}
         </p>
       </div>
       <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 6, opacity: locked ? 0.5 : 1, pointerEvents: locked ? 'none' : 'auto' }}>

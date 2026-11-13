@@ -163,7 +163,7 @@ export function GiftPanel() {
             🎡 Quay ngay
           </button>
           {wheelBoost > 1 && (
-            <p style={{ margin: '8px 0 0', fontSize: 13, color: '#a3e4a3' }}>🍀 Hôm nay khách ghé đông thêm {Math.round((wheelBoost - 1) * 100)}% nhờ vòng quay.</p>
+            <p style={{ margin: '8px 0 0', fontSize: 13, color: '#a3e4a3' }}>🍀 Hôm nay khách ghé đông thêm {Math.round((wheelBoost - 1) * 100)}% nhờ vòng quay hoặc quẻ xin ở chùa.</p>
           )}
         </div>
       </div>

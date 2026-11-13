@@ -89,3 +89,15 @@ describe('dạo phố — thao tác trong store', () => {
     expect(sk.owed).toBeGreaterThan(400_000);
   });
 });
+
+describe('dạo phố — liên kết Sổ việc', () => {
+  it('có nợ chú Tư thì có việc trỏ về bảng Dạo phố; hết nợ thì không', async () => {
+    const { TODO_SOURCES } = await import('../data/todo');
+    const run = (st: unknown, day: number) => TODO_SOURCES.stroll({ stroll: st, day } as never, 0);
+    expect(run(newStroll(), 5)).toEqual([]);
+    const due = run({ ...newStroll(), shark: { owed: 130_000, dueDay: 5 } }, 5);
+    expect(due[0].urgency).toBe('now');
+    expect(due[0].go).toEqual({ panel: 'stroll' });
+    expect(run({ ...newStroll(), shark: { owed: 130_000, dueDay: 9 } }, 5)[0].urgency).toBe('today');
+  });
+});

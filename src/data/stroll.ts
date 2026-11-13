@@ -1,3 +1,4 @@
+import { registerTodo } from './todo';
 /**
  * Dạo phố: vài điểm quanh ngõ để tiêu hoặc kiếm tiền nhàn rỗi — vé số cô Sáu, chùa, ngân hàng,
  * tài xỉu góc ngõ, chú Tư cho vay nóng. THUẦN (không đụng store): mọi hàm nhận `roll` (0..1) để test
@@ -74,3 +75,12 @@ export const SPOTS: Spot[] = [
   { id: 'dice', icon: '🎲', name: 'Tài xỉu góc ngõ', blurb: 'Chơi cho vui, nhà cái hơi lợi, tối đa 3 ván mỗi ngày.' },
   { id: 'shark', icon: '🕴️', name: 'Chú Tư cho vay nóng', blurb: 'Có tiền ngay, nhưng lãi nặng — cẩn thận.' },
 ];
+
+/** Nhắc nợ chú Tư: tới hạn/quá hạn là việc gấp (lãi chồng mỗi ngày); còn hạn thì chỉ nhắc nhẹ. */
+registerTodo('stroll', (s) => {
+  const sk = s.stroll?.shark;
+  if (!sk) return [];
+  const owed = sharkOwedNow(sk, s.day);
+  const text = s.day > sk.dueDay ? `Nợ chú Tư quá hạn, đang ${owed.toLocaleString('vi-VN')}đ và tính lãi chồng` : s.day === sk.dueDay ? `Hôm nay phải trả chú Tư ${owed.toLocaleString('vi-VN')}đ` : `Nợ chú Tư ${owed.toLocaleString('vi-VN')}đ, hạn ngày ${sk.dueDay}`;
+  return [{ id: `shark-${sk.dueDay}`, icon: '🕴️', text, urgency: s.day >= sk.dueDay ? 'now' : 'today', morning: true, go: { panel: 'stroll' } }];
+});
