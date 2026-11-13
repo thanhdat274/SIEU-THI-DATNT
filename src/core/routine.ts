@@ -115,7 +115,7 @@ export function autoOpenNote(
   const at = autoOpenAt ?? ROUTINE.open;
   return at < ROUTINE.open
     ? `⏰ Lịch tự động mở cửa ${Math.floor(at / 60)}h${at % 60 ? '30' : ''} — đón trọn giờ vàng sáng 6h–8h30.`
-    : `⏰ Lịch tự động mở cửa 8h — lỡ nửa đầu giờ vàng sáng (chỉnh trong menu hồ sơ).`;
+    : `⏰ Lịch tự động mở cửa 8h — lỡ nửa đầu giờ vàng sáng (chỉnh trong Cài đặt → Ván chơi).`;
 }
 
 /** Số món còn trên kệ và số ô trống, để báo lúc kiểm kê cuối ngày. */

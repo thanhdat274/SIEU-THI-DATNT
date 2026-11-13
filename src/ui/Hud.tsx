@@ -25,11 +25,9 @@ import { trialCost } from '../core/slices/build';
 import { todayLine, todayMissedLine, todayPeakLine, todayExpectSoFar, todayTopSeller } from '../data/todayScore';
 import { hasSkill } from '../data/titles';
 import { summarizeReviews } from '../data/reviews';
-import { AUTO_OPEN_PRESETS } from '../core/gameTypes';
 import { dayEffects, describeDate, festivalStock, upcomingFestival, weekdayOf } from '../data/calendar';
 
 /** GĐ275 — "7h30" / "8h": nhãn giờ mở cửa cho menu lịch tự động. */
-const fmtOpenAt = (m: number) => `${Math.floor(m / 60)}h${m % 60 ? '30' : ''}`;
 import { describeHours, goldenHourBands, goldenPrepWants, inGoldenHour, minutesToGolden, nextGoldenBand } from '../data/rhythm';
 import { skillPoints } from '../data/titles';
 import { COMBO_UNLOCK } from '../data/combos';
@@ -47,7 +45,7 @@ import { Panels } from './Panels';
 import { hubFirst, hubOf } from './hubs';
 import { ToolButton, type ToolDef } from './HudToolButton';
 import { rivalBadgeOf, socialBadgeOf, onlineBadgeOf, licenseBadgeOf, loanBadgeOf, challengeBadgeOf, fairBadgeOf, triBadgeOf, dossierBadgeOf, gardenBadgeOf } from './hudBadges';
-import { AccountMenu, MoreMenu } from './HudMenus';
+import { AccountMenu, MoreMenu, SettingsHost } from './HudMenus';
 import './hud.css';
 const SurpriseAlert = lazy(() => import('./SurpriseAlert').then((m) => ({ default: m.SurpriseAlert })));
 const MiniHost = lazy(() => import('./minigames/MiniHostView').then((m) => ({ default: m.MiniHostView })));
@@ -138,7 +136,6 @@ export function Hud() {
   const buyTrials = useGame((s) => s.buyTrials);
   const dropTrials = useGame((s) => s.dropTrials);
   const weather = useGame((s) => s.weather);
-  const autoRoutine = useGame((s) => s.autoRoutine);
   const forecast = useGame((s) => s.forecast);
   const weatherSeed = useGame((s) => s.weatherSeed);
   const skills = useGame((s) => s.skills);
@@ -176,6 +173,7 @@ export function Hud() {
   const late = minutes >= 24 * 60;
   const progress = Math.min(1, xp / xpToNext(level));
 
+  const [settingsOpen, setSettingsOpen] = useState<false | 'game' | 'img'>(false);
   const save = () => {
     notify(saveGame() ? '💾 Đã lưu game' : 'Không lưu được (trình duyệt chặn)');
     if (account) pushCloudSave();
@@ -475,32 +473,7 @@ Online: ${coop.peers.map((p) => (p.id === coop.selfId ? 'bạn' : p.name)).join(
           photo={account?.photo ?? null}
           status={online ? 'Lưu trên server hẻm' : account ? CLOUD_LABEL[cloudStatus] : 'Chỉ lưu trong máy'}
           items={[
-            ...(!online ? [{ label: '💾 Lưu game', on: save }] : []),
-            ...(!online ? [{ label: '⏪ Khôi phục bản lưu trước', on: restore }] : []),
-            {
-              // GĐ275 — lịch tự động chỉnh được giờ mở cửa (6h–8h): tắt → bật; đang bật → xoay vòng
-              // 8h → 7h30 → 7h → 6h30 → 6h → 8h. Giờ vàng sáng 6h–8h30 kéo 2h30, lịch 8h lỡ nửa đầu
-              // (tension GĐ160) — giờ người chơi chỉnh lịch thay vì phải mở tay mỗi sáng.
-              label: autoRoutine ? `⏰ Lịch tự động: mở ${fmtOpenAt(useGame.getState().autoOpenAt)}` : '⏰ Lịch tự động: Tắt',
-              on: () => {
-                if (!autoRoutine) {
-                  const at = useGame.getState().autoOpenAt;
-                  useGame.setState({ autoRoutine: true });
-                  notify(`⏰ Lịch tự động: mở ${fmtOpenAt(at)} (bấm tiếp đổi 6h–8h), đóng 22h30, về nhà 23h`);
-                } else {
-                  const cur = useGame.getState().autoOpenAt;
-                  const i = AUTO_OPEN_PRESETS.indexOf(cur);
-                  const next = AUTO_OPEN_PRESETS[(i + 1) % AUTO_OPEN_PRESETS.length];
-                  useGame.setState({ autoOpenAt: next });
-                  notify(`⏰ Lịch tự động mở cửa ${fmtOpenAt(next)}${next < cur ? ' — đón thêm giờ vàng sáng' : next > cur ? ' — mở trễ hơn' : ' (về mặc định)'}, 22h30 đóng, 23h kiểm kê`);
-                }
-              },
-              hint: autoRoutine
-                ? `⏰ Lịch mở cửa ${fmtOpenAt(useGame.getState().autoOpenAt)} — bấm để đổi (6h–8h). Mở sớm đón nửa giờ vàng sáng 6h–8h30.`
-                : undefined,
-            },
-            { label: '🏠 Màn hình chính', on: backToMenu },
-            ...(!online ? [{ label: '🔄 Chơi lại từ đầu', danger: true, on: () => { void askConfirm('Xoá bản lưu và chơi lại từ đầu?', { danger: true, okLabel: 'Chơi lại' }).then((ok) => ok && resetGame()); } }] : []),
+            { label: '⚙️ Cài đặt & ván chơi', on: () => setSettingsOpen('game'), hint: 'Lưu game, khôi phục, lịch tự động (mở cửa, đóng cửa, về nhà ngủ), chơi lại' },
             ...(account ? [{ label: '↪ Đăng xuất', on: logout }] : []),
             ...(!online && account ? [{ label: '🗑 Xoá tài khoản & dữ liệu', danger: true, on: () => void deleteAccountFlow() }] : []),
           ]}
@@ -600,7 +573,8 @@ Online: ${coop.peers.map((p) => (p.id === coop.selfId ? 'bạn' : p.name)).join(
             <span>{shopOpen ? 'Đóng cửa' : 'Mở cửa'}</span>
           </button>
           {tools.filter((t) => !(t.more || (narrow && t.narrowMore))).map((t) => <ToolButton key={t.label} tool={t} level={level} />)}
-          <MoreMenu tools={tools.filter((t) => t.more || (narrow && t.narrowMore))} level={level} onHelp={() => setHelpTutorial(true)} />
+          <MoreMenu tools={tools.filter((t) => t.more || (narrow && t.narrowMore))} level={level} onHelp={() => setHelpTutorial(true)} onSettings={() => setSettingsOpen('img')} />
+          <SettingsHost open={settingsOpen} onClose={() => setSettingsOpen(false)} game={{ online, save, restore, backToMenu, newGame: () => { void askConfirm('Xoá bản lưu và chơi lại từ đầu?', { danger: true, okLabel: 'Chơi lại' }).then((ok) => ok && resetGame()); } }} />
         </nav>
       </div>
       <Panels />

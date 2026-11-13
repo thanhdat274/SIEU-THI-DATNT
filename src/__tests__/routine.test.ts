@@ -153,8 +153,8 @@ describe('autoOpenNote (GĐ276, GĐ279 — thu ngân mở sớm)', () => {
   it('lịch tắt → null; 8h → nhắc chỉnh; mở sớm → khẳng định đón trọn giờ vàng', () => {
     expect(autoOpenNote(480, false)).toBeNull();
     expect(autoOpenNote(undefined, false)).toBeNull();
-    expect(autoOpenNote(480, true)).toBe('⏰ Lịch tự động mở cửa 8h — lỡ nửa đầu giờ vàng sáng (chỉnh trong menu hồ sơ).');
-    expect(autoOpenNote(undefined, true)).toBe('⏰ Lịch tự động mở cửa 8h — lỡ nửa đầu giờ vàng sáng (chỉnh trong menu hồ sơ).'); // save cũ tự bù
+    expect(autoOpenNote(480, true)).toBe('⏰ Lịch tự động mở cửa 8h — lỡ nửa đầu giờ vàng sáng (chỉnh trong Cài đặt → Ván chơi).');
+    expect(autoOpenNote(undefined, true)).toBe('⏰ Lịch tự động mở cửa 8h — lỡ nửa đầu giờ vàng sáng (chỉnh trong Cài đặt → Ván chơi).'); // save cũ tự bù
     expect(autoOpenNote(360, true)).toBe('⏰ Lịch tự động mở cửa 6h — đón trọn giờ vàng sáng 6h–8h30.');
     expect(autoOpenNote(450, true)).toBe('⏰ Lịch tự động mở cửa 7h30 — đón trọn giờ vàng sáng 6h–8h30.');
   });

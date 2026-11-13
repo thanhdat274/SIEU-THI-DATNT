@@ -3,6 +3,8 @@
  * Chỉ là tuỳ chọn riêng máy (localStorage), không vào save, không đổi mô phỏng → không lệch golden.
  */
 import { useState } from 'react';
+import { useGame } from '../core/store';
+import { AUTO_OPEN_PRESETS } from '../core/gameTypes';
 import { createPortal } from 'react-dom';
 import { GFX_CYCLE, GFX_LABEL, gfxStatus, setGfxChoice, type GfxChoice } from '../render/graphicsQuality';
 import {
@@ -16,10 +18,13 @@ import { WHATS_NEW } from '../data/whatsNew';
 import { telemetryOptedIn, setTelemetryOptIn } from '../data/telemetryConsent';
 import { deleteTelemetry, flushReports } from '../core/dayReport';
 
-type Tab = 'img' | 'gfx' | 'audio' | 'play' | 'a11y' | 'data';
+type Tab = 'img' | 'gfx' | 'audio' | 'play' | 'a11y' | 'data' | 'game';
+/** Việc của ván đang chơi (chỉ có khi mở từ trong game; ở màn đăng nhập tab này ẩn). */
+export interface GameActions { online: boolean; save: () => void; restore: () => void; backToMenu: () => void; newGame: () => void }
 const TABS: [Tab, string][] = [
   ['img', '👁 Hình ảnh'], ['gfx', '🎨 Đồ họa'], ['audio', '🔊 Âm thanh'], ['play', '🎮 Chơi'], ['a11y', '♿ Trợ năng'], ['data', '💾 Dữ liệu'],
 ];
+const GAME_TAB: [Tab, string] = ['game', '🏠 Ván chơi'];
 
 const GFX_NOTE: Record<GfxChoice, string> = {
   auto: 'Máy tự hạ/nâng mức theo FPS thật. Hợp với hầu hết máy.',
@@ -34,6 +39,15 @@ const CHANNELS: [VolChannel, string][] = [
 ];
 
 const rowCss: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: 10, padding: '10px 0', borderBottom: '1px solid rgba(0,0,0,.08)' };
+
+// Nút của dialog Cài đặt: trước đây để mặc định trình duyệt (trần trụi, mỗi máy một kiểu).
+// Bảng màu bám theo tab (viền #b9825a, nền kem; action chính = cam #c8663f như tab đang chọn).
+const dlgBtn: React.CSSProperties = {
+  padding: '6px 14px', borderRadius: 8, border: '1px solid #b9825a',
+  background: '#fff7ec', color: '#4a2f1c', font: 'inherit', fontSize: 13, cursor: 'pointer',
+};
+const dlgBtnPrimary: React.CSSProperties = { ...dlgBtn, background: '#c8663f', borderColor: '#c8663f', color: '#fff', fontWeight: 600 };
+const dlgBtnDisabled: React.CSSProperties = { opacity: 0.5, cursor: 'default' };
 
 function Row({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
@@ -236,6 +250,37 @@ function A11yTab() {
   );
 }
 
+const fmtAt = (m: number) => `${Math.floor(m / 60)}h${m % 60 ? '30' : ''}`;
+
+/** Ván chơi: lưu/khôi phục, lịch tự động (mở 6h–8h, đóng 22h30, về nhà ngủ 23h), về màn chính, chơi lại. */
+function GameTab({ game }: { game: GameActions }) {
+  const autoRoutine = useGame((s) => s.autoRoutine);
+  const autoOpenAt = useGame((s) => s.autoOpenAt);
+  return (
+    <div>
+      {!game.online && (
+        <>
+          <Row label="Lưu game" hint="Game tự lưu mỗi ngày; bấm để lưu ngay"><button style={dlgBtnPrimary} onClick={game.save}>Lưu</button></Row>
+          <Row label="Khôi phục bản lưu trước" hint="Quay về bản lưu cuối ngày hôm trước; khôi phục lần nữa là trở lại"><button style={dlgBtn} onClick={game.restore}>Khôi phục</button></Row>
+        </>
+      )}
+      <Row label="Lịch tự động" hint="Tự mở cửa đúng giờ, 22h30 đóng cửa, 23h kiểm kê và tự về nhà ngủ — khỏi lo ngất vì thức khuya">
+        <Switch label="Lịch tự động" on={autoRoutine} onChange={(v) => useGame.setState({ autoRoutine: v })} />
+      </Row>
+      {autoRoutine && (
+        <Row label="Giờ mở cửa" hint="Mở sớm (6h–6h30) đón thêm nửa giờ vàng buổi sáng">
+          <Select label="Giờ mở cửa" value={String(autoOpenAt)} options={AUTO_OPEN_PRESETS.map((m) => [String(m), fmtAt(m)] as [string, string])}
+            onChange={(v) => useGame.setState({ autoOpenAt: Number(v) })} />
+        </Row>
+      )}
+      <Row label="Về màn hình chính" hint="Lưu rồi thoát ra màn đăng nhập"><button style={dlgBtn} onClick={game.backToMenu}>Về menu</button></Row>
+      {!game.online && (
+        <Row label="Chơi lại từ đầu" hint="Xoá bản lưu và bắt đầu ván mới (có hỏi lại trước khi xoá)"><button style={{ ...dlgBtn, color: '#b3261e', borderColor: '#b3261e' }} onClick={game.newGame}>Chơi lại…</button></Row>
+      )}
+    </div>
+  );
+}
+
 function DataTab() {
   const [code, setCode] = useState('');
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -264,16 +309,16 @@ function DataTab() {
   return (
     <div>
       <Row label="Mã chuyển máy" hint="Biến ván đang chơi thành một chuỗi chữ để chép sang máy khác">
-        <button onClick={exportCode}>Xuất mã</button>
+        <button style={dlgBtnPrimary} onClick={exportCode}>Xuất mã</button>
       </Row>
       <div style={{ padding: '10px 0' }}>
         <div style={{ fontWeight: 600, marginBottom: 4 }}>Nhập mã</div>
         <textarea aria-label="Mã chuyển máy" value={code} rows={4} placeholder="Dán mã TH3D1.… vào đây"
           onChange={(e) => { setCode(e.target.value); setPending(null); setMsg(null); }}
-          style={{ width: '100%', boxSizing: 'border-box', fontSize: 11, fontFamily: 'monospace' }} />
+          style={{ width: '100%', boxSizing: 'border-box', fontSize: 11, fontFamily: 'monospace', borderRadius: 8, border: '1px solid #b9825a', background: '#fffdf6', padding: '6px 8px' }} />
         <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
-          <button onClick={check} disabled={!code.trim()}>Kiểm tra mã</button>
-          <button onClick={load} disabled={!pending}>Nạp vào máy này</button>
+          <button style={{ ...dlgBtn, ...(!code.trim() ? dlgBtnDisabled : null) }} onClick={check} disabled={!code.trim()}>Kiểm tra mã</button>
+          <button style={{ ...dlgBtnPrimary, ...(!pending ? dlgBtnDisabled : null) }} onClick={load} disabled={!pending}>Nạp vào máy này</button>
         </div>
         {msg && <div role="status" style={{ marginTop: 6, fontSize: 12, color: msg.ok ? '#2a7a3a' : '#b3261e' }}>{msg.text}</div>}
       </div>
@@ -288,8 +333,8 @@ function DataTab() {
   );
 }
 
-export function SettingsPanel({ onClose }: { onClose: () => void }) {
-  const [tab, setTab] = useState<Tab>('img');
+export function SettingsPanel({ onClose, game, initialTab }: { onClose: () => void; game?: GameActions; initialTab?: Tab }) {
+  const [tab, setTab] = useState<Tab>(initialTab === 'game' && !game ? 'img' : initialTab ?? 'img');
   const [rev, setRev] = useState(0);
   const reset = () => {
     resetSettings();
@@ -308,10 +353,10 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
             <h3 style={{ margin: 0 }}>⚙️ Cài đặt</h3>
             <div style={{ fontSize: 12, opacity: 0.65 }}>Hình ảnh, âm thanh, cách chơi, trợ năng</div>
           </div>
-          <button aria-label="Đóng" onClick={onClose}>✕</button>
+          <button aria-label="Đóng" style={dlgBtn} onClick={onClose}>✕</button>
         </div>
         <div role="tablist" style={{ display: 'flex', gap: 4, margin: '12px 16px' }}>
-          {TABS.map(([id, label]) => (
+          {(game ? [GAME_TAB, ...TABS] : TABS).map(([id, label]) => (
             <button key={id} role="tab" aria-selected={tab === id} onClick={() => setTab(id)}
               style={{ flex: 1, padding: '6px 2px', fontSize: 12, borderRadius: 8, border: '1px solid #b9825a', background: tab === id ? '#c8663f' : '#fff7ec', color: tab === id ? '#fff' : '#4a2f1c', cursor: 'pointer' }}>
               {label}
@@ -325,10 +370,11 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
           {tab === 'play' && <PlayTab />}
           {tab === 'a11y' && <A11yTab />}
           {tab === 'data' && <DataTab />}
+          {tab === 'game' && game && <GameTab game={game} />}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', borderTop: '1px solid rgba(0,0,0,.1)', fontSize: 12, opacity: 0.85 }}>
           <span style={{ flex: 1 }}>Cài đặt lưu riêng trên máy, áp dụng cho mọi save, không ảnh hưởng mô phỏng.</span>
-          <button onClick={reset}>Mặc định</button>
+          <button style={dlgBtn} onClick={reset}>Mặc định</button>
         </div>
       </div>
     </div>,

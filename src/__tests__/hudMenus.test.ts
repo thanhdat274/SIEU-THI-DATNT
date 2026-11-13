@@ -13,7 +13,7 @@ describe('GĐ951 — HudMenus', () => {
   });
   it('MoreMenu: chấm báo chỉ khi có badge và đã mở khoá, bỏ qua badge ★', () => {
     const t = (o: object) => ({ id: 'x', label: 'X', icon: 'i', on: noop, ...o }) as never;
-    const render = (tools: unknown[], level = 5) => renderToStaticMarkup(createElement(MoreMenu, { tools: tools as never, level, onHelp: noop }));
+    const render = (tools: unknown[], level = 5) => renderToStaticMarkup(createElement(MoreMenu, { tools: tools as never, level, onHelp: noop, onSettings: noop }));
     expect(render([t({})])).not.toContain('hud-dot');
     expect(render([t({ badge: '3' })])).toContain('hud-dot');
     expect(render([t({ badge: '★' })])).not.toContain('hud-dot');
