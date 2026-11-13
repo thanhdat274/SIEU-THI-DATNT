@@ -302,6 +302,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'banh_uot_thit_nuong', name: 'Bánh ướt thịt nướng', category: 'fresh', buy: 12000, sell: 22000, color: 0xe0bc88, unlock: 81, since: CONTENT_EPOCH_NOW },
   // GĐ2436: Bánh mì xíu mại — Đà Lạt trứ danh: bánh mì chấm nước sốt xíu mại (thịt heo xay hấp viên, sốt cà chua đậm). Mở 81; since: 1.
   { id: 'banh_mi_xiu_mai', name: 'Bánh mì xíu mại', category: 'fresh', buy: 13000, sell: 25000, color: 0xd08a4a, unlock: 81, since: CONTENT_EPOCH_NOW },
+  // GĐ2438: Bánh mì nướng bơ tỏi — món vỉa hè Sài Gòn khuấy đảo mạng 2022: ổ bánh mì phết bơ tỏi nướng than giòn rụm. Mở 81; since: 1.
+  { id: 'banh_mi_nuong_bo_toi', name: 'Bánh mì nướng bơ tỏi', category: 'fresh', buy: 11000, sell: 22000, color: 0xe8b864, unlock: 81, since: CONTENT_EPOCH_NOW },
   { id: 'com_lam', name: 'Cơm lam', category: 'fresh', buy: 6500, sell: 10000, color: 0xd9c9a0, unlock: 80, since: CONTENT_EPOCH_NOW },
   { id: 'banh_uot', name: 'Bánh ướt', category: 'fresh', buy: 4500, sell: 7500, color: 0xf6efdc, unlock: 80, since: CONTENT_EPOCH_NOW },
   // GĐ2410: Xôi đậu phộng — miền Nam: xôi nếp nấu cùng đậu phộng, chan nước cốt dừa. Mở 76; since: 1.
@@ -2459,6 +2461,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_banh_mi_xiu_mai', name: 'Bánh mì xíu mại', station: 'steamer',
     inputs: [{ productId: 'banhmi', quantity: 5 }, { productId: 'x_thit_heo', quantity: 1 }, { productId: 'x_ca_chua', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 1 }],
     outputId: 'banh_mi_xiu_mai', outputQty: 6, durationMin: 20, unlock: 81, reputationGain: 3, since: CONTENT_EPOCH_NOW },
+  { id: 'recipe_banh_mi_nuong_bo_toi', name: 'Bánh mì nướng bơ tỏi', station: 'food_grill',
+    inputs: [{ productId: 'banhmi', quantity: 5 }, { productId: 'x_bo', quantity: 1 }, { productId: 'x_toi', quantity: 1 }],
+    outputId: 'banh_mi_nuong_bo_toi', outputQty: 6, durationMin: 15, unlock: 81, reputationGain: 2, since: CONTENT_EPOCH_NOW },
+  // GĐ2438: Bánh mì nướng bơ tỏi — ổ bánh mì tách đôi phết bơ tỏi rồi NƯỚNG than vàng giòn, hành lá rắc
+  // (bánh mì phết bơ tỏi nướng trên vỉ/bếp than — đúng cách làm vỉa hè). Trạm nướng đúng cách nấu.
+  // Thay thế: rau ăn kèm + pate bỏ (không phải phần chính). Mở 81; since: 1.
+  // Mẻ (bánh mì 8k×5 + bơ 18k + tỏi 6k) = 64k → 6 ổ × 22k = 132k, lãi ~68k/mẻ,
+  // hời hơn bán thẳng nguyên liệu (75+26+9 = 110k < 132k — luật monKhuon).
   // GĐ2436: Bánh mì xíu mại — Đà Lạt: thịt heo xay viên hấp chín (xíu mại), đun sốt cà chua ngọt, chấm cùng
   // bánh mì tươi rắc hành phi. Hấp viên trong xửng → trạm hấp đúng cách nấu.
   // Thay thế: bột bọc viên đã trộn sẵn trong thịt xay; rau sống ăn kèm bỏ qua. Mở 81; since: 1.
