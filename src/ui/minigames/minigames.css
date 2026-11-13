@@ -303,3 +303,11 @@
 .flankhuon-molds { display: flex; gap: 6px; justify-content: center; margin: 6px 0 10px; font-size: 22px; }
 .flankhuon-mold.bad { opacity: 0.4; }
 .flankhuon-mold.ok { opacity: 0.8; }
+
+/* Hệ 7 — ⑥ Pha nước theo đơn */
+.phanuoc-order { display: flex; gap: 8px; justify-content: center; margin: 8px 0; font-size: 28px; }
+.phanuoc-slot { min-width: 40px; text-align: center; padding: 4px; border: 2px dashed #c9a24d; border-radius: 10px; background: #fff8e6; }
+.phanuoc-tray { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 8px 0; }
+.phanuoc-ing { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px; font-size: 24px; border: 2px solid #c9a24d; border-radius: 10px; background: #fffdf5; cursor: pointer; }
+.phanuoc-ing:disabled { opacity: 0.5; cursor: default; }
+.phanuoc-ing-name { font-size: 12px; color: #5d3a1a; }

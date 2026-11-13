@@ -138,6 +138,17 @@ export const FESTIVAL_MINIS: FestivalMiniDef[] = [
     seconds: 40,
     reward: recipeMiniReward(3, 10), // mẻ hôm đó ra thêm 0–3 cái flan
   },
+  // ⑥ Pha nước theo đơn — Mùa hè (SPEC §7.6), gắn với recipe_vai_da_xay (mẻ thường 8 ly).
+  {
+    id: 'pha_nuoc',
+    name: 'Pha nước theo đơn',
+    icon: '🥤',
+    festivals: ['he'],
+    unlock: 43, // = cấp mở recipe_vai_da_xay
+    target: { kind: 'recipe', recipeId: 'recipe_vai_da_xay' },
+    seconds: 45,
+    reward: recipeMiniReward(2, 8), // mẻ hôm đó ra thêm 0–2 ly
+  },
   // Trò giả để thử khung trên điện thoại (L1) — chỉ mở qua hash #mini=tap_test, không vô UI thật.
   {
     id: 'tap_test',
