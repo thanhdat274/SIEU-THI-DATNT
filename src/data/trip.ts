@@ -335,3 +335,15 @@ export function cartSavings(t: TripState, route: RouteDef): number {
   }
   return std - paid;
 }
+
+/** Hệ 5 L8 — lý do không còn người giao rảnh khi đơn app/điện thoại chờ: nếu có người giao đang đi tỉnh
+ *  thì nói rõ họ về lúc mấy giờ (thay vì câu chung chung), để người chơi chọn Grab hay đợi. THUẦN. */
+export function courierAbsentLine(trip: TripState | undefined, courierIds: number[], minutes: number): string {
+  if (trip && trip.by !== 'self' && courierIds.includes(trip.by)) {
+    const left = tripRemaining(trip, minutes);
+    const h = Math.floor((trip.returnAt % 1440) / 60);
+    const m = Math.round(trip.returnAt % 60);
+    return `Người giao đang đi tỉnh, về ~${h}h${String(m).padStart(2, '0')} (còn ~${left} phút) — gọi Grab nhé`;
+  }
+  return 'Không còn nhân viên giao hàng rảnh — gọi Grab hoặc thuê thêm người giao';
+}

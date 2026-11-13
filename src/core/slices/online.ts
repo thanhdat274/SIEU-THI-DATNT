@@ -5,7 +5,7 @@ import {
 } from '../../data/online';
 import { formatMoney, productById } from '../../data/products';
 import { regularById, regularFriendship } from '../../data/regulars';
-import { courierOnTrip } from '../../data/trip';
+import { courierAbsentLine, courierOnTrip } from '../../data/trip';
 import { playSfx } from '../audio';
 import type { GameState, GetState, SetState } from '../gameTypes';
 import { copyStock, takeStock } from '../stock';
@@ -135,7 +135,7 @@ export const createOnlineSlice = (set: SetState, get: GetState): Pick<GameState,
     let ownSaved = 0;
     if (via === 'own') {
       const courier = freeCouriers(s)[0];
-      if (!courier) { s.notify('Không còn nhân viên giao hàng rảnh — gọi Grab hoặc thuê thêm người giao'); return false; }
+      if (!courier) { s.notify(courierAbsentLine(s.biz.trip, s.staff.filter((st) => st.role === 'courier').map((st) => st.id), s.minutes)); return false; }
       travel = ownTravel(o.km, courier.skill);
       ownSaved = grabFee(o.km, eventGrabMul(s.online.event));
     } else {
