@@ -314,6 +314,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'banh_quai_vac', name: 'Bánh quai vạc', category: 'fresh', buy: 10000, sell: 15000, color: 0xf0e8d8, unlock: 81, since: CONTENT_EPOCH_NOW },
   // GĐ2443: Gà hấp muối — gà ta ủ muối hạt hấp chín tới, da vàng thịt ngọt (món Nam bộ/quán nhậu trứ danh). Mở 81; since: 1.
   { id: 'ga_hap_muoi', name: 'Gà hấp muối', category: 'fresh', buy: 32000, sell: 42000, color: 0xe8c878, unlock: 81, since: CONTENT_EPOCH_NOW },
+  // GĐ2444: Bánh canh chả lụa — tô bánh canh Quảng Nam/Nam Bộ dân dã: chả lụa lát dày lên nước lèo ngọt. Mở 81; since: 1.
+  { id: 'banh_canh_cha_lua', name: 'Bánh canh chả lụa', category: 'fresh', buy: 8000, sell: 15000, color: 0xf0dcc8, unlock: 81, since: CONTENT_EPOCH_NOW },
   { id: 'com_lam', name: 'Cơm lam', category: 'fresh', buy: 6500, sell: 10000, color: 0xd9c9a0, unlock: 80, since: CONTENT_EPOCH_NOW },
   { id: 'banh_uot', name: 'Bánh ướt', category: 'fresh', buy: 4500, sell: 7500, color: 0xf6efdc, unlock: 80, since: CONTENT_EPOCH_NOW },
   // GĐ2410: Xôi đậu phộng — miền Nam: xôi nếp nấu cùng đậu phộng, chan nước cốt dừa. Mở 76; since: 1.
@@ -2489,6 +2491,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_ga_hap_muoi', name: 'Gà hấp muối', station: 'steamer',
     inputs: [{ productId: 'ga_ta_tuoi', quantity: 1 }, { productId: 'x_sa', quantity: 2 }, { productId: 'x_muoi', quantity: 2 }],
     outputId: 'ga_hap_muoi', outputQty: 5, durationMin: 25, unlock: 81, reputationGain: 3, since: CONTENT_EPOCH_NOW },
+  { id: 'recipe_banh_canh_cha_lua', name: 'Bánh canh chả lụa', station: 'hot_kettle',
+    inputs: [{ productId: 'x_bot_gao', quantity: 2 }, { productId: 'x_cha_lua', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 1 }],
+    outputId: 'banh_canh_cha_lua', outputQty: 10, durationMin: 20, unlock: 81, reputationGain: 2, since: CONTENT_EPOCH_NOW },
+  // GĐ2444: Bánh canh chả lụa — sợi bánh canh bột gạo trụng, nước lèo ngọt từ xương/chả, chả lụa hấp
+  // lát dày thả lên trên, hành phi rắc. Nấu nước lèo ở nồi nước → trạm đúng cách nấu.
+  // Thay thế: tôm/chút giò sống ăn kèm bỏ qua (chả lụa là linh hồn tô). Mở 81; since: 1.
+  // Mẻ (bột gạo 9k×2 + chả lụa chợ 25k + hành phi 1.5k) = 44.5k → 10 tô × 15k = 150k,
+  // lãi ~105.5k/mẻ, hời hơn bán thẳng nguyên liệu (26+32+2.5 = 60.5k < 150k — luật monKhuon).
   // GĐ2443: Gà hấp muối — gà ta chặt miếng ủ với muối hạt + sả đập, HẤP chín tới trong xửng (không nước,
   // thịt ngọt giữ vị muối thấm) — trạm hấp đúng cách nấu; khác gà hấp rượu gạo (46) và gà hấp hành (128).
   // Thay thế: muối hạt thô → muối tinh (gần nhất); lá chanh kịm bỏ qua. Mở 81; since: 1.
