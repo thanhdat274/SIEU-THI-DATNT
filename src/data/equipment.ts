@@ -7,7 +7,7 @@
  */
 import type { BizState } from './biz';
 
-export type EquipId = 'fryer' | 'food_grill' | 'steamer';
+export type EquipId = 'fryer' | 'food_grill' | 'steamer' | 'hot_kettle' | 'rice_station' | 'blender' | 'drink_counter';
 export type EquipTier = 1 | 2 | 3 | 4 | 5;
 
 export const EQUIP_TIER_NAME: Record<EquipTier, string> = { 1: 'Cũ', 2: 'Phổ thông', 3: 'Cải tiến', 4: 'Chuyên nghiệp', 5: 'Cao cấp' };
@@ -17,9 +17,13 @@ export const EQUIPMENT: EquipDef[] = [
   { id: 'fryer', icon: '🍟', name: 'Chảo chiên' },
   { id: 'food_grill', icon: '🔥', name: 'Bếp nướng' },
   { id: 'steamer', icon: '♨️', name: 'Nồi hấp' },
+  { id: 'hot_kettle', icon: '🍲', name: 'Nồi luộc/kho' },
+  { id: 'rice_station', icon: '🍚', name: 'Nồi cơm/xôi' },
+  { id: 'blender', icon: '🥤', name: 'Máy xay' },
+  { id: 'drink_counter', icon: '🧋', name: 'Quầy pha chế' },
 ];
 
-/** Chỉ số theo bậc (dùng chung cho cả ba trạm): tốc độ nấu, công suất điện (kW), giá nâng LÊN bậc đó, cấp mở. */
+/** Chỉ số theo bậc (dùng chung cho mọi trạm): tốc độ nấu, công suất điện (kW), giá nâng LÊN bậc đó, cấp mở. */
 export const EQUIP_TIERS: Record<EquipTier, { speed: number; kw: number; price: number; unlock: number }> = {
   1: { speed: 1, kw: 1, price: 0, unlock: 1 },
   2: { speed: 1.1, kw: 1.5, price: 600_000, unlock: 20 },
@@ -29,7 +33,7 @@ export const EQUIP_TIERS: Record<EquipTier, { speed: number; kw: number; price: 
 };
 
 /** Hạn mức điện (kW) theo cấp tiệm: đủ để mỗi trạm lên khoảng bậc 2–3 ở giữa game. */
-export const powerCapacity = (level: number) => 4 + Math.floor(level / 5);
+export const powerCapacity = (level: number) => 8 + Math.floor(level / 5);
 /** Phụ phí mỗi kW vượt hạn mức mỗi ngày. */
 export const POWER_OVER_FEE = 15_000;
 
@@ -44,7 +48,7 @@ export const equipSpeed = (b: Pick<BizState, 'equip'> | undefined, station: stri
 export const powerUsed = (b: Pick<BizState, 'equip'> | undefined): number =>
   EQUIPMENT.reduce((n, e) => n + EQUIP_TIERS[equipTier(b, e.id)].kw, 0);
 
-/** Phụ phí điện hôm nay do vượt hạn mức (bậc 1 hết: 3kW < hạn mức tối thiểu 4kW nên luôn 0). */
+/** Phụ phí điện hôm nay do vượt hạn mức (bậc 1 hết: 7 trạm bậc 1 = 7kW < hạn mức tối thiểu 8kW nên luôn 0). */
 export const powerSurcharge = (b: Pick<BizState, 'equip'> | undefined, level: number): number =>
   Math.round(Math.max(0, powerUsed(b) - powerCapacity(level)) * POWER_OVER_FEE);
 

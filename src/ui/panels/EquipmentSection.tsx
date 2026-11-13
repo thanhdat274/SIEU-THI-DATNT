@@ -6,7 +6,7 @@ import {
 import { formatMoney } from '../../data/products';
 import { card, btn, sub, row, pill } from './businessStyles';
 
-/** Khu "Thiết bị" trong tab Nâng cấp: 3 trạm nấu × 5 bậc, bảng chỉ số trước/sau, thanh công suất điện. */
+/** Khu "Thiết bị" trong tab Nâng cấp: các trạm nấu × 5 bậc, bảng chỉ số trước/sau, thanh công suất điện. */
 export function EquipmentSection() {
   const { level, money, biz, shopOpen } = useGame();
   const used = powerUsed(biz);

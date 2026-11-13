@@ -21,8 +21,8 @@ describe('thiết bị 5 bậc — dữ liệu', () => {
     expect(powerUsed(undefined)).toBe(EQUIPMENT.length);
   });
   it('tất cả bậc 5 ở cấp 60 vượt hạn mức → có phụ phí', () => {
-    const all = { equip: { fryer: 5, food_grill: 5, steamer: 5 } };
-    expect(powerSurcharge(all, 60)).toBe((18 - powerCapacity(60)) * 15_000);
+    const all = { equip: Object.fromEntries(EQUIPMENT.map((e) => [e.id, 5])) };
+    expect(powerSurcharge(all, 60)).toBe((EQUIPMENT.length * EQUIP_TIERS[5].kw - powerCapacity(60)) * 15_000);
   });
   it('chặn: mở cửa, thiếu cấp, thiếu tiền, bậc tối đa', () => {
     expect(equipBlock({}, 'fryer', 30, 1e9, true)).toBe('open');
