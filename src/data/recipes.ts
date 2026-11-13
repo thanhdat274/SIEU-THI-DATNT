@@ -306,6 +306,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'banh_mi_nuong_bo_toi', name: 'Bánh mì nướng bơ tỏi', category: 'fresh', buy: 11000, sell: 22000, color: 0xe8b864, unlock: 81, since: CONTENT_EPOCH_NOW },
   // GĐ2439: Chè xoài — chè bế xoài Nam Bộ (cũng là món Thái quen thuộc Việt hoá): xoài chín + sợi bột năng + nước cốt dừa ngọt. Mở 81; since: 1.
   { id: 'che_xoai', name: 'Chè xoài', category: 'fresh', buy: 7000, sell: 15000, color: 0xf2c14e, unlock: 81, since: CONTENT_EPOCH_NOW },
+  // GĐ2440: Bánh canh tôm khô — miền Tây trứ danh (Sóc Trăng/Trà Vinh): sợi bánh canh bột gạo dai, nước lèo ngọt từ tôm khô, rắc hành. Mở 81; since: 1.
+  { id: 'banh_canh_tom_kho', name: 'Bánh canh tôm khô', category: 'fresh', buy: 11000, sell: 18000, color: 0xe8a868, unlock: 81, since: CONTENT_EPOCH_NOW },
   { id: 'com_lam', name: 'Cơm lam', category: 'fresh', buy: 6500, sell: 10000, color: 0xd9c9a0, unlock: 80, since: CONTENT_EPOCH_NOW },
   { id: 'banh_uot', name: 'Bánh ướt', category: 'fresh', buy: 4500, sell: 7500, color: 0xf6efdc, unlock: 80, since: CONTENT_EPOCH_NOW },
   // GĐ2410: Xôi đậu phộng — miền Nam: xôi nếp nấu cùng đậu phộng, chan nước cốt dừa. Mở 76; since: 1.
@@ -2469,6 +2471,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_che_xoai', name: 'Chè xoài', station: 'hot_kettle',
     inputs: [{ productId: 'x_xoai', quantity: 1 }, { productId: 'x_dua_cot_hop', quantity: 1 }, { productId: 'x_bot_nang', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
     outputId: 'che_xoai', outputQty: 8, durationMin: 20, unlock: 81, reputationGain: 2, since: CONTENT_EPOCH_NOW },
+  { id: 'recipe_banh_canh_tom_kho', name: 'Bánh canh tôm khô', station: 'hot_kettle',
+    inputs: [{ productId: 'x_bot_gao', quantity: 2 }, { productId: 'hx_tom_kho', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 1 }],
+    outputId: 'banh_canh_tom_kho', outputQty: 10, durationMin: 25, unlock: 81, reputationGain: 3, since: CONTENT_EPOCH_NOW },
+  // GĐ2440: Bánh canh tôm khô — sợi bánh canh bột gạo trộn giảm nấu sơ, nước lèo hầm ngọt từ TÔM KHÔ
+  // (hương chính của tô), rắc hành phi + hành lá. Nấu nước lèo ở nồi nước → trạm đúng cách nấu.
+  // Thay thế: cà rốt/củ cải nấu nước ngọt bỏ qua. Mở 81; since: 1.
+  // Mẻ (bột gạo 9k×2 + tôm khô nhà phơi 58k + hành phi 1.5k) = 77.5k → 10 tô × 18k = 180k,
+  // lãi ~102.5k/mẻ, hời hơn bán thẳng nguyên liệu (26+90+2.5 = 118.5k < 180k — luật monKhuon).
   // GĐ2439: Chè xoài — xoài chín thái miếng ăn cùng sợi bột năng dai và nước cốt dừa nấu đường:
   // NẤU nước cốt dừa + sợi bột năng ở nồi nước → trạm nồi nước đúng cách nấu (không dùng máy pha).
   // Thay thế: hạt chia/bột báng ăn kèm bỏ qua. Mở 81; since: 1.

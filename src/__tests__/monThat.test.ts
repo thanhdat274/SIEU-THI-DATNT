@@ -303,6 +303,7 @@ const MON_THAT: Record<string, { name: string; station: string; cachNau: string 
   recipe_banh_mi_xiu_mai: { name: 'Bánh mì xíu mại', station: 'steamer', cachNau: 'thịt heo xay viên hấp chín sốt cà chua chấm bánh mì (Đà Lạt)' },
   recipe_banh_mi_nuong_bo_toi: { name: 'Bánh mì nướng bơ tỏi', station: 'food_grill', cachNau: 'ổ bánh mì phết bơ tỏi nướng than giòn (vỉa hè Sài Gòn)' },
   recipe_che_xoai: { name: 'Chè xoài', station: 'hot_kettle', cachNau: 'xoài chín + sợi bột năng + nước cốt dừa nấu đường (Nam Bộ)' },
+  recipe_banh_canh_tom_kho: { name: 'Bánh canh tôm khô', station: 'hot_kettle', cachNau: 'sợi bánh canh bột gạo nước lèo ngọt tôm khô rắc hành (miền Tây)' },
 };
 
 /** Chữ mô tả tự chế không ai dùng làm tên món ngoài chợ. */
