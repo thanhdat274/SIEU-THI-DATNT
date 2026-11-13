@@ -236,3 +236,8 @@
   #ui .ar-btn { height: 40px; }
   #ui .ar-pad { grid-template-columns: repeat(3, 38px); grid-template-rows: repeat(2, 34px); }
 }
+
+/* Review 13/11-3 R4: nút ✕ đóng panel ≥44px trên màn cảm ứng */
+@media (pointer: coarse) {
+  #ui .ar-x { min-width: 44px; min-height: 44px; }
+}
