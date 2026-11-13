@@ -322,6 +322,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'goi_du_du', name: 'Gỏi đu đủ', category: 'fresh', buy: 10000, sell: 18000, color: 0x9ac860, unlock: 81, since: CONTENT_EPOCH_NOW },
   // GĐ2447: Chè kê — Quảng Nam trứ danh (Chợ Bêu): nếp nấu nhão trộn đậu phộng rang giã dập, chan nước đường. Mở 81; since: 1.
   { id: 'che_ke', name: 'Chè kê', category: 'fresh', buy: 8000, sell: 14000, color: 0xe8c078, unlock: 81, since: CONTENT_EPOCH_NOW },
+  // GĐ2448: Hủ tiếu xào — món vỉa hè Nam bộ trứ danh (xào khô): sợi hủ tiếu dai xào thịt heo + giá đỗ, thơm nước mắm. Mở 81; since: 1.
+  { id: 'hu_tieu_xao', name: 'Hủ tiếu xào', category: 'fresh', buy: 9000, sell: 18000, color: 0xd8b068, unlock: 81, since: CONTENT_EPOCH_NOW },
   { id: 'com_lam', name: 'Cơm lam', category: 'fresh', buy: 6500, sell: 10000, color: 0xd9c9a0, unlock: 80, since: CONTENT_EPOCH_NOW },
   { id: 'banh_uot', name: 'Bánh ướt', category: 'fresh', buy: 4500, sell: 7500, color: 0xf6efdc, unlock: 80, since: CONTENT_EPOCH_NOW },
   // GĐ2410: Xôi đậu phộng — miền Nam: xôi nếp nấu cùng đậu phộng, chan nước cốt dừa. Mở 76; since: 1.
@@ -2509,6 +2511,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_che_ke', name: 'Chè kê', station: 'hot_kettle',
     inputs: [{ productId: 'nep', quantity: 1 }, { productId: 'x_dau_phong', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
     outputId: 'che_ke', outputQty: 8, durationMin: 20, unlock: 81, reputationGain: 2, since: CONTENT_EPOCH_NOW },
+  { id: 'recipe_hu_tieu_xao', name: 'Hủ tiếu xào', station: 'fryer',
+    inputs: [{ productId: 'x_hu_tieu_goi', quantity: 1 }, { productId: 'x_thit_heo', quantity: 1 }, { productId: 'x_gia_do', quantity: 1 }, { productId: 'nuocmam', quantity: 1 }],
+    outputId: 'hu_tieu_xao', outputQty: 8, durationMin: 15, unlock: 81, reputationGain: 2, since: CONTENT_EPOCH_NOW },
+  // GĐ2448: Hủ tiếu xào — sợi hủ tiếu trụng sơ rồi XÀO lửa lớn với thịt heo thái + giá đỗ, nêm nước
+  // mắm, ra dĩa xào khô (không nước dùng) — chảo xào nhiều dầu → trạm fryer đúng cách nấu.
+  // Thay thế: hải sản/xá xíu ăn kèm biến thể bỏ qua (thịt heo là chuẩn xào khô). Mở 81; since: 1.
+  // Mẻ (hủ tiếu gói 6k + thịt heo 30k + giá đỗ 4k + nước mắm 18k) = 58k → 8 phần × 18k = 144k,
+  // lãi ~86k/mẻ, hời hơn bán thẳng nguyên liệu (8+38+6+26 = 78k < 144k — luật monKhuon).
   // GĐ2447: Chè kê — nếp nấu chín nhão (không nấu nhừ nát), trộn đậu phộng rang giã dập vừa tay,
   // chan nước đường gừng — NẤU ở nồi nước đúng cách; khác xôi đậu phộng (76 — món xôi khô).
   // Thay thế: gừng thái sợi chan lên không vào nguyên liệu chính. Mở 81; since: 1.
