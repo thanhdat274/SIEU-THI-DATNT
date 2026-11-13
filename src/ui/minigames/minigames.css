@@ -295,3 +295,11 @@
 .denong-sheet.center { left: 84px; top: 96px; }
 .denong-sheet-icon { font-size: 22px; }
 .denong-sheet-name { font-size: 10px; color: #5d3a1a; }
+
+/* Hệ 7 — ⑤ Rót khuôn bánh flan */
+.flankhuon-bar { position: relative; height: 22px; margin: 10px 0; border-radius: 11px; background: #f3e6c8; border: 2px solid #c9a24d; overflow: hidden; }
+.flankhuon-zone { position: absolute; top: 0; bottom: 0; background: #8fd19e; opacity: 0.85; }
+.flankhuon-mark { position: absolute; top: -2px; bottom: -2px; width: 4px; margin-left: -2px; background: #5d3a1a; border-radius: 2px; }
+.flankhuon-molds { display: flex; gap: 6px; justify-content: center; margin: 6px 0 10px; font-size: 22px; }
+.flankhuon-mold.bad { opacity: 0.4; }
+.flankhuon-mold.ok { opacity: 0.8; }

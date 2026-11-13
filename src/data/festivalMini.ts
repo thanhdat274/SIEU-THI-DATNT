@@ -127,6 +127,17 @@ export const FESTIVAL_MINIS: FestivalMiniDef[] = [
     seconds: 40,
     reward: flairMiniReward(8), // +2 → +6 điểm trang trí hết dịp Trung thu
   },
+  // ⑤ Rót khuôn bánh flan — Hội thi làm bánh (SPEC §7.6), gắn với recipe_banh_flan (mẻ thường 24 cái).
+  {
+    id: 'banh_flan',
+    name: 'Rót khuôn bánh flan',
+    icon: '🍮',
+    festivals: ['hoi_banh'],
+    unlock: 39, // = cấp mở recipe_banh_flan / nồi hấp
+    target: { kind: 'recipe', recipeId: 'recipe_banh_flan' },
+    seconds: 40,
+    reward: recipeMiniReward(3, 10), // mẻ hôm đó ra thêm 0–3 cái flan
+  },
   // Trò giả để thử khung trên điện thoại (L1) — chỉ mở qua hash #mini=tap_test, không vô UI thật.
   {
     id: 'tap_test',
