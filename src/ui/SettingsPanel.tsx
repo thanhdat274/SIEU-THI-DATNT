@@ -112,6 +112,9 @@ function ImgTab() {
           onChange={(v) => { const c: GfxChoice = v ? 'auto' : gfxStatus().level; setGfxChoice(c); setChoice(c); }} />
       </Row>
       <Row label="Cỡ giao diện"><Slider label="Cỡ giao diện" value={s.uiScale} min={0.8} max={1.4} step={0.05} fmt={pct} onChange={(v) => set({ uiScale: v })} /></Row>
+      <Row label="Tiền tệ hiển thị" hint="Chỉ đổi cách hiện số (1 USD = 25.000đ). Giá trong game không đổi; bảng đang mở cập nhật khi mở lại">
+        <Select label="Tiền tệ hiển thị" value={s.currency} options={[['vnd', 'Đồng (đ)'], ['usd', 'Đô la ($)']]} onChange={(v) => set({ currency: v })} />
+      </Row>
     </div>
   );
 }

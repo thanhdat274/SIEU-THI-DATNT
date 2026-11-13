@@ -14,6 +14,11 @@ describe('cài đặt người chơi', () => {
     expect(s.fpsCap).toBe(60);
     expect(s.reduceMotion).toBe(true);
   });
+  it('tiền tệ: mặc định đồng, rác về đồng', () => {
+    expect(SETTINGS_DEFAULT.currency).toBe('vnd');
+    expect(sanitize({ currency: 'eur' }).currency).toBe('vnd');
+    expect(sanitize({ currency: 'usd' }).currency).toBe('usd');
+  });
   it('mục mới: rác về mặc định, giá trị hợp lệ giữ nguyên', () => {
     expect(sanitize({ autosaveEvery: 7, colorblind: 'x', noFlash: 1 })).toEqual(SETTINGS_DEFAULT);
     const s = sanitize({ autosaveEvery: 180, colorblind: 'deutan', noFlash: true, autoSlow: true, confirmEndDay: true, showPatience: false });

@@ -40,13 +40,15 @@ export interface Settings {
   colorblind: 'off' | 'protan' | 'deutan' | 'tritan';
   /** Tắt chớp sáng (sét) */
   noFlash: boolean;
+  /** Tiền hiển thị (chỉ cách vẽ số, không đổi giá trong game) */
+  currency: 'vnd' | 'usd';
 }
 
 export const SETTINGS_DEFAULT: Settings = {
   fpsCap: 0, renderScale: 1, brightness: 1, uiScale: 1, fontSize: 'normal',
   reduceMotion: false, highContrast: false, detailDist: 'normal', autosave: true,
   shadows: true, rainDensity: 1, clouds: true, stars: true, foliageSway: true, lightQuality: 'high',
-  autosaveEvery: 0, showPatience: true, autoSlow: false, confirmEndDay: false, colorblind: 'off', noFlash: false,
+  autosaveEvery: 0, showPatience: true, autoSlow: false, confirmEndDay: false, colorblind: 'off', noFlash: false, currency: 'vnd',
 };
 
 const KEY = 'th3d_settings';
@@ -80,6 +82,7 @@ export function sanitize(raw: unknown): Settings {
     confirmEndDay: bool(r.confirmEndDay, d.confirmEndDay),
     colorblind: pick(r.colorblind, ['off', 'protan', 'deutan', 'tritan'] as const, d.colorblind),
     noFlash: bool(r.noFlash, d.noFlash),
+    currency: pick(r.currency, ['vnd', 'usd'] as const, d.currency),
   };
 }
 
