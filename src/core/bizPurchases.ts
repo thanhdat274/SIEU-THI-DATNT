@@ -2,6 +2,7 @@ import { petDef, HOME_ITEMS, type BizState, type PetKind } from '../data/biz';
 import { formatMoney, productById } from '../data/products';
 import { serviceById } from '../data/services';
 import { upgradeById, type UpgradeId } from '../data/upgrades';
+import { EQUIPMENT, EQUIP_TIERS, EQUIP_TIER_NAME, equipBlock, equipTier, powerSurcharge, type EquipId, type EquipTier } from '../data/equipment';
 import { checkAchievements } from './bizAchieve';
 import { useGame } from './store';
 
@@ -96,4 +97,22 @@ export function earnTip(amount: number) {
   const s = S();
   const nextStats = { ...s.stats, revenue: s.stats.revenue + amount, tips: (s.stats.tips ?? 0) + amount };
   useGame.setState({ money: s.money + amount, stats: nextStats });
+}
+
+// ───── Thiết bị trạm nấu 5 bậc (data/equipment.ts) ─────
+
+export function upgradeEquip(id: EquipId) {
+  const s = S();
+  const def = EQUIPMENT.find((e) => e.id === id);
+  if (!def) return;
+  const blk = equipBlock(s.biz, id, s.level, s.money, s.shopOpen);
+  if (blk === 'max') return s.notify(`${def.name} đã ở bậc cao nhất`);
+  const next = (equipTier(s.biz, id) + 1) as EquipTier;
+  const t = EQUIP_TIERS[next];
+  if (blk === 'level') return s.notify(`Cần cấp ${t.unlock} để nâng ${def.name} lên ${EQUIP_TIER_NAME[next]}`);
+  if (blk === 'open') return s.notify('Đóng cửa tiệm rồi mới nâng cấp thiết bị được');
+  if (!pay(t.price, `nâng ${def.name.toLowerCase()} lên ${EQUIP_TIER_NAME[next].toLowerCase()}`)) return;
+  patch({ equip: { ...(S().biz.equip ?? {}), [id]: next } });
+  const over = powerSurcharge(S().biz, s.level);
+  s.notify(`${def.icon} ${def.name} lên bậc ${EQUIP_TIER_NAME[next]}: nấu nhanh ×${t.speed}${over > 0 ? ` — điện vượt hạn mức, phụ phí ${formatMoney(over)}/ngày` : ''}`);
 }

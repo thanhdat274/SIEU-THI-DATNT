@@ -1,6 +1,7 @@
 import { formatMoney, productById, unlockedProducts } from '../../data/products';
 import { fitJoin, fitList } from '../../data/onboarding';
 import { SHOP_TIERS, rentOf, OPERATING_REVENUE_RATE } from '../../data/shopTiers';
+import { powerSurcharge } from '../../data/equipment';
 import { sapKindIcons, sapEventIncome, sapRongEvent, sapRongIncome } from '../../data/sapRong';
 import { describeDay, forecastFrom, WEATHER } from '../../data/weather';
 import { fitLots, nearestLife } from '../../data/freshness';
@@ -447,7 +448,8 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
   // Chi phí vận hành theo doanh thu (điện/nước/bảo trì): % doanh thu, nhỏ lúc đầu, đáng kể khi lên siêu thị
   // Tiện lợi chạy tủ mát/đông suốt 24h nên có hóa đơn điện riêng; doanh thu quán nước tự lo chi phí của nó
   const branchPower = br ? branchPowerBill(br) : 0;
-  const opCost = Math.round((s.stats.revenue + onlineDay.money + crew.tips) * OPERATING_REVENUE_RATE) + branchPower;
+  const equipPower = powerSurcharge(s.biz, s.level); // thiết bị bậc cao vượt hạn mức điện → phụ phí
+  const opCost = Math.round((s.stats.revenue + onlineDay.money + crew.tips) * OPERATING_REVENUE_RATE) + branchPower + equipPower;
   // GĐ1832 (review đợt 2 R1 / đợt 3 R2): thưởng thành tựu sẽ được checkAchievements() cộng vào ví
   // SAU khi tính dòng "Tiền vào − tiền ra" (đêm nay) — đọc trước bằng hàm thuần để tổng kết báo
   // đúng khoản chênh lệch với ví; phí vận hành thì tách khỏi `spent` thành dòng riêng.
@@ -459,7 +461,7 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
     ...(achvReward ? { achvReward } : {}),
     ...(opCost + maintCost > 0 ? { opCost: opCost + maintCost } : {}),
   };
-  if (opCost >= 5000 && s.day > 1) say(`💡 Chi phí vận hành (điện/nước) ${formatMoney(opCost)}${branchPower ? ` — riêng tiện lợi 24/7 ${formatMoney(branchPower)} tiền điện` : ''}`);
+  if (opCost >= 5000 && s.day > 1) say(`💡 Chi phí vận hành (điện/nước) ${formatMoney(opCost)}${branchPower ? ` — riêng tiện lợi 24/7 ${formatMoney(branchPower)} tiền điện` : ''}${equipPower ? ` — thiết bị vượt hạn mức điện, phụ phí ${formatMoney(equipPower)}` : ''}`);
   // GĐ300: chốt sẵn việc sáng 🧍 NGAY TẠI MÁY CHẠY. Snapshot staffDay là transient ngoài useGame
   // (chỉ máy chạy mô phỏng mới có), nên nếu để Sổ đầu ngày tự đọc thì máy khách hẻm online sẽ không
   // bao giờ thấy việc này. Tính ở đây rồi gửi kèm lastSummary → hai chế độ ra KẾT QUẢ GIỐNG NHAU.

@@ -3,6 +3,7 @@ import { machineDayLine, idleMachineHint, clawWinLine } from '../../data/machine
 import { buyHomeItem, buyService, buyPet, buyUpgrade, buyVehicle, feedPet } from '../../core/biz';
 import { hasUpgrade, UPGRADES } from '../../data/upgrades';
 import { Callout } from './shared';
+import { EquipmentSection } from './EquipmentSection';
 import { BREAKFAST, HOME_ITEMS, petActive, PETS, VEHICLES } from '../../data/biz';
 import { formatMoney, productById } from '../../data/products';
 import { shortLabel } from '../shortLabel';
@@ -183,6 +184,7 @@ export function Upgrades() {
         <b>🔧 Thiết bị của tiệm</b>
         <div style={sub}>Mua một lần dùng vĩnh viễn — tiền đốt cho giai đoạn về sau, mỗi món gắn với một hệ thống đã có.</div>
       </div>
+      <EquipmentSection />
       {UPGRADES.map((u) => {
         const owned = hasUpgrade(biz, u.id);
         const cameraRisk = u.id === 'camera' && level >= THEFT_UNLOCK

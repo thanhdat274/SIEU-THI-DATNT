@@ -15,6 +15,7 @@ import { runBranch } from './branch';
 import { endDay } from './endDay';
 import { countPanel } from '../dayReport';
 import { updateOnline } from './online';
+import { equipSpeed } from '../../data/equipment';
 import { updatePhones, cookSpeed, bartenderBoost } from './orders';
 import { maybeInspection } from '../inspection';
 import { pushNotif } from '../notifLog';
@@ -108,7 +109,7 @@ export const createClockSlice = (set: SetState, get: GetState): Pick<GameState, 
       // component đăng ký cả store không vẽ lại 60 lần/giây; chỉ `set` khi có mẻ xong. UI đọc tiến độ qua useClock.
       for (const j of jobs) {
         const r = RECIPE_MAP[j.recipeId];
-        j.remaining -= r?.station === 'drink_counter' ? drink : base;
+        j.remaining -= (r?.station === 'drink_counter' ? drink : base) * equipSpeed(s.biz, r?.station ?? '');
       }
       const next = jobs;
       const done = next.filter((j) => j.remaining <= 0);
