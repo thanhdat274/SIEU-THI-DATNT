@@ -324,6 +324,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'che_ke', name: 'Chè kê', category: 'fresh', buy: 8000, sell: 14000, color: 0xe8c078, unlock: 81, since: CONTENT_EPOCH_NOW },
   // GĐ2448: Hủ tiếu xào — món vỉa hè Nam bộ trứ danh (xào khô): sợi hủ tiếu dai xào thịt heo + giá đỗ, thơm nước mắm. Mở 81; since: 1.
   { id: 'hu_tieu_xao', name: 'Hủ tiếu xào', category: 'fresh', buy: 9000, sell: 18000, color: 0xd8b068, unlock: 81, since: CONTENT_EPOCH_NOW },
+  // GĐ2449: Cháo cá lóc — cháo hầm xương cá lóc xanh xương mềm, thịt cá dai ngọt, rắc tiêu hành (miền Tây). Mở 81; since: 1.
+  { id: 'chao_ca_loc', name: 'Cháo cá lóc', category: 'fresh', buy: 14000, sell: 18000, color: 0xe0d8c0, unlock: 81, since: CONTENT_EPOCH_NOW },
   { id: 'com_lam', name: 'Cơm lam', category: 'fresh', buy: 6500, sell: 10000, color: 0xd9c9a0, unlock: 80, since: CONTENT_EPOCH_NOW },
   { id: 'banh_uot', name: 'Bánh ướt', category: 'fresh', buy: 4500, sell: 7500, color: 0xf6efdc, unlock: 80, since: CONTENT_EPOCH_NOW },
   // GĐ2410: Xôi đậu phộng — miền Nam: xôi nếp nấu cùng đậu phộng, chan nước cốt dừa. Mở 76; since: 1.
@@ -2514,6 +2516,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_hu_tieu_xao', name: 'Hủ tiếu xào', station: 'fryer',
     inputs: [{ productId: 'x_hu_tieu_goi', quantity: 1 }, { productId: 'x_thit_heo', quantity: 1 }, { productId: 'x_gia_do', quantity: 1 }, { productId: 'nuocmam', quantity: 1 }],
     outputId: 'hu_tieu_xao', outputQty: 8, durationMin: 15, unlock: 81, reputationGain: 2, since: CONTENT_EPOCH_NOW },
+  { id: 'recipe_chao_ca_loc', name: 'Cháo cá lóc', station: 'hot_kettle',
+    inputs: [{ productId: 'gao', quantity: 1 }, { productId: 'ca_loc_tuoi', quantity: 1 }],
+    outputId: 'chao_ca_loc', outputQty: 12, durationMin: 35, unlock: 81, reputationGain: 2, since: CONTENT_EPOCH_NOW },
+  // GĐ2449: Cháo cá lóc — gạo rang sơ rồi HẦM nhừ với cá lóc xanh (cá nguyên con hầm lấy ngọt),
+  // thịt cá tách xương dai ngọt, rắc tiêu + hành lá — nồi nước hầm lâu → trạm đúng cách nấu.
+  // Thay thế: rau ngổ ăn kèm bỏ qua. Mở 81; since: 1.
+  // Mẻ (gạo 80k + cá lóc tươi 70k) = 150k → 12 tô × 18k = 216k, lãi ~66k/mẻ,
+  // hời hơn bán thẳng nguyên liệu (100+98 = 198k < 216k — luật monKhuon).
   // GĐ2448: Hủ tiếu xào — sợi hủ tiếu trụng sơ rồi XÀO lửa lớn với thịt heo thái + giá đỗ, nêm nước
   // mắm, ra dĩa xào khô (không nước dùng) — chảo xào nhiều dầu → trạm fryer đúng cách nấu.
   // Thay thế: hải sản/xá xíu ăn kèm biến thể bỏ qua (thịt heo là chuẩn xào khô). Mở 81; since: 1.

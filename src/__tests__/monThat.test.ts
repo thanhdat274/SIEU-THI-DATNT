@@ -312,6 +312,7 @@ const MON_THAT: Record<string, { name: string; station: string; cachNau: string 
   recipe_goi_du_du: { name: 'Gỏi đu đủ', station: 'steamer', cachNau: 'đu đủ green bào sợi trộn tôm khô đậu phộng nước mắm chanh (gỏi khộ)' },
   recipe_che_ke: { name: 'Chè kê', station: 'hot_kettle', cachNau: 'nếp nhão trộn đậu phộng rang giã dập chan nước đường (Quảng Nam)' },
   recipe_hu_tieu_xao: { name: 'Hủ tiếu xào', station: 'fryer', cachNau: 'sợi hủ tiếu xào khô thịt heo giá đỗ thơm nước mắm (Nam bộ)' },
+  recipe_chao_ca_loc: { name: 'Cháo cá lóc', station: 'hot_kettle', cachNau: 'gạo hầm nhừ cá lóc xanh thịt dai ngọt rắc tiêu hành (miền Tây)' },
 };
 
 /** Chữ mô tả tự chế không ai dùng làm tên món ngoài chợ. */
