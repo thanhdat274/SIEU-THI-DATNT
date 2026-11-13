@@ -289,6 +289,7 @@ const MON_THAT: Record<string, { name: string; station: string; cachNau: string 
   recipe_banh_ran: { name: 'Bánh rán', station: 'fryer', cachNau: 'bánh rán ngọt Hà Nội: vỏ bột nếp nhân đậu xanh chiên ngập dầu vàng giòn (Hà Nội)' },
   recipe_banh_da_nem_chua: { name: 'Bánh đa nem chua', station: 'food_grill', cachNau: 'bánh đa nướng than cuốn nem chua Thanh Hóa chấm tôm chua, ăn cuốn nóng giòn (Thanh Hóa)' },
   recipe_banh_cong: { name: 'Bánh cống', station: 'fryer', cachNau: 'bột gạo pha đậu xanh nhân thịt heo băm tôm tươi nhúng khuôn chiên ngập dầu giòn rụm (Sóc Trăng)' },
+  recipe_banh_te: { name: 'Bánh tẻ', station: 'steamer', cachNau: 'vỏ bột gạo tẻ ngâm ủ nhân thịt heo băm mộc nhĩ hành phi gói hấp trong xửng (Bắc Bộ)' },
 };
 
 /** Chữ mô tả tự chế không ai dùng làm tên món ngoài chợ. */
