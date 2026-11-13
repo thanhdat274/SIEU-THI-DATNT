@@ -275,6 +275,7 @@ const MON_THAT: Record<string, { name: string; station: string; cachNau: string 
   recipe_ga_nuong_mac_khen: { name: 'Gà nướng mắc khén', station: 'food_grill', cachNau: 'gà ướp mắc khén - hồ tiêu rừng nướng than hồng, thơm cay tê đặc trưng (Tây Nguyên)' },
   recipe_banh_nam: { name: 'Bánh nậm', station: 'steamer', cachNau: 'bột gạo tráng mỏng nhân tôm thịt gói lá hấp chín, chấm nước mắm (Huế)' },
   recipe_banh_bot_chien: { name: 'Bánh bột chiên', station: 'fryer', cachNau: 'bột gạo bột năng nấu đặc đổ khuôn cắt khối chiên chảo đảo trứng hành lá (Sài Gòn)' },
+  recipe_com_lam: { name: 'Cơm lam', station: 'food_grill', cachNau: 'nếp ngâm nhồi ống tre bịt lá chuối nướng than xoay đều (Tây Bắc/Tây Nguyên)' },
   recipe_banh_uot: { name: 'Bánh ướt', station: 'steamer', cachNau: 'tráng bột gạo hấp thành tấm mỏng không nhân, ăn kèm chả lụa hành phi (miền Trung/Nam)' },
   recipe_banh_cuon: { name: 'Bánh cuốn', station: 'steamer', cachNau: 'tráng bột gạo mỏng hấp chín cuốn nhân thịt băm nấm mèo, chấm nước mắm (Hà Nội)' },
   recipe_xoi_dau_phong: { name: 'Xôi đậu phộng', station: 'rice_station', cachNau: 'nếp nấu chín cùng đậu phộng, chan nước cốt dừa (miền Nam)' },

@@ -276,6 +276,7 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'banh_bot_chien', name: 'Bánh bột chiên', category: 'fresh', buy: 3500, sell: 7000, color: 0xe3b655, unlock: 74, since: CONTENT_EPOCH_NOW },
   // GĐ2409: Bánh cuốn — Hà Nội: bánh tráng mỏng hấp cuốn nhân thịt băm nấm mèo. Mở 75; since: 1.
   { id: 'banh_cuon', name: 'Bánh cuốn', category: 'fresh', buy: 4800, sell: 8000, color: 0xf3ead2, unlock: 75, since: CONTENT_EPOCH_NOW },
+  { id: 'com_lam', name: 'Cơm lam', category: 'fresh', buy: 6500, sell: 10000, color: 0xd9c9a0, unlock: 80, since: CONTENT_EPOCH_NOW },
   { id: 'banh_uot', name: 'Bánh ướt', category: 'fresh', buy: 4500, sell: 7500, color: 0xf6efdc, unlock: 80, since: CONTENT_EPOCH_NOW },
   // GĐ2410: Xôi đậu phộng — miền Nam: xôi nếp nấu cùng đậu phộng, chan nước cốt dừa. Mở 76; since: 1.
   { id: 'xoi_dau_phong', name: 'Xôi đậu phộng', category: 'fresh', buy: 3000, sell: 6000, color: 0xe8c98a, unlock: 76, since: CONTENT_EPOCH_NOW },
@@ -2369,6 +2370,11 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_banh_cuon', name: 'Bánh cuốn', station: 'steamer',
     inputs: [{ productId: 'x_bot_gao', quantity: 1 }, { productId: 'x_thit_heo', quantity: 1 }, { productId: 'x_nam_meo_kho', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 1 }],
     outputId: 'banh_cuon', outputQty: 12, durationMin: 18, unlock: 75, reputationGain: 2, since: CONTENT_EPOCH_NOW },
+  // GĐ2419: Cơm lam — Tây Bắc/Tây Nguyên: nếp ngâm + nước cốt dừa nhồi ống tre/nứa, bịt lá chuối, nướng than xoay đều 40–60 phút.
+  // Thay thế: không có ống tre → bỏ qua (chỉ là vỏ bọc); muối vừng/muối lạc ăn kèm không phải nguyên liệu chính. Mở 80; since: 1.
+  { id: 'recipe_com_lam', name: 'Cơm lam', station: 'food_grill',
+    inputs: [{ productId: 'nep', quantity: 1 }, { productId: 'x_dua_cot_hop', quantity: 1 }],
+    outputId: 'com_lam', outputQty: 12, durationMin: 20, unlock: 80, reputationGain: 2, since: CONTENT_EPOCH_NOW },
   // GĐ2418: Bánh ướt — miền Trung/Nam: tráng bột gạo hấp thành tấm mỏng, KHÔNG cuốn nhân, xếp đĩa ăn kèm chả lụa + hành phi.
   // Thay thế: rau sống/nước mắm chấm không phải nguyên liệu chính. Mở 80; since: 1.
   { id: 'recipe_banh_uot', name: 'Bánh ướt', station: 'steamer',
