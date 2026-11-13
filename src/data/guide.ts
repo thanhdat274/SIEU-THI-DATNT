@@ -91,3 +91,38 @@ export function guideFor(device: Device): GuideSection[] {
 
 /** Bảng phím đầy đủ cho tab Máy tính. */
 export const KEYS = CONTROLS;
+
+/**
+ * Giới thiệu game cho người chưa chơi (mở từ màn đăng nhập). Chỉ nói những gì game có thật
+ * (xem GAME_OVERVIEW.md) — không hứa tính năng chưa làm.
+ */
+export interface LandingPoint { icon: string; title: string; text: string }
+export const LANDING = {
+  title: 'Tạp Hóa Đầu Ngõ',
+  tagline: 'Mở tiệm nhỏ đầu ngõ, bán từng gói mì, nuôi lớn thành siêu thị.',
+  intro: [
+    'Bạn bắt đầu bằng một tiệm tạp hóa nhỏ trong con hẻm: nhập hàng, bày kệ, mở cửa đón khách. Khách quen sẽ gọi đúng tên bạn, mỗi ngày chăm một chút là tiệm lớn dần.',
+    'Game chạy ngay trên trình duyệt, nhìn 3D, chơi được cả trên điện thoại lẫn máy tính, không cần cài đặt.',
+  ],
+  points: [
+    { icon: '🌅', title: 'Một ngày ở tiệm', text: 'Sáng nhập hàng, bày kệ, mở cửa; khách vào mua, mặc cả, đặt hàng trước; tối đóng cửa, xem thu chi rồi đi ngủ.' },
+    { icon: '📈', title: 'Lớn dần theo cấp', text: 'Từ tiệm nhỏ nới rộng thành tạp hóa lớn, mini mart rồi siêu thị tạp hóa; mỗi cấp mở thêm mặt hàng và dịch vụ.' },
+    { icon: '🍳', title: 'Trồng, nấu, bán', text: 'Tự trồng, tự nấu món nhà làm, mở quán nước và tiệm xôi — các tiệm nối chuỗi cung ứng cho nhau, lãi hơn bán thẳng nguyên liệu.' },
+    { icon: '👥', title: 'Nhân viên & khách quen', text: 'Thuê người phụ bán, nhập hàng, giao hàng; nhớ những khách quen và việc làng xóm trong hẻm.' },
+    { icon: '🏘️', title: 'Chơi chung', text: 'Đăng nhập Google để kết bạn, buôn bán chợ liên hẻm và chơi chung hẻm online 2–4 người.' },
+    { icon: '💾', title: 'Lưu & chuyển máy', text: 'Tự lưu trong trình duyệt, lưu cloud khi đăng nhập, hoặc xuất mã để chơi tiếp trên máy khác.' },
+  ] as LandingPoint[],
+  cta: 'Vào chơi ngay',
+};
+
+const SEEN_KEY = 'landingSeen';
+/** Người mới = chưa có bản lưu và chưa từng đóng phần giới thiệu. */
+export function shouldShowLanding(hasSave: boolean, seen: boolean): boolean {
+  return !hasSave && !seen;
+}
+export function landingSeen(): boolean {
+  try { return localStorage.getItem(SEEN_KEY) === '1'; } catch { return false; }
+}
+export function markLandingSeen(): void {
+  try { localStorage.setItem(SEEN_KEY, '1'); } catch { /* bỏ qua */ }
+}

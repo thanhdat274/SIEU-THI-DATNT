@@ -1,11 +1,16 @@
-/* Màn đăng nhập: thị trấn 3D thật chạy phía sau, bên trái là tấm bảng hiệu tiệm tạp hóa. */
-.login {
+/* Màn đăng nhập: thị trấn 3D thật chạy phía sau, bên trái là tấm bảng hiệu tiệm tạp hóa.
+   Biến theme khai báo ở :root (không phải .login): các sheet Menu (Giới thiệu, Xếp hạng, Góp ý…)
+   được portal ra document.body — ngoài phạm vi .login — nếu không thì var(--letter)/var(--ink)
+   vô hiệu, nút .login-btn.primary mất nền vàng và viền (lỗi bắt được khi audit Góp ý). */
+:root {
   --sign: #1d4f91;
   --sign-deep: #12345f;
   --letter: #ffd23f;
   --red: #d7263d;
   --paper: #fffdf6;
   --ink: #1f2430;
+}
+.login {
   pointer-events: auto;
   position: fixed;
   inset: 0;
@@ -481,7 +486,10 @@
 .lm-text { resize: vertical; }
 .lm-count { text-align: right; font-size: 12px; opacity: .6; }
 .lm-kinds { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
-.lm-sheet { background: #fffaf0; color: #222; width: min(520px, calc(100vw - 32px)); max-height: 85vh; display: flex; flex-direction: column; border-radius: 14px; box-shadow: 0 10px 40px rgba(0,0,0,.4); }
+/* Chip chọn loại (góp ý, tab bảng xếp hạng, thiết bị hướng dẫn): ôm nội dung — flex:1 của
+   .login-btn.small làm 5 chip dàn đều mà nhãn dài bị gãy 3 dòng giữa chừng (audit Góp ý). */
+.lm-kinds .login-btn { flex: 0 1 auto; padding: 0 12px; white-space: nowrap; }
+.lm-sheet { background: var(--paper); color: #222; width: min(520px, calc(100vw - 32px)); max-height: 85vh; display: flex; flex-direction: column; border-radius: 14px; box-shadow: 0 10px 40px rgba(0,0,0,.4); }
 .lm-sheet header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-bottom: 1px solid rgba(0,0,0,.12); }
 .lm-sheet h2 { margin: 0; font-size: 18px; }
 .lm-body { padding: 12px 16px 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
@@ -495,3 +503,9 @@
 .lm-board small { opacity: .6; }
 .lm-guide b i { font-style: normal; display: inline-block; min-width: 22px; text-align: center; background: #e8b04a; border-radius: 11px; margin-right: 4px; font-size: 12px; }
 .lm-keys { display: grid; gap: 4px; } .lm-keys div { display: flex; gap: 10px; font-size: 13px; } .lm-keys kbd { min-width: 120px; font-weight: 600; }
+
+/* Giới thiệu game */
+.lm-tagline { margin: 0; font-size: 16px; font-weight: 700; color: #12345f; }
+.lm-points { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.lm-points li { display: flex; flex-direction: column; gap: 2px; font-size: 13px; background: #fff3d6; border-radius: 10px; padding: 8px 10px; }
+@media (max-width: 480px) { .lm-points { grid-template-columns: 1fr; } }

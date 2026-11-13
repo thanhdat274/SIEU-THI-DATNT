@@ -6,13 +6,13 @@ import { loadPlayerName, NAME_MAX, savePlayerName, validatePlayerName } from '..
 import { getBoard, type AlleyBoardRes, type BoardRes } from '../net/socialApi';
 import { useSession } from '../net/session';
 import { getGuestBoard, getPublicAlleyBoard, localLevel, submitGuestScore } from '../net/guestBoard';
-import { DEVICES, KEYS, guessDevice, guideFor, type Device } from '../data/guide';
+import { DEVICES, KEYS, LANDING, guessDevice, guideFor, landingSeen, markLandingSeen, shouldShowLanding, type Device } from '../data/guide';
 import { readLocalSave } from '../core/save';
 import { PrivacyPolicy } from './PrivacyPolicy';
 
 const SettingsPanel = lazy(() => import('./SettingsPanel').then((m) => ({ default: m.SettingsPanel })));
 
-type Modal = 'settings' | 'guide' | 'news' | 'board' | 'feedback' | 'rules' | null;
+type Modal = 'intro' | 'settings' | 'guide' | 'news' | 'board' | 'feedback' | 'rules' | null;
 
 function Sheet({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
   useEffect(() => {
@@ -101,6 +101,19 @@ function BoardTabs() {
         <button className={`login-btn small${t === 'coop' ? ' primary' : ''}`} onClick={() => setT('coop')}>🏘️ Co-op (hẻm)</button>
       </div>
       {t === 'shop' ? <Board /> : <AlleyBoard />}
+    </>
+  );
+}
+
+function Intro({ onPlay }: { onPlay: () => void }) {
+  return (
+    <>
+      <p className="lm-tagline">{LANDING.tagline}</p>
+      {LANDING.intro.map((t) => <p key={t}>{t}</p>)}
+      <ul className="lm-points">
+        {LANDING.points.map((p) => <li key={p.title}><b>{p.icon} {p.title}</b><span>{p.text}</span></li>)}
+      </ul>
+      <button className="login-btn primary" onClick={onPlay}>{LANDING.cta}</button>
     </>
   );
 }
@@ -201,17 +214,18 @@ export function NameField() {
 }
 
 export function LoginMenu() {
-  const [m, setM] = useState<Modal>(null);
+  const [m, setM] = useState<Modal>(() => (shouldShowLanding(!!readLocalSave(), landingSeen()) ? 'intro' : null));
   const items: [Exclude<Modal, null>, string][] = [
-    ['settings', '⚙️ Cài đặt'], ['guide', '📖 Hướng dẫn'], ['news', '🆕 Có gì mới'],
+    ['intro', '🏪 Giới thiệu'], ['settings', '⚙️ Cài đặt'], ['guide', '📖 Hướng dẫn'], ['news', '🆕 Có gì mới'],
     ['board', '🏆 Xếp hạng'], ['feedback', '💬 Góp ý'], ['rules', '📜 Quy định'],
   ];
-  const close = () => setM(null);
+  const close = () => { if (m === 'intro') markLandingSeen(); setM(null); };
   return (
     <>
       <nav className="lm-grid" aria-label="Menu">
         {items.map(([k, label]) => <button key={k} className="login-btn small" onClick={() => setM(k)}>{label}</button>)}
       </nav>
+      {m === 'intro' && <Sheet title={LANDING.title} onClose={close}><Intro onPlay={close} /></Sheet>}
       {m === 'settings' && <Suspense fallback={null}><SettingsPanel onClose={close} /></Suspense>}
       {m === 'rules' && <PrivacyPolicy onClose={close} />}
       {m === 'guide' && (

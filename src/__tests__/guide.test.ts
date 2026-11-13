@@ -15,3 +15,18 @@ describe('hướng dẫn', () => {
     expect(guessDevice(900, true)).toBe('tablet');
   });
 });
+
+import { LANDING, shouldShowLanding } from '../data/guide';
+describe('giới thiệu game', () => {
+  it('đủ chữ, có nút vào chơi', () => {
+    expect(LANDING.tagline && LANDING.cta).toBeTruthy();
+    expect(LANDING.intro.length).toBeGreaterThanOrEqual(1);
+    expect(LANDING.points.length).toBeGreaterThanOrEqual(4);
+    for (const p of LANDING.points) expect(p.icon && p.title && p.text).toBeTruthy();
+  });
+  it('chỉ hiện cho người mới chưa xem', () => {
+    expect(shouldShowLanding(false, false)).toBe(true);
+    expect(shouldShowLanding(true, false)).toBe(false);
+    expect(shouldShowLanding(false, true)).toBe(false);
+  });
+});
