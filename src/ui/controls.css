@@ -1,14 +1,20 @@
-/* Ô chọn, ô nhập, hộp tick trong các bảng game: cùng tông với bảng tối và nút vàng. */
-#ui {
+/* Ô chọn, ô nhập, hộp tick trong các bảng game: cùng tông với bảng tối và nút vàng.
+   Biến khai báo ở :root (không phải #ui): component Dropdown có CSS không scope (dùng được
+   ở mọi context, kể dialog Cài đặt portal ra ngoài #ui) — context sáng chỉ cần ghi đè
+   --ctl-* là dropdown tự đổi tông (xem SettingsPanel). */
+:root {
   --ctl-bg: #3a3a4d;
   --ctl-bg-hover: #45455c;
   --ctl-border: #5a5a74;
   --ctl-text: #fff;
   --ctl-accent: #f1c40f;
+  /* Nền danh sách dropdown và màu hover option: tối mặc định, context sáng ghi đè. */
+  --ctl-list-bg: #2f2f40;
+  --ctl-opt-active: rgba(255, 255, 255, 0.08);
 }
 
 #ui select,
-#ui input:not([type='checkbox']):not([type='radio']):not(.login-code) {
+#ui input:not([type='checkbox']):not([type='radio']):not(.login-code):not(.lm-input):not(.lm-text) {
   height: 30px;
   padding: 0 10px;
   border: 1px solid var(--ctl-border);
@@ -37,7 +43,7 @@
 }
 
 #ui select:hover,
-#ui input:not([type='checkbox']):hover {
+#ui input:not([type='checkbox']):not(.login-code):not(.lm-input):not(.lm-text):hover {
   background-color: var(--ctl-bg-hover);
 }
 
@@ -47,8 +53,14 @@
   box-shadow: 0 0 0 3px rgba(241, 196, 15, 0.25);
 }
 
-#ui input::placeholder {
+/* Ô nhập nền sáng của màn đăng nhập (.lm-input/.lm-text): placeholder xám đậm thay vì
+   trắng mờ — trắng trên kem là biến mất (lỗi ô "Tên của bạn" bị nhuộm tối bởi luật #ui). */
+#ui input:not(.lm-input):not(.lm-text)::placeholder {
   color: rgba(255, 255, 255, 0.4);
+}
+#ui .lm-input::placeholder,
+#ui .lm-text::placeholder {
+  color: rgba(0, 0, 0, 0.45);
 }
 
 /* Hộp tick hiện thành công tắc gạt: rõ bật/tắt, dễ bấm trên điện thoại */
@@ -121,7 +133,7 @@
 }
 
 /* Ô chọn tự vẽ (Dropdown.tsx) */
-#ui .dd-trigger {
+.dd-trigger {
   display: inline-flex;
   align-items: center;
   justify-content: space-between;
@@ -139,18 +151,18 @@
   cursor: pointer;
   transition: border-color 0.12s, background-color 0.12s, box-shadow 0.12s;
 }
-#ui .dd-trigger:hover { background: var(--ctl-bg-hover); }
-#ui .dd-trigger:focus-visible,
-#ui .dd-trigger.open {
+.dd-trigger:hover { background: var(--ctl-bg-hover); }
+.dd-trigger:focus-visible,
+.dd-trigger.open {
   outline: none;
   border-color: var(--ctl-accent);
   box-shadow: 0 0 0 3px rgba(241, 196, 15, 0.25);
 }
-#ui .dd-value { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-#ui .dd-arrow { flex: none; color: var(--ctl-accent); transition: transform 0.15s; }
-#ui .dd-trigger.open .dd-arrow { transform: rotate(180deg); }
+.dd-value { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dd-arrow { flex: none; color: var(--ctl-accent); transition: transform 0.15s; }
+.dd-trigger.open .dd-arrow { transform: rotate(180deg); }
 
-#ui .dd-list {
+.dd-list {
   position: fixed;
   z-index: 1000;
   display: flex;
@@ -158,15 +170,15 @@
   padding: 4px;
   border: 1px solid var(--ctl-border);
   border-radius: 10px;
-  background: #2f2f40;
+  background: var(--ctl-list-bg);
   color: var(--ctl-text);
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
   font-size: 13px;
   pointer-events: auto;
 }
-#ui .dd-list .dd-search { margin: 2px 2px 6px; flex: none; }
-#ui .dd-options { overflow-y: auto; }
-#ui .dd-option {
+.dd-list .dd-search { margin: 2px 2px 6px; flex: none; }
+.dd-options { overflow-y: auto; }
+.dd-option {
   display: flex;
   justify-content: space-between;
   gap: 12px;
@@ -175,14 +187,14 @@
   cursor: pointer;
   white-space: nowrap;
 }
-#ui .dd-option.active { background: rgba(255, 255, 255, 0.08); }
-#ui .dd-option.selected { color: var(--ctl-accent); font-weight: 600; }
-#ui .dd-option.selected::after { content: '✓'; }
-#ui .dd-hint { opacity: 0.55; font-weight: 400; }
-#ui .dd-empty { padding: 8px 10px; opacity: 0.6; }
+.dd-option.active { background: var(--ctl-opt-active); }
+.dd-option.selected { color: var(--ctl-accent); font-weight: 600; }
+.dd-option.selected::after { content: '✓'; }
+.dd-hint { opacity: 0.55; font-weight: 400; }
+.dd-empty { padding: 8px 10px; opacity: 0.6; }
 
 @media (prefers-reduced-motion: reduce) {
-  #ui .dd-trigger, #ui .dd-arrow { transition: none; }
+  .dd-trigger, #ui .dd-arrow { transition: none; }
 }
 
 /* Bảng nhập hàng: 7 cột trên máy tính, thành thẻ 2–3 dòng trên màn hẹp.
@@ -208,7 +220,7 @@
    rule .panel không bao giờ chạy ở nhiều môi trường — nút panel chỉ cao 21–29px). */
 @media (max-width: 700px) {
   #ui .dd-trigger, #ui select, #ui input:not([type='checkbox']) { height: 38px; font-size: 16px; }
-  #ui .dd-option { padding: 11px 12px; }
+  .dd-option { padding: 11px 12px; }
   #ui .or-qty button { width: 32px !important; height: 32px !important; }
   #ui .or-qty input { height: 32px !important; }
   /* Nút thao tác trong panel (inline styles.btn chỉ có padding 5px/10px nên cao ~28px):

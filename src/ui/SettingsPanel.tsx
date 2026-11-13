@@ -17,6 +17,7 @@ import { decodeSaveCode, encodeSaveCode } from '../core/saveCode';
 import { WHATS_NEW } from '../data/whatsNew';
 import { telemetryOptedIn, setTelemetryOptIn } from '../data/telemetryConsent';
 import { deleteTelemetry, flushReports } from '../core/dayReport';
+import { Dropdown } from './Dropdown';
 
 type Tab = 'img' | 'gfx' | 'audio' | 'play' | 'a11y' | 'data' | 'game';
 /** Việc của ván đang chơi (chỉ có khi mở từ trong game; ở màn đăng nhập tab này ẩn). */
@@ -48,6 +49,14 @@ const dlgBtn: React.CSSProperties = {
 };
 const dlgBtnPrimary: React.CSSProperties = { ...dlgBtn, background: '#c8663f', borderColor: '#c8663f', color: '#fff', fontWeight: 600 };
 const dlgBtnDisabled: React.CSSProperties = { opacity: 0.5, cursor: 'default' };
+// Tông sáng cho điều khiển tự vẽ (Dropdown): kem + viền nâu, action cam — bám bảng màu tab/dialog.
+// accentColor nhuộm luôn slider/checkbox thuần của trình duyệt (trước đây xanh mặc định, lệch tông).
+const lightCtl = {
+  accentColor: '#c8663f',
+  '--ctl-bg': '#fff7ec', '--ctl-bg-hover': '#f8e8d0', '--ctl-border': '#b9825a',
+  '--ctl-text': '#4a2f1c', '--ctl-accent': '#c8663f',
+  '--ctl-list-bg': '#fffdf6', '--ctl-opt-active': 'rgba(200, 102, 63, 0.16)',
+} as React.CSSProperties;
 
 function Row({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
@@ -73,12 +82,16 @@ function Switch({ on, onChange, label }: { on: boolean; onChange: (v: boolean) =
 function Select<T extends string | number>({ value, options, onChange, label }: {
   value: T; options: [T, string][]; onChange: (v: T) => void; label: string;
 }) {
+  // Dropdown tự vẽ thay <select>: danh sách thả của <select> do hệ điều hành vẽ — không bo góc,
+  // không đổi kiểu được. Component Dropdown dùng lại được ở mọi context (biến --ctl-* quyết định tông).
+  const opts = options.map(([v, t]) => ({ value: String(v), label: t }));
   return (
-    <select aria-label={label} value={String(value)}
-      onChange={(e) => { const o = options.find(([v]) => String(v) === e.target.value); if (o) onChange(o[0]); }}
-      style={{ padding: '6px 8px', borderRadius: 8, border: '1px solid #b9825a', background: '#fff7ec', color: '#4a2f1c' }}>
-      {options.map(([v, t]) => <option key={String(v)} value={String(v)}>{t}</option>)}
-    </select>
+    <Dropdown
+      value={String(value)}
+      options={opts}
+      ariaLabel={label}
+      onChange={(sv) => { const o = options.find(([v]) => String(v) === sv); if (o) onChange(o[0]); }}
+    />
   );
 }
 
@@ -347,7 +360,11 @@ export function SettingsPanel({ onClose, game, initialTab }: { onClose: () => vo
     <div role="dialog" aria-label="Cài đặt" onClick={onClose}
       style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.45)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div onClick={(e) => e.stopPropagation()}
-        style={{ background: '#fffaf0', color: '#4a2f1c', borderRadius: 14, width: 'min(520px, 94vw)', maxHeight: '88vh', display: 'flex', flexDirection: 'column', boxShadow: '0 10px 40px rgba(0,0,0,.4)' }}>
+        style={{
+          background: '#fffaf0', color: '#4a2f1c', borderRadius: 14, width: 'min(520px, 94vw)', maxHeight: '88vh', display: 'flex', flexDirection: 'column', boxShadow: '0 10px 40px rgba(0,0,0,.4)',
+          // Ghi đè biến --ctl-* (mặc định tông panel tối) để dropdown/điều khiển tự vẽ theo tông sáng của dialog
+          ...lightCtl,
+        }}>
         <div style={{ display: 'flex', alignItems: 'center', padding: '14px 16px 0' }}>
           <div style={{ flex: 1 }}>
             <h3 style={{ margin: 0 }}>⚙️ Cài đặt</h3>

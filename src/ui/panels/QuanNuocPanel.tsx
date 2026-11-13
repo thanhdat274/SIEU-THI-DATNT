@@ -8,14 +8,16 @@ import { quanNuocProjection, quanNuocCupSupply, quanNuocRestockTip, quanNuocBuil
 import { quanStatusChips } from '../../data/quanNuocStatus';
 import { quanNuocStaffValues } from '../../data/quanNuocStaffValue';
 import { teahouseHaulRead } from '../../data/teahouseHaul';
-import { Callout, Footer, styles } from './shared';
+import { Callout, CALLOUT_TONE, Footer, styles } from './shared';
 import { ZoneMapSection } from './ZoneMapSection';
 import { TiemXoiSection } from './TiemXoiSection';
 import { QuanMenuSection } from './QuanMenuSection';
 import { WEATHER } from '../../data/weather';
 import { quanHotNote } from '../../data/quanRecipes';
 
-const CHIP_BG = { ok: '#27ae60', warn: '#d68910', bad: '#c0392b', info: '#5d6d7e' } as const;
+// Chip trạng thái dùng đúng bảng màu ngữ cảnh chuẩn của dự án (Callout, GĐ166) — bộ màu riêng
+// gần-giống-but-lệch làm palette cả panel loãng.
+const CHIP_BG = { ok: CALLOUT_TONE.ok, warn: CALLOUT_TONE.warn, bad: CALLOUT_TONE.danger, info: CALLOUT_TONE.info } as const;
 
 /** Thứ tự hiển thị 3 mức giờ bán: bình dân → vừa phải → đắt hơn. */
 const PRICE_ORDER: readonly QuanNuocPrice[] = ['re', 'vua', 'cao'];

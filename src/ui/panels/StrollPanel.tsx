@@ -23,6 +23,8 @@ export function StrollPanel() {
   );
   const box = { ...styles.card, display: 'block' } as const;
   const row = { display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' } as const;
+  // Chuẩn nút dự án: hành động tốn tiền = vàng đặc (như panel Kinh doanh/Xây dựng), còn lại mặc định.
+  const gold = { ...styles.btn, background: '#f1c40f', color: '#222', fontWeight: 700 } as const;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
@@ -37,7 +39,7 @@ export function StrollPanel() {
       <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 6, opacity: locked ? 0.5 : 1, pointerEvents: locked ? 'none' : 'auto' }}>
         <div style={box}>
           <div style={row}>{head('ticket')}
-            <button style={styles.btn} disabled={st.tickets >= TICKET_CAP || money < TICKET_PRICE} onClick={() => strollTicket()}>
+            <button style={gold} disabled={st.tickets >= TICKET_CAP || money < TICKET_PRICE} onClick={() => strollTicket()}>
               Mua vé {formatMoney(TICKET_PRICE)} ({st.tickets}/{TICKET_CAP})
             </button>
           </div>
@@ -45,7 +47,7 @@ export function StrollPanel() {
         <div style={box}>
           <div style={row}>{head('temple')}
             <button style={styles.btn} disabled={st.incense} onClick={() => strollIncense()}>{st.incense ? 'Đã thắp nhang' : 'Thắp nhang'}</button>
-            <button style={styles.btn} disabled={!st.incense || st.fortune || money < FORTUNE_DONATE} onClick={() => strollFortune()}>
+            <button style={gold} disabled={!st.incense || st.fortune || money < FORTUNE_DONATE} onClick={() => strollFortune()}>
               {st.fortune ? 'Đã xin quẻ' : `Xin quẻ (${formatMoney(FORTUNE_DONATE)})`}
             </button>
           </div>
@@ -59,7 +61,7 @@ export function StrollPanel() {
           <div style={row}>{head('dice')}</div>
           <div style={{ ...row, marginTop: 6 }}>
             {DICE_STAKES.map((a) => (
-              <button key={a} style={styles.btn} disabled={st.dice >= DICE_CAP || money < a} onClick={() => strollDice(a)}>Cược {formatMoney(a)}</button>
+              <button key={a} style={gold} disabled={st.dice >= DICE_CAP || money < a} onClick={() => strollDice(a)}>Cược {formatMoney(a)}</button>
             ))}
             <span style={{ fontSize: 12, opacity: 0.8 }}>Ván hôm nay: {st.dice}/{DICE_CAP}</span>
           </div>
@@ -72,11 +74,11 @@ export function StrollPanel() {
                 <span style={{ fontSize: 13, color: overdue ? '#e74c3c' : undefined }}>
                   Đang nợ {formatMoney(debt)} · {overdue ? `quá hạn ${day - st.shark.dueDay} ngày, đang tính lãi chồng` : `hạn ngày ${st.shark.dueDay}`}
                 </span>
-                <button style={styles.btn} disabled={money <= 0} onClick={() => strollRepay()}>Trả nợ</button>
+                <button style={gold} disabled={money <= 0} onClick={() => strollRepay()}>Trả nợ</button>
               </>
             ) : (
               <>
-                <button style={styles.btn} onClick={() => strollBorrow()}>Vay {formatMoney(sharkOffer(level))}</button>
+                <button style={gold} onClick={() => strollBorrow()}>Vay {formatMoney(sharkOffer(level))}</button>
                 <span style={{ fontSize: 12, opacity: 0.8 }}>Phải trả {formatMoney(Math.round(sharkOffer(level) * SHARK_RATE))} sau {SHARK_DAYS} ngày, quá hạn mỗi ngày +10%.</span>
               </>
             )}

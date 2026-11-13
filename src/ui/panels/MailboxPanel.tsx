@@ -17,6 +17,8 @@ export function MailboxPanel() {
   const load = () => { listInbox().then((r) => setInbox(r.items)).catch(() => setInbox([])); };
   useEffect(() => { if (account) load(); }, [account]);
   const total = mails.length + (inbox?.length ?? 0);
+  // Chuẩn nút dự án: nhận thứ có giá trị = vàng đặc; mở điều hướng giữ nút mặc định.
+  const gold = { ...styles.btn, background: '#f1c40f', color: '#222', fontWeight: 700 } as const;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
@@ -36,7 +38,7 @@ export function MailboxPanel() {
           <div style={{ ...styles.card, display: 'block' }}>
             <div style={{ display: 'flex', alignItems: 'center' }}>
               <b style={{ flex: 1 }}>Thư từ bạn bè và chợ ({inbox.length})</b>
-              <button style={styles.btn} onClick={() => { claimInbox(inbox); load(); }}>Nhận tất cả</button>
+              <button style={gold} onClick={() => { claimInbox(inbox); load(); }}>Nhận tất cả</button>
             </div>
             {inbox.slice(0, 12).map((i) => (
               <div key={i.id} style={{ fontSize: 13, marginTop: 4 }}>
