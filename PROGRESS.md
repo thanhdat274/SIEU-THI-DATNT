@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (13/11/2026)
+- GĐ2427: MÓN MỚI Bắp hầm (Nam Bộ, nồi luộc/hầm `hot_kettle`: bắp + nước cốt dừa + đường + mè rang → 12 × 12k, mở 81, `since: 1`, đã tra nguồn); bảng test monThat/monKhuon + baseline unlockPacing (81–100 = 127) + tái sinh UNLOCK-CURVE (1920 mốc).
 - GĐ2426: MÓN MỚI Chả ram (Bình Định, chảo chiên `fryer`: tôm tươi + thịt heo + bánh tráng + hành phi → 20 × 8k, mở 81, `since: 1`, đã tra nguồn); bảng test monThat/monKhuon + baseline unlockPacing (81–100 = 125) + tái sinh UNLOCK-CURVE (1918 mốc).
 - GĐ2425: MÓN MỚI Bánh tẻ (Bắc Bộ, nồi hấp `steamer`: bột gạo + thịt heo + nấm mèo khô + hành phi → 16 × 9k, mở 81, `since: 1`, đã tra nguồn); bảng test monThat/monKhuon + baseline unlockPacing (81–100 = 123) + tái sinh UNLOCK-CURVE (1916 mốc).
 - GĐ2424: MÓN MỚI Bánh cống (Sóc Trăng/miền Tây, chảo chiên `fryer`: bột gạo + đậu xanh + thịt heo + tôm tươi → 14 × 15k, mở 81, `since: 1`, đã tra nguồn); bảng test monThat/monKhuon + baseline unlockPacing (81–100 = 121) + tái sinh UNLOCK-CURVE (1914 mốc).
