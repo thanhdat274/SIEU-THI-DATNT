@@ -182,7 +182,7 @@ export function Upgrades() {
     <>
       <div style={{ ...card, marginBottom: 8 }}>
         <b>🔧 Thiết bị của tiệm</b>
-        <div style={sub}>Mua một lần dùng vĩnh viễn — tiền đốt cho giai đoạn về sau, mỗi món gắn với một hệ thống đã có.</div>
+        <div style={sub}>Thiết bị nấu nâng được nhiều bậc (chỉ khi đóng cửa, bậc cao nấu nhanh nhưng ngốn điện); camera, POS, bảo trì, ca đêm mua một lần dùng vĩnh viễn.</div>
       </div>
       <EquipmentSection />
       {UPGRADES.map((u) => {
