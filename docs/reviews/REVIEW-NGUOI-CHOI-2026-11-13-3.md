@@ -67,3 +67,6 @@ Vòng đầy đủ nhà→tiệm→bán→ngủ bằng UI trên mobile; 1024×76
 - Các review 08–09/11 và 13/11, 13/11-2: đã đóng ở GĐ1826–1829 và GĐ2392; không còn mục mở.
 - GĐ2397: nút ✕ panel sắp xếp ≥44px trên cảm ứng.
 - GĐ2398: R9 — cấp >30, chạy >3× mà ≥4 khách chờ quầy → hạ về 3× một lần kèm thông báo (test `tocDoKhachCho`). R5 — dòng lễ/chợ và "lễ sắp tới" trong chip đồng hồ gộp thành một dòng.
+- R12 (GĐ2399, chạy sim): `runEconomySim` seed 169, 3 ngày, cấp 16/18/20/22/24/26/28 → tiền cuối kỳ 17,7–22,8 triệu, lãi vận hành âm ngày đầu rồi tiến về ~0 — cùng dạng với mốc golden cấp 10–100; KHÔNG có vách ở cấp 20/24. Số 2,37 triệu vs 473k trong review là do autoplay tự chi, không so được → đóng, không sửa.
+- R11 (tái hiện bằng trình duyệt pane ẩn, 42 FPS): toast "Máy hơi nặng" bật vì khung hình thật sự chậm trong môi trường này (pane ẩn/GL mềm) — bộ tự giảm đồ họa chạy đúng, không phải lỗi. Giữ nguyên.
+- R8: tái hiện được cảnh báo `GL_INVALID_FRAMEBUFFER_OPERATION … zero size` (263 lần) khi canvas 0×0 (pane ẩn). Thêm guard bỏ khung vẽ khi canvas 0×0 ở `src/main.tsx` (GĐ2399). Chưa xác nhận số cảnh báo về 0 do log console cũ còn lưu; lỗi `Buffer used in submit while destroyed` riêng của WebGPU chưa tái hiện.

@@ -895,6 +895,10 @@ function renderFrame() {
     lastPerfDay = g.day;
   }
 
+  // Review 13/11-3 R8: canvas 0×0 (tab/pane ẩn, đang xoay/đổi cỡ) → vẽ vào framebuffer rỗng sinh hàng trăm
+  // cảnh báo GL_INVALID_FRAMEBUFFER_OPERATION. Bỏ khung này, khung sau có kích thước lại thì vẽ tiếp.
+  const cv = renderer.domElement;
+  if (!cv.clientWidth || !cv.clientHeight) return;
   if (tiltShift) tiltShift.render();
   else renderer.render(scene, camera);
 }
