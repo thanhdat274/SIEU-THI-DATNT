@@ -32,6 +32,7 @@ const MamNguQua = lazy(() => import('./MamNguQua').then((m) => ({ default: m.Mam
 const DenOngSao = lazy(() => import('./DenOngSao').then((m) => ({ default: m.DenOngSao })));
 const FlanKhuon = lazy(() => import('./FlanKhuon').then((m) => ({ default: m.FlanKhuon })));
 const PhaNuoc = lazy(() => import('./PhaNuoc').then((m) => ({ default: m.PhaNuoc })));
+const XepKetBia = lazy(() => import('./XepKetBia').then((m) => ({ default: m.XepKetBia })));
 const GAME_MAP: Record<string, LazyExoticComponent<ComponentType<MiniGameProps>>> = {
   tap_test: TapSpot,
   gio_qua: GioQua,
@@ -40,6 +41,7 @@ const GAME_MAP: Record<string, LazyExoticComponent<ComponentType<MiniGameProps>>
   den_ong_sao: DenOngSao,
   banh_flan: FlanKhuon,
   pha_nuoc: PhaNuoc,
+  xep_ket: XepKetBia,
 };
 
 type Phase = 'play' | 'result';

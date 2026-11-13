@@ -149,6 +149,17 @@ export const FESTIVAL_MINIS: FestivalMiniDef[] = [
     seconds: 45,
     reward: recipeMiniReward(2, 8), // mẻ hôm đó ra thêm 0–2 ly
   },
+  // ⑦ Xếp két lên xe đẩy — Giải bóng đá phường (SPEC §7.6), gắn với recipe_ca_vien_chien_mam (mẻ thường 9 xiên).
+  {
+    id: 'xep_ket',
+    name: 'Xếp két lên xe đẩy',
+    icon: '🛒',
+    festivals: ['bong_da_phuong'],
+    unlock: 55, // = cấp mở recipe_ca_vien_chien_mam
+    target: { kind: 'recipe', recipeId: 'recipe_ca_vien_chien_mam' },
+    seconds: 30,
+    reward: recipeMiniReward(2, 8),
+  },
   // Trò giả để thử khung trên điện thoại (L1) — chỉ mở qua hash #mini=tap_test, không vô UI thật.
   {
     id: 'tap_test',
