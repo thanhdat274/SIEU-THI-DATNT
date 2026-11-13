@@ -44,6 +44,7 @@ const BrandPanel = lazy(() => import('./panels/BrandPanel').then((m) => ({ defau
 const TodoListPanel = lazy(() => import('./panels/TodoListPanel').then((m) => ({ default: m.TodoListPanel })));
 const NotifLogPanel = lazy(() => import('./panels/NotifLogPanel').then((m) => ({ default: m.NotifLogPanel })));
 
+const StrollPanel = lazy(() => import('./panels/StrollPanel').then((m) => ({ default: m.StrollPanel })));
 const MailboxPanel = lazy(() => import('./panels/MailboxPanel').then((m) => ({ default: m.MailboxPanel })));
 
 /** GĐ2349 — khung "vừa" cho vài panel nội dung vốn ngắn (Sổ thông báo): không ép khung LỚN 688px
@@ -117,6 +118,7 @@ export function Panels() {
         {panel.type === 'todo' && <TodoListPanel />}
         {panel.type === 'log' && <NotifLogPanel />}
         {panel.type === 'mailbox' && <MailboxPanel />}
+        {panel.type === 'stroll' && <StrollPanel />}
         </Suspense>
         </div>
       </div>

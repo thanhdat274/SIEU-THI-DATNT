@@ -44,6 +44,8 @@ import { createInventorySlice } from './slices/inventory';
 import { createSalesSlice } from './slices/sales';
 import { createRegularsSlice } from './slices/regulars';
 import { createProgressSlice } from './slices/progress';
+import { createStrollSlice } from './slices/stroll';
+import { newStroll } from '../data/stroll';
 import { createStaffSlice } from './slices/staff';
 import { createClockSlice } from './slices/clock';
 import { createSocialSlice } from './slices/social';
@@ -195,6 +197,7 @@ export const newGameData = () => ({
   wheelLastDay: 0,
   wheelLastPrize: null as { icon: string; label: string } | null,
   wheelBoost: 1,
+  stroll: newStroll(),
   lastSeenAt: 0,
   skills: [] as SkillId[],
   titles: [] as string[],
@@ -256,6 +259,7 @@ export const useGame = create<GameState>((set, get) => {
     ...createSalesSlice(set, get),
     ...createRegularsSlice(set, get),
     ...createProgressSlice(set, get),
+    ...createStrollSlice(set, get),
     ...createStaffSlice(set, get),
     ...createClockSlice(set, get),
     ...createSocialSlice(set, get),

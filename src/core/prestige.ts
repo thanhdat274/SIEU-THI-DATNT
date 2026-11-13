@@ -74,6 +74,7 @@ export function prestigeRestart(prev: GameState): GameState {
     giftGraceDay: prev.giftGraceDay,
     wheelLastDay: prev.wheelLastDay,
     wheelBoost: prev.wheelBoost,
+    stroll: prev.stroll,
     totals: prev.totals,
     biz: {
       ...base.biz,

@@ -24,6 +24,7 @@ import type { RandomEvent } from '../data/events';
 import type { RepSample } from '../data/reputation';
 import type { CommunityProgress, Opening } from '../data/community';
 import type { WheelPrize } from '../data/gifts';
+import type { Fortune, StrollState } from '../data/stroll';
 import type { PaymentMethod } from '../data/payments';
 import type { BranchState, PowerUpgradeId } from '../data/branches';
 import type { VenueDay } from '../data/venueTrend';
@@ -144,6 +145,7 @@ export type Panel =
   | { type: 'cook'; focus?: string }
   | { type: 'morning'; focus?: string }
   | { type: 'todo' } // GĐ2317: Sổ việc chung (SPEC-TOI-UU §T6-L3) — gộp mọi nguồn đã đăng ký qua registerTodo
+  | { type: 'stroll' } // Dạo phố: vé số, chùa, ngân hàng, tài xỉu, vay nóng
   | { type: 'mailbox' } // Hòm thư: quà chờ nhận + thư online gom một chỗ
   | { type: 'log' } // GĐ2347: Sổ thông báo — xem lại mọi tin đã hiện lên HUD trong phiên
   | { type: 'history' }
@@ -440,6 +442,17 @@ export interface GameState {
   wheelLastPrize: { icon: string; label: string } | null;
   /** Nhân lượng khách ghé hôm nay khi trúng giải 🍀 trên vòng quay (1 = bình thường). */
   wheelBoost: number;
+  /** Dạo phố: bộ đếm mỗi ngày (vé số, nhang, quẻ, tài xỉu) và nợ chú Tư. Mặc định newStroll(). */
+  stroll: StrollState;
+  /** Mua một tờ vé số cào; trả tiền trúng (0 = trượt) hoặc null nếu không mua được. */
+  strollTicket: () => number | null;
+  strollIncense: () => boolean;
+  /** Xin quẻ (cần thắp nhang trước, tốn tiền công đức); quẻ tốt tăng nhẹ lượng khách hôm nay. */
+  strollFortune: () => Fortune | null;
+  /** Một ván tài xỉu với mức cược cho phép; true = thắng, null = không chơi được. */
+  strollDice: (stake: number) => boolean | null;
+  strollBorrow: () => boolean;
+  strollRepay: () => boolean;
   /** Mốc thời gian THẬT (epoch ms) lần ghé/hoạt động gần nhất — đo vắng mặt cho thưởng "Chào mừng quay lại". */
   lastSeenAt: number;
   /** Soát thưởng "Chào mừng quay lại" khi nạp bản lưu: đủ 2 ngày thật vắng thì thưởng một lần; luôn làm mới lastSeenAt. */
