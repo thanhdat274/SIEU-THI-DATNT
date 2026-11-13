@@ -16,7 +16,8 @@ import { importSaveData, snapshot, type SaveData } from '../core/save';
 import { decodeSaveCode, encodeSaveCode } from '../core/saveCode';
 import { WHATS_NEW } from '../data/whatsNew';
 import { telemetryOptedIn, setTelemetryOptIn } from '../data/telemetryConsent';
-import { deleteTelemetry, flushReports } from '../core/dayReport';
+import { deleteTelemetry, exportReportsJson, flushReports } from '../core/dayReport';
+import { TelemetrySampleView } from './TelemetrySampleView';
 import { Dropdown } from './Dropdown';
 
 type Tab = 'img' | 'gfx' | 'audio' | 'play' | 'a11y' | 'data' | 'game';
@@ -209,7 +210,6 @@ function AudioTab() {
 
 function PlayTab() {
   const [s, set] = useSettings();
-  const [tele, setT] = useState(telemetryOptedIn());
   return (
     <div>
       <Row label="Tự động lưu" hint="Khi tắt, game chỉ lưu khi bạn bấm Lưu hoặc đóng/ẩn tab">
@@ -229,12 +229,23 @@ function PlayTab() {
       <Row label="Xác nhận trước khi kết thúc ngày" hint="Hỏi lại khi nằm lên giường đi ngủ">
         <Switch label="Xác nhận kết thúc ngày" on={s.confirmEndDay} onChange={(v) => set({ confirmEndDay: v })} />
       </Row>
-      <Row label="Gửi số liệu ẩn danh" hint="Mặc định tắt; tắt thì xoá số liệu đã gửi">
-        <Switch label="Gửi số liệu ẩn danh" on={tele}
-          onChange={(v) => { setTelemetryOptIn(v); setT(v); if (v) void flushReports(); else void deleteTelemetry(); }} />
-      </Row>
     </div>
   );
+}
+
+/** Tải file JSON 30 bản ghi ngày ẩn danh (SPEC-TOI-UU §T1) — người chơi thử gửi qua tin nhắn. */
+function downloadPlayLog() {
+  try {
+    const blob = new Blob([exportReportsJson()], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `tap-hoa-nhat-ky-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  } catch { /* bỏ qua */ }
 }
 
 function A11yTab() {
@@ -298,6 +309,8 @@ function DataTab() {
   const [code, setCode] = useState('');
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [pending, setPending] = useState<SaveData | null>(null);
+  const [tele, setT] = useState(telemetryOptedIn());
+  const [teleView, setTeleView] = useState(false);
   const exportCode = async () => {
     try {
       const c = await encodeSaveCode(snapshot());
@@ -335,6 +348,18 @@ function DataTab() {
         </div>
         {msg && <div role="status" style={{ marginTop: 6, fontSize: 12, color: msg.ok ? '#2a7a3a' : '#b3261e' }}>{msg.text}</div>}
       </div>
+      <div style={{ fontWeight: 700, margin: '8px 0 4px' }}>📊 Nhật ký & số liệu chơi thử</div>
+      <Row label="Xuất nhật ký chơi thử" hint="Tải file 30 ngày gần nhất lưu trên máy (không gửi đi đâu) để gửi cho người làm game">
+        <button style={dlgBtn} onClick={downloadPlayLog}>Tải về</button>
+      </Row>
+      <Row label="Gửi số liệu ẩn danh" hint="Mặc định tắt; tắt thì xoá số liệu đã gửi">
+        <Switch label="Gửi số liệu ẩn danh" on={tele}
+          onChange={(v) => { setTelemetryOptIn(v); setT(v); if (v) void flushReports(); else void deleteTelemetry(); }} />
+      </Row>
+      <Row label="Xem gửi những gì" hint="Bản ghi mẫu đúng như những gì sẽ gửi">
+        <button style={dlgBtn} onClick={() => setTeleView(!teleView)}>{teleView ? 'Ẩn' : 'Xem'}</button>
+      </Row>
+      {teleView && <TelemetrySampleView />}
       <div style={{ fontWeight: 700, margin: '8px 0 4px' }}>📰 Có gì mới</div>
       {WHATS_NEW.map((w) => (
         <div key={w.date} style={{ padding: '6px 0', borderBottom: '1px solid rgba(0,0,0,.08)' }}>

@@ -72,7 +72,7 @@ interface DayReport {
 - Cập nhật `docs/CHINH-SACH-BAO-MAT.md`: mục "Số liệu ẩn danh".
 
 ### Dùng được ngay cả khi chưa có server
-`game.report()` trong console và nút "Xuất nhật ký chơi thử" trong ⋯ Thêm: tải về một file JSON gồm 30 `DayReport` gần nhất lưu cục bộ. Người chơi thử gửi file qua tin nhắn là có số liệu, không cần chờ lượng người dùng.
+`game.report()` trong console và nút "Xuất nhật ký chơi thử" trong Cài đặt → Dữ liệu: tải về một file JSON gồm 30 `DayReport` gần nhất lưu cục bộ. Người chơi thử gửi file qua tin nhắn là có số liệu, không cần chờ lượng người dùng.
 
 ### Đọc số liệu
 Script `scripts/telemetry-report.mjs` đọc MongoDB (hoặc một thư mục file JSON xuất tay) và in ra `docs/telemetry/BAO-CAO-<ngày>.md` với năm bảng ứng với năm câu hỏi ở trên. Không dựng dashboard.

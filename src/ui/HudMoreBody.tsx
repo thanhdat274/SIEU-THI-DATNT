@@ -1,31 +1,14 @@
 /** GĐ651: phần trong menu Thêm (chỉ hiện khi bấm ⋯) — nạp lười, không nằm trong gói tải ban đầu. */
 import { Fragment, lazy, Suspense, useMemo, useState } from 'react';
 import { GFX_CYCLE, GFX_LABEL, gfxStatus, setGfxChoice } from '../render/graphicsQuality';
-import { exportReportsJson } from '../core/dayReport';
 import { useGame } from '../core/store';
 import { ToolButton, type ToolDef } from './HudToolButton';
 import { groupTools } from './groupTools';
 import { HUBS } from './hubs';
 import { SYSTEM_UNLOCKS } from '../data/unlockMap';
 import { PRODUCTS } from '../data/products';
-import { telemetryOptedIn, setTelemetryOptIn } from '../data/telemetryConsent';
-import { deleteTelemetry, flushReports } from '../core/dayReport';
-import { TelemetrySampleView } from './TelemetrySampleView';
 
-/** Tải file JSON 30 bản ghi ngày ẩn danh (SPEC-TOI-UU §T1) — người chơi thử gửi qua tin nhắn. */
-function downloadPlayLog() {
-  try {
-    const blob = new Blob([exportReportsJson()], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `tap-hoa-nhat-ky-${new Date().toISOString().slice(0, 10)}.json`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-  } catch { /* bỏ qua */ }
-}
+// Xuất nhật ký chơi thử, bật/tắt số liệu ẩn danh, xem gửi những gì → đã chuyển vào Cài đặt → Dữ liệu.
 
 const HudKeys = lazy(() => import('./HudKeys').then((m) => ({ default: m.HudKeys })));
 const TOUCH = typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches;
@@ -33,8 +16,6 @@ const TOUCH = typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)
 export function MoreMenuBody({ tools, level, onHelp, keys, setKeys, setOpen, onSettings }: {
   tools: ToolDef[]; level: number; onHelp: () => void; keys: boolean; setKeys: (v: boolean) => void; setOpen: (v: boolean) => void; onSettings: () => void;
 }) {
-  const [teleOpen, setTeleOpen] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
   // SPEC-TOI-UU §T6 (L3): mở Sổ việc chung từ menu ⋯ (không đụng dải HUD / chip / MorningPanel).
   const openTodo = () => useGame.getState().openPanel({ type: 'todo' } as never);
   // GĐ2347: Sổ thông báo — xem lại mọi tin đã hiện lên HUD trong phiên.
@@ -45,6 +26,8 @@ export function MoreMenuBody({ tools, level, onHelp, keys, setKeys, setOpen, onS
         <Suspense fallback={null}><HudKeys /></Suspense>
       ) : (
         <>
+          {/* SPEC-TOI-UU §T6 (L6): tìm nhanh bảng / hệ / món — ô gõ luôn hiện ở đầu menu (không cần bấm nút mở). */}
+          <HubSearch onPick={() => setOpen(false)} />
           {/* Tiêu đề nhóm nhỏ trước từng cụm; gom theo nhóm để mỗi tiêu đề chỉ hiện 1 lần (playtest M5) */}
           {groupTools(tools).map((t, i, arr) => (
             <Fragment key={t.label}>
@@ -61,31 +44,12 @@ export function MoreMenuBody({ tools, level, onHelp, keys, setKeys, setOpen, onS
           <ToolButton tool={{ icon: '✉️', label: 'Hòm thư', on: () => useGame.getState().openPanel({ type: 'mailbox' } as never) }} level={level} onPicked={() => setOpen(false)} />
           {/* GĐ2347: xem lại thông báo đã trôi / đang bị gom — mọi tin trong phiên đọc lại được */}
           <ToolButton tool={{ icon: '🔔', label: 'Sổ thông báo', on: openNotifLog }} level={level} onPicked={() => setOpen(false)} />
-          {/* SPEC-TOI-UU §T1 (L1): xuất 30 bản ghi ngày ẩn danh cục bộ (không gửi đi đâu). */}
-          <ToolButton tool={{ icon: '📤', label: 'Xuất nhật ký chơi thử', on: downloadPlayLog }} level={level} onPicked={() => setOpen(false)} />
-          {/* SPEC-TOI-UU §T1 (L2): bật/tắt + xem "gửi những gì" (mặc định TẮT). */}
-          <ToolButton tool={{ icon: '📊', label: telemetryOptedIn() ? 'Số liệu ẩn danh: BẬT' : 'Số liệu ẩn danh: TẮT', on: () => setTeleOptIn() }} level={level} />
-          <ToolButton tool={{ icon: '👁️', label: 'Xem gửi những gì', on: () => setTeleOpen(!teleOpen) }} level={level} />
-          {teleOpen && (
-            <TelemetrySampleView />
-          )}
-          {/* SPEC-TOI-UU §T6 (L6): tìm nhanh bảng / hệ / món. */}
-          <ToolButton tool={{ icon: '🔍', label: searchOpen ? 'Tìm nhanh: đóng' : 'Tìm nhanh', on: () => setSearchOpen(!searchOpen) }} level={level} />
-          {searchOpen && <HubSearch onPick={() => setOpen(false)} />}
           {/* SPEC-TOI-UU §T6 (L3): Sổ việc chung — gộp mọi việc gấp/hôm nay/rảnh về một bảng. */}
           <ToolButton tool={{ icon: '🗒️', label: 'Sổ việc', on: openTodo }} level={level} onPicked={() => setOpen(false)} />
         </>
       )}
     </>
   );
-}
-
-/** Đổi lựa chọn "Số liệu ẩn danh" (mặc định tắt, SPEC-TOI-UU §T1 L2/L3). */
-function setTeleOptIn() {
-  const next = !telemetryOptedIn();
-  setTelemetryOptIn(next);
-  if (next) void flushReports();   // L3: bật → gửi ngay các bản chưa gửi.
-  else void deleteTelemetry();     // L3: tắt → xoá số liệu đã gửi của install trên server.
 }
 
 /**
@@ -162,7 +126,6 @@ function HubSearch({ onPick }: { onPick: () => void }) {
     <div className="hud-more-search">
       <input
         className="hud-more-search-input"
-        autoFocus
         value={q}
         placeholder="Tìm bảng, hệ, món… (không cần dấu)"
         onChange={(e) => setQ(e.target.value)}

@@ -59,7 +59,7 @@ Máy chủ ghi nhật ký mỗi yêu cầu API kèm mã định danh người d�
 - Người chơi có thể chọn đồng ý gửi **số liệu ẩn danh** để giúp cân bằng game (scope `telemetry_anon`). Lựa chọn này **mặc định tắt** và không bắt buộc: không đồng ý thì không mất chức năng nào.
 - Mỗi ngày game gửi **một bản tóm tắt** gồm: cấp, số khách, số khách bực/khách bỏ về, giây thật đã chơi, dải tiền, hệ đã dùng, độ phân giải đồ họa, loại thiết bị, và một id ngẫu nhiên sinh trên máy (`install`).
 - Bản tóm tắt này **không** chứa tên, email, số điện thoại, mã tài khoản (uid), vị trí, hay bất kỳ nhận dạng cá nhân nào. `install` là định danh giả danh, tách rời hoàn toàn khỏi tài khoản (không bao giờ ghép với uid).
-- Người chơi xem đúng nội dung gửi đi qua mục "Xem gửi những gì", bật/tắt hoặc xuất bản nhật ký chơi thử (30 bản gần nhất) bất cứ lúc nào trong menu „⋯".
+- Người chơi xem đúng nội dung gửi đi qua mục "Xem gửi những gì", bật/tắt hoặc xuất bản nhật ký chơi thử (30 bản gần nhất) bất cứ lúc nào trong Cài đặt → Dữ liệu.
 - Người chưa đăng nhập: lựa chọn lưu trên máy (`localStorage`). Người đã đăng nhập: lựa chọn được ghi thêm vào bản đồng ý. Bản ghi đã gửi được tự động xoá sau 180 ngày.
 
 ### 2.7. Cộng đồng (danh thiếp, bạn bè, chợ, thi đua, hội chợ — TUỲ CHỌN, mặc định tắt)
