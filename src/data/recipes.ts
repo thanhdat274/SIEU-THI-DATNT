@@ -268,6 +268,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   // đúng cách nấu thật. Mẻ (nem chua 40k + tôm chua Huế 33k + bánh đa 14k) = 87k → 8 phần × 20k =
   // 160k, lãi ~73k/mẻ, hời hơn bán thẳng nguyên liệu (143k < 160k — luật monKhuon). Mở 70 — ngoài
   // cửa sổ 2 sim cân bằng (bài học GĐ2387v2).
+  // GĐ2406: Bánh rán — bánh rán ngọt Hà Nội (vỏ nếp, nhân đậu xanh), chiên ngập dầu. Mở 72; since: 1 để kỷ nguyên 0 không thấy.
+  { id: 'banh_ran', name: 'Bánh rán', category: 'fresh', buy: 4500, sell: 9000, color: 0xd9953a, unlock: 72, since: CONTENT_EPOCH_NOW },
   { id: 'banh_da_nem_chua', name: 'Bánh đa nem chua', category: 'fresh', buy: 8000, sell: 20000, color: 0xc87850, unlock: 70, since: CONTENT_EPOCH_NOW },
   // GĐ2381: Thịt đông — món cỗ Tết miền Bắc trứ danh (thịt kho nước nghệ rồi để LẠNH đông thạch tự nhiên
   // ngoài Tết), TRƯỚC NAY CHƯA CÓ (soát 'thịt đông'/'thit_dong' = 0 trong src/). Nấu kỹ nồi nước, để đông
@@ -2324,6 +2326,11 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_banh_da_nem_chua', name: 'Bánh đa nem chua', station: 'food_grill',
     inputs: [{ productId: 'rg_nem_chua', quantity: 1 }, { productId: 'hx_tom_chua', quantity: 1 }, { productId: 'hx_banh_da', quantity: 1 }],
     outputId: 'banh_da_nem_chua', outputQty: 8, durationMin: 20, unlock: 70, reputationGain: 2, since: CONTENT_EPOCH_NOW },
+  // GĐ2406: Bánh rán — Hà Nội: vỏ bột nếp nhân đậu xanh nghiền (đường) lăn mè, chiên ngập dầu ở chảo chiên.
+  // Thay thế: mè không có trong game nên bỏ; đậu xanh nguyên hạt thay đậu xanh đãi vỏ. Mở 72 (> mọi mốc sim); since: 1.
+  { id: 'recipe_banh_ran', name: 'Bánh rán', station: 'fryer',
+    inputs: [{ productId: 'nep', quantity: 1 }, { productId: 'dau_xanh', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
+    outputId: 'banh_ran', outputQty: 14, durationMin: 15, unlock: 72, reputationGain: 2, since: CONTENT_EPOCH_NOW },
   // GĐ1324: Nem chua rán — đặc sản nhà bà Tám (nem chua GĐ1085) thành nguyên liệu chảo chiên, món ăn vặt.
   { id: 'recipe_nem_chua_ran', name: 'Nem chua rán', station: 'fryer',
     inputs: [{ productId: 'hx_nem_chua', quantity: 2 }, { productId: 'x_duong', quantity: 1 }],
