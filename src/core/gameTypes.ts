@@ -603,6 +603,8 @@ export interface GameState {
   denyStaffRest: (id: number, bump?: number) => void;
   /** Đào tạo nhân viên: tốn tiền, cộng kinh nghiệm, mỗi người một buổi mỗi ngày. */
   trainStaff: (id: number) => void;
+  /** Cho nhân viên nghỉ phép hôm nay (vẫn nhận lương), cộng chút kinh nghiệm; cách nhau LEAVE_COOLDOWN ngày. */
+  giveLeave: (id: number) => void;
   giveLixi: () => void;
   /** Thăng chức nhân viên tiệm chính (thu ngân → trưởng quầy → quản lý). */
   promoteStaff: (id: number) => void;

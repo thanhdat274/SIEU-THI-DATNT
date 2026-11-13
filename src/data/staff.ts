@@ -90,6 +90,8 @@ export interface Staff {
   rank?: Rank;
   /** Ngày được điều sang tiệm khác gần nhất (mỗi ngày điều một lần). */
   movedDay?: number;
+  /** Ngày đang nghỉ phép (xem staffLeave.ts): hôm đó không đến làm nhưng vẫn nhận lương. */
+  leaveDay?: number;
 }
 
 /** Lương phải trả mỗi ngày. */
@@ -109,11 +111,12 @@ export const WAREHOUSE_KEEP_PER_STAR = 0.06;
 export const CARE_PATIENCE_PER_STAR = 0.06;
 
 /** Tay nghề cao nhất trong những nhân viên vai này đang trực ca (0 = không ai trực). */
-export function bestSkillOnDuty(staff: Pick<Staff, 'role' | 'skill' | 'shift'>[], role: StaffRole, minutes: number) {
+export function bestSkillOnDuty(staff: Pick<Staff, 'role' | 'skill' | 'shift' | 'leaveDay'>[], role: StaffRole, minutes: number, day?: number) {
   let best = 0;
   for (const st of staff) {
     if (st.role !== role) continue;
     const shift = SHIFTS[st.shift];
+    if (day !== undefined && st.leaveDay === day) continue; // đang nghỉ phép
     if (minutes >= shift.from && minutes < shift.to) best = Math.max(best, st.skill);
   }
   return best;

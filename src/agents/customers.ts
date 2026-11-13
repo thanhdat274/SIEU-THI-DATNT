@@ -395,7 +395,7 @@ export class CustomerManager {
     // Kệ dễ thấy (gần cửa, sát lối đi chính) thì món trên đó được hỏi mua nhiều hơn
     const attention = stockedAttention(s.furniture, this.geom());
     // Thịt cá tươi: không có người cân cắt trực ca thì khách ít hỏi mua
-    const butcher = bestSkillOnDuty(s.staff, 'butcher', s.minutes);
+    const butcher = bestSkillOnDuty(s.staff, 'butcher', s.minutes, s.day);
     return Array.from({ length: count }, () => {
       if (onSale.length && simRng()() < SALE_HUNT) return pick(onSale);
       if (homemade.length && simRng()() < 0.25) return pick(homemade);
@@ -448,7 +448,7 @@ export class CustomerManager {
     // Có mèo ở quầy: khách nhỏ (học sinh, mẹ bỉm) vui hơn, đỡ sốt ruột; nhân viên chăm sóc khách trực ca
     // thì ai cũng chịu chờ lâu hơn theo tay nghề — GĐ1208 tách thành patienceMultiplier (THUẦN, same công
     // thức/hằng) để logic này test được; hành vi giữ nguyên (chỉ đổi chỗ nhân nội tuyến → một lần gọi).
-    const care = bestSkillOnDuty(s.staff, 'customer_care', s.minutes);
+    const care = bestSkillOnDuty(s.staff, 'customer_care', s.minutes, s.day);
     c.patience *= patienceMultiplier({ petCat: petActive(s.biz.pets.cat, s.day), professionId: c.profession?.id ?? null, care });
     // Hệ 3 (SPEC §3.4) — biển Tiện lợi: khách vội, kiên nhẫn xếp hàng −20% (bậc 5). Không treo = 1.
     c.patience *= stancePatience(s.biz);

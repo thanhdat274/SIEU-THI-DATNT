@@ -5,6 +5,7 @@ import { useGame } from '../../core/store';
 import { formatMoney, fmtMul } from '../../data/products';
 import { QUAN_NUOC_HIRE_FEE, QUAN_NUOC_MAX_STAFF, QUAN_NUOC_PRICE, QUAN_NUOC_UNLOCK, QUAN_NUOC_WAGE, QUAN_PRICE_OPTIONS, QUAN_WEATHER_MUL, quanWeekendMul, quanMatchMul, isQuanMatchDay, type QuanNuocPrice } from '../../data/quanNuoc';
 import { quanNuocProjection, quanNuocCupSupply, quanNuocRestockTip, quanNuocBuildPayback, quanPricePayoff } from '../../data/quanNuocInsights';
+import { quanStatusChips } from '../../data/quanNuocStatus';
 import { quanNuocStaffValues } from '../../data/quanNuocStaffValue';
 import { teahouseHaulRead } from '../../data/teahouseHaul';
 import { Callout, Footer, styles } from './shared';
@@ -13,6 +14,8 @@ import { TiemXoiSection } from './TiemXoiSection';
 import { QuanMenuSection } from './QuanMenuSection';
 import { WEATHER } from '../../data/weather';
 import { quanHotNote } from '../../data/quanRecipes';
+
+const CHIP_BG = { ok: '#27ae60', warn: '#d68910', bad: '#c0392b', info: '#5d6d7e' } as const;
 
 /** Thứ tự hiển thị 3 mức giờ bán: bình dân → vừa phải → đắt hơn. */
 const PRICE_ORDER: readonly QuanNuocPrice[] = ['re', 'vua', 'cao'];
@@ -53,6 +56,15 @@ export function QuanNuocPanel() {
     <div style={{ width: '100%', display: 'flex', flexDirection: 'column', flex: 1 }}>
       <h2 style={styles.title}>🧋 Quán Nước Đầu Ngõ</h2>
       <p style={styles.sub}>Quán chuyên nước ở đầu hẻm, mở sớm {shopHoursLabel('quanNuoc')} — nguyên liệu lấy thẳng từ kho của mình.</p>
+      {quan.open && (
+        <div role="status" aria-label="Trạng thái quán hôm nay" style={{ display: 'flex', flexWrap: 'wrap', gap: 6, margin: '0 0 8px' }}>
+          {quanStatusChips(quan, level, drinkUnits, weather, day).map((c) => (
+            <span key={c.id} style={{ fontSize: 12, padding: '3px 9px', borderRadius: 999, background: CHIP_BG[c.tone], color: '#fff', whiteSpace: 'nowrap' }}>
+              {c.icon} {c.text}
+            </span>
+          ))}
+        </div>
+      )}
       {quan.open && QUAN_WEATHER_MUL[weather] !== 1 && (
         <p style={{ fontSize: 12, margin: '0 0 6px' }}>
           {WEATHER[weather].icon} {WEATHER[weather].name}: khách quán {QUAN_WEATHER_MUL[weather] > 1 ? 'đông' : 'vắng'} hơn ×{fmtMul(QUAN_WEATHER_MUL[weather])} — {QUAN_WEATHER_MUL[weather] > 1 ? 'nạp thêm đồ uống' : 'bớt nhập cho đỡ tồn'}

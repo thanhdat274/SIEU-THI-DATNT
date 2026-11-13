@@ -30,14 +30,14 @@ export const cookSpeed = (get: GetState) => {
   for (const st of s.staff) {
     if (st.role !== 'cook') continue;
     const shift = SHIFTS[st.shift];
-    if (s.minutes >= shift.from && s.minutes < shift.to) best = Math.max(best, workSpeed(st));
+    if (st.leaveDay !== s.day && s.minutes >= shift.from && s.minutes < shift.to) best = Math.max(best, workSpeed(st));
   }
   return best;
 };
 
 /** Pha chế trực ca: riêng mẻ ở trạm pha chế (cà phê, trà sữa...) nhanh thêm theo tay nghề, cộng cùng đầu bếp. */
 export const bartenderBoost = (get: GetState) =>
-  1 + BARTENDER_SPEED_PER_STAR * bestSkillOnDuty(get().staff, 'bartender', get().minutes);
+  1 + BARTENDER_SPEED_PER_STAR * bestSkillOnDuty(get().staff, 'bartender', get().minutes, get().day);
 
 /** Điện thoại: đổ chuông theo khung giờ khi tiệm mở; cúp máy khi không nghe; huỷ khi trễ quá lâu. */
 export const updatePhones = (set: SetState, get: GetState) => {

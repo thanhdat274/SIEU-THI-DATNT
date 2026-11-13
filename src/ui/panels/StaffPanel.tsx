@@ -13,6 +13,7 @@ import { BranchShiftStrip, BranchValueLine, NightStaffLine, NightStrip, ShiftVal
 import { Footer, Callout, styles, Tabs } from './shared';
 import { wageCoverage } from '../../data/wageCoverage';
 import { expToNext, shownTrait, trainCost, TRAITS } from '../../data/staffTraits';
+import { leaveBlock, leaveWait } from '../../data/staffLeave';
 import { payrollRunway } from '../../data/payrollRunway';
 import { trainValue } from '../../data/trainValue';
 import { staffEff } from '../../data/staffEff';
@@ -37,7 +38,7 @@ import { gapsOf, SITE_NAME, type Site } from '../../data/transfer';
 
 export function StaffPanel() {
   const [tab, setTab] = useState<'team' | 'hire'>('team');
-  const { staff, candidates, level, day, money, autoOpen, hire, fire, setShift, trainStaff, promoteStaff, closePanel, biz, branch, hireForBranch, stats, skills, dirt, storage, deliveries, furniture, sales, salesToday, analytics, garden, weatherSeed, weather } = useGame();
+  const { staff, candidates, level, day, money, autoOpen, hire, fire, setShift, trainStaff, giveLeave, promoteStaff, closePanel, biz, branch, hireForBranch, stats, skills, dirt, storage, deliveries, furniture, sales, salesToday, analytics, garden, weatherSeed, weather } = useGame();
   const [pick, setPick] = useState<Record<number, Shift>>({});
   const max = maxStaff(level);
   const bStaff = branch?.staff ?? [];
@@ -242,6 +243,20 @@ export function StaffPanel() {
                         </span>
                       )}
                     </>
+                  );
+                })()}
+                {st.role !== 'farmhand' && (() => {
+                  const blk = leaveBlock(st, day);
+                  const wait = leaveWait(st, day);
+                  return (
+                    <button
+                      style={{ ...staffSt.train, opacity: blk ? 0.45 : 1 }}
+                      disabled={blk !== null}
+                      title={blk === 'already' ? 'Hôm nay đang nghỉ phép' : blk === 'cooldown' ? `Nghỉ lại được sau ${wait} ngày` : 'Nghỉ một ngày, vẫn nhận lương, nghỉ xong làm hăng hơn (cộng chút kinh nghiệm)'}
+                      onClick={() => giveLeave(st.id)}
+                    >
+                      {blk === 'already' ? '🏖️ Đang nghỉ phép' : blk === 'cooldown' ? `🏖️ Sau ${wait} ngày` : '🏖️ Nghỉ phép'}
+                    </button>
                   );
                 })()}
                 <TransferButton id={st.id} from="main" />

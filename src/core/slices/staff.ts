@@ -1,4 +1,5 @@
-import { maxStaff, ROLES, SHIFTS, type Staff } from '../../data/staff';
+import { dailyWage, maxStaff, ROLES, SHIFTS, type Staff } from '../../data/staff';
+import { LEAVE_EXP, leaveBlock, leaveWait } from '../../data/staffLeave';
 import { lixiBlock, lixiCost, LIXI_EXP } from '../../data/lixi';
 import { nextPromotion, promoted } from '../../data/careers';
 import { gainExp, TRAIN_EXP, trainCost } from '../../data/staffTraits';
@@ -10,7 +11,7 @@ import type { GameState, SetState, GetState } from '../gameTypes';
 
 /** Nhân viên tiệm chính: thuê, cho nghỉ, đổi ca, đào tạo. */
 
-export const createStaffSlice = (set: SetState, get: GetState): Pick<GameState, 'hire' | 'fire' | 'setShift' | 'trainStaff' | 'giveLixi' | 'promoteStaff' | 'promoteBranchStaff' | 'transferStaff' | 'evacuateBranch'> => {
+export const createStaffSlice = (set: SetState, get: GetState): Pick<GameState, 'hire' | 'fire' | 'setShift' | 'trainStaff' | 'giveLeave' | 'giveLixi' | 'promoteStaff' | 'promoteBranchStaff' | 'transferStaff' | 'evacuateBranch'> => {
   /** Kiểm tra điều kiện, trừ tiền thưởng; trả về người sau khi thăng chức hoặc null. */
   const tryPromote = (st: Staff): Staff | null => {
     const s = get();
@@ -68,6 +69,17 @@ export const createStaffSlice = (set: SetState, get: GetState): Pick<GameState, 
     s.notify(leveled
       ? `🎓 ${st.name} học xong lên ${next.skill}★! Lương mới ${formatMoney(next.wage)}/ca`
       : `🎓 Đã cho ${st.name} học thêm (${formatMoney(cost)})`);
+  },
+  giveLeave: (id) => {
+    const s = get();
+    const st = s.staff.find((it) => it.id === id);
+    if (!st) return;
+    const block = leaveBlock(st, s.day);
+    if (block === 'already') return s.notify(`${st.name} đang nghỉ phép hôm nay rồi`);
+    if (block === 'cooldown') return s.notify(`${st.name} mới nghỉ gần đây — ${leaveWait(st, s.day)} ngày nữa mới nghỉ phép lại được`);
+    const { staff: next } = gainExp({ ...st, leaveDay: s.day }, LEAVE_EXP);
+    set({ staff: s.staff.map((it) => (it.id === id ? next : it)) });
+    s.notify(`🏖️ ${st.name} nghỉ phép hôm nay (vẫn nhận lương ${formatMoney(dailyWage(st))}) — nghỉ khoẻ, mai làm hăng hơn`);
   },
   giveLixi: () => {
     const s = get();
