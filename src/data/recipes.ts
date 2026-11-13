@@ -338,6 +338,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'banh_mi_cha_ca', name: 'Bánh mì chả cá', category: 'fresh', buy: 13000, sell: 24000, color: 0xd8a058, unlock: 81, since: CONTENT_EPOCH_NOW },
   // GĐ2455: Bánh canh tôm thịt — miền Tây (bánh canh tôm chạy): tôm tươi chạy nước lèo + thịt heo ba chỉ. Mở 81; since: 1.
   { id: 'banh_canh_tom_thit', name: 'Bánh canh tôm thịt', category: 'fresh', buy: 12000, sell: 17000, color: 0xe0b088, unlock: 81, since: CONTENT_EPOCH_NOW },
+  // GĐ2456: Bánh canh chả dầu — Quảng Bình/Quảng Trị trứ danh: chả cá chiên dầu vàng cắt khoanh lên nước lèo. Mở 81; since: 1.
+  { id: 'banh_canh_cha_dau', name: 'Bánh canh chả dầu', category: 'fresh', buy: 11000, sell: 17000, color: 0xd8b878, unlock: 81, since: CONTENT_EPOCH_NOW },
   { id: 'com_lam', name: 'Cơm lam', category: 'fresh', buy: 6500, sell: 10000, color: 0xd9c9a0, unlock: 80, since: CONTENT_EPOCH_NOW },
   { id: 'banh_uot', name: 'Bánh ướt', category: 'fresh', buy: 4500, sell: 7500, color: 0xf6efdc, unlock: 80, since: CONTENT_EPOCH_NOW },
   // GĐ2410: Xôi đậu phộng — miền Nam: xôi nếp nấu cùng đậu phộng, chan nước cốt dừa. Mở 76; since: 1.
@@ -2543,6 +2545,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_banh_canh_tom_thit', name: 'Bánh canh tôm thịt', station: 'hot_kettle',
     inputs: [{ productId: 'x_bot_gao', quantity: 2 }, { productId: 'x_tom_tuoi', quantity: 1 }, { productId: 'x_thit_heo', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 1 }],
     outputId: 'banh_canh_tom_thit', outputQty: 10, durationMin: 24, unlock: 81, reputationGain: 3, since: CONTENT_EPOCH_NOW },
+  { id: 'recipe_banh_canh_cha_dau', name: 'Bánh canh chả dầu', station: 'hot_kettle',
+    inputs: [{ productId: 'x_bot_gao', quantity: 2 }, { productId: 'x_cha_ca_thac_lat', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 1 }],
+    outputId: 'banh_canh_cha_dau', outputQty: 10, durationMin: 20, unlock: 81, reputationGain: 2, since: CONTENT_EPOCH_NOW },
+  // GĐ2456: Bánh canh chả dầu — sợi bánh canh bột gạo nấu nước lèo ngọt, CHẢ CÁ chiên dầu vàng cắt
+  // khoanh thả lên (chả dầu là linh hồn tô miền Trung) — nấu nước lèo ở nồi nước → trạm chính nấu.
+  // Thay thế: rau cần ăn kèm bỏ qua; chả cá chiên dùng chả cá thác lác chợ (gần nhất). Mở 81; since: 1.
+  // Mẻ (bột gạo 9k×2 + chả cá thác lác 28k + hành phi 1.5k) = 47.5k → 10 tô × 17k = 170k,
+  // lãi ~122.5k/mẻ, hời hơn bán thẳng nguyên liệu (26+39+2.5 = 67.5k < 170k — luật monKhuon).
   // GĐ2455: Bánh canh tôm thịt — sợi bánh canh bột gạo, nước lèo ngọt từ TÔM TƯỚI chạy + thịt heo
   // ba chỉ luộc lát, chanh ớt — nấu nước lèo ở nồi nước → trạm đúng cách nấu.
   // Thay thế: rau cần/củ nến ăn kèm bỏ qua. Mở 81; since: 1.
