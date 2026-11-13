@@ -4,8 +4,6 @@ import { HOMEMADE_PRODUCTS, NEIGHBOR2_PRODUCTS } from './homemade';
 import { REGION_PRODUCTS } from './regionSpecialty';
 import { LATE_GAME_PRODUCTS } from './lateGameProducts';
 import { epochGate } from './contentEpoch';
-import { getSettings } from '../core/settings';
-
 /** Ngành hàng: quyết định bày ở đâu (kệ thường, tủ mát, tủ đông). */
 export type Category = 'dry' | 'drink' | 'cold' | 'frozen' | 'household' | 'fresh' | 'meat';
 
@@ -239,14 +237,7 @@ export function describeUnits(productId: string, units: number): string {
   return loose ? `${full} thùng + ${loose} lẻ` : `${full} thùng`;
 }
 
-/** Tiền hiển thị: chỉ đổi cách VẼ số (Cài đặt → Tiền tệ), số liệu trong game vẫn là đồng. */
-export const USD_RATE = 25000;
-export const formatMoney = (v: number) => {
-  if (getSettings().currency === 'usd') {
-    const d = v / USD_RATE;
-    return `${d < 0 ? '-' : ''}$${Math.abs(d).toLocaleString('en-US', { minimumFractionDigits: Math.abs(d) >= 100 ? 0 : 2, maximumFractionDigits: Math.abs(d) >= 100 ? 0 : 2 })}`;
-  }
-  return `${Math.round(v).toLocaleString('vi-VN')}đ`;
-};
+/** Luôn ra chữ đồng; chọn đô la thì core/currency.ts đổi chữ trên trang (DOM) cho mọi màn cùng lúc. */
+export const formatMoney = (v: number) => `${Math.round(v).toLocaleString('vi-VN')}đ`;
 /** Hệ số kiểu Việt: 1.25 → "1,25", 1.5 → "1,5", 2 → "2" (GĐ539). */
 export const fmtMul = (v: number, digits = 2) => String(Number(v.toFixed(digits))).replace('.', ',');

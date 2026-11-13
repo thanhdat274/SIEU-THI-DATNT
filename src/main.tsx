@@ -9,7 +9,7 @@ import { queueUrgency, accumulateBackup } from './world/storefrontWaitLamp';
 import * as THREE from 'three';
 import { shopLayout, worldActions } from './core/actions';
 import { saveGame, startAutosave } from './core/save';
-import { DETAIL_MULT, LIGHT_CAP, getSettings, onSettings } from './core/settings';
+import { DETAIL_MULT, LIGHT_CAP, RES_HEIGHT, getSettings, onSettings } from './core/settings';
 import { askConfirm } from './ui/ConfirmDialog';
 import { formatClock, SLEEP_FROM, useGame, type GameState } from './core/store';
 import { bedHint } from './data/bedHint';
@@ -639,7 +639,11 @@ let gfxNotified = false;
 let lastPerfDay = -1;
 function applyGfx() {
   const p = gfx.preset;
-  renderer.setPixelRatio(Math.max(0.4, gfx.step.pixelRatio * getSettings().renderScale));
+  const st = getSettings();
+  let pr = (st.resolution === 'native' ? nativeDpr : gfx.step.pixelRatio) * st.renderScale;
+  const capH = RES_HEIGHT[st.resolution];
+  if (capH) pr = Math.min(pr, capH / Math.max(1, window.innerHeight)); // trần 1080p/720p theo chiều cao khung
+  renderer.setPixelRatio(Math.max(0.4, pr));
   // Không đổi castShadow lúc chạy: đổi là mọi vật liệu biên dịch lại pipeline → đứng hình vài giây.
   // Đã dựng có bóng thì chỉ làm mờ hẳn bóng + ngừng vẽ shadow pass (vòng render đọc preset.shadows);
   // dựng không bóng (mức Thấp) thì bật bóng phải chờ tải lại trang.
@@ -651,7 +655,8 @@ function applyGfx() {
   reportGfx(gfxChoice, gfx.step.level, gfx.avgFps);
 }
 applyGfx();
-onSettings(() => applyGfx()); // đổi Tỷ lệ render trong Cài đặt
+onSettings(() => applyGfx()); // đổi Tỷ lệ render / Độ phân giải trong Cài đặt
+window.addEventListener('resize', () => { if (getSettings().resolution === 'auto') return; applyGfx(); }); // trần 1080p/720p đổi theo cỡ cửa sổ
 // SPEC-TOI-UU §T1 (L1): bắt đầu bộ tích luỹ báo cáo ngày cho ngày game hiện tại + lộ `game.report()`
 // dùng trong console (xuất 30 bản ghi cục bộ) — dùng được ngay khi chưa có server.
 openSession(useGame.getState().day, gfx.avgFps, gfx.step.level);

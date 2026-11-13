@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { formatMoney } from '../../data/products';
+import { moneyShown } from '../../core/currency';
 
 /**
  * Juice kiểu game nông trại (Xóm Nông Trại): mỗi lần tính tiền xong, một bong bóng
@@ -10,7 +10,8 @@ import { formatMoney } from '../../data/products';
 
 /** Chữ trên bong bóng: số âm không có nghĩa ở đây — kẹp về 0 để khỏi in "+−3đ". */
 export function coinPopLabel(amount: number): string {
-  return `+${formatMoney(Math.max(0, amount))}`;
+  // Chữ vẽ lên canvas 3D không qua DOM → theo tiền tệ đang chọn tại lúc sinh bong bóng
+  return `+${moneyShown(Math.max(0, amount))}`;
 }
 
 export const COIN_POP_LIFETIME = 1.4;

@@ -96,6 +96,11 @@ function ImgTab() {
   };
   return (
     <div>
+      <Row label="Độ phân giải" hint="Độ nét hình 3D bên trong, luôn co giãn vừa cửa sổ. Thấp hơn = nhẹ máy hơn">
+        <Select label="Độ phân giải" value={s.resolution}
+          options={[['auto', 'Tự động'], ['native', 'Gốc màn hình'], ['1080', '1080p'], ['720', '720p']]}
+          onChange={(v) => set({ resolution: v })} />
+      </Row>
       <Row label="Chế độ hiển thị" hint="Trình duyệt yêu cầu thao tác người dùng để vào toàn màn hình">
         <Select label="Chế độ hiển thị" value={full ? 'full' : 'win'} options={[['win', 'Cửa sổ'], ['full', 'Toàn màn hình']]} onChange={(v) => toggleFull(v === 'full')} />
       </Row>
@@ -112,7 +117,7 @@ function ImgTab() {
           onChange={(v) => { const c: GfxChoice = v ? 'auto' : gfxStatus().level; setGfxChoice(c); setChoice(c); }} />
       </Row>
       <Row label="Cỡ giao diện"><Slider label="Cỡ giao diện" value={s.uiScale} min={0.8} max={1.4} step={0.05} fmt={pct} onChange={(v) => set({ uiScale: v })} /></Row>
-      <Row label="Tiền tệ hiển thị" hint="Chỉ đổi cách hiện số (1 USD = 25.000đ). Giá trong game không đổi; bảng đang mở cập nhật khi mở lại">
+      <Row label="Tiền tệ hiển thị" hint="Chỉ đổi cách hiện số (1 USD = 25.000 VND), áp dụng ngay cho mọi màn. Giá trong game không đổi">
         <Select label="Tiền tệ hiển thị" value={s.currency} options={[['vnd', 'Đồng (đ)'], ['usd', 'Đô la ($)']]} onChange={(v) => set({ currency: v })} />
       </Row>
     </div>

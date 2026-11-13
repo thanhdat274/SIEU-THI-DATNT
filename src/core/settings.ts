@@ -42,13 +42,18 @@ export interface Settings {
   noFlash: boolean;
   /** Tiền hiển thị (chỉ cách vẽ số, không đổi giá trong game) */
   currency: 'vnd' | 'usd';
+  /** Độ phân giải render: auto = theo bộ tự chỉnh, native = đủ điểm ảnh màn hình, 1080/720 = trần số dòng điểm ảnh */
+  resolution: 'auto' | 'native' | '1080' | '720';
 }
+
+/** Số dòng điểm ảnh tối đa theo mức độ phân giải (0 = không đặt trần). */
+export const RES_HEIGHT: Record<Settings['resolution'], number> = { auto: 0, native: 0, '1080': 1080, '720': 720 };
 
 export const SETTINGS_DEFAULT: Settings = {
   fpsCap: 0, renderScale: 1, brightness: 1, uiScale: 1, fontSize: 'normal',
   reduceMotion: false, highContrast: false, detailDist: 'normal', autosave: true,
   shadows: true, rainDensity: 1, clouds: true, stars: true, foliageSway: true, lightQuality: 'high',
-  autosaveEvery: 0, showPatience: true, autoSlow: false, confirmEndDay: false, colorblind: 'off', noFlash: false, currency: 'vnd',
+  autosaveEvery: 0, showPatience: true, autoSlow: false, confirmEndDay: false, colorblind: 'off', noFlash: false, currency: 'vnd', resolution: 'auto',
 };
 
 const KEY = 'th3d_settings';
@@ -83,6 +88,7 @@ export function sanitize(raw: unknown): Settings {
     colorblind: pick(r.colorblind, ['off', 'protan', 'deutan', 'tritan'] as const, d.colorblind),
     noFlash: bool(r.noFlash, d.noFlash),
     currency: pick(r.currency, ['vnd', 'usd'] as const, d.currency),
+    resolution: pick(r.resolution, ['auto', 'native', '1080', '720'] as const, d.resolution),
   };
 }
 
