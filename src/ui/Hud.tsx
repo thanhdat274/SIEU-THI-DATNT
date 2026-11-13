@@ -174,6 +174,11 @@ export function Hud() {
   const progress = Math.min(1, xp / xpToNext(level));
 
   const [settingsOpen, setSettingsOpen] = useState<false | 'game' | 'img'>(false);
+  // "Thư gọn": ẩn toàn bộ HUD để ngắm tiệm/chụp màn hình — chỉ còn nút nhỏ góc phải bật lại.
+  const [clean, setClean] = useState(false);
+  useEffect(() => {
+    document.getElementById('ui')?.classList.toggle('hud-clean', clean);
+  }, [clean]);
   const save = () => {
     notify(saveGame() ? '💾 Đã lưu game' : 'Không lưu được (trình duyệt chặn)');
     if (account) pushCloudSave();
@@ -301,6 +306,14 @@ Bản đang chơi được giữ lại, khôi phục lần nữa là trở lại
 
   return (
     <>
+      <button
+        className={`hud-clean-toggle${clean ? ' on' : ''}`}
+        aria-pressed={clean}
+        title={clean ? 'Hiện lại giao diện' : 'Thư gọn: ẩn giao diện để ngắm tiệm (bấm lần nữa để hiện lại)'}
+        onClick={() => setClean((v) => !v)}
+      >
+        {clean ? '🖼️' : '🧹'}
+      </button>
       <Joystick />
       {/* GĐ1831: ConfirmHost dời về boot.tsx (gốc ứng dụng) — hộp xác nhận cần hiện cả ở màn đăng nhập */}
       {!hudTourDone && !tutActive && openType == null && day === 1 && level <= 3
