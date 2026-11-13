@@ -47,14 +47,17 @@ function App() {
   // GĐ1496: tab bị chặn khoá thì khỏi tải trước — tab này không được chơi.
   useEffect(() => {
     if (screen === 'game' || !savesLoaded) return;
-    const ric = (window as { requestIdleCallback?: (cb: () => void) => number }).requestIdleCallback
-      ?? ((cb: () => void) => window.setTimeout(cb, 1500));
-    const id = ric(() => {
-      import('./main').then(() => setWorldReady(true), (err) => console.error('[boot] nạp trước thế giới lỗi (sẽ thử lại khi vào chơi):', err));
-    });
+    const ric = (window as { requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number }).requestIdleCallback;
+    const id = ric
+      ? ric(() => {
+          import('./main').then(() => setWorldReady(true), (err) => console.error('[boot] nạp trước thế giới lỗi (sẽ thử lại khi vào chơi):', err));
+        }, { timeout: 500 })
+      : window.setTimeout(() => {
+          import('./main').then(() => setWorldReady(true), (err) => console.error('[boot] nạp trước thế giới lỗi (sẽ thử lại khi vào chơi):', err));
+        }, 400);
     return () => {
       const cic = (window as { cancelIdleCallback?: (id: number) => void }).cancelIdleCallback;
-      if (cic) cic(id); else window.clearTimeout(id);
+      if (cic && ric) cic(id); else window.clearTimeout(id);
     };
   }, [screen, savesLoaded]);
   if (tabLock === 'blocked') return <TabLockScreen onRetry={bootAfterLock} />;

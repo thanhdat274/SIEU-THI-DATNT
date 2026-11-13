@@ -16,4 +16,10 @@ describe('HUD mobile (CSS)', () => {
     const block = /@media \(max-width: 600px\) \{[\s\S]*?\n\}/.exec(css.slice(css.indexOf('Màn dọc hẹp')));
     expect(block?.[0]).toMatch(/\.hud-alerts \{[^}]*max-height:\s*\d+vh/);
   });
+
+  it('thẻ thông báo hud-alert luôn có max-width 100% và co gọn trên màn thấp (max-height: 480px)', () => {
+    expect(css).toMatch(/#ui \.hud-alert \{[\s\S]*?max-width:\s*100%/);
+    const lowBlock = /@media \(max-height: 480px\) \{[\s\S]*?\n\}/.exec(css);
+    expect(lowBlock?.[0]).toMatch(/#ui \.hud-alert \{[^}]*max-width:\s*min\(100%/);
+  });
 });

@@ -10,8 +10,8 @@ export function UnlockActBanner() {
   if (!act) return null;
   const done = () => useGame.getState().dismissUnlockAct(act.id);
   return (
-    <div className="hud-alert" style={{ background: 'rgba(39,174,96,0.95)' }}>
-      <span>🔓 Mới mở: {act.icon} {act.title} — {act.hint}</span>
+    <div className="hud-alert hud-alert-unlock" style={{ background: 'rgba(39,174,96,0.95)' }}>
+      <span className="hud-alert-text">🔓 Mới mở: {act.icon} {act.title} — {act.hint}</span>
       <span className="hud-alert-actions">
         <button className="hud-btn" onClick={() => { openPanel(act.panel()); done(); }}>🚀 Thử ngay</button>
         <button className="hud-btn" onClick={done} title="Bỏ qua (không hiện lại)">✕</button>

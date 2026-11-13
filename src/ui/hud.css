@@ -291,6 +291,13 @@
   font-size: 14px;
   font-weight: 600;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+  max-width: 100%;
+  box-sizing: border-box;
+}
+#ui .hud-alert > span:first-child,
+#ui .hud-alert-text {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 #ui .hud-alert.danger { background: rgba(192, 57, 43, 0.92); }
 #ui .hud-alert.warn { background: rgba(230, 126, 34, 0.94); }
@@ -733,6 +740,8 @@
   #ui .hud-more { max-height: min(calc(100dvh - 124px), calc(100dvh - var(--hud-bottom-h, 108px) - 24px)) !important; box-sizing: border-box; }
   #ui .hud-tool { padding: 4px 6px; }
   #ui .hud-tool-icon { font-size: 17px; }
+  #ui .hud-alert { font-size: 13px; padding: 6px 12px; gap: 6px; max-width: min(100%, calc(100vw - 200px)); }
+  #ui .hud-alert .hud-btn { padding: 3px 8px; font-size: 12px; }
 }
 @media (max-height: 480px) and (max-width: 660px) {
   #ui .hud-chip.hud-time { max-width: min(58vw, 340px); }
