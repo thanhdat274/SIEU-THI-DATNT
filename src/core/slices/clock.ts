@@ -69,6 +69,12 @@ export const createClockSlice = (set: SetState, get: GetState): Pick<GameState, 
       set({ speed: 1 });
       s.notify('🌙 Đã khuya — đã chậm về 1×. Về nhà ngủ kẻo ngất!');
     }
+    // Review 13/11-3 R9: chạy ≥4× mà khách xếp hàng ≥4 người (chủ thường đang ở xa quầy) → hạ về 3×
+    // MỘT lần kèm giải thích, kẻo khách chất đống bỏ về. Cổng cấp >30 để không lệch golden.
+    if (s.level > 30 && s.speed > 3 && s.shopOpen && s.waiting >= 4) {
+      set({ speed: 3 });
+      s.notify('⏳ Khách xếp hàng chờ tính tiền — đã chậm về 3×. Ra quầy rồi hãy tăng tốc.');
+    }
     // Đồng hồ chạy mỗi khung hình: ghi thẳng vào state (không set) để cả đống component
     // dùng nguyên `useGame()` không phải vẽ lại 60 lần/giây. UI đọc giờ qua useClock bên dưới.
     const elapsedMinutes = minutes - s.minutes; // GĐ1506 — chốt trước khi mutation

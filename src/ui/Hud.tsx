@@ -343,21 +343,23 @@ ${forecastText}`}>
                     })()}
               </span>
             </small>
-            {(effects.festival || effects.market) && (
-              <small title={[effects.festival && `${effects.festival.name}: ${effects.festival.blurb}`, effects.market?.label].filter(Boolean).join('\n')}>
-                {effects.festival && `${effects.festival.icon} ${effects.festival.name}`}
-                {effects.festival && effects.market && ' · '}
-                {effects.market && `${effects.market.icon} ${effects.market.label}`}
+            {/* Review 13/11-3 R5: lễ/chợ + lễ sắp tới gộp MỘT dòng (trước đây 2 dòng chồng nhau) */}
+            {(effects.festival || effects.market || soon) && (
+              <small title={[
+                effects.festival && `${effects.festival.name}: ${effects.festival.blurb}`,
+                effects.market?.label,
+                soon && `${soon.festival.blurb}\nHàng nên nhập sẵn: ${festivalStock(soon.festival, level).map((id) => productById(id).name).join(', ')}`,
+              ].filter(Boolean).join('\n')}>
+                {[
+                  effects.festival && `${effects.festival.icon} ${effects.festival.name}`,
+                  effects.market && `${effects.market.icon} ${effects.market.label}`,
+                  soon && `⏳ ${soon.festival.icon} ${soon.festival.name} ${soon.inDays === 1 ? 'ngày mai' : `sau ${soon.inDays} ngày`}`,
+                ].filter(Boolean).join(' · ')}
               </small>
             )}
             {crisisDef && crisisPhase && (
               <small className="hud-crisis-chip" title={`${crisisDef.name} — ${crisisPhase}.${crisisDef.aftermath ? ` Hoàn thành phần chuẩn bị để nhận ${crisisDef.aftermath.label}.` : ''}`}>
                 {crisisDef.icon} {crisisPhase}
-              </small>
-            )}
-            {soon && (
-              <small title={`${soon.festival.blurb}\nHàng nên nhập sẵn: ${festivalStock(soon.festival, level).map((id) => productById(id).name).join(', ')}`}>
-                ⏳ {soon.festival.icon} {soon.festival.name} {soon.inDays === 1 ? 'ngày mai' : `sau ${soon.inDays} ngày`}
               </small>
             )}
             <small className="hud-forecast">{forecast.map((w, i) => <span key={i} title={describeDay(weatherSeed, day + 1 + i, w)}>{WEATHER[w].icon}</span>)}</small>

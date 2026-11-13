@@ -65,3 +65,5 @@ Vòng đầy đủ nhà→tiệm→bán→ngủ bằng UI trên mobile; 1024×76
 - R5: đã có `ALERT_CAP=2` cho thẻ `.hud-alert`; phần chip khác (giờ vàng, Tết, Mới mở) chưa gộp — cần đo lại trên bản mới trước khi sửa.
 - R8, R9, R11, R12: chưa làm — cần xác minh trên máy thật / quyết định thiết kế.
 - Các review 08–09/11 và 13/11, 13/11-2: đã đóng ở GĐ1826–1829 và GĐ2392; không còn mục mở.
+- GĐ2397: nút ✕ panel sắp xếp ≥44px trên cảm ứng.
+- GĐ2398: R9 — cấp >30, chạy >3× mà ≥4 khách chờ quầy → hạ về 3× một lần kèm thông báo (test `tocDoKhachCho`). R5 — dòng lễ/chợ và "lễ sắp tới" trong chip đồng hồ gộp thành một dòng.
