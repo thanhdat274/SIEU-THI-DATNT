@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useRef, useState, type ComponentType, type LazyExoticComponent } from 'react';
 import { formatMoney, productById } from '../../data/products';
-import { miniDefById, miniTargetRecipe, type MiniMode } from '../../data/festivalMini';
+import { miniDefById, miniTargetRecipe, nextMiniMilestone, type MiniMode } from '../../data/festivalMini';
 import { useGame } from '../../core/store';
 import { useMiniHost } from './miniHost';
 import { miniSeed } from './seeded';
@@ -58,6 +58,8 @@ export function MiniHostView() {
   const [phase, setPhase] = useState<Phase>('play');
   const [score, setScore] = useState(0);
   const [left, setLeft] = useState(0);
+  /** Mốc lượt chơi vừa chạm ở ván vừa xong (null = chưa chạm mốc nào) — hiện ở màn kết quả. */
+  const [milestone, setMilestone] = useState<number | null>(null);
   const progressRef = useRef(0);
   const feelRef = useRef(0); // Hệ7-L6: âm thanh + rung khi điểm tăng trong lúc chơi
 
@@ -91,6 +93,11 @@ export function MiniHostView() {
     setScore(s);
     setPhase('result');
     miniReward(); // Hệ7-L6: vừa xong trò → rung dài + tiếng thưởng
+    // Mốc thưởng theo lượt chơi: chỉ đếm ván đã chấm điểm, trò thử (tap_test) không đếm.
+    if (active && def && def.id !== 'tap_test') {
+      const got = useGame.getState().recordMiniPlay(def.id);
+      setMilestone(got > 0 ? got : null);
+    } else setMilestone(null);
     // Hệ7-L2: ghi thưởng thật cho TRÒ GẮN DỊP LỄ (trò giả tap_test không vô save).
     if (active && def && def.id.startsWith('viec_')) {
       if (s > 0) // bỏ qua (điểm 0) thì không chốt, còn chơi lại được
@@ -104,6 +111,7 @@ export function MiniHostView() {
     closeMini();
     setPhase('play');
     setScore(0);
+    setMilestone(null);
     progressRef.current = 0;
     feelRef.current = 0;
   }
@@ -159,6 +167,22 @@ export function MiniHostView() {
                 {reward.xp > 0 && ` · +${reward.xp} XP`}
               </p>
             )}
+            {(() => {
+              const total = useGame.getState().biz.miniPlays?.[def.id] ?? 0;
+              const next = nextMiniMilestone(total);
+              return (
+                <>
+                  {milestone !== null && (
+                    <p className="mini-result-reward" style={{ color: '#f1c40f' }}>🎮 Mốc khéo tay: tròn {total} ván — thưởng +{formatMoney(milestone)}!</p>
+                  )}
+                  {next && (
+                    <p className="mini-result-progress">
+                      Ván đã chơi: <b>{total}</b> · mốc kế tiếp {next.plays} ván → +{formatMoney(next.reward)}
+                    </p>
+                  )}
+                </>
+              );
+            })()}
             <button className="mini-btn primary" onClick={close}>Xong</button>
           </div>
         )}

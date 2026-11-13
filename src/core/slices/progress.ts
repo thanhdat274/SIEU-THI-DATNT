@@ -23,10 +23,27 @@ import { questContext } from '../store';
 import { alleyBond, tiesMilestonesReached } from '../../data/regularTies';
 import { LIFE_EVENT_UNLOCK } from '../../data/lifeEvent';
 import { hasFeature } from '../../data/features';
+import { nextMiniMilestone, miniDefById } from '../../data/festivalMini';
 
 /** Tiến trình: XP, nhiệm vụ, danh hiệu, kỹ năng, quà điểm danh, vòng quay, trang phục, tên tiệm. */
 
-export const createProgressSlice = (set: SetState, get: GetState): Pick<GameState, 'setCostume' | 'setShopName' | 'claimGift' | 'spinWheel' | 'learnSkill' | 'checkTitles' | 'claimQuest' | 'claimNgGoal' | 'placeBet' | 'addXp' | 'checkWelcomeBack' | 'collectOfflineRevenue' | 'contributeLandmark' | 'dismissUnlockAct'> => ({
+export const createProgressSlice = (set: SetState, get: GetState): Pick<GameState, 'setCostume' | 'setShopName' | 'claimGift' | 'spinWheel' | 'learnSkill' | 'checkTitles' | 'claimQuest' | 'claimNgGoal' | 'placeBet' | 'addXp' | 'checkWelcomeBack' | 'collectOfflineRevenue' | 'contributeLandmark' | 'dismissUnlockAct' | 'recordMiniPlay'> => ({
+  /** Ghi một ván trò khéo tay đã chấm điểm + thưởng mốc theo lượt (Hệ7, học từ Coffee Sữa Ơi).
+   *  Trả về tiền thưởng mốc vừa đạt (0 = chưa tới mốc nào). */
+  recordMiniPlay: (defId) => {
+    const s = get();
+    const plays = (s.biz.miniPlays?.[defId] ?? 0) + 1;
+    set({ biz: { ...s.biz, miniPlays: { ...s.biz.miniPlays, [defId]: plays } } });
+    const milestone = nextMiniMilestone(plays - 1); // ván này chạm mốc: plays-1 < mốc ≤ plays
+    if (milestone && milestone.plays === plays) {
+      const def = miniDefById(defId);
+      set({ money: get().money + milestone.reward, totals: { ...get().totals, revenue: get().totals.revenue + milestone.reward } });
+      s.notify(`🎮 Khéo tay có mã: ${def ? `${def.icon} ${def.name}` : 'trò khéo tay'} vừa tròn ${plays} ván — thưởng mốc +${formatMoney(milestone.reward)}`);
+      playSfx('gift');
+      return milestone.reward;
+    }
+    return 0;
+  },
   setCostume: (id) => {
     const s = get();
     const def = costumeById(id);

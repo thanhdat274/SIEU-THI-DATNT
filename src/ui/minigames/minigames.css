@@ -314,3 +314,5 @@
 
 /* Hệ 7 — ⑦ Xếp két lên xe đẩy (dùng lại .phanuoc-tray/.phanuoc-ing) */
 .xepket-cur { text-align: center; font-size: 26px; margin: 10px 0; padding: 10px; border: 2px dashed #c9a24d; border-radius: 10px; background: #fff8e6; }
+
+.mini-result-progress { margin: 4px 0 0; font-size: 12px; opacity: 0.8; }

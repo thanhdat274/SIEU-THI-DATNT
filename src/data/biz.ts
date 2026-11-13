@@ -124,6 +124,8 @@ export interface BizState {
   pets: Partial<Record<PetKind, PetState>>;
   achievements: string[];
   perfectDays: number;
+  /** Số ván đã chơi mỗi trò khéo tay (mốc thưởng ở festivalMini.ts). Thiếu ở save cũ. */
+  miniPlays?: Record<string, number>;
   surprise: ActiveSurprise | null;
   surpriseDay: number;
   /** Chương truyện đã xem của từng khách quen. */

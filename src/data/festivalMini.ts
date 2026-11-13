@@ -191,6 +191,20 @@ export const miniForFestival = (festivalId: string): FestivalMiniDef | undefined
 /** Trò này khéo tay có mở ở cấp `level` không. */
 export const miniUnlocked = (def: FestivalMiniDef, level: number): boolean => def.unlock <= level;
 
+// ── Mốc thưởng theo lượt chơi (học từ Coffee Sữa Ơi) ──
+// Ván thứ M của một trò → thưởng tiền một lần. Chỉ đếm ván ĐÃ CHẤT ĐIỂM (không tính "Để thợ làm"),
+// mỗi trò chỉ mở trong dịp lễ của nó và thưởng 1 lần/ngày nên mốc 50 ván là mục tiêu dài hơi —
+// tiền thưởng giữ nhỏ so với doanh thu ngày (cấp 45 ~900k/ngày) cho đỡ lệch cân bằng.
+export const MINI_MILESTONES: readonly (readonly [plays: number, reward: number])[] = [
+  [3, 50000], [7, 100000], [15, 200000], [30, 350000], [50, 500000],
+];
+
+/** Thưởng mốc kế tiếp của trò đã chơi `plays` ván (null = đã hết mốc). */
+export function nextMiniMilestone(plays: number): { plays: number; reward: number } | null {
+  for (const [p, r] of MINI_MILESTONES) if (plays < p) return { plays: p, reward: r };
+  return null;
+}
+
 /** Trò có đúng dịp đang diễn ra không (festivalId = `festivalOn(day)?.id`). */
 export const miniInFestival = (def: FestivalMiniDef, festivalId: string | undefined): boolean =>
   def.festivals.length === 0 ? false : !!festivalId && def.festivals.includes(festivalId);

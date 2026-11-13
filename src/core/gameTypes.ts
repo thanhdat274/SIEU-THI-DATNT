@@ -461,6 +461,8 @@ export interface GameState {
   collectOfflineRevenue: () => { gain: number; customers: number; minutesCounted: number; reason: string | null };
   /** GĐ64 — đóng vĩnh viễn banner "Mới mở: …" (ghi id vào biz.unlockActs). Là thao tác để hẻm online chạy trên máy chạy — không ghi đè cả `biz`. */
   dismissUnlockAct: (id: string) => void;
+  /** Ghi 1 ván trò khéo tay đã chấm điểm; trả về tiền thưởng mốc lượt chơi vừa chạm (0 = chưa tới). */
+  recordMiniPlay: (defId: string) => number;
   /** Điểm danh hôm nay; trả false nếu đã nhận rồi. */
   claimGift: () => boolean;
   /** Góp vật liệu một lượt cho sân chơi (mỗi ngày một lần); trả false nếu không góp được. */
