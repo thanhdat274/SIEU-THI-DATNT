@@ -330,6 +330,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'goi_ga_xe', name: 'Gỏi gà xé', category: 'fresh', buy: 19000, sell: 26000, color: 0xe8d8a8, unlock: 81, since: CONTENT_EPOCH_NOW },
   // GĐ2451: Chè thập cẩm — Nam Bộ trứ danh: đa hạt + thạch bột năng nhiều màu + chuối luộc, chan cốt dừa. Mở 81; since: 1.
   { id: 'che_thap_cam', name: 'Chè thập cẩm', category: 'fresh', buy: 7000, sell: 14000, color: 0xd8a0c0, unlock: 81, since: CONTENT_EPOCH_NOW },
+  // GĐ2452: Cháo nấm — cháo nấm chay dân dã: nấm kim châm + nấm hương hầm cùng gạo, ngọt nước đậm đà. Mở 81; since: 1.
+  { id: 'chao_nam', name: 'Cháo nấm', category: 'fresh', buy: 12000, sell: 16000, color: 0xd8c8a0, unlock: 81, since: CONTENT_EPOCH_NOW },
   { id: 'com_lam', name: 'Cơm lam', category: 'fresh', buy: 6500, sell: 10000, color: 0xd9c9a0, unlock: 80, since: CONTENT_EPOCH_NOW },
   { id: 'banh_uot', name: 'Bánh ướt', category: 'fresh', buy: 4500, sell: 7500, color: 0xf6efdc, unlock: 80, since: CONTENT_EPOCH_NOW },
   // GĐ2410: Xôi đậu phộng — miền Nam: xôi nếp nấu cùng đậu phộng, chan nước cốt dừa. Mở 76; since: 1.
@@ -2523,6 +2525,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_chao_ca_loc', name: 'Cháo cá lóc', station: 'hot_kettle',
     inputs: [{ productId: 'gao', quantity: 1 }, { productId: 'ca_loc_tuoi', quantity: 1 }],
     outputId: 'chao_ca_loc', outputQty: 12, durationMin: 35, unlock: 81, reputationGain: 2, since: CONTENT_EPOCH_NOW },
+  { id: 'recipe_chao_nam', name: 'Cháo nấm', station: 'hot_kettle',
+    inputs: [{ productId: 'gao', quantity: 1 }, { productId: 'x_nam_kim_cham', quantity: 1 }, { productId: 'x_nam_huong_kho', quantity: 1 }],
+    outputId: 'chao_nam', outputQty: 10, durationMin: 30, unlock: 81, reputationGain: 2, since: CONTENT_EPOCH_NOW },
+  // GĐ2452: Cháo nấm — gạo hầm nhừ cùng nấm kim châm + nấm hương (ngọt nước tự nhiên, món chay dễ bán),
+  // HẦM lâu ở nồi nước → trạm đúng cách nấu; khác cháo đậu xanh (22 — ngọt).
+  // Thay thế: nấm rơm tươi chưa có → hai loại nấm khô sẵn trong game. Mở 81; since: 1.
+  // Mẻ (gạo 80k + nấm kim châm 12k + nấm hương 25k) = 117k → 10 tô × 16k = 160k, lãi ~43k/mẻ,
+  // hời hơn bán thẳng nguyên liệu (100+17+25 = 142k < 160k — luật monKhuon).
   { id: 'recipe_goi_ga_xe', name: 'Gỏi gà xé', station: 'steamer',
     inputs: [{ productId: 'ga_ta_tuoi', quantity: 1 }, { productId: 'rau', quantity: 2 }, { productId: 'x_dau_phong', quantity: 1 }, { productId: 'nuocmam', quantity: 1 }],
     outputId: 'goi_ga_xe', outputQty: 10, durationMin: 12, unlock: 81, reputationGain: 2, since: CONTENT_EPOCH_NOW },
