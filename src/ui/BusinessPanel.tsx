@@ -29,7 +29,9 @@ const TABS: readonly (readonly [BusinessTab, string])[] = [
 /** Bảng Kinh doanh: các hệ thống thêm (đối thủ, quảng cáo, tích điểm, vay, hụi, tuần, thú cưng, nhà, xe, thành tựu). */
 export function BusinessPanel() {
   const closePanel = useGame((s) => s.closePanel);
-  const [tab, setTab] = useState<BusinessTab>('market');
+  // panel.focus (vd. từ Dạo phố → 'money') chọn sẵn tab; không có thì mở 'Cạnh tranh'.
+  const focus = useGame((s) => (s.panel && s.panel.type === 'business' ? s.panel.focus : undefined));
+  const [tab, setTab] = useState<BusinessTab>(TABS.some(([id]) => id === focus) ? (focus as BusinessTab) : 'market');
   return (
     <div style={{ width: '100%', display: 'flex', flexDirection: 'column', flex: 1 }}>
       <h2 style={{ margin: '0 0 8px' }}>📈 Kinh doanh</h2>

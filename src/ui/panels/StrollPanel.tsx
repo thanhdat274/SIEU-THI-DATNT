@@ -51,7 +51,7 @@ export function StrollPanel() {
         </div>
         <div style={box}>
           <div style={row}>{head('bank')}
-            <button style={styles.btn} onClick={() => openPanel({ type: 'business' } as never)}>Vào ngân hàng</button>
+            <button style={styles.btn} onClick={() => openPanel({ type: 'business', focus: 'money' })}>Vào ngân hàng (vay & hụi)</button>
           </div>
         </div>
         <div style={box}>
