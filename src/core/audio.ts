@@ -7,13 +7,14 @@
 let ctx: AudioContext | null = null;
 let master: GainNode | null = null;
 let rainGain: GainNode | null = null;
-/** Ba kênh con nối vào master: hiệu ứng, nhạc nền, tiếng đời (mưa + môi trường). */
+/** Bốn kênh con nối vào master: hiệu ứng đời thường, nhạc nền, tiếng đời (mưa + môi trường), giao diện. */
 let sfxBus: GainNode | null = null;
 let musicBus: GainNode | null = null;
 let ambBus: GainNode | null = null;
+let uiBus: GainNode | null = null;
 
-export type VolChannel = 'master' | 'sfx' | 'music' | 'amb';
-export const VOL_DEFAULT: Record<VolChannel, number> = { master: 1, sfx: 1, music: 1, amb: 1 };
+export type VolChannel = 'master' | 'sfx' | 'music' | 'amb' | 'ui';
+export const VOL_DEFAULT: Record<VolChannel, number> = { master: 1, sfx: 1, music: 1, amb: 1, ui: 1 };
 const vol: Record<VolChannel, number> = { ...VOL_DEFAULT };
 try {
   const v = JSON.parse(localStorage.getItem('th3d_vol') ?? '{}');
@@ -33,6 +34,7 @@ function applyVolumes() {
   if (sfxBus) sfxBus.gain.value = vol.sfx;
   if (musicBus) musicBus.gain.value = vol.music;
   if (ambBus) ambBus.gain.value = vol.amb;
+  if (uiBus) uiBus.gain.value = vol.ui;
 }
 
 let muted = false;
@@ -67,16 +69,18 @@ export function initAudio() {
   sfxBus = ctx.createGain();
   musicBus = ctx.createGain();
   ambBus = ctx.createGain();
+  uiBus = ctx.createGain();
   sfxBus.connect(master);
   musicBus.connect(master);
   ambBus.connect(master);
+  uiBus.connect(master);
   applyVolumes();
   startMusicIfEnabled();
 }
 
-/** Một nốt ngắn tắt dần theo hàm mũ. */
-function blip(freq: number, at: number, dur: number, type: OscillatorType, level: number, amb = false) {
-  const dest = amb ? ambBus : sfxBus;
+/** Một nốt ngắn tắt dần theo hàm mũ. `bus`: sfx (đời thường trong tiệm) / ui (thông báo, thưởng) / amb. */
+function blip(freq: number, at: number, dur: number, type: OscillatorType, level: number, bus: 'sfx' | 'ui' | 'amb' = 'sfx') {
+  const dest = bus === 'amb' ? ambBus : bus === 'ui' ? uiBus : sfxBus;
   if (!ctx || !dest) return;
   const osc = ctx.createOscillator();
   const g = ctx.createGain();
@@ -130,26 +134,26 @@ export function playSfx(name: Sfx) {
       blip(2093, 0.01, 0.4, 'sine', 0.02);
       break;
     case 'levelup':
-      blip(523, 0, 0.15, 'triangle', 0.05);
-      blip(659, 0.12, 0.15, 'triangle', 0.05);
-      blip(784, 0.24, 0.15, 'triangle', 0.05);
-      blip(1046, 0.36, 0.4, 'triangle', 0.06);
+      blip(523, 0, 0.15, 'triangle', 0.05, 'ui');
+      blip(659, 0.12, 0.15, 'triangle', 0.05, 'ui');
+      blip(784, 0.24, 0.15, 'triangle', 0.05, 'ui');
+      blip(1046, 0.36, 0.4, 'triangle', 0.06, 'ui');
       break;
     case 'achieve': // Thành tựu / danh hiệu: hợp âm sáng lên, lấp lánh
-      blip(784, 0, 0.16, 'triangle', 0.05);
-      blip(988, 0.09, 0.16, 'triangle', 0.05);
-      blip(1175, 0.18, 0.18, 'triangle', 0.05);
-      blip(1568, 0.26, 0.34, 'triangle', 0.05);
+      blip(784, 0, 0.16, 'triangle', 0.05, 'ui');
+      blip(988, 0.09, 0.16, 'triangle', 0.05, 'ui');
+      blip(1175, 0.18, 0.18, 'triangle', 0.05, 'ui');
+      blip(1568, 0.26, 0.34, 'triangle', 0.05, 'ui');
       break;
     case 'gift': // Nhận quà / quay vòng: hai nốt leng keng vui tai
-      blip(1319, 0, 0.1, 'sine', 0.05);
-      blip(1760, 0.07, 0.2, 'sine', 0.05);
-      blip(2637, 0.12, 0.28, 'sine', 0.045);
+      blip(1319, 0, 0.1, 'sine', 0.05, 'ui');
+      blip(1760, 0.07, 0.2, 'sine', 0.05, 'ui');
+      blip(2637, 0.12, 0.28, 'sine', 0.045, 'ui');
       break;
     case 'quest': // Xong nhiệm vụ: chuỗi nốt leo lên gọn gàng
-      blip(587, 0, 0.12, 'square', 0.035);
-      blip(740, 0.08, 0.12, 'square', 0.035);
-      blip(880, 0.16, 0.26, 'sine', 0.05);
+      blip(587, 0, 0.12, 'square', 0.035, 'ui');
+      blip(740, 0.08, 0.12, 'square', 0.035, 'ui');
+      blip(880, 0.16, 0.26, 'sine', 0.05, 'ui');
       break;
     case 'thunder': {
       const buf = noiseBuffer(1.6);
@@ -214,12 +218,12 @@ function ambTick() {
   if (!ambBand || !ctx || !master) return;
   if (ambBand === 'bird') {
     // Chim hót lúc hửng đông: cặp nốt cao vang, thưa thớt
-    blip(2400 + Math.random() * 300, 0, 0.08, 'sine', 0.018, true);
-    if (Math.random() < 0.6) blip(3000 + Math.random() * 400, 0.03, 0.07, 'triangle', 0.014, true);
+    blip(2400 + Math.random() * 300, 0, 0.08, 'sine', 0.018, 'amb');
+    if (Math.random() < 0.6) blip(3000 + Math.random() * 400, 0.03, 0.07, 'triangle', 0.014, 'amb');
     ambTimer = setTimeout(ambTick, 50 + Math.random() * 50);
   } else if (ambBand === 'cricket') {
     // Dế đêm: chuỗi tiếng rít ngắn lặp lại
-    for (let i = 0; i < 4; i++) blip(4300, i * 0.05, 0.04, 'square', 0.012, true);
+    for (let i = 0; i < 4; i++) blip(4300, i * 0.05, 0.04, 'square', 0.012, 'amb');
     ambTimer = setTimeout(ambTick, 900 + Math.random() * 700);
   }
 }

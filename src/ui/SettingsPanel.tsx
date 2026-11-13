@@ -38,6 +38,7 @@ const GFX_NOTE: Record<GfxChoice, string> = {
 const CHANNELS: [VolChannel, string][] = [
   ['master', 'Tổng'], ['sfx', 'Hiệu ứng (chuông cửa, thu tiền…)'],
   ['music', 'Nhạc nền'], ['amb', 'Môi trường (mưa, chim, dế)'],
+  ['ui', 'Giao diện (lên cấp, thưởng, nhiệm vụ)'],
 ];
 
 const rowCss: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: 10, padding: '10px 0', borderBottom: '1px solid rgba(0,0,0,.08)' };
@@ -204,7 +205,7 @@ function AudioTab() {
       {CHANNELS.map(([ch, label]) => (
         <Row key={ch} label={label}>
           <Slider label={label} value={getVolume(ch)} min={0} max={1} step={0.05} fmt={pct}
-            onChange={(v) => { initAudio(); setVolume(ch, v); bump((n) => n + 1); if (ch === 'sfx') playSfx('sale'); }} />
+            onChange={(v) => { initAudio(); setVolume(ch, v); bump((n) => n + 1); if (ch === 'sfx') playSfx('sale'); else if (ch === 'ui') playSfx('quest'); }} />
         </Row>
       ))}
     </div>
@@ -275,6 +276,9 @@ function A11yTab() {
       </Row>
       <Row label="Tắt chớp sáng" hint="Không loé sáng khi có giông sét">
         <Switch label="Tắt chớp sáng" on={s.noFlash} onChange={(v) => set({ noFlash: v })} />
+      </Row>
+      <Row label="Icon tương phản cao" hint="Viền trắng + nền đậm quanh icon nhỏ trên thanh công cụ — nhìn rõ hơn dưới nắng hoặc mắt yếu">
+        <Switch label="Icon tương phản cao" on={s.iconContrast} onChange={(v) => set({ iconContrast: v })} />
       </Row>
     </div>
   );

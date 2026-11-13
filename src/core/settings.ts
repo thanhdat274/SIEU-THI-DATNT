@@ -48,6 +48,8 @@ export interface Settings {
   pauseOnMenu: boolean;
   /** Chống nóng máy: FPS giới hạn 60 khi đang chạm/sạc, 30 khi đứng xem — điện thoại đỡ nóng */
   coolMode: boolean;
+  /** Icon tương phản cao: viền + nền đậm quanh icon nhỏ trên HUD cho dễ nhìn */
+  iconContrast: boolean;
 }
 
 /** Số dòng điểm ảnh tối đa theo mức độ phân giải (0 = không đặt trần). */
@@ -58,7 +60,7 @@ export const SETTINGS_DEFAULT: Settings = {
   reduceMotion: false, highContrast: false, detailDist: 'normal', autosave: true,
   shadows: true, rainDensity: 1, clouds: true, stars: true, foliageSway: true, lightQuality: 'high',
   autosaveEvery: 0, showPatience: true, autoSlow: false, confirmEndDay: false, colorblind: 'off', noFlash: false, currency: 'vnd', resolution: 'auto',
-  pauseOnMenu: false, coolMode: false,
+  pauseOnMenu: false, coolMode: false, iconContrast: false,
 };
 
 const KEY = 'th3d_settings';
@@ -96,6 +98,7 @@ export function sanitize(raw: unknown): Settings {
     resolution: pick(r.resolution, ['auto', 'native', '1080', '720'] as const, d.resolution),
     pauseOnMenu: bool(r.pauseOnMenu, d.pauseOnMenu),
     coolMode: bool(r.coolMode, d.coolMode),
+    iconContrast: bool(r.iconContrast, d.iconContrast),
   };
 }
 

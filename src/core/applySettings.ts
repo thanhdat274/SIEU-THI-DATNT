@@ -1,4 +1,4 @@
-/** Áp cài đặt lên DOM (độ sáng, cỡ giao diện, cỡ chữ, giảm chuyển động, tương phản). Gọi một lần lúc khởi động. */
+/** Áp cài đặt lên DOM (độ sáng, cỡ giao diện, cỡ chữ, giảm chuyển động, tương phản, icon tương phản). Gọi một lần lúc khởi động. */
 import { getSettings, onSettings, type Settings } from './settings';
 
 const FONT: Record<Settings['fontSize'], string> = { small: '14px', normal: '16px', large: '19px' };
@@ -16,6 +16,7 @@ export function applyDom(s: Settings = getSettings()) {
   if (ui) ui.style.filter = ((s.highContrast ? 'contrast(1.25) saturate(1.1)' : '') + cb).trim();
   root.classList.toggle('reduce-motion', s.reduceMotion);
   root.classList.toggle('high-contrast', s.highContrast);
+  root.classList.toggle('icon-contrast', s.iconContrast);
 }
 
 let styleEl: HTMLStyleElement | null = null;
