@@ -261,6 +261,14 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   // thịt gà 24k + hành phi 1.5k) = 83.5k → 5 phần × 30k = 150k, lãi ~66.5k/mẻ, hời hơn bán thẳng
   // nguyên liệu (133.1k < 150k — luật monKhuon).
   { id: 'ga_nuong_mac_khen', name: 'Gà nướng mắc khén', category: 'fresh', buy: 20000, sell: 30000, color: 0xb07830, unlock: 71, since: CONTENT_EPOCH_NOW },
+  // GĐ2388: Bánh đa nem chua — món Thanh Hóa trứ danh (bánh đa NƯỚNG than cuốn nem chua Thanh Hóa +
+  // tôm chua), TRƯỚC NAY CHƯA CÓ (soát 'bánh đa nem chua'/'banh_da_nem_chua' = 0 trong src/). Lối ra
+  // bếp cho rg_nem_chua (nem chua Thanh Hóa gói, mở 48 — trước chỉ bán thẳng; nem chua GĐ1085 nhà bà
+  // Tám đã có Nem chua rán nhưng bản Thanh Hóa vẫn trống). Nướng bánh đa trên than — trạm food_grill
+  // đúng cách nấu thật. Mẻ (nem chua 40k + tôm chua Huế 33k + bánh đa 14k) = 87k → 8 phần × 20k =
+  // 160k, lãi ~73k/mẻ, hời hơn bán thẳng nguyên liệu (143k < 160k — luật monKhuon). Mở 70 — ngoài
+  // cửa sổ 2 sim cân bằng (bài học GĐ2387v2).
+  { id: 'banh_da_nem_chua', name: 'Bánh đa nem chua', category: 'fresh', buy: 8000, sell: 20000, color: 0xc87850, unlock: 70, since: CONTENT_EPOCH_NOW },
   // GĐ2381: Thịt đông — món cỗ Tết miền Bắc trứ danh (thịt kho nước nghệ rồi để LẠNH đông thạch tự nhiên
   // ngoài Tết), TRƯỚC NAY CHƯA CÓ (soát 'thịt đông'/'thit_dong' = 0 trong src/). Nấu kỹ nồi nước, để đông
   // thạch — trạm nồi nước đúng cách nấu thật. Dưa hành ăn kèm chuẩn cỗ Bắc → hx_dua_hanh (mở 102) vào
@@ -2311,6 +2319,11 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_ga_nuong_mac_khen', name: 'Gà nướng mắc khén', station: 'food_grill',
     inputs: [{ productId: 'rg_mac_khen', quantity: 1 }, { productId: 'x_thit_ga', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 1 }],
     outputId: 'ga_nuong_mac_khen', outputQty: 5, durationMin: 25, unlock: 71, reputationGain: 2, since: CONTENT_EPOCH_NOW },
+  // GĐ2388: Bánh đa nem chua Thanh Hóa — bánh đa nướng than cuốn nem chua + tôm chua (lối ra cho
+  // rg_nem_chua mở 48). Mở 70 — ngoài cửa sổ 2 sim cân bằng; since: 1 để kỷ nguyên 0 không thấy.
+  { id: 'recipe_banh_da_nem_chua', name: 'Bánh đa nem chua', station: 'food_grill',
+    inputs: [{ productId: 'rg_nem_chua', quantity: 1 }, { productId: 'hx_tom_chua', quantity: 1 }, { productId: 'hx_banh_da', quantity: 1 }],
+    outputId: 'banh_da_nem_chua', outputQty: 8, durationMin: 20, unlock: 70, reputationGain: 2, since: CONTENT_EPOCH_NOW },
   // GĐ1324: Nem chua rán — đặc sản nhà bà Tám (nem chua GĐ1085) thành nguyên liệu chảo chiên, món ăn vặt.
   { id: 'recipe_nem_chua_ran', name: 'Nem chua rán', station: 'fryer',
     inputs: [{ productId: 'hx_nem_chua', quantity: 2 }, { productId: 'x_duong', quantity: 1 }],
