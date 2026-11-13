@@ -11,7 +11,7 @@ import { CANCEL_AFTER_LATE, describeItems, FAST_TIP, fastWindow, houseById, ON_T
 import { type CookingStation, COOKED_PRODUCT_IDS, RECIPE_MAP } from '../../data/recipes';
 import { BARTENDER_SPEED_PER_STAR, bestSkillOnDuty, SHIFTS } from '../../data/staff';
 import { workSpeed } from '../../data/staffTraits';
-import { courierOnTrip } from '../../data/trip';
+import { courierAbsentLine, courierOnTrip } from '../../data/trip';
 import { AUTO_CONTRACT_LEVEL, commitBonusValue, commitDeposit, CONTRACT_STREAK_BONUS, contractMilestoneDue, contractValue, missingForContract, reservedMissing, restockCost, supplyContractById } from '../../data/contracts';
 import { describeRep, meetsRep, reputationOf } from '../../data/reputation';
 import { activeGoals, addSales, goalLocked, goalMet } from '../../data/community';
@@ -61,6 +61,11 @@ export const updatePhones = (set: SetState, get: GetState) => {
         : call.premium
           ? `🍳 ${call.caller} (${houseById(call.houseId)!.name}) đặt nấu: ${describeItems(call.items)} — trả giá hời ×${call.premium}, nấu xong nghe máy rồi mang đi!`
           : `📞 ${call.caller} (${houseById(call.houseId)!.name}) gọi đặt hàng: ${describeItems(call.items)}`);
+    } else if (s.shopOpen && !hasCourier && s.biz.trip && s.phoneHintDay !== s.day
+      && s.staff.some((w) => w.role === 'courier' && courierOnTrip(s.biz.trip, w.id))) {
+      // Hệ 5 L8: có người giao nhưng đang đi tỉnh → đơn điện thoại bị lỡ; nói rõ lý do + giờ về, không bảo "thuê thêm".
+      set({ phoneHintDay: s.day });
+      s.notify(`📞 Điện thoại reo mà không ai giao: ${courierAbsentLine(s.biz.trip, s.staff.filter((w) => w.role === 'courier').map((w) => w.id), s.minutes)}`.replace(' — gọi Grab nhé', ''));
     } else if (s.shopOpen && !hasCourier && (s.weather === 'rain' || s.weather === 'storm') && s.phoneHintDay !== s.day) {
       // Mưa mà không ai giao hàng thì lỡ hết đơn — nhắc một lần mỗi ngày cho khỏi làm phiền
       set({ phoneHintDay: s.day });
