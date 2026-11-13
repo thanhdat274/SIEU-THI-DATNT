@@ -20,8 +20,10 @@ const baseBranch = (): BranchState => ({
 });
 
 describe('branchAlerts — chi nhánh chưa mở hoặc ổn thì im lặng', () => {
-  it('chưa mở → rỗng dù có nguy cơ', () => {
-    expect(branchAlerts({ ...baseBranch(), open: false }, 360)).toEqual([]);
+  it('GĐ2353: chưa MỞ CỬA → cảnh báo danger hướng dẫn mở (trước đây im lặng, chủ tưởng thuê người là chạy)', () => {
+    const a = branchAlerts({ ...baseBranch(), open: false }, 360);
+    expect(a.some((x) => x.text.includes('MỞ CỬA'))).toBe(true);
+    expect(a.some((x) => x.danger)).toBe(true);
   });
 
   it('đêm có bảo vệ + thu ngân + hàng → rỗng', () => {
@@ -79,6 +81,15 @@ describe('branchAlerts — vận hành thiếu', () => {
     const nightAlert = branchAlerts(b, 23 * 60);
     const empty = nightAlert.find((x) => x.text.includes('kệ trống'));
     expect(empty?.danger).toBe(true);
+  });
+
+  it('GĐ2353: kệ trống — có người chở thì hẹn chuyến kế, không ai chở thì chỉ đường auto chuyển kho', () => {
+    const noHauler = branchAlerts({ ...baseBranch(), shelf: {}, staff: [staff(1, 'cashier', 'morning')] }, 10 * 60);
+    expect(noHauler.find((x) => x.text.includes('kệ trống'))?.text).toContain('auto chuyển kho');
+    const withHauler = branchAlerts(
+      { ...baseBranch(), shelf: {}, staff: [staff(1, 'cashier', 'morning'), staff(2, 'courier', 'morning')] }, 10 * 60,
+    );
+    expect(withHauler.find((x) => x.text.includes('kệ trống'))?.text).toContain('chuyến kế tiếp');
   });
 
   it('đêm không bảo vệ → danger (nguy cơ trộm)', () => {

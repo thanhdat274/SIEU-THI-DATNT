@@ -65,8 +65,11 @@ export const FURNITURE: FurnitureDef[] = [
     categories: ['drink', 'cold'], priceBonus: 0.2, desc: '4 tầng, mỗi tầng 3 ô × 6 món: đồ uống, hàng mát; khách trả thêm 20% vì mát lạnh',
   },
   {
-    type: 'freezer', name: 'Tủ đông', price: 500000, unlock: 14, size: [1.6, 0.8], tiers: 2, slots: 3, capacity: 8,
-    categories: ['frozen'], desc: '2 ngăn, mỗi ngăn 3 ô × 8 món hàng đông lạnh (kem, thịt, cá)',
+    // GĐ2350 — QA người chơi: tủ đông thật chứa RẤT nhiều (hầm sâu, không phải kệ có tầng mỏng như
+    // tủ mát) — 2 ngăn × 3 ô × 8 (48 món) là ít hơn cả tủ mát 400k (72). Buff 3 × 4 × 10 = 120 món
+    // để đáng giá 500k; save cũ được migrateTiers bù ô trống, hàng đã bày giữ nguyên.
+    type: 'freezer', name: 'Tủ đông', price: 500000, unlock: 14, size: [1.6, 0.8], tiers: 3, slots: 4, capacity: 10,
+    categories: ['frozen'], desc: 'Ngăn sâu 3 ngăn, mỗi ngăn 4 ô × 10 món hàng đông lạnh (kem, thịt, cá) — chứa được rất nhiều',
   },
   {
     type: 'checkout', name: 'Quầy thu ngân phụ', price: 300000, unlock: 15, size: [1.6, 0.7], tiers: 0, slots: 0, capacity: 0,

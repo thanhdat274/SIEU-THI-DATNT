@@ -10,8 +10,10 @@ import { card, btn, sub, row } from './panels/businessStyles';
 import { Achievements } from './panels/AchievementsTab';
 import { Life, Pets, Services, Upgrades } from './panels/ShopLifeTabs';
 import { StanceTab } from './panels/StanceTab';
+import { Footer, Tabs } from './panels/shared';
 
-const TABS = [
+type BusinessTab = 'market' | 'services' | 'money' | 'stance' | 'week' | 'month' | 'pets' | 'life' | 'upgrades' | 'ach';
+const TABS: readonly (readonly [BusinessTab, string])[] = [
   ['market', '⚔️ Cạnh tranh'],
   ['services', '🧾 Dịch vụ'],
   ['money', '🏦 Vay & hụi'],
@@ -22,33 +24,16 @@ const TABS = [
   ['life', '🏡 Nhà & xe'],
   ['upgrades', '🔧 Nâng cấp'],
   ['ach', '🏆 Thành tựu'],
-] as const;
+];
 
 /** Bảng Kinh doanh: các hệ thống thêm (đối thủ, quảng cáo, tích điểm, vay, hụi, tuần, thú cưng, nhà, xe, thành tựu). */
 export function BusinessPanel() {
-  const [tab, setTab] = useState<(typeof TABS)[number][0]>('market');
+  const closePanel = useGame((s) => s.closePanel);
+  const [tab, setTab] = useState<BusinessTab>('market');
   return (
-    // Khung cố định để mọi tab cùng kích thước, không co giãn theo nội dung.
-    // width 100% + maxWidth (idiom GĐ95): 86vw ở 320px vượt content-box panel 7px làm cắt hàng tab.
-    <div style={{ width: '100%', maxWidth: 760, minHeight: 'min(520px, 70vh)' }}>
+    <div style={{ width: '100%', display: 'flex', flexDirection: 'column', flex: 1 }}>
       <h2 style={{ margin: '0 0 8px' }}>📈 Kinh doanh</h2>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(96px, 1fr))', gap: 4, padding: 4, marginBottom: 12, background: 'rgba(0,0,0,0.25)', borderRadius: 10 }}>
-        {TABS.map(([id, label]) => (
-          <button
-            key={id}
-            style={{
-              padding: '7px 8px', borderRadius: 7, border: 0, cursor: 'pointer', fontWeight: 600, fontSize: 12, whiteSpace: 'nowrap',
-              background: tab === id ? '#f1c40f' : 'transparent', color: tab === id ? '#222' : '#ddd',
-              transition: 'background 0.12s, transform 0.08s',
-            }}
-            onClick={() => setTab(id)}
-            onMouseEnter={(e) => { if (tab !== id) e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = tab === id ? '#f1c40f' : 'transparent'; }}
-            onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.95)'; }}
-            onMouseUp={(e) => { e.currentTarget.style.transform = ''; }}
-          >{label}</button>
-        ))}
-      </div>
+      <Tabs tabs={TABS} value={tab} onChange={setTab} />
       <div>
         {tab === 'market' && <Market />}
         {tab === 'services' && <Services />}
@@ -61,6 +46,7 @@ export function BusinessPanel() {
         {tab === 'upgrades' && <Upgrades />}
         {tab === 'ach' && <Achievements />}
       </div>
+      <Footer onClose={closePanel} />
     </div>
   );
 }

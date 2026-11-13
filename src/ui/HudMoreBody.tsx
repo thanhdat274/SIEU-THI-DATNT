@@ -8,8 +8,9 @@ import { groupTools } from './groupTools';
 import { HUBS } from './hubs';
 import { SYSTEM_UNLOCKS } from '../data/unlockMap';
 import { PRODUCTS } from '../data/products';
-import { TELEMETRY_SCOPE, telemetryOptedIn, setTelemetryOptIn, telemetrySample } from '../data/telemetryConsent';
+import { telemetryOptedIn, setTelemetryOptIn } from '../data/telemetryConsent';
 import { deleteTelemetry, flushReports } from '../core/dayReport';
+import { TelemetrySampleView } from './TelemetrySampleView';
 
 /** Tải file JSON 30 bản ghi ngày ẩn danh (SPEC-TOI-UU §T1) — người chơi thử gửi qua tin nhắn. */
 function downloadPlayLog() {
@@ -36,6 +37,8 @@ export function MoreMenuBody({ tools, level, onHelp, keys, setKeys, setOpen }: {
   const [searchOpen, setSearchOpen] = useState(false);
   // SPEC-TOI-UU §T6 (L3): mở Sổ việc chung từ menu ⋯ (không đụng dải HUD / chip / MorningPanel).
   const openTodo = () => useGame.getState().openPanel({ type: 'todo' } as never);
+  // GĐ2347: Sổ thông báo — xem lại mọi tin đã hiện lên HUD trong phiên.
+  const openNotifLog = () => useGame.getState().openPanel({ type: 'log' } as never);
   return (
     <>
       {keys ? (
@@ -53,16 +56,15 @@ export function MoreMenuBody({ tools, level, onHelp, keys, setKeys, setOpen }: {
           {!TOUCH && <ToolButton tool={{ icon: '⌨️', label: 'Phím', on: () => setKeys(true) }} level={level} />}
           {/* Xem lại hướng dẫn mở tiệm: cả máy cảm xúc lẫn desktop đều cần */}
           <ToolButton tool={{ icon: '📖', label: 'Hướng dẫn', on: onHelp }} level={level} onPicked={() => setOpen(false)} />
+          {/* GĐ2347: xem lại thông báo đã trôi / đang bị gom — mọi tin trong phiên đọc lại được */}
+          <ToolButton tool={{ icon: '🔔', label: 'Sổ thông báo', on: openNotifLog }} level={level} onPicked={() => setOpen(false)} />
           {/* SPEC-TOI-UU §T1 (L1): xuất 30 bản ghi ngày ẩn danh cục bộ (không gửi đi đâu). */}
           <ToolButton tool={{ icon: '📤', label: 'Xuất nhật ký chơi thử', on: downloadPlayLog }} level={level} onPicked={() => setOpen(false)} />
           {/* SPEC-TOI-UU §T1 (L2): bật/tắt + xem "gửi những gì" (mặc định TẮT). */}
           <ToolButton tool={{ icon: '📊', label: telemetryOptedIn() ? 'Số liệu ẩn danh: BẬT' : 'Số liệu ẩn danh: TẮT', on: () => setTeleOptIn() }} level={level} />
           <ToolButton tool={{ icon: '👁️', label: 'Xem gửi những gì', on: () => setTeleOpen(!teleOpen) }} level={level} />
           {teleOpen && (
-            <pre className="hud-more-tele-sample">
-              Scope {TELEMETRY_SCOPE} — bản ghi mẫu (ẩn danh), không tên/uid/vị trí:
-              {telemetrySample()}
-            </pre>
+            <TelemetrySampleView />
           )}
           {/* SPEC-TOI-UU §T6 (L6): tìm nhanh bảng / hệ / món. */}
           <ToolButton tool={{ icon: '🔍', label: searchOpen ? 'Tìm nhanh: đóng' : 'Tìm nhanh', on: () => setSearchOpen(!searchOpen) }} level={level} />
@@ -148,7 +150,8 @@ function HubSearch({ onPick }: { onPick: () => void }) {
       .slice(0, 12);
   }, [q]);
   const open = (h: SearchHit) => {
-    const t = typeof h.panel === 'function' ? (h.panel() as { type?: string }).type : h.panel;
+    const raw = typeof h.panel === 'function' ? h.panel() : h.panel;
+    const t = typeof raw === 'string' ? raw : raw?.type;
     if (t) openPanel({ type: t } as never);
     onPick();
   };

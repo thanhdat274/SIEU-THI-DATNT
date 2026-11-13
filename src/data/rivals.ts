@@ -58,7 +58,7 @@ export const RIVAL_SHOPS: { name: string; blurb: string }[] = [
 /**
  * Thế hệ trùm cuối của truyện rival (GĐ170): rival thứ 12 hạ được — cũng là mục cuối catalog
  * 'Siêu Thị Sao Mai' (blurb "hậu phương công ty lớn") — là đối thủ LỚN CUỐI CÙNG. Chương
- * ch13_sieu_thi_sao_mai khép truyện rival ở mốc này; từ gen 13 (rivalsBeaten ≥ 12) rival đời mới
+ * ch14_sieu_thi_sao_mai khép truyện rival ở mốc này (GĐ2386 đổi id từ ch13); từ gen 13 (rivalsBeaten ≥ 12) rival đời mới
  * chỉ là cửa hàng thường: tin khai trương khác nhãn + tên lặp vòng gắn hậu tố "cơ sở" (core/biz.ts).
  * Số này trùng RIVAL_SHOPS.length — giữ là hằng riêng để định nghĩa truyện không phụ thuộc catalog.
  */

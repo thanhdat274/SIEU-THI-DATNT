@@ -3,7 +3,10 @@
   pointer-events: auto;
   position: absolute;
   inset: 0;
+  box-sizing: border-box;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
   place-items: center;
   padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
   background: rgba(10, 12, 20, 0.55);
@@ -16,9 +19,12 @@
   --ar-accent: #f1c40f;
   --ar-red: #e74c3c;
   --ar-green: #2ecc71;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   width: min(1180px, 100%);
+  max-width: calc(100vw - 16px);
+  min-width: 0;
   height: min(760px, 100%);
   border: 1px solid var(--ar-line);
   border-radius: 16px;
@@ -45,7 +51,7 @@
 }
 #ui .ar-x:hover { background: var(--ar-line); }
 
-#ui .ar-body { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 320px; }
+#ui .ar-body { flex: 1; min-width: 0; min-height: 0; display: grid; grid-template-columns: 1fr 320px; }
 
 #ui .ar-main { display: flex; flex-direction: column; min-width: 0; min-height: 0; padding: 10px; gap: 8px; }
 #ui .ar-status {
@@ -59,8 +65,8 @@
 #ui .ar-status.bad { border-left-color: var(--ar-red); background: rgba(231, 76, 60, 0.15); }
 
 /* Hàng trạng thái + nút bật heatmap doanh số theo kệ */
-#ui .ar-status-row { display: flex; gap: 8px; align-items: stretch; }
-#ui .ar-status-row .ar-status { flex: 1; min-width: 0; }
+#ui .ar-status-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: stretch; min-width: 0; }
+#ui .ar-status-row .ar-status { flex: 1 1 180px; min-width: 0; }
 #ui .ar-status-row .ar-btn { align-self: center; white-space: nowrap; }
 #ui .ar-heat-legend {
   font-size: 12px; color: #d5dbdb; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
@@ -155,7 +161,7 @@
 #ui .ar-btn.danger { background: rgba(231, 76, 60, 0.85); }
 #ui .ar-btn.ghost { background: transparent; border: 1px solid var(--ar-line); }
 
-#ui .ar-side { display: flex; flex-direction: column; min-height: 0; border-left: 1px solid var(--ar-line); background: #2a2a39; }
+#ui .ar-side { display: flex; flex-direction: column; min-width: 0; min-height: 0; border-left: 1px solid var(--ar-line); background: #2a2a39; }
 #ui .ar-tabs { display: flex; gap: 4px; padding: 8px; border-bottom: 1px solid var(--ar-line); }
 #ui .ar-tabs button {
   flex: 1; height: 32px; border: none; border-radius: 8px;
@@ -199,10 +205,17 @@
 #ui .ar-foot-actions { margin-left: auto; display: flex; gap: 8px; }
 
 /* Màn hẹp dựng đứng: bản vẽ trên, danh mục dưới */
-@media (max-width: 760px) and (orientation: portrait) {
-  #ui .ar-body { grid-template-columns: 1fr; grid-template-rows: 1fr 38%; }
+@media (max-width: 760px) and (orientation: portrait), (max-width: 520px) {
+  #ui .ar-body { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) 38%; }
   #ui .ar-side { border-left: none; border-top: 1px solid var(--ar-line); }
+  #ui .ar-head { padding: 8px 10px; gap: 6px; flex-wrap: wrap; }
+  #ui .ar-head h2 { font-size: 16px; }
   #ui .ar-head p { display: none; }
+  #ui .ar-money { padding: 4px 8px; font-size: 12px; }
+  #ui .ar-main { padding: 6px; gap: 6px; }
+  #ui .ar-foot { padding: 8px 10px; gap: 6px; }
+  #ui .ar-foot-actions { flex-wrap: wrap; }
+  #ui .ar-btn { padding: 0 10px; font-size: 12px; }
 }
 
 /* Điện thoại xoay ngang: gọn tiêu đề, danh mục hẹp lại */

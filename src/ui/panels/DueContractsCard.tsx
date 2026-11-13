@@ -12,10 +12,13 @@ export function DueContractsCard({ dueContracts, day, storage }: {
   return (
     <>
       <h3 style={{ margin: '10px 0 4px', fontSize: 14 }}>🚚 Hợp đồng tới kỳ giao</h3>
-      <div style={{ display: 'grid', gap: 6, maxWidth: 560 }}>
+      <div style={{ display: 'grid', gap: 6 }}>
         {dueContracts.map(({ cs, def }) => def && (
-          <div key={cs.defId} style={{ ...styles.card }}>
-            <span style={{ flex: 1, fontSize: 13 }}>
+          // GĐ2352 — flexWrap: dòng chuỗi kỳ phía dưới mang `width: '100%'`; trong flex nowrap nó
+          // đòi nguyên bề rộng container → ép cột chữ trái co về min-content, mỗi từ rơi một dòng
+          // (QA người chơi: thẻ "Hợp đồng tới kỳ giao" vỡ chữ). Cho phép xuống dòng là xong.
+          <div key={cs.defId} style={{ ...styles.card, flexWrap: 'wrap' }}>
+            <span style={{ flex: 1, minWidth: 240, fontSize: 13 }}>
               <b>{def.title}</b>
               {cs.dueDay === day
                 ? <span style={{ color: '#f1c40f', fontWeight: 600 }}> · HẠN HÔM NAY</span>

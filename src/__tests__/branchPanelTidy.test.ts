@@ -5,7 +5,8 @@ import { readFileSync } from 'node:fs';
 describe('BranchPanel gọn', () => {
   const src = readFileSync('src/ui/BranchPanel.tsx', 'utf8');
   it('chỉ một nút Đóng', () => {
-    expect(src.match(/>Đóng<\/button>/g)).toHaveLength(1);
+    expect(src.match(/<Footer\b/g)).toHaveLength(1);
+    expect(src.match(/>Đóng<\/button>/g)).toBeNull();
   });
   it('tab Ban đêm nằm ở BranchNightTab', () => {
     expect(src).toContain('<BranchNightTab />');

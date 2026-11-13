@@ -62,7 +62,7 @@ export function AnalyticsPanel() {
           {!!advice.length && (
             <>
               <p style={styles.sub}><b>Gợi ý hôm nay</b></p>
-              <div style={{ display: 'grid', gap: 4, maxWidth: 620, marginBottom: 12 }}>
+              <div style={{ display: 'grid', gap: 4, marginBottom: 12 }}>
                 {advice.map((a, i) => (
                   <div key={i} style={{ ...styles.card, fontSize: 13 }}>{a.icon} {a.text}</div>
                 ))}

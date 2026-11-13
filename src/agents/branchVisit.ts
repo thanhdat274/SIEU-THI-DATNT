@@ -19,6 +19,9 @@ const DOOR_IN = at(0, CONVENIENCE.depth / 2 - 1.2);
 const CASHIER_SPOT = at(-5.6, 1.2);
 const PAY_SPOT = at(-5.6, 3.2);
 const GUARD_SPOT = at(1.8, CONVENIENCE.depth / 2 + 1.1);
+/** GĐ2353 — chỗ nhân viên xếp hàng đứng "đang bày kệ" giữa lối đi: trước đây chỉ thu ngân + bảo vệ
+ * được dựng, người xếp hàng/giao hàng thuê xong "biến mất" khiến chủ tưởng chưa có người (QA). */
+const STOCKER_SPOT = at(2.5, -1.2);
 const AISLES = [at(1.5, 1.7), at(4.5, 1.7), at(2.5, -1.2), at(5.5, -1.2), at(3, -3.3), at(-3.5, -2.2)];
 const COLORS = [0xe74c3c, 0x3498db, 0x9b59b6, 0x1abc9c, 0xe67e22, 0x34495e, 0xf1c40f, 0x16a085];
 const pick = <T,>(list: T[]) => list[Math.floor(Math.random() * list.length)];
@@ -96,20 +99,26 @@ export class BranchVisit {
     }
     if (!b.open) return this.clearPeople();
 
-    // Nhân viên trong ca: thu ngân sau quầy, bảo vệ cạnh cửa (ca đêm xin nghỉ mà chưa ai thay thì vắng)
+    // Nhân viên trong ca: thu ngân sau quầy, bảo vệ cạnh cửa, xếp hàng giữa lối đi (ca đêm xin nghỉ
+    // mà chưa ai thay thì vắng). Giao hàng/quản lý vẫn chỉ chạy trong mô phỏng ngầm.
     const absent = (id: number) => restingOn(b, id, s.day) || (b.event?.kind === 'calloff' && b.event.staffId === id && !b.event.covered);
-    const want = b.staff.filter((st) => (st.role === 'cashier' || st.role === 'guard') && onShift(st, s.minutes) && !absent(st.id));
+    const want = b.staff.filter((st) => (st.role === 'cashier' || st.role === 'guard' || st.role === 'stocker') && onShift(st, s.minutes) && !absent(st.id));
     // Mỗi vai trò chỉ cần một người đứng chỗ
-    const shown = [want.find((st) => st.role === 'cashier'), want.find((st) => st.role === 'guard')].filter(Boolean) as typeof want;
+    const shown = [
+      want.find((st) => st.role === 'cashier'),
+      want.find((st) => st.role === 'guard'),
+      want.find((st) => st.role === 'stocker'),
+    ].filter(Boolean) as typeof want;
     const ids = new Set(shown.map((st) => st.id));
     for (const [id, w] of this.staff) if (!ids.has(id)) { this.remove(w); this.staff.delete(id); }
     for (const st of shown) {
       if (this.staff.has(st.id)) continue;
       const role = ROLES[st.role];
       const w = new Walker(role.color, undefined, st.role === 'cashier' ? 'cashier' : 'stocker', role.archetype);
-      const spot = st.role === 'cashier' ? CASHIER_SPOT : GUARD_SPOT;
+      const spot = st.role === 'cashier' ? CASHIER_SPOT : st.role === 'guard' ? GUARD_SPOT : STOCKER_SPOT;
       w.position.copy(spot);
-      w.mesh.rotation.y = 0; // nhìn ra phía cửa (+z)
+      // Thu ngân/bảo vệ nhìn ra cửa (+z); xếp hàng quay mặt vào kệ, đang bày hàng
+      w.mesh.rotation.y = st.role === 'stocker' ? Math.PI : 0;
       w.setBadge(role.icon);
       this.scene.add(w.mesh);
       this.staff.set(st.id, w);

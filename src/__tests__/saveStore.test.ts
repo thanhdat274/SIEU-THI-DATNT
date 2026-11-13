@@ -244,6 +244,44 @@ describe('restoreBackup / resetGame', () => {
   });
 });
 
+describe('stashDiscarded — cất bản sắp bị thay (cloud ↔ máy)', () => {
+  const snap = (day: number, level: number) => ({ ...save.snapshot(), day, level, money: 1000 * day });
+
+  it('cất, đọc lại, khôi phục được và bền qua lần mở game sau', async () => {
+    await save.initSaves();
+    save.stashDiscarded(snap(25, 24), 111, 'cloud');
+    await flushWrites();
+    expect(save.readDiscardedSave()?.from).toBe('cloud');
+    expect(idb.has('discarded')).toBe(true);
+    // mở game lại: module nạp lại từ IndexedDB
+    vi.resetModules();
+    store = await import('../core/store');
+    save = await import('../core/save');
+    await save.initSaves();
+    expect(save.readDiscardedSave()?.data.day).toBe(25);
+    expect(save.loadDiscarded()).toBe(true);
+    expect(store.useGame.getState().day).toBe(25);
+  });
+
+  it('bản mới tinh (ngày 1) không đè mất bản tiến xa đã cất trước đó', async () => {
+    await save.initSaves();
+    save.stashDiscarded(snap(25, 24), 1, 'cloud');
+    save.stashDiscarded(snap(1, 1), 2, 'local');
+    expect(save.readDiscardedSave()?.data.day).toBe(25);
+    save.stashDiscarded(snap(30, 28), 3, 'local'); // tiến xa hơn thì được thay
+    expect(save.readDiscardedSave()?.data.day).toBe(30);
+  });
+
+  it('resetGame (chơi lại từ đầu) xóa luôn bản cất', async () => {
+    await save.initSaves();
+    save.stashDiscarded(snap(25, 24), 1, 'cloud');
+    save.resetGame();
+    await flushWrites();
+    expect(save.readDiscardedSave()).toBeNull();
+    expect(idb.size).toBe(0);
+  });
+});
+
 describe('migrate 1→2 — bản lưu đời cũ', () => {
   it('chuồng gà cũ → chuồng theo loài; kệ kho cũ trong tiệm → gỡ + hoàn tiền; ca "cả ngày" → ca sáng; bù hạt giống thời tiết', () => {
     const old = {

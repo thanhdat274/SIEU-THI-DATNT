@@ -154,6 +154,45 @@ export const PARTY_ORDERS: PartyOrderDef[] = [
     description: 'Nhóm thiện nguyện đi phát quà vùng xa, cần phở bò với bún bò Huế cho cả đoàn ăn sáng trước khi lên xe.',
     items: { pho_bo: 12, bun_bo_hue: 12 }, bonus: 260000, xp: 160,
   },
+  // GĐ2358: 2 đơn tiệc gắn kết 6 món mới (GĐ2350–2357) vào vòng lặp đơn đặt hàng cao cấp (tổng 45/45 ngân sách).
+  {
+    id: 'tiec_trua_van_phong', icon: '🍱', title: 'Tiệc trưa đãi đối tác', from: 'Văn phòng công ty đầu đường', unlock: 77, days: 3,
+    description: 'Công ty tiếp đoàn đối tác buổi trưa, đặt cơm tấm ăn no kèm bánh tôm giòn và bánh đúc nóng.',
+    items: { com_tam: 12, banh_tom: 10, banh_duc_nong: 10 }, bonus: 360000, xp: 220,
+  },
+  {
+    id: 'mam_qua_chieu_hue', icon: '🍡', title: 'Mâm quà chiều xứ Huế', from: 'Hội đồng hương miền Trung', unlock: 79, days: 3,
+    description: 'Cuối tuần hội đồng hương gặp mặt, đặt bánh ít trần, nem lụi nướng thơm và chè khúc bạch tráng miệng.',
+    items: { banh_it_tran: 12, nem_lui: 10, che_khuc_bach: 10 }, bonus: 340000, xp: 220,
+  },
+  // GĐ2385: 5 đơn tiệc gắn kết món mới GĐ2370–2383 vào vòng lặp đơn đặt hàng (Leader chốt nâng trần
+  // GĐ1759 từ 45 lên 50 — 5 đơn đủ câu chuyện, mỗi món mới đều có đơn gắn; unlock = mốc món cao nhất
+  // để đơn lúc nào cũng nấu được).
+  {
+    id: 'chao_ong_gia_boi_bo', icon: '🍲', title: 'Chén tiềm bồi bổ ông già', from: 'Nhà ông Tám đầu ngõ', unlock: 97, days: 3,
+    description: 'Ông già nhà ngoại mùa hè ăn ngủ kém, con cháu đặt chén gà tiềm nấm hương bồi bổ, kèm bánh trôi tàu nóng.',
+    items: { ga_tiem_nam_huong: 6, banh_troi_tau: 10 }, bonus: 320000, xp: 210,
+  },
+  {
+    id: 'mam_co_tet_ngoai', icon: '🧧', title: 'Mâm cỗ Tết nhà ngoại', from: 'Hội con cháu ngoại', unlock: 102, days: 3,
+    description: 'Tết về nhà ngoại đông con cháu, đặt khuôn thịt đông để lạnh sẵn và xôi gấc cỗ.',
+    items: { thit_dong: 6, xoi_gac: 12 }, bonus: 160000, xp: 180,
+  },
+  {
+    id: 'dam_cuoi_dau_xom', icon: '💐', title: 'Đám cưới đầu hẻm', from: 'Gia đình nhà cậu Tuấn', unlock: 103, days: 3,
+    description: 'Nhà đầu hẻm cưới con, mâm cỗ Nam cần thịt luộc chấm tôm chua củ kiệu và chè gấc tráng miệng.',
+    items: { thit_luoc_tom_chua: 8, che_gac: 10 }, bonus: 270000, xp: 200,
+  },
+  {
+    id: 'doi_ban_ky_niem_pho_co', icon: '🏮', title: 'Đoàn bạn kỷ niệm phố cổ', from: 'Nhóm bạn cũ phố cổ', unlock: 84, days: 2,
+    description: 'Nhóm bạn cũ về lại phố cổ nhớ ngày xưa, đặt bánh gối ăn vặt và bánh tiêu nóng ghé về.',
+    items: { banh_goi: 10, banh_tieu: 16 }, bonus: 240000, xp: 170,
+  },
+  {
+    id: 'sang_xuong_chiec', icon: '🌅', title: 'Bữa sáng xưởng chiếu', from: 'Xưởng chiếu đầu ngõ', unlock: 81, days: 2,
+    description: 'Ca sớm xưởng chiếu đổi bữa, đặt xôi xéo vàng nghệ và bánh tiêu cho cả tổ ăn no đi làm.',
+    items: { xoi_xeo: 20, banh_tieu: 15 }, bonus: 350000, xp: 190,
+  },
   // Đơn riêng theo câu chuyện từng khách quen
   {
     id: 'xoi_dam_gio', icon: '🍙', title: 'Mẻ xôi đám giỗ', from: regularById('ba_nam')!.name, regular: 'ba_nam', unlock: 12, days: 2,

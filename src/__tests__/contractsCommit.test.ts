@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach } from 'vitest';
-import { commitBonusValue, commitDeposit, reservedMissing, contractValue, CONTRACT_COMMIT_BONUS, CONTRACT_COMMIT_DEPOSIT, supplyContractById } from '../data/contracts';
+import { commitBonusValue, commitDeposit, reservedMissing, restockCost, contractValue, CONTRACT_COMMIT_BONUS, CONTRACT_COMMIT_DEPOSIT, supplyContractById } from '../data/contracts';
 import { newGameData, useGame } from '../core/store';
 
 /** Cam kết kỳ hợp đồng: trữ sẵn hàng để nhận thưởng tin cậy (cọc hoàn lại) — quyết định đổi-lấy vs linh hoạt. */
@@ -162,5 +162,103 @@ describe('commitContract / releaseContract / deliverContract (orders slice)', ()
     useGame.setState({ notify: (m) => void toasts.push(m) });
     expect(useGame.getState().deliverContract('khong-co')).toBe(false);
     expect(toasts.some((t) => t.includes('Hợp đồng không hợp lệ'))).toBe(true);
+  });
+});
+
+describe('GĐ2351 — restockContract (nhập bù đúng phần thiếu của kỳ)', () => {
+  const def = () => supplyContractById('quan_nhau')!;
+
+  function setupEmpty() {
+    const d = def();
+    useGame.setState({
+      level: d.unlock + 5,
+      storage: {},
+      money: 50_000_000,
+      contracts: { quan_nhau: { defId: 'quan_nhau', dueDay: useGame.getState().day + d.periodDays, delivered: 0, pending: false } },
+    });
+    return d;
+  }
+
+  it('chưa cam kết: mua ĐÚNG phần thiếu vào kho bán chung, trừ đúng tiền nhập', () => {
+    const d = setupEmpty();
+    useGame.setState({ storage: { bia: 2, ngot: 4 } }); // thiếu bia 10, ngot 6, nuoc 8, snack 10
+    const m0 = useGame.getState().money;
+    const missing = Object.entries(d.items).map(([id, q]) => ({ id, need: Math.max(0, q - (useGame.getState().storage[id] ?? 0)) }));
+    const cost = restockCost(missing, useGame.getState().biz);
+    expect(cost).toBeGreaterThan(0);
+    useGame.getState().restockContract('quan_nhau');
+    const s = useGame.getState();
+    for (const [id, q] of Object.entries(d.items)) expect(s.storage[id]).toBe(q); // vừa đủ
+    expect(s.money).toBe(m0 - cost);
+  });
+
+  it('đã cam kết: tiền đi thẳng vào ngăn trữ riêng `locked`, kho bán chung không đổi', () => {
+    const d = setupEmpty();
+    for (const [id, q] of Object.entries(d.items)) useGame.getState().buy(id, q); // có hàng để cam kết
+    useGame.getState().commitContract('quan_nhau');
+    expect(useGame.getState().contracts['quan_nhau'].locked).toEqual(d.items);
+    // rối ngăn: chỉ còn bia 2 → thiếu phần còn lại
+    useGame.setState({ contracts: { quan_nhau: { ...useGame.getState().contracts['quan_nhau'], locked: { bia: 2 } } } });
+    const m0 = useGame.getState().money;
+    const rm = reservedMissing(d, { bia: 2 });
+    const cost = restockCost(rm, useGame.getState().biz);
+    useGame.getState().restockContract('quan_nhau');
+    const s = useGame.getState();
+    expect(s.contracts['quan_nhau'].locked).toEqual(d.items); // đầy đủ lại
+    expect(s.money).toBe(m0 - cost);
+    for (const id of Object.keys(d.items)) expect(s.storage[id] ?? 0).toBe(0); // kho chung không động tới
+  });
+
+  it('thiếu tiền → chặn, không mua, báo "Không đủ tiền nhập bù"', () => {
+    setupEmpty();
+    const toasts: string[] = [];
+    useGame.setState({ money: 0, notify: (m) => void toasts.push(m) });
+    useGame.getState().restockContract('quan_nhau');
+    expect(useGame.getState().money).toBe(0);
+    expect(toasts.some((t) => t.includes('Không đủ tiền nhập bù'))).toBe(true);
+  });
+
+  it('kho đã đủ → báo "đã đủ hàng", không trừ tiền', () => {
+    const d = setupEmpty();
+    for (const [id, q] of Object.entries(d.items)) useGame.getState().buy(id, q);
+    const toasts: string[] = [];
+    useGame.setState({ notify: (m) => void toasts.push(m) });
+    const m0 = useGame.getState().money;
+    useGame.getState().restockContract('quan_nhau');
+    expect(useGame.getState().money).toBe(m0);
+    expect(toasts.some((t) => t.includes('đã đủ hàng'))).toBe(true);
+  });
+});
+
+describe('chế độ tự động hợp đồng (setContractAuto / runAutoContracts)', () => {
+  const setup = (level: number, storage: Record<string, number>) => {
+    const d = def();
+    useGame.setState({
+      level, storage, money: 5_000_000,
+      contracts: { quan_nhau: { defId: 'quan_nhau', dueDay: useGame.getState().day, delivered: 0, pending: false } },
+    });
+  };
+
+  it('dưới cấp 35 không bật được', () => {
+    setup(30, {});
+    useGame.getState().setContractAuto('quan_nhau', true);
+    expect(useGame.getState().contracts.quan_nhau.auto).toBeFalsy();
+  });
+
+  it('bật + tới kỳ + kho thiếu → tự nhập bù rồi giao, kỳ sau vẫn còn bật', () => {
+    setup(40, {});
+    useGame.getState().setContractAuto('quan_nhau', true);
+    const before = useGame.getState().money;
+    useGame.getState().runAutoContracts();
+    const cs = useGame.getState().contracts.quan_nhau;
+    expect(cs.delivered).toBe(1);
+    expect(cs.auto).toBe(true);
+    expect(useGame.getState().money).toBeGreaterThan(before - 5_000_000);
+  });
+
+  it('không bật auto thì không tự giao', () => {
+    setup(40, {});
+    useGame.getState().runAutoContracts();
+    expect(useGame.getState().contracts.quan_nhau.delivered).toBe(0);
   });
 });

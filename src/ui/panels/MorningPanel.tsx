@@ -239,7 +239,9 @@ export function MorningPanel() {
   ];
   const budget = budgetMorning(cards);
   return (
-    <>
+    // GĐ2349 — flex column minHeight 100% + Footer pin: nội dung ít (sáng quê, ít tín hiệu) thì hàng
+    // nút vẫn nằm dưới đáy khung thay vì kết thúc giữa panel rồi trống nửa khung dưới (QA người chơi).
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
       {/* GĐ1836 (review đợt 4 R5, tái xuất Đ1): mobile 375px tiêu đề đầy đủ bọc 3 dòng — bản mobile
           chỉ còn phần thay đổi theo ngày, tên tiệm/thứ để cho khung desktop */}
       <h2 style={styles.title}>{IS_MOBILE
@@ -252,7 +254,9 @@ export function MorningPanel() {
       {budget.rest.length > 0 && (
         <details style={{ marginTop: 12 }}>
           <summary style={{ fontSize: 13, opacity: 0.9, cursor: 'pointer', fontWeight: 600 }}>🧶 Xem thêm {budget.rest.length} mục…</summary>
-          <div style={{ display: 'grid', gap: 6, marginTop: 8 }}>
+          {/* GĐ2368: kẹp track lưới về chiều rộng khung — chip giờ nowrap trong CounterDemandCard
+              từng đẩy track max-content ~308px khiến mọi thẻ trong "Xem thêm" tràn khung ở 320px */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 6, marginTop: 8 }}>
             {budget.rest.map((c) => <Fragment key={c.id}>{c.node}</Fragment>)}
           </div>
         </details>
@@ -266,10 +270,10 @@ export function MorningPanel() {
       {courier && phoneWx && (
         <div style={{ fontSize: 12, color: '#3498db', marginTop: 2 }}>{phoneWx.line}</div>
       )}
-      <Footer onClose={() => { resetComboDay(); resetStaffDay(); closePanel(); }}>
+      <Footer pin onClose={() => { resetComboDay(); resetStaffDay(); closePanel(); }}>
         <button style={styles.btn} onClick={() => openPanel({ type: 'order' })}>📦 Nhập hàng</button>
         <button style={styles.btn} onClick={() => openPanel({ type: 'storage' })}>🏭 Kho</button>
       </Footer>
-    </>
+    </div>
   );
 }

@@ -74,6 +74,8 @@ export interface ContractState {
   committed?: boolean;
   /** Hàng đã trữ riêng cho kỳ đã cam kết (không bán dễ dàng ở quầy). */
   locked?: Record<string, number>;
+  /** Tự động: tới kỳ thì tự nhập bù phần thiếu rồi giao (mở từ cấp AUTO_CONTRACT_LEVEL). */
+  auto?: boolean;
 }
 
 export interface Tier {
@@ -142,6 +144,7 @@ export type Panel =
   | { type: 'cook'; focus?: string }
   | { type: 'morning'; focus?: string }
   | { type: 'todo' } // GĐ2317: Sổ việc chung (SPEC-TOI-UU §T6-L3) — gộp mọi nguồn đã đăng ký qua registerTodo
+  | { type: 'log' } // GĐ2347: Sổ thông báo — xem lại mọi tin đã hiện lên HUD trong phiên
   | { type: 'history' }
   | { type: 'social' }
   | { type: 'online' }
@@ -414,10 +417,16 @@ export interface GameState {
   commitContract: (id: string) => void;
   /** Hủy cam kết: trả hàng về kho bán chung, hoàn lại tiền cọc. */
   releaseContract: (id: string) => void;
+  /** GĐ2351 — nhập bù đúng phần thiếu của kỳ hợp đồng (kho chung hoặc thẳng ngăn trữ riêng). */
+  restockContract: (id: string) => void;
   /** Món vừa bán tính vào mục tiêu chung của dịp; đủ thì trao thưởng. */
   communitySale: (ids: string[]) => void;
   /** Giao kỳ hiện tại của hợp đồng từ kho; trả true nếu giao xong. */
   deliverContract: (id: string) => boolean;
+  /** Bật/tắt chế độ tự nhập bù + tự giao mỗi kỳ cho một hợp đồng (cấp ≥ AUTO_CONTRACT_LEVEL). */
+  setContractAuto: (id: string, on: boolean) => void;
+  /** Chạy tự động các hợp đồng đã bật `auto` và tới hạn (gọi lúc sang ngày mới). */
+  runAutoContracts: () => void;
   /** Sự kiện ngẫu nhiên hôm nay (ảnh hưởng lượt khách). */
   event: RandomEvent | null;
   /** Giữ chân: chuỗi điểm danh quà 7 ngày và lượt vòng quay may mắn mỗi ngày. */

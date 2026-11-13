@@ -14,7 +14,7 @@ import { starColor, Footer, styles } from './shared';
 
 export function AdviceCard({ title, items, onAct }: { title: string; items: Advice[]; onAct: (a: Advice) => void }) {
   return (
-    <div style={{ ...styles.card, display: 'block', marginTop: 10, maxWidth: 560 }}>
+    <div style={{ ...styles.card, display: 'block', marginTop: 10 }}>
       <b style={styles.cardTitle}>{title}</b>
       {items.map((a, i) => (
         <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, marginTop: 4 }}>
@@ -33,7 +33,7 @@ export function HourChart({ hours, peak, quiet }: { hours: HourStat[]; peak?: nu
   // nhãn giờ ghi giờ chẵn — để cột co được, không tràn khung (GĐ547).
   const dense = hours.length > 12;
   return (
-    <div style={{ ...styles.card, display: 'block', marginTop: 10, maxWidth: 560 }}>
+    <div style={{ ...styles.card, display: 'block', marginTop: 10 }}>
       <b style={styles.cardTitle}>🕒 Khách theo giờ</b>
       <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3, height: 70, marginTop: 6 }}>
         {hours.map((h) => (
@@ -73,7 +73,7 @@ export function ReputationCard({ log }: { log: RepSample[] }) {
     ...REGULARS.filter((r) => !regulars[r.id]?.visits && r.unlock <= level + 5 && regularRep(r)).map((r) => ({ name: `💛 Khách quen ${r.name}`, need: regularRep(r)! })),
   ].filter((g) => !meetsRep(rep, g.need)).slice(0, 4);
   return (
-    <div style={{ ...styles.card, display: 'block', marginBottom: 10, maxWidth: 560 }}>
+    <div style={{ ...styles.card, display: 'block', marginBottom: 10 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
         <b>⭐ Danh tiếng {insufficient ? 'chưa đủ khách' : `${rep.overall.toFixed(1)}★`}</b>
         <span style={{ fontSize: 12, opacity: 0.7 }}>{rep.samples} lượt khách gần nhất</span>
@@ -164,7 +164,7 @@ export function HistoryChart({ history }: { history: DayRecord[] }) {
   // Cột thưa thì có chỗ in nhãn số; đông ngày (14–30 cột) chỉ đọc tooltip.
   const labeled = history.length <= 8;
   return (
-    <div style={{ marginTop: 12, maxWidth: 560 }}>
+    <div style={{ marginTop: 12 }}>
       <div style={{ fontSize: 12, marginBottom: 6, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '4px 12px' }}>
         <span style={{ opacity: 0.75 }}>{history.length} ngày gần đây</span>
         {([['#f1c40f', 'Doanh thu'], ['#2ecc71', 'Tiền vào − ra: lãi'], ['#e74c3c', 'Tiền vào − ra: lỗ']] as const).map(([color, label]) => (
@@ -242,7 +242,14 @@ export function HistoryPanel() {
     <>
       <h2 style={styles.title}>📈 Sổ theo dõi 30 ngày</h2>
       <p style={styles.sub}>Doanh thu và lãi từng ngày (lãi hôm nay chưa trừ lương/tiền nhà tới khi sang ngày mới). Cột xám là số lượt khách. Dùng để nhìn đà tăng trưởng: nhập thêm hàng thì doanh thu có nhích không, khách có đông dần không.</p>
-      {/* viewBox để SVG co theo panel (max-width:100%) thay vì giữ cố định 600px tràn ngang màn hẹp */}
+      {/* GĐ2349 — ngày đầu chưa có số liệu ngày trước: không vẽ ô SVG trắng trống, hiện lời dẫn */}
+      {history.length === 0 ? (
+        <div style={{ ...styles.card, justifyContent: 'flex-start' }}>
+          🌱 Mới khai trương — chưa có số liệu ngày trước. Bán vài ngày rồi quay lại đây xem đà tăng trưởng
+          (doanh thu/lãi/khách từng ngày so cạnh nhau).
+        </div>
+      ) : (
+      <>
       <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', maxWidth: 600, background: '#fafbfc', borderRadius: 8, border: '1px solid #e3e6ea' }}>
         <line x1={padL} y1={zero} x2={W - padL} y2={zero} stroke="#d6dae0" />
         {days.map((d, i) => (
@@ -264,6 +271,8 @@ export function HistoryPanel() {
         🏆 Lãi nhất: <b>ngày {best.day}</b> — doanh thu {formatMoney(best.revenue)}, lãi {formatMoney(best.profit)}
       </p>
       <p style={{ ...styles.row, flexWrap: 'wrap' }}>📊 Lãi bình quân {days.length} ngày: <b>{formatMoney(avgProfit)}</b>/ngày · khách bình quân <b>{Math.round(days.reduce((n, d) => n + d.customers, 0) / days.length)}</b> lượt/ngày</p>
+      </>
+      )}
       {/* Heatmap vị trí kệ: kệ nào bán chạy nhất kể từ khi đặt (xem bản đồ màu ở màn 🏪 Sắp xếp → 🔥) */}
       {(() => {
         const ranked = furnitureList

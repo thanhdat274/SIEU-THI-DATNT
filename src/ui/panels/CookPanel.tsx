@@ -56,7 +56,7 @@ export function CookPanel() {
         </p>
       </details>
       {cookJobs.length > 0 && (
-        <div style={{ ...styles.card, display: 'block', marginBottom: 10, maxWidth: 560 }}>
+        <div style={{ ...styles.card, display: 'block', marginBottom: 10 }}>
           <b style={{ fontSize: 13 }}>🔥 Đang nấu</b>
           {cookJobs.map((j) => {
             const r = RECIPES.find((x) => x.id === j.recipeId);
@@ -89,7 +89,7 @@ export function CookPanel() {
                 <button style={{ ...styles.btn, marginLeft: 0 }} onClick={() => setBuildMode(true)}>Mua trạm</button>
               )}
             </div>
-            <div style={{ display: 'grid', gap: 6, maxWidth: 560 }}>
+            <div style={{ display: 'grid', gap: 6 }}>
               {recipes.map((r) => {
                 const out = productById(r.outputId);
                 const so = supplyOutletOf(r);

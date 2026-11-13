@@ -50,7 +50,7 @@ export function QuanNuocPanel() {
   const restockTip = quan.open ? quanNuocRestockTip(quan, level, storage, last, weather, day) : null;
 
   return (
-    <div style={{ width: '100%', maxWidth: 560 }}>
+    <div style={{ width: '100%', display: 'flex', flexDirection: 'column', flex: 1 }}>
       <h2 style={styles.title}>🧋 Quán Nước Đầu Ngõ</h2>
       <p style={styles.sub}>Quán chuyên nước ở đầu hẻm, mở sớm {shopHoursLabel('quanNuoc')} — nguyên liệu lấy thẳng từ kho của mình.</p>
       {quan.open && QUAN_WEATHER_MUL[weather] !== 1 && (

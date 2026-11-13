@@ -130,14 +130,15 @@ describe('farmVsCook', () => {
     expect(f.verdict).toBe('cook');
   });
 
-  it('sữa bò (sua_tuoi): cháo yến mạch + kem dừa + chè Thái (GĐ1381) → 3 món, best kem dừa +87400, verdict cook', () => {
+  it('sữa bò (sua_tuoi): cháo yến mạch + kem dừa + chè Thái + chè khúc bạch (GĐ2352) → 4 món, best kem dừa +87400, verdict cook', () => {
     // GĐ1369: Cháo yến mạch (+17.4k) · GĐ1376: Kem dừa (160k − 27k = 133k − 45.6k = +87.4k) ·
-    // GĐ1381: Chè Thái (132k − trái cây+đường 42k = 90k − 45.6k = +44.4k) → bõ nhất vẫn kem dừa
+    // GĐ1381: Chè Thái (132k − trái cây+đường 42k = 90k − 45.6k = +44.4k) · GĐ2352: Chè khúc bạch
+    // (120k − sữa+bột năng+đường 53k = 67k − 45.6k ≈ +21.4k) → bõ nhất vẫn kem dừa
     // (đổi CÓ CHỦ Ý theo nội dung mới).
     const f = farmVsCook('sua_tuoi');
-    expect(f.recipes).toHaveLength(3);
+    expect(f.recipes).toHaveLength(4);
     expect(f.recipes.map((d) => d.recipe.id).sort())
-      .toEqual(['recipe_chao_yen_mach', 'recipe_che_thai', 'recipe_kem_dua']);
+      .toEqual(['recipe_chao_yen_mach', 'recipe_che_khuc_bach', 'recipe_che_thai', 'recipe_kem_dua']);
     expect(f.best!.recipe.id).toBe('recipe_kem_dua');
     expect(f.best!.homegrownNet).toBe(87400);
     expect(f.verdict).toBe('cook');

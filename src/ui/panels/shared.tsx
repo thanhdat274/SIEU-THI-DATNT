@@ -29,9 +29,12 @@ export const stars = (n: number) => '★'.repeat(n) + '☆'.repeat(5 - n);
 
 export const starColor = (n: number) => (n >= 4 ? '#2ecc71' : n === 3 ? '#f1c40f' : '#e74c3c');
 
-export function Footer({ onClose, closeLabel = 'Đóng', children }: { onClose: () => void; closeLabel?: string; children?: React.ReactNode }) {
+/** GĐ2349 — `pin`: ghim hàng nút xuống ĐÁY khung khi nội dung ngắn (marginTop:'auto' trong flex
+ *  column của panel bọc ngoài; nội dung dài thì auto-margin tự về 0 như thường) — hết cảnh panel
+ *  Sổ đầu ngày kết thúc giữa panel rồi trống nửa khung dưới (QA người chơi). */
+export function Footer({ onClose, closeLabel = 'Đóng', children, pin = true }: { onClose: () => void; closeLabel?: string; children?: React.ReactNode; pin?: boolean }) {
   return (
-    <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 16 }}>
+    <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: pin ? 'auto' : 16, ...(pin ? { paddingTop: 16 } : {}) }}>
       {children}
       <button style={{ ...styles.btn, background: '#f1c40f' }} onClick={onClose}>{closeLabel}</button>
     </div>
@@ -82,6 +85,25 @@ export const IS_MOBILE =
  * số cứng — panel mobile padding 14px còn desktop 22px, số cứng làm tràn 8px mỗi mép (GĐ95). */
 const PANEL_VARS = (px: string) => ({ '--panel-px': px } as React.CSSProperties);
 
+/** GĐ2348 — vệt mờ dần mép trên/dưới của khung panel: dòng bị cắt lửng ở đáy phải ĐỌC RA là
+ * "còn nội dung, cuộn được", không phải nội dung gãy (QA người chơi: đáy panel khó chịu).
+ * Mẹo background-attachment chuẩn cho vùng cuộn: vệt màu nhạt CUỘN THEO nội dung (`local`,
+ * không che chữ vì là nền), bóng mờ ĐỨNG YÊN tại mép (`scroll`) — luôn hiện khi còn cuộn.
+ * Nhớ giữ `backgroundColor` riêng (không dùng shorthand `background`) để ảnh nền không bị xoá. */
+const PANEL_BG = '#2b2b3a';
+const PANEL_FADE = {
+  backgroundColor: PANEL_BG,
+  backgroundImage: [
+    `linear-gradient(${PANEL_BG} 30%, rgba(43,43,58,0))`,
+    `linear-gradient(rgba(43,43,58,0), ${PANEL_BG} 70%)`,
+    'radial-gradient(farthest-side at 50% 0, rgba(0,0,0,0.4), transparent)',
+    'radial-gradient(farthest-side at 50% 100%, rgba(0,0,0,0.4), transparent)',
+  ].join(','),
+  backgroundSize: '100% 48px, 100% 48px, 100% 20px, 100% 20px',
+  backgroundAttachment: 'local, local, scroll, scroll',
+  backgroundRepeat: 'no-repeat',
+} as React.CSSProperties;
+
 export const styles: Record<string, React.CSSProperties> = {
   backdrop: {
     pointerEvents: 'auto', position: 'absolute', inset: 0,
@@ -91,19 +113,24 @@ export const styles: Record<string, React.CSSProperties> = {
   panel: IS_MOBILE
     ? {
         ...PANEL_VARS('14px'),
-        background: '#2b2b3a', color: '#fff', borderRadius: 12, padding: '12px var(--panel-px)',
+        ...PANEL_FADE,
+        color: '#fff', borderRadius: 12, padding: '12px var(--panel-px)',
         // Màn ngang: panel chiếm gần full chiều ngang như desktop để nhiều thông tin trên
         // một tầm nhìn, đỡ phải cuộn dọc. Desktop giữ nguyên kích thước cũ.
         // GĐ662: khung CỐ ĐỊNH (width lẫn height) — chuyển tab trong hub không làm modal co giãn,
         // nhảy vị trí hay đổi chỗ nút ✕; nội dung dài cuộn BÊN TRONG (overflowY/X).
         width: 'calc(100vw - 24px)', height: 'calc(100dvh - 96px)',
-        overflowY: 'auto', overflowX: 'hidden',
+        // GĐ2351 — overflowX AUTO như desktop: bảng rộng (Bảng giá 6 cột…) trên màn hẹp trước đây
+        // bị CẮT mất nửa phải mà không cuộn được (QA mobile 390px GĐ2351). Chuẩn GĐ298: bảng rộng
+        // hơn khung thì cuộn ngang BÊN TRONG, không cắt nội dung.
+        overflowY: 'auto', overflowX: 'auto',
         boxSizing: 'border-box',
         boxShadow: '0 10px 40px rgba(0,0,0,0.5)',
       }
     : {
         ...PANEL_VARS('22px'),
-        background: '#2b2b3a', color: '#fff', borderRadius: 12, padding: '18px var(--panel-px)',
+        ...PANEL_FADE,
+        color: '#fff', borderRadius: 12, padding: '18px var(--panel-px)',
         // Chừa đáy màn hình cho dock nút của HUD — hết cảnh dãy nút cuối panel bị dock đè lên.
         // GĐ662: khung cố định min(760, màn−32) × min(688, cao−108) cho MỌI panel — hết tình trạng
         // cùng hub mà khung 658→1160px, cao 243→692 (QA toàn diện GĐ662). Bảng rộng hơn khung

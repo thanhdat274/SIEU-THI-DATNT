@@ -36,7 +36,7 @@ export function OnlinePanel() {
         </div>
       ) : (
         <>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 10 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(140px, 100%), 1fr))', gap: 8, marginBottom: 10 }}>
             <div style={{ ...styles.card, display: 'block' }}><small style={{ opacity: 0.7 }}>⭐ Điểm app</small><div><b>{rating.toFixed(1)}</b> <small>({online.ratingCount})</small></div></div>
             <div style={{ ...styles.card, display: 'block' }}><small style={{ opacity: 0.7 }}>📦 Đã giao</small><div><b>{online.done}</b> <small>trễ {online.late}</small></div></div>
             <div style={{ ...styles.card, display: 'block' }}><small style={{ opacity: 0.7 }}>💵 Hôm nay</small><div><b>{formatMoney(online.revenueToday)}</b></div>{!!online.grabFeesToday && <small>Grab -{formatMoney(online.grabFeesToday)}</small>}</div>

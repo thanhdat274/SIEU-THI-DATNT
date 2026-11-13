@@ -17,6 +17,7 @@ import { countPanel } from '../dayReport';
 import { updateOnline } from './online';
 import { updatePhones, cookSpeed, bartenderBoost } from './orders';
 import { maybeInspection } from '../inspection';
+import { pushNotif } from '../notifLog';
 
 /** Đồng hồ và nhịp ngày: tick mỗi khung hình (chi nhánh, điện thoại, mẻ nấu), đi ngủ, thông báo, mở bảng. */
 
@@ -161,6 +162,8 @@ export const createClockSlice = (set: SetState, get: GetState): Pick<GameState, 
     if (!burst.length) queueMicrotask(() => { burst = []; });
     if (!burst.includes(message)) burst.push(message);
     set({ message: burst.length > 1 ? fitJoin([message, ...burst.filter((m) => m !== message).reverse()]) : message });
+    // Sổ thông báo: tin trôi sau 3–4.5s nhưng xem lại được ở bảng 🔔 (panel 'log')
+    pushNotif(get().day, get().minutes, message);
     clearTimeout(messageTimer);
     // GĐ1835 (review đợt 4 R4): card thoại chương đè mất toast — khi thoại đang mở thì GIỮ tin
     // (không đếm giờ); bấm xong thoại, closeChapter gọi armMessage() mới bắt đầu đếm 3 giây.

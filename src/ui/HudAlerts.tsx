@@ -76,8 +76,10 @@ export function FestivalBanner() {
   const pct = (x: number) => `${x >= 1 ? '+' : ''}${Math.round((x - 1) * 100)}%`;
   return (
     <div className="hud-alert festival">
-      {f.icon} <b>{f.name}</b>: khách {pct(f.traffic)}{f.cost !== 1 && ` · giá nhập ${pct(f.cost)}`}
-      {f.tolerance && ' · khách chịu giá cao'}{goods && <small> · hàng hút: {goods}</small>}
+      <span>
+        {f.icon} <b>{f.name}</b>: khách {pct(f.traffic)}{f.cost !== 1 && ` · giá nhập ${pct(f.cost)}`}
+        {f.tolerance && ' · khách chịu giá cao'}{goods && <small> · hàng hút: {goods}</small>}
+      </span>
     </div>
   );
 }
@@ -97,7 +99,7 @@ export function CounterAskAlert() {
   }, [ask]);
   if (!ask) return null;
   return (
-    <div className="hud-alert phone ringing">
+    <div className="hud-alert pausing phone ringing">
       {ask.icon} <b>{ask.who}</b> {ask.text}
       <small> · tiệm tạm dừng chờ cậu chọn · còn ~{Math.max(1, rem)}s nữa khách tự chốt theo mặc định</small>
       <span className="hud-alert-actions">

@@ -38,9 +38,11 @@ export function CounterDemandCard({ demand, cleanStreak, cleanBest, cleanExtra }
     </div>
     <div style={{ marginTop: 6, display: 'flex', alignItems: 'flex-end', gap: 4, height: 44 }}>
       {demand.bands.map((b, i) => (
-        <div key={i} title={`${b.label}: ~${b.expected} khách (${b.perHour}/giờ)`} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+        <div key={i} title={`${b.label}: ~${b.expected} khách (${b.perHour}/giờ)`} style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
           <div style={{ width: '100%', height: Math.max(4, Math.round(b.pressure / 100 * 34)), background: b.peak ? '#2ecc71' : 'rgba(46,204,113,0.45)', borderRadius: 3 }} />
-          <span style={{ fontSize: 11, opacity: 0.8, whiteSpace: 'nowrap' }}>{b.label}</span>
+          {/* GĐ2368: cho nhãn co được — nowrap cứng từng đẩy min-content dãy chip ~308px
+              (track lưới "Xem thêm" phình, cả cụm thẻ tràn khung ở màn hẹp); title trên chip giữ nhãn đầy đủ */}
+          <span style={{ fontSize: 11, opacity: 0.8, whiteSpace: 'nowrap', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>{b.label}</span>
         </div>
       ))}
     </div>

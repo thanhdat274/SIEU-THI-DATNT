@@ -1,4 +1,5 @@
 import Dexie, { type EntityTable } from 'dexie';
+import { compareProgress } from './saveCompare';
 import { forecastFrom, type Weather } from '../data/weather';
 import { normalizeBranch } from '../data/branches';
 import { initialWeather, migrateTiers, newGameData, useGame, type Furniture } from './store';
@@ -154,7 +155,7 @@ export function applySnapshot(raw: Partial<SaveData>) {
 export const isSandboxUrl = (search: string) => new URLSearchParams(search).get('thu') === '1';
 export const SANDBOX = typeof location !== 'undefined' && isSandboxUrl(location.search);
 
-type LocalSave = { id: string; savedAt: number; data: SaveData };
+type LocalSave = { id: string; savedAt: number; data: SaveData; /** Bản bị thay: lấy từ cloud hay từ máy. */ from?: 'cloud' | 'local' };
 
 /** Lưu trong IndexedDB: dung lượng lớn, không bị giới hạn ~5MB như localStorage. */
 class SaveDb extends Dexie {
@@ -171,6 +172,8 @@ const MAIN = 'main';
 const BACKUP = 'backup';
 /** Bản chính bị hỏng được cất riêng (không ghi đè mất) để còn cứu tay. */
 const CORRUPT = 'corrupt';
+/** Bản lưu vừa bị bỏ khi chọn giữa cloud và máy / ghi đè cloud (cất lại để người chơi cứu được). */
+const DISCARDED = 'discarded';
 /** IndexedDB ghi bất đồng bộ nên có thể không kịp khi đóng tab; lúc đó ghi thêm bản này vào localStorage. */
 const EMERGENCY_KEY = SANDBOX ? 'taphoa3d-thu-emergency' : 'taphoa3d-emergency';
 /** Bản lưu cũ trong localStorage, trước khi chuyển sang IndexedDB. */
@@ -206,6 +209,7 @@ function clearLocalStorage() {
 // Bản sao trong bộ nhớ để màn đăng nhập và HUD đọc đồng bộ; nạp từ IndexedDB một lần bằng `initSaves`.
 let main: LocalSave | null = null;
 let backup: LocalSave | null = null;
+let discarded: LocalSave | null = null;
 let writes: Promise<unknown> = Promise.resolve();
 /** Ghi IndexedDB lần lượt theo thứ tự gọi, để bản cũ không đè bản mới. */
 const queue = (job: () => Promise<unknown>) => (writes = writes.then(job).catch((err) => console.warn('[save]', err)));
@@ -213,13 +217,14 @@ const queue = (job: () => Promise<unknown>) => (writes = writes.then(job).catch(
 /** Gọi một lần trước khi hiện màn đăng nhập: nạp bản lưu, chuyển bản localStorage cũ sang, nhận bản khẩn cấp. */
 export async function initSaves() {
   try {
-    const [m, b] = await db.saves.bulkGet([MAIN, BACKUP]);
+    const [m, b, x] = await db.saves.bulkGet([MAIN, BACKUP, DISCARDED]);
     if (m && !isValid(m)) {
       console.warn('[save] Bản lưu chính bị hỏng, dùng bản backup');
       await db.saves.put({ ...(m as LocalSave), id: CORRUPT });
     }
     main = isValid(m) ? m : null;
     backup = isValid(b) ? b : null;
+    discarded = isValid(x) ? x : null;
   } catch (err) {
     console.warn('[save] Không mở được IndexedDB', err);
   }
@@ -268,6 +273,28 @@ export const readLocalSave = (): LocalSave | null => main;
 /** Bản cuối ngày hôm trước, để người chơi quay lại. */
 export const readBackupSave = (): LocalSave | null => backup;
 
+/**
+ * Cất bản sắp bị thay (cloud bị ghi đè, hoặc bản máy bị bỏ) để còn cứu. Chỉ giữ MỘT bản — bản tiến xa
+ * nhất: không để một bản mới tinh (ngày 1) đè mất bản cứu quý hơn đã cất trước đó.
+ */
+export function stashDiscarded(data: SaveData, savedAt: number, from: 'cloud' | 'local'): void {
+  const next: LocalSave = { id: DISCARDED, savedAt, data, from };
+  if (!isValid(next)) return;
+  if (discarded && compareProgress(next.data, discarded.data) < 0) return;
+  discarded = next;
+  queue(() => db.saves.put(next));
+}
+
+/** Bản đã bị thay gần nhất (nếu có), để màn đăng nhập mời khôi phục. */
+export const readDiscardedSave = (): LocalSave | null => discarded;
+
+/** Nạp bản đã bị thay vào ván đang chơi. Bản này vẫn được giữ cho tới khi có bản tiến xa hơn thay. */
+export function loadDiscarded(): boolean {
+  if (!discarded) return false;
+  applySnapshot(discarded.data);
+  return true;
+}
+
 export function loadGame(): boolean {
   if (!main) return false;
   applySnapshot(main.data);
@@ -288,7 +315,7 @@ export function restoreBackup(): boolean {
 }
 
 export function resetGame() {
-  main = backup = null;
+  main = backup = discarded = null;
   queue(() => db.saves.clear());
   clearLocalStorage();
   useGame.setState({ ...newGameData(), shopOpen: false, panel: null, buildMode: false, placing: null });

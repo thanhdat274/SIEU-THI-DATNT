@@ -5,7 +5,7 @@
 // cấp mở khóa, và trạm nấu (station). Thành phẩm tự động thêm vào PRODUCTS.
 // ============================================================================
 
-import { epochGate } from './contentEpoch';
+import { CONTENT_EPOCH_NOW, epochGate } from './contentEpoch';
 
 /** Trạm nấu: nơi có thể thực hiện recipe. */
 export type CookingStation =
@@ -131,6 +131,183 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   // mẻ (nem chua 9k×2 + đường 17k) = 35k → 8 phần × 9k = 72k, lãi 37k/mẻ, nấu hời hơn bán thẳng nguyên liệu (49k < 72k).
   // Khép chuỗi hàng xóm (bà Tám) → chảo chiên, mở 36 (sau mốc golden 30 → sim không đổi).
   { id: 'nem_chua_ran', name: 'Nem chua rán', category: 'fresh', buy: 4500, sell: 9000, color: 0xd35400, unlock: 36 },
+  // GĐ2346: Bánh bao chiên — món chiên giòn trứ danh, lấp khoảng trống của "bánh bao chiên" trong họ bánh bao
+  // (hấp 39 · lạp xưởng 45 · kim sa 52 đều có, CHIÊN chưa có). Chảo chiên: bột mì + thịt heo + hành phi.
+  // Mẻ (bột mì 26k×2 + thịt heo 38k + hành phi 2.5k) = 92.5k → 10 cái × 14.5k = 145k, lãi ~52.5k/mẻ, nấu hời
+  // hơn bán thẳng nguyên liệu (92.5k < 145k). Mở 71: trên mọi mốc sim cân bằng không cổng epoch (crisis 45~48,
+  // stance 65~69, L50 50~52) — chỉ simBands 100 thấy (đã chấp nhận được ở mốc 48). Nội dung MỚI ghi `since:
+  // CONTENT_EPOCH_NOW` → sim golden kỷ nguyên 0 không thấy (LUẬT món mới, SPEC-TOI-UU §T4).
+  { id: 'banh_bao_chien', name: 'Bánh bao chiên', category: 'fresh', buy: 9500, sell: 14500, color: 0xc8732a, unlock: 71, since: CONTENT_EPOCH_NOW },
+  // GĐ2350: Bánh tôm — món chiên trứ danh Hồ Tây (tôm kẹp bánh bột mì chiên ngập dầu), lấp khoảng trống
+  // "bánh tôm" và cho TÔM SÚ (hàng meat đắt, 190k) một lối ra MÓN ĂN VẶT bên cạnh các món quán nhậu.
+  // Mẻ (tôm sú 190k + bột mì 18k×2 + hành phi 1.5k) = 227.5k → 18 cái × 19k = 342k, lãi ~114.5k/mẻ
+  // theo giá nhập, và hời hơn bán thẳng nguyên liệu (bán raw 314.5k < 342k). Mở 74: trên mọi mốc sim
+  // cân bằng không cổng epoch (crisis 45~48 · stance 65~69 · L50 50~52), tránh mốc latePremium
+  // 82/86/91/96/100. Nội dung MỚI ghi `since: CONTENT_EPOCH_NOW` → golden kỷ nguyên 0 không thấy.
+  { id: 'banh_tom', name: 'Bánh tôm', category: 'fresh', buy: 12000, sell: 19000, color: 0xe98b4e, unlock: 74, since: CONTENT_EPOCH_NOW },
+  // GĐ2352: Chè khúc bạch — chè Hà Nội trứ danh (thạch bột năng trắng ngập sữa tươi, hạnh nhân rang):
+  // đun sữa tươi với đường + nấu thạch bột năng ở NỒI NƯỚC (đúng cách nấu "nấu nước" của trạm).
+  // Lấp khoảng trống họ "chè khúc bạch" chưa có. Mẻ (sữa tươi 28k + bột năng 8k + đường 17k) = 53k
+  // → 10 chén × 12k = 120k, lãi ~67k/mẻ, hời hơn bán thẳng nguyên liệu (70k < 120k). Mở 75 trên mọi
+  // mốc sim cân bằng không cổng epoch, tránh mốc latePremium 82/86/91/96/100; since kỷ nguyên 0 không thấy.
+  { id: 'che_khuc_bach', name: 'Chè khúc bạch', category: 'fresh', buy: 6500, sell: 12000, color: 0xfdfefe, unlock: 75, since: CONTENT_EPOCH_NOW },
+  // GĐ2353: Cơm tấm — cơm tấm sườn bì chả trứng, biểu tượng Sài Gòn chưa có trong game (đã soát
+  // "Cơm tấm"/"com_tam" 0 kết quả). Quầy xôi nấu cơm; gạo tấm game chưa có → dùng GẦN NHẤT là
+  // Gạo (túi 5kg) thay (luật CLAUDE.md §4 — ghi rõ thay thế). Mẻ (gạo 80k + thịt heo 30k +
+  // trứng gà 2.5k + hành phi 1.5k) = 114k → 16 phần × 16k = 256k, lãi ~142k/mẻ, hời hơn bán thẳng
+  // nguyên liệu (144k < 256k). Mở 76 trên mọi mốc sim không cổng epoch, tránh latePremium 82/86/91/96/100.
+  { id: 'com_tam', name: 'Cơm tấm', category: 'fresh', buy: 7000, sell: 16000, color: 0xf5e0c8, unlock: 76, since: CONTENT_EPOCH_NOW },
+  // GĐ2355: Bánh đúc nóng — điểm tâm Hà Nội (khuấy bột gạo + bột năng chín dẻo trong nồi, rắc thịt heo băm,
+  // nấm mèo khô và hành phi, chan nước mắm ấm). Đủ nguyên liệu thật, không thay thế. Mẻ (bột gạo 9k + bột năng 8k
+  // + thịt heo 30k + nấm mèo khô 12k + hành phi 1.5k) = 60.5k → 10 chén × 12k = 120k, lãi ~59.5k/mẻ, hời hơn
+  // bán thẳng nguyên liệu (81.5k < 120k). Mở 77 trên mọi mốc sim không cổng epoch, tránh latePremium 82/86/91/96/100.
+  { id: 'banh_duc_nong', name: 'Bánh đúc nóng', category: 'fresh', buy: 6000, sell: 12000, color: 0xf3ead8, unlock: 77, since: CONTENT_EPOCH_NOW },
+  // GĐ2356: Bánh ít trần — đặc sản Huế / Nam Bộ (vỏ nếp dẻo bọc nhân đậu xanh, thịt heo băm, tôm tươi, hấp chín
+  // và thoa mỡ hành lá). Đủ nguyên liệu thật (x_nep thay bột nếp gần nhất), không tự chế. Mẻ (nếp 28k + đậu xanh 2.5k
+  // + thịt heo 30k + tôm tươi 45k + hành lá 2k) = 107.5k → 12 cái × 16k = 192k, lãi ~84.5k/mẻ, hời hơn bán thẳng
+  // nguyên liệu (141k < 192k). Mở 78 trên mọi mốc sim không cổng epoch, tránh latePremium 82/86/91/96/100.
+  { id: 'banh_it_tran', name: 'Bánh ít trần', category: 'fresh', buy: 9000, sell: 16000, color: 0xf4f0e0, unlock: 78, since: CONTENT_EPOCH_NOW },
+  // GĐ2357: Nem lụi — đặc sản Huế trứ danh (thịt heo băm quết dẻo ướp sả, tỏi, hành phi bọc quanh cây sả
+  // nướng than thơm lừng ở bếp nướng). Đủ nguyên liệu thật, không tự chế. Mẻ (thịt heo 30k + sả 2k + tỏi 6k
+  // + hành phi 1.5k) = 39.5k → 8 cây × 11k = 88k, lãi ~48.5k/mẻ, hời hơn bán thẳng nguyên liệu (52.5k < 88k).
+  // Mở 79 trên mọi mốc sim không cổng epoch, tránh latePremium 82/86/91/96/100.
+  { id: 'nem_lui', name: 'Nem lụi', category: 'fresh', buy: 5500, sell: 11000, color: 0xd96b27, unlock: 79, since: CONTENT_EPOCH_NOW },
+  // GĐ2369: Cao lầu — đặc sản Hội An trứ danh, TRƯỚC NAY CHƯA CÓ (soát 'cao lầu'/'cao_lau' = 0 kết quả
+  // trong recipes + MON_THAT/MON_KHUON). Mì gạo HẤP trong xửng (không luộc — làm hỏng sợi dai), nước
+  // dùng đậm đà nấu từ thịt heo, ăn với giá đỗ, hành phi, rau thơm. Nước tro củ + nước giếng Bá Lễ game
+  // chưa có → thay gần nhất là bột gạo làm sợi (ghi rõ theo CLAUDE.md §4); bánh mì mỏi chiên ăn kèm
+  // game chưa có nguyên liệu, bỏ khỏi mẻ. Mẻ (bột gạo 9k + thịt heo 30k + giá đỗ 4k + hành phi 1.5k)
+  // = 44.5k → 10 tô × 15k = 150k, lãi ~105.5k/mẻ, hời hơn bán thẳng nguyên liệu (59.5k < 150k — luật monKhuon).
+  { id: 'cao_lau', name: 'Cao lầu', category: 'fresh', buy: 9000, sell: 15000, color: 0xb5651d, unlock: 80, since: CONTENT_EPOCH_NOW },
+  // GĐ2370: Bánh trôi tàu — điểm tâm đường nóng trứ danh Hà Nội (lò bake/ngõ Phùng Hưng), TRƯỚC NAY CHƯA CÓ
+  // (soát 'bánh trôi tàu'/'banh_troi' = 0 trong src/). Viên bột nếp ruột mè + đường luộc CHÍN trong nồi
+  // nước đường pha gừng, ăn nóng khi trời lạnh — trạm nồi nước đúng cách nấu thật. GĐ2374 SỬA nguyên liệu:
+  // mè trắng đã có từ trước — hx_me_rang 'Mè rang nhà làm' (GĐ1486, mở 55) chính là mè trắng rang; trước
+  // dùng nhầm mè đen xay hx_me_den (chỉ đúng cho Chè mè đen). Mẻ (nếp 28k + đường
+  // 17k + gừng 7k + mè rang 32k) = 84k → 10 chén × 15k = 150k, lãi ~66k/mẻ, hời hơn bán thẳng nguyên liệu
+  // (118k < 150k — luật monKhuon).
+  { id: 'banh_troi_tau', name: 'Bánh trôi tàu', category: 'fresh', buy: 9500, sell: 15000, color: 0xe8d8c0, unlock: 81, since: CONTENT_EPOCH_NOW },
+  // GĐ2371: Bánh gối — bánh túi gối chiên vàng trứ danh Hà Nội (gánh hàng rong/ô phố cổ), TRƯỚC NAY CHƯA CÓ
+  // (soát 'bánh gối'/'banh_goi' = 0 trong src/). Nhân thịt heo xay + miến + mộc nhĩ gói vỏ bột, CHIÊN NGẬP
+  // DẦU vàng ruộm — trạm chảo chiên đúng cách nấu thật. Nguyên liệu thật tất cả đã có (không cần proxy):
+  // bột chiên giòn làm vỏ, miến thay bằng bún tươi gần nhất (họ bún/miến, ghi rõ theo CLAUDE.md §4),
+  // mộc nhĩ dùng nấm mèo khô nhà phơi hx_nam_meo (cùng loại nấm mèo đen). Mẻ (bột chiên giòn 6k + thịt
+  // xay 30k + nấm mèo 35k + bún tươi 5k) = 76k → 10 cái × 15k = 150k, lãi ~74k/mẻ, hời hơn bán thẳng
+  // nguyên liệu (112k < 150k — luật monKhuon). Trứng cút ăn kèm game không đủ quy mô mẻ, bỏ khỏi mẻ.
+  { id: 'banh_goi', name: 'Bánh gối', category: 'fresh', buy: 9500, sell: 15000, color: 0xd9a441, unlock: 83, since: CONTENT_EPOCH_NOW },
+  // GĐ2372: Phở cuốn — món cuốn Hà Nội trứ danh (chợ Nhật Tân/Nguyễn Khang), TRƯỚC NAY CHƯA CÓ (soát
+  // 'phở cuốn'/'pho_cuon' = 0 trong src/). Chả bò NƯỚNG trên bếp than cuốn bánh phở tấm với rau mùi +
+  // giá đỗ, chấm nước mắm pha — trạm bếp nướng đúng cách nấu thật. Bánh phở tấm game chưa có → dùng gần
+  // nhất bột gạo (họ gạo làm bánh phở, ghi rõ theo CLAUDE.md §4). Mẻ (bột gạo 9k + thịt bò 42k + rau mùi
+  // 3k + giá đỗ 4k) = 58k → 10 phần × 20k = 200k, lãi ~142k/mẻ, hời hơn bán thẳng nguyên liệu (78k < 200k
+  // — luật monKhuon).
+  { id: 'pho_cuon', name: 'Phở cuốn', category: 'fresh', buy: 12000, sell: 20000, color: 0xc9a24b, unlock: 84, since: CONTENT_EPOCH_NOW },
+  // GĐ2373: Bánh khoai — bánh khoai Huế chiên giòn trứ danh (bột gạo pha nước cốt dừa, nhân thịt + giá đỗ,
+  // rán trong KHUÔN ngập dầu), TRƯỚC NAY CHƯA CÓ (soát 'bánh khoai'/'banh_khoai' = 0 trong src/). Trạm
+  // chảo chiên đúng cách nấu thật — khác bánh xèo vì đúc khuôn dày, nhân xếp lớp. Mẻ (bột gạo 9k + nước
+  // cốt dừa 10k + thịt heo 30k + giá đỗ 4k + hành phi 1.5k) = 54.5k → 6 cái × 20k = 120k, lãi ~65.5k/mẻ,
+  // hời hơn bán thẳng nguyên liệu (73.5k < 120k — luật monKhuon).
+  { id: 'banh_khoai', name: 'Bánh khoai', category: 'fresh', buy: 10000, sell: 20000, color: 0xe0b04f, unlock: 85, since: CONTENT_EPOCH_NOW },
+  // GĐ2375: Mực một nắng nướng — đặc sản Nha Trang trứ danh (mực 1 nắng phơi NƯỚNG trên than, chấm mắm
+  // gừng), TRƯỚC NAY CHƯA CÓ (soát 'mực một nắng' trong src/ chỉ có nguyên liệu hx_muc_mot_nang không lối
+  // ra bếp — bán thẳng đồ khô). Nướng than để nguyên con, xiên que bán vỉa hè — trạm bếp nướng đúng cách
+  // nấu thật. Mẻ (mực một nắng 31k) = 31k → 6 xiên × 15k = 90k, lãi ~59k/mẻ, hời hơn bán thẳng nguyên
+  // liệu (50k < 90k — luật monKhuon).
+  { id: 'muc_mot_nang_nuong', name: 'Mực một nắng nướng', category: 'fresh', buy: 8500, sell: 15000, color: 0xd88a6a, unlock: 99, since: CONTENT_EPOCH_NOW },
+  // GĐ2376: Bánh đa cá kho — đặc sản Nam Định/Hải Phòng trứ danh (bánh đa NƯỚNG than ăn với cá dứa kho +
+  // rau thơm), TRƯỚC NAY CHƯA CÓ (soát 'bánh đa cá kho'/'banh_da_ca_kho' = 0 trong src/). Lối ra bếp cho
+  // hx_ca_dua_kho (khô cá dứa nhà phơi, mở 101 — trước chỉ bán thẳng). Bánh đa dùng hx_banh_da (bì, mở
+  // 38) gần nhất — họ bánh đa, ghi rõ theo CLAUDE.md §4. Trạm bếp nướng đúng cách nấu thật. Mẻ (cá dứa
+  // kho 31k + bánh đa 14k) = 45k → 8 phần × 15k = 120k, lãi ~75k/mẻ, hời hơn bán thẳng nguyên liệu
+  // (72k < 120k — luật monKhuon).
+  { id: 'banh_da_ca_kho', name: 'Bánh đa cá kho', category: 'fresh', buy: 7000, sell: 15000, color: 0xc86a3a, unlock: 101, since: CONTENT_EPOCH_NOW },
+  // GĐ2377: Cháo cua — cháo cua đồng Hà Nội trứ danh (riêu cua giã lọc nấu cháo trắng, trứng gà, hành
+  // mùi), TRƯỚC NAY CHƯA CÓ (soát 'cháo cua'/'chao_cua' = 0 trong src/; cua đồng GĐ2125 đã dùng cho Bún
+  // riêu + Canh cua mồng tơi nhưng cháo cua vẫn còn trống). Quẩy ăn kèm game chưa có nguyên liệu, bỏ khỏi
+  // mẻ. Trạm nồi nước đúng cách nấu thật (nấu cháo trắng, thả riêu cua + trứng). Mẻ (cua đồng 30k + gạo
+  // 80k + trứng gà 2.5k + hành lá 2k) = 114.5k → 25 bát × 15k = 375k, lãi ~260k/mẻ, hời hơn bán thẳng
+  // nguyên liệu (148.5k < 375k — luật monKhuon).
+  { id: 'chao_cua', name: 'Cháo cua', category: 'fresh', buy: 8000, sell: 15000, color: 0xd88a4a, unlock: 170, since: CONTENT_EPOCH_NOW },
+  // GĐ2378: Cá thu muối chiên — cá mặn chiên cơm nhà trứ danh miền Trung (cá thu ướp muối CHIÊN giòn
+  // ăn cơm nóng, khác cá thu tươi chiên GĐ1424), TRƯỚC NAY CHƯA CÓ (soát 'cá thu muối chiên' = 0 trong
+  // src/). Lối ra bếp cho hx_ca_muoi (cá thu muối nhà ướp, mở 106 — trước chỉ bán thẳng). Trạm chảo
+  // chiên đúng cách nấu thật. Mẻ (cá thu muối 31k) = 31k → 8 phần × 12k = 96k, lãi ~65k/mẻ, hời hơn
+  // bán thẳng nguyên liệu (50k < 96k — luật monKhuon).
+  { id: 'ca_thu_muoi_chien', name: 'Cá thu muối chiên', category: 'fresh', buy: 5500, sell: 12000, color: 0xb89870, unlock: 106, since: CONTENT_EPOCH_NOW },
+  // GĐ2379: Xôi xéo — gánh xôi xéo điểm tâm Hà Nội trứ danh (xôi vàng nghệ rắc đậu xanh xéo + hành
+  // phi), TRƯỚC NAY CHƯA CÓ (soát 'xôi xéo'/'xoi_xeo' = 0 trong src/). Lối ra bếp cho hx_bot_nghe (bột
+  // nghệ nhà xay, mở 79 — trước chỉ bán thẳng; nghệ lên màu vàng đúng cách làm thật). Trạm bếp xôi.
+  // Mẻ (nếp 30k + đậu xanh cà vỏ 2.5k + hành phi 1.5k + bột nghệ 31k) = 65k → 14 hộp × 15k = 210k,
+  // lãi ~145k/mẻ, hời hơn bán thẳng nguyên liệu (98.5k < 210k — luật monKhuon).
+  { id: 'xoi_xeo', name: 'Xôi xéo', category: 'fresh', buy: 9000, sell: 15000, color: 0xe8c840, unlock: 81, since: CONTENT_EPOCH_NOW },
+  // GĐ2380: Cá lóc nấu măng chua — món Nam Bộ trứ danh (cá lóc nấu cùng măng chua ngâm, vị chua dịu
+  // măng thay me), TRƯỚC NAY CHƯA CÓ (soát 'măng chua' trong src/ chỉ có nguyên liệu hx_mang_chua không
+  // lối ra bếp — bán thẳng đồ khô). Trạm nồi nước đúng cách nấu thật. Mẻ (cá lóc tươi 70k + măng chua
+  // ngâm 31k) = 101k → 10 phần × 20k = 200k, lãi ~99k/mẻ, hời hơn bán thẳng nguyên liệu (148k < 200k —
+  // luật monKhuon).
+  { id: 'ca_loc_nau_mang_chua', name: 'Cá lóc nấu măng chua', category: 'fresh', buy: 11000, sell: 20000, color: 0xd0b050, unlock: 104, since: CONTENT_EPOCH_NOW },
+  // ── GĐ2387v2: CHUỖI SẢN XUẤT CHẾ BIẾN SÂU (làm lại theo pattern GĐ1322 ĐÃ KIỂM CỨNG balance —
+  // main input là ĐẶC SẢN VÙNG đắt (mối lái) → bot churn thấp; output là COOKED riêng mang since;
+  // unlock > 30; biên mẻ khiêm tốn. V1 (commit e416f6b0) REVERT vì nguyên liệu nông sản RẺ (churn cao)
+  // + tái dùng hàng catalog — xem proposal.md §Outcome). Khép luôn bài học "chè cốm/cốm chưa có".
+  // GĐ2387v2: Chè cốm — chè cốm làng Vòng Hà Nội trứ danh (cốm dập nấu với đường, nước cốt dừa),
+  // TRƯỚC NAY CHƯA CÓ (soát 'chè cốm'/'che_com' = 0 trong src/; cốm trước nay bị ghi 'chưa có nguyên liệu' ở các lần soát trước). Lối ra bếp cho rg_com_lang (Cốm làng Vòng hộp, mở 44 — trước chỉ bán thẳng). Nấu nồi nước
+  // đúng cách. Mẻ (cốm 44k + đường 17k + nước cốt dừa 10k) = 71k → 8 chén × 15k = 120k, lãi ~49k/mẻ,
+  // hời hơn bán thẳng nguyên liệu (111.8k < 120k — luật monKhuon).
+  { id: 'che_com', name: 'Chè cốm', category: 'fresh', buy: 10000, sell: 15000, color: 0x9ac84b, unlock: 70, since: CONTENT_EPOCH_NOW },
+  // GĐ2387v2: Gà nướng mắc khén — món Tây Nguyên trứ danh (gà ướp mắc khén -hồ tiêu rừng nướng than),
+  // TRƯỚC NAY CHƯA CÓ (soát 'mắc khén' = 0 trong src/). Lối ra bếp cho rg_mac_khen (mắc khén gói, mở
+  // 52 — trước chỉ bán thẳng). Nướng than — trạm bếp nướng đúng cách nấu thật. Mẻ (mắc khén 58k +
+  // thịt gà 24k + hành phi 1.5k) = 83.5k → 5 phần × 30k = 150k, lãi ~66.5k/mẻ, hời hơn bán thẳng
+  // nguyên liệu (133.1k < 150k — luật monKhuon).
+  { id: 'ga_nuong_mac_khen', name: 'Gà nướng mắc khén', category: 'fresh', buy: 20000, sell: 30000, color: 0xb07830, unlock: 71, since: CONTENT_EPOCH_NOW },
+  // GĐ2388: Bánh đa nem chua — món Thanh Hóa trứ danh (bánh đa NƯỚNG than cuốn nem chua Thanh Hóa +
+  // tôm chua), TRƯỚC NAY CHƯA CÓ (soát 'bánh đa nem chua'/'banh_da_nem_chua' = 0 trong src/). Lối ra
+  // bếp cho rg_nem_chua (nem chua Thanh Hóa gói, mở 48 — trước chỉ bán thẳng; nem chua GĐ1085 nhà bà
+  // Tám đã có Nem chua rán nhưng bản Thanh Hóa vẫn trống). Nướng bánh đa trên than — trạm food_grill
+  // đúng cách nấu thật. Mẻ (nem chua 40k + tôm chua Huế 33k + bánh đa 14k) = 87k → 8 phần × 20k =
+  // 160k, lãi ~73k/mẻ, hời hơn bán thẳng nguyên liệu (143k < 160k — luật monKhuon). Mở 70 — ngoài
+  // cửa sổ 2 sim cân bằng (bài học GĐ2387v2).
+  { id: 'banh_da_nem_chua', name: 'Bánh đa nem chua', category: 'fresh', buy: 8000, sell: 20000, color: 0xc87850, unlock: 70, since: CONTENT_EPOCH_NOW },
+  // GĐ2381: Thịt đông — món cỗ Tết miền Bắc trứ danh (thịt kho nước nghệ rồi để LẠNH đông thạch tự nhiên
+  // ngoài Tết), TRƯỚC NAY CHƯA CÓ (soát 'thịt đông'/'thit_dong' = 0 trong src/). Nấu kỹ nồi nước, để đông
+  // thạch — trạm nồi nước đúng cách nấu thật. Dưa hành ăn kèm chuẩn cỗ Bắc → hx_dua_hanh (mở 102) vào
+  // mẻ như phần ăn kèm (tiền lệ món kèm: giá đỗ/hành phi ở cao lầu, theo CLAUDE.md §4). Mộc nhĩ dùng
+  // hx_nam_meo. Mẻ (thịt heo 30k + nấm mèo 35k + hành lá 2k + dưa hành 31k) = 98k → 8 khuôn × 25k =
+  // 200k, lãi ~102k/mẻ, hời hơn bán thẳng nguyên liệu (146k < 200k — luật monKhuon).
+  { id: 'thit_dong', name: 'Thịt đông', category: 'fresh', buy: 7000, sell: 25000, color: 0xe8e0d8, unlock: 102, since: CONTENT_EPOCH_NOW },
+  // GĐ2381: Thịt luộc tôm chua — mâm cỗ Tết miền Nam trứ danh (thịt luộc chấm tôm chua, ăn kèm củ kiệu
+  // muối), TRƯỚC NAY CHƯA CÓ (soát 'thịt luộc tôm chua'/'tôm chua thịt' = 0 trong src/; Thịt luộc GĐ1970
+  // chỉ là bản cơm nhà không có tôm chua/củ kiệu). Nối 2 nguyên liệu hàng xóm Tết còn bán thẳng:
+  // hx_tom_chua (mở 67) + hx_cu_kieu (mở 68). Luộc nồi nước — trạm hot_kettle đúng. Mẻ (thịt heo 30k +
+  // tôm chua Huế 33k + củ kiệu muối 31k) = 94k → 8 phần × 25k = 200k, lãi ~106k/mẻ, hời hơn bán thẳng
+  // nguyên liệu (141k < 200k — luật monKhuon).
+  { id: 'thit_luoc_tom_chua', name: 'Thịt luộc tôm chua', category: 'fresh', buy: 7000, sell: 25000, color: 0xe0a890, unlock: 103, since: CONTENT_EPOCH_NOW },
+  // GĐ2382: Bánh tiêu — bánh rỗng chiên vàng trứ danh Hà Nội, TRƯỚC NAY CHƯA CÓ (soát 'bánh
+  // tiêu'/'banh_tieu' = 0 trong src/). Giá thật 2024-2025: truyền thống 3-5k/cái, loại ĐẶC BIỆT nhân mè
+  // ~10k (Má Hoa Tân Định 11k) → game bán 10k/cái bản nhân mè. Bột mì lên men CHIÊN NGẬP DẦU rỗng ruột,
+  // rắc mè trắng — trạm chảo chiên đúng cách nấu thật; mè trắng dùng hx_me_rang (mở 55, bài học
+  // GĐ2374). Mẻ (bột mì 17k + đường 17k + mè rang 32k) = 66k → 16 cái × 10k = 160k, lãi ~94k/mẻ, hời
+  // hơn bán thẳng nguyên liệu (95k < 160k — luật monKhuon).
+  { id: 'banh_tieu', name: 'Bánh tiêu', category: 'fresh', buy: 6000, sell: 10000, color: 0xe8b878, unlock: 84, since: CONTENT_EPOCH_NOW },
+  // GĐ2383: Cải muối nấu tôm khô — canh cải muối với tôm khô cơm nhà miền Bắc trứ danh (ngọt tôm dằn
+  // vị chua nhẹ cải), TRƯỚC NAY CHƯA CÓ (soát 'cải muối'/'cai_muoi' = 0 trong src/). Lối ra bếp cho
+  // hx_cai_muoi (cải muối nhà làm, mở 94 — trước chỉ bán thẳng). Nấu canh nồi nước đúng cách nấu thật.
+  // Mẻ (cải muối 31k + tôm khô 25k) = 56k → 10 phần × 12k = 120k, lãi ~64k/mẻ, hời hơn bán thẳng nguyên
+  // liệu (84k < 120k — luật monKhuon).
+  { id: 'cai_muoi_nau_tom_kho', name: 'Cải muối nấu tôm khô', category: 'fresh', buy: 6500, sell: 12000, color: 0x9ab860, unlock: 94, since: CONTENT_EPOCH_NOW },
+  // GĐ2383: Gà tiềm nấm hương — chén gà tiềm hầm nấm hương trứ danh (tiệm gà tiềm/thuốc Bắc, chén 40-60k
+  // đời thật), TRƯỚC NAY CHƯA CÓ (soát 'gà tiềm'/'ga_tiem' = 0 trong src/). Hầm nguyên con nồi nước kín
+  // — trạm hot_kettle đúng cách nấu thật. Lối ra bếp cho hx_nam_huong_say (nấm hương sấy nhà làm, mở 97
+  // — trước chỉ bán thẳng). Mẻ (gà nguyên con 130k + nấm hương sấy 31k + hành phi 1.5k) = 162.5k →
+  // 8 chén × 42k = 336k, lãi ~173k/mẻ, hời hơn bán thẳng nguyên liệu (227.5k < 336k — luật monKhuon).
+  { id: 'ga_tiem_nam_huong', name: 'Gà tiềm nấm hương', category: 'fresh', buy: 20000, sell: 42000, color: 0xc89a50, unlock: 97, since: CONTENT_EPOCH_NOW },
+  // GĐ2383: Cải chua xào thịt heo — cơm nhà miền Bắc trứ danh (dưa cải chua xào thịt ba chỉ, ăn cơm
+  // nóng), TRƯỚC NAY CHƯA CÓ (soát 'cải chua xào'/'cai_chua_xao' = 0 trong src/). Xào lửa to chảo —
+  // trạm chảo chiên đúng cách nấu thật (tiền lệ Măng khô xào lạp xưởng). Lối ra bếp cho hx_dua_cai
+  // (dưa cải chua nhà làm, mở 105 — trước chỉ bán thẳng). Mẻ (dưa cải chua 31k + thịt heo 30k) = 61k
+  // → 10 phần × 12k = 120k, lãi ~59k/mẻ, hời hơn bán thẳng nguyên liệu (88k < 120k — luật monKhuon).
+  { id: 'cai_chua_xao_thit', name: 'Cải chua xào thịt heo', category: 'fresh', buy: 6500, sell: 12000, color: 0xa8b860, unlock: 105, since: CONTENT_EPOCH_NOW },
   // GĐ1332: Bánh xèo — món bánh xèo giòn trứ danh (Mỹ Tho/Đà Nẵng) từ bột gạo + nước cốt dừa + thịt + hành phi:
   // trước nay TỘT KHÔNG có bánh xèo trong bếp dù là món ăn biểu tượng nhất — lấp khoảng trống trạm chảo chiên.
   // Mẻ (bột gạo 9k + nước cốt dừa 10k + thịt 30k + hành phi 1.5k×2) = 52k → 6 cái × 19k = 114k, lãi 62k/mẻ.
@@ -1998,6 +2175,155 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_ca_vien', name: 'Cá viên chiên', station: 'fryer',
     inputs: [{ productId: 'ca', quantity: 1 }],
     outputId: 'ca_vien_chien', outputQty: 10, durationMin: 15, unlock: 32, reputationGain: 2 },
+  // GĐ2346: Bánh bao chiên — món chiên lấp khoảng trống họ bánh bao (chảo chiên), mở 71 trên mọi mốc sim cân bằng
+  // không cổng epoch (crisis ~48 · stance ~69 · L50 ~52); simBands 100 chịu được. since: 1 để kỷ nguyên 0 không thấy.
+  { id: 'recipe_banh_bao_chien', name: 'Bánh bao chiên', station: 'fryer',
+    inputs: [{ productId: 'botmi', quantity: 2 }, { productId: 'x_thit_heo', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 1 }],
+    outputId: 'banh_bao_chien', outputQty: 10, durationMin: 18, unlock: 71, reputationGain: 2, since: CONTENT_EPOCH_NOW },
+  // GĐ2350: Bánh tôm — tôm sú kẹp bánh bột mì chiên ngập dầu (Hồ Tây), chảo chiên: mẻ (tôm sú 190k +
+  // bột mì 18k×2 + hành phi 1.5k) = 227.5k → 18 cái × 19k = 342k, lãi ~114.5k/mẻ. Mở 74 trên mọi mốc
+  // sim cân bằng không cổng epoch; since: 1 để kỷ nguyên 0 không thấy.
+  { id: 'recipe_banh_tom', name: 'Bánh tôm', station: 'fryer',
+    inputs: [{ productId: 'tom_su_tuoi', quantity: 1 }, { productId: 'botmi', quantity: 2 }, { productId: 'x_hanh_phi', quantity: 1 }],
+    outputId: 'banh_tom', outputQty: 18, durationMin: 15, unlock: 74, reputationGain: 2, since: CONTENT_EPOCH_NOW },
+  // GĐ2352: Chè khúc bạch — đun sữa tươi + nấu thạch bột năng ở nồi nước (chè Hà Nội), mở 75
+  // trên mọi mốc sim cân bằng không cổng epoch; since kỷ nguyên 0 không thấy.
+  { id: 'recipe_che_khuc_bach', name: 'Chè khúc bạch', station: 'hot_kettle',
+    inputs: [{ productId: 'sua_tuoi', quantity: 1 }, { productId: 'x_bot_nang', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
+    outputId: 'che_khuc_bach', outputQty: 10, durationMin: 12, unlock: 75, reputationGain: 2, since: CONTENT_EPOCH_NOW },
+  // GĐ2353: Cơm tấm — nấu cơm + sườn bì chả trứng ở quầy xôi, mở 76 trên mọi mốc sim không cổng
+  // epoch; since kỷ nguyên 0 không thấy.
+  { id: 'recipe_com_tam', name: 'Cơm tấm', station: 'rice_station',
+    inputs: [{ productId: 'gao', quantity: 1 }, { productId: 'x_thit_heo', quantity: 1 }, { productId: 'x_trung_ga', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 1 }],
+    outputId: 'com_tam', outputQty: 16, durationMin: 20, unlock: 76, reputationGain: 3, since: CONTENT_EPOCH_NOW },
+  // GĐ2355: Bánh đúc nóng — khuấy bột gạo + bột năng chín dẻo ở nồi nấu với thịt heo băm, nấm mèo khô, hành phi (Hà Nội),
+  // mở 77 trên mọi mốc sim không cổng epoch; since: 1 để kỷ nguyên 0 không thấy.
+  { id: 'recipe_banh_duc_nong', name: 'Bánh đúc nóng', station: 'hot_kettle',
+    inputs: [{ productId: 'x_bot_gao', quantity: 1 }, { productId: 'x_bot_nang', quantity: 1 }, { productId: 'x_thit_heo', quantity: 1 }, { productId: 'x_nam_meo_kho', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 1 }],
+    outputId: 'banh_duc_nong', outputQty: 10, durationMin: 15, unlock: 77, reputationGain: 2, since: CONTENT_EPOCH_NOW },
+  // GĐ2356: Bánh ít trần — vỏ nếp nhân đậu xanh thịt heo tôm tươi hấp ở nồi hấp, chan mỡ hành lá (Huế / Nam Bộ),
+  // mở 78 trên mọi mốc sim không cổng epoch; since: 1 để kỷ nguyên 0 không thấy.
+  { id: 'recipe_banh_it_tran', name: 'Bánh ít trần', station: 'steamer',
+    inputs: [{ productId: 'x_nep', quantity: 1 }, { productId: 'x_dau_xanh', quantity: 1 }, { productId: 'x_thit_heo', quantity: 1 }, { productId: 'x_tom_tuoi', quantity: 1 }, { productId: 'x_hanh_la', quantity: 1 }],
+    outputId: 'banh_it_tran', outputQty: 12, durationMin: 18, unlock: 78, reputationGain: 2, since: CONTENT_EPOCH_NOW },
+  // GĐ2357: Nem lụi — thịt heo băm ướp sả tỏi hành phi nướng trên than ở bếp nướng (Huế),
+  // mở 79 trên mọi mốc sim không cổng epoch; since: 1 để kỷ nguyên 0 không thấy.
+  { id: 'recipe_nem_lui', name: 'Nem lụi', station: 'food_grill',
+    inputs: [{ productId: 'x_thit_heo', quantity: 1 }, { productId: 'x_sa', quantity: 1 }, { productId: 'x_toi', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 1 }],
+    outputId: 'nem_lui', outputQty: 8, durationMin: 15, unlock: 79, reputationGain: 2, since: CONTENT_EPOCH_NOW },
+  // GĐ2369: Cao lầu Hội An — mì gạo HẤP trong xửng là cách nấu thật (khác hủ tiếu/bánh canh luộc),
+  // nước dùng đậm đà nấu cùng thịt heo; giá đỗ + hành phi ăn kèm. Nước tro củ + nước giếng Bá Lễ
+  // game chưa có → thay gần nhất bột gạo (CLAUDE.md §4); mở 80 trên mọi mốc sim không cổng epoch,
+  // tránh mốc latePremium 82/86/91/96/100; since: 1 để kỷ nguyên 0 không thấy.
+  { id: 'recipe_cao_lau', name: 'Cao lầu', station: 'steamer',
+    inputs: [{ productId: 'x_bot_gao', quantity: 1 }, { productId: 'x_thit_heo', quantity: 1 }, { productId: 'x_gia_do', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 1 }],
+    outputId: 'cao_lau', outputQty: 10, durationMin: 20, unlock: 80, reputationGain: 2, since: CONTENT_EPOCH_NOW },
+  // GĐ2370: Bánh trôi tàu Hà Nội — viên bột nếp ruột mè + đường luộc chín trong nồi nước đường gừng
+  // (không chiên, không hấp — đúng cách nấu thật của trạm ấm nước). Mở 81 trên mọi mốc sim không cổng
+  // epoch, tránh latePremium 82/86/91/96/100; since: 1 để kỷ nguyên 0 không thấy.
+  // GĐ2374: sửa nguyên liệu — ruột bánh trôi tàu là mè TRẮNG; hx_me_rang (mè rang nhà làm, GĐ1486, mở 55)
+  // đã có từ trước nên thay cho hx_me_den (mè đen xay — chỉ đúng cho Chè mè đen, GĐ2370 chọn nhầm).
+  { id: 'recipe_banh_troi_tau', name: 'Bánh trôi tàu', station: 'hot_kettle',
+    inputs: [{ productId: 'x_nep', quantity: 1 }, { productId: 'x_duong', quantity: 1 }, { productId: 'x_gung', quantity: 1 }, { productId: 'hx_me_rang', quantity: 1 }],
+    outputId: 'banh_troi_tau', outputQty: 10, durationMin: 15, unlock: 81, reputationGain: 2, since: CONTENT_EPOCH_NOW },
+  // GĐ2371: Bánh gối Hà Nội — túi gối vàng ruộm nhân thịt xay + miến + mộc nhĩ, CHIÊN NGẬP DẦU ở chảo chiên
+  // (đúng cách nấu thật); miến thiếu → bún tươi thay (họ bún/miến), mộc nhĩ dùng nấm mèo khô hx_nam_meo.
+  // Mở 83 trên mọi mốc sim không cổng epoch, tránh latePremium 82/86/91/96/100;
+  // since: 1 để kỷ nguyên 0 không thấy.
+  { id: 'recipe_banh_goi', name: 'Bánh gối', station: 'fryer',
+    inputs: [{ productId: 'x_bot_chien', quantity: 1 }, { productId: 'x_thit_xay', quantity: 1 }, { productId: 'hx_nam_meo', quantity: 1 }, { productId: 'x_bun_tuoi', quantity: 1 }],
+    outputId: 'banh_goi', outputQty: 10, durationMin: 20, unlock: 83, reputationGain: 3, since: CONTENT_EPOCH_NOW },
+  // GĐ2372: Phở cuốn Hà Nội — chả bò nướng bếp than cuốn bánh phở tấm với rau mùi giá đỗ; bánh phở tấm
+  // thiếu → bột gạo thay (họ gạo làm bánh phở). Mở 84 trên mọi mốc sim không cổng epoch, tránh
+  // latePremium 82/86/91/96/100; since: 1 để kỷ nguyên 0 không thấy.
+  { id: 'recipe_pho_cuon', name: 'Phở cuốn', station: 'food_grill',
+    inputs: [{ productId: 'x_bot_gao', quantity: 1 }, { productId: 'x_thit_bo', quantity: 1 }, { productId: 'x_rau_mui', quantity: 1 }, { productId: 'x_gia_do', quantity: 1 }],
+    outputId: 'pho_cuon', outputQty: 10, durationMin: 20, unlock: 84, reputationGain: 3, since: CONTENT_EPOCH_NOW },
+  // GĐ2373: Bánh khoai Huế — bột gạo pha nước cốt dừa đúc KHUÔN rán ngập dầu, nhân thịt heo + giá đỗ xếp
+  // lớp (dày hơn bánh xèo, chấm nước mắm muối ớt). Mở 85 trên mọi mốc sim không cổng epoch, tránh
+  // latePremium 82/86/91/96/100; since: 1 để kỷ nguyên 0 không thấy.
+  { id: 'recipe_banh_khoai', name: 'Bánh khoai', station: 'fryer',
+    inputs: [{ productId: 'x_bot_gao', quantity: 1 }, { productId: 'x_dua_cot_hop', quantity: 1 }, { productId: 'x_thit_heo', quantity: 1 }, { productId: 'x_gia_do', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 1 }],
+    outputId: 'banh_khoai', outputQty: 6, durationMin: 15, unlock: 85, reputationGain: 3, since: CONTENT_EPOCH_NOW },
+  // GĐ2375: Mực một nắng nướng Nha Trang — mực 1 nắng nướng than nguyên con, xiên que chấm mắm gừng
+  // (lối ra cho hx_muc_mot_nang mở 98). Mở 99 trên mọi mốc sim không cổng epoch, tránh latePremium
+  // 82/86/91/96/100; since: 1 để kỷ nguyên 0 không thấy.
+  { id: 'recipe_muc_mot_nang_nuong', name: 'Mực một nắng nướng', station: 'food_grill',
+    inputs: [{ productId: 'hx_muc_mot_nang', quantity: 1 }],
+    outputId: 'muc_mot_nang_nuong', outputQty: 6, durationMin: 15, unlock: 99, reputationGain: 3, since: CONTENT_EPOCH_NOW },
+  // GĐ2376: Bánh đa cá kho Nam Định — bánh đa nướng than ăn với cá dứa kho (lối ra cho hx_ca_dua_kho mở
+  // 101). Mở 101 trên mọi mốc sim; since: 1 để kỷ nguyên 0 không thấy.
+  { id: 'recipe_banh_da_ca_kho', name: 'Bánh đa cá kho', station: 'food_grill',
+    inputs: [{ productId: 'hx_ca_dua_kho', quantity: 1 }, { productId: 'hx_banh_da', quantity: 1 }],
+    outputId: 'banh_da_ca_kho', outputQty: 8, durationMin: 15, unlock: 101, reputationGain: 3, since: CONTENT_EPOCH_NOW },
+  // GĐ2377: Cháo cua đồng Hà Nội — riêu cua giã lọc nấu cùng cháo trắng, trứng gà, hành mùi (lối ra thứ
+  // ba cho x_cua_dong mở 170; quẩy chưa có nguyên liệu bỏ khỏi mẻ). Mở 170 trên mọi mốc sim; since: 1
+  // để kỷ nguyên 0 không thấy.
+  { id: 'recipe_chao_cua', name: 'Cháo cua', station: 'hot_kettle',
+    inputs: [{ productId: 'x_cua_dong', quantity: 1 }, { productId: 'gao', quantity: 1 }, { productId: 'x_trung_ga', quantity: 1 }, { productId: 'x_hanh_la', quantity: 1 }],
+    outputId: 'chao_cua', outputQty: 25, durationMin: 30, unlock: 170, reputationGain: 3, since: CONTENT_EPOCH_NOW },
+  // GĐ2378: Cá thu muối chiên miền Trung — cá thu ướp muối chiên giòn ăn cơm nóng (lối ra cho
+  // hx_ca_muoi mở 106). Mở 106 trên mọi mốc sim; since: 1 để kỷ nguyên 0 không thấy.
+  { id: 'recipe_ca_thu_muoi_chien', name: 'Cá thu muối chiên', station: 'fryer',
+    inputs: [{ productId: 'hx_ca_muoi', quantity: 1 }],
+    outputId: 'ca_thu_muoi_chien', outputQty: 8, durationMin: 15, unlock: 106, reputationGain: 3, since: CONTENT_EPOCH_NOW },
+  // GĐ2379: Xôi xéo Hà Nội — nếp đồ vàng nghệ, đậu xanh xéo + hành phi rắc mặt (lối ra cho hx_bot_nghe
+  // mở 79). Mở 81 trên mọi mốc sim không cổng epoch, tránh latePremium 82/86/91/96/100; since: 1 để
+  // kỷ nguyên 0 không thấy.
+  { id: 'recipe_xoi_xeo', name: 'Xôi xéo', station: 'rice_station',
+    inputs: [{ productId: 'nep', quantity: 1 }, { productId: 'x_dau_xanh', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 1 }, { productId: 'hx_bot_nghe', quantity: 1 }],
+    outputId: 'xoi_xeo', outputQty: 14, durationMin: 30, unlock: 81, reputationGain: 3, since: CONTENT_EPOCH_NOW },
+  // GĐ2380: Cá lóc nấu măng chua Nam Bộ — cá lóc nấu cùng măng chua ngâm, chua dịu từ măng (lối ra cho
+  // hx_mang_chua mở 104). Mở 104 trên mọi mốc sim; since: 1 để kỷ nguyên 0 không thấy.
+  { id: 'recipe_ca_loc_nau_mang_chua', name: 'Cá lóc nấu măng chua', station: 'hot_kettle',
+    inputs: [{ productId: 'ca_loc_tuoi', quantity: 1 }, { productId: 'hx_mang_chua', quantity: 1 }],
+    outputId: 'ca_loc_nau_mang_chua', outputQty: 10, durationMin: 25, unlock: 104, reputationGain: 3, since: CONTENT_EPOCH_NOW },
+  // GĐ2381: Thịt đông Tết miền Bắc — nấu kỹ để đông thạch, mộc nhĩ + dưa hành ăn kèm chuẩn cỗ Bắc
+  // (lối ra cho hx_dua_hanh mở 102). Mở 102 trên mọi mốc sim; since: 1 để kỷ nguyên 0 không thấy.
+  { id: 'recipe_thit_dong', name: 'Thịt đông', station: 'hot_kettle',
+    inputs: [{ productId: 'x_thit_heo', quantity: 1 }, { productId: 'hx_nam_meo', quantity: 1 }, { productId: 'x_hanh_la', quantity: 1 }, { productId: 'hx_dua_hanh', quantity: 1 }],
+    outputId: 'thit_dong', outputQty: 8, durationMin: 30, unlock: 102, reputationGain: 3, since: CONTENT_EPOCH_NOW },
+  // GĐ2381: Thịt luộc tôm chua Tết miền Nam — thịt luộc chấm tôm chua Huế, củ kiệu muối ăn kèm (lối ra
+  // cho hx_tom_chua 67 + hx_cu_kieu 68). Mở 103 trên mọi mốc sim; since: 1 để kỷ nguyên 0 không thấy.
+  { id: 'recipe_thit_luoc_tom_chua', name: 'Thịt luộc tôm chua', station: 'hot_kettle',
+    inputs: [{ productId: 'x_thit_heo', quantity: 1 }, { productId: 'hx_tom_chua', quantity: 1 }, { productId: 'hx_cu_kieu', quantity: 1 }],
+    outputId: 'thit_luoc_tom_chua', outputQty: 8, durationMin: 25, unlock: 103, reputationGain: 3, since: CONTENT_EPOCH_NOW },
+  // GĐ2382: Bánh tiêu Hà Nội — bột mì lên men chiên ngập dầu rỗng ruột rắc mè trắng (bản nhân mè giá
+  // 10k theo giá thật loại đặc biệt). Mở 84 trên mọi mốc sim không cổng epoch, tránh latePremium
+  // 82/86/91/96/100; since: 1 để kỷ nguyên 0 không thấy.
+  { id: 'recipe_banh_tieu', name: 'Bánh tiêu', station: 'fryer',
+    inputs: [{ productId: 'x_bot_mi', quantity: 1 }, { productId: 'x_duong', quantity: 1 }, { productId: 'hx_me_rang', quantity: 1 }],
+    outputId: 'banh_tieu', outputQty: 16, durationMin: 15, unlock: 84, reputationGain: 2, since: CONTENT_EPOCH_NOW },
+  // GĐ2383: Cải muối nấu tôm khô — canh canh cải muối ngọt tôm khô (lối ra cho hx_cai_muoi mở 94).
+  // Mở 94 trên mọi mốc sim; since: 1 để kỷ nguyên 0 không thấy.
+  { id: 'recipe_cai_muoi_nau_tom_kho', name: 'Cải muối nấu tôm khô', station: 'hot_kettle',
+    inputs: [{ productId: 'hx_cai_muoi', quantity: 1 }, { productId: 'x_tom_kho', quantity: 1 }],
+    outputId: 'cai_muoi_nau_tom_kho', outputQty: 10, durationMin: 20, unlock: 94, reputationGain: 2, since: CONTENT_EPOCH_NOW },
+  // GĐ2383: Gà tiềm nấm hương — hầm kín nguyên con tới mềm, ra chén nước trong thịt rời xương (lối ra
+  // cho hx_nam_huong_say mở 97). Mở 97 trên mọi mốc sim; since: 1 để kỷ nguyên 0 không thấy.
+  { id: 'recipe_ga_tiem_nam_huong', name: 'Gà tiềm nấm hương', station: 'hot_kettle',
+    inputs: [{ productId: 'thit_ga', quantity: 1 }, { productId: 'hx_nam_huong_say', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 1 }],
+    outputId: 'ga_tiem_nam_huong', outputQty: 8, durationMin: 40, unlock: 97, reputationGain: 3, since: CONTENT_EPOCH_NOW },
+  // GĐ2383: Cải chua xào thịt heo — xào lửa to chảo chiên, cải chua vẫn giòn (lối ra cho hx_dua_cai
+  // mở 105). Mở 105 trên mọi mốc sim; since: 1 để kỷ nguyên 0 không thấy.
+  { id: 'recipe_cai_chua_xao_thit', name: 'Cải chua xào thịt heo', station: 'fryer',
+    inputs: [{ productId: 'hx_dua_cai', quantity: 1 }, { productId: 'x_thit_heo', quantity: 1 }],
+    outputId: 'cai_chua_xao_thit', outputQty: 10, durationMin: 20, unlock: 105, reputationGain: 2, since: CONTENT_EPOCH_NOW },
+  // ── GĐ2387v2: 2 công thức chuỗi sản xuất (pattern GĐ1322 — xem đầu khối products phía trên).
+  // GĐ2387v2: Chè cốm — cốm dập nấu đường + nước cốt dừa (lối ra cho rg_com_lang mở 44). Mở 70 (ngoài CẢ cửa sổ sim crisisBalance L45 và stanceBalance L65 — 2 lock mỏng dính với nội dung nấu mới, xem PROGRESS GĐ2387v2); since: 1 để kỷ nguyên 0 không thấy.
+  { id: 'recipe_che_com', name: 'Chè cốm', station: 'hot_kettle',
+    inputs: [{ productId: 'rg_com_lang', quantity: 1 }, { productId: 'x_duong', quantity: 1 }, { productId: 'x_dua_cot_hop', quantity: 1 }],
+    outputId: 'che_com', outputQty: 8, durationMin: 20, unlock: 70, reputationGain: 2, since: CONTENT_EPOCH_NOW },
+  // GĐ2387v2: Gà nướng mắc khén — gà ướp mắc khén nướng than (lối ra cho rg_mac_khen mở 52). Mở 71;
+  // since: 1 để kỷ nguyên 0 không thấy.
+  { id: 'recipe_ga_nuong_mac_khen', name: 'Gà nướng mắc khén', station: 'food_grill',
+    inputs: [{ productId: 'rg_mac_khen', quantity: 1 }, { productId: 'x_thit_ga', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 1 }],
+    outputId: 'ga_nuong_mac_khen', outputQty: 5, durationMin: 25, unlock: 71, reputationGain: 2, since: CONTENT_EPOCH_NOW },
+  // GĐ2388: Bánh đa nem chua Thanh Hóa — bánh đa nướng than cuốn nem chua + tôm chua (lối ra cho
+  // rg_nem_chua mở 48). Mở 70 — ngoài cửa sổ 2 sim cân bằng; since: 1 để kỷ nguyên 0 không thấy.
+  { id: 'recipe_banh_da_nem_chua', name: 'Bánh đa nem chua', station: 'food_grill',
+    inputs: [{ productId: 'rg_nem_chua', quantity: 1 }, { productId: 'hx_tom_chua', quantity: 1 }, { productId: 'hx_banh_da', quantity: 1 }],
+    outputId: 'banh_da_nem_chua', outputQty: 8, durationMin: 20, unlock: 70, reputationGain: 2, since: CONTENT_EPOCH_NOW },
   // GĐ1324: Nem chua rán — đặc sản nhà bà Tám (nem chua GĐ1085) thành nguyên liệu chảo chiên, món ăn vặt.
   { id: 'recipe_nem_chua_ran', name: 'Nem chua rán', station: 'fryer',
     inputs: [{ productId: 'hx_nem_chua', quantity: 2 }, { productId: 'x_duong', quantity: 1 }],

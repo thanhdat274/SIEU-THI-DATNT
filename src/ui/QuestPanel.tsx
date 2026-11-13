@@ -9,6 +9,7 @@ import { betBonusMoney, betStatus, BET_TIERS, betCoreSetProgress, dailyQuests, d
 import { formatMoney, productById, fmtMul } from '../data/products';
 import { recentAvgSalesProfit } from '../data/gifts';
 import { missingForOrder, orderValue, rushQuote, partyOrderById, STORY_ORDER_FRIEND_GAIN, STORY_ORDER_FRIEND_LOSS } from '../data/orders';
+import { Footer } from './panels/shared';
 
 /** Sổ nhiệm vụ: những việc mỗi ngày (đủ mở gì thêm việc đó) và một bước cốt truyện, xong thì bấm nhận thưởng. */
 export function QuestPanel() {
@@ -47,6 +48,7 @@ export function QuestPanel() {
           🎁 Nhận tất cả ({claimable.length})
         </button>
       )}
+      <Footer onClose={() => s.closePanel()} />
     </>
   );
 }

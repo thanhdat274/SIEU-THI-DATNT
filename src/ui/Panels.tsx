@@ -42,6 +42,14 @@ const DossierPanel = lazy(() => import('./panels/DossierPanel').then((m) => ({ d
 const RoadmapPanel = lazy(() => import('./panels/RoadmapPanel').then((m) => ({ default: m.RoadmapPanel })));
 const BrandPanel = lazy(() => import('./panels/BrandPanel').then((m) => ({ default: m.BrandPanel })));
 const TodoListPanel = lazy(() => import('./panels/TodoListPanel').then((m) => ({ default: m.TodoListPanel })));
+const NotifLogPanel = lazy(() => import('./panels/NotifLogPanel').then((m) => ({ default: m.NotifLogPanel })));
+
+/** GĐ2349 — khung "vừa" cho vài panel nội dung vốn ngắn (Sổ thông báo): không ép khung LỚN 688px
+ *  thì hết khoảng trống đáy lớn khi tin còn ít. Mỗi loại vẫn MỘT khung cố định (không co giãn theo
+ *  nội dung — luật GĐ662), chỉ chọn cỡ trong hệ thống khung nhỏ/vừa/lớn của thiết kế. */
+export const PANEL_HEIGHT: Partial<Record<string, string>> = {
+  log: 'min(520px, calc(100dvh - 108px))',
+};
 
 export function Panels() {
   const panel = useGame((s) => s.panel);
@@ -61,9 +69,10 @@ export function Panels() {
   if (panel.type === 'arrange') return <Suspense fallback={<div style={styles.backdrop}><PanelLoading /></div>}><ArrangePanel /></Suspense>;
   return (
     <div style={styles.backdrop} onClick={(e) => e.target === e.currentTarget && closePanel()}>
-      <div className="panel" style={styles.panel}>
-        <button style={styles.close} title="Đóng (Esc)" aria-label="Đóng" onClick={closePanel}>✕</button>
-        {hub && <Tabs tabs={hubTabs(hub, level, panel.type)} value={panel.type} onChange={(t) => openPanel({ type: t } as never)} />}
+      <div className="panel" style={{ ...styles.panel, ...(PANEL_HEIGHT[panel.type] ? { height: PANEL_HEIGHT[panel.type] } : {}) }}>
+        <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%', width: '100%', minWidth: 0 }}>
+          <button style={{ ...styles.close, float: undefined, alignSelf: 'flex-end', marginBottom: -30, flex: 'none' }} title="Đóng (Esc)" aria-label="Đóng" onClick={closePanel}>✕</button>
+          {hub && <Tabs tabs={hubTabs(hub, level, panel.type)} value={panel.type} onChange={(t) => openPanel({ type: t } as never)} />}
         {/* Playtest P1 T4: panel tải lười hiện khung chờ thay vì màn trắng ~3 giây (tưởng treo) */}
         <Suspense fallback={<PanelLoading />}>
         {panel.type === 'order' && <OrderPanel />}
@@ -103,7 +112,9 @@ export function Panels() {
         {panel.type === 'roadmap' && <RoadmapPanel />}
         {panel.type === 'brand' && <BrandPanel />}
         {panel.type === 'todo' && <TodoListPanel />}
+        {panel.type === 'log' && <NotifLogPanel />}
         </Suspense>
+        </div>
       </div>
     </div>
   );
@@ -111,5 +122,9 @@ export function Panels() {
 
 /** Khung chờ khi panel đang tải (playtest P1 T4). */
 export function PanelLoading() {
-  return <p role="status" aria-live="polite" style={{ padding: 24, opacity: 0.75, textAlign: 'center' }}>⏳ Đang mở…</p>;
+  return (
+    <div style={{ background: '#2b2b3a', color: '#fff', borderRadius: 12, padding: '18px 28px', boxShadow: '0 10px 40px rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.12)' }}>
+      <p role="status" aria-live="polite" style={{ margin: 0, opacity: 0.85, textAlign: 'center' }}>⏳ Đang mở…</p>
+    </div>
+  );
 }

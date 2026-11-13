@@ -24,7 +24,7 @@ export function ExpectedRegularsList({ expected, regulars, reservations, favsOf,
     <>
       <h3 style={{ margin: '10px 0 4px', fontSize: 14 }}>💛 Khách quen dự kiến ghé hôm nay ({expected.length})</h3>
       {expected.length === 0 && <p style={styles.sub}>Không ai trong nhóm khách quen có lịch ghé hôm nay.</p>}
-      <div style={{ display: 'grid', gap: 6, maxWidth: 560 }}>
+      <div style={{ display: 'grid', gap: 6 }}>
         {expected.map((r) => {
           const prog = regulars[r.id];
           const res = reservations[r.id];

@@ -215,7 +215,7 @@ export function PlanogramPanel() {
   }, [fixtures, shelfHeat, shelfProfit, labelMap]);
 
   return (
-    <div style={{ width: '100%', maxWidth: 900 }}>
+    <div style={{ width: '100%', maxWidth: 900, display: 'flex', flexDirection: 'column', flex: 1 }}>
       <h2 style={{ margin: '0 0 4px' }}>🗺️ Sơ đồ kệ</h2>
       <p style={st.sub}>Xem mọi kệ và tủ trong tiệm, ô nào đang bày gì, còn bao nhiêu. Bày hàng nhanh từ kho, ô trống tự chọn món kho đang có.</p>
 
@@ -267,8 +267,8 @@ export function PlanogramPanel() {
             <b style={{ fontSize: 12 }}>⏰ Sắp tới giờ vàng ({golden.name} {hh(golden.from)}–{hh(golden.to)}): khách thèm…</b>
             {golden.rows.map(({ id, status, canStock }) => (
               <div key={id} style={{ fontSize: 12, opacity: 0.85, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                <span style={{ minWidth: 120 }}>· {productById(id)?.name ?? id}</span>
-                <span style={{ opacity: 0.8, flex: 1 }}>{status}.</span>
+                <span>· <b>{productById(id)?.name ?? id}</b></span>
+                <span style={{ opacity: 0.85 }}>{status}.</span>
                 {canStock && (
                   <button style={{ ...st.btn, background: '#2ecc71', color: '#fff' }} onClick={() => stockThis(id)}
                     title={`Đặt/châm ${productById(id)?.name ?? id} vào mọi ô trống hoặc ô đang chứa nó (chỉ khi kho còn)`}>

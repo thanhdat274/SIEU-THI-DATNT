@@ -165,7 +165,28 @@ export function StaffPanel() {
           <ShiftValueStrip sum={shiftSum} hasData={!!stats?.byHour && Object.keys(stats.byHour).length > 0} />
           <NightStrip p={nightStrip} />
           {branch && <b style={staffSt.section}>🏬 Tiệm chính ({staff.length}/{max})</b>}
-          {!staff.length && <p style={styles.sub}>Chưa có ai. Qua tab Tuyển dụng để thuê.</p>}
+          {!staff.length && (
+            <div style={{ display: 'grid', gap: 10 }}>
+              <div style={{ ...styles.card, justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+                <span style={{ fontSize: 13 }}>Chưa có nhân viên nào trong tiệm ({staff.length}/{max} chỗ).</span>
+                <button style={{ ...styles.btn, marginLeft: 0, background: '#f1c40f', color: '#222', fontWeight: 700 }} onClick={() => setTab('hire')}>
+                  📋 Sang tab Tuyển dụng
+                </button>
+              </div>
+              <div style={{ fontSize: 12, fontWeight: 700, opacity: 0.75 }}>Cẩm nang các vị trí nhân viên</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 8 }}>
+                {Object.entries(ROLES).slice(0, 6).map(([rk, r]) => (
+                  <div key={rk} style={{ ...styles.card, display: 'grid', gap: 4, alignContent: 'start', opacity: level >= r.unlock ? 1 : 0.7 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 6 }}>
+                      <b style={{ fontSize: 13 }}>{r.icon} {r.name}</b>
+                      <span style={{ fontSize: 11, opacity: 0.75 }}>{level >= r.unlock ? '✓ Đã mở' : `🔒 Cấp ${r.unlock}`}</span>
+                    </div>
+                    <div style={{ fontSize: 12, opacity: 0.8, lineHeight: 1.35 }}>{r.desc}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
           {staff.map((st) => (
             <div key={st.id} style={staffSt.card}>
               <StaffInfo st={st} right={<span style={staffSt.wage}>{formatMoney(dailyWage(st))}<small>/ngày</small></span>} />

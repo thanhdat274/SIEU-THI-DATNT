@@ -304,7 +304,7 @@ function WeekTab() {
       </Callout>
       {err && <div style={{ color: '#e74c3c', fontSize: 12 }}>{err}</div>}
       {week?.mine && (
-        <div style={{ ...styles.card, display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8 }}>
+        <div style={{ ...styles.card, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(130px, 100%), 1fr))', gap: 8 }}>
           <span><small style={{ opacity: 0.6 }}>Điểm tuần</small><div><b>{week.mine.score}</b>/100</div></span>
           <span><small style={{ opacity: 0.6 }}>Tổ</small><div><b>{week.group.slice(-6)}</b></div></span>
           <span><small style={{ opacity: 0.6 }}>Bạn cùng tổ</small><div><b>{week.cohort.length}</b></div></span>

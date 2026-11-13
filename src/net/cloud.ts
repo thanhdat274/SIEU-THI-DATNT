@@ -1,4 +1,4 @@
-import { applySnapshot, SANDBOX, snapshot, type SaveData } from '../core/save';
+import { applySnapshot, SANDBOX, snapshot, stashDiscarded, type SaveData } from '../core/save';
 import { useGame } from '../core/store';
 import { idToken } from './firebase';
 import { apiUrl } from './serverUrl';
@@ -58,7 +58,14 @@ export async function pushCloudSave(force = false): Promise<boolean> {
   if (!session.account || session.coop || SANDBOX) return false;
   useSession.setState({ cloudStatus: 'saving' });
   try {
-    const res = await api('PUT', { data: snapshot(), expectedUpdatedAt: session.cloudUpdatedAt, force });
+    // Ghi đè có chủ ý: cất bản cloud đang có vào máy trước, lỡ tay còn khôi phục được
+    if (force) {
+      try {
+        const old = await fetchCloudSave();
+        if (old) stashDiscarded(old.data, Date.parse(old.updatedAt) || Date.now(), 'cloud');
+      } catch { /* không tải được bản cũ thì vẫn ghi đè theo ý người chơi */ }
+    }
+    const res = await api('PUT', { data: snapshot(), expectedUpdatedAt: useSession.getState().cloudUpdatedAt, force });
     const body = await res.json();
     if (res.status === 409) {
       useSession.setState({ cloudStatus: 'conflict', conflict: body.cloud });
@@ -77,6 +84,8 @@ export async function pushCloudSave(force = false): Promise<boolean> {
 /** Xung đột: lấy bản trên cloud thay cho bản đang chơi. */
 export async function takeCloudSave() {
   const save = await fetchCloudSave();
+  // Bản đang chơi trên máy sắp bị thay: cất lại để còn cứu
+  if (save) stashDiscarded(snapshot(), Date.now(), 'local');
   if (save) applySnapshot(save.data);
   useSession.setState({ cloudStatus: 'saved', conflict: null });
   useGame.getState().notify(`☁️ Đã tải bản cloud: ngày ${useGame.getState().day}`);

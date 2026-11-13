@@ -1,15 +1,15 @@
 import { useGame } from '../core/store';
 import { describeRep, meetsRep, repScore, reputationOf } from '../data/reputation';
-import { CONTRACT_STREAK_BONUS, CONTRACT_STREAK_EVERY, CONTRACT_COMMIT_BONUS, SUPPLY_CONTRACTS, supplyContractById, contractValue, commitBonusValue, commitDeposit, contractStreakProgress, contractAcceptRoi, type SupplyContract } from '../data/contracts';
+import { AUTO_CONTRACT_LEVEL, CONTRACT_STREAK_BONUS, CONTRACT_STREAK_EVERY, CONTRACT_COMMIT_BONUS, SUPPLY_CONTRACTS, supplyContractById, contractValue, commitBonusValue, commitDeposit, contractStreakProgress, contractAcceptRoi, missingForContract, reservedMissing, restockCost, type SupplyContract } from '../data/contracts';
 import { formatMoney, productById } from '../data/products';
 import { shortLabel } from './shortLabel';
-import { Callout } from './panels/shared';
+import { Callout, Footer } from './panels/shared';
 import { commitTry } from '../data/commitTry';
 import { contractPortfolio } from '../data/contractPortfolio';
 
 /** Panel Hợp đồng — xem, chấp nhận và giao hợp đồng cung cấp dài hạn. */
 export function ContractsPanel() {
-  const { level, contracts } = useGame();
+  const { level, contracts, closePanel } = useGame();
   const all = SUPPLY_CONTRACTS;
   const available = all.filter((c) => c.unlock <= level);
   const locked = all.filter((c) => c.unlock > level);
@@ -44,13 +44,14 @@ export function ContractsPanel() {
           </div>
         </>
       )}
+      <Footer onClose={closePanel} />
     </>
   );
 }
 
 /** Các hợp đồng đang hoạt động: đã chấp nhận, chờ giao. */
 function ActiveContracts() {
-  const { contracts, deliverContract, commitContract, releaseContract, money, day } = useGame();
+  const { contracts, deliverContract, commitContract, releaseContract, restockContract, setContractAuto, level, money, day, storage, biz } = useGame();
   const active = Object.entries(contracts).filter(([, cs]) => !cs.pending || cs.dueDay);
   if (!active.length) return null;
   return (
@@ -94,6 +95,15 @@ function ActiveContracts() {
                   </div>
                 </div>
                 <button
+                  style={{ ...btn, background: cs.auto ? '#3498db' : 'transparent', border: '1px solid #3498db', color: cs.auto ? '#fff' : '#3498db', opacity: level < AUTO_CONTRACT_LEVEL ? 0.5 : 1 }}
+                  onClick={() => setContractAuto(id, !cs.auto)}
+                  title={level < AUTO_CONTRACT_LEVEL
+                    ? `Mở từ cấp ${AUTO_CONTRACT_LEVEL}`
+                    : 'Tới kỳ giao thì tự nhập bù phần thiếu (nếu đủ tiền) rồi giao. Món nhà làm vẫn phải nấu trước.'}
+                >
+                  {cs.auto ? '🔁 Tự động: BẬT' : level < AUTO_CONTRACT_LEVEL ? `🔒 Tự động (cấp ${AUTO_CONTRACT_LEVEL})` : '🔁 Tự động'}
+                </button>
+                <button
                   style={{ ...btn, background: left > 0 ? '#2ecc71' : '#e74c3c', color: '#fff' }}
                   onClick={() => deliverContract(id)}
                 >
@@ -105,6 +115,22 @@ function ActiveContracts() {
                   <>
                     <span style={{ color: '#f1c40f' }}>🤝 Đã cam kết — trữ {Object.values(cs.locked ?? {}).reduce((n, q) => n + q, 0)} món riêng, cọc {formatMoney(deposit)} (hoàn khi giao).</span>
                     <button style={{ ...btn, background: 'transparent', border: '1px solid #e67e22', color: '#e67e22' }} onClick={() => releaseContract(id)}>↩️ Hủy cam kết</button>
+                    {/* GĐ2351 — nhập bù thẳng vào ngăn trữ riêng đúng phần còn thiếu */}
+                    {(() => {
+                      const rm = reservedMissing(def, cs.locked);
+                      if (!rm.length) return null;
+                      const cost = restockCost(rm, biz);
+                      return (
+                        <button
+                          style={{ ...btn, background: money < cost ? '#777' : '#f1c40f', color: '#222' }}
+                          disabled={money < cost}
+                          onClick={() => restockContract(id)}
+                          title="Nhập ngay đúng phần còn thiếu vào ngăn trữ riêng của kỳ này"
+                        >
+                          🛒 Nhập bù ({formatMoney(cost)})
+                        </button>
+                      );
+                    })()}
                   </>
                 ) : (
                   <>
@@ -119,6 +145,22 @@ function ActiveContracts() {
                       return <span style={{ color: line.c, width: '100%' }}>{line.t}.</span>;
                     })()}
                     <button style={{ ...btn, background: money < deposit ? '#777' : '#f1c40f', color: '#222' }} disabled={money < deposit} onClick={() => commitContract(id)}>{shortLabel('🤝 Cam kết', deposit, money)}</button>
+                    {/* GĐ2351 — nhập bù đúng phần kho còn thiếu để giao/cam kết được kỳ này */}
+                    {(() => {
+                      const missing = missingForContract(def, storage);
+                      if (!missing.length) return null;
+                      const cost = restockCost(missing, biz);
+                      return (
+                        <button
+                          style={{ ...btn, background: money < cost ? '#777' : '#2ecc71', color: '#222' }}
+                          disabled={money < cost}
+                          onClick={() => restockContract(id)}
+                          title="Nhập ngay đúng phần kho còn thiếu cho kỳ giao này (giá nhập như ở Nhập hàng)"
+                        >
+                          🛒 Nhập bù ({formatMoney(cost)})
+                        </button>
+                      );
+                    })()}
                   </>
                 )}
               </div>
@@ -230,7 +272,7 @@ function ContractRow({ contract }: { contract: SupplyContract }) {
 /** Hợp đồng chưa mở khóa — chỉ hiện thông tin khóa. */
 function LockedContract({ contract }: { contract: SupplyContract }) {
   return (
-    <div style={{ background: '#2b2b3a', borderRadius: 8, padding: '8px 12px', opacity: 0.5 }}>
+    <div style={{ background: '#3a3a4d', borderRadius: 8, padding: '8px 12px', opacity: 0.5 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <span style={{ fontSize: 22 }}>🔒</span>
         <div>

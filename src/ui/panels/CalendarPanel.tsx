@@ -47,7 +47,8 @@ export function CalendarPanel() {
         khách ghé mua ăn vặt nhiều hơn. 🙏 là ngày cúng (mùng 1, rằm): khách hỏi nhang, trái cây, xôi. Xem trước dịp nào tới để nhập sẵn hàng:
         giá nhập thay đổi theo dịp, khách chịu giá cao với hàng mùa.
       </p>
-      <div style={{ display: 'grid', gap: 3, marginBottom: 14, maxWidth: 660, overflowX: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: 6 }}>
+      <div style={{ width: '100%', minWidth: 0, maxWidth: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch', marginBottom: 14, paddingBottom: 6 }}>
+      <div style={{ display: 'grid', gap: 3, minWidth: 'max-content' }}>
         {MONTH_LENGTHS.map((len, m) => (
           <div key={m} style={{ display: 'grid', gridTemplateColumns: `28px repeat(${len}, 1fr)`, gap: 2 }}>
             <span style={{ fontSize: 11, opacity: 0.6, alignSelf: 'center' }}>T{m + 1}</span>
@@ -78,7 +79,8 @@ export function CalendarPanel() {
           </div>
         ))}
       </div>
-      <div style={{ display: 'grid', gap: 8, maxWidth: 660 }}>
+      </div>
+      <div style={{ display: 'grid', gap: 8 }}>
         {sorted.map((f) => {
           const inDays = (f.from - doy + YEAR_DAYS) % YEAR_DAYS;
           const running = f === current;

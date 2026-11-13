@@ -5,7 +5,9 @@
 #ui {
   --hud-bg: rgba(22, 24, 34, 0.82);
   --hud-bg-solid: #1d1f2b;
+  --hud-panel: #2b2b3a;
   --hud-line: rgba(255, 255, 255, 0.1);
+  --hud-border: rgba(255, 255, 255, 0.16);
   --hud-text: #fff;
   --hud-muted: rgba(255, 255, 255, 0.62);
   --hud-accent: #f1c40f;
@@ -81,6 +83,24 @@
   font-family: 'Baloo 2', 'Paytone One', 'Be Vietnam Pro', system-ui, sans-serif;
   letter-spacing: 0.2px;
 }
+/* GĐ2348 — thanh cuộn của khung panel: mặc định của trình duyệt đen chìm trên nền panel tối
+ * (QA người chơi: cuộn tới đáy "không biết cuộn được") — làm núm sáng rõ, mảnh, có hover.
+ * Cả hai trục (dọc + cuộn ngang bảng rộng) và cả vùng cuộn con bên trong panel. */
+.panel {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.28) transparent;
+  overscroll-behavior: contain;
+}
+.panel::-webkit-scrollbar { width: 10px; height: 10px; }
+.panel::-webkit-scrollbar-track { background: transparent; }
+.panel::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 6px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+.panel::-webkit-scrollbar-thumb:hover { background-color: rgba(255, 255, 255, 0.4); }
+.panel::-webkit-scrollbar-corner { background: transparent; }
 /* GĐ1254 — chip đồng hồ có small nowrap (ngày/dự báo/hội thoại). Màn 701–1100px: dòng dài làm chip
    tràn mép phải (layoutAudit clipped 135px ở 768px) — chặn bề rộng + lược bớt bằng ellipsis;
    desktop rộng đủ chỗ nên không đổi hình dáng. */
@@ -149,18 +169,24 @@
 #ui .hud-place {
   flex-basis: 100%;
   display: flex;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: 6px;
   align-items: center;
   font-size: 12px;
-  color: var(--hud-muted);
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+  color: #f0f2f8;
+}
+#ui .hud-place > span:first-child {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(22, 24, 34, 0.62);
+  white-space: nowrap;
 }
 #ui .hud-open {
   padding: 2px 8px;
   border-radius: 999px;
-  background: rgba(0, 0, 0, 0.45);
-  color: #bbb;
-  text-shadow: none;
+  background: rgba(22, 24, 34, 0.72);
+  color: #ddd;
+  white-space: nowrap;
 }
 #ui .hud-open.on { background: rgba(46, 204, 113, 0.9); color: #0b2b17; font-weight: 600; }
 
@@ -208,6 +234,9 @@
   border-radius: var(--hud-radius);
   background: var(--hud-bg-solid);
   box-shadow: 0 14px 34px rgba(0, 0, 0, 0.45);
+  max-height: calc(100dvh - 80px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 #ui .hud-menu button {
   display: block;
@@ -246,6 +275,10 @@
   overscroll-behavior: contain;
   scrollbar-width: thin;
 }
+/* GĐ2349 — cột thông báo nằm trong `.hud-left` có pointer-events: none (không chặn cả màn);
+ * thẻ .hud-alert tự bật lại `auto` nên bấm được, nhưng NÚT THƯỜNG kế thừa `none` → nút
+ * "+N thông báo" / "🔔 Sổ thông báo" trông có mà bấm không ăn (QA người chơi GĐ2349). */
+#ui .hud-alerts button { pointer-events: auto; cursor: pointer; }
 #ui .hud-alert {
   pointer-events: auto;
   display: flex;
@@ -400,6 +433,7 @@
   align-items: stretch;
   gap: 4px;
   max-width: 100%;
+  box-sizing: border-box;
   padding: 6px;
   border: 1px solid var(--hud-line);
   border-radius: 16px;
@@ -485,10 +519,11 @@
   right: 0;
   left: auto;
   display: grid;
-  grid-template-columns: repeat(3, minmax(76px, 1fr));
+  grid-template-columns: repeat(3, minmax(88px, 1fr));
   width: max-content;
-  gap: 4px;
-  padding: 8px;
+  max-width: calc(100vw - 24px);
+  gap: 6px;
+  padding: 10px;
   /* Menu mở LÊN TRÊN từ dock nên chiều cao bị chặn bởi đỉnh màn — giới hạn ở MỌI width
      (GĐ93: trước đây chỉ ≤1000px mới có, desktop 1280×800 bị cắt mất hàng nút đầu, không cuộn). */
   max-height: calc(100dvh - var(--hud-bottom-h, 96px) - 60px);
@@ -518,9 +553,23 @@
     overscroll-behavior: contain;
   }
 }
-#ui .hud-more .hud-tool { display: flex; min-width: 0; padding: 10px 6px; font-size: 12px; text-align: center; }
+#ui .hud-more .hud-tool {
+  display: flex;
+  min-width: 0;
+  padding: 10px 6px;
+  font-size: 12px;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 10px;
+}
+#ui .hud-more .hud-tool:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.11);
+  border-color: rgba(241, 196, 15, 0.45);
+}
+#ui .hud-more .hud-badge { top: 5px; right: 5px; }
 #ui .hud-more .hud-tool > span:not(.hud-tool-icon):not(.hud-badge) { display: inline; }
-#ui .hud-more .hud-help { grid-column: 1 / -1; width: max-content; min-width: 280px; }
+#ui .hud-more .hud-help { grid-column: 1 / -1; width: 100%; min-width: 0; max-width: 100%; white-space: normal; }
 /* Tiêu đề nhóm menu Thêm: chiếm trọn hàng lưới, chữ nhỏ mờ tách cụm nút mà không tăng cỡ menu */
 #ui .hud-more-group {
   grid-column: 1 / -1;
@@ -534,23 +583,26 @@
   white-space: nowrap;
 }
 #ui .hud-help kbd, #ui .hud-help span { white-space: nowrap; }
-/* SPEC-TOI-UU §T1 (L2): bản ghi mẫu "Xem gửi những gì" — giữ gọn, cuộn khi dài. */
-#ui .hud-more-tele-sample {
+/* SPEC-TOI-UU §T1 (L2): bản ghi mẫu "Xem gửi những gì" — danh sách giải thích dễ đọc (không JSON thô). */
+#ui .hud-tele-sample {
   grid-column: 1 / -1;
   margin: 2px 2px 8px;
   padding: 8px;
-  font-size: 10px;
-  line-height: 1.4;
-  white-space: pre-wrap;
-  word-break: break-word;
-  max-height: 180px;
-  overflow: auto;
+  font-size: 11px;
+  line-height: 1.45;
   background: var(--hud-panel);
   border: 1px dashed var(--hud-border);
   border-radius: 6px;
-  color: var(--hud-muted);
+  color: var(--hud-text);
+  max-height: 200px;
+  overflow: auto;
 }
-#ui .hud-dialogue .hud-more-tele-sample { max-height: 140px; }
+#ui .hud-tele-intro { margin: 0 0 6px; font-size: 11px; color: var(--hud-muted); }
+#ui .hud-tele-rows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+#ui .hud-tele-row { display: flex; gap: 8px; align-items: baseline; }
+#ui .hud-tele-key { flex: 0 0 44%; color: var(--hud-muted); }
+#ui .hud-tele-val { flex: 1 1 auto; font-weight: 600; }
+#ui .hud-dialogue .hud-tele-sample { max-height: 150px; }
 /* SPEC-TOI-UU §T6 (L6): tìm nhanh trong menu Thêm. */
 #ui .hud-more-search { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 6px; }
 #ui .hud-more-search-input {
@@ -560,13 +612,13 @@
 }
 #ui .hud-more-search-results { display: flex; flex-direction: column; gap: 2px; max-height: 200px; overflow: auto; }
 #ui .hud-more-search-hit {
-  display: flex; align-items: center; gap: 6px;
+  display: flex; align-items: center; gap: 8px;
   border: 1px solid var(--hud-border); border-radius: 6px; background: var(--hud-panel);
-  padding: 5px 7px; font-size: 12px; color: var(--hud-text); cursor: pointer; text-align: left;
+  padding: 6px 8px; font-size: 12px; color: var(--hud-text); cursor: pointer; text-align: left;
 }
-#ui .hud-more-search-hit:hover { background: var(--hud-accent-soft, #f4e7c8); }
-#ui .hud-more-search-name { font-weight: 600; }
-#ui .hud-more-search-group { margin-left: auto; font-size: 10px; opacity: 0.55; white-space: nowrap; }
+#ui .hud-more-search-hit:hover { background: rgba(241, 196, 15, 0.18); border-color: rgba(241, 196, 15, 0.5); }
+#ui .hud-more-search-name { flex: 1; min-width: 0; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#ui .hud-more-search-group { margin-left: auto; font-size: 11px; color: var(--hud-muted); background: rgba(255, 255, 255, 0.08); padding: 1px 6px; border-radius: 999px; white-space: nowrap; }
 #ui .hud-more-search-empty { font-size: 11px; opacity: 0.6; padding: 2px 2px 0; }
 #ui .hud-badge.hud-dot { top: 2px; right: 10px; width: 9px; height: 9px; padding: 0; background: #e74c3c; }
 #ui .hud-help { min-width: 260px; display: grid; gap: 6px; padding: 10px 12px; font-size: 13px; }
@@ -615,6 +667,24 @@
 #ui button.hud-hint:active { transform: scale(0.97); }
 #ui .hud-btn.primary { background: var(--hud-accent); }
 
+/* Nút "+N thông báo" (QA người chơi): phải cho biết thẻ NÀO đang bị gom chứ không chỉ con số —
+   nội dung thẻ đầu nằm ngay trên nút, tràn thì ba chấm; tooltip liệt kê đủ các thẻ còn lại. */
+#ui .hud-alerts-more {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: min(560px, calc(100vw - 48px));
+}
+#ui .hud-alerts-more-count { flex: none; }
+#ui .hud-alerts-more-preview {
+  font-weight: 500;
+  color: #444;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
 /* Nút bấm HUD trên màn hẹp: đủ to để chạm (tối thiểu ~40px) */
 @media (max-width: 700px) {
   #ui .hud-btn { padding: 8px 14px; font-size: 14px; min-height: 36px; }
@@ -656,8 +726,18 @@
   /* Playtest P1 M7: màn ngang 812×375 — ô đồng hồ thu còn 1 dòng (giờ + ngày); dự báo/giờ vàng/lễ ẩn */
   #ui .hud-time > span > small ~ small { display: none; }
   #ui .hud-time > span > b, #ui .hud-time > span > small { display: inline; margin-right: 6px; }
+  #ui .hud-bottom { bottom: 4px; }
+  #ui .hud-dock { padding: 3px 4px; }
+  #ui .hud-dock > .hud-tool, #ui .hud-dock > .hud-pop > .hud-tool { min-height: 36px; padding: 3px 2px; }
+  #ui .hud-speed button { min-height: 34px; }
+  #ui .hud-more { max-height: min(calc(100dvh - 124px), calc(100dvh - var(--hud-bottom-h, 108px) - 24px)) !important; box-sizing: border-box; }
   #ui .hud-tool { padding: 4px 6px; }
   #ui .hud-tool-icon { font-size: 17px; }
+}
+@media (max-height: 480px) and (max-width: 660px) {
+  #ui .hud-chip.hud-time { max-width: min(58vw, 340px); }
+  #ui .hud-time > span > b { display: block; font-size: 14px; line-height: 1.1; margin-right: 0; }
+  #ui .hud-time > span > small { display: block; font-size: 10px; line-height: 1.15; margin-right: 0; }
 }
 
 /* Màn vừa (701–1000px: máy tính bảng dọc, điện thoại ngang cỡ lớn): nút dock co lại +
@@ -751,6 +831,7 @@
 @media (prefers-reduced-motion: reduce) { #ui .hud-alert.phone.ringing { animation: none; } }
 
 /* Hội thoại chương cốt truyện — luôn nằm trên dock, không bao giờ che nút tương tác */
+#ui:has(.hud-dialogue) .hud-toast { top: 12%; }
 #ui .hud-dialogue {
   pointer-events: auto;
   position: absolute;
@@ -766,7 +847,7 @@
   color: var(--hud-text);
   padding: 12px 16px;
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.45);
-  z-index: 20;
+  z-index: 30;
 }
 /* Điện thoại: dialog nhỏ hơn + đẩy lên cao hơn */
 @media (max-width: 1000px) {
@@ -810,18 +891,39 @@
   #ui .hud-alert { font-size: 13px; padding: 6px 12px; width: 100%; }
 }
 
-/* Màn rất hẹp (~320-360px): nút dock co lại để dock luôn vừa một hàng, không đẩy nút Thêm ra khỏi màn */
+/* Màn rất hẹp (~320-360px): nút dock chia đều 2 hàng gọn (~48px/nút), không ép 1 hàng 24px gây đè chữ */
 @media (max-width: 360px) {
-  #ui .hud-dock > .hud-tool, #ui .hud-dock > .hud-pop > .hud-tool { flex: 1 1 26px; min-width: 26px; }
-  #ui .hud-speed button { min-width: 22px; }
+  #ui .hud-bottom { bottom: 4px; width: calc(100% - 8px); }
+  #ui .hud-dock { gap: 10px 2px; padding: 4px 3px; }
+  #ui .hud-dock > .hud-tool, #ui .hud-dock > .hud-pop > .hud-tool { flex: 1 1 48px; min-width: 48px; min-height: 42px; padding: 4px 2px; }
+  #ui .hud-dock > .hud-pop { flex: 1 1 48px; min-width: 48px; }
+  #ui .hud-tool > span:not(.hud-tool-icon):not(.hud-badge) { font-size: 10px; }
+  #ui .hud-speed { padding: 2px; gap: 1px; }
+  #ui .hud-speed button { min-width: 22px; font-size: 11px; }
+  #ui .hud-more { width: calc(100vw - 16px); grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 8px; }
 }
 
-/* Dock nhiều nút: khi màn hẹp, cho các nút xuống dòng thay vì bị cắt ở mép màn.
-   Bug thật (multi-size gate): dock ~575px tràn khỏi viewport 360–414px, `overflow-x: visible`
-   và không scroll → các nút cuối (Nhập hàng/Nhiệm vụ/Thêm) nằm ngoài màn, không chạm được.
-   Wrapping thành 2 hàng giữ mọi nút dùng được; desktop đủ rộng (>720px) vẫn một hàng y nguyên. */
-@media (max-width: 720px) {
-  #ui .hud-dock { flex-wrap: wrap; justify-content: center; row-gap: 4px; }
+/* Dock nhiều nút: bất kỳ màn nào hẹp hơn ~1120px đều cho phép xuống dòng gọn gàng thay vì bị
+   cắt nút "⋯ Thêm" bên phải (768x1024, 800x800, 1024px); desktop rộng vẫn nằm trọn một hàng.
+   Trên màn hẹp ≤720px, căn giữa & giới hạn bề rộng huy hiệu theo từng nút để "19 trống" và
+   "🛒 Phiên chợ" không bao giờ chồm đè lên nhau. */
+@media (max-width: 1120px) {
+  #ui .hud-dock { flex-wrap: wrap; justify-content: center; row-gap: 10px; }
+}
+@media (max-width: 1000px) {
+  #ui .hud-dock > .hud-tool .hud-badge,
+  #ui .hud-dock > .hud-pop > .hud-tool .hud-badge:not(.hud-dot) {
+    top: -4px;
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    max-width: calc(100% - 2px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding: 0 4px;
+    font-size: 9px;
+    line-height: 15px;
+  }
 }
 
 /* Số người online hiện cạnh biểu tượng hẻm (danh sách tên nằm trong tooltip khi chip bị thu gọn) */

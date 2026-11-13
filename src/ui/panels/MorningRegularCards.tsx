@@ -9,7 +9,7 @@ export function DueDebtsCard({ dueDebts, day }: { dueDebts: { r: RegularDef; deb
   return (
     <>
       <h3 style={{ margin: '10px 0 4px', fontSize: 14 }}>📒 Nợ của khách quen ghé hôm nay</h3>
-      <div style={{ display: 'grid', gap: 6, maxWidth: 560 }}>
+      <div style={{ display: 'grid', gap: 6 }}>
         {dueDebts.map(({ r, debt }) => debt && (
           <div key={r.id} style={{ ...styles.card }}>
             <span style={{ flex: 1, fontSize: 13 }}>
@@ -29,7 +29,7 @@ export function ReservationsCard({ resList, haveStock }: { resList: [string, Res
   return (
     <>
       <h3 style={{ margin: '10px 0 4px', fontSize: 14 }}>🤝 Lời hẹn giữ món hôm nay</h3>
-      <div style={{ display: 'grid', gap: 6, maxWidth: 560 }}>
+      <div style={{ display: 'grid', gap: 6 }}>
         {resList.map(([rid, r]) => (
           <div key={rid} style={{ ...styles.card }}>
             <span style={{ flex: 1, fontSize: 13 }}>
