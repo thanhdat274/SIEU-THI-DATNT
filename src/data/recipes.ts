@@ -270,6 +270,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   // cửa sổ 2 sim cân bằng (bài học GĐ2387v2).
   // GĐ2406: Bánh rán — bánh rán ngọt Hà Nội (vỏ nếp, nhân đậu xanh), chiên ngập dầu. Mở 72; since: 1 để kỷ nguyên 0 không thấy.
   { id: 'banh_ran', name: 'Bánh rán', category: 'fresh', buy: 4500, sell: 9000, color: 0xd9953a, unlock: 72, since: CONTENT_EPOCH_NOW },
+  // GĐ2407: Bánh nậm — Huế: bột gạo nhân tôm thịt gói lá, hấp. Mở 73; since: 1 để kỷ nguyên 0 không thấy.
+  { id: 'banh_nam', name: 'Bánh nậm', category: 'fresh', buy: 4500, sell: 9000, color: 0xe8dcb0, unlock: 73, since: CONTENT_EPOCH_NOW },
   { id: 'banh_da_nem_chua', name: 'Bánh đa nem chua', category: 'fresh', buy: 8000, sell: 20000, color: 0xc87850, unlock: 70, since: CONTENT_EPOCH_NOW },
   // GĐ2381: Thịt đông — món cỗ Tết miền Bắc trứ danh (thịt kho nước nghệ rồi để LẠNH đông thạch tự nhiên
   // ngoài Tết), TRƯỚC NAY CHƯA CÓ (soát 'thịt đông'/'thit_dong' = 0 trong src/). Nấu kỹ nồi nước, để đông
@@ -2331,6 +2333,11 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_banh_ran', name: 'Bánh rán', station: 'fryer',
     inputs: [{ productId: 'nep', quantity: 1 }, { productId: 'dau_xanh', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
     outputId: 'banh_ran', outputQty: 14, durationMin: 15, unlock: 72, reputationGain: 2, since: CONTENT_EPOCH_NOW },
+  // GĐ2407: Bánh nậm — Huế: bột gạo tráng mỏng nhân tôm + thịt heo băm xào hành phi, gói lá hấp ở nồi hấp.
+  // Thay thế: lá chuối/lá dong game chưa có nên bỏ (bánh trần); tôm tươi thay tôm khô giã. Mở 73; since: 1.
+  { id: 'recipe_banh_nam', name: 'Bánh nậm', station: 'steamer',
+    inputs: [{ productId: 'x_bot_gao', quantity: 1 }, { productId: 'x_tom_tuoi', quantity: 1 }, { productId: 'x_thit_heo', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 1 }],
+    outputId: 'banh_nam', outputQty: 16, durationMin: 20, unlock: 73, reputationGain: 2, since: CONTENT_EPOCH_NOW },
   // GĐ1324: Nem chua rán — đặc sản nhà bà Tám (nem chua GĐ1085) thành nguyên liệu chảo chiên, món ăn vặt.
   { id: 'recipe_nem_chua_ran', name: 'Nem chua rán', station: 'fryer',
     inputs: [{ productId: 'hx_nem_chua', quantity: 2 }, { productId: 'x_duong', quantity: 1 }],

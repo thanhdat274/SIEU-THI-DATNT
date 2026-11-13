@@ -272,6 +272,7 @@ export const MON_KHUON: Record<string, { gd: string; station: string; inputs: st
   recipe_cai_chua_xao_thit: { gd: "GĐ2383", station: 'fryer', inputs: ['hx_dua_cai', 'x_thit_heo'] },
   recipe_che_com: { gd: "GĐ2387", station: 'hot_kettle', inputs: ['rg_com_lang', 'x_duong', 'x_dua_cot_hop'] },
   recipe_ga_nuong_mac_khen: { gd: "GĐ2387", station: 'food_grill', inputs: ['rg_mac_khen', 'x_thit_ga', 'x_hanh_phi'] },
+  recipe_banh_nam: { gd: 'GĐ2407', station: 'steamer', inputs: ['x_bot_gao', 'x_tom_tuoi', 'x_thit_heo', 'x_hanh_phi'] },
   recipe_banh_ran: { gd: 'GĐ2406', station: 'fryer', inputs: ['nep', 'dau_xanh', 'x_duong'] },
   recipe_banh_da_nem_chua: { gd: "GĐ2388", station: 'food_grill', inputs: ['rg_nem_chua', 'hx_tom_chua', 'hx_banh_da'] },
 };
