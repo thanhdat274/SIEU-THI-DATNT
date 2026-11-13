@@ -12,11 +12,12 @@ export function TelemetrySampleView() {
         Đây là <b>bản ghi mẫu</b> được gửi <b>mỗi ngày</b> — tất cả đều <b>ẩn danh</b>, không có
         tên, tài khoản hay vị trí của bạn:
       </p>
-      <ul className="hud-tele-rows">
+      <ul className="hud-tele-rows" style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
         {rows.map((r) => (
-          <li key={r.key} className="hud-tele-row">
-            <span className="hud-tele-key">{r.label}</span>
-            <span className="hud-tele-val">{r.value}</span>
+          <li key={r.key} className="hud-tele-row" style={{ display: 'flex', gap: 8, alignItems: 'baseline' }}>
+            <span aria-hidden style={{ flex: '0 0 auto', opacity: 0.5 }}>–</span>
+            <span className="hud-tele-key" style={{ flex: '0 0 44%', opacity: 0.75 }}>{r.label}</span>
+            <span className="hud-tele-val" style={{ flex: '1 1 auto', fontWeight: 600 }}>{r.value}</span>
           </li>
         ))}
       </ul>
