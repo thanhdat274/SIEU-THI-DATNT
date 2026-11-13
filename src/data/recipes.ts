@@ -300,6 +300,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'banh_canh_trang_bang', name: 'Bánh canh Trảng Bàng', category: 'fresh', buy: 10000, sell: 18000, color: 0xf5f3ea, unlock: 81, since: CONTENT_EPOCH_NOW },
   // GĐ2435: Bánh ướt thịt nướng — đặc sản Kim Long xứ Huế: bánh ướt bột gạo mềm mướt cuốn thịt heo ướp sả nướng than thơm lừng. Mở 81; since: 1.
   { id: 'banh_uot_thit_nuong', name: 'Bánh ướt thịt nướng', category: 'fresh', buy: 12000, sell: 22000, color: 0xe0bc88, unlock: 81, since: CONTENT_EPOCH_NOW },
+  // GĐ2436: Bánh mì xíu mại — Đà Lạt trứ danh: bánh mì chấm nước sốt xíu mại (thịt heo xay hấp viên, sốt cà chua đậm). Mở 81; since: 1.
+  { id: 'banh_mi_xiu_mai', name: 'Bánh mì xíu mại', category: 'fresh', buy: 13000, sell: 25000, color: 0xd08a4a, unlock: 81, since: CONTENT_EPOCH_NOW },
   { id: 'com_lam', name: 'Cơm lam', category: 'fresh', buy: 6500, sell: 10000, color: 0xd9c9a0, unlock: 80, since: CONTENT_EPOCH_NOW },
   { id: 'banh_uot', name: 'Bánh ướt', category: 'fresh', buy: 4500, sell: 7500, color: 0xf6efdc, unlock: 80, since: CONTENT_EPOCH_NOW },
   // GĐ2410: Xôi đậu phộng — miền Nam: xôi nếp nấu cùng đậu phộng, chan nước cốt dừa. Mở 76; since: 1.
@@ -2454,6 +2456,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_banh_uot_thit_nuong', name: 'Bánh ướt thịt nướng', station: 'food_grill',
     inputs: [{ productId: 'x_bot_gao', quantity: 1 }, { productId: 'x_thit_heo', quantity: 1 }, { productId: 'x_sa', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 1 }],
     outputId: 'banh_uot_thit_nuong', outputQty: 8, durationMin: 20, unlock: 81, reputationGain: 3, since: CONTENT_EPOCH_NOW },
+  { id: 'recipe_banh_mi_xiu_mai', name: 'Bánh mì xíu mại', station: 'steamer',
+    inputs: [{ productId: 'banhmi', quantity: 5 }, { productId: 'x_thit_heo', quantity: 1 }, { productId: 'x_ca_chua', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 1 }],
+    outputId: 'banh_mi_xiu_mai', outputQty: 6, durationMin: 20, unlock: 81, reputationGain: 3, since: CONTENT_EPOCH_NOW },
+  // GĐ2436: Bánh mì xíu mại — Đà Lạt: thịt heo xay viên hấp chín (xíu mại), đun sốt cà chua ngọt, chấm cùng
+  // bánh mì tươi rắc hành phi. Hấp viên trong xửng → trạm hấp đúng cách nấu.
+  // Thay thế: bột bọc viên đã trộn sẵn trong thịt xay; rau sống ăn kèm bỏ qua. Mở 81; since: 1.
+  // Mẻ (bánh mì 8k×5 + thịt heo 30k + cà chua 5k + hành phi 1.5k) = 76.5k → 6 phần × 25k = 150k,
+  // lãi ~73.5k/mẻ, hời hơn bán thẳng nguyên liệu (75+38+8+2.5 = 123.5k < 150k — luật monKhuon).
   // GĐ2419: Cơm lam — Tây Bắc/Tây Nguyên: nếp ngâm + nước cốt dừa nhồi ống tre/nứa, bịt lá chuối, nướng than xoay đều 40–60 phút.
   // Thay thế: không có ống tre → bỏ qua (chỉ là vỏ bọc); muối vừng/muối lạc ăn kèm không phải nguyên liệu chính. Mở 80; since: 1.
   { id: 'recipe_com_lam', name: 'Cơm lam', station: 'food_grill',
