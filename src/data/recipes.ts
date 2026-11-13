@@ -282,6 +282,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'ga_rang_muoi', name: 'Gà rang muối', category: 'fresh', buy: 16000, sell: 32000, color: 0xd8a24a, unlock: 77, since: CONTENT_EPOCH_NOW },
   // GĐ2412: Bắp nướng — bắp nướng than, phết mỡ hành, món vỉa hè quen thuộc. Mở 79; since: 1.
   { id: 'bap_nuong', name: 'Bắp nướng', category: 'fresh', buy: 5000, sell: 9000, color: 0xe6b422, unlock: 79, since: CONTENT_EPOCH_NOW },
+  // GĐ2413: Bánh ú — Nam Bộ: bánh ú nhân mặn (nếp + đậu xanh + thịt heo) gói hình tháp, luộc. Mở 80; since: 1.
+  { id: 'banh_u', name: 'Bánh ú', category: 'fresh', buy: 8000, sell: 14000, color: 0x7a9a4a, unlock: 80, since: CONTENT_EPOCH_NOW },
   { id: 'banh_da_nem_chua', name: 'Bánh đa nem chua', category: 'fresh', buy: 8000, sell: 20000, color: 0xc87850, unlock: 70, since: CONTENT_EPOCH_NOW },
   // GĐ2381: Thịt đông — món cỗ Tết miền Bắc trứ danh (thịt kho nước nghệ rồi để LẠNH đông thạch tự nhiên
   // ngoài Tết), TRƯỚC NAY CHƯA CÓ (soát 'thịt đông'/'thit_dong' = 0 trong src/). Nấu kỹ nồi nước, để đông
@@ -2368,6 +2370,11 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_ga_rang_muoi', name: 'Gà rang muối', station: 'fryer',
     inputs: [{ productId: 'thit_ga', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }, { productId: 'x_toi', quantity: 1 }],
     outputId: 'ga_rang_muoi', outputQty: 8, durationMin: 20, unlock: 77, reputationGain: 2, since: CONTENT_EPOCH_NOW },
+  // GĐ2413: Bánh ú — gói nếp + nhân đậu xanh thịt heo thành hình tháp, luộc trong nồi nước nhiều giờ.
+  // Thay thế: lá dong/lá tre không có trong game nên bỏ (bánh trần). Mở 80; since: 1.
+  { id: 'recipe_banh_u', name: 'Bánh ú', station: 'hot_kettle',
+    inputs: [{ productId: 'nep', quantity: 1 }, { productId: 'dau_xanh', quantity: 1 }, { productId: 'x_thit_heo', quantity: 1 }],
+    outputId: 'banh_u', outputQty: 12, durationMin: 30, unlock: 80, reputationGain: 2, since: CONTENT_EPOCH_NOW },
   // GĐ2412: Bắp nướng — vỉa hè khắp nước: bắp nướng than hồng, phết mỡ hành.
   // Thay thế: mỡ hành → hành lá (x_hanh_la) thay; tép khô không có trong game. Mở 79; since: 1.
   { id: 'recipe_bap_nuong', name: 'Bắp nướng', station: 'food_grill',
