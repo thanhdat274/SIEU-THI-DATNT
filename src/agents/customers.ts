@@ -8,7 +8,7 @@ import { trending } from '../data/suppliers';
 import { skyAt } from '../data/weather';
 import { marketTrafficFactor } from '../data/chophien';
 import { tierMarkdown, fitLots, nearestLife, nearExpiryRefuseChance } from '../data/freshness';
-import { demandPriceFactor, keepChance, PRICE_RULES } from '../data/pricing';
+import { bulkBuyChance, demandPriceFactor, isCheapPraise, keepChance, PRICE_RULES } from '../data/pricing';
 import { stanceTraffic, stanceLowCap, stanceOverSensitivity, stancePullSlope, stanceSensitivity, stanceNearExpiry, stanceCriticChance, stanceBasketAdd, isSpecialtyProduct, stanceNightMul, stanceSlowMul, stanceServiceMul, stancePatience, stanceBasketCut, sealPatience } from '../data/stance';
 import { CUNG_GOODS, CUNG_PULL, isXoiCungDay } from '../data/tiemXoi';
 import { dayEffects, isWeekend, OFF_SEASON_CLEARANCE, OFF_SEASON_HUNT, offSeason } from '../data/calendar';
@@ -565,6 +565,16 @@ export class CustomerManager {
         if (price !== null) {
           c.basket.push({ id: want, price });
           this.pullCombo(c, want);
+          // R3 (review 13/11-2): giá ≤75% gợi ý → đôi khi khách mua gom thêm 1. chọn tất định theo ngày/phút (không rút simRng để không xê dịch dòng ngẫu nhiên của sim), chỉ từ cấp > 30.
+          const bulkP = bulkBuyChance(want, price, st.level);
+          const bonus = bulkP > 0 && ((st.day * 31 + Math.floor(st.minutes) * 7 + c.basket.length * 13) % 100) < bulkP * 100 ? st.takeFromShelf(want, shelfUid) : null;
+          if (bonus !== null) {
+            c.basket.push({ id: want, price: bonus });
+            c.say('🛒 Rẻ quá, lấy thêm một cái!');
+          } else if (isCheapPraise(want, price) && (st.day * 7 + Math.floor(st.minutes) + c.basket.length) % 5 === 0) {
+            // R1: khen rẻ — thuần hiển thị, chọn tất định theo ngày/phút, KHÔNG rút simRng.
+            c.say(Math.floor(st.minutes) % 2 ? '🏷️ Rẻ ghê!' : '✨ Giá tốt!');
+          }
         } else {
           // GĐ1829 — OpenSpec khach-thay-mon-het-hang: hết món muốn thì khách nhìn trên CÙNG KỆ
           // lấy món khác giá không vượt dung sai (SUBSTITUTE_CHANCE ~60%, tất định simRng).

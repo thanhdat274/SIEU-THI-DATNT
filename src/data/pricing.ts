@@ -66,6 +66,20 @@ export function keepChance(productId: string, price: number, customerSensitivity
   return Math.max(PRICE_RULES.minKeepChance, 1 - productSensitivity(productId) * customerSensitivity * (ratio - 1));
 }
 
+/** Review 13/11-2 R1 — khách khen rẻ (thuần hiển thị, không đổi kinh tế): giá ≤ 95% gợi ý. */
+export const CHEAP_PRAISE_RATIO = 0.95;
+export const isCheapPraise = (productId: string, price: number) => priceRatio(price, productId) <= CHEAP_PRAISE_RATIO;
+
+/** Review 13/11-2 R3 — "thấy rẻ mua gom": giá ≤ 75% gợi ý thì có xác suất khách lấy thêm 1. Cơ chế mới nên
+ *  chỉ chạy từ cấp > 30 (không đụng golden cấp ≤ 30). Trả 0 khi chưa đủ rẻ / chưa đủ cấp. */
+export const BULK_BUY_RATIO = 0.75;
+export const BULK_BUY_CHANCE = 0.2;
+export const BULK_BUY_MIN_LEVEL = 31;
+export function bulkBuyChance(productId: string, price: number, level: number): number {
+  if (level < BULK_BUY_MIN_LEVEL) return 0;
+  return priceRatio(price, productId) <= BULK_BUY_RATIO ? BULK_BUY_CHANCE : 0;
+}
+
 /** GĐ1222 — bề mặt "giá cao ăn vào đơn": tỉ lệ khách còn chịu mua ở giá đang bày (baseline khách vãng
  *  lai, sensitivity=1) + giá tham chiếu thị trường, để báo cáo trỏ "chê đắt → hạ về ~reference thì đa số
  *  mua". THUẦN — ghép từ `keepChance`/`referenceSell` có sẵn, không đổi kinh tế/save/seed. */
