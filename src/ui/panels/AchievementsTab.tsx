@@ -1,7 +1,8 @@
 import { askConfirm } from '../ConfirmDialog';
 import { useGame } from '../../core/store';
-import { Callout } from './shared';
+import { Callout, Stat, styles } from './shared';
 import { ACHIEVEMENTS } from '../../data/biz';
+import { achievementCtx, freshAchievements } from '../../core/bizAchieve';
 import { nearestMilestones } from '../../data/goals';
 import { nextBonus, prestigeEligible, prestigePreview, PRESTIGE_BONUS, PRESTIGE_MAX_LEVEL, PRESTIGE_MIN_LEVEL, PRESTIGE_MIN_REVENUE, revenueFactor } from '../../core/prestige';
 import { PARTNER_TIERS } from '../../data/supplierRel';
@@ -21,17 +22,44 @@ function NearMilestones() {
 export function Achievements() {
   const { biz } = useGame();
   const done = new Set(biz.achievements);
+  const claimed = ACHIEVEMENTS.filter((a) => done.has(a.id));
+  const claimedMoney = claimed.reduce((n, a) => n + a.reward, 0);
+  const ctx = achievementCtx(useGame.getState());
+  const waiting = freshAchievements(useGame.getState());
+  const waitingMoney = waiting.reduce((n, a) => n + a.reward, 0);
   return (
     <>
       <NearMilestones />
-      <p style={sub}>Đã đạt {done.size}/{ACHIEVEMENTS.length} thành tựu.</p>
+      {/* Thẻ tổng (học từ Coffee Sứa Ơi): số bậc, tiền thưởng đã nhận, thưởng sắp về ví tối nay */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6, marginBottom: 8 }}>
+        <Stat icon="🏆" label="bậc thành tựu" value={`${done.size}/${ACHIEVEMENTS.length}`} />
+        <Stat icon="💰" label="thưởng đã nhận" value={formatMoney(claimedMoney)} />
+        <Stat icon="⏳" label={waiting.length ? 'sắp về ví tối nay' : 'đang chờ mốc mới'} value={waitingMoney ? `+${formatMoney(waitingMoney)}` : '—'} />
+      </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 6 }}>
-        {ACHIEVEMENTS.map((a) => (
-          <div key={a.id} style={{ ...card, marginBottom: 0, opacity: done.has(a.id) ? 1 : 0.55 }}>
-            <b>{done.has(a.id) ? a.icon : '🔒'} {a.name}</b>
-            <div style={sub}>{a.desc} · thưởng {formatMoney(a.reward)}</div>
-          </div>
-        ))}
+        {ACHIEVEMENTS.map((a) => {
+          const isDone = done.has(a.id);
+          const g = !isDone && a.goal ? a.goal(ctx) : null;
+          const pct = g ? Math.max(0, Math.min(100, (g.cur / g.goal) * 100)) : 0;
+          return (
+            <div key={a.id} style={{ ...card, marginBottom: 0, opacity: isDone ? 1 : 0.75 }}>
+              <b>{isDone ? a.icon : '🔒'} {a.name}</b>
+              <div style={sub}>{a.desc} · thưởng {formatMoney(a.reward)}</div>
+              {g && (
+                <div style={{ marginTop: 4 }}>
+                  <div style={{ height: 5, borderRadius: 3, background: 'rgba(255,255,255,0.15)', overflow: 'hidden' }}>
+                    <div style={{ width: `${pct}%`, height: '100%', borderRadius: 3, background: '#f1c40f' }} />
+                  </div>
+                  <div style={{ ...sub, fontSize: 11, marginTop: 2 }}>
+                    {g.money
+                      ? `${formatMoney(Math.min(g.cur, g.goal))} / ${formatMoney(g.goal)}`
+                      : `${Math.min(g.cur, g.goal).toLocaleString('vi-VN')} / ${g.goal.toLocaleString('vi-VN')}`}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
       <PrestigeSection />
     </>
