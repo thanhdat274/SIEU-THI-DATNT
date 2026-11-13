@@ -39,7 +39,7 @@ export const createSalesSlice = (set: SetState, get: GetState): Pick<GameState, 
     p = Math.round(p * revenueFactor(s.biz.prestige.bonus));
     return p;
   },
-  setPrice: (productId, price) => set({ prices: { ...get().prices, [productId]: price } }),
+  setPrice: (productId, price) => !Number.isFinite(price) || price <= 0 ? undefined : set({ prices: { ...get().prices, [productId]: price } }),
   // Đổi nhiều giá một lúc, chỉ món còn đúng giá người bấm vừa thấy (from): ở hẻm online người khác
   // vừa đổi giá món đó thì giữ giá của họ, không đè bằng bảng giá cũ. to = null là về giá gợi ý.
   setPrices: (changes) => {

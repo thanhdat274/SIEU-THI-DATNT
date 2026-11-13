@@ -3,7 +3,7 @@ import { fitList } from '../../data/onboarding';
 import { WAREHOUSE_TIERS } from '../../data/warehouse';
 import { MATERIAL_FROM_TIER, MATERIAL_KEYS, MATERIAL_LABEL, costOfMaterials, emptyWareMaterials, hasMaterials, materialsFor, missingMaterials } from '../../data/wareMaterials';
 import { customersPerDay } from '../../data/levels';
-import { formatMoney, productById, unlockedProducts } from '../../data/products';
+import { formatMoney, PRODUCTS, productById, unlockedProducts } from '../../data/products';
 import { orderTotal, supplierById } from '../../data/suppliers';
 import { addRel, deliversInstantly } from '../../data/supplierRel';
 import { fitLots, mergeLots, tierMarkdown, takeOldest } from '../../data/freshness';
