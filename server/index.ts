@@ -22,6 +22,7 @@ import {
 import { heartbeatStep } from './room';
 import { BATCH_MAX, TELEMETRY_TTL_DAYS, tBucketKey, validateReport } from './telemetry';
 import { registerSocial } from './social';
+import { FEEDBACK_TTL_DAYS, validateFeedback } from './feedback';
 
 config({ path: resolve(dirname(fileURLToPath(import.meta.url)), '.env') });
 const env = process.env;
@@ -161,6 +162,31 @@ app.post('/t', async (req, res) => {
   }
   if (good.length) await (await telemetryCollection()).insertMany(good);
   res.json({ ok: true, accepted: good.length, dropped });
+});
+
+// ---- Góp ý của người chơi: KHÔNG cần đăng nhập, định danh bằng install; chặn spam 5 bản/giờ/máy+IP. ----
+interface FeedbackRecord { install: string; kind: string; text: string; contact: string; tech: unknown; createdAt: number; expiredAt: number }
+let feedbackColl: Collection<FeedbackRecord> | null = null;
+async function feedbackCollection() {
+  if (!feedbackColl) {
+    const client = await new MongoClient(env.MONGO_URI ?? env.MONGODB_URI ?? '').connect();
+    feedbackColl = client.db(env.MONGODB_DATABASE ?? 'taphoa3d').collection<FeedbackRecord>('feedback');
+    await feedbackColl.createIndex({ expiredAt: 1 }, { expireAfterSeconds: 0 });
+    await feedbackColl.createIndex({ install: 1 });
+  }
+  return feedbackColl;
+}
+app.post('/feedback', async (req, res) => {
+  const ip = String(req.headers['x-forwarded-for'] ?? req.socket.remoteAddress ?? '');
+  const v = validateFeedback(req.body);
+  if (!v.ok) return void res.status(400).json({ error: 'Góp ý chưa hợp lệ.', reason: v.reason });
+  if (!takeTelemetryToken(`fb:${tBucketKey(v.fb.install, ip)}`, Date.now(), 3_600_000, 5)) {
+    res.setHeader('Retry-After', '3600');
+    return void res.status(429).json({ error: 'Bạn gửi góp ý hơi nhiều, thử lại sau ít phút nhé.' });
+  }
+  const now = Date.now();
+  await (await feedbackCollection()).insertOne({ ...v.fb, createdAt: now, expiredAt: now + FEEDBACK_TTL_DAYS * 24 * 3600 * 1000 });
+  res.json({ ok: true });
 });
 
 // Tắt telemetry → xoá toàn bộ số liệu của install đó (R13: dữ liệu xoá được).

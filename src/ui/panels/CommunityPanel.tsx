@@ -13,7 +13,7 @@ import { SEASONAL_GOODS } from '../../data/calendar';
 import { weekParts } from '../../data/socialWeek';
 import {
   addFriend, listFriends, getCardByCode, gift, listInbox, getMarket,
-  getWeek, postWeekScore, getBoard, getFair, contributeFair, removeFriend,
+  getWeek, postWeekScore, getBoard, getAlleyBoard, type AlleyBoardRes, getFair, contributeFair, removeFriend,
   type FriendRow, type MarketLot, type PublicCard, type InboxItem, type WeekRes, type BoardRes,
 } from '../../net/socialApi';
 
@@ -268,6 +268,7 @@ function MarketTab() {
 }
 
 /* ─────────────────────────── Thi đua / Xếp hạng ─────────────────────────── */
+const bandOfLevel = (l: number) => (l <= 29 ? '1-29' : l <= 59 ? '30-59' : l <= 99 ? '60-99' : l <= 149 ? '100-149' : '150-200');
 function WeekTab() {
   const { level, history, biz, ordersDone } = useGame();
   const [week, setWeek] = useState<WeekRes | null>(null);
@@ -275,6 +276,8 @@ function WeekTab() {
   const [period, setPeriod] = useState<'week' | 'season'>('week');
   const [scope, setScope] = useState<'friends' | 'server'>('friends');
   const [err, setErr] = useState('');
+  const [alleys, setAlleys] = useState<AlleyBoardRes | null>(null);
+  useEffect(() => { getAlleyBoard({ scope: 'server', band: bandOfLevel(level) }).then(setAlleys).catch(() => {}); }, [level]);
 
   const load = () => {
     // Gửi điểm tuần (thành tích vài ngày gần nhất), server tự kẹp trần từng thành phần.
@@ -323,11 +326,25 @@ function WeekTab() {
           {board?.top.slice(0, 20).map((r) => (
             <div key={r.rank} style={{ display: 'flex', gap: 8, fontSize: 13, marginTop: 3 }}>
               <span style={{ width: 28, opacity: 0.8 }}>#{r.rank}</span>
-              <span style={{ flex: 1 }}>{r.flagged ? 'Tiệm ẩn' : `Tiệm #${r.uid.slice(0, 4)}`}</span>
+              <span style={{ flex: 1 }}>{r.flagged ? 'Tiệm ẩn' : (r.name || `Tiệm #${r.uid.slice(0, 4)}`)}</span>
               <span><b>{r.score}</b></span>
             </div>
           ))}
           {board && !board.top.length && <small style={{ opacity: 0.6 }}>Chưa có ai ghi điểm.</small>}
+        </div>
+      </div>
+      <div style={styles.card}>
+        <b>🏘️ Bảng co-op — hẻm chơi chung</b>
+        <div><small style={{ opacity: 0.6 }}>Cùng dải cấp, xếp theo điểm tuần; số nhỏ là ngày gắn bó.</small></div>
+        <div style={{ marginTop: 4 }}>
+          {alleys?.rows.slice(0, 20).map((r) => (
+            <div key={r.rank} style={{ display: 'flex', gap: 8, fontSize: 13, marginTop: 3 }}>
+              <span style={{ width: 28, opacity: 0.8 }}>#{r.rank}</span>
+              <span style={{ flex: 1 }}>{r.name || `Hẻm #${r.key}`} <small style={{ opacity: 0.6 }}>{r.together} ngày</small></span>
+              <span><b>{r.score}</b></span>
+            </div>
+          ))}
+          {alleys && !alleys.rows.length && <small style={{ opacity: 0.6 }}>Tuần này chưa có hẻm nào lên bảng.</small>}
         </div>
       </div>
     </div>

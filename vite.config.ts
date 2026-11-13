@@ -78,6 +78,8 @@ export default defineConfig({
     host: true,
     proxy: {
       '/api': 'http://localhost:3002',
+      '/guest': 'http://localhost:3002',     // bảng xếp hạng cho khách (không đăng nhập)
+      '/feedback': 'http://localhost:3002',  // góp ý ở màn đăng nhập
       '/ws': { target: 'ws://localhost:3002', ws: true },
     },
   },

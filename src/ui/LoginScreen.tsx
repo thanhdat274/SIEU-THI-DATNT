@@ -13,6 +13,8 @@ import { useSession, type SaveSummary } from '../net/session';
 import { recordConsent } from '../net/consent';
 import { allConsentsGiven, CONSENT_SCOPES, type ConsentScope } from '../net/consentPolicy';
 import { PrivacyPolicy } from './PrivacyPolicy';
+import { LoginMenu, NameField } from './LoginMenu';
+import { loadPlayerName } from '../data/playerName';
 import './login.css';
 // GĐ521: bảng hẻm online tải lười (bù ngân sách tải đầu)
 const AlleyPanel = lazy(() => import('./AlleyPanel').then((m) => ({ default: m.AlleyPanel })));
@@ -22,6 +24,9 @@ export function startGame() {
   useSession.setState({ screen: 'game' });
   // Vào hẻm đang có người chạy: tốc độ là của cả hẻm, không chỉnh
   if (useSession.getState().coop?.role !== 'player') useGame.setState({ speed: 1 });
+  // Tên người chơi đặt ở màn đăng nhập → tên tiệm (hiện trên bảng xếp hạng), chỉ khi chơi đơn
+  const nick = loadPlayerName();
+  if (nick && !useSession.getState().coop) useGame.getState().setShopName(nick);
   // Thưởng "Chào mừng quay lại" (GĐ39): soi khi nạp bản lưu và vào chơi đơn — không vào hẻm người khác
   if (!useSession.getState().coop) {
     useGame.getState().checkWelcomeBack();
@@ -242,6 +247,8 @@ export function LoginScreen() {
           )}
 
           {error && <p className="login-error">{error}</p>}
+          {!choice && <NameField />}
+          <LoginMenu />
         </section>
       </div>
       {/* Bảng hẻm online tách riêng thẻ đăng nhập: nhiều hẻm không đấy thông tin đăng nhập */}

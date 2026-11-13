@@ -65,13 +65,14 @@ export const getWeek = (level: number) => api<WeekRes>('GET', `/week?level=${lev
 
 export interface BoardRes {
   scope: string; band: string; period: string;
-  top: { rank: number; uid: string; score: number; flagged?: boolean }[];
+  top: { rank: number; uid: string; name?: string; score: number; flagged?: boolean }[];
   self: { rank: number; score: number; percent: number } | null; total: number;
 }
 export const getBoard = (opts: { scope?: string; band?: string; period?: string; level?: number }) =>
   api<BoardRes>('GET', `/board?scope=${opts.scope ?? 'friends'}&period=${opts.period ?? 'week'}&band=${opts.band ?? ''}&level=${opts.level ?? 30}`);
+export interface AlleyBoardRes { week: string; band: string; rows: { rank: number; key: number; name?: string; band: string; score: number; together: number }[] }
 export const getAlleyBoard = (opts: { scope?: string; band?: string }) =>
-  api<{ week: string; rows: { alley: string; band: string; score: number; together: number }[] }>('GET', `/board/alleys?scope=${opts.scope ?? 'server'}&band=${opts.band ?? '1-29'}`);
+  api<AlleyBoardRes>('GET', `/board/alleys?scope=${opts.scope ?? 'server'}&band=${opts.band ?? '1-29'}`);
 
 export const report = (kind: 'card' | 'board', target: string, reason: string) =>
   api<{ ok: true }>('POST', '/report', { kind, target, reason });

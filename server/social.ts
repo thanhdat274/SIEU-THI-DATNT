@@ -11,7 +11,7 @@ import { MongoClient, type Collection, type Document } from 'mongodb';
 import {
   FLOWER_MAX_ACTIVE, GIFT_MAX_DAY, GIFT_PER_FRIEND_DAY, MARKET_BUY_MAX_DAY, MARKET_MAX_LOTS_WEEK,
   MARKET_MAX_QTY, MARKET_MAX_RATIO, MARKET_MIN_RATIO, MARKET_TTL_DAYS, MAX_FRIENDS, bandForLevel,
-  newFriendCode, normalizeCard, progressionSuspicious, sanitizeOwnerName, seasonKey,
+  newFriendCode, normalizeCard, progressionSuspicious, sanitizeOwnerName, sanitizeShopName, seasonKey,
   scorePoints, weekKey, type ShopCardData,
 } from './socialRules';
 
@@ -52,6 +52,7 @@ interface WeekDoc extends Document {
   _id: string;              // `${week}:${uid}`
   week: string; uid: string; band: string; group: string;
   score: number; parts: Record<string, number>; reachedAt: number; flagged?: boolean;
+  name?: string; guest?: boolean;   // khách không đăng nhập: tên tự đặt (đã lọc) + cờ guest
 }
 interface SeasonDoc extends Document { _id: string; season: string; uid: string; band: string; score: number }
 interface AlleyCardDoc extends Document { _id: string; name: string; level: number; band: string; members: { uid: string; name: string }[]; layout: unknown; updatedAt: string }
@@ -331,6 +332,56 @@ export function registerSocial(app: Express) {
     res.json({ week, band, group, mine: mine ? scoreRow(mine) : null, cohort: cohort.map(scoreRow) });
   });
 
+  // ───────────────── Khách (không đăng nhập) chung bảng với người đăng nhập ─────────────────
+  // Điểm khách ghi vào CHÍNH `week_scores` (uid `g_<install>`), nên /api/board và /guest/board cùng một bảng.
+  // Điểm vẫn do server tính từ chỉ số có trần (scorePoints) nên khách không bơm quá trần; tên được lọc từ bẩn.
+  const guestHits = new Map<string, { at: number; n: number }>();
+  const guestOk = (key: string, max: number) => {
+    const now = Date.now();
+    const b = guestHits.get(key);
+    if (!b || now - b.at > 3_600_000) { guestHits.set(key, { at: now, n: 1 }); return true; }
+    if (b.n >= max) return false;
+    b.n++;
+    return true;
+  };
+  const guestIp = (req: Request) => String(req.headers['x-forwarded-for'] ?? req.socket.remoteAddress ?? '');
+  const INSTALL_RE = /^[a-z0-9_-]{8,96}$/;
+
+  app.post('/guest/score', async (req: Request, res: Response) => {
+    const install = String(req.body?.install ?? '');
+    if (!INSTALL_RE.test(install)) return void res.status(400).json({ error: 'Máy chưa có mã.' });
+    if (!guestOk(`s:${install}:${guestIp(req)}`, 30)) return void res.status(429).json({ error: 'Gửi điểm hơi nhiều, thử lại sau.' });
+    const partsIn = req.body?.parts;
+    if (!partsIn || typeof partsIn !== 'object') return void res.status(400).json({ error: 'Thiếu điểm.' });
+    const level = Number(req.body?.level) || 1;
+    const name = sanitizeShopName(String(req.body?.name ?? '')) || 'Tiệm tạp hóa';
+    const { parts, total } = scorePoints(partsIn as never);
+    const week = weekKey();
+    const band = bandForLevel(level);
+    const uid = `g_${install}`;
+    const doc: WeekDoc = { _id: `${week}:${uid}`, week, uid, band, group: groupOf(week, band, uid), score: total, parts, reachedAt: Date.now(), flagged: false, name, guest: true };
+    await (await coll<WeekDoc>('week_scores')).replaceOne({ _id: doc._id }, doc, { upsert: true });
+    res.json({ ok: true, week, band, score: total });
+  });
+
+  // Bảng toàn server (cùng band) cho người chưa đăng nhập; `install` để tìm hạng của chính mình.
+  app.get('/guest/board', async (req: Request, res: Response) => {
+    if (!guestOk(`b:${guestIp(req)}`, 120)) return void res.status(429).json({ error: 'Xem bảng hơi nhiều, thử lại sau.' });
+    const install = String(req.query?.install ?? '');
+    const myUid = INSTALL_RE.test(install) ? `g_${install}` : '';
+    const band = String(req.query?.band ?? bandForLevel(Number(req.query?.level) || 1));
+    const week = weekKey();
+    const rows = await (await coll<WeekDoc>('week_scores')).find({ week }).sort({ score: -1, reachedAt: 1 }).limit(200).toArray();
+    const ranked = rows.filter((r) => r.band === band).map((r, i) => ({ ...r, rank: i + 1 }));
+    const mine = myUid ? ranked.find((r) => r.uid === myUid) : undefined;
+    const total = ranked.length;
+    const topRows = ranked.slice(0, 100);
+    const cardRows = await (await coll<CardDoc>('shop_cards')).find({ _id: { $in: topRows.filter((r) => !r.guest).map((r) => r.uid) } }).project({ shopName: 1, flagged: 1 }).toArray();
+    const nameOf = new Map(cardRows.map((c) => [c._id as unknown as string, c.flagged ? '' : String(c.shopName ?? '')]));
+    const top = topRows.map((r) => ({ rank: r.rank, uid: r.guest ? 'g' : r.uid, name: (r.guest ? r.name : nameOf.get(r.uid)) || undefined, score: r.score, flagged: r.flagged }));
+    res.json({ scope: 'server', band, period: 'week', top, total, self: mine ? { rank: mine.rank, score: mine.score, percent: Math.max(1, Math.round((mine.rank / total) * 100)) } : null });
+  });
+
   // ───────────────── Bảng xếp hạng (§6.4d/6.4e-f, L6b/L6c/L6d) ─────────────────
   app.get('/api/board', async (req: Request, res: Response) => {
     const { uid } = auth(res);
@@ -355,19 +406,30 @@ export function registerSocial(app: Express) {
     const self = mine
       ? { rank: mine.rank, score: mine.score, percent: total ? Math.max(1, Math.round((mine.rank / total) * 100)) : 100 }
       : null;
-    const top = ranked.slice(0, scope === 'friends' ? 50 : 100).map((r) => ({ rank: r.rank, uid: r.uid, score: r.score, flagged: r.flagged }));
+    const topRows = ranked.slice(0, scope === 'friends' ? 50 : 100);
+    // Tên tiệm người chơi đặt (đã lọc từ bẩn khi lưu danh thiếp); người bị gắn cờ hoặc chưa có danh thiếp thì để trống.
+    const cardRows = await (await coll<CardDoc>('shop_cards')).find({ _id: { $in: topRows.map((r) => r.uid) } }).project({ shopName: 1, flagged: 1 }).toArray();
+    const nameOf = new Map(cardRows.map((c) => [c._id as unknown as string, c.flagged ? '' : String(c.shopName ?? '')]));
+    const guestName = new Map(rows.filter((r) => (r as WeekDoc).guest).map((r) => [r.uid, String((r as WeekDoc).name ?? '')]));
+    const top = topRows.map((r) => ({ rank: r.rank, uid: r.uid, name: nameOf.get(r.uid) || guestName.get(r.uid) || undefined, score: r.score, flagged: r.flagged }));
     res.json({ scope, band, period, top, self, total });
   });
 
   // Bảng hẻm (§6.4f): điểm kèm checkpoint + điểm chung sức do server đo → đặt trong index.ts nhánh checkpoint.
-  app.get('/api/board/alleys', async (req: Request, res: Response) => {
-    const scope = String(req.query?.scope ?? 'server');
-    const band = String(req.query?.band ?? '1-29');
+  // Bảng co-op (hẻm): công khai (không cần đăng nhập) để màn đăng nhập cũng xem được. Không lộ mã hẻm;
+  // tên hẻm lấy từ danh thiếp hẻm (đã lọc từ bẩn), chưa có thì để trống cho client hiện 'Hẻm #…'.
+  const alleyBoard = async (req: Request, res: Response) => {
+    const band = String(req.query?.band ?? bandForLevel(Number(req.query?.level) || 1));
+    const all = String(req.query?.scope ?? 'server') === 'all';
     const aws = await coll<Document>('alley_week_scores');
     const week = weekKey();
-    const rows = await aws.find({ week, ...(scope === 'server' ? { band } : {}) }).sort({ score: -1 }).limit(50).toArray();
-    res.json({ week, rows: rows.map((r) => ({ alley: r.alley, band: r.band, score: r.score, together: r.together })) });
-  });
+    const rows = await aws.find({ week, ...(all ? {} : { band }) }).sort({ score: -1, together: -1 }).limit(50).toArray();
+    const cards = await (await coll<AlleyCardDoc>('alley_cards')).find({ _id: { $in: rows.map((r) => String(r.alley)) } }).project({ name: 1 }).toArray();
+    const nameOf = new Map(cards.map((c) => [String(c._id), sanitizeShopName(String(c.name ?? ''))]));
+    res.json({ week, band, rows: rows.map((r, i) => ({ rank: i + 1, key: (stableHash(String(r.alley)) % 9000) + 1000, name: nameOf.get(String(r.alley)) || undefined, band: r.band, score: r.score, together: r.together })) });
+  };
+  app.get('/api/board/alleys', alleyBoard);
+  app.get('/guest/board/alleys', alleyBoard);
 
   // ───────────────── Danh thiếp hẻm + đồng ý hiện tên (§6.4f, L6c) ─────────────────
   app.put('/api/alleys/:id/card', async (req: Request, res: Response) => {

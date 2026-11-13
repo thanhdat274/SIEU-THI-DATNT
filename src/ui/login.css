@@ -472,3 +472,26 @@
   line-height: 1.4;
 }
 .login-warn .login-row { margin-top: 8px; flex-wrap: wrap; }
+
+/* Menu ngoài màn đăng nhập: cài đặt, hướng dẫn, có gì mới, xếp hạng, góp ý, quy định */
+.lm-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
+.lm-name { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+.lm-name label { font-size: 13px; opacity: .8; }
+.lm-input, .lm-text { width: 100%; box-sizing: border-box; padding: 8px 10px; border-radius: 8px; border: 1px solid rgba(0,0,0,.25); font: inherit; background: #fffdf7; color: #222; }
+.lm-text { resize: vertical; }
+.lm-count { text-align: right; font-size: 12px; opacity: .6; }
+.lm-kinds { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.lm-sheet { background: #fffaf0; color: #222; width: min(520px, calc(100vw - 32px)); max-height: 85vh; display: flex; flex-direction: column; border-radius: 14px; box-shadow: 0 10px 40px rgba(0,0,0,.4); }
+.lm-sheet header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-bottom: 1px solid rgba(0,0,0,.12); }
+.lm-sheet h2 { margin: 0; font-size: 18px; }
+.lm-body { padding: 12px 16px 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+.lm-body h3 { margin: 8px 0 2px; font-size: 15px; } .lm-body h3 em { font-weight: 400; font-size: 12px; opacity: .6; }
+.lm-guide, .lm-board, .lm-sent { margin: 0; padding-left: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.lm-guide li { display: flex; flex-direction: column; }
+.lm-board li { display: grid; grid-template-columns: 40px 1fr auto; gap: 8px; }
+.lm-sent li { font-size: 13px; } .lm-sent em { opacity: .6; margin-right: 6px; }
+@media (max-width: 480px) { .lm-grid { grid-template-columns: repeat(2, 1fr); } }
+.lm-board li.mine { background: rgba(255, 200, 60, .3); border-radius: 6px; font-weight: 600; }
+.lm-board small { opacity: .6; }
+.lm-guide b i { font-style: normal; display: inline-block; min-width: 22px; text-align: center; background: #e8b04a; border-radius: 11px; margin-right: 4px; font-size: 12px; }
+.lm-keys { display: grid; gap: 4px; } .lm-keys div { display: flex; gap: 10px; font-size: 13px; } .lm-keys kbd { min-width: 120px; font-weight: 600; }
