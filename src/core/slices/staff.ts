@@ -1,5 +1,5 @@
 import { dailyWage, maxStaff, ROLES, SHIFTS, type Staff } from '../../data/staff';
-import { LEAVE_EXP, leaveBlock, leaveWait } from '../../data/staffLeave';
+import { LEAVE_DENY_EXP, LEAVE_EXP, leaveBlock, leaveWait } from '../../data/staffLeave';
 import { lixiBlock, lixiCost, LIXI_EXP } from '../../data/lixi';
 import { nextPromotion, promoted } from '../../data/careers';
 import { gainExp, TRAIN_EXP, trainCost } from '../../data/staffTraits';
@@ -11,7 +11,7 @@ import type { GameState, SetState, GetState } from '../gameTypes';
 
 /** Nhân viên tiệm chính: thuê, cho nghỉ, đổi ca, đào tạo. */
 
-export const createStaffSlice = (set: SetState, get: GetState): Pick<GameState, 'hire' | 'fire' | 'setShift' | 'trainStaff' | 'giveLeave' | 'giveLixi' | 'promoteStaff' | 'promoteBranchStaff' | 'transferStaff' | 'evacuateBranch'> => {
+export const createStaffSlice = (set: SetState, get: GetState): Pick<GameState, 'hire' | 'fire' | 'setShift' | 'trainStaff' | 'giveLeave' | 'approveLeave' | 'denyLeave' | 'giveLixi' | 'promoteStaff' | 'promoteBranchStaff' | 'transferStaff' | 'evacuateBranch'> => {
   /** Kiểm tra điều kiện, trừ tiền thưởng; trả về người sau khi thăng chức hoặc null. */
   const tryPromote = (st: Staff): Staff | null => {
     const s = get();
@@ -80,6 +80,15 @@ export const createStaffSlice = (set: SetState, get: GetState): Pick<GameState, 
     const { staff: next } = gainExp({ ...st, leaveDay: s.day }, LEAVE_EXP);
     set({ staff: s.staff.map((it) => (it.id === id ? next : it)) });
     s.notify(`🏖️ ${st.name} nghỉ phép hôm nay (vẫn nhận lương ${formatMoney(dailyWage(st))}) — nghỉ khoẻ, mai làm hăng hơn`);
+  },
+  approveLeave: (id) => get().giveLeave(id),
+  denyLeave: (id) => {
+    const s = get();
+    const st = s.staff.find((it) => it.id === id);
+    if (!st) return;
+    const next = { ...st, leaveDenied: s.day, exp: Math.max(0, (st.exp ?? 0) - LEAVE_DENY_EXP) };
+    set({ staff: s.staff.map((it) => (it.id === id ? next : it)) });
+    s.notify(`😔 ${st.name} hơi buồn vì không được nghỉ — làm kém hăng hơn chút`);
   },
   giveLixi: () => {
     const s = get();

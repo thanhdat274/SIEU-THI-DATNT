@@ -92,6 +92,8 @@ export interface Staff {
   movedDay?: number;
   /** Ngày đang nghỉ phép (xem staffLeave.ts): hôm đó không đến làm nhưng vẫn nhận lương. */
   leaveDay?: number;
+  /** Ngày bị từ chối đơn xin nghỉ (ẩn đơn hôm đó). */
+  leaveDenied?: number;
 }
 
 /** Lương phải trả mỗi ngày. */

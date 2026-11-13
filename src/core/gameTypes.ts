@@ -618,6 +618,10 @@ export interface GameState {
   trainStaff: (id: number) => void;
   /** Cho nhân viên nghỉ phép hôm nay (vẫn nhận lương), cộng chút kinh nghiệm; cách nhau LEAVE_COOLDOWN ngày. */
   giveLeave: (id: number) => void;
+  /** Duyệt đơn xin nghỉ phép (như giveLeave). */
+  approveLeave: (id: number) => void;
+  /** Từ chối đơn xin nghỉ: ẩn đơn hôm nay, trừ chút kinh nghiệm. */
+  denyLeave: (id: number) => void;
   giveLixi: () => void;
   /** Thăng chức nhân viên tiệm chính (thu ngân → trưởng quầy → quản lý). */
   promoteStaff: (id: number) => void;

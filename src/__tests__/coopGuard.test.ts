@@ -73,6 +73,8 @@ const LOCAL_ONLY: Record<string, string> = {
   setShift: 'đổi ca một nhân viên theo id người',
   trainStaff: 'đào tạo một nhân viên theo id người',
   giveLeave: 'cho một nhân viên nghỉ phép hôm nay theo id người (leaveDay riêng từng người)',
+  approveLeave: 'duyệt đơn xin nghỉ phép theo id người (leaveDay riêng từng người)',
+  denyLeave: 'từ chối đơn xin nghỉ theo id người (leaveDenied riêng từng người)',
   giveLixi: 'lì xì Tết cả đội — cờ lixiDay toàn cục chốt một lần mỗi kỳ Tết',
   promoteStaff: 'thăng chức một nhân viên tiệm chính theo id người',
   transferStaff: 'điều nhân viên sang chi nhánh/tiệm chính theo id người',

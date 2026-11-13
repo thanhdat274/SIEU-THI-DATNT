@@ -13,7 +13,7 @@ import { BranchShiftStrip, BranchValueLine, NightStaffLine, NightStrip, ShiftVal
 import { Footer, Callout, styles, Tabs } from './shared';
 import { wageCoverage } from '../../data/wageCoverage';
 import { expToNext, shownTrait, trainCost, TRAITS } from '../../data/staffTraits';
-import { leaveBlock, leaveWait } from '../../data/staffLeave';
+import { leaveBlock, leaveRequests, leaveWait, onLeaveToday } from '../../data/staffLeave';
 import { payrollRunway } from '../../data/payrollRunway';
 import { trainValue } from '../../data/trainValue';
 import { staffEff } from '../../data/staffEff';
@@ -38,7 +38,7 @@ import { gapsOf, SITE_NAME, type Site } from '../../data/transfer';
 
 export function StaffPanel() {
   const [tab, setTab] = useState<'team' | 'hire'>('team');
-  const { staff, candidates, level, day, money, autoOpen, hire, fire, setShift, trainStaff, giveLeave, promoteStaff, closePanel, biz, branch, hireForBranch, stats, skills, dirt, storage, deliveries, furniture, sales, salesToday, analytics, garden, weatherSeed, weather } = useGame();
+  const { staff, candidates, level, day, money, autoOpen, hire, fire, setShift, trainStaff, giveLeave, approveLeave, denyLeave, promoteStaff, closePanel, biz, branch, hireForBranch, stats, skills, dirt, storage, deliveries, furniture, sales, salesToday, analytics, garden, weatherSeed, weather } = useGame();
   const [pick, setPick] = useState<Record<number, Shift>>({});
   const max = maxStaff(level);
   const bStaff = branch?.staff ?? [];
@@ -95,6 +95,25 @@ export function StaffPanel() {
         <div style={staffSt.stat}><small>Nhân sự</small><b>{staff.length + bStaff.length}</b><small>{staff.length}/{max} tiệm chính{branch ? ` · ${bStaff.length}/${CONVENIENCE.maxStaff} tiện lợi` : ''}</small></div>
         <div style={staffSt.stat}><small>Tổng lương / ngày</small><b>{formatMoney(total)}</b><small>cả hai tiệm, trả lúc đi ngủ</small></div>
       </div>
+      {(() => {
+        // Thẻ Nghỉ phép: ai đang nghỉ hôm nay + đơn xin nghỉ (băm tất định, người chơi duyệt/từ chối)
+        const resting = onLeaveToday(staff, day);
+        const asking = leaveRequests(staff, weatherSeed, day);
+        return (
+          <div style={{ ...styles.card, display: 'block', marginBottom: 6 }}>
+            <b>🏖️ Nghỉ phép</b>
+            {resting.length === 0 && asking.length === 0 && <div style={{ fontSize: 12, opacity: 0.8 }}>Không có nhân viên nghỉ phép hôm nay. Muốn cho ai nghỉ thì bấm "🏖️ Nghỉ phép" ở thẻ người đó (vẫn nhận lương).</div>}
+            {resting.map((st) => <div key={st.id} style={{ fontSize: 13 }}>😴 {st.name} đang nghỉ phép hôm nay (vẫn nhận lương)</div>)}
+            {asking.map((st) => (
+              <div key={st.id} style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginTop: 4 }}>
+                <span style={{ flex: 1, fontSize: 13 }}>📝 {st.name} xin nghỉ phép hôm nay</span>
+                <button style={{ ...staffSt.train, background: '#f1c40f', color: '#3a3a4d', fontWeight: 700 }} title="Nghỉ một ngày vẫn nhận lương, nghỉ xong làm hăng hơn" onClick={() => approveLeave(st.id)}>✅ Duyệt</button>
+                <button style={staffSt.train} title="Người hơi buồn, mất chút kinh nghiệm" onClick={() => denyLeave(st.id)}>😔 Từ chối</button>
+              </div>
+            ))}
+          </div>
+        );
+      })()}
       {(() => {
         const wageCov = wageCoverage(stats, staff);
         if (wageCov.wageBill <= 0) return null;

@@ -39,3 +39,32 @@ describe('dải trạng thái quán nước', () => {
     expect(quanStatusChips(q, 30, 500, 'storm', 2).find((c) => c.id === 'crowd')?.text).toBe('Khách vắng');
   });
 });
+
+describe('đơn xin nghỉ phép', () => {
+  const crew = Array.from({ length: 60 }, (_, i) => ({ id: i + 1, role: 'cashier' as const }));
+  it('tất định theo (seed, ngày); khoảng 12% người xin; thợ vườn không xin', async () => {
+    const { leaveRequests } = await import('../data/staffLeave');
+    const a = leaveRequests(crew, 7, 20).map((x) => x.id);
+    expect(leaveRequests(crew, 7, 20).map((x) => x.id)).toEqual(a);
+    expect(a.length).toBeGreaterThan(0);
+    expect(a.length).toBeLessThan(20);
+    expect(leaveRequests([{ id: 1, role: 'farmhand' as const }], 7, 20)).toEqual([]);
+  });
+  it('đã nghỉ/đang cooldown/bị từ chối hôm nay thì không xin', async () => {
+    const { leaveRequests } = await import('../data/staffLeave');
+    const ids = leaveRequests(crew, 7, 20).map((x) => x.id);
+    const blocked = crew.map((c) => (ids.includes(c.id) ? { ...c, leaveDenied: 20 } : c));
+    expect(leaveRequests(blocked, 7, 20)).toEqual([]);
+    const rest = crew.map((c) => (ids.includes(c.id) ? { ...c, leaveDay: 18 } : c));
+    expect(leaveRequests(rest, 7, 20)).toEqual([]);
+  });
+  it('duyệt = nghỉ hôm nay; từ chối = ẩn đơn, trừ 1 exp', async () => {
+    const { useGame } = await import('../core/store');
+    const base = { id: 901, name: 'Test', role: 'cashier', skill: 1, wage: 100, shift: 'morning', exp: 3 };
+    useGame.setState({ day: 20, staff: [base] } as never);
+    useGame.getState().denyLeave(901);
+    expect(useGame.getState().staff[0]).toMatchObject({ leaveDenied: 20, exp: 2 });
+    useGame.getState().approveLeave(901);
+    expect(useGame.getState().staff[0].leaveDay).toBe(20);
+  });
+});
