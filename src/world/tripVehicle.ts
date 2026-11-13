@@ -44,7 +44,7 @@ function buildVehicle(kind: ParkedKind): THREE.Group {
 
 export function installTripVehicleSync(scene: THREE.Scene): THREE.Group {
   const root = new THREE.Group();
-  root.position.set(-17.2, 0, -2); // hông tây nhà riêng (nhà ở x=-12, rộng 6)
+  root.position.set(-16.9, 0, -2); // hông tây nhà riêng (nhà ở x=-12, rộng 6)
   root.rotation.y = Math.PI / 2;
   root.visible = false;
   scene.add(root);
