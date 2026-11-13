@@ -272,6 +272,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'banh_ran', name: 'Bánh rán', category: 'fresh', buy: 4500, sell: 9000, color: 0xd9953a, unlock: 72, since: CONTENT_EPOCH_NOW },
   // GĐ2407: Bánh nậm — Huế: bột gạo nhân tôm thịt gói lá, hấp. Mở 73; since: 1 để kỷ nguyên 0 không thấy.
   { id: 'banh_nam', name: 'Bánh nậm', category: 'fresh', buy: 4500, sell: 9000, color: 0xe8dcb0, unlock: 73, since: CONTENT_EPOCH_NOW },
+  // GĐ2408: Bánh bột chiên — Sài Gòn: bột gạo + bột năng hấp cắt khối chiên trứng hành. Mở 74; since: 1.
+  { id: 'banh_bot_chien', name: 'Bánh bột chiên', category: 'fresh', buy: 3500, sell: 7000, color: 0xe3b655, unlock: 74, since: CONTENT_EPOCH_NOW },
   { id: 'banh_da_nem_chua', name: 'Bánh đa nem chua', category: 'fresh', buy: 8000, sell: 20000, color: 0xc87850, unlock: 70, since: CONTENT_EPOCH_NOW },
   // GĐ2381: Thịt đông — món cỗ Tết miền Bắc trứ danh (thịt kho nước nghệ rồi để LẠNH đông thạch tự nhiên
   // ngoài Tết), TRƯỚC NAY CHƯA CÓ (soát 'thịt đông'/'thit_dong' = 0 trong src/). Nấu kỹ nồi nước, để đông
@@ -2338,6 +2340,11 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_banh_nam', name: 'Bánh nậm', station: 'steamer',
     inputs: [{ productId: 'x_bot_gao', quantity: 1 }, { productId: 'x_tom_tuoi', quantity: 1 }, { productId: 'x_thit_heo', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 1 }],
     outputId: 'banh_nam', outputQty: 16, durationMin: 20, unlock: 73, reputationGain: 2, since: CONTENT_EPOCH_NOW },
+  // GĐ2408: Bánh bột chiên — Sài Gòn: bột gạo + bột năng nấu đặc, đổ khuôn cắt khối, chiên chảo đảo trứng gà + hành lá.
+  // Thay thế: không có đồ chấm tương ớt/đu đủ ngâm (không phải nguyên liệu chính). Mở 74; since: 1.
+  { id: 'recipe_banh_bot_chien', name: 'Bánh bột chiên', station: 'fryer',
+    inputs: [{ productId: 'x_bot_gao', quantity: 1 }, { productId: 'x_bot_nang', quantity: 1 }, { productId: 'x_trung_ga', quantity: 1 }, { productId: 'x_hanh_la', quantity: 1 }],
+    outputId: 'banh_bot_chien', outputQty: 12, durationMin: 18, unlock: 74, reputationGain: 2, since: CONTENT_EPOCH_NOW },
   // GĐ1324: Nem chua rán — đặc sản nhà bà Tám (nem chua GĐ1085) thành nguyên liệu chảo chiên, món ăn vặt.
   { id: 'recipe_nem_chua_ran', name: 'Nem chua rán', station: 'fryer',
     inputs: [{ productId: 'hx_nem_chua', quantity: 2 }, { productId: 'x_duong', quantity: 1 }],
