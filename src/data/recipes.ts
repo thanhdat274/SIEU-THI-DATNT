@@ -310,6 +310,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'banh_canh_tom_kho', name: 'Bánh canh tôm khô', category: 'fresh', buy: 11000, sell: 18000, color: 0xe8a868, unlock: 81, since: CONTENT_EPOCH_NOW },
   // GĐ2441: Bánh canh giò heo — miền Tây trứ danh (Cà Mau/Bạc Liêu): sợi bánh canh trắng dai, nước lèo ngọt giò heo, da heo giòn. Mở 81; since: 1.
   { id: 'banh_canh_gio_heo', name: 'Bánh canh giò heo', category: 'fresh', buy: 12000, sell: 17000, color: 0xe8c0a8, unlock: 81, since: CONTENT_EPOCH_NOW },
+  // GĐ2442: Bánh quai vạc — Huế trứ danh: vỏ bột năng trong suốt ôm nhân tôm giã, hấp chén, chấm nước mắm ớt. Mở 81; since: 1.
+  { id: 'banh_quai_vac', name: 'Bánh quai vạc', category: 'fresh', buy: 10000, sell: 15000, color: 0xf0e8d8, unlock: 81, since: CONTENT_EPOCH_NOW },
   { id: 'com_lam', name: 'Cơm lam', category: 'fresh', buy: 6500, sell: 10000, color: 0xd9c9a0, unlock: 80, since: CONTENT_EPOCH_NOW },
   { id: 'banh_uot', name: 'Bánh ướt', category: 'fresh', buy: 4500, sell: 7500, color: 0xf6efdc, unlock: 80, since: CONTENT_EPOCH_NOW },
   // GĐ2410: Xôi đậu phộng — miền Nam: xôi nếp nấu cùng đậu phộng, chan nước cốt dừa. Mở 76; since: 1.
@@ -2479,6 +2481,15 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_banh_canh_gio_heo', name: 'Bánh canh giò heo', station: 'hot_kettle',
     inputs: [{ productId: 'x_bot_gao', quantity: 2 }, { productId: 'x_thit_heo', quantity: 2 }, { productId: 'x_hanh_phi', quantity: 1 }],
     outputId: 'banh_canh_gio_heo', outputQty: 10, durationMin: 30, unlock: 81, reputationGain: 3, since: CONTENT_EPOCH_NOW },
+  { id: 'recipe_banh_quai_vac', name: 'Bánh quai vạc', station: 'steamer',
+    inputs: [{ productId: 'x_bot_nang', quantity: 2 }, { productId: 'hx_tom_kho', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 1 }],
+    outputId: 'banh_quai_vac', outputQty: 10, durationMin: 18, unlock: 81, reputationGain: 2, since: CONTENT_EPOCH_NOW },
+  // GĐ2442: Bánh quai vạc — vỏ bột năng nhào với nước sôi thành khối dẻo, nặn chén ép nhân tôm giã,
+  // HẤP trong xửng đến khi vỏ trong suốt; chấm nước mắm ớt. Xửng hấp → trạm đúng cách nấu.
+  // Thay thế: tôm giã tươi chưa có → tôm khô nhà phơi (gần nhất, giã nhỏ trộn ruốc theo cách Huế);
+  // hành lá + tóp mỡ rắc bỏ qua. Mở 81; since: 1.
+  // Mẻ (bột năng 8k×2 + tôm khô nhà phơi 58k + hành phi 1.5k) = 75.5k → 10 chén × 15k = 150k,
+  // lãi ~74.5k/mẻ, hời hơn bán thẳng nguyên liệu (22+90+2.5 = 114.5k < 150k — luật monKhuon).
   // GĐ2441: Bánh canh giò heo — giò heo hầm xương lấy nước ngọt, sợi bánh canh trộn bột gạo dai,
   // da heo chiên giòn ăn kèm. Hầm nước lèo lâu ở nồi nước → trạm đúng cách nấu.
   // Thay thế: giò heo nguyên quý chưa có → thịt heo (x_thit_heo, cùng con heo — gần nhất, ghi rõ);
