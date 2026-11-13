@@ -282,6 +282,7 @@ const MON_THAT: Record<string, { name: string; station: string; cachNau: string 
   recipe_banh_phu_the: { name: 'Bánh phu thê', station: 'steamer', cachNau: 'vỏ bột bọc nhân đậu xanh ngọt, hấp chín' },
   recipe_banh_hoi: { name: 'Bánh hỏi', station: 'steamer', cachNau: 'bột gạo hấp thành sợi nhỏ dệt lá, ăn với thịt hành phi' },
   recipe_che_ba_ba: { name: 'Chè bà ba', station: 'hot_kettle', cachNau: 'khoai lang nấu mềm với bột năng, chan nước cốt dừa' },
+  recipe_bun_thang: { name: 'Bún thang', station: 'hot_kettle', cachNau: 'nước dùng gà trong chan bún, gà xé trứng tráng giò lụa tôm khô' },
   recipe_ga_rang_muoi: { name: 'Gà rang muối', station: 'fryer', cachNau: 'gà chặt miếng ướp muối tỏi rang chảo vàng giòn' },
   recipe_banh_ran: { name: 'Bánh rán', station: 'fryer', cachNau: 'bánh rán ngọt Hà Nội: vỏ bột nếp nhân đậu xanh chiên ngập dầu vàng giòn (Hà Nội)' },
   recipe_banh_da_nem_chua: { name: 'Bánh đa nem chua', station: 'food_grill', cachNau: 'bánh đa nướng than cuốn nem chua Thanh Hóa chấm tôm chua, ăn cuốn nóng giòn (Thanh Hóa)' },

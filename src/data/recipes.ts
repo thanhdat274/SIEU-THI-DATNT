@@ -290,6 +290,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'banh_hoi', name: 'Bánh hỏi', category: 'fresh', buy: 4800, sell: 8000, color: 0xf5efdc, unlock: 80, since: CONTENT_EPOCH_NOW },
   // GĐ2416: Chè bà ba — Nam Bộ: chè khoai lang nấu với bột năng, nước cốt dừa. Mở 80; since: 1.
   { id: 'che_ba_ba', name: 'Chè bà ba', category: 'fresh', buy: 4800, sell: 8000, color: 0xe8b04a, unlock: 80, since: CONTENT_EPOCH_NOW },
+  // GĐ2417: Bún thang — Hà Nội: bún + gà xé + trứng tráng thái chỉ + giò lụa + tôm khô, chan nước dùng trong. Mở 80; since: 1.
+  { id: 'bun_thang', name: 'Bún thang', category: 'fresh', buy: 16000, sell: 26000, color: 0xf0d9a0, unlock: 80, since: CONTENT_EPOCH_NOW },
   { id: 'banh_da_nem_chua', name: 'Bánh đa nem chua', category: 'fresh', buy: 8000, sell: 20000, color: 0xc87850, unlock: 70, since: CONTENT_EPOCH_NOW },
   // GĐ2381: Thịt đông — món cỗ Tết miền Bắc trứ danh (thịt kho nước nghệ rồi để LẠNH đông thạch tự nhiên
   // ngoài Tết), TRƯỚC NAY CHƯA CÓ (soát 'thịt đông'/'thit_dong' = 0 trong src/). Nấu kỹ nồi nước, để đông
@@ -2376,6 +2378,11 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_ga_rang_muoi', name: 'Gà rang muối', station: 'fryer',
     inputs: [{ productId: 'thit_ga', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }, { productId: 'x_toi', quantity: 1 }],
     outputId: 'ga_rang_muoi', outputQty: 8, durationMin: 20, unlock: 77, reputationGain: 2, since: CONTENT_EPOCH_NOW },
+  // GĐ2417: Bún thang — Hà Nội: nước dùng gà trong ninh cùng tôm khô, chan lên bún, xếp gà xé, trứng tráng thái chỉ, giò lụa.
+  // Thay thế: nấm hương/củ cải khô/rau răm/mắm tôm không đưa vào (nguyên liệu phụ, nguồn cũng không thống nhất). Mở 80; since: 1.
+  { id: 'recipe_bun_thang', name: 'Bún thang', station: 'hot_kettle',
+    inputs: [{ productId: 'bun', quantity: 2 }, { productId: 'thit_ga', quantity: 1 }, { productId: 'x_trung_ga', quantity: 1 }, { productId: 'x_cha_lua', quantity: 1 }, { productId: 'x_tom_kho', quantity: 1 }],
+    outputId: 'bun_thang', outputQty: 14, durationMin: 25, unlock: 80, reputationGain: 2, since: CONTENT_EPOCH_NOW },
   // GĐ2416: Chè bà ba — khoai lang cắt khối nấu mềm với bột năng (bột báng), chan nước cốt dừa, nấu ở nồi.
   // Thay thế: khoai mì/đậu xanh nguyên hạt không dùng; khoai lang là nguyên liệu chính có sẵn. Mở 80; since: 1.
   { id: 'recipe_che_ba_ba', name: 'Chè bà ba', station: 'hot_kettle',
