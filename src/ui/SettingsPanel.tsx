@@ -99,8 +99,8 @@ function ImgTab() {
       <Row label="Chế độ hiển thị" hint="Trình duyệt yêu cầu thao tác người dùng để vào toàn màn hình">
         <Select label="Chế độ hiển thị" value={full ? 'full' : 'win'} options={[['win', 'Cửa sổ'], ['full', 'Toàn màn hình']]} onChange={(v) => toggleFull(v === 'full')} />
       </Row>
-      <Row label="Giới hạn FPS" hint="Thấp hơn = mát máy, đỡ hao pin">
-        <Select label="Giới hạn FPS" value={s.fpsCap} options={[[0, 'Không giới hạn'], [30, '30'], [60, '60'], [120, '120']]} onChange={(v) => set({ fpsCap: v })} />
+      <Row label="Giới hạn FPS (V-Sync)" hint="Không giới hạn = đồng bộ theo màn hình (V-Sync luôn bật trên trình duyệt). Thấp hơn = mát máy, đỡ hao pin">
+        <Select label="Giới hạn FPS" value={s.fpsCap} options={[[0, 'Theo màn hình'], [30, '30'], [60, '60'], [120, '120']]} onChange={(v) => set({ fpsCap: v })} />
       </Row>
       <Row label="Hiện FPS"><Switch label="Hiện FPS" on={perf} onChange={(v) => { setPerf(v); setP(v); }} /></Row>
       <Row label="Độ sáng"><Slider label="Độ sáng" value={s.brightness} min={0.7} max={1.3} step={0.05} fmt={pct} onChange={(v) => set({ brightness: v })} /></Row>
