@@ -304,6 +304,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'banh_mi_xiu_mai', name: 'Bánh mì xíu mại', category: 'fresh', buy: 13000, sell: 25000, color: 0xd08a4a, unlock: 81, since: CONTENT_EPOCH_NOW },
   // GĐ2438: Bánh mì nướng bơ tỏi — món vỉa hè Sài Gòn khuấy đảo mạng 2022: ổ bánh mì phết bơ tỏi nướng than giòn rụm. Mở 81; since: 1.
   { id: 'banh_mi_nuong_bo_toi', name: 'Bánh mì nướng bơ tỏi', category: 'fresh', buy: 11000, sell: 22000, color: 0xe8b864, unlock: 81, since: CONTENT_EPOCH_NOW },
+  // GĐ2439: Chè xoài — chè bế xoài Nam Bộ (cũng là món Thái quen thuộc Việt hoá): xoài chín + sợi bột năng + nước cốt dừa ngọt. Mở 81; since: 1.
+  { id: 'che_xoai', name: 'Chè xoài', category: 'fresh', buy: 7000, sell: 15000, color: 0xf2c14e, unlock: 81, since: CONTENT_EPOCH_NOW },
   { id: 'com_lam', name: 'Cơm lam', category: 'fresh', buy: 6500, sell: 10000, color: 0xd9c9a0, unlock: 80, since: CONTENT_EPOCH_NOW },
   { id: 'banh_uot', name: 'Bánh ướt', category: 'fresh', buy: 4500, sell: 7500, color: 0xf6efdc, unlock: 80, since: CONTENT_EPOCH_NOW },
   // GĐ2410: Xôi đậu phộng — miền Nam: xôi nếp nấu cùng đậu phộng, chan nước cốt dừa. Mở 76; since: 1.
@@ -2464,6 +2466,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_banh_mi_nuong_bo_toi', name: 'Bánh mì nướng bơ tỏi', station: 'food_grill',
     inputs: [{ productId: 'banhmi', quantity: 5 }, { productId: 'x_bo', quantity: 1 }, { productId: 'x_toi', quantity: 1 }],
     outputId: 'banh_mi_nuong_bo_toi', outputQty: 6, durationMin: 15, unlock: 81, reputationGain: 2, since: CONTENT_EPOCH_NOW },
+  { id: 'recipe_che_xoai', name: 'Chè xoài', station: 'hot_kettle',
+    inputs: [{ productId: 'x_xoai', quantity: 1 }, { productId: 'x_dua_cot_hop', quantity: 1 }, { productId: 'x_bot_nang', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
+    outputId: 'che_xoai', outputQty: 8, durationMin: 20, unlock: 81, reputationGain: 2, since: CONTENT_EPOCH_NOW },
+  // GĐ2439: Chè xoài — xoài chín thái miếng ăn cùng sợi bột năng dai và nước cốt dừa nấu đường:
+  // NẤU nước cốt dừa + sợi bột năng ở nồi nước → trạm nồi nước đúng cách nấu (không dùng máy pha).
+  // Thay thế: hạt chia/bột báng ăn kèm bỏ qua. Mở 81; since: 1.
+  // Mẻ (xoài 12k + cốt dừa hộp 10k + bột năng 8k + đường 17k) = 47k → 8 chén × 15k = 120k,
+  // lãi ~73k/mẻ, hời hơn bán thẳng nguyên liệu (18+14+11+21 = 64k < 120k — luật monKhuon).
   // GĐ2438: Bánh mì nướng bơ tỏi — ổ bánh mì tách đôi phết bơ tỏi rồi NƯỚNG than vàng giòn, hành lá rắc
   // (bánh mì phết bơ tỏi nướng trên vỉ/bếp than — đúng cách làm vỉa hè). Trạm nướng đúng cách nấu.
   // Thay thế: rau ăn kèm + pate bỏ (không phải phần chính). Mở 81; since: 1.
