@@ -312,6 +312,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'banh_canh_gio_heo', name: 'Bánh canh giò heo', category: 'fresh', buy: 12000, sell: 17000, color: 0xe8c0a8, unlock: 81, since: CONTENT_EPOCH_NOW },
   // GĐ2442: Bánh quai vạc — Huế trứ danh: vỏ bột năng trong suốt ôm nhân tôm giã, hấp chén, chấm nước mắm ớt. Mở 81; since: 1.
   { id: 'banh_quai_vac', name: 'Bánh quai vạc', category: 'fresh', buy: 10000, sell: 15000, color: 0xf0e8d8, unlock: 81, since: CONTENT_EPOCH_NOW },
+  // GĐ2443: Gà hấp muối — gà ta ủ muối hạt hấp chín tới, da vàng thịt ngọt (món Nam bộ/quán nhậu trứ danh). Mở 81; since: 1.
+  { id: 'ga_hap_muoi', name: 'Gà hấp muối', category: 'fresh', buy: 32000, sell: 42000, color: 0xe8c878, unlock: 81, since: CONTENT_EPOCH_NOW },
   { id: 'com_lam', name: 'Cơm lam', category: 'fresh', buy: 6500, sell: 10000, color: 0xd9c9a0, unlock: 80, since: CONTENT_EPOCH_NOW },
   { id: 'banh_uot', name: 'Bánh ướt', category: 'fresh', buy: 4500, sell: 7500, color: 0xf6efdc, unlock: 80, since: CONTENT_EPOCH_NOW },
   // GĐ2410: Xôi đậu phộng — miền Nam: xôi nếp nấu cùng đậu phộng, chan nước cốt dừa. Mở 76; since: 1.
@@ -2484,6 +2486,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_banh_quai_vac', name: 'Bánh quai vạc', station: 'steamer',
     inputs: [{ productId: 'x_bot_nang', quantity: 2 }, { productId: 'hx_tom_kho', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 1 }],
     outputId: 'banh_quai_vac', outputQty: 10, durationMin: 18, unlock: 81, reputationGain: 2, since: CONTENT_EPOCH_NOW },
+  { id: 'recipe_ga_hap_muoi', name: 'Gà hấp muối', station: 'steamer',
+    inputs: [{ productId: 'ga_ta_tuoi', quantity: 1 }, { productId: 'x_sa', quantity: 2 }, { productId: 'x_muoi', quantity: 2 }],
+    outputId: 'ga_hap_muoi', outputQty: 5, durationMin: 25, unlock: 81, reputationGain: 3, since: CONTENT_EPOCH_NOW },
+  // GĐ2443: Gà hấp muối — gà ta chặt miếng ủ với muối hạt + sả đập, HẤP chín tới trong xửng (không nước,
+  // thịt ngọt giữ vị muối thấm) — trạm hấp đúng cách nấu; khác gà hấp rượu gạo (46) và gà hấp hành (128).
+  // Thay thế: muối hạt thô → muối tinh (gần nhất); lá chanh kịm bỏ qua. Mở 81; since: 1.
+  // Mẻ (gà ta 130k + sả 2k×2 + muối 5k×2) = 144k → 5 phần × 42k = 210k, lãi ~66k/mẻ,
+  // hời hơn bán thẳng nguyên liệu (178+6+14 = 198k < 210k — luật monKhuon).
   // GĐ2442: Bánh quai vạc — vỏ bột năng nhào với nước sôi thành khối dẻo, nặn chén ép nhân tôm giã,
   // HẤP trong xửng đến khi vỏ trong suốt; chấm nước mắm ớt. Xửng hấp → trạm đúng cách nấu.
   // Thay thế: tôm giã tươi chưa có → tôm khô nhà phơi (gần nhất, giã nhỏ trộn ruốc theo cách Huế);

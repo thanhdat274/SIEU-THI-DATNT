@@ -306,6 +306,7 @@ const MON_THAT: Record<string, { name: string; station: string; cachNau: string 
   recipe_banh_canh_tom_kho: { name: 'Bánh canh tôm khô', station: 'hot_kettle', cachNau: 'sợi bánh canh bột gạo nước lèo ngọt tôm khô rắc hành (miền Tây)' },
   recipe_banh_canh_gio_heo: { name: 'Bánh canh giò heo', station: 'hot_kettle', cachNau: 'sợi bánh canh nước lèo hầm giò heo da giòn (miền Tây)' },
   recipe_banh_quai_vac: { name: 'Bánh quai vạc', station: 'steamer', cachNau: 'vỏ bột năng trong om nhân tôm giã hấp chén chấm mắm ớt (Huế)' },
+  recipe_ga_hap_muoi: { name: 'Gà hấp muối', station: 'steamer', cachNau: 'gà ta ủ muối hạt sả hấp chín tới da vàng thịt ngọt (quán nhậu)' },
 };
 
 /** Chữ mô tả tự chế không ai dùng làm tên món ngoài chợ. */
