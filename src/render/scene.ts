@@ -2,6 +2,7 @@ import { WEATHER, type Sky, type WeatherInfo } from '../data/weather';
 import * as THREE from 'three';
 import { WebGPURenderer } from 'three/webgpu';
 import { windGust } from './fx/windSway';
+import { getSettings } from '../core/settings';
 import { GFX_PRESETS, detectLevel, loadChoice, readDeviceHints, type GfxLevel } from './graphicsQuality';
 
 /**
@@ -218,7 +219,7 @@ export class Lighting {
     this.now.fog += (target.fog - this.now.fog) * k;
     const { clouds, rain, fog } = this.now;
     // Mưa càng to gió càng giật: cây lắc mạnh hơn khi giông
-    windGust.value = 1 + rain * 1.5;
+    windGust.value = getSettings().foliageSway ? 1 + rain * 1.5 : 0;
 
     const hour = (minutes / 60) % 24;
     // 5h mọc, 19h lặn
@@ -234,7 +235,7 @@ export class Lighting {
 
     // Chớp khi giông: trời loé sáng chốc lát
     this.flash = Math.max(0, this.flash - dt * 6);
-    if (weather.thunder && (this.nextFlash -= dt) <= 0) {
+    if (weather.thunder && !getSettings().noFlash && (this.nextFlash -= dt) <= 0) {
       this.flash = 1;
       this.nextFlash = 4 + Math.random() * 8;
     }
@@ -275,13 +276,13 @@ export class Lighting {
     this.moonDisc.position.copy(this.moonDir).multiplyScalar(DOME_R - 30);
     this.moonDisc.lookAt(0, 0, 0);
     (this.moonDisc.material as THREE.MeshBasicMaterial).opacity = Math.min(1, Math.max(0, (0.45 - daylight) * 2)) * (1 - clouds * 0.8);
-    (this.stars.material as THREE.PointsMaterial).opacity = Math.min(1, Math.max(0, (0.35 - daylight) * 2)) * (1 - clouds * 0.85);
+    (this.stars.material as THREE.PointsMaterial).opacity = getSettings().stars ? Math.min(1, Math.max(0, (0.35 - daylight) * 2)) * (1 - clouds * 0.85) : 0;
     this.stars.rotation.y += dt * 0.004;
 
     // Mây trôi theo gió, ra khỏi vùng thì quay lại phía bên kia
     const visibleClouds = Math.round(clouds * CLOUDS);
     this.clouds.forEach((c, i) => {
-      c.visible = i < visibleClouds;
+      c.visible = i < visibleClouds && getSettings().clouds;
       c.position.x += dt * (1.2 + rain * 2.5);
       if (c.position.x > focus.x + 80) c.position.x -= 160;
       if (c.position.x < focus.x - 80) c.position.x += 160;
@@ -291,7 +292,7 @@ export class Lighting {
     });
 
     // Mưa rơi chéo theo gió; giọt chạm đất thì sinh lại trên cao
-    const drops = Math.round(rain * RAIN_DROPS);
+    const drops = Math.round(rain * RAIN_DROPS * getSettings().rainDensity);
     this.rain.visible = drops > 0;
     if (drops > 0) {
       const p = this.rainPos;

@@ -9,6 +9,8 @@ import { queueUrgency, accumulateBackup } from './world/storefrontWaitLamp';
 import * as THREE from 'three';
 import { shopLayout, worldActions } from './core/actions';
 import { saveGame, startAutosave } from './core/save';
+import { DETAIL_MULT, LIGHT_CAP, getSettings, onSettings } from './core/settings';
+import { askConfirm } from './ui/ConfirmDialog';
 import { formatClock, SLEEP_FROM, useGame, type GameState } from './core/store';
 import { bedHint } from './data/bedHint';
 import { lampLevel } from './render/lampLevel';
@@ -515,6 +517,7 @@ const nearestInteractable = () => {
 };
 
 /** Nằm lên giường một lúc cho thấy nhân vật ngủ, rồi mới sang ngày mới. */
+let wasJam = false;
 function goToBed() {
   const s = useGame.getState();
   if (player.asleep) {
@@ -526,6 +529,18 @@ function goToBed() {
     return;
   }
   if (s.minutes < SLEEP_FROM) return void s.sleep(); // báo "chưa buồn ngủ"
+  if (getSettings().confirmEndDay && !bedAsking) {
+    // Cài đặt "Xác nhận trước khi kết thúc ngày": hỏi ở tầng giao diện, không đụng sleep() của store
+    bedAsking = true;
+    void askConfirm('Đi ngủ và kết thúc ngày hôm nay?', { title: '🛏️ Kết thúc ngày', okLabel: 'Đi ngủ', cancelLabel: 'Chưa' })
+      .then((ok) => { bedAsking = false; if (ok) lieAndSleep(); });
+    return;
+  }
+  lieAndSleep();
+}
+let bedAsking = false;
+function lieAndSleep() {
+  if (player.asleep) return;
   player.lieOn(bedPos);
   controller.follow = player.position;
   setTimeout(() => {
@@ -624,11 +639,11 @@ let gfxNotified = false;
 let lastPerfDay = -1;
 function applyGfx() {
   const p = gfx.preset;
-  renderer.setPixelRatio(gfx.step.pixelRatio);
+  renderer.setPixelRatio(Math.max(0.4, gfx.step.pixelRatio * getSettings().renderScale));
   // Không đổi castShadow lúc chạy: đổi là mọi vật liệu biên dịch lại pipeline → đứng hình vài giây.
   // Đã dựng có bóng thì chỉ làm mờ hẳn bóng + ngừng vẽ shadow pass (vòng render đọc preset.shadows);
   // dựng không bóng (mức Thấp) thì bật bóng phải chờ tải lại trang.
-  if (lighting.sun.castShadow) lighting.sun.shadow.intensity = p.shadows ? 1 : 0;
+  if (lighting.sun.castShadow) lighting.sun.shadow.intensity = p.shadows && getSettings().shadows ? 1 : 0;
   // Đồ trang trí theo NỘI DUNG (đầy ở mọi mức; tấm chắn khẩn cấp mới tắt khi máy yếu dưới 30 FPS)
   world.kit.setDecor(gfx.content.decor);
   world.nature.setDecor(gfx.content.decor);
@@ -636,6 +651,7 @@ function applyGfx() {
   reportGfx(gfxChoice, gfx.step.level, gfx.avgFps);
 }
 applyGfx();
+onSettings(() => applyGfx()); // đổi Tỷ lệ render trong Cài đặt
 // SPEC-TOI-UU §T1 (L1): bắt đầu bộ tích luỹ báo cáo ngày cho ngày game hiện tại + lộ `game.report()`
 // dùng trong console (xuất 30 bản ghi cục bộ) — dùng được ngay khi chưa có server.
 openSession(useGame.getState().day, gfx.avgFps, gfx.step.level);
@@ -668,7 +684,15 @@ const tutorialMarker = createTutorialMarker(scene);
 const clock = new THREE.Clock();
 
 /** Vòng lặp một khung hình — WebGPU cần renderer.init() xong mới được render nên tách ra riêng. */
+let lastFrameT = 0;
 function renderFrame() {
+  // Giới hạn FPS (Cài đặt): bỏ khung nếu chưa đủ thời gian; dt dồn lại cho khung sau
+  const cap = getSettings().fpsCap;
+  if (cap) {
+    const now = performance.now();
+    if (now - lastFrameT < 1000 / cap - 1) return;
+    lastFrameT = now;
+  }
   const dt = Math.min(clock.getDelta(), 0.1);
   // SPEC-TOI-UU §T1 (L1): đếm giây thật đã chơi (chỉ khi tab hiện) + lấy số đo FPS/đồ hoạ
   // cho báo cáo ngày ẩn danh. Rẻ, không ghi localStorage mỗi khung (flush gộp 5s).
@@ -694,6 +718,13 @@ function renderFrame() {
     // Ở hẻm bảng tổng kết và hội thoại cốt truyện không dừng giờ: một người đọc tổng kết không bắt cả hẻm đứng chờ
     const speed = effectiveSpeed({ panelType: state.panel?.type, chapterPending: Boolean(state.biz.chapterPending), speed: state.speed }, inAlley(), askPending());
     const guest = isGuest();
+    // Cài đặt "Tự về x1 khi có cảnh báo": khách xếp hàng ≥4 mà đang chạy nhanh → về 1× (cạnh lên, một lần)
+    const jam = state.shopOpen && state.waiting >= 4;
+    if (getSettings().autoSlow && jam && !wasJam && state.speed > 1 && !guest) {
+      state.setSpeed(1);
+      state.notify('⏳ Khách xếp hàng chờ tính tiền — đã về 1×. Ra quầy rồi hãy tăng tốc.');
+    }
+    wasJam = jam;
     // Người vào phòng không tự chạy mô phỏng: giờ, khách, nhân viên đều do chủ phòng gửi sang
     if (speed && !guest) state.tick(dt);
     if (!guest) {
@@ -876,10 +907,10 @@ function renderFrame() {
     lastNatureMonth = natureMonth;
     world.nature.setSeason(natureMonth);
   }
-  applyLightBudget(controller.target);
+  applyLightBudget(controller.target, LIGHT_CAP[getSettings().lightQuality]);
   // Bóng đổ cập nhật 30 hình/giây là đủ (nắng di chuyển chậm): tiết kiệm một nửa vệt vẽ bóng; mức Thấp tắt hẳn
-  if ((frameNo++ & 1) === 0 && gfx.preset.shadows) renderer.shadowMap.needsUpdate = true;
-  applyCrowdLod(controller.target, gfx.content.npcCap, gfx.preset.animFarDist);
+  if ((frameNo++ & 1) === 0 && gfx.preset.shadows && getSettings().shadows) renderer.shadowMap.needsUpdate = true;
+  applyCrowdLod(controller.target, gfx.content.npcCap, gfx.preset.animFarDist * DETAIL_MULT[getSettings().detailDist]);
   const prevLevel = gfx.step.level;
   const prevContent = gfx.content.npcCap + (gfx.content.decor ? 'd' : '');
   if (gfx.update(dt)) {

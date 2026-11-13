@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { simRng } from '../core/rand';
+import { getSettings } from '../core/settings';
 import { MINUTES_PER_SECOND, useGame, type CartItem } from '../core/store';
 import { furnitureDef, isCookStation } from '../data/furniture';
 import { customersPerDay, FEATURES } from '../data/levels';
@@ -242,7 +243,7 @@ export class CustomerManager {
         // dùng badge bền (setBadge) đọc từ waited/patience có sẵn; chỉ đổi emoji khi VƯỢT MỐC
         // (không gọi lại mỗi tick → không giật). 😕 bắt đầu sốt ruột → 😤 sắp bỏ đi → 😠 khi bỏ.
         const emo = c.patience > 0 ? impatienceEmoji(c.waitedMinutes / c.patience) : null;
-        if (emo && c.badge !== emo) c.setBadge(emo);
+        if (emo && c.badge !== emo && getSettings().showPatience) c.setBadge(emo);
         if (c.waitedMinutes > c.patience) {
           c.say('😠 Chờ lâu quá!');
           s.noteMiss('wait');

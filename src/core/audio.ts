@@ -7,6 +7,33 @@
 let ctx: AudioContext | null = null;
 let master: GainNode | null = null;
 let rainGain: GainNode | null = null;
+/** Ba kênh con nối vào master: hiệu ứng, nhạc nền, tiếng đời (mưa + môi trường). */
+let sfxBus: GainNode | null = null;
+let musicBus: GainNode | null = null;
+let ambBus: GainNode | null = null;
+
+export type VolChannel = 'master' | 'sfx' | 'music' | 'amb';
+export const VOL_DEFAULT: Record<VolChannel, number> = { master: 1, sfx: 1, music: 1, amb: 1 };
+const vol: Record<VolChannel, number> = { ...VOL_DEFAULT };
+try {
+  const v = JSON.parse(localStorage.getItem('th3d_vol') ?? '{}');
+  for (const k of Object.keys(vol) as VolChannel[]) if (typeof v[k] === 'number') vol[k] = Math.max(0, Math.min(1, v[k]));
+} catch { /* private mode */ }
+
+export const getVolume = (c: VolChannel) => vol[c];
+
+export function setVolume(c: VolChannel, v: number) {
+  vol[c] = Math.max(0, Math.min(1, v));
+  try { localStorage.setItem('th3d_vol', JSON.stringify(vol)); } catch { /* private mode */ }
+  applyVolumes();
+}
+
+function applyVolumes() {
+  if (master) master.gain.value = muted ? 0 : vol.master;
+  if (sfxBus) sfxBus.gain.value = vol.sfx;
+  if (musicBus) musicBus.gain.value = vol.music;
+  if (ambBus) ambBus.gain.value = vol.amb;
+}
 
 let muted = false;
 try { muted = localStorage.getItem('th3d_muted') === '1'; } catch { /* private mode */ }
@@ -22,7 +49,7 @@ export const isMuted = () => muted;
 export function setMuted(m: boolean) {
   muted = m;
   try { localStorage.setItem('th3d_muted', m ? '1' : '0'); } catch { /* private mode */ }
-  if (master) master.gain.value = m ? 0 : 1;
+  applyVolumes();
   if (rainGain) rainGain.gain.value = 0;
 }
 
@@ -36,22 +63,29 @@ export function initAudio() {
   if (!AC) return;
   ctx = new AC();
   master = ctx.createGain();
-  master.gain.value = muted ? 0 : 1;
   master.connect(ctx.destination);
+  sfxBus = ctx.createGain();
+  musicBus = ctx.createGain();
+  ambBus = ctx.createGain();
+  sfxBus.connect(master);
+  musicBus.connect(master);
+  ambBus.connect(master);
+  applyVolumes();
   startMusicIfEnabled();
 }
 
 /** Một nốt ngắn tắt dần theo hàm mũ. */
-function blip(freq: number, at: number, dur: number, type: OscillatorType, vol: number) {
-  if (!ctx || !master) return;
+function blip(freq: number, at: number, dur: number, type: OscillatorType, level: number, amb = false) {
+  const dest = amb ? ambBus : sfxBus;
+  if (!ctx || !dest) return;
   const osc = ctx.createOscillator();
   const g = ctx.createGain();
   osc.type = type;
   osc.frequency.value = freq;
   const t = ctx.currentTime + at;
-  g.gain.setValueAtTime(vol, t);
+  g.gain.setValueAtTime(level, t);
   g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-  osc.connect(g).connect(master);
+  osc.connect(g).connect(dest);
   osc.start(t);
   osc.stop(t + dur + 0.05);
 }
@@ -128,7 +162,7 @@ export function playSfx(name: Sfx) {
       filter.frequency.value = 220;
       g.gain.setValueAtTime(0.3, now);
       g.gain.exponentialRampToValueAtTime(0.001, now + 1.5);
-      src.connect(filter).connect(g).connect(master);
+      src.connect(filter).connect(g).connect(ambBus ?? master);
       src.start(now);
       break;
     }
@@ -153,7 +187,7 @@ export function setRain(intensity: number) {
     filter.type = 'lowpass';
     filter.frequency.value = 900;
     out.gain.value = 0;
-    src.connect(filter).connect(out).connect(master);
+    src.connect(filter).connect(out).connect(ambBus ?? master);
     src.start();
     rainOn = true;
   }
@@ -180,12 +214,12 @@ function ambTick() {
   if (!ambBand || !ctx || !master) return;
   if (ambBand === 'bird') {
     // Chim hót lúc hửng đông: cặp nốt cao vang, thưa thớt
-    blip(2400 + Math.random() * 300, 0, 0.08, 'sine', 0.018);
-    if (Math.random() < 0.6) blip(3000 + Math.random() * 400, 0.03, 0.07, 'triangle', 0.014);
+    blip(2400 + Math.random() * 300, 0, 0.08, 'sine', 0.018, true);
+    if (Math.random() < 0.6) blip(3000 + Math.random() * 400, 0.03, 0.07, 'triangle', 0.014, true);
     ambTimer = setTimeout(ambTick, 50 + Math.random() * 50);
   } else if (ambBand === 'cricket') {
     // Dế đêm: chuỗi tiếng rít ngắn lặp lại
-    for (let i = 0; i < 4; i++) blip(4300, i * 0.05, 0.04, 'square', 0.012);
+    for (let i = 0; i < 4; i++) blip(4300, i * 0.05, 0.04, 'square', 0.012, true);
     ambTimer = setTimeout(ambTick, 900 + Math.random() * 700);
   }
 }
@@ -202,7 +236,7 @@ function ambStartNoise() {
   filter.type = 'lowpass';
   filter.frequency.value = 550;
   gain.gain.value = 0;
-  src.connect(filter).connect(gain).connect(master);
+  src.connect(filter).connect(gain).connect(ambBus ?? master);
   src.start();
   ambNoise = { src, gain };
 }
@@ -246,9 +280,9 @@ let chordIdx = 0;
 let noteCount = 0;
 
 /** Tiếng đàn mộc: sóng sin cộng nhẹ bồi âm, tắt dần. */
-function pluck(freq: number, vol: number, dur = 1.4) {
-  if (!ctx || !master) return;
-  for (const [f, v, type] of [[freq, vol, 'sine'], [freq * 2, vol * 0.25, 'triangle']] as const) {
+function pluck(freq: number, level: number, dur = 1.4) {
+  if (!ctx || !musicBus) return;
+  for (const [f, v, type] of [[freq, level, 'sine'], [freq * 2, level * 0.25, 'triangle']] as const) {
     const osc = ctx.createOscillator();
     const g = ctx.createGain();
     osc.type = type;
@@ -256,7 +290,7 @@ function pluck(freq: number, vol: number, dur = 1.4) {
     const t = ctx.currentTime;
     g.gain.setValueAtTime(v, t);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    osc.connect(g).connect(master);
+    osc.connect(g).connect(musicBus);
     osc.start(t);
     osc.stop(t + dur + 0.05);
   }

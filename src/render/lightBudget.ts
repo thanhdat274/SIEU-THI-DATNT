@@ -43,8 +43,8 @@ export function initLightPool(scene: THREE.Scene, size: number) {
  * nhất + `cut` ở mốc đèn bị loại) GIỐNG HỆT sort đầy đủ nên không đổi hành vi, không đụng số đèn
  * trong bể (pool) hay shader.
  */
-export function applyLightBudget(focus: THREE.Vector3) {
-  const k = pool.length;
+export function applyLightBudget(focus: THREE.Vector3, cap = Infinity) {
+  const k = Math.min(pool.length, cap);
   for (const e of entries) e.d = e.light.intensity > 0 ? e.pos.distanceTo(focus) : Infinity;
   // Top-K: giữ k đèn gần nhất (tăng dần) vào topScratch; `cut` = khoảng cách của đèn bị loại gần nhất
   // (= đèn thứ k+1 tổng thể), Infinity khi không có đèn nào bị loại. Đúng như `entries[k].d` cũ.
@@ -70,6 +70,7 @@ export function applyLightBudget(focus: THREE.Vector3) {
       cut = e.d;
     }
   }
+  for (let i = k; i < pool.length; i++) pool[i].intensity = 0;
   for (let i = 0; i < k; i++) {
     const p = pool[i];
     const e = topScratch[i];

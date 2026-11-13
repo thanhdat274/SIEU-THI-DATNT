@@ -30,8 +30,8 @@ function downloadPlayLog() {
 const HudKeys = lazy(() => import('./HudKeys').then((m) => ({ default: m.HudKeys })));
 const TOUCH = typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches;
 
-export function MoreMenuBody({ tools, level, onHelp, keys, setKeys, setOpen }: {
-  tools: ToolDef[]; level: number; onHelp: () => void; keys: boolean; setKeys: (v: boolean) => void; setOpen: (v: boolean) => void;
+export function MoreMenuBody({ tools, level, onHelp, keys, setKeys, setOpen, onSettings }: {
+  tools: ToolDef[]; level: number; onHelp: () => void; keys: boolean; setKeys: (v: boolean) => void; setOpen: (v: boolean) => void; onSettings: () => void;
 }) {
   const [teleOpen, setTeleOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -53,6 +53,7 @@ export function MoreMenuBody({ tools, level, onHelp, keys, setKeys, setOpen }: {
             </Fragment>
           ))}
           <GfxButton level={level} />
+          <ToolButton tool={{ icon: '⚙️', label: 'Cài đặt', on: onSettings }} level={level} />
           {!TOUCH && <ToolButton tool={{ icon: '⌨️', label: 'Phím', on: () => setKeys(true) }} level={level} />}
           {/* Xem lại hướng dẫn mở tiệm: cả máy cảm xúc lẫn desktop đều cần */}
           <ToolButton tool={{ icon: '📖', label: 'Hướng dẫn', on: onHelp }} level={level} onPicked={() => setOpen(false)} />

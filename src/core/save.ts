@@ -1,5 +1,6 @@
 import Dexie, { type EntityTable } from 'dexie';
 import { compareProgress } from './saveCompare';
+import { getSettings } from './settings';
 import { forecastFrom, type Weather } from '../data/weather';
 import { normalizeBranch } from '../data/branches';
 import { initialWeather, migrateTiers, newGameData, useGame, type Furniture } from './store';
@@ -334,10 +335,17 @@ export function startAutosave(canSave: () => boolean, onCloud?: () => void) {
   let timer: ReturnType<typeof setTimeout> | undefined;
   let dirty = false;
   let cloudDirty = false;
-  const flush = (emergency = false) => {
+  let lastSaveAt = 0;
+  const flush =(emergency = false) => {
     if (timer) clearTimeout(timer);
     timer = undefined;
     if (!dirty || !canSave()) return;
+    // Tắt tự lưu trong Cài đặt: chỉ lưu khi đóng/ẩn tab (bản khẩn cấp) hoặc bấm Lưu tay
+    if (!getSettings().autosave && !emergency) return;
+    // Chu kỳ tự lưu dài (Cài đặt): chưa đủ thời gian từ lần lưu trước thì để dành, mốc 30 giây sẽ thử lại
+    const every = getSettings().autosaveEvery * 1000;
+    if (every && !emergency && Date.now() - lastSaveAt < every) return;
+    lastSaveAt = Date.now();
     dirty = false;
     cloudDirty = true;
     saveGame(emergency);

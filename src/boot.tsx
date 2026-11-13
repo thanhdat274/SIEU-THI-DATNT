@@ -1,6 +1,7 @@
 import { Component, useEffect, useState, type ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { initSaves } from './core/save';
+import { initSettingsDom } from './core/applySettings';
 import { acquireTabLock } from './core/tabLock';
 import { useGame } from './core/store';
 import { watchUser } from './net/firebase';
@@ -142,6 +143,7 @@ const uiEl = document.getElementById('ui') as HTMLElement & { __root?: ReturnTyp
 // GĐ1831 (review đợt 2 R14 / đợt 4 R7): ConfirmHost gắn ở GỐC ứng dụng (trước đây chỉ trong HUD) —
 // hộp xác nhận gọi từ màn đăng nhập (vd nút "Rời hẻm" ở AlleyPanel) phải hiện được ngay,
 // không chờ tới khi vào game mới bật giữa màn chơi.
+initSettingsDom();
 bootAfterLock().finally(() => (uiEl.__root ??= createRoot(uiEl)).render(<UiBoundary><><App /><ConfirmHost /></></UiBoundary>));
 
 // PWA: đăng ký service worker để game cài ra màn hình chính iPhone/iOS

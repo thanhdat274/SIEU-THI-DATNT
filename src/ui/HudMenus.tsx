@@ -2,12 +2,15 @@ import { Fragment, lazy, Suspense, useEffect, useRef, useState } from 'react';
 import type { ToolDef } from './HudToolButton';
 
 const MoreMenuBody = lazy(() => import('./HudMoreBody').then((m) => ({ default: m.MoreMenuBody }))); // GĐ651: ruột menu Thêm
+const SettingsPanel = lazy(() => import('./SettingsPanel').then((m) => ({ default: m.SettingsPanel })));
 
 /** GĐ951: menu Thêm + menu tài khoản của Hud, tách nguyên văn. */
 /** Các bảng ít dùng gom vào một nút để thanh công cụ vừa màn hình; có việc cần xem thì hiện chấm báo. */
 export function MoreMenu({ tools, level, onHelp }: { tools: ToolDef[]; level: number; onHelp: () => void }) {
   const { open, setOpen, ref } = usePopover();
   const [keys, setKeys] = useState(false);
+  // Panel Cài đặt sống ở đây (không trong menu) để bấm trong panel không bị tính là "bấm ra ngoài" làm đóng nó.
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const alert = tools.some((t) => t.badge && !(t.lock !== undefined && level < t.lock) && !t.badge.includes('★'));
   return (
     <div className="hud-pop" ref={ref}>
@@ -18,9 +21,10 @@ export function MoreMenu({ tools, level, onHelp }: { tools: ToolDef[]; level: nu
       </button>
       {open && (
         <div className="hud-menu hud-more" role="menu">
-          <Suspense fallback={null}><MoreMenuBody tools={tools} level={level} onHelp={onHelp} keys={keys} setKeys={setKeys} setOpen={setOpen} /></Suspense>
+          <Suspense fallback={null}><MoreMenuBody tools={tools} level={level} onHelp={onHelp} keys={keys} setKeys={setKeys} setOpen={setOpen} onSettings={() => { setSettingsOpen(true); setOpen(false); }} /></Suspense>
         </div>
       )}
+      {settingsOpen && <Suspense fallback={null}><SettingsPanel onClose={() => setSettingsOpen(false)} /></Suspense>}
     </div>
   );
 }
