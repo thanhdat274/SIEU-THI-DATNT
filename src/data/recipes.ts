@@ -2394,7 +2394,7 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_che_ba_ba', name: 'Chè bà ba', station: 'hot_kettle',
     inputs: [{ productId: 'x_khoai_lang_tuoi', quantity: 1 }, { productId: 'x_bot_nang', quantity: 1 }, { productId: 'x_dua_cot_hop', quantity: 1 }],
     outputId: 'che_ba_ba', outputQty: 12, durationMin: 20, unlock: 80, reputationGain: 2, since: CONTENT_EPOCH_NOW },
-  // GĐ2415: Bánh hỏi — Bình Định/Quảng Ngãi: bột gạo hấp, ép thành sợi dệt từng lá, ăn kèm thịt + hành phi.
+  // GĐ2415: Bánh hỏi — Bình Định: bột gạo hấp, ép thành sợi dệt từng lá, ăn kèm thịt + hành phi.
   // Thay thế: thịt heo thường thay thịt heo nướng; nước mắm/rau sống không phải nguyên liệu chính. Mở 80; since: 1.
   { id: 'recipe_banh_hoi', name: 'Bánh hỏi', station: 'steamer',
     inputs: [{ productId: 'x_bot_gao', quantity: 1 }, { productId: 'x_thit_heo', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 1 }],
