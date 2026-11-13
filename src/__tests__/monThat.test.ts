@@ -296,6 +296,7 @@ const MON_THAT: Record<string, { name: string; station: string; cachNau: string 
   recipe_banh_bo_nuong: { name: 'Bánh bò nướng', station: 'food_grill', cachNau: 'bột năng bột gạo trứng gà nước cốt dừa đường nướng than rễ tre (Nam Bộ)' },
   recipe_banh_canh_cha_ca: { name: 'Bánh canh chả cá', station: 'hot_kettle', cachNau: 'bột gạo nấu sợi nước dùng ngọt ăn cùng chả cá thác lác chiên hành phi (miền Trung)' },
   recipe_banh_bao_chay: { name: 'Bánh bao chay', station: 'steamer', cachNau: 'bột mì nhồi nước cốt dừa đường hấp nở xốp trắng mịn thơm béo' },
+  recipe_banh_trang_cuon_thit_heo: { name: 'Bánh tráng cuốn thịt heo', station: 'hot_kettle', cachNau: 'thịt heo luộc thái mỏng cuốn bánh tráng xà lách chấm mắm (Đà Nẵng)' },
 };
 
 /** Chữ mô tả tự chế không ai dùng làm tên món ngoài chợ. */
