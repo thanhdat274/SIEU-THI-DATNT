@@ -318,6 +318,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'banh_canh_cha_lua', name: 'Bánh canh chả lụa', category: 'fresh', buy: 8000, sell: 15000, color: 0xf0dcc8, unlock: 81, since: CONTENT_EPOCH_NOW },
   // GĐ2445: Sườn nướng mật ong — sườn sécial ướp mật ong tỏi nướng than láng vàng óng (quán nhậu/vỉa hè trứ danh). Mở 81; since: 1.
   { id: 'suon_nuong_mat_ong', name: 'Sườn nướng mật ong', category: 'fresh', buy: 14000, sell: 25000, color: 0xc87830, unlock: 81, since: CONTENT_EPOCH_NOW },
+  // GĐ2446: Gỏi đu đủ — gỏi khộ (Thái) Việt hoá trứ danh: đu đủ green sợi trộn tôm khô, đậu phộng rang, nước mắm chanh. Mở 81; since: 1.
+  { id: 'goi_du_du', name: 'Gỏi đu đủ', category: 'fresh', buy: 10000, sell: 18000, color: 0x9ac860, unlock: 81, since: CONTENT_EPOCH_NOW },
   { id: 'com_lam', name: 'Cơm lam', category: 'fresh', buy: 6500, sell: 10000, color: 0xd9c9a0, unlock: 80, since: CONTENT_EPOCH_NOW },
   { id: 'banh_uot', name: 'Bánh ướt', category: 'fresh', buy: 4500, sell: 7500, color: 0xf6efdc, unlock: 80, since: CONTENT_EPOCH_NOW },
   // GĐ2410: Xôi đậu phộng — miền Nam: xôi nếp nấu cùng đậu phộng, chan nước cốt dừa. Mở 76; since: 1.
@@ -2499,6 +2501,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_suon_nuong_mat_ong', name: 'Sườn nướng mật ong', station: 'food_grill',
     inputs: [{ productId: 'x_suon_heo', quantity: 1 }, { productId: 'x_mat_ong', quantity: 1 }, { productId: 'x_toi', quantity: 1 }],
     outputId: 'suon_nuong_mat_ong', outputQty: 5, durationMin: 25, unlock: 81, reputationGain: 3, since: CONTENT_EPOCH_NOW },
+  { id: 'recipe_goi_du_du', name: 'Gỏi đu đủ', station: 'steamer',
+    inputs: [{ productId: 'x_du_du', quantity: 2 }, { productId: 'hx_tom_kho', quantity: 1 }, { productId: 'x_dau_phong', quantity: 1 }, { productId: 'nuocmam', quantity: 1 }],
+    outputId: 'goi_du_du', outputQty: 10, durationMin: 10, unlock: 81, reputationGain: 2, since: CONTENT_EPOCH_NOW },
+  // GĐ2446: Gỏi đu đủ — đu đủ green bào sợi ngâm lạnh, trộn tôm khô + đậu phộng rang + nước mắm
+  // chanh ớt. Trộn/chần sơ theo precedent Gỏi xoài tôm khô (steamer); cà chua chanh ăn kèm bỏ.
+  // Mở 81; since: 1.
+  // Mẻ (đu đủ 8k×2 + tôm khô nhà phơi 58k + đậu phộng rang 10k + nước mắm 18k) = 102k →
+  // 10 phần × 18k = 180k, lãi ~78k/mẻ, hời hơn bán thẳng nguyên liệu (24+90+14+26 = 154k < 180k).
   // GĐ2445: Sườn nướng mật ong — sườn non ướp mật ong + tỏi bằm ít nhất 1 tiếng rồi NƯỚNG than,
   // quét lớp mật dần cho láng vàng óng — bếp nướng đúng cách nấu; khác sườn xào chua ngọt (chiên).
   // Thay thế: nước tương/nhâm gia vị ướp bỏ qua. Mở 81; since: 1.

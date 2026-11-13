@@ -309,6 +309,7 @@ const MON_THAT: Record<string, { name: string; station: string; cachNau: string 
   recipe_ga_hap_muoi: { name: 'Gà hấp muối', station: 'steamer', cachNau: 'gà ta ủ muối hạt sả hấp chín tới da vàng thịt ngọt (quán nhậu)' },
   recipe_banh_canh_cha_lua: { name: 'Bánh canh chả lụa', station: 'hot_kettle', cachNau: 'sợi bánh canh nước lèo ngọt chả lụa lát dày (Quảng Nam)' },
   recipe_suon_nuong_mat_ong: { name: 'Sườn nướng mật ong', station: 'food_grill', cachNau: 'sườn non ướp mật ong tỏi nướng than láng vàng (quán nhậu)' },
+  recipe_goi_du_du: { name: 'Gỏi đu đủ', station: 'steamer', cachNau: 'đu đủ green bào sợi trộn tôm khô đậu phộng nước mắm chanh (gỏi khộ)' },
 };
 
 /** Chữ mô tả tự chế không ai dùng làm tên món ngoài chợ. */
