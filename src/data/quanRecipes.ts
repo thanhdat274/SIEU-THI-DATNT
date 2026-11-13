@@ -93,6 +93,10 @@ export const QUAN_RECIPES: QuanRecipe[] = [
   // vốn/ly = 38k/10 + 17k/30 + 3k/10 = 4.7k → bán 16k (lời >2× vốn). Mở 44 > mốc golden 30 → sim không đổi;
   // KHÔNG hot (giữ đếm đồ nóng = 3).
   { id: 'atiso_da', name: 'Trà atiso đá', icon: '🌿', unlock: 44, price: 16_000, uses: [{ id: 'tra_atiso', cups: 10 }, { id: 'x_duong', cups: 30 }, { id: 'x_nuoc_da', cups: 10 }] },
+  // GĐ2437: Chanh tuyết — đá xay chanh tươi trứ danh của quán vỉa hè (chanh xay nhuyễn + đường, đá bào mịn):
+  // vốn/ly = 10k/8×3 + 17k/30 + 3k/10 ≈ 4.6k → bán 15k (lời >2× vốn). Mở 75 > mốc golden 30 → sim
+  // không đổi; KHÔNG hot (giữ đếm đồ nóng = 3).
+  { id: 'chanh_tuyet', name: 'Chanh tuyết', icon: '🍧', unlock: 75, price: 15_000, uses: [{ id: 'x_chanh_khong_hat', cups: 3 }, { id: 'x_duong', cups: 30 }, { id: 'x_nuoc_da', cups: 10 }] },
   // GĐ1362: Trà thảo mộc đá — trà lành đá mát (hộp thảo mộc chưa có lối ra pha):
   // vốn/ly = 65k/10 + 17k/30 + 3k/10 = 7.4k → bán 22k (lời >2× vốn). Mở 59 > mốc golden 30 → sim không đổi;
   // KHÔNG hot (giữ đếm đồ nóng = 3).
