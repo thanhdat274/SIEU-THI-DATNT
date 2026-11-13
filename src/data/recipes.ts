@@ -296,6 +296,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'banh_trang_cuon_thit_heo', name: 'Bánh tráng cuốn thịt heo', category: 'fresh', buy: 12000, sell: 22000, color: 0xe8cba8, unlock: 81, since: CONTENT_EPOCH_NOW },
   // GĐ2433: Bánh canh Nam Phổ — đặc sản xứ Huế: sợi bánh canh bột gạo bột lọc nấu nước dùng sền sệt với tôm thịt băm và hành lá. Mở 81; since: 1.
   { id: 'banh_canh_nam_pho', name: 'Bánh canh Nam Phổ', category: 'fresh', buy: 11000, sell: 20000, color: 0xe58b45, unlock: 81, since: CONTENT_EPOCH_NOW },
+  // GĐ2434: Bánh canh Trảng Bàng — đặc sản Tây Ninh: sợi bánh canh bột gạo trắng ngần dẻo dai nấu nước dùng trong veo với thịt heo luộc và hành phi. Mở 81; since: 1.
+  { id: 'banh_canh_trang_bang', name: 'Bánh canh Trảng Bàng', category: 'fresh', buy: 10000, sell: 18000, color: 0xf5f3ea, unlock: 81, since: CONTENT_EPOCH_NOW },
   { id: 'com_lam', name: 'Cơm lam', category: 'fresh', buy: 6500, sell: 10000, color: 0xd9c9a0, unlock: 80, since: CONTENT_EPOCH_NOW },
   { id: 'banh_uot', name: 'Bánh ướt', category: 'fresh', buy: 4500, sell: 7500, color: 0xf6efdc, unlock: 80, since: CONTENT_EPOCH_NOW },
   // GĐ2410: Xôi đậu phộng — miền Nam: xôi nếp nấu cùng đậu phộng, chan nước cốt dừa. Mở 76; since: 1.
@@ -2440,6 +2442,11 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_banh_canh_nam_pho', name: 'Bánh canh Nam Phổ', station: 'hot_kettle',
     inputs: [{ productId: 'x_bot_gao', quantity: 1 }, { productId: 'x_bot_nang', quantity: 1 }, { productId: 'x_tom_tuoi', quantity: 1 }, { productId: 'x_thit_heo', quantity: 1 }, { productId: 'x_hanh_la', quantity: 1 }],
     outputId: 'banh_canh_nam_pho', outputQty: 10, durationMin: 22, unlock: 81, reputationGain: 3, since: CONTENT_EPOCH_NOW },
+  // GĐ2434: Bánh canh Trảng Bàng — đặc sản Tây Ninh trứ danh: sợi bánh canh bột gạo mềm dai luộc trong nồi nước dùng xương trong veo, ăn cùng thịt heo luộc thái mỏng và hành phi thơm lừng.
+  // Thay thế: bột gạo hấp/luộc thành sợi; thịt heo luộc thái mỏng chấm mắm tiêu. Mở 81; since: 1.
+  { id: 'recipe_banh_canh_trang_bang', name: 'Bánh canh Trảng Bàng', station: 'hot_kettle',
+    inputs: [{ productId: 'x_bot_gao', quantity: 2 }, { productId: 'x_thit_heo', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 1 }],
+    outputId: 'banh_canh_trang_bang', outputQty: 10, durationMin: 22, unlock: 81, reputationGain: 3, since: CONTENT_EPOCH_NOW },
   // GĐ2419: Cơm lam — Tây Bắc/Tây Nguyên: nếp ngâm + nước cốt dừa nhồi ống tre/nứa, bịt lá chuối, nướng than xoay đều 40–60 phút.
   // Thay thế: không có ống tre → bỏ qua (chỉ là vỏ bọc); muối vừng/muối lạc ăn kèm không phải nguyên liệu chính. Mở 80; since: 1.
   { id: 'recipe_com_lam', name: 'Cơm lam', station: 'food_grill',
