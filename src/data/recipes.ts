@@ -280,6 +280,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'xoi_dau_phong', name: 'Xôi đậu phộng', category: 'fresh', buy: 3000, sell: 6000, color: 0xe8c98a, unlock: 76, since: CONTENT_EPOCH_NOW },
   // GĐ2411: Gà rang muối — gà chặt miếng rang muối tỏi vàng thơm. Mở 77; since: 1.
   { id: 'ga_rang_muoi', name: 'Gà rang muối', category: 'fresh', buy: 16000, sell: 32000, color: 0xd8a24a, unlock: 77, since: CONTENT_EPOCH_NOW },
+  // GĐ2412: Bắp nướng — bắp nướng than, phết mỡ hành, món vỉa hè quen thuộc. Mở 79; since: 1.
+  { id: 'bap_nuong', name: 'Bắp nướng', category: 'fresh', buy: 5000, sell: 9000, color: 0xe6b422, unlock: 79, since: CONTENT_EPOCH_NOW },
   { id: 'banh_da_nem_chua', name: 'Bánh đa nem chua', category: 'fresh', buy: 8000, sell: 20000, color: 0xc87850, unlock: 70, since: CONTENT_EPOCH_NOW },
   // GĐ2381: Thịt đông — món cỗ Tết miền Bắc trứ danh (thịt kho nước nghệ rồi để LẠNH đông thạch tự nhiên
   // ngoài Tết), TRƯỚC NAY CHƯA CÓ (soát 'thịt đông'/'thit_dong' = 0 trong src/). Nấu kỹ nồi nước, để đông
@@ -2366,6 +2368,11 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_ga_rang_muoi', name: 'Gà rang muối', station: 'fryer',
     inputs: [{ productId: 'thit_ga', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }, { productId: 'x_toi', quantity: 1 }],
     outputId: 'ga_rang_muoi', outputQty: 8, durationMin: 20, unlock: 77, reputationGain: 2, since: CONTENT_EPOCH_NOW },
+  // GĐ2412: Bắp nướng — vỉa hè khắp nước: bắp nướng than hồng, phết mỡ hành.
+  // Thay thế: mỡ hành → hành lá (x_hanh_la) thay; tép khô không có trong game. Mở 79; since: 1.
+  { id: 'recipe_bap_nuong', name: 'Bắp nướng', station: 'food_grill',
+    inputs: [{ productId: 'bap', quantity: 3 }, { productId: 'x_hanh_la', quantity: 1 }],
+    outputId: 'bap_nuong', outputQty: 8, durationMin: 15, unlock: 79, reputationGain: 2, since: CONTENT_EPOCH_NOW },
   // GĐ1324: Nem chua rán — đặc sản nhà bà Tám (nem chua GĐ1085) thành nguyên liệu chảo chiên, món ăn vặt.
   { id: 'recipe_nem_chua_ran', name: 'Nem chua rán', station: 'fryer',
     inputs: [{ productId: 'hx_nem_chua', quantity: 2 }, { productId: 'x_duong', quantity: 1 }],
