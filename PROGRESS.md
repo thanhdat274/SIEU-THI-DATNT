@@ -21,6 +21,7 @@
 
 ## Trạng thái hiện tại (13/11/2026)
 - GĐ2403: HỆ 5 L9 (3D) — `src/world/tripVehicle.ts`: xe ba gác/xe tải đã mua đậu hông tây nhà riêng (không phải hành lang trước tiệm, 1 prop, hộp thủ tục, không asset), vắng khi `biz.trip` chạy, về là hiện lại. Nối ở `main.tsx`. Test `tripVehicle` (logic + cảnh). Full suite 772 file / 7171 test xanh. Đã đo trong trình duyệt: xe chiếm x -17,8..-16,0, cách tường nhà ~1 m, không trùng vật cảnh (dịch -17,2→-16,9); screenshot pane ẩn không chụp được. Chưa làm cảnh xe rời/về hẻm động — việc kế của Hệ 5 3D.
+- GĐ2416: MÓN MỚI Chè bà ba (nồi nấu `hot_kettle`, khoai lang + bột năng + nước cốt dừa → 12 × 8k, mở 80, `since: 1`); bảng test + baseline + UNLOCK-CURVE (61–80 = 195).
 - GĐ2415: MÓN MỚI Bánh hỏi (nồi hấp `steamer`, bột gạo + thịt heo + hành phi → 12 × 8k, mở 80, `since: 1`); bảng test + baseline + UNLOCK-CURVE (61–80 = 193).
 - GĐ2414: MÓN MỚI Bánh phu thê (nồi hấp `steamer`, bột gạo + đậu xanh + đường → 12 × 9k, mở 80, `since: 1`); bảng test + baseline + UNLOCK-CURVE (61–80 = 191).
 - GĐ2413: MÓN MỚI Bánh ú (nồi luộc `hot_kettle`, nếp + đậu xanh + thịt heo → 12 × 14k, mở 80, `since: 1`); bảng test + baseline + UNLOCK-CURVE (61–80 = 189).
