@@ -276,6 +276,7 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'banh_bot_chien', name: 'Bánh bột chiên', category: 'fresh', buy: 3500, sell: 7000, color: 0xe3b655, unlock: 74, since: CONTENT_EPOCH_NOW },
   // GĐ2409: Bánh cuốn — Hà Nội: bánh tráng mỏng hấp cuốn nhân thịt băm nấm mèo. Mở 75; since: 1.
   { id: 'banh_cuon', name: 'Bánh cuốn', category: 'fresh', buy: 4800, sell: 8000, color: 0xf3ead2, unlock: 75, since: CONTENT_EPOCH_NOW },
+  { id: 'banh_uot', name: 'Bánh ướt', category: 'fresh', buy: 4500, sell: 7500, color: 0xf6efdc, unlock: 80, since: CONTENT_EPOCH_NOW },
   // GĐ2410: Xôi đậu phộng — miền Nam: xôi nếp nấu cùng đậu phộng, chan nước cốt dừa. Mở 76; since: 1.
   { id: 'xoi_dau_phong', name: 'Xôi đậu phộng', category: 'fresh', buy: 3000, sell: 6000, color: 0xe8c98a, unlock: 76, since: CONTENT_EPOCH_NOW },
   // GĐ2411: Gà rang muối — gà chặt miếng rang muối tỏi vàng thơm. Mở 77; since: 1.
@@ -2368,6 +2369,11 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_banh_cuon', name: 'Bánh cuốn', station: 'steamer',
     inputs: [{ productId: 'x_bot_gao', quantity: 1 }, { productId: 'x_thit_heo', quantity: 1 }, { productId: 'x_nam_meo_kho', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 1 }],
     outputId: 'banh_cuon', outputQty: 12, durationMin: 18, unlock: 75, reputationGain: 2, since: CONTENT_EPOCH_NOW },
+  // GĐ2418: Bánh ướt — miền Trung/Nam: tráng bột gạo hấp thành tấm mỏng, KHÔNG cuốn nhân, xếp đĩa ăn kèm chả lụa + hành phi.
+  // Thay thế: rau sống/nước mắm chấm không phải nguyên liệu chính. Mở 80; since: 1.
+  { id: 'recipe_banh_uot', name: 'Bánh ướt', station: 'steamer',
+    inputs: [{ productId: 'x_bot_gao', quantity: 1 }, { productId: 'x_cha_lua', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 1 }],
+    outputId: 'banh_uot', outputQty: 12, durationMin: 16, unlock: 80, reputationGain: 2, since: CONTENT_EPOCH_NOW },
   // GĐ2410: Xôi đậu phộng — miền Nam: nếp ngâm nấu chín cùng đậu phộng, chan nước cốt dừa, ở quầy xôi.
   // Thay thế: đậu phộng rang thay đậu phộng luộc; muối mè không phải nguyên liệu chính. Mở 76; since: 1.
   { id: 'recipe_xoi_dau_phong', name: 'Xôi đậu phộng', station: 'rice_station',
