@@ -15,8 +15,10 @@ export function TelemetryPrompt() {
   const day = useGame((s) => s.day);
   const panelOpen = useGame((s) => s.panel !== null);
   const chapterPending = useGame((s) => s.biz.chapterPending);
+  // Review 13/11-3 R6: không chen giữa màn hình lúc đang bán — chỉ hỏi khi tiệm đóng cửa.
+  const shopOpen = useGame((s) => s.shopOpen);
   const [open, setOpen] = useState(false);
-  if (day < 2 || telemetryAsked() || telemetryOptedIn() || panelOpen || chapterPending) return null;
+  if (day < 2 || telemetryAsked() || telemetryOptedIn() || panelOpen || chapterPending || shopOpen) return null;
 
   const decide = (on: boolean) => {
     setTelemetryOptIn(on);
@@ -42,8 +44,8 @@ export function TelemetryPrompt() {
       <div className="hud-dialogue-foot">
         <button className="hud-btn" onClick={() => setOpen(!open)}>{open ? 'Đóng bản ghi mẫu' : 'Xem gửi những gì'}</button>
         <span style={{ display: 'flex', gap: 6 }}>
-          <button className="hud-btn" onClick={() => decide(false)}>Không</button>
-          <button className="hud-btn primary" onClick={() => decide(true)}>Đồng ý</button>
+          <button className="hud-btn" style={{ minWidth: 72, minHeight: 40 }} onClick={() => decide(false)}>Không</button>
+          <button className="hud-btn primary" style={{ minWidth: 72, minHeight: 40 }} onClick={() => decide(true)}>Đồng ý</button>
         </span>
       </div>
       {open && (

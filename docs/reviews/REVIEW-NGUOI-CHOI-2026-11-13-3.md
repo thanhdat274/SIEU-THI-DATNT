@@ -56,3 +56,12 @@
 
 ## 6. Chưa chơi tới
 Vòng đầy đủ nhà→tiệm→bán→ngủ bằng UI trên mobile; 1024×768; xoay lúc đang bán; 1920×1080; co-op; cấp 30–50 chơi tay; thẻ 🧺 trên mobile.
+
+## 7. Đã xử lý (ghi chú sau review)
+- R1, R2, R7 → GĐ2395 (nút ô kệ ≥44px, ô xuống dòng 2 cột trên cảm ứng).
+- R3, R4 → GĐ2395 (giới hạn chiều cao cột trái HUD; ngang thấp ẩn hộp hướng dẫn, dock 1 hàng cuộn). Nút ✕ panel 30×30 chưa chỉnh.
+- R6 → GĐ2396 (hộp số liệu chỉ hỏi khi tiệm đóng; hai nút cùng cỡ).
+- R10 → GĐ2394.
+- R5: đã có `ALERT_CAP=2` cho thẻ `.hud-alert`; phần chip khác (giờ vàng, Tết, Mới mở) chưa gộp — cần đo lại trên bản mới trước khi sửa.
+- R8, R9, R11, R12: chưa làm — cần xác minh trên máy thật / quyết định thiết kế.
+- Các review 08–09/11 và 13/11, 13/11-2: đã đóng ở GĐ1826–1829 và GĐ2392; không còn mục mở.
