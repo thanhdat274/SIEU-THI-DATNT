@@ -106,9 +106,10 @@ describe('farmVsCook', () => {
     expect(f.best!.recipe.id).toBe('recipe_com_suon');
     expect(f.best!.homegrownNet).toBe(501600);
     expect(f.verdict).toBe('cook');
-    // 7 công thức rau (GĐ1094 thêm hột vịt lộn, gà Đông Tảo nướng; GĐ1322 thêm bóp gỏi khô bò, bánh cuốn chả lụa):
-    // cơm sườn, cơm hộp, gà DT nướng, bóp gỏi khô bò, canh, bánh cuốn chả lụa, hột vịt lộn — sắp lãi giảm dần
-    expect(f.recipes.map((d) => d.recipe.id)).toEqual(['recipe_com_suon', 'recipe_com_hop_ga', 'recipe_ga_dt_nuong', 'recipe_bo_gio_kho_bo', 'recipe_canh', 'recipe_banh_cuon_cha_lua', 'recipe_hot_vit_lon']);
+    // 8 công thức rau (GĐ1094 thêm hột vịt lộn, gà Đông Tảo nướng; GĐ1322 thêm bóp gỏi khô bò, bánh cuốn chả lụa;
+    // GĐ2450 thêm gỏi gà xé chen vị 5 — rau ×2 nhưng lãi mỏng hơn bóp gỏi):
+    // cơm sườn, cơm hộp, gà DT nướng, bóp gỏi khô bò, gỏi gà xé, canh, bánh cuốn chả lụa, hột vịt lộn — sắp lãi giảm dần
+    expect(f.recipes.map((d) => d.recipe.id)).toEqual(['recipe_com_suon', 'recipe_com_hop_ga', 'recipe_ga_dt_nuong', 'recipe_bo_gio_kho_bo', 'recipe_goi_ga_xe', 'recipe_canh', 'recipe_banh_cuon_cha_lua', 'recipe_hot_vit_lon']);
   });
 
   it('trứng: best là bánh bao (+148400), verdict cook', () => {

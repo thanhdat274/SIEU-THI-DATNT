@@ -326,6 +326,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'hu_tieu_xao', name: 'Hủ tiếu xào', category: 'fresh', buy: 9000, sell: 18000, color: 0xd8b068, unlock: 81, since: CONTENT_EPOCH_NOW },
   // GĐ2449: Cháo cá lóc — cháo hầm xương cá lóc xanh xương mềm, thịt cá dai ngọt, rắc tiêu hành (miền Tây). Mở 81; since: 1.
   { id: 'chao_ca_loc', name: 'Cháo cá lóc', category: 'fresh', buy: 14000, sell: 18000, color: 0xe0d8c0, unlock: 81, since: CONTENT_EPOCH_NOW },
+  // GĐ2450: Gỏi gà xé — gà ta luộc xé sợi trộn hành tây + rau răm, đậu phộng rang, chan nước mắm chua ngọt. Mở 81; since: 1.
+  { id: 'goi_ga_xe', name: 'Gỏi gà xé', category: 'fresh', buy: 19000, sell: 26000, color: 0xe8d8a8, unlock: 81, since: CONTENT_EPOCH_NOW },
   { id: 'com_lam', name: 'Cơm lam', category: 'fresh', buy: 6500, sell: 10000, color: 0xd9c9a0, unlock: 80, since: CONTENT_EPOCH_NOW },
   { id: 'banh_uot', name: 'Bánh ướt', category: 'fresh', buy: 4500, sell: 7500, color: 0xf6efdc, unlock: 80, since: CONTENT_EPOCH_NOW },
   // GĐ2410: Xôi đậu phộng — miền Nam: xôi nếp nấu cùng đậu phộng, chan nước cốt dừa. Mở 76; since: 1.
@@ -2519,6 +2521,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_chao_ca_loc', name: 'Cháo cá lóc', station: 'hot_kettle',
     inputs: [{ productId: 'gao', quantity: 1 }, { productId: 'ca_loc_tuoi', quantity: 1 }],
     outputId: 'chao_ca_loc', outputQty: 12, durationMin: 35, unlock: 81, reputationGain: 2, since: CONTENT_EPOCH_NOW },
+  { id: 'recipe_goi_ga_xe', name: 'Gỏi gà xé', station: 'steamer',
+    inputs: [{ productId: 'ga_ta_tuoi', quantity: 1 }, { productId: 'rau', quantity: 2 }, { productId: 'x_dau_phong', quantity: 1 }, { productId: 'nuocmam', quantity: 1 }],
+    outputId: 'goi_ga_xe', outputQty: 10, durationMin: 12, unlock: 81, reputationGain: 2, since: CONTENT_EPOCH_NOW },
+  // GĐ2450: Gỏi gà xé — gà ta LUỘC chín (chần/hấp sơ trong xửng theo precedent gỏi), xé sợi tay,
+  // trộn hành tây + rau răm + đậu phộng rang, chan nước mắm chua ngọt — trạm hấp đúng precedent gỏi.
+  // Thay thế: hành tây → giá đỗ/rau trộn sẵn trong game bỏ qua chi tiết; lá chanh kịm bỏ. Mở 81; since: 1.
+  // Mẻ (gà ta 130k + rau 4k×2 + đậu phộng rang 10k + nước mắm 18k) = 166k → 10 phần × 26k = 260k,
+  // lãi ~84k/mẻ, hời hơn bán thẳng nguyên liệu (178+12+14+26 = 230k < 250k — luật monKhuon).
   // GĐ2449: Cháo cá lóc — gạo rang sơ rồi HẦM nhừ với cá lóc xanh (cá nguyên con hầm lấy ngọt),
   // thịt cá tách xương dai ngọt, rắc tiêu + hành lá — nồi nước hầm lâu → trạm đúng cách nấu.
   // Thay thế: rau ngổ ăn kèm bỏ qua. Mở 81; since: 1.
