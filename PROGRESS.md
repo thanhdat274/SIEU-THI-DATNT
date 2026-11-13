@@ -21,6 +21,7 @@
 
 ## Trạng thái hiện tại (13/11/2026)
 - GĐ2403: HỆ 5 L9 (3D) — `src/world/tripVehicle.ts`: xe ba gác/xe tải đã mua đậu hông tây nhà riêng (không phải hành lang trước tiệm, 1 prop, hộp thủ tục, không asset), vắng khi `biz.trip` chạy, về là hiện lại. Nối ở `main.tsx`. Test `tripVehicle` (logic + cảnh). Full suite 772 file / 7171 test xanh. Đã đo trong trình duyệt: xe chiếm x -17,8..-16,0, cách tường nhà ~1 m, không trùng vật cảnh (dịch -17,2→-16,9); screenshot pane ẩn không chụp được. Chưa làm cảnh xe rời/về hẻm động — việc kế của Hệ 5 3D.
+- GĐ2411: MÓN MỚI Gà rang muối (chảo chiên, gà nguyên con + muối + tỏi → 8 × 32k, mở 77, `since: 1`); bảng test + baseline + UNLOCK-CURVE (61–80 = 185). Full suite 772 file / 7191 test xanh.
 - GĐ2410: MÓN MỚI Xôi đậu phộng (miền Nam, quầy xôi, nếp + đậu phộng rang + nước cốt dừa hộp → 16 × 6k, mở 76, `since: 1`); bảng test + baseline + UNLOCK-CURVE (61–80 = 183). Full suite 772 file / 7188 test xanh.
 - GĐ2409: MÓN MỚI Bánh cuốn (Hà Nội, hấp, bột gạo + thịt heo + nấm mèo khô + hành phi → 12 × 8k, mở 75, `since: 1`); bảng test + baseline + UNLOCK-CURVE (61–80 = 181). Full suite 772 file / 7185 test xanh. GĐ2408 + GĐ2406/07 đã nấu thử qua `startCook` trong game thật (`?thu=1`).
 - GĐ2408: MÓN MỚI Bánh bột chiên (Sài Gòn, chảo chiên, bột gạo + bột năng + trứng gà + hành lá → 12 × 7k, mở 74, `since: 1`). Bảng test + baseline + UNLOCK-CURVE (61–80 = 179). Ghi chú: `longSessionLeak` đỏ chập chờn khi chạy full song song (qua 3/3 khi chạy riêng, cả trước thay đổi) — nghi nhạy tải máy, không do nội dung.
