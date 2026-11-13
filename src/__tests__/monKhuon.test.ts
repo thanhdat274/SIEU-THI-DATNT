@@ -313,6 +313,7 @@ export const MON_KHUON: Record<string, { gd: string; station: string; inputs: st
   recipe_hu_tieu_xao: { gd: 'GĐ2448', station: 'fryer', inputs: ['x_hu_tieu_goi', 'x_thit_heo', 'x_gia_do', 'nuocmam'] },
   recipe_chao_ca_loc: { gd: 'GĐ2449', station: 'hot_kettle', inputs: ['gao', 'ca_loc_tuoi'] },
   recipe_goi_ga_xe: { gd: 'GĐ2450', station: 'steamer', inputs: ['ga_ta_tuoi', 'rau', 'x_dau_phong', 'nuocmam'] },
+  recipe_che_thap_cam: { gd: 'GĐ2451', station: 'hot_kettle', inputs: ['dau_xanh', 'x_dua_cot_hop', 'x_bot_nang', 'x_duong'] },
 };
 
 describe.each(Object.entries(MON_KHUON))('%s', (id, mon) => {

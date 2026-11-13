@@ -328,6 +328,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'chao_ca_loc', name: 'Cháo cá lóc', category: 'fresh', buy: 14000, sell: 18000, color: 0xe0d8c0, unlock: 81, since: CONTENT_EPOCH_NOW },
   // GĐ2450: Gỏi gà xé — gà ta luộc xé sợi trộn hành tây + rau răm, đậu phộng rang, chan nước mắm chua ngọt. Mở 81; since: 1.
   { id: 'goi_ga_xe', name: 'Gỏi gà xé', category: 'fresh', buy: 19000, sell: 26000, color: 0xe8d8a8, unlock: 81, since: CONTENT_EPOCH_NOW },
+  // GĐ2451: Chè thập cẩm — Nam Bộ trứ danh: đa hạt + thạch bột năng nhiều màu + chuối luộc, chan cốt dừa. Mở 81; since: 1.
+  { id: 'che_thap_cam', name: 'Chè thập cẩm', category: 'fresh', buy: 7000, sell: 14000, color: 0xd8a0c0, unlock: 81, since: CONTENT_EPOCH_NOW },
   { id: 'com_lam', name: 'Cơm lam', category: 'fresh', buy: 6500, sell: 10000, color: 0xd9c9a0, unlock: 80, since: CONTENT_EPOCH_NOW },
   { id: 'banh_uot', name: 'Bánh ướt', category: 'fresh', buy: 4500, sell: 7500, color: 0xf6efdc, unlock: 80, since: CONTENT_EPOCH_NOW },
   // GĐ2410: Xôi đậu phộng — miền Nam: xôi nếp nấu cùng đậu phộng, chan nước cốt dừa. Mở 76; since: 1.
@@ -2524,6 +2526,15 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_goi_ga_xe', name: 'Gỏi gà xé', station: 'steamer',
     inputs: [{ productId: 'ga_ta_tuoi', quantity: 1 }, { productId: 'rau', quantity: 2 }, { productId: 'x_dau_phong', quantity: 1 }, { productId: 'nuocmam', quantity: 1 }],
     outputId: 'goi_ga_xe', outputQty: 10, durationMin: 12, unlock: 81, reputationGain: 2, since: CONTENT_EPOCH_NOW },
+  { id: 'recipe_che_thap_cam', name: 'Chè thập cẩm', station: 'hot_kettle',
+    inputs: [{ productId: 'dau_xanh', quantity: 1 }, { productId: 'x_dua_cot_hop', quantity: 1 }, { productId: 'x_bot_nang', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
+    outputId: 'che_thap_cam', outputQty: 10, durationMin: 22, unlock: 81, reputationGain: 2, since: CONTENT_EPOCH_NOW },
+  // GĐ2451: Chè thập cẩm — đậu các loại + thạch bột năng nhiều màu + chuối luộc dầm, chan nước cốt dừa
+  // ngọt — NẤU đậu + thạch ở nồi nước → trạm đúng cách nấu.
+  // Thay thế: đậu đỏ/đậu đen + dừa khô tươi chưa có riêng → đậu xanh đại diện hạt (gần nhất, ghi rõ);
+  // chuối luộc dùng chuoi có sẵn trong game không tính vào mẻ (topping). Mở 81; since: 1.
+  // Mẻ (đậu xanh 15k + cốt dừa hộp 10k + bột năng 8k + đường 17k) = 50k → 10 chén × 14k = 140k,
+  // lãi ~90k/mẻ, hời hơn bán thẳng nguyên liệu (22+14+11+21 = 68k < 140k — luật monKhuon).
   // GĐ2450: Gỏi gà xé — gà ta LUỘC chín (chần/hấp sơ trong xửng theo precedent gỏi), xé sợi tay,
   // trộn hành tây + rau răm + đậu phộng rang, chan nước mắm chua ngọt — trạm hấp đúng precedent gỏi.
   // Thay thế: hành tây → giá đỗ/rau trộn sẵn trong game bỏ qua chi tiết; lá chanh kịm bỏ. Mở 81; since: 1.
