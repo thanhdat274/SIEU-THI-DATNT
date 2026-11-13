@@ -332,6 +332,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'che_thap_cam', name: 'Chè thập cẩm', category: 'fresh', buy: 7000, sell: 14000, color: 0xd8a0c0, unlock: 81, since: CONTENT_EPOCH_NOW },
   // GĐ2452: Cháo nấm — cháo nấm chay dân dã: nấm kim châm + nấm hương hầm cùng gạo, ngọt nước đậm đà. Mở 81; since: 1.
   { id: 'chao_nam', name: 'Cháo nấm', category: 'fresh', buy: 12000, sell: 16000, color: 0xd8c8a0, unlock: 81, since: CONTENT_EPOCH_NOW },
+  // GĐ2453: Cá kho riêu — Nam Bộ đậm đà: cá kho nước màu với riêu tôm giã, ăn cơm nóng hổi. Mở 81; since: 1.
+  { id: 'ca_kho_rieu', name: 'Cá kho riêu', category: 'fresh', buy: 18000, sell: 25000, color: 0xb07040, unlock: 81, since: CONTENT_EPOCH_NOW },
   { id: 'com_lam', name: 'Cơm lam', category: 'fresh', buy: 6500, sell: 10000, color: 0xd9c9a0, unlock: 80, since: CONTENT_EPOCH_NOW },
   { id: 'banh_uot', name: 'Bánh ướt', category: 'fresh', buy: 4500, sell: 7500, color: 0xf6efdc, unlock: 80, since: CONTENT_EPOCH_NOW },
   // GĐ2410: Xôi đậu phộng — miền Nam: xôi nếp nấu cùng đậu phộng, chan nước cốt dừa. Mở 76; since: 1.
@@ -2528,6 +2530,15 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_chao_nam', name: 'Cháo nấm', station: 'hot_kettle',
     inputs: [{ productId: 'gao', quantity: 1 }, { productId: 'x_nam_kim_cham', quantity: 1 }, { productId: 'x_nam_huong_kho', quantity: 1 }],
     outputId: 'chao_nam', outputQty: 10, durationMin: 30, unlock: 81, reputationGain: 2, since: CONTENT_EPOCH_NOW },
+  { id: 'recipe_ca_kho_rieu', name: 'Cá kho riêu', station: 'hot_kettle',
+    inputs: [{ productId: 'ca_loc_tuoi', quantity: 1 }, { productId: 'hx_tom_kho', quantity: 1 }, { productId: 'nuocmam', quantity: 1 }],
+    outputId: 'ca_kho_rieu', outputQty: 10, durationMin: 28, unlock: 81, reputationGain: 3, since: CONTENT_EPOCH_NOW },
+  // GĐ2453: Cá kho riêu — cá khúc kho nước màu đậm với RIÊU TÔM giã (tôm giã rang thơm), nước mắm
+  // đậm, kho liu riu — nồi kho/nấu ở nồi nước → trạm đúng cách nấu (không phải nướng).
+  // Thay thế: cá tra/basá → cá lóc tươi gần nhất; riêu tôm tươi chưa có riêng → tôm khô nhà phơi
+  // (giã riêu theo cách Nam Bộ). Mở 81; since: 1.
+  // Mẻ (cá lóc tươi 70k + tôm khô nhà phơi 58k + nước mắm 18k) = 146k → 10 phần × 25k = 250k,
+  // lãi ~104k/mẻ, hời hơn bán thẳng nguyên liệu (98+90+26 = 214k < 250k — luật monKhuon).
   // GĐ2452: Cháo nấm — gạo hầm nhừ cùng nấm kim châm + nấm hương (ngọt nước tự nhiên, món chay dễ bán),
   // HẦM lâu ở nồi nước → trạm đúng cách nấu; khác cháo đậu xanh (22 — ngọt).
   // Thay thế: nấm rơm tươi chưa có → hai loại nấm khô sẵn trong game. Mở 81; since: 1.
