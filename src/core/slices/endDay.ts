@@ -448,7 +448,7 @@ export const endDay = (set: SetState, get: GetState, extra: Partial<GameState> =
   // Chi phí vận hành theo doanh thu (điện/nước/bảo trì): % doanh thu, nhỏ lúc đầu, đáng kể khi lên siêu thị
   // Tiện lợi chạy tủ mát/đông suốt 24h nên có hóa đơn điện riêng; doanh thu quán nước tự lo chi phí của nó
   const branchPower = br ? branchPowerBill(br) : 0;
-  const equipPower = powerSurcharge(s.biz, s.level); // thiết bị bậc cao vượt hạn mức điện → phụ phí
+  const equipPower = powerSurcharge(s.biz, s.level, s.furniture); // thiết bị bậc cao vượt hạn mức điện → phụ phí
   const opCost = Math.round((s.stats.revenue + onlineDay.money + crew.tips) * OPERATING_REVENUE_RATE) + branchPower + equipPower;
   // GĐ1832 (review đợt 2 R1 / đợt 3 R2): thưởng thành tựu sẽ được checkAchievements() cộng vào ví
   // SAU khi tính dòng "Tiền vào − tiền ra" (đêm nay) — đọc trước bằng hàm thuần để tổng kết báo

@@ -164,6 +164,8 @@ export interface BizState {
   upgrades?: string[];
   /** Bậc thiết bị trạm nấu (equipment.ts); thiếu = bậc 1 cho mọi trạm. */
   equip?: Partial<Record<string, number>>;
+  /** Bậc nâng hạn mức điện (equipment.ts POWER_TIERS); thiếu = 0. */
+  powerTier?: number;
   /** Hệ 3 (SPEC-CHIEU-SAU §3.9) — biển hiệu đang treo (định vị tiệm, cấp ≥ 60). THIẾU = chưa treo. */
   stance?: StanceState;
   /** Hệ3-L8 — biển THỨ HAI (mở khi đủ 3 ấn định vị); treo hai biển, hiệu ứng mỗi biển 60%. THIẾU = một biển. */

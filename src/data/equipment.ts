@@ -32,8 +32,25 @@ export const EQUIP_TIERS: Record<EquipTier, { speed: number; kw: number; price: 
   5: { speed: 1.5, kw: 6, price: 12_000_000, unlock: 60 },
 };
 
-/** Hạn mức điện (kW) theo cấp tiệm: đủ để mỗi trạm lên khoảng bậc 2–3 ở giữa game. */
-export const powerCapacity = (level: number) => 8 + Math.floor(level / 5);
+/** Hạn mức nền (kW) theo cấp tiệm. */
+export const basePowerCapacity = (level: number) => 8 + Math.floor(level / 5);
+
+/** Nâng hạn mức điện (đồng hồ/đường dây): bậc 0 = mặc định. `bonus` = kW cộng thêm (cộng dồn từ bậc 0). Chỉ nâng khi đóng cửa. */
+export const POWER_TIERS: { name: string; bonus: number; price: number; unlock: number }[] = [
+  { name: 'Đồng hồ 1 pha', bonus: 0, price: 0, unlock: 1 },
+  { name: 'Đồng hồ 1 pha 60A', bonus: 4, price: 500_000, unlock: 10 },
+  { name: 'Điện 3 pha', bonus: 9, price: 1_500_000, unlock: 25 },
+  { name: 'Điện 3 pha công suất lớn', bonus: 16, price: 4_000_000, unlock: 40 },
+  { name: 'Trạm biến áp riêng', bonus: 26, price: 9_000_000, unlock: 55 },
+];
+export const powerTier = (b: Pick<BizState, 'powerTier'> | undefined): number => Math.min(POWER_TIERS.length - 1, b?.powerTier ?? 0);
+
+/** Hạn mức điện (kW) = nền theo cấp + phần đã mua nâng thêm. */
+export const powerCapacity = (level: number, b?: Pick<BizState, 'powerTier'>) => basePowerCapacity(level) + POWER_TIERS[powerTier(b)].bonus;
+
+/** Công suất (kW) của đồ điện khác trong tiệm: đồ đặt ở tiệm (theo loại) và thiết bị lắp một lần. */
+export const APPLIANCE_KW: Record<string, number> = { fridge: 0.4, freezer: 0.6, meat_counter: 0.5, vending_drink: 0.3 };
+export const UPGRADE_KW: Record<string, number> = { camera: 0.1, pos: 0.1 };
 /** Phụ phí mỗi kW vượt hạn mức mỗi ngày. */
 export const POWER_OVER_FEE = 15_000;
 
@@ -44,13 +61,37 @@ export const isEquipStation = (s: string): s is EquipId => EQUIPMENT.some((e) =>
 export const equipSpeed = (b: Pick<BizState, 'equip'> | undefined, station: string): number =>
   isEquipStation(station) ? EQUIP_TIERS[equipTier(b, station)].speed : 1;
 
-/** Tổng công suất đang dùng (kW) của các trạm có bậc. */
-export const powerUsed = (b: Pick<BizState, 'equip'> | undefined): number =>
-  EQUIPMENT.reduce((n, e) => n + EQUIP_TIERS[equipTier(b, e.id)].kw, 0);
+type PowerBiz = Pick<BizState, 'equip' | 'powerTier' | 'upgrades'>;
+type PowerFurniture = ReadonlyArray<{ type: string; trial?: boolean }>;
 
-/** Phụ phí điện hôm nay do vượt hạn mức (bậc 1 hết: 7 trạm bậc 1 = 7kW < hạn mức tối thiểu 8kW nên luôn 0). */
-export const powerSurcharge = (b: Pick<BizState, 'equip'> | undefined, level: number): number =>
-  Math.round(Math.max(0, powerUsed(b) - powerCapacity(level)) * POWER_OVER_FEE);
+/** Tổng công suất đang dùng (kW): trạm nấu có bậc + đồ điện đặt ở tiệm (nếu truyền `furniture`) + camera/POS đã lắp. */
+export const powerUsed = (b: PowerBiz | undefined, furniture?: PowerFurniture): number => {
+  let kw = EQUIPMENT.reduce((n, e) => n + EQUIP_TIERS[equipTier(b, e.id)].kw, 0);
+  for (const f of furniture ?? []) if (!f.trial) kw += APPLIANCE_KW[f.type] ?? 0;
+  for (const u of b?.upgrades ?? []) kw += UPGRADE_KW[u] ?? 0;
+  return Math.round(kw * 10) / 10;
+};
+
+/**
+ * Hệ tiền điện chỉ "bật" khi người chơi đã tự đụng tới nó (nâng bậc một trạm hoặc nâng hạn mức):
+ * người chơi/mô phỏng chưa nâng gì thì không bao giờ có phụ phí → golden không đổi.
+ */
+export const electricActive = (b: PowerBiz | undefined): boolean =>
+  powerTier(b) > 0 || EQUIPMENT.some((e) => equipTier(b, e.id) > 1);
+
+/** Phụ phí điện hôm nay do vượt hạn mức (0 nếu hệ điện chưa bật). */
+export const powerSurcharge = (b: PowerBiz | undefined, level: number, furniture?: PowerFurniture): number =>
+  electricActive(b) ? Math.round(Math.max(0, powerUsed(b, furniture) - powerCapacity(level, b)) * POWER_OVER_FEE) : 0;
+
+export type PowerBlock = 'max' | 'level' | 'money' | 'open' | null;
+export function powerBlock(b: Pick<BizState, 'powerTier'> | undefined, level: number, money: number, shopOpen: boolean): PowerBlock {
+  const t = powerTier(b);
+  if (t >= POWER_TIERS.length - 1) return 'max';
+  const next = POWER_TIERS[t + 1];
+  if (level < next.unlock) return 'level';
+  if (shopOpen) return 'open';
+  return money < next.price ? 'money' : null;
+}
 
 export type EquipBlock = 'max' | 'level' | 'money' | 'open' | null;
 export function equipBlock(b: Pick<BizState, 'equip'> | undefined, id: EquipId, level: number, money: number, shopOpen: boolean): EquipBlock {

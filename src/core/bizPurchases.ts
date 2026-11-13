@@ -2,7 +2,7 @@ import { petDef, HOME_ITEMS, type BizState, type PetKind } from '../data/biz';
 import { formatMoney, productById } from '../data/products';
 import { serviceById } from '../data/services';
 import { upgradeById, type UpgradeId } from '../data/upgrades';
-import { EQUIPMENT, EQUIP_TIERS, EQUIP_TIER_NAME, equipBlock, equipTier, powerSurcharge, type EquipId, type EquipTier } from '../data/equipment';
+import { EQUIPMENT, EQUIP_TIERS, EQUIP_TIER_NAME, POWER_TIERS, equipBlock, equipTier, powerBlock, powerTier, powerSurcharge, type EquipId, type EquipTier } from '../data/equipment';
 import { checkAchievements } from './bizAchieve';
 import { useGame } from './store';
 
@@ -113,6 +113,20 @@ export function upgradeEquip(id: EquipId) {
   if (blk === 'open') return s.notify('Đóng cửa tiệm rồi mới nâng cấp thiết bị được');
   if (!pay(t.price, `nâng ${def.name.toLowerCase()} lên ${EQUIP_TIER_NAME[next].toLowerCase()}`)) return;
   patch({ equip: { ...(S().biz.equip ?? {}), [id]: next } });
-  const over = powerSurcharge(S().biz, s.level);
+  const over = powerSurcharge(S().biz, s.level, S().furniture);
   s.notify(`${def.icon} ${def.name} lên bậc ${EQUIP_TIER_NAME[next]}: nấu nhanh ×${t.speed}${over > 0 ? ` — điện vượt hạn mức, phụ phí ${formatMoney(over)}/ngày` : ''}`);
+}
+
+/** Nâng hạn mức điện lên bậc kế (đồng hồ → 3 pha → trạm biến áp). Chỉ khi đóng cửa. */
+export function upgradePower() {
+  const s = S();
+  const blk = powerBlock(s.biz, s.level, s.money, s.shopOpen);
+  if (blk === 'max') return s.notify('Hạn mức điện đã ở bậc cao nhất');
+  const next = powerTier(s.biz) + 1;
+  const t = POWER_TIERS[next];
+  if (blk === 'level') return s.notify(`Cần cấp ${t.unlock} để nâng lên ${t.name}`);
+  if (blk === 'open') return s.notify('Đóng cửa tiệm rồi mới nâng hạn mức điện được');
+  if (!pay(t.price, `nâng điện lên ${t.name.toLowerCase()}`)) return;
+  patch({ powerTier: next });
+  s.notify(`⚡ Đã nâng điện: ${t.name} — hạn mức +${t.bonus} kW so với nền`);
 }
