@@ -308,6 +308,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'che_xoai', name: 'Chè xoài', category: 'fresh', buy: 7000, sell: 15000, color: 0xf2c14e, unlock: 81, since: CONTENT_EPOCH_NOW },
   // GĐ2440: Bánh canh tôm khô — miền Tây trứ danh (Sóc Trăng/Trà Vinh): sợi bánh canh bột gạo dai, nước lèo ngọt từ tôm khô, rắc hành. Mở 81; since: 1.
   { id: 'banh_canh_tom_kho', name: 'Bánh canh tôm khô', category: 'fresh', buy: 11000, sell: 18000, color: 0xe8a868, unlock: 81, since: CONTENT_EPOCH_NOW },
+  // GĐ2441: Bánh canh giò heo — miền Tây trứ danh (Cà Mau/Bạc Liêu): sợi bánh canh trắng dai, nước lèo ngọt giò heo, da heo giòn. Mở 81; since: 1.
+  { id: 'banh_canh_gio_heo', name: 'Bánh canh giò heo', category: 'fresh', buy: 12000, sell: 17000, color: 0xe8c0a8, unlock: 81, since: CONTENT_EPOCH_NOW },
   { id: 'com_lam', name: 'Cơm lam', category: 'fresh', buy: 6500, sell: 10000, color: 0xd9c9a0, unlock: 80, since: CONTENT_EPOCH_NOW },
   { id: 'banh_uot', name: 'Bánh ướt', category: 'fresh', buy: 4500, sell: 7500, color: 0xf6efdc, unlock: 80, since: CONTENT_EPOCH_NOW },
   // GĐ2410: Xôi đậu phộng — miền Nam: xôi nếp nấu cùng đậu phộng, chan nước cốt dừa. Mở 76; since: 1.
@@ -2474,6 +2476,15 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_banh_canh_tom_kho', name: 'Bánh canh tôm khô', station: 'hot_kettle',
     inputs: [{ productId: 'x_bot_gao', quantity: 2 }, { productId: 'hx_tom_kho', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 1 }],
     outputId: 'banh_canh_tom_kho', outputQty: 10, durationMin: 25, unlock: 81, reputationGain: 3, since: CONTENT_EPOCH_NOW },
+  { id: 'recipe_banh_canh_gio_heo', name: 'Bánh canh giò heo', station: 'hot_kettle',
+    inputs: [{ productId: 'x_bot_gao', quantity: 2 }, { productId: 'x_thit_heo', quantity: 2 }, { productId: 'x_hanh_phi', quantity: 1 }],
+    outputId: 'banh_canh_gio_heo', outputQty: 10, durationMin: 30, unlock: 81, reputationGain: 3, since: CONTENT_EPOCH_NOW },
+  // GĐ2441: Bánh canh giò heo — giò heo hầm xương lấy nước ngọt, sợi bánh canh trộn bột gạo dai,
+  // da heo chiên giòn ăn kèm. Hầm nước lèo lâu ở nồi nước → trạm đúng cách nấu.
+  // Thay thế: giò heo nguyên quý chưa có → thịt heo (x_thit_heo, cùng con heo — gần nhất, ghi rõ);
+  // da heo chiên bỏ (không phải nước lèo). Mở 81; since: 1.
+  // Mẻ (bột gạo 9k×2 + thịt heo 30k×2 + hành phi 1.5k) = 79.5k → 10 tô × 17k = 170k,
+  // lãi ~90.5k/mẻ, hời hơn bán thẳng nguyên liệu (26+76+2.5 = 104.5k < 170k — luật monKhuon).
   // GĐ2440: Bánh canh tôm khô — sợi bánh canh bột gạo trộn giảm nấu sơ, nước lèo hầm ngọt từ TÔM KHÔ
   // (hương chính của tô), rắc hành phi + hành lá. Nấu nước lèo ở nồi nước → trạm đúng cách nấu.
   // Thay thế: cà rốt/củ cải nấu nước ngọt bỏ qua. Mở 81; since: 1.
