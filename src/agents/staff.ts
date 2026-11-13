@@ -155,7 +155,7 @@ export class StaffManager {
       // Làm thêm giờ: hết ca mà tiệm còn khách chưa thanh toán thì ở lại tính tiền nốt
       // (chỉ tính từ buổi tối, chốt muộn nhất 23h30 — sau đó khách lì lợn quá cũng phải để mai)
       const overtime = s.customersInside > 0 && s.minutes >= 20 * 60 && s.minutes < 23.5 * 60;
-      const onDuty = st.leaveDay !== s.day && ((s.minutes >= shift.from && s.minutes < shift.to) || overtime);
+      const onDuty = !(st.leaveDay !== undefined && st.leaveDay === s.day) && ((s.minutes >= shift.from && s.minutes < shift.to) || overtime);
       const w = this.workers.get(st.id);
       if (w) w.staff = st;
       if (onDuty && !w) this.arrive(st);
