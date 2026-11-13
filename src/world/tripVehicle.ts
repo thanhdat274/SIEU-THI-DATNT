@@ -42,21 +42,37 @@ function buildVehicle(kind: ParkedKind): THREE.Group {
   return g;
 }
 
+/** Xe đã chạy xa bao nhiêu (0 = đậu tại chỗ, 1 = khuất hẳn): 10 phút game đầu chuyến xe rời đi, 10 phút cuối xe về tới. THUẦN. */
+export const TRIP_DRIVE_MIN = 10;
+export function driveAway(trip: { departAt: number; returnAt: number } | undefined, minutes: number): number {
+  if (!trip) return 0;
+  const out = Math.min(1, Math.max(0, (minutes - trip.departAt) / TRIP_DRIVE_MIN));
+  const back = Math.min(1, Math.max(0, (trip.returnAt - minutes) / TRIP_DRIVE_MIN));
+  return Math.min(out, back);
+}
+
+const PARK_X = -16.9;
+const DRIVE_DIST = 45; // chạy theo trục x ra phía tây, hết đường thì khuất
+
 export function installTripVehicleSync(scene: THREE.Scene): THREE.Group {
   const root = new THREE.Group();
-  root.position.set(-16.9, 0, -2); // hông tây nhà riêng (nhà ở x=-12, rộng 6)
+  root.position.set(PARK_X, 0, -2); // hông tây nhà riêng (nhà ở x=-12, rộng 6)
   root.rotation.y = Math.PI / 2;
   root.visible = false;
   scene.add(root);
   let shown: ParkedKind | null = null;
   const update = () => {
-    const b = useGame.getState().biz;
-    const want = parkedHauler(b.hauler, !!b.trip);
-    if (want === shown) return;
-    shown = want;
-    root.clear();
-    if (want) root.add(buildVehicle(want));
-    root.visible = want !== null;
+    const st = useGame.getState();
+    const b = st.biz;
+    const kind = b.hauler === 'ba_gac' || b.hauler === 'xe_tai' ? b.hauler : null;
+    const d = driveAway(b.trip, st.minutes);
+    if (kind !== shown) {
+      shown = kind;
+      root.clear();
+      if (kind) root.add(buildVehicle(kind));
+    }
+    root.position.x = PARK_X - DRIVE_DIST * d;
+    root.visible = kind !== null && d < 1;
   };
   update();
   useGame.subscribe(update);
