@@ -286,6 +286,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'banh_u', name: 'Bánh ú', category: 'fresh', buy: 8000, sell: 14000, color: 0x7a9a4a, unlock: 80, since: CONTENT_EPOCH_NOW },
   // GĐ2414: Bánh phu thê — Huế/Bắc Ninh: bánh bột hấp nhân đậu xanh ngọt. Mở 80; since: 1.
   { id: 'banh_phu_the', name: 'Bánh phu thê', category: 'fresh', buy: 5000, sell: 9000, color: 0xe9c46a, unlock: 80, since: CONTENT_EPOCH_NOW },
+  // GĐ2415: Bánh hỏi — Trung/Nam Trung Bộ: bún bột gạo hấp thành sợi nhỏ, ăn với thịt heo + hành phi. Mở 80; since: 1.
+  { id: 'banh_hoi', name: 'Bánh hỏi', category: 'fresh', buy: 4800, sell: 8000, color: 0xf5efdc, unlock: 80, since: CONTENT_EPOCH_NOW },
   { id: 'banh_da_nem_chua', name: 'Bánh đa nem chua', category: 'fresh', buy: 8000, sell: 20000, color: 0xc87850, unlock: 70, since: CONTENT_EPOCH_NOW },
   // GĐ2381: Thịt đông — món cỗ Tết miền Bắc trứ danh (thịt kho nước nghệ rồi để LẠNH đông thạch tự nhiên
   // ngoài Tết), TRƯỚC NAY CHƯA CÓ (soát 'thịt đông'/'thit_dong' = 0 trong src/). Nấu kỹ nồi nước, để đông
@@ -2372,6 +2374,11 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_ga_rang_muoi', name: 'Gà rang muối', station: 'fryer',
     inputs: [{ productId: 'thit_ga', quantity: 1 }, { productId: 'x_muoi', quantity: 1 }, { productId: 'x_toi', quantity: 1 }],
     outputId: 'ga_rang_muoi', outputQty: 8, durationMin: 20, unlock: 77, reputationGain: 2, since: CONTENT_EPOCH_NOW },
+  // GĐ2415: Bánh hỏi — Bình Định/Quảng Ngãi: bột gạo hấp, ép thành sợi dệt từng lá, ăn kèm thịt + hành phi.
+  // Thay thế: thịt heo thường thay thịt heo nướng; nước mắm/rau sống không phải nguyên liệu chính. Mở 80; since: 1.
+  { id: 'recipe_banh_hoi', name: 'Bánh hỏi', station: 'steamer',
+    inputs: [{ productId: 'x_bot_gao', quantity: 1 }, { productId: 'x_thit_heo', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 1 }],
+    outputId: 'banh_hoi', outputQty: 12, durationMin: 18, unlock: 80, reputationGain: 2, since: CONTENT_EPOCH_NOW },
   // GĐ2414: Bánh phu thê — vỏ bột gạo/nếp bọc nhân đậu xanh nấu đường, hấp chín (bánh xu xê).
   // Thay thế: lá dứa/dừa nạo không có trong game nên bỏ; bột gạo thay bột nếp. Mở 80; since: 1.
   { id: 'recipe_banh_phu_the', name: 'Bánh phu thê', station: 'steamer',
