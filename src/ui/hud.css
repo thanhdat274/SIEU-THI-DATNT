@@ -993,3 +993,16 @@
 #ui .hud-confirm-cancel { background: rgba(255, 255, 255, 0.12); color: var(--hud-text); }
 #ui .hud-confirm-ok { background: var(--hud-accent); color: #1d1f2b; }
 #ui .hud-confirm-ok.danger { background: #e74c3c; color: #fff; }
+
+/* Review 13/11-3 R3/R4 — điện thoại: cột trái HUD không được nuốt quá nửa màn.
+ * Dọc: danh sách hướng dẫn ngày đầu cuộn trong khung thấp. Ngang thấp: ẩn hộp hướng dẫn,
+ * dock gói 1 hàng cuộn ngang. */
+@media (max-width: 600px) {
+  #ui .hud-tutorial { max-height: 22dvh; overflow-y: auto; }
+  #ui .hud-left { max-height: 45dvh; }
+}
+@media (max-height: 480px) {
+  #ui .hud-tutorial { display: none; }
+  #ui .hud-left { max-height: 38dvh; }
+  #ui .hud-dock { flex-wrap: nowrap; overflow-x: auto; max-width: calc(100vw - 16px); }
+}

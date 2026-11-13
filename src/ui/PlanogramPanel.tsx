@@ -330,7 +330,7 @@ export function PlanogramPanel() {
               </div>
               {/* Tầng trên cùng ở trên, như nhìn vào kệ thật */}
               {Array.from({ length: def.tiers }, (_, r) => def.tiers - 1 - r).map((row) => (
-                <div key={row} style={{ display: 'flex', alignItems: 'stretch', gap: 6, marginTop: 6, overflowX: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: 4 }}>
+                <div key={row} style={{ display: 'flex', alignItems: 'stretch', gap: 6, marginTop: 6, ...(IS_COARSE ? { flexWrap: 'wrap' as const } : { overflowX: 'auto' as const, WebkitOverflowScrolling: 'touch' as const }), paddingBottom: 4 }}>
                   <span style={st.rowLabel}>T{row + 1}</span>
                   {Array.from({ length: def.slots }, (_, c) => row * def.slots + c).map((i) => {
                     // Dự phòng dữ lệch (kit cũ chưa qua migrateTiers): ô thiếu coi như trống, không để sập cả UI
@@ -368,7 +368,7 @@ export function PlanogramPanel() {
                             title={t.productId ? 'Bày đầy ô này từ kho' : 'Tự chọn món kho đang có và bày'}>
                             {t.productId ? '＋ Bày' : '✨ Tự chọn'}
                           </button>
-                          <button style={st.mini} disabled={!t.count} onClick={() => unstockTier(f.uid, i)} title="Dỡ hàng ô này về kho">↩ Dỡ</button>
+                          <button style={{ ...st.mini, ...(IS_COARSE ? { flex: '0 0 38%' } : null) }} disabled={!t.count} onClick={() => unstockTier(f.uid, i)} title="Dỡ hàng ô này về kho">↩ Dỡ</button>
                         </div>
                       </div>
                     );
@@ -411,3 +411,9 @@ const st: Record<string, React.CSSProperties> = {
   barFill: { height: '100%', borderRadius: 3 },
   mini: { flex: 1, border: 'none', borderRadius: 5, padding: '3px 4px', cursor: 'pointer', fontSize: 11 },
 };
+// Review 13/11-3 R1/R2/R7: màn cảm ứng — nút ≥44px, ô xuống dòng 2 cột thay vì cuộn ngang ẩn.
+const IS_COARSE = typeof window !== 'undefined' && !!window.matchMedia?.('(pointer: coarse)').matches;
+if (IS_COARSE) {
+  st.mini = { ...st.mini, minHeight: 44, fontSize: 13, padding: '6px 6px' };
+  st.slot = { ...st.slot, flex: '1 1 calc(50% - 40px)', minWidth: 140 };
+}
