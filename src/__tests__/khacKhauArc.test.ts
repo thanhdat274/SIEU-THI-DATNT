@@ -115,7 +115,9 @@ describe('chooseSurprise — hoà giải ghi tiesMended (SPEC §2.6)', () => {
 });
 
 describe('maybeSurprise — arc khắc khẩu chỉ vào pool khi CẢ HAI đã ghé (needRegulars)', () => {
-  it('cả hai chưa từng ghé (visits 0) → không arc khắc khẩu nào mở dù chạy nhiều nhịp', () => {
+  // timeout 15s (mặc định 5s): vòng 6000 lần maybeSurprise nặng CPU — dưới load song song full suite
+  // từng chạm 5s và fail nhiễu (GĐ2388: re-run độc lập luôn pass; timeout không phải assertion).
+  it('cả hai chưa từng ghé (visits 0) → không arc khắc khẩu nào mở dù chạy nhiều nhịp', { timeout: 15_000 }, () => {
     setSimSeed(11);
     // giữ needRegulars của cả 3 arc = visits 0
     useGame.setState((s) => {
