@@ -334,6 +334,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'chao_nam', name: 'Cháo nấm', category: 'fresh', buy: 12000, sell: 16000, color: 0xd8c8a0, unlock: 81, since: CONTENT_EPOCH_NOW },
   // GĐ2453: Cá kho riêu — Nam Bộ đậm đà: cá kho nước màu với riêu tôm giã, ăn cơm nóng hổi. Mở 81; since: 1.
   { id: 'ca_kho_rieu', name: 'Cá kho riêu', category: 'fresh', buy: 18000, sell: 25000, color: 0xb07040, unlock: 81, since: CONTENT_EPOCH_NOW },
+  // GĐ2454: Bánh mì chả cá — Đà Nẵng/Nha Trang trứ danh: bánh mì nướng giòn kẹp chả cá rán, chấm mắm gan. Mở 81; since: 1.
+  { id: 'banh_mi_cha_ca', name: 'Bánh mì chả cá', category: 'fresh', buy: 13000, sell: 24000, color: 0xd8a058, unlock: 81, since: CONTENT_EPOCH_NOW },
   { id: 'com_lam', name: 'Cơm lam', category: 'fresh', buy: 6500, sell: 10000, color: 0xd9c9a0, unlock: 80, since: CONTENT_EPOCH_NOW },
   { id: 'banh_uot', name: 'Bánh ướt', category: 'fresh', buy: 4500, sell: 7500, color: 0xf6efdc, unlock: 80, since: CONTENT_EPOCH_NOW },
   // GĐ2410: Xôi đậu phộng — miền Nam: xôi nếp nấu cùng đậu phộng, chan nước cốt dừa. Mở 76; since: 1.
@@ -2533,6 +2535,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_ca_kho_rieu', name: 'Cá kho riêu', station: 'hot_kettle',
     inputs: [{ productId: 'ca_loc_tuoi', quantity: 1 }, { productId: 'hx_tom_kho', quantity: 1 }, { productId: 'nuocmam', quantity: 1 }],
     outputId: 'ca_kho_rieu', outputQty: 10, durationMin: 28, unlock: 81, reputationGain: 3, since: CONTENT_EPOCH_NOW },
+  { id: 'recipe_banh_mi_cha_ca', name: 'Bánh mì chả cá', station: 'food_grill',
+    inputs: [{ productId: 'banhmi', quantity: 5 }, { productId: 'x_cha_ca_thac_lat', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 1 }],
+    outputId: 'banh_mi_cha_ca', outputQty: 6, durationMin: 15, unlock: 81, reputationGain: 2, since: CONTENT_EPOCH_NOW },
+  // GĐ2454: Bánh mì chả cá — ổ bánh mì NƯỚNG giòn kẹp chả cá rán vàng + rau, quét mắm gan
+  // (bánh mì nướng trên than + chả cá rán → bếp nướng đúng cách làm vỉa hè).
+  // Thay thế: mắm gan tự nấu bỏ qua (chấm ăn kèm); rau sống ăn kèm không vào mẻ. Mở 81; since: 1.
+  // Mẻ (bánh mì 8k×5 + chả cá thác lác 28k + hành phi 1.5k) = 69.5k → 6 bánh × 24k = 144k,
+  // lãi ~74.5k/mẻ, hời hơn bán thẳng nguyên liệu (75+39+2.5 = 116.5k < 144k — luật monKhuon).
   // GĐ2453: Cá kho riêu — cá khúc kho nước màu đậm với RIÊU TÔM giã (tôm giã rang thơm), nước mắm
   // đậm, kho liu riu — nồi kho/nấu ở nồi nước → trạm đúng cách nấu (không phải nướng).
   // Thay thế: cá tra/basá → cá lóc tươi gần nhất; riêu tôm tươi chưa có riêng → tôm khô nhà phơi
