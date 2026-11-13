@@ -10,12 +10,15 @@ import {
 } from '../core/audio';
 import { perfOn, setPerf } from '../core/perf';
 import { getSettings, resetSettings, setSettings, type Settings } from '../core/settings';
+import { importSaveData, snapshot, type SaveData } from '../core/save';
+import { decodeSaveCode, encodeSaveCode } from '../core/saveCode';
+import { WHATS_NEW } from '../data/whatsNew';
 import { telemetryOptedIn, setTelemetryOptIn } from '../data/telemetryConsent';
 import { deleteTelemetry, flushReports } from '../core/dayReport';
 
-type Tab = 'img' | 'gfx' | 'audio' | 'play' | 'a11y';
+type Tab = 'img' | 'gfx' | 'audio' | 'play' | 'a11y' | 'data';
 const TABS: [Tab, string][] = [
-  ['img', '👁 Hình ảnh'], ['gfx', '🎨 Đồ họa'], ['audio', '🔊 Âm thanh'], ['play', '🎮 Chơi'], ['a11y', '♿ Trợ năng'],
+  ['img', '👁 Hình ảnh'], ['gfx', '🎨 Đồ họa'], ['audio', '🔊 Âm thanh'], ['play', '🎮 Chơi'], ['a11y', '♿ Trợ năng'], ['data', '💾 Dữ liệu'],
 ];
 
 const GFX_NOTE: Record<GfxChoice, string> = {
@@ -233,6 +236,58 @@ function A11yTab() {
   );
 }
 
+function DataTab() {
+  const [code, setCode] = useState('');
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [pending, setPending] = useState<SaveData | null>(null);
+  const exportCode = async () => {
+    try {
+      const c = await encodeSaveCode(snapshot());
+      setCode(c);
+      let copied = false;
+      try { await navigator.clipboard.writeText(c); copied = true; } catch { /* trình duyệt chặn: người chơi tự chép từ ô bên dưới */ }
+      setMsg({ ok: true, text: copied ? 'Đã chép mã vào bộ nhớ tạm. Dán sang máy mới ở ô "Nhập mã".' : 'Mã nằm ở ô bên dưới — chép toàn bộ rồi dán sang máy mới.' });
+    } catch { setMsg({ ok: false, text: 'Không xuất được mã trên trình duyệt này.' }); }
+  };
+  const check = async () => {
+    const r = await decodeSaveCode(code);
+    if (!r.ok) { setPending(null); return setMsg({ ok: false, text: r.error }); }
+    setPending(r.data);
+    setMsg({ ok: true, text: `Mã hợp lệ: ngày ${r.data.day}, cấp ${r.data.level}. Bấm "Nạp vào máy này" để thay ván đang chơi (ván hiện tại được cất lại để khôi phục).` });
+  };
+  const load = () => {
+    if (!pending) return;
+    importSaveData(pending);
+    setPending(null);
+    setMsg({ ok: true, text: 'Đã nạp xong. Ván cũ được cất lại ở màn đăng nhập (mục khôi phục).' });
+  };
+  return (
+    <div>
+      <Row label="Mã chuyển máy" hint="Biến ván đang chơi thành một chuỗi chữ để chép sang máy khác">
+        <button onClick={exportCode}>Xuất mã</button>
+      </Row>
+      <div style={{ padding: '10px 0' }}>
+        <div style={{ fontWeight: 600, marginBottom: 4 }}>Nhập mã</div>
+        <textarea aria-label="Mã chuyển máy" value={code} rows={4} placeholder="Dán mã TH3D1.… vào đây"
+          onChange={(e) => { setCode(e.target.value); setPending(null); setMsg(null); }}
+          style={{ width: '100%', boxSizing: 'border-box', fontSize: 11, fontFamily: 'monospace' }} />
+        <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
+          <button onClick={check} disabled={!code.trim()}>Kiểm tra mã</button>
+          <button onClick={load} disabled={!pending}>Nạp vào máy này</button>
+        </div>
+        {msg && <div role="status" style={{ marginTop: 6, fontSize: 12, color: msg.ok ? '#2a7a3a' : '#b3261e' }}>{msg.text}</div>}
+      </div>
+      <div style={{ fontWeight: 700, margin: '8px 0 4px' }}>📰 Có gì mới</div>
+      {WHATS_NEW.map((w) => (
+        <div key={w.date} style={{ padding: '6px 0', borderBottom: '1px solid rgba(0,0,0,.08)' }}>
+          <div style={{ fontWeight: 600 }}>{w.title} <span style={{ fontWeight: 400, fontSize: 12, opacity: 0.6 }}>· {w.date}</span></div>
+          <ul style={{ margin: '4px 0 0', paddingLeft: 18, fontSize: 13 }}>{w.lines.map((l) => <li key={l}>{l}</li>)}</ul>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function SettingsPanel({ onClose }: { onClose: () => void }) {
   const [tab, setTab] = useState<Tab>('img');
   const [rev, setRev] = useState(0);
@@ -269,6 +324,7 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
           {tab === 'audio' && <AudioTab />}
           {tab === 'play' && <PlayTab />}
           {tab === 'a11y' && <A11yTab />}
+          {tab === 'data' && <DataTab />}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', borderTop: '1px solid rgba(0,0,0,.1)', fontSize: 12, opacity: 0.85 }}>
           <span style={{ flex: 1 }}>Cài đặt lưu riêng trên máy, áp dụng cho mọi save, không ảnh hưởng mô phỏng.</span>

@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { initSaves } from './core/save';
 import { initSettingsDom } from './core/applySettings';
 import { initCurrencyDom } from './core/currency';
+import './data/mailbox'; // đăng ký nguồn việc "Hòm thư" (registerTodo)
 import { acquireTabLock } from './core/tabLock';
 import { useGame } from './core/store';
 import { watchUser } from './net/firebase';

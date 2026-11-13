@@ -57,6 +57,7 @@ export function MoreMenuBody({ tools, level, onHelp, keys, setKeys, setOpen, onS
           {!TOUCH && <ToolButton tool={{ icon: '⌨️', label: 'Phím', on: () => setKeys(true) }} level={level} />}
           {/* Xem lại hướng dẫn mở tiệm: cả máy cảm xúc lẫn desktop đều cần */}
           <ToolButton tool={{ icon: '📖', label: 'Hướng dẫn', on: onHelp }} level={level} onPicked={() => setOpen(false)} />
+          <ToolButton tool={{ icon: '✉️', label: 'Hòm thư', on: () => useGame.getState().openPanel({ type: 'mailbox' } as never) }} level={level} onPicked={() => setOpen(false)} />
           {/* GĐ2347: xem lại thông báo đã trôi / đang bị gom — mọi tin trong phiên đọc lại được */}
           <ToolButton tool={{ icon: '🔔', label: 'Sổ thông báo', on: openNotifLog }} level={level} onPicked={() => setOpen(false)} />
           {/* SPEC-TOI-UU §T1 (L1): xuất 30 bản ghi ngày ẩn danh cục bộ (không gửi đi đâu). */}

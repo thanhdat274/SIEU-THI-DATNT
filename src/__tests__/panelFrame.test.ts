@@ -43,7 +43,7 @@ describe('khung modal cố định (GĐ662)', () => {
   it('GĐ2349 — panel nội dung ngắn chọn khung "vừa" (log 520px), các panel khác giữ khung LỚN 688px', () => {
     expect(PANEL_HEIGHT.log).toBe('min(520px, calc(100dvh - 108px))');
     // chỉ một vài loại được chọn cỡ khác — phần còn lại (kể cả khung LỚN) không bị đụng
-    expect(Object.keys(PANEL_HEIGHT)).toEqual(['log']);
+    expect(Object.keys(PANEL_HEIGHT)).toEqual(['log', 'mailbox']);
     expect(panel().height).toBe('min(688px, calc(100dvh - 108px))');
   });
 });

@@ -296,6 +296,13 @@ export function loadDiscarded(): boolean {
   return true;
 }
 
+/** Nạp bản lưu từ mã chuyển máy. Ván đang chơi được cất lại (stashDiscarded) để cứu được nếu nạp nhầm. */
+export function importSaveData(data: SaveData): void {
+  if (!SANDBOX) stashDiscarded(snapshot(), Date.now(), 'local');
+  applySnapshot(data);
+  saveGame(true);
+}
+
 export function loadGame(): boolean {
   if (!main) return false;
   applySnapshot(main.data);

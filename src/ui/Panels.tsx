@@ -44,11 +44,14 @@ const BrandPanel = lazy(() => import('./panels/BrandPanel').then((m) => ({ defau
 const TodoListPanel = lazy(() => import('./panels/TodoListPanel').then((m) => ({ default: m.TodoListPanel })));
 const NotifLogPanel = lazy(() => import('./panels/NotifLogPanel').then((m) => ({ default: m.NotifLogPanel })));
 
+const MailboxPanel = lazy(() => import('./panels/MailboxPanel').then((m) => ({ default: m.MailboxPanel })));
+
 /** GĐ2349 — khung "vừa" cho vài panel nội dung vốn ngắn (Sổ thông báo): không ép khung LỚN 688px
  *  thì hết khoảng trống đáy lớn khi tin còn ít. Mỗi loại vẫn MỘT khung cố định (không co giãn theo
  *  nội dung — luật GĐ662), chỉ chọn cỡ trong hệ thống khung nhỏ/vừa/lớn của thiết kế. */
 export const PANEL_HEIGHT: Partial<Record<string, string>> = {
   log: 'min(520px, calc(100dvh - 108px))',
+  mailbox: 'min(520px, calc(100dvh - 108px))',
 };
 
 export function Panels() {
@@ -113,6 +116,7 @@ export function Panels() {
         {panel.type === 'brand' && <BrandPanel />}
         {panel.type === 'todo' && <TodoListPanel />}
         {panel.type === 'log' && <NotifLogPanel />}
+        {panel.type === 'mailbox' && <MailboxPanel />}
         </Suspense>
         </div>
       </div>

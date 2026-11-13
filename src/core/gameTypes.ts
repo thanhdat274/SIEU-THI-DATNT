@@ -144,6 +144,7 @@ export type Panel =
   | { type: 'cook'; focus?: string }
   | { type: 'morning'; focus?: string }
   | { type: 'todo' } // GĐ2317: Sổ việc chung (SPEC-TOI-UU §T6-L3) — gộp mọi nguồn đã đăng ký qua registerTodo
+  | { type: 'mailbox' } // Hòm thư: quà chờ nhận + thư online gom một chỗ
   | { type: 'log' } // GĐ2347: Sổ thông báo — xem lại mọi tin đã hiện lên HUD trong phiên
   | { type: 'history' }
   | { type: 'social' }
