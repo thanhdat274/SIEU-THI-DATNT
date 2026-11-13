@@ -19,6 +19,7 @@ import { equipSpeed } from '../../data/equipment';
 import { updatePhones, cookSpeed, bartenderBoost } from './orders';
 import { maybeInspection } from '../inspection';
 import { pushNotif } from '../notifLog';
+import { getSettings } from '../settings';
 
 /** Đồng hồ và nhịp ngày: tick mỗi khung hình (chi nhánh, điện thoại, mẻ nấu), đi ngủ, thông báo, mở bảng. */
 
@@ -29,6 +30,8 @@ let sleepWarned = false;
 let dirtFreeze = 0;
 /** GĐ571: tin gọi liên tiếp trong cùng một lượt xử lý gộp một toast thay vì đè nhau. */
 let burst: string[] = [];
+/** "Tạm dừng khi mở menu": tốc độ bị pause thay vì người chơi bấm — đóng bảng thì trả lại. */
+let menuPauseSpeed: number | null = null;
 
 export const createClockSlice = (set: SetState, get: GetState): Pick<GameState, 'addDirt' | 'freezeDirt' | 'setSpeed' | 'tick' | 'sleep' | 'notify' | 'armMessage' | 'openPanel' | 'closePanel' | 'markHudTourDone'> => ({
   freezeDirt: () => { dirtFreeze = 200; },
@@ -45,7 +48,7 @@ export const createClockSlice = (set: SetState, get: GetState): Pick<GameState, 
     set({ dirt });
     if (before < 60 && dirt >= 60) get().notify('🧹 Sàn tiệm bẩn quá, khách bắt đầu ngại vào. Thuê lao công nhé!');
   },
-  setSpeed: (speed) => set({ speed }),
+  setSpeed: (speed) => { menuPauseSpeed = null; set({ speed }); },
   tick: (dt) => {
     const s = get();
     const minutes = s.minutes + dt * MINUTES_PER_SECOND * s.speed;
@@ -186,9 +189,21 @@ export const createClockSlice = (set: SetState, get: GetState): Pick<GameState, 
   openPanel: (panel) => {
     // SPEC-TOI-UU §T1 (L1): đếm số lần mở bảng trong ngày — một chỗ duy nhất mọi bảng đi qua.
     countPanel(panel.type);
+    // "Tạm dừng khi mở menu" (cài đặt Chơi): nhớ tốc độ đang chạy để đóng bảng trả lại đúng;
+    // người chơi bấm đổi tốc độ trong bảng (setSpeed) thì tự coi là chủ động, không trả lại nữa.
+    if (getSettings().pauseOnMenu && menuPauseSpeed === null && get().speed > 0) {
+      menuPauseSpeed = get().speed;
+      set({ speed: 0 });
+    }
     set({ panel });
   },
   // GĐ1503 — chốt cờ đã xem tour HUD (UI thuần, không đụng kinh tế)
   markHudTourDone: () => set({ hudTourDone: true }),
-  closePanel: () => set({ panel: null }),
+  closePanel: () => {
+    if (menuPauseSpeed !== null) {
+      set({ speed: menuPauseSpeed });
+      menuPauseSpeed = null;
+    }
+    set({ panel: null });
+  },
 });

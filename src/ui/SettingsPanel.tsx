@@ -138,6 +138,9 @@ function ImgTab() {
       <Row label="Giới hạn FPS (V-Sync)" hint="Không giới hạn = đồng bộ theo màn hình (V-Sync luôn bật trên trình duyệt). Thấp hơn = mát máy, đỡ hao pin">
         <Select label="Giới hạn FPS" value={s.fpsCap} options={[[0, 'Theo màn hình'], [30, '30'], [60, '60'], [120, '120']]} onChange={(v) => set({ fpsCap: v })} />
       </Row>
+      <Row label="Chống nóng máy" hint="60 FPS khi đang chạm/sạc, 30 FPS khi đứng xem — máy đỡ nóng, pin đỡ tụt. Giới hạn FPS phía trên thấp hơn thì vẫn thắng">
+        <Switch label="Chống nóng máy" on={s.coolMode} onChange={(v) => set({ coolMode: v })} />
+      </Row>
       <Row label="Hiện FPS"><Switch label="Hiện FPS" on={perf} onChange={(v) => { setPerf(v); setP(v); }} /></Row>
       <Row label="Độ sáng"><Slider label="Độ sáng" value={s.brightness} min={0.7} max={1.3} step={0.05} fmt={pct} onChange={(v) => set({ brightness: v })} /></Row>
       <Row label="Tỷ lệ render" hint="Thấp hơn = nhanh hơn trên máy yếu">
@@ -225,6 +228,9 @@ function PlayTab() {
       </Row>
       <Row label="Tự về 1× khi tiệm quá tải" hint="Khách xếp hàng từ 4 người mà đang chạy nhanh">
         <Switch label="Tự về 1×" on={s.autoSlow} onChange={(v) => set({ autoSlow: v })} />
+      </Row>
+      <Row label="Tạm dừng khi mở menu" hint="Mở một bảng (nhập hàng, kho…) là thời gian trong game tạm dừng, đóng bảng chạy tiếp đúng tốc độ cũ">
+        <Switch label="Tạm dừng khi mở menu" on={s.pauseOnMenu} onChange={(v) => set({ pauseOnMenu: v })} />
       </Row>
       <Row label="Xác nhận trước khi kết thúc ngày" hint="Hỏi lại khi nằm lên giường đi ngủ">
         <Switch label="Xác nhận kết thúc ngày" on={s.confirmEndDay} onChange={(v) => set({ confirmEndDay: v })} />

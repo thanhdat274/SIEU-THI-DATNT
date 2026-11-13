@@ -7,6 +7,7 @@ import { getBoard, type AlleyBoardRes, type BoardRes } from '../net/socialApi';
 import { useSession } from '../net/session';
 import { getGuestBoard, getPublicAlleyBoard, localLevel, submitGuestScore } from '../net/guestBoard';
 import { DEVICES, KEYS, LANDING, guessDevice, guideFor, landingSeen, markLandingSeen, shouldShowLanding, type Device } from '../data/guide';
+import { PLAY_LIMIT_MIN, PLAY_WARN_MIN, playMinutesToday } from '../data/playTime';
 import { readLocalSave } from '../core/save';
 import { PrivacyPolicy } from './PrivacyPolicy';
 
@@ -31,6 +32,23 @@ function Sheet({ title, onClose, children }: { title: string; onClose: () => voi
   );
 }
 
+/** Dòng chốt tuần của bảng xếp hạng: thứ 2 → 23:59 Chủ nhật (giờ máy), kèm đếm ngược. */
+function WeekCut() {
+  const now = new Date();
+  const start = new Date(now);
+  start.setDate(now.getDate() - ((now.getDay() + 6) % 7)); // Thứ 2 đầu tuần
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(start);
+  end.setDate(start.getDate() + 6);
+  end.setHours(23, 59, 59, 999);
+  const fmt = (d: Date) => d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+  const ms = Math.max(0, end.getTime() - now.getTime());
+  const days = Math.floor(ms / 86_400_000);
+  const hours = Math.floor((ms % 86_400_000) / 3_600_000);
+  const countdown = days > 0 ? `còn ${days} ngày ${hours} giờ` : `còn ${hours} giờ`;
+  return <p className="login-muted">🗓️ {fmt(start)} – {fmt(end)} · chốt 23:59 Chủ nhật (giờ máy bạn) · ⏳ {countdown}</p>;
+}
+
 /** Bảng co-op: các hẻm chơi chung, xếp theo điểm tuần (công khai, không cần đăng nhập). */
 function AlleyBoard() {
   const [res, setRes] = useState<AlleyBoardRes | null>(null);
@@ -43,6 +61,7 @@ function AlleyBoard() {
   return (
     <>
       <p className="login-muted">Các hẻm chơi chung (co-op) cùng dải cấp với bạn, xếp theo điểm tuần. Số bên phải là số ngày gắn bó.</p>
+      <WeekCut />
       {err && <p className="login-error">{err}</p>}
       {!res && !err && <p className="login-muted">Đang tải…</p>}
       {res && (res.rows.length === 0 ? <p className="login-muted">Tuần này chưa có hẻm nào lên bảng. Rủ bạn chơi chung để là hẻm đầu tiên!</p> : (
@@ -73,6 +92,7 @@ function Board() {
   return (
     <>
       <p className="login-muted">Top tiệm tuần này — người đăng nhập và khách cùng một bảng. Tên là tên bạn đặt ở ô "Tên của bạn".</p>
+      <WeekCut />
       <div className="login-row">
         <button className={`login-btn small${scope === 'server' ? ' primary' : ''}`} onClick={() => setScope('server')}>Toàn server</button>
         {friendsOk && <button className={`login-btn small${scope === 'friends' ? ' primary' : ''}`} onClick={() => setScope('friends')}>Bạn bè</button>}
@@ -213,9 +233,37 @@ export function NameField() {
   );
 }
 
+/** Đồng hồ thời gian chơi hôm nay (chống nghiện): đậm dần khi gần/qua mốc khuyến nghị. */
+function PlayTimeCard() {
+  const [min, setMin] = useState(() => playMinutesToday());
+  useEffect(() => {
+    const t = setInterval(() => setMin(playMinutesToday()), 30_000);
+    return () => clearInterval(t);
+  }, []);
+  if (min < 10) return null; // mới chơi một chút thì không cần nhắc
+  const over = min >= PLAY_LIMIT_MIN;
+  const warn = !over && min >= PLAY_WARN_MIN;
+  return (
+    <div
+      className={`login-nudge${warn || over ? ' claimable' : ''}`}
+      role="status"
+      style={over ? { borderColor: '#d64545', background: '#fff1f1', color: '#8f2828' } : undefined}
+    >
+      <span aria-hidden="true">⏰</span>
+      <span>
+        Hôm nay bạn đã chơi <b>{min} phút</b>.
+        {over
+          ? ' Đã quá mốc 180 phút khuyến nghị — nên nghỉ ngơi, vận động nhẹ và nhắm mắt vài phút nhé!'
+          : warn
+            ? ` Gần mốc ${PLAY_LIMIT_MIN} phút khuyến nghị rồi — chơi thêm nữa thì nghỉ giải lao nhé!`
+            : ` Chơi quá ${PLAY_LIMIT_MIN} phút liên tục hại mắt — nhớ nghỉ giải lao.`}
+      </span>
+    </div>
+  );
+}
+
 export function LoginMenu() {
-  const [m, setM] = useState<Modal>(() => (shouldShowLanding(!!readLocalSave(), landingSeen()) ? 'intro' : null));
-  const items: [Exclude<Modal, null>, string][] = [
+  const [m, setM] = useState<Modal>(() => (shouldShowLanding(!!readLocalSave(), landingSeen()) ? 'intro' : null));  const items: [Exclude<Modal, null>, string][] = [
     ['intro', '🏪 Giới thiệu'], ['settings', '⚙️ Cài đặt'], ['guide', '📖 Hướng dẫn'], ['news', '🆕 Có gì mới'],
     ['board', '🏆 Xếp hạng'], ['feedback', '💬 Góp ý'], ['rules', '📜 Quy định'],
   ];
@@ -225,6 +273,7 @@ export function LoginMenu() {
       <nav className="lm-grid" aria-label="Menu">
         {items.map(([k, label]) => <button key={k} className="login-btn small" onClick={() => setM(k)}>{label}</button>)}
       </nav>
+      <PlayTimeCard />
       {m === 'intro' && <Sheet title={LANDING.title} onClose={close}><Intro onPlay={close} /></Sheet>}
       {m === 'settings' && <Suspense fallback={null}><SettingsPanel onClose={close} /></Suspense>}
       {m === 'rules' && <PrivacyPolicy onClose={close} />}

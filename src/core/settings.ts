@@ -44,6 +44,10 @@ export interface Settings {
   currency: 'vnd' | 'usd';
   /** Độ phân giải render: auto = theo bộ tự chỉnh, native = đủ điểm ảnh màn hình, 1080/720 = trần số dòng điểm ảnh */
   resolution: 'auto' | 'native' | '1080' | '720';
+  /** Tạm dừng mô phỏng khi mở một bảng (menu) — xem/thao tác bảng đỡ bị thời gian trôi */
+  pauseOnMenu: boolean;
+  /** Chống nóng máy: FPS giới hạn 60 khi đang chạm/sạc, 30 khi đứng xem — điện thoại đỡ nóng */
+  coolMode: boolean;
 }
 
 /** Số dòng điểm ảnh tối đa theo mức độ phân giải (0 = không đặt trần). */
@@ -54,6 +58,7 @@ export const SETTINGS_DEFAULT: Settings = {
   reduceMotion: false, highContrast: false, detailDist: 'normal', autosave: true,
   shadows: true, rainDensity: 1, clouds: true, stars: true, foliageSway: true, lightQuality: 'high',
   autosaveEvery: 0, showPatience: true, autoSlow: false, confirmEndDay: false, colorblind: 'off', noFlash: false, currency: 'vnd', resolution: 'auto',
+  pauseOnMenu: false, coolMode: false,
 };
 
 const KEY = 'th3d_settings';
@@ -89,6 +94,8 @@ export function sanitize(raw: unknown): Settings {
     noFlash: bool(r.noFlash, d.noFlash),
     currency: pick(r.currency, ['vnd', 'usd'] as const, d.currency),
     resolution: pick(r.resolution, ['auto', 'native', '1080', '720'] as const, d.resolution),
+    pauseOnMenu: bool(r.pauseOnMenu, d.pauseOnMenu),
+    coolMode: bool(r.coolMode, d.coolMode),
   };
 }
 

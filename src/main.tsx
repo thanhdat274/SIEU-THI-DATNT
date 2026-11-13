@@ -43,6 +43,7 @@ import { InteriorView } from './render/interiorView';
 import { createRenderer, GFX_CHOICE, INITIAL_GFX, installRenderGuard, Lighting, LOW_POWER, type GameRenderer } from './render/scene';
 import { GFX_LABEL, GFX_PRESETS, QualityGovernor, detectLevel, gfxStatus, onGfxChoice, readDeviceHints, readPerfLog, recordPerf, reportGfx, type GfxChoice } from './render/graphicsQuality';
 import { exportReportsJson, noteLiveFps, noteLiveGfx, noteRealSec, openSession, setMode } from './core/dayReport';
+import { startPlayTimeTracker } from './data/playTime';
 import { frameTimes, perfOn, sampleFrame, setPerf, setSnapshot, takeHudRedraws } from './core/perf';
 import { applyCrowdLod } from './agents/walker';
 import { createTiltShift } from './render/fx/tiltShift';
@@ -660,6 +661,7 @@ window.addEventListener('resize', () => { if (getSettings().resolution === 'auto
 // SPEC-TOI-UU §T1 (L1): bắt đầu bộ tích luỹ báo cáo ngày cho ngày game hiện tại + lộ `game.report()`
 // dùng trong console (xuất 30 bản ghi cục bộ) — dùng được ngay khi chưa có server.
 openSession(useGame.getState().day, gfx.avgFps, gfx.step.level);
+startPlayTimeTracker(); // đồng hồ thời gian chơi hôm nay (menu đăng nhập hiển thị)
 setMode(inAlley() ? 'alley' : 'solo');
 window.game = {
   ...(window.game ?? {}),
@@ -688,11 +690,25 @@ const tutorialMarker = createTutorialMarker(scene);
 
 const clock = new THREE.Clock();
 
+// ── Chống nóng máy (Cài đặt → Hình ảnh): 60 FPS khi người chơi đang chạm/sạc, 30 FPS khi đứng xem ──
+let lastInputT = performance.now();
+for (const ev of ['pointerdown', 'pointermove', 'keydown', 'wheel'] as const) {
+  window.addEventListener(ev, () => { lastInputT = performance.now(); }, { passive: true });
+}
+let batteryCharging = false; // getBattery chỉ có trên Chromium; Safari/Firefox bỏ qua (coi như không sạc)
+try { (navigator as Navigator & { getBattery?: () => Promise<{ charging: boolean; addEventListener: (t: string, f: () => void) => void }> }).getBattery?.()
+  .then((b) => { batteryCharging = b.charging; b.addEventListener('chargingchange', () => { batteryCharging = b.charging; }); })
+  .catch(() => { /* không đọc được pin */ }); } catch { /* API bị chặn */ }
+/** Trần FPS động theo chế độ chống nóng máy: đang chạm/sạc = 60, đứng xem = 30. */
+const coolFrameCap = (): 30 | 60 => (performance.now() - lastInputT < 10_000 || batteryCharging ? 60 : 30);
+
 /** Vòng lặp một khung hình — WebGPU cần renderer.init() xong mới được render nên tách ra riêng. */
 let lastFrameT = 0;
 function renderFrame() {
-  // Giới hạn FPS (Cài đặt): bỏ khung nếu chưa đủ thời gian; dt dồn lại cho khung sau
-  const cap = getSettings().fpsCap;
+  // Giới hạn FPS (Cài đặt): bỏ khung nếu chưa đủ thời gian; dt dồn lại cho khung sau.
+  // Chống nóng máy: trần động 60/30, nhưng người chơi đặt Giới hạn FPS thấp hơn thì số đó thắng.
+  const st = getSettings();
+  const cap = st.coolMode ? (st.fpsCap === 0 ? coolFrameCap() : Math.min(st.fpsCap, coolFrameCap())) : st.fpsCap;
   if (cap) {
     const now = performance.now();
     if (now - lastFrameT < 1000 / cap - 1) return;
