@@ -320,6 +320,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'suon_nuong_mat_ong', name: 'Sườn nướng mật ong', category: 'fresh', buy: 14000, sell: 25000, color: 0xc87830, unlock: 81, since: CONTENT_EPOCH_NOW },
   // GĐ2446: Gỏi đu đủ — gỏi khộ (Thái) Việt hoá trứ danh: đu đủ green sợi trộn tôm khô, đậu phộng rang, nước mắm chanh. Mở 81; since: 1.
   { id: 'goi_du_du', name: 'Gỏi đu đủ', category: 'fresh', buy: 10000, sell: 18000, color: 0x9ac860, unlock: 81, since: CONTENT_EPOCH_NOW },
+  // GĐ2447: Chè kê — Quảng Nam trứ danh (Chợ Bêu): nếp nấu nhão trộn đậu phộng rang giã dập, chan nước đường. Mở 81; since: 1.
+  { id: 'che_ke', name: 'Chè kê', category: 'fresh', buy: 8000, sell: 14000, color: 0xe8c078, unlock: 81, since: CONTENT_EPOCH_NOW },
   { id: 'com_lam', name: 'Cơm lam', category: 'fresh', buy: 6500, sell: 10000, color: 0xd9c9a0, unlock: 80, since: CONTENT_EPOCH_NOW },
   { id: 'banh_uot', name: 'Bánh ướt', category: 'fresh', buy: 4500, sell: 7500, color: 0xf6efdc, unlock: 80, since: CONTENT_EPOCH_NOW },
   // GĐ2410: Xôi đậu phộng — miền Nam: xôi nếp nấu cùng đậu phộng, chan nước cốt dừa. Mở 76; since: 1.
@@ -2504,6 +2506,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_goi_du_du', name: 'Gỏi đu đủ', station: 'steamer',
     inputs: [{ productId: 'x_du_du', quantity: 2 }, { productId: 'hx_tom_kho', quantity: 1 }, { productId: 'x_dau_phong', quantity: 1 }, { productId: 'nuocmam', quantity: 1 }],
     outputId: 'goi_du_du', outputQty: 10, durationMin: 10, unlock: 81, reputationGain: 2, since: CONTENT_EPOCH_NOW },
+  { id: 'recipe_che_ke', name: 'Chè kê', station: 'hot_kettle',
+    inputs: [{ productId: 'nep', quantity: 1 }, { productId: 'x_dau_phong', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
+    outputId: 'che_ke', outputQty: 8, durationMin: 20, unlock: 81, reputationGain: 2, since: CONTENT_EPOCH_NOW },
+  // GĐ2447: Chè kê — nếp nấu chín nhão (không nấu nhừ nát), trộn đậu phộng rang giã dập vừa tay,
+  // chan nước đường gừng — NẤU ở nồi nước đúng cách; khác xôi đậu phộng (76 — món xôi khô).
+  // Thay thế: gừng thái sợi chan lên không vào nguyên liệu chính. Mở 81; since: 1.
+  // Mẻ (nếp 30k + đậu phộng rang 10k + đường 17k) = 57k → 8 chén × 14k = 112k, lãi ~55k/mẻ,
+  // hời hơn bán thẳng nguyên liệu (42+14+21 = 77k < 112k — luật monKhuon).
   // GĐ2446: Gỏi đu đủ — đu đủ green bào sợi ngâm lạnh, trộn tôm khô + đậu phộng rang + nước mắm
   // chanh ớt. Trộn/chần sơ theo precedent Gỏi xoài tôm khô (steamer); cà chua chanh ăn kèm bỏ.
   // Mở 81; since: 1.
