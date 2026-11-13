@@ -47,6 +47,8 @@ export interface LifeEventState {
   eventDay: number;
   tier: 0 | 1 | 2;
   accepted: boolean;
+  /** Hệ7: điểm 0–100 trò khéo tay (giỗ=②, cưới=①); chưa chơi = undefined. Một lần mỗi việc. */
+  craft?: number;
 }
 
 /** Cổng cấp cho toàn bộ hệ (golden L30 an toàn — R1). */
@@ -287,3 +289,15 @@ export function lifeEventTodoItems(day: number, lifeEvent?: LifeEventState): Tod
 }
 
 registerTodo('lifeEvent', (s) => lifeEventTodoItems(s.day, s.biz.lifeEvent));
+
+/** Hệ 7 — trò khéo tay cho việc nhà: giỗ dùng lại ② (gói bánh), cưới dùng lại ① (xếp giỏ quà). */
+export const LIFE_CRAFT_MINI: Partial<Record<LifeEventKind, string>> = { gio: 'viec_gio', cuoi: 'viec_cuoi' };
+/** Tiền công thêm tối đa 10% giá trị mâm cỗ khi khéo tay hết cỡ (điểm 100). THUẦN. */
+export const LIFE_CRAFT_MAX_PCT = 0.1;
+export function lifeCraftBonus(menuValueSum: number, craft: number | undefined): number {
+  if (craft === undefined) return 0;
+  const f = Math.max(0, Math.min(100, craft)) / 100;
+  return Math.round(menuValueSum * LIFE_CRAFT_MAX_PCT * f);
+}
+/** Khéo tay ≥ 80 điểm thì chủ nhà thân thiết thêm 1. */
+export const lifeCraftFriendBonus = (craft: number | undefined): number => ((craft ?? 0) >= 80 ? 1 : 0);

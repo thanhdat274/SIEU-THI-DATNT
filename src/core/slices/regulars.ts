@@ -10,12 +10,12 @@ import { REP_CAP } from '../../data/reputation';
 import { regularGiftPlan, giftFriendship, giftXp, giftableCount, giftRemainNote } from '../../data/regularGift';
 import { type GameState, type SetState, type GetState, addHour } from '../gameTypes';
 import { rippleFriendship, friendlyRipple, FORGIVE_HO_HANG_GAIN, TIES_UNLOCK, RIPPLE_DAILY_CAP } from '../../data/regularTies';
-import { lifeEventById, menuValue, menuSize, LIFE_EVENT_UNLOCK, LIFE_EVENT_KIND_LABEL } from '../../data/lifeEvent';
+import { lifeCraftBonus, lifeCraftFriendBonus, lifeEventById, menuValue, menuSize, LIFE_EVENT_UNLOCK, LIFE_EVENT_KIND_LABEL } from '../../data/lifeEvent';
 import { hasFeature } from '../../data/features';
 
 /** Khách: lượt ghé, khách quen, lời hẹn giữ món, sổ nợ, đánh giá. */
 
-export const createRegularsSlice = (set: SetState, get: GetState): Pick<GameState, 'recordVisit' | 'regularVisit' | 'addReservation' | 'cancelReservation' | 'adjustFriendship' | 'applyRipple' | 'acceptLifeEvent' | 'declineLifeEvent' | 'deliverLifeEvent' | 'rescuePoachedRegular' | 'checkoutOnCredit' | 'collectDebt' | 'collectDebtPartial' | 'remindDebt' | 'forgiveDebt' | 'giftRegular' | 'addReview'> => ({
+export const createRegularsSlice = (set: SetState, get: GetState): Pick<GameState, 'recordVisit' | 'regularVisit' | 'addReservation' | 'cancelReservation' | 'adjustFriendship' | 'applyRipple' | 'acceptLifeEvent' | 'craftLifeEvent' | 'declineLifeEvent' | 'deliverLifeEvent' | 'rescuePoachedRegular' | 'checkoutOnCredit' | 'collectDebt' | 'collectDebtPartial' | 'remindDebt' | 'forgiveDebt' | 'giftRegular' | 'addReview'> => ({
   recordVisit: (happy, sample) => {
     const s = get();
     set({
@@ -157,6 +157,15 @@ export const createRegularsSlice = (set: SetState, get: GetState): Pick<GameStat
     const tname = ['gọn', 'đủ', 'linh đình'][tier];
     s.notify(def ? `🏮 ${LIFE_EVENT_KIND_LABEL[def.kind]} ${def.region === 'nam' ? '· cỗ miền Nam' : '· cỗ miền Bắc'} mức ${tname} — còn ${le.eventDay - s.day} ngày chuẩn bị` : `🏮 Đã nhận lo cỗ mức ${tname}`);
   },
+  // Hệ 7: ghi điểm trò khéo tay cho việc đã nhận (một lần mỗi việc) — thưởng thêm khi giao cỗ.
+  craftLifeEvent: (score) => {
+    const s = get();
+    const le = s.biz.lifeEvent;
+    if (!le || !le.accepted || le.craft !== undefined) return;
+    const sc = Math.max(0, Math.min(100, Math.round(score)));
+    set({ biz: { ...s.biz, lifeEvent: { ...le, craft: sc } } });
+    s.notify(`🏮 Khéo tay ${sc}/100 — giao cỗ sẽ được thêm tiền công`);
+  },
   declineLifeEvent: () => {
     const s = get();
     const le = s.biz.lifeEvent;
@@ -182,8 +191,9 @@ export const createRegularsSlice = (set: SetState, get: GetState): Pick<GameStat
     }
     const k = copyStock(s);
     for (const [id, q] of Object.entries(menu)) takeStock(k, id, q);
-    const pay = menuValue(menu) + def.bonus[le.tier];
-    const hostGain = def.friendship[le.tier];
+    const craftPay = lifeCraftBonus(menuValue(menu), le.craft); // Hệ7: khéo tay thêm tới +10% giá trị mâm
+    const pay = menuValue(menu) + def.bonus[le.tier] + craftPay;
+    const hostGain = def.friendship[le.tier] + lifeCraftFriendBonus(le.craft);
     const sold = menuSize(menu);
     // Việc lớn một lần (không phải giỗ) → ghi vào lifeEventsDone sau khi giao xong (1 việc/ván, R7).
     const done = def.kind !== 'gio' ? [...(s.biz.lifeEventsDone ?? []), def.id] : s.biz.lifeEventsDone ?? [];

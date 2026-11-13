@@ -679,6 +679,7 @@ export interface GameState {
   /** Hệ 2 — Việc nhà trong hẻm (GĐ Hệ2-L3, SPEC §2.5): nhận/từ chối/giao cỗ giỗ.
    *  Cổng cấp ≥ LIFE_EVENT_UNLOCK; GUARDED 'lifeEvent'. */
   acceptLifeEvent: (tier: 0 | 1 | 2) => void;
+  craftLifeEvent: (score: number) => void;
   declineLifeEvent: () => void;
   deliverLifeEvent: () => boolean;
 

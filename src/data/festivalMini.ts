@@ -160,6 +160,12 @@ export const FESTIVAL_MINIS: FestivalMiniDef[] = [
     seconds: 30,
     reward: recipeMiniReward(2, 8),
   },
+  // Việc nhà trong hẻm (SPEC §7.6, hệ 2) — dùng lại ② cho đám giỗ, ① cho đám cưới. Không gắn dịp lễ:
+  // mở từ thẻ việc nhà ở Sổ đầu ngày, ghi điểm bằng craftLifeEvent (thưởng thêm tiền công lúc giao cỗ).
+  { id: 'viec_gio', name: 'Gói bánh cho đám giỗ', icon: '🏮', festivals: [], unlock: 32,
+    target: { kind: 'decor', furniture: 'mam_ngu_qua' }, seconds: 45, reward: recipeMiniReward(1, 8) },
+  { id: 'viec_cuoi', name: 'Xếp giỏ quà đám cưới', icon: '💐', festivals: [], unlock: 32,
+    target: { kind: 'decor', furniture: 'mam_ngu_qua' }, seconds: 45, reward: recipeMiniReward(1, 8) },
   // Trò giả để thử khung trên điện thoại (L1) — chỉ mở qua hash #mini=tap_test, không vô UI thật.
   {
     id: 'tap_test',

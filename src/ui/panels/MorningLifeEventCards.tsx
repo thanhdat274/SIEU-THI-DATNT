@@ -3,6 +3,8 @@ import { formatMoney, productById } from '../../data/products';
 import { regularById } from '../../data/regulars';
 import { menuFulfillable, menuCookMinutes, menuValue, lifeEventById, gioLabel, LIFE_EVENT_KIND_LABEL, type LifeEventState } from '../../data/lifeEvent';
 import type { CookingStation } from '../../data/recipes';
+import { LIFE_CRAFT_MINI } from '../../data/lifeEvent';
+import { useMiniHost } from '../minigames/miniHost';
 import { styles } from './shared';
 
 const TIER = ['gọn', 'đủ', 'linh đình'] as const;
@@ -89,6 +91,13 @@ export function LifeEventCard({
       {missing.length > 0
         ? <div style={{ marginTop: 2, color: '#ff7675' }}>Còn thiếu: {missing.join(', ')}</div>
         : <div style={{ marginTop: 2, color: '#2ecc71' }}>Kho đã đủ cỗ.</div>}
+      {LIFE_CRAFT_MINI[def.kind] && daysLeft >= 0 && (
+        st.craft === undefined
+          ? <button onClick={() => useMiniHost.getState().openMini(LIFE_CRAFT_MINI[def.kind]!, day)} style={{ ...styles.btn, marginTop: 6, background: '#e67e22', color: '#fff' }}>
+              {def.kind === 'gio' ? '🏮 Gói bánh cho đám giỗ (khéo tay)' : '💐 Xếp giỏ quà đám cưới (khéo tay)'}
+            </button>
+          : <div style={{ marginTop: 4, color: '#f5d799' }}>Khéo tay {st.craft}/100 — giao cỗ được thêm tiền công.</div>
+      )}
       <button
         onClick={() => deliver()}
         disabled={!ready}

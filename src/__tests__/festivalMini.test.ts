@@ -59,9 +59,9 @@ describe('khung dữ liệu FESTIVAL_MINIS', () => {
     });
   }
 
-  it('7 trò thật đều có mặt, còn trò giả tách riêng cho lúc thử khung', () => {
+  it('9 trò thật đều có mặt, còn trò giả tách riêng cho lúc thử khung', () => {
     const ids = FESTIVAL_MINIS.filter((d) => d.id !== 'tap_test').map((d) => d.id).sort();
-    expect(ids).toEqual(['banh_chung', 'banh_flan', 'den_ong_sao', 'gio_qua', 'mam_ngu_qua', 'pha_nuoc', 'xep_ket']);
+    expect(ids).toEqual(['banh_chung', 'banh_flan', 'den_ong_sao', 'gio_qua', 'mam_ngu_qua', 'pha_nuoc', 'viec_cuoi', 'viec_gio', 'xep_ket']);
   });
 });
 

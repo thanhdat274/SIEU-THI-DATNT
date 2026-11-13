@@ -41,6 +41,8 @@ const GAME_MAP: Record<string, LazyExoticComponent<ComponentType<MiniGameProps>>
   den_ong_sao: DenOngSao,
   banh_flan: FlanKhuon,
   pha_nuoc: PhaNuoc,
+  viec_gio: BanhChung,
+  viec_cuoi: GioQua,
   xep_ket: XepKetBia,
 };
 
@@ -90,7 +92,10 @@ export function MiniHostView() {
     setPhase('result');
     miniReward(); // Hệ7-L6: vừa xong trò → rung dài + tiếng thưởng
     // Hệ7-L2: ghi thưởng thật cho TRÒ GẮN DỊP LỄ (trò giả tap_test không vô save).
-    if (active && def && def.festivals.length > 0) {
+    if (active && def && def.id.startsWith('viec_')) {
+      if (s > 0) // bỏ qua (điểm 0) thì không chốt, còn chơi lại được
+        useGame.getState().craftLifeEvent(s); // Hệ7: việc nhà — điểm khéo tay cộng tiền công khi giao cỗ
+    } else if (active && def && def.festivals.length > 0) {
       useGame.getState().scoreFestivalMini(def.id, s, active.mode);
     }
   }
@@ -144,7 +149,9 @@ export function MiniHostView() {
             <p className="mini-result-score">Điểm: <b>{score}</b>/100</p>
             {reward && (
               <p className="mini-result-reward">
-                {reward.bonusQty
+                {def.id.startsWith('viec_')
+                  ? `Khéo tay: giao cỗ được thêm ≈ ${Math.round(score / 10)}% giá trị mâm${score >= 80 ? ' · 💛 +1 thân thiết' : ''}`
+                  : reward.bonusQty
                   ? `+${reward.bonusQty} thành phẩm cho mẻ hôm nay`
                   : reward.flair
                     ? `+${reward.flair} điểm trang trí cho tới hết dịp`

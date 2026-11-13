@@ -23,6 +23,7 @@ export const GUARDED: Record<string, (args: unknown[]) => string> = {
   // GĐ Hệ2-L3 — Việc nhà trong hẻm: một việc một lúc (biz.lifeEvent chung), hai người bấm cùng lúc
   // thì người sau đợi một chút (SPEC §2.9: khoá chung 'lifeEvent').
   acceptLifeEvent: () => 'lifeEvent',
+  craftLifeEvent: () => 'lifeEvent',
   declineLifeEvent: () => 'lifeEvent',
   deliverLifeEvent: () => 'lifeEvent',
   expandFarm: () => 'farm:land',
