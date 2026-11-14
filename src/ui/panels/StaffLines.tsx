@@ -4,20 +4,21 @@ import type { staffShiftSummary } from '../../data/staffValue';
 import type { StaffIdleRow } from '../../data/staffIdle';
 import type { branchShiftSummary } from '../../data/branchStaffValue';
 import { BRANCH_SHIFTS } from '../../data/branches';
+import { t } from '../../core/i18n';
 
 /** GĐ141: dòng giá trị hôm nay của một nhân viên so với lương — thuần đọc, ẩn khi chưa có dữ liệu/ca đêm. */
 export const VERDICT_META: Record<string, { color: string; label: string }> = {
-  ok: { color: '#2ecc71', label: 'đáng lương' },
-  warn: { color: '#f1c40f', label: 'vừa đủ' },
-  low: { color: '#e74c3c', label: 'đang lỗ' },
+  ok: { color: '#2ecc71', label: t('panels_staff.dang_luong') },
+  warn: { color: '#f1c40f', label: t('panels_staff.vua_du') },
+  low: { color: '#e74c3c', label: t('panels_staff.dang_lo') },
   nodata: { color: '', label: '' },
 };
 export function StaffValueLine({ sv }: { sv?: import('../../data/staffValue').StaffValue }) {
   if (!sv || sv.verdict === 'nodata') return null;
   const m = VERDICT_META[sv.verdict];
   return (
-    <div style={{ fontSize: 12, marginTop: 2, color: m.color }} title="Ước tính: doanh thu các giờ ca mình trực chia cho số người cùng ca, so với lương ngày (thuần đọc sổ giờ)" >
-      💸 Hôm nay ~{formatMoney(sv.value)} · lương {formatMoney(sv.wage)} → <b>{sv.net >= 0 ? '+' : ''}{formatMoney(sv.net)}</b> · {m.label}
+    <div style={{ fontSize: 12, marginTop: 2, color: m.color }} title={t('panels_staff.uoc_tinh_doanh_thu_cac_gio')} >
+      {t('panels_staff.hom_nay_2')}{formatMoney(sv.value)}{' '}{t('panels_staff.luong')}{' '}{formatMoney(sv.wage)} → <b>{sv.net >= 0 ? '+' : ''}{formatMoney(sv.net)}</b> · {m.label}
     </div>
   );
 }
@@ -27,8 +28,8 @@ export function NightStaffLine({ sv }: { sv?: import('../../data/nightStaffValue
   if (!sv || sv.verdict === 'nodata') return null;
   const m = VERDICT_META[sv.verdict];
   return (
-    <div style={{ fontSize: 12, marginTop: 2, color: m.color }} title="Ước tính: doanh thu các giờ đêm (≥22h) chia cho số người cùng ca đêm, so với lương thực trả ×1,5 (thuần đọc sổ giờ)">
-      🌙 Đêm qua ~{formatMoney(sv.value)} · lương {formatMoney(sv.wage)} → <b>{sv.net >= 0 ? '+' : ''}{formatMoney(sv.net)}</b> · {m.label}
+    <div style={{ fontSize: 12, marginTop: 2, color: m.color }} title={t('panels_staff.uoc_tinh_doanh_thu_cac_gio_2')}>
+      {t('panels_staff.dem_qua')}{formatMoney(sv.value)}{' '}{t('panels_staff.luong')}{' '}{formatMoney(sv.wage)} → <b>{sv.net >= 0 ? '+' : ''}{formatMoney(sv.net)}</b> · {m.label}
     </div>
   );
 }
@@ -43,8 +44,8 @@ export function CourierValueLine({ sv }: { sv?: import('../../data/staffValue').
   const ph = sv.phoneValue ?? 0;
   const saved = sv.onlineSaved ?? 0;
   return (
-    <div style={{ fontSize: 12, marginTop: 2, color: m.color }} title="Giá trị người giao hôm nay = doanh thu đơn điện thoại (stats.phone) + phí Grab tiết kiệm nhờ tự chở đơn app (stats.onlineOwnGrabSaved), chia đều số người giao, so với lương ngày (thuần đọc)">
-      📞 Điện thoại {formatMoney(ph)}{saved ? ` · 🛵 tiết kiệm phí Grab ${formatMoney(saved)}` : ''} → ~{formatMoney(sv.value)} · lương {formatMoney(sv.wage)} → <b>{sv.net >= 0 ? '+' : ''}{formatMoney(sv.net)}</b> · {m.label}
+    <div style={{ fontSize: 12, marginTop: 2, color: m.color }} title={t('panels_staff.gia_tri_nguoi_giao_hom_nay')}>
+      {t('panels_staff.dien_thoai')}{' '}{formatMoney(ph)}{saved ? t('panels_staff.tiet_kiem_phi_grab', { v0: formatMoney(saved) }) : ''} → ~{formatMoney(sv.value)}{' '}{t('panels_staff.luong')}{' '}{formatMoney(sv.wage)} → <b>{sv.net >= 0 ? '+' : ''}{formatMoney(sv.net)}</b> · {m.label}
     </div>
   );
 }
@@ -56,7 +57,7 @@ export function StaffPoachWarn({ rival, poachRiskId }: { rival?: { name?: string
   const isAggressive = rival.personality === 'aggressive';
   return (
     <div style={{ fontSize: 12, marginTop: 2, color: '#e74c3c' }} title={`${rival.name ?? ''} ${isAggressive ? 'máu liều' : 'đối thủ'} mạnh — móc người giỏi nhất về đêm. Hạ sức mạnh rival dưới ${STAFF_POACH_STRENGTH} để giữ.`}>
-      ⚠️ {rival.name ?? 'Đối thủ'}{isAggressive ? ' (máu liều)' : ''} đang để mắt — có thể móc bạn sang lương gấp rưỡi — hạ sức mạnh rival dưới {STAFF_POACH_STRENGTH} để giữ
+      ⚠️ {rival.name ?? t('panels_staff.doi_thu')}{isAggressive ? t('panels_staff.mau_lieu') : ''}{' '}{t('panels_staff.dang_de_mat_co_the_moc')}{' '}{STAFF_POACH_STRENGTH}{' '}{t('panels_staff.de_giu')}
     </div>
   );
 }
@@ -66,16 +67,16 @@ export function StaffPoachWarn({ rival, poachRiskId }: { rival?: { name?: string
 export function StaffIdleLine({ row }: { row?: StaffIdleRow }) {
   if (!row) return null;
   const color = row.verdict === 'idle_heavy' ? '#e67e22' : row.verdict === 'balanced' ? '#f1c40f' : '#3498db';
-  const label = row.verdict === 'idle_heavy' ? 'rảnh nhiều — dư người vai này?' : row.verdict === 'busy' ? 'bận liền tay — cân nhắc thêm người' : 'vừa sức';
+  const label = row.verdict === 'idle_heavy' ? t('panels_staff.ranh_nhieu_du_nguoi_vai_nay') : row.verdict === 'busy' ? t('panels_staff.ban_lien_tay_can_nhac_them') : t('panels_staff.vua_suc');
   return (
-    <div style={{ fontSize: 12, marginTop: 2, color }} title="Đo từ agent trong ca hôm nay: 'rảnh' là đứng không chờ việc; trực quầy/canh bếp có mẻ tính là đang làm. Thu ngân/bảo vệ/chăm khách là vai hiện diện (%rảnh ~0) và phụ trại không đo.">
-      🧍 Sáng đến giờ: rảnh ~{row.idlePct}% ca · làm {row.workMin}m · nghỉ {row.idleMin}m — {label}
+    <div style={{ fontSize: 12, marginTop: 2, color }} title={t('panels_staff.do_tu_agent_trong_ca_hom')}>
+      {t('panels_staff.sang_den_gio_ranh')}{row.idlePct}{t('panels_staff.ca_lam_2')}{' '}{row.workMin}{t('panels_staff.m_nghi')}{' '}{row.idleMin}m — {label}
     </div>
   );
 }
 
 /** GĐ141: thanh tóm tắt từng ca ngày (sáng/chiều/cả ngày): doanh thu ca · lương · net — để người chơi thấy ca nào đang nguồn lợi. */
-export const SHIFT_LABEL: Record<string, string> = { morning: 'Ca sáng', afternoon: 'Ca chiều', full: 'Cả ngày' };
+export const SHIFT_LABEL: Record<string, string> = { morning: t('panels_staff.ca_sang'), afternoon: t('panels_staff.ca_chieu'), full: t('panels_staff.ca_ngay') };
 export function ShiftValueStrip({ sum, hasData }: { sum: ReturnType<typeof staffShiftSummary>; hasData: boolean }) {
   const rows = (['morning', 'afternoon', 'full'] as const).filter((k) => sum[k].count > 0);
   if (!rows.length || !hasData) return null;
@@ -87,8 +88,8 @@ export function ShiftValueStrip({ sum, hasData }: { sum: ReturnType<typeof staff
         const color = net > 0 ? '#2ecc71' : net < 0 ? '#e74c3c' : '#f1c40f';
         return (
           <div key={k} style={{ padding: '8px 10px', borderRadius: 10, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', fontSize: 12 }}>
-            <div style={{ opacity: 0.75 }}>{SHIFT_LABEL[k]} · {r.count} người · doanh thu {formatMoney(r.revenue)}</div>
-            <div style={{ color }}><b>lời/lỗ {net >= 0 ? '+' : ''}{formatMoney(net)}</b> vs lương {formatMoney(r.wages)}</div>
+            <div style={{ opacity: 0.75 }}>{SHIFT_LABEL[k]} · {r.count}{' '}{t('panels_staff.nguoi_doanh_thu')}{' '}{formatMoney(r.revenue)}</div>
+            <div style={{ color }}><b>{t('panels_staff.loi_lo')}{' '}{net >= 0 ? '+' : ''}{formatMoney(net)}</b>{' '}{t('panels_staff.vs_luong')}{' '}{formatMoney(r.wages)}</div>
           </div>
         );
       })}
@@ -103,8 +104,8 @@ export function NightStrip({ p }: { p: import('../../data/nightReport').NightPnl
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8 }}>
       <div style={{ padding: '8px 10px', borderRadius: 10, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', fontSize: 12 }}>
-        <div style={{ opacity: 0.75 }}>🌙 Ca đêm · doanh thu {formatMoney(p.revenue)}</div>
-        <div style={{ color }}><b>lời/lỗ {p.net >= 0 ? '+' : ''}{formatMoney(p.net)}</b> vs lương {formatMoney(p.wages)} (×1,5)</div>
+        <div style={{ opacity: 0.75 }}>{t('panels_staff.ca_dem_doanh_thu')}{' '}{formatMoney(p.revenue)}</div>
+        <div style={{ color }}><b>{t('panels_staff.loi_lo')}{' '}{p.net >= 0 ? '+' : ''}{formatMoney(p.net)}</b>{' '}{t('panels_staff.vs_luong')}{' '}{formatMoney(p.wages)} (×1,5)</div>
       </div>
     </div>
   );
@@ -115,14 +116,14 @@ export function BranchValueLine({ sv }: { sv?: import('../../data/branchStaffVal
   if (!sv || sv.verdict === 'nodata') return null;
   const m = VERDICT_META[sv.verdict];
   return (
-    <div style={{ fontSize: 12, marginTop: 2, color: m.color }} title="Ước tính: doanh thu các giờ ca mình trực ở chi nhánh chia cho số người cùng ca, so với lương ngày (thuần đọc sổ giờ tiện lợi)">
-      💸 Chi nhánh hôm nay ~{formatMoney(sv.value)} · lương {formatMoney(sv.wage)} → <b>{sv.net >= 0 ? '+' : ''}{formatMoney(sv.net)}</b> · {m.label}
+    <div style={{ fontSize: 12, marginTop: 2, color: m.color }} title={t('panels_staff.uoc_tinh_doanh_thu_cac_gio_3')}>
+      {t('panels_staff.chi_nhanh_hom_nay')}{formatMoney(sv.value)}{' '}{t('panels_staff.luong')}{' '}{formatMoney(sv.wage)} → <b>{sv.net >= 0 ? '+' : ''}{formatMoney(sv.net)}</b> · {m.label}
     </div>
   );
 }
 
 /** GĐ142: thanh tóm tắt từng ca chi nhánh (sáng/chiều/đêm · đêm ×1.5 lương): doanh thu ca · lương · net — để người chơi thấy ca nào đang nguồn lợi ở tiện lợi. */
-export const BRANCH_SHIFT_LABEL: Record<string, string> = { morning: 'Ca sáng', afternoon: 'Ca chiều', night: 'Ca đêm' };
+export const BRANCH_SHIFT_LABEL: Record<string, string> = { morning: t('panels_staff.ca_sang'), afternoon: t('panels_staff.ca_chieu'), night: t('panels_staff.ca_dem') };
 export function BranchShiftStrip({ sum, hasData, hasStaff }: { sum: ReturnType<typeof branchShiftSummary>; hasData: boolean; hasStaff: boolean }) {
   const rows = BRANCH_SHIFTS.filter((k) => sum[k].count > 0);
   if (!rows.length || !hasData || !hasStaff) return null;
@@ -134,8 +135,8 @@ export function BranchShiftStrip({ sum, hasData, hasStaff }: { sum: ReturnType<t
         const color = net > 0 ? '#2ecc71' : net < 0 ? '#e74c3c' : '#f1c40f';
         return (
           <div key={k} style={{ padding: '8px 10px', borderRadius: 10, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', fontSize: 12 }}>
-            <div style={{ opacity: 0.75 }}>{BRANCH_SHIFT_LABEL[k]} · {r.count} người · doanh thu {formatMoney(r.revenue)}</div>
-            <div style={{ color }}><b>lời/lỗ {net >= 0 ? '+' : ''}{formatMoney(net)}</b> vs lương {formatMoney(r.wages)}</div>
+            <div style={{ opacity: 0.75 }}>{BRANCH_SHIFT_LABEL[k]} · {r.count}{' '}{t('panels_staff.nguoi_doanh_thu')}{' '}{formatMoney(r.revenue)}</div>
+            <div style={{ color }}><b>{t('panels_staff.loi_lo')}{' '}{net >= 0 ? '+' : ''}{formatMoney(net)}</b>{' '}{t('panels_staff.vs_luong')}{' '}{formatMoney(r.wages)}</div>
           </div>
         );
       })}

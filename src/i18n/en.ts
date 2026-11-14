@@ -3,6 +3,7 @@ import { enLogin } from './en/login';
 import { enSettings } from './en/settings';
 import { enHud } from './en/hud';
 import { enPanelsQuest } from './en/panels_quest';
+import { enPanelsStaff } from './en/panels_staff';
 
 /** English. `Record<I18nKey, string>` → thiếu khóa nào `tsc` báo ngay. */
 export const en: Record<I18nKey, string> = {
@@ -10,6 +11,7 @@ export const en: Record<I18nKey, string> = {
   ...enSettings,
   ...enHud,
   ...enPanelsQuest,
+  ...enPanelsStaff,
   'settings.title': '⚙️ Settings',
   'settings.subtitle': 'Display, sound, gameplay, accessibility',
   'settings.tab.img': '👁 Display',

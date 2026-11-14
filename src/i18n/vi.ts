@@ -6,12 +6,14 @@ import { viLogin } from './vi/login';
 import { viSettings } from './vi/settings';
 import { viHud } from './vi/hud';
 import { viPanelsQuest } from './vi/panels_quest';
+import { viPanelsStaff } from './vi/panels_staff';
 
 export const vi = {
   ...viLogin,
   ...viSettings,
   ...viHud,
   ...viPanelsQuest,
+  ...viPanelsStaff,
   'settings.title': '⚙️ Cài đặt',
   'settings.subtitle': 'Hình ảnh, âm thanh, cách chơi, trợ năng',
   'settings.tab.img': '👁 Hình ảnh',
