@@ -10,6 +10,7 @@ import { reputationOf } from '../data/reputation';
 import { formatMoney } from '../data/products';
 import { ExpandTab, PaintTab } from './panels/BuildPanel';
 import { MAIN_UID, STEP, snap, frontLine, findSpot } from './arrangeGeometry';
+import { t } from '../core/i18n';
 import './arrange.css';
 
 
@@ -36,7 +37,7 @@ const ICONS: Record<FurnitureType, string> = {
 };
 
 /** uid giả của quầy chính trong bản nháp. */
-const nameOf = (f: Furniture) => (f.uid === MAIN_UID ? 'Quầy chính' : furnitureDef(f.type).name);
+const nameOf = (f: Furniture) => (f.uid === MAIN_UID ? t('biz.quay_chinh') : furnitureDef(f.type).name);
 
 type Tab = 'furniture' | 'paint' | 'expand';
 
@@ -119,7 +120,7 @@ export function ArrangePanel() {
   const rotate = () => sel && update(sel.uid, (f) => ({ ...f, rot: (f.rot + 1) % 4 }));
   const remove = () => {
     if (!sel) return;
-    if (sel.uid === MAIN_UID) return notify('Quầy chính không bán được, chỉ dời hoặc xoay thôi.');
+    if (sel.uid === MAIN_UID) return notify(t('biz.quay_chinh_khong_ban_duoc_chi'));
     commit(draft.filter((f) => f.uid !== sel.uid));
     setSelected(null);
   };
@@ -140,19 +141,19 @@ export function ArrangePanel() {
   };
 
   const apply = () => {
-    if (problems.size) return setError(`Còn ${problems.size} món đặt chưa hợp lệ (viền đỏ).`);
+    if (problems.size) return setError(t('biz.con_mon_dat_chua_hop_le', { size: problems.size }));
     const blocked = shopLayout.layoutCheck(draft.filter((f) => f.uid !== MAIN_UID), draft.find((f) => f.uid === MAIN_UID));
     if (blocked) return setError(blocked);
-    if (cost - refund > money) return setError(`Thiếu ${formatMoney(cost - refund - money)} để áp dụng.`);
+    if (cost - refund > money) return setError(t('biz.thieu_de_ap_dung', { v0: formatMoney(cost - refund - money) }));
     for (const f of removed) sellFurniture(f.uid);
     for (const f of moved) (f.uid === MAIN_UID ? moveMainCounter : moveFurniture)(...(f.uid === MAIN_UID ? [f.x, f.z, f.rot] : [f.uid, f.x, f.z, f.rot]) as [number, number, number, number]);
     for (const f of added) placeFurniture(f.type, f.x, f.z, f.rot);
-    if (changes) notify(`✅ Đã áp dụng bố cục mới (${changes} thay đổi).`);
+    if (changes) notify(t('biz.da_ap_dung_bo_cuc_moi', { changes }));
     closePanel();
   };
 
   const close = async () => {
-    if (changes && !await askConfirm('Bỏ các thay đổi chưa áp dụng?', { danger: true, okLabel: 'Bỏ thay đổi' })) return;
+    if (changes && !await askConfirm(t('biz.bo_cac_thay_doi_chua_ap'), { danger: true, okLabel: t('biz.bo_thay_doi') })) return;
     closePanel();
   };
 
@@ -245,10 +246,10 @@ export function ArrangePanel() {
         <header className="ar-head">
           <div>
             <h2 id="ar-title">🏪 {shopName}</h2>
-            <p>Kéo đồ để dời chỗ, chạm vào món để xoay hoặc bán. Bấm "Áp dụng" mới tính tiền.</p>
+            <p>{t('biz.keo_do_de_doi_cho_cham')}</p>
           </div>
           <span className="ar-money">💰 {formatMoney(money)}</span>
-          <button className="ar-x" aria-label="Đóng" title="Đóng (Esc)" onClick={close}>✕</button>
+          <button className="ar-x" aria-label={t('biz.dong')} title={t('biz.dong_esc')} onClick={close}>✕</button>
         </header>
 
         <div className="ar-body">
@@ -258,17 +259,17 @@ export function ArrangePanel() {
                 {sel ? (
                   problems.has(sel.uid)
                     ? <>⚠️ <b>{nameOf(sel)}</b>: {problems.get(sel.uid)}</>
-                    : <>✥ <b>{nameOf(sel)}</b>: kéo để dời, hoặc chạm chỗ sàn trống để đưa tới đó.</>
+                    : <>✥ <b>{nameOf(sel)}</b>{t('biz.keo_de_doi_hoac_cham_cho')}</>
                 ) : (
-                  <>💡 Chạm vào một món trên bản vẽ để chọn, hoặc mua món mới ở danh mục.</>
+                  <>{t('biz.cham_vao_mot_mon_tren_ban')}</>
                 )}
               </div>
               <button
                 className={`ar-btn${heatOn ? ' primary' : ' ghost'}`}
-                title="Tô màu kệ theo số món đã bán ra: đỏ bán chạy, xanh là ế. Kệ dễ thấy (gần cửa, sát lối đi) bán nhiều hơn."
+                title={t('biz.to_mau_ke_theo_so_mon')}
                 onClick={() => setHeatOn(!heatOn)}
               >
-                🔥 Doanh số theo kệ
+                {t('biz.doanh_so_theo_ke')}
               </button>
             </div>
 
@@ -299,9 +300,9 @@ export function ArrangePanel() {
                     )}
                   </g>
                 ))}
-                <text className="ar-door ar-door-back" x={backDoorX} y={-D / 2 - 0.2}>▲ Nhà kho</text>
+                <text className="ar-door ar-door-back" x={backDoorX} y={-D / 2 - 0.2}>{t('biz.nha_kho')}</text>
                 <rect className="ar-door-zone" x={backDoorX - 0.9} y={-D / 2} width={1.8} height={1} />
-                <text className="ar-door" x={0} y={D / 2 + 0.45}>▼ Cửa ra vào</text>
+                <text className="ar-door" x={0} y={D / 2 + 0.45}>{t('biz.cua_ra_vao')}</text>
                 <rect className="ar-door-zone" x={-0.9} y={D / 2 - 1} width={1.8} height={1} />
 
                 {draft.map((f) => {
@@ -349,9 +350,9 @@ export function ArrangePanel() {
             {heatOn && (
               <div className="ar-heat-legend">
                 {topHeat > 0 ? (
-                  <>Ế <i className="ar-heat-scale" /> Bán chạy · kệ đỏ nhất đã bán {topHeat} món · kệ dễ thấy (gần cửa, sát lối đi) bán nhiều hơn kệ khuất</>
+                  <>{t('biz.e')}{' '}<i className="ar-heat-scale" />{' '}{t('biz.ban_chay_ke_do_nhat_da')}{' '}{topHeat}{' '}{t('biz.mon_ke_de_thay_gan_cua')}</>
                 ) : (
-                  <>Chưa có số liệu: heatmap ghi số món mỗi kệ bán ra, khách mua là tự cập nhật.</>
+                  <>{t('biz.chua_co_so_lieu_heatmap_ghi')}</>
                 )}
               </div>
             )}
@@ -360,31 +361,31 @@ export function ArrangePanel() {
               <div className="ar-inspect">
                 <div className="ar-inspect-name">
                   <b>{ICONS[sel.type]} {nameOf(sel)}</b>
-                  <small>{sel.uid === MAIN_UID ? 'Quầy chính của tiệm: kéo để dời, xoay để đổi hướng khách xếp hàng. Dời miễn phí.' : sel.uid < 0 ? `Mua mới · ${formatMoney(furnitureDef(sel.type).price)}` : furnitureDef(sel.type).desc}</small>
+                  <small>{sel.uid === MAIN_UID ? t('biz.quay_chinh_cua_tiem_keo_de') : sel.uid < 0 ? t('biz.mua_moi', { v0: formatMoney(furnitureDef(sel.type).price) }) : furnitureDef(sel.type).desc}</small>
                   {bannerPayoff && <small>{regionFlagPayoffLine(bannerPayoff)}</small>}
                   {isDisplay(sel) && (
                     <small>
                       📍 {visibilityLabel(selAttention)} · {Math.round(selAttention * 100)}%
-                      {sel.uid > 0 && shelfHeat[sel.uid] ? ` · 🔥 đã bán ${shelfHeat[sel.uid]} món từ khi đặt` : ''}
+                      {sel.uid > 0 && shelfHeat[sel.uid] ? t('biz.da_ban_mon_tu_khi_dat', { v0: shelfHeat[sel.uid] }) : ''}
                       {(() => {
                         const eff = sel.uid > 0 ? shelfEfficiency([sel], shelfProfit, today)[0] : undefined;
-                        return eff ? ` · 💰 lời ${formatMoney(eff.perM2Day)}/m²/ngày` : '';
+                        return eff ? t('biz.loi_m_ngay', { v0: formatMoney(eff.perM2Day) }) : '';
                       })()}
                     </small>
                   )}
                   {isDisplay(sel) && eyeRow(furnitureDef(sel.type).tiers) >= 0 && (
-                    <small>👁️ Tầng {eyeRow(furnitureDef(sel.type).tiers) + 1} (tính từ dưới lên) ngang tầm mắt: món bày ở đó được để ý thêm {Math.round((EYE_LEVEL_BONUS - 1) * 100)}%, tầng sát sàn thì kém hơn — đặt món lời cao ở tầng này.</small>
+                    <small>{t('biz.tang')}{' '}{eyeRow(furnitureDef(sel.type).tiers) + 1}{' '}{t('biz.tinh_tu_duoi_len_ngang_tam')}{' '}{Math.round((EYE_LEVEL_BONUS - 1) * 100)}{t('biz.tang_sat_san_thi_kem_hon')}</small>
                   )}
                 </div>
-                <div className="ar-pad" aria-label="Dời món đang chọn">
-                  <button onClick={() => nudge(0, -STEP)} aria-label="Lên">▲</button>
-                  <button onClick={() => nudge(-STEP, 0)} aria-label="Trái">◀</button>
-                  <button onClick={() => nudge(STEP, 0)} aria-label="Phải">▶</button>
-                  <button onClick={() => nudge(0, STEP)} aria-label="Xuống">▼</button>
+                <div className="ar-pad" aria-label={t('biz.doi_mon_dang_chon')}>
+                  <button onClick={() => nudge(0, -STEP)} aria-label={t('biz.len')}>▲</button>
+                  <button onClick={() => nudge(-STEP, 0)} aria-label={t('biz.trai')}>◀</button>
+                  <button onClick={() => nudge(STEP, 0)} aria-label={t('biz.phai')}>▶</button>
+                  <button onClick={() => nudge(0, STEP)} aria-label={t('biz.xuong')}>▼</button>
                 </div>
                 <button className="ar-btn" onClick={rotate}>↻ Xoay</button>
                 {sel.uid !== MAIN_UID && <button className="ar-btn danger" onClick={remove}>
-                  {sel.uid < 0 ? '✕ Bỏ món' : `🗑 Bán (+${formatMoney(Math.round(furnitureDef(sel.type).price * SELL_BACK))})`}
+                  {sel.uid < 0 ? t('biz.bo_mon') : t('biz.ban', { v0: formatMoney(Math.round(furnitureDef(sel.type).price * SELL_BACK)) })}
                 </button>}
                 <button className="ar-btn ghost" onClick={() => setSelected(null)}>Xong</button>
               </div>
@@ -393,7 +394,7 @@ export function ArrangePanel() {
 
           <aside className="ar-side">
             <div className="ar-tabs" role="tablist">
-              {([['furniture', '🪑 Nội thất'], ['paint', '🎨 Sơn sửa'], ['expand', '🏗️ Mở rộng']] as const).map(([id, label]) => (
+              {([['furniture', t('biz.noi_that')], ['paint', t('biz.son_sua')], ['expand', t('biz.mo_rong')]] as const).map(([id, label]) => (
                 <button key={id} role="tab" aria-selected={tab === id} className={tab === id ? 'on' : ''} onClick={() => setTab(id)}>
                   {label}
                 </button>
@@ -409,7 +410,7 @@ export function ArrangePanel() {
                       <b>{f.name}</b>
                       <small>{f.desc}</small>
                     </span>
-                    <span className="ar-card-price">{locked ? `🔒 Cấp ${f.unlock}` : formatMoney(f.price)}</span>
+                    <span className="ar-card-price">{locked ? t('biz.cap', { unlock: f.unlock }) : formatMoney(f.price)}</span>
                   </button>
                 );
               })}
@@ -421,15 +422,15 @@ export function ArrangePanel() {
 
         <footer className="ar-foot">
           <span className="ar-sum">
-            📝 {changes} thay đổi
+            📝 {changes}{' '}{t('biz.thay_doi')}
             {cost > 0 && <> · Mua <b>{formatMoney(cost)}</b></>}
-            {refund > 0 && <> · Bán lại <b>+{formatMoney(refund)}</b></>}
+            {refund > 0 && <>{' '}{t('biz.ban_lai')}{' '}<b>+{formatMoney(refund)}</b></>}
           </span>
           {error && <span className="ar-error">{error}</span>}
           <div className="ar-foot-actions">
-            <button className="ar-btn ghost" disabled={!history.length} onClick={undo}>↺ Hoàn tác</button>
-            <button className="ar-btn ghost" onClick={close}>Huỷ</button>
-            <button className="ar-btn primary" disabled={!changes} onClick={apply}>✓ Áp dụng</button>
+            <button className="ar-btn ghost" disabled={!history.length} onClick={undo}>{t('biz.hoan_tac')}</button>
+            <button className="ar-btn ghost" onClick={close}>{t('biz.huy')}</button>
+            <button className="ar-btn primary" disabled={!changes} onClick={apply}>{t('biz.ap_dung')}</button>
           </div>
         </footer>
       </section>

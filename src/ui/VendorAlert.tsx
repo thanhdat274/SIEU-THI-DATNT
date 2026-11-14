@@ -4,6 +4,7 @@ import { formatMoney } from '../data/products';
 import { shortLabel } from './shortLabel';
 import { canRush, vendorById, wholesaleRush, wholesaleTotal } from '../data/wholesale';
 import { wholesaleAdvice } from '../data/wholesaleValue';
+import { t } from '../core/i18n';
 
 /** Tách khỏi Hud, tải lười (GĐ418): lời xin lấy sỉ chỉ hiện thỉnh thoảng. */
 /** Người bán rong đang đứng ở quầy xin lấy sỉ từ kho. */
@@ -35,24 +36,24 @@ export function VendorAlertView({ offer, minutes, storage, storageLots, priceOf,
   const sellLines = advice ? advice.lines.filter((l) => l.verdict === 'sell') : [];
   return (
     <div className="hud-alert phone">
-      {v?.icon} <b>{v?.name}</b> xin lấy sỉ: {describeItems(offer.items)} · trả {formatMoney(wholesaleTotal(offer.items, priceOf))} (giá sỉ)
-      <small> · chờ thêm {Math.max(0, Math.ceil(offer.expiresAt - minutes))} phút</small>
+      {v?.icon} <b>{v?.name}</b>{' '}{t('biz.xin_lay_si')}{' '}{describeItems(offer.items)}{' '}{t('biz.tra')}{' '}{formatMoney(wholesaleTotal(offer.items, priceOf))}{' '}{t('biz.gia_si')}
+      <small>{' '}{t('biz.cho_them')}{' '}{Math.max(0, Math.ceil(offer.expiresAt - minutes))}{' '}{t('biz.phut')}</small>
       {advice && (advice.clearEmerging || !advice.canFulfill || sellLines.length > 0) && (
         <small className="hud-wholesale-tip">
           {!advice.canFulfill
-            ? (rush && rush.net > 0 ? `⚡ Kho thiếu — nhập gấp ${formatMoney(rush.cost)} vẫn lời ~${formatMoney(rush.net)}.` : '⚠️ Kho thiếu — nhập gấp không còn lời.')
+            ? (rush && rush.net > 0 ? t('biz.kho_thieu_nhap_gap_van_loi', { v0: formatMoney(rush.cost), v1: formatMoney(rush.net) }) : t('biz.kho_thieu_nhap_gap_khong_con'))
             : advice.clearEmerging
-              ? '💡 Có hàng cận hạn — bán sỉ đỡ mất trắng.'
+              ? t('biz.co_hang_can_han_ban_si')
               : sellLines.length > 0
-                ? `Nên bán sỉ: ${sellLines.map((l) => l.name).join(' · ')}`
+                ? t('biz.nen_ban_si', { v0: sellLines.map((l) => l.name).join(' · ') })
                 : null}
         </small>
       )}
       <span className="hud-alert-actions">
         {short
-          ? <button className="hud-btn primary" disabled={!canRush(rush, money)} onClick={() => accept(true)}>{shortLabel(`⚡ Nhập gấp & giao (${formatMoney(rush?.cost ?? 0)})`, rush?.cost ?? 0, money)}</button>
-          : <button className="hud-btn primary" onClick={() => accept()}>🤝 Bán sỉ từ kho</button>}
-        <button className="hud-btn" onClick={decline}>Không bán</button>
+          ? <button className="hud-btn primary" disabled={!canRush(rush, money)} onClick={() => accept(true)}>{shortLabel(t('biz.nhap_gap_giao', { v0: formatMoney(rush?.cost ?? 0) }), rush?.cost ?? 0, money)}</button>
+          : <button className="hud-btn primary" onClick={() => accept()}>{t('biz.ban_si_tu_kho')}</button>}
+        <button className="hud-btn" onClick={decline}>{t('biz.khong_ban')}</button>
       </span>
     </div>
   );

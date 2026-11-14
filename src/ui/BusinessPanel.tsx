@@ -11,19 +11,20 @@ import { Achievements } from './panels/AchievementsTab';
 import { Life, Pets, Services, Upgrades } from './panels/ShopLifeTabs';
 import { StanceTab } from './panels/StanceTab';
 import { Footer, Tabs } from './panels/shared';
+import { t } from '../core/i18n';
 
 type BusinessTab = 'market' | 'services' | 'money' | 'stance' | 'week' | 'month' | 'pets' | 'life' | 'upgrades' | 'ach';
 const TABS: readonly (readonly [BusinessTab, string])[] = [
-  ['market', '⚔️ Cạnh tranh'],
-  ['services', '🧾 Dịch vụ'],
-  ['money', '🏦 Vay & hụi'],
-  ['stance', '🪧 Định vị'],
-  ['week', '📊 Lãi lỗ'],
-  ['month', '📆 Tháng'],
-  ['pets', '🐾 Thú cưng'],
-  ['life', '🏡 Nhà & xe'],
-  ['upgrades', '🔧 Nâng cấp'],
-  ['ach', '🏆 Thành tựu'],
+  ['market', t('biz.canh_tranh')],
+  ['services', t('biz.dich_vu')],
+  ['money', t('biz.vay_hui')],
+  ['stance', t('biz.dinh_vi')],
+  ['week', t('biz.lai_lo')],
+  ['month', t('biz.thang')],
+  ['pets', t('biz.thu_cung')],
+  ['life', t('biz.nha_xe')],
+  ['upgrades', t('biz.nang_cap')],
+  ['ach', t('biz.thanh_tuu')],
 ];
 
 /** Bảng Kinh doanh: các hệ thống thêm (đối thủ, quảng cáo, tích điểm, vay, hụi, tuần, thú cưng, nhà, xe, thành tựu). */
@@ -60,8 +61,8 @@ function Money() {
   return (
     <>
       <div style={card}>
-        <b>🏦 Vay ngân hàng</b>
-        {level < LOAN_UNLOCK ? <div style={sub}>Mở ở cấp {LOAN_UNLOCK}.</div> : loan ? (
+        <b>{t('biz.vay_ngan_hang')}</b>
+        {level < LOAN_UNLOCK ? <div style={sub}>{t('biz.mo_o_cap')}{' '}{LOAN_UNLOCK}.</div> : loan ? (
           <>
             {(() => {
               const daily = loanInterest(loan.principal);
@@ -70,37 +71,36 @@ function Money() {
               const row = { display: 'flex', justifyContent: 'space-between', gap: 12 };
               return (
                 <div style={{ display: 'grid', gap: 2, marginTop: 4, maxWidth: 420 }}>
-                  <div style={row}><span>Nợ gốc</span><b>{formatMoney(loan.principal)}</b></div>
-                  <div style={row}><span>Lãi mỗi tối ({(LOAN_DAILY_RATE * 100).toFixed(1)}%)</span><span>{formatMoney(daily)}</span></div>
-                  <div style={row}><span>Lãi đã trả</span><span>{formatMoney(loan.interestPaid ?? 0)}</span></div>
-                  <div style={row}><span>Lãi còn phải trả nếu giữ tới hạn ({left} ngày)</span><span>{formatMoney(interestLeft)}</span></div>
+                  <div style={row}><span>{t('biz.no_goc')}</span><b>{formatMoney(loan.principal)}</b></div>
+                  <div style={row}><span>{t('biz.lai_moi_toi')}{(LOAN_DAILY_RATE * 100).toFixed(1)}%)</span><span>{formatMoney(daily)}</span></div>
+                  <div style={row}><span>{t('biz.lai_da_tra')}</span><span>{formatMoney(loan.interestPaid ?? 0)}</span></div>
+                  <div style={row}><span>{t('biz.lai_con_phai_tra_neu_giu')}{left}{' '}{t('biz.ngay')}</span><span>{formatMoney(interestLeft)}</span></div>
                   <div style={{ ...row, borderTop: '1px solid rgba(255,255,255,0.2)', paddingTop: 2 }}>
-                    <span>Tổng còn phải trả tới hạn (ngày {loan.dueDay})</span><b>{formatMoney(loan.principal + interestLeft)}</b>
+                    <span>{t('biz.tong_con_phai_tra_toi_han')}{' '}{loan.dueDay})</span><b>{formatMoney(loan.principal + interestLeft)}</b>
                   </div>
                 </div>
               );
             })()}
             <div style={{ marginTop: 6 }}>
-              <button style={{ ...btn, marginLeft: 0 }} onClick={() => repayLoan(Math.min(loan.principal, 500000))}>Trả 500.000đ</button>
-              <button style={btn} onClick={() => repayLoan()}>Trả hết gốc {formatMoney(loan.principal)}</button>
+              <button style={{ ...btn, marginLeft: 0 }} onClick={() => repayLoan(Math.min(loan.principal, 500000))}>{t('biz.tra_500_000d')}</button>
+              <button style={btn} onClick={() => repayLoan()}>{t('biz.tra_het_goc')}{' '}{formatMoney(loan.principal)}</button>
             </div>
             {loanTopUps(level, loan.principal).length > 0 ? (
               <div style={{ marginTop: 4 }}>
-                {loanTopUps(level, loan.principal).map((a) => <button key={a} style={{ ...btn, marginLeft: 0, marginRight: 6 }} onClick={() => takeLoan(a)}>Vay thêm {formatMoney(a)}</button>)}
+                {loanTopUps(level, loan.principal).map((a) => <button key={a} style={{ ...btn, marginLeft: 0, marginRight: 6 }} onClick={() => takeLoan(a)}>{t('biz.vay_them')}{' '}{formatMoney(a)}</button>)}
               </div>
             ) : (
-              <div style={sub}>Đã chạm hạn mức {formatMoney(loanLimit(level))} ở cấp này.</div>
+              <div style={sub}>{t('biz.da_cham_han_muc')}{' '}{formatMoney(loanLimit(level))}{' '}{t('biz.o_cap_nay')}</div>
             )}
             <div style={sub}>
-              Lãi trừ vào tiền mỗi tối, trả bớt gốc thì lãi giảm theo. Vay thêm sẽ dời hạn trả thành 30 ngày kể từ hôm nay; hạn mức {formatMoney(loanLimit(level))}.
-              Quá hạn ngân hàng sẽ tự trừ hết tiền gốc vào tài khoản.
+              {t('biz.lai_tru_vao_tien_moi_toi')}{' '}{formatMoney(loanLimit(level))}{t('biz.qua_han_ngan_hang_se_tu')}
             </div>
           </>
         ) : (
           <>
             <div style={sub}>
-              Vay để mở rộng sớm. Lãi {(LOAN_DAILY_RATE * 100).toFixed(1)}%/ngày trên tiền còn nợ, hạn 30 ngày, trả sớm không mất phí.
-              {loanOptions(level)[0] > 0 && ` Ví dụ vay ${formatMoney(loanOptions(level)[0])}: trả ${formatMoney(Math.round(loanOptions(level)[0] * LOAN_DAILY_RATE))}/ngày, giữ đủ 30 ngày thì tổng lãi ~${formatMoney(Math.round(loanOptions(level)[0] * LOAN_DAILY_RATE) * 30)}.`}
+              {t('biz.vay_de_mo_rong_som_lai')}{' '}{(LOAN_DAILY_RATE * 100).toFixed(1)}{t('biz.ngay_tren_tien_con_no_han')}
+              {loanOptions(level)[0] > 0 && t('biz.vi_du_vay_tra_ngay_giu', { v0: formatMoney(loanOptions(level)[0]), v1: formatMoney(Math.round(loanOptions(level)[0] * LOAN_DAILY_RATE)), v2: formatMoney(Math.round(loanOptions(level)[0] * LOAN_DAILY_RATE) * 30) })}
             </div>
             <div style={{ marginTop: 4 }}>
               {loanOptions(level).map((a) => <button key={a} style={{ ...btn, marginLeft: 0, marginRight: 6 }} onClick={() => takeLoan(a)}>Vay {formatMoney(a)}</button>)}
@@ -109,11 +109,11 @@ function Money() {
         )}
       </div>
       <div style={card}>
-        <b>🤝 Chơi hụi với hàng xóm</b>
-        {level < HUI_UNLOCK ? <div style={sub}>Mở ở cấp {HUI_UNLOCK}.</div> : hui ? (
+        <b>{t('biz.choi_hui_voi_hang_xom')}</b>
+        {level < HUI_UNLOCK ? <div style={sub}>{t('biz.mo_o_cap')}{' '}{HUI_UNLOCK}.</div> : hui ? (
           <>
-            <div>Góp {formatMoney(hui.daily)}/ngày · đã góp {hui.paidDays}/{hui.members} ngày</div>
-            <div>{hui.received ? '✅ Đã hốt hụi' : `Ngày ${hui.turnDay} tới lượt hốt ${formatMoney(hui.daily * hui.members)}`}</div>
+            <div>{t('biz.gop')}{' '}{formatMoney(hui.daily)}{t('biz.ngay_da_gop')}{' '}{hui.paidDays}/{hui.members}{' '}{t('biz.ngay_2')}</div>
+            <div>{hui.received ? t('biz.da_hot_hui') : t('biz.ngay_toi_luot_hot', { turnDay: hui.turnDay, v1: formatMoney(hui.daily * hui.members) })}</div>
             {/* GĐ159: "đã góp bao nhiêu trong vòng này". contributed = daily × paidDays là số CHÍNH XÁC (mỗi tối
                 trừ đúng daily rồi mới tăng paidDays — news vỡ hụi cũng tính vậy), không phải ước. Vòng đều tay hòa
                 về danh nghĩa: góp đủ members ngày, hốt đúng 1 lần = cả vòng góp. Lệch audit 28/10: trong game này
@@ -123,19 +123,18 @@ function Money() {
               const hr = huiRoundSummary(hui);
               return (
                 <div style={sub}>
-                  Đã góp <b>{formatMoney(hr.contributed)}</b> trong vòng này · còn góp {hr.daysLeft} ngày nữa. Vòng đều tay thì
-                  hòa (hốt 1 lần = cả vòng góp) — hốt sớm là có tiền dùng trước, còn chủ hụi ôm trốn thì mất thật phần đã góp.
+                  {t('biz.da_gop')}{' '}<b>{formatMoney(hr.contributed)}</b>{' '}{t('biz.trong_vong_nay_con_gop')}{' '}{hr.daysLeft}{' '}{t('biz.ngay_nua_vong_deu_tay_thi')}
                 </div>
               );
             })()}
-            <div style={sub}>Tiền góp trừ mỗi tối. Mỗi ngày có {(HUI_COLLAPSE * 100).toFixed(1)}% chủ hụi ôm tiền trốn!</div>
+            <div style={sub}>{t('biz.tien_gop_tru_moi_toi_moi')}{' '}{(HUI_COLLAPSE * 100).toFixed(1)}{t('biz.chu_hui_om_tien_tron')}</div>
           </>
         ) : (
           <>
-            <div style={sub}>Mỗi ngày góp một khoản, tới lượt mình thì hốt cả vòng. Như một khoản tiết kiệm có kỳ hạn, có chút rủi ro.</div>
+            <div style={sub}>{t('biz.moi_ngay_gop_mot_khoan_toi')}</div>
             {HUI_OPTIONS.map((o, i) => (
               <button key={i} style={{ ...btn, marginLeft: 0, marginRight: 6, marginTop: 4 }} onClick={() => joinHui(i)}>
-                Hụi {formatMoney(o.daily)}/ngày × {o.members} chân
+                {t('biz.hui')}{' '}{formatMoney(o.daily)}{t('biz.ngay_3')}{' '}{o.members}{' '}{t('biz.chan')}
               </button>
             ))}
           </>

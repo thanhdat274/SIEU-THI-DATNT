@@ -14,6 +14,7 @@ import { enPanelsMisc } from './en/panels_misc';
 import { enPanelsMorning } from './en/panels_morning';
 import { enOrder } from './en/order';
 import { enTrip } from './en/trip';
+import { enBiz } from './en/biz';
 
 /** English. `Record<I18nKey, string>` → thiếu khóa nào `tsc` báo ngay. */
 export const en: Record<I18nKey, string> = {
@@ -32,6 +33,7 @@ export const en: Record<I18nKey, string> = {
   ...enPanelsMorning,
   ...enOrder,
   ...enTrip,
+  ...enBiz,
   'settings.title': '⚙️ Settings',
   'settings.subtitle': 'Display, sound, gameplay, accessibility',
   'settings.tab.img': '👁 Display',
