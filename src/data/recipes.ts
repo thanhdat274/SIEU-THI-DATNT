@@ -344,6 +344,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'xoi_bat_bau', name: 'Xôi bát báu', category: 'fresh', buy: 19000, sell: 25000, color: 0xd8b890, unlock: 81, since: CONTENT_EPOCH_NOW },
   // GĐ2458: Bánh canh cá thu — Nha Trang/Phan Thiết trứ danh: cá thu tươi khoén nước lèo ngọt đậm. Mở 81; since: 1.
   { id: 'banh_canh_ca_thu', name: 'Bánh canh cá thu', category: 'fresh', buy: 10000, sell: 16000, color: 0xd8c098, unlock: 81, since: CONTENT_EPOCH_NOW },
+  // GĐ2459: Sò điệp nướng — quán nhậu trứ danh: sò điệp nướng vỉa mỡ hành, gạch aiu vàng ruộm. Mở 81; since: 1.
+  { id: 'so_diep_nuong', name: 'Sò điệp nướng', category: 'fresh', buy: 26000, sell: 35000, color: 0xe8b858, unlock: 81, since: CONTENT_EPOCH_NOW },
   { id: 'com_lam', name: 'Cơm lam', category: 'fresh', buy: 6500, sell: 10000, color: 0xd9c9a0, unlock: 80, since: CONTENT_EPOCH_NOW },
   { id: 'banh_uot', name: 'Bánh ướt', category: 'fresh', buy: 4500, sell: 7500, color: 0xf6efdc, unlock: 80, since: CONTENT_EPOCH_NOW },
   // GĐ2410: Xôi đậu phộng — miền Nam: xôi nếp nấu cùng đậu phộng, chan nước cốt dừa. Mở 76; since: 1.
@@ -2558,6 +2560,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_banh_canh_ca_thu', name: 'Bánh canh cá thu', station: 'hot_kettle',
     inputs: [{ productId: 'x_bot_gao', quantity: 2 }, { productId: 'x_ca_thu_tuoi', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 1 }],
     outputId: 'banh_canh_ca_thu', outputQty: 10, durationMin: 22, unlock: 81, reputationGain: 2, since: CONTENT_EPOCH_NOW },
+  { id: 'recipe_so_diep_nuong', name: 'Sò điệp nướng', station: 'food_grill',
+    inputs: [{ productId: 'so_diep', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 2 }],
+    outputId: 'so_diep_nuong', outputQty: 8, durationMin: 15, unlock: 81, reputationGain: 3, since: CONTENT_EPOCH_NOW },
+  // GĐ2459: Sò điệp nướng — sò điệp để nguyên vỏ NƯỚNG than/vỉa với mỡ hành + đậu phộng rang
+  // giã, gạch vàng ruộm — món nhậu trứ danh; bếp nướng đúng cách nấu.
+  // Thay thế: bơ tỏi quét thêm bỏ (giữ mỡ hành chuẩn Sài Gòn). Mở 81; since: 1.
+  // Mẻ (sò điệp 180k + hành phi 1.5k×2) = 183k → 8 con × 35k = 280k, lãi ~97k/mẻ,
+  // hời hơn bán thẳng nguyên liệu (250+5 = 255k < 280k — luật monKhuon).
   // GĐ2458: Bánh canh cá thu — sợi bánh canh bột gạo nấu nước lèo đậm, cá thu tươi khoén miếng
   // chần chín thả lên, hành phi rắc — nấu nước lèo ở nồi nước → trạm đúng cách nấu.
   // Thay thế: chả cá thác lác ăn kèm bỏ qua (cá thu là chính). Mở 81; since: 1.

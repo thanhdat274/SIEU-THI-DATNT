@@ -320,6 +320,7 @@ const MON_THAT: Record<string, { name: string; station: string; cachNau: string 
   recipe_banh_canh_cha_dau: { name: 'Bánh canh chả dầu', station: 'hot_kettle', cachNau: 'sợi bánh canh nước lèo chả cá chiên dầu cắt khoanh (Quảng Bình)' },
   recipe_xoi_bat_bau: { name: 'Xôi bát báu', station: 'rice_station', cachNau: 'xôi nếp hấp trộn lạp xưởng chả lụa trứng nhiều topping (Nam Bộ)' },
   recipe_banh_canh_ca_thu: { name: 'Bánh canh cá thu', station: 'hot_kettle', cachNau: 'sợi bánh canh nước lèo cá thu tươi khoén miếng (Nha Trang)' },
+  recipe_so_diep_nuong: { name: 'Sò điệp nướng', station: 'food_grill', cachNau: 'sò điệp nguyên vỏ nướng than mỡ hành gạch vàng (quán nhậu)' },
   recipe_goi_ga_xe: { name: 'Gỏi gà xé', station: 'steamer', cachNau: 'gà ta luộc xé sợi trộn hành rau đậu phộng nước mắm chua ngọt (toàn quốc)' },
   recipe_che_thap_cam: { name: 'Chè thập cẩm', station: 'hot_kettle', cachNau: 'đa hạt thạch bột năng nhiều màu chuối luộc chan cốt dừa (Nam Bộ)' },
 };
