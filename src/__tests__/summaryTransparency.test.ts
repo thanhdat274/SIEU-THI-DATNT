@@ -51,7 +51,7 @@ describe('tổng kết ngày minh bạch (GĐ1832)', () => {
 
   it('panel tổng kết có dòng ⭐ Thưởng thành tựu và 💡 phí vận hành', () => {
     const src = readFileSync(join(ROOT, 'src/ui/panels/ReportPanels.tsx'), 'utf8');
-    expect(src).toContain('Thưởng thành tựu (vào ví sau tổng kết)');
-    expect(src).toContain('trong đó 💡 phí vận hành');
+    expect(src).toContain("t('panels_report.thuong_thanh_tuu_vao_vi_sau')");
+    expect(src).toContain("t('panels_report.trong_do_phi_van_hanh')");
   });
 });

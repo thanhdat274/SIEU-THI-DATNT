@@ -4,6 +4,7 @@ import type { loyaltyPayoff } from '../../data/biz';
 import type { happyPayoff } from '../../data/rhythm';
 import type { spoilNightReport, storeMissRevenue } from '../../data/advice';
 import { Callout } from './shared';
+import { t } from '../../core/i18n';
 
 type P = {
   loyaltyPay: ReturnType<typeof loyaltyPayoff>;
@@ -18,28 +19,28 @@ export function SummaryMoneyCards({ loyaltyPay, happyPay, missRev, spoilNite, op
   return (
     <>
           {loyaltyPay && loyaltyPay.verdict !== 'soon' && (
-            <Callout tone={loyaltyPay.verdict === 'keep' ? 'ok' : 'warn'} style={{ marginTop: 8 }} title="🎫 Thẻ tích điểm hôm nay">
+            <Callout tone={loyaltyPay.verdict === 'keep' ? 'ok' : 'warn'} style={{ marginTop: 8 }} title={t('panels_report.the_tich_diem_hom_nay')}>
               <div style={{ fontSize: 12, opacity: 0.75, marginTop: 2 }}>
                 {loyaltyPay.verdict === 'keep'
-                  ? `Nhờ +${loyaltyPay.boostPct}% khách, kéo thêm ~${loyaltyPay.extraCustomers} khách (~${formatMoney(loyaltyPay.extraValue)}/ngày) — so với quà tặng ~${formatMoney(loyaltyPay.costToday)}/ngày (món ~${formatMoney(loyaltyPay.avgGift)}) là ĐÁNG giữ.`
-                  : `Quà tặng ~${formatMoney(loyaltyPay.costToday)}/ngày (món ~${formatMoney(loyaltyPay.avgGift)}) cao hơn giá trị khách kéo thêm (~${formatMoney(loyaltyPay.extraValue)}/ngày) — nâng lên ${5}/${10}/${15} tem hoặc tắt cho đỡ tốn.`}
+                  ? t('panels_report.nho_khach_keo_them_khach_ngay', { boostPct: loyaltyPay.boostPct, extraCustomers: loyaltyPay.extraCustomers, v2: formatMoney(loyaltyPay.extraValue), v3: formatMoney(loyaltyPay.costToday), v4: formatMoney(loyaltyPay.avgGift) })
+                  : t('panels_report.qua_tang_ngay_mon_cao_hon', { v0: formatMoney(loyaltyPay.costToday), v1: formatMoney(loyaltyPay.avgGift), v2: formatMoney(loyaltyPay.extraValue), n5: 5, n10: 10, n15: 15 })}
               </div>
             </Callout>
           )}
           {happyPay && (
             <Callout tone={happyPay.verdict === 'great' ? 'ok' : happyPay.verdict === 'ok' ? 'accent' : 'danger'} style={{ marginTop: 8 }}
-              title={`🌞 Giờ vàng hôm nay (${happyPay.from}h–${happyPay.to}h)`}>
+              title={t('panels_report.gio_vang_hom_nay_h_h', { from: happyPay.from, to: happyPay.to })}>
               <div style={{ fontSize: 12, opacity: 0.75, marginTop: 2 }}>
                 {happyPay.verdict === 'great'
-                  ? `Kéo thêm ~${happyPay.extraCustomers} khách (~${formatMoney(happyPay.extraValue)} lợi) so tiền giảm giá ~${formatMoney(happyPay.discountCost)} — hiệu quả ~${happyPay.efficiency.toFixed(1)}×, giữ mức này.`
+                  ? t('panels_report.keo_them_khach_loi_so_tien', { extraCustomers: happyPay.extraCustomers, v1: formatMoney(happyPay.extraValue), v2: formatMoney(happyPay.discountCost), v3: happyPay.efficiency.toFixed(1) })
                   : happyPay.verdict === 'ok'
-                  ? `Kéo thêm ~${happyPay.extraCustomers} khách (~${formatMoney(happyPay.extraValue)} lợi) nhưng tiền giảm giá ~${formatMoney(happyPay.discountCost)} chiếm phần lớn (hiệu quả ~${happyPay.efficiency.toFixed(1)}×) — cân nhắc hạ mức chiết khấu để lời hơn.`
-                  : `Tiền giảm giá ~${formatMoney(happyPay.discountCost)} vượt lợi khách kéo thêm (~${formatMoney(happyPay.extraValue)}) — giờ vàng đang tốn, nên hạ mức giảm hoặc đổi giờ sang giờ vắng.`}
+                  ? t('panels_report.keo_them_khach_loi_nhung_tien', { extraCustomers: happyPay.extraCustomers, v1: formatMoney(happyPay.extraValue), v2: formatMoney(happyPay.discountCost), v3: happyPay.efficiency.toFixed(1) })
+                  : t('panels_report.tien_giam_gia_vuot_loi_khach', { v0: formatMoney(happyPay.discountCost), v1: formatMoney(happyPay.extraValue) })}
               </div>
             </Callout>
           )}
           {missRev && missRev.totalLoss > 0 && (
-            <Callout tone="danger" style={{ marginTop: 8 }} title={<>📦 Hết hàng bỏ lỡ ~{formatMoney(missRev.totalLoss)} hôm nay</>}>
+            <Callout tone="danger" style={{ marginTop: 8 }} title={<>{t('panels_report.het_hang_bo_lo')}{formatMoney(missRev.totalLoss)}{' '}{t('panels_report.hom_nay_2')}</>}>
               <div style={{ fontSize: 12, opacity: 0.75, marginTop: 2 }}>
                 {missRev.inStorageCount > 0 && missRev.outOfStockCount > 0
                   ? `${missRev.rows.length} món khách tìm mà kệ trống: ${missRev.inStorageCount} món còn trong kho (chỉ thiếu chỗ bày — xếp thêm lên kệ) · ${missRev.outOfStockCount} món hết cả kho (nhập thêm). ${missRev.rows.slice(0, 3).map((r) => `${r.name} ~${formatMoney(r.estLoss)}`).join(' · ')}`
@@ -50,19 +51,19 @@ export function SummaryMoneyCards({ loyaltyPay, happyPay, missRev, spoilNite, op
             </Callout>
           )}
           {spoilNite && spoilNite.totalCost > 0 && (
-            <Callout tone="danger" style={{ marginTop: 8 }} title={<>🥀 Đêm qua hỏng ~{formatMoney(spoilNite.totalCost)} hàng</>}>
+            <Callout tone="danger" style={{ marginTop: 8 }} title={<>{t('panels_report.dem_qua_hong')}{formatMoney(spoilNite.totalCost)}{' '}{t('panels_report.hang')}</>}>
               <div style={{ marginTop: 4, display: 'grid', gap: 2 }}>
                 {spoilNite.rows.slice(0, 3).map((r) => (
                   <button key={r.id} onClick={() => openPanel({ type: 'order' })}
                     style={{ display: 'flex', gap: 8, alignItems: 'baseline', background: 'transparent', border: 'none', color: 'inherit', fontSize: 12, cursor: 'pointer', padding: 0, textAlign: 'left' }}>
-                    <span style={{ minWidth: 150 }}>{r.name}: {r.spoiled} món · vốn {formatMoney(r.cost)} →</span>
+                    <span style={{ minWidth: 150 }}>{r.name}: {r.spoiled}{' '}{t('panels_report.mon_von_2')}{' '}{formatMoney(r.cost)} →</span>
                     <span style={{ opacity: 0.8 }}>
-                      {r.kind === 'cold' ? 'cần lạnh để ngoài tủ' : r.kind === 'short' ? 'món tươi hạn ngắn, nhập nhiều không kịp bán' : 'để lâu hết hạn'}
+                      {r.kind === 'cold' ? t('panels_report.can_lanh_de_ngoai_tu') : r.kind === 'short' ? t('panels_report.mon_tuoi_han_ngan_nhap_nhieu') : t('panels_report.de_lau_het_han')}
                     </span>
                   </button>
                 ))}
               </div>
-              <div style={{ fontSize: 12, opacity: 0.75, marginTop: 3 }}>Giảm bớt nhập món hay hỏng hoặc cất tủ lạnh hàng mát — chỉnh ở Nhập hàng.</div>
+              <div style={{ fontSize: 12, opacity: 0.75, marginTop: 3 }}>{t('panels_report.giam_bot_nhap_mon_hay_hong')}</div>
             </Callout>
           )}
     </>

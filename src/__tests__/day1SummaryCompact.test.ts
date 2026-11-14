@@ -19,9 +19,9 @@ describe('Tổng kết ngày 1–2 gọn — khối nâng cao sau nút Xem chi t
   it('nút Xem chi tiết chỉ hiện ngày 1–2; "Vì sao khách không mua" vẫn nằm ngoài khối gập', () => {
     expect(src).toContain('day <= 2 &&');
     expect(src).toContain('setMore((v) => !v)');
-    expect(src).toContain('Vì sao khách không mua được · nên làm gì');
+    expect(src).toContain("t('panels_report.vi_sao_khach_khong_mua_duoc')");
     // nút toggle đứng TRƯỚC thẻ gợi ý trong JSX — thứ tự: bảng → lãi thật → stats → toggle → advice
     expect(src.indexOf('setMore((v) => !v)')).toBeGreaterThan(src.indexOf('<HourChart'));
-    expect(src.indexOf('Vì sao khách không mua được')).toBeGreaterThan(src.indexOf('setMore((v) => !v)'));
+    expect(src.indexOf("t('panels_report.vi_sao_khach_khong_mua_duoc')")).toBeGreaterThan(src.indexOf('setMore((v) => !v)'));
   });
 });

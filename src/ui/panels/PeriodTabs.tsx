@@ -12,6 +12,7 @@ import { venueTrendSummary } from '../../data/venueTrend';
 import { riskTrendSummary } from '../../data/risk';
 import { card, title, pill, iconTile, sub, row } from './businessStyles';
 import { fmtNum } from '../../core/format';
+import { t } from '../../core/i18n';
 
 /** Tab Lãi lỗ tuần và Tháng (tách từ BusinessPanel, GĐ876). */
 export function Week() {
@@ -32,25 +33,25 @@ export function Week() {
   return (
     <>
       <div style={card}>
-        <b>📈 Lãi lỗ {history.length} ngày gần đây</b>
+        <b>{t('panels_report.lai_lo')}{' '}{history.length}{' '}{t('panels_report.ngay_gan_day')}</b>
         <div style={sub}>
-          Tổng tiền vào − ra: <b style={{ color: total >= 0 ? '#2ecc71' : '#e74c3c' }}>{trendMark(total)}{formatMoney(total)}</b>
-          {best && ` · ngày tốt nhất: ngày ${best.day} (${formatMoney(best.profit)})`}
+          {t('panels_report.tong_tien_vao_ra')}{' '}<b style={{ color: total >= 0 ? '#2ecc71' : '#e74c3c' }}>{trendMark(total)}{formatMoney(total)}</b>
+          {best && t('panels_report.ngay_tot_nhat_ngay', { day: best.day, v1: formatMoney(best.profit) })}
         </div>
-        {history.length < 2 ? <div style={sub}>Chơi thêm vài ngày để xem biểu đồ.</div> : <HistoryChart history={history} />}
+        {history.length < 2 ? <div style={sub}>{t('panels_report.choi_them_vai_ngay_de_xem')}</div> : <HistoryChart history={history} />}
       </div>
       <div style={card}>
-        <b>📅 Tuần này (ngày {w.startDay}–{w.startDay + WEEK_DAYS - 1}{(w.startDay - 1) % WEEK_DAYS === 0 ? ' · Thứ 2 → Chủ nhật' : ''}) — hôm nay {weekdayOf(day)}</b>
-        <div>Doanh thu {formatMoney(w.revenue)} · Lãi {formatMoney(w.profit)} · {w.customers} khách</div>
+        <b>{t('panels_report.tuan_nay_ngay')}{' '}{w.startDay}–{w.startDay + WEEK_DAYS - 1}{(w.startDay - 1) % WEEK_DAYS === 0 ? t('panels_report.thu_2_chu_nhat') : ''}{t('panels_report.hom_nay')}{' '}{weekdayOf(day)}</b>
+        <div>Doanh thu {formatMoney(w.revenue)}{' '}{t('panels_report.lai')}{' '}{formatMoney(w.profit)} · {w.customers}{' '}{t('panels_report.khach')}</div>
         {w.goal !== null ? (
           <>
-            <div style={{ marginTop: 4 }}>🎯 Mục tiêu: {formatMoney(w.goal)} (thưởng 5% nếu đạt)</div>
+            <div style={{ marginTop: 4 }}>{t('panels_report.muc_tieu')}{' '}{formatMoney(w.goal)}{' '}{t('panels_report.thuong_5_neu_dat')}</div>
             <div style={{ height: 8, background: '#555', borderRadius: 4, marginTop: 4 }}>
               <div style={{ width: `${Math.min(100, (w.revenue / w.goal) * 100)}%`, height: '100%', borderRadius: 4, background: '#2ecc71' }} />
             </div>
           </>
-        ) : <div style={sub}>Tuần đầu chưa có mục tiêu; hết tuần sẽ đặt mục tiêu cao hơn 10%.</div>}
-        <div style={sub}>Số liệu cộng vào lúc tổng kết mỗi tối.</div>
+        ) : <div style={sub}>{t('panels_report.tuan_dau_chua_co_muc_tieu')}</div>}
+        <div style={sub}>{t('panels_report.so_lieu_cong_vao_luc_tong')}</div>
       </div>
       {/* Thử thách tuần: mục tiêu phụ của tuần hiện tại, thưởng tự cộng lúc chốt tuần (không có nút nhận). */}
       <div style={card}>
@@ -67,7 +68,7 @@ export function Week() {
         </div>
         <div style={{ ...row, marginTop: 4, flexWrap: 'wrap' }}>
           <span>{fmtNum(Math.round(chCurrent))}/{fmtNum(Math.round(chTarget))} {ch.unit}</span>
-          {chMet && <span style={{ ...pill, background: 'rgba(46,204,113,0.2)', color: '#2ecc71' }}>✅ Đã đủ — giữ đều nhé!</span>}
+          {chMet && <span style={{ ...pill, background: 'rgba(46,204,113,0.2)', color: '#2ecc71' }}>{t('panels_report.da_du_giu_deu_nhe')}</span>}
         </div>
         {/* GĐ121: nhịp chạy tuần — dòng dự báo + nguy cơ mất chuỗi (thuần đọc, không đổi state) */}
         {!chMet && pace && (() => {
@@ -76,76 +77,76 @@ export function Week() {
           // GĐ262: nói "tới Chủ nhật" chỉ khi cửa sổ tuần khối-aligned (startDay 1/8/15… — play thường
           // luôn đúng vì endDay tăng 1 ngày each; save lệch do can thiệp tay thì nói trung tính).
           const aligned = (w.startDay - 1) % WEEK_DAYS === 0;
-          const due = aligned ? ' (tới Chủ nhật)' : '';
-          const dueLong = aligned ? ' trước Chủ nhật' : '';
+          const due = aligned ? t('panels_report.toi_chu_nhat') : '';
+          const dueLong = aligned ? t('panels_report.truoc_chu_nhat') : '';
           return (
             <>
               <div style={{ ...row, marginTop: 4, flexWrap: 'wrap', gap: 4 }}>
-                <span style={{ opacity: 0.85 }}>⏱ Nhịp {pctPace}% mục tiêu · còn {pace.remainingDays} ngày{due}</span>
+                <span style={{ opacity: 0.85 }}>{t('panels_report.nhip')}{' '}{pctPace}{t('panels_report.muc_tieu_con')}{' '}{pace.remainingDays}{' '}{t('panels_report.ngay_4')}{due}</span>
                 {pace.onTrack
-                  ? <span style={{ ...pill, background: 'rgba(46,204,113,0.2)', color: '#2ecc71' }}>📈 Dự kiến kịp ({pctProj} {ch.unit})</span>
-                  : <span style={{ ...pill, background: 'rgba(241,196,15,0.2)', color: '#f1c40f' }}>📉 Dự kiến hụt — còn {pace.remainingDays} ngày để bù{dueLong}</span>}
+                  ? <span style={{ ...pill, background: 'rgba(46,204,113,0.2)', color: '#2ecc71' }}>{t('panels_report.du_kien_kip')}{pctProj} {ch.unit})</span>
+                  : <span style={{ ...pill, background: 'rgba(241,196,15,0.2)', color: '#f1c40f' }}>{t('panels_report.du_kien_hut_con')}{' '}{pace.remainingDays}{' '}{t('panels_report.ngay_de_bu')}{dueLong}</span>}
               </div>
               {pace.streakAtRisk && (
                 <div style={{ ...sub, color: '#e74c3c', marginTop: 3 }}>
-                  ⚠️ Đang hụt MÀ có chuỗi {biz.weekStreak} tuần — trượt tuần này sẽ mất +{pace.streakXp} XP chuỗi.
+                  {t('panels_report.dang_hut_ma_co_chuoi')}{' '}{biz.weekStreak}{' '}{t('panels_report.tuan_truot_tuan_nay_se_mat')}{pace.streakXp}{' '}{t('panels_report.xp_chuoi')}
                 </div>
               )}
               <div style={{ ...sub, marginTop: 3 }}>
-                Còn thiếu {fmtNum(Math.round(pace.missing))} {ch.unit} nữa là đủ mục tiêu tuần này.
+                {t('panels_report.con_thieu')}{' '}{fmtNum(Math.round(pace.missing))} {ch.unit}{' '}{t('panels_report.nua_la_du_muc_tieu_tuan')}
               </div>
             </>
           );
         })()}
         <div style={sub}>
-          Thưởng {formatMoney(ch.reward(level))}
-          {biz.weekStreak > 0 && ` · chuỗi ${biz.weekStreak} tuần`}
+          {t('panels_report.thuong_3')}{' '}{formatMoney(ch.reward(level))}
+          {biz.weekStreak > 0 && t('panels_report.chuoi_tuan', { weekStreak: biz.weekStreak })}
           {/* GĐ169 — chuỗi đền bằng XP thay vì nhân tiền: từ tuần đạt thứ 3 liên tiếp mỗi tuần +35% XP cần lên cấp. */}
-          {biz.weekStreak + 1 >= STREAK_XP_FROM && ` · đạt tuần này: +${Math.round(STREAK_XP_RATE_WEEK * xpToNext(level))} XP`}
+          {biz.weekStreak + 1 >= STREAK_XP_FROM && t('panels_report.dat_tuan_nay_xp', { v0: Math.round(STREAK_XP_RATE_WEEK * xpToNext(level)) })}
         </div>
       </div>
       {r && (
         <div style={card}>
-          <b>📊 Báo cáo tuần {r.week}</b>
-          <div>Doanh thu {formatMoney(r.revenue)} · Lãi {formatMoney(r.profit)} · {r.customers} khách ({r.unhappy} không vui)</div>
-          {r.goal !== null && <div>{r.goalMet ? `✅ Đạt mục tiêu ${formatMoney(r.goal)}, thưởng ${formatMoney(r.reward)}` : `❌ Chưa đạt mục tiêu ${formatMoney(r.goal)}`}</div>}
+          <b>{t('panels_report.bao_cao_tuan')}{' '}{r.week}</b>
+          <div>Doanh thu {formatMoney(r.revenue)}{' '}{t('panels_report.lai')}{' '}{formatMoney(r.profit)} · {r.customers}{' '}{t('panels_report.khach_2')}{r.unhappy}{' '}{t('panels_report.khong_vui')}</div>
+          {r.goal !== null && <div>{r.goalMet ? t('panels_report.dat_muc_tieu_thuong', { v0: formatMoney(r.goal), v1: formatMoney(r.reward) }) : t('panels_report.chua_dat_muc_tieu', { v0: formatMoney(r.goal) })}</div>}
           {r.challenge && (
             <div>
               {r.challenge.met
                 ? `🎯 ${r.challenge.icon} ${r.challenge.title}: XONG, +${formatMoney(r.challenge.reward)}`
-                : `🎯 ${r.challenge.icon} ${r.challenge.title}: ${fmtNum(Math.round(r.challenge.current))}/${fmtNum(Math.round(r.challenge.target))} ${r.challenge.unit} — chưa xong`}
+                : t('panels_report.chua_xong', { icon: r.challenge.icon, title: r.challenge.title, v2: fmtNum(Math.round(r.challenge.current)), v3: fmtNum(Math.round(r.challenge.target)), unit: r.challenge.unit })}
             </div>
           )}
-          {(r.challengeStreak ?? biz.weekStreak) >= 2 && <div>🔥 Chuỗi {(r.challengeStreak ?? biz.weekStreak)} tuần{r.streakXp ? ` — +${r.streakXp} XP` : ''}</div>}
-          {r.best && <div>💰 Lãi nhiều nhất: {productById(r.best).name}</div>}
-          {r.worst && <div>📉 Lãi mỗi món thấp nhất: {productById(r.worst).name} · cân nhắc tăng giá hoặc bỏ bớt</div>}
-          <div>🎯 Mục tiêu tuần tới: {formatMoney(r.nextGoal)}</div>
+          {(r.challengeStreak ?? biz.weekStreak) >= 2 && <div>{t('panels_report.chuoi')}{' '}{(r.challengeStreak ?? biz.weekStreak)}{' '}{t('panels_report.tuan')}{r.streakXp ? ` — +${r.streakXp} XP` : ''}</div>}
+          {r.best && <div>{t('panels_report.lai_nhieu_nhat_2')}{' '}{productById(r.best).name}</div>}
+          {r.worst && <div>{t('panels_report.lai_moi_mon_thap_nhat')}{' '}{productById(r.worst).name}{' '}{t('panels_report.can_nhac_tang_gia_hoac_bo')}</div>}
+          <div>{t('panels_report.muc_tieu_tuan_toi')}{' '}{formatMoney(r.nextGoal)}</div>
         </div>
       )}
       {/* Xu hướng cơ sở: chi nhánh 24/7 + quán nước có đang đỡ hơn theo ngày không (cửa sổ 14 ngày). */}
       {vt.length > 0 && (
         <div style={card}>
-          <div style={title}>📈 Xu hướng cơ sở (14 ngày)</div>
-          {vt.map((t) => (
-            <div key={t.label} style={{ marginTop: 6 }}>
+          <div style={title}>{t('panels_report.xu_huong_co_so_14_ngay')}</div>
+          {vt.map((tr) => (
+            <div key={tr.label} style={{ marginTop: 6 }}>
               <div style={{ ...row, flexWrap: 'wrap' }}>
-                <b>{t.icon} {t.label}</b>
+                <b>{tr.icon} {tr.label}</b>
                 <span
-                  style={{ ...pill, background: t.direction === 'up' ? 'rgba(46,204,113,0.2)' : t.direction === 'down' ? 'rgba(231,76,60,0.2)' : 'rgba(255,255,255,0.08)', color: t.direction === 'up' ? '#2ecc71' : t.direction === 'down' ? '#e74c3c' : '#ccc' }}
+                  style={{ ...pill, background: tr.direction === 'up' ? 'rgba(46,204,113,0.2)' : tr.direction === 'down' ? 'rgba(231,76,60,0.2)' : 'rgba(255,255,255,0.08)', color: tr.direction === 'up' ? '#2ecc71' : tr.direction === 'down' ? '#e74c3c' : '#ccc' }}
                 >
-                  {t.direction === 'up' ? '📈 đang tăng' : t.direction === 'down' ? '📉 đang giảm' : '➖ khá đều'}
+                  {tr.direction === 'up' ? t('panels_report.dang_tang') : tr.direction === 'down' ? t('panels_report.dang_giam') : t('panels_report.kha_deu')}
                 </span>
               </div>
               <div style={{ marginTop: 3 }}>
-                Mới nhất <b>{formatMoney(t.last)}</b>
-                {t.days >= 2 && (
+                {t('panels_report.moi_nhat')}{' '}<b>{formatMoney(tr.last)}</b>
+                {tr.days >= 2 && (
                   <>
-                    {' '}· trung bình {formatMoney(t.recent)} so {formatMoney(t.earlier)} ({t.delta >= 0 ? '+' : ''}{formatMoney(t.delta)})
-                    {t.pct !== 0 && ` · ${t.pct > 0 ? '+' : ''}${t.pct}%`}
+                    {' '}{t('panels_report.trung_binh')}{' '}{formatMoney(tr.recent)} so {formatMoney(tr.earlier)} ({tr.delta >= 0 ? '+' : ''}{formatMoney(tr.delta)})
+                    {tr.pct !== 0 && ` · ${tr.pct > 0 ? '+' : ''}${tr.pct}%`}
                   </>
                 )}
-                {t.best && <div style={sub}>Cao nhất cửa sổ: ngày {t.best.day} · {formatMoney(t.best.value)}</div>}
-                <div style={sub}>{t.label.startsWith('Chi nhánh') ? 'Lãi thô chi nhánh = thu − lương, chưa trừ tiền điện cuối ngày.' : 'Lãi quán nước = doanh thu − lương nhân viên.'} Cần ≥2 ngày để thấy xu hướng.</div>
+                {tr.best && <div style={sub}>{t('panels_report.cao_nhat_cua_so_ngay')}{' '}{tr.best.day} · {formatMoney(tr.best.value)}</div>}
+                <div style={sub}>{tr.label.startsWith(t('panels_report.chi_nhanh')) ? t('panels_report.lai_tho_chi_nhanh_thu_luong') : t('panels_report.lai_quan_nuoc_doanh_thu_luong')}{' '}{t('panels_report.can_2_ngay_de_thay_xu')}</div>
               </div>
             </div>
           ))}
@@ -159,28 +160,28 @@ export function Week() {
         const isDown = rs.leakDir === 'down';
         return (
           <div style={card}>
-            <div style={title}>📉 Xu hướng rủi ro (14 ngày)</div>
+            <div style={title}>{t('panels_report.xu_huong_rui_ro_14_ngay')}</div>
             <div style={{ ...row, flexWrap: 'wrap' }}>
-              <b>🛡️ Lọt rủi ro (trộm + tiền giả + gian lận)</b>
+              <b>{t('panels_report.lot_rui_ro_trom_tien_gia')}</b>
               <span
                 style={{ ...pill, background: isUp ? 'rgba(231,76,60,0.2)' : isDown ? 'rgba(46,204,113,0.2)' : 'rgba(255,255,255,0.08)', color: isUp ? '#e74c3c' : isDown ? '#2ecc71' : '#ccc' }}
               >
-                {isUp ? '📈 đang tăng' : isDown ? '📉 đang giảm' : '➖ khá đều'}
+                {isUp ? t('panels_report.dang_tang') : isDown ? t('panels_report.dang_giam') : t('panels_report.kha_deu')}
               </span>
             </div>
             <div style={{ marginTop: 3 }}>
-              Mới nhất <b>{formatMoney(last?.leak ?? 0)}</b>/ngày
+              {t('panels_report.moi_nhat')}{' '}<b>{formatMoney(last?.leak ?? 0)}</b>{t('panels_report.ngay_5')}
               {rs.days >= 2 && (
-                <> · nửa gần {formatMoney(rs.leakLast)} so nửa trước {formatMoney(rs.leakEarly)} ({rs.leakDelta >= 0 ? '+' : ''}{formatMoney(rs.leakDelta)})</>
+                <>{' '}{t('panels_report.nua_gan')}{' '}{formatMoney(rs.leakLast)}{' '}{t('panels_report.so_nua_truoc')}{' '}{formatMoney(rs.leakEarly)} ({rs.leakDelta >= 0 ? '+' : ''}{formatMoney(rs.leakDelta)})</>
               )}
-              {' · '}tuần này lọt <b>{formatMoney(rs.weekLeak)}</b> · chặn <b>{formatMoney(rs.weekBlocked)}</b>
+              {' · '}{t('panels_report.tuan_nay_lot')}{' '}<b>{formatMoney(rs.weekLeak)}</b>{' '}{t('panels_report.chan')}{' '}<b>{formatMoney(rs.weekBlocked)}</b>
             </div>
             {isUp && (
               <div style={{ ...sub, marginTop: 4, color: '#e74c3c' }}>
-                🛡️ Lọt {formatMoney(rs.weekLeak)} tuần này — camera/chó/mắt tinh có đang đỡ?
+                {t('panels_report.lot_2')}{' '}{formatMoney(rs.weekLeak)}{' '}{t('panels_report.tuan_nay_camera_cho_mat_tinh')}
               </div>
             )}
-            <div style={sub}>Chỉ báo 2 chiều: lọt = thứ thật mất; chặn = thứ thu lại/bắt được. Cần ≥2 ngày để thấy xu hướng.</div>
+            <div style={sub}>{t('panels_report.chi_bao_2_chieu_lot_thu')}</div>
           </div>
         );
       })()}
@@ -205,17 +206,17 @@ export function Month() {
   return (
     <>
       <div style={card}>
-        <b>📆 Tháng {m} này (bắt đầu ngày {mo.startDay}, hôm nay ngày {day})</b>
-        <div>Doanh thu {formatMoney(mo.revenue)} · Lãi {formatMoney(mo.profit)} · {mo.customers} khách</div>
+        <b>{t('panels_report.thang')}{' '}{m}{' '}{t('panels_report.nay_bat_dau_ngay')}{' '}{mo.startDay}{t('panels_report.hom_nay_ngay')}{' '}{day})</b>
+        <div>Doanh thu {formatMoney(mo.revenue)}{' '}{t('panels_report.lai')}{' '}{formatMoney(mo.profit)} · {mo.customers}{' '}{t('panels_report.khach')}</div>
         {mo.goal !== null ? (
           <>
-            <div style={{ marginTop: 4 }}>🎯 Mục tiêu: {formatMoney(mo.goal)} (thưởng 6% nếu đạt)</div>
+            <div style={{ marginTop: 4 }}>{t('panels_report.muc_tieu')}{' '}{formatMoney(mo.goal)}{' '}{t('panels_report.thuong_6_neu_dat')}</div>
             <div style={{ height: 8, background: '#555', borderRadius: 4, marginTop: 4 }}>
               <div style={{ width: `${Math.min(100, (mo.revenue / Math.max(1, mo.goal)) * 100)}%`, height: '100%', borderRadius: 4, background: '#2ecc71' }} />
             </div>
           </>
-        ) : <div style={sub}>Tháng đầu chưa có mục tiêu; hết tháng sẽ đặt mục tiêu cao hơn 15%.</div>}
-        <div style={sub}>Số liệu cộng vào lúc tổng kết mỗi tối. Một năm có 12 tháng, lễ hội theo từng tháng.</div>
+        ) : <div style={sub}>{t('panels_report.thang_dau_chua_co_muc_tieu')}</div>}
+        <div style={sub}>{t('panels_report.so_lieu_cong_vao_luc_tong_2')}</div>
       </div>
       <div style={card}>
         <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
@@ -231,7 +232,7 @@ export function Month() {
         </div>
         <div style={{ ...row, marginTop: 4, flexWrap: 'wrap' }}>
           <span>{fmtNum(Math.round(chCurrent))}/{fmtNum(Math.round(chTarget))} {ch.unit}</span>
-          {chMet && <span style={{ ...pill, background: 'rgba(46,204,113,0.2)', color: '#2ecc71' }}>✅ Đã đủ — giữ đều nhé!</span>}
+          {chMet && <span style={{ ...pill, background: 'rgba(46,204,113,0.2)', color: '#2ecc71' }}>{t('panels_report.da_du_giu_deu_nhe')}</span>}
         </div>
         {!chMet && mPace && (() => {
           const pctPace = Math.round(mPace.pace * 100);
@@ -239,45 +240,45 @@ export function Month() {
           return (
             <>
               <div style={{ ...row, marginTop: 4, flexWrap: 'wrap', gap: 4 }}>
-                <span style={{ opacity: 0.85 }}>⏱ Nhịp {pctPace}% mục tiêu · còn {mPace.remainingDays} ngày (hết tháng {m})</span>
+                <span style={{ opacity: 0.85 }}>{t('panels_report.nhip')}{' '}{pctPace}{t('panels_report.muc_tieu_con')}{' '}{mPace.remainingDays}{' '}{t('panels_report.ngay_het_thang')}{' '}{m})</span>
                 {mPace.onTrack
-                  ? <span style={{ ...pill, background: 'rgba(46,204,113,0.2)', color: '#2ecc71' }}>📈 Dự kiến kịp ({pctProj} {ch.unit})</span>
-                  : <span style={{ ...pill, background: 'rgba(241,196,15,0.2)', color: '#f1c40f' }}>📉 Dự kiến hụt — còn {mPace.remainingDays} ngày để bù</span>}
+                  ? <span style={{ ...pill, background: 'rgba(46,204,113,0.2)', color: '#2ecc71' }}>{t('panels_report.du_kien_kip')}{pctProj} {ch.unit})</span>
+                  : <span style={{ ...pill, background: 'rgba(241,196,15,0.2)', color: '#f1c40f' }}>{t('panels_report.du_kien_hut_con')}{' '}{mPace.remainingDays}{' '}{t('panels_report.ngay_de_bu')}</span>}
               </div>
               {mPace.streakAtRisk && (
                 <div style={{ ...sub, color: '#e74c3c', marginTop: 3 }}>
-                  ⚠️ Đang hụt MÀ có chuỗi {biz.monthStreak} tháng — trượt tháng này sẽ mất +{mPace.streakXp} XP chuỗi.
+                  {t('panels_report.dang_hut_ma_co_chuoi')}{' '}{biz.monthStreak}{' '}{t('panels_report.thang_truot_thang_nay_se_mat')}{mPace.streakXp}{' '}{t('panels_report.xp_chuoi')}
                 </div>
               )}
               <div style={{ ...sub, marginTop: 3 }}>
-                Còn thiếu {fmtNum(Math.round(mPace.missing))} {ch.unit} nữa là đủ mục tiêu tháng này.
+                {t('panels_report.con_thieu')}{' '}{fmtNum(Math.round(mPace.missing))} {ch.unit}{' '}{t('panels_report.nua_la_du_muc_tieu_thang')}
               </div>
             </>
           );
         })()}
         <div style={sub}>
-          Thưởng {formatMoney(ch.reward(level))}
-          {biz.monthStreak > 0 && ` · chuỗi ${biz.monthStreak} tháng`}
+          {t('panels_report.thuong_3')}{' '}{formatMoney(ch.reward(level))}
+          {biz.monthStreak > 0 && t('panels_report.chuoi_thang', { monthStreak: biz.monthStreak })}
           {/* GĐ169 — chuỗi tháng đền bằng XP gấp đôi tuần (bỏ nhân tiền chuỗi cũ). */}
-          {biz.monthStreak + 1 >= STREAK_XP_FROM && ` · đạt tháng này: +${Math.round(STREAK_XP_RATE_MONTH * xpToNext(level))} XP`}
+          {biz.monthStreak + 1 >= STREAK_XP_FROM && t('panels_report.dat_thang_nay_xp', { v0: Math.round(STREAK_XP_RATE_MONTH * xpToNext(level)) })}
         </div>
       </div>
       {r && (
         <div style={card}>
-          <b>📊 Báo cáo tháng {r.month}</b>
-          <div>Doanh thu {formatMoney(r.revenue)} · Lãi {formatMoney(r.profit)} · {r.customers} khách ({r.unhappy} không vui)</div>
-          {r.goal !== null && <div>{r.goalMet ? `✅ Đạt mục tiêu ${formatMoney(r.goal)}, thưởng ${formatMoney(r.reward)}` : `❌ Chưa đạt mục tiêu ${formatMoney(r.goal)}`}</div>}
+          <b>{t('panels_report.bao_cao_thang')}{' '}{r.month}</b>
+          <div>Doanh thu {formatMoney(r.revenue)}{' '}{t('panels_report.lai')}{' '}{formatMoney(r.profit)} · {r.customers}{' '}{t('panels_report.khach_2')}{r.unhappy}{' '}{t('panels_report.khong_vui')}</div>
+          {r.goal !== null && <div>{r.goalMet ? t('panels_report.dat_muc_tieu_thuong', { v0: formatMoney(r.goal), v1: formatMoney(r.reward) }) : t('panels_report.chua_dat_muc_tieu', { v0: formatMoney(r.goal) })}</div>}
           {r.challenge && (
             <div>
               {r.challenge.met
                 ? `🎯 ${r.challenge.icon} ${r.challenge.title}: XONG, +${formatMoney(r.challenge.reward)}`
-                : `🎯 ${r.challenge.icon} ${r.challenge.title}: ${fmtNum(Math.round(r.challenge.current))}/${fmtNum(Math.round(r.challenge.target))} ${r.challenge.unit} — chưa xong`}
+                : t('panels_report.chua_xong', { icon: r.challenge.icon, title: r.challenge.title, v2: fmtNum(Math.round(r.challenge.current)), v3: fmtNum(Math.round(r.challenge.target)), unit: r.challenge.unit })}
             </div>
           )}
-          {(r.monthStreak ?? biz.monthStreak) >= 2 && <div>🔥 Chuỗi {(r.monthStreak ?? biz.monthStreak)} tháng{r.streakXp ? ` — +${r.streakXp} XP` : ''}</div>}
-          {r.best && <div>💰 Lãi nhiều nhất: {productById(r.best).name}</div>}
-          {r.worst && <div>📉 Lãi mỗi món thấp nhất: {productById(r.worst).name} · cân nhắc tăng giá hoặc bỏ bớt</div>}
-          <div>🎯 Mục tiêu tháng tới: {formatMoney(r.nextGoal)}</div>
+          {(r.monthStreak ?? biz.monthStreak) >= 2 && <div>{t('panels_report.chuoi')}{' '}{(r.monthStreak ?? biz.monthStreak)}{' '}{t('panels_report.thang_2')}{r.streakXp ? ` — +${r.streakXp} XP` : ''}</div>}
+          {r.best && <div>{t('panels_report.lai_nhieu_nhat_2')}{' '}{productById(r.best).name}</div>}
+          {r.worst && <div>{t('panels_report.lai_moi_mon_thap_nhat')}{' '}{productById(r.worst).name}{' '}{t('panels_report.can_nhac_tang_gia_hoac_bo')}</div>}
+          <div>{t('panels_report.muc_tieu_thang_toi')}{' '}{formatMoney(r.nextGoal)}</div>
         </div>
       )}
       {(() => {
@@ -286,15 +287,15 @@ export function Month() {
         return (
           <>
             <div style={card}>
-              <b>📅 Năm {yr.year} này (bắt đầu ngày {yr.startDay})</b>
-              <div>Doanh thu {formatMoney(yr.revenue)} · Lãi {formatMoney(yr.profit)} · {yr.customers} khách ({yr.unhappy} không vui)</div>
-              <div style={sub}>⭐ {yr.seasonStars} sao 4 mùa năm này · một năm = 365 ngày, khép năm có thưởng tròn năm</div>
+              <b>{t('panels_report.nam')}{' '}{yr.year}{' '}{t('panels_report.nay_bat_dau_ngay')}{' '}{yr.startDay})</b>
+              <div>Doanh thu {formatMoney(yr.revenue)}{' '}{t('panels_report.lai')}{' '}{formatMoney(yr.profit)} · {yr.customers}{' '}{t('panels_report.khach_2')}{yr.unhappy}{' '}{t('panels_report.khong_vui')}</div>
+              <div style={sub}>⭐ {yr.seasonStars}{' '}{t('panels_report.sao_4_mua_nam_nay_mot')}</div>
             </div>
             {lr && (
               <div style={card}>
-                <b>🏅 Báo cáo năm {lr.year}</b>
-                <div>Doanh thu {formatMoney(lr.revenue)} · Lãi {formatMoney(lr.profit)} · {lr.customers} khách ({lr.unhappy} không vui)</div>
-                <div>⭐ {lr.seasonStars} sao 4 mùa · 🎉 Thưởng tròn năm +{formatMoney(lr.reward)}</div>
+                <b>{t('panels_report.bao_cao_nam')}{' '}{lr.year}</b>
+                <div>Doanh thu {formatMoney(lr.revenue)}{' '}{t('panels_report.lai')}{' '}{formatMoney(lr.profit)} · {lr.customers}{' '}{t('panels_report.khach_2')}{lr.unhappy}{' '}{t('panels_report.khong_vui')}</div>
+                <div>⭐ {lr.seasonStars}{' '}{t('panels_report.sao_4_mua_thuong_tron_nam')}{formatMoney(lr.reward)}</div>
               </div>
             )}
           </>
@@ -303,16 +304,16 @@ export function Month() {
       {(() => {
         const a = readAlmanac(biz.seasonAlmanac ?? {});
         const nxt = nextAlmanacMilestone(a.total, biz.almanacClaimed ?? []);
-        const SI: Record<string, string> = { spring: '🌱 Xuân', summer: '☀️ Hè', autumn: '🍂 Thu', winter: '❄️ Đông' };
+        const SI: Record<string, string> = { spring: t('panels_report.xuan'), summer: t('panels_report.he'), autumn: '🍂 Thu', winter: t('panels_report.dong') };
         return (
           <div style={card}>
-            <b>📖 Sổ Mùa — sao mọi mùa (đời)</b>
-            <div style={sub}>Tích lũy vĩnh viễn qua các năm, không reset khi sang mùa/năm mới.</div>
+            <b>{t('panels_report.so_mua_sao_moi_mua_doi')}</b>
+            <div style={sub}>{t('panels_report.tich_luy_vinh_vien_qua_cac')}</div>
             <div>{ALMANAC_SEASONS.map((s) => `${SI[s]} ${a.perSeason[s]}`).join(' · ')}</div>
-            <div>⭐ Tổng {a.total} sao {a.favorite ? `· mùa hợp nhất: ${SI[a.favorite]}` : ''}</div>
+            <div>{t('panels_report.tong')}{' '}{a.total} sao {a.favorite ? t('panels_report.mua_hop_nhat', { v0: SI[a.favorite] }) : ''}</div>
             {nxt
-              ? <div style={sub}>🎯 Mốc tiếp: {nxt.at} sao (còn {nxt.remaining} sao) → +{formatMoney(almanacMilestoneReward(nxt.at, level))}</div>
-              : <div style={sub}>🏁 Đã chạm mốc cuối {ALMANAC_MILESTONES[ALMANAC_MILESTONES.length - 1]} sao</div>}
+              ? <div style={sub}>{t('panels_report.moc_tiep')}{' '}{nxt.at}{' '}{t('panels_report.sao_con')}{' '}{nxt.remaining} sao) → +{formatMoney(almanacMilestoneReward(nxt.at, level))}</div>
+              : <div style={sub}>{t('panels_report.da_cham_moc_cuoi')}{' '}{ALMANAC_MILESTONES[ALMANAC_MILESTONES.length - 1]} sao</div>}
           </div>
         );
       })()}
