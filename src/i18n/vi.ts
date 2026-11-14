@@ -26,6 +26,7 @@ import { viBuild } from './vi/build';
 import { viPanelsSmall } from './vi/panels_small';
 import { viAlerts } from './vi/alerts';
 import { viPrivacy } from './vi/privacy';
+import { viStory } from './vi/story';
 
 export const vi = {
   ...viLogin,
@@ -52,6 +53,7 @@ export const vi = {
   ...viPanelsSmall,
   ...viAlerts,
   ...viPrivacy,
+  ...viStory,
   'settings.title': '⚙️ Cài đặt',
   'settings.subtitle': 'Hình ảnh, âm thanh, cách chơi, trợ năng',
   'settings.tab.img': '👁 Hình ảnh',

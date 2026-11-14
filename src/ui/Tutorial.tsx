@@ -1,6 +1,7 @@
 import { useGame } from '../core/store';
 import { dismissTutorial } from '../core/biz';
 import { tutorialSteps } from './tutorialSteps';
+import { t } from '../core/i18n';
 
 /** Hướng dẫn ngày đầu: danh sách việc tự tích khi làm xong. Chế độ review (mục 📖 Hướng dẫn ở menu
  *  Thêm) xem lại mọi lúc, chỉ đọc — không ghi cờ ẩn vào bản lưu. */
@@ -16,15 +17,15 @@ export function Tutorial({ review, onDone }: { review: boolean; onDone: () => vo
   if (allDone && !review) return null;
   return (
     <div className="hud-alert info hud-tutorial">
-      <b>{review ? '🧭 Xem lại hướng dẫn' : '🧭 Ngày đầu mở tiệm'}</b>
+      <b>{review ? t('story.xem_lai_huong_dan') : t('story.ngay_dau_mo_tiem')}</b>
       {allDone ? (
-        <p>✅ Bạn đã làm đủ các bước mở tiệm rồi. Còn Việc hôm nay ở chip La bàn và nút 📜 Nhiệm vụ.</p>
+        <p>{t('story.ban_da_lam_du_cac_buoc')}</p>
       ) : (
         <ul>{list.map((x) => <li key={x.label} className={x.done ? 'done' : undefined}>{x.done ? '✅' : '⬜'} {x.label}</li>)}</ul>
       )}
       {review
         ? <button className="hud-btn" onClick={onDone}>Xong</button>
-        : <button className="hud-btn" onClick={dismissTutorial}>Ẩn hướng dẫn</button>}
+        : <button className="hud-btn" onClick={dismissTutorial}>{t('story.an_huong_dan')}</button>}
     </div>
   );
 }

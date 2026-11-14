@@ -3,6 +3,7 @@ import { useGame } from '../core/store';
 import { closeChapter } from '../core/biz';
 import { chapterById } from '../data/chapters';
 import { formatMoney } from '../data/products';
+import { t } from '../core/i18n';
 
 /** Hội thoại chương cốt truyện: hiện từng câu, bấm để qua câu kế; game tạm dừng trong lúc đọc.
  *  Khi panel đang mở thì ẩn — chapterPending vẫn giữ trong state, đóng panel là hiện lại
@@ -18,13 +19,13 @@ export function ChapterDialogue() {
     // vẫn treo, đồng hồ dừng 0× VĨNH VIỄN mà không có thoại nào hiện. Hiện thẻ tối thiểu để đóng.
     if (!id || panelOpen) return null;
     return (
-      <div className="hud-dialogue" role="dialog" aria-label="Cốt truyện">
-        <div className="hud-dialogue-title">📖 Cốt truyện</div>
+      <div className="hud-dialogue" role="dialog" aria-label={t('story.cot_truyen')}>
+        <div className="hud-dialogue-title">{t('story.cot_truyen_2')}</div>
         <div className="hud-dialogue-line">
           <span className="hud-dialogue-avatar" aria-hidden="true">📖</span>
           <span>
-            <b>Truyện hẻm</b>
-            <p>Một chuyện đã kể rồi — chạm để đón chuyện tiếp theo.</p>
+            <b>{t('story.truyen_hem')}</b>
+            <p>{t('story.mot_chuyen_da_ke_roi_cham')}</p>
           </span>
         </div>
         <div className="hud-dialogue-foot">
@@ -48,9 +49,9 @@ export function ChapterDialogue() {
         </span>
       </div>
       <div className="hud-dialogue-foot">
-        <small>{line + 1}/{ch.lines.length}{last && reward ? ` · Thưởng: ${reward}` : ''}</small>
+        <small>{line + 1}/{ch.lines.length}{last && reward ? t('story.thuong', { reward }) : ''}</small>
         <button className="hud-btn primary" onClick={() => (last ? closeChapter() : setLine(line + 1))}>
-          {last ? '✔ Xong' : 'Tiếp ▶'}
+          {last ? '✔ Xong' : t('story.tiep')}
         </button>
       </div>
     </div>
