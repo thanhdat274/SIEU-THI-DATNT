@@ -342,6 +342,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'banh_canh_cha_dau', name: 'Bánh canh chả dầu', category: 'fresh', buy: 11000, sell: 17000, color: 0xd8b878, unlock: 81, since: CONTENT_EPOCH_NOW },
   // GĐ2457: Xôi bát báu — Nam Bộ trứ danh: xôi nếp trộn đủ topping quý (lạp xưởng + chả lụa + trứng). Mở 81; since: 1.
   { id: 'xoi_bat_bau', name: 'Xôi bát báu', category: 'fresh', buy: 19000, sell: 25000, color: 0xd8b890, unlock: 81, since: CONTENT_EPOCH_NOW },
+  // GĐ2458: Bánh canh cá thu — Nha Trang/Phan Thiết trứ danh: cá thu tươi khoén nước lèo ngọt đậm. Mở 81; since: 1.
+  { id: 'banh_canh_ca_thu', name: 'Bánh canh cá thu', category: 'fresh', buy: 10000, sell: 16000, color: 0xd8c098, unlock: 81, since: CONTENT_EPOCH_NOW },
   { id: 'com_lam', name: 'Cơm lam', category: 'fresh', buy: 6500, sell: 10000, color: 0xd9c9a0, unlock: 80, since: CONTENT_EPOCH_NOW },
   { id: 'banh_uot', name: 'Bánh ướt', category: 'fresh', buy: 4500, sell: 7500, color: 0xf6efdc, unlock: 80, since: CONTENT_EPOCH_NOW },
   // GĐ2410: Xôi đậu phộng — miền Nam: xôi nếp nấu cùng đậu phộng, chan nước cốt dừa. Mở 76; since: 1.
@@ -2553,6 +2555,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_xoi_bat_bau', name: 'Xôi bát báu', station: 'rice_station',
     inputs: [{ productId: 'nep', quantity: 1 }, { productId: 'lap_xuong', quantity: 1 }, { productId: 'x_cha_lua', quantity: 1 }, { productId: 'trung', quantity: 1 }],
     outputId: 'xoi_bat_bau', outputQty: 9, durationMin: 30, unlock: 81, reputationGain: 3, since: CONTENT_EPOCH_NOW },
+  { id: 'recipe_banh_canh_ca_thu', name: 'Bánh canh cá thu', station: 'hot_kettle',
+    inputs: [{ productId: 'x_bot_gao', quantity: 2 }, { productId: 'x_ca_thu_tuoi', quantity: 1 }, { productId: 'x_hanh_phi', quantity: 1 }],
+    outputId: 'banh_canh_ca_thu', outputQty: 10, durationMin: 22, unlock: 81, reputationGain: 2, since: CONTENT_EPOCH_NOW },
+  // GĐ2458: Bánh canh cá thu — sợi bánh canh bột gạo nấu nước lèo đậm, cá thu tươi khoén miếng
+  // chần chín thả lên, hành phi rắc — nấu nước lèo ở nồi nước → trạm đúng cách nấu.
+  // Thay thế: chả cá thác lác ăn kèm bỏ qua (cá thu là chính). Mở 81; since: 1.
+  // Mẻ (bột gạo 9k×2 + cá thu tươi 30k + hành phi 1.5k) = 49.5k → 10 tô × 16k = 160k,
+  // lãi ~110.5k/mẻ, hời hơn bán thẳng nguyên liệu (26+41+2.5 = 69.5k < 160k — luật monKhuon).
   // GĐ2457: Xôi bát báu (còn gọi bát bửu) — xôi nếp HẤP dẻo trộn đủ topping quý: lạp xưởng hấp +
   // chả lụa + trứng gà luộc (bát báu = nhiều loại quý cùng một bát) — trạm cơm/xôi đúng quy tắc.
   // Thay thế: đồ khô (lạp xưởng bớt mừng/chà bông) chọn 3 loại đắt nhất làm topping chính. Mở 81; since: 1.

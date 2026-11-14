@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (14/11/2026)
+- GĐ2458: MÓN MỚI Bánh canh cá thu (Nha Trang, nồi nước `hot_kettle`: bột gạo ×2 + cá thu tươi + hành phi → 10 × 16k, mở 81, `since: 1`, đã tra nguồn); bảng test monThat/monKhuon + baseline unlockPacing (81–100 = 187) + tái sinh UNLOCK-CURVE (1980 mốc).
 - GĐ2457: MÓN MỚI Xôi bát báu (Nam Bộ, `rice_station`: nếp + lạp xưởng + chả lụa + trứng → 9 × 25k, mở 81, `since: 1`, đã tra nguồn); bảng test monThat/monKhuon + baseline unlockPacing (81–100 = 185) + tái sinh UNLOCK-CURVE (1978 mốc).
 - GĐ2456: MÓN MỚI Bánh canh chả dầu (Quảng Bình, nồi nước `hot_kettle`: bột gạo ×2 + chả cá thác lác chiên dầu + hành phi → 10 × 17k, mở 81, `since: 1`, đã tra nguồn); bảng test monThat/monKhuon + baseline unlockPacing (81–100 = 183) + tái sinh UNLOCK-CURVE (1976 mốc).
 - GĐ2455: MÓN MỚI Bánh canh tôm thịt (miền Tây, nồi nước `hot_kettle`: bột gạo ×2 + tôm tươi + thịt heo + hành phi → 10 × 17k, mở 81, `since: 1`, đã tra nguồn); bảng test monThat/monKhuon + baseline unlockPacing (81–100 = 181) + tái sinh UNLOCK-CURVE (1974 mốc).
