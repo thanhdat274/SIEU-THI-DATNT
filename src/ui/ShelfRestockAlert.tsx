@@ -2,6 +2,7 @@ import { useGame, type Furniture } from '../core/store';
 import { furnitureDef } from '../data/furniture';
 import { unlockedProducts } from '../data/products';
 import { allowedForType, fillPlanForShelf } from '../data/planogram';
+import { t } from '../core/i18n';
 
 /** Ô coi là cần châm khi trống hoặc còn ≤ nửa sức chứa (cùng ngưỡng Sơ đồ kệ). */
 const LOW = 0.5;
@@ -38,7 +39,7 @@ export function ShelfRestockAlert() {
   if (slots.length < MIN_SLOTS) return null;
   return (
     <div className="hud-alert info">
-      🧺 {slots.length} ô kệ trống/sắp hết, kho còn hàng để châm.
+      🧺 {slots.length}{' '}{t('alerts.o_ke_trong_sap_het_kho')}
       <span className="hud-alert-actions">
         <button
           className="hud-btn primary"
@@ -52,7 +53,7 @@ export function ShelfRestockAlert() {
             }
           }}
         >
-          Bày đầy
+          {t('alerts.bay_day')}
         </button>
       </span>
     </div>

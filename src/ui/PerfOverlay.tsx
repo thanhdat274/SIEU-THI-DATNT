@@ -4,6 +4,7 @@
 // Mount ở boot.tsx (ngoài Hud) để không làm nhiễu số "Hud vẽ lại/giây".
 import { useEffect, useRef, useState } from 'react';
 import { setPerf, usePerf, type PerfSnapshot } from '../core/perf';
+import { t } from '../core/i18n';
 
 const NUM = (n: number, d = 0) => (Number.isFinite(n) ? n.toFixed(d) : '—');
 const CSS = {
@@ -32,7 +33,7 @@ export function PerfOverlay() {
       rowsRef.current = [...rowsRef.current, { t: Date.now(), s }];
       setRec({ rows: rowsRef.current });
       if (rowsRef.current.length >= 30) {
-        setDone(JSON.stringify({ legend: 'mỗi dòng = 1 giây', rows: rowsRef.current }));
+        setDone(JSON.stringify({ legend: t('alerts.moi_dong_1_giay'), rows: rowsRef.current }));
         setRec(null);
       }
     }, 1000);
@@ -53,27 +54,27 @@ export function PerfOverlay() {
     line('js memory', `${NUM(snap.jsMemory, 1)} MB`),
     line('hud redraws/s', NUM(snap.hudRedraws, 0)),
     line('gfx', `${snap.gfx} @ ${snap.pixelRatio}x`),
-  ].join('\n') : 'đang chờ snapshot…';
+  ].join('\n') : t('alerts.dang_cho_snapshot');
 
   return (
     <div style={CSS.box}>
       <div>{body}</div>
       {!rec && !done && (
         <button style={CSS.btn} onClick={() => { rowsRef.current = []; setDone(null); setRec({ rows: [] }); }}>
-          ▶ Ghi 30 giây
+          {t('alerts.ghi_30_giay')}
         </button>
       )}
-      {rec && <div style={{ color: '#fe7' }}>⏺ Đang ghi… {rec.rows.length}/30</div>}
+      {rec && <div style={{ color: '#fe7' }}>{t('alerts.dang_ghi')}{' '}{rec.rows.length}/30</div>}
       {done && (
         <>
-          <div style={{ color: '#7f7' }}>✓ Xong 30 giây (dán vào docs/PERF.md)</div>
+          <div style={{ color: '#7f7' }}>{t('alerts.xong_30_giay_dan_vao_docs')}</div>
           <textarea
             readOnly value={done} style={{ width: 260, height: 70, fontSize: 11 }}
             onFocus={(e) => e.currentTarget.select()}
           />
         </>
       )}
-      <button style={CSS.btn} onClick={() => setPerf(false)}>✕ Tắt</button>
+      <button style={CSS.btn} onClick={() => setPerf(false)}>{t('alerts.tat')}</button>
     </div>
   );
 }

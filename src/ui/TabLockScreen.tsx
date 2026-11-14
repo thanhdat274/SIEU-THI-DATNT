@@ -1,4 +1,5 @@
 import { useSession } from '../net/session';
+import { t } from '../core/i18n';
 
 /**
  * GĐ1496 — Màn chặn khi game đang mở ở tab khác (tham khảo Midnight Bistro "Game is open
@@ -26,11 +27,10 @@ export function TabLockScreen({ onRetry }: { onRetry: () => void }) {
       >
         <div style={{ fontSize: 46 }}>🎮</div>
         <h1 style={{ color: '#d64541', fontSize: 22, margin: '8px 0 10px' }}>
-          Game đang mở ở tab khác
+          {t('alerts.game_dang_mo_o_tab_khac')}
         </h1>
         <p style={{ color: '#4a4a55', fontSize: 14.5, margin: '0 0 18px' }}>
-          Tạp Hóa 3D chỉ chạy được trong một tab mỗi trình duyệt để khỏi ghi đè tiến trình
-          của nhau. Hãy đóng tab đang chơi, rồi bấm thử lại.
+          {t('alerts.tap_hoa_3d_chi_chay_duoc')}
         </p>
         <button
           onClick={retry}
@@ -40,7 +40,7 @@ export function TabLockScreen({ onRetry }: { onRetry: () => void }) {
             cursor: 'pointer', boxShadow: '0 3px 0 #0d3d47',
           }}
         >
-          ↻ Thử lại
+          {t('alerts.thu_lai')}
         </button>
       </div>
     </div>

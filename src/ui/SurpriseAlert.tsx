@@ -2,6 +2,7 @@ import { useGame } from '../core/store';
 import { productById } from '../data/products';
 import { findSurprise } from '../data/surpriseArcs';
 import { chooseSurprise } from '../core/biz';
+import { t } from '../core/i18n';
 
 /** Sự kiện bất ngờ trong ngày: chọn một cách xử lý. GĐ164: tra ARC trước rồi mới tới
  *  pool một-phát — cảnh arc resolve theo lựa chọn đã chốt; lựa chọn cần hàng kho mà
@@ -20,8 +21,8 @@ export function SurpriseAlert() {
           return (
             <button key={i} disabled={short} className={`hud-btn${i === 0 && !short ? ' primary' : ''}`}
               onClick={() => chooseSurprise(i)}
-              title={short ? `Kho hết ${productById(c.needStock!.productId).name} rồi` : undefined}>
-              {c.label}{short && <small> (kho hết {productById(c.needStock!.productId).name} rồi)</small>}
+              title={short ? t('alerts.kho_het_roi', { v0: productById(c.needStock!.productId).name }) : undefined}>
+              {c.label}{short && <small>{' '}{t('alerts.kho_het')}{' '}{productById(c.needStock!.productId).name}{' '}{t('alerts.roi')}</small>}
             </button>
           );
         })}

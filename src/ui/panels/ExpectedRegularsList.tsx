@@ -4,6 +4,7 @@ import type { RegularDef } from '../../data/regulars';
 import type { RegularHurt } from '../../data/regularChurn';
 import type { RegularSpend, NextPerkValue, ReferValue, NextPerkTimeline } from '../../data/regularValue';
 import { Swatch, styles } from './shared';
+import { t } from '../../core/i18n';
 
 /** GĐ941: tách khỏi MorningPanel (nguyên văn danh sách khách quen dự kiến ghé hôm nay). */
 export function ExpectedRegularsList({ expected, regulars, reservations, favsOf, haveStock, churn, value, nextPerk, refer, timeline }: {
@@ -22,8 +23,8 @@ export function ExpectedRegularsList({ expected, regulars, reservations, favsOf,
 }) {
   return (
     <>
-      <h3 style={{ margin: '10px 0 4px', fontSize: 14 }}>💛 Khách quen dự kiến ghé hôm nay ({expected.length})</h3>
-      {expected.length === 0 && <p style={styles.sub}>Không ai trong nhóm khách quen có lịch ghé hôm nay.</p>}
+      <h3 style={{ margin: '10px 0 4px', fontSize: 14 }}>{t('alerts.khach_quen_du_kien_ghe_hom')}{expected.length})</h3>
+      {expected.length === 0 && <p style={styles.sub}>{t('alerts.khong_ai_trong_nhom_khach_quen')}</p>}
       <div style={{ display: 'grid', gap: 6 }}>
         {expected.map((r) => {
           const prog = regulars[r.id];
@@ -33,18 +34,18 @@ export function ExpectedRegularsList({ expected, regulars, reservations, favsOf,
             <div key={r.id} style={{ ...styles.card, display: 'block' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
                 <b><Swatch color={r.color} /> {r.name}</b>
-                <span style={{ fontSize: 12, opacity: 0.7 }}>{formatClock(r.visitFrom)}–{formatClock(r.visitUntil)}{res ? ' · 🤝 đang giữ món hẹn' : ''}</span>
+                <span style={{ fontSize: 12, opacity: 0.7 }}>{formatClock(r.visitFrom)}–{formatClock(r.visitUntil)}{res ? t('alerts.dang_giu_mon_hen') : ''}</span>
               </div>
               <div style={{ fontSize: 12, marginTop: 2 }}>
-                Món thích: {favs.length
+                {t('alerts.mon_thich')}{' '}{favs.length
                   ? favs.map((id) => `${prog?.discovered.includes(id) || res?.productId === id ? productById(id).name : '???'}${haveStock(id) ? ' ✓' : ' ⚠️'}`).join(', ')
-                  : 'chưa biết'}
+                  : t('alerts.chua_biet')}
               </div>
               {(() => {
                 const cb = churn?.find((h) => h.regular.id === r.id);
                 if (!cb) return null;
                 const v = value ? value(r.id) : null;
-                const tail = v ? ` bị hụt — kẻo bỏ, mất ~${formatMoney(v.total)}/lần ghé` : ' bị hụt — kẻo khách quen này bỏ.';
+                const tail = v ? t('alerts.bi_hut_keo_bo_mat_lan', { v0: formatMoney(v.total) }) : t('alerts.bi_hut_keo_khach_quen_nay');
                 return (
                   <div style={{ fontSize: 11, marginTop: 3, color: '#e74c3c' }}>
                     💔 {cb.hitFavorites.slice(0, 2).map((h) => `${productById(h.productId)?.name ?? h.productId} (${h.count})`).join(', ')}{tail}
@@ -57,8 +58,8 @@ export function ExpectedRegularsList({ expected, regulars, reservations, favsOf,
                 const tl = timeline ? timeline(r.id) : null;
                 return (
                   <div style={{ fontSize: 11, marginTop: 3, color: '#16a085' }}>
-                    ⚡ {nv.perk.title} (+~{formatMoney(nv.delta)}/lần) — còn {nv.toGo} thân thiết
-                    {tl && tl.weeksToPerk > 0 ? ` (~${tl.weeksToPerk} tuần)` : ''}
+                    ⚡ {nv.perk.title} (+~{formatMoney(nv.delta)}{t('alerts.lan_con')}{' '}{nv.toGo}{' '}{t('alerts.than_thiet')}
+                    {tl && tl.weeksToPerk > 0 ? t('alerts.tuan', { weeksToPerk: tl.weeksToPerk }) : ''}
                   </div>
                 );
               })()}
@@ -67,7 +68,7 @@ export function ExpectedRegularsList({ expected, regulars, reservations, favsOf,
                 if (!rf || rf.extraRevenueWeek <= 0) return null;
                 return (
                   <div style={{ fontSize: 11, marginTop: 3, color: '#8e44ad' }}>
-                    👥 Rủ thêm ~{rf.extraCustomersWeek} khách/tuần (≈{formatMoney(rf.extraRevenueWeek)})
+                    {t('alerts.ru_them')}{rf.extraCustomersWeek}{' '}{t('alerts.khach_tuan')}{formatMoney(rf.extraRevenueWeek)})
                   </div>
                 );
               })()}
