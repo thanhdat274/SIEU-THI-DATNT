@@ -2,6 +2,8 @@
  * Danh sách khách quen (dữ liệu thuần). Tách từ `data/regulars.ts` (GĐ974) — file kia vẫn xuất lại REGULARS.
  */
 import type { RegularDef, RegularPerk } from './regulars';
+import { getSettings } from '../core/settings';
+import { EN_REGULARS } from '../i18n/en/data/regulars';
 
 const perks = (tipAt: number, tip: number, extraAt: number, frequent: string, extra: string, tipText: string): RegularPerk[] => [
   { threshold: 15, title: 'Ghé thường hơn', description: frequent, effect: 'frequent_visit', value: 0.2 },
@@ -331,3 +333,13 @@ export const REGULARS: RegularDef[] = [
     ],
   },
 ];
+
+// i18n bước 5e: tiếng Anh thì thay chữ hiển thị một lần lúc nạp (save/sim dùng id, không đổi).
+if (getSettings().lang === 'en') {
+  for (const r of REGULARS) {
+    const e = EN_REGULARS[r.id];
+    if (!e) continue;
+    r.name = e.name; r.role = e.role; r.bio = e.bio; r.lines = { ...r.lines, ...e.lines };
+    r.perks = r.perks.map((p, i) => (e.perks[i] ? { ...p, title: e.perks[i][0], description: e.perks[i][1] } : p));
+  }
+}

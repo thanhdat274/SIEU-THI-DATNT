@@ -7,6 +7,9 @@
  */
 
 /** Một sự kiện đặc biệt xảy ra trong 1–2 ngày. */
+import { localizeFields } from '../i18n/dataLang';
+import { EN_EVENTS } from '../i18n/en/data/events';
+
 export interface RandomEvent {
   id: string;
   icon: string;
@@ -62,6 +65,8 @@ export const RANDOM_EVENTS: RandomEvent[] = [
   { id: 'competitor', icon: '⚔️', title: 'Đối thủ giảm giá', kind: 'bad', traffic: 0.85, days: 2,
     blurb: 'Cửa hàng đối diện bày trò giảm giá, khách bị hút sang bên đó.' },
 ];
+
+localizeFields(RANDOM_EVENTS, EN_EVENTS);
 
 type Season = 'summer' | 'autumn' | 'winter' | 'spring';
 

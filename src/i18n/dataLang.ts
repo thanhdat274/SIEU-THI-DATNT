@@ -18,3 +18,12 @@ export function localizeRecord(rec: Record<string, string>, en: Record<string, s
   for (const k of Object.keys(rec)) rec[k] = en[k] ?? rec[k];
   return rec;
 }
+
+/** Đổi nhiều trường theo id (vd. title/blurb của sự kiện). Trường thiếu → giữ tiếng Việt. */
+export function localizeFields<T extends { id: string }>(
+  rows: T[], en: Record<string, Partial<T>>, lang: string = getSettings().lang,
+): T[] {
+  if (lang !== 'en') return rows;
+  for (const r of rows) Object.assign(r, en[r.id] ?? {});
+  return rows;
+}
