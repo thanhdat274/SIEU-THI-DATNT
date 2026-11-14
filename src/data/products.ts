@@ -5,6 +5,8 @@ import { REGION_PRODUCTS } from './regionSpecialty';
 import { LATE_GAME_PRODUCTS } from './lateGameProducts';
 import { epochGate } from './contentEpoch';
 import { fmtNum } from '../core/format';
+import { localizeNames, localizeRecord } from '../i18n/dataLang';
+import { EN_PRODUCTS, EN_CATEGORIES } from '../i18n/en/data/products';
 /** Ngành hàng: quyết định bày ở đâu (kệ thường, tủ mát, tủ đông). */
 export type Category = 'dry' | 'drink' | 'cold' | 'frozen' | 'household' | 'fresh' | 'meat';
 
@@ -201,6 +203,9 @@ PRODUCTS.push(...LATE_GAME_PRODUCTS);
 // Kỷ nguyên nội dung (SPEC-TOI-UU §T4): dòng có `since` tự khoá `unlock` khi sim golden chạy ở kỷ nguyên 0.
 // Phải gọi SAU mọi lệnh push ở trên.
 epochGate(PRODUCTS);
+// i18n bước 5: tiếng Anh thì đổi tên hiển thị theo id (src/i18n/en/data/products.ts). Gọi SAU mọi push.
+localizeNames(PRODUCTS, EN_PRODUCTS);
+localizeRecord(CATEGORIES, EN_CATEGORIES);
 
 export const productById = (id: string) => PRODUCTS.find((it) => it.id === id)!;
 
