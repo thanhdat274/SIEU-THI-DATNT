@@ -5,6 +5,7 @@ import { segmentHurt, recentLostByProduct, HIT_LABEL } from '../../data/segmentH
 import { productById } from '../../data/products';
 import { counterThroughputNote } from '../../agents/customerEntity';
 import { styles } from './shared';
+import { t } from '../../core/i18n';
 
 interface Props {
   demand: ReturnType<typeof demandForecast>;
@@ -32,13 +33,13 @@ export function CounterDemandCard({ demand, cleanStreak, cleanBest, cleanExtra }
   const topHurt = segmentHurt({ level, day, lostByProduct: recentLostByProduct(analytics, day), reviews })[0];
   return (
   <div style={{ ...styles.card, display: 'block', marginBottom: 8, outline: '1px solid rgba(46,204,113,0.35)' }}>
-    <b style={styles.cardTitle}>🛒 Nhu cầu quầy hôm nay</b>
+    <b style={styles.cardTitle}>{t('panels_small.nhu_cau_quay_hom_nay')}</b>
     <div style={{ fontSize: 12, marginTop: 2, opacity: 0.9 }}>
-      ~{demand.expectedTotal} khách dự kiến cả ngày · đỉnh: {demand.peakBands.join(', ')} (ước lượng theo nhịp + lễ/thời tiết)
+      ~{demand.expectedTotal}{' '}{t('panels_small.khach_du_kien_ca_ngay_dinh')}{' '}{demand.peakBands.join(', ')}{' '}{t('panels_small.uoc_luong_theo_nhip_le_thoi')}
     </div>
     <div style={{ marginTop: 6, display: 'flex', alignItems: 'flex-end', gap: 4, height: 44 }}>
       {demand.bands.map((b, i) => (
-        <div key={i} title={`${b.label}: ~${b.expected} khách (${b.perHour}/giờ)`} style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+        <div key={i} title={t('panels_small.khach_gio', { label: b.label, expected: b.expected, perHour: b.perHour })} style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
           <div style={{ width: '100%', height: Math.max(4, Math.round(b.pressure / 100 * 34)), background: b.peak ? '#2ecc71' : 'rgba(46,204,113,0.45)', borderRadius: 3 }} />
           {/* GĐ2368: cho nhãn co được — nowrap cứng từng đẩy min-content dãy chip ~308px
               (track lưới "Xem thêm" phình, cả cụm thẻ tràn khung ở màn hẹp); title trên chip giữ nhãn đầy đủ */}
@@ -48,12 +49,12 @@ export function CounterDemandCard({ demand, cleanStreak, cleanBest, cleanExtra }
     </div>
     <div style={{ fontSize: 12, marginTop: 4 }}>
       ⏰ {demand.bands.filter((b) => b.peak).slice(0, 2).map((b) => b.label).join(' · ') || demand.bands[0]?.label} đông: bày sẵn món &nbsp;
-      <button onClick={() => openPanel({ type: 'order' })} style={{ ...styles.btn, fontSize: 11, padding: '1px 6px' }}>châm kệ món tủ →</button>
-      · <button onClick={() => openPanel({ type: 'staff' })} style={{ ...styles.btn, fontSize: 11, padding: '1px 6px' }}>đủ người đứng quầy →</button>
+      <button onClick={() => openPanel({ type: 'order' })} style={{ ...styles.btn, fontSize: 11, padding: '1px 6px' }}>{t('panels_small.cham_ke_mon_tu')}</button>
+      · <button onClick={() => openPanel({ type: 'staff' })} style={{ ...styles.btn, fontSize: 11, padding: '1px 6px' }}>{t('panels_small.du_nguoi_dung_quay')}</button>
     </div>
     {mix && segs.length > 0 && (
       <div style={{ fontSize: 12, marginTop: 3, paddingTop: 4, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-        👥 Khung đông nhất <b>{mix.band.label}</b>: {segs.slice(0, 2).map((sg, i) => (
+        {t('panels_small.khung_dong_nhat')}{' '}<b>{mix.band.label}</b>: {segs.slice(0, 2).map((sg, i) => (
           <span key={sg.id}>
             {i > 0 && <>&nbsp;·&nbsp;</>}
             <span title={`${sg.name} — thích: ${sg.likes.slice(0, 4).join(', ') || 'nhiều món thoáng'} · nhạy giá ${sg.sensitivity} · kiên nhẫn ${sg.patience}`}>
@@ -65,17 +66,17 @@ export function CounterDemandCard({ demand, cleanStreak, cleanBest, cleanExtra }
     )}
     {topHurt && (
       <div style={{ fontSize: 12, marginTop: 3, paddingTop: 4, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-        <b>💢 Phân khúc đang hụt:</b>{' '}
+        <b>{t('panels_small.phan_khuc_dang_hut')}</b>{' '}
         <span title={`${topHurt.profession.name} — món ưa bị hụt: ${topHurt.affectedLikes.slice(0, 6).map((id) => productById(id)?.name ?? id).join(', ') || 'chưa xác định'}`}>
           {topHurt.profession.icon} {topHurt.profession.name}
-          {topHurt.lost > 0 ? ` · ${topHurt.lost} lượt lỡ món` : ''}
-          {topHurt.complaints.slice(0, 2).map((c) => ` · ${c.count} chê ${HIT_LABEL[c.reason]}`).join('')}
+          {topHurt.lost > 0 ? t('panels_small.luot_lo_mon', { lost: topHurt.lost }) : ''}
+          {topHurt.complaints.slice(0, 2).map((c) => t('panels_small.che', { count: c.count, v1: HIT_LABEL[c.reason] })).join('')}
         </span>
       </div>
     )}
     <div style={{ fontSize: 11.5, marginTop: 3, opacity: 0.75 }}>{counterThroughputNote()}</div>
     <div style={{ fontSize: 12, marginTop: 4, paddingTop: 4, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-      🧭 Nếp vận hành: chuỗi <b>{cleanStreak}</b> ngày sạch · kỷ lục <b>{cleanBest}</b> · {cleanExtra}
+      {t('panels_small.nep_van_hanh_chuoi')}{' '}<b>{cleanStreak}</b>{' '}{t('panels_small.ngay_sach_ky_luc')}{' '}<b>{cleanBest}</b> · {cleanExtra}
     </div>
   </div>
   );

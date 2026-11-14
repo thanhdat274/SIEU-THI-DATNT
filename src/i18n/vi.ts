@@ -23,6 +23,7 @@ import { viBrand } from './vi/brand';
 import { viCommunity } from './vi/community';
 import { viMarket } from './vi/market';
 import { viBuild } from './vi/build';
+import { viPanelsSmall } from './vi/panels_small';
 
 export const vi = {
   ...viLogin,
@@ -46,6 +47,7 @@ export const vi = {
   ...viCommunity,
   ...viMarket,
   ...viBuild,
+  ...viPanelsSmall,
   'settings.title': '⚙️ Cài đặt',
   'settings.subtitle': 'Hình ảnh, âm thanh, cách chơi, trợ năng',
   'settings.tab.img': '👁 Hình ảnh',

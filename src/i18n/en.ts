@@ -20,6 +20,7 @@ import { enBrand } from './en/brand';
 import { enCommunity } from './en/community';
 import { enMarket } from './en/market';
 import { enBuild } from './en/build';
+import { enPanelsSmall } from './en/panels_small';
 
 /** English. `Record<I18nKey, string>` → thiếu khóa nào `tsc` báo ngay. */
 export const en: Record<I18nKey, string> = {
@@ -44,6 +45,7 @@ export const en: Record<I18nKey, string> = {
   ...enCommunity,
   ...enMarket,
   ...enBuild,
+  ...enPanelsSmall,
   'settings.title': '⚙️ Settings',
   'settings.subtitle': 'Display, sound, gameplay, accessibility',
   'settings.tab.img': '👁 Display',

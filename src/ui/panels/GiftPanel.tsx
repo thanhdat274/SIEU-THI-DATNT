@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useGame } from '../../core/store';
 import { DAILY_GIFTS, WHEEL_PRIZES, giftText, recentAvgProfit, scaledGiftEco, scaledPrize, wheelOdds, type WheelPrize } from '../../data/gifts';
 import { Footer, styles } from './shared';
+import { t } from '../../core/i18n';
 
 const formatMoneyShort = (v: number) => v >= 1_000_000 ? `${Math.round(v / 1_000_000)}tr` : `${Math.round(v / 1000)}k`;
 
@@ -66,8 +67,7 @@ export function GiftPanel() {
     <>
       <h2 style={styles.title}>🎁 Điểm danh & vòng quay</h2>
       <p style={styles.sub}>
-        Mỗi ngày chơi nhận một phần quà, đủ 7 ngày liên tiếp thì trúng rương vàng rồi lặp lại.
-        Mỗi ngày còn một lượt vòng quay may mắn.
+        {t('panels_small.moi_ngay_choi_nhan_mot_phan')}
       </p>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 6 }}>
@@ -87,21 +87,21 @@ export function GiftPanel() {
             >
               <div style={{ fontSize: 22 }}>{done ? '✅' : g.icon}</div>
               <div>{giftText(g)}</div>
-              <small style={{ opacity: 0.65 }}>Ngày {i + 1}</small>
+              <small style={{ opacity: 0.65 }}>{t('panels_small.ngay')}{' '}{i + 1}</small>
             </div>
           );
         })}
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-        <small style={{ opacity: 0.75 }}>Chuỗi điểm danh: {giftStreak > 0 ? `${giftStreak} ngày` : 'chưa bắt đầu'}</small>
+        <small style={{ opacity: 0.75 }}>{t('panels_small.chuoi_diem_danh')}{' '}{giftStreak > 0 ? t('panels_small.ngay_2', { giftStreak }) : t('panels_small.chua_bat_dau')}</small>
         <button style={{ ...styles.btn, marginLeft: 0, background: claimedToday ? '#666' : '#2ecc71', color: '#fff', cursor: claimedToday ? 'default' : 'pointer' }} onClick={claimGift} disabled={claimedToday}>
-          {claimedToday ? '✅ Hôm nay đã điểm danh' : 'Nhận quà hôm nay'}
+          {claimedToday ? t('panels_small.hom_nay_da_diem_danh') : t('panels_small.nhan_qua_hom_nay')}
         </button>
       </div>
-      <small style={{ display: 'block', opacity: 0.55, margin: '-8px 0 14px' }}>Chuỗi ≥3 ngày được tha 1 lần nếu bỏ quên 🛟</small>
+      <small style={{ display: 'block', opacity: 0.55, margin: '-8px 0 14px' }}>{t('panels_small.chuoi_3_ngay_duoc_tha_1')}</small>
       {avg > 0 && (
         <small style={{ display: 'block', opacity: 0.65, margin: '-6px 0 10px', color: '#e6c95c' }}>
-          📈 Quà tăng theo lợi nhuận gần đây của tiệm ({formatMoneyShort(avg)}/ngày) — tiệm càng lớn quà càng đáng.
+          {t('panels_small.qua_tang_theo_loi_nhuan_gan')}{formatMoneyShort(avg)}{t('panels_small.ngay_tiem_cang_lon_qua_cang')}
         </small>
       )}
 
@@ -145,15 +145,15 @@ export function GiftPanel() {
         </div>
         <div style={{ flex: 1, minWidth: 180 }}>
           {spinning ? (
-            <p style={styles.sub}>Đang quay…</p>
+            <p style={styles.sub}>{t('panels_small.dang_quay')}</p>
           ) : result ? (
             <p style={{ ...styles.sub, fontSize: 15 }}>
-              🎉 Chúc mừng: <b>{result.icon} {result.label}</b>
+              {t('panels_small.chuc_mung')}{' '}<b>{result.icon} {result.label}</b>
             </p>
           ) : spunToday ? (
-            <p style={styles.sub}>Hôm nay đã quay rồi, mai quay lại nhé!</p>
+            <p style={styles.sub}>{t('panels_small.hom_nay_da_quay_roi_mai')}</p>
           ) : (
-            <p style={styles.sub}>Mỗi ngày một lượt quay. Trúng 🍀 thì cả ngày khách ghé đông thêm!</p>
+            <p style={styles.sub}>{t('panels_small.moi_ngay_mot_luot_quay_trung')}</p>
           )}
           <button
             style={{ ...styles.btn, marginLeft: 0, background: spunToday || spinning || awaiting ? '#666' : '#e67e22', color: '#fff', cursor: spunToday || spinning || awaiting ? 'default' : 'pointer', padding: '8px 16px' }}
@@ -163,7 +163,7 @@ export function GiftPanel() {
             🎡 Quay ngay
           </button>
           {wheelBoost > 1 && (
-            <p style={{ margin: '8px 0 0', fontSize: 13, color: '#a3e4a3' }}>🍀 Hôm nay khách ghé đông thêm {Math.round((wheelBoost - 1) * 100)}% nhờ vòng quay hoặc quẻ xin ở chùa.</p>
+            <p style={{ margin: '8px 0 0', fontSize: 13, color: '#a3e4a3' }}>{t('panels_small.hom_nay_khach_ghe_dong_them')}{' '}{Math.round((wheelBoost - 1) * 100)}{t('panels_small.nho_vong_quay_hoac_que_xin')}</p>
           )}
         </div>
       </div>
@@ -175,7 +175,7 @@ export function GiftPanel() {
         ))}
       </div>
       <small style={{ display: 'block', opacity: 0.65, marginTop: 6, color: '#e6c95c' }}>
-        🎯 Lộ trọng số: mỗi lượt quay về trung bình ~{formatMoneyShort(odds.moneyEv)} tiền + {Math.round(odds.xpEv)} XP (🍀 Đông khách {Math.round(odds.boostPct)}%) — quà lớn khó hơn, phần nhỏ dễ hơn.
+        {t('panels_small.lo_trong_so_moi_luot_quay')}{formatMoneyShort(odds.moneyEv)}{' '}{t('panels_small.tien')}{' '}{Math.round(odds.xpEv)}{' '}{t('panels_small.xp_dong_khach')}{' '}{Math.round(odds.boostPct)}{t('panels_small.qua_lon_kho_hon_phan_nho')}
       </small>
       <Footer onClose={closePanel} />
     </>

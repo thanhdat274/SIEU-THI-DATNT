@@ -4,6 +4,7 @@ import { maxStaff } from '../../data/staff';
 import { customersPerDay, MAX_LEVEL, unlockGroups, unlocksAt, xpToNext } from '../../data/levels';
 import { Footer, styles } from './shared';
 import { fmtNum } from '../../core/format';
+import { t } from '../../core/i18n';
 
 /** Lộ trình cấp: tiến độ cấp hiện tại và mọi mốc có mở khóa, kèm XP còn thiếu. */
 export function LevelsPanel() {
@@ -11,12 +12,12 @@ export function LevelsPanel() {
   const [showAll, setShowAll] = useState(false);
   const unlocksWithStaff = (lv: number) => [
     ...unlocksAt(lv),
-    ...(lv > 1 && maxStaff(lv - 1) > 0 && maxStaff(lv) > maxStaff(lv - 1) ? [`Thêm chỗ nhân viên (tối đa ${maxStaff(lv)})`] : []),
+    ...(lv > 1 && maxStaff(lv - 1) > 0 && maxStaff(lv) > maxStaff(lv - 1) ? [t('panels_small.them_cho_nhan_vien_toi_da', { v0: maxStaff(lv) })] : []),
   ];
   const groupsWithStaff = (lv: number) => {
     const groups = unlockGroups(lv);
     if (lv > 1 && maxStaff(lv - 1) > 0 && maxStaff(lv) > maxStaff(lv - 1)) {
-      groups.push({ label: 'Nhân viên', icon: '😀', items: [`Thêm chỗ nhân viên (tối đa ${maxStaff(lv)})`] });
+      groups.push({ label: t('panels_small.nhan_vien'), icon: '😀', items: [t('panels_small.them_cho_nhan_vien_toi_da', { v0: maxStaff(lv) })] });
     }
     return groups;
   };
@@ -33,14 +34,13 @@ export function LevelsPanel() {
   const grouped = (r: typeof rows[number]) => r.unlocks.length > 6;
   return (
     <>
-      <h2 style={styles.title}>⭐ Lộ trình cấp độ</h2>
+      <h2 style={styles.title}>{t('panels_small.lo_trinh_cap_do')}</h2>
       <p style={styles.sub}>
-        Bán hàng và làm khách vui để lấy XP. Mỗi cấp thêm {customersPerDay(2) - customersPerDay(1)} khách mỗi ngày
-        (hiện khoảng {customersPerDay(level)} khách/ngày).
+        {t('panels_small.ban_hang_va_lam_khach_vui')}{' '}{customersPerDay(2) - customersPerDay(1)}{' '}{t('panels_small.khach_moi_ngay_hien_khoang')}{' '}{customersPerDay(level)}{' '}{t('panels_small.khach_ngay')}
       </p>
       <div style={{ ...styles.card, display: 'block', marginBottom: 12, maxWidth: 780 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-          <b>{level >= MAX_LEVEL ? `Cấp tối đa ${MAX_LEVEL}` : `Cấp ${level} → ${level + 1}`}</b>
+          <b>{level >= MAX_LEVEL ? t('panels_small.cap_toi_da', { MAX_LEVEL }) : t('panels_small.cap_2', { level, v1: level + 1 })}</b>
           <span>{xp} / {xpToNext(level)} XP</span>
         </div>
         <div style={{ height: 8, background: '#555', borderRadius: 4, marginTop: 6, overflow: 'hidden' }}>
@@ -48,7 +48,7 @@ export function LevelsPanel() {
         </div>
       </div>
       <label style={{ fontSize: 13, opacity: 0.8 }}>
-        <input type="checkbox" checked={showAll} onChange={(e) => setShowAll(e.target.checked)} /> Hiện cả các cấp không mở khóa gì
+        <input type="checkbox" checked={showAll} onChange={(e) => setShowAll(e.target.checked)} />{' '}{t('panels_small.hien_ca_cac_cap_khong_mo')}
       </label>
       <div style={{ display: 'grid', gap: 8, marginTop: 8, maxWidth: 780 }}>
         {Array.from({ length: Math.ceil(MAX_LEVEL / 20) }, (_, bi) => {
@@ -60,14 +60,14 @@ export function LevelsPanel() {
           return (
             <details key={from} open={isFirstBand} style={{ ...styles.card, display: 'block', padding: '8px 12px' }}>
               <summary style={{ fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
-                📍 Cấp {from}–{to} ({bandRows.length} mốc)
+                {t('panels_small.cap_3')}{' '}{from}–{to} ({bandRows.length}{' '}{t('panels_small.moc')}
               </summary>
               <div style={{ display: 'grid', gap: 6, marginTop: 8 }}>
                 {bandRows.map((r) => (
                   <div key={r.lv} style={{ padding: '8px 10px', borderRadius: 8, background: 'rgba(0,0,0,0.2)', outline: r.lv === rows[0]?.lv ? '2px solid #f1c40f' : undefined }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
-                      <b>🔒 Cấp {r.lv}</b>
-                      <span style={{ opacity: 0.75, fontSize: 13 }}>còn {fmtNum(r.need)} XP</span>
+                      <b>{t('panels_small.cap_4')}{' '}{r.lv}</b>
+                      <span style={{ opacity: 0.75, fontSize: 13 }}>{t('panels_small.con_2')}{' '}{fmtNum(r.need)} XP</span>
                     </div>
                     {r.unlocks.length > 0 && (grouped(r) ? (
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 6, fontSize: 12 }}>
@@ -93,8 +93,8 @@ export function LevelsPanel() {
       </div>
       {past.length > 0 && (
         <details style={{ marginTop: 12, fontSize: 13 }}>
-          <summary>✓ Đã mở khóa ({past.length} mốc)</summary>
-          {past.map((lv) => <div key={lv} style={{ opacity: 0.75, marginTop: 4 }}>Cấp {lv}: {unlocksWithStaff(lv).join(' · ')}</div>)}
+          <summary>{t('panels_small.da_mo_khoa')}{past.length}{' '}{t('panels_small.moc')}</summary>
+          {past.map((lv) => <div key={lv} style={{ opacity: 0.75, marginTop: 4 }}>{t('panels_small.cap_5')}{' '}{lv}: {unlocksWithStaff(lv).join(' · ')}</div>)}
         </details>
       )}
       <Footer onClose={closePanel} />

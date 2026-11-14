@@ -2,6 +2,7 @@ import { useGame } from '../../core/store';
 import { roadmapAhead, SYSTEM_UNLOCKS } from '../../data/unlockMap';
 import { Footer, styles } from './shared';
 import { fmtNum } from '../../core/format';
+import { t } from '../../core/i18n';
 
 /** 🗺️ Phía trước — bản đồ toàn ván các HỆ lớn + MỐC lớn (tiệm/trại/chương/tái sinh) mở khóa theo cấp. */
 export function RoadmapPanel() {
@@ -12,8 +13,7 @@ export function RoadmapPanel() {
     <>
       <h2 style={styles.title}>🗺️ Phía trước — mở khóa các hệ & mốc lớn</h2>
       <p style={styles.sub}>
-        Hệ lớn, bậc mở rộng, chương truyện và tái sinh sẽ mở theo cấp, xếp thứ tự trước→sau.
-        Không còn thứ gì sắp mở thì làm sâu hệ đang có.
+        {t('panels_small.he_lon_bac_mo_rong_chuong')}
       </p>
       {road.length === 0 ? (
         <p style={{ ...styles.card, opacity: 0.85 }}>🏁 Đã mở toàn bộ hệ lớn & mốc lớn. Giờ là lúc vận hành và mở rộng sâu.</p>
@@ -23,7 +23,7 @@ export function RoadmapPanel() {
             <div key={r.id} style={{ ...styles.card, display: 'block', outline: i === 0 ? '2px solid #f1c40f' : undefined }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'baseline' }}>
                 <b>{r.icon} {r.name}</b>
-                <span style={{ opacity: 0.75, fontSize: 13 }}>🔒 Cấp {r.atLevel} · còn {fmtNum(r.xpAway)} XP</span>
+                <span style={{ opacity: 0.75, fontSize: 13 }}>{t('panels_small.cap_4')}{' '}{r.atLevel}{' '}{t('panels_small.con')}{' '}{fmtNum(r.xpAway)} XP</span>
               </div>
               <div style={{ fontSize: 13, opacity: 0.8, marginTop: 3 }}>{r.desc}</div>
             </div>
@@ -32,7 +32,7 @@ export function RoadmapPanel() {
       )}
       {unlocked.length > 0 && (
         <details style={{ marginTop: 12, fontSize: 13 }}>
-          <summary>✓ Đã mở ({unlocked.length} mục) — mở nhanh</summary>
+          <summary>{t('panels_small.da_mo')}{unlocked.length}{' '}{t('panels_small.muc_mo_nhanh')}</summary>
           <div style={{ display: 'grid', gap: 6, marginTop: 8 }}>
             {unlocked.map((s) => (
               <div key={s.id} style={{ ...styles.card, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
