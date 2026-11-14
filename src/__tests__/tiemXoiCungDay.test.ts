@@ -63,8 +63,8 @@ describe('GĐ598: panel tiệm xôi hiện mục tiêu kho ngày cúng', () => {
   it('TiemXoiSection nhân mục tiêu theo tiemXoiCungMul', async () => {
     const { readFileSync } = await import('node:fs');
     const src = readFileSync('src/ui/panels/TiemXoiSection.tsx', 'utf8');
-    expect(src).toContain('tiemXoiTarget(t) * tiemXoiCungMul(day)');
-    expect(src).toContain('thợ tự nấu đầy kho ×1,3');
+    expect(src).toContain('tiemXoiTarget(tx) * tiemXoiCungMul(day)');
+    expect(src).toContain("t('panels_xoi.mai_la_ngay_cung_khach_mua')");
   });
 });
 
