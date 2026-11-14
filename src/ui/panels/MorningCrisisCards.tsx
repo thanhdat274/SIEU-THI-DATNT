@@ -2,6 +2,7 @@ import { crisisDefById, crisisEffects, crisisPhaseLabel, type CrisisState } from
 import { formatMoney } from '../../data/products';
 import { useGame } from '../../core/store';
 import { styles } from './shared';
+import { t } from '../../core/i18n';
 
 /** GĐ Hệ8-L3/L2 (SPEC-CHIEU-RONG §8.7) — Thẻ "🚧 Biến cố dài" trong Sổ đầu ngày.
  *  Chỉ hiện khi `biz.crisis` đang mở (mở/đóng bởi crisisNight ở endDay). Cho biết đợt nào, giai
@@ -16,22 +17,22 @@ export function CrisisCard({ biz, day }: { biz: { crisis?: CrisisState }; day: n
   const e = crisisEffects(st, day);
   const phase = crisisPhaseLabel(def, day, st);
   const effects: string[] = [];
-  if (e.traffic !== undefined && e.traffic !== 1) effects.push(`khách ×${e.traffic.toFixed(2)}`);
+  if (e.traffic !== undefined && e.traffic !== 1) effects.push(t('panels_morning.khach', { v0: e.traffic.toFixed(2) }));
   if (e.channel) {
     if (e.channel.online !== undefined && e.channel.online !== 1) effects.push(`online ×${e.channel.online.toFixed(2)}`);
-    if (e.channel.phone !== undefined && e.channel.phone !== 1) effects.push(`điện thoại ×${e.channel.phone.toFixed(2)}`);
+    if (e.channel.phone !== undefined && e.channel.phone !== 1) effects.push(t('panels_morning.dien_thoai', { v0: e.channel.phone.toFixed(2) }));
   }
-  if (e.dirt) effects.push(`bẩn sàn ×${e.dirt}`);
-  if (e.supplyDelay) effects.push(`hàng mối trễ ${Math.round(e.supplyDelay * 100)}%`);
+  if (e.dirt) effects.push(t('panels_morning.ban_san', { dirt: e.dirt }));
+  if (e.supplyDelay) effects.push(t('panels_morning.hang_moi_tre', { v0: Math.round(e.supplyDelay * 100) }));
   const notDone = def.preps.filter((p) => !st.preps.includes(p.id));
   return (
     <div style={{ ...styles.card, display: 'block', fontSize: 12, lineHeight: 1.6, marginBottom: 8, borderLeft: '3px solid #e67e22' }}>
       <b style={{ ...styles.cardTitle, color: '#e67e22' }}>{def.icon} {def.name} · {phase}</b>
       {effects.length > 0 && (
-        <div style={{ marginTop: 2, color: '#ff7675' }}>Hôm nay: {effects.join(' · ')}.</div>
+        <div style={{ marginTop: 2, color: '#ff7675' }}>{t('panels_morning.hom_nay')}{' '}{effects.join(' · ')}.</div>
       )}
       {notDone.length > 0 ? (
-        <div style={{ marginTop: 4 }}>Chuẩn bị để đỡ thiệt:
+        <div style={{ marginTop: 4 }}>{t('panels_morning.chuan_bi_de_do_thiet')}
           {notDone.map((p) => (
             <div key={p.id} style={{ marginTop: 4 }}>
               <button
@@ -46,7 +47,7 @@ export function CrisisCard({ biz, day }: { biz: { crisis?: CrisisState }; day: n
           ))}
         </div>
       ) : (
-        <div style={{ marginTop: 4, color: '#2ecc71' }}>Đã chuẩn bị đủ — đợt này thiệt hại được làm dịu.</div>
+        <div style={{ marginTop: 4, color: '#2ecc71' }}>{t('panels_morning.da_chuan_bi_du_dot_nay')}</div>
       )}
     </div>
   );
@@ -68,13 +69,13 @@ export function CrisisSummaryCard({
   const def = crisisDefById(last.defId);
   return (
     <div style={{ ...styles.card, display: 'block', fontSize: 12, lineHeight: 1.6, marginBottom: 8, borderLeft: '3px solid #2ecc71' }}>
-      <b style={{ ...styles.cardTitle, color: '#2ecc71' }}>✅ {def?.icon} Đợt {def?.name} đã kết thúc</b>
+      <b style={{ ...styles.cardTitle, color: '#2ecc71' }}>✅ {def?.icon}{' '}{t('panels_morning.dot')}{' '}{def?.name}{' '}{t('panels_morning.da_ket_thuc')}</b>
       <div style={{ marginTop: 2 }}>
         {last.saved > 0
-          ? <>Nhờ {last.saved >= 750_000 ? 'chuẩn bị kỹ càng' : 'các việc chuẩn bị'}, đợt này thiệt hại được làm dịu, ước cứu được <b>{formatMoney(last.saved)}</b>.</>
-          : <>Bạn đã trải qua đợt này mà không chuẩn bị gì — may là vẫn vượt qua được.</>}
+          ? <>{t('panels_morning.nho')}{' '}{last.saved >= 750_000 ? t('panels_morning.chuan_bi_ky_cang') : t('panels_morning.cac_viec_chuan_bi')}{t('panels_morning.dot_nay_thiet_hai_duoc_lam')}{' '}<b>{formatMoney(last.saved)}</b>.</>
+          : <>{t('panels_morning.ban_da_trai_qua_dot_nay')}</>}
       </div>
-      {def && biz.roadBoon && <div style={{ marginTop: 2, color: '#2ecc71' }}>Đường mới khang trang — từ nay khách ghé thêm một chút.</div>}
+      {def && biz.roadBoon && <div style={{ marginTop: 2, color: '#2ecc71' }}>{t('panels_morning.duong_moi_khang_trang_tu_nay')}</div>}
     </div>
   );
 }

@@ -11,6 +11,7 @@ import { enPanelsPeople } from './en/panels_people';
 import { enPanelsQuan } from './en/panels_quan';
 import { enPanelsXoi } from './en/panels_xoi';
 import { enPanelsMisc } from './en/panels_misc';
+import { enPanelsMorning } from './en/panels_morning';
 
 /** English. `Record<I18nKey, string>` → thiếu khóa nào `tsc` báo ngay. */
 export const en: Record<I18nKey, string> = {
@@ -26,6 +27,7 @@ export const en: Record<I18nKey, string> = {
   ...enPanelsQuan,
   ...enPanelsXoi,
   ...enPanelsMisc,
+  ...enPanelsMorning,
   'settings.title': '⚙️ Settings',
   'settings.subtitle': 'Display, sound, gameplay, accessibility',
   'settings.tab.img': '👁 Display',
