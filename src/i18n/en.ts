@@ -17,6 +17,7 @@ import { enTrip } from './en/trip';
 import { enBiz } from './en/biz';
 import { enBranch } from './en/branch';
 import { enBrand } from './en/brand';
+import { enCommunity } from './en/community';
 
 /** English. `Record<I18nKey, string>` → thiếu khóa nào `tsc` báo ngay. */
 export const en: Record<I18nKey, string> = {
@@ -38,6 +39,7 @@ export const en: Record<I18nKey, string> = {
   ...enBiz,
   ...enBranch,
   ...enBrand,
+  ...enCommunity,
   'settings.title': '⚙️ Settings',
   'settings.subtitle': 'Display, sound, gameplay, accessibility',
   'settings.tab.img': '👁 Display',
