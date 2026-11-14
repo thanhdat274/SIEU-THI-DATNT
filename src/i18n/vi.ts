@@ -10,6 +10,7 @@ import { viPanelsStaff } from './vi/panels_staff';
 import { viPanelsReport } from './vi/panels_report';
 import { viPanelsStock } from './vi/panels_stock';
 import { viPlanogram } from './vi/planogram';
+import { viPanelsPeople } from './vi/panels_people';
 
 export const vi = {
   ...viLogin,
@@ -20,6 +21,7 @@ export const vi = {
   ...viPanelsReport,
   ...viPanelsStock,
   ...viPlanogram,
+  ...viPanelsPeople,
   'settings.title': '⚙️ Cài đặt',
   'settings.subtitle': 'Hình ảnh, âm thanh, cách chơi, trợ năng',
   'settings.tab.img': '👁 Hình ảnh',

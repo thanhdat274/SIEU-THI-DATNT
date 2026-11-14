@@ -11,6 +11,7 @@ import { regularGiftPlan, REGULAR_GIFT_LEVEL, giftFriendship, giftableCount, sor
 import {
   REGULAR_TIES, TIE_LABEL, TIE_ICON, alleyBond, tieIsHostile, tieKey, displayTieKind,
 } from '../../data/regularTies';
+import { t } from '../../core/i18n';
 
 /** GĐ793 — nút đòi khách quen bị rival lôi kéo (cùng kiểu nút vàng accent của hệ thống). */
 const rescueBtn: React.CSSProperties = {
@@ -48,20 +49,19 @@ export function RegularsPanel() {
   const tri = monthlyTriAn(triVisits, biz.triAnMonth ?? 0, closeFriends);
   return (
     <>
-      <h2 style={styles.title}>💛 Khách quen</h2>
-      <Tabs tabs={[['list', '👥 Khách quen'], ['ties', '🕸️ Quan hệ']]} value={tab} onChange={setTab} />
+      <h2 style={styles.title}>{t('panels_people.khach_quen_2')}</h2>
+      <Tabs tabs={[['list', t('panels_people.khach_quen_3')], ['ties', t('panels_people.quan_he')]]} value={tab} onChange={setTab} />
       {tab === 'list' && (
         <>
           {level >= REGULAR_GIFT_LEVEL && <p style={styles.sub}>{giftPanelLine(giftableCount(met, regulars, level, day, storage), stats.gifts)}</p>}
       <DebtBook />
       <p style={styles.sub}>
-        Khách quen ghé vào giờ quen. Bán đúng món họ thích thì thân hơn (+2, món khác +1, mỗi ngày một lần);
-        để họ về tay không thì mất 1 điểm. Thân đủ mốc thì họ ghé thường hơn, mua thêm món và boa tiền.
+        {t('panels_people.khach_quen_ghe_vao_gio_quen')}
       </p>
       <div style={{ ...styles.card, marginBottom: 6, border: '1px solid rgba(243,156,18,0.4)', background: 'rgba(243,156,18,0.06)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-          <b>📖 Sổ thương mến</b>
-          <span>{triTier.icon} {triTier.name} <span style={{ opacity: 0.7, fontSize: 12 }}>— {triVisits} lượt khách quen</span></span>
+          <b>{t('panels_people.so_thuong_men')}</b>
+          <span>{triTier.icon} {triTier.name} <span style={{ opacity: 0.7, fontSize: 12 }}>— {triVisits}{' '}{t('panels_people.luot_khach_quen')}</span></span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, fontSize: 12 }}>
           {triNext ? (
@@ -69,17 +69,17 @@ export function RegularsPanel() {
               <div style={{ flex: 1, height: 6, background: '#555', borderRadius: 3 }}>
                 <div style={{ width: `${Math.min(100, ((triVisits - triPrev) / (triNext.threshold - triPrev || 1)) * 100)}%`, height: '100%', borderRadius: 3, background: '#e67e22' }} />
               </div>
-              <span style={{ opacity: 0.8 }}>còn {triNext.threshold - triVisits} lượt tới {triNext.icon} {triNext.name}</span>
+              <span style={{ opacity: 0.8 }}>{t('panels_people.con_3')}{' '}{triNext.threshold - triVisits}{' '}{t('panels_people.luot_toi')}{' '}{triNext.icon} {triNext.name}</span>
             </>
           ) : (
-            <span style={{ opacity: 0.8 }}>🛍️ Bậc cao nhất — bể khách quen toàn thịnh!</span>
+            <span style={{ opacity: 0.8 }}>{t('panels_people.bac_cao_nhat_be_khach_quen')}</span>
           )}
         </div>
         <div style={{ fontSize: 12, marginTop: 4, opacity: 0.95 }}>
-          Tháng này đã phục vụ <b>{biz.triAnMonth ?? 0} lượt khách quen</b>{' '}
+          {t('panels_people.thang_nay_da_phuc_vu')}{' '}<b>{biz.triAnMonth ?? 0}{' '}{t('panels_people.luot_khach_quen')}</b>{' '}
           {closeFriends >= 1 && triTier.level >= 1
-            ? <span>→ cuối tháng nhận 💝 tri ân <b style={{ color: '#2ecc71' }}>~{formatMoney(tri.amount)}</b></span>
-            : <span style={{ opacity: 0.75 }}>(cần 1 khách thân 💛 ≥{EMOTIONAL_FRIENDSHIP} và bậc Tiệm ≥1 để nhận quà)</span>}
+            ? <span>{t('panels_people.cuoi_thang_nhan_tri_an')}{' '}<b style={{ color: '#2ecc71' }}>~{formatMoney(tri.amount)}</b></span>
+            : <span style={{ opacity: 0.75 }}>{t('panels_people.can_1_khach_than')}{EMOTIONAL_FRIENDSHIP}{' '}{t('panels_people.va_bac_tiem_1_de_nhan')}</span>}
         </div>
       </div>
       {poachedList.length > 0 && rival && (
@@ -96,7 +96,7 @@ export function RegularsPanel() {
                 key={id}
                 tone="danger"
                 strong
-                title={`😠 ${def.name} đang sang tiệm ${rival.name}`}
+                title={t('panels_people.dang_sang_tiem', { name: def.name, name2: rival.name })}
                 actions={
                   <button
                     disabled={!canRescue}
@@ -104,14 +104,13 @@ export function RegularsPanel() {
                     style={{ ...rescueBtn, opacity: canRescue ? 1 : 0.55 }}
                   >
                     {usedToday
-                      ? 'Hôm nay đã đòi một người — mai tiếp'
-                      : gift ? `Đòi về — tặng 1 ${wantName} + ${formatMoney(RESCUE_FEE)}` : `Thiếu ${wantName} trong kho`}
+                      ? t('panels_people.hom_nay_da_doi_mot_nguoi')
+                      : gift ? t('panels_people.doi_ve_tang_1', { wantName, v1: formatMoney(RESCUE_FEE) }) : t('panels_people.thieu_trong_kho', { wantName })}
                   </button>
                 }
               >
                 <div style={{ fontSize: 12, opacity: 0.9 }}>
-                  Từ ngày {sinceDay} khách không ghé tiệm mình. Tặng 1 {wantName} + {formatMoney(RESCUE_FEE)} tiền quà là khách quay lại ngay,
-                  cộng thêm thân thiết. Mỗi ngày đòi lại được một người.
+                  {t('panels_people.tu_ngay')}{' '}{sinceDay}{' '}{t('panels_people.khach_khong_ghe_tiem_minh_tang')}{' '}{wantName} + {formatMoney(RESCUE_FEE)}{' '}{t('panels_people.tien_qua_la_khach_quay_lai')}
                 </div>
               </Callout>
             );
@@ -133,7 +132,7 @@ export function RegularsPanel() {
               <summary style={{ display: 'flex', justifyContent: 'space-between', gap: 8, cursor: 'pointer', listStyle: 'none', fontWeight: 700 }}>
                 <span><Swatch color={r.color} /> {r.name}</span>
                 <span style={{ opacity: 0.75, fontSize: 12, fontWeight: 400 }}>
-                  {poached[r.id] ? '😠 ' : lungLay.includes(r.id) ? <span title={`Người nhà/bạn của người vừa bị kéo — mấy đêm nay dễ lung lay gấp đôi, ưu tiên chăm`}>💢 </span> : atRisk.includes(r.id) ? <span title={`Thân thiết thấp, ${rival?.name} có thể lôi kéo — tặng quà hoặc bán đúng món họ thích`}>⚠️ </span> : ''}{arcSt && !arcSt.done ? '📖 ' : ''}💛 {pts} · {prog?.visits ?? 0} lần ghé
+                  {poached[r.id] ? '😠 ' : lungLay.includes(r.id) ? <span title={t('panels_people.nguoi_nha_ban_cua_nguoi_vua', {  })}>💢 </span> : atRisk.includes(r.id) ? <span title={t('panels_people.than_thiet_thap_co_the_loi', { v0: rival?.name })}>⚠️ </span> : ''}{arcSt && !arcSt.done ? '📖 ' : ''}💛 {pts} · {prog?.visits ?? 0}{' '}{t('panels_people.lan_ghe')}
                 </span>
               </summary>
               <div style={{ marginTop: 6 }}>
@@ -146,7 +145,7 @@ export function RegularsPanel() {
                   <div style={{ fontSize: 12, fontStyle: 'italic', marginTop: 2 }}>💬 “{r.lines.greeting}”</div>
                 )}
                 <div style={{ fontSize: 12, marginTop: 4 }}>
-                  Thích: {r.favorites.map((id) => (prog?.discovered.includes(id) ? productById(id).name : '???')).join(', ')}
+                  {t('panels_people.thich')}{' '}{r.favorites.map((id) => (prog?.discovered.includes(id) ? productById(id).name : '???')).join(', ')}
                 </div>
                 {level >= REGULAR_GIFT_LEVEL && (() => {
                   const plan = regularGiftPlan(r, prog, level, day, storage);
@@ -157,7 +156,7 @@ export function RegularsPanel() {
                       onClick={() => giftRegular(r.id)}
                       style={{ marginTop: 4, fontSize: 12, padding: '3px 8px', borderRadius: 6, border: 'none', cursor: err ? 'default' : 'pointer', opacity: err ? 0.55 : 1 }}
                     >
-                      {'productId' in plan ? `🎁 Tặng 1 ${productById(plan.productId).name} (+${giftFriendship(isBirthday(r, day))} 💛)` : `🎁 ${err}`}
+                      {'productId' in plan ? t('panels_people.tang_1', { v0: productById(plan.productId).name, v1: giftFriendship(isBirthday(r, day)) }) : `🎁 ${err}`}
                     </button>
                   );
                 })()}
@@ -179,16 +178,16 @@ export function RegularsPanel() {
                 )}
                 {arcSt && (() => {
                   if (!arc) return null;
-                  if (arcSt.done) return <div style={{ fontSize: 12, color: '#e67e22', marginTop: 2 }}>📖 Đã xong: {arc.title} ✓</div>;
+                  if (arcSt.done) return <div style={{ fontSize: 12, color: '#e67e22', marginTop: 2 }}>{t('panels_people.da_xong')}{' '}{arc.title} ✓</div>;
                   const step = currentArcStep(arc, arcSt);
                   const left = Math.max(0, arcSt.expiresDay - day);
                   return (
                     <div style={{ fontSize: 12, color: '#e67e22', marginTop: 2 }}>
                       📖 {arc.title} —&nbsp;
                       {arcSt.waitingReward
-                        ? 'xong đủ bước, tối nay gom thưởng'
-                        : step ? `bước ${arcSt.step + 1}/${arc.steps.length}: cần ${step.qty} ${productById(step.itemId).name}` : ''}
-                      {' · hạn còn '}{left} ngày
+                        ? t('panels_people.xong_du_buoc_toi_nay_gom')
+                        : step ? t('panels_people.buoc_can', { v0: arcSt.step + 1, length: arc.steps.length, qty: step.qty, v3: productById(step.itemId).name }) : ''}
+                      {t('panels_people.han_con')}{left}{' '}{t('panels_people.ngay_2')}
                     </div>
                   );
                 })()}
@@ -196,7 +195,7 @@ export function RegularsPanel() {
             </details>
           );
         })}
-        {REGULARS.length > met.length && <p style={styles.sub}>Lên cấp để gặp thêm {REGULARS.length - met.length} khách quen nữa.</p>}
+        {REGULARS.length > met.length && <p style={styles.sub}>{t('panels_people.len_cap_de_gap_them')}{' '}{REGULARS.length - met.length}{' '}{t('panels_people.khach_quen_nua')}</p>}
       </div>
         </>
       )}
@@ -220,23 +219,23 @@ function TiesView({ bond, regulars, tiesMended, met }: {
   const metIds = new Set(met.map((r) => r.id));
   const name = (id: string): string => {
     const def = regularById(id);
-    return def ? (metIds.has(id) ? def.name : `${def?.name ?? id} (chưa gặp)`) : id;
+    return def ? (metIds.has(id) ? def.name : t('panels_people.chua_gap', { v0: def?.name ?? id })) : id;
   };
   return (
     <>
       <div style={{ ...styles.card, marginBottom: 8, border: '1px solid rgba(46,204,113,0.4)', background: 'rgba(46,204,113,0.06)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-          <b>🏮 Tình làng nghĩa xóm</b>
+          <b>{t('panels_people.tinh_lang_nghia_xom')}</b>
           <span style={{ fontWeight: 700, color: '#2ecc71' }}>{bond}%</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, fontSize: 12 }}>
           <div style={{ flex: 1, height: 8, background: '#555', borderRadius: 4 }}>
             <div style={{ width: `${bond}%`, height: '100%', borderRadius: 4, background: '#2ecc71' }} />
           </div>
-          <span style={{ opacity: 0.8 }}>min thân thiết đủ 40 là kín 1 mối ({friendly.length} mối thân)</span>
+          <span style={{ opacity: 0.8 }}>{t('panels_people.min_than_thiet_du_40_la')}{friendly.length}{' '}{t('panels_people.moi_than')}</span>
         </div>
         <div style={{ fontSize: 11, opacity: 0.75, marginTop: 4 }}>
-          Họ hàng · bạn bè · láng giềng trong hẻm. Chăm sâu vài người then chốt giữ được cả cụm; mối khắc khẩu thì lo A là B hơi dỗi.
+          {t('panels_people.ho_hang_ban_be_lang_gieng')}
         </div>
       </div>
       <div style={{ display: 'grid', gap: 4 }}>
@@ -260,7 +259,7 @@ function TiesView({ bond, regulars, tiesMended, met }: {
         })}
         {hostile.length > 0 && (
           <div style={{ fontSize: 12, opacity: 0.9, background: 'rgba(231,76,60,0.08)', borderRadius: 8, padding: '6px 12px' }}>
-            ⚡ <b>Người khắc khẩu</b> — lo chu đáo một người thì người kia hơi dỗi:
+            ⚡ <b>{t('panels_people.nguoi_khac_khau')}</b>{' '}{t('panels_people.lo_chu_dao_mot_nguoi_thi')}
             {hostile.map((t) => <div key={tieKey(t.a, t.b)}>💢 {name(t.a)} · {name(t.b)}</div>)}
           </div>
         )}
