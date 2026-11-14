@@ -2,6 +2,7 @@ import { useClock, useGame } from '../../core/store';
 import { todos, type TodoItem } from '../../data/todo';
 import { worldActions } from '../../core/actions';
 import { Footer, styles } from './shared';
+import { t } from '../../core/i18n';
 
 /**
  * Sổ việc chung (SPEC-TOI-UU §T6-L3): gộp mọi nguồn việc đã đăng ký (`todos()`) thành MỘT bảng,
@@ -13,9 +14,9 @@ import { Footer, styles } from './shared';
 const CAP = 5;
 
 const GROUPS: { key: TodoItem['urgency']; title: string; icon: string }[] = [
-  { key: 'now', title: 'Gấp', icon: '🔴' },
-  { key: 'today', title: 'Hôm nay', icon: '🟡' },
-  { key: 'idle', title: 'Khi rảnh', icon: '⚪' },
+  { key: 'now', title: t('panels_misc.gap'), icon: '🔴' },
+  { key: 'today', title: t('panels_misc.hom_nay_2'), icon: '🟡' },
+  { key: 'idle', title: t('panels_misc.khi_ranh'), icon: '⚪' },
 ];
 
 /** Bấm một việc: mở đúng bảng (hay lau nhà luôn) — cùng quy ước với dải HUD (HudAgenda). */
@@ -44,12 +45,12 @@ export function TodoListPanel() {
 
   return (
     <>
-      <h2 style={styles.title}>🗒️ Sổ việc</h2>
+      <h2 style={styles.title}>{t('panels_misc.so_viec')}</h2>
       <p style={styles.sub}>
-        Mọi việc gấp / hôm nay / nên làm khi rảnh gộp về một nơi. Bấm một việc là tới đúng bảng.
+        {t('panels_misc.moi_viec_gap_hom_nay_nen')}
       </p>
       {list.length === 0 ? (
-        <p style={{ ...styles.card, opacity: 0.85 }}>🎉 Hôm nay không còn việc gì phải chú ý — cứ để tiệm chạy, hoặc mở rộng sâu hệ đang có.</p>
+        <p style={{ ...styles.card, opacity: 0.85 }}>{t('panels_misc.hom_nay_khong_con_viec_gi')}</p>
       ) : (
         GROUPS.map((g) => {
           const items = list.filter((it) => it.urgency === g.key);
@@ -76,7 +77,7 @@ export function TodoListPanel() {
                   </button>
                 ))}
                 {hidden > 0 && (
-                  <div style={{ fontSize: 12, opacity: 0.6, paddingLeft: 4 }}>+{hidden} mục {g.title.toLowerCase()} nữa…</div>
+                  <div style={{ fontSize: 12, opacity: 0.6, paddingLeft: 4 }}>+{hidden}{' '}{t('panels_misc.muc')}{' '}{g.title.toLowerCase()}{' '}{t('panels_misc.nua')}</div>
                 )}
               </div>
             </div>

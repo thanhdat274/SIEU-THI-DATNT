@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { clearNotifLog, notifLog } from '../../core/notifLog';
 import { useGame } from '../../core/store';
 import { Footer, styles } from './shared';
+import { t } from '../../core/i18n';
 
 /**
  * GĐ2347 — Sổ thông báo (panel 'log'): mọi tin đã hiện lên HUD trong phiên, mới nhất đứng đầu.
@@ -31,22 +32,21 @@ export function NotifLogPanel() {
     // chạm tới đáy khung, hết cảnh "khoảng đen lãng phí" khi tin chưa đầy một trang.
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
       <div style={{ flex: 'none' }}>
-        <h2 style={styles.title}>🔔 Sổ thông báo</h2>
+        <h2 style={styles.title}>{t('panels_misc.so_thong_bao')}</h2>
         <p style={styles.sub}>
-          Mọi tin đã hiện lên màn hình trong phiên này — cả tin đã trôi và tin đang bị gom sau nút "+N thông báo".
-          Mới nhất đứng đầu. Đóng trang là mất (không lưu vào save).
+          {t('panels_misc.moi_tin_da_hien_len_man')}
         </p>
       </div>
       {entries.length === 0 ? (
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <p style={{ ...styles.card, opacity: 0.85 }}>Chưa có tin nào trong phiên này — mở cửa tiệm, đón khách là có ngay!</p>
+          <p style={{ ...styles.card, opacity: 0.85 }}>{t('panels_misc.chua_co_tin_nao_trong_phien')}</p>
         </div>
       ) : (
         <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 6, scrollbarWidth: 'thin' }}>
           {shown.map((e, i) => (
             <div key={`${e.day}-${e.minutes}-${i}`} style={{ ...styles.card, alignItems: 'baseline' }}>
               <small style={{ flex: 'none', opacity: 0.7, minWidth: 96 }}>
-                Ngày {e.day} · {clockLabel(e.minutes)}
+                {t('panels_misc.ngay_3')}{' '}{e.day} · {clockLabel(e.minutes)}
               </small>
               <span style={{ fontSize: 13, lineHeight: 1.45 }}>{e.text}</span>
             </div>
@@ -56,12 +56,12 @@ export function NotifLogPanel() {
       <Footer onClose={closePanel}>
         {entries.length > PAGE && (
           <button style={styles.btn} onClick={() => setShowAll(!showAll)}>
-            {showAll ? 'Thu gọn' : `Xem tất cả ${entries.length} tin`}
+            {showAll ? t('panels_misc.thu_gon') : t('panels_misc.xem_tat_ca_tin', { length: entries.length })}
           </button>
         )}
         {entries.length > 0 && (
           <button style={styles.btn} onClick={() => { clearNotifLog(); tick((n) => n + 1); }}>
-            🗑 Xoá thông báo cũ
+            {t('panels_misc.xoa_thong_bao_cu')}
           </button>
         )}
       </Footer>

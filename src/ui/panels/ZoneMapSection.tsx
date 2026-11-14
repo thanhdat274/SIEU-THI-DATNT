@@ -9,6 +9,7 @@ import { isXoiCungDay } from '../../data/tiemXoi';
 import { WEATHER } from '../../data/weather';
 import { MAP_LANDMARKS, ZONES, zoneMapView } from '../../data/zones';
 import { styles } from './shared';
+import { t } from '../../core/i18n';
 
 // Khung bản đồ bao hết các khu; trục z thế giới hướng xuống dưới trên hình
 const X1 = Math.min(...ZONES.map((z) => z.bounds.x1));
@@ -26,7 +27,7 @@ export function ZoneMapSection() {
   const po = sapPayoff({ lots: sap, weather, day, kinds: biz.sapKinds, tiers: biz.sapTiers, homeXoi: biz.tiemXoi.open });
   return (
     <div style={{ ...styles.card, display: 'block', marginTop: 10 }}>
-      <b>🗺️ Bản đồ khu phố</b>
+      <b>{t('panels_misc.ban_do_khu_pho')}</b>
       <svg viewBox={`${X1} ${Z1} ${X2 - X1} ${Z2 - Z1}`} style={{ width: '100%', maxHeight: 180, display: 'block', margin: '6px 0', background: '#dfe6e9', borderRadius: 6 }}>
         {cells.map(({ zone: z, state }) => (
           <g key={z.id}>
@@ -48,13 +49,13 @@ export function ZoneMapSection() {
         <div key={z.id} style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
           <span>{z.icon} <b>{z.name}</b>: {z.desc}</span>
           <button style={styles.btn} disabled={state !== 'ok'} onClick={() => openZone(z.id)}>
-            {state === 'level' ? `Cấp ${z.unlock}` : `Mở ${formatMoney(z.cost)}`}
+            {state === 'level' ? t('panels_misc.cap_3', { unlock: z.unlock }) : t('panels_misc.mo_2', { v0: formatMoney(z.cost) })}
           </button>
         </div>
       ))}
       {cells.some((c) => c.zone.id === 'ngo2' && c.state === 'open') && (
         <>
-          <div style={{ fontSize: 12, opacity: 0.8 }}>🛒 Sạp hàng rong Ngõ 2: {sap}/{SAP_LOTS} lô (thuê ở lô trống, bấm L)</div>
+          <div style={{ fontSize: 12, opacity: 0.8 }}>{t('panels_misc.sap_hang_rong_ngo_2')}{' '}{sap}/{SAP_LOTS}{' '}{t('panels_misc.lo_thue_o_lo_trong_bam')}</div>
           {po.line && <div style={{ fontSize: 12, opacity: 0.8, color: '#e67e22' }}>{po.line}</div>}
         </>
       )}
@@ -62,16 +63,16 @@ export function ZoneMapSection() {
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
           {Array.from({ length: Math.min(sap, SAP_LOTS) }, (_, i) => {
             const k = sapKindOf(biz.sapKinds, i);
-            const t = SAP_TIERS[sapTierOf(biz.sapTiers, i)];
+            const tier = SAP_TIERS[sapTierOf(biz.sapTiers, i)];
             const up = SAP_TIERS[sapTierOf(biz.sapTiers, i) + 1];
             const home = k.id === 'xoi' && biz.tiemXoi.open;
             return (
               <span key={i} style={{ display: 'inline-flex', gap: 4 }}>
                 <button style={styles.btn} title={`${k.hint}${home ? ' · xôi nhà làm +20%' : ''} — bấm để đổi món`} onClick={() => cycleSapKind(i)}>
-                  Lô {i + 1}: {t.icon} {k.icon} {k.name} · hôm nay {formatMoney(Math.round(sapLotIncome(k, weather, day) * t.mul * (home ? SAP_HOME_XOI_MUL : 1)))}{home ? ' 🏠' : ''}{k.id === 'xoi' && isXoiCungDay(day) ? ' 🙏' : ''}{k.id === 'nuocmia' && isQuanMatchDay(day, weather) ? ' ⚽' : ''}
+                  {t('panels_misc.lo')}{' '}{i + 1}: {tier.icon} {k.icon} {k.name}{' '}{t('panels_misc.hom_nay')}{' '}{formatMoney(Math.round(sapLotIncome(k, weather, day) * tier.mul * (home ? SAP_HOME_XOI_MUL : 1)))}{home ? ' 🏠' : ''}{k.id === 'xoi' && isXoiCungDay(day) ? ' 🙏' : ''}{k.id === 'nuocmia' && isQuanMatchDay(day, weather) ? ' ⚽' : ''}
                 </button>
                 {up && (
-                  <button style={styles.btn} disabled={money < up.cost} title={`Nâng lên ${up.name}: thu ×${fmtMul(up.mul)}`} onClick={() => upgradeSapLot(i)}>
+                  <button style={styles.btn} disabled={money < up.cost} title={t('panels_misc.nang_len_thu', { name: up.name, v1: fmtMul(up.mul) })} onClick={() => upgradeSapLot(i)}>
                     ⬆ {up.icon} {shortLabel(formatMoney(up.cost), up.cost, money)}
                   </button>
                 )}
@@ -80,7 +81,7 @@ export function ZoneMapSection() {
           })}
           {tmr && tip && (
             <div style={{ fontSize: 12, opacity: 0.8, width: '100%' }}>
-              {WEATHER[tmr].icon} Mai {WEATHER[tmr].name.toLowerCase()}: {tmr === 'rain' || tmr === 'storm' ? 'sạp nghỉ bán' : `nên bán ${tip.icon} ${tip.name}${tip.id === 'xoi' && isXoiCungDay(day + 1) ? ' (ngày cúng)' : ''}${tip.id === 'nuocmia' && isQuanMatchDay(day + 1, tmr) ? ' (có trận)' : ''}`}
+              {WEATHER[tmr].icon} Mai {WEATHER[tmr].name.toLowerCase()}: {tmr === 'rain' || tmr === 'storm' ? t('panels_misc.sap_nghi_ban') : `nên bán ${tip.icon} ${tip.name}${tip.id === 'xoi' && isXoiCungDay(day + 1) ? ' (ngày cúng)' : ''}${tip.id === 'nuocmia' && isQuanMatchDay(day + 1, tmr) ? ' (có trận)' : ''}`}
             </div>
           )}
         </div>

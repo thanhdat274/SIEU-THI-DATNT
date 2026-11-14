@@ -17,6 +17,7 @@ import { avgPerVisit } from '../../data/repMoney';
 import { brokenShelfLoss } from '../../data/brokenShelfLoss';
 import { itemHealthList, shelfCount } from '../../data/analytics';
 import { card, title, pill, iconTile, btn, sub, row } from './businessStyles';
+import { t } from '../../core/i18n';
 
 export function Pets() {
   const { biz, day, level, storage, analytics, riskTrend } = useGame();
@@ -32,55 +33,55 @@ export function Pets() {
           <div key={p.kind} style={card}>
             <div style={row}>
               <b>{p.icon} {p.name}</b>
-              {!pet ? (level < p.unlock ? <span style={sub}>Cấp {p.unlock}</span> : <button style={btn} onClick={() => buyPet(p.kind)}>Nuôi · {formatMoney(p.price)}</button>)
-                : <button style={btn} disabled={pet.fedDay === day} onClick={() => feedPet(p.kind)}>{pet.fedDay === day ? 'Đã cho ăn' : 'Cho ăn'}</button>}
+              {!pet ? (level < p.unlock ? <span style={sub}>{t('panels_misc.cap')}{' '}{p.unlock}</span> : <button style={btn} onClick={() => buyPet(p.kind)}>{t('panels_misc.nuoi')}{' '}{formatMoney(p.price)}</button>)
+                : <button style={btn} disabled={pet.fedDay === day} onClick={() => feedPet(p.kind)}>{pet.fedDay === day ? t('panels_misc.da_cho_an') : t('panels_misc.cho_an')}</button>}
             </div>
             <div style={sub}>{p.desc}</div>
             {pet && (
               <div style={{ fontSize: 12, marginTop: 2, color: fed ? '#2ecc71' : '#e67e22' }}>
-                {fed ? 'No bụng, đang làm việc' : 'Đói, không chịu làm việc'} · kho còn {storage[p.food] ?? 0} {productById(p.food).name} (không có thì mua lẻ giá gấp đôi)
+                {fed ? t('panels_misc.no_bung_dang_lam_viec') : t('panels_misc.doi_khong_chiu_lam_viec')}{' '}{t('panels_misc.kho_con')}{' '}{storage[p.food] ?? 0} {productById(p.food).name}{' '}{t('panels_misc.khong_co_thi_mua_le_gia')}
               </div>
             )}
             {/* GĐ157: payoff thú cưng — số tiền là ƯỚC từ sổ hỏng hàng / sổ rủi ro có sẵn. */}
             {p.kind === 'cat' && pet && cat.verdict !== 'nothing-spoiled' && (
               <div style={{ fontSize: 12, marginTop: 4, borderTop: '1px dashed rgba(255,255,255,0.12)', paddingTop: 4 }}>
                 <div>
-                  Hôm qua cứu <b>~{formatMoney(cat.savedYesterday)}</b> hàng hỏng · bữa cơm hôm nay ~{formatMoney(cat.foodCostToday)} →{' '}
+                  {t('panels_misc.hom_qua_cuu')}{' '}<b>~{formatMoney(cat.savedYesterday)}</b>{' '}{t('panels_misc.hang_hong_bua_com_hom_nay')}{formatMoney(cat.foodCostToday)} →{' '}
                   <b style={{ color: cat.savedYesterday >= cat.foodCostToday ? '#2ecc71' : '#e67e22' }}>
-                    {cat.savedYesterday >= cat.foodCostToday ? `đang lời ~${formatMoney(cat.savedYesterday - cat.foodCostToday)}` : `đang lỗ ~${formatMoney(cat.foodCostToday - cat.savedYesterday)}`}
+                    {cat.savedYesterday >= cat.foodCostToday ? t('panels_misc.dang_loi', { v0: formatMoney(cat.savedYesterday - cat.foodCostToday) }) : t('panels_misc.dang_lo', { v0: formatMoney(cat.foodCostToday - cat.savedYesterday) })}
                   </b>
                 </div>
                 <div style={{ marginTop: 2 }}>
-                  7 ngày: cứu <b>~{formatMoney(cat.savedWeek)}</b> —{' '}
-                  {cat.verdict === 'saved' && <b style={{ color: '#2ecc71' }}>lời ~{formatMoney(cat.savedWeek - cat.foodWeek)}</b>}
-                  {cat.verdict === 'breakeven' && <b style={{ color: '#f1c40f' }}>vừa đủ ăn</b>}
-                  {cat.verdict === 'losing' && <b style={{ color: '#e67e22' }}>lỗ cơm ~{formatMoney(cat.foodWeek - cat.savedWeek)}</b>}
-                  {' '}(thức ăn ~{formatMoney(cat.foodWeek)}).
+                  {t('panels_misc.7_ngay_cuu')}{' '}<b>~{formatMoney(cat.savedWeek)}</b> —{' '}
+                  {cat.verdict === 'saved' && <b style={{ color: '#2ecc71' }}>{t('panels_misc.loi')}{formatMoney(cat.savedWeek - cat.foodWeek)}</b>}
+                  {cat.verdict === 'breakeven' && <b style={{ color: '#f1c40f' }}>{t('panels_misc.vua_du_an')}</b>}
+                  {cat.verdict === 'losing' && <b style={{ color: '#e67e22' }}>{t('panels_misc.lo_com')}{formatMoney(cat.foodWeek - cat.savedWeek)}</b>}
+                  {' '}{t('panels_misc.thuc_an')}{formatMoney(cat.foodWeek)}).
                 </div>
-                {!fed && <div style={{ color: '#e67e22', marginTop: 2 }}>😾 Đói 1 ngày mất công dụng — cho ăn đều.</div>}
+                {!fed && <div style={{ color: '#e67e22', marginTop: 2 }}>{t('panels_misc.doi_1_ngay_mat_cong_dung')}</div>}
               </div>
             )}
             {p.kind === 'cat' && pet && cat.verdict === 'nothing-spoiled' && (
               <div style={{ fontSize: 12, marginTop: 4 }}>
-                7 ngày qua kho sạch, không hỏng gì — chưa thấy công, thức ăn vẫn ~{formatMoney(cat.foodCostToday)}/ngày.
+                {t('panels_misc.7_ngay_qua_kho_sach_khong')}{formatMoney(cat.foodCostToday)}{t('panels_misc.ngay')}
               </div>
             )}
             {p.kind === 'cat' && !pet && cat.weekSpoilCost >= CAT_PITCH_MIN && (
               <Callout tone="danger" strong style={{ marginTop: 4 }}>
                 <div style={{ fontSize: 12 }}>
-                  🥀 Tuần này hàng hỏng <b>~{formatMoney(cat.weekSpoilCost)}</b> — nuôi mèo cứu được ~1/4 (~{formatMoney(Math.round(cat.weekSpoilCost * 0.25))}) với ~{formatMoney(cat.foodCostToday)}/ngày thức ăn.
+                  {t('panels_misc.tuan_nay_hang_hong')}{' '}<b>~{formatMoney(cat.weekSpoilCost)}</b>{' '}{t('panels_misc.nuoi_meo_cuu_duoc_1_4')}{formatMoney(Math.round(cat.weekSpoilCost * 0.25))}{t('panels_misc.voi')}{formatMoney(cat.foodCostToday)}{t('panels_misc.ngay_thuc_an')}
                 </div>
               </Callout>
             )}
             {p.kind === 'dog' && pet && dog.days > 0 && dog.weekBlocked > 0 && (
               <div style={{ fontSize: 12, marginTop: 4, borderTop: '1px dashed rgba(255,255,255,0.12)', paddingTop: 4 }}>
-                🛡️ Tuần này chặn/thu lại <b>~{formatMoney(dog.weekBlocked)}</b> trộm & tiền giả.
-                <div style={{ ...sub, marginTop: 2 }}>Sổ rủi ro chung cả tiệm (gồm cả camera, mắt tinh) — không tách riêng được công con chó.</div>
+                {t('panels_misc.tuan_nay_chan_thu_lai')}{' '}<b>~{formatMoney(dog.weekBlocked)}</b> trộm & tiền giả.
+                <div style={{ ...sub, marginTop: 2 }}>{t('panels_misc.so_rui_ro_chung_ca_tiem')}</div>
               </div>
             )}
             {p.kind === 'dog' && pet && dog.days > 0 && dog.weekBlocked <= 0 && dog.weekLeak > 0 && (
               <div style={{ fontSize: 12, marginTop: 4 }}>
-                🛡️ Tuần này lọt <b>~{formatMoney(dog.weekLeak)}</b>, chưa chặn được gì — chó giữ cửa giúp giảm nguy cơ.
+                {t('panels_misc.tuan_nay_lot')}{' '}<b>~{formatMoney(dog.weekLeak)}</b>{t('panels_misc.chua_chan_duoc_gi_cho_giu')}
               </div>
             )}
           </div>
@@ -97,12 +98,11 @@ export function Services() {
   return (
     <>
       <div style={card}>
-        <b>🧾 Dịch vụ ở quầy</b>
+        <b>{t('panels_misc.dich_vu_o_quay')}</b>
         <div style={sub}>
-          Không cần kệ: khách đi thẳng tới quầy, lãi mỗi lượt ít nhưng {Math.round(SERVICE_BUY_ALONG * 100)}% khách tiện tay mua kèm 1–2 món.
-          Phải có người đứng quầy mới phục vụ được.
+          {t('panels_misc.khong_can_ke_khach_di_thang')}{' '}{Math.round(SERVICE_BUY_ALONG * 100)}{t('panels_misc.khach_tien_tay_mua_kem_1')}
         </div>
-        <div style={{ fontSize: 12, marginTop: 4 }}>Hôm nay lời từ dịch vụ: <b>{formatMoney(stats.services ?? 0)}</b></div>
+        <div style={{ fontSize: 12, marginTop: 4 }}>{t('panels_misc.hom_nay_loi_tu_dich_vu')}{' '}<b>{formatMoney(stats.services ?? 0)}</b></div>
         {machineDayLine(stats.byService) && <div style={{ fontSize: 12, marginTop: 2 }}>{machineDayLine(stats.byService)}</div>}
         {clawWinLine(stats.clawWins) && <div style={{ fontSize: 12, marginTop: 2 }}>{clawWinLine(stats.clawWins)}</div>}
         {idleMachineHint(furniture, stats.byService, minutes) && <div style={{ fontSize: 12, marginTop: 2, opacity: 0.8 }}>{idleMachineHint(furniture, stats.byService, minutes)}</div>}
@@ -111,25 +111,25 @@ export function Services() {
         <div key={sv.id} style={{ ...card, opacity: level < sv.unlock ? 0.5 : 1 }}>
           <div style={row}>
             <b>{sv.icon} {sv.name}</b>
-            {owned.includes(sv.id) ? <span style={{ ...sub, color: '#2ecc71' }}>Đang chạy</span>
-              : level < sv.unlock ? <span style={sub}>Cấp {sv.unlock}</span>
-                : <button style={btn} onClick={() => buyService(sv.id)}>Mở · {formatMoney(sv.price)}</button>}
+            {owned.includes(sv.id) ? <span style={{ ...sub, color: '#2ecc71' }}>{t('panels_misc.dang_chay')}</span>
+              : level < sv.unlock ? <span style={sub}>{t('panels_misc.cap')}{' '}{sv.unlock}</span>
+                : <button style={btn} onClick={() => buyService(sv.id)}>{t('panels_misc.mo')}{' '}{formatMoney(sv.price)}</button>}
           </div>
           <div style={sub}>{sv.desc}</div>
           {owned.includes(sv.id) && (() => {
             const roi = roiOf(sv, biz.serviceLife, stats.byService);
             const goal = roi.paidBack
-              ? <span style={{ color: '#2ecc71' }}>đã hoàn vốn ✓</span>
-              : <span style={{ color: '#f1c40f' }}>còn kém {formatMoney(roi.deficit)} nữa là hoàn vốn{roi.daysToRecoup ? ` (~${roi.daysToRecoup} ngày theo nhịp hôm nay)` : ''}</span>;
+              ? <span style={{ color: '#2ecc71' }}>{t('panels_misc.da_hoan_von')}</span>
+              : <span style={{ color: '#f1c40f' }}>{t('panels_misc.con_kem')}{' '}{formatMoney(roi.deficit)}{' '}{t('panels_misc.nua_la_hoan_von')}{roi.daysToRecoup ? t('panels_misc.ngay_theo_nhip_hom_nay', { daysToRecoup: roi.daysToRecoup }) : ''}</span>;
             return (
               <div style={{ fontSize: 12, marginTop: 2 }}>
-                Đã lời {formatMoney(roi.life)} · hôm nay {roi.today >= 0 ? '+' : ''}{formatMoney(roi.today)} · {goal}
+                {t('panels_misc.da_loi')}{' '}{formatMoney(roi.life)}{' '}{t('panels_misc.hom_nay')}{' '}{roi.today >= 0 ? '+' : ''}{formatMoney(roi.today)} · {goal}
               </div>
             );
           })()}
           {sv.id === 'bills' && (
             <div style={{ fontSize: 12, marginTop: 2 }}>
-              Hôm nay ngày {dayOfMonth(day)} trong tháng{dayOfMonth(day) <= BILL_RUSH_DAYS ? ' · 🔥 đầu tháng, khách đóng tiền đông gấp 4' : ` · đợt đông tới sau ${30 - dayOfMonth(day) + 1} ngày`}
+              {t('panels_misc.hom_nay_ngay')}{' '}{dayOfMonth(day)}{' '}{t('panels_misc.trong_thang')}{dayOfMonth(day) <= BILL_RUSH_DAYS ? t('panels_misc.dau_thang_khach_dong_tien_dong') : t('panels_misc.dot_dong_toi_sau_ngay', { v0: 30 - dayOfMonth(day) + 1 })}
             </div>
           )}
         </div>
@@ -143,30 +143,30 @@ export function Life() {
   return (
     <>
       <div style={card}>
-        <b>🏡 Sắm đồ cho nhà riêng</b>
-        <div style={sub}>Nhà đẹp ngủ ngon: mỗi món giúp sáng hôm sau đi nhanh hơn.</div>
+        <b>{t('panels_misc.sam_do_cho_nha_rieng')}</b>
+        <div style={sub}>{t('panels_misc.nha_dep_ngu_ngon_moi_mon')}</div>
         {HOME_ITEMS.map((h) => (
           <div key={h.id} style={{ ...row, marginTop: 4, opacity: level < h.unlock ? 0.5 : 1 }}>
-            <span>{h.icon} {h.name} <span style={sub}>+{Math.round(h.rest * 100)}% tốc độ</span></span>
-            {biz.home.includes(h.id) ? <span style={{ ...sub, color: '#2ecc71' }}>Đã có</span>
-              : level < h.unlock ? <span style={sub}>Cấp {h.unlock}</span>
+            <span>{h.icon} {h.name} <span style={sub}>+{Math.round(h.rest * 100)}{t('panels_misc.toc_do')}</span></span>
+            {biz.home.includes(h.id) ? <span style={{ ...sub, color: '#2ecc71' }}>{t('panels_misc.da_co')}</span>
+              : level < h.unlock ? <span style={sub}>{t('panels_misc.cap')}{' '}{h.unlock}</span>
                 : <button style={btn} onClick={() => buyHomeItem(h.id)}>{formatMoney(h.price)}</button>}
           </div>
         ))}
       </div>
       <div style={card}>
-        <b>🍜 Bữa sáng</b>
-        <div style={sub}>Bước tới cạnh tủ đầu giường là tự ăn sáng ({formatMoney(BREAKFAST.price)}, trước 11:00): đi nhanh hơn {Math.round(BREAKFAST.speed * 100)}% cả ngày, thức khuya thêm {BREAKFAST.lateMinutes} phút mới ngất.</div>
-        <div style={{ fontSize: 12, marginTop: 2 }}>{biz.breakfastDay === day ? '✅ Sáng nay đã ăn' : 'Hôm nay chưa ăn'}</div>
+        <b>{t('panels_misc.bua_sang')}</b>
+        <div style={sub}>{t('panels_misc.buoc_toi_canh_tu_dau_giuong')}{formatMoney(BREAKFAST.price)}{t('panels_misc.truoc_11_00_di_nhanh_hon')}{' '}{Math.round(BREAKFAST.speed * 100)}{t('panels_misc.ca_ngay_thuc_khuya_them')}{' '}{BREAKFAST.lateMinutes}{' '}{t('panels_misc.phut_moi_ngat')}</div>
+        <div style={{ fontSize: 12, marginTop: 2 }}>{biz.breakfastDay === day ? t('panels_misc.sang_nay_da_an') : t('panels_misc.hom_nay_chua_an')}</div>
       </div>
       <div style={card}>
-        <b>🛵 Xe cộ</b>
-        <div style={sub}>Ngoài đường đi nhanh hơn, nút đi lại nhà ↔ tiệm tốn ít giờ hơn, giao đơn gọi điện kịp hơn.</div>
+        <b>{t('panels_misc.xe_co')}</b>
+        <div style={sub}>{t('panels_misc.ngoai_duong_di_nhanh_hon_nut')}</div>
         {VEHICLES.map((v) => (
           <div key={v.id} style={{ ...row, marginTop: 4, opacity: level < v.unlock ? 0.5 : 1 }}>
-            <span>{v.icon} {v.name} <span style={sub}>+{Math.round(v.speed * 100)}% ngoài đường, đi lại còn {Math.round(v.travel * 100)}% thời gian</span></span>
-            {biz.vehicle === v.id || (biz.vehicle === 'moto' && v.id === 'bike') ? <span style={{ ...sub, color: '#2ecc71' }}>Đã có</span>
-              : level < v.unlock ? <span style={sub}>Cấp {v.unlock}</span>
+            <span>{v.icon} {v.name} <span style={sub}>+{Math.round(v.speed * 100)}{t('panels_misc.ngoai_duong_di_lai_con')}{' '}{Math.round(v.travel * 100)}{t('panels_misc.thoi_gian')}</span></span>
+            {biz.vehicle === v.id || (biz.vehicle === 'moto' && v.id === 'bike') ? <span style={{ ...sub, color: '#2ecc71' }}>{t('panels_misc.da_co')}</span>
+              : level < v.unlock ? <span style={sub}>{t('panels_misc.cap')}{' '}{v.unlock}</span>
                 : <button style={btn} onClick={() => buyVehicle(v.id)}>{formatMoney(v.price)}</button>}
           </div>
         ))}
@@ -181,8 +181,8 @@ export function Upgrades() {
   return (
     <>
       <div style={{ ...card, marginBottom: 8 }}>
-        <b>🔧 Thiết bị của tiệm</b>
-        <div style={sub}>Thiết bị nấu nâng được nhiều bậc (chỉ khi đóng cửa, bậc cao nấu nhanh nhưng ngốn điện); camera, POS, bảo trì, ca đêm mua một lần dùng vĩnh viễn.</div>
+        <b>{t('panels_misc.thiet_bi_cua_tiem')}</b>
+        <div style={sub}>{t('panels_misc.thiet_bi_nau_nang_duoc_nhieu')}</div>
       </div>
       <EquipmentSection />
       {UPGRADES.map((u) => {
@@ -215,13 +215,13 @@ export function Upgrades() {
                   <b>{u.name}</b>
                   <div style={sub}>{u.desc}</div>
                   {owned
-                    ? <span style={{ ...pill, background: 'rgba(46,204,113,0.2)', color: '#2ecc71' }}>✓ Đã lắp</span>
-                    : <div style={sub}>Giá {formatMoney(u.price)} · mở ở cấp {u.unlock}</div>}
+                    ? <span style={{ ...pill, background: 'rgba(46,204,113,0.2)', color: '#2ecc71' }}>{t('panels_misc.da_lap')}</span>
+                    : <div style={sub}>{t('panels_misc.gia')}{' '}{formatMoney(u.price)}{' '}{t('panels_misc.mo_o_cap')}{' '}{u.unlock}</div>}
                 </div>
               </div>
               {!owned && (
                 <button style={btn} disabled={level < u.unlock || money < u.price} onClick={() => buyUpgrade(u.id)}>
-                  {level < u.unlock ? `Cần cấp ${u.unlock}` : shortLabel(`Mua ${formatMoney(u.price)}`, u.price, money)}
+                  {level < u.unlock ? t('panels_misc.can_cap', { unlock: u.unlock }) : shortLabel(`Mua ${formatMoney(u.price)}`, u.price, money)}
                 </button>
               )}
             </div>
@@ -230,13 +230,13 @@ export function Upgrades() {
                 tone={cameraRisk.hasCamera ? 'ok' : cameraRisk.leakExposureToday >= THEFT_LEAK_HIGH ? 'danger' : cameraRisk.leakExposureToday >= THEFT_LEAK_MODERATE ? 'warn' : 'info'}
                 style={{ marginTop: 8 }}
                 title={cameraRisk.hasCamera
-                  ? '📹 Đã lắp camera — kẻ trộm né tiệm'
-                  : `🦹 Mỗi ngày trộm rút ~${formatMoney(cameraRisk.leakExposureToday)} hàng`}
+                  ? t('panels_misc.da_lap_camera_ke_trom_ne')
+                  : t('panels_misc.moi_ngay_trom_rut_hang', { v0: formatMoney(cameraRisk.leakExposureToday) })}
               >
                 <div style={{ marginTop: 2, fontSize: 12 }}>
                   {cameraRisk.hasCamera
-                    ? 'Đã lắp: kẻ trộm né tiệm (mất bớt ~30% vụ trộm).'
-                    : `~${Math.round(cameraRisk.expectedThievesToday * 10) / 10} khách/ngày là kẻ trộm (giỏ trung bình ${formatMoney(cameraRisk.avgBasketRetail)}). Lắp camera kìm còn 70% → tiết kiệm ước ~${formatMoney(cameraRisk.cameraSavesPerDay)}/ngày, hoàn vốn sau ~${cameraRisk.cameraPaybackDays ?? '?'} ngày.`}
+                    ? t('panels_misc.da_lap_ke_trom_ne_tiem')
+                    : t('panels_misc.khach_ngay_la_ke_trom_gio', { v0: Math.round(cameraRisk.expectedThievesToday * 10) / 10, v1: formatMoney(cameraRisk.avgBasketRetail), v2: formatMoney(cameraRisk.cameraSavesPerDay), v3: cameraRisk.cameraPaybackDays ?? '?' })}
                 </div>
               </Callout>
             )}
@@ -245,18 +245,18 @@ export function Upgrades() {
                 tone={maintPayoff.hasContract ? 'ok' : maintPayoff.nightlyRepairSpend >= MAINT_RISK_HIGH ? 'danger' : maintPayoff.nightlyRepairSpend >= MAINT_RISK_MODERATE ? 'warn' : 'info'}
                 style={{ marginTop: 8 }}
                 title={maintPayoff.hasContract
-                  ? '🔧 Đã ký hợp đồng — thợ chăm kệ mỗi sáng'
-                  : `🔧 Mỗi đêm kệ hỏng rủi ro ~${formatMoney(maintPayoff.nightlyRepairSpend)} tiền sửa`}
+                  ? t('panels_misc.da_ky_hop_dong_tho_cham')
+                  : t('panels_misc.moi_dem_ke_hong_rui_ro', { v0: formatMoney(maintPayoff.nightlyRepairSpend) })}
               >
                 <div style={{ marginTop: 2, fontSize: 12 }}>
                   {maintPayoff.hasContract
-                    ? 'Kệ mòn ≥40 được thợ chăm về 10 mỗi sáng → gần như không bao giờ hỏng. Tiền sửa/đêm ~0 (mất lợi chỉ còn khi kệ đang hỏng sẵn).'
-                    : `~${Math.round(maintPayoff.expectedBreaksPerNight * 10) / 10} kệ/đêm có nguy cơ hỏng trên ${maintPayoff.nbWearing} đồ hao mòn. Ký hợp đồng tiết kiệm ước ~${formatMoney(maintPayoff.savingPerDay)}/ngày (nửa giá + chăm kệ tránh hỏng), hoàn vốn sau ~${maintPayoff.paybackDays ?? '?'} ngày — chưa tính hàng lỡ bán khi kệ hỏng.`}
+                    ? t('panels_misc.ke_mon_40_duoc_tho_cham')
+                    : t('panels_misc.ke_dem_co_nguy_co_hong', { v0: Math.round(maintPayoff.expectedBreaksPerNight * 10) / 10, nbWearing: maintPayoff.nbWearing, v2: formatMoney(maintPayoff.savingPerDay), v3: maintPayoff.paybackDays ?? '?' })}
                 </div>
                 {shelfLoss && shelfLoss.hasBroken && (
                   <div style={{ marginTop: 4, fontSize: 12, color: '#e74c3c' }}
                     title={`Kệ hỏng đang chặn hẳn: ${shelfLoss.lines.map((l) => `${l.typeName} (${l.itemNames.join(', ')})`).join(' · ')}`}>
-                    🔧 Kệ hỏng đang chặn hẳn {shelfLoss.lines.length} đồ — lỡ TỚI ~{formatMoney(shelfLoss.lostPerDay)}/ngày, sửa để bán lại.
+                    {t('panels_misc.ke_hong_dang_chan_han')}{' '}{shelfLoss.lines.length}{' '}{t('panels_misc.do_lo_toi')}{formatMoney(shelfLoss.lostPerDay)}{t('panels_misc.ngay_sua_de_ban_lai')}
                   </div>
                 )}
               </Callout>
@@ -266,13 +266,13 @@ export function Upgrades() {
                 tone={owned ? 'ok' : posValue.verdict === 'high' ? 'danger' : posValue.verdict === 'modest' ? 'warn' : 'info'}
                 style={{ marginTop: 8 }}
                 title={owned
-                  ? '🖥️ Đã lắp POS — quầy quét nhanh gấp rưỡi'
-                  : `🖥️ Mỗi ngày lỡ ~${formatMoney(posValue.estRevenueLostPerDay)} vì khách chờ quầy`}
+                  ? t('panels_misc.da_lap_pos_quay_quet_nhanh')
+                  : t('panels_misc.moi_ngay_lo_vi_khach_cho', { v0: formatMoney(posValue.estRevenueLostPerDay) })}
               >
                 <div style={{ marginTop: 2, fontSize: 12 }}>
                   {owned
-                    ? 'Quét mã tự động mọi quầy, khách chờ ít hẳn — giờ đông không còn nghẽn ở máy tính tiền.'
-                    : `~${posValue.waitMissed} khách/ngày bỏ về vì chờ quầy. POS kìm ~80% chờ do tốc độ quầy → tiết kiệm ước ~${formatMoney(posValue.savingPerDay)}/ngày, hoàn vốn sau ~${posValue.paybackDays ?? '?'} ngày (ước lượng, chưa tính giờ đông).`}
+                    ? t('panels_misc.quet_ma_tu_dong_moi_quay')
+                    : t('panels_misc.khach_ngay_bo_ve_vi_cho', { waitMissed: posValue.waitMissed, v1: formatMoney(posValue.savingPerDay), v2: posValue.paybackDays ?? '?' })}
                 </div>
               </Callout>
             )}

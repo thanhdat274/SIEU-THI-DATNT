@@ -3,6 +3,7 @@ import { STANCE_META, STANCE_UNLOCK, STANCE_IDS, STANCE_TIER_DAYS, stanceTier, s
 import { buildStanceCtx } from '../../data/stanceData';
 import { card, title, btn } from './businessStyles';
 import { hasFeature } from '../../data/features';
+import { t } from '../../core/i18n';
 
 /**
  * Hệ 3 (SPEC-CHIEU-SAU §3.4, §3.5, §3.9) — "🪧 Biển hiệu": trước khi treo đo 3 hướng X/Y; sau khi treo
@@ -20,26 +21,26 @@ export function StanceTab() {
   return (
     <div>
       <div style={card}>
-        <div style={title}>🪧 Treo biển định vị</div>
+        <div style={title}>{t('panels_misc.treo_bien_dinh_vi')}</div>
         <div style={{ fontSize: 12, opacity: 0.8, marginBottom: 6 }}>
           {s.level < STANCE_UNLOCK
-            ? `Mở hệ từ cấp ${STANCE_UNLOCK}. Dưới đây là số liệu đo sẵn để biết tiệm đang nghiêng về hướng nào.`
+            ? t('panels_misc.mo_he_tu_cap_duoi_day', { STANCE_UNLOCK })
             : !st
-              ? 'Chọn một hướng để treo biển (lần đầu miễn phí). Không treo cũng là lựa chọn hợp lệ — không lợi, không phạt.'
-              : `Đang treo: ${STANCE_META[st.id].icon} ${STANCE_META[st.id].name}`}
+              ? t('panels_misc.chon_mot_huong_de_treo_bien')
+              : t('panels_misc.dang_treo', { v0: STANCE_META[st.id].icon, v1: STANCE_META[st.id].name })}
         </div>
         {st && (
           <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 4 }}>
             {active
-              ? `Cấp biển ${tier} · ${st.fitDays} ngày khớp`
+              ? t('panels_misc.cap_bien_ngay_khop', { tier, fitDays: st.fitDays })
               : resetting
-                ? `Đang làm lại biển (${Math.max(0, st.switchUntil! - s.day)} ngày nữa mới có hiệu ứng)`
-                : 'Biển chưa có hiệu lực'}
+                ? t('panels_misc.dang_lam_lai_bien_ngay_nua', { v0: Math.max(0, st.switchUntil! - s.day) })
+                : t('panels_misc.bien_chua_co_hieu_luc')}
           </div>
         )}
         {st && active && tier < STANCE_TIER_DAYS.length && (
           <div style={{ fontSize: 12, opacity: 0.85, marginBottom: 4 }}>
-            Còn {STANCE_TIER_DAYS[tier] - st.fitDays} ngày khớp nữa lên bậc {tier + 1}
+            {t('panels_misc.con_2')}{' '}{STANCE_TIER_DAYS[tier] - st.fitDays}{' '}{t('panels_misc.ngay_khop_nua_len_bac')}{' '}{tier + 1}
           </div>
         )}
         {hasFeature(s, 'stance') && (
@@ -51,7 +52,7 @@ export function StanceTab() {
             ))}
             {st && (
               <button style={{ ...btn, marginLeft: 0 }} onClick={() => useGame.getState().dropStance()}>
-                🪧 Gỡ biển
+                {t('panels_misc.go_bien')}
               </button>
             )}
           </div>
