@@ -4,6 +4,7 @@ import { landmarkPayoff } from '../../data/landmarkPayoff';
 import { formatMoney } from '../../data/products';
 import { Footer, styles } from './shared';
 import { fmtNum } from '../../core/format';
+import { t } from '../../core/i18n';
 
 const formatMoneyShort = (v: number) => v >= 1_000_000 ? `${fmtNum((v / 1_000_000))}tr` : `${fmtNum(Math.round(v / 1000))}k`;
 const TOTAL = LANDMARK_TARGETS[LANDMARK_TARGETS.length - 1];
@@ -32,14 +33,13 @@ export function LandmarkPanel() {
     const doneTurns = contributions - TOTAL;
     return (
       <>
-        <h2 style={styles.title}>💡 Công trình Đèn Đường Ngõ 1</h2>
+        <h2 style={styles.title}>{t('brand.cong_trinh_den_duong_ngo_1')}</h2>
         <p style={styles.sub}>
-          Sân chơi đã xong — giờ cả hẻm cùng góp dựng <b>đèn đường</b>: đêm hẻm sáng sủa, khách đêm ghé chi nhánh đông hơn
-          (lưu lượng đêm <b>+15%</b> khi thắp sáng). Mỗi ngày góp một lượt — đủ <b>{TOTAL2 - TOTAL} lượt</b> là thắp sáng!
+          {t('brand.san_choi_da_xong_gio_ca')}{' '}<b>{t('brand.den_duong')}</b>{t('brand.dem_hem_sang_sua_khach_dem')}{' '}<b>+15%</b>{' '}{t('brand.khi_thap_sang_moi_ngay_gop')}{' '}<b>{TOTAL2 - TOTAL}{' '}{t('brand.luot')}</b>{' '}{t('brand.la_thap_sang')}
         </p>
         <div style={{ margin: '6px 0 4px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, opacity: 0.8, marginBottom: 4 }}>
-            <span>Lượt góp dự án đèn: {doneTurns}/{TOTAL2 - TOTAL}</span>
+            <span>{t('brand.luot_gop_du_an_den')}{' '}{doneTurns}/{TOTAL2 - TOTAL}</span>
             <span>{Math.round(p2.pct * 100)}%</span>
           </div>
           <div style={{ height: 14, borderRadius: 7, background: '#3a3a4d', overflow: 'hidden' }}>
@@ -49,34 +49,34 @@ export function LandmarkPanel() {
         <div style={{ ...styles.card, marginTop: 12, alignItems: 'flex-start' }}>
           <span style={{ fontSize: 30 }}>{p2.done ? '💡' : stage.icon}</span>
           <div style={{ flex: 1 }}>
-            <b style={{ fontSize: 15 }}>{p2.done ? '💡 Đã thắp sáng!' : `${stage.icon} ${stage.title}`}</b>
-            <div style={{ fontSize: 13, opacity: 0.8, margin: '2px 0' }}>{p2.done ? 'Đèn đường Ngõ 1 thắp sáng cả hẻm!' : stage.desc}</div>
-            {!p2.done && <small style={{ opacity: 0.7 }}>Trong giai đoạn {p2.into}/{LANDMARK2_TARGETS[p2.index] - TOTAL} lượt</small>}
+            <b style={{ fontSize: 15 }}>{p2.done ? t('brand.da_thap_sang') : `${stage.icon} ${stage.title}`}</b>
+            <div style={{ fontSize: 13, opacity: 0.8, margin: '2px 0' }}>{p2.done ? t('brand.den_duong_ngo_1_thap_sang') : stage.desc}</div>
+            {!p2.done && <small style={{ opacity: 0.7 }}>{t('brand.trong_giai_doan')}{' '}{p2.into}/{LANDMARK2_TARGETS[p2.index] - TOTAL}{' '}{t('brand.luot')}</small>}
           </div>
         </div>
         {nextStage ? (
           <div style={{ marginTop: 10, fontSize: 13, opacity: 0.85 }}>
-            🎯 Giai đoạn kế tiếp: <b>{nextStage.icon} {nextStage.title}</b> ({nextStage.desc}) — thưởng{' '}
+            {t('brand.giai_doan_ke_tiep')}{' '}<b>{nextStage.icon} {nextStage.title}</b> ({nextStage.desc}{t('brand.thuong')}{' '}
             <b>+{formatMoneyShort(nextStage.bonusMoney)} + {nextStage.bonusXp} XP</b>
           </div>
         ) : (
           <div style={{ marginTop: 10, fontSize: 13, color: '#a3e4a3' }}>
-            🎊 Đèn thắp sáng cả ngõ — khách đêm ghé chi nhánh đông hơn +15%!
+            {t('brand.den_thap_sang_ca_ngo_khach')}
           </div>
         )}
         <p style={{ margin: '12px 0 4px', fontSize: 13 }}>
-          Chi phí một lượt góp hôm nay: <b>{formatMoneyShort(cost)}</b>
-          {p2.done && ' (không cần góp nữa)'}
+          {t('brand.chi_phi_mot_luot_gop_hom')}{' '}<b>{formatMoneyShort(cost)}</b>
+          {p2.done && t('brand.khong_can_gop_nua')}
         </p>
         <button
           style={{ ...styles.btn, marginLeft: 0, background: disabled ? '#666' : '#e67e22', color: '#fff', cursor: disabled ? 'default' : 'pointer', padding: '8px 14px', fontSize: 14 }}
           onClick={contributeLandmark}
           disabled={disabled}
         >
-          {p2.done ? '✅ Đã thắp sáng' : alreadyToday ? '✅ Hôm nay đã góp' : `💡 Góp vật liệu (+1 hôm nay) · ${formatMoneyShort(cost)}`}
+          {p2.done ? t('brand.da_thap_sang_2') : alreadyToday ? t('brand.hom_nay_da_gop') : t('brand.gop_vat_lieu_1_hom_nay', { v0: formatMoneyShort(cost) })}
         </button>
         {broke && !p2.done && !alreadyToday && (
-          <small style={{ display: 'block', margin: '6px 0 0', color: '#f0a35c' }}>Chưa đủ tiền mua vật liệu (cần {formatMoneyShort(cost)})</small>
+          <small style={{ display: 'block', margin: '6px 0 0', color: '#f0a35c' }}>{t('brand.chua_du_tien_mua_vat_lieu')}{' '}{formatMoneyShort(cost)})</small>
         )}
         <Footer onClose={closePanel} />
       </>
@@ -92,11 +92,11 @@ export function LandmarkPanel() {
   const nextStage = prog.index < LANDMARK_STAGES.length - 1 ? LANDMARK_STAGES[prog.index + 1] : null;
   const disabled = done || alreadyToday || broke;
   const disabledReason = done
-    ? 'Sân chơi đã khánh thành rồi!'
+    ? t('brand.san_choi_da_khanh_thanh_roi')
     : alreadyToday
-      ? 'Hôm nay đã góp rồi — mai quay lại nhé!'
+      ? t('brand.hom_nay_da_gop_roi_mai')
       : broke
-        ? `Chưa đủ tiền mua vật liệu (cần ${formatMoneyShort(cost)})`
+        ? t('brand.chua_du_tien_mua_vat_lieu_2', { v0: formatMoneyShort(cost) })
         : undefined;
   // GĐ158 — thẻ soi sáng "góp bao nhiêu, còn bao nhiêu, đáng không" (thuần đọc, không đổi kinh tế/save).
   const payoff = landmarkPayoff(landmark, level, history);
@@ -105,16 +105,15 @@ export function LandmarkPanel() {
 
   return (
     <>
-      <h2 style={styles.title}>🏗️ Công trình Sân chơi</h2>
+      <h2 style={styles.title}>{t('brand.cong_trinh_san_choi')}</h2>
       <p style={styles.sub}>
-        Hẻm cùng nhau góp vật liệu xây sân chơi cho trẻ con. Mỗi ngày góp một lượt — đủ {TOTAL} lượt
-        là khánh thành, cả hẻm cảm ơn bạn và… trẻ con reo hò! 🎉
+        {t('brand.hem_cung_nhau_gop_vat_lieu')}{' '}{TOTAL}{' '}{t('brand.luot_la_khanh_thanh_ca_hem')}
       </p>
 
       {/* Tiến độ tổng */}
       <div style={{ margin: '6px 0 4px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, opacity: 0.8, marginBottom: 4 }}>
-          <span>Đã góp {contributions}/{TOTAL} lượt</span>
+          <span>{t('brand.da_gop')}{' '}{contributions}/{TOTAL}{' '}{t('brand.luot')}</span>
           <span>{Math.round(prog.pct * 100)}%</span>
         </div>
         <div style={{ height: 14, borderRadius: 7, background: '#3a3a4d', overflow: 'hidden' }}>
@@ -126,11 +125,11 @@ export function LandmarkPanel() {
       <div style={{ ...styles.card, marginTop: 12, alignItems: 'flex-start' }}>
         <span style={{ fontSize: 30 }}>{done ? '🏟️' : stage.icon}</span>
         <div style={{ flex: 1 }}>
-          <b style={{ fontSize: 15 }}>{done ? '🏟️ Khánh thành' : `${stage.icon} ${stage.title}`}</b>
-          <div style={{ fontSize: 13, opacity: 0.8, margin: '2px 0' }}>{done ? 'Sân chơi đầu hẻm đã hoàn thành!' : stage.desc}</div>
+          <b style={{ fontSize: 15 }}>{done ? t('brand.khanh_thanh') : `${stage.icon} ${stage.title}`}</b>
+          <div style={{ fontSize: 13, opacity: 0.8, margin: '2px 0' }}>{done ? t('brand.san_choi_dau_hem_da_hoan') : stage.desc}</div>
           {!done && (
             <small style={{ opacity: 0.7 }}>
-              Trong giai đoạn {prog.into}/{LANDMARK_TARGETS[prog.index]} lượt
+              {t('brand.trong_giai_doan')}{' '}{prog.into}/{LANDMARK_TARGETS[prog.index]}{' '}{t('brand.luot')}
             </small>
           )}
         </div>
@@ -139,50 +138,49 @@ export function LandmarkPanel() {
       {/* Phần thưởng giai đoạn kế tiếp */}
       {nextStage ? (
         <div style={{ marginTop: 10, fontSize: 13, opacity: 0.85 }}>
-          🎯 Giai đoạn kế tiếp: <b>{nextStage.icon} {nextStage.title}</b> ({nextStage.desc}) — thưởng{' '}
+          {t('brand.giai_doan_ke_tiep')}{' '}<b>{nextStage.icon} {nextStage.title}</b> ({nextStage.desc}{t('brand.thuong')}{' '}
           <b>+{formatMoneyShort(nextStage.bonusMoney)} + {nextStage.bonusXp} XP</b>
         </div>
       ) : (
         <div style={{ marginTop: 10, fontSize: 13, color: '#a3e4a3' }}>
-          🎊 Đã hoàn thành cả 4 giai đoạn. Cả hẻm hưởng lợi: khách ghé đông hơn (+6%)!
+          {t('brand.da_hoan_thanh_ca_4_giai')}
         </div>
       )}
 
       {/* GĐ158 — Soi sáng: góp bao nhiêu, còn bao nhiêu, đáng không (thuần đọc) */}
       <div style={{ ...styles.card, display: 'block', marginTop: 12 }}>
-        <b style={{ fontSize: 13 }}>💡 Góp bao nhiêu, đáng không?</b>
+        <b style={{ fontSize: 13 }}>{t('brand.gop_bao_nhieu_dang_khong')}</b>
         <div style={{ fontSize: 12, opacity: 0.88, marginTop: 4, lineHeight: 1.55 }}>
           {payoff.done ? (
             <>
               <div>
-                Đã khánh thành! Đã góp ước ~<b>{formatMoney(payoff.spentEst)}</b>
+                {t('brand.da_khanh_thanh_da_gop_uoc')}<b>{formatMoney(payoff.spentEst)}</b>
                 {gain !== null && !smallGain ? (
-                  <> — khách tiệm chính đông thêm 6% ≈ <b>+{formatMoney(gain)}/ngày</b> từ ngày khánh thành.</>
+                  <>{' '}{t('brand.khach_tiem_chinh_dong_them_6')}{' '}<b>+{formatMoney(gain)}{t('brand.ngay_3')}</b>{' '}{t('brand.tu_ngay_khanh_thanh')}</>
                 ) : (
-                  <> — khách tiệm chính đông thêm 6% từ ngày khánh thành.</>
+                  <>{' '}{t('brand.khach_tiem_chinh_dong_them_6_2')}</>
                 )}
               </div>
               {smallGain && (
-                <div>Doanh thu đông thêm khiêm tốn — góp nhỏ, được cái đẹp hẻm: sân chơi rộn ràng là quà cho cả khu phố. 😊</div>
+                <div>{t('brand.doanh_thu_dong_them_khiem_ton')}</div>
               )}
             </>
           ) : (
             <>
               <div>
-                Đã góp ~<b>{payoff.contributedTurns}</b> lượt (ước ~<b>{formatMoney(payoff.spentEst)}</b>) · còn{' '}
-                <b>{payoff.remainingTurns}</b> lượt ≈ ~<b>{formatMoney(payoff.remainingCostEst)}</b> nữa là khánh thành.
+                {t('brand.da_gop_2')}<b>{payoff.contributedTurns}</b>{' '}{t('brand.luot_uoc')}<b>{formatMoney(payoff.spentEst)}</b>{t('brand.con')}{' '}
+                <b>{payoff.remainingTurns}</b>{' '}{t('brand.luot_2')}<b>{formatMoney(payoff.remainingCostEst)}</b>{' '}{t('brand.nua_la_khanh_thanh')}
               </div>
               {gain === null ? (
-                <div>Bán hàng vài ngày để ước xem khoản góp hòa lại trong bao lâu nhé.</div>
+                <div>{t('brand.ban_hang_vai_ngay_de_uoc')}</div>
               ) : smallGain ? (
-                <div>Khách đông thêm khiêm tốn — góp nhỏ, được cái đẹp hẻm: sân chơi rộn ràng là quà cho cả khu phố. 😊</div>
+                <div>{t('brand.khach_dong_them_khiem_ton_gop')}</div>
               ) : (
                 <div>
-                  Xong rồi khách tiệm chính đông thêm 6% ≈ <b>+{formatMoney(gain)}/ngày</b> — toàn bộ khoản góp hòa lại sau
-                  ~<b>{payoff.paybackDays}</b> ngày bán.
+                  {t('brand.xong_roi_khach_tiem_chinh_dong')}{' '}<b>+{formatMoney(gain)}{t('brand.ngay_3')}</b>{' '}{t('brand.toan_bo_khoan_gop_hoa_lai')}<b>{payoff.paybackDays}</b>{' '}{t('brand.ngay_ban')}
                 </div>
               )}
-              <div>Mỗi ngày góp 1 lượt là khánh thành sớm nhất — góp đều, sớm hưởng lâu!</div>
+              <div>{t('brand.moi_ngay_gop_1_luot_la')}</div>
             </>
           )}
         </div>
@@ -190,8 +188,8 @@ export function LandmarkPanel() {
 
       {/* Chi phí hôm nay + nút góp */}
       <p style={{ margin: '12px 0 4px', fontSize: 13 }}>
-        Chi phí một lượt góp hôm nay: <b>{formatMoneyShort(cost)}</b>
-        {done && ' (không cần góp nữa)'}
+        {t('brand.chi_phi_mot_luot_gop_hom')}{' '}<b>{formatMoneyShort(cost)}</b>
+        {done && t('brand.khong_can_gop_nua')}
       </p>
       <button
         style={{ ...styles.btn, marginLeft: 0, background: disabled ? '#666' : '#e67e22', color: '#fff', cursor: disabled ? 'default' : 'pointer', padding: '8px 14px', fontSize: 14 }}
@@ -199,7 +197,7 @@ export function LandmarkPanel() {
         disabled={disabled}
         title={disabledReason}
       >
-        {done ? '✅ Đã khánh thành' : alreadyToday ? '✅ Hôm nay đã góp' : `🏗️ Góp vật liệu (+1 hôm nay) · ${formatMoneyShort(cost)}`}
+        {done ? t('brand.da_khanh_thanh') : alreadyToday ? t('brand.hom_nay_da_gop') : t('brand.gop_vat_lieu_1_hom_nay_2', { v0: formatMoneyShort(cost) })}
       </button>
       {disabledReason && !done && (
         <small style={{ display: 'block', margin: '6px 0 0', color: '#f0a35c' }}>{disabledReason}</small>

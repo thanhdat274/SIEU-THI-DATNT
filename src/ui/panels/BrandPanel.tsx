@@ -15,16 +15,17 @@ import { brandWorkshopPayoff } from '../../data/brandWorkshopPayoff';
 import { brandDealPayoff } from '../../data/brandDealPayoff';
 import { Footer, styles, Tabs } from './shared';
 import { fmtNum } from '../../core/format';
+import { t } from '../../core/i18n';
 
 type Tab = 'lines' | 'workshop' | 'dealers' | 'franchise';
 const TABS: readonly [Tab, string][] = [
-  ['lines', '🏷️ Dòng hàng'],
-  ['workshop', '🏭 Xưởng'],
-  ['dealers', '🚛 Bỏ mối'],
-  ['franchise', '🏮 Nhượng quyền'],
+  ['lines', t('brand.dong_hang')],
+  ['workshop', t('brand.xuong')],
+  ['dealers', t('brand.bo_moi')],
+  ['franchise', t('brand.nhuong_quyen')],
 ];
 
-const vnd = (n: number) => `${fmtNum((n ?? 0))}đ`;
+const vnd = (n: number) => t('brand.d', { v0: fmtNum((n ?? 0)) });
 const pname = (id: string) => (productById(id)?.name ?? id).replace(/\s*\([^)]*\)\s*$/, '');
 
 /**
@@ -52,28 +53,27 @@ export function BrandPanel() {
 
   return (
     <>
-      <h2 style={styles.title}>🏷️ Nhãn hàng riêng</h2>
+      <h2 style={styles.title}>{t('brand.nhan_hang_rieng')}</h2>
       <p style={styles.sub}>
-        Những món nhà làm đã thành thạo được dán nhãn mang tên tiệm, sản xuất theo lô ở xưởng, rồi bỏ mối cho
-        đại lý và tiệm nhượng quyền — việc cuối game là giữ uy tín một thương hiệu. Mở từ cấp {BRAND_UNLOCK}.
+        {t('brand.nhung_mon_nha_lam_da_thanh')}{' '}{BRAND_UNLOCK}.
       </p>
 
       {!b && (
         <div style={styles.card}>
           <div style={{ flex: 1 }}>
-            <b>Lập nhãn</b>
+            <b>{t('brand.lap_nhan')}</b>
             <div style={{ fontSize: 12, opacity: 0.8, marginTop: 2 }}>
-              Đặt tên nhãn (≤ 24 ký tự) — tên sẽ theo các dòng hàng, đại lý và nhượng quyền.
+              {t('brand.dat_ten_nhan_24_ky_tu')}
             </div>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
               maxLength={24}
-              placeholder="VD: Nước mắm nhà Năm"
+              placeholder={t('brand.vd_nuoc_mam_nha_nam')}
               style={{ marginTop: 8, padding: '6px 8px', borderRadius: 6, border: '1px solid #555', background: '#2b2b3a', color: '#f5f5f5' }}
             />
           </div>
-          <button style={styles.btn} onClick={() => foundBrand(name)}>Khai trương nhãn</button>
+          <button style={styles.btn} onClick={() => foundBrand(name)}>{t('brand.khai_truong_nhan')}</button>
         </div>
       )}
 
@@ -118,7 +118,7 @@ function RepBar({ rep, name, repLog }: { rep: number; name: string; repLog: { da
     <div style={{ ...styles.card, background: '#41324f' }}>
       <div style={{ flex: 1 }}>
         <b style={{ fontSize: 14 }}>🏷️ {name}</b>
-        <div style={{ fontSize: 12, opacity: 0.85 }}>Uy tín {Math.round(rep)}/100 · {tier.name} · hàng nhãn bán +{Math.round(tier.premium * 100)}%</div>
+        <div style={{ fontSize: 12, opacity: 0.85 }}>{t('brand.uy_tin')}{' '}{Math.round(rep)}/100 · {tier.name}{' '}{t('brand.hang_nhan_ban')}{Math.round(tier.premium * 100)}%</div>
         <div style={{ height: 8, background: '#2b2b3a', borderRadius: 4, marginTop: 6, overflow: 'hidden' }}>
           <div style={{ height: '100%', width: `${rep}%`, background: '#f39c12', borderRadius: 4 }} />
         </div>
@@ -126,7 +126,7 @@ function RepBar({ rep, name, repLog }: { rep: number; name: string; repLog: { da
           <div style={{ marginTop: 8, fontSize: 12, opacity: 0.85 }}>
             {repLog.slice(-4).reverse().map((e, i) => (
               <div key={i} style={{ display: 'flex', gap: 6, marginTop: 2 }}>
-                <span style={{ opacity: 0.6 }}>ngày {e.day}</span>
+                <span style={{ opacity: 0.6 }}>{t('brand.ngay')}{' '}{e.day}</span>
                 <span style={{ color: e.delta >= 0 ? '#7ee787' : '#ff7b72', width: 40 }}>{e.delta >= 0 ? `+${e.delta}` : e.delta}</span>
                 <span style={{ flex: 1 }}>{e.why}</span>
               </div>
@@ -141,21 +141,20 @@ function RepBar({ rep, name, repLog }: { rep: number; name: string; repLog: { da
 function WorkshopTab(props: { b: BrandState; level: number; money: number; storage: Record<string, number>; onBuy: () => void; onHire: () => void; onFire: () => void }) {
   const { b, level, money, storage, onBuy, onHire, onFire } = props;
   const w = b.workshop;
-  const vnd = (n: number) => `${fmtNum((n ?? 0))}đ`;
+  const vnd = (n: number) => t('brand.d', { v0: fmtNum((n ?? 0)) });
   return (
     <div>
       <p style={{ ...styles.sub, maxWidth: 620 }}>
-        Mỗi đêm xưởng lấy hàng chưa nhãn trong kho của các dòng, đóng thành hàng <b>mang nhãn</b> (bán theo bậc
-        uy tín). Công suất = thợ × bậc xưởng, phí bao bì 8% giá bán + lương thợ. Mở từ cấp 100.
+        {t('brand.moi_dem_xuong_lay_hang_chua')}{' '}<b>{t('brand.mang_nhan')}</b>{' '}{t('brand.ban_theo_bac_uy_tin_cong')}
       </p>
 
       {!w?.open && (
         <div style={styles.card}>
           <div style={{ flex: 1 }}>
-            <b>Mua xưởng đóng gói</b>
-            <div style={{ fontSize: 12, opacity: 0.8 }}>{vnd(60000000)} · mở mặt bằng để đóng hàng mang nhãn theo lô.</div>
+            <b>{t('brand.mua_xuong_dong_goi')}</b>
+            <div style={{ fontSize: 12, opacity: 0.8 }}>{vnd(60000000)}{' '}{t('brand.mo_mat_bang_de_dong_hang')}</div>
           </div>
-          <button style={styles.btn} disabled={level < 100 || money < 60000000} onClick={onBuy}>Mua xưởng</button>
+          <button style={styles.btn} disabled={level < 100 || money < 60000000} onClick={onBuy}>{t('brand.mua_xuong')}</button>
         </div>
       )}
 
@@ -163,19 +162,18 @@ function WorkshopTab(props: { b: BrandState; level: number; money: number; stora
         <>
           <div style={styles.card}>
             <div style={{ flex: 1 }}>
-              <b>🏭 Xưởng đóng gói</b>
+              <b>{t('brand.xuong_dong_goi')}</b>
               <div style={{ fontSize: 12, opacity: 0.8 }}>
-                Thợ {w.staff}/3 · công suất/đêm ≈ <b>{brandWorkshopCapacity(w)}</b> đơn vị · lương thợ/đêm {vnd(w.staff * 150000)} · phí bao bì 8% giá bán.
-                {' '}Hàng nhãn trong kho: {brandStockUnits(b)} đơn vị.
+                {t('brand.tho')}{' '}{w.staff}{t('brand.3_cong_suat_dem')}{' '}<b>{brandWorkshopCapacity(w)}</b>{' '}{t('brand.don_vi_luong_tho_dem')}{' '}{vnd(w.staff * 150000)}{' '}{t('brand.phi_bao_bi_8_gia_ban')}
+                {' '}{t('brand.hang_nhan_trong_kho')}{' '}{brandStockUnits(b)}{' '}{t('brand.don_vi')}
               </div>
               <div style={{ fontSize: 12, color: '#e67e22', marginTop: 4 }}>📊 {brandWorkshopPayoff(b, storage).line}</div>
             </div>
-            <button style={styles.btn} disabled={w.staff >= 3} onClick={onHire}>+ Thuê thợ</button>
-            <button style={styles.btn} disabled={w.staff <= 0} onClick={onFire}>− Cho nghỉ</button>
+            <button style={styles.btn} disabled={w.staff >= 3} onClick={onHire}>{t('brand.thue_tho')}</button>
+            <button style={styles.btn} disabled={w.staff <= 0} onClick={onFire}>{t('brand.cho_nghi')}</button>
           </div>
           <p style={{ ...styles.sub, marginTop: 8 }}>
-            Hệ 1 — món nào trong dòng hàng còn nguyên liệu thô ở kho, xưởng sẽ tự đóng qua đêm. Sau vài đêm mở lại
-            tab này để thấy hàng nhãn tích trong kho, rồi bán lẻ (hoặc lát sau bỏ mối đại lý).
+            {t('brand.he_1_mon_nao_trong_dong')}
           </p>
         </>
       )}
@@ -196,8 +194,7 @@ function LinesTab(props: {
   return (
     <div>
       <p style={styles.sub}>
-        Dòng nhãn: <b>{lines.length}/{slots}</b> · Hàng nhãn trong kho: <b>{stock}</b> đơn vị. Mỗi món mở dòng khi đã
-        làm 100 mẻ và bán 500 đơn vị. Dòng tiếp mở ở cấp {BRAND_LINE_SLOTS[lines.length] ?? 'tối đa'}.
+        {t('brand.dong_nhan')}{' '}<b>{lines.length}/{slots}</b>{' '}{t('brand.hang_nhan_trong_kho_2')}{' '}<b>{stock}</b>{' '}{t('brand.don_vi_moi_mon_mo_dong')}{' '}{BRAND_LINE_SLOTS[lines.length] ?? t('brand.toi_da')}.
       </p>
 
       {lines.length > 0 && (
@@ -206,36 +203,36 @@ function LinesTab(props: {
             const blp = payoff.find((r) => r.productId === l.productId);
             return (
               <div key={l.productId} style={styles.card}>
-                <span style={{ flex: 1 }}><b>{pname(l.productId)}</b> <span style={{ opacity: 0.7 }}>· đóng {l.made} · bán {l.sold}</span>
+                <span style={{ flex: 1 }}><b>{pname(l.productId)}</b> <span style={{ opacity: 0.7 }}>{t('brand.dong')}{' '}{l.made}{' '}{t('brand.ban')}{' '}{l.sold}</span>
                   {blp && <div style={{ fontSize: 12, color: '#e67e22', marginTop: 4 }}>📊 {blp.line}</div>}
                 </span>
-                <button style={styles.btn} onClick={() => onDrop(l.productId)}>Bỏ dòng</button>
+                <button style={styles.btn} onClick={() => onDrop(l.productId)}>{t('brand.bo_dong')}</button>
               </div>
             );
           })}
         </div>
       )}
-      {lines.length === 0 && <p style={styles.sub}>Chưa có dòng nhãn nào. Bên dưới là các món nhà làm đã thực hiện — chọn món đủ điều kiện để thêm.</p>}
+      {lines.length === 0 && <p style={styles.sub}>{t('brand.chua_co_dong_nhan_nao_ben')}</p>}
 
       {candidates.length > 0 && (
         <>
-          <p style={{ ...styles.sub, marginTop: 12 }}>Món nhà làm của bạn:</p>
+          <p style={{ ...styles.sub, marginTop: 12 }}>{t('brand.mon_nha_lam_cua_ban')}</p>
           <div style={{ display: 'grid', gap: 6 }}>
             {candidates.map((c) => (
               <div key={c.id} style={styles.card}>
                 <span style={{ flex: 1 }}>
-                  <b>{pname(c.id)}</b> <span style={{ opacity: 0.7 }}>· {c.made} mẻ · bán {c.sold}</span>
-                  {!c.eligible && <span style={{ opacity: 0.6 }}> · cần {(c.made < 100 ? `${100 - c.made} mẻ` : '')}{(c.made < 100 && c.sold < 500 ? ' và ' : '')}{c.sold < 500 ? `bán ${500 - c.sold} đv` : ''}</span>}
+                  <b>{pname(c.id)}</b> <span style={{ opacity: 0.7 }}>· {c.made}{' '}{t('brand.me_ban')}{' '}{c.sold}</span>
+                  {!c.eligible && <span style={{ opacity: 0.6 }}>{' '}{t('brand.can')}{' '}{(c.made < 100 ? t('brand.me', { v0: 100 - c.made }) : '')}{(c.made < 100 && c.sold < 500 ? t('brand.va') : '')}{c.sold < 500 ? t('brand.ban_dv', { v0: 500 - c.sold }) : ''}</span>}
                 </span>
                 <button style={styles.btn} disabled={!c.eligible || lines.some((l) => l.productId === c.id) || lines.length >= slots} onClick={() => onAdd(c.id)}>
-                  Thêm dòng
+                  {t('brand.them_dong')}
                 </button>
               </div>
             ))}
           </div>
         </>
       )}
-      {candidates.length === 0 && <p style={styles.sub}>Chưa có món nhà làm nào — qua Hệ 1 (Sân phơi · Muối · Ủ) hoàn các mẻ để dồn mẻ làm.</p>}
+      {candidates.length === 0 && <p style={styles.sub}>{t('brand.chua_co_mon_nha_lam_nao')}</p>}
     </div>
   );
 }
@@ -255,23 +252,21 @@ function DealersTab(props: {
   return (
     <div>
       <p style={styles.sub}>
-        Ký hợp đồng giao hàng nhãn cho đại lý theo định kỳ — giá mua lại thấp hơn bán lẻ nhưng số lượng nhiều
-        và đều. Giao đúng hẹn +2 uy tín, trễ −4, bỏ kỳ −8; <b>{BRAND_DEAL_CUT_AFTER} kỳ hỏng liên tiếp thì bị cắt
-        hợp đồng</b> (30 ngày sau mới ký lại). Mở từ cấp {BRAND_DEALER_UNLOCK}.
+        {t('brand.ky_hop_dong_giao_hang_nhan')}{' '}<b>{BRAND_DEAL_CUT_AFTER}{' '}{t('brand.ky_hong_lien_tiep_thi_bi')}</b>{' '}{t('brand.30_ngay_sau_moi_ky_lai')}{' '}{BRAND_DEALER_UNLOCK}.
       </p>
 
       {rival && rival.strength > 0 && (
         <div style={{ ...styles.card, background: '#4a2c2c', marginBottom: 6 }}>
           <span style={{ flex: 1 }}>
-            <b>😈 {rival.name} — đối thủ ghé mua</b>
+            <b>😈 {rival.name}{' '}{t('brand.doi_thu_ghe_mua')}</b>
             <div style={{ fontSize: 12, opacity: 0.85 }}>
               {b.rivalOffer
-                ? `${pname(b.rivalOffer.productId)} × ${b.rivalOffer.units} đơn vị, trả ${fmtNum(brandRivalValue(b.rivalOffer))}đ (95%) — giành tiền nhưng ${rival.name} +${BRAND_RIVAL_STRENGTH_GAIN} sức mạnh, hàng mình lên kệ họ.`
-                : `Đối thủ ${rival.strength} sức mạnh — thỉnh thoảng họ ngỏ ý mua hàng nhãn giá cao để trưng trên kệ.`}
-              {b.rivalSold ? ` Đã bán ${b.rivalSold} đơn vị cho rival.` : ''}
+                ? t('brand.don_vi_tra_d_95_gianh', { v0: pname(b.rivalOffer.productId), units: b.rivalOffer.units, v2: fmtNum(brandRivalValue(b.rivalOffer)), name: rival.name, BRAND_RIVAL_STRENGTH_GAIN })
+                : t('brand.doi_thu_suc_manh_thinh_thoang', { strength: rival.strength })}
+              {b.rivalSold ? t('brand.da_ban_don_vi_cho_rival', { rivalSold: b.rivalSold }) : ''}
             </div>
           </span>
-          {b.rivalOffer && <button style={styles.btn} onClick={onRivalSupply}>🤝 Giành tiền đợt này</button>}
+          {b.rivalOffer && <button style={styles.btn} onClick={onRivalSupply}>{t('brand.gianh_tien_dot_nay')}</button>}
         </div>
       )}
 
@@ -287,25 +282,25 @@ function DealersTab(props: {
                 <span style={{ flex: 1 }}>
                   <b>{def.icon} {def.title}</b>
                   <div style={{ fontSize: 12, opacity: 0.8 }}>
-                    {pname(deal.productId)} · {def.qty} đv mỗi {def.periodDays} ngày · {fmtNum(brandDealValue(def, deal.productId))}đ/kỳ
-                    {' '}· kỳ tới {dueIn <= 0 ? (deal.overdue ? 'QUÁ HẠN' : 'hôm nay') : `${dueIn} ngày nữa`}
-                    {' '}· kho nhãn {have}/{def.qty}
-                    {deal.committed ? ' · 🤝 đã cam kết' : ''}
+                    {pname(deal.productId)} · {def.qty}{' '}{t('brand.dv_moi')}{' '}{def.periodDays}{' '}{t('brand.ngay_2')}{' '}{fmtNum(brandDealValue(def, deal.productId))}{t('brand.d_ky')}
+                    {' '}{t('brand.ky_toi')}{' '}{dueIn <= 0 ? (deal.overdue ? t('brand.qua_han') : t('brand.hom_nay')) : t('brand.ngay_nua', { dueIn })}
+                    {' '}{t('brand.kho_nhan')}{' '}{have}/{def.qty}
+                    {deal.committed ? t('brand.da_cam_ket') : ''}
                   </div>
                   <div style={{ fontSize: 12, color: '#e67e22', marginTop: 4 }}>📊 {dlp.line}</div>
                 </span>
-                {!deal.committed && <button style={styles.btn} disabled={have < def.qty} onClick={() => onCommit(id)}>🤝 Cam kết</button>}
-                {deal.committed && <button style={styles.btn} onClick={() => onRelease(id)}>↩️ Hoàn cọc</button>}
-                <button style={styles.btn} disabled={have < def.qty} onClick={() => onDeliver(id)}>🚚 Giao kỳ</button>
+                {!deal.committed && <button style={styles.btn} disabled={have < def.qty} onClick={() => onCommit(id)}>{t('brand.cam_ket')}</button>}
+                {deal.committed && <button style={styles.btn} onClick={() => onRelease(id)}>{t('brand.hoan_coc')}</button>}
+                <button style={styles.btn} disabled={have < def.qty} onClick={() => onDeliver(id)}>{t('brand.giao_ky')}</button>
               </div>
             );
           })}
         </div>
       )}
 
-      {Object.keys(b.deals).length === 0 && <p style={styles.sub}>Chưa có hợp đồng nào — chọn đại lý bên dưới để ký.</p>}
+      {Object.keys(b.deals).length === 0 && <p style={styles.sub}>{t('brand.chua_co_hop_dong_nao_chon')}</p>}
 
-      <p style={{ ...styles.sub, marginTop: 12 }}>Đại lý có thể ký ({avail.length}/{BRAND_DEALERS.length}):</p>
+      <p style={{ ...styles.sub, marginTop: 12 }}>{t('brand.dai_ly_co_the_ky')}{avail.length}/{BRAND_DEALERS.length}):</p>
       <div style={{ display: 'grid', gap: 6 }}>
         {avail.map((def) => {
           const deal = b.deals[def.id];
@@ -315,19 +310,19 @@ function DealersTab(props: {
               <span style={{ flex: 1 }}>
                 <b>{def.icon} {def.title}</b>
                 <div style={{ fontSize: 12, opacity: 0.8 }}>
-                  {def.qty} đv mỗi {def.periodDays} ngày · {Math.round(def.pricePerUnit * 100)}% giá bán lẻ · cần uy tín {def.rep}
+                  {def.qty}{' '}{t('brand.dv_moi')}{' '}{def.periodDays}{' '}{t('brand.ngay_2')}{' '}{Math.round(def.pricePerUnit * 100)}{t('brand.gia_ban_le_can_uy_tin')}{' '}{def.rep}
                 </div>
               </span>
               {deal
-                ? <span style={{ fontSize: 12, opacity: 0.8 }}>đang ký</span>
+                ? <span style={{ fontSize: 12, opacity: 0.8 }}>{t('brand.dang_ky')}</span>
                 : reopen > 0
-                  ? <span style={{ fontSize: 12, opacity: 0.7 }}>cắt · còn {reopen} ngày</span>
+                  ? <span style={{ fontSize: 12, opacity: 0.7 }}>{t('brand.cat_con')}{' '}{reopen}{' '}{t('brand.ngay')}</span>
                   : <DealerSign def={def} lines={b.lines} onAccept={onAccept} />}
             </div>
           );
         })}
       </div>
-      {avail.length === 0 && <p style={styles.sub}>Chưa có đại lý nào — mở theo cấp và nâng uy tín nhãn.</p>}
+      {avail.length === 0 && <p style={styles.sub}>{t('brand.chua_co_dai_ly_nao_mo')}</p>}
     </div>
   );
 }
@@ -339,7 +334,7 @@ function DealerSign({ def, lines, onAccept }: { def: { id: string; title: string
       <select value={sel} onChange={(e) => setSel(e.target.value)} disabled={lines.length === 0} style={{ padding: '5px', borderRadius: 6, border: '1px solid #555', background: '#2b2b3a', color: '#f5f5f5' }}>
         {lines.map((l) => <option key={l.productId} value={l.productId}>{pname(l.productId)}</option>)}
       </select>
-      <button style={styles.btn} disabled={lines.length === 0 || !sel} onClick={() => onAccept(def.id, sel)}>Ký hợp đồng</button>
+      <button style={styles.btn} disabled={lines.length === 0 || !sel} onClick={() => onAccept(def.id, sel)}>{t('brand.ky_hop_dong')}</button>
     </span>
   );
 }
@@ -349,9 +344,7 @@ function FranchiseTab(props: { b: BrandState; level: number; money: number; onOp
   return (
     <div>
       <p style={styles.sub}>
-        Mở điểm nhượng quyền bán hàng nhãn — mỗi tuần xe tự chở <b>{BRAND_FRANCHISE_SLOTS[0].weekly}</b> đơn vị trở
-        lên (tùy quy mô), mỗi đêm điểm trả phí nhượng quyền và cộng uy tín. Thiếu hàng 1 tuần: sức khỏe giảm, uy tín
-        −3; thiếu 3 tuần liền: điểm đóng, mất {vnd(BRAND_FRANCHISE_SETUP)} setup. Phí mở {vnd(BRAND_FRANCHISE_SETUP)} · cần uy tín {BRAND_FRANCHISE_REP} · mở từ cấp {BRAND_FRANCHISE_UNLOCK}.
+        {t('brand.mo_diem_nhuong_quyen_ban_hang')}{' '}<b>{BRAND_FRANCHISE_SLOTS[0].weekly}</b>{' '}{t('brand.don_vi_tro_len_tuy_quy')}{' '}{vnd(BRAND_FRANCHISE_SETUP)}{' '}{t('brand.setup_phi_mo')}{' '}{vnd(BRAND_FRANCHISE_SETUP)}{' '}{t('brand.can_uy_tin')}{' '}{BRAND_FRANCHISE_REP}{' '}{t('brand.mo_tu_cap')}{' '}{BRAND_FRANCHISE_UNLOCK}.
       </p>
 
       {b.franchises.length > 0 && (
@@ -366,8 +359,8 @@ function FranchiseTab(props: { b: BrandState; level: number; money: number; onOp
                 <span style={{ flex: 1 }}>
                   <b>{def.icon} {def.title}</b>
                   <div style={{ fontSize: 12, opacity: 0.8 }}>
-                    khoẻ {f.health}/100 · mỗi tuần {def.weekly} đơn vị · phí/đêm ≈ {fmtNum(franchiseIncome(f.health, b.rep, def.size, 1))}đ
-                    {' '}· nhập hàng {due !== undefined ? (due <= 1 ? (due <= 0 ? 'quá hạn' : 'hôm nay') : `còn ${due} ngày`) : '—'}
+                    {t('brand.khoe')}{' '}{f.health}{t('brand.100_moi_tuan')}{' '}{def.weekly}{' '}{t('brand.don_vi_phi_dem')}{' '}{fmtNum(franchiseIncome(f.health, b.rep, def.size, 1))}{t('brand.d_2')}
+                    {' '}{t('brand.nhap_hang')}{' '}{due !== undefined ? (due <= 1 ? (due <= 0 ? t('brand.qua_han_2') : t('brand.hom_nay')) : t('brand.con_ngay', { due })) : '—'}
                   </div>
                   {frp && (
                     <div style={{ fontSize: 12, color: '#e67e22', marginTop: 4 }}>
@@ -375,15 +368,15 @@ function FranchiseTab(props: { b: BrandState; level: number; money: number; onOp
                     </div>
                   )}
                 </span>
-                <button style={styles.btn} onClick={() => onClose(f.id)}>Đóng điểm</button>
+                <button style={styles.btn} onClick={() => onClose(f.id)}>{t('brand.dong_diem')}</button>
               </div>
             );
           })}
         </div>
       )}
-      {b.franchises.length === 0 && <p style={styles.sub}>Chưa có điểm nhượng quyền nào — chọn suất bên dưới để mở.</p>}
+      {b.franchises.length === 0 && <p style={styles.sub}>{t('brand.chua_co_diem_nhuong_quyen_nao')}</p>}
 
-      <p style={{ ...styles.sub, marginTop: 12 }}>Suất nhượng quyền:</p>
+      <p style={{ ...styles.sub, marginTop: 12 }}>{t('brand.suat_nhuong_quyen')}</p>
       <div style={{ display: 'grid', gap: 6 }}>
         {BRAND_FRANCHISE_SLOTS.map((def) => {
           const has = b.franchises.some((f) => f.id === def.id);
@@ -392,9 +385,9 @@ function FranchiseTab(props: { b: BrandState; level: number; money: number; onOp
             <div key={def.id} style={styles.card}>
               <span style={{ flex: 1 }}>
                 <b>{def.icon} {def.title}</b>
-                <div style={{ fontSize: 12, opacity: 0.8 }}>cấp {def.unlock} · mỗi tuần {def.weekly} đơn vị · quy mô {def.size}</div>
+                <div style={{ fontSize: 12, opacity: 0.8 }}>{t('brand.cap')}{' '}{def.unlock}{' '}{t('brand.moi_tuan')}{' '}{def.weekly}{' '}{t('brand.don_vi_quy_mo')}{' '}{def.size}</div>
               </span>
-              <button style={styles.btn} disabled={locked} onClick={() => onOpen(def.id)}>{has ? 'Đã mở' : 'Mở điểm'}</button>
+              <button style={styles.btn} disabled={locked} onClick={() => onOpen(def.id)}>{has ? t('brand.da_mo') : t('brand.mo_diem')}</button>
             </div>
           );
         })}

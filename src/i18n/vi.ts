@@ -19,6 +19,7 @@ import { viOrder } from './vi/order';
 import { viTrip } from './vi/trip';
 import { viBiz } from './vi/biz';
 import { viBranch } from './vi/branch';
+import { viBrand } from './vi/brand';
 
 export const vi = {
   ...viLogin,
@@ -38,6 +39,7 @@ export const vi = {
   ...viTrip,
   ...viBiz,
   ...viBranch,
+  ...viBrand,
   'settings.title': '⚙️ Cài đặt',
   'settings.subtitle': 'Hình ảnh, âm thanh, cách chơi, trợ năng',
   'settings.tab.img': '👁 Hình ảnh',
