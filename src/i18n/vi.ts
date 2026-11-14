@@ -8,6 +8,8 @@ import { viHud } from './vi/hud';
 import { viPanelsQuest } from './vi/panels_quest';
 import { viPanelsStaff } from './vi/panels_staff';
 import { viPanelsReport } from './vi/panels_report';
+import { viPanelsStock } from './vi/panels_stock';
+import { viPlanogram } from './vi/planogram';
 
 export const vi = {
   ...viLogin,
@@ -16,6 +18,8 @@ export const vi = {
   ...viPanelsQuest,
   ...viPanelsStaff,
   ...viPanelsReport,
+  ...viPanelsStock,
+  ...viPlanogram,
   'settings.title': '⚙️ Cài đặt',
   'settings.subtitle': 'Hình ảnh, âm thanh, cách chơi, trợ năng',
   'settings.tab.img': '👁 Hình ảnh',

@@ -12,6 +12,7 @@ import { marketTrend } from '../../data/market';
 import { priceGap } from '../../data/priceGap';
 import { Footer, styles, Callout } from './shared';
 import { fmtNum } from '../../core/format';
+import { t } from '../../core/i18n';
 
 export const PRICE_PAGE = 12;
 
@@ -39,16 +40,13 @@ export function PricePanel() {
   const shown = filtered.slice(cur * PRICE_PAGE, cur * PRICE_PAGE + PRICE_PAGE);
   return (
     <>
-      <h2 style={styles.title}>💲 Bảng giá</h2>
+      <h2 style={styles.title}>{t('panels_stock.bang_gia')}</h2>
       <p style={styles.sub}>
-        Giá cao hơn giá gợi ý thì lời nhiều hơn nhưng khách ít mua hơn (💸); đồ uống, bánh kẹo bị chê nhanh nhất, gạo, trứng ít bị ảnh hưởng.
-        Giá rẻ hơn gợi ý thì thêm người ghé tiệm. Cột "Nên" gợi ý theo số bán mấy ngày gần đây.
-        Giá gợi ý hiện hành nhích nhẹ mỗi ngày theo khan hiếm hàng trên thị trường (hàng cạn → giá thị trường nhích lên, tồn nhiều → hạ xuống).
-        Mũi tên ⬆/⬇/• bên cạnh "Gợi ý" báo giá thị trường hôm nay đang trôi về đâu (khan → trụ/nâng giá; thừa → hạ giá xả).
+        {t('panels_stock.gia_cao_hon_gia_goi_y')}
       </p>
       {priceEffects.festival && (
         <div style={{ fontSize: 12, padding: '6px 12px', borderRadius: 10, background: 'rgba(241,196,15,0.12)', color: '#f1c40f', margin: '4px 0 8px' }}>
-          🎉 Đang {priceEffects.festival.name} — khách chịu giá cao hơn (món của dịp nhạy giá giảm còn ×{fmtMul(priceEffects.festival.tolerance ?? 1)}): cột "Nên" đã tính điều chỉnh, tăng giá mạnh hơn ngày thường vẫn bán được.
+          {t('panels_stock.dang')}{' '}{priceEffects.festival.name}{' '}{t('panels_stock.khach_chiu_gia_cao_hon_mon')}{fmtMul(priceEffects.festival.tolerance ?? 1)}{t('panels_stock.cot_nen_da_tinh_dieu_chinh')}
         </div>
       )}
       {(() => {
@@ -56,72 +54,72 @@ export function PricePanel() {
         if (!gap.actionable) return null;
         const top = gap.offenders.slice(0, 3);
         return (
-          <Callout tone="warn" style={{ marginBottom: 8 }} title={`💸 Giá hôm nay đang để hụt ~${formatMoney(gap.totalMissedPerDay)}/ngày (${gap.count} món chưa về đúng gợi ý)`}>
+          <Callout tone="warn" style={{ marginBottom: 8 }} title={t('panels_stock.gia_hom_nay_dang_de_hut', { v0: formatMoney(gap.totalMissedPerDay), count: gap.count })}>
             <div style={{ marginTop: 2, fontSize: 12 }}>
-              {top.map((o) => `${o.name} ${formatMoney(o.gainPerDay)}/ngày`).join(' · ')}
-              {gap.offenders.length > top.length ? ` (+${gap.offenders.length - top.length} món nữa)` : ''}
-              . Điều chỉnh giá theo mũi ⬆/⬇ gần nút +/− là thu lại chừng đó mỗi ngày.
+              {top.map((o) => t('panels_stock.ngay', { name: o.name, v1: formatMoney(o.gainPerDay) })).join(' · ')}
+              {gap.offenders.length > top.length ? t('panels_stock.mon_nua', { v0: gap.offenders.length - top.length }) : ''}
+              {t('panels_stock.dieu_chinh_gia_theo_mui_gan')}
             </div>
           </Callout>
         );
       })()}
       <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 10, padding: '10px 14px', borderRadius: 12, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', margin: '8px 0' }}>
-        <b style={{ flex: 'none' }}>⏰ Giờ vàng</b>
-        <span style={{ ...styles.sub, flex: '1 1 220px', minWidth: 180 }}>giảm giá đúng khung 2 tiếng, khách kéo về đông hơn (giảm {HAPPY_OFF_OPTIONS.join('/')}% → +{HAPPY_OFF_OPTIONS.map((o) => Math.round(o * 2.5)).join('/')}% khách)</span>
+        <b style={{ flex: 'none' }}>{t('panels_stock.gio_vang')}</b>
+        <span style={{ ...styles.sub, flex: '1 1 220px', minWidth: 180 }}>{t('panels_stock.giam_gia_dung_khung_2_tieng')}{' '}{HAPPY_OFF_OPTIONS.join('/')}% → +{HAPPY_OFF_OPTIONS.map((o) => Math.round(o * 2.5)).join('/')}{t('panels_stock.khach')}</span>
         {happyHour ? (
           <>
             <span
               style={{ fontSize: 12, padding: '4px 10px', borderRadius: 999, whiteSpace: 'nowrap', background: running ? 'rgba(46,204,113,0.18)' : 'rgba(255,255,255,0.08)', color: running ? '#2ecc71' : undefined }}
-              title={running ? 'Giờ vàng đang chạy' : 'Giờ vàng đã đặt, tự chạy đúng khung mỗi ngày'}
+              title={running ? t('panels_stock.gio_vang_dang_chay') : t('panels_stock.gio_vang_da_dat_tu_chay')}
             >
-              {running ? `● đang chạy tới ${happyHour.from + HAPPY_HOURS}h` : `mỗi ngày ${happyHour.from}h–${happyHour.from + HAPPY_HOURS}h`}
+              {running ? t('panels_stock.dang_chay_toi_h', { v0: happyHour.from + HAPPY_HOURS }) : t('panels_stock.moi_ngay_h_h', { from: happyHour.from, v1: happyHour.from + HAPPY_HOURS })}
             </span>
             <span style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
               <Dropdown
                 value={String(happyHour.from)}
                 onChange={(v) => setHappyHour({ ...happyHour, from: Number(v) })}
                 options={Array.from({ length: HAPPY_FROM_MAX - HAPPY_FROM_MIN + 1 }, (_, i) => ({ value: String(HAPPY_FROM_MIN + i), label: `${HAPPY_FROM_MIN + i}h` }))}
-                ariaLabel="Giờ bắt đầu giờ vàng"
+                ariaLabel={t('panels_stock.gio_bat_dau_gio_vang')}
               />
               <Dropdown
                 value={String(happyHour.off)}
                 onChange={(v) => setHappyHour({ ...happyHour, off: Number(v) })}
-                options={HAPPY_OFF_OPTIONS.map((o) => ({ value: String(o), label: `giảm ${o}%` }))}
-                ariaLabel="Mức giảm giờ vàng"
+                options={HAPPY_OFF_OPTIONS.map((o) => ({ value: String(o), label: t('panels_stock.giam', { o }) }))}
+                ariaLabel={t('panels_stock.muc_giam_gio_vang')}
               />
             </span>
-            <button style={{ ...styles.btn, background: '#e74c3c', color: '#fff' }} onClick={() => setHappyHour(null)}>Tắt</button>
+            <button style={{ ...styles.btn, background: '#e74c3c', color: '#fff' }} onClick={() => setHappyHour(null)}>{t('panels_stock.tat')}</button>
             {(() => {
               const fit = happyWindowFit(happyHour.from);
               const line = fit.verdict === 'dead'
-                ? { icon: '✅', color: '#2ecc71', text: `giờ vắng (traffic ${fit.traffic.toFixed(1)}) — kéo thêm khách vào lúc vắng, đáng giá` }
+                ? { icon: '✅', color: '#2ecc71', text: t('panels_stock.gio_vang_traffic_keo_them_khach', { v0: fit.traffic.toFixed(1) }) }
                 : fit.verdict === 'golden'
-                  ? { icon: '⚠️', color: '#e74c3c', text: `trùng ${fit.goldenMinutes} phút giờ vàng tự nhiên — đang giảm giá cho khách vốn đã đông, lãng phí; nên chọn giờ vắng hơn` }
-                  : { icon: '➖', color: '#f1c40f', text: `xen ${fit.goldenMinutes} phút giờ vàng — một nửa là giờ vắng, chấp nhận được` };
+                  ? { icon: '⚠️', color: '#e74c3c', text: t('panels_stock.trung_phut_gio_vang_tu_nhien', { goldenMinutes: fit.goldenMinutes }) }
+                  : { icon: '➖', color: '#f1c40f', text: t('panels_stock.xen_phut_gio_vang_mot_nua', { goldenMinutes: fit.goldenMinutes }) };
               return (
-                <div style={{ width: '100%', flex: '1 1 100%', fontSize: 12, color: line.color, paddingTop: 2 }} title="So với nhịp tự nhiên: giảm giá đúng giờ vắng thì thêm khách biên rẻ nhất, trùng giờ vàng thì giảm giá cho khách vốn đã tới">
-                  {line.icon} Cửa sổ {happyHour.from}h–{happyHour.from + HAPPY_HOURS}h: {line.text}.
+                <div style={{ width: '100%', flex: '1 1 100%', fontSize: 12, color: line.color, paddingTop: 2 }} title={t('panels_stock.so_voi_nhip_tu_nhien_giam')}>
+                  {line.icon}{' '}{t('panels_stock.cua_so')}{' '}{happyHour.from}h–{happyHour.from + HAPPY_HOURS}h: {line.text}.
                 </div>
               );
             })()}
             {(() => {
               const r = happyHourReport(happyHour, stats.byHour);
               const verdict = !r.present
-                ? { color: '#888', t: 'chưa có khách trong khung hôm nay' }
+                ? { color: '#888', t: t('panels_stock.chua_co_khach_trong_khung_hom') }
                 : r.extraCustomers > 0 && r.discountCost < r.revenue
-                  ? { color: '#2ecc71', t: `+${r.extraCustomers} khách nhờ giờ vàng · giảm giá −${formatMoney(r.discountCost)} trên doanh thu ${formatMoney(r.revenue)} — đáng giữ` }
-                  : { color: '#f1c40f', t: `+${r.extraCustomers} khách nhờ giờ vàng nhưng giảm giá −${formatMoney(r.discountCost)} — cân nhắc giảm mức/đổi giờ` };
+                  ? { color: '#2ecc71', t: t('panels_stock.khach_nho_gio_vang_giam_gia', { extraCustomers: r.extraCustomers, v1: formatMoney(r.discountCost), v2: formatMoney(r.revenue) }) }
+                  : { color: '#f1c40f', t: t('panels_stock.khach_nho_gio_vang_nhung_giam', { extraCustomers: r.extraCustomers, v1: formatMoney(r.discountCost) }) };
               return (
-                <div style={{ width: '100%', flex: '1 1 100%', fontSize: 12, color: verdict.color, paddingTop: 2 }} title="Kết quả khung tính từ sổ theo giờ (stats.byHour): doanh thu trong khung đã trừ mức giảm, tiền giảm giá là ước tính">
-                  📊 Khung hôm nay {r.from}h–{r.to}h: {r.present ? `${r.customers} khách · doanh thu ${formatMoney(r.revenue)} · ${verdict.t}` : verdict.t}.
+                <div style={{ width: '100%', flex: '1 1 100%', fontSize: 12, color: verdict.color, paddingTop: 2 }} title={t('panels_stock.ket_qua_khung_tinh_tu_so')}>
+                  {t('panels_stock.khung_hom_nay')}{' '}{r.from}h–{r.to}h: {r.present ? t('panels_stock.khach_doanh_thu', { customers: r.customers, v1: formatMoney(r.revenue), t: verdict.t }) : verdict.t}.
                 </div>
               );
             })()}
           </>
         ) : (
           <>
-            <span style={{ fontSize: 12, padding: '4px 10px', borderRadius: 999, whiteSpace: 'nowrap', background: 'rgba(255,255,255,0.08)' }}>chưa đặt</span>
-            <button style={{ ...styles.btn, background: '#2ecc71', color: '#1d1f2b', fontWeight: 700 }} onClick={() => setHappyHour({ from: 14, off: 10 })}>Bật từ 14h</button>
+            <span style={{ fontSize: 12, padding: '4px 10px', borderRadius: 999, whiteSpace: 'nowrap', background: 'rgba(255,255,255,0.08)' }}>{t('panels_stock.chua_dat')}</span>
+            <button style={{ ...styles.btn, background: '#2ecc71', color: '#1d1f2b', fontWeight: 700 }} onClick={() => setHappyHour({ from: 14, off: 10 })}>{t('panels_stock.bat_tu_14h')}</button>
           </>
         )}
       </div>
@@ -129,22 +127,22 @@ export function PricePanel() {
         <Dropdown
           value={cat}
           onChange={(v) => { setCat(v as typeof cat); setPage(0); }}
-          options={[{ value: 'all', label: `📂 Tất cả (${all.length})` }, ...Object.entries(CATEGORIES).map(([k, label]) => ({ value: k, label: `${label} (${all.filter((p) => p.category === k).length})` }))]}
-          ariaLabel="Lọc theo ngành hàng"
+          options={[{ value: 'all', label: t('panels_stock.tat_ca', { length: all.length }) }, ...Object.entries(CATEGORIES).map(([k, label]) => ({ value: k, label: `${label} (${all.filter((p) => p.category === k).length})` }))]}
+          ariaLabel={t('panels_stock.loc_theo_nganh_hang')}
         />
         <input
           style={{ flex: 1, minWidth: 160, padding: '6px 10px', borderRadius: 6, border: '1px solid #ffffff33', background: '#1f1f2b', color: '#fff' }}
-          placeholder="Tìm mặt hàng…"
+          placeholder={t('panels_stock.tim_mat_hang')}
           value={query}
           onChange={(e) => { setQuery(e.target.value); setPage(0); }}
-          aria-label="Tìm mặt hàng"
+          aria-label={t('panels_stock.tim_mat_hang_2')}
         />
-        <span style={styles.sub}>{filtered.length} món</span>
+        <span style={styles.sub}>{filtered.length}{' '}{t('panels_stock.mon')}</span>
       </div>
       <div style={{ overflowX: 'auto' }}>
       <table style={styles.table}>
         <thead>
-          <tr><th style={styles.left}>Mặt hàng</th><th>Giá nhập</th><th>Gợi ý</th><th>Giá bán</th><th>Lời / món</th><th>Bán/ngày</th><th>Nên</th></tr>
+          <tr><th style={styles.left}>{t('panels_stock.mat_hang')}</th><th>{t('panels_stock.gia_nhap')}</th><th>{t('panels_stock.goi_y')}</th><th>{t('panels_stock.gia_ban')}</th><th>{t('panels_stock.loi_mon')}</th><th>{t('panels_stock.ban_ngay')}</th><th>{t('panels_stock.nen')}</th></tr>
         </thead>
         <tbody>
           {shown.map((p) => {
@@ -159,10 +157,10 @@ export function PricePanel() {
             const trendMark = trend.dir === 'up' ? '⬆' : trend.dir === 'down' ? '⬇' : '•';
             const trendColor = trend.dir === 'up' ? '#2ecc71' : trend.dir === 'down' ? '#e74c3c' : '#888';
             const trendTip = trend.dir === 'up'
-              ? `Giá thị trường đang nhích lên (hàng món này đang khan) — ngày mai gợi ý tăng, giữ/nâng giá được.`
+              ? t('panels_stock.gia_thi_truong_dang_nhich_len', {  })
               : trend.dir === 'down'
-                ? `Giá thị trường đang hạ (hàng món này tồn nhiều) — ngày mai gợi ý giảm, hạ giá để bán nhanh.`
-                : `Giá thị trường đang ổn định, gợi ý hầu như không đổi.`;
+                ? t('panels_stock.gia_thi_truong_dang_ha_hang', {  })
+                : t('panels_stock.gia_thi_truong_dang_on_dinh', {  });
             return (
               <tr key={p.id}>
                 <td style={styles.left}>
@@ -171,9 +169,9 @@ export function PricePanel() {
                     const s = productSensitivity(p.id);
                     const lv = sensitivityLevel(s);
                     const conf: Record<string, { txt: string; col: string; bg: string }> = {
-                      hot: { txt: '🔴 nhạy', col: '#e74c3c', bg: 'rgba(231,76,60,0.16)' },
-                      mid: { txt: '🟠 vừa', col: '#f1c40f', bg: 'rgba(241,196,15,0.16)' },
-                      soft: { txt: '🟢 bền', col: '#2ecc71', bg: 'rgba(46,204,113,0.16)' },
+                      hot: { txt: t('panels_stock.nhay'), col: '#e74c3c', bg: 'rgba(231,76,60,0.16)' },
+                      mid: { txt: t('panels_stock.vua'), col: '#f1c40f', bg: 'rgba(241,196,15,0.16)' },
+                      soft: { txt: t('panels_stock.ben'), col: '#2ecc71', bg: 'rgba(46,204,113,0.16)' },
                     };
                     const c = conf[lv];
                     return (
@@ -187,33 +185,33 @@ export function PricePanel() {
                     // GĐ1284 — "giá này đang đuổi đi phân khúc nào?" (chỉ khi giá cao hơn gợi ý & có nghề ưa món bị đuổi)
                     const fo = level && day ? segmentPriceFallout({ productId: p.id, price, level, day }) : null;
                     if (!fo) return null;
-                    const t = fo.rows[0];
+                    const row = fo.rows[0];
                     return (
                       <div style={{ fontSize: 11, marginTop: 2, color: '#e67e22' }}>
-                        💡 {t.profession.icon} {t.profession.name} (nhạy {t.sensitivity}) bị giá cao đuổi ~{t.losePct}% lượt — hạ về ~{fmtNum(fo.reference)}đ.
+                        💡 {row.profession.icon} {row.profession.name}{' '}{t('panels_stock.nhay_2')}{' '}{row.sensitivity}{t('panels_stock.bi_gia_cao_duoi')}{row.losePct}{t('panels_stock.luot_ha_ve')}{fmtNum(fo.reference)}{t('panels_stock.d')}
                       </div>
                     );
                   })()}
                 </td>
                 <td>{formatMoney(p.buy)}</td>
-                <td title={`Giá gợi ý hiện hành (${formatMoney(ref)}): nhích theo khan hiếm hàng. ${trendTip}`}>
+                <td title={t('panels_stock.gia_goi_y_hien_hanh_nhich', { v0: formatMoney(ref), trendTip })}>
                   {formatMoney(ref)} <span style={{ color: trendColor, fontSize: 13 }}>{trendMark}</span>
                 </td>
                 <td style={{ whiteSpace: 'nowrap' }}>
-                  <button style={styles.btn} aria-label="Giảm giá" onClick={() => change(-step)}>−</button>
+                  <button style={styles.btn} aria-label={t('panels_stock.giam_gia')} onClick={() => change(-step)}>−</button>
                   <b
                     style={{ display: 'inline-block', width: 80, margin: '0 5px', textAlign: 'center', color: ratio > 1.3 ? '#e74c3c' : ratio < 0.8 ? '#3498db' : ratio > 1 ? '#f1c40f' : '#fff' }}
                     title={ratio > 1.3
-                      ? 'Đắt hơn 30% giá gợi ý: rất nhiều khách chê và bỏ đi (💸)'
+                      ? t('panels_stock.dat_hon_30_gia_goi_y')
                       : ratio < 0.8
-                        ? 'Rẻ hơn 20% giá gợi ý: bán được nhưng lời mỏng, cân nhắc tăng lại'
+                        ? t('panels_stock.re_hon_20_gia_goi_y')
                         : ratio > 1
-                          ? 'Hơi cao hơn gợi ý: một số khách nhạy giá sẽ chê (💸)'
-                          : 'Trong biên giá hợp lý (0.8–1.3× giá gợi ý)'}
+                          ? t('panels_stock.hoi_cao_hon_goi_y_mot')
+                          : t('panels_stock.trong_bien_gia_hop_ly_0')}
                   >
                     {formatMoney(price)}
                   </b>
-                  <button style={styles.btn} aria-label="Tăng giá" onClick={() => change(step)}>+</button>
+                  <button style={styles.btn} aria-label={t('panels_stock.tang_gia')} onClick={() => change(step)}>+</button>
                   {(() => {
                     // GĐ1224/1225 — bề mặt hai phía giá ngay trên ô giá (pure priceSideMark: rẻ → +% khách; đắt → % đơn chịu mua)
                     const mk = priceSideMark(p.id, price);
@@ -236,16 +234,16 @@ export function PricePanel() {
                     return (
                       <div
                         style={{ whiteSpace: 'normal', fontSize: 11, lineHeight: '15px', maxWidth: 140, marginTop: 2, color, opacity: flat ? 0.75 : undefined }}
-                        title={`Ước tính khi bán giá ${formatMoney(price)}: chừng ${fmtUnits(fc.unitsPerDay)} món/ngày, lãi chừng ${formatDeltaK(fc.profitPerDay).replace('+', '')}/ngày — so với giá đang đặt ban đầu ${formatMoney(p.sell)}: chừng ${fmtUnits(fc.baseUnitsPerDay)} món/ngày, lãi chừng ${formatDeltaK(fc.baseProfitPerDay).replace('+', '')}/ngày. Chỉ là ước tính "chừng" từ số bán trung bình mấy ngày qua nhân độ nhạy giá của món; chưa kể giờ vàng, khách quen hay đối thủ phá giá.`}
+                        title={t('panels_stock.uoc_tinh_khi_ban_gia_chung', { v0: formatMoney(price), v1: fmtUnits(fc.unitsPerDay), v2: formatDeltaK(fc.profitPerDay).replace('+', ''), v3: formatMoney(p.sell), v4: fmtUnits(fc.baseUnitsPerDay), v5: formatDeltaK(fc.baseProfitPerDay).replace('+', '') })}
                       >
-                        {icon} chừng {fmtUnits(fc.unitsPerDay)} món/ngày · lãi chừng {formatDeltaK(delta)}/ngày
+                        {icon}{' '}{t('panels_stock.chung')}{' '}{fmtUnits(fc.unitsPerDay)}{' '}{t('panels_stock.mon_ngay_lai_chung')}{' '}{formatDeltaK(delta)}{t('panels_stock.ngay_2')}
                       </div>
                     );
                   })()}
                 </td>
                 <td style={{ color: price > p.buy ? '#2ecc71' : '#e74c3c' }}>{profitMark(price - p.buy)}{formatMoney(price - p.buy)}</td>
-                <td title={`Khách hỏi mua ~${(demand[p.id] ?? 0).toFixed(1)} lượt/ngày`}>{(sales[p.id] ?? 0).toFixed(1)}</td>
-                <td>{tip.action === 'hold' ? <span style={{ opacity: 0.5 }} title={tip.reason}>giữ</span> : (
+                <td title={t('panels_stock.khach_hoi_mua_luot_ngay', { v0: (demand[p.id] ?? 0).toFixed(1) })}>{(sales[p.id] ?? 0).toFixed(1)}</td>
+                <td>{tip.action === 'hold' ? <span style={{ opacity: 0.5 }} title={tip.reason}>{t('panels_stock.giu')}</span> : (
                   <button style={styles.btn} title={tip.reason} onClick={() => setPrice(p.id, tip.price)}>
                     {tip.action === 'raise' ? '↑' : '↓'} {formatMoney(tip.price)}
                   </button>
@@ -254,14 +252,14 @@ export function PricePanel() {
             );
           })}
           {!shown.length && (
-            <tr><td style={styles.left} colSpan={7}>Không có mặt hàng nào khớp bộ lọc.</td></tr>
+            <tr><td style={styles.left} colSpan={7}>{t('panels_stock.khong_co_mat_hang_nao_khop')}</td></tr>
           )}
         </tbody>
         </table>
       </div>
       {pages > 1 && (
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'center', marginTop: 10 }}>
-          <button style={styles.btn} disabled={cur === 0} onClick={() => setPage(cur - 1)}>‹ Trước</button>
+          <button style={styles.btn} disabled={cur === 0} onClick={() => setPage(cur - 1)}>{t('panels_stock.truoc')}</button>
           <span style={{ fontSize: 13 }}>Trang {cur + 1}/{pages}</span>
           <button style={styles.btn} disabled={cur >= pages - 1} onClick={() => setPage(cur + 1)}>Sau ›</button>
         </div>
@@ -270,7 +268,7 @@ export function PricePanel() {
         <button style={styles.btn} onClick={() => {
           const { prices, setPrices } = useGame.getState();
           setPrices(Object.fromEntries(Object.entries(prices).map(([id, from]) => [id, { from, to: null }])));
-        }}>Về giá gợi ý</button>
+        }}>{t('panels_stock.ve_gia_goi_y')}</button>
         <button
           style={{ ...styles.btn, background: '#2ecc71', color: '#1d1f2b', fontWeight: 700 }}
           onClick={() => {
@@ -289,10 +287,10 @@ export function PricePanel() {
               if (target !== s.prices[p.id]) changes[p.id] = { from: s.prices[p.id], to: target };
             }
             s.setPrices(changes);
-            s.notify(`💲 Đã chỉnh giá ${changed}/${total} món mở theo cột "Nên"`);
+            s.notify(t('panels_stock.da_chinh_gia_mon_mo_theo', { changed, total }));
           }}
         >
-          ✨ Chỉnh tất cả về giá nên
+          {t('panels_stock.chinh_tat_ca_ve_gia_nen')}
         </button>
         <button style={styles.btn} onClick={() => useGame.getState().openPanel({ type: 'combos' })}>🎁 Combo</button>
       </Footer>

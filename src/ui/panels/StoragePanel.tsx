@@ -11,6 +11,7 @@ import { shelfCount } from '../../data/analytics';
 import { itemHealthList } from '../../data/analytics';
 import { warehouseUpgradeValue } from '../../data/warehouseUpgrade';
 import { Callout, LifeBadge, Footer, styles } from './shared';
+import { t } from '../../core/i18n';
 
 /** Kho hàng: thùng nguyên + hàng lẻ đã khui, hạn gần nhất, chỗ trống. */
 export function StoragePanel() {
@@ -33,8 +34,8 @@ export function StoragePanel() {
     <>
       <h2 style={styles.title}>🏭 {tier.name}</h2>
       <p style={styles.sub}>
-        Đang chứa <b>{used}/{capacity} thùng</b>{coming > 0 && ` · ${coming} thùng sẽ về sáng mai (${formatMoney(pending.cost)} vốn ở trên đường)`}. Thùng đã khui vẫn chiếm một chỗ.
-        {' '}Bày kệ dùng hàng lẻ trước rồi mới khui thùng mới. Tủ lạnh kho giữ lạnh {tier.cold} món hàng mát, đông lạnh, tươi; phần dư để ngoài hỏng nhanh.
+        {t('panels_stock.dang_chua')}{' '}<b>{used}/{capacity}{' '}{t('panels_stock.thung')}</b>{coming > 0 && t('panels_stock.thung_se_ve_sang_mai_von', { coming, v1: formatMoney(pending.cost) })}{t('panels_stock.thung_da_khui_van_chiem_mot')}
+        {' '}{t('panels_stock.bay_ke_dung_hang_le_truoc')}{' '}{tier.cold}{' '}{t('panels_stock.mon_hang_mat_dong_lanh_tuoi')}
       </p>
       <div style={{ height: 8, borderRadius: 4, background: '#ffffff22', margin: '6px 0 10px' }}>
         <div style={{ height: '100%', borderRadius: 4, width: `${Math.min(100, (used / capacity) * 100)}%`, background: used >= capacity ? '#e67e22' : '#2ecc71' }} />
@@ -44,14 +45,14 @@ export function StoragePanel() {
         if (!cap) return null;
         const overCash = cap.totalRetail > money;
         return (
-          <Callout tone={overCash ? 'warn' : 'info'} style={{ marginBottom: 8 }} title={`🪙 Kho đang chôn ${formatMoney(cap.totalCost)} vốn (giá nhập) · trị giá bán lẻ ${formatMoney(cap.totalRetail)}`}>
+          <Callout tone={overCash ? 'warn' : 'info'} style={{ marginBottom: 8 }} title={t('panels_stock.kho_dang_chon_von_gia_nhap', { v0: formatMoney(cap.totalCost), v1: formatMoney(cap.totalRetail) })}>
             <div style={{ marginTop: 2, fontSize: 12 }}>
-              {cap.lines.length > 0 && <>Chôn nhiều nhất: {cap.lines.slice(0, 3).map((l) => `${l.name} ${formatMoney(l.costTotal)}`).join(' · ')}.</>}{' '}
+              {cap.lines.length > 0 && <>{t('panels_stock.chon_nhieu_nhat')}{' '}{cap.lines.slice(0, 3).map((l) => `${l.name} ${formatMoney(l.costTotal)}`).join(' · ')}.</>}{' '}
               {overCash
-                ? `Trị giá kho còn vượt cả tiền mặt (${formatMoney(money)}) — kho ứ vốn, cân nhắc xả sỉ hay bày kệ bán bớt trước khi nhập thêm.`
-                : 'Vốn nằm trong hàng hoá đang chờ bán; xem nếu muốn bơm vốn vào chỗ khác.'}
+                ? t('panels_stock.tri_gia_kho_con_vuot_ca', { v0: formatMoney(money) })
+                : t('panels_stock.von_nam_trong_hang_hoa_dang')}
               {pending.orders > 0 && (
-                <> <br />🚚 Trên đường về (sáng mai): {pending.orders} đơn — {formatMoney(pending.cost)} vốn giá nhập đã trừ; tính chung tổng vốn chôn {formatMoney(cap.totalCost + pending.cost)}.</>
+                <> <br />{t('panels_stock.tren_duong_ve_sang_mai')}{' '}{pending.orders}{' '}{t('panels_stock.don')}{' '}{formatMoney(pending.cost)}{' '}{t('panels_stock.von_gia_nhap_da_tru_tinh')}{' '}{formatMoney(cap.totalCost + pending.cost)}.</>
               )}
             </div>
           </Callout>
@@ -66,36 +67,36 @@ export function StoragePanel() {
         return (
           <Callout tone={turn.topStale.length > 0 ? 'warn' : 'accent'} style={{ marginBottom: 8 }} title={`⏳ Tồn kho quay ${turn.avgDays != null ? `~${turn.avgDays.toFixed(0)} ngày/lần` : 'chậm (chưa ước được ngày)'}`}>
             <div style={{ marginTop: 2, fontSize: 12 }}>
-              Vốn hàng ~{formatMoney(turn.totalValue)} đang chờ bán hết.
-              {worst ? ` ⚠️ Chôn lâu nhất theo giá trị: ${worst.name} (${formatMoney(worst.value)}, ${worst.daysLeft == null ? 'không bán' : `còn ~${worst.daysLeft.toFixed(0)} ngày`}) — xả sớm / giảm nhập.` : ' Xoay vòng ổn, không món nào kẹt lâu.'}
+              {t('panels_stock.von_hang')}{formatMoney(turn.totalValue)}{' '}{t('panels_stock.dang_cho_ban_het')}
+              {worst ? ` ⚠️ Chôn lâu nhất theo giá trị: ${worst.name} (${formatMoney(worst.value)}, ${worst.daysLeft == null ? 'không bán' : `còn ~${worst.daysLeft.toFixed(0)} ngày`}) — xả sớm / giảm nhập.` : t('panels_stock.xoay_vong_on_khong_mon_nao')}
             </div>
           </Callout>
         );
       })()}
       {missRev && missRev.totalLoss > 0 && (
-        <Callout tone="danger" style={{ marginBottom: 8 }} title={`📦 Hôm qua bỏ lỡ ~${formatMoney(missRev.totalLoss)} vì hết chỗ/kho`}>
+        <Callout tone="danger" style={{ marginBottom: 8 }} title={t('panels_stock.hom_qua_bo_lo_vi_het', { v0: formatMoney(missRev.totalLoss) })}>
           <div style={{ marginTop: 2, fontSize: 12 }}>
             {missRev.inStorageCount > 0
-              ? `${missRev.rows[0]?.name} còn trong kho mà kệ hết chỗ — nâng kho/kệ thêm để bày đủ, thu hồi dần.`
-              : `${missRev.rows[0]?.name} hết cả kho — nhập thêm rồi nâng kho để chứa đủ.`}
+              ? t('panels_stock.con_trong_kho_ma_ke_het', { v0: missRev.rows[0]?.name })
+              : t('panels_stock.het_ca_kho_nhap_them_roi', { v0: missRev.rows[0]?.name })}
           </div>
         </Callout>
       )}
       {coldOv && (
-        <Callout tone="warn" style={{ marginBottom: 8 }} title={`🧊 Tủ lạnh kho đầy: ${coldOv.coldQty}/${coldOv.capacity} món cần lạnh`}>
+        <Callout tone="warn" style={{ marginBottom: 8 }} title={t('panels_stock.tu_lanh_kho_day_mon_can', { coldQty: coldOv.coldQty, capacity: coldOv.capacity })}>
           <div style={{ marginTop: 2, fontSize: 12 }}>
-            Dư {coldOv.overflow} món phải để ngoài nhiệt độ thường — hỏng nhanh gấp ~
+            {t('panels_stock.du')}{' '}{coldOv.overflow}{' '}{t('panels_stock.mon_phai_de_ngoai_nhiet_do')}
             {coldOv.items[0]?.penalty.toFixed(1)}×{' '}
             {coldOv.nextCapacity
-              ? `· nâng kho giữ lạnh được ${coldOv.nextCapacity} món.`
-              : '· đã kho tối đa, bán bớt món lạnh dự trữ.'}
+              ? t('panels_stock.nang_kho_giu_lanh_duoc_mon', { nextCapacity: coldOv.nextCapacity })
+              : t('panels_stock.da_kho_toi_da_ban_bot')}
           </div>
           <div style={{ marginTop: 2, opacity: 0.75 }}>
-            {coldOv.items.map((it) => `· ${it.name}: ${it.qty} món`).join(' ')}
+            {coldOv.items.map((it) => t('panels_stock.mon_2', { name: it.name, qty: it.qty })).join(' ')}
           </div>
         </Callout>
       )}
-      {items.length === 0 ? <p style={styles.sub}>Kho trống. Vào Nhập hàng để đặt thêm.</p> : (
+      {items.length === 0 ? <p style={styles.sub}>{t('panels_stock.kho_trong_vao_nhap_hang_de')}</p> : (
         <div style={{ overflowX: 'auto', maxWidth: '100%' }}>
           <table style={styles.table}>
             <tbody>
@@ -103,7 +104,7 @@ export function StoragePanel() {
                 <tr key={id}>
                   <td style={styles.left}>{productById(id).name}</td>
                   <td>{describeUnits(id, q)}</td>
-                  <td style={{ opacity: 0.7 }}>{q} món · thùng {caseSize(id)}</td>
+                  <td style={{ opacity: 0.7 }}>{q}{' '}{t('panels_stock.mon_thung')}{' '}{caseSize(id)}</td>
                   <td><LifeBadge life={life} sale={0} /></td>
                 </tr>
               ))}
@@ -114,10 +115,10 @@ export function StoragePanel() {
       {next && (
         <div style={{ ...styles.card, marginTop: 12 }}>
           <span style={{ flex: 1, fontSize: 13 }}>
-            <b>Nâng lên {next.name}</b>: chứa {next.cases} thùng, giữ lạnh {next.cold} món, {next.racks} kệ, {next.fridges} tủ lạnh.
+            <b>{t('panels_stock.nang_len')}{' '}{next.name}</b>{t('panels_stock.chua')}{' '}{next.cases}{' '}{t('panels_stock.thung_giu_lanh')}{' '}{next.cold}{' '}{t('panels_stock.mon_3')}{' '}{next.racks}{' '}{t('panels_stock.ke')}{' '}{next.fridges}{' '}{t('panels_stock.tu_lanh')}
           </span>
           <button style={styles.btn} disabled={level < next.unlock || money < next.price || !hasMaterials(wareMaterials, tierIndex + 1)} onClick={upgradeWarehouse}>
-            {level < next.unlock ? `🔒 Cấp ${next.unlock}` : (materialBlockLabel(wareMaterials, tierIndex + 1) ?? shortLabel(formatMoney(next.price), next.price, money))}
+            {level < next.unlock ? t('panels_stock.cap', { unlock: next.unlock }) : (materialBlockLabel(wareMaterials, tierIndex + 1) ?? shortLabel(formatMoney(next.price), next.price, money))}
           </button>
         </div>
       )}
@@ -129,7 +130,7 @@ export function StoragePanel() {
         return (
           <div style={{ ...styles.card, marginTop: 8 }}>
             <span style={{ flex: 1, fontSize: 13 }}>
-              <b>🏗️ Vật liệu nâng kho</b> (không chiếm thùng):{' '}
+              <b>{t('panels_stock.vat_lieu_nang_kho')}</b>{' '}{t('panels_stock.khong_chiem_thung')}{' '}
               {MATERIAL_KEYS.map((k) => (
                 <span key={k} style={{ marginRight: 8, color: miss[k] > 0 ? '#ff7675' : '#55efc4' }}>
                   {MATERIAL_LABEL[k]} {wareMaterials?.[k] ?? 0}/{need[k]}
@@ -138,9 +139,9 @@ export function StoragePanel() {
             </span>
             {cost > 0 ? (
               <button style={styles.btn} disabled={money < cost} onClick={buyMaterialPack}>
-                {shortLabel('Mua đủ phần thiếu', cost, money)}
+                {shortLabel(t('panels_stock.mua_du_phan_thieu'), cost, money)}
               </button>
-            ) : <span style={{ fontSize: 12, color: '#2ecc71' }}>✅ Đủ vật liệu</span>}
+            ) : <span style={{ fontSize: 12, color: '#2ecc71' }}>{t('panels_stock.du_vat_lieu')}</span>}
           </div>
         );
       })()}
@@ -150,20 +151,20 @@ export function StoragePanel() {
         return (
           <Callout tone={tone} style={{ marginTop: 12 }} title={`🏭 Kho dùng ${wu.casePct}% thùng · giữ lạnh ${wu.coldPct}%${wu.overflow > 0 ? ` (tràn ${wu.overflow} → ~${formatMoney(wu.overflowValue)} hỏng nhanh)` : ''}`}>
             <div style={{ marginTop: 2, fontSize: 12 }}>
-              {wu.verdict === 'upgrade' && 'Đang tràn/đụng trần kho — nên nâng lên ' + wu.next!.name + ' (' + formatMoney(wu.next!.price) + ')' + (wu.affordable ? ', tiền đủ.' : ', tiền chưa đủ.' )}
-              {wu.verdict === 'soon' && `Sắp đụng trần (${Math.max(wu.coldPct, wu.casePct)}%) — chuẩn bị ${formatMoney(wu.next!.price)} cho ${wu.next!.name} (${wu.next!.cases} thùng / giữ lạnh ${wu.next!.cold}).`}
-              {wu.verdict === 'ok' && 'Kho còn rộng, chưa cần nâng.'}
+              {wu.verdict === 'upgrade' && t('panels_stock.dang_tran_dung_tran_kho_nen') + wu.next!.name + ' (' + formatMoney(wu.next!.price) + ')' + (wu.affordable ? t('panels_stock.tien_du') : t('panels_stock.tien_chua_du') )}
+              {wu.verdict === 'soon' && t('panels_stock.sap_dung_tran_chuan_bi_cho', { v0: Math.max(wu.coldPct, wu.casePct), v1: formatMoney(wu.next!.price), v2: wu.next!.name, v3: wu.next!.cases, v4: wu.next!.cold })}
+              {wu.verdict === 'ok' && t('panels_stock.kho_con_rong_chua_can_nang')}
             </div>
           </Callout>
         );
       })()}
       <label style={{ ...styles.card, display: 'flex', fontSize: 13, marginTop: 8 }}>
         <input type="checkbox" checked={autoSwap} onChange={(e) => useGame.setState({ autoSwap: e.target.checked })} />
-        Tự thay ô kệ hết hàng (kho cũng hết, không có đơn chờ) bằng món khác đang có trong kho
+        {t('panels_stock.tu_thay_o_ke_het_hang')}
       </label>
       <Footer onClose={closePanel}>
-        <button style={styles.btn} onClick={() => openPanel({ type: 'planogram' })}>🗺️ Sơ đồ kệ</button>
-        <button style={styles.btn} onClick={() => openPanel({ type: 'order' })}>📦 Nhập hàng</button>
+        <button style={styles.btn} onClick={() => openPanel({ type: 'planogram' })}>{t('panels_stock.so_do_ke')}</button>
+        <button style={styles.btn} onClick={() => openPanel({ type: 'order' })}>{t('panels_stock.nhap_hang')}</button>
       </Footer>
     </>
   );

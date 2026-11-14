@@ -9,6 +9,7 @@ import { allowedForType, fillPlanForShelf, pickForShelf } from '../data/planogra
 import { dayEffects, festivalStock } from '../data/calendar';
 import { nextGoldenPrep } from '../data/rhythm';
 import { Footer } from './panels/shared';
+import { t } from '../core/i18n';
 
 /** Ô còn ít hơn chừng này phần sức chứa thì coi là sắp hết. */
 const LOW = 0.5;
@@ -145,12 +146,12 @@ export function PlanogramPanel() {
       }
       const stocked = `${onShelves}/${capacity}`;
       const status = (storage[id] ?? 0) === 0
-        ? 'kho hết món này — vào Nhập hàng'
+        ? t('planogram.kho_het_mon_nay_vao_nhap')
         : onShelves === 0
-          ? `chưa bày trên kệ nào (kho còn ${describeUnits(id, storage[id] ?? 0)})`
+          ? t('planogram.chua_bay_tren_ke_nao_kho', { v0: describeUnits(id, storage[id] ?? 0) })
           : onShelves >= capacity
-            ? 'đã bày đủ trên kệ'
-            : `đã bày ${stocked} trên kệ — châm thêm khi sắp hết`;
+            ? t('planogram.da_bay_du_tren_ke')
+            : t('planogram.da_bay_tren_ke_cham_them', { stocked });
       return { id, status, canStock: (storage[id] ?? 0) > 0 && onShelves < capacity };
     });
     return { ...prep, rows };
@@ -196,10 +197,10 @@ export function PlanogramPanel() {
     const heatOf = (f: Furniture) => shelfHeat[f.uid] ?? 0;
     const sold = fixtures.filter((f) => heatOf(f) > 0).sort((a, b) => heatOf(b) - heatOf(a));
     if (!sold.length) return [];
-    const k = (v: number) => (Math.abs(v) >= 1000 ? `${Math.round(Math.abs(v) / 1000)}k` : `${Math.round(Math.abs(v))}đ`);
+    const k = (v: number) => (Math.abs(v) >= 1000 ? `${Math.round(Math.abs(v) / 1000)}k` : t('planogram.d', { v0: Math.round(Math.abs(v)) }));
     const rows = sold.slice(0, 5).map((f) => ({
       uid: f.uid,
-      text: `🟡 ${label(f)}: đã bán ${heatOf(f)} món · lời ~${k(shelfProfit[f.uid]?.profit ?? 0)}`,
+      text: t('planogram.da_ban_mon_loi', { v0: label(f), v1: heatOf(f), v2: k(shelfProfit[f.uid]?.profit ?? 0) }),
       cold: false,
     }));
     const total = fixtures.reduce((n, f) => n + heatOf(f), 0);
@@ -209,50 +210,50 @@ export function PlanogramPanel() {
       ? rest.reduce((min, f) => (heatOf(f) < heatOf(min) ? f : min), rest[0])
       : null;
     if (cold && heatOf(cold) < avg * 0.5) {
-      rows.push({ uid: cold.uid, text: `⚠️ ${label(cold)}: chỉ ${heatOf(cold)} món — vắng khách, đổi chỗ?`, cold: true });
+      rows.push({ uid: cold.uid, text: t('planogram.chi_mon_vang_khach_doi_cho', { v0: label(cold), v1: heatOf(cold) }), cold: true });
     }
     return rows;
   }, [fixtures, shelfHeat, shelfProfit, labelMap]);
 
   return (
     <div style={{ width: '100%', maxWidth: 900, display: 'flex', flexDirection: 'column', flex: 1 }}>
-      <h2 style={{ margin: '0 0 4px' }}>🗺️ Sơ đồ kệ</h2>
-      <p style={st.sub}>Xem mọi kệ và tủ trong tiệm, ô nào đang bày gì, còn bao nhiêu. Bày hàng nhanh từ kho, ô trống tự chọn món kho đang có.</p>
+      <h2 style={{ margin: '0 0 4px' }}>{t('planogram.so_do_ke')}</h2>
+      <p style={st.sub}>{t('planogram.xem_moi_ke_va_tu_trong')}</p>
 
       <div style={st.stats}>
-        <Stat label="Ô hàng" value={stats.slots} />
-        <Stat label="Ô trống" value={stats.empty} warn={stats.empty > 0} />
-        <Stat label="Sắp hết" value={stats.low} warn={stats.low > 0} />
-        <Stat label="Bày được từ kho" value={stats.fillable} />
+        <Stat label={t('planogram.o_hang')} value={stats.slots} />
+        <Stat label={t('planogram.o_trong')} value={stats.empty} warn={stats.empty > 0} />
+        <Stat label={t('planogram.sap_het')} value={stats.low} warn={stats.low > 0} />
+        <Stat label={t('planogram.bay_duoc_tu_kho')} value={stats.fillable} />
         <span style={{ display: 'flex', gap: 6, marginLeft: 'auto', flexWrap: 'wrap' }}>
           <button style={{ ...st.btn, background: '#f1c40f', fontWeight: 700 }} disabled={!stats.fillable}
             onClick={() => { for (const fx of fixtures) fillFixture(fx.uid, furniture, storage, stockTier, typeProducts, hotIds); }}
-            title="Châm mọi ô của MỌI kệ/tủ, ô trống tự chọn món kho đang có (ưu tiên món đang bán chạy hôm nay)">
-            📥 Bày đầy cả tiệm
+            title={t('planogram.cham_moi_o_cua_moi_ke')}>
+            {t('planogram.bay_day_ca_tiem')}
           </button>
           <button style={st.btn} onClick={() => openPanel({ type: 'storage' })}>🗃️ Kho</button>
-          <button style={st.btn} onClick={() => openPanel({ type: 'order' })}>📦 Nhập hàng</button>
+          <button style={st.btn} onClick={() => openPanel({ type: 'order' })}>{t('planogram.nhap_hang')}</button>
         </span>
       </div>
 
       {top && (() => {
         const name = productById(top.id)?.name ?? top.id;
         const status = topKho === 0
-          ? 'kho hết món này — vào Nhập hàng để bổ sung'
+          ? t('planogram.kho_het_mon_nay_vao_nhap_2')
           : topStatus && topStatus.onShelves === 0
-            ? `bán chạy mà chưa bày trên kệ nào (kho còn ${describeUnits(top.id, topKho)})`
+            ? t('planogram.ban_chay_ma_chua_bay_tren', { v0: describeUnits(top.id, topKho) })
             : topStatus && topStatus.onShelves >= topStatus.capacity
-              ? 'đã bày đủ trên kệ'
-              : `đã bày ${topStatus?.onShelves ?? 0}/${topStatus?.capacity ?? 0} trên kệ — châm thêm khi sắp hết`;
+              ? t('planogram.da_bay_du_tren_ke')
+              : t('planogram.da_bay_tren_ke_cham_them_2', { v0: topStatus?.onShelves ?? 0, v1: topStatus?.capacity ?? 0 });
         return (
           <div style={st.hotBox}>
-            <b style={{ fontSize: 12 }}>🔥 Chạy nhất hôm nay: {name} — bán {top.qty} món</b>
+            <b style={{ fontSize: 12 }}>{t('planogram.chay_nhat_hom_nay')}{' '}{name}{' '}{t('planogram.ban')}{' '}{top.qty}{' '}{t('planogram.mon')}</b>
             <div style={{ fontSize: 12, opacity: 0.85, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
               <span>{status}.</span>
               {topKho > 0 && topStatus?.canStock && (
                 <button style={{ ...st.btn, background: '#3498db', color: '#fff' }} onClick={() => stockThis(top.id)}
-                  title={`Đặt/châm ${name} vào mọi ô trống hoặc ô đang chứa nó (chỉ khi kho còn)`}>
-                  📥 Bày/châm món này
+                  title={t('planogram.dat_cham_vao_moi_o_trong', { name })}>
+                  {t('planogram.bay_cham_mon_nay')}
                 </button>
               )}
             </div>
@@ -264,15 +265,15 @@ export function PlanogramPanel() {
         const hh = (m: number) => `${Math.floor(m / 60)}h${m % 60 ? '30' : ''}`;
         return (
           <div style={st.hotBox}>
-            <b style={{ fontSize: 12 }}>⏰ Sắp tới giờ vàng ({golden.name} {hh(golden.from)}–{hh(golden.to)}): khách thèm…</b>
+            <b style={{ fontSize: 12 }}>{t('planogram.sap_toi_gio_vang')}{golden.name} {hh(golden.from)}–{hh(golden.to)}{t('planogram.khach_them')}</b>
             {golden.rows.map(({ id, status, canStock }) => (
               <div key={id} style={{ fontSize: 12, opacity: 0.85, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                 <span>· <b>{productById(id)?.name ?? id}</b></span>
                 <span style={{ opacity: 0.85 }}>{status}.</span>
                 {canStock && (
                   <button style={{ ...st.btn, background: '#2ecc71', color: '#fff' }} onClick={() => stockThis(id)}
-                    title={`Đặt/châm ${productById(id)?.name ?? id} vào mọi ô trống hoặc ô đang chứa nó (chỉ khi kho còn)`}>
-                    📥 Bày/châm món này
+                    title={t('planogram.dat_cham_vao_moi_o_trong_2', { v0: productById(id)?.name ?? id })}>
+                    {t('planogram.bay_cham_mon_nay')}
                   </button>
                 )}
               </div>
@@ -283,7 +284,7 @@ export function PlanogramPanel() {
 
       {heatRows.length > 0 && (
         <div style={st.heatBox}>
-          <b style={{ fontSize: 12 }}>📊 Kệ đang chạy thế nào</b>
+          <b style={{ fontSize: 12 }}>{t('planogram.ke_dang_chay_the_nao')}</b>
           {heatRows.map((r) => (
             <div key={r.uid} title={r.text}
               style={{ fontSize: 12, lineHeight: 1.5, color: r.cold ? '#f1c40f' : undefined, opacity: r.cold ? 1 : 0.85, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -297,23 +298,23 @@ export function PlanogramPanel() {
         <Dropdown<Filter>
           value={filter}
           onChange={setFilter}
-          ariaLabel="Lọc kệ"
+          ariaLabel={t('planogram.loc_ke')}
           options={[
-            { value: 'all', label: 'Tất cả kệ, tủ' },
-            { value: 'need', label: '⚠️ Cần châm hàng' },
+            { value: 'all', label: t('planogram.tat_ca_ke_tu') },
+            { value: 'need', label: t('planogram.can_cham_hang') },
             ...types.map((t) => ({ value: t as Filter, label: furnitureDef(t).name })),
           ]}
         />
-        <input style={st.search} placeholder="Tìm món hoặc tên kệ…" value={query} onChange={(e) => setQuery(e.target.value)} aria-label="Tìm món hoặc tên kệ" />
-        <label style={st.toggle} title="Khi hàng mới về: ô kệ hết hàng mà kho cũng hết món đó thì tự gỡ, bày món khác đang có trong kho">
+        <input style={st.search} placeholder={t('planogram.tim_mon_hoac_ten_ke')} value={query} onChange={(e) => setQuery(e.target.value)} aria-label={t('planogram.tim_mon_hoac_ten_ke_2')} />
+        <label style={st.toggle} title={t('planogram.khi_hang_moi_ve_o_ke')}>
           <input type="checkbox" checked={autoSwap} onChange={(e) => useGame.setState({ autoSwap: e.target.checked })} />
-          🔄 Tự thay món hết hàng
+          {t('planogram.tu_thay_mon_het_hang')}
         </label>
         <button style={st.btn} onClick={() => replaceEmptySlots(true)}>🔄 Thay ngay</button>
       </div>
 
-      {fixtures.length === 0 && <p style={st.sub}>Tiệm chưa có kệ nào. Vào Xây dựng để mua kệ.</p>}
-      {fixtures.length > 0 && shown.length === 0 && <p style={st.sub}>Không có kệ nào khớp bộ lọc.</p>}
+      {fixtures.length === 0 && <p style={st.sub}>{t('planogram.tiem_chua_co_ke_nao_vao')}</p>}
+      {fixtures.length > 0 && shown.length === 0 && <p style={st.sub}>{t('planogram.khong_co_ke_nao_khop_bo')}</p>}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         {shown.map((f) => {
@@ -323,9 +324,9 @@ export function PlanogramPanel() {
             <div key={f.uid} style={st.fixture}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                 <b>{label(f)}</b>
-                <span style={{ opacity: 0.6, fontSize: 12 }}>{def.tiers} tầng × {def.slots} ô · mỗi ô {def.capacity} món</span>
+                <span style={{ opacity: 0.6, fontSize: 12 }}>{def.tiers}{' '}{t('planogram.tang')}{' '}{def.slots}{' '}{t('planogram.o_moi_o')}{' '}{def.capacity}{' '}{t('planogram.mon')}</span>
                 <button style={{ ...st.btn, marginLeft: 'auto' }} disabled={!f.tiers.some((_, i) => canFill(f, i))} onClick={() => fillFixture(f.uid, furniture, storage, stockTier, typeProducts, hotIds)}>
-                  📥 Bày đầy kệ này
+                  {t('planogram.bay_day_ke_nay')}
                 </button>
               </div>
               {/* Tầng trên cùng ở trên, như nhìn vào kệ thật */}
@@ -334,41 +335,41 @@ export function PlanogramPanel() {
                   <span style={st.rowLabel}>T{row + 1}</span>
                   {Array.from({ length: def.slots }, (_, c) => row * def.slots + c).map((i) => {
                     // Dự phòng dữ lệch (kit cũ chưa qua migrateTiers): ô thiếu coi như trống, không để sập cả UI
-                    const t = f.tiers[i] ?? { productId: null, count: 0 };
-                    const p = t.productId ? productById(t.productId) : null;
-                    const life = p ? nearestLife(fitLots(t.lots, t.count, p.id)) : null;
-                    const sale = tierMarkdown(t.productId, t.lots, t.count);
-                    const fill = t.count / def.capacity;
+                    const tier = f.tiers[i] ?? { productId: null, count: 0 };
+                    const p = tier.productId ? productById(tier.productId) : null;
+                    const life = p ? nearestLife(fitLots(tier.lots, tier.count, p.id)) : null;
+                    const sale = tierMarkdown(tier.productId, tier.lots, tier.count);
+                    const fill = tier.count / def.capacity;
                     const kho = p ? storage[p.id] ?? 0 : 0;
                     return (
-                      <div key={i} style={{ ...st.slot, borderColor: !p || t.count === 0 ? '#e67e22' : fill <= LOW ? '#f1c40f' : '#ffffff22' }}>
+                      <div key={i} style={{ ...st.slot, borderColor: !p || tier.count === 0 ? '#e67e22' : fill <= LOW ? '#f1c40f' : '#ffffff22' }}>
                         <div style={{ height: 4, borderRadius: 2, background: p ? `#${p.color.toString(16).padStart(6, '0')}` : '#ffffff22' }} />
                         <Dropdown
-                          value={t.productId ?? ''}
+                          value={tier.productId ?? ''}
                           onChange={(v) => stockTier(f.uid, i, v || null)}
-                          ariaLabel={`${label(f)}, tầng ${row + 1}, ô ${(i % def.slots) + 1}`}
+                          ariaLabel={t('planogram.tang_o', { v0: label(f), v1: row + 1, v2: (i % def.slots) + 1 })}
                           style={{ width: '100%' }}
                           options={[
-                            { value: '', label: '(Chưa gán món)' },
+                            { value: '', label: t('planogram.chua_gan_mon') },
                             ...products.map((it) => ({ value: it.id, label: it.name, hint: `kho ${storage[it.id] ?? 0}` })),
                           ]}
                         />
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
                           <div style={st.bar}><div style={{ ...st.barFill, width: `${fill * 100}%`, background: fill <= LOW ? '#f1c40f' : '#2ecc71' }} /></div>
-                          <b>{t.count}/{def.capacity}</b>
+                          <b>{tier.count}/{def.capacity}</b>
                         </div>
                         <div style={{ fontSize: 11, opacity: 0.8, minHeight: 15 }}>
-                          {p ? <>Kho: {describeUnits(p.id, kho)}</> : 'Ô trống'}
+                          {p ? <>Kho: {describeUnits(p.id, kho)}</> : t('planogram.o_trong')}
                           {life !== null && <span style={{ color: life <= 1 ? '#ff7675' : life <= 3 ? '#fab1a0' : undefined }}> · ⏳{life}d</span>}
                           {sale > 0 && <b style={{ color: '#ff7675' }}> −{sale * 100}%</b>}
                         </div>
                         <div style={{ display: 'flex', gap: 4 }}>
                           <button style={st.mini} disabled={!canFill(f, i)}
-                            onClick={() => stockTier(f.uid, i, t.productId ?? pickForShelf(f, storage, allowed(f, typeProducts), hotIds))}
-                            title={t.productId ? 'Bày đầy ô này từ kho' : 'Tự chọn món kho đang có và bày'}>
-                            {t.productId ? '＋ Bày' : '✨ Tự chọn'}
+                            onClick={() => stockTier(f.uid, i, tier.productId ?? pickForShelf(f, storage, allowed(f, typeProducts), hotIds))}
+                            title={tier.productId ? t('planogram.bay_day_o_nay_tu_kho') : t('planogram.tu_chon_mon_kho_dang_co')}>
+                            {tier.productId ? t('planogram.bay') : t('planogram.tu_chon')}
                           </button>
-                          <button style={{ ...st.mini, ...(IS_COARSE ? { flex: '0 0 38%' } : null) }} disabled={!t.count} onClick={() => unstockTier(f.uid, i)} title="Dỡ hàng ô này về kho">↩ Dỡ</button>
+                          <button style={{ ...st.mini, ...(IS_COARSE ? { flex: '0 0 38%' } : null) }} disabled={!tier.count} onClick={() => unstockTier(f.uid, i)} title={t('planogram.do_hang_o_nay_ve_kho')}>{t('planogram.do')}</button>
                         </div>
                       </div>
                     );

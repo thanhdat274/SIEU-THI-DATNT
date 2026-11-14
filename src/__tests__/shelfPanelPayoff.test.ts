@@ -15,10 +15,10 @@ describe('shelfSlotValue — nối vào ShelfPanel (lúc bày kệ)', () => {
   });
   it('dropdown chọn món hiện lãi/ô/ngày từ shelfSlotValue', () => {
     expect(src).toContain("const s = slot.items.find((x) => x.id === p.id);");
-    expect(src).toContain('` · lãi ${formatMoney(s.perSlot ?? 0)}/ô/ngày`');
+    expect(src).toContain("t('panels_stock.lai_o_ngay', { v0: formatMoney(s.perSlot ?? 0) })");
   });
   it('ô đang bày hiện 📊 lãi/ô/ngày + cảnh báo LỖ', () => {
-    expect(src).toContain('📊 lãi {formatMoney(s.perSlot ?? 0)}/ô/ngày');
-    expect(src).toContain('ĐANG LỖ — nên dọn');
+    expect(src).toContain("{t('panels_stock.lai')}{' '}{formatMoney(s.perSlot ?? 0)}{t('panels_stock.o_ngay')}");
+    expect(src).toContain("t('panels_stock.dang_lo_nen_don')");
   });
 });
