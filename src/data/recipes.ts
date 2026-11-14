@@ -346,6 +346,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'banh_canh_ca_thu', name: 'Bánh canh cá thu', category: 'fresh', buy: 10000, sell: 16000, color: 0xd8c098, unlock: 81, since: CONTENT_EPOCH_NOW },
   // GĐ2459: Sò điệp nướng — quán nhậu trứ danh: sò điệp nướng vỉa mỡ hành, gạch aiu vàng ruộm. Mở 81; since: 1.
   { id: 'so_diep_nuong', name: 'Sò điệp nướng', category: 'fresh', buy: 26000, sell: 35000, color: 0xe8b858, unlock: 81, since: CONTENT_EPOCH_NOW },
+  // GĐ2460: Cháo gà nấm — cháo gà nấm kim châm dân dã (món cháo quán quen thuộc, nước ngọt da gà). Mở 81; since: 1.
+  { id: 'chao_ga_nam', name: 'Cháo gà nấm', category: 'fresh', buy: 16000, sell: 20000, color: 0xe0d0a0, unlock: 81, since: CONTENT_EPOCH_NOW },
   { id: 'com_lam', name: 'Cơm lam', category: 'fresh', buy: 6500, sell: 10000, color: 0xd9c9a0, unlock: 80, since: CONTENT_EPOCH_NOW },
   { id: 'banh_uot', name: 'Bánh ướt', category: 'fresh', buy: 4500, sell: 7500, color: 0xf6efdc, unlock: 80, since: CONTENT_EPOCH_NOW },
   // GĐ2410: Xôi đậu phộng — miền Nam: xôi nếp nấu cùng đậu phộng, chan nước cốt dừa. Mở 76; since: 1.
@@ -2539,6 +2541,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_chao_ca_loc', name: 'Cháo cá lóc', station: 'hot_kettle',
     inputs: [{ productId: 'gao', quantity: 1 }, { productId: 'ca_loc_tuoi', quantity: 1 }],
     outputId: 'chao_ca_loc', outputQty: 12, durationMin: 35, unlock: 81, reputationGain: 2, since: CONTENT_EPOCH_NOW },
+  { id: 'recipe_chao_ga_nam', name: 'Cháo gà nấm', station: 'hot_kettle',
+    inputs: [{ productId: 'thit_ga', quantity: 1 }, { productId: 'gao', quantity: 1 }, { productId: 'x_nam_kim_cham', quantity: 1 }],
+    outputId: 'chao_ga_nam', outputQty: 15, durationMin: 35, unlock: 81, reputationGain: 2, since: CONTENT_EPOCH_NOW },
+  // GĐ2460: Cháo gà nấm — gà chặt miếng ướp gừng HẦM cùng gạo + nấm kim châm, ngọt nước tự nhiên —
+  // nồi hầm lâu → trạm đúng cách nấu; khác cháo gà (lòng gà) và cháo nấm chay (một nguyên liệu gà).
+  // Thay thế: rau ngổ ăn kèm bỏ qua. Mở 81; since: 1.
+  // Mẻ (gà nguyên con 130k + gạo 80k + nấm kim châm 12k) = 222k → 15 tô × 20k = 300k, lãi ~78k/mẻ,
+  // hời hơn bán thẳng nguyên liệu (175+100+17 = 292k < 300k — luật monKhuon).
   { id: 'recipe_chao_nam', name: 'Cháo nấm', station: 'hot_kettle',
     inputs: [{ productId: 'gao', quantity: 1 }, { productId: 'x_nam_kim_cham', quantity: 1 }, { productId: 'x_nam_huong_kho', quantity: 1 }],
     outputId: 'chao_nam', outputQty: 10, durationMin: 30, unlock: 81, reputationGain: 2, since: CONTENT_EPOCH_NOW },

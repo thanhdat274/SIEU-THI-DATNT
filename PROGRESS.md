@@ -20,6 +20,7 @@
 **Phong cách hình ảnh (UI 2D phủ trên thế giới 3D):** thế giới low-poly 3D màu ấm; UI (HUD, panel React, icon pixel 16×16) nền tím-than (#3a3a4d) accent vàng (#f1c40f); chữ/biển/bong bóng vẽ canvas 2D rồi dán lên vật thể 3D; icon emoji nhất quán, tiếng Việt đời thường. Tài sản 3D thủ công bằng Blender (low-poly stylized cùng bảng màu, theo mục "Tài sản 3D với Blender" trong promt_game.md). Bảng màu/biểu mẫu tập trung ở `src/ui/controls.css` + `src/ui/panels/shared.tsx`.
 
 ## Trạng thái hiện tại (14/11/2026)
+- GĐ2460: MÓN MỚI Cháo gà nấm (cháo quán, nồi hầm `hot_kettle`: gà nguyên con + gạo + nấm kim châm → 15 × 20k, mở 81, `since: 1`, đã tra nguồn; Ốc bơ bị loại — x_oc mở 170 trễ hơn món 81, monKhuon chặn) + NHỊP GĐ×10 rà ngân sách + QA.
 - GĐ2459: MÓN MỚI Sò điệp nướng (quán nhậu, bếp nướng `food_grill`: sò điệp đông lạnh + hành phi → 8 × 35k, mở 81, `since: 1`, đã tra nguồn — lối ra bếp cho hàng đông lạnh vốn bán thẳng); bảng test monThat/monKhuon + baseline unlockPacing (81–100 = 189) + tái sinh UNLOCK-CURVE (1982 mốc).
 - GĐ2458: MÓN MỚI Bánh canh cá thu (Nha Trang, nồi nước `hot_kettle`: bột gạo ×2 + cá thu tươi + hành phi → 10 × 16k, mở 81, `since: 1`, đã tra nguồn); bảng test monThat/monKhuon + baseline unlockPacing (81–100 = 187) + tái sinh UNLOCK-CURVE (1980 mốc).
 - GĐ2457: MÓN MỚI Xôi bát báu (Nam Bộ, `rice_station`: nếp + lạp xưởng + chả lụa + trứng → 9 × 25k, mở 81, `since: 1`, đã tra nguồn); bảng test monThat/monKhuon + baseline unlockPacing (81–100 = 185) + tái sinh UNLOCK-CURVE (1978 mốc).
@@ -290,6 +291,7 @@
 - Họ màu hướng dẫn/chuỗi/biểu đồ: gộp về một sắc info `#3498db` (GĐ178); ngoại lệ duy nhất: buy-tone `#55efc4`/`#ff7675`; GardenPanel giữ họ riêng. GĐ258 quét nốt 6 màu cũ — src/ui chỉ còn bảng duyệt + màu nhận diện.
 
 ## Cần theo dõi / nợ mở
+- ⚠️ **NHỊP GĐ×10 (GĐ2460): tải ban đầu 479/480 KB gzip — SÁT TRẦN 1KB.** 25 GĐ thêm món data cộng dồn ~2KB/GĐ. Việc sắp tới: dọn/lazy-load (tách menu Thêm nặng hơn, codec phần chưa dùng) trước khi thêm nhiều code UI mới; các GĐ món data-only vẫn nhẹ, an toàn.
 > Ghi chú 05/11/2026: đã rà lại + kiểm chứng số liệu thật. Các mục ✅ đã xong (giữ lại vết để đối chiếu); các mục ⏳/🕳️ còn mở là vì **chờ điều kiện NGOÀI tầm dev** (bản vá upstream / tab trình duyệt thật) — không phải nợ thiếu trách nhiệm.
 
 - ✅ **GĐ1265 phần NÂNG dep patch an toàn — ĐÃ XONG** (verify lại 05/11: installed `dexie` 4.4.7 · `ws` 8.22.1 · `mongodb` 7.8.0 · `@types/node` 26.6.6 — khớp mục tiêu; full suite 466/3808 + tsc/build/bundle không đổi + co-op 110 xanh). Không nâng major (`firebase` 12→13, `three` 0.186→0.187, `dotenv` 17→18 — phá tương thích, chưa có lý do chơi, Luật 3). **Phần còn lại** (firebase-admin advisory) đã dồn về GĐ1073 bên dưới để không trùng dấu vết.
