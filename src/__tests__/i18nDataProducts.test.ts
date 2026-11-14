@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { PRODUCTS, CATEGORIES } from '../data/products';
+import { CATALOG_PRODUCTS } from '../data/catalog';
 import { EN_PRODUCTS, EN_CATEGORIES } from '../i18n/en/data/products';
 import { localizeNames, localizeRecord } from '../i18n/dataLang';
 
@@ -9,8 +10,9 @@ describe('i18n bước 5 — tên hàng tiếng Anh', () => {
     expect(Object.keys(EN_PRODUCTS).filter((k) => !ids.has(k))).toEqual([]);
   });
 
-  it('đủ tên Anh cho mọi ngành hàng và 131 hàng gốc', () => {
+  it('đủ tên Anh cho mọi ngành hàng, 131 hàng gốc và hàng catalog', () => {
     expect(Object.keys(CATEGORIES).filter((k) => !EN_CATEGORIES[k])).toEqual([]);
+    expect(CATALOG_PRODUCTS.filter((p) => !EN_PRODUCTS[p.id]).map((p) => p.id)).toEqual([]);
     expect(PRODUCTS.slice(0, 131).filter((p) => !EN_PRODUCTS[p.id]).map((p) => p.id)).toEqual([]);
   });
 

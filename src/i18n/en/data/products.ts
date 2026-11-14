@@ -2,12 +2,14 @@
  * Tên hàng tiếng Anh theo id (i18n bước 5). Chỉ là lớp hiển thị: mô phỏng/save/golden dùng id nên không đổi.
  * Thiếu id → giữ tên tiếng Việt. Món Việt đặc trưng giữ tên gốc + chú thích Anh (vd. "Phở — instant pho").
  */
+import { EN_CATALOG } from './catalog';
 export const EN_CATEGORIES: Record<string, string> = {
   dry: 'Dry goods', drink: 'Drinks', cold: 'Chilled', frozen: 'Frozen',
   household: 'Household', fresh: 'Fresh produce', meat: 'Fresh meat & fish',
 };
 
 export const EN_PRODUCTS: Record<string, string> = {
+  ...EN_CATALOG,
   // ── Hàng gốc (products.ts) ──
   mi: 'Instant noodles', nuoc: 'Bottled water', banh: 'Snacks & candy',
   ngot: 'Soft drinks', diem: 'Matches & lighters', sua: 'Boxed milk',
