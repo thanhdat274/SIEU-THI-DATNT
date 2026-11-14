@@ -7,6 +7,7 @@ import { spoilNightReport, storeMissRevenue } from '../../data/advice';
 import { trafficForecast } from '../../data/trafficForecast';
 import { skillPayoff } from '../../data/skillPayoff';
 import { Footer, styles } from './shared';
+import { t } from '../../core/i18n';
 
 /** Danh hiệu đã đạt và cây kỹ năng chủ tiệm. */
 export function SkillsPanel() {
@@ -40,7 +41,7 @@ export function SkillsPanel() {
   return (
     <>
       <h2 style={styles.title}>🏅 Danh hiệu & kỹ năng</h2>
-      <p style={styles.sub}>Cứ 5 cấp được 1 điểm kỹ năng. Còn {left} điểm.</p>
+      <p style={styles.sub}>{t('panels_quest.cu_5_cap_duoc_1_diem')}{' '}{left}{' '}{t('panels_quest.diem')}</p>
       <div style={{ display: 'grid', gap: 6 }}>
         {SKILLS.map((k) => {
           const learned = skills.includes(k.id);
@@ -55,7 +56,7 @@ export function SkillsPanel() {
                   <div style={{ fontSize: 11, marginTop: 2, color: counterRisk.hasSharpEye ? '#2ecc71' : counterRisk.leakPerDay >= COINFAKE_LEAK_MODERATE ? '#e67e22' : '#999' }}>
                     {counterRisk.hasSharpEye
                       ? `Đã học: tiền giả lọt còn ~${formatMoney(counterRisk.leakPerDay)}/ngày${counterRisk.fakeCashToday > 0 ? ` · két hôm nay đang giữ ${formatMoney(counterRisk.fakeCashToday)} chưa thu hồi` : ''}`
-                      : `Tiền giả rò ~${formatMoney(counterRisk.leakPerDay)}/ngày — học chặn thêm ~${formatMoney(counterRisk.sharpEyeSavesPerDay)}/ngày`}
+                      : t('panels_quest.tien_gia_ro_ngay_hoc_chan', { v0: formatMoney(counterRisk.leakPerDay), v1: formatMoney(counterRisk.sharpEyeSavesPerDay) })}
                   </div>
                 )}
                 {!learned && (() => {
@@ -63,14 +64,14 @@ export function SkillsPanel() {
                   return p.ok ? <div style={{ fontSize: 11, marginTop: 2, color: '#2ecc71' }}>{p.line}</div> : null;
                 })()}
               </div>
-              {learned ? <span style={{ color: '#2ecc71' }}>✔ Đã học</span> : level < k.unlock ? <span style={{ opacity: 0.7 }}>🔒 Cấp {k.unlock}</span> : (
-                <button style={styles.btn} disabled={!can} onClick={() => learnSkill(k.id)}>{left > 0 ? 'Học' : `Hết điểm — cấp ${nextSkillPointLevel(level)}`}</button>
+              {learned ? <span style={{ color: '#2ecc71' }}>{t('panels_quest.da_hoc')}</span> : level < k.unlock ? <span style={{ opacity: 0.7 }}>{t('panels_quest.cap')}{' '}{k.unlock}</span> : (
+                <button style={styles.btn} disabled={!can} onClick={() => learnSkill(k.id)}>{left > 0 ? t('panels_quest.hoc') : t('panels_quest.het_diem_cap', { v0: nextSkillPointLevel(level) })}</button>
               )}
             </div>
           );
         })}
       </div>
-      <h3 style={{ margin: '14px 0 8px', fontSize: 15 }}>Danh hiệu ({titles.length}/{ALL_TITLES.length})</h3>
+      <h3 style={{ margin: '14px 0 8px', fontSize: 15 }}>{t('panels_quest.danh_hieu')}{titles.length}/{ALL_TITLES.length})</h3>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))', gap: 6 }}>
         {TITLES.map((t) => {
           const got = titles.includes(t.id);
@@ -82,18 +83,18 @@ export function SkillsPanel() {
           );
         })}
       </div>
-      <h3 style={{ margin: '14px 0 8px', fontSize: 15 }}>🌟 Danh hiệu NG+ (tái sinh)</h3>
-      <p style={styles.sub}>Mỗi lần tái sinh mở thêm một danh hiệu độc quyền, giữ qua mọi vòng sau.</p>
+      <h3 style={{ margin: '14px 0 8px', fontSize: 15 }}>{t('panels_quest.danh_hieu_ng_tai_sinh')}</h3>
+      <p style={styles.sub}>{t('panels_quest.moi_lan_tai_sinh_mo_them')}</p>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))', gap: 6 }}>
-        {PRESTIGE_TITLES.map((t) => {
-          const got = titles.includes(t.id);
-          const locked = !got && prestige < (t.prestige ?? 0);
+        {PRESTIGE_TITLES.map((pt) => {
+          const got = titles.includes(pt.id);
+          const locked = !got && prestige < (pt.prestige ?? 0);
           return (
-            <div key={t.id} style={{ ...styles.card, display: 'block', opacity: got ? 1 : 0.5, border: '1px solid rgba(241,196,15,0.25)' }} title={t.description}>
-              <b>{got ? t.icon : (locked ? (t.lockIcon ?? '🔒') : '🔒')} {t.name}</b>
-              <div style={{ fontSize: 12, opacity: 0.8 }}>{t.description}</div>
+            <div key={pt.id} style={{ ...styles.card, display: 'block', opacity: got ? 1 : 0.5, border: '1px solid rgba(241,196,15,0.25)' }} title={pt.description}>
+              <b>{got ? pt.icon : (locked ? (pt.lockIcon ?? '🔒') : '🔒')} {pt.name}</b>
+              <div style={{ fontSize: 12, opacity: 0.8 }}>{pt.description}</div>
               <div style={{ fontSize: 11, opacity: 0.65 }}>
-                {got ? '✔ Đã mở' : locked ? `Tái sinh ${t.prestige} lần` : `Chưa đạt: tái sinh ${t.prestige} lần`}
+                {got ? t('panels_quest.da_mo') : locked ? t('panels_quest.tai_sinh_lan', { prestige: pt.prestige }) : t('panels_quest.chua_dat_tai_sinh_lan', { prestige: pt.prestige })}
               </div>
             </div>
           );

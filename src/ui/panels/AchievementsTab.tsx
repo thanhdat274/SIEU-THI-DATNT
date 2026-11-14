@@ -13,6 +13,7 @@ import { formatMoney } from '../../data/products';
 import { NearMilestonesView, NgGoalsCard, NextUnlockTeaser } from './PrestigeParts';
 import { card, title, btn, sub } from './businessStyles';
 import { fmtNum } from '../../core/format';
+import { t } from '../../core/i18n';
 
 /** "Sắp đạt": nhắc những cột mốc còn cách không xa. */
 function NearMilestones() {
@@ -33,9 +34,9 @@ export function Achievements() {
       <NearMilestones />
       {/* Thẻ tổng (học từ Coffee Sứa Ơi): số bậc, tiền thưởng đã nhận, thưởng sắp về ví tối nay */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6, marginBottom: 8 }}>
-        <Stat icon="🏆" label="bậc thành tựu" value={`${done.size}/${ACHIEVEMENTS.length}`} />
-        <Stat icon="💰" label="thưởng đã nhận" value={formatMoney(claimedMoney)} />
-        <Stat icon="⏳" label={waiting.length ? 'sắp về ví tối nay' : 'đang chờ mốc mới'} value={waitingMoney ? `+${formatMoney(waitingMoney)}` : '—'} />
+        <Stat icon="🏆" label={t('panels_quest.bac_thanh_tuu')} value={`${done.size}/${ACHIEVEMENTS.length}`} />
+        <Stat icon="💰" label={t('panels_quest.thuong_da_nhan')} value={formatMoney(claimedMoney)} />
+        <Stat icon="⏳" label={waiting.length ? t('panels_quest.sap_ve_vi_toi_nay') : t('panels_quest.dang_cho_moc_moi')} value={waitingMoney ? `+${formatMoney(waitingMoney)}` : '—'} />
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 6 }}>
         {ACHIEVEMENTS.map((a) => {
@@ -45,7 +46,7 @@ export function Achievements() {
           return (
             <div key={a.id} style={{ ...card, marginBottom: 0, opacity: isDone ? 1 : 0.75 }}>
               <b>{isDone ? a.icon : '🔒'} {a.name}</b>
-              <div style={sub}>{a.desc} · thưởng {formatMoney(a.reward)}</div>
+              <div style={sub}>{a.desc}{' '}{t('panels_quest.thuong_4')}{' '}{formatMoney(a.reward)}</div>
               {g && (
                 <div style={{ marginTop: 4 }}>
                   <div style={{ height: 5, borderRadius: 3, background: 'rgba(255,255,255,0.15)', overflow: 'hidden' }}>
@@ -100,53 +101,53 @@ function PrestigeSection() {
   });
   return (
     <div style={{ ...card, marginTop: 8, border: '1px solid rgba(241,196,15,0.4)' }}>
-      <div style={title}>🌟 Tái sinh (NG+)</div>
+      <div style={title}>{t('panels_quest.tai_sinh_ng')}</div>
       {p.brandLegacy && (
         <div style={{ ...sub, opacity: 0.85 }}>
-          🏷️ Hồ sơ nhãn: <b>{p.brandLegacy.name}</b> (uy tín cao nhất {p.brandLegacy.maxRep}/100).
+          {t('panels_quest.ho_so_nhan')}{' '}<b>{p.brandLegacy.name}</b>{' '}{t('panels_quest.uy_tin_cao_nhat')}{' '}{p.brandLegacy.maxRep}/100).
         </div>
       )}
       {capped ? (
         <div style={sub}>
-          Đã tái sinh tối đa {PRESTIGE_MAX_LEVEL} lần — doanh thu đang +{Math.round(p.bonus * 100)}%.
+          {t('panels_quest.da_tai_sinh_toi_da')}{' '}{PRESTIGE_MAX_LEVEL}{' '}{t('panels_quest.lan_doanh_thu_dang')}{Math.round(p.bonus * 100)}%.
         </div>
       ) : eligible ? (
         <>
           <div style={sub}>
-            Vòng {p.level + 1}. Doanh thu đang +{Math.round(p.bonus * 100)}%, tái sinh thêm sẽ là +{Math.round((nextMult! - 1) * 100)}% (tối đa +{Math.round(PRESTIGE_MAX_LEVEL * PRESTIGE_BONUS * 100)}%).
+            {t('panels_quest.vong')}{' '}{p.level + 1}{t('panels_quest.doanh_thu_dang')}{Math.round(p.bonus * 100)}{t('panels_quest.tai_sinh_them_se_la')}{Math.round((nextMult! - 1) * 100)}{t('panels_quest.toi_da')}{Math.round(PRESTIGE_MAX_LEVEL * PRESTIGE_BONUS * 100)}%).
           </div>
           {!capped && (
-            <Callout tone="ok" title="🌳 Chuẩn bị tái sinh" style={{ marginTop: 8 }}>
+            <Callout tone="ok" title={t('panels_quest.chuan_bi_tai_sinh')} style={{ marginTop: 8 }}>
               {preview.projectedDailyGain > 0 && (
                 <div style={sub}>
-                  Nhận: vòng sau lời thêm ≈ <b>{formatMoney(preview.projectedDailyGain)}/ngày</b> (thêm +{preview.nextBonus}% so với lãi hiện tại).
+                  {t('panels_quest.nhan_vong_sau_loi_them')}{' '}<b>{formatMoney(preview.projectedDailyGain)}{t('panels_quest.ngay_3')}</b>{' '}{t('panels_quest.them')}{preview.nextBonus}{t('panels_quest.so_voi_lai_hien_tai')}
                 </div>
               )}
               <div style={sub}>
-                Bỏ lại:{' '}
-                {preview.suppliersActive > 0 ? <b>{preview.suppliersActive} mối quen</b> : 'chưa có mối quen'}
+                {t('panels_quest.bo_lai')}{' '}
+                {preview.suppliersActive > 0 ? <b>{preview.suppliersActive}{' '}{t('panels_quest.moi_quen')}</b> : t('panels_quest.chua_co_moi_quen')}
                 {preview.topRelTier > 0 && <span>{` (bậc ${preview.topRelTier}${preview.topRelTier >= PARTNER_TIERS.length ? '' : ', còn hoàn tháng'})`}</span>}
                 {' · '}
-                {preview.analyticsDays > 0 ? <b>{preview.analyticsDays} ngày</b> : '0 ngày'} dữ liệu phân tích
-                {preview.unsoldMarketDay && <span style={{ color: '#f1c40f' }}> · 🧺 phiên chợ hôm nay chưa kịp gánh!</span>}
-                {preview.lostBrand && <span style={{ color: '#f1c40f' }}> · 🏷️ nhãn <b>{preview.lostBrand.name}</b> (uy tín {preview.lostBrand.maxRep})</span>}
+                {preview.analyticsDays > 0 ? <b>{preview.analyticsDays}{' '}{t('panels_quest.ngay_4')}</b> : t('panels_quest.0_ngay')}{' '}{t('panels_quest.du_lieu_phan_tich')}
+                {preview.unsoldMarketDay && <span style={{ color: '#f1c40f' }}>{' '}{t('panels_quest.phien_cho_hom_nay_chua_kip')}</span>}
+                {preview.lostBrand && <span style={{ color: '#f1c40f' }}>{' '}{t('panels_quest.nhan_2')}{' '}<b>{preview.lostBrand.name}</b>{' '}{t('panels_quest.uy_tin')}{' '}{preview.lostBrand.maxRep})</span>}
               </div>
             </Callout>
           )}
-          {online && <div style={sub}>Chơi hẻm online không tái sinh được — chỉ ở chế độ chơi đơn.</div>}
+          {online && <div style={sub}>{t('panels_quest.choi_hem_online_khong_tai_sinh')}</div>}
           {!online && (
             <button
               style={{ ...btn, marginLeft: 0, marginTop: 6 }}
               onClick={async () => {
-                if (!await askConfirm('🌟 Tái sinh: bắt đầu lại tiệm từ cấp 1, KHÔNG THỂ HOÀN TÁC!\n\nThành tựu, danh hiệu, cốt truyện, nhà, xe, thú cưng, bộ sưu tập và doanh thu cả đời giữ nguyên; tiền, cấp, ngày, nội thất, kho, nhân viên, trang trại... đều làm lại từ đầu.', { danger: true, title: '🌟 Tái sinh', okLabel: 'Tái sinh' })) return;
+                if (!await askConfirm(t('panels_quest.tai_sinh_bat_dau_lai_tiem'), { danger: true, title: t('panels_quest.tai_sinh'), okLabel: t('panels_quest.tai_sinh_2') })) return;
                 useGame.getState().doPrestige();
               }}
-            >🌟 Tái sinh</button>
+            >{t('panels_quest.tai_sinh')}</button>
           )}
         </>
       ) : (
         <div style={{ ...sub, color: '#999' }}>
-          Cần cấp {PRESTIGE_MIN_LEVEL} + doanh thu cả đời {formatMoney(PRESTIGE_MIN_REVENUE)} để tái sinh (mở khi cuối game). Giữ bộ sưu tập tài khoản và bán đắt dần mỗi vòng.
+          {t('panels_quest.can_cap')}{' '}{PRESTIGE_MIN_LEVEL}{' '}{t('panels_quest.doanh_thu_ca_doi')}{' '}{formatMoney(PRESTIGE_MIN_REVENUE)}{' '}{t('panels_quest.de_tai_sinh_mo_khi_cuoi')}
         </div>
       )}
       <NgGoalsCard prestigeLevel={p.level} cachedGoals={goals} claimedIds={p.goalsClaimed ?? []} onClaim={(id) => useGame.getState().claimNgGoal(id)} />

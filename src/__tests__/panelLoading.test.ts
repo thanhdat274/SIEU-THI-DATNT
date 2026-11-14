@@ -10,6 +10,6 @@ describe('Panels — khung chờ khi tải lười', () => {
     expect(src).not.toMatch(/fallback=\{null\}/);
   });
   it('khung chờ có chữ "Đang mở"', () => {
-    expect(src).toContain('Đang mở…');
+    expect(src).toContain("t('common.opening')");
   });
 });

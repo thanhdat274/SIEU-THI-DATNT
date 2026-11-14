@@ -11,6 +11,7 @@ import { recentAvgSalesProfit } from '../data/gifts';
 import { missingForOrder, orderValue, rushQuote, partyOrderById, STORY_ORDER_FRIEND_GAIN, STORY_ORDER_FRIEND_LOSS } from '../data/orders';
 import { Footer } from './panels/shared';
 import { fmtNum } from '../core/format';
+import { t } from '../core/i18n';
 
 /** Sổ nhiệm vụ: những việc mỗi ngày (đủ mở gì thêm việc đó) và một bước cốt truyện, xong thì bấm nhận thưởng. */
 export function QuestPanel() {
@@ -24,18 +25,18 @@ export function QuestPanel() {
   const betBadge = !!s.questLog.bet && s.questLog.bet.day === s.day;
   return (
     <>
-      <h2 style={{ margin: '0 0 4px' }}>📜 Sổ nhiệm vụ</h2>
+      <h2 style={{ margin: '0 0 4px' }}>{t('panels_quest.so_nhiem_vu')}</h2>
       <p style={{ margin: '0 0 12px', opacity: 0.75, fontSize: 13, maxWidth: 520 }}>
-        Nhiệm vụ ngày làm mới mỗi sáng, càng lên cấp càng khó và thưởng càng to. Cốt truyện làm lần lượt từng bước.
+        {t('panels_quest.nhiem_vu_ngay_lam_moi_moi')}
       </p>
 
       <CommunityGoals />
       <OrderCard />
 
-      <h3 style={head}>📖 Cốt truyện <small style={{ opacity: 0.6, fontWeight: 400 }}>· bước {Math.min(doneSteps + 1, STORY_STEPS.length)}/{STORY_STEPS.length}</small></h3>
-      {story ? <QuestRow q={story} /> : <p style={{ opacity: 0.75, fontSize: 13 }}>🎊 Đã xong toàn bộ cốt truyện!</p>}
+      <h3 style={head}>{t('panels_quest.cot_truyen')}{' '}<small style={{ opacity: 0.6, fontWeight: 400 }}>{t('panels_quest.buoc')}{' '}{Math.min(doneSteps + 1, STORY_STEPS.length)}/{STORY_STEPS.length}</small></h3>
+      {story ? <QuestRow q={story} /> : <p style={{ opacity: 0.75, fontSize: 13 }}>{t('panels_quest.da_xong_toan_bo_cot_truyen')}</p>}
 
-      <h3 style={head}>☀️ Nhiệm vụ hôm nay <small style={{ opacity: 0.6, fontWeight: 400 }}>· ngày {s.day} · {daily.length} việc</small></h3>
+      <h3 style={head}>{t('panels_quest.nhiem_vu_hom_nay')}{' '}<small style={{ opacity: 0.6, fontWeight: 400 }}>{t('panels_quest.ngay')}{' '}{s.day} · {daily.length}{' '}{t('panels_quest.viec')}</small></h3>
       <DailySetStatus />
       <QuestEcoNote />
       <BetCard />
@@ -46,7 +47,7 @@ export function QuestPanel() {
       {claimable.length > 1 && (
         <button style={{ ...btn, marginTop: 12, width: '100%', padding: '8px 0', background: '#f1c40f' }}
           onClick={() => claimable.forEach((q) => useGame.getState().claimQuest(q.id))}>
-          🎁 Nhận tất cả ({claimable.length})
+          {t('panels_quest.nhan_tat_ca')}{claimable.length})
         </button>
       )}
       <Footer onClose={() => s.closePanel()} />
@@ -79,19 +80,19 @@ function CommunityCard({ goal, inDays }: { goal: CommunityGoal; inDays: number }
   const names = goal.items.slice(0, 3).map((id) => productById(id).name).join(', ') + (goal.items.length > 3 ? '…' : '');
   return (
     <div style={{ background: '#3a3a4d', borderRadius: 8, padding: '8px 12px', marginBottom: 10 }}>
-      <b>{f.icon} Mục tiêu chung · {f.name}</b>
-      <span style={{ fontSize: 12, opacity: 0.75 }}> · {inDays ? `${inDays === 1 ? 'mai' : `${inDays} ngày nữa`} bắt đầu, chuẩn bị hàng và trang trí` : goal.days === 1 ? 'chỉ hôm nay' : `${goal.days} ngày`}</span>
+      <b>{f.icon}{' '}{t('panels_quest.muc_tieu_chung')}{' '}{f.name}</b>
+      <span style={{ fontSize: 12, opacity: 0.75 }}> · {inDays ? `${inDays === 1 ? 'mai' : `${inDays} ngày nữa`} bắt đầu, chuẩn bị hàng và trang trí` : goal.days === 1 ? t('panels_quest.chi_hom_nay') : t('panels_quest.ngay_2', { days: goal.days })}</span>
       {p?.done ? (
-        <div style={{ fontSize: 13, marginTop: 4 }}>🎉 Cả hẻm đã hoàn thành mục tiêu dịp này!</div>
+        <div style={{ fontSize: 13, marginTop: 4 }}>{t('panels_quest.ca_hem_da_hoan_thanh_muc')}</div>
       ) : locked ? (
         <div style={{ fontSize: 12, marginTop: 4, color: '#e67e22' }}>🔒 {goalLockText(goal)}</div>
       ) : (
         <>
-          {bar(goal.items.length ? `🛍️ Bán hàng của dịp (${names})` : '🛍️ Bán món bất kỳ', p?.sold ?? 0, goal.itemTarget)}
-          {bar('🍲 Món nhà làm', p?.cooked ?? 0, goal.cookedTarget)}
-          {bar(f.id === 'khai_truong' ? '💐 Lẵng hoa mừng (chậu cây)' : '🪴 Trang trí tiệm (chậu cây)', decor, goal.decorTarget)}
+          {bar(goal.items.length ? t('panels_quest.ban_hang_cua_dip', { names }) : t('panels_quest.ban_mon_bat_ky'), p?.sold ?? 0, goal.itemTarget)}
+          {bar(t('panels_quest.mon_nha_lam'), p?.cooked ?? 0, goal.cookedTarget)}
+          {bar(f.id === 'khai_truong' ? t('panels_quest.lang_hoa_mung_chau_cay') : t('panels_quest.trang_tri_tiem_chau_cay'), decor, goal.decorTarget)}
           <div style={{ fontSize: 12, marginTop: 6, opacity: 0.8 }}>
-            🎁 Thưởng {formatMoney(goal.reward.money)} · {goal.reward.xp} XP{f.host ? ' · người lo hội thân hơn' : ''}. Chơi chung thì cả hẻm cùng góp.
+            {t('panels_quest.thuong')}{' '}{formatMoney(goal.reward.money)} · {goal.reward.xp} XP{f.host ? t('panels_quest.nguoi_lo_hoi_than_hon') : ''}{t('panels_quest.choi_chung_thi_ca_hem_cung')}
           </div>
         </>
       )}
@@ -111,7 +112,7 @@ function OrderCard() {
   const left = order.dueDay - day;
   return (
     <>
-      <h3 style={head}>{def.icon} {def.regular ? 'Khách quen nhờ' : 'Đơn đặt hàng'} <small style={{ opacity: 0.6, fontWeight: 400 }}>· {left > 0 ? `còn ${left + 1} ngày` : 'hạn chót hôm nay'}</small></h3>
+      <h3 style={head}>{def.icon} {def.regular ? t('panels_quest.khach_quen_nho') : t('panels_quest.don_dat_hang')} <small style={{ opacity: 0.6, fontWeight: 400 }}>· {left > 0 ? t('panels_quest.con_ngay', { v0: left + 1 }) : t('panels_quest.han_chot_hom_nay')}</small></h3>
       <div style={{ background: '#3a3a4d', borderRadius: 8, padding: '8px 12px', display: 'grid', gap: 6 }}>
         <div><b>{def.title}</b> <span style={{ opacity: 0.7, fontSize: 12 }}>· {def.from}</span></div>
         <div style={{ fontSize: 12, opacity: 0.8 }}>{def.description}</div>
@@ -122,42 +123,42 @@ function OrderCard() {
           })}
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12 }}>
-          <span>Trả {formatMoney(orderValue(def))} + thưởng {formatMoney(def.bonus)} · {def.xp} XP{def.regular && ` · 💛 +${STORY_ORDER_FRIEND_GAIN}`}</span>
+          <span>{t('panels_quest.tra')}{' '}{formatMoney(orderValue(def))}{' '}{t('panels_quest.thuong_2')}{' '}{formatMoney(def.bonus)} · {def.xp} XP{def.regular && ` · 💛 +${STORY_ORDER_FRIEND_GAIN}`}</span>
           {order.accepted ? (
             <button style={{ ...btn, background: missing.length ? '#555' : '#2ecc71', color: missing.length ? '#bbb' : '#fff' }} onClick={deliverOrder}>
-              🚚 Giao từ kho
+              {t('panels_quest.giao_tu_kho')}
             </button>
           ) : (
             <span>
-              <button style={btn} onClick={declineOrder}>Từ chối</button>{' '}
-              <button style={{ ...btn, background: '#f1c40f' }} onClick={acceptOrder}>Nhận đơn</button>
+              <button style={btn} onClick={declineOrder}>{t('panels_quest.tu_choi')}</button>{' '}
+              <button style={{ ...btn, background: '#f1c40f' }} onClick={acceptOrder}>{t('panels_quest.nhan_don')}</button>
             </span>
           )}
         </div>
         {order.accepted && missing.length > 0 && (
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, fontSize: 12, background: '#2f2f40', borderRadius: 6, padding: '6px 8px' }}>
             {!rush.ok ? (
-              <span style={{ opacity: 0.8 }}>Có món nhà làm, đại lý không bán: phải tự nấu rồi giao từ kho.</span>
+              <span style={{ opacity: 0.8 }}>{t('panels_quest.co_mon_nha_lam_dai_ly')}</span>
             ) : (
               <>
                 <span>
-                  Nhập gấp phần thiếu ở 🏠 đại lý: <b>{formatMoney(rush.cost)}</b>
-                  {short > 0 && <span style={{ color: '#ff7675' }}> · thiếu {formatMoney(short)}</span>}
+                  {t('panels_quest.nhap_gap_phan_thieu_o_dai')}{' '}<b>{formatMoney(rush.cost)}</b>
+                  {short > 0 && <span style={{ color: '#ff7675' }}>{' '}{t('panels_quest.thieu')}{' '}{formatMoney(short)}</span>}
                 </span>
                 {short <= 0 ? (
                   <button style={{ ...btn, background: '#2ecc71', color: '#fff', whiteSpace: 'nowrap' }} onClick={rushDeliverOrder}>⚡ Nhập gấp & giao</button>
                 ) : loan ? (
                   <button style={{ ...btn, background: '#f1c40f', whiteSpace: 'nowrap' }} onClick={() => takeLoan(loan.amount, loan.emergency)}>
-                    🏦 Vay {formatMoney(loan.amount)} để nhập
+                    🏦 Vay {formatMoney(loan.amount)}{' '}{t('panels_quest.de_nhap')}
                   </button>
                 ) : (
-                  <span style={{ opacity: 0.7 }}>Đã chạm hạn mức vay</span>
+                  <span style={{ opacity: 0.7 }}>{t('panels_quest.da_cham_han_muc_vay')}</span>
                 )}
               </>
             )}
           </div>
         )}
-        {order.accepted && <div style={{ fontSize: 11, opacity: 0.65 }}>Lỡ hẹn thì người đặt chê 1 sao{def.regular && ` và giảm ${STORY_ORDER_FRIEND_LOSS} thân thiết`}.</div>}
+        {order.accepted && <div style={{ fontSize: 11, opacity: 0.65 }}>{t('panels_quest.lo_hen_thi_nguoi_dat_che')}{def.regular && t('panels_quest.va_giam_than_thiet', { STORY_ORDER_FRIEND_LOSS })}.</div>}
       </div>
     </>
   );
@@ -172,12 +173,12 @@ function QuestRow({ q, betBadge }: { q: Quest; betBadge?: boolean }) {
         <span style={{ fontSize: 22 }}>{q.icon}</span>
         <div style={{ flex: 1 }}>
           <b>{q.title}</b>
-          {betBadge && <span style={{ background: 'rgba(241,196,15,0.16)', borderRadius: 4, padding: '1px 6px', marginLeft: 6, fontSize: 11, verticalAlign: 'middle' }}>🎯 kèo</span>}
+          {betBadge && <span style={{ background: 'rgba(241,196,15,0.16)', borderRadius: 4, padding: '1px 6px', marginLeft: 6, fontSize: 11, verticalAlign: 'middle' }}>{t('panels_quest.keo')}</span>}
           <div style={{ fontSize: 12, opacity: 0.75 }}>{q.description}</div>
         </div>
         <button style={{ ...btn, background: q.done && !q.claimed ? '#2ecc71' : '#555', color: q.done && !q.claimed ? '#fff' : '#bbb' }}
           disabled={!q.done || q.claimed} onClick={() => claimQuest(q.id)}>
-          {q.claimed ? '✔ Đã nhận' : q.done ? '🎁 Nhận' : 'Chưa xong'}
+          {q.claimed ? t('panels_quest.da_nhan') : q.done ? t('panels_quest.nhan') : t('panels_quest.chua_xong')}
         </button>
       </div>
       <div style={{ height: 7, background: '#555', borderRadius: 4 }}>
@@ -185,7 +186,7 @@ function QuestRow({ q, betBadge }: { q: Quest; betBadge?: boolean }) {
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
         <span>{fmtNum(q.current)} / {fmtNum(q.target)}</span>
-        <span>Thưởng {formatMoney(q.money)}{q.xp ? ` · ${q.xp} XP` : ''}</span>
+        <span>{t('panels_quest.thuong_3')}{' '}{formatMoney(q.money)}{q.xp ? ` · ${q.xp} XP` : ''}</span>
       </div>
     </div>
   );
@@ -210,14 +211,14 @@ function BetCard() {
     const bet = s.questLog.bet!;
     return (
       <div style={{ background: 'rgba(46,204,113,0.18)', borderRadius: 8, padding: '10px 12px', marginBottom: 8, fontSize: 13, border: '2px solid #2ecc71' }}>
-        🎉 trúng kèo +{formatMoney(bet.bonus)} — làm trọn việc chính hôm nay ở mục tiêu ×{fmtMul(bet.tier)}
+        {t('panels_quest.trung_keo')}{formatMoney(bet.bonus)}{' '}{t('panels_quest.lam_tron_viec_chinh_hom_nay')}{fmtMul(bet.tier)}
       </div>
     );
   }
   if (status === 'lost') {
     return (
       <div style={{ background: '#3a3a4d', borderRadius: 8, padding: '10px 12px', marginBottom: 8, fontSize: 13, opacity: 0.6, border: '2px solid #f1c40f' }}>
-        hụt kèo — mai thử lại
+        {t('panels_quest.hut_keo_mai_thu_lai')}
       </div>
     );
   }
@@ -226,8 +227,8 @@ function BetCard() {
   // option vẫn ≥40px cao (minHeight 40), đủ tên kèo + mục tiêu ×N + thưởng thêm X.
   return (
     <div style={{ background: '#3a3a4d', borderRadius: 8, padding: '6px 10px', marginBottom: 8 }}>
-      <b style={{ fontSize: 13 }}>🎯 Đặt kèo hôm nay</b>
-      <div style={{ fontSize: 12, opacity: 0.75, margin: '2px 0 4px' }}>Chốt 1 kèo — làm trọn việc chính hôm nay (đông khách, bán hàng, doanh thu) là nhận thêm, hụt thì không mất gì.</div>
+      <b style={{ fontSize: 13 }}>{t('panels_quest.dat_keo_hom_nay')}</b>
+      <div style={{ fontSize: 12, opacity: 0.75, margin: '2px 0 4px' }}>{t('panels_quest.chot_1_keo_lam_tron_viec')}</div>
       <div style={{ display: 'grid', gap: 4 }}>
         {BET_TIERS.map((t) => <BetOption key={t.tier} tier={t} totalMoney={totalMoney} />)}
       </div>
@@ -248,12 +249,12 @@ function BetPendingCard() {
   return (
     <div style={{ background: '#3a3a4d', borderRadius: 8, padding: '7px 12px', marginBottom: 8, border: '2px solid #f1c40f' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, minHeight: 36, fontSize: 13 }}>
-        <span style={{ flex: 1 }}>🎯 Kèo: <b>{def.name}</b> · thưởng thêm {formatMoney(betBonusMoney(bet.tier, totalMoney))} khi làm trọn việc chính</span>
+        <span style={{ flex: 1 }}>{t('panels_quest.keo_2')}{' '}<b>{def.name}</b>{' '}{t('panels_quest.thuong_them')}{' '}{formatMoney(betBonusMoney(bet.tier, totalMoney))}{' '}{t('panels_quest.khi_lam_tron_viec_chinh')}</span>
         <button style={{ ...btn, background: '#2f2f40', color: '#fff', border: '1px solid #555', minHeight: 36, minWidth: 44, transition: BET_TRANSITION }}
-          onClick={() => setOpen((v) => !v)}>Đổi kèo</button>
+          onClick={() => setOpen((v) => !v)}>{t('panels_quest.doi_keo')}</button>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '4px 0 2px', fontSize: 12 }}>
-        <span style={{ opacity: 0.85, whiteSpace: 'nowrap' }}>Việc chính: <b>{core.done}/{core.total}</b> đã xong{core.allDone ? ' 🎉' : ''}</span>
+        <span style={{ opacity: 0.85, whiteSpace: 'nowrap' }}>{t('panels_quest.viec_chinh')}{' '}<b>{core.done}/{core.total}</b>{' '}{t('panels_quest.da_xong')}{core.allDone ? ' 🎉' : ''}</span>
         <div style={{ flex: 1, height: 6, borderRadius: 3, background: '#2f2f40', overflow: 'hidden' }}>
           <div style={{ height: '100%', width: `${corePct}%`, background: core.allDone ? '#2ecc71' : '#f1c40f', transition: 'width 0.2s ease' }} />
         </div>
@@ -290,7 +291,7 @@ function BetOption({ tier, totalMoney, current }: { tier: BetTier; totalMoney: n
     >
       <span style={{ fontSize: 16 }}>{tier.icon}</span>
       <b>{tier.name}</b>
-      <span style={{ marginLeft: 'auto', fontSize: 11.5, opacity: 0.85 }}>mục tiêu ×{fmtMul(tier.tier)} · thưởng thêm {formatMoney(betBonusMoney(tier.tier, totalMoney))}</span>
+      <span style={{ marginLeft: 'auto', fontSize: 11.5, opacity: 0.85 }}>{t('panels_quest.muc_tieu')}{fmtMul(tier.tier)}{' '}{t('panels_quest.thuong_them')}{' '}{formatMoney(betBonusMoney(tier.tier, totalMoney))}</span>
     </button>
   );
 }
@@ -300,14 +301,14 @@ function DailySetStatus() {
   const p = dailySetProgress(questContext(useGame()));
   if (p.total === 0) return null;
   if (p.allClaimed) {
-    return <div style={{ background: 'rgba(46,204,113,0.22)', borderRadius: 8, padding: '8px 12px', marginBottom: 8, fontSize: 13 }}>🎉 Xong và nhận toàn bộ thưởng hôm nay ({p.done}/{p.total}) — mai về thử bộ mới!</div>;
+    return <div style={{ background: 'rgba(46,204,113,0.22)', borderRadius: 8, padding: '8px 12px', marginBottom: 8, fontSize: 13 }}>{t('panels_quest.xong_va_nhan_toan_bo_thuong')}{p.done}/{p.total}{t('panels_quest.mai_ve_thu_bo_moi')}</div>;
   }
   if (p.allDone) {
-    return <div style={{ background: 'rgba(241,196,15,0.18)', borderRadius: 8, padding: '8px 12px', marginBottom: 8, fontSize: 13 }}>🎉 Xong hết {p.done}/{p.total} việc hôm nay — bấm 🎁 Nhận (hoặc "Nhận tất cả") để lấy thưởng!</div>;
+    return <div style={{ background: 'rgba(241,196,15,0.18)', borderRadius: 8, padding: '8px 12px', marginBottom: 8, fontSize: 13 }}>{t('panels_quest.xong_het')}{' '}{p.done}/{p.total}{' '}{t('panels_quest.viec_hom_nay_bam_nhan_hoac')}</div>;
   }
   return (
     <div style={{ marginBottom: 8, fontSize: 12, opacity: 0.85 }}>
-      ✅ Đã xong <b>{p.done}/{p.total}</b> việc hôm nay ({p.pct}%) — còn <b>{p.total - p.done}</b> là khép trọn cả bộ. 🎯
+      {t('panels_quest.da_xong_2')}{' '}<b>{p.done}/{p.total}</b>{' '}{t('panels_quest.viec_hom_nay')}{p.pct}{t('panels_quest.con')}{' '}<b>{p.total - p.done}</b>{' '}{t('panels_quest.la_khep_tron_ca_bo')}
     </div>
   );
 }
@@ -324,7 +325,7 @@ function QuestEcoNote() {
   if (!isFinite(cap)) return null; // chưa tới trần — không nói gì
   return (
     <div style={{ marginBottom: 8, fontSize: 11.5, opacity: 0.8 }}>
-      💹 Thưởng bộ hôm nay <b>{formatMoney(total)}</b> — neo theo lãi bán hàng gần đây ({formatMoney(avg)}/ngày, tối đa {QUEST_ECO_MULT}×), để việc bán hàng vẫn đáng công.
+      {t('panels_quest.thuong_bo_hom_nay')}{' '}<b>{formatMoney(total)}</b>{' '}{t('panels_quest.neo_theo_lai_ban_hang_gan')}{formatMoney(avg)}{t('panels_quest.ngay_toi_da')}{' '}{QUEST_ECO_MULT}{t('panels_quest.de_viec_ban_hang_van_dang')}
     </div>
   );
 }

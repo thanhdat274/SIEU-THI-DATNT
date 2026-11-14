@@ -2,6 +2,7 @@ import { Suspense, lazy, useEffect } from 'react';
 import { useGame } from '../core/store';
 import { styles, Tabs } from './panels/shared';
 import { hubOf, hubTabs } from './hubs';
+import { t } from '../core/i18n';
 
 // Mỗi bảng là một chunk riêng: chỉ tải khi người chơi mở lần đầu (giữ tải ban đầu nhẹ).
 const BranchPanel = lazy(() => import('./BranchPanel').then((m) => ({ default: m.BranchPanel })));
@@ -130,7 +131,7 @@ export function Panels() {
 export function PanelLoading() {
   return (
     <div style={{ background: '#2b2b3a', color: '#fff', borderRadius: 12, padding: '18px 28px', boxShadow: '0 10px 40px rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.12)' }}>
-      <p role="status" aria-live="polite" style={{ margin: 0, opacity: 0.85, textAlign: 'center' }}>⏳ Đang mở…</p>
+      <p role="status" aria-live="polite" style={{ margin: 0, opacity: 0.85, textAlign: 'center' }}>⏳ {t('common.opening')}</p>
     </div>
   );
 }

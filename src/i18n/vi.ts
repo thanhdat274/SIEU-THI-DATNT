@@ -5,11 +5,13 @@
 import { viLogin } from './vi/login';
 import { viSettings } from './vi/settings';
 import { viHud } from './vi/hud';
+import { viPanelsQuest } from './vi/panels_quest';
 
 export const vi = {
   ...viLogin,
   ...viSettings,
   ...viHud,
+  ...viPanelsQuest,
   'settings.title': '⚙️ Cài đặt',
   'settings.subtitle': 'Hình ảnh, âm thanh, cách chơi, trợ năng',
   'settings.tab.img': '👁 Hình ảnh',
@@ -22,6 +24,7 @@ export const vi = {
   'settings.lang': 'Ngôn ngữ',
   'settings.lang.hint': 'Đổi xong game lưu và tải lại. Bản tiếng Anh đang dịch dần — chỗ chưa dịch vẫn hiện tiếng Việt',
   'common.close': 'Đóng',
+  'common.opening': 'Đang mở…',
   'common.day_one': '{n} ngày',
   'common.day_other': '{n} ngày',
 } as const;
