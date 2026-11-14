@@ -18,6 +18,7 @@ import { viPanelsMorning } from './vi/panels_morning';
 import { viOrder } from './vi/order';
 import { viTrip } from './vi/trip';
 import { viBiz } from './vi/biz';
+import { viBranch } from './vi/branch';
 
 export const vi = {
   ...viLogin,
@@ -36,6 +37,7 @@ export const vi = {
   ...viOrder,
   ...viTrip,
   ...viBiz,
+  ...viBranch,
   'settings.title': '⚙️ Cài đặt',
   'settings.subtitle': 'Hình ảnh, âm thanh, cách chơi, trợ năng',
   'settings.tab.img': '👁 Hình ảnh',

@@ -7,6 +7,6 @@ describe('BranchPanel gom cảnh báo', () => {
   it('không còn dòng ⚠️ rời, có một khung "Cần xử lý"', () => {
     const src = readFileSync(join(__dirname, '../ui/BranchPanel.tsx'), 'utf8');
     expect(src.match(/st\.warn\}>⚠️/g) ?? []).toHaveLength(0);
-    expect(src.match(/Cần xử lý/g)).toHaveLength(1);
+    expect(src.match(/branch.can_xu_ly/g)).toHaveLength(1);
   });
 });

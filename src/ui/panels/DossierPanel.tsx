@@ -6,6 +6,7 @@ import { serviceById } from '../../data/services';
 import { MASTER_BADGES, badgeEarned, type DossierInput } from '../../data/dossier';
 import { CRISIS_DEFS } from '../../data/crisis';
 import { Footer, styles } from './shared';
+import { t } from '../../core/i18n';
 
 /** Hồ sơ tiệm + Huy hiệu thâm niên (GĐ71): chân dung dài hạn gộp mọi bể tiệm. Thuần đọc, không sửa state. */
 export function DossierPanel({ closePanel }: { closePanel: () => void }) {
@@ -28,29 +29,28 @@ export function DossierPanel({ closePanel }: { closePanel: () => void }) {
   const earned = MASTER_BADGES.filter((b) => badgeEarned(d, b));
 
   const facts: [string, string][] = [
-    ['🔝 Cấp tiệm', `Cấp ${level}`],
-    ['🤝 Mối quen cao nhất', `Bậc ${d.supplierTier}`],
-    ['💛 Bậc Tiệm (khách quen)', `Bậc ${d.regularTier} · ${lifetimeRegularVisits(regulars ?? {})} lượt`],
-    ['🛒 Lô chợ phiên', d.fairTaken ? 'Đã lấy' : 'Chưa'],
-    ['🎊 Đón lễ (thưởng mùa)', d.prepClaimed ? 'Đã nhận' : 'Chưa'],
-    ['🧾 Dịch vụ quầy', `${d.servicesOwned} mở · ${d.servicesPaidBack} thu hồi vốn`],
-    ['👥 Phân khúc khách', `${d.demographicsCount} nhóm`],
-    ['🏗️ Công trình hẻm', `${d.landmarkContrib} góp`],
-    ['♻️ Tái sinh NG+', d.prestigeLevel ? `Bậc ${d.prestigeLevel}` : 'Chưa'],
-    ['⚔️ Arc rival', `${d.rivalArcs} đã qua`],
-    ['🌟 Ngày hoàn hảo', `${d.perfectDays} ngày`],
+    [t('branch.cap_tiem'), t('branch.cap', { level })],
+    [t('branch.moi_quen_cao_nhat'), t('branch.bac', { supplierTier: d.supplierTier })],
+    [t('branch.bac_tiem_khach_quen'), t('branch.bac_luot', { regularTier: d.regularTier, v1: lifetimeRegularVisits(regulars ?? {}) })],
+    [t('branch.lo_cho_phien'), d.fairTaken ? t('branch.da_lay') : t('branch.chua')],
+    [t('branch.don_le_thuong_mua'), d.prepClaimed ? t('branch.da_nhan') : t('branch.chua')],
+    [t('branch.dich_vu_quay'), t('branch.mo_thu_hoi_von', { servicesOwned: d.servicesOwned, servicesPaidBack: d.servicesPaidBack })],
+    [t('branch.phan_khuc_khach'), t('branch.nhom', { demographicsCount: d.demographicsCount })],
+    [t('branch.cong_trinh_hem'), t('branch.gop', { landmarkContrib: d.landmarkContrib })],
+    [t('branch.tai_sinh_ng'), d.prestigeLevel ? t('branch.bac_2', { prestigeLevel: d.prestigeLevel }) : t('branch.chua')],
+    ['⚔️ Arc rival', t('branch.da_qua', { rivalArcs: d.rivalArcs })],
+    [t('branch.ngay_hoan_hao'), t('branch.ngay_5', { perfectDays: d.perfectDays })],
   ];
 
   return (
     <div style={{ width: '100%', display: 'flex', flexDirection: 'column', flex: 1 }}>
-      <h2 style={styles.title}>📖 Hồ sơ tiệm</h2>
+      <h2 style={styles.title}>{t('branch.ho_so_tiem')}</h2>
       <p style={styles.sub}>
-        Cả một đời của cửa tiệm gom về một trang. Những dấu ấn dài hạn bạn đã gây được — và 4 huy hiệu thâm niên,
-        mỗi cái chỉ đạt khi giữ nhiều hệ cùng sống. Huy hiệu là danh dự, không đổi tiền — đích để nâng cấp xuyên cả ván.
+        {t('branch.ca_mot_doi_cua_cua_tiem')}
       </p>
 
       <div style={{ ...styles.card, display: 'block' }}>
-        <b>🖼️ Chân dung dài hạn</b>
+        <b>{t('branch.chan_dung_dai_han')}</b>
         <div style={{ display: 'grid', gap: 3, marginTop: 6 }}>
           {facts.map(([k, v]) => (
             <div key={k} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, opacity: 0.92 }}>
@@ -63,7 +63,7 @@ export function DossierPanel({ closePanel }: { closePanel: () => void }) {
       <div style={{ display: 'grid', gap: 6, marginTop: 6 }}>
         {/* Hệ8-L4 — huy hiệu "vượt khó": từng đợt biến cố dài đã vượt qua. Không cho Năm yên ả (đã tắt). */}
         <div style={{ ...styles.card, display: 'block' }}>
-          <b>🚧 Huy hiệu vượt khó (Biến cố dài)</b>
+          <b>{t('branch.huy_hieu_vuot_kho_bien_co')}</b>
           {CRISIS_DEFS.length === 0 ? null : (
             <div style={{ display: 'grid', gap: 3, marginTop: 6 }}>
               {CRISIS_DEFS.map((d) => {
@@ -71,19 +71,19 @@ export function DossierPanel({ closePanel }: { closePanel: () => void }) {
                 return (
                   <div key={d.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, opacity: on ? 1 : 0.55 }}>
                     <span>{on ? `${d.icon} ${d.name}` : `○ ${d.name}`}</span>
-                    <b>{on ? '✅ Vượt qua' : 'Chưa trải qua'}</b>
+                    <b>{on ? t('branch.vuot_qua') : t('branch.chua_trai_qua')}</b>
                   </div>
                 );
               })}
             </div>
           )}
           <p style={{ fontSize: 11, marginTop: 4, opacity: 0.75 }}>
-            Mỗi đợt biến cố dài bình tĩnh vượt qua là một dấu ấn. Chọn "Năm yên ả" thì không có huy hiệu này.
+            {t('branch.moi_dot_bien_co_dai_binh')}
           </p>
           {/* Hệ8-L8 (SPEC-CHIEU-RONG §8.3) — tuỳ chọn "Năm yên ả": tắt hẳn biến cố dài, đổi lại không huy hiệu. */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: 6, paddingTop: 6, borderTop: '1px dashed rgba(255,255,255,0.12)' }}>
             <span style={{ fontSize: 12 }}>
-              🌿 <b>Năm yên ả</b> — tạm ngừng biến cố dài cho người chơi nhẹ nhàng. Mở lại bất cứ lúc nào.
+              🌿 <b>{t('branch.nam_yen_a')}</b>{' '}{t('branch.tam_ngung_bien_co_dai_cho')}
             </span>
             <button
               style={styles.btn}
@@ -93,7 +93,7 @@ export function DossierPanel({ closePanel }: { closePanel: () => void }) {
                 setCalmLocal(next);
               }}
             >
-              {(calmLocal ?? biz.calmYears ?? false) ? 'Đang bật ✓' : 'Đang tắt'}
+              {(calmLocal ?? biz.calmYears ?? false) ? t('branch.dang_bat') : t('branch.dang_tat')}
             </button>
           </div>
         </div>
@@ -117,7 +117,7 @@ export function DossierPanel({ closePanel }: { closePanel: () => void }) {
             </div>
           );
         })}
-        <p style={styles.sub}>Đã đạt {earned.length}/4 huy hiệu thâm niên — danh hiệu {earned.length === 4 ? 'Huyền Thoại Hẻm 🏆' : 'còn chờ bạn vun đắp nhiều hệ hơn'}.</p>
+        <p style={styles.sub}>{t('branch.da_dat')}{' '}{earned.length}{t('branch.4_huy_hieu_tham_nien_danh')}{' '}{earned.length === 4 ? t('branch.huyen_thoai_hem') : t('branch.con_cho_ban_vun_dap_nhieu')}.</p>
       </div>
 
       <Footer onClose={closePanel} />
