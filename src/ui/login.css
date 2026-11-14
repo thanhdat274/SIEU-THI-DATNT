@@ -509,3 +509,17 @@
 .lm-points { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .lm-points li { display: flex; flex-direction: column; gap: 2px; font-size: 13px; background: #fff3d6; border-radius: 10px; padding: 8px 10px; }
 @media (max-width: 480px) { .lm-points { grid-template-columns: 1fr; } }
+
+/* Hộp thoại Chơi mới (đặt tên tiệm khi mở ván) */
+.ng-overlay { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 16px; background: rgba(30, 26, 20, .45); backdrop-filter: blur(4px); }
+.ng-dialog { width: min(480px, 100%); max-height: calc(100vh - 32px); overflow: auto; box-sizing: border-box; display: flex; flex-direction: column; gap: 10px; padding: 18px; border: 2px solid var(--ink); border-radius: 16px; background: #fffdf7; box-shadow: 0 6px 0 var(--ink); }
+.ng-head { display: flex; align-items: center; gap: 12px; }
+.ng-head h2 { margin: 0; font-size: 19px; }
+.ng-icon { font-size: 26px; width: 44px; height: 44px; display: grid; place-items: center; border-radius: 12px; background: var(--letter); border: 2px solid var(--ink); flex: none; }
+.ng-close { margin-left: auto; align-self: flex-start; width: 32px; height: 32px; border: 2px solid var(--ink); border-radius: 8px; background: #fff; cursor: pointer; font-size: 14px; }
+.ng-story { border-left: 4px solid #3f8f5a; background: #eef7ef; border-radius: 10px; padding: 10px 12px; }
+.ng-story small { font-size: 11px; letter-spacing: .12em; font-weight: 700; color: #3f8f5a; }
+.ng-story p { margin: 4px 0 0; font-size: 14px; line-height: 1.55; color: #3c4350; }
+.ng-label { font-weight: 700; font-size: 14px; margin-top: 4px; }
+.ng-input { font-size: 16px; padding: 10px 12px; }
+.login-btn.danger { background: #d64545; color: #fff; }

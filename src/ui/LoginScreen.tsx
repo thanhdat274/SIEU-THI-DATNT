@@ -14,6 +14,7 @@ import { recordConsent } from '../net/consent';
 import { allConsentsGiven, CONSENT_SCOPES, type ConsentScope } from '../net/consentPolicy';
 import { PrivacyPolicy } from './PrivacyPolicy';
 import { LoginMenu, NameField } from './LoginMenu';
+import { NewGameDialog } from './NewGameDialog';
 import { loadPlayerName } from '../data/playerName';
 import { t } from '../core/i18n';
 import './login.css';
@@ -63,6 +64,8 @@ export function LoginScreen() {
   /** Đồng ý xử lý dữ liệu (Luật 91/2025): khoá nút Google tới khi tick + đọc Chính sách. */
   const [consents, setConsents] = useState<Partial<Record<ConsentScope, boolean>>>({});
   const [showPrivacy, setShowPrivacy] = useState(false);
+  /** Hộp thoại Chơi mới (đặt tên tiệm). */
+  const [newGame, setNewGame] = useState(false);
   /** Đặt cờ này trước khi mở popup Google; khi `account` có (watchUser) thì ghi bằng chứng đồng ý. */
   const pendingConsent = useRef(false);
   /** Cả máy và cloud đều có bản lưu khác nhau: cho người chơi chọn. */
@@ -238,21 +241,31 @@ export function LoginScreen() {
               >
                 <GoogleMark />{' '}{t('login.dang_nhap_bang_google')}
               </button>
-              <button className="login-btn" disabled={busy} onClick={enterAsGuest}>
-                {localSummary ? t('login.choi_tiep_trong_may_ngay', { day: localSummary.day }) : t('login.choi_khong_can_dang_nhap')}
-              </button>
+              {localSummary ? (
+                <div className="login-row">
+                  <button className="login-btn small" disabled={busy} onClick={enterAsGuest}>
+                    {t('login.choi_tiep_trong_may_ngay', { day: localSummary.day })}
+                  </button>
+                  <button className="login-btn small" disabled={busy} onClick={() => setNewGame(true)}>{t('login.ng_choi_moi')}</button>
+                </div>
+              ) : (
+                <button className="login-btn" disabled={busy} onClick={() => setNewGame(true)}>{t('login.choi_khong_can_dang_nhap')}</button>
+              )}
               <p className="login-muted login-coop-hint">{t('login.muon_choi_chung_voi_ban_be')}</p>
             </>
           )}
 
           {error && <p className="login-error">{error}</p>}
-          {!choice && <NameField />}
+          {!choice && account && <NameField />}
           <LoginMenu />
         </section>
       </div>
       {/* Bảng hẻm online tách riêng thẻ đăng nhập: nhiều hẻm không đấy thông tin đăng nhập */}
       {account && !choice && (
         <Suspense fallback={null}><AlleyPanel busy={busy} run={run} onEnter={startGame} /></Suspense>
+      )}
+      {newGame && (
+        <NewGameDialog hasSave={!!localSummary} saveDay={localSummary?.day} onClose={() => setNewGame(false)} onStart={startGame} />
       )}
       {showPrivacy && <PrivacyPolicy onClose={() => setShowPrivacy(false)} />}
     </div>
