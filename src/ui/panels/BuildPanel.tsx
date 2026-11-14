@@ -22,26 +22,27 @@ import { formatMoney } from '../../data/products';
 import { shortLabel } from '../shortLabel';
 import { newUnlockMark, shelfBuyHint, storeMissRevenue } from '../../data/advice';
 import { Callout, Footer, Swatch, styles, Tabs } from './shared';
+import { t } from '../../core/i18n';
 
 export function BuildPanel() {
   const [tab, setTab] = useState<'furniture' | 'paint' | 'expand' | 'ads'>('furniture');
   const setBuildMode = useGame((s) => s.setBuildMode);
   const tabs = [
-    ['furniture', '🪑 Nội thất'],
-    ['paint', '🎨 Sơn sửa'],
-    ['expand', '🏗️ Mở rộng tiệm'],
-    ['ads', '📣 Quảng cáo'],
+    ['furniture', t('build.noi_that')],
+    ['paint', t('build.son_sua')],
+    ['expand', t('build.mo_rong_tiem')],
+    ['ads', t('build.quang_cao')],
   ] as const;
   return (
     <>
-      <h2 style={styles.title}>🛠️ Xây dựng</h2>
+      <h2 style={styles.title}>{t('build.xay_dung')}</h2>
       <Tabs tabs={tabs} value={tab} onChange={setTab} />
       {tab === 'furniture' && <FurnitureTab />}
       {tab === 'paint' && <PaintTab />}
       {tab === 'expand' && <ExpandTab />}
       {tab === 'ads' && <AdsTab />}
-      <Footer onClose={() => useGame.setState({ panel: null })} closeLabel="Di chuyển đồ có sẵn">
-        <button style={styles.btn} onClick={() => setBuildMode(false)}>Thoát chế độ xây</button>
+      <Footer onClose={() => useGame.setState({ panel: null })} closeLabel={t('build.di_chuyen_do_co_san')}>
+        <button style={styles.btn} onClick={() => setBuildMode(false)}>{t('build.thoat_che_do_xay')}</button>
       </Footer>
     </>
   );
@@ -79,16 +80,16 @@ export function FurnitureTab() {
   return (
     <>
       <p style={styles.sub}>
-        Chọn món để đặt vào tiệm. "Thử" để đặt xem trước, ưng mới trả tiền. Bấm "Di chuyển đồ có sẵn" rồi bấm vào đồ để dời, cất kho (giữ nguyên giá trị) hoặc bán (nhận lại 50%).
+        {t('build.chon_mon_de_dat_vao_tiem')}
       </p>
       {stashed.length > 0 && (
         <div style={{ marginBottom: 10 }}>
-          <b>📦 Kho đồ</b>
+          <b>{t('build.kho_do')}</b>
           <div style={{ display: 'grid', gap: 6, marginTop: 6 }}>
             {stashed.map(([type, n]) => (
               <div key={type} style={styles.card}>
                 <div style={{ flex: 1 }}><b>{furnitureDef(type).name}</b> × {n}</div>
-                <button style={styles.btn} onClick={() => setPlacing({ type, rot: 0, source: 'stash' })}>Lấy ra đặt</button>
+                <button style={styles.btn} onClick={() => setPlacing({ type, rot: 0, source: 'stash' })}>{t('build.lay_ra_dat')}</button>
               </div>
             ))}
           </div>
@@ -96,20 +97,20 @@ export function FurnitureTab() {
       )}
       {hint && (
         <Callout tone={hint.kind === 'shelf' ? 'ok' : 'info'} style={{ marginBottom: 8 }}
-          title={hint.kind === 'shelf' ? '💡 Mua thêm kệ hôm nay đáng' : '💡 Mua thêm kệ hôm nay chưa giúp'}>
+          title={hint.kind === 'shelf' ? t('build.mua_them_ke_hom_nay_dang') : t('build.mua_them_ke_hom_nay_chua')}>
           <div style={{ marginTop: 2, fontSize: 12 }}>{hint.line}</div>
         </Callout>
       )}
       {coldLine && (
-        <Callout tone="warn" style={{ marginBottom: 8 }} title="🥩 Chuỗi lạnh Khu thịt cá">
+        <Callout tone="warn" style={{ marginBottom: 8 }} title={t('build.chuoi_lanh_khu_thit_ca')}>
           <div style={{ marginTop: 2, fontSize: 12 }}>{coldLine}</div>
         </Callout>
       )}
       {level > 30 && (
         <div style={{ fontSize: 12, opacity: 0.85, margin: '4px 0 8px' }}>
-          🏺 Bộ Đồ Việt: {vietSetCount(furniture)}/{VIET_SET.length} món
-          {' · '}mốc {VIET_SET_TIERS.map(([n, b]) => `${n} món +${b}🩷`).join(', ')}
-          {vietSetDecorBonus(furniture) > 0 && <b> · đang +{vietSetDecorBonus(furniture)}🩷</b>}
+          {t('build.bo_do_viet')}{' '}{vietSetCount(furniture)}/{VIET_SET.length}{' '}{t('build.mon')}
+          {' · '}{t('build.moc')}{' '}{VIET_SET_TIERS.map(([n, b]) => t('build.mon_2', { n, b })).join(', ')}
+          {vietSetDecorBonus(furniture) > 0 && <b>{' '}{t('build.dang')}{vietSetDecorBonus(furniture)}🩷</b>}
         </div>
       )}
       {level > 30 && decorInfo.decorScore > 0 && (
@@ -141,14 +142,14 @@ export function FurnitureTab() {
                 {buyPayoff && <div style={{ fontSize: 12, color: '#9ecbff', opacity: 0.9 }}>{buyPayoff}</div>}
               </div>
               {locked ? (
-                <span style={{ fontSize: 12 }}>{f.unlock > level ? `🔒 Cấp ${f.unlock}` : `🗓 Chỉ bán dịp ${festivalShopName(f)}`}</span>
+                <span style={{ fontSize: 12 }}>{f.unlock > level ? t('build.cap', { unlock: f.unlock }) : t('build.chi_ban_dip', { v0: festivalShopName(f) })}</span>
               ) : (
                 <>
-                  <button style={styles.btn} title="Đặt xem trước, chưa trả tiền" onClick={() => setPlacing({ type: f.type, rot: 0, source: 'trial' })}>
-                    Thử
+                  <button style={styles.btn} title={t('build.dat_xem_truoc_chua_tra_tien')} onClick={() => setPlacing({ type: f.type, rot: 0, source: 'trial' })}>
+                    {t('build.thu')}
                   </button>
                   <button style={styles.btn} disabled={money < f.price} onClick={() => setPlacing({ type: f.type, rot: 0 })}>
-                    {shortLabel('Chọn', f.price, money)}
+                    {shortLabel(t('build.chon'), f.price, money)}
                   </button>
                 </>
               )}
@@ -160,9 +161,9 @@ export function FurnitureTab() {
         <button
           style={{ ...styles.btn, marginLeft: 0, background: '#e74c3c', color: '#fff' }}
           disabled={!furniture.length}
-          onClick={() => { void askConfirm('Đập hết nội thất trong tiệm? Nhận lại 50% tiền, hàng trên kệ về kho.', { danger: true, okLabel: 'Đập hết' }).then((ok) => ok && demolishAll()); }}
+          onClick={() => { void askConfirm(t('build.dap_het_noi_that_trong_tiem'), { danger: true, okLabel: t('build.dap_het') }).then((ok) => ok && demolishAll()); }}
         >
-          🔨 Đập hết, xây lại từ đầu
+          {t('build.dap_het_xay_lai_tu_dau')}
         </button>
       </div>
     </>
@@ -177,9 +178,9 @@ export function PaintTab() {
   const [name, setName] = useState(shopName);
   const [pick, setPick] = useState<Partial<ShopStyle>>({});
   const rows = [
-    { part: 'wall', label: 'Màu tường', swatches: WALL_COLORS },
-    { part: 'floor', label: 'Sàn nhà', swatches: FLOOR_COLORS },
-    { part: 'roof', label: 'Màu mái', swatches: ROOF_COLORS },
+    { part: 'wall', label: t('build.mau_tuong'), swatches: WALL_COLORS },
+    { part: 'floor', label: t('build.san_nha'), swatches: FLOOR_COLORS },
+    { part: 'roof', label: t('build.mau_mai'), swatches: ROOF_COLORS },
   ] as const;
   const look = { ...style, ...pick };
   const changed = rows.filter((r) => pick[r.part] !== undefined && pick[r.part] !== style[r.part]).map((r) => r.part);
@@ -205,24 +206,24 @@ export function PaintTab() {
 
   return (
     <>
-      <p style={styles.sub}>Chọn màu để xem thử, ưng thì bấm "Xác nhận sơn". Mỗi phần sơn lại: {formatMoney(PAINT_PRICE)}.</p>
+      <p style={styles.sub}>{t('build.chon_mau_de_xem_thu_ung')}{' '}{formatMoney(PAINT_PRICE)}.</p>
       {/* Biển hiệu tên tiệm: đặt lại miễn phí bao nhiêu lần cũng được */}
       <div style={{ display: 'flex', gap: 6, alignItems: 'center', margin: '8px 0' }}>
-        <b>🏪 Tên tiệm</b>
+        <b>{t('build.ten_tiem')}</b>
         <input
           value={name}
           maxLength={24}
           onChange={(e) => setName(e.target.value)}
-          placeholder="Tạp Hóa Đầu Ngõ"
+          placeholder={t('build.tap_hoa_dau_ngo')}
           style={{ flex: 1, minWidth: 0, padding: '6px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.25)', color: '#fff', font: 'inherit' }}
         />
-        <button style={{ ...styles.btn, marginLeft: 0, opacity: name.trim() === shopName ? 0.5 : 1 }} disabled={name.trim() === shopName} onClick={() => setShopName(name)}>Đổi tên</button>
+        <button style={{ ...styles.btn, marginLeft: 0, opacity: name.trim() === shopName ? 0.5 : 1 }} disabled={name.trim() === shopName} onClick={() => setShopName(name)}>{t('build.doi_ten')}</button>
       </div>
       <ShopPreview style={look} />
       {rows.map((row) => (
         <div key={row.part} style={{ margin: '10px 0' }}>
           <b>{row.label}</b>
-          {pick[row.part] !== undefined && <span style={{ fontSize: 12, color: '#f1c40f' }}> · đang xem thử</span>}
+          {pick[row.part] !== undefined && <span style={{ fontSize: 12, color: '#f1c40f' }}>{' '}{t('build.dang_xem_thu')}</span>}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
             {row.swatches.map((sw) => {
               const current = style[row.part] === sw.color;
@@ -230,7 +231,7 @@ export function PaintTab() {
               return (
                 <button
                   key={sw.color}
-                  title={current ? `${sw.name} (đang dùng)` : sw.name}
+                  title={current ? t('build.dang_dung', { name: sw.name }) : sw.name}
                   aria-pressed={chosen}
                   onClick={() => choose(row.part, sw.color)}
                   style={{
@@ -247,16 +248,16 @@ export function PaintTab() {
       ))}
       <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginTop: 12 }}>
         <span style={{ flex: 1, fontSize: 13, opacity: 0.8 }}>
-          {changed.length ? `Sơn lại ${changed.length} phần: ${formatMoney(cost)}` : 'Chưa đổi màu nào'}
-          {cost > money && <b style={{ color: '#ff7675' }}> · không đủ tiền</b>}
+          {changed.length ? t('build.son_lai_phan', { length: changed.length, v1: formatMoney(cost) }) : t('build.chua_doi_mau_nao')}
+          {cost > money && <b style={{ color: '#ff7675' }}>{' '}{t('build.khong_du_tien')}</b>}
         </span>
-        <button style={{ ...styles.btn, marginLeft: 0 }} disabled={!Object.keys(pick).length} onClick={() => setPick({})}>Về màu cũ</button>
+        <button style={{ ...styles.btn, marginLeft: 0 }} disabled={!Object.keys(pick).length} onClick={() => setPick({})}>{t('build.ve_mau_cu')}</button>
         <button
           style={{ ...styles.btn, marginLeft: 0, background: '#f1c40f', color: '#222', fontWeight: 700 }}
           disabled={!changed.length || cost > money}
           onClick={confirmPaint}
         >
-          ✓ Xác nhận sơn
+          {t('build.xac_nhan_son')}
         </button>
       </div>
       <ZonePaintSection />
@@ -274,17 +275,17 @@ function ZonePaintSection() {
   const [dep, setDep] = useState<string | null>(null);
   if (shopTier < DEPT_ECON_FROM_TIER) return null;
   const list = activeDepartments(furniture, shopTier);
-  if (!list.length) return <p style={styles.sub}>🏬 Sơn theo khu: đặt nội thất chủ chốt để mở khu siêu thị.</p>;
+  if (!list.length) return <p style={styles.sub}>{t('build.son_theo_khu_dat_noi_that')}</p>;
   const cur = list.find((d) => d.id === dep) ?? list[0];
   const zp = zonePaint[cur.id] ?? {};
   const rows = [
-    { part: 'floor', label: 'Nền khu', swatches: FLOOR_COLORS },
-    { part: 'wall', label: 'Vách ngăn khu', swatches: WALL_COLORS },
+    { part: 'floor', label: t('build.nen_khu'), swatches: FLOOR_COLORS },
+    { part: 'wall', label: t('build.vach_ngan_khu'), swatches: WALL_COLORS },
   ] as const;
   return (
     <div style={{ marginTop: 14 }}>
-      <b>🏬 Sơn theo khu</b>
-      <p style={styles.sub}>Mỗi khu sơn riêng nền & vách ngăn ({formatMoney(PAINT_PRICE)}/lần). Đặt vách ngăn quanh khu thì khu thêm 🩷.</p>
+      <b>{t('build.son_theo_khu')}</b>
+      <p style={styles.sub}>Mỗi khu sơn riêng nền & vách ngăn ({formatMoney(PAINT_PRICE)}{t('build.lan_dat_vach_ngan_quanh_khu')}</p>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
         {list.map((d) => (
           <button key={d.id} aria-pressed={d.id === cur.id} onClick={() => setDep(d.id)}
@@ -315,7 +316,7 @@ function ZonePaintSection() {
 export function ShopPreview({ style }: { style: ShopStyle }) {
   const hex = (c: number) => `#${c.toString(16).padStart(6, '0')}`;
   return (
-    <svg viewBox="0 0 200 120" style={{ width: '100%', maxWidth: 260, display: 'block', margin: '4px auto 8px', borderRadius: 10, background: '#8ec5ea' }} aria-label="Xem thử màu tiệm">
+    <svg viewBox="0 0 200 120" style={{ width: '100%', maxWidth: 260, display: 'block', margin: '4px auto 8px', borderRadius: 10, background: '#8ec5ea' }} aria-label={t('build.xem_thu_mau_tiem')}>
       <rect x="0" y="100" width="200" height="20" fill="#7cb05a" />
       <polygon points="30,52 100,18 170,52" fill={hex(style.roof)} stroke="rgba(0,0,0,0.25)" />
       <rect x="40" y="52" width="120" height="50" fill={hex(style.wall)} stroke="rgba(0,0,0,0.2)" />
@@ -323,7 +324,7 @@ export function ShopPreview({ style }: { style: ShopStyle }) {
       <rect x="52" y="64" width="22" height="18" fill="#bfe3f5" stroke="#fff" strokeWidth="2" />
       <rect x="126" y="64" width="22" height="18" fill="#bfe3f5" stroke="#fff" strokeWidth="2" />
       <rect x="66" y="40" width="68" height="12" rx="2" fill="#1d4f91" />
-      <text x="100" y="49" fontSize="8" fontWeight="700" textAnchor="middle" fill="#ffd23f">TẠP HÓA</text>
+      <text x="100" y="49" fontSize="8" fontWeight="700" textAnchor="middle" fill="#ffd23f">{t('build.tap_hoa')}</text>
     </svg>
   );
 }
@@ -339,14 +340,14 @@ export function ExpandTab() {
       ? Math.round(recent.reduce((s, d) => s + d.revenue, 0) / recent.length)
       : null;
   const spaceVerdict = (pct: number) =>
-    pct < 50 ? 'còn nhiều chỗ trống, chưa vội mở rộng' : pct >= 80 ? 'sắp chật, mở để bày thêm' : 'vừa đà';
+    pct < 50 ? t('build.con_nhieu_cho_trong_chua_voi') : pct >= 80 ? t('build.sap_chat_mo_de_bay_them') : t('build.vua_da');
   return (
     <>
       <p style={styles.sub}>
-        Mở rộng thì mặt tiền giữ nguyên, tiệm nới ra phía sau và hai bên. Đồ đạc giữ nguyên chỗ. Thợ làm qua đêm.
+        {t('build.mo_rong_thi_mat_tien_giu')}
       </p>
       <div style={{ fontSize: 13, margin: '0 0 10px' }}>
-        💰 Tiền nhà bây giờ: <b style={{ color: '#f1c40f' }}>{formatMoney(rentNow)}/ngày</b>
+        {t('build.tien_nha_bay_gio')}{' '}<b style={{ color: '#f1c40f' }}>{formatMoney(rentNow)}{t('build.ngay')}</b>
       </div>
       {(() => {
         const hasCart = furniture.some((f) => f.type === 'cartStation');
@@ -358,53 +359,53 @@ export function ExpandTab() {
         return null;
       })()}
       <div style={{ display: 'grid', gap: 8 }}>
-        {SHOP_TIERS.map((t, i) => {
+        {SHOP_TIERS.map((tier, i) => {
           const done = i <= shopTier;
           const next = i === shopTier + 1;
           const ahead = i > shopTier;
           const rentThen = rentOf(i);
           const rentUp = rentDelta(shopTier, i);
-          const usePct = spaceUsePct(furniture, i, shopFootprint(i, extraTilesAll).depth - t.depth);
+          const usePct = spaceUsePct(furniture, i, shopFootprint(i, extraTilesAll).depth - tier.depth);
           return (
-            <div key={t.name} style={{ ...styles.card, opacity: done || next ? 1 : 0.5 }}>
+            <div key={tier.name} style={{ ...styles.card, opacity: done || next ? 1 : 0.5 }}>
               <div style={{ flex: 1 }}>
-                <b>{t.name}</b> · {t.width}×{t.depth}m
+                <b>{tier.name}</b> · {tier.width}×{tier.depth}m
                 <div style={{ fontSize: 12, opacity: 0.75 }}>
-                  {i === 0 ? 'Khởi đầu' : `${formatMoney(t.price)} · cần cấp ${t.unlock}`}
+                  {i === 0 ? t('build.khoi_dau') : t('build.can_cap', { v0: formatMoney(tier.price), unlock: tier.unlock })}
                 </div>
                 {i === shopTier && (
                   <div style={{ fontSize: 12, marginTop: 2 }}>
-                    Tiền nhà hiện tại: <b style={{ color: '#f1c40f' }}>{formatMoney(rentNow)}/ngày</b>
-                    {' · '}Mặt bằng đang dùng ~{usePct}% — {spaceVerdict(usePct)}.
+                    {t('build.tien_nha_hien_tai')}{' '}<b style={{ color: '#f1c40f' }}>{formatMoney(rentNow)}{t('build.ngay')}</b>
+                    {' · '}{t('build.mat_bang_dang_dung')}{usePct}% — {spaceVerdict(usePct)}.
                   </div>
                 )}
                 {ahead && (
                   <div style={{ fontSize: 12, marginTop: 2 }}>
-                    Tiền nhà lên <b style={{ color: '#f1c40f' }}>{formatMoney(rentThen)}/ngày</b>
+                    {t('build.tien_nha_len')}{' '}<b style={{ color: '#f1c40f' }}>{formatMoney(rentThen)}{t('build.ngay')}</b>
                     {' '}(+<b style={{ color: '#f1c40f' }}>{formatMoney(rentUp)}</b>
-                    {' — '}30 ngày ~+{formatMoney(rentUp * 30)}), chưa kể thuê thợ.
+                    {' — '}{t('build.30_ngay')}{formatMoney(rentUp * 30)}{t('build.chua_ke_thue_tho')}
                     <div style={{ opacity: 0.75 }}>
-                      Đồ hiện tại chiếm ~{usePct}% — {spaceVerdict(usePct)}.
+                      {t('build.do_hien_tai_chiem')}{usePct}% — {spaceVerdict(usePct)}.
                     </div>
                     {next && avgRev7 !== null && (
                       <div style={{ opacity: 0.75 }}>
-                        Tiền nhà mới ≈ {Math.round((rentThen / avgRev7) * 100)}% doanh thu bình quân 7 ngày.
+                        {t('build.tien_nha_moi')}{' '}{Math.round((rentThen / avgRev7) * 100)}{t('build.doanh_thu_binh_quan_7_ngay')}
                       </div>
                     )}
                     {departmentsUnlockedAtTier(i).length > 0 && (
                       <div style={{ color: '#55efc4', opacity: 0.9 }}>
-                        🆕 Mở ngành: {departmentsUnlockedAtTier(i).map((d) => `${d.icon} ${d.name}`).join(' · ')}
+                        {t('build.mo_nganh')}{' '}{departmentsUnlockedAtTier(i).map((d) => `${d.icon} ${d.name}`).join(' · ')}
                       </div>
                     )}
                   </div>
                 )}
               </div>
-              {done && <span>{i === shopTier ? '📍 Hiện tại' : '✅'}</span>}
-              {next && pendingUpgrade && <span>🏗️ Đang thi công</span>}
+              {done && <span>{i === shopTier ? t('build.hien_tai') : '✅'}</span>}
+              {next && pendingUpgrade && <span>{t('build.dang_thi_cong')}</span>}
               {next && !pendingUpgrade && (
-                level < t.unlock
-                  ? <span style={{ fontSize: 12 }}>🔒 Cấp {t.unlock}</span>
-                  : <button style={styles.btn} disabled={money < t.price} onClick={buyUpgrade}>{shortLabel('Thuê thợ', t.price, money)}</button>
+                level < tier.unlock
+                  ? <span style={{ fontSize: 12 }}>{t('build.cap_2')}{' '}{tier.unlock}</span>
+                  : <button style={styles.btn} disabled={money < tier.price} onClick={buyUpgrade}>{shortLabel(t('build.thue_tho'), tier.price, money)}</button>
               )}
             </div>
           );
@@ -428,11 +429,11 @@ function ExpansionTiles() {
   return (
     <div style={{ ...styles.card, marginTop: 8 }}>
       <div style={{ flex: 1 }}>
-        <b>🧱 Ô mở rộng</b> · {extraTiles}/{EXPANSION_TILE_CAP} ô · khuôn {fp.width}×{fp.depth}m
-        <div style={{ fontSize: 12, opacity: 0.75 }}>Mỗi ô nới tiệm sâu thêm 1 m về phía sau, nối liền tường sau.</div>
+        <b>{t('build.o_mo_rong')}</b> · {extraTiles}/{EXPANSION_TILE_CAP}{' '}{t('build.o_khuon')}{' '}{fp.width}×{fp.depth}m
+        <div style={{ fontSize: 12, opacity: 0.75 }}>{t('build.moi_o_noi_tiem_sau_them')}</div>
       </div>
       {block ? <span style={{ fontSize: 12 }}>{block}</span>
-        : <button style={styles.btn} disabled={money < expansionTilePrice(k)} onClick={buy}>{shortLabel(`Mở ô ${k}`, expansionTilePrice(k), money)}</button>}
+        : <button style={styles.btn} disabled={money < expansionTilePrice(k)} onClick={buy}>{shortLabel(t('build.mo_o', { k }), expansionTilePrice(k), money)}</button>}
     </div>
   );
 }
@@ -452,15 +453,15 @@ export function AdsTab() {
   const boostToday = adBoost(ad, day);
   return (
     <>
-      <p style={styles.sub}>Bỏ tiền quảng cáo để dân hẻm biết tiệm: tờ rơi / băng rôn / "tiếng lành" kéo thêm khách đi đường trong vài ngày (giá trị như điểm trang trí 🩷). Mở từ cấp 42.</p>
+      <p style={styles.sub}>{t('build.bo_tien_quang_cao_de_dan')}</p>
       {ad && (() => {
         const adef = adById(ad.defId);
         return (
           <div style={{ ...styles.card, marginBottom: 8, background: 'rgba(241,196,15,.10)' }}>
-            <b>📣 Đang chạy: {adef?.name ?? ad.defId}</b> · tới ngày {ad.until}
-            {boostToday > 0 && <span style={{ color: '#f1c40f' }}> · hôm nay +{boostToday}🩷 hút khách</span>}
+            <b>{t('build.dang_chay')}{' '}{adef?.name ?? ad.defId}</b>{' '}{t('build.toi_ngay')}{' '}{ad.until}
+            {boostToday > 0 && <span style={{ color: '#f1c40f' }}>{' '}{t('build.hom_nay')}{boostToday}{t('build.hut_khach')}</span>}
             {boostToday > 0 && adef && (
-              <div style={{ fontSize: 11, marginTop: 2, color: '#9ecbff' }} title="Tính theo phí chi tiêu bình quân thật của hôm nay (doanh thu / số khách).">{adTodayLine(adef, stars, level, avgPerVisit)}</div>
+              <div style={{ fontSize: 11, marginTop: 2, color: '#9ecbff' }} title={t('build.tinh_theo_phi_chi_tieu_binh')}>{adTodayLine(adef, stars, level, avgPerVisit)}</div>
             )}
           </div>
         );
@@ -476,7 +477,7 @@ export function AdsTab() {
               <div style={{ fontSize: 12, color: '#9ecbff' }}>{adPayoffLine(p)}</div>
             </div>
             <button style={styles.btn} disabled={active || money < def.cost} onClick={() => buyAd(def.id)}>
-              {active ? 'Đang chạy' : shortLabel('Chạy', def.cost, money)}
+              {active ? t('build.dang_chay_2') : shortLabel(t('build.chay'), def.cost, money)}
             </button>
           </div>
         );
@@ -484,7 +485,7 @@ export function AdsTab() {
       {ADS.filter((a) => a.unlock > level).map((def) => (
         <div key={def.id} style={{ ...styles.card, opacity: 0.5 }}>
           <b>{def.icon} {def.name}</b> · {formatMoney(def.cost)}
-          <span style={{ fontSize: 12 }}> 🔒 Cấp {def.unlock}</span>
+          <span style={{ fontSize: 12 }}>{' '}{t('build.cap_2')}{' '}{def.unlock}</span>
         </div>
       ))}
     </>
