@@ -14,6 +14,7 @@ import { rivalBuyPayoff } from '../../data/rivalBuyPayoff';
 import { counterStreakInfo } from '../../data/counterStreak';
 import { summarizeDemographics, adReach, adTargetSuggest } from '../../data/demographics';
 import { card, title, pill, iconTile, btn, sub, row } from './businessStyles';
+import { t } from '../../core/i18n';
 
 /** Tab Cạnh tranh: đối thủ, quảng cáo, tích điểm (tách từ BusinessPanel, GĐ876). */
 export function Market() {
@@ -57,16 +58,16 @@ export function Market() {
     <>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(260px, 100%), 1fr))', gap: 8 }}>
       <div style={{ ...card, marginBottom: 0 }}>
-        <div style={title}>⚔️ Tiệm đối thủ</div>
-        {level < RIVAL_UNLOCK ? <div style={sub}>Từ cấp {RIVAL_UNLOCK} sẽ có tiệm khác mở cạnh tranh trong hẻm.</div>
+        <div style={title}>{t('market.tiem_doi_thu')}</div>
+        {level < RIVAL_UNLOCK ? <div style={sub}>{t('market.tu_cap')}{' '}{RIVAL_UNLOCK}{' '}{t('market.se_co_tiem_khac_mo_canh')}</div>
           : r ? (
             <>
               <div style={{ ...row, flexWrap: 'wrap' }}>
                 <span>
-                  {r.name} (mở ngày {r.openedDay}){' '}
+                  {r.name}{' '}{t('market.mo_ngay')}{' '}{r.openedDay}){' '}
                   <span style={{ ...pill, background: 'rgba(255,255,255,0.1)' }}>{tier.icon} {tier.label}</span>
                 </span>
-                <span>Sức mạnh {Math.round(r.strength)}/100</span>
+                <span>{t('market.suc_manh')}{' '}{Math.round(r.strength)}/100</span>
               </div>
               {r.blurb && <div style={{ ...sub, fontStyle: 'italic', opacity: 0.6, marginTop: 2 }}>"{r.blurb}"</div>}
               <div style={{ height: 8, background: '#555', borderRadius: 4, margin: '4px 0' }}>
@@ -83,16 +84,16 @@ export function Market() {
                 return (
                   <>
                     <div style={{ ...row, flexWrap: 'wrap', marginTop: 4 }}>
-                      <b>⚔️ Xu hướng sức mạnh</b>
+                      <b>{t('market.xu_huong_suc_manh')}</b>
                       <span style={{ ...pill, background: up ? 'rgba(231,76,60,0.2)' : down ? 'rgba(46,204,113,0.2)' : 'rgba(255,255,255,0.08)', color: up ? '#e74c3c' : down ? '#2ecc71' : '#ccc' }}>
-                        {up ? '📈 rival đang TIẾN (mạnh lên)' : down ? '📉 rival đang LUI (yếu dần)' : '➖ sức mạnh khá đều'}
+                        {up ? t('market.rival_dang_tien_manh_len') : down ? t('market.rival_dang_lui_yeu_dan') : t('market.suc_manh_kha_deu')}
                       </span>
                     </div>
                     <div style={{ ...sub, marginTop: 2 }}>
-                      {Math.round(m.start)} → {Math.round(m.last)}{m.streak > 0 ? ` · ${m.streak} đêm liên tiếp ${up ? 'mạnh' : 'yếu'} dần` : ''} · biến {m.pct >= 0 ? '+' : ''}{m.pct}%
+                      {Math.round(m.start)} → {Math.round(m.last)}{m.streak > 0 ? ` · ${m.streak} đêm liên tiếp ${up ? 'mạnh' : 'yếu'} dần` : ''}{' '}{t('market.bien')}{' '}{m.pct >= 0 ? '+' : ''}{m.pct}%
                     </div>
                     <div style={{ marginTop: 6 }}>
-                      <div style={{ fontSize: 12, opacity: 0.85 }}>🎯 4 đòn bẩy hôm nay</div>
+                      <div style={{ fontSize: 12, opacity: 0.85 }}>{t('market.4_don_bay_hom_nay')}</div>
                       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 3 }}>
                         {levers.map((l) => (
                           <span key={l.lever} style={{ ...pill, background: l.ok ? 'rgba(46,204,113,0.15)' : 'rgba(231,76,60,0.18)', color: l.ok ? '#2ecc71' : '#e74c3c' }}>
@@ -102,39 +103,38 @@ export function Market() {
                       </div>
                       {up && fail && (
                         <div style={{ ...sub, marginTop: 4, color: '#e74c3c' }}>
-                          ⚠️ Rival đang mạnh lên — {fail.label} đang kéo bạn xuống. Sửa cái này để họ yếu đi.
+                          {t('market.rival_dang_manh_len')}{' '}{fail.label}{' '}{t('market.dang_keo_ban_xuong_sua_cai')}
                         </div>
                       )}
-                      <div style={{ ...sub, marginTop: 2 }}>Tiệm mình phục vụ tốt (sao cao, ít lỡ bán, giá không đắt, có quảng cáo) thì đối thủ yếu dần mỗi đêm.</div>
+                      <div style={{ ...sub, marginTop: 2 }}>{t('market.tiem_minh_phuc_vu_tot_sao')}</div>
                     </div>
                   </>
                 );
               })()}
               {r.personality && (
                 <div style={{ ...sub, marginTop: 4 }}>
-                  Tính cách: {RIVAL_PERSONALITIES[r.personality].icon} <b>{RIVAL_PERSONALITIES[r.personality].name}</b> — {RIVAL_PERSONALITIES[r.personality].desc}.
-                  {' '}Khách quen bị lôi kéo: {Object.keys(r.poached ?? {}).length ? Object.keys(r.poached!).map((id) => `${REGULAR_NAMES[id] ?? id} (từ ngày ${r.poached![id]})`).join(', ') + ' — đòi lại ở bảng Khách quen' : 'chưa có'}.
+                  {t('market.tinh_cach')}{' '}{RIVAL_PERSONALITIES[r.personality].icon} <b>{RIVAL_PERSONALITIES[r.personality].name}</b> — {RIVAL_PERSONALITIES[r.personality].desc}.
+                  {' '}{t('market.khach_quen_bi_loi_keo')}{' '}{Object.keys(r.poached ?? {}).length ? Object.keys(r.poached!).map((id) => t('market.tu_ngay', { v0: REGULAR_NAMES[id] ?? id, v1: r.poached![id] })).join(', ') + t('market.doi_lai_o_bang_khach_quen') : t('market.chua_co')}.
                 </div>
               )}
               {staffRisk && (
-                <div style={{ ...sub, marginTop: 4, color: '#e74c3c' }} title={`${r.name} máu liều, sức ${r.strength} — móc người giỏi nhất về đêm. Hạ sức mạnh rival dưới ${STAFF_POACH_STRENGTH} để giữ.`}>
-                  ⚠️ Nhân viên giỏi nhất <b>{staffRisk.name}</b> đang bị {r.name} để mắt — mở bảng <b>Nhân viên</b> để giữ, hạ sức mạnh rival dưới {STAFF_POACH_STRENGTH}.
+                <div style={{ ...sub, marginTop: 4, color: '#e74c3c' }} title={t('market.mau_lieu_suc_moc_nguoi_gioi', { name: r.name, strength: r.strength, STAFF_POACH_STRENGTH })}>
+                  {t('market.nhan_vien_gioi_nhat')}{' '}<b>{staffRisk.name}</b>{' '}{t('market.dang_bi')}{' '}{r.name}{' '}{t('market.de_mat_mo_bang')}{' '}<b>{t('market.nhan_vien')}</b>{' '}{t('market.de_giu_ha_suc_manh_rival')}{' '}{STAFF_POACH_STRENGTH}.
                 </div>
               )}
               {!!Object.keys(r.prices ?? {}).length && (
                 <div style={{ ...sub, marginTop: 4 }}>
-                  <b>Giá rival đang bán:</b>{' '}
+                  <b>{t('market.gia_rival_dang_ban')}</b>{' '}
                   {Object.entries(r.prices!).map(([id, rp]) => {
                     const mine = useGame.getState().priceOf(id);
-                    return `${productById(id).name} ${formatMoney(rp)}${mine ? ` (mình ${formatMoney(mine)}${rp < mine * 0.95 ? ' ⚠️' : ''})` : ''}`;
+                    return `${productById(id).name} ${formatMoney(rp)}${mine ? t('market.minh', { v0: formatMoney(mine), v1: rp < mine * 0.95 ? ' ⚠️' : '' }) : ''}`;
                   }).join(' · ')}
                 </div>
               )}
               <div style={sub}>
-                Đang hút mất {rivalDrag(r, day, avgRev7).lostPct.toFixed(0)}% khách{r.saleUntil !== undefined && r.saleUntil >= day ? ` (đang giảm giá tới ngày ${r.saleUntil})` : ''}{avgRev7 > 0 ? ` → ~${formatMoney(rivalDrag(r, day, avgRev7).moneyPerDay)}/ngày` : ''}.
-                Mỗi đêm họ yếu đi khi tiệm bạn được đánh giá cao, ít để khách hụt hàng, giá không đắt hơn giá gợi ý, và có chạy quảng cáo.
+                {t('market.dang_hut_mat')}{' '}{rivalDrag(r, day, avgRev7).lostPct.toFixed(0)}{t('market.khach')}{r.saleUntil !== undefined && r.saleUntil >= day ? t('market.dang_giam_gia_toi_ngay', { saleUntil: r.saleUntil }) : ''}{avgRev7 > 0 ? t('market.ngay', { v0: formatMoney(rivalDrag(r, day, avgRev7).moneyPerDay) }) : ''}{t('market.moi_dem_ho_yeu_di_khi')}
               </div>
-              <div style={{ ...title, marginTop: 8 }}>🎯 Phản công (mỗi ngày một đợt)</div>
+              <div style={{ ...title, marginTop: 8 }}>{t('market.phan_cong_moi_ngay_mot_dot')}</div>
               <div style={{ display: 'grid', gap: 4 }}>
                 {COUNTERS.map((c) => {
                   const runningNow = biz.counter?.day === day && biz.counter.tactic === c.id;
@@ -154,8 +154,8 @@ export function Market() {
                       onClick={() => startCounter(c.id)}
                     >
                       <b>{c.icon} {c.name}</b>
-                      {c.cost > 0 ? ` · ${formatMoney(c.cost)}` : ' · miễn phí (lãi mỏng)'}
-                      {runningNow ? ' · ✅ đang chạy' : usedToday ? ' · hôm nay đã chạy đợt khác' : !ready ? ` · hồi từ ngày ${biz.counterReady[c.id]}` : !affordable ? ` · thiếu ${formatMoney(c.cost - money)}` : ''}
+                      {c.cost > 0 ? ` · ${formatMoney(c.cost)}` : t('market.mien_phi_lai_mong')}
+                      {runningNow ? t('market.dang_chay') : usedToday ? t('market.hom_nay_da_chay_dot_khac') : !ready ? t('market.hoi_tu_ngay', { v0: biz.counterReady[c.id] }) : !affordable ? t('market.thieu', { v0: formatMoney(c.cost - money) }) : ''}
                       <div style={sub}>{c.desc}</div>
                       {/* GĐ159: quy "bớt N sức mạnh" ra khách & tiền — rivalTrafficFactor tuyến tính theo sức mạnh
                           (1 sức mạnh ≈ 0,25% khách, ×2 khi rival xả hàng) nên quy được sạch. Số là ƯỚC: hit thật có
@@ -166,7 +166,7 @@ export function Market() {
                         const pct1 = Math.round(g.pctCustomers * 10) / 10;
                         return (
                           <div style={{ ...sub, marginTop: 2 }}>
-                            Bớt ~{c.hit} sức mạnh ≈ khách đông lại ~{pct1}% — ước ~{formatMoney(g.moneyPerDay)}/ngày (bình quân 7 ngày).
+                            {t('market.bot')}{c.hit}{' '}{t('market.suc_manh_khach_dong_lai')}{pct1}{t('market.uoc')}{formatMoney(g.moneyPerDay)}{t('market.ngay_binh_quan_7_ngay')}
                           </div>
                         );
                       })()}
@@ -186,56 +186,55 @@ export function Market() {
                 })}
               </div>
             </>
-          ) : <div style={sub}>Hẻm đang chỉ có tiệm bạn{biz.rivalsBeaten ? ` · đã đánh bại ${biz.rivalsBeaten} đối thủ` : ''}. Thỉnh thoảng sẽ có tiệm mới mở.</div>}
+          ) : <div style={sub}>{t('market.hem_dang_chi_co_tiem_ban')}{biz.rivalsBeaten ? t('market.da_danh_bai_doi_thu', { rivalsBeaten: biz.rivalsBeaten }) : ''}{t('market.thinh_thoang_se_co_tiem_moi')}</div>}
       </div>
 
       {biz.rivalForSale && !biz.rival && (
         <div style={{ ...card, marginBottom: 0, gridColumn: '1 / -1', border: '1px solid #f1c40f' }}>
-          <div style={title}>🏢 Mặt bằng "{biz.rivalForSale.name}" chào bán lại</div>
+          <div style={title}>{t('market.mat_bang')}{biz.rivalForSale.name}{t('market.chao_ban_lai')}</div>
           <div style={sub}>
-            Rival vừa đóng cửa, chủ tiệm bán lại mặt bằng {formatMoney(biz.rivalForSale.price)}
+            {t('market.rival_vua_dong_cua_chu_tiem')}{' '}{formatMoney(biz.rivalForSale.price)}
             {branch
-              ? ' — mua về thì chi nhánh nhận thêm một chuyến hàng lớn từ kho chung và khách cũ của họ ghé tiệm bạn đông hơn 7 ngày.'
-              : ' — mua về là có ngay chi nhánh thứ hai, không mất tiền mở cửa hàng tiện lợi (5 triệu).'}
-            {' '}Hết ngày {biz.rivalForSale.until} không mua thì người khác thuê mất.
+              ? t('market.mua_ve_thi_chi_nhanh_nhan')
+              : t('market.mua_ve_la_co_ngay_chi')}
+            {' '}{t('market.het_ngay')}{' '}{biz.rivalForSale.until}{' '}{t('market.khong_mua_thi_nguoi_khac_thue')}
           </div>
           {buyPay.line && <div style={{ fontSize: 12, color: '#2ecc71', marginTop: 2 }}>{buyPay.line}</div>}
           <button style={{ ...btn, background: money >= biz.rivalForSale.price ? '#f1c40f' : '#555' }} onClick={buyRivalShop}>
-            🏢 Mua lại mặt bằng ({formatMoney(biz.rivalForSale.price)})
+            {t('market.mua_lai_mat_bang')}{formatMoney(biz.rivalForSale.price)})
           </button>
         </div>
       )}
 
       <div style={{ ...card, marginBottom: 0 }}>
         <div style={{ ...row, ...title }}>
-          <span>🎫 Thẻ tích điểm</span>
+          <span>{t('market.the_tich_diem')}</span>
           {level >= LOYALTY_UNLOCK && (
             <label style={{ fontSize: 13 }}>
-              <input type="checkbox" checked={biz.loyalty.on} onChange={(e) => setLoyalty(e.target.checked)} /> Bật
+              <input type="checkbox" checked={biz.loyalty.on} onChange={(e) => setLoyalty(e.target.checked)} />{' '}{t('market.bat')}
             </label>
           )}
         </div>
-        {level < LOYALTY_UNLOCK ? <div style={sub}>Mở ở cấp {LOYALTY_UNLOCK}.</div> : (
+        {level < LOYALTY_UNLOCK ? <div style={sub}>{t('market.mo_o_cap')}{' '}{LOYALTY_UNLOCK}.</div> : (
           <>
             <div style={{ margin: '4px 0' }}>
-              Mua đủ {LOYALTY_OPTIONS.map((n) => (
-                <button key={n} style={{ ...btn, background: biz.loyalty.stamps === n ? '#f1c40f' : '#fff' }} onClick={() => setLoyalty(biz.loyalty.on, n)}>{n} lần</button>
-              ))} tặng món rẻ nhất trong giỏ
+              {t('market.mua_du')}{' '}{LOYALTY_OPTIONS.map((n) => (
+                <button key={n} style={{ ...btn, background: biz.loyalty.stamps === n ? '#f1c40f' : '#fff' }} onClick={() => setLoyalty(biz.loyalty.on, n)}>{n}{' '}{t('market.lan')}</button>
+              ))}{' '}{t('market.tang_mon_re_nhat_trong_gio')}
             </div>
             <div style={sub}>
-              Ít tem thì khách ghé nhiều hơn (+{Math.round(60 / biz.loyalty.stamps)}%) nhưng tặng nhiều hơn.
-              Đã tặng {biz.loyalty.redeemed} lần · {formatMoney(biz.loyalty.given)}.
+              {t('market.it_tem_thi_khach_ghe_nhieu')}{Math.round(60 / biz.loyalty.stamps)}{t('market.nhung_tang_nhieu_hon_da_tang')}{' '}{biz.loyalty.redeemed}{' '}{t('market.lan_2')}{' '}{formatMoney(biz.loyalty.given)}.
             </div>
             {loyaltyPay && loyaltyPay.verdict !== 'soon' && (
               <div style={{ ...sub, marginTop: 4, color: loyaltyPay.verdict === 'keep' ? '#2ecc71' : '#e67e22', fontWeight: 600 }}>
                 {loyaltyPay.verdict === 'keep'
-                  ? `✅ Thẻ tích điểm đang đáng: hôm nay kéo thêm ~${loyaltyPay.extraCustomers} khách (~${formatMoney(loyaltyPay.extraValue)}/ngày) so với quà tặng ~${formatMoney(loyaltyPay.costToday)}/ngày (món ~${formatMoney(loyaltyPay.avgGift)}).`
-                  : `⚠️ Thẻ tích điểm đang tốn: hôm nay kéo thêm ~${loyaltyPay.extraCustomers} khách (~${formatMoney(loyaltyPay.extraValue)}/ngày) nhưng quà tặng ~${formatMoney(loyaltyPay.costToday)}/ngày (món ~${formatMoney(loyaltyPay.avgGift)}) — cân nhắc nâng ${5}/${10}/${15} tem hoặc tắt để đỡ tốn.`}
+                  ? t('market.the_tich_diem_dang_dang_hom', { extraCustomers: loyaltyPay.extraCustomers, v1: formatMoney(loyaltyPay.extraValue), v2: formatMoney(loyaltyPay.costToday), v3: formatMoney(loyaltyPay.avgGift) })
+                  : t('market.the_tich_diem_dang_ton_hom', { extraCustomers: loyaltyPay.extraCustomers, v1: formatMoney(loyaltyPay.extraValue), v2: formatMoney(loyaltyPay.costToday), v3: formatMoney(loyaltyPay.avgGift) })}
               </div>
             )}
             {loyaltyPay && loyaltyPay.verdict === 'soon' && (
               <div style={{ ...sub, marginTop: 4, opacity: 0.8 }}>
-                🎫 Thẻ đang bật (+{loyaltyPay.boostPct}% khách) — sau vài lượt đổi quà sẽ có đánh giá đáng/không tại đây.
+                {t('market.the_dang_bat')}{loyaltyPay.boostPct}{t('market.khach_sau_vai_luot_doi_qua')}
               </div>
             )}
           </>
@@ -244,7 +243,7 @@ export function Market() {
       </div>
 
       <div style={{ ...card, marginTop: 8 }}>
-        <div style={title}>📢 Quảng cáo</div>
+        <div style={title}>{t('market.quang_cao')}</div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(300px, 100%), 1fr))', gap: 6 }}>
           {ADS.map((a) => {
             const on = running.find((x) => x.id === a.id);
@@ -263,8 +262,8 @@ export function Market() {
                   <div style={{ fontWeight: 600, fontSize: 13 }}>{a.name}</div>
                   <div style={{ ...sub, fontSize: 11 }}>{a.desc}</div>
                   <div style={{ display: 'flex', gap: 4, marginTop: 4 }}>
-                    <span style={{ ...pill, background: 'rgba(241,196,15,0.18)', color: '#f1c40f' }}>+{Math.round((a.traffic - 1) * 100)}% khách</span>
-                    <span style={{ ...pill, background: 'rgba(255,255,255,0.1)' }}>{a.days} ngày</span>
+                    <span style={{ ...pill, background: 'rgba(241,196,15,0.18)', color: '#f1c40f' }}>+{Math.round((a.traffic - 1) * 100)}{t('market.khach')}</span>
+                    <span style={{ ...pill, background: 'rgba(255,255,255,0.1)' }}>{a.days}{' '}{t('market.ngay_2')}</span>
                   </div>
                   {/* GĐ62: nhóm nghề ad nhắm (targets trước đây vô hình); khi đang chạy hiện ✓ đã chạm / • chưa */}
                   {(() => {
@@ -274,7 +273,7 @@ export function Market() {
                         {reach.targets.map((t) => {
                           const live = !!on && t.matched;
                           return (
-                            <span key={t.id} title={live ? 'Đã có khách nghề này ghé trong ván' : 'Nghề mục tiêu'} style={{
+                            <span key={t.id} title={live ? t('market.da_co_khach_nghe_nay_ghe') : t('market.nghe_muc_tieu')} style={{
                               ...pill, fontSize: 11,
                               background: live ? 'rgba(46,204,113,0.18)' : 'rgba(255,255,255,0.08)',
                               color: live ? '#2ecc71' : undefined,
@@ -287,8 +286,8 @@ export function Market() {
                     );
                   })()}
                 </div>
-                {locked ? <span style={{ ...pill, background: 'rgba(255,255,255,0.1)' }}>Cấp {a.unlock}</span>
-                  : on ? <span style={{ ...pill, background: 'rgba(46,204,113,0.2)', color: '#2ecc71' }}>✓ Tới ngày {on.untilDay}</span>
+                {locked ? <span style={{ ...pill, background: 'rgba(255,255,255,0.1)' }}>{t('market.cap')}{' '}{a.unlock}</span>
+                  : on ? <span style={{ ...pill, background: 'rgba(46,204,113,0.2)', color: '#2ecc71' }}>{t('market.toi_ngay')}{' '}{on.untilDay}</span>
                     : <button style={{ ...btn, marginLeft: 0, whiteSpace: 'nowrap', opacity: money < a.price ? 0.5 : 1 }} disabled={money < a.price} onClick={() => buyAd(a.id)}>{shortLabel(formatMoney(a.price), a.price, money)}</button>}
               </div>
             );
@@ -299,24 +298,24 @@ export function Market() {
       {/* GĐ128: ROI quảng cáo — trả lời "quảng cáo có đáng không" sau vài ngày chạy.
           Chỉ hiện khi có ad đang chạy VÀ đã có dữ liệu so sánh ngày có/không quảng cáo. */}
       {adRoiData && (
-        <Callout tone={adRoiData.worth === 'yes' ? 'ok' : 'warn'} title="📈 Quảng cáo có đáng không?" style={{ marginTop: 8 }}>
+        <Callout tone={adRoiData.worth === 'yes' ? 'ok' : 'warn'} title={t('market.quang_cao_co_dang_khong')} style={{ marginTop: 8 }}>
           <div style={sub}>
-            Ngày có quảng cáo: doanh thu TB <b>{formatMoney(adRoiData.withAvg)}/ngày</b> vs{' '}
-            <b>{formatMoney(adRoiData.withoutAvg)}/ngày</b> ngày thường → kéo thêm ~{formatMoney(adRoiData.adExtraRev)}/ngày.
+            {t('market.ngay_co_quang_cao_doanh_thu')}{' '}<b>{formatMoney(adRoiData.withAvg)}{t('market.ngay_3')}</b> vs{' '}
+            <b>{formatMoney(adRoiData.withoutAvg)}{t('market.ngay_3')}</b>{' '}{t('market.ngay_thuong_keo_them')}{formatMoney(adRoiData.adExtraRev)}{t('market.ngay_4')}
           </div>
           <div style={{ ...sub, marginTop: 4, color: adRoiData.worth === 'yes' ? '#2ecc71' : '#e67e22', fontWeight: 600 }}>
             {adRoiData.net >= 0
-              ? `✅ Đang chạy chi phí ${formatMoney(adRoiData.dailyCost)}/ngày — quảng cáo có lời ~${formatMoney(adRoiData.net)}/ngày. Giữ hoặc mua thêm.`
-              : `⚠️ Đang chạy chi phí ${formatMoney(adRoiData.dailyCost)}/ngày — quảng cáo lỗ ~${formatMoney(-adRoiData.net)}/ngày. Cân nhắc bớt hoặc nhắm đúng nghề (xem Khách của tôi).`}
+              ? t('market.dang_chay_chi_phi_ngay_quang', { v0: formatMoney(adRoiData.dailyCost), v1: formatMoney(adRoiData.net) })
+              : t('market.dang_chay_chi_phi_ngay_quang_2', { v0: formatMoney(adRoiData.dailyCost), v1: formatMoney(-adRoiData.net) })}
           </div>
         </Callout>
       )}
 
       {/* GĐ62: nhân khẩu học khách vãng lai — "khách của tôi là ai" để nhắm ad đúng nghề */}
       <div style={{ ...card, marginTop: 8 }}>
-        <div style={title}>🧑 Khách của tôi</div>
+        <div style={title}>{t('market.khach_cua_toi')}</div>
         {demoRows.length === 0 ? (
-          <div style={sub}>Chưa có số liệu — chơi vài ngày để thấy ai là khách của tiệm.</div>
+          <div style={sub}>{t('market.chua_co_so_lieu_choi_vai')}</div>
         ) : (
           <>
             <div style={{ display: 'grid', gap: 4 }}>
@@ -326,20 +325,20 @@ export function Market() {
                   <div key={r.id} style={{ ...row, gap: 8 }}>
                     <span style={{ whiteSpace: 'nowrap' }}>{r.icon} <b>{r.name}</b></span>
                     <span style={{ ...sub, flex: 1, textAlign: 'right' }}>
-                      {r.visits} lượt · {formatMoney(r.revenue)} · {r.revenuePct}%
-                      {highWalkout && <span title="Nhiều khách nhóm này bỏ về không mua" style={{ color: '#e74c3c' }}> ⚠️</span>}
+                      {r.visits}{' '}{t('market.luot')}{' '}{formatMoney(r.revenue)} · {r.revenuePct}%
+                      {highWalkout && <span title={t('market.nhieu_khach_nhom_nay_bo_ve')} style={{ color: '#e74c3c' }}> ⚠️</span>}
                     </span>
                   </div>
                 );
               })}
             </div>
             <div style={{ ...sub, marginTop: 6 }}>
-              Thống kê khách vãng lai. Mua 📢 quảng cáo nhắm đúng nghề đông nhất để kéo thêm người giống họ; ⚠️ = nhóm hay bỏ về — kiểm tra kệ/giá có đúng sở thích họ không.
+              {t('market.thong_ke_khach_vang_lai_mua')}
             </div>
             {adSuggest && (
               <Callout tone="ok" style={{ marginTop: 6 }}>
                 <div style={{ fontSize: 12 }}>
-                  💡 Nên quảng cáo: <b>{adSuggest.ad.icon} {adSuggest.ad.name}</b> — nhắm {adSuggest.reason}.
+                  {t('market.nen_quang_cao')}{' '}<b>{adSuggest.ad.icon} {adSuggest.ad.name}</b>{' '}{t('market.nham')}{' '}{adSuggest.reason}.
                 </div>
               </Callout>
             )}
