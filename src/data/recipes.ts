@@ -332,6 +332,8 @@ export const COOKED_PRODUCTS: { id: string; name: string; category: import('./pr
   { id: 'che_thap_cam', name: 'Chè thập cẩm', category: 'fresh', buy: 7000, sell: 14000, color: 0xd8a0c0, unlock: 81, since: CONTENT_EPOCH_NOW },
   // GĐ2452: Cháo nấm — cháo nấm chay dân dã: nấm kim châm + nấm hương hầm cùng gạo, ngọt nước đậm đà. Mở 81; since: 1.
   { id: 'chao_nam', name: 'Cháo nấm', category: 'fresh', buy: 12000, sell: 16000, color: 0xd8c8a0, unlock: 81, since: CONTENT_EPOCH_NOW },
+  // GĐ2461: Chè kho — Hà Nội trứ danh: khoai tây luộc nghiền nhồi đậu xanh, cắt miếng chiên ngập dầu, rắc vừng. Mở 81; since: 1.
+  { id: 'che_kho', name: 'Chè kho', category: 'fresh', buy: 8000, sell: 15000, color: 0xd8b050, unlock: 81, since: CONTENT_EPOCH_NOW },
   // GĐ2453: Cá kho riêu — Nam Bộ đậm đà: cá kho nước màu với riêu tôm giã, ăn cơm nóng hổi. Mở 81; since: 1.
   { id: 'ca_kho_rieu', name: 'Cá kho riêu', category: 'fresh', buy: 18000, sell: 25000, color: 0xb07040, unlock: 81, since: CONTENT_EPOCH_NOW },
   // GĐ2454: Bánh mì chả cá — Đà Nẵng/Nha Trang trứ danh: bánh mì nướng giòn kẹp chả cá rán, chấm mắm gan. Mở 81; since: 1.
@@ -2552,6 +2554,14 @@ export const RECIPES: Recipe[] = [
   { id: 'recipe_chao_nam', name: 'Cháo nấm', station: 'hot_kettle',
     inputs: [{ productId: 'gao', quantity: 1 }, { productId: 'x_nam_kim_cham', quantity: 1 }, { productId: 'x_nam_huong_kho', quantity: 1 }],
     outputId: 'chao_nam', outputQty: 10, durationMin: 30, unlock: 81, reputationGain: 2, since: CONTENT_EPOCH_NOW },
+  { id: 'recipe_che_kho', name: 'Chè kho', station: 'fryer',
+    inputs: [{ productId: 'x_khoai_tay', quantity: 2 }, { productId: 'dau_xanh', quantity: 1 }, { productId: 'x_duong', quantity: 1 }],
+    outputId: 'che_kho', outputQty: 8, durationMin: 20, unlock: 81, reputationGain: 2, since: CONTENT_EPOCH_NOW },
+  // GĐ2461: Chè kho — khoai tây luộc nghiền trộn bột nhồi đậu xanh đường, CẮT MIẾNG CHIÊN NGẬP DẦU
+  // vàng giòn, rắc vừng rang — chảo chiên nhiều dầu → trạm fryer đúng cách nấu (tên "kho" là chiên kho).
+  // Thay thế: vừng rang rắc bỏ (không phải nhân chính). Mở 81; since: 1.
+  // Mẻ (khoai tây 8k×2 + đậu xanh 15k + đường 17k) = 48k → 8 miếng × 15k = 120k, lãi ~72k/mẻ,
+  // hời hơn bán thẳng nguyên liệu (22+22+21 = 65k < 120k — luật monKhuon).
   { id: 'recipe_ca_kho_rieu', name: 'Cá kho riêu', station: 'hot_kettle',
     inputs: [{ productId: 'ca_loc_tuoi', quantity: 1 }, { productId: 'hx_tom_kho', quantity: 1 }, { productId: 'nuocmam', quantity: 1 }],
     outputId: 'ca_kho_rieu', outputQty: 10, durationMin: 28, unlock: 81, reputationGain: 3, since: CONTENT_EPOCH_NOW },

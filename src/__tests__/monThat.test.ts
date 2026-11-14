@@ -315,6 +315,7 @@ const MON_THAT: Record<string, { name: string; station: string; cachNau: string 
   recipe_chao_ca_loc: { name: 'Cháo cá lóc', station: 'hot_kettle', cachNau: 'gạo hầm nhừ cá lóc xanh thịt dai ngọt rắc tiêu hành (miền Tây)' },
   recipe_chao_ga_nam: { name: 'Cháo gà nấm', station: 'hot_kettle', cachNau: 'gà chặt hầm gạo nấm kim châm ngọt nước (cháo quán)' },
   recipe_chao_nam: { name: 'Cháo nấm', station: 'hot_kettle', cachNau: 'gạo hầm nhừ nấm kim châm nấm hương ngọt nước (chay dân dã)' },
+  recipe_che_kho: { name: 'Chè kho', station: 'fryer', cachNau: 'khoai tây nghiền nhồi đậu xanh chiên ngập dầu rắc vừng (Hà Nội)' },
   recipe_ca_kho_rieu: { name: 'Cá kho riêu', station: 'hot_kettle', cachNau: 'cá kho nước màu đậm riêu tôm giã ăn cơm nóng (Nam Bộ)' },
   recipe_banh_mi_cha_ca: { name: 'Bánh mì chả cá', station: 'food_grill', cachNau: 'bánh mì nướng giòn kẹp chả cá rán chấm mắm gan (Đà Nẵng)' },
   recipe_banh_canh_tom_thit: { name: 'Bánh canh tôm thịt', station: 'hot_kettle', cachNau: 'sợi bánh canh nước lèo tôm tươi chạy thịt heo ba chỉ (miền Tây)' },
