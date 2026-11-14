@@ -1,4 +1,5 @@
 import { telemetrySampleRows } from '../data/telemetryConsent';
+import { t } from '../core/i18n';
 
 /**
  * SPEC-TOI-UU §T1 (L2) — hiện "Xem gửi những gì" thành danh sách giải thích dễ đọc, KHÔNG phải
@@ -7,10 +8,9 @@ import { telemetrySampleRows } from '../data/telemetryConsent';
 export function TelemetrySampleView() {
   const rows = telemetrySampleRows();
   return (
-    <div className="hud-tele-sample" role="group" aria-label="Bản ghi mẫu — những gì được gửi">
+    <div className="hud-tele-sample" role="group" aria-label={t('privacy.ban_ghi_mau_nhung_gi_duoc')}>
       <p className="hud-tele-intro">
-        Đây là <b>bản ghi mẫu</b> được gửi <b>mỗi ngày</b> — tất cả đều <b>ẩn danh</b>, không có
-        tên, tài khoản hay vị trí của bạn:
+        {t('privacy.day_la')}{' '}<b>{t('privacy.ban_ghi_mau')}</b>{' '}{t('privacy.duoc_gui')}{' '}<b>{t('privacy.moi_ngay')}</b>{' '}{t('privacy.tat_ca_deu')}{' '}<b>{t('privacy.an_danh')}</b>{t('privacy.khong_co_ten_tai_khoan_hay')}
       </p>
       <ul className="hud-tele-rows" style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
         {rows.map((r) => (

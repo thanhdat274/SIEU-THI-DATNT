@@ -5,6 +5,7 @@ import {
 } from '../data/telemetryConsent';
 import { deleteTelemetry, flushReports } from '../core/dayReport';
 import { TelemetrySampleView } from './TelemetrySampleView';
+import { t } from '../core/i18n';
 
 /**
  * SPEC-TOI-UU §T1 (L2) — Hỏi MỘT lần, sau ngày game thứ 2, về "Số liệu ẩn danh" (mặc định tắt).
@@ -29,23 +30,22 @@ export function TelemetryPrompt() {
   };
 
   return (
-    <div className="hud-dialogue" role="dialog" aria-label="Số liệu ẩn danh">
-      <div className="hud-dialogue-title">📊 Giúp game tốt hơn?</div>
+    <div className="hud-dialogue" role="dialog" aria-label={t('privacy.so_lieu_an_danh')}>
+      <div className="hud-dialogue-title">{t('privacy.giup_game_tot_hon')}</div>
       <div className="hud-dialogue-line">
         <span className="hud-dialogue-avatar" aria-hidden="true">📈</span>
         <span>
-          <b>Cho phép gửi số liệu ẩn danh?</b>
+          <b>{t('privacy.cho_phep_gui_so_lieu_an')}</b>
           <p>
-            Gửi mỗi ngày <b>một tóm tắt</b> (cấp, số khách, giây chơi, máy đang dùng…), <b>không</b> có
-            tên, tài khoản hay vị trí. Mặc định tắt; bạn đổi bất cứ lúc nào trong menu ⋯.
+            {t('privacy.gui_moi_ngay')}{' '}<b>{t('privacy.mot_tom_tat')}</b>{' '}{t('privacy.cap_so_khach_giay_choi_may')}{' '}<b>{t('privacy.khong')}</b>{' '}{t('privacy.co_ten_tai_khoan_hay_vi')}
           </p>
         </span>
       </div>
       <div className="hud-dialogue-foot">
-        <button className="hud-btn" onClick={() => setOpen(!open)}>{open ? 'Đóng bản ghi mẫu' : 'Xem gửi những gì'}</button>
+        <button className="hud-btn" onClick={() => setOpen(!open)}>{open ? t('privacy.dong_ban_ghi_mau') : t('privacy.xem_gui_nhung_gi')}</button>
         <span style={{ display: 'flex', gap: 6 }}>
-          <button className="hud-btn" style={{ minWidth: 72, minHeight: 40 }} onClick={() => decide(false)}>Không</button>
-          <button className="hud-btn primary" style={{ minWidth: 72, minHeight: 40 }} onClick={() => decide(true)}>Đồng ý</button>
+          <button className="hud-btn" style={{ minWidth: 72, minHeight: 40 }} onClick={() => decide(false)}>{t('privacy.khong_2')}</button>
+          <button className="hud-btn primary" style={{ minWidth: 72, minHeight: 40 }} onClick={() => decide(true)}>{t('privacy.dong_y')}</button>
         </span>
       </div>
       {open && (
