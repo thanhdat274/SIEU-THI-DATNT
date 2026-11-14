@@ -270,15 +270,15 @@ export function Market() {
                     const reach = adReach(a, biz.demographics);
                     return (
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 4 }}>
-                        {reach.targets.map((t) => {
-                          const live = !!on && t.matched;
+                        {reach.targets.map((tg) => {
+                          const live = !!on && tg.matched;
                           return (
-                            <span key={t.id} title={live ? t('market.da_co_khach_nghe_nay_ghe') : t('market.nghe_muc_tieu')} style={{
+                            <span key={tg.id} title={live ? t('market.da_co_khach_nghe_nay_ghe') : t('market.nghe_muc_tieu')} style={{
                               ...pill, fontSize: 11,
                               background: live ? 'rgba(46,204,113,0.18)' : 'rgba(255,255,255,0.08)',
                               color: live ? '#2ecc71' : undefined,
                             }}>
-                              {t.icon} {t.name}{on && (t.matched ? ' ✓' : ' •')}
+                              {tg.icon} {tg.name}{on && (tg.matched ? ' ✓' : ' •')}
                             </span>
                           );
                         })}
