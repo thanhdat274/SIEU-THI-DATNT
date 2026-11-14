@@ -14,16 +14,16 @@ export const LANG_OPTIONS: [Lang, string][] = [['vi', 'Tiếng Việt'], ['en', 
 
 export const getLang = (): Lang => getSettings().lang;
 
-const fill = (s: string, vars?: Record<string, string | number>) =>
+const fill = (s: string, vars?: Record<string, string | number | undefined>) =>
   vars ? s.replace(/\{(\w+)\}/g, (m, k) => (k in vars ? String(vars[k]) : m)) : s;
 
 /** Chuỗi theo ngôn ngữ hiện tại; thiếu bản dịch thì rơi về tiếng Việt. */
-export function t(key: I18nKey, vars?: Record<string, string | number>, lang: Lang = getLang()): string {
+export function t(key: I18nKey, vars?: Record<string, string | number | undefined>, lang: Lang = getLang()): string {
   return fill(DICTS[lang][key] ?? vi[key] ?? key, vars);
 }
 
 /** Số nhiều: dùng cặp khóa `<base>_one` / `<base>_other`; biến `{n}` tự điền. */
-export function tn(n: number, base: string, vars?: Record<string, string | number>, lang: Lang = getLang()): string {
+export function tn(n: number, base: string, vars?: Record<string, string | number | undefined>, lang: Lang = getLang()): string {
   const key = `${base}_${n === 1 ? 'one' : 'other'}` as I18nKey;
   return t(key, { n, ...vars }, lang);
 }

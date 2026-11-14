@@ -1,5 +1,6 @@
 import { Fragment, lazy, Suspense, useEffect, useRef, useState } from 'react';
 import type { ToolDef } from './HudToolButton';
+import { t } from '../core/i18n';
 
 const MoreMenuBody = lazy(() => import('./HudMoreBody').then((m) => ({ default: m.MoreMenuBody }))); // GĐ651: ruột menu Thêm
 const SettingsPanel = lazy(() => import('./SettingsPanel').then((m) => ({ default: m.SettingsPanel })));
@@ -18,10 +19,10 @@ export function MoreMenu({ tools, level, onHelp, onSettings }: { tools: ToolDef[
   const alert = tools.some((t) => t.badge && !(t.lock !== undefined && level < t.lock) && !t.badge.includes('★'));
   return (
     <div className="hud-pop" ref={ref}>
-      <button className="hud-tool" aria-haspopup="menu" aria-expanded={open} title="Thêm" onClick={() => { setOpen(!open); setKeys(false); }}>
+      <button className="hud-tool" aria-haspopup="menu" aria-expanded={open} title={t('hud.them')} onClick={() => { setOpen(!open); setKeys(false); }}>
         <span className="hud-tool-icon" aria-hidden="true">⋯</span>
-        <span>Thêm</span>
-        {alert && <span className="hud-badge hud-dot" aria-label="Có việc cần xem" />}
+        <span>{t('hud.them')}</span>
+        {alert && <span className="hud-badge hud-dot" aria-label={t('hud.co_viec_can_xem')} />}
       </button>
       {open && (
         <div className="hud-menu hud-more" role="menu">

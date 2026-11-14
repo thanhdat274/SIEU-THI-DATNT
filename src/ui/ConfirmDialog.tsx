@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { t } from '../core/i18n';
 
 /**
  * GĐ1821 — Hộp xác nhận chung của game, thay cho `window.confirm` (hộp xám của trình duyệt, hiện
@@ -47,11 +48,11 @@ export function ConfirmHost() {
   return (
     <div className="hud-confirm-backdrop" onClick={() => close(false)}>
       <div className="hud-confirm" role="alertdialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
-        <div className="hud-confirm-title">{p.title ?? (p.danger ? '⚠️ Xác nhận' : 'Xác nhận')}</div>
+        <div className="hud-confirm-title">{p.title ?? (p.danger ? t('hud.xac_nhan') : t('hud.xac_nhan_2'))}</div>
         <div className="hud-confirm-msg">{p.message}</div>
         <div className="hud-confirm-actions">
-          <button className="hud-confirm-cancel" onClick={() => close(false)}>{p.cancelLabel ?? 'Hủy'}</button>
-          <button className={p.danger ? 'hud-confirm-ok danger' : 'hud-confirm-ok'} autoFocus onClick={() => close(true)}>{p.okLabel ?? 'Đồng ý'}</button>
+          <button className="hud-confirm-cancel" onClick={() => close(false)}>{p.cancelLabel ?? t('hud.huy_2')}</button>
+          <button className={p.danger ? 'hud-confirm-ok danger' : 'hud-confirm-ok'} autoFocus onClick={() => close(true)}>{p.okLabel ?? t('hud.dong_y')}</button>
         </div>
       </div>
     </div>

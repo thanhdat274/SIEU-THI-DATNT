@@ -93,3 +93,52 @@ Tạp Hóa 3D có AchievementsPanel — thiếu thì thêm thẻ tổng + bậc 
 cs2-settings (Hình ảnh) · cs3-gfx · cs4-audio · cs5-play · cs6-a11y · cs7-backup ·
 cs8-rank · cs9-news · cs11-newgame · cs14-hud · cs15-quests · cs16-manage · cs18-games ·
 cs19-street · cs20-achv.
+
+## 6. Kế hoạch phần còn lại (lập 14-11-2026)
+
+Đã xong nhóm ⚡ và 🔨 (trừ "nhấn giữ → nhấn một lần": bỏ vì game không có thao tác giữ nào ngoài joystick).
+Còn lại 5 mục lớn. **i18n Việt/Anh làm trước tiên** vì mọi mục sau đều thêm chuỗi UI mới —
+làm trước thì chuỗi mới viết thẳng qua `t()`, không phải dịch lại.
+
+### 6.1 Tiếng Anh (i18n) — quy mô thực tế
+
+Đo trong code: ~122 file `src/ui/*.tsx` (~1.000 chuỗi có dấu + chữ trong JSX), ~278 file
+`src/data` (~5.500 chuỗi: tên món, hàng, khách, sự kiện, nhiệm vụ…), 81 file dùng
+`toLocaleString`/`vi-VN`. Đã có sẵn `Settings.currency: 'vnd'|'usd'` + `sanitize()` ở
+`src/core/settings.ts` → chỗ đặt `lang` có sẵn khuôn.
+
+**Kiến trúc chốt (không thư viện ngoài):**
+- `src/core/i18n.ts`: `t(key, vars?)`, `tn(count, key)` (số nhiều tiếng Anh), `getLang()`;
+  từ điển `src/i18n/vi.ts` (nguồn gốc, là kiểu chuẩn) + `src/i18n/en.ts` (`satisfies` kiểu vi →
+  `tsc` báo thiếu khóa).
+- `Settings.lang: 'vi'|'en'` (mặc định `vi`; lần đầu đoán theo `navigator.language`). Đổi →
+  lưu + reload (như Coffee Sữa Ơi), tránh phải làm React re-render toàn cây.
+- **Dữ liệu game không dịch bằng khóa rải rác**: giữ `name` tiếng Việt làm id hiển thị gốc,
+  thêm bảng `src/i18n/en/data/*.ts` map `id → tên Anh`; helper `nameOf(item)` dùng ở UI.
+  Mô phỏng/golden/save **không đổi** (chỉ lớp hiển thị) → `simGolden`, `monThat` không đụng.
+- Món Việt giữ tên gốc + chú thích Anh: "Bánh căn — mini rice pancakes" (đúng tinh thần
+  CLAUDE.md "tên chợ thật"; người chơi Anh vẫn học tên món). Tiền/ngày qua `formatMoney`/
+  `formatDate` chung theo `lang` (gom 81 chỗ `toLocaleString`).
+
+**Các bước (mỗi bước 1 commit, game luôn chạy được):**
+1. Khung: `i18n.ts`, `Settings.lang`, mục "Ngôn ngữ" trong tab Chơi, test `en` đủ khóa của `vi`.
+2. Gom định dạng số/tiền/ngày về helper chung (81 file) — thay đổi cơ học, test chặn.
+3. Màn đăng nhập + menu chính + Cài đặt + HUD/dock (cái người chơi thấy đầu tiên).
+4. Các panel theo nhóm: Quản lý quán, Nhiệm vụ, Thành tựu, Dạo phố, Minigame, Sổ đầu ngày…
+5. Dữ liệu: món/hàng → khách/sự kiện → hội thoại/cốt truyện (nhiều chữ nhất, làm cuối).
+6. Lưới an toàn: test quét `src/ui` chặn chuỗi có dấu tiếng Việt nằm ngoài `t()` (danh sách
+   ngoại lệ thu nhỏ dần) + thêm luật vào CLAUDE.md: "chuỗi UI mới phải qua `t()`, tên món mới
+   thêm dòng Anh".
+7. Server (`server/socialRules.ts`, thông báo lỗi co-op/xếp hạng) trả mã lỗi, client dịch.
+
+Rủi ro: nhiều phiên song song cùng sửa UI → bước 3–4 chia theo file nhỏ, commit đúng đường dẫn;
+chữ Anh dài hơn ~30% → kiểm lại nút/ dock ở 375px sau mỗi nhóm.
+
+### 6.2 Các mục lớn khác (sau i18n, theo thứ tự)
+
+| # | Mục | Cách làm gọn | Cổng golden |
+|---|---|---|---|
+| 1 | Trạng thái đồng bộ cloud + tải file backup `.txt` | Thẻ trạng thái (Đang bật/tắt, lần đồng bộ cuối) ở Sao lưu; nút tải = mã TH3D1 ghi ra Blob | Không ảnh hưởng mô phỏng |
+| 2 | Chọn 2 nhiệm vụ ưu tiên/ngày | Lớp "ghim" trên hệ quest sẵn có, thưởng thêm khi xong việc đã ghim; `registerTodo` để nhắc | Cơ chế mới → cổng cấp > 30 hoặc golden:update có chủ ý |
+| 3 | Chọn phong cách khởi đầu khi tạo ván | Màu mặt tiền + bộ bàn ghế lưu vào save, chỉ thẩm mỹ | Không ảnh hưởng kinh tế |
+| 4 | Podium xếp hạng + danh hiệu/avatar | Cần thêm trường server; danh hiệu suy từ chỉ số sẵn có | Không ảnh hưởng mô phỏng |

@@ -1,4 +1,5 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
+import { t } from '../core/i18n';
 
 export interface DropdownOption<T extends string> {
   value: T;
@@ -127,8 +128,8 @@ export function Dropdown<T extends string>({ value, options, onChange, ariaLabel
             <input
               className="dd-search"
               autoFocus
-              placeholder="Tìm…"
-              aria-label="Tìm trong danh sách"
+              placeholder={t('hud.tim')}
+              aria-label={t('hud.tim_trong_danh_sach')}
               value={query}
               onChange={(e) => {
                 setQuery(e.target.value);
@@ -151,7 +152,7 @@ export function Dropdown<T extends string>({ value, options, onChange, ariaLabel
                 {o.hint && <span className="dd-hint">{o.hint}</span>}
               </div>
             ))}
-            {shown.length === 0 && <div className="dd-empty">Không có kết quả</div>}
+            {shown.length === 0 && <div className="dd-empty">{t('hud.khong_co_ket_qua')}</div>}
           </div>
         </div>
       )}

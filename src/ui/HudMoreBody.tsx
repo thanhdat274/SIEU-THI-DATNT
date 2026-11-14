@@ -7,6 +7,7 @@ import { groupTools } from './groupTools';
 import { HUBS } from './hubs';
 import { SYSTEM_UNLOCKS } from '../data/unlockMap';
 import { PRODUCTS } from '../data/products';
+import { t } from '../core/i18n';
 
 // Xuất nhật ký chơi thử, bật/tắt số liệu ẩn danh, xem gửi những gì → đã chuyển vào Cài đặt → Dữ liệu.
 
@@ -36,16 +37,16 @@ export function MoreMenuBody({ tools, level, onHelp, keys, setKeys, setOpen, onS
             </Fragment>
           ))}
           <GfxButton level={level} />
-          <ToolButton tool={{ icon: '⚙️', label: 'Cài đặt', on: onSettings }} level={level} />
-          {!TOUCH && <ToolButton tool={{ icon: '⌨️', label: 'Phím', on: () => setKeys(true) }} level={level} />}
+          <ToolButton tool={{ icon: '⚙️', label: t('hud.cai_dat'), on: onSettings }} level={level} />
+          {!TOUCH && <ToolButton tool={{ icon: '⌨️', label: t('hud.phim'), on: () => setKeys(true) }} level={level} />}
           {/* Xem lại hướng dẫn mở tiệm: cả máy cảm xúc lẫn desktop đều cần */}
-          <ToolButton tool={{ icon: '📖', label: 'Hướng dẫn', on: onHelp }} level={level} onPicked={() => setOpen(false)} />
-          <ToolButton tool={{ icon: '🚶', label: 'Dạo phố', lock: 3, on: () => useGame.getState().openPanel({ type: 'stroll' } as never) }} level={level} onPicked={() => setOpen(false)} />
-          <ToolButton tool={{ icon: '✉️', label: 'Hòm thư', on: () => useGame.getState().openPanel({ type: 'mailbox' } as never) }} level={level} onPicked={() => setOpen(false)} />
+          <ToolButton tool={{ icon: '📖', label: t('hud.huong_dan'), on: onHelp }} level={level} onPicked={() => setOpen(false)} />
+          <ToolButton tool={{ icon: '🚶', label: t('hud.dao_pho'), lock: 3, on: () => useGame.getState().openPanel({ type: 'stroll' } as never) }} level={level} onPicked={() => setOpen(false)} />
+          <ToolButton tool={{ icon: '✉️', label: t('hud.hom_thu'), on: () => useGame.getState().openPanel({ type: 'mailbox' } as never) }} level={level} onPicked={() => setOpen(false)} />
           {/* GĐ2347: xem lại thông báo đã trôi / đang bị gom — mọi tin trong phiên đọc lại được */}
-          <ToolButton tool={{ icon: '🔔', label: 'Sổ thông báo', on: openNotifLog }} level={level} onPicked={() => setOpen(false)} />
+          <ToolButton tool={{ icon: '🔔', label: t('hud.so_thong_bao_2'), on: openNotifLog }} level={level} onPicked={() => setOpen(false)} />
           {/* SPEC-TOI-UU §T6 (L3): Sổ việc chung — gộp mọi việc gấp/hôm nay/rảnh về một bảng. */}
-          <ToolButton tool={{ icon: '🗒️', label: 'Sổ việc', on: openTodo }} level={level} onPicked={() => setOpen(false)} />
+          <ToolButton tool={{ icon: '🗒️', label: t('hud.so_viec'), on: openTodo }} level={level} onPicked={() => setOpen(false)} />
         </>
       )}
     </>
@@ -59,7 +60,7 @@ export function MoreMenuBody({ tools, level, onHelp, keys, setKeys, setOpen, onS
 function GfxButton({ level }: { level: number }) {
   const [choice, setChoice] = useState(gfxStatus().choice);
   const st = gfxStatus();
-  const label = choice === 'auto' ? `Đồ họa: Tự động (${GFX_LABEL[st.level]})` : `Đồ họa: ${GFX_LABEL[choice]}`;
+  const label = choice === 'auto' ? t('hud.do_hoa_tu_dong', { v0: GFX_LABEL[st.level] }) : t('hud.do_hoa', { v0: GFX_LABEL[choice] });
   const next = () => {
     const c = GFX_CYCLE[(GFX_CYCLE.indexOf(choice) + 1) % GFX_CYCLE.length];
     setGfxChoice(c);
@@ -90,18 +91,18 @@ function buildIndex(): SearchHit[] {
   const out: SearchHit[] = [];
   for (const hub of Object.keys(HUBS)) {
     for (const [id, label] of HUBS[hub]) {
-      out.push({ key: `b:${hub}:${id}`, icon: '📑', name: label, group: `Bảng (${hub})`, panel: () => ({ type: id }) });
+      out.push({ key: `b:${hub}:${id}`, icon: '📑', name: label, group: t('hud.bang', { hub }), panel: () => ({ type: id }) });
     }
   }
   for (const s of SYSTEM_UNLOCKS) {
     if (!s.panel) continue;
     const run = s.panel;
-    out.push({ key: `s:${s.id}`, icon: s.icon, name: s.name, group: 'Hệ', panel: () => run() as unknown as { type: string } });
+    out.push({ key: `s:${s.id}`, icon: s.icon, name: s.name, group: t('hud.he'), panel: () => run() as unknown as { type: string } });
   }
   for (const p of PRODUCTS) {
-    out.push({ key: `p:${p.id}`, icon: '🍎', name: p.name, group: 'Món', panel: () => 'prices' });
+    out.push({ key: `p:${p.id}`, icon: '🍎', name: p.name, group: t('hud.mon_2'), panel: () => 'prices' });
   }
-  out.push({ key: 'b:todo', icon: '🗒️', name: 'Sổ việc', group: 'Bảng', panel: () => ({ type: 'todo' as const }) });
+  out.push({ key: 'b:todo', icon: '🗒️', name: t('hud.so_viec'), group: t('hud.bang_2'), panel: () => ({ type: 'todo' as const }) });
   return out;
 }
 
@@ -127,7 +128,7 @@ function HubSearch({ onPick }: { onPick: () => void }) {
       <input
         className="hud-more-search-input"
         value={q}
-        placeholder="Tìm bảng, hệ, món… (không cần dấu)"
+        placeholder={t('hud.tim_bang_he_mon_khong_can')}
         onChange={(e) => setQ(e.target.value)}
       />
       {res.length > 0 && (
@@ -141,7 +142,7 @@ function HubSearch({ onPick }: { onPick: () => void }) {
           ))}
         </div>
       )}
-      {q.trim().length >= 2 && res.length === 0 && <div className="hud-more-search-empty">Không thấy gì khớp.</div>}
+      {q.trim().length >= 2 && res.length === 0 && <div className="hud-more-search-empty">{t('hud.khong_thay_gi_khop')}</div>}
     </div>
   );
 }

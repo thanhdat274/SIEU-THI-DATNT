@@ -23,6 +23,6 @@ describe('GĐ651: ruột menu Thêm nạp lười', () => {
     expect(readFileSync('src/ui/HudMenus.tsx', 'utf8')).toContain("lazy(() => import('./HudMoreBody')");
     expect(hud).not.toContain('function GfxButton');
     const body = readFileSync('src/ui/HudMoreBody.tsx', 'utf8');
-    for (const s of ['function GfxButton', "label: 'Phím'", "label: 'Hướng dẫn'"]) expect(body).toContain(s);
+    for (const s of ['function GfxButton', "label: t('hud.phim')", "label: t('hud.huong_dan')"]) expect(body).toContain(s);
   });
 });

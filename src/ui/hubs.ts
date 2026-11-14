@@ -3,6 +3,7 @@ import { QUAN_NUOC_UNLOCK } from '../data/quanNuoc';
 import { SOCIAL_UNLOCK } from '../data/social';
 import { ONLINE_UNLOCK } from '../data/online';
 import { INSPECTION_UNLOCK } from '../data/biz';
+import { t } from '../core/i18n';
 
 /**
  * Nút HUD gom nhiều bảng cùng chủ đề thành MỘT nút + thanh tab (chống phình HUD).
@@ -11,27 +12,27 @@ import { INSPECTION_UNLOCK } from '../data/biz';
 export type HubTab = readonly [id: string, label: string, lock: number];
 export const HUBS: Record<string, readonly HubTab[]> = {
   sosach: [
-    ['history', '📊 Theo dõi', 0],
-    ['records', '🏆 Kỷ lục', 0],
-    ['analytics', '🩺 Sức khoẻ món', 0],
-    ['dossier', '📖 Hồ sơ', 0],
-    ['roadmap', '🗺️ Mở khóa', 0],
-    ['discovery', '🔍 Sổ tay', 0],
+    ['history', t('hud.theo_doi'), 0],
+    ['records', t('hud.ky_luc'), 0],
+    ['analytics', t('hud.suc_khoe_mon'), 0],
+    ['dossier', t('hud.ho_so'), 0],
+    ['roadmap', t('hud.mo_khoa'), 0],
+    ['discovery', t('hud.so_tay'), 0],
   ],
   danhtieng: [
-    ['reviews', '💬 Đánh giá', 0],
-    ['regulars', '💛 Khách quen', 0],
-    ['skills', '🏅 Danh hiệu', 0],
-    ['licenses', '📜 Giấy phép', INSPECTION_UNLOCK],
+    ['reviews', t('hud.danh_gia'), 0],
+    ['regulars', t('hud.khach_quen'), 0],
+    ['skills', t('hud.danh_hieu'), 0],
+    ['licenses', t('hud.giay_phep'), INSPECTION_UNLOCK],
   ],
   morong: [
-    ['garden', '🚜 Trang trại', 8],
-    ['quannuoc', '🧋 Quán nước', QUAN_NUOC_UNLOCK],
-    ['landmark', '🏗️ Sân chơi', 0],
-    ['branch', '🏪 Tiện lợi', CONVENIENCE.unlock],
+    ['garden', t('hud.trang_trai'), 8],
+    ['quannuoc', t('hud.quan_nuoc'), QUAN_NUOC_UNLOCK],
+    ['landmark', t('hud.san_choi'), 0],
+    ['branch', t('hud.tien_loi'), CONVENIENCE.unlock],
     ['social', '📱 MXH', SOCIAL_UNLOCK],
     ['online', '📲 Online', ONLINE_UNLOCK],
-    ['community', '👥 Cộng đồng', 0],
+    ['community', t('hud.cong_dong'), 0],
   ],
 };
 

@@ -14,7 +14,7 @@ import { perfOn, setPerf } from '../core/perf';
 import { getSettings, resetSettings, setSettings, type Settings } from '../core/settings';
 import { importSaveData, snapshot, type SaveData } from '../core/save';
 import { decodeSaveCode, encodeSaveCode } from '../core/saveCode';
-import { WHATS_NEW } from '../data/whatsNew';
+import { WhatsNewList } from './WhatsNewList';
 import { telemetryOptedIn, setTelemetryOptIn } from '../data/telemetryConsent';
 import { deleteTelemetry, exportReportsJson, flushReports } from '../core/dayReport';
 import { TelemetrySampleView } from './TelemetrySampleView';
@@ -28,16 +28,16 @@ const TABS: [Tab, string][] = (['img', 'gfx', 'audio', 'play', 'a11y', 'data'] a
 const GAME_TAB: [Tab, string] = ['game', t('settings.tab.game')];
 
 const GFX_NOTE: Record<GfxChoice, string> = {
-  auto: 'Máy tự hạ/nâng mức theo FPS thật. Hợp với hầu hết máy.',
-  low: 'Ít bóng, ít mưa/mây/sao. Dành cho máy yếu hoặc điện thoại cũ.',
-  medium: 'Cân bằng giữa đẹp và mượt.',
-  high: 'Bóng, mưa, mây, sao đầy đủ. Cần máy khá.',
+  auto: t('settings.may_tu_ha_nang_muc_theo'),
+  low: t('settings.it_bong_it_mua_may_sao'),
+  medium: t('settings.can_bang_giua_dep_va_muot'),
+  high: t('settings.bong_mua_may_sao_day_du'),
 };
 
 const CHANNELS: [VolChannel, string][] = [
-  ['master', 'Tổng'], ['sfx', 'Hiệu ứng (chuông cửa, thu tiền…)'],
-  ['music', 'Nhạc nền'], ['amb', 'Môi trường (mưa, chim, dế)'],
-  ['ui', 'Giao diện (lên cấp, thưởng, nhiệm vụ)'],
+  ['master', t('settings.tong')], ['sfx', t('settings.hieu_ung_chuong_cua_thu_tien')],
+  ['music', t('settings.nhac_nen')], ['amb', t('settings.moi_truong_mua_chim_de')],
+  ['ui', t('settings.giao_dien_len_cap_thuong_nhiem')],
 ];
 
 const rowCss: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: 10, padding: '10px 0', borderBottom: '1px solid rgba(0,0,0,.08)' };
@@ -127,36 +127,36 @@ function ImgTab() {
   };
   return (
     <div>
-      <Row label="Độ phân giải" hint="Độ nét hình 3D bên trong, luôn co giãn vừa cửa sổ. Thấp hơn = nhẹ máy hơn">
-        <Select label="Độ phân giải" value={s.resolution}
-          options={[['auto', 'Tự động'], ['native', 'Gốc màn hình'], ['1080', '1080p'], ['720', '720p']]}
+      <Row label={t('settings.do_phan_giai')} hint={t('settings.do_net_hinh_3d_ben_trong')}>
+        <Select label={t('settings.do_phan_giai')} value={s.resolution}
+          options={[['auto', t('settings.tu_dong')], ['native', t('settings.goc_man_hinh')], ['1080', '1080p'], ['720', '720p']]}
           onChange={(v) => set({ resolution: v })} />
       </Row>
-      <Row label="Chế độ hiển thị" hint="Trình duyệt yêu cầu thao tác người dùng để vào toàn màn hình">
-        <Select label="Chế độ hiển thị" value={full ? 'full' : 'win'} options={[['win', 'Cửa sổ'], ['full', 'Toàn màn hình']]} onChange={(v) => toggleFull(v === 'full')} />
+      <Row label={t('settings.che_do_hien_thi')} hint={t('settings.trinh_duyet_yeu_cau_thao_tac')}>
+        <Select label={t('settings.che_do_hien_thi')} value={full ? 'full' : 'win'} options={[['win', t('settings.cua_so')], ['full', t('settings.toan_man_hinh')]]} onChange={(v) => toggleFull(v === 'full')} />
       </Row>
-      <Row label="Giới hạn FPS (V-Sync)" hint="Không giới hạn = đồng bộ theo màn hình (V-Sync luôn bật trên trình duyệt). Thấp hơn = mát máy, đỡ hao pin">
-        <Select label="Giới hạn FPS" value={s.fpsCap} options={[[0, 'Theo màn hình'], [30, '30'], [60, '60'], [120, '120']]} onChange={(v) => set({ fpsCap: v })} />
+      <Row label={t('settings.gioi_han_fps_v_sync')} hint={t('settings.khong_gioi_han_dong_bo_theo')}>
+        <Select label={t('settings.gioi_han_fps')} value={s.fpsCap} options={[[0, t('settings.theo_man_hinh')], [30, '30'], [60, '60'], [120, '120']]} onChange={(v) => set({ fpsCap: v })} />
       </Row>
-      <Row label="Chống nóng máy" hint="60 FPS khi đang chạm/sạc, 30 FPS khi đứng xem — máy đỡ nóng, pin đỡ tụt. Giới hạn FPS phía trên thấp hơn thì vẫn thắng">
-        <Switch label="Chống nóng máy" on={s.coolMode} onChange={(v) => set({ coolMode: v })} />
+      <Row label={t('settings.chong_nong_may')} hint={t('settings.60_fps_khi_dang_cham_sac')}>
+        <Switch label={t('settings.chong_nong_may')} on={s.coolMode} onChange={(v) => set({ coolMode: v })} />
       </Row>
-      <Row label="Hiện FPS"><Switch label="Hiện FPS" on={perf} onChange={(v) => { setPerf(v); setP(v); }} /></Row>
-      <Row label="Độ sáng"><Slider label="Độ sáng" value={s.brightness} min={0.7} max={1.3} step={0.05} fmt={pct} onChange={(v) => set({ brightness: v })} /></Row>
-      <Row label="Tỷ lệ render" hint="Thấp hơn = nhanh hơn trên máy yếu">
-        <Slider label="Tỷ lệ render" value={s.renderScale} min={0.5} max={1} step={0.05} fmt={pct} onChange={(v) => set({ renderScale: v })} />
+      <Row label={t('settings.hien_fps')}><Switch label={t('settings.hien_fps')} on={perf} onChange={(v) => { setPerf(v); setP(v); }} /></Row>
+      <Row label={t('settings.do_sang')}><Slider label={t('settings.do_sang')} value={s.brightness} min={0.7} max={1.3} step={0.05} fmt={pct} onChange={(v) => set({ brightness: v })} /></Row>
+      <Row label={t('settings.ty_le_render')} hint={t('settings.thap_hon_nhanh_hon_tren_may')}>
+        <Slider label={t('settings.ty_le_render')} value={s.renderScale} min={0.5} max={1} step={0.05} fmt={pct} onChange={(v) => set({ renderScale: v })} />
       </Row>
-      <Row label="Tự giữ khung hình mượt" hint="Tự hạ độ phân giải khi máy bị giật, nâng lại khi mượt">
-        <Switch label="Tự giữ khung hình mượt" on={choice === 'auto'}
+      <Row label={t('settings.tu_giu_khung_hinh_muot')} hint={t('settings.tu_ha_do_phan_giai_khi')}>
+        <Switch label={t('settings.tu_giu_khung_hinh_muot')} on={choice === 'auto'}
           onChange={(v) => { const c: GfxChoice = v ? 'auto' : gfxStatus().level; setGfxChoice(c); setChoice(c); }} />
       </Row>
-      <Row label="Cỡ giao diện"><Slider label="Cỡ giao diện" value={s.uiScale} min={0.8} max={1.4} step={0.05} fmt={pct} onChange={(v) => set({ uiScale: v })} /></Row>
+      <Row label={t('settings.co_giao_dien')}><Slider label={t('settings.co_giao_dien')} value={s.uiScale} min={0.8} max={1.4} step={0.05} fmt={pct} onChange={(v) => set({ uiScale: v })} /></Row>
       <Row label={t('settings.lang')} hint={t('settings.lang.hint')}>
         {/* Đổi ngôn ngữ → reload; pagehide trong save.ts ghi ván trước khi tải lại */}
         <Select label={t('settings.lang')} value={s.lang} options={LANG_OPTIONS} onChange={(v) => { if (v === s.lang) return; set({ lang: v }); location.reload(); }} />
       </Row>
-      <Row label="Tiền tệ hiển thị" hint="Chỉ đổi cách hiện số (1 USD = 25.000 VND), áp dụng ngay cho mọi màn. Giá trong game không đổi">
-        <Select label="Tiền tệ hiển thị" value={s.currency} options={[['vnd', 'Đồng (đ)'], ['usd', 'Đô la ($)']]} onChange={(v) => set({ currency: v })} />
+      <Row label={t('settings.tien_te_hien_thi')} hint={t('settings.chi_doi_cach_hien_so_1')}>
+        <Select label={t('settings.tien_te_hien_thi')} value={s.currency} options={[['vnd', t('settings.dong_d')], ['usd', t('settings.do_la')]]} onChange={(v) => set({ currency: v })} />
       </Row>
     </div>
   );
@@ -168,30 +168,30 @@ function GfxTab() {
   const lv = gfxStatus().level;
   return (
     <div>
-      <Row label="Thiết lập sẵn" hint="Đồ họa không ảnh hưởng số khách hay logic mô phỏng">
-        <Select label="Thiết lập sẵn" value={choice}
-          options={GFX_CYCLE.map((c) => [c, c === 'auto' ? 'Tự động' : GFX_LABEL[c]] as [GfxChoice, string])}
+      <Row label={t('settings.thiet_lap_san')} hint={t('settings.do_hoa_khong_anh_huong_so')}>
+        <Select label={t('settings.thiet_lap_san')} value={choice}
+          options={GFX_CYCLE.map((c) => [c, c === 'auto' ? t('settings.tu_dong') : GFX_LABEL[c]] as [GfxChoice, string])}
           onChange={(c) => { setGfxChoice(c); setChoice(c); }} />
       </Row>
       <p style={{ margin: '8px 0', fontSize: 13 }}>
-        {GFX_NOTE[choice]} Đang chạy mức <b>{GFX_LABEL[lv]}</b> · ~{Math.round(gfxStatus().fps)} FPS. Các mục bên dưới đổi ngay khi đang chơi.
+        {GFX_NOTE[choice]}{' '}{t('settings.dang_chay_muc')}{' '}<b>{GFX_LABEL[lv]}</b> · ~{Math.round(gfxStatus().fps)}{' '}{t('settings.fps_cac_muc_ben_duoi_doi')}
       </p>
-      <Row label="Khoảng cách chi tiết" hint="Nhân vật ở xa đứng yên cho nhẹ máy. Gần = nhẹ hơn, Xa = đẹp hơn">
-        <Select label="Khoảng cách chi tiết" value={s.detailDist} options={[['near', 'Gần'], ['normal', 'Vừa'], ['far', 'Xa']]} onChange={(v) => set({ detailDist: v })} />
+      <Row label={t('settings.khoang_cach_chi_tiet')} hint={t('settings.nhan_vat_o_xa_dung_yen')}>
+        <Select label={t('settings.khoang_cach_chi_tiet')} value={s.detailDist} options={[['near', t('settings.gan')], ['normal', t('settings.vua')], ['far', 'Xa']]} onChange={(v) => set({ detailDist: v })} />
       </Row>
-      <Row label="Bóng đổ" hint="Tắt để nhẹ máy; bật lại chỉ có bóng nếu mức đồ họa có bóng">
-        <Switch label="Bóng đổ" on={s.shadows} onChange={(v) => set({ shadows: v })} />
+      <Row label={t('settings.bong_do')} hint={t('settings.tat_de_nhe_may_bat_lai')}>
+        <Switch label={t('settings.bong_do')} on={s.shadows} onChange={(v) => set({ shadows: v })} />
       </Row>
-      <Row label="Chất lượng ánh sáng" hint="Số đèn thật quanh camera (đèn đường, đèn tiệm)">
-        <Select label="Chất lượng ánh sáng" value={s.lightQuality} options={[['low', 'Thấp'], ['normal', 'Vừa'], ['high', 'Cao']]} onChange={(v) => set({ lightQuality: v })} />
+      <Row label={t('settings.chat_luong_anh_sang')} hint={t('settings.so_den_that_quanh_camera_den')}>
+        <Select label={t('settings.chat_luong_anh_sang')} value={s.lightQuality} options={[['low', t('settings.thap')], ['normal', t('settings.vua')], ['high', 'Cao']]} onChange={(v) => set({ lightQuality: v })} />
       </Row>
-      <Row label="Mật độ mưa">
-        <Select label="Mật độ mưa" value={s.rainDensity} options={[[0, 'Tắt'], [0.5, 'Thưa'], [1, 'Đủ']]} onChange={(v) => set({ rainDensity: v })} />
+      <Row label={t('settings.mat_do_mua')}>
+        <Select label={t('settings.mat_do_mua')} value={s.rainDensity} options={[[0, t('settings.tat')], [0.5, t('settings.thua')], [1, t('settings.du')]]} onChange={(v) => set({ rainDensity: v })} />
       </Row>
-      <Row label="Mây trên trời"><Switch label="Mây trên trời" on={s.clouds} onChange={(v) => set({ clouds: v })} /></Row>
-      <Row label="Sao ban đêm"><Switch label="Sao ban đêm" on={s.stars} onChange={(v) => set({ stars: v })} /></Row>
-      <Row label="Cây lá chuyển động" hint="Cây, lúa lắc theo gió">
-        <Switch label="Cây lá chuyển động" on={s.foliageSway} onChange={(v) => set({ foliageSway: v })} />
+      <Row label={t('settings.may_tren_troi')}><Switch label={t('settings.may_tren_troi')} on={s.clouds} onChange={(v) => set({ clouds: v })} /></Row>
+      <Row label={t('settings.sao_ban_dem')}><Switch label={t('settings.sao_ban_dem')} on={s.stars} onChange={(v) => set({ stars: v })} /></Row>
+      <Row label={t('settings.cay_la_chuyen_dong')} hint={t('settings.cay_lua_lac_theo_gio')}>
+        <Switch label={t('settings.cay_la_chuyen_dong')} on={s.foliageSway} onChange={(v) => set({ foliageSway: v })} />
       </Row>
     </div>
   );
@@ -203,8 +203,8 @@ function AudioTab() {
   const [music, setMu] = useState(isMusic());
   return (
     <div>
-      <Row label="Bật âm thanh"><Switch label="Bật âm thanh" on={!muted} onChange={(v) => { initAudio(); setMuted(!v); setM(!v); }} /></Row>
-      <Row label="Bật nhạc nền"><Switch label="Bật nhạc nền" on={music} onChange={(v) => { setMusic(v); setMu(v); }} /></Row>
+      <Row label={t('settings.bat_am_thanh')}><Switch label={t('settings.bat_am_thanh')} on={!muted} onChange={(v) => { initAudio(); setMuted(!v); setM(!v); }} /></Row>
+      <Row label={t('settings.bat_nhac_nen')}><Switch label={t('settings.bat_nhac_nen')} on={music} onChange={(v) => { setMusic(v); setMu(v); }} /></Row>
       {CHANNELS.map(([ch, label]) => (
         <Row key={ch} label={label}>
           <Slider label={label} value={getVolume(ch)} min={0} max={1} step={0.05} fmt={pct}
@@ -219,25 +219,25 @@ function PlayTab() {
   const [s, set] = useSettings();
   return (
     <div>
-      <Row label="Tự động lưu" hint="Khi tắt, game chỉ lưu khi bạn bấm Lưu hoặc đóng/ẩn tab">
-        <Switch label="Tự động lưu" on={s.autosave} onChange={(v) => set({ autosave: v })} />
+      <Row label={t('settings.tu_dong_luu')} hint={t('settings.khi_tat_game_chi_luu_khi')}>
+        <Switch label={t('settings.tu_dong_luu')} on={s.autosave} onChange={(v) => set({ autosave: v })} />
       </Row>
-      <Row label="Chu kỳ tự động lưu" hint="Dài hơn thì ít giật máy yếu; thoát/ẩn tab vẫn lưu ngay">
-        <Select label="Chu kỳ tự động lưu" value={s.autosaveEvery}
-          options={[[0, 'Mặc định (ngay khi đổi)'], [60, '1 phút'], [180, '3 phút'], [300, '5 phút']]}
+      <Row label={t('settings.chu_ky_tu_dong_luu')} hint={t('settings.dai_hon_thi_it_giat_may')}>
+        <Select label={t('settings.chu_ky_tu_dong_luu')} value={s.autosaveEvery}
+          options={[[0, t('settings.mac_dinh_ngay_khi_doi')], [60, t('settings.1_phut')], [180, t('settings.3_phut')], [300, t('settings.5_phut')]]}
           onChange={(v) => set({ autosaveEvery: v })} />
       </Row>
-      <Row label="Hiện biểu tượng sốt ruột của khách" hint="😕😤😠 trên đầu khách chờ lâu">
-        <Switch label="Hiện biểu tượng sốt ruột" on={s.showPatience} onChange={(v) => set({ showPatience: v })} />
+      <Row label={t('settings.hien_bieu_tuong_sot_ruot_cua')} hint={t('settings.tren_dau_khach_cho_lau')}>
+        <Switch label={t('settings.hien_bieu_tuong_sot_ruot')} on={s.showPatience} onChange={(v) => set({ showPatience: v })} />
       </Row>
-      <Row label="Tự về 1× khi tiệm quá tải" hint="Khách xếp hàng từ 4 người mà đang chạy nhanh">
-        <Switch label="Tự về 1×" on={s.autoSlow} onChange={(v) => set({ autoSlow: v })} />
+      <Row label={t('settings.tu_ve_1_khi_tiem_qua')} hint={t('settings.khach_xep_hang_tu_4_nguoi')}>
+        <Switch label={t('settings.tu_ve_1')} on={s.autoSlow} onChange={(v) => set({ autoSlow: v })} />
       </Row>
-      <Row label="Tạm dừng khi mở menu" hint="Mở một bảng (nhập hàng, kho…) là thời gian trong game tạm dừng, đóng bảng chạy tiếp đúng tốc độ cũ">
-        <Switch label="Tạm dừng khi mở menu" on={s.pauseOnMenu} onChange={(v) => set({ pauseOnMenu: v })} />
+      <Row label={t('settings.tam_dung_khi_mo_menu')} hint={t('settings.mo_mot_bang_nhap_hang_kho')}>
+        <Switch label={t('settings.tam_dung_khi_mo_menu')} on={s.pauseOnMenu} onChange={(v) => set({ pauseOnMenu: v })} />
       </Row>
-      <Row label="Xác nhận trước khi kết thúc ngày" hint="Hỏi lại khi nằm lên giường đi ngủ">
-        <Switch label="Xác nhận kết thúc ngày" on={s.confirmEndDay} onChange={(v) => set({ confirmEndDay: v })} />
+      <Row label={t('settings.xac_nhan_truoc_khi_ket_thuc')} hint={t('settings.hoi_lai_khi_nam_len_giuong')}>
+        <Switch label={t('settings.xac_nhan_ket_thuc_ngay')} on={s.confirmEndDay} onChange={(v) => set({ confirmEndDay: v })} />
       </Row>
     </div>
   );
@@ -262,26 +262,26 @@ function A11yTab() {
   const [s, set] = useSettings();
   return (
     <div>
-      <Row label="Cỡ giao diện"><Slider label="Cỡ giao diện" value={s.uiScale} min={0.8} max={1.4} step={0.05} fmt={pct} onChange={(v) => set({ uiScale: v })} /></Row>
-      <Row label="Cỡ chữ">
-        <Select label="Cỡ chữ" value={s.fontSize} options={[['small', 'Nhỏ'], ['normal', 'Vừa'], ['large', 'Lớn']]} onChange={(v) => set({ fontSize: v })} />
+      <Row label={t('settings.co_giao_dien')}><Slider label={t('settings.co_giao_dien')} value={s.uiScale} min={0.8} max={1.4} step={0.05} fmt={pct} onChange={(v) => set({ uiScale: v })} /></Row>
+      <Row label={t('settings.co_chu')}>
+        <Select label={t('settings.co_chu')} value={s.fontSize} options={[['small', t('settings.nho')], ['normal', t('settings.vua')], ['large', t('settings.lon')]]} onChange={(v) => set({ fontSize: v })} />
       </Row>
-      <Row label="Giảm chuyển động" hint="Tắt hiệu ứng chuyển cảnh và hoạt ảnh giao diện">
-        <Switch label="Giảm chuyển động" on={s.reduceMotion} onChange={(v) => set({ reduceMotion: v })} />
+      <Row label={t('settings.giam_chuyen_dong')} hint={t('settings.tat_hieu_ung_chuyen_canh_va')}>
+        <Switch label={t('settings.giam_chuyen_dong')} on={s.reduceMotion} onChange={(v) => set({ reduceMotion: v })} />
       </Row>
-      <Row label="Tương phản cao" hint="Tăng độ rõ của giao diện">
-        <Switch label="Tương phản cao" on={s.highContrast} onChange={(v) => set({ highContrast: v })} />
+      <Row label={t('settings.tuong_phan_cao')} hint={t('settings.tang_do_ro_cua_giao_dien')}>
+        <Switch label={t('settings.tuong_phan_cao')} on={s.highContrast} onChange={(v) => set({ highContrast: v })} />
       </Row>
-      <Row label="Lọc màu cho người mù màu" hint="Đổi dải màu của cả cảnh và giao diện">
-        <Select label="Lọc màu" value={s.colorblind}
-          options={[['off', 'Tắt'], ['protan', 'Khó phân biệt đỏ'], ['deutan', 'Khó phân biệt lục'], ['tritan', 'Khó phân biệt lam']]}
+      <Row label={t('settings.loc_mau_cho_nguoi_mu_mau')} hint={t('settings.doi_dai_mau_cua_ca_canh')}>
+        <Select label={t('settings.loc_mau')} value={s.colorblind}
+          options={[['off', t('settings.tat')], ['protan', t('settings.kho_phan_biet_do')], ['deutan', t('settings.kho_phan_biet_luc')], ['tritan', t('settings.kho_phan_biet_lam')]]}
           onChange={(v) => set({ colorblind: v })} />
       </Row>
-      <Row label="Tắt chớp sáng" hint="Không loé sáng khi có giông sét">
-        <Switch label="Tắt chớp sáng" on={s.noFlash} onChange={(v) => set({ noFlash: v })} />
+      <Row label={t('settings.tat_chop_sang')} hint={t('settings.khong_loe_sang_khi_co_giong')}>
+        <Switch label={t('settings.tat_chop_sang')} on={s.noFlash} onChange={(v) => set({ noFlash: v })} />
       </Row>
-      <Row label="Icon tương phản cao" hint="Viền trắng + nền đậm quanh icon nhỏ trên thanh công cụ — nhìn rõ hơn dưới nắng hoặc mắt yếu">
-        <Switch label="Icon tương phản cao" on={s.iconContrast} onChange={(v) => set({ iconContrast: v })} />
+      <Row label={t('settings.icon_tuong_phan_cao')} hint={t('settings.vien_trang_nen_dam_quanh_icon')}>
+        <Switch label={t('settings.icon_tuong_phan_cao')} on={s.iconContrast} onChange={(v) => set({ iconContrast: v })} />
       </Row>
     </div>
   );
@@ -297,22 +297,22 @@ function GameTab({ game }: { game: GameActions }) {
     <div>
       {!game.online && (
         <>
-          <Row label="Lưu game" hint="Game tự lưu mỗi ngày; bấm để lưu ngay"><button style={dlgBtnPrimary} onClick={game.save}>Lưu</button></Row>
-          <Row label="Khôi phục bản lưu trước" hint="Quay về bản lưu cuối ngày hôm trước; khôi phục lần nữa là trở lại"><button style={dlgBtn} onClick={game.restore}>Khôi phục</button></Row>
+          <Row label={t('settings.luu_game')} hint={t('settings.game_tu_luu_moi_ngay_bam')}><button style={dlgBtnPrimary} onClick={game.save}>{t('settings.luu')}</button></Row>
+          <Row label={t('settings.khoi_phuc_ban_luu_truoc')} hint={t('settings.quay_ve_ban_luu_cuoi_ngay')}><button style={dlgBtn} onClick={game.restore}>{t('settings.khoi_phuc')}</button></Row>
         </>
       )}
-      <Row label="Lịch tự động" hint="Tự mở cửa đúng giờ, 22h30 đóng cửa, 23h kiểm kê và tự về nhà ngủ — khỏi lo ngất vì thức khuya">
-        <Switch label="Lịch tự động" on={autoRoutine} onChange={(v) => useGame.setState({ autoRoutine: v })} />
+      <Row label={t('settings.lich_tu_dong')} hint={t('settings.tu_mo_cua_dung_gio_22h30')}>
+        <Switch label={t('settings.lich_tu_dong')} on={autoRoutine} onChange={(v) => useGame.setState({ autoRoutine: v })} />
       </Row>
       {autoRoutine && (
-        <Row label="Giờ mở cửa" hint="Mở sớm (6h–6h30) đón thêm nửa giờ vàng buổi sáng">
-          <Select label="Giờ mở cửa" value={String(autoOpenAt)} options={AUTO_OPEN_PRESETS.map((m) => [String(m), fmtAt(m)] as [string, string])}
+        <Row label={t('settings.gio_mo_cua')} hint={t('settings.mo_som_6h_6h30_don_them')}>
+          <Select label={t('settings.gio_mo_cua')} value={String(autoOpenAt)} options={AUTO_OPEN_PRESETS.map((m) => [String(m), fmtAt(m)] as [string, string])}
             onChange={(v) => useGame.setState({ autoOpenAt: Number(v) })} />
         </Row>
       )}
-      <Row label="Về màn hình chính" hint="Lưu rồi thoát ra màn đăng nhập"><button style={dlgBtn} onClick={game.backToMenu}>Về menu</button></Row>
+      <Row label={t('settings.ve_man_hinh_chinh')} hint={t('settings.luu_roi_thoat_ra_man_dang')}><button style={dlgBtn} onClick={game.backToMenu}>{t('settings.ve_menu')}</button></Row>
       {!game.online && (
-        <Row label="Chơi lại từ đầu" hint="Xoá bản lưu và bắt đầu ván mới (có hỏi lại trước khi xoá)"><button style={{ ...dlgBtn, color: '#b3261e', borderColor: '#b3261e' }} onClick={game.newGame}>Chơi lại…</button></Row>
+        <Row label={t('settings.choi_lai_tu_dau')} hint={t('settings.xoa_ban_luu_va_bat_dau')}><button style={{ ...dlgBtn, color: '#b3261e', borderColor: '#b3261e' }} onClick={game.newGame}>{t('settings.choi_lai')}</button></Row>
       )}
     </div>
   );
@@ -330,56 +330,51 @@ function DataTab() {
       setCode(c);
       let copied = false;
       try { await navigator.clipboard.writeText(c); copied = true; } catch { /* trình duyệt chặn: người chơi tự chép từ ô bên dưới */ }
-      setMsg({ ok: true, text: copied ? 'Đã chép mã vào bộ nhớ tạm. Dán sang máy mới ở ô "Nhập mã".' : 'Mã nằm ở ô bên dưới — chép toàn bộ rồi dán sang máy mới.' });
-    } catch { setMsg({ ok: false, text: 'Không xuất được mã trên trình duyệt này.' }); }
+      setMsg({ ok: true, text: copied ? t('settings.da_chep_ma_vao_bo_nho') : t('settings.ma_nam_o_o_ben_duoi') });
+    } catch { setMsg({ ok: false, text: t('settings.khong_xuat_duoc_ma_tren_trinh') }); }
   };
   const check = async () => {
     const r = await decodeSaveCode(code);
     if (!r.ok) { setPending(null); return setMsg({ ok: false, text: r.error }); }
     setPending(r.data);
-    setMsg({ ok: true, text: `Mã hợp lệ: ngày ${r.data.day}, cấp ${r.data.level}. Bấm "Nạp vào máy này" để thay ván đang chơi (ván hiện tại được cất lại để khôi phục).` });
+    setMsg({ ok: true, text: t('settings.ma_hop_le_ngay_cap_bam', { day: r.data.day, level: r.data.level }) });
   };
   const load = () => {
     if (!pending) return;
     importSaveData(pending);
     setPending(null);
-    setMsg({ ok: true, text: 'Đã nạp xong. Ván cũ được cất lại ở màn đăng nhập (mục khôi phục).' });
+    setMsg({ ok: true, text: t('settings.da_nap_xong_van_cu_duoc') });
   };
   return (
     <div>
-      <Row label="Mã chuyển máy" hint="Biến ván đang chơi thành một chuỗi chữ để chép sang máy khác">
-        <button style={dlgBtnPrimary} onClick={exportCode}>Xuất mã</button>
+      <Row label={t('settings.ma_chuyen_may')} hint={t('settings.bien_van_dang_choi_thanh_mot')}>
+        <button style={dlgBtnPrimary} onClick={exportCode}>{t('settings.xuat_ma')}</button>
       </Row>
       <div style={{ padding: '10px 0' }}>
-        <div style={{ fontWeight: 600, marginBottom: 4 }}>Nhập mã</div>
-        <textarea aria-label="Mã chuyển máy" value={code} rows={4} placeholder="Dán mã TH3D1.… vào đây"
+        <div style={{ fontWeight: 600, marginBottom: 4 }}>{t('settings.nhap_ma')}</div>
+        <textarea aria-label={t('settings.ma_chuyen_may')} value={code} rows={4} placeholder={t('settings.dan_ma_th3d1_vao_day')}
           onChange={(e) => { setCode(e.target.value); setPending(null); setMsg(null); }}
           style={{ width: '100%', boxSizing: 'border-box', fontSize: 11, fontFamily: 'monospace', borderRadius: 8, border: '1px solid #b9825a', background: '#fffdf6', padding: '6px 8px' }} />
         <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
-          <button style={{ ...dlgBtn, ...(!code.trim() ? dlgBtnDisabled : null) }} onClick={check} disabled={!code.trim()}>Kiểm tra mã</button>
-          <button style={{ ...dlgBtnPrimary, ...(!pending ? dlgBtnDisabled : null) }} onClick={load} disabled={!pending}>Nạp vào máy này</button>
+          <button style={{ ...dlgBtn, ...(!code.trim() ? dlgBtnDisabled : null) }} onClick={check} disabled={!code.trim()}>{t('settings.kiem_tra_ma')}</button>
+          <button style={{ ...dlgBtnPrimary, ...(!pending ? dlgBtnDisabled : null) }} onClick={load} disabled={!pending}>{t('settings.nap_vao_may_nay')}</button>
         </div>
         {msg && <div role="status" style={{ marginTop: 6, fontSize: 12, color: msg.ok ? '#2a7a3a' : '#b3261e' }}>{msg.text}</div>}
       </div>
-      <div style={{ fontWeight: 700, margin: '8px 0 4px' }}>📊 Nhật ký & số liệu chơi thử</div>
-      <Row label="Xuất nhật ký chơi thử" hint="Tải file 30 ngày gần nhất lưu trên máy (không gửi đi đâu) để gửi cho người làm game">
-        <button style={dlgBtn} onClick={downloadPlayLog}>Tải về</button>
+      <div style={{ fontWeight: 700, margin: '8px 0 4px' }}>{t('settings.nhat_ky_so_lieu')}</div>
+      <Row label={t('settings.xuat_nhat_ky_choi_thu')} hint={t('settings.tai_file_30_ngay_gan_nhat')}>
+        <button style={dlgBtn} onClick={downloadPlayLog}>{t('settings.tai_ve')}</button>
       </Row>
-      <Row label="Gửi số liệu ẩn danh" hint="Mặc định tắt; tắt thì xoá số liệu đã gửi">
-        <Switch label="Gửi số liệu ẩn danh" on={tele}
+      <Row label={t('settings.gui_so_lieu_an_danh')} hint={t('settings.mac_dinh_tat_tat_thi_xoa')}>
+        <Switch label={t('settings.gui_so_lieu_an_danh')} on={tele}
           onChange={(v) => { setTelemetryOptIn(v); setT(v); if (v) void flushReports(); else void deleteTelemetry(); }} />
       </Row>
-      <Row label="Xem gửi những gì" hint="Bản ghi mẫu đúng như những gì sẽ gửi">
-        <button style={dlgBtn} onClick={() => setTeleView(!teleView)}>{teleView ? 'Ẩn' : 'Xem'}</button>
+      <Row label={t('settings.xem_gui_nhung_gi')} hint={t('settings.ban_ghi_mau_dung_nhu_nhung')}>
+        <button style={dlgBtn} onClick={() => setTeleView(!teleView)}>{teleView ? t('settings.an') : 'Xem'}</button>
       </Row>
       {teleView && <TelemetrySampleView />}
-      <div style={{ fontWeight: 700, margin: '8px 0 4px' }}>📰 Có gì mới</div>
-      {WHATS_NEW.map((w) => (
-        <div key={w.date} style={{ padding: '6px 0', borderBottom: '1px solid rgba(0,0,0,.08)' }}>
-          <div style={{ fontWeight: 600 }}>{w.title} <span style={{ fontWeight: 400, fontSize: 12, opacity: 0.6 }}>· {w.date}</span></div>
-          <ul style={{ margin: '4px 0 0', paddingLeft: 18, fontSize: 13 }}>{w.lines.map((l) => <li key={l}>{l}</li>)}</ul>
-        </div>
-      ))}
+      <div style={{ fontWeight: 700, margin: '8px 0 4px' }}>{t('settings.co_gi_moi')}</div>
+      <WhatsNewList />
     </div>
   );
 }
@@ -395,7 +390,7 @@ export function SettingsPanel({ onClose, game, initialTab }: { onClose: () => vo
     setRev((n) => n + 1);
   };
   return createPortal(
-    <div role="dialog" aria-label="Cài đặt" onClick={onClose}
+    <div role="dialog" aria-label={t('settings.cai_dat')} onClick={onClose}
       style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.45)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div onClick={(e) => e.stopPropagation()}
         style={{
@@ -428,8 +423,8 @@ export function SettingsPanel({ onClose, game, initialTab }: { onClose: () => vo
           {tab === 'game' && game && <GameTab game={game} />}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', borderTop: '1px solid rgba(0,0,0,.1)', fontSize: 12, opacity: 0.85 }}>
-          <span style={{ flex: 1 }}>Cài đặt lưu riêng trên máy, áp dụng cho mọi save, không ảnh hưởng mô phỏng.</span>
-          <button style={dlgBtn} onClick={reset}>Mặc định</button>
+          <span style={{ flex: 1 }}>{t('settings.cai_dat_luu_rieng_tren_may')}</span>
+          <button style={dlgBtn} onClick={reset}>{t('settings.mac_dinh')}</button>
         </div>
       </div>
     </div>,

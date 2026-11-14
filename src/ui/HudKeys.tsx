@@ -1,16 +1,17 @@
+import { t } from '../core/i18n';
 /** GĐ635: bảng phím tắt trong menu Thêm — tách khỏi Hud để nạp lười (gói tải ban đầu sát trần). */
 export const CONTROLS = [
-  ['WASD / bấm chuột', 'Đi lại'],
-  ['N', 'Đi ngủ (ở giường)'],
-  ['B', 'Bày hàng (ở kệ, tủ)'],
-  ['K', 'Đặt hàng / xem kho (ở kho)'],
-  ['G', 'Giao hàng (ở cửa nhà khách)'],
-  ['M', 'Nấu ăn (ở trạm nấu)'],
-  ['O', 'Đóng / mở cửa tiệm'],
-  ['Kéo chuột trái', 'Nhìn quanh'],
-  ['Chuột phải / Q E', 'Xoay camera'],
-  ['Cuộn chuột', 'Phóng to, thu nhỏ'],
-  ['Esc', 'Đóng bảng'],
+  [t('hud.wasd_bam_chuot'), t('hud.di_lai')],
+  ['N', t('hud.di_ngu_o_giuong')],
+  ['B', t('hud.bay_hang_o_ke_tu')],
+  ['K', t('hud.dat_hang_xem_kho_o_kho')],
+  ['G', t('hud.giao_hang_o_cua_nha_khach')],
+  ['M', t('hud.nau_an_o_tram_nau')],
+  ['O', t('hud.dong_mo_cua_tiem')],
+  [t('hud.keo_chuot_trai'), t('hud.nhin_quanh')],
+  [t('hud.chuot_phai_q_e'), 'Xoay camera'],
+  [t('hud.cuon_chuot'), t('hud.phong_to_thu_nho')],
+  ['Esc', t('hud.dong_bang')],
 ];
 
 export function HudKeys() {

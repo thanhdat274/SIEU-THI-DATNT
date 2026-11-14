@@ -1,7 +1,13 @@
 import type { I18nKey } from './vi';
+import { enLogin } from './en/login';
+import { enSettings } from './en/settings';
+import { enHud } from './en/hud';
 
 /** English. `Record<I18nKey, string>` → thiếu khóa nào `tsc` báo ngay. */
 export const en: Record<I18nKey, string> = {
+  ...enLogin,
+  ...enSettings,
+  ...enHud,
   'settings.title': '⚙️ Settings',
   'settings.subtitle': 'Display, sound, gameplay, accessibility',
   'settings.tab.img': '👁 Display',

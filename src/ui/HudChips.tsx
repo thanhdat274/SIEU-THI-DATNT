@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { initAudio, isMuted, isMusic, setMuted, setMusic } from '../core/audio';
 import { formatMoney } from '../data/products';
+import { t } from '../core/i18n';
 
 /** Nút tắt/bật tiếng: âm thanh lưu riêng trong máy, không nằm trong bản lưu game. */
 export function SoundToggle() {
@@ -8,7 +9,7 @@ export function SoundToggle() {
   return (
     <button
       className="hud-chip hud-sound"
-      title={muted ? 'Bật âm thanh' : 'Tắt âm thanh'}
+      title={muted ? t('hud.bat_am_thanh') : t('hud.tat_am_thanh')}
       onClick={() => { initAudio(); const next = !muted; setMuted(next); setLocal(next); }}
     >
       <span aria-hidden="true">{muted ? '🔇' : '🔊'}</span>
@@ -22,7 +23,7 @@ export function MusicToggle() {
   return (
     <button
       className="hud-chip hud-sound"
-      title={on ? 'Tắt nhạc nền' : 'Bật nhạc nền'}
+      title={on ? t('hud.tat_nhac_nen') : t('hud.bat_nhac_nen')}
       onClick={() => { const next = !on; setMusic(next); setLocal(next); }}
     >
       <span aria-hidden="true">{on ? '🎵' : '🎶'}</span>
@@ -47,7 +48,7 @@ export function MoneyChip({ money }: { money: number }) {
     return () => clearTimeout(t);
   }, [money]);
   return (
-    <div className="hud-chip hud-money" title="Tiền hiện có">
+    <div className="hud-chip hud-money" title={t('hud.tien_hien_co')}>
       <span aria-hidden="true">💰</span>
       <b key={bump} className={delta ? (delta.dir === 1 ? 'money-up' : 'money-down') : undefined}>{formatMoney(money)}</b>
       {delta && <span className={`hud-delta ${delta.dir === 1 ? 'up' : 'down'}`}>{delta.dir === 1 ? '+' : '−'}{formatMoney(Math.abs(delta.v))}</span>}

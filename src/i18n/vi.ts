@@ -2,7 +2,14 @@
  * Từ điển gốc (tiếng Việt). Khóa nào ở đây cũng phải có trong en.ts — `tsc` chặn thiếu khóa.
  * Chuỗi có biến dùng `{ten}`; số nhiều tiếng Anh dùng cặp `khóa_one` / `khóa_other` (xem tn()).
  */
+import { viLogin } from './vi/login';
+import { viSettings } from './vi/settings';
+import { viHud } from './vi/hud';
+
 export const vi = {
+  ...viLogin,
+  ...viSettings,
+  ...viHud,
   'settings.title': '⚙️ Cài đặt',
   'settings.subtitle': 'Hình ảnh, âm thanh, cách chơi, trợ năng',
   'settings.tab.img': '👁 Hình ảnh',
