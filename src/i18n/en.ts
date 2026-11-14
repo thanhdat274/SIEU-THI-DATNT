@@ -8,6 +8,7 @@ import { enPanelsReport } from './en/panels_report';
 import { enPanelsStock } from './en/panels_stock';
 import { enPlanogram } from './en/planogram';
 import { enPanelsPeople } from './en/panels_people';
+import { enPanelsQuan } from './en/panels_quan';
 
 /** English. `Record<I18nKey, string>` → thiếu khóa nào `tsc` báo ngay. */
 export const en: Record<I18nKey, string> = {
@@ -20,6 +21,7 @@ export const en: Record<I18nKey, string> = {
   ...enPanelsStock,
   ...enPlanogram,
   ...enPanelsPeople,
+  ...enPanelsQuan,
   'settings.title': '⚙️ Settings',
   'settings.subtitle': 'Display, sound, gameplay, accessibility',
   'settings.tab.img': '👁 Display',

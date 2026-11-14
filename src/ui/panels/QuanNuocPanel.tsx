@@ -15,6 +15,7 @@ import { QuanMenuSection } from './QuanMenuSection';
 import { WEATHER } from '../../data/weather';
 import { quanHotNote } from '../../data/quanRecipes';
 import { fmtNum } from '../../core/format';
+import { t } from '../../core/i18n';
 
 // Chip trạng thái dùng đúng bảng màu ngữ cảnh chuẩn của dự án (Callout, GĐ166) — bộ màu riêng
 // gần-giống-but-lệch làm palette cả panel loãng.
@@ -32,8 +33,8 @@ const pill = (on: boolean): React.CSSProperties => ({
 /** Chú giải nút mức giá từ hệ số dữ liệu: "Giá ×1.3 nhưng khách −25%". */
 const priceTip = (mul: number, traffic: number) => {
   const pct = Math.round(Math.abs(traffic - 1) * 100);
-  const khach = traffic === 1 ? 'khách như cũ' : `khách ${traffic > 1 ? '+' : '−'}${pct}%`;
-  return `Giá ×${fmtMul(mul)} nhưng ${khach}`;
+  const khach = traffic === 1 ? t('panels_quan.khach_nhu_cu') : t('panels_quan.khach', { v0: traffic > 1 ? '+' : '−', pct });
+  return t('panels_quan.gia_nhung', { v0: fmtMul(mul), khach });
 };
 
 /** Quán Nước Đầu Ngõ: quán nước ở đầu hẻm, nguyên liệu lấy thẳng từ kho tiệm. */
@@ -57,10 +58,10 @@ export function QuanNuocPanel() {
 
   return (
     <div style={{ width: '100%', display: 'flex', flexDirection: 'column', flex: 1 }}>
-      <h2 style={styles.title}>🧋 Quán Nước Đầu Ngõ</h2>
-      <p style={styles.sub}>Quán chuyên nước ở đầu hẻm, mở sớm {shopHoursLabel('quanNuoc')} — nguyên liệu lấy thẳng từ kho của mình.</p>
+      <h2 style={styles.title}>{t('panels_quan.quan_nuoc_dau_ngo')}</h2>
+      <p style={styles.sub}>{t('panels_quan.quan_chuyen_nuoc_o_dau_hem')}{' '}{shopHoursLabel('quanNuoc')}{' '}{t('panels_quan.nguyen_lieu_lay_thang_tu_kho')}</p>
       {quan.open && (
-        <div role="status" aria-label="Trạng thái quán hôm nay" style={{ display: 'flex', flexWrap: 'wrap', gap: 6, margin: '0 0 8px' }}>
+        <div role="status" aria-label={t('panels_quan.trang_thai_quan_hom_nay')} style={{ display: 'flex', flexWrap: 'wrap', gap: 6, margin: '0 0 8px' }}>
           {quanStatusChips(quan, level, drinkUnits, weather, day).map((c) => (
             <span key={c.id} style={{ fontSize: 12, padding: '3px 9px', borderRadius: 999, background: CHIP_BG[c.tone], color: '#fff', whiteSpace: 'nowrap' }}>
               {c.icon} {c.text}
@@ -70,17 +71,17 @@ export function QuanNuocPanel() {
       )}
       {quan.open && QUAN_WEATHER_MUL[weather] !== 1 && (
         <p style={{ fontSize: 12, margin: '0 0 6px' }}>
-          {WEATHER[weather].icon} {WEATHER[weather].name}: khách quán {QUAN_WEATHER_MUL[weather] > 1 ? 'đông' : 'vắng'} hơn ×{fmtMul(QUAN_WEATHER_MUL[weather])} — {QUAN_WEATHER_MUL[weather] > 1 ? 'nạp thêm đồ uống' : 'bớt nhập cho đỡ tồn'}
+          {WEATHER[weather].icon} {WEATHER[weather].name}{t('panels_quan.khach_quan')}{' '}{QUAN_WEATHER_MUL[weather] > 1 ? t('panels_quan.dong') : t('panels_quan.vang')}{' '}{t('panels_quan.hon')}{fmtMul(QUAN_WEATHER_MUL[weather])} — {QUAN_WEATHER_MUL[weather] > 1 ? t('panels_quan.nap_them_do_uong') : t('panels_quan.bot_nhap_cho_do_ton')}
         </p>
       )}
       {quan.open && quanWeekendMul(day) !== 1 && (
-        <p style={{ fontSize: 12, margin: '0 0 6px' }}>🎉 Cuối tuần: khách ngồi quán đông hơn ×{fmtMul(quanWeekendMul(day))} — nạp thêm nguyên liệu</p>
+        <p style={{ fontSize: 12, margin: '0 0 6px' }}>{t('panels_quan.cuoi_tuan_khach_ngoi_quan_dong')}{fmtMul(quanWeekendMul(day))}{' '}{t('panels_quan.nap_them_nguyen_lieu')}</p>
       )}
       {quan.open && isQuanMatchDay(day, weather) && (
-        <p style={{ fontSize: 12, margin: '0 0 6px' }}>⚽ Tối nay có trận bóng: khách quán đông hơn ×{fmtMul(quanMatchMul(day, weather))} — nạp thêm đồ uống</p>
+        <p style={{ fontSize: 12, margin: '0 0 6px' }}>{t('panels_quan.toi_nay_co_tran_bong_khach')}{fmtMul(quanMatchMul(day, weather))}{' '}{t('panels_quan.nap_them_do_uong_2')}</p>
       )}
       {quan.open && !isQuanMatchDay(day, weather) && isQuanMatchDay(day + 1, forecast[0] ?? 'sunny') && ( // GĐ645: mai dự báo mưa thì không báo trận
-        <p style={{ fontSize: 12, margin: '0 0 6px' }}>⚽ Mai có trận bóng (nếu trời không mưa) — chuẩn bị đồ uống từ hôm nay</p>
+        <p style={{ fontSize: 12, margin: '0 0 6px' }}>{t('panels_quan.mai_co_tran_bong_neu_troi')}</p>
       )}
       {quan.open && quanHotNote(quan.menu ?? [], weather, level, day) && (
         <p style={{ fontSize: 12, margin: '0 0 6px' }}>{quanHotNote(quan.menu ?? [], weather, level, day)}</p>
@@ -88,12 +89,12 @@ export function QuanNuocPanel() {
       {!quan.open ? (
         <>
           <div style={{ ...styles.card, display: 'block' }}>
-            <b>🏗️ Xây quán ở đầu hẻm</b>
+            <b>{t('panels_quan.xay_quan_o_dau_hem')}</b>
             <ul style={{ fontSize: 13, margin: '6px 0 0', paddingLeft: 18, lineHeight: 1.7 }}>
-              <li>Cần cấp <b>{QUAN_NUOC_UNLOCK}</b> · giá xây <b>{formatMoney(QUAN_NUOC_PRICE)}</b> (trả một lần, sở hữu luôn)</li>
-              <li>🧃 Bán nước nguyên liệu sẵn trong kho — nước/ngọt/cà phê tồn kho có chỗ tiêu mới</li>
-              <li>💰 Phí tuyển {formatMoney(QUAN_NUOC_HIRE_FEE)}/người, lương {formatMoney(QUAN_NUOC_WAGE)}/ngày, tối đa {QUAN_NUOC_MAX_STAFF} nhân viên</li>
-              <li>⚙️ Ba mức giờ bán: bình dân kéo khách, đắt hơn lời cao</li>
+              <li>{t('panels_quan.can_cap')}{' '}<b>{QUAN_NUOC_UNLOCK}</b>{' '}{t('panels_quan.gia_xay')}{' '}<b>{formatMoney(QUAN_NUOC_PRICE)}</b>{' '}{t('panels_quan.tra_mot_lan_so_huu_luon')}</li>
+              <li>{t('panels_quan.ban_nuoc_nguyen_lieu_san_trong')}</li>
+              <li>{t('panels_quan.phi_tuyen')}{' '}{formatMoney(QUAN_NUOC_HIRE_FEE)}{t('panels_quan.nguoi_luong')}{' '}{formatMoney(QUAN_NUOC_WAGE)}{t('panels_quan.ngay_toi_da')}{' '}{QUAN_NUOC_MAX_STAFF}{' '}{t('panels_quan.nhan_vien')}</li>
+              <li>{t('panels_quan.ba_muc_gio_ban_binh_dan')}</li>
             </ul>
             {!locked && (() => { // GĐ193: ước hồi vốn — quyết định mua (giá 25tr) có đáng không
               const bp = quanNuocBuildPayback(level);
@@ -101,11 +102,11 @@ export function QuanNuocPanel() {
               const c = bp.verdict === 'worth' ? '#2ecc71' : bp.verdict === 'slow' ? '#e67e22' : '#e74c3c';
               return (
                 <div style={{ fontSize: 12, marginTop: 6, color: c }}>
-                  💸 Ước hồi vốn 25tr:{' '}
+                  {t('panels_quan.uoc_hoi_von_25tr')}{' '}
                   {bp.verdict === 'notworth'
-                    ? `đang lỗ ~${formatMoney(-bp.netPerDay)}/ngày (1 nhân viên, giá vừa) — chờ lên cấp thêm thực đơn`
-                    : `~${bp.paybackDays} ngày (lời ~${formatMoney(bp.netPerDay)}/ngày)`}{' '}
-                  · nếu kho đủ
+                    ? t('panels_quan.dang_lo_ngay_1_nhan_vien', { v0: formatMoney(-bp.netPerDay) })
+                    : t('panels_quan.ngay_loi_ngay', { paybackDays: bp.paybackDays ?? 0, v1: formatMoney(bp.netPerDay) })}{' '}
+                  {t('panels_quan.neu_kho_du')}
                 </div>
               );
             })()}
@@ -117,19 +118,19 @@ export function QuanNuocPanel() {
               opacity: canBuild ? 1 : 0.6, cursor: canBuild ? 'pointer' : 'not-allowed',
             }}
             disabled={!canBuild}
-            title={locked ? `Mở ở cấp ${QUAN_NUOC_UNLOCK}` : money < QUAN_NUOC_PRICE ? `Chưa đủ tiền (cần ${formatMoney(QUAN_NUOC_PRICE)})` : 'Xây quán và bắt đầu bán nước'}
+            title={locked ? t('panels_quan.mo_o_cap', { QUAN_NUOC_UNLOCK }) : money < QUAN_NUOC_PRICE ? t('panels_quan.chua_du_tien_can', { v0: formatMoney(QUAN_NUOC_PRICE) }) : t('panels_quan.xay_quan_va_bat_dau_ban')}
             onClick={buyQuanNuoc}
           >
-            🏗️ Xây quán ({formatMoney(QUAN_NUOC_PRICE)})
+            {t('panels_quan.xay_quan')}{formatMoney(QUAN_NUOC_PRICE)})
           </button>
           {locked
-            ? <p style={{ fontSize: 13, color: '#e67e22', margin: '6px 0 0' }}>🔒 Mở ở cấp {QUAN_NUOC_UNLOCK}.</p>
-            : money < QUAN_NUOC_PRICE && <p style={{ fontSize: 13, color: '#e67e22', margin: '6px 0 0' }}>Chưa đủ tiền — có thể vay ở mục Kinh doanh.</p>}
+            ? <p style={{ fontSize: 13, color: '#e67e22', margin: '6px 0 0' }}>{t('panels_quan.mo_o_cap_2')}{' '}{QUAN_NUOC_UNLOCK}.</p>
+            : money < QUAN_NUOC_PRICE && <p style={{ fontSize: 13, color: '#e67e22', margin: '6px 0 0' }}>{t('panels_quan.chua_du_tien_co_the_vay')}</p>}
         </>
       ) : (
         <>
           <div style={{ ...styles.card }}>
-            <b style={{ flex: 1 }}>👥 Nhân viên: {quan.staff}/{QUAN_NUOC_MAX_STAFF} · lương {formatMoney(quan.staff * QUAN_NUOC_WAGE)}/ngày</b>
+            <b style={{ flex: 1 }}>{t('panels_quan.nhan_vien_2')}{' '}{quan.staff}/{QUAN_NUOC_MAX_STAFF}{' '}{t('panels_quan.luong')}{' '}{formatMoney(quan.staff * QUAN_NUOC_WAGE)}{t('panels_quan.ngay')}</b>
             <button
               style={{
                 ...styles.btn, background: canHire ? '#2ecc71' : '#555', color: '#fff',
@@ -137,11 +138,11 @@ export function QuanNuocPanel() {
               }}
               disabled={!canHire}
               title={quan.staff >= QUAN_NUOC_MAX_STAFF
-                ? `Quán chỉ giữ được ${QUAN_NUOC_MAX_STAFF} nhân viên`
-                : money < QUAN_NUOC_HIRE_FEE ? `Chưa đủ phí tuyển ${formatMoney(QUAN_NUOC_HIRE_FEE)}` : 'Tuyển thêm nhân viên pha chế'}
+                ? t('panels_quan.quan_chi_giu_duoc_nhan_vien', { QUAN_NUOC_MAX_STAFF })
+                : money < QUAN_NUOC_HIRE_FEE ? t('panels_quan.chua_du_phi_tuyen', { v0: formatMoney(QUAN_NUOC_HIRE_FEE) }) : t('panels_quan.tuyen_them_nhan_vien_pha_che')}
               onClick={hireQuanNuoc}
             >
-              + Tuyển ({formatMoney(QUAN_NUOC_HIRE_FEE)})
+              {t('panels_quan.tuyen')}{formatMoney(QUAN_NUOC_HIRE_FEE)})
             </button>
             <button
               style={{
@@ -149,27 +150,26 @@ export function QuanNuocPanel() {
                 opacity: quan.staff > 0 ? 1 : 0.6, cursor: quan.staff > 0 ? 'pointer' : 'not-allowed',
               }}
               disabled={quan.staff <= 0}
-              title={quan.staff <= 0 ? 'Chưa có nhân viên nào' : 'Sa thải một nhân viên (bớt tiền lương mỗi ngày)'}
+              title={quan.staff <= 0 ? t('panels_quan.chua_co_nhan_vien_nao') : t('panels_quan.sa_thai_mot_nhan_vien_bot')}
               onClick={fireQuanNuoc}
             >
-              − Sa thải
+              {t('panels_quan.sa_thai')}
             </button>
           </div>
           <p style={{ fontSize: 12, opacity: 0.75, margin: '2px 0 6px' }}>
-            👥 Mỗi nhân viên đón thêm khách → bán được nhiều ly hơn (tăng doanh thu thô), nhưng tốn lương mỗi ngày.
-            Lợi nhuận ròng mỗi ly điều chỉnh bằng mức <b>Giờ bán</b> bên dưới.
+            {t('panels_quan.moi_nhan_vien_don_them_khach')}{' '}<b>{t('panels_quan.gio_ban')}</b>{' '}{t('panels_quan.ben_duoi')}
           </p>
           {hireProj && tonightProj && (
             <div style={{ fontSize: 12, margin: '0 0 6px', color: hireProj.served > tonightProj.served && hireProj.profit - tonightProj.profit >= 0 ? '#2ecc71' : '#e67e22' }}>
               {hireProj.served > tonightProj.served && hireProj.profit - tonightProj.profit >= 0
-                ? `💰 Dự phóng thuê thêm 1 người: lời ròng ~${formatMoney(hireProj.profit)}/ngày (đang ~${formatMoney(tonightProj.profit)}, +${formatMoney(hireProj.profit - tonightProj.profit)}) — đáng so với lương ${formatMoney(QUAN_NUOC_WAGE)}.`
+                ? t('panels_quan.du_phong_thue_them_1_nguoi', { v0: formatMoney(hireProj.profit), v1: formatMoney(tonightProj.profit), v2: formatMoney(hireProj.profit - tonightProj.profit), v3: formatMoney(QUAN_NUOC_WAGE) })
                 : hireProj.served > tonightProj.served
-                  ? `💰 Thuê thêm 1 người chưa đáng: bán thêm ${formatMoney(hireProj.served - tonightProj.served)} ly nhưng lương ${formatMoney(QUAN_NUOC_WAGE)}/ngày cao hơn lời tăng (lời ròng ~${formatMoney(hireProj.profit)} vs ~${formatMoney(tonightProj.profit)}).`
-                  : `💰 Thuê thêm KHÔNG đáng: kho chỉ còn ${drinkUnits} ly đồ uống, tuyển thêm không bán thêm (lời ròng ~${formatMoney(hireProj.profit)} vs ~${formatMoney(tonightProj.profit)}). Nhập nước/ngọt/cà phê trước.`}
+                  ? t('panels_quan.thue_them_1_nguoi_chua_dang', { v0: formatMoney(hireProj.served - tonightProj.served), v1: formatMoney(QUAN_NUOC_WAGE), v2: formatMoney(hireProj.profit), v3: formatMoney(tonightProj.profit) })
+                  : t('panels_quan.thue_them_khong_dang_kho_chi', { drinkUnits, v1: formatMoney(hireProj.profit), v2: formatMoney(tonightProj.profit) })}
             </div>
           )}
           <div style={{ ...styles.card }}>
-            <b style={{ flex: 'none' }}>⏰ Giờ bán</b>
+            <b style={{ flex: 'none' }}>{t('panels_quan.gio_ban_2')}</b>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
               {PRICE_ORDER.map((id) => {
                 const o = QUAN_PRICE_OPTIONS[id];
@@ -182,7 +182,7 @@ export function QuanNuocPanel() {
             </div>
             {quan.open && pricePayoff && (
               <div style={{ fontSize: 11, marginTop: 6, opacity: 0.9, lineHeight: 1.5 }}>
-                <b style={{ marginRight: 4 }}>💡 Lời ròng tối nay từng mức:</b>
+                <b style={{ marginRight: 4 }}>{t('panels_quan.loi_rong_toi_nay_tung_muc')}</b>
                 {PRICE_ORDER.map((id) => {
                   const p = pricePayoff[id];
                   const now = quan.price === id;
@@ -193,44 +193,44 @@ export function QuanNuocPanel() {
                     </span>
                   );
                 })}
-                {pricePayoff.vua.served === 0 && <span style={{ opacity: 0.6 }}>· kho cạn đồ uống — nhập trước khi so</span>}
+                {pricePayoff.vua.served === 0 && <span style={{ opacity: 0.6 }}>{t('panels_quan.kho_can_do_uong_nhap_truoc')}</span>}
               </div>
             )}
           </div>
           {last && (
             <div style={{ ...styles.card, display: 'block', borderLeft: `3px solid ${(last.profit ?? last.revenue) < 0 ? '#e74c3c' : '#2ecc71'}` }}>
-              <b>🧾 Hôm qua: {last.served}/{last.wanted} ly · doanh thu {formatMoney(last.revenue)}</b>
+              <b>{t('panels_quan.hom_qua')}{' '}{last.served}/{last.wanted} ly · doanh thu {formatMoney(last.revenue)}</b>
               {last.wages !== undefined && last.profit !== undefined && (
                 <div style={{ fontSize: 12, marginTop: 4 }}>
-                  lương −{formatMoney(last.wages)} · lời ròng <b style={{ color: last.profit >= 0 ? '#2ecc71' : '#e74c3c' }}>{trendMark(last.profit)}{formatMoney(last.profit)}</b>
+                  {t('panels_quan.luong_2')}{formatMoney(last.wages)}{' '}{t('panels_quan.loi_rong')}{' '}<b style={{ color: last.profit >= 0 ? '#2ecc71' : '#e74c3c' }}>{trendMark(last.profit)}{formatMoney(last.profit)}</b>
                 </div>
               )}
               {last.event === 'brewer' && (
-                <div style={{ fontSize: 12, marginTop: 4, color: '#e67e22' }}>⚙️ Hôm qua máy pha hỏng — quán pha chậm, đã sửa xong.</div>
+                <div style={{ fontSize: 12, marginTop: 4, color: '#e67e22' }}>{t('panels_quan.hom_qua_may_pha_hong_quan')}</div>
               )}
               {last.event === 'cart' && (
-                <div style={{ fontSize: 12, marginTop: 4, color: '#e67e22' }}>🛺 Hôm qua có xe nước mọc đối diện — khách vắng hơn.</div>
+                <div style={{ fontSize: 12, marginTop: 4, color: '#e67e22' }}>{t('panels_quan.hom_qua_co_xe_nuoc_moc')}</div>
               )}
               {last.served < last.wanted && (
-                <div style={{ fontSize: 12, marginTop: 4, color: '#e67e22' }}>⚠️ Kho thiếu đồ uống — nhập nước/ngọt/cà phê… để bán đủ.</div>
+                <div style={{ fontSize: 12, marginTop: 4, color: '#e67e22' }}>{t('panels_quan.kho_thieu_do_uong_nhap_nuoc')}</div>
               )}
             </div>
           )}
           {restockTip && (
             <Callout
               tone={restockTip.verdict}
-              title={restockTip.verdict === 'danger' ? '🚨 Thiếu đồ uống tối nay' : '🥤 Sắp ăn khô kho chung'}
+              title={restockTip.verdict === 'danger' ? t('panels_quan.thieu_do_uong_toi_nay') : t('panels_quan.sap_an_kho_kho_chung')}
               style={{ marginTop: 6 }}
             >
               <div style={{ fontSize: 12 }}>
                 {restockTip.verdict === 'danger'
-                  ? `Hôm qua đã bỏ lỡ ~${fmtNum(restockTip.missedRevenue)}đ vì kho thiếu. Đêm nay quán cần ~${restockTip.wanted} ly nhưng kho chỉ còn ${restockTip.have} — cần thêm ${restockTip.shortfall} ly để bán đủ. `
-                  : `Đêm nay quán cần ~${restockTip.wanted} ly nhưng kho chỉ còn ${restockTip.have} — quán ăn hết là kệ tiệm chính cạn nước. Cần thêm ${restockTip.shortfall} ly. `}
+                  ? t('panels_quan.hom_qua_da_bo_lo_d', { v0: fmtNum(restockTip.missedRevenue), wanted: restockTip.wanted, have: restockTip.have, shortfall: restockTip.shortfall })
+                  : t('panels_quan.dem_nay_quan_can_ly_nhung', { wanted: restockTip.wanted, have: restockTip.have, shortfall: restockTip.shortfall })}
                 <button
                   style={{ ...styles.btn, marginLeft: 0, padding: '2px 10px', background: restockTip.verdict === 'danger' ? '#e74c3c' : '#e67e22', color: '#fff' }}
                   onClick={() => openPanel({ type: 'order' })}
                 >
-                  → Nhập hàng
+                  {t('panels_quan.nhap_hang')}
                 </button>
               </div>
             </Callout>
@@ -239,19 +239,19 @@ export function QuanNuocPanel() {
             const hr = teahouseHaulRead(drinkUnits, quan, level, day);
             if (hr.daysLeft >= 3) return null;
             const tone = hr.verdict === 'danger' ? 'danger' : 'warn';
-            const nights = hr.daysLeft === Infinity ? 'vô hạn' : `~${Math.ceil(hr.daysLeft)} đêm`;
+            const nights = hr.daysLeft === Infinity ? t('panels_quan.vo_han') : t('panels_quan.dem', { v0: Math.ceil(hr.daysLeft) });
             return (
-              <Callout tone={tone} title={hr.verdict === 'danger' ? '🚨 Kho đồ uống sắp cạn' : '🥤 Quán ăn khô kho chung'} style={{ marginTop: 6 }}>
+              <Callout tone={tone} title={hr.verdict === 'danger' ? t('panels_quan.kho_do_uong_sap_can') : t('panels_quan.quan_an_kho_kho_chung')} style={{ marginTop: 6 }}>
                 <div style={{ fontSize: 12 }}>
-                  Kho chung chỉ còn <b>{hr.haveNow} ly</b> đồ uống, quán tiêu ~<b>{hr.needPerNight} ly/đêm</b> → còn {nights}.
+                  {t('panels_quan.kho_chung_chi_con')}{' '}<b>{hr.haveNow} ly</b>{' '}{t('panels_quan.do_uong_quan_tieu')}<b>{hr.needPerNight}{' '}{t('panels_quan.ly_dem')}</b>{' '}{t('panels_quan.con')}{' '}{nights}.
                   {hr.haulNow
-                    ? ' Nên chở thêm đồ uống về kho sớm (cửa sổ vài đêm), đừng chờ cạn đúng một đêm mới nhập.'
-                    : ' Quán đang đóng, không đụng kho.'}{' '}
+                    ? t('panels_quan.nen_cho_them_do_uong_ve')
+                    : t('panels_quan.quan_dang_dong_khong_dung_kho')}{' '}
                   <button
                     style={{ ...styles.btn, marginLeft: 0, padding: '2px 10px', background: '#e67e22', color: '#fff' }}
                     onClick={() => openPanel({ type: 'order' })}
                   >
-                    → Nhập đồ uống
+                    {t('panels_quan.nhap_do_uong')}
                   </button>
                 </div>
               </Callout>
@@ -259,30 +259,30 @@ export function QuanNuocPanel() {
           })()}
           {staffValues.length > 0 && (            <Callout
               tone={staffValues.some((v) => v.verdict !== 'ok') ? 'warn' : 'ok'}
-              title="🧑‍🤝‍🧑 Từng người đáng đồng lương?"
+              title={t('panels_quan.tung_nguoi_dang_dong_luong')}
               style={{ marginTop: 6 }}
             >
               <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                 {staffValues.map((v) => (
                   <div key={v.index} style={{ fontSize: 12 }}>
                     <b style={{ color: v.verdict === 'ok' ? '#2ecc71' : '#e67e22' }}>
-                      {v.verdict === 'ok' ? '✔' : v.verdict === 'warn' ? '◑' : '✖'} Người thứ {v.index}
+                      {v.verdict === 'ok' ? '✔' : v.verdict === 'warn' ? '◑' : '✖'}{' '}{t('panels_quan.nguoi_thu')}{' '}{v.index}
                     </b>
-                    {' · '}{v.marginalValue >= 0 ? '+' : ''}{formatMoney(v.marginalValue)} /ngày —
+                    {' · '}{v.marginalValue >= 0 ? '+' : ''}{formatMoney(v.marginalValue)}{' '}{t('panels_quan.ngay_2')}
                     {v.marginNet >= 0
-                      ? ` đáng lương ${formatMoney(v.wage)} (lãi +${formatMoney(v.marginNet)})`
+                      ? t('panels_quan.dang_luong_lai', { v0: formatMoney(v.wage), v1: formatMoney(v.marginNet) })
                       : v.ratio >= 0.5
-                        ? ` chưa đáng ${formatMoney(v.wage)} (lỗ ${formatMoney(-v.marginNet)}/ngày)`
-                        : ` nên sa thải — kho chỉ còn ${drinkUnits} ly`}
+                        ? t('panels_quan.chua_dang_lo_ngay', { v0: formatMoney(v.wage), v1: formatMoney(-v.marginNet) })
+                        : t('panels_quan.nen_sa_thai_kho_chi_con', { drinkUnits })}
                   </div>
                 ))}
               </div>
               <div style={{ fontSize: 11, opacity: 0.7, marginTop: 4 }}>
-                Giá trị biên = doanh thu người này mang thêm so với ít hơn 1 người, trừ lương. Kho cạn đồ uống thì người cuối không bán thêm được.
+                {t('panels_quan.gia_tri_bien_doanh_thu_nguoi')}
               </div>
             </Callout>
           )}
-          <p style={{ fontSize: 12, opacity: 0.7, margin: '8px 0 0' }}>🧃 Nguyên liệu lấy thẳng từ kho: kho hết nước là quán bán không được.</p>
+          <p style={{ fontSize: 12, opacity: 0.7, margin: '8px 0 0' }}>{t('panels_quan.nguyen_lieu_lay_thang_tu_kho_2')}</p>
         </>
       )}
       {quan.open && <QuanMenuSection />}

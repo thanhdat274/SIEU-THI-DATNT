@@ -9,6 +9,7 @@ import { quanHandPayoff, quanHandPayoffLine } from '../../data/quanHandPayoff';
 import { styles } from './shared';
 import { blockedLabel, shortLabel } from '../shortLabel';
 import { newUnlockMark } from '../../data/advice';
+import { t } from '../../core/i18n';
 
 /** Thực đơn pha chế quán nước (GĐ415): chọn tối đa 4 món, mỗi món hiện lời/ly và số ly kho đủ pha. */
 export function QuanMenuSection() {
@@ -25,23 +26,23 @@ export function QuanMenuSection() {
   const handLine = quanHandPayoffLine(quanHandPayoff({ level, menu, storage, priceMul: mul, day, q }));
   return (
     <div style={{ ...styles.card, display: 'block', marginTop: 10 }}>
-      <b>📋 Thực đơn pha chế ({menu.length}/{slots})</b>
+      <b>{t('panels_quan.thuc_don_pha_che')}{menu.length}/{slots})</b>
       <div style={{ fontSize: 12, opacity: 0.75, margin: '2px 0 6px' }}>
-        Món pha lời hơn nước chai, cần đủ nguyên liệu trong kho. Mỗi món thêm kéo +{Math.round(QUAN_VARIETY_BONUS * 100)}% khách.
-        {menu.length === 0 && ' Chưa chọn món nào: quán chỉ bán nước chai.'}
+        {t('panels_quan.mon_pha_loi_hon_nuoc_chai')}{Math.round(QUAN_VARIETY_BONUS * 100)}{t('panels_quan.khach_2')}
+        {menu.length === 0 && t('panels_quan.chua_chon_mon_nao_quan_chi')}
       </div>
       <div style={{ fontSize: 13, marginBottom: 6 }}>
         {QUAN_TIERS[tier].icon} <b>{QUAN_TIERS[tier].name}</b>
-        <span style={{ fontSize: 11, opacity: 0.7 }}> (bậc {tier + 1}/{QUAN_TIERS.length}: {QUAN_TIERS.map((t) => t.name).join(' → ')} — cùng một cửa hàng)</span>
+        <span style={{ fontSize: 11, opacity: 0.7 }}>{' '}{t('panels_quan.bac')}{' '}{tier + 1}/{QUAN_TIERS.length}: {QUAN_TIERS.map((t) => t.name).join(' → ')}{' '}{t('panels_quan.cung_mot_cua_hang')}</span>
         {nextTier && (
           <button style={styles.btn} disabled={level < nextTier.level || money < nextTier.cost} onClick={() => upgradeQuanTier()}>
-            {level < nextTier.level ? `${nextTier.name}: cấp ${nextTier.level}` : shortLabel(`Nâng lên ${nextTier.name} ${formatMoney(nextTier.cost)} (khách ×${fmtMul(nextTier.mul)}${quanMenuSlots({ tier: tier + 1 }) > slots ? ', +1 ô món' : ''})`, nextTier.cost, money)}
+            {level < nextTier.level ? t('panels_quan.cap', { name: nextTier.name, level: nextTier.level }) : shortLabel(`Nâng lên ${nextTier.name} ${formatMoney(nextTier.cost)} (khách ×${fmtMul(nextTier.mul)}${quanMenuSlots({ tier: tier + 1 }) > slots ? ', +1 ô món' : ''})`, nextTier.cost, money)}
           </button>
         )}
       </div>
       <button style={{ ...styles.btn, marginLeft: 0, marginBottom: 6 }} disabled={!menu.length || quanHandLeft(q, day) <= 0} onClick={() => brewQuanHand()}
-        title="Tự đứng quầy pha một mẻ, lần lượt từng món trên thực đơn, bán ngay giá tay nghề +20%">
-        {blockedLabel(!menu.length ? '🍹 Chọn món vào thực đơn trước' : null, `🍹 Tự pha ${QUAN_HAND_CUPS} ly (còn ${quanHandLeft(q, day)} mẻ)`, 0, money)}
+        title={t('panels_quan.tu_dung_quay_pha_mot_me')}>
+        {blockedLabel(!menu.length ? t('panels_quan.chon_mon_vao_thuc_don_truoc') : null, t('panels_quan.tu_pha_ly_con_me', { QUAN_HAND_CUPS, v1: quanHandLeft(q, day) }), 0, money)}
       </button>
       {handLine && (
         <div style={{ fontSize: 11, marginTop: 2, color: '#2ecc71' }}>{handLine}</div>
@@ -62,13 +63,13 @@ export function QuanMenuSection() {
               disabled={locked || (!on && menu.length >= slots)}
               onClick={() => toggleQuanRecipe(r.id)}
             >
-              {locked ? `Cấp ${r.unlock}` : on ? '✓ Bán' : blockedLabel(menu.length >= slots ? `Đủ ${slots} ô` : null, 'Thêm', 0, money)}
+              {locked ? t('panels_quan.cap_2', { unlock: r.unlock }) : on ? t('panels_quan.ban') : blockedLabel(menu.length >= slots ? t('panels_quan.du_o', { slots }) : null, t('panels_quan.them'), 0, money)}
             </button>
             <div style={{ fontSize: 13, lineHeight: 1.4 }}>
-              {r.icon} <b>{r.name}</b>{newUnlockMark(r.unlock, level)} · {formatMoney(Math.round(r.price * mul))} · lời ~{formatMoney(profit)}/ly{r.hot ? " · ♨ đồ nóng (mưa/rét đông khách)" : ""}
+              {r.icon} <b>{r.name}</b>{newUnlockMark(r.unlock, level)} · {formatMoney(Math.round(r.price * mul))}{' '}{t('panels_quan.loi')}{formatMoney(profit)}/ly{r.hot ? t('panels_quan.do_nong_mua_ret_dong_khach') : ""}
               <div style={{ fontSize: 11, opacity: 0.75 }}>
                 {r.uses.map((u) => productById(u.id).name).join(' + ')}
-                {!locked && (missing.length ? ` · ⚠️ thiếu ${missing.join(', ')}` : ` · kho đủ ~${cap} ly`)}
+                {!locked && (missing.length ? t('panels_quan.thieu', { v0: missing.join(', ') }) : t('panels_quan.kho_du_ly', { cap }))}
               </div>
             </div>
           </div>
