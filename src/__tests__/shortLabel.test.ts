@@ -30,7 +30,7 @@ describe('GĐ1649 — nhập gấp bán sỉ và đơn nhập nêu số thiếu'
     const { readFileSync } = await import('node:fs');
     expect(readFileSync('src/ui/VendorAlert.tsx', 'utf8')).toContain('shortLabel(');
     const order = readFileSync('src/ui/OrderPanel.tsx', 'utf8');
-    expect(order).toContain('thiếu {formatMoney(total - money)}');
+    expect(order).toContain("{t('order.thieu_3')}{' '}{formatMoney(total - money)}");
     expect(order).not.toContain('· không đủ tiền</span>');
   });
 });

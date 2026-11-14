@@ -42,6 +42,7 @@ const NEW_WITHIN = NEW_UNLOCK_WINDOW;
 type Filter = 'suggest' | 'all' | Category;
 
 import { ASSESS_STYLE, BUY_TONE_COLOR, BUY_TONE_ICON, BUY_TONE_LABEL, DIR_WORD, Meter } from './orderPanelParts';
+import { t } from '../core/i18n';
 
 export function OrderPanel() {
   const { level, day, money, demand, demandToday, deliveries, placeOrder, closePanel, notify, weatherSeed, forecast, storage, weather, warehouseTier, priceOf, furniture, openPanel, analytics } = useGame();
@@ -50,7 +51,7 @@ export function OrderPanel() {
   useEffect(() => {
     const g = useGame.getState();
     const next = orderSlowdown(g.speed, !!coop);
-    if (next !== null) { g.setSpeed(next); g.notify('⏱ Đang tua nhanh → hạ về 1× cho bạn chọn hàng thong thả'); }
+    if (next !== null) { g.setSpeed(next); g.notify(t('order.dang_tua_nhanh_ha_ve_1')); }
   }, [coop]);
   // GĐ57: lớp minh bạch giá mua chỉ bật khi đã mở mối dao động mạnh (Chợ đầu mối, cấp 3) — cấp <3 chưa thấy gì mới.
   const showCost = level >= 3;
@@ -215,7 +216,7 @@ export function OrderPanel() {
   const setQty = (id: string, qty: number) => {
     const want = Math.max(0, Math.min(99, Math.round(qty) || 0));
     const q = want > (cart[id] ?? 0) ? maxFit(cart, id, want) : want;
-    if (q < want) notify(moneyLeft < unitCost(supplier, id, day) * caseSize(id) ? '💰 Không đủ tiền cho thêm thùng nữa' : '📦 Nhà kho hết chỗ, nâng cấp nhà kho để nhập thêm');
+    if (q < want) notify(moneyLeft < unitCost(supplier, id, day) * caseSize(id) ? t('order.khong_du_tien_cho_them_thung') : t('order.nha_kho_het_cho_nang_cap'));
     setCart((c) => ({ ...c, [id]: q }));
   };
   // Điền gợi ý theo thứ tự ưu tiên (món thiếu, bán chạy trước), mỗi món lấy tối đa phần còn vừa ngân sách và kho.
@@ -264,8 +265,8 @@ export function OrderPanel() {
       if (c[r.p.id] < want) cut = true;
     }
     setCart(c);
-    if (cut) notify(useGame.getState().day <= 1 ? '💰 Ngày đầu điền đủ bộ 3 món hướng dẫn — bán xong nhập thêm' : '💰/📦 Điền tới hết tiền hoặc hết chỗ kho — nâng cấp để nhập thêm');
-    else if (bottle > 0 && restockTip) notify(`🧾 Đã điền nút thắt quán nước (${bottle}/${restockTip.shortfall} ly thiếu) + gợi ý thường`);
+    if (cut) notify(useGame.getState().day <= 1 ? t('order.ngay_dau_dien_du_bo_3') : t('order.dien_toi_het_tien_hoac_het'));
+    else if (bottle > 0 && restockTip) notify(t('order.da_dien_nut_that_quan_nuoc', { bottle, shortfall: restockTip.shortfall }));
   };
   // GĐ1512 (K1) — mở từ nút "📦 Nhập đủ" trên cảnh báo sắp hết hàng: tự điền giỏ gợi ý một lần
   // (người chơi vẫn xem lại và bấm Đặt). Xoá cờ ngay để mở lại bảng không điền lần nữa.
@@ -290,7 +291,7 @@ export function OrderPanel() {
       if (casesWant > 0) c[l.id] = maxFit(c, l.id, casesWant, budget);
     }
     setCart(c);
-    notify('🧾 Đã thêm món chi nhánh thiếu vào giỏ (theo phiếu nạp kho)');
+    notify(t('order.da_them_mon_chi_nhanh_thieu'));
   };
   // GĐ209: một-chạm nạp ĐỒ UỐNG cho quán nước — quán rút đồ uống từ kho CHUNG nên "chở" = đặt đồ uống
   // về kho đủ tối nay. Dùng helper THUẦN teahouseFillPlan (phân bổ thiếu vào món quán bán mà supplier
@@ -300,7 +301,7 @@ export function OrderPanel() {
     const budget = Math.max(0, money - wages);
     const drinkUnits = quanNuocDrinkIds(level).reduce((n, id) => n + (storage[id] ?? 0), 0);
     const plan = teahouseFillPlan(biz.quanNuoc, level, drinkUnits, (id) => (rows.some((r) => r.p.id === id) ? caseSize(id) : 0), day);
-    if (plan.topup <= 0) return notify('🥤 Quán nước tối nay đã đủ đồ uống — không cần nạp.');
+    if (plan.topup <= 0) return notify(t('order.quan_nuoc_toi_nay_da_du'));
     let c = { ...cart };
     let filled = 0;
     for (const ln of plan.lines) {
@@ -310,7 +311,7 @@ export function OrderPanel() {
     setCart(c);
     notify(filled > 0
       ? `🧾 Đã thêm ${filled} ly đồ uống thiếu cho quán nước vào giỏ (${plan.lines.map((l) => `${l.id}×${l.cases}`).join(', ')})`
-      : '💰/📦 Đủ tiền hay chỗ kho không vừa thêm thùng nào — nâng cấp kho/nhập ít hơn');
+      : t('order.du_tien_hay_cho_kho_khong'));
   };
   // GĐ247: phiếu trữ lễ — lễ sắp tới (≤3 ngày) còn món chưa trữ đủ trong kho → một chạm vào giỏ.
   // Món mối này không bán thì liệt kê ở skipped để gợi ý đổi mối (helper thuần, giỏ điền qua maxFit).
@@ -335,14 +336,14 @@ export function OrderPanel() {
     setCart(c);
     notify(added > 0
       ? `🧾 Đã thêm trữ lễ ${festivalPlan.festival.name} vào giỏ (${festivalPlan.lines.map((l) => `${productById(l.id).name} ${c[l.id]} thùng`).join(', ')})`
-      : '💰/📦 Đủ tiền hay chỗ kho không vừa thêm thùng nào — nâng cấp kho/nhập ít hơn');
+      : t('order.du_tien_hay_cho_kho_khong'));
   };
   const categories = [...new Set(rows.map((r) => r.p.category))];
 
   const order = () => {
     if (needConfirm) {
       setConfirmedTotal(total);
-      notify(`⚠️ Sau đơn chỉ còn ${formatMoney(Math.max(0, moneyLeft))}, chưa đủ ${formatMoney(wages)} lương cuối ngày. Bấm lại nếu vẫn nhập.`);
+      notify(t('order.sau_don_chi_con_chua_du', { v0: formatMoney(Math.max(0, moneyLeft)), v1: formatMoney(wages) }));
       return;
     }
     // Hẻm online, máy khách: placeOrder trả `true` tạm — chỉ xoá giỏ khi máy chạy báo đặt được thật
@@ -351,19 +352,19 @@ export function OrderPanel() {
 
   return (
     <div style={{ width: '100%', maxWidth: 860 }}>
-      <h2 style={{ margin: '0 0 4px' }}>📦 Nhập hàng</h2>
+      <h2 style={{ margin: '0 0 4px' }}>{t('order.nhap_hang')}</h2>
       {guideOn && <GuideBanner guideItems={guideItems} guideIn={guideIn} />}
       {restockTip && <QuanDrinkTipCallout tip={restockTip} onFill={fillQuanNuocDrinks} />}
       {festivalPlan && <FestivalPrepCallout plan={festivalPlan} onFill={fillFestivalPrep} />}
       {netNeeds && <NetworkFillCallout manifest={netManifest} onFillBranch={fillBranchSheet} />}
       <div style={st.meters}>
         <Meter
-          label="💰 Tiền"
+          label={t('order.tien')}
           used={total} max={money}
-          text={`Đơn ${formatMoney(total)} · còn ${formatMoney(Math.max(0, moneyLeft))}`}
+          text={t('order.don_con', { v0: formatMoney(total), v1: formatMoney(Math.max(0, moneyLeft)) })}
         />
         <Meter
-          label="📦 Nhà kho"
+          label={t('order.nha_kho')}
           used={capacity - spaceLeft} max={capacity} base={usedNow}
           text={`${capacity - spaceLeft}/${capacity} thùng · còn trống ${Math.max(0, spaceLeft)}${deliveries.length ? ` (tính cả ${deliveries.length} đơn chờ giao)` : ''}`}
         />
@@ -379,31 +380,31 @@ export function OrderPanel() {
           <div style={{ ...st.banner, marginTop: 8, background: 'rgba(155, 89, 182, 0.10)', border: '1px solid rgba(155,89,182,0.45)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
               <div>
-                <b style={{ color: '#d6a2ff' }}>🛒 Chợ phiên đầu tháng</b>
-                <span style={{ opacity: 0.8 }}> — thương lái ghé bán cả lô rẻ hơn mua lẻ</span>
+                <b style={{ color: '#d6a2ff' }}>{t('order.cho_phien_dau_thang')}</b>
+                <span style={{ opacity: 0.8 }}>{' '}{t('order.thuong_lai_ghe_ban_ca_lo')}</span>
                 {taken ? (
-                  <div style={{ marginTop: 4, fontSize: 12, color: '#2ecc71', fontWeight: 600 }}>✅ Đã nhận lô chợ phiên tháng này — tháng sau quay lại nhé</div>
+                  <div style={{ marginTop: 4, fontSize: 12, color: '#2ecc71', fontWeight: 600 }}>{t('order.da_nhan_lo_cho_phien_thang')}</div>
                 ) : (
                   <>
                     <div style={{ marginTop: 5, fontSize: 12, opacity: 0.95 }}>
                       {offer.lines.map((l) => `${productById(l.id).name} ×${l.qty}`).join(' · ')}
                     </div>
                     <div style={{ marginTop: 4, fontSize: 12 }}>
-                      <span style={{ textDecoration: 'line-through', opacity: 0.55 }}>lẻ {formatMoney(offer.totalBuy)}</span>{' '}
+                      <span style={{ textDecoration: 'line-through', opacity: 0.55 }}>{t('order.le')}{' '}{formatMoney(offer.totalBuy)}</span>{' '}
                       → <b style={{ color: '#2ecc71' }}>{formatMoney(offer.dealPrice)}</b>{' '}
-                      <span style={{ color: '#f1c40f' }}>tiết kiệm {formatMoney(offer.totalBuy - offer.dealPrice)}</span>
+                      <span style={{ color: '#f1c40f' }}>{t('order.tiet_kiem')}{' '}{formatMoney(offer.totalBuy - offer.dealPrice)}</span>
                     </div>
                     {(() => {
                       const fv = fairLotValue(offer, storage, shelfCount(furniture), itemHealthList(analytics, level, storage, shelfCount(furniture), demand), day);
                       const tone = fv.verdict === 'grab' ? '#2ecc71' : fv.verdict === 'hold' ? '#e67e22' : 'rgba(255,255,255,0.7)';
                       return (
                         <div style={{ marginTop: 4, fontSize: 12, color: tone, fontWeight: 600 }}>
-                          {fv.verdict === 'grab' && `Đáng múc: ${fv.beneficialCount} món đang bán nhanh, cầm ít — lô giúp đỡ thiếu hàng.`}
-                          {fv.verdict === 'hold' && `Cân nhắc: ${fv.overstockCount} món bạn đã có đủ lâu (${fv.overstockCount} món dư thừa) — mua sẽ chôn thêm vốn.`}
-                          {fv.verdict === 'maybe' && 'Chưa rõ sức bán — đang tiết kiệm ~' + Math.round(fv.savePct * 100) + '%, xem nhịp bán rồi quyết.'}
+                          {fv.verdict === 'grab' && t('order.dang_muc_mon_dang_ban_nhanh', { beneficialCount: fv.beneficialCount })}
+                          {fv.verdict === 'hold' && t('order.can_nhac_mon_ban_da_co', { overstockCount: fv.overstockCount })}
+                          {fv.verdict === 'maybe' && t('order.chua_ro_suc_ban_dang_tiet') + Math.round(fv.savePct * 100) + t('order.xem_nhip_ban_roi_quyet')}
                           {fv.weekendSnacksCount > 0 && (
                             <div style={{ marginTop: 3, color: '#f1c40f', fontWeight: 500 }}>
-                              🍬 Lô có {fv.weekendSnacksCount} món ăn vặt cuối tuần{fv.isWeekendFair ? ' — hôm nay cuối tuần khách mua nhiều!' : ' — trữ sẵn cho cuối tuần'}
+                              {t('order.lo_co')}{' '}{fv.weekendSnacksCount}{' '}{t('order.mon_an_vat_cuoi_tuan')}{fv.isWeekendFair ? t('order.hom_nay_cuoi_tuan_khach_mua') : t('order.tru_san_cho_cuoi_tuan')}
                             </div>
                           )}
                         </div>
@@ -418,7 +419,7 @@ export function OrderPanel() {
                   disabled={money < offer.dealPrice}
                   style={{ ...st.btn, flexShrink: 0, background: money < offer.dealPrice ? 'rgba(255,255,255,0.08)' : 'rgba(155,89,182,0.5)' }}
                 >
-                  {shortLabel('Nhận lô', offer.dealPrice, money)}
+                  {shortLabel(t('order.nhan_lo'), offer.dealPrice, money)}
                 </button>
               )}
             </div>
@@ -446,26 +447,26 @@ export function OrderPanel() {
                   return <span style={{ ...st.badge, marginLeft: 5, background: 'transparent', color: BUY_TONE_COLOR[sm.tone], border: `1px solid ${BUY_TONE_COLOR[sm.tone]}` }}>{BUY_TONE_ICON[sm.tone]}</span>;
                 })()}
                 <span style={st.tabMeta}>
-                  {locked ? `🔒 Cấp ${s.unlock}` : `${s.discount > 0 ? `−${s.discount * 100}%` : s.discount < 0 ? `+${-s.discount * 100}%` : 'Giá chuẩn'} · ${s.delayDays ? 'giao sáng mai' : 'có ngay'}`}
+                  {locked ? t('order.cap', { unlock: s.unlock }) : `${s.discount > 0 ? `−${s.discount * 100}%` : s.discount < 0 ? `+${-s.discount * 100}%` : t('order.gia_chuan')} · ${s.delayDays ? t('order.giao_sang_mai') : t('order.co_ngay')}`}
                 </span>
-                {relHot && <span style={{ ...st.badge, marginLeft: 5, background: 'rgba(231, 76, 60, 0.15)', color: '#e74c3c', border: '1px solid rgba(231,76,60,0.5)' }}>🔥 Mối ruột</span>}
+                {relHot && <span style={{ ...st.badge, marginLeft: 5, background: 'rgba(231, 76, 60, 0.15)', color: '#e74c3c', border: '1px solid rgba(231,76,60,0.5)' }}>{t('order.moi_ruot')}</span>}
               </span>
             </button>
           );
         })}
         {(() => {
           const v = visibleSuppliers(SUPPLIERS, level);
-          return v.hiddenCount > 0 ? <span style={{ fontSize: 12, opacity: 0.6, alignSelf: 'center' }}>🔒 +{v.hiddenCount} mối nữa từ cấp {v.nextHiddenUnlock}</span> : null;
+          return v.hiddenCount > 0 ? <span style={{ fontSize: 12, opacity: 0.6, alignSelf: 'center' }}>🔒 +{v.hiddenCount}{' '}{t('order.moi_nua_tu_cap')}{' '}{v.nextHiddenUnlock}</span> : null;
         })()}
       </div>
       <p style={st.sub}>
         {supplier.desc}
-        {supplier.minOrder > 0 && ` Đơn tối thiểu ${formatMoney(supplier.minOrder)}.`}
+        {supplier.minOrder > 0 && t('order.don_toi_thieu', { v0: formatMoney(supplier.minOrder) })}
         {supplier.bulk && ` Mua nhiều: ${supplier.bulk.map((b) => `từ ${b.minCases} thùng một món bớt ${b.discount * 100}%`).join(', ')}.`}
-        {' '}Hàng nhập theo thùng, về kho rồi khui ra bày lẻ.
+        {' '}{t('order.hang_nhap_theo_thung_ve_kho')}
       </p>
       {day > 1 && <details className="restock-extras" style={{ margin: '4px 0' }}>
-        <summary style={{ cursor: 'pointer', fontSize: 13, padding: '8px 0', minHeight: 44, display: 'flex', alignItems: 'center' }}>ℹ️ Mối quen · giá hôm nay · dự báo · hàng hot (bấm để xem)</summary>
+        <summary style={{ cursor: 'pointer', fontSize: 13, padding: '8px 0', minHeight: 44, display: 'flex', alignItems: 'center' }}>{t('order.moi_quen_gia_hom_nay_du')}</summary>
       <div style={{ ...st.banner, ...(showRestockExtras(day) ? null : { display: 'none' }) }}>{/* GĐ319: ngày đầu chỉ dạy nhập-bày-bán */}
         <SupplierRelLine life={biz.supplierRel?.[supplier.id]?.spent ?? 0} monthSpent={biz.supplierRelMonth?.[supplier.id] ?? 0} />
       </div>
@@ -485,13 +486,13 @@ export function OrderPanel() {
         if (!sm) return null;
         return (
           <div style={{ ...st.banner, background: 'rgba(46, 204, 113, 0.08)', border: '1px solid rgba(255,255,255,0.07)' }}>
-            💹 Hôm nay giá {supplier.name} đang ở <b style={{ color: BUY_TONE_COLOR[sm.tone] }}>{BUY_TONE_LABEL[sm.tone]}</b> khung giá (±{Math.round(supplier.volatility * 100)}%)<span style={{ opacity: 0.7 }}> · trung bình {sm.pct > 0 ? '+' : ''}{sm.pct}%</span> · <b>{DIR_WORD[sm.dir]}</b>
+            {t('order.hom_nay_gia')}{' '}{supplier.name}{' '}{t('order.dang_o')}{' '}<b style={{ color: BUY_TONE_COLOR[sm.tone] }}>{BUY_TONE_LABEL[sm.tone]}</b>{' '}{t('order.khung_gia')}{Math.round(supplier.volatility * 100)}%)<span style={{ opacity: 0.7 }}>{' '}{t('order.trung_binh')}{' '}{sm.pct > 0 ? '+' : ''}{sm.pct}%</span> · <b>{DIR_WORD[sm.dir]}</b>
           </div>
         );
       })()}
       {cheapest && cheapest.rival && cheapest.delta > 0 && showRestockExtras(day) && (
         <div style={{ ...st.banner, background: 'rgba(241, 196, 15, 0.09)', border: '1px solid rgba(255,255,255,0.07)' }}>
-          🧮 Với giỏ này <b>{cheapest.best.name}</b> rẻ hơn <b>{cheapest.rival.name}</b> {formatMoney(cheapest.delta)} hôm nay
+          {t('order.voi_gio_nay')}{' '}<b>{cheapest.best.name}</b>{' '}{t('order.re_hon')}{' '}<b>{cheapest.rival.name}</b> {formatMoney(cheapest.delta)}{' '}{t('order.hom_nay')}
         </div>
       )}
 
@@ -511,13 +512,13 @@ export function OrderPanel() {
         const hh = (m: number) => `${Math.floor(m / 60)}h${m % 60 ? '30' : ''}`;
         return (
           <div style={{ background: 'rgba(52,152,219,0.14)', borderRadius: 8, padding: '6px 10px', fontSize: 13, marginBottom: 8, outline: '1px solid rgba(52,152,219,0.35)' }}>
-            <b>⏰ Giờ vàng sắp tới ({goldenNeeds.name} {hh(goldenNeeds.from)}–{hh(goldenNeeds.to)}): đang hết món khách thèm</b>
+            <b>{t('order.gio_vang_sap_toi')}{goldenNeeds.name} {hh(goldenNeeds.from)}–{hh(goldenNeeds.to)}{t('order.dang_het_mon_khach_them')}</b>
             <div style={{ marginTop: 4, display: 'grid', gap: 2 }}>
               {goldenNeeds.short.map((s) => (
                 <div key={s.id} style={{ display: 'flex', gap: 8, alignItems: 'baseline' }}>
                   <span style={{ minWidth: 120 }}>{productById(s.id)?.name ?? s.id}</span>
-                  <span style={{ opacity: 0.85, flex: 1 }}>hết hàng mà giờ này khách hay mua — nên nhập trước khi đông</span>
-                  <span style={{ marginLeft: 'auto', opacity: 0.75 }}>✨ nên nhập {s.qty} món (1 thùng)</span>
+                  <span style={{ opacity: 0.85, flex: 1 }}>{t('order.het_hang_ma_gio_nay_khach')}</span>
+                  <span style={{ marginLeft: 'auto', opacity: 0.75 }}>{t('order.nen_nhap')}{' '}{s.qty}{' '}{t('order.mon_1_thung')}</span>
                 </div>
               ))}
             </div>
@@ -529,15 +530,15 @@ export function OrderPanel() {
         <Dropdown<Filter>
           value={filter}
           onChange={setFilter}
-          ariaLabel="Lọc mặt hàng"
+          ariaLabel={t('order.loc_mat_hang')}
           options={[
-            { value: 'suggest', label: '✨ Nên nhập' },
-            { value: 'all', label: 'Tất cả mặt hàng' },
+            { value: 'suggest', label: t('order.nen_nhap_2') },
+            { value: 'all', label: t('order.tat_ca_mat_hang') },
             ...categories.map((c) => ({ value: c as Filter, label: CATEGORIES[c] })),
           ]}
         />
-        <button style={st.btn} onClick={fillSuggest}>✨ Điền theo gợi ý</button>
-        <button style={st.btn} onClick={() => setCart({})} disabled={!count}>Xoá đơn</button>
+        <button style={st.btn} onClick={fillSuggest}>{t('order.dien_theo_goi_y')}</button>
+        <button style={st.btn} onClick={() => setCart({})} disabled={!count}>{t('order.xoa_don')}</button>
       </div>
 
       {guideOn && (
@@ -552,16 +553,16 @@ export function OrderPanel() {
                 <span className="or-name" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                   <ProductIcon product={g} size={26} tile />
                   <b>{g.name}</b>
-                  <span style={{ ...st.badge, background: '#3498db' }}>Nên mua</span>
-                  {inCart && <span style={{ ...st.badge, background: '#2ecc71' }}>✓ trong giỏ</span>}
+                  <span style={{ ...st.badge, background: '#3498db' }}>{t('order.nen_mua')}</span>
+                  {inCart && <span style={{ ...st.badge, background: '#2ecc71' }}>{t('order.trong_gio')}</span>}
                 </span>
-                <span style={{ fontSize: 12, opacity: 0.8 }}>{formatMoney(caseCost)}/thùng</span>
+                <span style={{ fontSize: 12, opacity: 0.8 }}>{formatMoney(caseCost)}{t('order.thung')}</span>
                 <span style={{ whiteSpace: 'nowrap' }}>
                   {/* GĐ1834 (review đợt 3 R4): hết tiền thì nút phải nói thiếu bao nhiêu, không câm lặng */}
                   <button style={st.btn} disabled={caseCost > moneyLeft} onClick={() => setQty(g.id, (cart[g.id] ?? 0) + 1)}>
-                    {caseCost > moneyLeft ? `Thiếu ${formatMoney(caseCost - moneyLeft)}` : '+1 thùng'}
+                    {caseCost > moneyLeft ? t('order.thieu', { v0: formatMoney(caseCost - moneyLeft) }) : t('order.1_thung')}
                   </button>
-                  {(cart[g.id] ?? 0) > 0 && <span style={{ marginLeft: 8, fontSize: 12 }}>{cart[g.id]} thùng</span>}
+                  {(cart[g.id] ?? 0) > 0 && <span style={{ marginLeft: 8, fontSize: 12 }}>{cart[g.id]}{' '}{t('order.thung_2')}</span>}
                 </span>
               </div>
             );
@@ -571,11 +572,11 @@ export function OrderPanel() {
 
       <div style={st.list}>
         <div className="or-row or-head" style={{ ...st.row, ...st.head }}>
-          <span>Mặt hàng</span><span>Khách mua/ngày</span><span>Đang có (món)</span><span>Giá thùng</span><span>Lãi/thùng</span><span>Số thùng</span><span>Thành tiền</span>
+          <span>{t('order.mat_hang')}</span><span>{t('order.khach_mua_ngay')}</span><span>{t('order.dang_co_mon')}</span><span>{t('order.gia_thung')}</span><span>{t('order.lai_thung')}</span><span>{t('order.so_thung')}</span><span>{t('order.thanh_tien')}</span>
         </div>
         {shown.length === 0 && (
           <p style={{ ...st.sub, padding: 12 }}>
-            {filter === 'suggest' ? 'Hàng đang đủ bán. Chọn "Tất cả mặt hàng" để nhập thêm.' : 'Mối này không bán ngành hàng này.'}
+            {filter === 'suggest' ? t('order.hang_dang_du_ban_chon_tat') : t('order.moi_nay_khong_ban_nganh_hang')}
           </p>
         )}
         {shown.map((r) => {
@@ -593,20 +594,20 @@ export function OrderPanel() {
               <span className="or-name">
                 <ProductIcon product={r.p} size={26} tile />{r.p.name}
                 {Number.isFinite(shelfLife(r.p.id)) && shelfLife(r.p.id) <= 14 && (
-                  <span style={{ ...st.badge, background: shelfLife(r.p.id) <= 3 ? '#e74c3c' : '#636e72' }} title="Hạn dùng khi mới nhập">⏳ {shelfLife(r.p.id)} ngày</span>
+                  <span style={{ ...st.badge, background: shelfLife(r.p.id) <= 3 ? '#e74c3c' : '#636e72' }} title={t('order.han_dung_khi_moi_nhap')}>⏳ {shelfLife(r.p.id)}{' '}{t('order.ngay')}</span>
                 )}
                 {r.isHot && <span style={{ ...st.badge, background: '#e67e22' }}>🔥 Hot</span>}
-                {r.weekendPull && <span style={{ ...st.badge, background: '#f1c40f', color: '#222' }} title="Lô này bán vào Thứ 7/Chủ nhật — khách hay ghé mua ăn vặt, gợi ý đã nhân thêm">🍬 Cuối tuần</span>}
-                {r.isNew && <span style={{ ...st.badge, background: '#2ecc71' }}>Mới</span>}
-                {r.demand > 0 && r.have > 0 && r.have < r.demand && <span style={{ ...st.badge, background: '#e67e22' }} title={`Còn ${r.have} món, khách mua ~${r.demand.toFixed(1)}/ngày — sắp hết`}>⚠️ Gần hết</span>}
-                {r.asked > 0 && r.have === 0 && <span style={{ ...st.badge, background: '#e74c3c' }}>Khách hỏi {r.asked} lần, hết hàng</span>}
+                {r.weekendPull && <span style={{ ...st.badge, background: '#f1c40f', color: '#222' }} title={t('order.lo_nay_ban_vao_thu_7')}>{t('order.cuoi_tuan')}</span>}
+                {r.isNew && <span style={{ ...st.badge, background: '#2ecc71' }}>{t('order.moi')}</span>}
+                {r.demand > 0 && r.have > 0 && r.have < r.demand && <span style={{ ...st.badge, background: '#e67e22' }} title={t('order.con_mon_khach_mua_ngay_sap', { have: r.have, v1: r.demand.toFixed(1) })}>{t('order.gan_het')}</span>}
+                {r.asked > 0 && r.have === 0 && <span style={{ ...st.badge, background: '#e74c3c' }}>{t('order.khach_hoi')}{' '}{r.asked}{' '}{t('order.lan_het_hang')}</span>}
                 {cheapById.get(r.p.id) && cheapById.get(r.p.id)!.delta > 0 && (
                   <button
                     onClick={() => setSupplierId(cheapById.get(r.p.id)!.supplier.id)}
                     style={{ ...st.badge, background: 'rgba(85, 239, 196, 0.16)', color: '#55efc4', border: '1px solid #55efc433', cursor: 'pointer' }}
-                    title={`${cheapById.get(r.p.id)!.supplier.name} rẻ hơn ${formatMoney(cheapById.get(r.p.id)!.delta)}/món hôm nay (sau bớt số thùng) — bấm để sang mối này`}
+                    title={t('order.re_hon_mon_hom_nay_sau', { v0: cheapById.get(r.p.id)!.supplier.name, v1: formatMoney(cheapById.get(r.p.id)!.delta) })}
                   >
-                    ⇄ {cheapById.get(r.p.id)!.supplier.name} rẻ hơn {formatMoney(cheapById.get(r.p.id)!.delta)}
+                    ⇄ {cheapById.get(r.p.id)!.supplier.name}{' '}{t('order.re_hon')}{' '}{formatMoney(cheapById.get(r.p.id)!.delta)}
                   </button>
                 )}
                 {assess && (
@@ -615,28 +616,28 @@ export function OrderPanel() {
                   </span>
                 )}
               </span>
-              <span data-label="Mua/ngày">{r.demand ? r.demand.toFixed(1) : '—'}</span>
-              <span data-label="Đang có" title={`Trong kho: ${describeUnits(r.p.id, storage[r.p.id] ?? 0)}`}>{r.have}{r.coming > 0 && <span style={{ opacity: 0.7 }}> +{r.coming}</span>}</span>
-              <span data-label="Giá thùng" title={`Thùng ${r.size} món, ${formatMoney(r.cost)}/món (giá chuẩn ${formatMoney(base)})`}>
+              <span data-label={t('order.mua_ngay')}>{r.demand ? r.demand.toFixed(1) : '—'}</span>
+              <span data-label={t('order.dang_co')} title={`Trong kho: ${describeUnits(r.p.id, storage[r.p.id] ?? 0)}`}>{r.have}{r.coming > 0 && <span style={{ opacity: 0.7 }}> +{r.coming}</span>}</span>
+              <span data-label={t('order.gia_thung')} title={t('order.thung_mon_mon_gia_chuan', { size: r.size, v1: formatMoney(r.cost), v2: formatMoney(base) })}>
                 {formatMoney(caseCost)}
                 <span style={{ opacity: 0.6, fontSize: 11 }}> ×{r.size}</span>
                 {Math.abs(diff) >= 0.01 && <span style={{ color: diff > 0 ? '#ff7675' : '#55efc4', fontSize: 11 }}> {diff > 0 ? '▲' : '▼'}{Math.round(Math.abs(diff) * 100)}%</span>}
               </span>
-              <span data-label="Lãi/thùng" title={`Giá bán đang đặt ${formatMoney(priceOf(r.p.id))} − giá nhập ${formatMoney(r.cost)} = ${formatMoney(priceOf(r.p.id) - r.cost)}/món, nhân ${r.size} món/thùng`} style={{ color: margin > 0 ? '#55efc4' : '#ff7675' }}>
+              <span data-label={t('order.lai_thung')} title={t('order.gia_ban_dang_dat_gia_nhap', { v0: formatMoney(priceOf(r.p.id)), v1: formatMoney(r.cost), v2: formatMoney(priceOf(r.p.id) - r.cost), size: r.size })} style={{ color: margin > 0 ? '#55efc4' : '#ff7675' }}>
                 {margin > 0 ? '+' : ''}{formatMoney(margin)}
               </span>
               <span className="or-qty" style={{ display: 'flex', gap: 3, alignItems: 'center' }}>
-                <button style={st.step} onClick={() => setQty(r.p.id, qty - 1)} aria-label={`Bớt một thùng ${r.p.name}`}>−</button>
+                <button style={st.step} onClick={() => setQty(r.p.id, qty - 1)} aria-label={t('order.bot_mot_thung', { name: r.p.name })}>−</button>
                 <input style={assess?.level === 'over' ? { ...st.qty, border: '1px solid #ff7675' } : st.qty} inputMode="numeric" value={qty || ''} placeholder={r.suggest ? String(r.suggest) : '0'}
-                  onChange={(e) => setQty(r.p.id, Number(e.target.value))} aria-label={`Số thùng ${r.p.name}`} />
+                  onChange={(e) => setQty(r.p.id, Number(e.target.value))} aria-label={t('order.so_thung_2', { name: r.p.name })} />
                 <button style={st.step} disabled={!fits({ ...cart, [r.p.id]: qty + 1 })} onClick={() => setQty(r.p.id, qty + 1)}
-                  title={fits({ ...cart, [r.p.id]: qty + 1 }) ? undefined : 'Hết tiền hoặc hết chỗ kho'} aria-label={`Thêm một thùng ${r.p.name}`}>+</button>
+                  title={fits({ ...cart, [r.p.id]: qty + 1 }) ? undefined : t('order.het_tien_hoac_het_cho_kho')} aria-label={t('order.them_mot_thung', { name: r.p.name })}>+</button>
                 {/* GĐ1834 (review đợt 3 R4): bấm + mà không thêm được thì nói ngay thiếu bao nhiêu / hết chỗ */}
                 {!fits({ ...cart, [r.p.id]: qty + 1 }) && (r.cost * r.size - moneyLeft > 0
-                  ? <span style={{ color: '#ff7675', fontSize: 11, whiteSpace: 'nowrap' }}>Thiếu {formatMoney(r.cost * r.size - moneyLeft)}</span>
-                  : <span style={{ color: '#ff7675', fontSize: 11 }}>Hết chỗ</span>)}
+                  ? <span style={{ color: '#ff7675', fontSize: 11, whiteSpace: 'nowrap' }}>{t('order.thieu_2')}{' '}{formatMoney(r.cost * r.size - moneyLeft)}</span>
+                  : <span style={{ color: '#ff7675', fontSize: 11 }}>{t('order.het_cho')}</span>)}
                 {r.suggest > 0 && qty !== r.suggest && (
-                  <button style={{ ...st.step, width: 'auto', padding: '0 6px' }} onClick={() => setQty(r.p.id, r.suggest)} title="Lấy số gợi ý">✨{r.suggest}</button>
+                  <button style={{ ...st.step, width: 'auto', padding: '0 6px' }} onClick={() => setQty(r.p.id, r.suggest)} title={t('order.lay_so_goi_y')}>✨{r.suggest}</button>
                 )}
               </span>
               <span className="or-total">
@@ -655,22 +656,22 @@ export function OrderPanel() {
 
       <div style={st.footer}>
         <span>
-          {cases} thùng ({count} món) · <b style={{ fontSize: 17 }}>{formatMoney(total)}</b>
-          {before - total > 0 && <span style={{ color: '#55efc4' }}> (bớt {formatMoney(before - total)})</span>}
-          {tooSmall && <span style={{ color: '#ff7675' }}> · cần thêm {formatMoney(supplier.minOrder - total)} cho đủ đơn tối thiểu</span>}
-          {total > money && <span style={{ color: '#ff7675' }}> · thiếu {formatMoney(total - money)}</span>}
-          {wageShort && <span style={{ color: '#f1c40f' }}> · còn lại không đủ {formatMoney(wages)} lương cuối ngày</span>}
-          {tooBig && <span style={{ color: '#ff7675' }}> · nhà kho không đủ chỗ (còn trống {Math.max(0, capacity - usedNow)} thùng), nâng cấp nhà kho</span>}
+          {cases}{' '}{t('order.thung_3')}{count}{' '}{t('order.mon')}{' '}<b style={{ fontSize: 17 }}>{formatMoney(total)}</b>
+          {before - total > 0 && <span style={{ color: '#55efc4' }}>{' '}{t('order.bot')}{' '}{formatMoney(before - total)})</span>}
+          {tooSmall && <span style={{ color: '#ff7675' }}>{' '}{t('order.can_them')}{' '}{formatMoney(supplier.minOrder - total)}{' '}{t('order.cho_du_don_toi_thieu')}</span>}
+          {total > money && <span style={{ color: '#ff7675' }}>{' '}{t('order.thieu_3')}{' '}{formatMoney(total - money)}</span>}
+          {wageShort && <span style={{ color: '#f1c40f' }}>{' '}{t('order.con_lai_khong_du')}{' '}{formatMoney(wages)}{' '}{t('order.luong_cuoi_ngay')}</span>}
+          {tooBig && <span style={{ color: '#ff7675' }}>{' '}{t('order.nha_kho_khong_du_cho_con')}{' '}{Math.max(0, capacity - usedNow)}{' '}{t('order.thung_nang_cap_nha_kho')}</span>}
         </span>
         <span style={{ display: 'flex', gap: 8 }}>
-          <button style={st.btn} onClick={closePanel}>Đóng</button>
+          <button style={st.btn} onClick={closePanel}>{t('order.dong')}</button>
           <button style={{ ...st.btn, background: '#f1c40f', fontWeight: 700 }} disabled={!count || tooSmall || tooBig || total > money} onClick={order}>
             {/* GĐ1834 (review đợt 3 R4): nút đặt khi không đủ tiền ghi "Thiếu X₫" — chuẩn shortLabel đã dùng khắp panels */}
             {wageShort && !needConfirm
-              ? '⚠️ Vẫn nhập'
+              ? t('order.van_nhap')
               : !deliversInstantly(supplier, biz.supplierRel?.[supplier.id]?.spent ?? 0)
-                ? shortLabel('🚚 Đặt giao sáng mai', total, money)
-                : shortLabel('📦 Nhập ngay', total, money)}
+                ? shortLabel(t('order.dat_giao_sang_mai'), total, money)
+                : shortLabel(t('order.nhap_ngay'), total, money)}
           </button>
         </span>
       </div>

@@ -18,15 +18,15 @@ const src = () => read('src/ui/OrderPanel.tsx');
 
 describe('nhập hàng phản hồi thiếu tiền (GĐ1834)', () => {
   it('nút "+1 thùng" ngày đầu và nút đặt hàng dùng nhãn "Thiếu X₫" khi hết tiền', () => {
-    expect(src()).toContain('`Thiếu ${formatMoney(caseCost - moneyLeft)}`');
-    expect(src()).toContain("shortLabel('📦 Nhập ngay', total, money)");
-    expect(src()).toContain("shortLabel('🚚 Đặt giao sáng mai', total, money)");
+    expect(src()).toContain("t('order.thieu', { v0: formatMoney(caseCost - moneyLeft) })");
+    expect(src()).toContain("shortLabel(t('order.nhap_ngay'), total, money)");
+    expect(src()).toContain("shortLabel(t('order.dat_giao_sang_mai'), total, money)");
   });
 
   it('dòng hàng: bấm + không thêm được thì hiện chip Thiếu X₫ / Hết chỗ cạnh ô số thùng', () => {
     const s = src();
-    expect(s).toContain('Thiếu {formatMoney(r.cost * r.size - moneyLeft)}');
-    expect(s).toContain('Hết chỗ</span>');
+    expect(s).toContain("{t('order.thieu_2')}{' '}{formatMoney(r.cost * r.size - moneyLeft)}");
+    expect(s).toContain("{t('order.het_cho')}</span>");
   });
 
   it('fillSuggest điền nút thắt quán nước TRƯỚC khi chia gợi ý thường (chỉ từ ngày 2)', () => {
