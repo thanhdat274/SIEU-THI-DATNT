@@ -6,6 +6,7 @@ import { shortLabel } from './shortLabel';
 import { Callout, Footer } from './panels/shared';
 import { commitTry } from '../data/commitTry';
 import { contractPortfolio } from '../data/contractPortfolio';
+import { t } from '../core/i18n';
 
 /** Panel Hợp đồng — xem, chấp nhận và giao hợp đồng cung cấp dài hạn. */
 export function ContractsPanel() {
@@ -15,17 +16,16 @@ export function ContractsPanel() {
   const locked = all.filter((c) => c.unlock > level);
   return (
     <>
-      <h2 style={{ margin: '0 0 4px' }}>📋 Hợp đồng</h2>
+      <h2 style={{ margin: '0 0 4px' }}>{t('trip.hop_dong')}</h2>
       <p style={{ margin: '0 0 12px', opacity: 0.75, fontSize: 13, maxWidth: 520 }}>
-        Hợp đồng cung cấp dài hạn: giao hàng định kỳ, mỗi kỳ được trả theo giá đã thỏa thuận.
-        Tiền về nhanh nhưng thấp hơn bán lẻ — bù lại số lượng lớn và đều đặn.
+        {t('trip.hop_dong_cung_cap_dai_han')}
       </p>
 
       {Object.keys(contracts).length > 0 && <ActiveContracts />}
 
-      <h3 style={head}>📦 Hợp đồng đang có</h3>
+      <h3 style={head}>{t('trip.hop_dong_dang_co')}</h3>
       {available.length === 0 ? (
-        <p style={{ opacity: 0.75, fontSize: 13 }}>Chưa có hợp đồng nào khả dụng.</p>
+        <p style={{ opacity: 0.75, fontSize: 13 }}>{t('trip.chua_co_hop_dong_nao_kha')}</p>
       ) : (
         <div style={{ display: 'grid', gap: 8 }}>
           {available.map((c) => (
@@ -36,7 +36,7 @@ export function ContractsPanel() {
 
       {locked.length > 0 && (
         <>
-          <h3 style={head}>🔒 Hợp đồng khóa</h3>
+          <h3 style={head}>{t('trip.hop_dong_khoa')}</h3>
           <div style={{ display: 'grid', gap: 6 }}>
             {locked.map((c) => (
               <LockedContract key={c.id} contract={c} />
@@ -56,19 +56,18 @@ function ActiveContracts() {
   if (!active.length) return null;
   return (
     <>
-      <h3 style={head}>⚡ Đang hoạt động</h3>
+      <h3 style={head}>{t('trip.dang_hoat_dong')}</h3>
       <div style={{ fontSize: 12, opacity: 0.75, margin: '0 0 6px' }}>
-        🎯 Giao mỗi kỳ đúng hạn để giữ chuỗi; đủ {CONTRACT_STREAK_EVERY} kỳ liên tiếp được +{Math.round(CONTRACT_STREAK_BONUS * 100)}% thưởng mốc.
-        · 🤝 <b>Cam kết kỳ</b>: trữ sẵn đúng hàng kỳ này để giao đúng hạn được thưởng tin cậy +{Math.round(CONTRACT_COMMIT_BONUS * 100)}%.
+        {t('trip.giao_moi_ky_dung_han_de')}{' '}{CONTRACT_STREAK_EVERY}{' '}{t('trip.ky_lien_tiep_duoc')}{Math.round(CONTRACT_STREAK_BONUS * 100)}{t('trip.thuong_moc')}{' '}<b>{t('trip.cam_ket_ky')}</b>{t('trip.tru_san_dung_hang_ky_nay')}{Math.round(CONTRACT_COMMIT_BONUS * 100)}%.
       </div>
       {(() => {
         const pf = contractPortfolio(active.map(([id]) => id));
         if (pf.count === 0) return null;
         return (
-          <Callout tone={pf.verdict === 'ok' ? 'ok' : 'warn'} style={{ marginBottom: 8 }} title={`📋 ${pf.count} hợp đồng đang đóng góp ~${formatMoney(pf.netPerDayTotal)}/ngày`}>
+          <Callout tone={pf.verdict === 'ok' ? 'ok' : 'warn'} style={{ marginBottom: 8 }} title={t('trip.hop_dong_dang_dong_gop_ngay', { count: pf.count, v1: formatMoney(pf.netPerDayTotal) })}>
             <div style={{ marginTop: 2, fontSize: 12 }}>
-              Mỗi kỳ cần trữ ~{formatMoney(pf.capitalPerPeriod)} vốn hàng để giao đủ cả chùm
-              {pf.anyLosing ? ' · ⚠️ có hợp đồng đang lỗ thật — cân nhắc thả.' : ' — đối chiếu với kho và dòng tiền.'}
+              {t('trip.moi_ky_can_tru')}{formatMoney(pf.capitalPerPeriod)}{' '}{t('trip.von_hang_de_giao_du_ca')}
+              {pf.anyLosing ? t('trip.co_hop_dong_dang_lo_that') : t('trip.doi_chieu_voi_kho_va_dong')}
             </div>
           </Callout>
         );
@@ -88,20 +87,20 @@ function ActiveContracts() {
                 <div style={{ flex: 1 }}>
                   <b>{def.title}</b>
                   <div style={{ fontSize: 12, opacity: 0.7 }}>
-                    {cs.delivered} kỳ đã giao · mỗi {def.periodDays} ngày
-                    {left > 0 && ` · còn ${left} ngày nữa`}
-                    {(cs.streak ?? 0) > 0 && ` · chuỗi đúng hẹn ${cs.streak}`}
-                    {cs.overdue && <span style={{ color: '#e74c3c' }}> · ⚠️ quá hạn — giao lần này sẽ mất chuỗi</span>}
+                    {cs.delivered}{' '}{t('trip.ky_da_giao_moi')}{' '}{def.periodDays}{' '}{t('trip.ngay')}
+                    {left > 0 && t('trip.con_ngay_nua', { left })}
+                    {(cs.streak ?? 0) > 0 && t('trip.chuoi_dung_hen', { streak: cs.streak })}
+                    {cs.overdue && <span style={{ color: '#e74c3c' }}>{' '}{t('trip.qua_han_giao_lan_nay_se')}</span>}
                   </div>
                 </div>
                 <button
                   style={{ ...btn, background: cs.auto ? '#3498db' : 'transparent', border: '1px solid #3498db', color: cs.auto ? '#fff' : '#3498db', opacity: level < AUTO_CONTRACT_LEVEL ? 0.5 : 1 }}
                   onClick={() => setContractAuto(id, !cs.auto)}
                   title={level < AUTO_CONTRACT_LEVEL
-                    ? `Mở từ cấp ${AUTO_CONTRACT_LEVEL}`
-                    : 'Tới kỳ giao thì tự nhập bù phần thiếu (nếu đủ tiền) rồi giao. Món nhà làm vẫn phải nấu trước.'}
+                    ? t('trip.mo_tu_cap', { AUTO_CONTRACT_LEVEL })
+                    : t('trip.toi_ky_giao_thi_tu_nhap')}
                 >
-                  {cs.auto ? '🔁 Tự động: BẬT' : level < AUTO_CONTRACT_LEVEL ? `🔒 Tự động (cấp ${AUTO_CONTRACT_LEVEL})` : '🔁 Tự động'}
+                  {cs.auto ? t('trip.tu_dong_bat') : level < AUTO_CONTRACT_LEVEL ? t('trip.tu_dong_cap', { AUTO_CONTRACT_LEVEL }) : t('trip.tu_dong')}
                 </button>
                 <button
                   style={{ ...btn, background: left > 0 ? '#2ecc71' : '#e74c3c', color: '#fff' }}
@@ -113,8 +112,8 @@ function ActiveContracts() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginTop: 8, fontSize: 12, background: committed ? 'rgba(241,196,15,0.10)' : 'rgba(255,255,255,0.03)', borderRadius: 6, padding: '6px 8px' }}>
                 {committed ? (
                   <>
-                    <span style={{ color: '#f1c40f' }}>🤝 Đã cam kết — trữ {Object.values(cs.locked ?? {}).reduce((n, q) => n + q, 0)} món riêng, cọc {formatMoney(deposit)} (hoàn khi giao).</span>
-                    <button style={{ ...btn, background: 'transparent', border: '1px solid #e67e22', color: '#e67e22' }} onClick={() => releaseContract(id)}>↩️ Hủy cam kết</button>
+                    <span style={{ color: '#f1c40f' }}>{t('trip.da_cam_ket_tru')}{' '}{Object.values(cs.locked ?? {}).reduce((n, q) => n + q, 0)}{' '}{t('trip.mon_rieng_coc')}{' '}{formatMoney(deposit)}{' '}{t('trip.hoan_khi_giao')}</span>
+                    <button style={{ ...btn, background: 'transparent', border: '1px solid #e67e22', color: '#e67e22' }} onClick={() => releaseContract(id)}>{t('trip.huy_cam_ket')}</button>
                     {/* GĐ2351 — nhập bù thẳng vào ngăn trữ riêng đúng phần còn thiếu */}
                     {(() => {
                       const rm = reservedMissing(def, cs.locked);
@@ -125,26 +124,26 @@ function ActiveContracts() {
                           style={{ ...btn, background: money < cost ? '#777' : '#f1c40f', color: '#222' }}
                           disabled={money < cost}
                           onClick={() => restockContract(id)}
-                          title="Nhập ngay đúng phần còn thiếu vào ngăn trữ riêng của kỳ này"
+                          title={t('trip.nhap_ngay_dung_phan_con_thieu')}
                         >
-                          🛒 Nhập bù ({formatMoney(cost)})
+                          {t('trip.nhap_bu')}{formatMoney(cost)})
                         </button>
                       );
                     })()}
                   </>
                 ) : (
                   <>
-                    <span style={{ opacity: 0.75 }}>🤝 Cam kết kỳ: cọc {formatMoney(deposit)} (hoàn), trữ hàng riêng → giao đúng hạn được <b style={{ color: '#f1c40f' }}>+{formatMoney(bonus)} tin cậy</b>.</span>
+                    <span style={{ opacity: 0.75 }}>{t('trip.cam_ket_ky_coc')}{' '}{formatMoney(deposit)}{' '}{t('trip.hoan_tru_hang_rieng_giao_dung')}{' '}<b style={{ color: '#f1c40f' }}>+{formatMoney(bonus)}{' '}{t('trip.tin_cay')}</b>.</span>
                     {(() => {
                       const ct = commitTry(def, money);
                       const line = ct.verdict === 'skip'
-                        ? { c: '#e74c3c', t: `không đủ cọc (cần ${formatMoney(ct.deposit)})` }
+                        ? { c: '#e74c3c', t: t('trip.khong_du_coc_can', { v0: formatMoney(ct.deposit) }) }
                         : ct.verdict === 'tight'
-                          ? { c: '#f1c40f', t: `cọc/${formatMoney(ct.reservedValue)} vốn khóa chiếm phần lớn tiền mặt — tiền còn mỏng thì để thoáng hơn` }
-                          : { c: '#2ecc71', t: `đáng: cọc ${formatMoney(ct.deposit)} hoàn khi giao, lấy +${formatMoney(ct.bonus)}` };
+                          ? { c: '#f1c40f', t: t('trip.coc_von_khoa_chiem_phan_lon', { v0: formatMoney(ct.reservedValue) }) }
+                          : { c: '#2ecc71', t: t('trip.dang_coc_hoan_khi_giao_lay', { v0: formatMoney(ct.deposit), v1: formatMoney(ct.bonus) }) };
                       return <span style={{ color: line.c, width: '100%' }}>{line.t}.</span>;
                     })()}
-                    <button style={{ ...btn, background: money < deposit ? '#777' : '#f1c40f', color: '#222' }} disabled={money < deposit} onClick={() => commitContract(id)}>{shortLabel('🤝 Cam kết', deposit, money)}</button>
+                    <button style={{ ...btn, background: money < deposit ? '#777' : '#f1c40f', color: '#222' }} disabled={money < deposit} onClick={() => commitContract(id)}>{shortLabel(t('trip.cam_ket'), deposit, money)}</button>
                     {/* GĐ2351 — nhập bù đúng phần kho còn thiếu để giao/cam kết được kỳ này */}
                     {(() => {
                       const missing = missingForContract(def, storage);
@@ -155,9 +154,9 @@ function ActiveContracts() {
                           style={{ ...btn, background: money < cost ? '#777' : '#2ecc71', color: '#222' }}
                           disabled={money < cost}
                           onClick={() => restockContract(id)}
-                          title="Nhập ngay đúng phần kho còn thiếu cho kỳ giao này (giá nhập như ở Nhập hàng)"
+                          title={t('trip.nhap_ngay_dung_phan_kho_con')}
                         >
-                          🛒 Nhập bù ({formatMoney(cost)})
+                          {t('trip.nhap_bu')}{formatMoney(cost)})
                         </button>
                       );
                     })()}
@@ -172,7 +171,7 @@ function ActiveContracts() {
                 return (
                   <div style={{ fontSize: 12, marginTop: 6 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{ color: '#3498db' }}>🎯 {p.cycle}/{CONTRACT_STREAK_EVERY} kỳ · còn {p.toMilestone} kỳ nữa tới mốc +{Math.round(CONTRACT_STREAK_BONUS * 100)}%</span>
+                      <span style={{ color: '#3498db' }}>🎯 {p.cycle}/{CONTRACT_STREAK_EVERY}{' '}{t('trip.ky_con')}{' '}{p.toMilestone}{' '}{t('trip.ky_nua_toi_moc')}{Math.round(CONTRACT_STREAK_BONUS * 100)}%</span>
                       <span style={{ flex: 1, height: 6, background: 'rgba(255,255,255,0.08)', borderRadius: 3, overflow: 'hidden' }}>
                         <span style={{ display: 'block', height: '100%', width: `${pct}%`, background: barColor, borderRadius: 3 }} />
                       </span>
@@ -181,17 +180,17 @@ function ActiveContracts() {
                       <div style={{ color: riskColor, marginTop: 3 }}>
                         {p.overdue
                           ? (p.streak > 0
-                              ? `⚠️ Đã quá hạn — giao bây giờ sẽ đứt chuỗi ${p.streak} kỳ về 0`
-                              : '⚠️ Đã quá hạn — giao lần này sẽ tính muộn')
-                          : `⏳ Còn ${p.daysLeft} ngày nữa tới hạn · giao đúng hẹn để giữ chuỗi — sắp tới mốc +${Math.round(CONTRACT_STREAK_BONUS * 100)}%`}
+                              ? t('trip.da_qua_han_giao_bay_gio', { streak: p.streak })
+                              : t('trip.da_qua_han_giao_lan_nay'))
+                          : t('trip.con_ngay_nua_toi_han_giao', { daysLeft: p.daysLeft, v1: Math.round(CONTRACT_STREAK_BONUS * 100) })}
                       </div>
                     )}
                     <div style={{ marginTop: 3, opacity: 0.85 }}>
                       {p.overdue && p.streak > 0
-                        ? '💡 Đánh đổi: giao giữ doanh thu kỳ này nhưng mất chuỗi — hoặc bỏ qua để xả hàng bán lẻ.'
+                        ? t('trip.danh_doi_giao_giu_doanh_thu')
                         : p.risk === 'due_soon'
-                          ? `💡 Giao đúng hạn kỳ này đưa chuỗi lên ${p.streak + 1} — gần hơn mốc thưởng.`
-                          : `💡 Giữ nhịp: giao mỗi ${def.periodDays} ngày để chuỗi tiến đều tới mốc +${Math.round(CONTRACT_STREAK_BONUS * 100)}%.`}
+                          ? t('trip.giao_dung_han_ky_nay_dua', { v0: p.streak + 1 })
+                          : t('trip.giu_nhip_giao_moi_ngay_de', { periodDays: def.periodDays, v1: Math.round(CONTRACT_STREAK_BONUS * 100) })}
                     </div>
                   </div>
                 );
@@ -221,8 +220,8 @@ function ContractRow({ contract }: { contract: SupplyContract }) {
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8, fontSize: 12 }}>
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-          <span>📅 Chu kỳ: {contract.periodDays} ngày</span>
-          <span>💰 {formatMoney(contractValue(contract))}/kỳ</span>
+          <span>{t('trip.chu_ky')}{' '}{contract.periodDays}{' '}{t('trip.ngay')}</span>
+          <span>💰 {formatMoney(contractValue(contract))}{t('trip.ky')}</span>
           <span>⭐ {contract.xp} XP</span>
         </div>
       </div>
@@ -236,24 +235,24 @@ function ContractRow({ contract }: { contract: SupplyContract }) {
       {(() => {
         const roi = contractAcceptRoi(contract);
         const chipColor = roi.verdict === 'worth' ? '#2ecc71' : roi.verdict === 'tight' ? '#f1c40f' : '#e74c3c';
-        const chipText = roi.verdict === 'worth' ? 'Đáng ký' : roi.verdict === 'tight' ? 'Cân nhắc' : 'Suy nghĩ lại';
+        const chipText = roi.verdict === 'worth' ? t('trip.dang_ky') : roi.verdict === 'tight' ? t('trip.can_nhac') : t('trip.suy_nghi_lai');
         return (
           <div style={{ fontSize: 13, marginTop: 4 }}>
-            💸 Lời thật ~{formatMoney(roi.contractNet)}/kỳ (~{formatMoney(roi.netPerDay)}/ngày){' '}
+            {t('trip.loi_that')}{formatMoney(roi.contractNet)}{t('trip.ky_2')}{formatMoney(roi.netPerDay)}{t('trip.ngay_2')}{' '}
             <span style={{ color: chipColor, border: `1px solid ${chipColor}`, borderRadius: 10, padding: '0 7px', fontSize: 11 }}>{chipText}</span>
             <div style={{ fontSize: 12, opacity: 0.7, marginTop: 2 }}>
-              So với bán lẻ hết lô, giá sỉ nhượng {Math.round(roi.giveUpPct * 100)}% — đổi lại đầu ra chắc, giao đều, giữ chuỗi thưởng.
+              {t('trip.so_voi_ban_le_het_lo')}{' '}{Math.round(roi.giveUpPct * 100)}{t('trip.doi_lai_dau_ra_chac_giao')}
             </div>
           </div>
         );
       })()}
       {alreadyAccepted ? (
-        <div style={{ marginTop: 8, fontSize: 12, opacity: 0.75 }}>✅ Đã chấp nhận hợp đồng này</div>
+        <div style={{ marginTop: 8, fontSize: 12, opacity: 0.75 }}>{t('trip.da_chap_nhan_hop_dong_nay')}</div>
       ) : (
         <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
           {contract.rep && (
             <span style={{ fontSize: 12, color: trusted ? '#2ecc71' : '#e67e22' }}>
-              {trusted ? '✅' : '🔒'} {describeRep(contract.rep)} (đang {repScore(rep, contract.rep).toFixed(1)}★)
+              {trusted ? '✅' : '🔒'} {describeRep(contract.rep)}{' '}{t('trip.dang')}{' '}{repScore(rep, contract.rep).toFixed(1)}★)
             </span>
           )}
           <button
@@ -261,7 +260,7 @@ function ContractRow({ contract }: { contract: SupplyContract }) {
             disabled={!trusted}
             onClick={() => acceptContract(contract.id)}
           >
-            📋 Chấp nhận hợp đồng
+            {t('trip.chap_nhan_hop_dong')}
           </button>
         </div>
       )}
@@ -277,7 +276,7 @@ function LockedContract({ contract }: { contract: SupplyContract }) {
         <span style={{ fontSize: 22 }}>🔒</span>
         <div>
           <b>{contract.title}</b>
-          <div style={{ fontSize: 12, opacity: 0.75 }}>Cần cấp {contract.unlock}{contract.rep ? ` · ${describeRep(contract.rep)}` : ''}</div>
+          <div style={{ fontSize: 12, opacity: 0.75 }}>{t('trip.can_cap')}{' '}{contract.unlock}{contract.rep ? ` · ${describeRep(contract.rep)}` : ''}</div>
         </div>
       </div>
     </div>

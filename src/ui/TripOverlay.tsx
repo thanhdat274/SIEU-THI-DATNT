@@ -9,6 +9,7 @@ import { roadEventDraw } from '../data/roadEvents';
 import { tripCtx } from '../core/slices/trip';
 import { relTier } from '../data/supplierRel';
 import { productById, formatMoney, caseSize, casesFor } from '../data/products';
+import { t } from '../core/i18n';
 import './trip.css';
 
 /**
@@ -45,15 +46,15 @@ export function TripOverlay() {
       <div className="trip-ov">
         <div className="trip-ov-card">
           <div className="trip-ov-head">
-            <b>{route?.icon ?? '🚚'} {hauler?.name ?? 'Xe'} đi {route?.name ?? ''}</b>
-            <span className="trip-ov-when">về {fmt(trip.returnAt)}</span>
+            <b>{route?.icon ?? '🚚'} {hauler?.name ?? 'Xe'}{' '}{t('trip.di')}{' '}{route?.name ?? ''}</b>
+            <span className="trip-ov-when">{t('trip.ve')}{' '}{fmt(trip.returnAt)}</span>
           </div>
           <div className="trip-bar"><div className="trip-bar-fill" style={{ width: `${Math.round(p * 100)}%` }} /></div>
           <p className="trip-ov-note">
             {trip.by === 'self'
-              ? (remain > 0 ? <>Còn {Math.ceil(remain / 60)}h nữa xe về — đang vắng tiệm.</> : 'Xe vừa về tới.')
-              : (remain > 0 ? <>Còn {Math.ceil(remain / 60)}h nữa người giao về — chủ vẫn trông tiệm.</> : 'Người giao vừa về tới.')}
-            {' '}Mang theo <b>{formatMoney(trip.cash)}</b> mua hàng.
+              ? (remain > 0 ? <>{t('trip.con')}{' '}{Math.ceil(remain / 60)}{t('trip.h_nua_xe_ve_dang_vang')}</> : t('trip.xe_vua_ve_toi'))
+              : (remain > 0 ? <>{t('trip.con')}{' '}{Math.ceil(remain / 60)}{t('trip.h_nua_nguoi_giao_ve_chu')}</> : t('trip.nguoi_giao_vua_ve_toi'))}
+            {' '}Mang theo <b>{formatMoney(trip.cash)}</b>{' '}{t('trip.mua_hang')}
           </p>
         </div>
         {trip.by === 'self' && (
@@ -75,7 +76,7 @@ export function TripOverlay() {
     return (
       <div className="trip-ov">
         <DebtEditor />
-        <button className="trip-ov-launch" onClick={() => setOpen(true)}>🚚 Đi tỉnh</button>
+        <button className="trip-ov-launch" onClick={() => setOpen(true)}>{t('trip.di_tinh')}</button>
       </div>
     );
   }
@@ -91,18 +92,18 @@ export function TripOverlay() {
   return (
     <div className="trip-ov">
       <div className="trip-ov-card">
-        <div className="trip-ov-head"><b>🚚 Chọn chuyến đi tỉnh</b></div>
+        <div className="trip-ov-head"><b>{t('trip.chon_chuyen_di_tinh')}</b></div>
         {unlocked.map((r) => {
           const sel = picked === r.id;
           return (
             <button key={r.id} className={`trip-ov-route ${sel ? 'sel' : ''}`} onClick={() => setPicked(r.id)}>
               <span className="trip-ov-route-name">{r.icon} {r.name}</span>
-              <span className="trip-ov-route-meta">{r.hours}h khứ hồi · mở cấp {r.unlock}</span>
+              <span className="trip-ov-route-meta">{r.hours}{t('trip.h_khu_hoi_mo_cap')}{' '}{r.unlock}</span>
             </button>
           );
         })}
         <label className="trip-ov-cash">
-          Tiền mang theo (đ)
+          {t('trip.tien_mang_theo_d')}
           <input type="number" value={cash} min={1} onChange={(e) => setCash(e.target.value)} />
         </label>
         <Garage />
@@ -110,8 +111,8 @@ export function TripOverlay() {
         {picked && <PayoffCard routeId={picked} />}
         <CourierSender routeId={picked} cash={cash} />
         <div className="trip-ov-actions">
-          <button className="mini-btn" onClick={() => setOpen(false)}>Bỏ qua</button>
-          <button className="mini-btn primary" disabled={!picked} onClick={go}>Lên đường</button>
+          <button className="mini-btn" onClick={() => setOpen(false)}>{t('trip.bo_qua')}</button>
+          <button className="mini-btn primary" disabled={!picked} onClick={go}>{t('trip.len_duong')}</button>
         </div>
       </div>
     </div>
@@ -143,13 +144,13 @@ function CartEditor({ trip }: { trip: TripState }) {
 
   const stock = routeStockResolve(biz.routeStock, route, trip.day, tier);
   const used = cartCases(draft);
-  const t = { ...trip, cart: draft };
-  const paid = cartBuyCost(t, route);
-  const savings = cartSavings(t, route);
+  const tr = { ...trip, cart: draft };
+  const paid = cartBuyCost(tr, route);
+  const savings = cartSavings(tr, route);
   const debtLimit = tier >= 3 ? Math.floor(trip.cash * TRIP_DEBT_PCT) : 0;
   const moneyLbl = paid > trip.cash
-    ? ` (nợ ${formatMoney(paid - trip.cash)})`
-    : tier >= 3 ? ' (mối ruột ghi nợ được)' : '';
+    ? t('trip.no', { v0: formatMoney(paid - trip.cash) })
+    : tier >= 3 ? t('trip.moi_ruot_ghi_no_duoc') : '';
 
   const setQ = (pid: string, q: number) => {
     const next = { ...draft };
@@ -163,10 +164,10 @@ function CartEditor({ trip }: { trip: TripState }) {
   return (
     <div className="trip-ov-card">
       <button className="trip-ov-route" onClick={() => setOpen(!open)}>
-        <span className="trip-ov-route-name">🛒 Giỏ hàng chở về</span>
+        <span className="trip-ov-route-name">{t('trip.gio_hang_cho_ve')}</span>
         <span className="trip-ov-route-meta">
-          {Object.keys(draft).length ? `${Object.values(draft).reduce((n, q) => n + q, 0)} món · ${formatMoney(paid)}` : 'chưa chốt'}
-          {savings > 0 ? ` (tiết kiệm ${formatMoney(savings)})` : ''}
+          {Object.keys(draft).length ? t('trip.mon', { v0: Object.values(draft).reduce((n, q) => n + q, 0), v1: formatMoney(paid) }) : t('trip.chua_chot')}
+          {savings > 0 ? t('trip.tiet_kiem', { v0: formatMoney(savings) }) : ''}
         </span>
       </button>
 
@@ -187,7 +188,7 @@ function CartEditor({ trip }: { trip: TripState }) {
               <div key={pid} className="trip-shop-row">
                 <div className="trip-shop-info">
                   <span className="trip-shop-name">{p.name}</span>
-                  <span className="trip-shop-meta">{formatMoney(price)}/món · còn {left} tuần này · {size}/thùng</span>
+                  <span className="trip-shop-meta">{formatMoney(price)}{t('trip.mon_con')}{' '}{left}{' '}{t('trip.tuan_nay')}{' '}{size}{t('trip.thung')}</span>
                 </div>
                 <div className="trip-shop-step">
                   <button className="trip-shop-btn" disabled={q <= 0} onClick={() => setQ(pid, q - 1)}>−</button>
@@ -199,12 +200,12 @@ function CartEditor({ trip }: { trip: TripState }) {
             );
           })}
           <div className="trip-shop-total">
-            <span>Chở {used}/{hauler.cases} thùng · {formatMoney(paid)}/{formatMoney(trip.cash)}đ{moneyLbl}</span>
-            {savings > 0 && <span className="trip-shop-save">+{formatMoney(savings)} so mối lái</span>}
+            <span>{t('trip.cho')}{' '}{used}/{hauler.cases}{' '}{t('trip.thung_2')}{' '}{formatMoney(paid)}/{formatMoney(trip.cash)}{t('trip.d')}{moneyLbl}</span>
+            {savings > 0 && <span className="trip-shop-save">+{formatMoney(savings)}{' '}{t('trip.so_moi_lai')}</span>}
           </div>
           <div className="trip-ov-actions">
-            <button className="mini-btn" onClick={() => setOpen(false)}>Đóng</button>
-            <button className="mini-btn primary" onClick={commit}>Chốt giỏ</button>
+            <button className="mini-btn" onClick={() => setOpen(false)}>{t('trip.dong')}</button>
+            <button className="mini-btn primary" onClick={commit}>{t('trip.chot_gio')}</button>
           </div>
         </div>
       )}
@@ -240,33 +241,33 @@ function HaggleEditor({ trip }: { trip: TripState }) {
   return (
     <div className="trip-ov-card">
       <div className="trip-ov-route">
-        <span className="trip-ov-route-name">🤝 Mặc cả với người bán</span>
+        <span className="trip-ov-route-name">{t('trip.mac_ca_voi_nguoi_ban')}</span>
         <span className="trip-ov-route-meta">
           {done
-            ? (discount > 0 ? `Chốt −${Math.round(discount * 100)}% → ${formatMoney(paid)}` : 'Mua giá niêm yết.')
-            : `Giá niêm yết ${formatMoney(listed)} · còn ${HAGGLE_MAX_ROUNDS - round} lượt`}
+            ? (discount > 0 ? t('trip.chot', { v0: Math.round(discount * 100), v1: formatMoney(paid) }) : t('trip.mua_gia_niem_yet'))
+            : t('trip.gia_niem_yet_con_luot', { v0: formatMoney(listed), v1: HAGGLE_MAX_ROUNDS - round })}
         </span>
       </div>
 
       {!done && (
         <div className="trip-haggle">
           <div className="trip-haggle-face">
-            {mood} {grudge ? 'Người bán vẫn còn phật ý (giá khó xuống).' : (tier > 0 ? `Mối quen bậc ${tier} — dễ mặc cả hơn.` : 'Trả giá nhẹ nhẹ, đừng ép quá tay.')}
+            {mood} {grudge ? t('trip.nguoi_ban_van_con_phat_y') : (tier > 0 ? t('trip.moi_quen_bac_de_mac_ca', { tier }) : t('trip.tra_gia_nhe_nhe_dung_ep'))}
           </div>
           <div className="trip-haggle-row">
-            <span>Giảm thêm {pct}% → {formatMoney(paid)}</span>
+            <span>{t('trip.giam_them')}{' '}{pct}% → {formatMoney(paid)}</span>
             <input className="trip-haggle-range" type="range" min={0} max={Math.round(HAGGLE_MAX_OFFER * 100)} step={1}
               value={pct} onChange={(e) => setOffer(Number(e.target.value) / 100)} />
           </div>
           <div className="trip-ov-actions">
-            <button className="mini-btn" onClick={() => tripAcceptPrice()}>Thôi, giá đó được rồi</button>
-            <button className="mini-btn primary" onClick={() => tripHaggle(offer)}>Trả giá</button>
+            <button className="mini-btn" onClick={() => tripAcceptPrice()}>{t('trip.thoi_gia_do_duoc_roi')}</button>
+            <button className="mini-btn primary" onClick={() => tripHaggle(offer)}>{t('trip.tra_gia')}</button>
           </div>
         </div>
       )}
       {done && discount > 0 && (
         <div className="trip-ov-actions">
-          <button className="mini-btn" onClick={() => tripAcceptPrice()}>Chốt xe hàng</button>
+          <button className="mini-btn" onClick={() => tripAcceptPrice()}>{t('trip.chot_xe_hang')}</button>
         </div>
       )}
     </div>
@@ -313,9 +314,9 @@ function RoadEvents({ trip }: { trip: TripState }) {
 
 function fmtCost(o: { label: string; minutes: number; cost?: number; wet?: boolean; friend?: number; sell?: boolean }) {
   if (o.cost) return `−${formatMoney(o.cost)} · +${o.minutes}′`;
-  if (o.friend) return `+${o.friend} thân thiết · +${o.minutes}′`;
-  if (o.sell) return 'bán bớt hàng';
-  if (o.wet) return 'hàng dễ ướt';
+  if (o.friend) return t('trip.than_thiet', { friend: o.friend, minutes: o.minutes });
+  if (o.sell) return t('trip.ban_bot_hang');
+  if (o.wet) return t('trip.hang_de_uot');
   return o.minutes > 0 ? `+${o.minutes}′` : '';
 }
 
@@ -331,14 +332,14 @@ function DebtEditor() {
   return (
     <div className="trip-ov-card">
       <div className="trip-ov-head">
-        <b>{overdue ? '🧾 Nợ mối ruột QUÁ HẠN' : '🧾 Ghi nợ chuyến đi'}</b>
+        <b>{overdue ? t('trip.no_moi_ruot_qua_han') : t('trip.ghi_no_chuyen_di')}</b>
         <span className={`trip-debt-due ${overdue ? 'late' : ''}`}>
-          {formatMoney(d.amount)} · {overdue ? `quá hạn ${day - d.dueDay} ngày` : `hạn ${d.dueDay}`}
+          {formatMoney(d.amount)} · {overdue ? t('trip.qua_han_ngay', { v0: day - d.dueDay }) : t('trip.han', { dueDay: d.dueDay })}
         </span>
       </div>
-      <p className="trip-ov-note">{route?.name ?? ''} còn {formatMoney(d.amount)} — trả trong {TRIP_DEBT_DUE_DAYS} ngày, kẻo mất ưu đãi mối ruột.</p>
+      <p className="trip-ov-note">{route?.name ?? ''}{' '}{t('trip.con_2')}{' '}{formatMoney(d.amount)}{' '}{t('trip.tra_trong')}{' '}{TRIP_DEBT_DUE_DAYS}{' '}{t('trip.ngay_keo_mat_uu_dai_moi')}</p>
       <div className="trip-ov-actions">
-        <button className="mini-btn primary" disabled={s.money < d.amount} onClick={() => tripRepayDebt()}>Trả nợ {formatMoney(d.amount)}</button>
+        <button className="mini-btn primary" disabled={s.money < d.amount} onClick={() => tripRepayDebt()}>{t('trip.tra_no')}{' '}{formatMoney(d.amount)}</button>
       </div>
     </div>
   );
@@ -352,8 +353,8 @@ function PayoffCard({ routeId }: { routeId: string }) {
   const p = useMemo(() => tripPayoff(route), [route]);
   return (
     <div className="trip-ov-route" style={{ cursor: 'default' }}>
-      <span className="trip-ov-route-name">🧾 So sánh một chuyến {route.icon} {route.name}</span>
-      <span className="trip-ov-route-meta">giỏ ước ~{p.cases} thùng · cùng weeklyCap tuần</span>
+      <span className="trip-ov-route-name">{t('trip.so_sanh_mot_chuyen')}{' '}{route.icon} {route.name}</span>
+      <span className="trip-ov-route-meta">{t('trip.gio_uoc')}{p.cases}{' '}{t('trip.thung_cung_weeklycap_tuan')}</span>
       {p.rows.map((r) => (
         <div key={r.id} className="trip-payoff-row">
           <span className="trip-payoff-name">{r.icon} {r.name}</span>
@@ -363,7 +364,7 @@ function PayoffCard({ routeId }: { routeId: string }) {
           <span className="trip-payoff-note">{r.note}</span>
         </div>
       ))}
-      <span className="trip-payoff-note">Số ước lượng để chọn cách đi; tiền thật tính khi xe về.</span>
+      <span className="trip-payoff-note">{t('trip.so_uoc_luong_de_chon_cach')}</span>
     </div>
   );
 }
@@ -409,24 +410,24 @@ function CourierSender({ routeId, cash }: { routeId: string; cash: string }) {
 
   return (
     <div className="trip-garage">
-      <div className="trip-garage-title">👤 Sai người giao hàng đi thay (giả niêm yết, không mặc cả tay)</div>
+      <div className="trip-garage-title">{t('trip.sai_nguoi_giao_hang_di_thay')}</div>
       <div className="trip-garage-row">
         {couriers.map((w) => (
           <button key={w.id} className={`trip-garage-btn ${courierId === w.id ? 'trip-garage-sel' : ''}`}
             onClick={() => setCourierId(w.id)}>
             {`🛵 ${w.name.slice(0, 12)} · ${w.skill}★`}
-            <span className="trip-garage-sub">{w.skill >= 4 ? 'tự mặc cả −6%' : 'chưa mặc cả được'}</span>
+            <span className="trip-garage-sub">{w.skill >= 4 ? t('trip.tu_mac_ca_6') : t('trip.chua_mac_ca_duoc')}</span>
           </button>
         ))}
       </div>
-      {!hasCargo && <span className="trip-garage-sub">Cần xe chở hàng (ba gác/xe tải) để sai người đi.</span>}
+      {!hasCargo && <span className="trip-garage-sub">{t('trip.can_xe_cho_hang_ba_gac')}</span>}
       <div className="trip-ov-actions">
         <button className="mini-btn primary" disabled={disabled}
           onClick={() => {
             const c = buildCart();
             if (Object.keys(c).length) startTrip(route.id, courierId as number, cashN, c);
           }}>
-          Giao cho người (giỏ tự động)
+          {t('trip.giao_cho_nguoi_gio_tu_dong')}
         </button>
       </div>
     </div>
@@ -455,15 +456,15 @@ function Garage() {
             <button key={h.id} className="trip-garage-btn"
               disabled={has || open || !can(h.price)}
               onClick={() => buyHauler(h.id)}>
-              {has ? `✓ ${h.name}` : `${h.icon} ${h.name} ${h.price ? formatMoney(h.price) : 'miễn phí'}`}
-              <span className="trip-garage-sub">{h.cases} thùng/con · mở cấp {h.unlock}</span>
+              {has ? `✓ ${h.name}` : `${h.icon} ${h.name} ${h.price ? formatMoney(h.price) : t('trip.mien_phi')}`}
+              <span className="trip-garage-sub">{h.cases}{' '}{t('trip.thung_con_mo_cap')}{' '}{h.unlock}</span>
             </button>
           );
         })}
         <button className="trip-garage-btn" disabled={coolBox || open || !can(COOL_BOX.price)}
           onClick={() => buyCoolBox()}>
-          {coolBox ? '✓ Thùng đá' : `${COOL_BOX.icon} Thùng đá ${formatMoney(COOL_BOX.price)}`}
-          <span className="trip-garage-sub">hàng tươi không mất hạn</span>
+          {coolBox ? t('trip.thung_da') : t('trip.thung_da_2', { icon: COOL_BOX.icon, v1: formatMoney(COOL_BOX.price) })}
+          <span className="trip-garage-sub">{t('trip.hang_tuoi_khong_mat_han')}</span>
         </button>
       </div>
     </div>
