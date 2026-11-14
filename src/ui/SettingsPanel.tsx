@@ -19,14 +19,13 @@ import { telemetryOptedIn, setTelemetryOptIn } from '../data/telemetryConsent';
 import { deleteTelemetry, exportReportsJson, flushReports } from '../core/dayReport';
 import { TelemetrySampleView } from './TelemetrySampleView';
 import { Dropdown } from './Dropdown';
+import { LANG_OPTIONS, t } from '../core/i18n';
 
 type Tab = 'img' | 'gfx' | 'audio' | 'play' | 'a11y' | 'data' | 'game';
 /** Việc của ván đang chơi (chỉ có khi mở từ trong game; ở màn đăng nhập tab này ẩn). */
 export interface GameActions { online: boolean; save: () => void; restore: () => void; backToMenu: () => void; newGame: () => void }
-const TABS: [Tab, string][] = [
-  ['img', '👁 Hình ảnh'], ['gfx', '🎨 Đồ họa'], ['audio', '🔊 Âm thanh'], ['play', '🎮 Chơi'], ['a11y', '♿ Trợ năng'], ['data', '💾 Dữ liệu'],
-];
-const GAME_TAB: [Tab, string] = ['game', '🏠 Ván chơi'];
+const TABS: [Tab, string][] = (['img', 'gfx', 'audio', 'play', 'a11y', 'data'] as const).map((id) => [id, t(`settings.tab.${id}`)]);
+const GAME_TAB: [Tab, string] = ['game', t('settings.tab.game')];
 
 const GFX_NOTE: Record<GfxChoice, string> = {
   auto: 'Máy tự hạ/nâng mức theo FPS thật. Hợp với hầu hết máy.',
@@ -152,6 +151,10 @@ function ImgTab() {
           onChange={(v) => { const c: GfxChoice = v ? 'auto' : gfxStatus().level; setGfxChoice(c); setChoice(c); }} />
       </Row>
       <Row label="Cỡ giao diện"><Slider label="Cỡ giao diện" value={s.uiScale} min={0.8} max={1.4} step={0.05} fmt={pct} onChange={(v) => set({ uiScale: v })} /></Row>
+      <Row label={t('settings.lang')} hint={t('settings.lang.hint')}>
+        {/* Đổi ngôn ngữ → reload; pagehide trong save.ts ghi ván trước khi tải lại */}
+        <Select label={t('settings.lang')} value={s.lang} options={LANG_OPTIONS} onChange={(v) => { if (v === s.lang) return; set({ lang: v }); location.reload(); }} />
+      </Row>
       <Row label="Tiền tệ hiển thị" hint="Chỉ đổi cách hiện số (1 USD = 25.000 VND), áp dụng ngay cho mọi màn. Giá trong game không đổi">
         <Select label="Tiền tệ hiển thị" value={s.currency} options={[['vnd', 'Đồng (đ)'], ['usd', 'Đô la ($)']]} onChange={(v) => set({ currency: v })} />
       </Row>
@@ -402,10 +405,10 @@ export function SettingsPanel({ onClose, game, initialTab }: { onClose: () => vo
         }}>
         <div style={{ display: 'flex', alignItems: 'center', padding: '14px 16px 0' }}>
           <div style={{ flex: 1 }}>
-            <h3 style={{ margin: 0 }}>⚙️ Cài đặt</h3>
-            <div style={{ fontSize: 12, opacity: 0.65 }}>Hình ảnh, âm thanh, cách chơi, trợ năng</div>
+            <h3 style={{ margin: 0 }}>{t('settings.title')}</h3>
+            <div style={{ fontSize: 12, opacity: 0.65 }}>{t('settings.subtitle')}</div>
           </div>
-          <button aria-label="Đóng" style={dlgBtn} onClick={onClose}>✕</button>
+          <button aria-label={t('common.close')} style={dlgBtn} onClick={onClose}>✕</button>
         </div>
         <div role="tablist" style={{ display: 'flex', gap: 4, margin: '12px 16px' }}>
           {(game ? [GAME_TAB, ...TABS] : TABS).map(([id, label]) => (

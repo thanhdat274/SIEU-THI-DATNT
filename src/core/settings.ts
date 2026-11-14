@@ -50,6 +50,8 @@ export interface Settings {
   coolMode: boolean;
   /** Icon tương phản cao: viền + nền đậm quanh icon nhỏ trên HUD cho dễ nhìn */
   iconContrast: boolean;
+  /** Ngôn ngữ giao diện (chỉ chữ hiển thị — xem core/i18n.ts). Mặc định tiếng Việt */
+  lang: 'vi' | 'en';
 }
 
 /** Số dòng điểm ảnh tối đa theo mức độ phân giải (0 = không đặt trần). */
@@ -60,7 +62,7 @@ export const SETTINGS_DEFAULT: Settings = {
   reduceMotion: false, highContrast: false, detailDist: 'normal', autosave: true,
   shadows: true, rainDensity: 1, clouds: true, stars: true, foliageSway: true, lightQuality: 'high',
   autosaveEvery: 0, showPatience: true, autoSlow: false, confirmEndDay: false, colorblind: 'off', noFlash: false, currency: 'vnd', resolution: 'auto',
-  pauseOnMenu: false, coolMode: false, iconContrast: false,
+  pauseOnMenu: false, coolMode: false, iconContrast: false, lang: 'vi',
 };
 
 const KEY = 'th3d_settings';
@@ -99,11 +101,16 @@ export function sanitize(raw: unknown): Settings {
     pauseOnMenu: bool(r.pauseOnMenu, d.pauseOnMenu),
     coolMode: bool(r.coolMode, d.coolMode),
     iconContrast: bool(r.iconContrast, d.iconContrast),
+    lang: pick(r.lang, ['vi', 'en'] as const, d.lang),
   };
 }
 
 let current: Settings = SETTINGS_DEFAULT;
-try { current = sanitize(JSON.parse(localStorage.getItem(KEY) ?? '{}')); } catch { /* private mode */ }
+try {
+  // Chưa tự đoán ngôn ngữ theo trình duyệt: bản Anh còn ít chữ, máy en-US sẽ ra nửa Anh nửa Việt.
+  // Bật lại bằng guessLang() (core/i18n.ts) khi giao diện chính đã dịch xong (bước 3 kế hoạch).
+  current = sanitize(JSON.parse(localStorage.getItem(KEY) ?? '{}'));
+} catch { /* private mode */ }
 const listeners = new Set<(s: Settings) => void>();
 
 export const getSettings = (): Readonly<Settings> => current;
