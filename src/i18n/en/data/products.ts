@@ -3,6 +3,7 @@
  * Thiếu id → giữ tên tiếng Việt. Món Việt đặc trưng giữ tên gốc + chú thích Anh (vd. "Phở — instant pho").
  */
 import { EN_CATALOG } from './catalog';
+import { EN_HOMEMADE } from './homemade';
 export const EN_CATEGORIES: Record<string, string> = {
   dry: 'Dry goods', drink: 'Drinks', cold: 'Chilled', frozen: 'Frozen',
   household: 'Household', fresh: 'Fresh produce', meat: 'Fresh meat & fish',
@@ -10,6 +11,7 @@ export const EN_CATEGORIES: Record<string, string> = {
 
 export const EN_PRODUCTS: Record<string, string> = {
   ...EN_CATALOG,
+  ...EN_HOMEMADE,
   // ── Hàng gốc (products.ts) ──
   mi: 'Instant noodles', nuoc: 'Bottled water', banh: 'Snacks & candy',
   ngot: 'Soft drinks', diem: 'Matches & lighters', sua: 'Boxed milk',

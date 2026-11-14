@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { PRODUCTS, CATEGORIES } from '../data/products';
 import { CATALOG_PRODUCTS } from '../data/catalog';
+import { COOKED_PRODUCTS } from '../data/recipes';
 import { EN_PRODUCTS, EN_CATEGORIES } from '../i18n/en/data/products';
 import { localizeNames, localizeRecord } from '../i18n/dataLang';
 
@@ -10,9 +11,11 @@ describe('i18n bước 5 — tên hàng tiếng Anh', () => {
     expect(Object.keys(EN_PRODUCTS).filter((k) => !ids.has(k))).toEqual([]);
   });
 
-  it('đủ tên Anh cho mọi ngành hàng, 131 hàng gốc và hàng catalog', () => {
+  it('đủ tên Anh cho mọi hàng trừ món nấu (món nấu đang dịch dần)', () => {
     expect(Object.keys(CATEGORIES).filter((k) => !EN_CATEGORIES[k])).toEqual([]);
-    expect(CATALOG_PRODUCTS.filter((p) => !EN_PRODUCTS[p.id]).map((p) => p.id)).toEqual([]);
+    const cooked = new Set(COOKED_PRODUCTS.map((p) => p.id));
+    expect(PRODUCTS.filter((p) => !cooked.has(p.id) && !EN_PRODUCTS[p.id]).map((p) => p.id)).toEqual([]);
+    expect(CATALOG_PRODUCTS.length).toBeGreaterThan(0);
     expect(PRODUCTS.slice(0, 131).filter((p) => !EN_PRODUCTS[p.id]).map((p) => p.id)).toEqual([]);
   });
 
