@@ -24,6 +24,7 @@ import { enPanelsSmall } from './en/panels_small';
 import { enAlerts } from './en/alerts';
 import { enPrivacy } from './en/privacy';
 import { enStory } from './en/story';
+import { enMorningMain } from './en/morning_main';
 
 /** English. `Record<I18nKey, string>` → thiếu khóa nào `tsc` báo ngay. */
 export const en: Record<I18nKey, string> = {
@@ -52,6 +53,7 @@ export const en: Record<I18nKey, string> = {
   ...enAlerts,
   ...enPrivacy,
   ...enStory,
+  ...enMorningMain,
   'settings.title': '⚙️ Settings',
   'settings.subtitle': 'Display, sound, gameplay, accessibility',
   'settings.tab.img': '👁 Display',

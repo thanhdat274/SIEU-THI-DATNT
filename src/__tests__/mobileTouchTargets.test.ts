@@ -39,7 +39,7 @@ describe('cảm ứng mobile ≥44px, nhãn ≥11px (GĐ1836)', () => {
   it('tiêu đề Sổ đầu ngày bản mobile rút gọn (IS_MOBILE dùng một nguồn chân lý từ shared)', () => {
     const panel = read('src/ui/panels/MorningPanel.tsx');
     expect(panel).toContain('IS_MOBILE');
-    expect(panel).toContain('Sổ đầu ngày {day} ({today.day}/{today.month})');
+    expect(panel).toContain("{t('morning_main.so_dau_ngay')}{' '}{day} ({today.day}/{today.month})");
     expect(read('src/ui/panels/shared.tsx')).toContain('export const IS_MOBILE');
   });
 });

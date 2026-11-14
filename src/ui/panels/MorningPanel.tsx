@@ -65,6 +65,7 @@ import { morningTodos, todos } from '../../data/todo';
 import { isCookStation } from '../../data/furniture';
 import { Fragment } from 'react';
 import { budgetMorning, type MorningCardEntry } from './morningBudget';
+import { t } from '../../core/i18n';
 
 
 
@@ -96,7 +97,7 @@ export function MorningPanel() {
   });
   const cleanStreak = biz.cleanStreak ?? 0;
   const cleanNext = nextCleanTier(cleanStreak);
-  const cleanExtra = cleanNext ? `chạm ${cleanNext.name} → +${formatMoney(cleanBonus(cleanNext.n, level))}` : `đã đạt ${CLEAN_TIERS[CLEAN_TIERS.length - 1].name}`;
+  const cleanExtra = cleanNext ? t('morning_main.cham', { name: cleanNext.name, v1: formatMoney(cleanBonus(cleanNext.n, level)) }) : t('morning_main.da_dat', { v0: CLEAN_TIERS[CLEAN_TIERS.length - 1].name });
   const shopName = useGame((s) => s.shopName);
   // GĐ Hệ2-L3 — Việc nhà trong hẻm: thẻ giỗ cần biết có đủ trạm nấu để nhận từng mức cỗ.
   const cookStations = [...new Set(furniture.filter((f) => isCookStation(f.type)).map((f) => f.type as string))];
@@ -144,9 +145,9 @@ export function MorningPanel() {
   const fv = festivalValue({ day, level, customers: avgCust7, revenue: recentAvgRevenue(history, 7) });
   const fvDelta = fv && (
     <>
-      ~{Math.round(fv.deltaKhachPerDay)} khách/ngày
-      {avgCust7 > 0 && <> ≈ <b style={{ color: '#2ecc71' }}>+{formatMoney(Math.round(fv.moneyDeltaPerDay))}</b>/ngày</>}
-      {fv.hotIds.length > 0 && <> · {fv.hotIds.length} món hot mở khóa</>}
+      ~{Math.round(fv.deltaKhachPerDay)}{' '}{t('morning_main.khach_ngay')}
+      {avgCust7 > 0 && <> ≈ <b style={{ color: '#2ecc71' }}>+{formatMoney(Math.round(fv.moneyDeltaPerDay))}</b>{t('morning_main.ngay')}</>}
+      {fv.hotIds.length > 0 && <> · {fv.hotIds.length}{' '}{t('morning_main.mon_hot_mo_khoa')}</>}
     </>
   );
   const hot = trending(day, level).filter((id) => !effects.hot.includes(id));
@@ -212,7 +213,7 @@ export function MorningPanel() {
     { id: 'supply', prio: 50, node: <SupplyChainCard storage={storage} branch={branch ?? undefined} quanNuoc={biz.quanNuoc} quanNuocLast={biz.quanNuocLast ?? null} level={level} weather={weather} day={day} /> },
     { id: 'earlyUnlocks', prio: 60, node: earlyUnlocks ? <EarlyUnlocksCard earlyUnlocks={earlyUnlocks} /> : null },
     { id: 'chophien', prio: 50, node: chophien ? <MarketSurplusCard chophien={chophien} /> : null },
-    { id: 'todayActions', prio: 20, node: <><TodayActionsCard actions={actions} onOpen={(panel) => openPanel({ type: panel as never })} />{nextEvt && <button onClick={() => openPanel({ type: 'calendar' })} title="Xem lịch năm" style={{ display: 'block', fontSize: 11, opacity: 0.7, margin: '-4px 0 8px', background: 'transparent', border: 'none', color: 'inherit', padding: 0, cursor: 'pointer', textAlign: 'left' }}>{nextEvt} →</button>}</> },
+    { id: 'todayActions', prio: 20, node: <><TodayActionsCard actions={actions} onOpen={(panel) => openPanel({ type: panel as never })} />{nextEvt && <button onClick={() => openPanel({ type: 'calendar' })} title={t('morning_main.xem_lich_nam')} style={{ display: 'block', fontSize: 11, opacity: 0.7, margin: '-4px 0 8px', background: 'transparent', border: 'none', color: 'inherit', padding: 0, cursor: 'pointer', textAlign: 'left' }}>{nextEvt} →</button>}</> },
     { id: 'sick', prio: 30, node: sickest.length > 0 ? <SickShelvesCard sickest={sickest} /> : null },
     { id: 'yesterCombos', prio: 70, node: yesterCombos.length > 0 ? <YesterCombosCard yesterCombos={yesterCombos} /> : null },
     { id: 'loanNote', prio: 70, node: biz.loan ? <LoanNoteCard loan={biz.loan} day={day} /> : null },
@@ -231,9 +232,9 @@ export function MorningPanel() {
     { id: 'festivalNow', prio: 50, node: effects.festival ? <FestivalNowCard festival={effects.festival} level={level} day={day} haveStock={haveStock} fv={fv} fvDelta={fvDelta} /> : null },
     { id: 'hot', prio: 60, node: <HotGoodsCards eventHot={effects.hot} weekHot={hot} haveStock={haveStock} /> },
     { id: 'festivalSoon', prio: 60, node: soon ? <FestivalSoonCard soon={soon} level={level} storage={storage} fv={fv} fvDelta={fvDelta} /> : null },
-    { id: 'regulars', prio: 90, node: <><ExpectedRegularsList expected={expected} regulars={regulars} reservations={reservations} favsOf={favsOf} haveStock={haveStock} churn={regularChurnData} value={regularValueOf} nextPerk={nextPerkValueOf} refer={referValueOf} timeline={nextPerkTimelineOf} />{weeklyTopData && <div style={{ fontSize: 12, marginTop: 8, color: '#b8860b' }}>🏆 Khách vàng theo tuần (giỏ × tần ghé): {weeklyTopData.map((w) => `${w.regular.name} ~${formatMoney(w.weekly)}/tuần`).join(' · ')}</div>}{cohortText && <div style={{ fontSize: 12, marginTop: 6, color: '#d2691e' }}>{cohortText}</div>}</> },
+    { id: 'regulars', prio: 90, node: <><ExpectedRegularsList expected={expected} regulars={regulars} reservations={reservations} favsOf={favsOf} haveStock={haveStock} churn={regularChurnData} value={regularValueOf} nextPerk={nextPerkValueOf} refer={referValueOf} timeline={nextPerkTimelineOf} />{weeklyTopData && <div style={{ fontSize: 12, marginTop: 8, color: '#b8860b' }}>{t('morning_main.khach_vang_theo_tuan_gio_tan')}{' '}{weeklyTopData.map((w) => t('morning_main.tuan', { name: w.regular.name, v1: formatMoney(w.weekly) })).join(' · ')}</div>}{cohortText && <div style={{ fontSize: 12, marginTop: 6, color: '#d2691e' }}>{cohortText}</div>}</> },
     { id: 'dueDebts', prio: 10, node: dueDebts.length > 0 ? <DueDebtsCard dueDebts={dueDebts} day={day} /> : null },
-    { id: 'expiring', prio: 30, node: expiring.length > 0 ? <div style={{ marginTop: 10 }}><AdviceCard title={`🥀 Hàng sắp hỏng (${expiring.reduce((n, l) => n + l.qty, 0)} món)`} items={expiryTips} onAct={(a) => a.action && openPanel({ type: a.action })} /></div> : null },
+    { id: 'expiring', prio: 30, node: expiring.length > 0 ? <div style={{ marginTop: 10 }}><AdviceCard title={t('morning_main.hang_sap_hong_mon', { v0: expiring.reduce((n, l) => n + l.qty, 0) })} items={expiryTips} onAct={(a) => a.action && openPanel({ type: a.action })} /></div> : null },
     { id: 'reservations', prio: 10, node: resList.length > 0 ? <ReservationsCard resList={resList} haveStock={haveStock} /> : null },
     { id: 'dueContracts', prio: 10, node: dueContracts.length > 0 ? <DueContractsCard dueContracts={dueContracts} day={day} storage={storage} /> : null },
   ];
@@ -245,15 +246,15 @@ export function MorningPanel() {
       {/* GĐ1836 (review đợt 4 R5, tái xuất Đ1): mobile 375px tiêu đề đầy đủ bọc 3 dòng — bản mobile
           chỉ còn phần thay đổi theo ngày, tên tiệm/thứ để cho khung desktop */}
       <h2 style={styles.title}>{IS_MOBILE
-        ? <>☀️ Sổ đầu ngày {day} ({today.day}/{today.month})</>
-        : <>☀️ {shopName} · Sổ đầu ngày {day} ({today.day}/{today.month}) · {weekdayOf(day)}</>}</h2>
+        ? <>{t('morning_main.so_dau_ngay')}{' '}{day} ({today.day}/{today.month})</>
+        : <>☀️ {shopName}{' '}{t('morning_main.so_dau_ngay_2')}{' '}{day} ({today.day}/{today.month}) · {weekdayOf(day)}</>}</h2>
       <MorningSubtitle weatherSeed={weatherSeed} day={day} weather={weather} tomorrow={forecast[0]} level={level} rent={rentOf(shopTier)}
         autoNote={autoOpenNote(autoOpenAt, autoRoutine, cashierOpensMorning(staff))} />
       {/* Spec T6-L5: hiện tối đa MORNING_CARD_CAP thẻ thẳng theo mức gấp, còn lại gập "Xem thêm". */}
       {budget.visible.map((c) => <Fragment key={c.id}>{c.node}</Fragment>)}
       {budget.rest.length > 0 && (
         <details style={{ marginTop: 12 }}>
-          <summary style={{ fontSize: 13, opacity: 0.9, cursor: 'pointer', fontWeight: 600 }}>🧶 Xem thêm {budget.rest.length} mục…</summary>
+          <summary style={{ fontSize: 13, opacity: 0.9, cursor: 'pointer', fontWeight: 600 }}>{t('morning_main.xem_them')}{' '}{budget.rest.length}{' '}{t('morning_main.muc')}</summary>
           {/* GĐ2368: kẹp track lưới về chiều rộng khung — chip giờ nowrap trong CounterDemandCard
               từng đẩy track max-content ~308px khiến mọi thẻ trong "Xem thêm" tràn khung ở 320px */}
           <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 6, marginTop: 8 }}>
@@ -261,17 +262,17 @@ export function MorningPanel() {
           </div>
         </details>
       )}
-      <h3 style={{ margin: '10px 0 4px', fontSize: 14 }}>📞 Điện thoại</h3>
+      <h3 style={{ margin: '10px 0 4px', fontSize: 14 }}>{t('morning_main.dien_thoai')}</h3>
       <p style={styles.sub}>
         {courier
-          ? `Hôm nay có ${PHONE_SLOTS.length} khe giờ hàng xóm gọi điện đặt hàng: ${PHONE_SLOTS.map((m) => formatClock(m)).join(', ')}. Nghe máy kịp mới có đơn.`
-          : `Chưa thuê 🛵 Giao hàng nên không có cuộc gọi nào. Thuê nhân viên giao hàng để mở đơn điện thoại (khe giờ: ${PHONE_SLOTS.map((m) => formatClock(m)).join(', ')}).`}
+          ? t('morning_main.hom_nay_co_khe_gio_hang', { length: PHONE_SLOTS.length, v1: PHONE_SLOTS.map((m) => formatClock(m)).join(', ') })
+          : t('morning_main.chua_thue_giao_hang_nen_khong', { v0: PHONE_SLOTS.map((m) => formatClock(m)).join(', ') })}
       </p>
       {courier && phoneWx && (
         <div style={{ fontSize: 12, color: '#3498db', marginTop: 2 }}>{phoneWx.line}</div>
       )}
       <Footer pin onClose={() => { resetComboDay(); resetStaffDay(); closePanel(); }}>
-        <button style={styles.btn} onClick={() => openPanel({ type: 'order' })}>📦 Nhập hàng</button>
+        <button style={styles.btn} onClick={() => openPanel({ type: 'order' })}>{t('morning_main.nhap_hang')}</button>
         <button style={styles.btn} onClick={() => openPanel({ type: 'storage' })}>🏭 Kho</button>
       </Footer>
     </div>

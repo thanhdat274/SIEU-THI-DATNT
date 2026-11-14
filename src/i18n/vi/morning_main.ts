@@ -1,0 +1,20 @@
+/** Chuỗi giao diện "morning_main" (tiếng Việt, nguồn gốc). Tách tự động i18n bước 3. */
+export const viMorningMain = {
+  'morning_main.cham': 'chạm {name} → +{v1}',
+  'morning_main.da_dat': 'đã đạt {v0}',
+  'morning_main.khach_ngay': 'khách/ngày',
+  'morning_main.ngay': '/ngày',
+  'morning_main.mon_hot_mo_khoa': 'món hot mở khóa',
+  'morning_main.xem_lich_nam': 'Xem lịch năm',
+  'morning_main.khach_vang_theo_tuan_gio_tan': '🏆 Khách vàng theo tuần (giỏ × tần ghé):',
+  'morning_main.tuan': '{name} ~{v1}/tuần',
+  'morning_main.hang_sap_hong_mon': '🥀 Hàng sắp hỏng ({v0} món)',
+  'morning_main.so_dau_ngay': '☀️ Sổ đầu ngày',
+  'morning_main.so_dau_ngay_2': '· Sổ đầu ngày',
+  'morning_main.xem_them': '🧶 Xem thêm',
+  'morning_main.muc': 'mục…',
+  'morning_main.dien_thoai': '📞 Điện thoại',
+  'morning_main.hom_nay_co_khe_gio_hang': 'Hôm nay có {length} khe giờ hàng xóm gọi điện đặt hàng: {v1}. Nghe máy kịp mới có đơn.',
+  'morning_main.chua_thue_giao_hang_nen_khong': 'Chưa thuê 🛵 Giao hàng nên không có cuộc gọi nào. Thuê nhân viên giao hàng để mở đơn điện thoại (khe giờ: {v0}).',
+  'morning_main.nhap_hang': '📦 Nhập hàng',
+} as const;
