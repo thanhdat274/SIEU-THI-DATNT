@@ -14,6 +14,7 @@ import {
 } from './garden';
 import { productById } from './products';
 import { rackCap, vaiCap, chumCap, PHOI_UNLOCK, VAI_UNLOCK, CHUM_UNLOCK } from './preserve';
+import { fmtNum } from '../core/format';
 
 /** Giá bán lẻ 1 món nhà trồng/nhà nuôi ở quầy (đã cộng 20% nhãn nhà trồng). */
 export const homegrownSell = (productId: string) =>
@@ -218,7 +219,7 @@ export function animalBuyPayback(kind: AnimalKind, g: GardenState): AnimalBuyPay
   if (perDay <= 0) {
     return {
       perDay, paybackDays: null, verdict: 'loss',
-      line: `Chưa đáng: mỗi con lỗ ~${Math.abs(perDay).toLocaleString('vi-VN')}đ/ngày sau trừ cám — cần bãi thả hoặc cám rẻ hơn`,
+      line: `Chưa đáng: mỗi con lỗ ~${fmtNum(Math.abs(perDay))}đ/ngày sau trừ cám — cần bãi thả hoặc cám rẻ hơn`,
     };
   }
   const paybackDays = av.mode === 'fatten' ? def.fattenDays! : Math.ceil(def.price / av.perDay);
@@ -228,7 +229,7 @@ export function animalBuyPayback(kind: AnimalKind, g: GardenState): AnimalBuyPay
     : `hồi vốn ~${paybackDays} ngày`;
   return {
     perDay, paybackDays, verdict,
-    line: `Lãi ~${perDay.toLocaleString('vi-VN')}đ/con/ngày (đã trừ cám) — ${tail} (${verdict === 'worth' ? 'đáng' : 'chậm'})`,
+    line: `Lãi ~${fmtNum(perDay)}đ/con/ngày (đã trừ cám) — ${tail} (${verdict === 'worth' ? 'đáng' : 'chậm'})`,
   };
 }
 
@@ -276,15 +277,15 @@ export const farmBuildingValue = (g: GardenState): FarmBuildingValue[] => {
     if (id === 'bai_tha') {
       const saved = Math.round(dailyFeedCost(g) * farmGrazeDiscount(g));
       const care = saved > 0
-        ? `giảm ~${saved.toLocaleString('vi-VN')}đ cám/ngày (cho ${g.pens ? Object.values(g.pens).filter(p => p && p.count > 0).length : 0} chuồng đang nuôi)`
+        ? `giảm ~${fmtNum(saved)}đ cám/ngày (cho ${g.pens ? Object.values(g.pens).filter(p => p && p.count > 0).length : 0} chuồng đang nuôi)`
         : 'chưa có vật nuôi nào nên hôm nay chưa giảm được đồng cám nào';
-      line = star > 0 ? `Bãi thả cấp ${star}: ${care}` : `Chưa xây (${cost.toLocaleString('vi-VN')}đ): ${care}`;
+      line = star > 0 ? `Bãi thả cấp ${star}: ${care}` : `Chưa xây (${fmtNum(cost)}đ): ${care}`;
       hasMoney = saved > 0;
     } else if (id === 'bu_nhin') {
       const pct = Math.round(farmCritChance(g) * 100);
       line = star > 0
         ? `Bù nhìn cấp ${star}: thu hoạch có ${pct}% cơ hội gấp đôi trái (càng nhiều rau đang trồng càng lời)`
-        : `Chưa xây (${cost.toLocaleString('vi-VN')}đ): thu hoạch có cơ hội gấp đôi trái — chỉ đáng khi bạn trồng nhiều`;
+        : `Chưa xây (${fmtNum(cost)}đ): thu hoạch có cơ hội gấp đôi trái — chỉ đáng khi bạn trồng nhiều`;
       hasMoney = false;
     } else if (id === 'tuoi_tu_dong') {
       const gPct = Math.round(farmGrowthPct(g) * 100);
@@ -292,13 +293,13 @@ export const farmBuildingValue = (g: GardenState): FarmBuildingValue[] => {
         ? (gPct > 0
             ? `Tưới tự động cấp ${star}: tự tưới cả vườn + cây lớn nhanh thêm ${gPct}%/sao`
             : `Tưới tự động cấp 1: tự tưới cả vườn mỗi sáng (khỏi thao tác); lên cấp 2–3 để cây lớn nhanh hơn`)
-        : `Chưa xây (${cost.toLocaleString('vi-VN')}đ): tự tưới cả vườn mỗi sáng, khỏi thao tác`;
+        : `Chưa xây (${fmtNum(cost)}đ): tự tưới cả vườn mỗi sáng, khỏi thao tác`;
       hasMoney = false;
     } else if (id === 'gian_phoi') {
       const cap = rackCap(star);
       // Hệ Phơi (SPEC §1): đổi nguyên liệu thô thành món khô bán được — lợi phụ thuộc phơi theo trời
       // (nắng/mưa/bão tất định theo seed) nên chỉ dòng định tính, không cày số đ/ngày mơ hồ (Luật 3).
-      const built = star > 0 ? `Sân phơi cấp ${star}: ${cap} nong cho mẻ phơi — bánh tráng, tôm khô, mực một nắng` : `Chưa xây (${cost.toLocaleString('vi-VN')}đ, mở cấp ${PHOI_UNLOCK}): ${cap} nong phơi món khô (bánh tráng, tôm khô, mực một nắng)`;
+      const built = star > 0 ? `Sân phơi cấp ${star}: ${cap} nong cho mẻ phơi — bánh tráng, tôm khô, mực một nắng` : `Chưa xây (${fmtNum(cost)}đ, mở cấp ${PHOI_UNLOCK}): ${cap} nong phơi món khô (bánh tráng, tôm khô, mực một nắng)`;
       line = built;
       hasMoney = false;
     } else if (id === 'vai_muoi') {
@@ -307,20 +308,20 @@ export const farmBuildingValue = (g: GardenState): FarmBuildingValue[] => {
       // vớt trễ thì khú/hỏng, nên dòng định tính (Luật 3), không cày số đ/ngày mơ hồ.
       line = star > 0
         ? `Dãy vại cấp ${star}: ${cap} vại muối chua — dưa muối, cà pháo, chanh muối, củ kiệu, dưa hành, dưa cải`
-        : `Chưa xây (${cost.toLocaleString('vi-VN')}đ, mở cấp ${VAI_UNLOCK}): ${cap} vại muối chua (dưa muối, cà pháo, chanh muối…)`;
+        : `Chưa xây (${fmtNum(cost)}đ, mở cấp ${VAI_UNLOCK}): ${cap} vại muối chua (dưa muối, cà pháo, chanh muối…)`;
       hasMoney = false;
     } else if (id === 'chum_u') {
       const cap = chumCap(star);
       // Hệ Ủ (SPEC §1.5): chum không hỏng theo thời gian, rủi ro = chi phí cơ hội — dòng định tính (Luật 3).
       line = star > 0
         ? `Nhà chum cấp ${star}: ${cap} chum ủ — mắm tép, tương bần, nước mắm, tỏi đen, tôm chua Huế, tương hột`
-        : `Chưa xây (${cost.toLocaleString('vi-VN')}đ, mở cấp ${CHUM_UNLOCK}): ${cap} chum ủ (mắm tép, tương bần, nước mắm…)`;
+        : `Chưa xây (${fmtNum(cost)}đ, mở cấp ${CHUM_UNLOCK}): ${cap} chum ủ (mắm tép, tương bần, nước mắm…)`;
       hasMoney = false;
     } else { // nha_luoi
       const flat = farmGrowthFlat(g);
       line = star > 0
         ? `Nhà lưới cấp ${star}: mưa giông không sập luống + cây lớn thêm ${flat} ngày mỗi đêm`
-        : `Chưa xây (${cost.toLocaleString('vi-VN')}đ): mưa giông không sập luống + cây lớn nhanh hơn`;
+        : `Chưa xây (${fmtNum(cost)}đ): mưa giông không sập luống + cây lớn nhanh hơn`;
       hasMoney = false;
     }
     out.push({ id, owned: star > 0, cost, line, hasMoney });

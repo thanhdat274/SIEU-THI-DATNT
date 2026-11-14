@@ -10,6 +10,7 @@ import { HOMEGROWN_PREMIUM } from './garden';
 import { phoiReady, type PreserveDef, type PreserveJob } from './preserve';
 import { productById } from './products';
 import { referenceSell } from './pricing';
+import { fmtNum } from '../core/format';
 
 export interface PhoiBatchPayoff {
   defId: string;
@@ -30,7 +31,7 @@ export interface PhoiBatchPayoff {
   line: string;
 }
 
-const fmt = (n: number) => n.toLocaleString('vi-VN');
+const fmt = (n: number) => fmtNum(n);
 
 export function phoiPayoff(opts: {
   job: PreserveJob;

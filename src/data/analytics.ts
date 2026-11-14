@@ -6,6 +6,7 @@
  * Chỉ có dữ liệu và hàm thuần; ghi vào trạng thái ở `core/slices/endDay`, vẽ ở `ui/panels/AnalyticsPanel`.
  */
 import { caseSize, productById, unlockedProducts } from './products';
+import { fmtNum } from '../core/format';
 
 export const ANALYTICS_DAYS = 30;
 
@@ -162,7 +163,7 @@ export function analyticsAdvice(
       out.push({ icon: '📦', text: `Nhập thêm ~${cases} thùng ${h.name}: chỉ còn ${h.daysLeft.toFixed(1)} ngày là cạn hàng` });
     }
     if (h.profit21 < 0 && h.qty30 > 5) {
-      out.push({ icon: '🪦', text: `Cân nhắc bỏ ${h.name}: 3 tuần gần nhất lỗ ${Math.round(-h.profit21).toLocaleString('vi-VN')}đ dù bán ${h.qty30} món/tháng` });
+      out.push({ icon: '🪦', text: `Cân nhắc bỏ ${h.name}: 3 tuần gần nhất lỗ ${fmtNum(Math.round(-h.profit21))}đ dù bán ${h.qty30} món/tháng` });
     }
     if (h.spoilShare > 0.25 && h.qty30 > 0) {
       out.push({ icon: '🗑️', text: `${h.name} hỏng ${Math.round(h.spoilShare * 100)}% số hàng — nhập ít đi hoặc giảm giá sớm` });
@@ -210,7 +211,7 @@ export function shelfAttention(list: ItemHealth[], max = 3): ShelfAttention[] {
     if (h.dailyQty > 0 && h.daysLeft !== null && h.daysLeft > 0 && h.daysLeft <= 1.5) {
       out.push({ id: h.id, icon: '📦', text: `${h.name}: còn ~${h.daysLeft.toFixed(1)} ngày là cạn hàng` });
     } else if (h.profit21 < 0 && h.qty30 > 5) {
-      out.push({ id: h.id, icon: '🪦', text: `${h.name}: 3 tuần lỗ ${Math.round(-h.profit21).toLocaleString('vi-VN')}đ — cân nhắc bỏ` });
+      out.push({ id: h.id, icon: '🪦', text: `${h.name}: 3 tuần lỗ ${fmtNum(Math.round(-h.profit21))}đ — cân nhắc bỏ` });
     } else if (h.lostShare > 0.3 && h.qty30 > 5) {
       out.push({ id: h.id, icon: '🚶', text: `${h.name}: ${Math.round(h.lostShare * 100)}% lượt tìm không mua được — bày đầy kệ hơn` });
     }

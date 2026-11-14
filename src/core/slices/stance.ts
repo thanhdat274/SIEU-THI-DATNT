@@ -1,5 +1,6 @@
 import { STANCE_IDS, STANCE_SWITCH_BASE_COST, STANCE_UNLOCK, stanceTier, type StanceId } from '../../data/stance';
 import type { GameState, GetState, SetState } from '../gameTypes';
+import { fmtNum } from '../format';
 
 /**
  * Hệ 3 (SPEC-CHIEU-SAU §3.9) — TREO / GỠ BIỂN ĐỊNH VỊ (cấp ≥ 60).
@@ -36,10 +37,10 @@ export const createStanceSlice = (set: SetState, get: GetState): Pick<GameState,
       const tier = stanceTier(cur.fitDays ?? 0);
       const cost = STANCE_SWITCH_BASE_COST * tier;
       if (s.money < cost) {
-        return s.notify(`🪧 Đổi biển sang hướng mới cần ${cost.toLocaleString('vi-VN')}đ (5tr × bậc ${tier}) — còn thiếu ${(cost - s.money).toLocaleString('vi-VN')}đ.`);
+        return s.notify(`🪧 Đổi biển sang hướng mới cần ${fmtNum(cost)}đ (5tr × bậc ${tier}) — còn thiếu ${fmtNum((cost - s.money))}đ.`);
       }
       set({ money: s.money - cost, biz: { ...s.biz, stance: { id, since: day, fitDays: 0, missStreak: 0, switchUntil: day + 14 } } });
-      s.notify(`🪧 Đổi biển sang hướng mới — bỏ ${cost.toLocaleString('vi-VN')}đ làm biển, 14 ngày chưa có hiệu ứng, bậc về 0.`);
+      s.notify(`🪧 Đổi biển sang hướng mới — bỏ ${fmtNum(cost)}đ làm biển, 14 ngày chưa có hiệu ứng, bậc về 0.`);
     } else {
       s.notify(`🪧 Đang treo biển hướng này rồi.`);
     }

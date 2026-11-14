@@ -4,6 +4,7 @@ import {
   prestigeEligible, prestigeRestart, PRESTIGE_MAX_LEVEL, PRESTIGE_MIN_LEVEL, PRESTIGE_MIN_REVENUE,
 } from '../prestige';
 import type { GameState, SetState, GetState } from '../gameTypes';
+import { fmtNum } from '../format';
 
 /** Tái sinh (NG+): action store — kiểm tra điều kiện rồi gọi prestigeRestart và ghi state mới. */
 export const createPrestigeSlice = (set: SetState, get: GetState): Pick<GameState, 'doPrestige'> => ({
@@ -14,7 +15,7 @@ export const createPrestigeSlice = (set: SetState, get: GetState): Pick<GameStat
     const p = s.biz.prestige;
     if (p.level >= PRESTIGE_MAX_LEVEL) return s.notify('🌟 Đã tái sinh tối đa số lần, không thể thêm nữa.');
     if (!prestigeEligible(s.level, s.totals.revenue, p.level)) {
-      return s.notify(`🌟 Chưa đủ điều kiện tái sinh (cần cấp ${PRESTIGE_MIN_LEVEL} + doanh thu cả đời ${PRESTIGE_MIN_REVENUE.toLocaleString('vi-VN')}đ).`);
+      return s.notify(`🌟 Chưa đủ điều kiện tái sinh (cần cấp ${PRESTIGE_MIN_LEVEL} + doanh thu cả đời ${fmtNum(PRESTIGE_MIN_REVENUE)}đ).`);
     }
     const next = prestigeRestart(s);
     set(next);

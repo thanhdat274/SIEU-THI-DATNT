@@ -7,6 +7,7 @@
  */
 import { brandPremium, type BrandState } from './brand';
 import { productById } from './products';
+import { fmtNum } from '../core/format';
 
 export interface BrandLinePayoffRow {
   productId: string;
@@ -26,7 +27,7 @@ export interface BrandLinePayoffRow {
   line: string;
 }
 
-export const fmt = (n: number) => n.toLocaleString('vi-VN');
+export const fmt = (n: number) => fmtNum(n);
 
 export function brandLinePayoff(b: BrandState): {
   rows: BrandLinePayoffRow[];

@@ -19,6 +19,7 @@ import { managerNeedToRestock } from '../agents/staff';
 import { storeMissRevenue, type MissLog } from './advice';
 import { MANAGER_LOW_STOCK, MANAGER_TARGET } from './staff';
 import { productById } from './products';
+import { fmtNum } from '../core/format';
 
 export interface ManagerAutoPayoff {
   /** Có việc tự nhập hàng đang gánh được (hoặc đã lỡ trong nhóm canh) để nêu không. */
@@ -33,7 +34,7 @@ export interface ManagerAutoPayoff {
   line: string;
 }
 
-const fmt = (n: number) => n.toLocaleString('vi-VN');
+const fmt = (n: number) => fmtNum(n);
 
 const NEED_MIN_LOSS = 20000;
 

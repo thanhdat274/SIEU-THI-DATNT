@@ -12,6 +12,7 @@ import { useSession } from '../../net/session';
 import { formatMoney } from '../../data/products';
 import { NearMilestonesView, NgGoalsCard, NextUnlockTeaser } from './PrestigeParts';
 import { card, title, btn, sub } from './businessStyles';
+import { fmtNum } from '../../core/format';
 
 /** "Sắp đạt": nhắc những cột mốc còn cách không xa. */
 function NearMilestones() {
@@ -53,7 +54,7 @@ export function Achievements() {
                   <div style={{ ...sub, fontSize: 11, marginTop: 2 }}>
                     {g.money
                       ? `${formatMoney(Math.min(g.cur, g.goal))} / ${formatMoney(g.goal)}`
-                      : `${Math.min(g.cur, g.goal).toLocaleString('vi-VN')} / ${g.goal.toLocaleString('vi-VN')}`}
+                      : `${fmtNum(Math.min(g.cur, g.goal))} / ${fmtNum(g.goal)}`}
                   </div>
                 </div>
               )}

@@ -12,6 +12,7 @@ import { QUAN_NUOC_UNLOCK } from './quanNuoc';
 import { SHOP_TIERS } from './shopTiers';
 import { PHOI_UNLOCK } from './preserve';
 import { BRAND_UNLOCK } from './brand';
+import { fmtNum } from '../core/format';
 
 /** GĐ81 — "🗺️ Phía trước": bản đồ toàn ván các HỆ + MỐC LỚN mở khóa theo cấp.
  *  `unlocksAt` (levels.ts) chỉ liệt kê món/kệ/tier/thuộc tính theo cấp và bỏ sót hầu hết hệ lớn
@@ -32,7 +33,7 @@ export interface SystemUnlock {
 }
 
 /** Định dạng tiền Việt cho mô tả mốc (7.000.000đ) — chỉ để hiện, không phải logic kinh tế. */
-const vnd = (n: number) => `${n.toLocaleString('vi-VN')}đ`;
+const vnd = (n: number) => `${fmtNum(n)}đ`;
 /** Tra bậc theo tên thật trong data — đổi tên/di giá data sẽ vỡ test (cố ý), không vỡ im lặng. */
 const shopTier = (name: string) => SHOP_TIERS.find((t) => t.name === name)!;
 const landTier = (name: string) => LAND_TIERS.find((t) => t.name === name)!;

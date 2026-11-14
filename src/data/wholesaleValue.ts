@@ -12,6 +12,7 @@ import type { Lot } from './freshness';
 import { markdown, nearestLife } from './freshness';
 import { productById } from './products';
 import { vendorById, wholesaleTotal, wholesaleUnit, type VendorOffer } from './wholesale';
+import { fmtNum } from '../core/format';
 
 /** Còn ≤ chừng này ngày coi là cận hạn đáng nhả sỉ (khớp ý EXPIRY_WARN_DAYS của advice). */
 export const WHOLESALE_SELL_DAYS = 2;
@@ -81,7 +82,7 @@ export function wholesaleAdvice(
       reason = `Cận hạn còn ${life} ngày — nhả ${qty} món cho sỉ đỡ mất trắng nếu không kịp bán lẻ.`;
     } else if (wu >= markedRetailUnit) {
       verdict = 'sell';
-      reason = `Giá sỉ ${wu.toLocaleString('vi-VN')}đ từng bằng/trên giá lẻ sau giảm cận hạn (${markedRetailUnit.toLocaleString('vi-VN')}đ) — bán ngay gọn lời.`;
+      reason = `Giá sỉ ${fmtNum(wu)}đ từng bằng/trên giá lẻ sau giảm cận hạn (${fmtNum(markedRetailUnit)}đ) — bán ngay gọn lời.`;
     } else if (inStorage >= qty * 3) {
       verdict = 'sell';
       reason = `Kho còn nhiều (${inStorage} món) — bán sỉ giải phóng chỗ, không ứ vốn dưới kệ.`;

@@ -5,11 +5,13 @@
  * nguyên văn. Chữ do React vẽ lại sau đó cũng được đổi tiếp (MutationObserver), nên chuyển qua lại không sót màn nào.
  */
 import { getSettings, onSettings, type Settings } from './settings';
+import { fmtNum } from './format';
 
 export const USD_RATE = 25000;
 
-/** "12.000đ" / "12.000 đ" / "12000₫" — số kiểu Việt (chấm ngăn nghìn), đơn vị không dính chữ cái sau (khỏi nhầm "5 đơn"). */
-const VND_RE = /(\d{1,3}(?:\.\d{3})+|\d+)(?:,\d+)?(\s?)(?:đ|₫)(?![\p{L}])/gu;
+/** "12.000đ" / "12.000 đ" / "12000₫" / "12,000đ" (bản tiếng Anh) — số kiểu Việt (chấm ngăn nghìn), đơn vị không dính chữ cái sau (khỏi nhầm "5 đơn"). */
+// Bản tiếng Anh ngăn nghìn bằng phẩy ("12,000đ") — nhánh phẩy đứng TRƯỚC \d+ để không bị đọc "12" + phần thập phân ",000".
+const VND_RE = /(\d{1,3}(?:\.\d{3})+|\d{1,3}(?:,\d{3})+(?!\d)|\d+)(?:,\d+)?(\s?)(?:đ|₫)(?![\p{L}])/gu;
 
 export function usdText(vnd: number): string {
   const d = vnd / USD_RATE;
@@ -20,12 +22,12 @@ export function usdText(vnd: number): string {
 
 /** Đổi mọi số tiền đồng trong một đoạn chữ sang đô la. Đoạn không có tiền thì giữ nguyên. */
 export function toUsdText(text: string): string {
-  return text.replace(VND_RE, (_m, n: string) => usdText(Number(n.replace(/\./g, ''))));
+  return text.replace(VND_RE, (_m, n: string) => usdText(Number(n.replace(/[.,]/g, ''))));
 }
 
 /** Cho nơi không có DOM (chữ vẽ lên canvas 3D): số tiền theo tiền tệ đang chọn. */
 export function moneyShown(vnd: number, cur: Settings['currency'] = getSettings().currency): string {
-  return cur === 'usd' ? usdText(vnd) : `${Math.round(vnd).toLocaleString('vi-VN')}đ`;
+  return cur === 'usd' ? usdText(vnd) : `${fmtNum(Math.round(vnd))}đ`;
 }
 
 const shown = new WeakMap<Text, { orig: string; out: string }>();

@@ -2,6 +2,7 @@ import type { ContractState } from '../core/gameTypes';
 import { productById } from './products';
 import type { TodoItem } from './todo';
 import { registerTodo, urgencyAt } from './todo';
+import { fmtNum } from '../core/format';
 
 /** Tên sản phẩm bỏ phần ngoặc (mẫu slice brand.ui). */
 const pname = (id: string) => (productById(id)?.name ?? id).replace(/\s*\([^)]*\)\s*$/, '');
@@ -207,7 +208,7 @@ export function brandWorkshopDay(b: BrandState, storage: Record<string, number>,
   fee = Math.round(fee / 100) * 100;
   const wage = w.staff * BRAND_WORKSHOP_WAGE;
   const brand = { ...b, lines, stock, lastPackDay: packedTotal > 0 ? day : b.lastPackDay };
-  if (packedTotal > 0) news.push(`🏭 Xưởng đóng gói ${packedTotal} đơn vị hàng nhãn (thợ ${w.staff}, phí bao bì ${fee.toLocaleString('vi-VN')}đ)`);
+  if (packedTotal > 0) news.push(`🏭 Xưởng đóng gói ${packedTotal} đơn vị hàng nhãn (thợ ${w.staff}, phí bao bì ${fmtNum(fee)}đ)`);
   return { brand, storage: newStorage, homegrown: newHome, packed: packedTotal, fee, wage, news };
 }
 
@@ -419,7 +420,7 @@ export function brandFranchiseNight(b: BrandState, day: number): { brand: BrandS
         cur = applyBrandRep(cur, day, -BRAND_FRANCHISE_MISS_REP, `thiếu hàng tuần "${def.title}"`);
         if (missed >= BRAND_FRANCHISE_CLOSE_WEEKS) {
           delete due[f.id];
-          news.push(`🚨 "${def.title}" thiếu hàng ${BRAND_FRANCHISE_CLOSE_WEEKS} tuần liền — điểm ĐÓNG, mất ${BRAND_FRANCHISE_SETUP.toLocaleString('vi-VN')}đ phí setup`);
+          news.push(`🚨 "${def.title}" thiếu hàng ${BRAND_FRANCHISE_CLOSE_WEEKS} tuần liền — điểm ĐÓNG, mất ${fmtNum(BRAND_FRANCHISE_SETUP)}đ phí setup`);
         } else {
           remain.push({ ...f, health: health2, missedWeeks: missed });
           due[f.id] = day + 7;

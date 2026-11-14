@@ -21,6 +21,7 @@
 // ============================================================================
 
 import { PRICE_WAR_MIN_SALES } from './bizFinance';
+import { fmtNum } from '../core/format';
 
 export interface PriceCounterViability {
   /** Đã bán ≥ 30 món hôm nay — đòn chắc kích hoạt. */
@@ -29,7 +30,7 @@ export interface PriceCounterViability {
   line: string;
 }
 
-const fmt = (n: number) => Math.round(n).toLocaleString('vi-VN');
+const fmt = (n: number) => fmtNum(Math.round(n));
 
 /** GĐ1270 — điều kiện kích hoạt đòn Đối đầu giá so với mốc 30 món + nhịp ngày thường. THUẦN. */
 export function priceCounterViability(soldNow: number, avgItemsPerDay: number): PriceCounterViability {

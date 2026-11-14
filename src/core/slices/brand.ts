@@ -8,6 +8,7 @@ import {
 } from '../../data/brand';
 import { productById } from '../../data/products';
 import type { GameState, GetState, SetState } from '../gameTypes';
+import { fmtNum } from '../format';
 
 /**
  * Hệ 4 (SPEC-CHIEU-SAU §4) — NHÃN HÀNG RIÊNG (cấp ≥ 100).
@@ -70,7 +71,7 @@ export const createBrandSlice = (set: SetState, get: GetState): Pick<
     if (!b) return s.notify(`🏷️ Hãy lập nhãn trước (mục Nhãn riêng, cấp ${BRAND_UNLOCK}).`);
     if (s.level < BRAND_WORKSHOP_UNLOCK) return s.notify(`🏭 Xưởng đóng gói mở từ cấp ${BRAND_WORKSHOP_UNLOCK}.`);
     if (b.workshop?.open) return s.notify(`🏭 Xưởng đóng gói đã mở.`);
-    if (s.money < BRAND_WORKSHOP_COST) return s.notify(`🏭 Mua xưởng đóng gói cần ${BRAND_WORKSHOP_COST.toLocaleString('vi-VN')}đ — còn thiếu ${(BRAND_WORKSHOP_COST - s.money).toLocaleString('vi-VN')}đ.`);
+    if (s.money < BRAND_WORKSHOP_COST) return s.notify(`🏭 Mua xưởng đóng gói cần ${fmtNum(BRAND_WORKSHOP_COST)}đ — còn thiếu ${fmtNum((BRAND_WORKSHOP_COST - s.money))}đ.`);
     set({ money: s.money - BRAND_WORKSHOP_COST, biz: { ...s.biz, brand: { ...b, workshop: { open: true, staff: 0, tier: 0 } } } });
     s.notify(`🏭 Mở xưởng đóng gói! Thuê thợ để mỗi đêm tự đóng hàng mang nhãn (tối đa ${BRAND_WORKSHOP_MAX_STAFF} thợ).`);
   },
@@ -173,7 +174,7 @@ export const createBrandSlice = (set: SetState, get: GetState): Pick<
       biz: { ...s.biz, brand: { ...nb, stock, lines, deals, reopenDays } },
       money: s.money + pay,
     });
-    s.notify(`🚚 Giao xong "${def.title}": +${pay.toLocaleString('vi-VN')}đ` + (onTime ? ` · uy tín +${BRAND_REP_ONTIME}` : ` · giao muộn, uy tín ${BRAND_REP_LATE}`)
+    s.notify(`🚚 Giao xong "${def.title}": +${fmtNum(pay)}đ` + (onTime ? ` · uy tín +${BRAND_REP_ONTIME}` : ` · giao muộn, uy tín ${BRAND_REP_LATE}`)
       + (cut ? ` · bị cắt hợp đồng (${BRAND_DEAL_CUT_AFTER} kỳ hỏng)` : ` · chuỗi đúng hẹn ${cut ? 0 : newStreak}`));
     return true;
   },
@@ -201,7 +202,7 @@ export const createBrandSlice = (set: SetState, get: GetState): Pick<
       biz: { ...s.biz, brand: { ...b, stock, lines, rivalOffer: undefined, rivalSold: (b.rivalSold ?? 0) + offer.units }, rival: rivalB },
       money: s.money + val,
     });
-    s.notify(`🤝 Bán ${offer.units} ${pname(offer.productId)} cho đối thủ +${val.toLocaleString('vi-VN')}, họ +${BRAND_RIVAL_STRENGTH_GAIN} sức mạnh (tiền nhanh, nuôi đối thủ).`);
+    s.notify(`🤝 Bán ${offer.units} ${pname(offer.productId)} cho đối thủ +${fmtNum(val)}, họ +${BRAND_RIVAL_STRENGTH_GAIN} sức mạnh (tiền nhanh, nuôi đối thủ).`);
   },
 
   // ───── Nhượng quyền (SPEC §4.5e) ─────
@@ -216,13 +217,13 @@ export const createBrandSlice = (set: SetState, get: GetState): Pick<
     if (b.rep < BRAND_FRANCHISE_REP) return s.notify(`🏮 Mở nhượng quyền cần uy tín nhãn ${BRAND_FRANCHISE_REP}+ (đang ${Math.round(b.rep)}).`);
     if (b.franchises.some((f) => f.id === defId)) return s.notify(`🏮 Điểm này đã mở rồi.`);
     if (b.franchises.length >= BRAND_FRANCHISE_SLOTS.length) return s.notify('🏮 Đã đủ 3 điểm nhượng quyền.');
-    if (s.money < BRAND_FRANCHISE_SETUP) return s.notify(`🏮 Phí setup mở điểm cần ${BRAND_FRANCHISE_SETUP.toLocaleString('vi-VN')}đ.`);
+    if (s.money < BRAND_FRANCHISE_SETUP) return s.notify(`🏮 Phí setup mở điểm cần ${fmtNum(BRAND_FRANCHISE_SETUP)}đ.`);
     const franchises = [...b.franchises, { id: defId, openedDay: s.day, health: 100, missedWeeks: 0 }];
     set({
       money: s.money - BRAND_FRANCHISE_SETUP,
       biz: { ...s.biz, brand: { ...b, franchises, franchiseDue: { ...b.franchiseDue, [defId]: s.day + 7 } } },
     });
-    s.notify(`🏮 Mở "${def.title}" (−${BRAND_FRANCHISE_SETUP.toLocaleString('vi-VN')}đ): tuần cần ${def.weekly} hàng nhãn, đêm trả phí nhượng quyền.`);
+    s.notify(`🏮 Mở "${def.title}" (−${fmtNum(BRAND_FRANCHISE_SETUP)}đ): tuần cần ${def.weekly} hàng nhãn, đêm trả phí nhượng quyền.`);
   },
   closeFranchise: (defId) => {
     const s = get();
@@ -233,7 +234,7 @@ export const createBrandSlice = (set: SetState, get: GetState): Pick<
     const franchiseDue = { ...b.franchiseDue };
     delete franchiseDue[defId];
     set({ biz: { ...s.biz, brand: { ...b, franchises, franchiseDue } } });
-    s.notify(`🏮 Đóng cửa điểm nhượng quyền (mất ${BRAND_FRANCHISE_SETUP.toLocaleString('vi-VN')}đ phí setup đã bỏ).`);
+    s.notify(`🏮 Đóng cửa điểm nhượng quyền (mất ${fmtNum(BRAND_FRANCHISE_SETUP)}đ phí setup đã bỏ).`);
   },
 });
 

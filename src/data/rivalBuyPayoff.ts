@@ -10,6 +10,7 @@
  */
 import { RIVAL_BUY_DAYS, RIVAL_BUY_TRAFFIC, RIVAL_SHOP_PRICE } from './rivals';
 import type { BranchState } from './branches';
+import { fmtNum } from '../core/format';
 
 export interface RivalBuyPayoff {
   /** Giá mua lại mặt bằng (mặc định RIVAL_SHOP_PRICE). */
@@ -48,5 +49,5 @@ export function rivalBuyPayoff(
   return { price, days, boostPct, extraPerDay, totalBoost, line };
 }
 
-const fmt = (v: number) => `${Math.round(v).toLocaleString('vi-VN')}đ`;
+const fmt = (v: number) => `${fmtNum(Math.round(v))}đ`;
 const compact = (v: number) => (v % 1000000 === 0 ? `${v / 1000000}tr` : v % 1000 === 0 ? `${v / 1000}k` : `${v}`);

@@ -22,6 +22,7 @@
 import { dailyWage } from './staff';
 import { dirtLoss, DIRT_LOSS_WARN_KHACH } from './dirtLoss';
 import { theftCatchChance, theftSpawnChance } from './theftRisk';
+import { fmtNum } from '../core/format';
 
 export interface HirePayoff {
   /** Có lỗ THẬT đang đo để nêu hay không (UI chỉ hiện dòng khi true). */
@@ -36,7 +37,7 @@ export const HIRE_SHELF_MIN_LOSS = 50000;
 /** GĐ1269 — ngưỡng rò trộm/ngày đáng nhắc khi thuê bảo vệ (tránh nhiễu ngày sạch). */
 export const GUARD_MIN_SAVE = 10000;
 
-const fmt = (n: number) => n.toLocaleString('vi-VN');
+const fmt = (n: number) => fmtNum(n);
 
 /**
  * GĐ1267 — lỗ cụ thể một ứng viên vai đang vá, theo sổ hôm nay.

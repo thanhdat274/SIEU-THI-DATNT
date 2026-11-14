@@ -4,6 +4,7 @@ import { productById, CATEGORIES, type Category } from './products';
 import { needsCold } from './freshness';
 import { scarcityMul } from './market';
 import type { ItemHealth } from './analytics';
+import { fmtNum } from '../core/format';
 
 // ───── GĐ135: 🧺 "Chợ phiên cuối ngõ" — bản đánh giá thuần-đọc hàng DƯ đáng gánh ra bán ─────
 // Slice 1 (pure-read) của mở rộng đã duyệt (audit deleg_057f5794 verdict EXPAND):
@@ -180,7 +181,7 @@ export function marketDayAction(val: MarketClearValue | null): DayAction | null 
   if (!val || val.units <= 0) return null;
   return {
     icon: '🧺',
-    text: `Chợ phiên đầu ngõ hôm nay: gánh ${val.units} món dư thu ~${val.total.toLocaleString('vi-VN')}đ`,
+    text: `Chợ phiên đầu ngõ hôm nay: gánh ${val.units} món dư thu ~${fmtNum(val.total)}đ`,
     panel: 'morning',
     danger: false,
     priority: 2,

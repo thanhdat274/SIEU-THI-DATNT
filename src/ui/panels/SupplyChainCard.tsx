@@ -2,6 +2,7 @@ import { useGame } from '../../core/store';
 import { supplyChainOverview, supplyRestockManifest } from '../../data/supplyChain';
 import { supplyRestockValue } from '../../data/supplyRestockValue';
 import { Callout, styles } from './shared';
+import { fmtNum } from '../../core/format';
 
 type Overview = Parameters<typeof supplyChainOverview>;
 interface Props {
@@ -41,8 +42,8 @@ export function SupplyChainCard({ storage, branch, quanNuoc, quanNuocLast, level
                     {rm.lines.map((l, i) => (
                       <div key={i} style={{ display: 'flex', gap: 6, alignItems: 'center', justifyContent: 'space-between' }}>
                         <span>
-                          {l.outlet === 'teahouse' ? '🍵' : '🏪'} <b>{l.label}</b>: thêm <b>{l.need.toLocaleString('vi-VN')}</b> (kho chung có {l.inWarehouse.toLocaleString('vi-VN')}) — {l.source === 'warehouse' ? 'chở được' : 'nhập thêm'}
-                          {rv.rows[i] ? <span style={{ color: '#e67e22' }}> ≈ {rv.rows[i].worth.toLocaleString('vi-VN')}đ giá bán lẻ</span> : ''}
+                          {l.outlet === 'teahouse' ? '🍵' : '🏪'} <b>{l.label}</b>: thêm <b>{fmtNum(l.need)}</b> (kho chung có {fmtNum(l.inWarehouse)}) — {l.source === 'warehouse' ? 'chở được' : 'nhập thêm'}
+                          {rv.rows[i] ? <span style={{ color: '#e67e22' }}> ≈ {fmtNum(rv.rows[i].worth)}đ giá bán lẻ</span> : ''}
                         </span>
                         <button onClick={() => openPanel({ type: l.outlet === 'teahouse' ? ('quannuoc' as never) : ('branch' as never) })}
                           style={{ ...styles.btn, fontSize: 11, padding: '1px 6px', flex: '0 0 auto' }}>

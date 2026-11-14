@@ -14,6 +14,7 @@ import { TiemXoiSection } from './TiemXoiSection';
 import { QuanMenuSection } from './QuanMenuSection';
 import { WEATHER } from '../../data/weather';
 import { quanHotNote } from '../../data/quanRecipes';
+import { fmtNum } from '../../core/format';
 
 // Chip trạng thái dùng đúng bảng màu ngữ cảnh chuẩn của dự án (Callout, GĐ166) — bộ màu riêng
 // gần-giống-but-lệch làm palette cả panel loãng.
@@ -223,7 +224,7 @@ export function QuanNuocPanel() {
             >
               <div style={{ fontSize: 12 }}>
                 {restockTip.verdict === 'danger'
-                  ? `Hôm qua đã bỏ lỡ ~${restockTip.missedRevenue.toLocaleString('vi-VN')}đ vì kho thiếu. Đêm nay quán cần ~${restockTip.wanted} ly nhưng kho chỉ còn ${restockTip.have} — cần thêm ${restockTip.shortfall} ly để bán đủ. `
+                  ? `Hôm qua đã bỏ lỡ ~${fmtNum(restockTip.missedRevenue)}đ vì kho thiếu. Đêm nay quán cần ~${restockTip.wanted} ly nhưng kho chỉ còn ${restockTip.have} — cần thêm ${restockTip.shortfall} ly để bán đủ. `
                   : `Đêm nay quán cần ~${restockTip.wanted} ly nhưng kho chỉ còn ${restockTip.have} — quán ăn hết là kệ tiệm chính cạn nước. Cần thêm ${restockTip.shortfall} ly. `}
                 <button
                   style={{ ...styles.btn, marginLeft: 0, padding: '2px 10px', background: restockTip.verdict === 'danger' ? '#e74c3c' : '#e67e22', color: '#fff' }}

@@ -62,6 +62,7 @@ const PhoneAlerts = lazy(() => import('./PhoneAlerts').then((m) => ({ default: m
 
 export { tutorialActive, tutorialStep, tutorialSteps } from './tutorialSteps';
 import { tutorialActive, tutorialStep } from './tutorialSteps';
+import { fmtNum, locale } from '../core/format';
 const Tutorial = lazy(() => import('./Tutorial').then((m) => ({ default: m.Tutorial })));
 const VendorAlert = lazy(() => import('./VendorAlert').then((m) => ({ default: m.VendorAlert })));
 const CounterAskAlert = lazy(() => import('./HudAlerts').then((m) => ({ default: m.CounterAskAlert }))); // GĐ636
@@ -186,7 +187,7 @@ export function Hud() {
   const restore = async () => {
     const prev = readBackupSave();
     if (!prev) return notify('Chưa có bản lưu trước để khôi phục');
-    const at = new Date(prev.savedAt).toLocaleString('vi-VN');
+    const at = new Date(prev.savedAt).toLocaleString(locale());
     if (!await askConfirm(`Quay về bản lưu trước (ngày ${prev.data.day}, lưu lúc ${at})?
 Bản đang chơi được giữ lại, khôi phục lần nữa là trở lại.`, { okLabel: 'Khôi phục' })) return;
     restoreBackup();
@@ -632,7 +633,7 @@ function GoalChip({ ready }: { ready: number }) {
   }
   const [icon, title, desc, current, target, lockAt] = story.split('|');
   // GĐ1818: số lớn (doanh thu 16665800/50000000) phải có dấu chấm ngăn nghìn.
-  const fmtGoalNum = (s: string) => { const n = Number(s); return Number.isFinite(n) ? Math.round(n).toLocaleString('vi-VN') : s; };
+  const fmtGoalNum = (s: string) => { const n = Number(s); return Number.isFinite(n) ? fmtNum(Math.round(n)) : s; };
   return (
     <button
       className="hud-chip hud-goal"

@@ -15,6 +15,6 @@ describe('supplyRestockValue — nối vào Phiếu nạp kho (SupplyChainCard)'
   });
   it('headline + mỗi dòng nạp hiện giá trị bán lẻ', () => {
     expect(src).toContain('· {rv.headline}');
-    expect(src).toContain('≈ {rv.rows[i].worth.toLocaleString(\'vi-VN\')}đ giá bán lẻ');
+    expect(src).toContain('≈ {fmtNum(rv.rows[i].worth)}đ giá bán lẻ');
   });
 });

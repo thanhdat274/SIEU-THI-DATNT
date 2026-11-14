@@ -14,6 +14,7 @@ import { StaffManager } from '../agents/staff';
 import { Player } from '../agents/player';
 import { createAutoplay, brandSim, type AutoplayRunner, type AutoplayOptions } from './autoplay';
 import type { Furniture } from '../core/store';
+import { fmtNum } from '../core/format';
 
 /**
  * GĐ105 — khảo sát kinh tế vòng ngày: dựng một ván ở cấp `level` trên STORE THẬT rồi chạy autoplay
@@ -188,7 +189,7 @@ export async function runEconomySim(level: number, days: number, opts: AutoplayO
   return { rows, averages };
 }
 
-const fmt = (v: number) => `${Math.round(v).toLocaleString('vi-VN')}đ`;
+const fmt = (v: number) => `${fmtNum(Math.round(v))}đ`;
 const profitNum = (p: string | number) => {
   if (p === '-') return 0;
   if (typeof p === 'number') return p;

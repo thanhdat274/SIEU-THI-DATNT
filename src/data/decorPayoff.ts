@@ -15,6 +15,7 @@
  */
 import { decorVisitBoost, DECOR_VISIT_DIVISOR } from './layout';
 import { customersPerDay } from './levels';
+import { fmtNum } from '../core/format';
 
 /** Nền xác suất ghé của khách đi đường (khớp customers.ts:181 / repPayoff VISIT_BASE). */
 export const VISIT_BASE = 0.5;
@@ -65,5 +66,5 @@ export function decorPayoff(
 
 /** Một dòng ngắn cho bề mặt xây dựng: decor đang kéo bao nhiêu khách/tiền, thêm 10🩷 thì sao. */
 export function decorPayoffLine(p: DecorPayoff): string {
-  return `🩷 Trang trí ${p.decorScore} điểm đang kéo thêm ~${p.extraKhach} khách/ngày (${p.moneyPerDay.toLocaleString('vi-VN')}đ/ngày); thêm 10🩷 ≈ +${p.stepKhach} khách (~${p.stepMoney.toLocaleString('vi-VN')}đ/ngày).`;
+  return `🩷 Trang trí ${p.decorScore} điểm đang kéo thêm ~${p.extraKhach} khách/ngày (${fmtNum(p.moneyPerDay)}đ/ngày); thêm 10🩷 ≈ +${p.stepKhach} khách (~${fmtNum(p.stepMoney)}đ/ngày).`;
 }

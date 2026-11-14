@@ -2,6 +2,7 @@ import { ageLots, spoilRate } from './freshness';
 import { isMeat } from './meat';
 import { productById } from './products';
 import type { Weather } from './weather';
+import { fmtNum } from '../core/format';
 
 /**
  * GĐ-C — Trục "Siêu thị hóa sâu": CHUỖI LẠNH của ngành "Khu thịt cá tươi".
@@ -75,4 +76,4 @@ export function meatCounterPayoff(lots: readonly MeatChainLot[], weather: Weathe
   };
 }
 
-const formatMoney = (v: number) => `${Math.round(v).toLocaleString('vi-VN')}đ`;
+const formatMoney = (v: number) => `${fmtNum(Math.round(v))}đ`;

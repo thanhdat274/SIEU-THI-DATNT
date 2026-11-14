@@ -10,6 +10,7 @@ import {
   BRAND_FRANCHISE_CLOSE_WEEKS, BRAND_FRANCHISE_SLOTS, franchiseIncome,
   type BrandState, type FranchiseState,
 } from './brand';
+import { fmtNum } from '../core/format';
 
 export interface FranchisePayoffRow {
   id: string;
@@ -26,7 +27,7 @@ export interface FranchisePayoffRow {
   line: string;
 }
 
-export const fmt = (n: number) => n.toLocaleString('vi-VN');
+export const fmt = (n: number) => fmtNum(n);
 
 export function franchisePayoff(b: BrandState): { rows: FranchisePayoffRow[]; totalWeek: number; headline: string } {
   const rows: FranchisePayoffRow[] = b.franchises.map((f: FranchiseState) => {

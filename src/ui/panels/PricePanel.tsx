@@ -11,6 +11,7 @@ import { dayEffects } from '../../data/calendar';
 import { marketTrend } from '../../data/market';
 import { priceGap } from '../../data/priceGap';
 import { Footer, styles, Callout } from './shared';
+import { fmtNum } from '../../core/format';
 
 export const PRICE_PAGE = 12;
 
@@ -189,7 +190,7 @@ export function PricePanel() {
                     const t = fo.rows[0];
                     return (
                       <div style={{ fontSize: 11, marginTop: 2, color: '#e67e22' }}>
-                        💡 {t.profession.icon} {t.profession.name} (nhạy {t.sensitivity}) bị giá cao đuổi ~{t.losePct}% lượt — hạ về ~{fo.reference.toLocaleString('vi-VN')}đ.
+                        💡 {t.profession.icon} {t.profession.name} (nhạy {t.sensitivity}) bị giá cao đuổi ~{t.losePct}% lượt — hạ về ~{fmtNum(fo.reference)}đ.
                       </div>
                     );
                   })()}

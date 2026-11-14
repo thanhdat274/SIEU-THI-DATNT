@@ -1,4 +1,5 @@
 import { registerTodo } from './todo';
+import { fmtNum } from '../core/format';
 /**
  * Dạo phố: vài điểm quanh ngõ để tiêu hoặc kiếm tiền nhàn rỗi — vé số cô Sáu, chùa, ngân hàng,
  * tài xỉu góc ngõ, chú Tư cho vay nóng. THUẦN (không đụng store): mọi hàm nhận `roll` (0..1) để test
@@ -81,6 +82,6 @@ registerTodo('stroll', (s) => {
   const sk = s.stroll?.shark;
   if (!sk) return [];
   const owed = sharkOwedNow(sk, s.day);
-  const text = s.day > sk.dueDay ? `Nợ chú Tư quá hạn, đang ${owed.toLocaleString('vi-VN')}đ và tính lãi chồng` : s.day === sk.dueDay ? `Hôm nay phải trả chú Tư ${owed.toLocaleString('vi-VN')}đ` : `Nợ chú Tư ${owed.toLocaleString('vi-VN')}đ, hạn ngày ${sk.dueDay}`;
+  const text = s.day > sk.dueDay ? `Nợ chú Tư quá hạn, đang ${fmtNum(owed)}đ và tính lãi chồng` : s.day === sk.dueDay ? `Hôm nay phải trả chú Tư ${fmtNum(owed)}đ` : `Nợ chú Tư ${fmtNum(owed)}đ, hạn ngày ${sk.dueDay}`;
   return [{ id: `shark-${sk.dueDay}`, icon: '🕴️', text, urgency: s.day >= sk.dueDay ? 'now' : 'today', morning: true, go: { panel: 'stroll' } }];
 });

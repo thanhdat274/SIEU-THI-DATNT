@@ -11,6 +11,7 @@
 import { PRESERVE_DEFS, type PreserveDef } from './preserve';
 import { productById } from './products';
 import { monthlyRelRebate } from './supplierRel';
+import { fmtNum } from '../core/format';
 
 export interface PreservePayoffRow {
   defId: string;
@@ -45,7 +46,7 @@ export interface PreservePayoff {
 export const preserveFinishDays = (d: PreserveDef) =>
   d.kind === 'u' ? d.need : d.window ? d.window[1] : d.need;
 
-const fmt = (n: number) => n.toLocaleString('vi-VN');
+const fmt = (n: number) => fmtNum(n);
 
 /** Bậc/mốc ủ lâu (aged) nếu có → chú thích thêm một dòng ở line. */
 function agedNote(d: PreserveDef): string {

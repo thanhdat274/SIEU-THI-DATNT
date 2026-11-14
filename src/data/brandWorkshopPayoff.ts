@@ -11,6 +11,7 @@ import {
   type BrandState,
 } from './brand';
 import { productById } from './products';
+import { fmtNum } from '../core/format';
 
 export interface BrandWorkshopPayoffResult {
   /** Số đơn vị đêm kế tiếp gói được (giới hạn bởi cả nguyên liệu kho lẫn công suất). */
@@ -30,7 +31,7 @@ export interface BrandWorkshopPayoffResult {
   line: string;
 }
 
-export const fmt = (n: number) => n.toLocaleString('vi-VN');
+export const fmt = (n: number) => fmtNum(n);
 
 export function brandWorkshopPayoff(b: BrandState, storage: Record<string, number>): BrandWorkshopPayoffResult {
   const w = b.workshop;

@@ -1,6 +1,7 @@
 import { useGame } from '../../core/store';
 import { roadmapAhead, SYSTEM_UNLOCKS } from '../../data/unlockMap';
 import { Footer, styles } from './shared';
+import { fmtNum } from '../../core/format';
 
 /** 🗺️ Phía trước — bản đồ toàn ván các HỆ lớn + MỐC lớn (tiệm/trại/chương/tái sinh) mở khóa theo cấp. */
 export function RoadmapPanel() {
@@ -22,7 +23,7 @@ export function RoadmapPanel() {
             <div key={r.id} style={{ ...styles.card, display: 'block', outline: i === 0 ? '2px solid #f1c40f' : undefined }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'baseline' }}>
                 <b>{r.icon} {r.name}</b>
-                <span style={{ opacity: 0.75, fontSize: 13 }}>🔒 Cấp {r.atLevel} · còn {r.xpAway.toLocaleString('vi-VN')} XP</span>
+                <span style={{ opacity: 0.75, fontSize: 13 }}>🔒 Cấp {r.atLevel} · còn {fmtNum(r.xpAway)} XP</span>
               </div>
               <div style={{ fontSize: 13, opacity: 0.8, marginTop: 3 }}>{r.desc}</div>
             </div>

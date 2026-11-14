@@ -1,5 +1,6 @@
 import type { Furniture } from '../core/gameTypes';
 import { isWeekend, festivalOn } from './calendar';
+import { fmtNum } from '../core/format';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GĐ1493 — máy tự phục vụ thu phí mỗi lượt (đặt được như nội thất, không cần
@@ -71,7 +72,7 @@ export function machinePopupLine(type: Furniture['type'], earned?: number): stri
   if (!isMachine(type)) return null;
   const t = MACHINE_TYPES[type];
   const night = NIGHT_MACHINES.has(type) ? ' · tối ×1,5' : type === 'cotton_candy' ? ' · cuối tuần & ngày lễ ×1,5' : type === 'claw_machine' ? ' · cuối tuần ×1,5' : type === 'photo_booth' ? ' · ngày lễ ×1,5' : type === 'shoe_shine' ? ' · trời mưa ×1,5' : '';
-  return `${t.icon} ${t.fee.toLocaleString('vi-VN')}đ/lượt · hoàn vốn ~${Math.round(t.price / t.fee)} lượt${night}${earned ? ` · đã thu ${earned.toLocaleString('vi-VN')}đ` : ''}`;
+  return `${t.icon} ${fmtNum(t.fee)}đ/lượt · hoàn vốn ~${Math.round(t.price / t.fee)} lượt${night}${earned ? ` · đã thu ${fmtNum(earned)}đ` : ''}`;
 }
 
 // GĐ1544 — chơi máy xong khách vui, hay mua thêm một món: cấp ≥40, 30% thêm 1 món muốn mua.
@@ -85,7 +86,7 @@ export function machineDayLine(byService: Record<string, number> | undefined): s
   const rows = Object.entries(byService ?? {}).filter(([id, v]) => isMachine(id) && v > 0).sort((a, b) => b[1] - a[1]);
   if (!rows.length) return null;
   const total = rows.reduce((n, [, v]) => n + v, 0);
-  return `🎰 Máy thu phí hôm nay: ${total.toLocaleString('vi-VN')}đ (${rows.map(([id, v]) => `${MACHINE_TYPES[id as MachineId].icon} ${v.toLocaleString('vi-VN')}đ`).join(' · ')})`;
+  return `🎰 Máy thu phí hôm nay: ${fmtNum(total)}đ (${rows.map(([id, v]) => `${MACHINE_TYPES[id as MachineId].icon} ${fmtNum(v)}đ`).join(' · ')})`;
 }
 
 /** GĐ1565 — tổng phí máy trong ngày (cho dòng "trong đó máy thu phí" ở Tổng kết ngày). */

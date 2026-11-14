@@ -15,6 +15,7 @@ import {
   haggleOff,
   type HagglePolicy,
 } from './counterDeals';
+import { fmtNum } from '../core/format';
 
 export type HaggleChoice = 'accept' | 'counter' | 'refuse';
 
@@ -69,7 +70,7 @@ export function hagglePolicyEarn(current: HagglePolicy | undefined, total: numbe
 }
 
 const NAME: Record<HaggleChoice, string> = { accept: 'Luôn bớt', counter: 'trả nửa', refuse: 'giữ giá' };
-const fmt = (v: number) => `${Math.round(v).toLocaleString('vi-VN')}đ`;
+const fmt = (v: number) => `${fmtNum(Math.round(v))}đ`;
 const kOf = (v: number) => (v % 1000 === 0 ? `${Math.round(v / 1000)}k` : `${v}`);
 
 function policyLine(o: {

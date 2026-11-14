@@ -14,6 +14,7 @@ import { HOMEGROWN_PREMIUM } from './garden';
 import { pickleAge, pickleState, uRipe, uAged, type PickleState, type PreserveDef, type PreserveJob } from './preserve';
 import { productById } from './products';
 import { referenceSell } from './pricing';
+import { fmtNum } from '../core/format';
 
 export interface PickleBatchPayoff {
   defId: string;
@@ -39,7 +40,7 @@ export interface PickleBatchPayoff {
   line: string;
 }
 
-const fmt = (n: number) => n.toLocaleString('vi-VN');
+const fmt = (n: number) => fmtNum(n);
 
 export function picklePayoff(opts: {
   job: PreserveJob;

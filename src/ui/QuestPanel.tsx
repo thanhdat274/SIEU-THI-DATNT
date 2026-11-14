@@ -10,6 +10,7 @@ import { formatMoney, productById, fmtMul } from '../data/products';
 import { recentAvgSalesProfit } from '../data/gifts';
 import { missingForOrder, orderValue, rushQuote, partyOrderById, STORY_ORDER_FRIEND_GAIN, STORY_ORDER_FRIEND_LOSS } from '../data/orders';
 import { Footer } from './panels/shared';
+import { fmtNum } from '../core/format';
 
 /** Sổ nhiệm vụ: những việc mỗi ngày (đủ mở gì thêm việc đó) và một bước cốt truyện, xong thì bấm nhận thưởng. */
 export function QuestPanel() {
@@ -183,7 +184,7 @@ function QuestRow({ q, betBadge }: { q: Quest; betBadge?: boolean }) {
         <div style={{ width: `${pct * 100}%`, height: '100%', borderRadius: 4, background: q.done ? '#2ecc71' : '#e67e22' }} />
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
-        <span>{q.current.toLocaleString('vi-VN')} / {q.target.toLocaleString('vi-VN')}</span>
+        <span>{fmtNum(q.current)} / {fmtNum(q.target)}</span>
         <span>Thưởng {formatMoney(q.money)}{q.xp ? ` · ${q.xp} XP` : ''}</span>
       </div>
     </div>

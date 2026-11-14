@@ -1,3 +1,4 @@
+import { fmtNum } from '../core/format';
 // GĐ1553 — Thông thạo món bán (tham khảo Xóm B5 "thông thạo giống"): bán một món đủ nhiều lần cả ván
 // lên bậc Đồng/Bạc/Vàng. Chỉ báo tin chúc mừng khi vừa lên bậc (không thêm tiền/XP — không đụng kinh tế).
 // Đọc từ `soldEver` sẵn có nên không cần trường save mới. Từ cấp 36.
@@ -25,7 +26,7 @@ export function masteryBadge(level: number, count: number): string {
   if (level < SELL_MASTERY_LEVEL || t === 0) return '';
   // GĐ1576 — kèm tiến độ tới bậc kế (bậc Vàng thì thôi).
   const next = SELL_MASTERY_TIERS[t];
-  return ` · ${SELL_MASTERY_NAMES[t - 1].split(' ')[0]}${next ? ` ${count.toLocaleString('vi-VN')}/${next.toLocaleString('vi-VN')}` : ''}`;
+  return ` · ${SELL_MASTERY_NAMES[t - 1].split(' ')[0]}${next ? ` ${fmtNum(count)}/${fmtNum(next)}` : ''}`;
 }
 
 // GĐ1575 — lên bậc thông thạo thưởng chút XP (Đồng 20 / Bạc 60 / Vàng 150). Chỉ XP, không tiền.

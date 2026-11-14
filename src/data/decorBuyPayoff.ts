@@ -12,6 +12,7 @@
  */
 import { decorVisitBoost } from './layout';
 import { customersPerDay } from './levels';
+import { fmtNum } from '../core/format';
 
 export interface DecorBuyPayoff {
   /** Giá mua món đồ (furniture.price). */
@@ -49,6 +50,6 @@ export function decorBuyPayoff(
 export function decorBuyPayoffLine(p: DecorBuyPayoff): string {
   if (p.decorDelta <= 0) return '';
   const khach = p.extraKhach > 0 ? `thêm ~${p.extraKhach} khách/ngày` : 'không kéo thêm khách đáng kể';
-  const money = p.moneyPerDay > 0 ? ` (~${p.moneyPerDay.toLocaleString('vi-VN')}đ doanh thu/ngày)` : '';
+  const money = p.moneyPerDay > 0 ? ` (~${fmtNum(p.moneyPerDay)}đ doanh thu/ngày)` : '';
   return `mua → +${p.decorDelta}🩷 · ${khach}${money}`;
 }

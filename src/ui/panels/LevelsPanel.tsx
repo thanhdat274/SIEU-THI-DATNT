@@ -3,6 +3,7 @@ import { useGame } from '../../core/store';
 import { maxStaff } from '../../data/staff';
 import { customersPerDay, MAX_LEVEL, unlockGroups, unlocksAt, xpToNext } from '../../data/levels';
 import { Footer, styles } from './shared';
+import { fmtNum } from '../../core/format';
 
 /** Lộ trình cấp: tiến độ cấp hiện tại và mọi mốc có mở khóa, kèm XP còn thiếu. */
 export function LevelsPanel() {
@@ -66,7 +67,7 @@ export function LevelsPanel() {
                   <div key={r.lv} style={{ padding: '8px 10px', borderRadius: 8, background: 'rgba(0,0,0,0.2)', outline: r.lv === rows[0]?.lv ? '2px solid #f1c40f' : undefined }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
                       <b>🔒 Cấp {r.lv}</b>
-                      <span style={{ opacity: 0.75, fontSize: 13 }}>còn {r.need.toLocaleString('vi-VN')} XP</span>
+                      <span style={{ opacity: 0.75, fontSize: 13 }}>còn {fmtNum(r.need)} XP</span>
                     </div>
                     {r.unlocks.length > 0 && (grouped(r) ? (
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 6, fontSize: 12 }}>

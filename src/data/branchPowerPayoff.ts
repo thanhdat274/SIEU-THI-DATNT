@@ -9,6 +9,7 @@
  * KHÔNG bịa hoàn vốn. KHÔNG import store (co-op an toàn), không đổi kinh tế/save/seed/state (Luật 5).
  */
 import { EFFICIENT_MUL, POWER_UPGRADES, branchPowerBill, hasPower, type BranchState } from './branches';
+import { fmtNum } from '../core/format';
 
 export interface BranchPowerEfficientPayoff {
   /** Giá lắp 'efficient'. */
@@ -44,4 +45,4 @@ export function branchPowerPayoff(b: BranchState): BranchPowerPayoff {
   return { efficient: { price: eff.price, savingPerDay, payback }, line };
 }
 
-const fmtMoney = (v: number) => `${Math.round(v).toLocaleString('vi-VN')}đ`;
+const fmtMoney = (v: number) => `${fmtNum(Math.round(v))}đ`;

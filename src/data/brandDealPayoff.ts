@@ -8,6 +8,7 @@
  */
 import { brandPremium, type BrandDealerDef } from './brand';
 import { productById } from './products';
+import { fmtNum } from '../core/format';
 
 export interface BrandDealPayoffRow {
   productId: string;
@@ -27,7 +28,7 @@ export interface BrandDealPayoffRow {
   line: string;
 }
 
-export const fmt = (n: number) => n.toLocaleString('vi-VN');
+export const fmt = (n: number) => fmtNum(n);
 
 export function brandDealPayoff(def: BrandDealerDef, productId: string, rep: number): BrandDealPayoffRow {
   const sell = productById(productId)?.sell ?? 0;

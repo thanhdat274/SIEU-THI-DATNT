@@ -1,6 +1,7 @@
 import { useGame } from '../../core/store';
 import type { EarlyUnlockTeaser } from '../../data/unlockMap';
 import { styles } from './shared';
+import { fmtNum } from '../../core/format';
 
 /** GĐ922: tách khỏi MorningPanel (nguyên văn thẻ "Sắp mở khóa" cho những ngày đầu). */
 export function EarlyUnlocksCard({ earlyUnlocks }: { earlyUnlocks: EarlyUnlockTeaser[] }) {
@@ -14,13 +15,13 @@ export function EarlyUnlocksCard({ earlyUnlocks }: { earlyUnlocks: EarlyUnlockTe
             <button key={u.id} onClick={() => openPanel(u.panel!())}
               style={{ display: 'flex', gap: 8, alignItems: 'baseline', background: 'transparent', border: 'none', color: '#f1c40f', fontSize: 12, cursor: 'pointer', padding: 0, textAlign: 'left' }}>
               <span style={{ minWidth: 150 }}>{u.icon} {u.name} →</span>
-              <span style={{ opacity: 0.8 }}>cấp {u.atLevel} · còn {u.xpAway.toLocaleString('vi-VN')} XP</span>
+              <span style={{ opacity: 0.8 }}>cấp {u.atLevel} · còn {fmtNum(u.xpAway)} XP</span>
             </button>
           ) : (
             // Mốc tự vận hành (chương truyện) không có bảng mở nhanh — hiện chỉ đọc
             <div key={u.id} style={{ display: 'flex', gap: 8, alignItems: 'baseline', fontSize: 12 }}>
               <span style={{ minWidth: 150 }}>{u.icon} {u.name}</span>
-              <span style={{ opacity: 0.8 }}>cấp {u.atLevel} · còn {u.xpAway.toLocaleString('vi-VN')} XP</span>
+              <span style={{ opacity: 0.8 }}>cấp {u.atLevel} · còn {fmtNum(u.xpAway)} XP</span>
             </div>
           )
         ))}

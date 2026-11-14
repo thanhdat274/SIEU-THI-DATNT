@@ -16,6 +16,7 @@
  */
 import { productById } from './products';
 import { comboById, type ComboDef } from './combos';
+import { fmtNum } from '../core/format';
 
 export interface ComboMarginRow {
   id: string;
@@ -94,6 +95,6 @@ export function comboRealizedPayoff(
 /** Một dòng ngắn cho bề mặt combo: ăn bao nhiêu % lời, giữ bao nhiêu đồng mỗi lần bán cặp. */
 export function comboMarginLine(m: ComboMarginRow): string {
   const eatenPct = Math.round(m.eaten * 100);
-  const keepTxt = m.keep.toLocaleString('vi-VN');
+  const keepTxt = fmtNum(m.keep);
   return `${m.icon} ${m.name}: chiết khấu ăn ~${eatenPct}% lời cặp — mỗi lần bán cặp giữ ~${keepTxt}đ.`;
 }

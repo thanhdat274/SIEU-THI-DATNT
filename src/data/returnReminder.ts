@@ -22,6 +22,7 @@ import { dayOfYear } from './calendar';
 import { SEASON_REWARD_PER_STAR, seasonEvent, seasonEventName, seasonWindow } from './seasonEvent';
 import { almanacMilestoneReward, nextAlmanacMilestone } from './seasonAlmanac';
 import { WEEK_DAYS, weeklyChallenge, type WeekTally } from './bizWeeks';
+import { fmtNum } from '../core/format';
 
 /** Chỉ nhắc khi thật sự vắng ít nhất 1 NGÀY THẬT (chơi hằng ngày không bị làm phiền). */
 export const RETURN_MIN_DAYS = 1;
@@ -139,6 +140,6 @@ export function returnNudgeWeek(
   const missing = Math.max(0, target - current);
   return {
     icon: ch.icon,
-    text: `Tuần này còn ~${remaining} ngày — thiếu ~${missing.toLocaleString('vi-VN')} ${ch.unit} nữa đạt "${ch.title}" (thưởng ~${formatMoney(ch.reward(level))}đ)!`,
+    text: `Tuần này còn ~${remaining} ngày — thiếu ~${fmtNum(missing)} ${ch.unit} nữa đạt "${ch.title}" (thưởng ~${formatMoney(ch.reward(level))}đ)!`,
   };
 }

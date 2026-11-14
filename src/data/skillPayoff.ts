@@ -22,6 +22,7 @@
 // ============================================================================
 
 import type { SkillId } from './titles';
+import { fmtNum } from '../core/format';
 
 export interface SkillPayoff {
   /** Có dữ liệu để nêu con số thật hay không (UI chỉ hiện dòng khi true). */
@@ -33,7 +34,7 @@ export interface SkillPayoff {
 /** Ngưỡng để kỹ năng "kê xếp" đáng nhắc: kệ trống dù kho còn lỡ từ chừng này lên mới hiện. */
 export const SKILL_PAYOFF_MIN_LOSS = 50000;
 
-const fmt = (n: number) => n.toLocaleString('vi-VN');
+const fmt = (n: number) => fmtNum(n);
 
 /**
  * GĐ1266 — con số thật cho một kỹ năng chủ tiệm, theo sổ người chơi đang có.

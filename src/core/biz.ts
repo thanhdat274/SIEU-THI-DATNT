@@ -32,6 +32,7 @@ export { buyPet, feedPet, upgradeEquip, upgradePower, buyUpgrade, buyHomeItem, b
 import { takeLoan, repayLoan, joinHui } from './bizLoan';
 export { takeLoan, repayLoan, joinHui } from './bizLoan';
 import { achievementCtx, checkAchievements, freshAchievements, stockReminders } from './bizAchieve';
+import { fmtNum } from './format';
 export { achievementCtx, checkAchievements, freshAchievements, stockReminders } from './bizAchieve';
 const S = () => useGame.getState();
 const patch = (b: Partial<BizState>) => useGame.setState({ biz: { ...S().biz, ...b } });
@@ -169,7 +170,7 @@ export function eatBreakfast() {
   if (s.minutes > 11 * 60) return s.notify('Quá giờ ăn sáng rồi');
   if (!pay(BREAKFAST.price, 'ăn sáng')) return;
   patch({ breakfastDay: s.day });
-  s.notify(`🍜 Ăn tô phở sáng (${BREAKFAST.price.toLocaleString('vi-VN')}đ): hôm nay đi nhanh hơn, thức khuya thêm ${BREAKFAST.lateMinutes} phút mới ngất`);
+  s.notify(`🍜 Ăn tô phở sáng (${fmtNum(BREAKFAST.price)}đ): hôm nay đi nhanh hơn, thức khuya thêm ${BREAKFAST.lateMinutes} phút mới ngất`);
 }
 
 export function buyVehicle(id: Exclude<Vehicle, 'none'>) {
@@ -366,7 +367,7 @@ export function bizEndOfDay(s: GameState, stats: DayStats, hiepLucRevenue = 0): 
         money += ch.reward;
         news.push(`🎯 Thử thách tuần: ${ch.title} xong! +${formatMoney(ch.reward)} (chuỗi ${report.challengeStreak ?? 1} tuần)`);
       } else {
-        const fmtCh = (n: number) => (ch.unit === 'đ' ? formatMoney(n) : n.toLocaleString('vi-VN'));
+        const fmtCh = (n: number) => (ch.unit === 'đ' ? formatMoney(n) : fmtNum(n));
         news.push(`🎯 Thử thách tuần ${ch.title} chưa xong (${fmtCh(ch.current)}/${fmtCh(ch.target)}) — tuần tới thử lại`);
       }
     }
@@ -400,7 +401,7 @@ export function bizEndOfDay(s: GameState, stats: DayStats, hiepLucRevenue = 0): 
         money += mch.reward;
         news.push(`🎯 Thử thách tháng: ${mch.title} xong! +${formatMoney(mch.reward)} (chuỗi ${report.monthStreak ?? 1} tháng)`);
       } else {
-        const fmtM = (n: number) => (mch.unit === 'đ' ? formatMoney(n) : n.toLocaleString('vi-VN'));
+        const fmtM = (n: number) => (mch.unit === 'đ' ? formatMoney(n) : fmtNum(n));
         news.push(`🎯 Thử thách tháng ${mch.title} chưa xong (${fmtM(mch.current)}/${fmtM(mch.target)}) — tháng tới thử lại`);
       }
     }

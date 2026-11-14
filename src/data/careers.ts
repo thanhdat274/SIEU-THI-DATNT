@@ -1,4 +1,5 @@
 import { ROLES, type Staff } from './staff';
+import { fmtNum } from '../core/format';
 
 /**
  * Thăng tiến nhân viên: thu ngân giỏi → Trưởng quầy (quản lý quầy) → Quản lý chi nhánh.
@@ -115,6 +116,6 @@ export function promotionWorth(st: Staff, to: Rank): PromotionWorth {
     wageAfter,
     wageDelta,
     perks,
-    line: `Lương +${wageDelta.toLocaleString('vi-VN')}đ/ca — được: ${perks.join(', ')}.`,
+    line: `Lương +${fmtNum(wageDelta)}đ/ca — được: ${perks.join(', ')}.`,
   };
 }

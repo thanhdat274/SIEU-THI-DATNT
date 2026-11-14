@@ -26,6 +26,7 @@ import { homegrownSell } from './farmValue';
 import { preserveDefById, phoiReady, type PreserveDef, type PreserveJob } from './preserve';
 import { nextWeather, type Weather } from './weather';
 import { productById } from './products';
+import { fmtNum } from '../core/format';
 
 export interface FarmhandPayoff {
   /** Có phụ trại + tối nay có việc thật để lo không. */
@@ -42,7 +43,7 @@ export interface FarmhandPayoff {
   line: string;
 }
 
-const fmt = (n: number) => n.toLocaleString('vi-VN');
+const fmt = (n: number) => fmtNum(n);
 
 /** Ngưỡng giá trị nông sản gom/thu đủ đáng nhắc (tránh nhiễu ngày trại an nhàn). */
 export const FARMHAND_GATHER_MIN = 15000;

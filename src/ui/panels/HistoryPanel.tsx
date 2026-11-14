@@ -11,6 +11,7 @@ import { regularRep, REGULARS } from '../../data/regulars';
 import { ACTION_LABEL, type Advice, type HourStat } from '../../data/advice';
 import { SUPPLY_CONTRACTS } from '../../data/contracts';
 import { starColor, Footer, styles } from './shared';
+import { fmtNum } from '../../core/format';
 
 export function AdviceCard({ title, items, onAct }: { title: string; items: Advice[]; onAct: (a: Advice) => void }) {
   return (
@@ -150,7 +151,7 @@ export function ItemTable({ lines }: { lines: (ItemLine & { id: string; gross: n
 
 /** Đọc nhanh số tiền cho nhãn trên cột: 850k · 1,2tr (chỉ dùng khi cột thưa, còn chỗ). */
 const compactMoney = (v: number) =>
-  v >= 1_000_000 ? `${(Math.round(v / 100_000) / 10).toLocaleString('vi-VN')}tr` : v >= 1_000 ? `${Math.round(v / 1_000)}k` : `${v}`;
+  v >= 1_000_000 ? `${fmtNum((Math.round(v / 100_000) / 10))}tr` : v >= 1_000 ? `${Math.round(v / 1_000)}k` : `${v}`;
 
 /** Cột doanh thu và cột "tiền vào − tiền ra" của các ngày gần đây.
  *  GĐ1254 thiết kế lại theo QA người dùng (trước đây 2 vạch 7px lẻ loi giữa cột rộng xơi trống,

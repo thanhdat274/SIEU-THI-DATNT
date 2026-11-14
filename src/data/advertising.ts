@@ -17,6 +17,7 @@
 import { formatMoney } from './products';
 import { decorVisitBoost } from './layout';
 import { customersPerDay } from './levels';
+import { fmtNum } from '../core/format';
 
 export interface AdDef {
   id: string;
@@ -81,7 +82,7 @@ export function adPayoff(def: AdDef, overallStars: number, level: number, avgPer
 /** Dòng ngắn cho bề mặt mua quảng cáo. */
 export function adPayoffLine(p: AdPayoff): string {
   const daily = p.extraKhach > 0 ? `~${p.extraKhach} khách/ngày trong ${p.def.days} ngày` : 'không kéo thêm khách đáng kể';
-  const money = p.moneyPerDay > 0 ? ` (~${p.totalMoney.toLocaleString('vi-VN')}đ cả đợt)` : '';
+  const money = p.moneyPerDay > 0 ? ` (~${fmtNum(p.totalMoney)}đ cả đợt)` : '';
   const verdict = p.moneyPerDay > 0
     ? (p.roiPct >= 0 ? ` · ~${p.roiPct}% so vốn` : ` · lỗ ~${-p.roiPct}% nếu chỉ tính doanh thu thêm`)
     : '';
@@ -99,6 +100,6 @@ export function adPayoffLine(p: AdPayoff): string {
 export function adTodayLine(def: AdDef, stars: number, level: number, avgPerVisit: number): string {
   const p = adPayoff(def, stars, level, avgPerVisit);
   if (p.extraKhach <= 0) return `Hôm nay chưa kéo thêm khách đáng kể.`;
-  const money = p.moneyPerDay > 0 ? ` ≈ ${p.moneyPerDay.toLocaleString('vi-VN')}đ hôm nay` : '';
+  const money = p.moneyPerDay > 0 ? ` ≈ ${fmtNum(p.moneyPerDay)}đ hôm nay` : '';
   return `Hôm nay đang kéo thêm ~${p.extraKhach} khách${money}.`;
 }

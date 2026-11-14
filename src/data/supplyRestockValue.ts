@@ -10,6 +10,7 @@
 import type { RestockLine } from './supplyChain';
 import { productById } from './products';
 import { quanNuocDrinkIds } from './quanNuoc';
+import { fmtNum } from '../core/format';
 
 export interface RestockValueRow {
   /** == line.id nếu là món cụ thể, else '' (nhóm). */
@@ -23,7 +24,7 @@ export interface RestockValueRow {
   worth: number;
 }
 
-export const fmt = (n: number) => n.toLocaleString('vi-VN');
+export const fmt = (n: number) => fmtNum(n);
 
 export function supplyRestockValue(lines: RestockLine[], level: number): {
   rows: RestockValueRow[];

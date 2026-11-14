@@ -19,6 +19,7 @@
 // ============================================================================
 
 import { WAREHOUSE_KEEP_PER_STAR } from './staff';
+import { fmtNum } from '../core/format';
 
 export interface WarehouseKeeperPayoff {
   /** Có dữ liệu đêm hỏng thật để nêu (hoặc đã có quản lý kho đang cứu) không. */
@@ -33,7 +34,7 @@ export interface WarehouseKeeperPayoff {
   line: string;
 }
 
-const fmt = (n: number) => n.toLocaleString('vi-VN');
+const fmt = (n: number) => fmtNum(n);
 
 /** Ngưỡng tiền cứu đủ đáng nhắc (tránh nhiễu khi đêm hỏng vài nghìn). */
 export const WAREHOUSE_SAVE_MIN = 10000;

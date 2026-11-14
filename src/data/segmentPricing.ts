@@ -11,6 +11,7 @@ import { PROFESSIONS, type ProfessionDef } from './professions';
 import { keepChance, referenceSell } from './pricing';
 import { likedProducts } from './segmentHurt';
 import { productById } from './products';
+import { fmtNum } from '../core/format';
 
 export interface SegmentPriceRow {
   profession: ProfessionDef;
@@ -64,6 +65,6 @@ export function segmentPriceFallout(opts: {
 /** Một dòng ngắn cho bề mặt định giá: phân khúc bị đuổi nhiều nhất + típ hạ giá. */
 export function segmentPriceLine(f: SegmentPriceFallout): string {
   const top = f.rows[0];
-  const refTxt = f.reference.toLocaleString('vi-VN');
+  const refTxt = fmtNum(f.reference);
   return `Giá ${f.name} đắt hơn gợi ý ${(f.ratio).toFixed(1)}×: ${top.profession.icon} ${top.profession.name} (nhạy ${top.sensitivity}) bỏ ~${top.losePct}% lượt — hạ về ~${refTxt}đ giữ họ.`;
 }

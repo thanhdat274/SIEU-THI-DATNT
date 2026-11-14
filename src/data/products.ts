@@ -4,6 +4,7 @@ import { HOMEMADE_PRODUCTS, NEIGHBOR2_PRODUCTS } from './homemade';
 import { REGION_PRODUCTS } from './regionSpecialty';
 import { LATE_GAME_PRODUCTS } from './lateGameProducts';
 import { epochGate } from './contentEpoch';
+import { fmtNum } from '../core/format';
 /** Ngành hàng: quyết định bày ở đâu (kệ thường, tủ mát, tủ đông). */
 export type Category = 'dry' | 'drink' | 'cold' | 'frozen' | 'household' | 'fresh' | 'meat';
 
@@ -238,6 +239,6 @@ export function describeUnits(productId: string, units: number): string {
 }
 
 /** Luôn ra chữ đồng; chọn đô la thì core/currency.ts đổi chữ trên trang (DOM) cho mọi màn cùng lúc. */
-export const formatMoney = (v: number) => `${Math.round(v).toLocaleString('vi-VN')}đ`;
+export const formatMoney = (v: number) => `${fmtNum(Math.round(v))}đ`;
 /** Hệ số kiểu Việt: 1.25 → "1,25", 1.5 → "1,5", 2 → "2" (GĐ539). */
 export const fmtMul = (v: number, digits = 2) => String(Number(v.toFixed(digits))).replace('.', ',');

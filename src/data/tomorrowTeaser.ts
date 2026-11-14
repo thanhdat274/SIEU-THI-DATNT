@@ -22,6 +22,7 @@ import { isXoiCungDay } from './tiemXoi';
 import { isQuanMatchDay } from './quanNuoc';
 import { arcScenePending, surpriseArcById, type SurpriseArcState } from './surpriseArcs';
 import { hasFeature } from './features';
+import { fmtNum } from '../core/format';
 
 /**
  * Panel mà một dòng mồi sẽ mở khi bấm. Chỉ gồm 3 panel lá (không có trường bắt buộc),
@@ -159,7 +160,7 @@ export function tomorrowTeaser(input: TeaserInput): TeaserRow[] {
     rows.push({
       id: 'milestone',
       icon: top.m.icon,
-      text: `Sắp tới ${top.m.name} — còn ${top.remaining.toLocaleString('vi-VN')} ${UNIT[top.m.key]}`,
+      text: `Sắp tới ${top.m.name} — còn ${fmtNum(top.remaining)} ${UNIT[top.m.key]}`,
       panel: 'business',
     });
   }

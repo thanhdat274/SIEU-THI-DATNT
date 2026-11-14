@@ -5,6 +5,7 @@ import type { MilestoneStep } from '../../data/goals';
 import { PRESTIGE_TITLES } from '../../data/titles';
 import { PRESTIGE_COSTUMES } from '../../data/costumes';
 import { btn, card, pill, sub } from './businessStyles';
+import { fmtNum } from '../../core/format';
 
 /** GĐ954: các thẻ props-based của tab Thành tựu/Tái sinh, tách nguyên văn khỏi BusinessPanel. */
 /** "Sắp đạt": nhắc những cột mốc người chơi còn cách không xa — mồi "thêm chút nữa là xong". */
@@ -18,7 +19,7 @@ export function NearMilestonesView({ steps }: { steps: MilestoneStep[] }) {
         <div key={m.id} style={{ marginTop: 6 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
             <span>{m.icon} {m.name}</span>
-            <span style={sub}>còn {remaining.toLocaleString('vi-VN')} {UNIT[m.key]}</span>
+            <span style={sub}>còn {fmtNum(remaining)} {UNIT[m.key]}</span>
           </div>
           <div style={{ height: 6, background: '#555', borderRadius: 4, marginTop: 3 }}>
             <div style={{ width: `${Math.round(pct * 100)}%`, height: '100%', borderRadius: 4, background: '#f1c40f' }} />

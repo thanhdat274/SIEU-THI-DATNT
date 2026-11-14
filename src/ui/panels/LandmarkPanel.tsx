@@ -3,8 +3,9 @@ import { feedCost, landmark2Progress, landmarkProgress, LANDMARK_STAGES, LANDMAR
 import { landmarkPayoff } from '../../data/landmarkPayoff';
 import { formatMoney } from '../../data/products';
 import { Footer, styles } from './shared';
+import { fmtNum } from '../../core/format';
 
-const formatMoneyShort = (v: number) => v >= 1_000_000 ? `${(v / 1_000_000).toLocaleString('vi-VN')}tr` : `${Math.round(v / 1000).toLocaleString('vi-VN')}k`;
+const formatMoneyShort = (v: number) => v >= 1_000_000 ? `${fmtNum((v / 1_000_000))}tr` : `${fmtNum(Math.round(v / 1000))}k`;
 const TOTAL = LANDMARK_TARGETS[LANDMARK_TARGETS.length - 1];
 const TOTAL2 = LANDMARK2_TARGETS[LANDMARK2_TARGETS.length - 1];
 

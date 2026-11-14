@@ -5,6 +5,7 @@ import { fitLots, needsCold, shelfLife, spoilRate, type Lot } from './freshness'
 import { warehouseTier, WAREHOUSE_TIERS } from './warehouse';
 import type { Weather } from './weather';
 import type { AnalyticsState } from './analytics';
+import { fmtNum } from '../core/format';
 
 /** Bảng mở ra khi bấm nút của một gợi ý. */
 export type AdviceAction = 'order' | 'arrange' | 'prices' | 'staff';
@@ -96,7 +97,7 @@ export function shelfBuyHint(missRev: StoreMissRevenue | null): ShelfBuyHint | n
   const top = shelfRows[0]?.name ?? null;
   return {
     kind: 'shelf', count, loss, top,
-    line: `Hôm nay ${count} lượt khách tìm món mà kệ trống dù kho còn (lãi bỏ lỡ ~${loss.toLocaleString('vi-VN')}đ) — thêm kệ để bày${top ? `: ${top}` : ''}.`,
+    line: `Hôm nay ${count} lượt khách tìm món mà kệ trống dù kho còn (lãi bỏ lỡ ~${fmtNum(loss)}đ) — thêm kệ để bày${top ? `: ${top}` : ''}.`,
   };
 }
 
@@ -242,9 +243,9 @@ export function walkoutAdvice(log: MissLog, inStorage: Record<string, number>, p
       // GĐ1222 — bề mặt "giá cao ăn vào đơn": cho biết tỉ lệ khách còn chịu mua ở giá đang bày + giá thị trường
       const odds = priceBuyOdds(r.id, now);
       const note = odds.keep < 1
-        ? ` — giá này chỉ ~${Math.round(odds.keep * 100)}% đơn được mua; hạ về ~${odds.reference.toLocaleString('vi-VN')}đ là đa số mua.`
+        ? ` — giá này chỉ ~${Math.round(odds.keep * 100)}% đơn được mua; hạ về ~${fmtNum(odds.reference)}đ là đa số mua.`
         : '';
-      out.push({ icon: '💸', text: `${p.name}: ${r.count} lần khách chê đắt ở giá ${now.toLocaleString('vi-VN')}đ. Thử hạ về khoảng ${suggest.toLocaleString('vi-VN')}đ.${note}`, action: 'prices' });
+      out.push({ icon: '💸', text: `${p.name}: ${r.count} lần khách chê đắt ở giá ${fmtNum(now)}đ. Thử hạ về khoảng ${fmtNum(suggest)}đ.${note}`, action: 'prices' });
     }
   }
   return out;

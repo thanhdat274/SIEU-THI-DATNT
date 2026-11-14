@@ -3,6 +3,7 @@ import { shelfTotal, CONVENIENCE } from './branches';
 import { quanNuocDrinkIds, type QuanNuocState } from './quanNuoc';
 import { quanNuocProjection, quanNuocRestockTip } from './quanNuocInsights';
 import { productById } from './products';
+import { fmtNum } from '../core/format';
 
 /**
  * GĐ199 — "Rốn kho chung": bắt đầu trục multi-shop supply chain (backlog 6) bằng một bước soi sáng —
@@ -80,7 +81,7 @@ export function supplyChainOverview(
     id: 'main', icon: '📦', name: 'Kho chung (tiệm chính)',
     state: total > 0 ? 'ok' : 'danger',
     line: total > 0
-      ? `chứa ~${total.toLocaleString('vi-VN')} món — nuôi cả tiệm chính, chi nhánh & quán nước`
+      ? `chứa ~${fmtNum(total)} món — nuôi cả tiệm chính, chi nhánh & quán nước`
       : 'trống — nhập hàng ngay kẻo các điểm bán không có gì bán',
   });
 
@@ -93,7 +94,7 @@ export function supplyChainOverview(
     outlets.push(tip === null
       ? { id: 'teahouse', icon: '🍵', name: 'Quán nước', state: 'ok', line: `đủ đồ uống cho tối nay${days !== null ? ` · kho chung nuôi ~${days} ngày` : ''}` }
       : tip.verdict === 'danger'
-        ? { id: 'teahouse', icon: '🍵', name: 'Quán nước', state: 'danger', line: `thiếu ~${tip.shortfall} ly (hôm qua mất ${tip.missedRevenue.toLocaleString('vi-VN')}đ) — nhập nước/ngọt/cà phê` }
+        ? { id: 'teahouse', icon: '🍵', name: 'Quán nước', state: 'danger', line: `thiếu ~${tip.shortfall} ly (hôm qua mất ${fmtNum(tip.missedRevenue)}đ) — nhập nước/ngọt/cà phê` }
         : { id: 'teahouse', icon: '🍵', name: 'Quán nước', state: 'warn', line: `sắp cạn kho chung — đêm nay cần thêm ~${tip.shortfall} ly` });
   }
 
@@ -191,7 +192,7 @@ export function supplyRestockManifest(
 
   const line = (total === 0
     ? 'kho chung & các điểm bán đều đủ cho hôm nay — không cần nạp thêm'
-    : `cần ~${total.toLocaleString('vi-VN')} đơn vị: ${warehouseCover > 0 ? `chở ${warehouseCover.toLocaleString('vi-VN')} từ kho chung` : 'chở 0 từ kho chung'}${buyNeed > 0 ? `, nhập thêm ${buyNeed.toLocaleString('vi-VN')} từ nhà cung cấp` : ''}`);
+    : `cần ~${fmtNum(total)} đơn vị: ${warehouseCover > 0 ? `chở ${fmtNum(warehouseCover)} từ kho chung` : 'chở 0 từ kho chung'}${buyNeed > 0 ? `, nhập thêm ${fmtNum(buyNeed)} từ nhà cung cấp` : ''}`);
 
   return { lines, total, warehouseCover, buyNeed, line };
 }

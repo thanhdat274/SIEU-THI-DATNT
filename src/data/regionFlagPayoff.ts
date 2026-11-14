@@ -16,6 +16,7 @@ import { FLAG_TIER_DECOR, FLAG_TIER_PRICE, type RegionFlag } from './regionFlags
 import { REGION_PRODUCTS, type RegionName } from './regionSpecialty';
 import { decorVisitBoost } from './layout';
 import { customersPerDay } from './levels';
+import { fmtNum } from '../core/format';
 
 /** Một đặc sản của miền: giá bán thật và lời thêm mỗi lượt bán nhờ +% giá bảng hiệu. */
 export interface RegionPriceRow {
@@ -91,11 +92,11 @@ export function regionFlagPayoffLine(p: RegionFlagPayoff): string {
   // Có vol (số lượt bán thật) thì hiện đ/ngày SỐNG hôm nay; không thì chỉ vd. lời/lượt.
   let price: string;
   if (p.pricePerDay > 0) {
-    price = `; đặc sản miền +${Math.round(p.pricePct * 100)}% giá · hôm nay lời thêm ~${p.pricePerDay.toLocaleString('vi-VN')}đ`;
+    price = `; đặc sản miền +${Math.round(p.pricePct * 100)}% giá · hôm nay lời thêm ~${fmtNum(p.pricePerDay)}đ`;
   } else {
     const top = p.priceRows.slice().sort((a, b) => b.extraPerSale - a.extraPerSale)[0];
     price = top
-      ? `; đặc sản miền +${Math.round(p.pricePct * 100)}% giá (vd. ${top.name} +${top.extraPerSale.toLocaleString('vi-VN')}đ/lượt bán)`
+      ? `; đặc sản miền +${Math.round(p.pricePct * 100)}% giá (vd. ${top.name} +${fmtNum(top.extraPerSale)}đ/lượt bán)`
       : '';
   }
   return `🚩 Bảng ${p.region} (${p.tier === 2 ? 'vinh danh' : 'đủ bộ'}): +${p.decorDelta}🩷${extra}${price}.`;

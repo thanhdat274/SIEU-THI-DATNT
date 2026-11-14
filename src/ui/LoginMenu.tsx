@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { WHATS_NEW } from '../data/whatsNew';
+import { whatsNewMarkSeen, whatsNewUnseen } from '../data/whatsNew';
+import { WhatsNewList } from './WhatsNewList';
 import { FEEDBACK_KINDS, CONTACT_MAX, TEXT_MAX, feedbackProblem, loadDraft, loadSent, saveDraft, sendFeedback, type FeedbackKind } from '../data/feedback';
 import { loadPlayerName, NAME_MAX, savePlayerName, validatePlayerName } from '../data/playerName';
 import { getBoard, type AlleyBoardRes, type BoardRes } from '../net/socialApi';
@@ -10,6 +11,7 @@ import { DEVICES, KEYS, LANDING, guessDevice, guideFor, landingSeen, markLanding
 import { PLAY_LIMIT_MIN, PLAY_WARN_MIN, playMinutesToday } from '../data/playTime';
 import { readLocalSave } from '../core/save';
 import { PrivacyPolicy } from './PrivacyPolicy';
+import { fmtDate, fmtNum } from '../core/format';
 
 const SettingsPanel = lazy(() => import('./SettingsPanel').then((m) => ({ default: m.SettingsPanel })));
 
@@ -41,7 +43,7 @@ function WeekCut() {
   const end = new Date(start);
   end.setDate(start.getDate() + 6);
   end.setHours(23, 59, 59, 999);
-  const fmt = (d: Date) => d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+  const fmt = (d: Date) => fmtDate(d, { day: '2-digit', month: '2-digit' });
   const ms = Math.max(0, end.getTime() - now.getTime());
   const days = Math.floor(ms / 86_400_000);
   const hours = Math.floor((ms % 86_400_000) / 3_600_000);
@@ -102,11 +104,11 @@ function Board() {
       {res && (res.top.length === 0 ? <p className="login-muted">Tuần này chưa có ai lên bảng.</p> : (
         <ol className="lm-board">
           {res.top.map((r) => (
-            <li key={r.uid} className={res.self && r.rank === res.self.rank ? 'mine' : undefined}><b>#{r.rank}</b><span>{r.flagged ? 'Tiệm ẩn' : (r.name || `Tiệm #${r.uid.slice(0, 4)}`)}</span><em>{r.score.toLocaleString('vi-VN')}</em></li>
+            <li key={r.uid} className={res.self && r.rank === res.self.rank ? 'mine' : undefined}><b>#{r.rank}</b><span>{r.flagged ? 'Tiệm ẩn' : (r.name || `Tiệm #${r.uid.slice(0, 4)}`)}</span><em>{fmtNum(r.score)}</em></li>
           ))}
         </ol>
       ))}
-      {res?.self && <p className="login-muted">Hạng của bạn #{res.self.rank}/{res.total} · Top {res.self.percent}% · {res.self.score.toLocaleString('vi-VN')} điểm</p>}
+      {res?.self && <p className="login-muted">Hạng của bạn #{res.self.rank}/{res.total} · Top {res.self.percent}% · {fmtNum(res.self.score)} điểm</p>}
       <button className="login-btn small" onClick={() => setTick((t) => t + 1)}>⟳ Làm mới</button>
     </>
   );
@@ -202,7 +204,7 @@ function Feedback() {
         <>
           <h3>Góp ý của bạn</h3>
           <ul className="lm-sent">
-            {sent.map((s) => <li key={s.at}><em>{new Date(s.at).toLocaleDateString('vi-VN')}</em> {s.text.length > 90 ? `${s.text.slice(0, 90)}…` : s.text}</li>)}
+            {sent.map((s) => <li key={s.at}><em>{fmtDate(s.at)}</em> {s.text.length > 90 ? `${s.text.slice(0, 90)}…` : s.text}</li>)}
           </ul>
         </>
       )}
@@ -263,15 +265,29 @@ function PlayTimeCard() {
 }
 
 export function LoginMenu() {
-  const [m, setM] = useState<Modal>(() => (shouldShowLanding(!!readLocalSave(), landingSeen()) ? 'intro' : null));  const items: [Exclude<Modal, null>, string][] = [
+  const [m, setM] = useState<Modal>(() => (shouldShowLanding(!!readLocalSave(), landingSeen()) ? 'intro' : null));
+  const [newsUnseen, setNewsUnseen] = useState(whatsNewUnseen);
+  const items: [Exclude<Modal, null>, string][] = [
     ['intro', '🏪 Giới thiệu'], ['settings', '⚙️ Cài đặt'], ['guide', '📖 Hướng dẫn'], ['news', '🆕 Có gì mới'],
     ['board', '🏆 Xếp hạng'], ['feedback', '💬 Góp ý'], ['rules', '📜 Quy định'],
   ];
   const close = () => { if (m === 'intro') markLandingSeen(); setM(null); };
+  const open = (k: Exclude<Modal, null>) => {
+    setM(k);
+    if (k === 'news') { whatsNewMarkSeen(); setNewsUnseen(false); }
+  };
   return (
     <>
       <nav className="lm-grid" aria-label="Menu">
-        {items.map(([k, label]) => <button key={k} className="login-btn small" onClick={() => setM(k)}>{label}</button>)}
+        {items.map(([k, label]) => (
+          <button key={k} className="login-btn small" onClick={() => open(k)}>
+            {label}
+            {k === 'news' && newsUnseen && (
+              <span aria-hidden="true" data-testid="whats-new-dot"
+                style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: '#d64545', marginLeft: 6, verticalAlign: 'middle' }} />
+            )}
+          </button>
+        ))}
       </nav>
       <PlayTimeCard />
       {m === 'intro' && <Sheet title={LANDING.title} onClose={close}><Intro onPlay={close} /></Sheet>}
@@ -282,9 +298,7 @@ export function LoginMenu() {
       )}
       {m === 'news' && (
         <Sheet title="Có gì mới" onClose={close}>
-          {WHATS_NEW.map((e) => (
-            <section key={e.date + e.title}><h3>{e.title} <em>{e.date}</em></h3><ul>{e.lines.map((l) => <li key={l}>{l}</li>)}</ul></section>
-          ))}
+          <WhatsNewList />
         </Sheet>
       )}
       {m === 'board' && <Sheet title="Bảng xếp hạng" onClose={close}><BoardTabs /></Sheet>}

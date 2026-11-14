@@ -8,6 +8,7 @@ import type { guideProducts } from '../data/onboarding';
 import { dayTraffic, describeDay } from '../data/weather';
 import { monthlyRelRebate, tierProgress } from '../data/supplierRel';
 import { Callout } from './panels/shared';
+import { fmtNum } from '../core/format';
 
 /** GĐ947: các banner/callout đầu OrderPanel, tách nguyên văn. Hành động (điền giỏ) truyền qua props. */
 const btn: CSSProperties = { border: 'none', borderRadius: 6, padding: '2px 8px', cursor: 'pointer', fontSize: 11, marginTop: 6 };
@@ -42,7 +43,7 @@ export function QuanDrinkTipCallout({ tip: restockTip, onFill }: { tip: NonNulla
     >
       <div style={{ fontSize: 12 }}>
         {restockTip.verdict === 'danger'
-          ? `Hôm qua quán nước bỏ lỡ ~${restockTip.missedRevenue.toLocaleString('vi-VN')}đ vì kho thiếu đồ uống. `
+          ? `Hôm qua quán nước bỏ lỡ ~${fmtNum(restockTip.missedRevenue)}đ vì kho thiếu đồ uống. `
           : 'Quán nước chung kho với kệ tiệm chính — '}
         tối nay quán cần ~{restockTip.wanted} ly mà kho chỉ còn {restockTip.have}{restockTip.shortfall > 0
           ? <> — nhập thêm ít nhất <b>{restockTip.shortfall} ly</b> nước/ngọt/cà phê</>

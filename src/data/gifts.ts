@@ -1,6 +1,7 @@
 import { VIET_SET } from './decorSets';
 import { furnitureDef } from './furniture';
 import { simRng } from '../core/rand';
+import { fmtNum } from '../core/format';
 /**
  * Giữ chân người chơi: điểm danh mỗi ngày nhận quà tăng dần theo chuỗi 7 ngày,
  * và mỗi ngày một lượt vòng quay may mắn. Chỉ có dữ liệu; nhận/quay nằm ở `core/store`.
@@ -55,7 +56,7 @@ export const WHEEL_PRIZES: WheelPrize[] = [
 export const giftText = (g: DailyGift | WheelPrize) =>
   [g.money ? formatMoney(g.money) : '', g.xp ? `${g.xp} XP` : '', 'boost' in g && g.boost ? 'khách đông hơn hôm nay' : ''].filter(Boolean).join(' + ');
 
-const formatMoney = (v: number) => `${Math.round(v).toLocaleString('vi-VN')}đ`;
+const formatMoney = (v: number) => `${fmtNum(Math.round(v))}đ`;
 
 /** Quà của ngày trong chuỗi: chuỗi 1–7, dài hơn thì lặp lại vòng sau. */
 export const giftOfStreak = (streak: number) => DAILY_GIFTS[(Math.max(1, streak) - 1) % DAILY_GIFTS.length];

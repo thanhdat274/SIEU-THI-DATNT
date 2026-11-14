@@ -11,6 +11,7 @@ import { formatMoney, productById } from '../../data/products';
 import { venueTrendSummary } from '../../data/venueTrend';
 import { riskTrendSummary } from '../../data/risk';
 import { card, title, pill, iconTile, sub, row } from './businessStyles';
+import { fmtNum } from '../../core/format';
 
 /** Tab Lãi lỗ tuần và Tháng (tách từ BusinessPanel, GĐ876). */
 export function Week() {
@@ -65,13 +66,13 @@ export function Week() {
           <div style={{ width: `${chTarget > 0 ? Math.min(100, (chCurrent / chTarget) * 100) : 0}%`, height: '100%', borderRadius: 4, background: chMet ? '#2ecc71' : '#f1c40f' }} />
         </div>
         <div style={{ ...row, marginTop: 4, flexWrap: 'wrap' }}>
-          <span>{Math.round(chCurrent).toLocaleString('vi-VN')}/{Math.round(chTarget).toLocaleString('vi-VN')} {ch.unit}</span>
+          <span>{fmtNum(Math.round(chCurrent))}/{fmtNum(Math.round(chTarget))} {ch.unit}</span>
           {chMet && <span style={{ ...pill, background: 'rgba(46,204,113,0.2)', color: '#2ecc71' }}>✅ Đã đủ — giữ đều nhé!</span>}
         </div>
         {/* GĐ121: nhịp chạy tuần — dòng dự báo + nguy cơ mất chuỗi (thuần đọc, không đổi state) */}
         {!chMet && pace && (() => {
           const pctPace = Math.round(pace.pace * 100);
-          const pctProj = Math.round(pace.projected).toLocaleString('vi-VN');
+          const pctProj = fmtNum(Math.round(pace.projected));
           // GĐ262: nói "tới Chủ nhật" chỉ khi cửa sổ tuần khối-aligned (startDay 1/8/15… — play thường
           // luôn đúng vì endDay tăng 1 ngày each; save lệch do can thiệp tay thì nói trung tính).
           const aligned = (w.startDay - 1) % WEEK_DAYS === 0;
@@ -91,7 +92,7 @@ export function Week() {
                 </div>
               )}
               <div style={{ ...sub, marginTop: 3 }}>
-                Còn thiếu {Math.round(pace.missing).toLocaleString('vi-VN')} {ch.unit} nữa là đủ mục tiêu tuần này.
+                Còn thiếu {fmtNum(Math.round(pace.missing))} {ch.unit} nữa là đủ mục tiêu tuần này.
               </div>
             </>
           );
@@ -112,7 +113,7 @@ export function Week() {
             <div>
               {r.challenge.met
                 ? `🎯 ${r.challenge.icon} ${r.challenge.title}: XONG, +${formatMoney(r.challenge.reward)}`
-                : `🎯 ${r.challenge.icon} ${r.challenge.title}: ${Math.round(r.challenge.current).toLocaleString('vi-VN')}/${Math.round(r.challenge.target).toLocaleString('vi-VN')} ${r.challenge.unit} — chưa xong`}
+                : `🎯 ${r.challenge.icon} ${r.challenge.title}: ${fmtNum(Math.round(r.challenge.current))}/${fmtNum(Math.round(r.challenge.target))} ${r.challenge.unit} — chưa xong`}
             </div>
           )}
           {(r.challengeStreak ?? biz.weekStreak) >= 2 && <div>🔥 Chuỗi {(r.challengeStreak ?? biz.weekStreak)} tuần{r.streakXp ? ` — +${r.streakXp} XP` : ''}</div>}
@@ -229,12 +230,12 @@ export function Month() {
           <div style={{ width: `${chTarget > 0 ? Math.min(100, (chCurrent / chTarget) * 100) : 0}%`, height: '100%', borderRadius: 4, background: chMet ? '#2ecc71' : '#f1c40f' }} />
         </div>
         <div style={{ ...row, marginTop: 4, flexWrap: 'wrap' }}>
-          <span>{Math.round(chCurrent).toLocaleString('vi-VN')}/{Math.round(chTarget).toLocaleString('vi-VN')} {ch.unit}</span>
+          <span>{fmtNum(Math.round(chCurrent))}/{fmtNum(Math.round(chTarget))} {ch.unit}</span>
           {chMet && <span style={{ ...pill, background: 'rgba(46,204,113,0.2)', color: '#2ecc71' }}>✅ Đã đủ — giữ đều nhé!</span>}
         </div>
         {!chMet && mPace && (() => {
           const pctPace = Math.round(mPace.pace * 100);
-          const pctProj = Math.round(mPace.projected).toLocaleString('vi-VN');
+          const pctProj = fmtNum(Math.round(mPace.projected));
           return (
             <>
               <div style={{ ...row, marginTop: 4, flexWrap: 'wrap', gap: 4 }}>
@@ -249,7 +250,7 @@ export function Month() {
                 </div>
               )}
               <div style={{ ...sub, marginTop: 3 }}>
-                Còn thiếu {Math.round(mPace.missing).toLocaleString('vi-VN')} {ch.unit} nữa là đủ mục tiêu tháng này.
+                Còn thiếu {fmtNum(Math.round(mPace.missing))} {ch.unit} nữa là đủ mục tiêu tháng này.
               </div>
             </>
           );
@@ -270,7 +271,7 @@ export function Month() {
             <div>
               {r.challenge.met
                 ? `🎯 ${r.challenge.icon} ${r.challenge.title}: XONG, +${formatMoney(r.challenge.reward)}`
-                : `🎯 ${r.challenge.icon} ${r.challenge.title}: ${Math.round(r.challenge.current).toLocaleString('vi-VN')}/${Math.round(r.challenge.target).toLocaleString('vi-VN')} ${r.challenge.unit} — chưa xong`}
+                : `🎯 ${r.challenge.icon} ${r.challenge.title}: ${fmtNum(Math.round(r.challenge.current))}/${fmtNum(Math.round(r.challenge.target))} ${r.challenge.unit} — chưa xong`}
             </div>
           )}
           {(r.monthStreak ?? biz.monthStreak) >= 2 && <div>🔥 Chuỗi {(r.monthStreak ?? biz.monthStreak)} tháng{r.streakXp ? ` — +${r.streakXp} XP` : ''}</div>}

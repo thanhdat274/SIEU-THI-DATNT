@@ -14,6 +14,7 @@ import { SUPPLY_CONTRACTS } from './contracts';
 import { SHOP_TIERS } from './shopTiers';
 import { WAREHOUSE_TIERS } from './warehouse';
 import { maxStaff } from './staff';
+import { fmtNum } from '../core/format';
 
 /** GĐ1618: cấp sớm nhất có hợp đồng cung cấp — bước cốt truyện hợp đồng ghi rõ khi chưa tới cấp. */
 export const FIRST_CONTRACT_LEVEL = Math.min(...SUPPLY_CONTRACTS.map((d) => d.unlock));
@@ -341,7 +342,7 @@ export function dailyQuests(c: QuestContext): Quest[] {
     const money = Math.max(0, Math.floor(d.money * scaledRatio));
     return {
       id: d.id, icon: d.icon, title: d.title,
-      description: ('desc' in d && d.desc ? d.desc.replace('{n}', target.toLocaleString('vi-VN')) : `Đạt ${target.toLocaleString('vi-VN')} ${d.unit} trong ngày`),
+      description: ('desc' in d && d.desc ? d.desc.replace('{n}', fmtNum(target)) : `Đạt ${fmtNum(target)} ${d.unit} trong ngày`),
       current: Math.min(d.current, target), target, money, xp: d.xp,
       done: d.current >= target, claimed: claimed.has(d.id),
     };

@@ -14,6 +14,7 @@ import { brandLinePayoff } from '../../data/brandLinePayoff';
 import { brandWorkshopPayoff } from '../../data/brandWorkshopPayoff';
 import { brandDealPayoff } from '../../data/brandDealPayoff';
 import { Footer, styles, Tabs } from './shared';
+import { fmtNum } from '../../core/format';
 
 type Tab = 'lines' | 'workshop' | 'dealers' | 'franchise';
 const TABS: readonly [Tab, string][] = [
@@ -23,7 +24,7 @@ const TABS: readonly [Tab, string][] = [
   ['franchise', '🏮 Nhượng quyền'],
 ];
 
-const vnd = (n: number) => `${(n ?? 0).toLocaleString('vi-VN')}đ`;
+const vnd = (n: number) => `${fmtNum((n ?? 0))}đ`;
 const pname = (id: string) => (productById(id)?.name ?? id).replace(/\s*\([^)]*\)\s*$/, '');
 
 /**
@@ -140,7 +141,7 @@ function RepBar({ rep, name, repLog }: { rep: number; name: string; repLog: { da
 function WorkshopTab(props: { b: BrandState; level: number; money: number; storage: Record<string, number>; onBuy: () => void; onHire: () => void; onFire: () => void }) {
   const { b, level, money, storage, onBuy, onHire, onFire } = props;
   const w = b.workshop;
-  const vnd = (n: number) => `${(n ?? 0).toLocaleString('vi-VN')}đ`;
+  const vnd = (n: number) => `${fmtNum((n ?? 0))}đ`;
   return (
     <div>
       <p style={{ ...styles.sub, maxWidth: 620 }}>
@@ -265,7 +266,7 @@ function DealersTab(props: {
             <b>😈 {rival.name} — đối thủ ghé mua</b>
             <div style={{ fontSize: 12, opacity: 0.85 }}>
               {b.rivalOffer
-                ? `${pname(b.rivalOffer.productId)} × ${b.rivalOffer.units} đơn vị, trả ${brandRivalValue(b.rivalOffer).toLocaleString('vi-VN')}đ (95%) — giành tiền nhưng ${rival.name} +${BRAND_RIVAL_STRENGTH_GAIN} sức mạnh, hàng mình lên kệ họ.`
+                ? `${pname(b.rivalOffer.productId)} × ${b.rivalOffer.units} đơn vị, trả ${fmtNum(brandRivalValue(b.rivalOffer))}đ (95%) — giành tiền nhưng ${rival.name} +${BRAND_RIVAL_STRENGTH_GAIN} sức mạnh, hàng mình lên kệ họ.`
                 : `Đối thủ ${rival.strength} sức mạnh — thỉnh thoảng họ ngỏ ý mua hàng nhãn giá cao để trưng trên kệ.`}
               {b.rivalSold ? ` Đã bán ${b.rivalSold} đơn vị cho rival.` : ''}
             </div>
@@ -286,7 +287,7 @@ function DealersTab(props: {
                 <span style={{ flex: 1 }}>
                   <b>{def.icon} {def.title}</b>
                   <div style={{ fontSize: 12, opacity: 0.8 }}>
-                    {pname(deal.productId)} · {def.qty} đv mỗi {def.periodDays} ngày · {brandDealValue(def, deal.productId).toLocaleString('vi-VN')}đ/kỳ
+                    {pname(deal.productId)} · {def.qty} đv mỗi {def.periodDays} ngày · {fmtNum(brandDealValue(def, deal.productId))}đ/kỳ
                     {' '}· kỳ tới {dueIn <= 0 ? (deal.overdue ? 'QUÁ HẠN' : 'hôm nay') : `${dueIn} ngày nữa`}
                     {' '}· kho nhãn {have}/{def.qty}
                     {deal.committed ? ' · 🤝 đã cam kết' : ''}
@@ -365,7 +366,7 @@ function FranchiseTab(props: { b: BrandState; level: number; money: number; onOp
                 <span style={{ flex: 1 }}>
                   <b>{def.icon} {def.title}</b>
                   <div style={{ fontSize: 12, opacity: 0.8 }}>
-                    khoẻ {f.health}/100 · mỗi tuần {def.weekly} đơn vị · phí/đêm ≈ {franchiseIncome(f.health, b.rep, def.size, 1).toLocaleString('vi-VN')}đ
+                    khoẻ {f.health}/100 · mỗi tuần {def.weekly} đơn vị · phí/đêm ≈ {fmtNum(franchiseIncome(f.health, b.rep, def.size, 1))}đ
                     {' '}· nhập hàng {due !== undefined ? (due <= 1 ? (due <= 0 ? 'quá hạn' : 'hôm nay') : `còn ${due} ngày`) : '—'}
                   </div>
                   {frp && (

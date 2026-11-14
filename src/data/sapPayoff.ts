@@ -18,6 +18,7 @@ import {
   sapTierOf,
 } from './sapRong';
 import type { Weather } from './weather';
+import { fmtNum } from '../core/format';
 
 export interface SapUpPayoff {
   /** Tên bậc kế (Xe đẩy / Quầy). */
@@ -102,4 +103,4 @@ export function sapPayoff(opts: {
   };
 }
 
-const fmtMoney = (v: number) => `${Math.round(v).toLocaleString('vi-VN')}đ`;
+const fmtMoney = (v: number) => `${fmtNum(Math.round(v))}đ`;
